@@ -106,6 +106,13 @@ than assumption.
 env var (alias `BRAND_CORPUS_ROOT`), choosing a Python vs TS implementation, and the three ways to
 register it (bundled in a plugin / standalone / published): [`references/mcp-wiring.md`](references/mcp-wiring.md).
 
+## Stamping the corpus into a distributable
+
+A finished corpus is *emitted* for a host via **`/brand-stamp`** (mechanized by `bin/brand-stamp`):
+a **plugin** (corpus + the `brand-corpus` MCP, for Claude Code / Cowork) or **skill + documents**
+(flat knowledge, for Claude chat). The two forms map onto this skill's two conventions —
+folder → plugin, flat → docs. → [`references/stamping.md`](references/stamping.md).
+
 ## Boundaries
 
 - This skill organizes documents; it does not **write** the strategy (`brand-methodology`) or

@@ -13,7 +13,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 /plugin install brand-forge@plugins-forge
 ```
 
-Then drive it through four typed commands:
+Then drive it through five typed commands:
 
 | Command | Posture | What it does |
 |---|---|---|
@@ -21,6 +21,7 @@ Then drive it through four typed commands:
 | `/brand-evaluate` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
+| `/brand-stamp` | package | Emit a finished corpus as a distributable — a plugin (Claude Code/Cowork) or skill+docs (Claude chat). |
 
 ---
 
