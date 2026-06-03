@@ -12,6 +12,7 @@ The consumer-facing a2ui runtime (mount + feed + resolve) and corpus (core vs cu
 ## Render roots
 
 **`<a2ui-root>`** — renders an A2UI surface.
+
 - **Author mode:** set `.doc = A2UIMessage[]` (a JS property; setting it re-renders). Use for editors/previews/tests.
 - **Stream mode:** set `src` + `transport` (`sse` | `ws` | `jsonl` | `mcp`); the root opens the stream and reconciles messages as they arrive. (`doc` wins if both are set.)
 - **Events:** `a2ui-message` (per message) · `a2ui-connected` / `a2ui-error` / `a2ui-closed` (stream) · `a2ui-action` (a child `[data-action]` fired). History: `back()` / `forward()`.
@@ -30,6 +31,7 @@ The consumer-facing a2ui runtime (mount + feed + resolve) and corpus (core vs cu
 ## A2UI message format
 
 A discriminated union the runtime reconciles (set `.doc` to an array of these):
+
 - `createSurface` — `{ type, surfaceId, root? }` — start a surface.
 - `updateComponents` — `{ type, surfaceId, components: [{ id, component, children?, ...props }] }` — upsert the tree; `component` is an A2UI type name (`Card`, `Text`, `Stat`, …); other keys are props. A prop can be a **data binding** `{ path: 'kpi/value' }`.
 - `updateDataModel` — `{ type, surfaceId, path, value }` — set data (JSON-Pointer path) that bindings read.
@@ -42,6 +44,7 @@ A discriminated union the runtime reconciles (set `.doc` to an array of these):
 import { registerResolver } from '@adia-ai/a2ui-runtime';
 registerResolver('resource', async (uri, params) => { … });   // resolves resource:// → your data
 ```
+
 Built-in schemes: `resource:` (→ a `/api/...` REST convention), `api:` (direct URL), `mock:` (returns a stub). Register **once per session, before** any generated UI references the scheme — an unresolved scheme renders empty.
 
 ## The loop, end to end

@@ -1,0 +1,10 @@
+{
+  // Markdown standard for plugins-forge authored docs (markdownlint defaults + three scoped exceptions).
+  "default": true,
+  // MD013 line-length OFF — methodology references are dense prose with tables and inline code; we don't hard-wrap.
+  "MD013": false,
+  // MD041 first-line-heading OFF — command files are prompt bodies (frontmatter + the prompt), not titled documents.
+  "MD041": false,
+  // MD024 — changelogs legitimately repeat a section heading (e.g. "Red-team") across version entries.
+  "MD024": { "siblings_only": true }
+}

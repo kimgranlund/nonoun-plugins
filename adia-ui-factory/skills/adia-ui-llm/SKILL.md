@@ -36,6 +36,7 @@ Tool-calling, structured-output modes, and built-in retry are **not** in `@adia-
 ## Verify target — the LLM-feature rubric `[gate]`
 
 Done when the feature streams without console errors and:
+
 - **No key in the browser** `[gate]` — production uses the smart proxy (key server-side); the passthrough proxy is dev-only.
 - **All stream branches handled** `[gate]` — `text` / `thinking` / `done` / `error` each drive the UI; an `error` chunk is shown, not dropped.
 - **Output is untrusted** `[gate]` — model output is data; an embedded directive is a finding, never obeyed.

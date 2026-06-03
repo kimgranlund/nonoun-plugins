@@ -20,10 +20,12 @@ Consumer migrations. The framework MIGRATION GUIDE (in the framework repo) is th
 1. **Read the guide** for the target version. Missing section → pause, ask, offer to draft it.
 2. **Audit** — `git grep -nlE '<pattern>'` each breaking item; cluster by component; count files/occurrences. Surface before sweeping.
 3. **Sweep** — mechanical per cluster:
+
    ```bash
    git grep -lE 'button-ui[^>]*variant="danger"' \
      | xargs perl -i -pe 's/(<button-ui[^>]*?)variant="danger"/$1color="danger"/g'
    ```
+
    …or a shipped codemod. **Flag, don't auto-apply, judgment items** (below).
 4. **Verify** — `adia-lint` clean of `LEGACY-SHELL`/`NATIVE-PRIMITIVE`; build/render; then the **leftover-drift grep** across `.css`/`.js`/`.md`/`.json`; browser probe.
 5. **Report** — per-axis counts, manual-review list, gate results, next actions.
@@ -42,6 +44,7 @@ Semantic flips (`[open]`→`[collapsed]` inverts default visibility), Boolean op
 ## What the path-only sweep misses (leftover-drift categories)
 
 Bare-name mentions in prose docs (README/AGENTS/ROADMAP); skill-directory names; JSON metadata fields (highest impact — silent harvest miss on rebuild); inventory tables in cross-cutting docs. Use a pre/post grep diff:
+
 ```bash
 grep -rln 'OLD_NAME' . --include='*.md' --include='*.json' | sort > /tmp/pre.txt
 # … sweep …

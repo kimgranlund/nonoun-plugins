@@ -18,7 +18,7 @@ The plumbing between the host (`adia-ui-spa` / `adia-ui-ssr`) and the UI (`adia-
 ## Step 1 — pick the data-flow pattern (cited by the need)
 
 | Need | Pattern |
-|---|---|
+| --- | --- |
 | reactive local UI state | **signals** — `signal()` / `effect()` |
 | CRUD with mutations + undo | **Service / Controller / Command** (async Service interface; commands record patches) |
 | typed reads from a backend/corpus | **DataClient** — `read({type, params})` → pure **mappers** → projection |

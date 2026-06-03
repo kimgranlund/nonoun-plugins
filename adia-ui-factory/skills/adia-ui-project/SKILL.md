@@ -18,7 +18,7 @@ Owns the **shape of the app on disk** — the shapes, the four-axis layout, the 
 ## Modes
 
 | Mode | When | Verify target |
-|---|---|---|
+| --- | --- | --- |
 | **new-app** | start a fresh app | the **structure rubric** passes + the first surface renders (`adia-ui-verify`) |
 | **add-surface** | add a surface to a rollup / shared-foundation app | surface lands in the right place; structure rubric passes |
 | **add-page** | add a page to a rollup | trio/DUO form correct (the gate below); renders |
@@ -31,7 +31,7 @@ Three shapes; the decision table + full layouts are in `${CLAUDE_PLUGIN_ROOT}/re
 
 ## Step 2 — scaffold it (mechanized — do not hand-roll the layout)
 
-```
+```bash
 # new app skeleton (rendering mode picks the host: see adia-ui-spa / -ssr)
 python3 "${CLAUDE_PLUGIN_ROOT}/bin/adia-scaffold" spa <name>
 python3 "${CLAUDE_PLUGIN_ROOT}/bin/adia-scaffold" ssr <name> --framework <next|nuxt|sveltekit|astro>
@@ -47,11 +47,12 @@ The bin emits the byte-stable pieces — the **single-surface** host (SPA/SSR) +
 
 ## The page-trio vs page-DUO gate
 
-```
+```text
 Does this surface need behavior or property-API wiring (events, .columns=…, streaming, fetch)?
    ├─ yes → page-TRIO  (<page>.html + .contents.html + .contents.js exporting setup(host))
    └─ no  → page-DUO   (<page>.html + .contents.html — no .contents.js)
 ```
+
 `[gate]` — a DUO that ships a `.contents.js`, or a trio whose `.contents.js` doesn't export `setup`, is a defect. `adia-scaffold page` enforces the right form per `--duo`.
 
 ## Verify target — the structure rubric

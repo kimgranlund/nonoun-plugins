@@ -19,7 +19,7 @@ The entry point for all adia-ui app work. It does one thing well: **turn a vague
 ## Modes (cold start)
 
 | Mode | When | Verify target |
-|---|---|---|
+| --- | --- | --- |
 | **orient** | an existing adia-ui repo you must understand before changing | a complete Orientation Record, every axis cited |
 | **start** | a new app/surface from a brief | Record + a route to `adia-ui-project` + the mode skill |
 | **route** | a specific task ("wire the data", "add a chat") | the task axis set + a hand-off to the owning skill |
@@ -29,7 +29,7 @@ The entry point for all adia-ui app work. It does one thing well: **turn a vague
 ### 1 · Rendering mode
 
 | Signal (cite the one you found) | Mode |
-|---|---|
+| --- | --- |
 | `next` / `nuxt` / `@sveltejs/kit` / `astro` in `package.json`; framework route dirs (`app/`, `pages/`, `src/routes/`) | **SSR** → `adia-ui-ssr` |
 | static `index.html` linking `/packages/web-components/*` + one registration `<script type="module">`; Vite/vanilla; no framework router | **SPA** → `adia-ui-spa` |
 | an SSR framework **and** a self-contained client island inside a page (content-less `<router-ui>` / a mounted SPA surface) | **hybrid** → `adia-ui-data` owns the boundary; the page is SSR, the island is SPA |
@@ -40,7 +40,7 @@ Mode is load-bearing: routing ownership, registration, and state placement are *
 ### 2 · Project shape  → `${CLAUDE_PLUGIN_ROOT}/references/project-shapes.md`
 
 | Signal | Shape |
-|---|---|
+| --- | --- |
 | one entry + one surface (`<name>.html` + contents) | **single-surface** |
 | many sibling sub-pages under one app, uniform shell template | **rollup** (homogeneous or heterogeneous) |
 | root `spec/plan/` + sibling apps under `app/<name>/` sharing `app/shared/` | **shared-foundation** |
@@ -50,7 +50,7 @@ All shapes use the **four-axis layout** (`spec/ plan/ app/ skills/`) and the **p
 ### 3 · Shell  → the `adia-ui-shells` skill
 
 | Signal | Shell |
-|---|---|
+| --- | --- |
 | full app chrome — sidebar + topbar + command palette | **admin-shell** |
 | LLM conversation surface | **chat-shell** |
 | design-tool / canvas + panes | **editor-shell** |
@@ -61,7 +61,7 @@ All shapes use the **four-axis layout** (`spec/ plan/ app/ skills/`) and the **p
 ### 4 · Task → skill
 
 | Task | Skill |
-|---|---|
+| --- | --- |
 | lay out / scaffold an app or surface | `adia-ui-project` |
 | build a screen · author a component · theme | `adia-ui-compose` |
 | pick / wire a shell | `adia-ui-shells` |
@@ -77,7 +77,7 @@ All shapes use the **four-axis layout** (`spec/ plan/ app/ skills/`) and the **p
 
 Before routing, emit this (one line per axis, each with the signal that decided it):
 
-```
+```text
 Mode:  spa | ssr | hybrid     — signal: <file / dep / marker, or the user's explicit words>
 Shape: single | rollup | shared-foundation — signal: <…>
 Shell: admin | chat | editor | simple | embed | none — signal: <…>
@@ -86,6 +86,7 @@ Task:  <task>                 — signal: <the request>
 ```
 
 **Orientation rubric `[gate]` — do not route until all pass:**
+
 - **Evidence** `[gate]` — each axis is set by a *cited* signal (a real file/dep/marker, or the user's explicit words), not an assumption.
 - **Ambiguity surfaced** `[gate]` — any axis that's genuinely unclear is *asked*, never guessed (greenfield mode/shell especially).
 - **Route legal** `[gate]` — the hand-off follows the Task table, not improvisation.

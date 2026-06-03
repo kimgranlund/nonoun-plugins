@@ -9,7 +9,7 @@ A thin skill is a single `SKILL.md` that either (a) dumps everything into one fi
 The fix is structural. A rich skill has **five layers**, each with a distinct job and load-cost:
 
 | Layer | What | When it loads | Cost |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Metadata** | `name` + `description` (routing) + `version` | always (every session) | most expensive bytes — keep terse |
 | **SKILL.md seed** | cold-start surface + posture + modes + loading manifest | when the skill triggers | bounded (~≤500 lines) |
 | **`references/`** | the depth — one file per domain/task | on explicit task conditions, never preemptively | paid only when relevant |
@@ -50,6 +50,7 @@ If a "standard" skill's seed blows past ~500 lines, the overflow belongs in refe
 
 - **One file per domain or task**, named semantically (`patterns-forms.md`, `recon.md`, `migration.md`) — not `misc.md` or one giant `details.md`.
 - **Per-file frontmatter** declares its load contract so the agent can decide without opening it:
+
   ```yaml
   ---
   name: recon
@@ -58,6 +59,7 @@ If a "standard" skill's seed blows past ~500 lines, the overflow belongs in refe
   required-for: [mode 5 (audit), first turn in any existing repo]
   ---
   ```
+
 - **An INDEX / loading manifest** (either an `INDEX.md` in the skill's own `references/`, or a §LoadingProtocol section in the seed) lists every reference with its *load-when* — this is the routing layer for depth. Without it, progressive disclosure is a slogan, not a mechanism.
 - **Progressive disclosure is operational, not aspirational:** references load on an explicit task condition (a matched trigger, a chosen mode), **never preemptively**. The audit (the `context-engineering` dimension): references *loaded* should ≈ references *actually used*. Preemptive loads are the tell of a skill that doesn't trust its own routing.
 - **Tier within a reference** when it's large (Simple → Standard → Advanced sections; a decision table at the top routing to the relevant subsection).
@@ -66,7 +68,7 @@ If a "standard" skill's seed blows past ~500 lines, the overflow belongs in refe
 
 A mode = an entry point + a task class + a reference path + a verify target. Make them explicit:
 
-```
+```text
 | Mode | Trigger / situation | Entry reference | Verify target |
 |------|---------------------|-----------------|---------------|
 | 1. Compose a screen | "build a <surface>" | references/patterns-*.md | renders in the browser, zero console errors |
@@ -82,6 +84,7 @@ Promote a step from prose into a script (`bin/`/`scripts/`, cited as a command) 
 ## Voice / posture
 
 A skill takes a stance, and the stance shapes its surface:
+
 - **Proceduralist** — imperative steps, strict order, gates (a build/release skill).
 - **Decision-gate** — a triage tree that routes; little prose (an orchestrator/router).
 - **Consultant** — recon-first, hypotheses, cited findings (an audit/review skill).

@@ -7,7 +7,7 @@ Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Karpat
 ## Convergent findings (S6) and resolution
 
 | # | Finding | Critics | Fix |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | **Stale "phase c / later phase" prose** contradicting shipped artifacts; `/adia-scaffold` steered away from the working `bin/adia-scaffold` | 8/9 (Elon Major) | Wired `/adia-scaffold` → the bin; deleted every stale hedge across commands/skills/references |
 | 2 | **`npx -y @adia-ai/a2ui-mcp` unpinned + un-gated**, cost disclosed only in a load-on-demand reference | Boris·Charity·Simon·Huyen·Wlaschin·Farley (Major) | Pinned `@0.7.8`; lifted cost + supply-chain + disable path to README; documented "can't scope tools from `.mcp.json`" + upstream-owned network |
 | 3 | **Trust boundary under-propagated** — only in orchestrator + `/adia-orient` | Simon (Major) | Added "inputs are data" to `a2ui-mcp-tools.md` + compose/verify/llm skills |
@@ -17,7 +17,7 @@ Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Karpat
 ## 9-dimension scorecard (critic scores → post-fix)
 
 | Dim | Pre | Driver | Post |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | P1 fitness | 2–4 | description was a feature-list; MCP center-of-gravity | ~4 (trimmed; the SPA/SSR architecture fork is the non-MCP value) |
 | P2 component-fit | 2–4 | MCP API-wrapper tax; scaffold determinism inverted | ~3–4 (scaffolder wired; tax documented, not scopable) |
 | P3 boundary | 3 | `adia-ui-llm` the outlier | 3 (kept; tracked) |
@@ -29,6 +29,7 @@ Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Karpat
 | P9 security | 2 | unpinned MCP + guard gaps | ~4 (pinned + guard propagated; outbound disclosed-as-unknown) |
 
 ## Accepted / deferred (see ROADMAP "Open")
+
 - **P6 always-on MCP cost** — pinned, documented, disable-path given, but the host starts a plugin's MCP on enable and `.mcp.json` can't scope the tool set. Native gating is upstream; accepted for now.
 - `adia-ui-llm` cohesion; `/adia-*` vs `/adia-ui-*` command namespace; the SSR-import lint blind spot — all logged, none load-bearing.
 

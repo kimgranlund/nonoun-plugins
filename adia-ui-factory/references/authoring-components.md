@@ -6,7 +6,7 @@ When no catalog primitive composes to the need, author a light-DOM custom elemen
 
 A component is three files in one folder (`components/<tag>/`):
 
-```
+```text
 components/my-thing/
 ├── my-thing.js      # the class + side-effect registration
 ├── my-thing.css     # the @scope block (token-only)
@@ -69,7 +69,7 @@ Every component stylesheet is scoped to its tag and split into a zero-specificit
 The mechanizable smells the framework audits — these seed the phase-(c) hook and overlap the MCP's `check_anti_patterns`. Grep hints in parens.
 
 | Smell | Fix |
-|---|---|
+| --- | --- |
 | Shadow DOM (`attachShadow`) | light DOM only |
 | Raw color in component CSS (`#`, `rgb(`, `oklch(`) | `var(--a-*)` token |
 | Raw px ≥ 3 without carve-out comment | `var(--a-space-*)` |
@@ -79,7 +79,7 @@ The mechanizable smells the framework audits — these seed the phase-(c) hook a
 | Single `:scope` block (no `:where(:scope)` token block) | two-block `@scope` |
 | Boolean prop `default: true` | flip the name (`closable`→`permanent`) so absent = false |
 | `attr:` in a property def | `attribute:` |
-| `title`/`error`/`active`/`disabled` as a prop name | `heading` / `danger` / `value`|`step` / `readonly` |
+| `title`/`error`/`active`/`disabled` as a prop name | `heading` / `danger` / `value`/`step` / `readonly` |
 | Bare `<div>` for layout; raw `<button>`/`<input>` | `<col-ui>`/`<row-ui>`/`<grid-ui>`; the `*-ui` control |
 | Card/drawer body not wrapped in `<section>` | `<card-ui><section>…</section></card-ui>` |
 | Hardcoded `open` on `<modal-ui>`/`<drawer-ui>` | drive via `.open = true` |

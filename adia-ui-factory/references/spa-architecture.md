@@ -27,6 +27,7 @@ One static `index.html` whose job is to load CSS in cascade order and register c
 ```
 
 **Cascade order is load-bearing** (later wins): foundation → barrel → register → page → component. Invariants:
+
 - Link **both** `host.css` and `styles/index.css`. Post-0.7.6 the barrel was split — `host.css` is foundation-only, so linking it alone renders primitives unstyled.
 - **One** registration script (`/packages/web-components/index.js`). Don't piecemeal-import primitives across the page.
 - Never hand-roll `:where(html,body){}` — the foundation owns the page frame; re-rolling it drifts from the system (the classic serif-leak bug).
@@ -34,7 +35,7 @@ One static `index.html` whose job is to load CSS in cascade order and register c
 
 ## Four-axis project structure
 
-```
+```text
 my-app/
 ├── spec/     design axis — BRIEF · ARCHITECTURE · SPEC · screen specs
 ├── plan/     execution axis — ROADMAP · MILESTONES · PLAN
@@ -54,7 +55,7 @@ Keep design (`spec/`), plan (`plan/`), and source (`app/`) on separate axes — 
 A standalone page is a triplet:
 
 | File | Owns |
-|---|---|
+| --- | --- |
 | `<page>.html` | static shell — meta, CSS/script links, a mount point |
 | `<page>.contents.html` | the markup, **fetched** and injected at runtime |
 | `<page>.contents.js` | `setup(root)` — wires behavior after the markup lands |
@@ -75,6 +76,7 @@ In a real app the trio usually **collapses into the surface's own custom-element
 router.routes = [{ path: '/live' }, { path: '/briefing' }];   // content-LESS
 router.navigate('/live');
 ```
+
 ```css
 my-surface .view { display: none; }
 my-surface router-ui[data-route-path="/live"] .live { display: flex; }
@@ -86,7 +88,7 @@ A **content-mode** route (one carrying `content`) makes the router fetch and `in
 
 The UI never talks to a backend. It reads typed **projections** from a `DataClient`; a pure mapper is the swap seam between fixtures and a real API:
 
-```
+```text
 DataClient.read({ type: 'LabRecommendationSet', params })   ← the only surface the UI sees
    → runMapper(query, loader)                                ← pure (sources) => Projection; the v1-fixture ⇄ v2-API seam
       → CorpusLoader.load*()                                 ← fetches the source data
@@ -94,6 +96,7 @@ DataClient.read({ type: 'LabRecommendationSet', params })   ← the only surface
 
 - Components consume **projections only** — no backend calls, no re-deriving projections in the view, no per-view reshaping (the projection type *is* the contract).
 - **Attribution is structural:** every `mutate` requires an `action_source`; the client throws without it.
+
   ```js
   await client.mutate({ type: 'order', payload }, { action_source: btn.dataset.action });
   ```
@@ -101,6 +104,7 @@ DataClient.read({ type: 'LabRecommendationSet', params })   ← the only surface
 ## State — single owner
 
 One owner per piece of state, no shadow copies:
+
 - the **route** owns which view is active,
 - the **component** owns selection sets / UI toggles,
 - the **DataClient** owns fetched data.

@@ -28,6 +28,7 @@ The advisory `adia-lint` hook mechanizes the *structural* slice on write (shadow
 ## Verify rubric `[gate]`
 
 A surface ships only when all pass:
+
 - **Renders** `[gate]` — loads with zero `console.error`/`pageerror`; key elements have non-zero bounding boxes.
 - **Screenshot read** `[gate]` — you looked at the `deviceScaleFactor: 2` capture (DOM-present-but-clipped shows only in pixels).
 - **Accessible** `[gate]` — region role + label; a keyboard path per interaction; AA contrast; overlays via `.open`.

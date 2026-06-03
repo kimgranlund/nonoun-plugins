@@ -22,7 +22,7 @@ If none hold, it's a skill.
 ## Taxonomy — name the role, then design to it
 
 | Role | Job | Tools | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Critic / reviewer** | judge an artifact from one lens, in isolation | `Read, Grep, Glob` | persona-driven; read-only; the council unit |
 | **Worker** | one unit of parallel work (analyze a file, score a candidate) | minimal for the job | stateless; returns structured findings |
 | **Analyst** | map structure / build a model (e.g., a dependency graph) | `Read, Grep, Glob` | read-only; output feeds the orchestrator |
@@ -32,6 +32,7 @@ If none hold, it's a skill.
 ## Frontmatter & the loader rule
 
 Define the contract precisely (full field list in `frontmatter.md`):
+
 - `name` + `description` — the description is **dispatch routing**: *when to send work here*. The orchestrator reads it to decide.
 - `tools` — the allowlist. Default to the minimum; a reviewer is `Read, Grep, Glob`, an orchestrator adds `Task`.
 - `model` / `effort` / `maxTurns` — budget the agent to its job.
@@ -50,6 +51,7 @@ If the agent reads anything it didn't author — an artifact under review, repo 
 ## Persona design
 
 Persona matters for **review** agents (it produces diverse, non-redundant judgment) and is noise for pure workers. A good persona is reproducible, not theatrical:
+
 - **Stance** — the lens and what it refuses to accept (e.g., "empirical, terse; won't accept ceremony that can't show earned value").
 - **Owned dimensions** — what this lens is responsible for, so coverage is complete and non-overlapping across a panel.
 - **Citation discipline** — findings cite file + field/line + a concrete tell, and are severity-classified. A persona that gives vague impressions isn't a critic; it's flavor.
@@ -63,6 +65,7 @@ Persona matters for **review** agents (it produces diverse, non-redundant judgme
 ## Orchestration — the council pattern
 
 The highest-value agent shape is a panel: **fan out isolated lenses in parallel → collect cited, severity-classified findings → synthesize across them.** The synthesis is the point — the individual critiques are inputs to it (convergence where ≥2 agree, the productive tension, the blind spot all of them miss, the scorecard). Worked examples ship in this plugin: `agents/plugin-council.md` (the orchestrator) fanning out `agents/critic-*.md` (the lenses); brand-forge's `brand-council` is the same shape. Rules:
+
 - The orchestrator is the **only** agent with `Task`; nesting beyond one level is a smell.
 - Fan out **concurrently** (one message, many dispatches) so an earlier lens can't anchor a later one.
 - A panel that returns only minor findings is reviewing an excellent artifact **or** isn't being adversarial enough — push for severity, or state the clean pass and cite the standard met.

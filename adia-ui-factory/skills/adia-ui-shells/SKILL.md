@@ -18,13 +18,13 @@ Shells are the **page-chrome composites** (`@adia-ai/web-modules`). They are **b
 ## Step 1 — pick the shell (decide on a cited signal)
 
 | Signal | Shell | Reference |
-|---|---|---|
+| --- | --- | --- |
 | full app frame — sidebar(s) + topbar + command palette + pages | **admin-shell** | `shell-admin.md` |
 | an LLM conversation surface (thread + composer) | **chat-shell** | `shell-chat.md` |
 | a design tool — center canvas + resizable side panes + focus mode | **editor-shell** | `shell-editor.md` |
 | marketing / error / landing / auth — minimal centered chrome | **simple-shell** | `shell-simple.md` |
 | an embedded surface — a host page sizes/centers a light-DOM element | **adia-embed-shell** *(forthcoming)* | `shell-embed.md` |
-| none fit | **no shell** — compose from primitives (`adia-ui-compose`) |
+| none fit | **no shell** — compose from primitives (`adia-ui-compose`) | — |
 
 ## Shared conventions (every shell)
 

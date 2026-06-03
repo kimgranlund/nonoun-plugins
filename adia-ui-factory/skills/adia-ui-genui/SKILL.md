@@ -27,7 +27,7 @@ Author an app that **renders generated UI** via the a2ui runtime: mount a render
 ## Mount the runtime
 
 | Need | Root |
-|---|---|
+| --- | --- |
 | a canvas / preview of generated A2UI | `<a2ui-root>` — set `.doc = A2UIMessage[]` (author mode) or `src`+`transport` (`sse`/`ws`/`jsonl`/`mcp`) for a stream |
 | a chat + canvas gen-UI layout | `<gen-root mode="chat\|split\|canvas">` (+ `inspector` for debugging) |
 
@@ -50,6 +50,7 @@ A2UI is a message union (`createSurface` · `updateComponents` · `updateDataMod
 ## Verify target — the gen-UI rubric `[gate]`
 
 A gen-UI surface is done when it **renders in `<a2ui-root>` with zero console errors** and:
+
 - **Validated before render** `[gate]` — `validate_schema` + `check_anti_patterns` pass on the A2UI before it reaches a root. *(Self-verified: no shipped check observes whether you validated before `root.doc =` — the discipline is yours.)*
 - **Resolvers registered** `[gate]` — every `resource:`/`api:` scheme the UI references has a `registerResolver`, registered before render.
 - **One root per surface** `[gate]` — a single render root owns a surface; no competing roots.

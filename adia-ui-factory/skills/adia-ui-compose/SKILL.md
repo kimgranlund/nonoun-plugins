@@ -37,6 +37,7 @@ How you build screens and components in adia-ui. **Mode-independent** — the ma
 ## Verify target — the compose rubric `[gate]`
 
 Composed UI is done when it renders (`adia-ui-verify`) and:
+
 - **Catalog-first** `[gate]` — primitive before custom, custom before raw HTML (no raw `<div>` layout, no `<button>`/`<input>` where a `*-ui` exists). (`adia-lint` `NATIVE-PRIMITIVE`.)
 - **Token-only** `[gate]` — `var(--a-*)`; no raw color or px ≥ 3. (`adia-lint` `RAW-COLOR`/`RAW-PX`.)
 - **Light DOM** `[gate]` — no `attachShadow`/`::slotted`; projected children via `logicalChildren`.

@@ -18,7 +18,7 @@ Move an app across versions, into adia-ui, or between rendering modes — **mech
 ## Step 0 — which migration (cited signal)
 
 | Signal | Type |
-|---|---|
+| --- | --- |
 | bump `@adia-ai/*` X → Y | **version-upgrade** — read the guide's section for Y |
 | an existing non-adia / `@agent-ui-kit` app | **port-to-adia** — tag + token rename map |
 | move a surface SPA ↔ SSR | **mode-change** — re-own routing / registration / state (`adia-ui-spa` / `adia-ui-ssr`) |
@@ -43,6 +43,7 @@ Real breaking-change history (the v0.0.20 ten-item set, the v0.4.0 shell-shape r
 ## Verify target — the migration rubric `[gate]`
 
 A migration is done when the **acceptance gates pass** (the app renders via `adia-ui-verify` with zero console errors) and:
+
 - **Audited before swept** `[gate]` — every breaking item's call sites were surfaced (git grep) before any change.
 - **Sweeps verified** `[gate]` — post-sweep, `adia-lint` is clean of legacy shapes and the build/render passes.
 - **Judgment items flagged** `[gate]` — semantic flips / attribution / Boolean inversions were *reported for review*, not blindly swept.

@@ -11,6 +11,7 @@ This plugin wires `@adia-ai/a2ui-mcp` (declared in `.mcp.json`, run via `npx`). 
 ## Tools by job
 
 **Discover the catalog** — start here instead of guessing tag names:
+
 - `get_component_map` — the full current catalog (the live count + names).
 - `lookup_component` — one component's props, slots, events, examples.
 - `get_traits` — the behavior catalog (`pressable`, `draggable`, …).
@@ -18,25 +19,30 @@ This plugin wires `@adia-ai/a2ui-mcp` (declared in `.mcp.json`, run via `npx`). 
 - `lookup_chunk` — a specific corpus chunk by id.
 
 **Retrieve patterns & knowledge:**
+
 - `search_chunks` — semantic/keyword search over the 280+ corpus chunks.
 - `search_patterns` / `get_fragment` / `get_composition` — reusable composition patterns and fragments.
 - `get_chunk` / `get_graph` / `resolve_composition` / `zettel_stats` — chunk graph navigation.
 
 **Classify & assemble (the generation pre-step):**
+
 - `classify_intent` — what kind of UI does this request want?
 - `assemble_context` — build the retrieval context for a generation.
 
 **Generate** (host LLM in stdio):
+
 - `generate_ui` — produce A2UI/markup for a described surface.
 - `refine_ui` — iterate on a generated surface (multi-turn refinement; carry a `sessionId`).
 - `plan_app_state` — plan an app's state shape.
 
 **Validate** (offline):
+
 - `validate_schema` — check generated A2UI against the schema.
 - `check_anti_patterns` — the structural smells (overlaps [authoring-components.md](authoring-components.md)'s table).
 - `convert_html` — convert/normalize HTML.
 
 **Feedback & authoring loop:**
+
 - `submit_feedback` · `get_quality_metrics` · `get_training_gaps` · `import_pattern`.
 
 ## When to reach for it vs. hand-author

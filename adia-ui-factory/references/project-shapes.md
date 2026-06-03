@@ -11,7 +11,7 @@ How real adia-ui apps are laid out (synthesized from the chat-ui apps). Three sh
 
 ## The four-axis layout (all shapes)
 
-```
+```text
 <app>/
 ├── README.md · PATTERNS.md · CHANGELOG.md   # entry + non-obvious patterns + history
 ├── spec/     design — BRIEF · ARCHITECTURE · SPEC (+ per-screen specs)
@@ -25,41 +25,51 @@ Keep the axes separate: `spec/` is the contract, `plan/` the sequence, `app/` th
 ## The three shapes
 
 ### Single-surface — one entry, one surface
+
 One `app/<name>.html` + its contents + a controller; reactive state via signals, often Service/Controller/Command for mutations/undo.
-```
+
+```text
 app/
 ├── index.html · <name>.css
 ├── components/<tag>/<tag>.{js,css}
 ├── controller/ · service/ · state/   # if it has real domain logic
 └── seed-data.js
 ```
+
 Use for: a focused tool/widget (a board, a canvas, an embedded panel).
 
 ### Rollup — many sibling sub-pages under one app
+
 Each sub-page is a page-trio or page-DUO; a uniform (or per-subflow) shell template loads it. Three flavors:
+
 - **heterogeneous** — independent playgrounds, each its own chrome + logic; shared bits in `app/_shared/`.
 - **homogeneous** — uniform template, fixtures per page, property-API wiring (often `admin-shell`).
 - **declarative-DUO** — mostly static flows (auth/onboarding), per-subflow chrome, few controllers.
-```
+
+```text
 app/
 ├── _shared/                         # cross-page helpers (heterogeneous)
 └── <sub>/<sub>.{html,contents.html[,contents.js]}
 ```
+
 Use for: a suite of related surfaces (a SaaS admin, a flow set, a demo gallery).
 
 ### Shared-foundation — sibling apps over a shared core
+
 Root-level `spec/plan/` for cross-app concerns; each app under `app/<name>/` with its own `spec/plan/src/`; a shared `app/shared/` (DataClient, loaders, mappers, tokens). The embed pattern lives here → becomes **`adia-embed-shell`**.
-```
+
+```text
 app/
 ├── shared/                          # DataClient · corpus/mappers · components · tokens
 └── <surface>/{spec,plan,src}/       # one per embedded surface
 ```
+
 Use for: multiple embedded surfaces sharing data context, components, and an embed bridge.
 
 ## Page-trio vs page-DUO
 
 | Form | Files | When |
-|---|---|---|
+| --- | --- | --- |
 | **trio** | `<page>.html` + `<page>.contents.html` + `<page>.contents.js` (`export default setup(host)`) | the surface needs **behavior or property-API wiring** (events, `.columns=…`, streaming) |
 | **DUO** | `<page>.html` + `<page>.contents.html` | the surface is **purely declarative** (static markup, CSS-only state) |
 
@@ -76,6 +86,7 @@ One folder per tag, mirroring the framework: `components/<tag>/<tag>.{js,css}` (
 ## Structure rubric `[gate]`
 
 A project is well-structured when (gate = all `[gate]` hold):
+
 - **Four-axis present** `[gate]` — `spec/` + `plan/` + `app/` (skills/ optional).
 - **Shape declared & matched** `[gate]` — the layout matches one of the three shapes; no half-rollup.
 - **Page form correct** `[gate]` — every surface is trio or DUO per the rule; a DUO carries no `.contents.js`; a trio's `.contents.js` exports `setup`.

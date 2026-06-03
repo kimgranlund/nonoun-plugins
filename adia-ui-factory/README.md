@@ -8,7 +8,7 @@
 
 `adia-ui-factory` is organized as the **app-authoring lifecycle** (orient → scaffold → compose/shell → wire → verify → migrate) over the load-bearing **rendering-mode** fork:
 
-```
+```text
 adia-ui-factory/
 ├── .mcp.json                 → wires @adia-ai/a2ui-mcp@0.7.8 (npx) — catalog, retrieval, generate_ui, validate
 ├── skills/                   (11)

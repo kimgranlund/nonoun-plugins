@@ -37,9 +37,11 @@ Anthropic, OpenAI, and Gemini, **auto-detected from the model name** (`claude*` 
 **Never ship a provider API key to the browser in production.** `@adia-ai/llm` supports two proxy shapes, auto-selected by the `proxyUrl`:
 
 - **Smart proxy (production):** point `proxyUrl` at your own same-origin endpoint (e.g. `/api/chat`). The browser sends a provider-neutral body (`{provider, model, messages, …}`); **your server** holds the real key, reformats per provider, and pipes the SSE bytes back. The browser never sees a key.
+
   ```js
   for await (const c of streamChat({ proxyUrl: '/api/chat', model, messages })) { … }
   ```
+
   A reference server lives at `@adia-ai/llm`'s `server.js` (`POST /api/chat`).
 - **Passthrough proxy (LOCAL DEV ONLY):** a `proxyUrl` matching `/api/llm/<provider>/…` (e.g. a Vite dev proxy). The browser sends the real upstream body **and the real key in headers** — anyone with DevTools can read it. The package logs a loud one-time warning. **Never deploy this shape.**
 

@@ -15,6 +15,7 @@ The consequence that drives everything: `import '@adia-ai/web-components'` **thr
 Defer the import into a client lifecycle hook. One provider/boundary per app, mounted high.
 
 **React / Next.js** **[D]** — `'use client'` + `useEffect`:
+
 ```tsx
 'use client';
 import { useEffect } from 'react';
@@ -27,9 +28,11 @@ export function AdiaProvider({ children }) {
   return <>{children}</>;
 }
 ```
+
 (React ≤18 also needs a ref wrapper to set non-string props — see "property binding". React 19+ sets them natively.)
 
 **Vue / Nuxt** **[D]** — a `.client.vue` component (Nuxt's SSR boundary) + `onMounted`:
+
 ```vue
 <script setup>
 import { onMounted } from 'vue';
@@ -41,6 +44,7 @@ onMounted(async () => {
 ```
 
 **SvelteKit** **[D]** — `onMount` (the hydration barrier):
+
 ```svelte
 <script>
   import { onMount } from 'svelte';
@@ -49,6 +53,7 @@ onMounted(async () => {
 ```
 
 **Astro** **[D]** — CSS in server frontmatter (safe — no browser APIs), JS in a `<script>` (browser-only):
+
 ```astro
 ---
 import '@adia-ai/web-components/css';
@@ -64,7 +69,7 @@ import '@adia-ai/web-components/css';
 Use the framework's outlet and link element instead. Documented replacements:
 
 | Framework | Owner | Link / outlet |
-|---|---|---|
+| --- | --- | --- |
 | Next.js (App/Pages) **[D]** | Next router | `<Link>` (`next/link`) · `app/**/page.tsx` · `usePathname()`/`useRouter()` |
 | Nuxt 3 **[D]** | Vue Router | `<NuxtLink>` · `pages/**.vue` · `useRoute()`/`useRouter()` |
 | SvelteKit **[D]** | SvelteKit | `<a href>` · `src/routes/**/+page.svelte` · `$page` |
@@ -72,6 +77,7 @@ Use the framework's outlet and link element instead. Documented replacements:
 | Remix · Rails/Turbo · Django/HTMX · Phoenix **[G]** | that framework | its own link + route table — wiring is standard for that stack, not kit-shipped |
 
 The shell's body becomes the framework's route outlet — e.g. Next:
+
 ```tsx
 <admin-shell>
   <admin-sidebar slot="leading">…</admin-sidebar>

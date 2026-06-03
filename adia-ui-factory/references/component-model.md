@@ -5,7 +5,7 @@ How to *think* about the catalog. The **live** catalog is the a2ui MCP (`get_com
 ## Three tiers
 
 | Tier | Package | What it is | Examples (shape, not a contract) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Primitives** | `@adia-ai/web-components` | Atomic custom elements — controls, layout, display, overlays | `<button-ui>` `<input-ui>` `<select-ui>` `<table-ui>` `<card-ui>` `<modal-ui>` `<drawer-ui>` |
 | **Layout primitives** | (same) | The box model — never hand-roll a bare `<div>` for layout | `<col-ui>` `<row-ui>` `<grid-ui>` `<stack-ui>` `<page-ui>` `<section-ui>` |
 | **Traits** | (subpath) | Reusable *behaviors* attached to any element — not data, not components | `pressable` `focusable` `draggable` `ripple` `scale-press` `roving-tabindex` `focus-trap` |
@@ -53,7 +53,7 @@ or programmatically: `static traits = [pressable, scalePress]`. A trait is a fac
 Three levels, all `--a-*`:
 
 | Level | Role | Examples |
-|---|---|---|
+| --- | --- | --- |
 | **L1 primitive scales** | dimensionless base values | `--a-space-2` `--a-size-md` `--a-radius-sm` `--a-duration-fast` `--a-font-family-ui` |
 | **L2 semantic families** | role vocabulary | `--a-primary` `--a-danger` `--a-accent-bg` |
 | **L3 state × role** | what components consume | `--a-accent-bg-hover` `--a-danger-fg-active` `--a-ui-bg-disabled` |
@@ -68,4 +68,4 @@ A *register* (e.g. `verse`, `prose`) is a typographic treatment applied two ways
 
 ## Where this is incomplete
 
-The deep internals — the `html`\`\`` template engine's escaping contract, `BaseController` delegation, the icon loader (`installIconLoadersForRegistered` + Vite `import.meta.glob`), `@bp` responsive notation, and the A2UI runtime/`<a2ui-root>` resolver — are framework-owned and version-specific. Treat the MCP (`lookup_component`, `search_chunks`) as the source of truth for them rather than encoding them here.
+The deep internals — the `html` template engine's escaping contract, `BaseController` delegation, the icon loader (`installIconLoadersForRegistered` + Vite `import.meta.glob`), `@bp` responsive notation, and the A2UI runtime/`<a2ui-root>` resolver — are framework-owned and version-specific. Treat the MCP (`lookup_component`, `search_chunks`) as the source of truth for them rather than encoding them here.
