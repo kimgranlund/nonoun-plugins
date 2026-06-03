@@ -49,12 +49,36 @@ corpus goes in as *separate* claude.ai Project knowledge rather than bundled in 
 
 (The `skill` form has no bundled/linked switch — the corpus *must* travel inside the skill, since cloud has no MCP.)
 
+## Versioning — re-baking is a release
+
+A bundled corpus is a **baked snapshot**, and shipping it is a *release action*: when the corpus changes,
+re-stamp from the source workspace and **bump the version** (`brand-stamp plugin … --version 0.2.0`). The
+editable **source-of-truth corpus lives in the consumer's version-controlled workspace** — never inside the
+plugin (the install cache is read-only). The plugin / skill / mcp artifacts are derived, versioned outputs;
+the workspace is the canon.
+
+## Sizing the retrieval
+
+Bundle *size* decides how the brand is retrieved — it is not always "an MCP":
+
+- **Small** — inline reference files + progressive disclosure; the `skill` form (corpus in `references/`, no MCP) is enough.
+- **Medium** — the generated `INDEX.md` manifest + many on-demand files (skill), or the bundled grep MCP (plugin / mcp).
+- **Large / queryable** — an **indexed** MCP (SQLite / embeddings) so context only ever holds the retrieved slice.
+
+Every bundled corpus now ships an `INDEX.md` (per-layer manifest). The bundled reference MCP does **live grep**
+over the markdown — fine for small/medium; a genuinely large corpus wants an indexed server (a future `--index`
+that builds a SQLite/embedding index). The MCP is the retrieval *tier*, not a default for every bundle.
+
 ## Cloud limits — why `skill` carries no MCP
 
 Claude chat can run **skills** (with bundled files/sub-folders) and use **remote (HTTP) MCP connectors**, but
 it **cannot run a local process** — no stdio MCP, no `bin/` scripts, no hooks. So the cloud form ships the
 corpus *inside the skill*. If you want live MCP retrieval in chat, host the `mcp` form's tools behind an HTTP
 transport and add it as a connector (the tool contract is identical — see `mcp-wiring.md`).
+
+(Marketplace-distributed plugins' **skills** also surface in Claude chat, so a stamped *plugin's* skill reaches
+chat too — only its bundled MCP / bin / hooks won't run there. The `skill` form is just the *self-contained*
+chat artifact: it carries its own corpus, with no MCP dependency.)
 
 ## After stamping
 

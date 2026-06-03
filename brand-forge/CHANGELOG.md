@@ -5,6 +5,8 @@
 - **`/brand-stamp`** — emit a finished brand corpus as a distributable artifact, in one of **three pure, separate** forms (each to its own folder under `-o`): **plugin** (`<out>/plugin/<brand>-brand/` — corpus + the stdio `brand-corpus` MCP + a thin skill, for Claude Code / Cowork; bundled or `--linked`), **skill** (`<out>/skill/<brand>-brand/` — a standard Agent Skill with the corpus bundled in `references/`, for Claude chat; no MCP/scripts), and **mcp** (`<out>/mcp/<brand>-brand-mcp/` — the standalone server + corpus + a `claude mcp add` README). The command **always asks** which form. Mechanized by `bin/brand-stamp`; the plugin form is authored to pass plugins-factory's `validate_plugin.py`.
 - **`brand-corpus` MCP wiring** captured in `skills/brand-corpus/references/mcp-wiring.md` — the language-agnostic tool contract, Python-vs-TS guidance, and the three registration recipes (bundled / standalone / published). `brand-corpus-mcp.py` now also accepts the `BRAND_CORPUS_ROOT` env alias.
 
+- **Corpus distribution hygiene** — every bundled corpus now ships a per-layer `INDEX.md`; the plugin form takes `--version` (re-baking a corpus is a release — bump it); and `stamping.md` documents size-tiered retrieval (small inline / large indexed-MCP) and keeps the source-of-truth corpus in the consumer's version-controlled workspace, never in the plugin.
+
 ## 0.1.0 — 2026-06-02
 
 Initial release. brand-forge packages the cultural-authority brand methodology as a self-contained Claude Code plugin, re-cast through the five plugin primitives for component-fit:

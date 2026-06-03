@@ -9,13 +9,16 @@ Three forms, by destination — each emitted into its OWN folder under <out>, ke
   mcp     <out>/mcp/<brand>-brand-mcp/     a standalone deployable MCP (server + corpus + wiring) — claude mcp add / self-host
 
 Usage:
-  brand-stamp plugin <corpus_dir> --name <brand> -o <out_dir> [--linked]
+  brand-stamp plugin <corpus_dir> --name <brand> -o <out_dir> [--linked] [--version V]
   brand-stamp skill  <corpus_dir> --name <brand> -o <out_dir>
   brand-stamp mcp    <corpus_dir> --name <brand> -o <out_dir> [--linked]
-      --linked  (plugin/mcp) point the MCP at a live corpus_dir instead of bundling a snapshot
+      --linked   (plugin/mcp) point the MCP at a live corpus_dir instead of bundling a snapshot
+      --version  (plugin) plugin.json version — bump on each re-stamp; baking a corpus is a release action
 
-Mechanical scaffolding only — readiness/quality judgment lives in /brand-stamp + the brand-corpus
-skill. Stdlib only (Python 3.8+). The plugin form is built to pass plugins-factory's validate_plugin.py.
+A bundled corpus is a baked SNAPSHOT — the editable source-of-truth lives in the consumer's workspace,
+never here. Mechanical scaffolding only; readiness/quality judgment lives in /brand-stamp + the
+brand-corpus skill. Stdlib only (Python 3.8+). The plugin form is built to pass plugins-factory's
+validate_plugin.py.
 """
 import argparse
 import json
@@ -57,13 +60,22 @@ def read_corpus(corpus):
     return docs, extras
 
 
-def _write_folder_corpus(dest, docs, extras):
-    """Write docs in folder convention (path = layer) under dest/, plus token files verbatim."""
+def _write_folder_corpus(dest, docs, extras, brand):
+    """Write docs in folder convention (path = layer) under dest/, plus token files and an INDEX.md manifest."""
+    by_layer = {}
     for layer, nm, text in docs:
         os.makedirs(os.path.join(dest, layer), exist_ok=True)
         open(os.path.join(dest, layer, f"{nm}.md"), "w", encoding="utf-8").write(text)
+        by_layer.setdefault(layer, []).append(nm)
     for rel, src in extras:
         shutil.copy2(src, os.path.join(dest, rel))
+    lines = [f"# {brand} — brand corpus index", "",
+             f"{len(docs)} document(s) across {len(by_layer)} layer(s). Read by layer; 01-foundation is load-bearing."]
+    for layer in sorted(by_layer):
+        lines += ["", f"## {layer}"] + [f"- `{layer}/{nm}.md`" for nm in sorted(by_layer[layer])]
+    if extras:
+        lines += ["", "## tokens"] + [f"- `{rel}`" for rel, _ in extras]
+    open(os.path.join(dest, "INDEX.md"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 
 def _ref_mcp():
@@ -97,7 +109,7 @@ def _thin_skill(brand, docs, retrieval):
     )
 
 
-def emit_plugin(corpus, out, brand, linked):
+def emit_plugin(corpus, out, brand, linked, version):
     name = f"{_kebab(brand)}-brand"
     root = os.path.join(out, "plugin", name)
     docs, extras = read_corpus(corpus)
@@ -109,12 +121,12 @@ def emit_plugin(corpus, out, brand, linked):
     if linked:
         corpus_env = "${user_config.corpus_dir}"
     else:
-        _write_folder_corpus(os.path.join(root, "corpus"), docs, extras)
+        _write_folder_corpus(os.path.join(root, "corpus"), docs, extras, brand)
         corpus_env = "${CLAUDE_PLUGIN_ROOT}/corpus"
 
     pj = {
         "name": name,
-        "version": "0.1.0",
+        "version": version,
         "description": (f"The {brand} brand corpus — foundation, positioning, identity, voice, tokens — "
                         f"with a read-only brand-corpus MCP for retrieval."),
         "keywords": ["brand", _kebab(brand), "brand-corpus", "design"],
@@ -141,11 +153,12 @@ def emit_skill(corpus, out, brand):
     root = os.path.join(out, "skill", name)
     docs, extras = read_corpus(corpus)
     os.makedirs(os.path.join(root, "references"), exist_ok=True)
-    _write_folder_corpus(os.path.join(root, "references"), docs, extras)   # corpus bundled INSIDE the skill
+    _write_folder_corpus(os.path.join(root, "references"), docs, extras, brand)   # corpus bundled INSIDE the skill
     open(os.path.join(root, "SKILL.md"), "w", encoding="utf-8").write(_thin_skill(
         brand, docs,
-        "The brand's documents are bundled in this skill's `references/` (one folder per layer) — read them "
-        "directly, by layer. (The cloud form ships no MCP or scripts; the corpus travels with the skill.)"))
+        "The brand's documents are bundled in this skill's `references/` (one folder per layer; start from "
+        "`references/INDEX.md`) — read them directly, by layer. (The cloud form ships no MCP or scripts; the "
+        "corpus travels with the skill.)"))
     return root, len(docs)
 
 
@@ -158,7 +171,7 @@ def emit_mcp(corpus, out, brand, linked):
     if linked:
         corpus_env, corpus_note = "/path/to/<corpus>", "Point `BRAND_CORPUS_DIR` at your **live** corpus directory:"
     else:
-        _write_folder_corpus(os.path.join(root, "corpus"), docs, extras)
+        _write_folder_corpus(os.path.join(root, "corpus"), docs, extras, brand)
         corpus_env, corpus_note = "$(pwd)/corpus", "A **snapshot** of the corpus is bundled in `corpus/`:"
     readme = f"""# {brand} — brand-corpus MCP (standalone)
 
@@ -197,15 +210,19 @@ def main(argv):
         if form in ("plugin", "mcp"):
             p.add_argument("--linked", action="store_true",
                            help="point the MCP at a live corpus_dir instead of bundling a snapshot")
+        if form == "plugin":
+            p.add_argument("--version", default="0.1.0",
+                           help="plugin.json version — bump on each re-stamp (baking a corpus is a release)")
     args = ap.parse_args(argv)
 
     if args.form == "plugin":
-        root, n = emit_plugin(args.corpus, args.out, args.name, args.linked)
-        print(f"brand-stamp: plugin → {root} ({n} doc(s), {'linked' if args.linked else 'bundled'} corpus)")
+        root, n = emit_plugin(args.corpus, args.out, args.name, args.linked, args.version)
+        print(f"brand-stamp: plugin → {root} (v{args.version}, {n} doc(s), "
+              f"{'linked' if args.linked else 'bundled'} corpus)")
         print(f"  → validate:  python3 <plugins-factory>/bin/validate_plugin.py plugin {root}")
     elif args.form == "skill":
         root, n = emit_skill(args.corpus, args.out, args.name)
-        print(f"brand-stamp: skill → {root} ({n} doc(s) bundled in references/)")
+        print(f"brand-stamp: skill → {root} ({n} doc(s) bundled in references/, + INDEX.md)")
         print("  → upload the skill folder to Claude chat (it carries its own corpus; no MCP/scripts).")
     else:
         root, n = emit_mcp(args.corpus, args.out, args.name, args.linked)
