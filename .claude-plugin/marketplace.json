@@ -69,6 +69,26 @@
         "release-engineering",
         "maintainer"
       ]
+    },
+    {
+      "name": "product-forge",
+      "source": "./product-forge",
+      "description": "Build and evaluate product strategy, management, and UX grounded in research and named-practitioner authority — discovery, JTBD, positioning, prioritization, personas + user research, a comprehensive UX-pattern + app-genre library, and PRD/vision authoring — with an adversarial critic council (parallel isolated agents) spanning product strategy, UX, and AI-era product leadership.",
+      "category": "product",
+      "tags": [
+        "product-strategy",
+        "product-management",
+        "ux",
+        "user-research",
+        "personas",
+        "jobs-to-be-done",
+        "ux-patterns",
+        "app-genres",
+        "discovery",
+        "positioning",
+        "ai-product",
+        "council"
+      ]
     }
   ]
 }

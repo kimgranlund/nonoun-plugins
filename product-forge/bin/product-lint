@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""product-lint — advisory PM-document smell checker (the mechanizable slice of the bullshit filter).
+
+SCOPE (be honest): pattern-matchable smells in product PROSE — strategy stated as a goal (Richard R.'s
+bad-strategy tell), success defined as an output/ship (Melissa P.'s build trap), demographic-theater
+personas ("Sarah, 34"), vanity metrics named as the north star, dark-pattern intent, and strategy/
+positioning fluff. It does NOT judge whether the strategy is right, the discovery sufficient, or the
+UX good — that lives in the skills (product-methodology / -research / -patterns) and the rubrics +
+council (product-evaluate). A clean product-lint says "no obvious tells," never "this is good."
+
+Usage:
+  product-lint <file>...      # lint files; exit 1 if any smell found, else 0
+  product-lint -              # lint stdin as a generic product doc
+  product-lint --hook         # PostToolUse hook mode: read event JSON on stdin, lint the written
+                              #   doc, print advisory findings, ALWAYS exit 0 (never blocks)
+  product-lint selftest       # built-in fixtures (seeded smells + a clean doc + the hook exit-0 invariant)
+Stdlib only (Python 3.8+).
+"""
+import json
+import os
+import re
+import sys
+
+LINT_EXT = (".md", ".markdown", ".mdx", ".txt")
+
+SMELLS = [
+    ("STRATEGY-AS-GOALS",
+     re.compile(r"\b(?:our|the|my)\s+(?:product\s+|company\s+|go-to-market\s+)?strateg(?:y|ies)\s+(?:is|are|will\s+be)\s+to\s+(?:increase|grow|reach|hit|achieve|double|triple|10x|maximi[sz]e|boost|drive|win|become|dominate)\b", re.I),
+     "a goal is not a strategy (Richard R.) — name the diagnosis + guiding policy, not the number you want to hit"),
+    ("OUTPUT-AS-SUCCESS",
+     re.compile(r"\bsuccess\s+(?:is|=|means|will\s+be|looks\s+like|metric\s+is)\s+(?:to\s+)?(?:ship|launch|build|deliver|releas|complet|roll(?:ing)?\s*out)\w*", re.I),
+     "shipping is an output, not an outcome (Melissa P. build-trap) — define success as a user/business outcome"),
+    ("DEMOGRAPHIC-PERSONA",
+     re.compile(r"\b[A-Z][a-z]+,\s*\d{2}\b"),
+     "demographic theater (\"Sarah, 34\") — define the persona by jobs/goals from research, not age + lifestyle"),
+    ("VANITY-METRIC",
+     re.compile(r"\b(?:north[\s-]?star|success\s+metric|key\s+metric|primary\s+metric|kpi)\b[^.\n]{0,60}\b(?:page[\s-]?views|pageviews|impressions|registrations|sign[\s-]?ups|downloads|total\s+users|raw\s+clicks)\b", re.I),
+     "vanity metric as the headline — prefer a retention / activation / value-delivered metric over a count"),
+    ("DARK-PATTERN-INTENT",
+     re.compile(r"\b(?:confirmsham|roach\s*motel|forced\s+continuity|make\s+it\s+(?:hard|difficult|annoying)\s+to\s+(?:cancel|unsubscribe|delete|leave|downgrade)|hide\s+the\s+(?:cancel|unsubscribe|opt-?out)|trick(?:s|ing)?\s+(?:the\s+)?users?|guilt[\s-]?trip)", re.I),
+     "dark-pattern intent — this is the line not to cross; design for honest opt-out, not coercion"),
+    ("STRATEGY-FLUFF",
+     re.compile(r"\b(?:synerg(?:y|ies|istic)|world[\s-]class|best[\s-]in[\s-]class|next[\s-]gen(?:eration)?|cutting[\s-]edge|paradigm\s+shift|move\s+the\s+needle|leverage\s+our\s+(?:core\s+)?(?:competenc|strength|synerg)|delightful\s+experience|seamless(?:ly)?\s+(?:experience|integrat))", re.I),
+     "fluff, not a position (Richard R.) — replace the buzzword with a specific, falsifiable claim"),
+]
+
+
+def _ext(path):
+    return os.path.splitext(path or "")[1].lower()
+
+
+def lint_text(text, path=""):
+    findings = []
+    for i, line in enumerate(text.splitlines(), 1):
+        s = line.strip()
+        if not s or s.startswith(("```", "    ")):  # skip blank + obvious code
+            continue
+        seen = set()
+        for name, rx, why in SMELLS:
+            if name in seen:
+                continue
+            if rx.search(line):
+                seen.add(name)
+                findings.append((name, i, s[:90], why))
+    findings.sort(key=lambda f: (f[1], f[0]))
+    return findings
+
+
+def _render(path, findings):
+    out = [f"product-lint: {len(findings)} advisory smell(s) in {path or '<stdin>'}"]
+    for name, ln, snip, why in findings:
+        out.append(f"  [{name}] line {ln}: {snip}")
+        out.append(f"      → {why}")
+    return "\n".join(out)
+
+
+def _lint_path(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return lint_text(f.read(), path)
+    except OSError:
+        return []
+
+
+def _hook():
+    try:
+        event = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError):
+        return 0
+    ti = event.get("tool_input", {}) or {}
+    path = ti.get("file_path", "") or ""
+    if _ext(path) not in LINT_EXT:
+        return 0  # only product docs; stay quiet otherwise
+    text = ti.get("content")
+    if text is None:
+        if not os.path.isfile(path):
+            return 0
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            return 0
+    findings = lint_text(text, path)
+    if findings:
+        print(_render(path, findings))
+        print("  (advisory — product/PM doc smells; the skills + rubrics + council own the judgment)")
+    return 0  # NEVER block
+
+
+def _selftest():
+    import io
+    cases = [
+        ("strategy.md", "Our product strategy is to grow revenue 30% this year.", {"STRATEGY-AS-GOALS"}),
+        ("prd.md", "Success is shipping the dashboard by Q3.", {"OUTPUT-AS-SUCCESS"}),
+        ("persona.md", "Meet Sarah, 34, a busy professional who loves coffee.", {"DEMOGRAPHIC-PERSONA"}),
+        ("metrics.md", "Our north-star metric is total signups this quarter.", {"VANITY-METRIC"}),
+        ("growth.md", "Make it hard to cancel so users stay subscribed.", {"DARK-PATTERN-INTENT"}),
+        ("vision.md", "We will leverage our core synergies to deliver a seamless experience.", {"STRATEGY-FLUFF"}),
+        ("good.md",
+         "Diagnosis: new users churn at onboarding because the first value is buried.\n"
+         "Guiding policy: get users to first value in under two minutes.\n"
+         "Success: 7-day activation rate, with retention as a guardrail.",
+         set()),
+    ]
+    ok = True
+    for name, text, expected in cases:
+        got = {f[0] for f in lint_text(text, name)}
+        if expected - got:
+            ok = False
+            print(f"selftest: {name} MISSING {sorted(expected - got)} (got {sorted(got)})", file=sys.stderr)
+        if not expected and got:
+            ok = False
+            print(f"selftest: {name} expected clean, got {sorted(got)}", file=sys.stderr)
+    saved_in, saved_out = sys.stdin, sys.stdout
+    try:
+        sys.stdin = io.StringIO(json.dumps({"tool_input": {"file_path": "x.md",
+                                "content": "Our strategy is to dominate the market."}}))
+        sys.stdout = io.StringIO()
+        rc = _hook()
+    finally:
+        sys.stdin, sys.stdout = saved_in, saved_out
+    if rc != 0:
+        ok = False
+        print("selftest: --hook did not exit 0 on smelly input", file=sys.stderr)
+    print("selftest: PASS" if ok else "selftest: FAIL")
+    return 0 if ok else 1
+
+
+def main(argv):
+    if argv and argv[0] == "selftest":
+        return _selftest()
+    if "--hook" in argv:
+        return _hook()
+    args = [a for a in argv if a == "-" or not a.startswith("-")]
+    if not args:
+        print(__doc__.strip().split("\n\n", 1)[0], file=sys.stderr)
+        return 2
+    total = 0
+    for path in args:
+        findings = lint_text(sys.stdin.read(), "<stdin>") if path == "-" else _lint_path(path)
+        if findings:
+            total += len(findings)
+            print(_render("<stdin>" if path == "-" else path, findings))
+    return 1 if total else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

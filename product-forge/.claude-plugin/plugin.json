@@ -1,0 +1,25 @@
+{
+  "name": "product-forge",
+  "version": "0.1.0",
+  "description": "Build and evaluate product strategy, management, and UX grounded in research and named-practitioner authority — discovery, JTBD, positioning, prioritization, personas + user research, a comprehensive UX-pattern + app-genre library, and PRD/vision authoring — with an adversarial critic council (parallel isolated agents) spanning product strategy, UX, and AI-era product leadership.",
+  "author": {
+    "name": "Kim",
+    "email": "kim@sublimeheroics.com"
+  },
+  "homepage": "https://github.com/kimgranlund/plugins-forge",
+  "license": "MIT",
+  "keywords": [
+    "product-strategy",
+    "product-management",
+    "ux",
+    "user-research",
+    "personas",
+    "jobs-to-be-done",
+    "ux-patterns",
+    "app-genres",
+    "discovery",
+    "positioning",
+    "ai-product",
+    "council"
+  ]
+}
