@@ -7,7 +7,8 @@ description: >
   keep a brand coherent over time. Use whenever building, repositioning, or stewarding a brand.
   Triggers on "brand strategy", "positioning", "cultural research", "brand archaeology",
   "brand identity", "expression system", "rebrand", "category design", "brand stewardship",
-  "what should we stand for", "what's our point of view". NOT marketing tactics or performance media.
+  "what should we stand for", "what's our point of view". NOT marketing tactics or performance media,
+  and NOT product strategy, management, or UX — that is product-forge's domain.
 ---
 
 # Brand Methodology

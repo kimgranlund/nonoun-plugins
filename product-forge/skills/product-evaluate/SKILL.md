@@ -32,12 +32,18 @@ The review seat of the studio. Where `product-methodology` (and `-research` / `-
 - `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-prd-quality.md` — a PRD / spec (problem clarity · success metrics · non-goals · risk surfacing · decision-readiness).
 - `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-ux-quality.md` — a UX / flow / screen (task completion · pattern fit · error/empty states · accessibility `[gate]` · ethical patterns `[gate]` · genre fit).
 - `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-ai-product.md` — an AI-product surface (trust calibration · control/steerability · human-in-the-loop · eval-driven · failure UX).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-architecture.md` — an experience structure (plane coherence · journey/flow integrity `[gate]` · navigation/wayfinding · state coverage `[gate]` · interaction-model fit · reversibility `[gate]` · automation boundaries).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-information-architecture.md` — an IA (object model `[gate]` · organization scheme · labeling `[gate]` · navigation systems · search · filtering · sensemaking).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-content-design.md` — UX content (dual-goal clarity `[gate]` · clarity-over-cleverness · voice/tone · labels `[gate]` · edge-state content `[gate]` · in-product education).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-trust-safety.md` — a trust/safety surface (privacy-by-design `[gate]` · protective default `[gate]` · genuine consent `[gate]` · explainability · auditability/control · risk/harm handling).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-service-model.md` — a service (whole-journey blueprint `[gate]` · research-grounded `[gate]` · handoffs · support paths · cross-channel · escalation `[gate]` · backstage/ops).
+- `${CLAUDE_PLUGIN_ROOT}/skills/product-evaluate/references/rubrics/rubric-governance.md` — product governance (enforceable principles `[gate]` · decision rights `[gate]` · decision records · standards/systems · review rituals · documentation coherence).
 
 `[gate]` dimensions can cap the score (e.g. an AA-failing or dark-pattern UX caps `ux-quality`); `[review]` dimensions need expert judgment and the council.
 
 ## The critic council
 
-For the qualities a rubric can't fully score, invoke the **`product-council`** orchestrator agent — it fans out the `critic-*` agents in parallel isolated contexts (`strategy` · `discovery` · `ux` · `ai-product` · `full`), collects severity-classified cited findings, and runs the cross-critic synthesis. Use it for any high-stakes "is this good" call.
+For the qualities a rubric can't fully score, invoke the **`product-council`** orchestrator agent — it fans out the `critic-*` agents in parallel isolated contexts (`strategy` · `discovery` · `ux` · `architecture` · `content` · `service` · `trust` · `ai-product` · `full`; 23 critics), collects severity-classified cited findings, and runs the cross-critic synthesis. Use it for any high-stakes "is this good" call.
 
 ## How to run an evaluation
 

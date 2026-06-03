@@ -3,7 +3,8 @@ name: product-forge
 description: >-
   Cold-start orchestrator for product strategy, management, and UX work. Run FIRST when the task's
   shape is undecided — it classifies the work (strategy · discovery · PRD-spec · vision · user-research ·
-  persona · UX-pattern · app-genre · evaluate) on a cited signal, then routes to the owning skill or
+  persona · architecture/IA · interaction · content · service · governance · UX-pattern · app-genre ·
+  evaluate) on a cited signal, then routes to the owning skill or
   convenes the critic council. Triggers: "where do I start on this product work", "which product-forge
   skill", "orient me on this product / PM / UX task". If the task already names a clear artifact (a PRD,
   a persona, a specific pattern, an evaluation), route straight to the owning skill instead of orienting.
@@ -32,6 +33,8 @@ The entry point for all product / PM / UX work. It turns a vague request into a 
 | a PRD / spec / requirements / one-pager / PR-FAQ to author | **product-methodology** (its self-contained `spec/` cluster, which adapts plan-spec's discipline) |
 | user research, interviews, surveys, personas, segmentation, journey mapping | **product-research** |
 | a UX/interaction/flow pattern for a screen or flow (onboarding, search, forms, empty states, AI-chat…) | **product-patterns** |
+| the STRUCTURE of an experience — journeys/flows, navigation, information architecture, the object model, the interaction model, states | **product-architecture** |
+| the SERVICE around the product (blueprint, support, handoffs, escalation, fulfillment) or product GOVERNANCE (principles, decision rights, ADRs, review rituals) | **product-operations** |
 | an app-genre's conventions / "what makes a good `<genre>` app" / cross-genre metrics | **product-genres** |
 | score / critique / audit / red-team an existing product, strategy, PRD, or UX | **product-evaluate** (+ the **product-council** agent) |
 
@@ -66,5 +69,6 @@ A new task type or app genre? Add its row to the classifier here, create or exte
 
 ## References (load the one the route selects)
 
-- the owning skill — **product-methodology · product-research · product-patterns · product-genres · product-evaluate** — holds the depth; load it on the matched route.
+- the **experience-strategy-taxonomy** frame — `${CLAUDE_PLUGIN_ROOT}/skills/product-forge/references/experience-strategy-taxonomy.md`: the 12-domain map of Product Experience Strategy → owning skill · rubric · critic · cross-plugin boundary. Load it for a broad request or to place a sub-topic.
+- the owning skill — **product-methodology · product-research · product-architecture · product-operations · product-patterns · product-genres · product-evaluate** — holds the depth; load it on the matched route.
 - the **product-council** agent — convene it (via `product-evaluate`) for an adversarial, multi-critic review.

@@ -73,7 +73,7 @@
     {
       "name": "product-forge",
       "source": "./product-forge",
-      "description": "Build and evaluate product strategy, management, and UX grounded in research and named-practitioner authority — discovery, JTBD, positioning, prioritization, personas + user research, a comprehensive UX-pattern + app-genre library, and PRD/vision authoring — with an adversarial critic council (parallel isolated agents) spanning product strategy, UX, and AI-era product leadership.",
+      "description": "Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — strategy, architecture, content, service, governance, trust/safety, research, and AI-product UX — grounded in research and named-practitioner authority, with 11 rubrics and a 23-critic adversarial council.",
       "category": "product",
       "tags": [
         "product-strategy",
@@ -87,7 +87,12 @@
         "discovery",
         "positioning",
         "ai-product",
-        "council"
+        "council",
+        "information-architecture",
+        "service-design",
+        "content-design",
+        "governance",
+        "experience-strategy"
       ]
     }
   ]

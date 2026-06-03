@@ -2,6 +2,30 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.0] — 2026-06-03
+
+The **Product Experience Strategy** expansion — adopts the 12-domain taxonomy as the plugin's canonical frame and fills the gaps it exposed (information architecture, service & workflow, governance), hardens content design and trust/safety, and makes the cross-plugin boundaries explicit. Built via the same wave-based research + verification discipline as 0.1.0.
+
+### Added
+
+- **2 skills** — `product-architecture` (experience architecture · interaction model · information architecture) and `product-operations` (service model · governance). Total skills: **8**.
+- **6 critics** — `critic-jesse-g` (the five planes), `critic-abby-c` (IA / sensemaking), `critic-torrey-p` (content design), `critic-ann-c` (privacy by design), `critic-marc-s` (service design), `critic-john-c` (operating model & governance). Council: 17 → **23 critics**, with new `architecture` / `content` / `service` / `trust` sub-councils.
+- **6 rubrics** — architecture · information-architecture · content-design · trust-safety · service-model · governance (`[gate]`/`[review]` + cited hard tests). Total rubrics: **11**.
+- **~42 reference files** — experience-architecture, interaction-model, information-architecture, service-model, governance, content-design depth, and a `trust-safety/` pattern cluster; all dated, coverage-tiered, source-cited.
+- **The taxonomy frame** — `skills/product-forge/references/experience-strategy-taxonomy.md`: the 12 domains → owning skill · rubric · critic · cross-plugin boundary; the orchestrator routes by it.
+
+### Changed
+
+- Cross-plugin boundaries are now explicit, both directions: **Brand & Perception → `brand-forge`**; interface-system mechanics (tokens, components, motion, layout) → the **adia-ui / `ui-*`** layer. product-forge owns the experience decision; those plugins own brand and the rendered component system.
+
+### Reviewed
+
+- **Verified all 6 new (living) critics' verbatim quotes against their public sources** before ship; the famous "two coffee shops" line was confirmed **NOT** Marc S.'s (it is 31 Volts, 2008) and excluded, and Covert's IA definition uses the correct "make it _more_ understandable" wording. `bin/check-sourcing.py` enforces the provenance floor across the new references and critics.
+
+### Planned (next)
+
+- The read-only `product-corpus` MCP (carried over) — per-instance retrieval of a team's PRDs / research / personas.
+
 ## [0.1.0] — 2026-06-03
 
 Initial release — the product counterpart to `brand-forge`: a brand-forge-style plugin for product strategy, management, and UX, with a research-grounded reference library and a named-practitioner critic council. Built via wave-based research (the `meta-expert-author` methodology).

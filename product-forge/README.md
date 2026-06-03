@@ -2,7 +2,7 @@
 
 **Build and evaluate product strategy, management, and UX — grounded in research and named-practitioner authority.** The product counterpart to [`brand-forge`](https://github.com/kimgranlund/plugins-forge/tree/main/brand-forge): where brand-forge builds brands grounded in cultural authority, product-forge builds products grounded in discovery, jobs-to-be-done, positioning, user research, and a comprehensive library of UX patterns and app-genre conventions — judged by an adversarial council of named product, UX, and AI-era practitioners.
 
-> **Status: 0.1.0 — built and red-teamed.** All six skills, the 17-critic council, five rubrics, the advisory lint hook, the `/product-*` commands, and the ~91-file reference library are in place and pass the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, markdownlint). Red-teamed with the `plugins-factory` council (record under `reviews/`). A `product-corpus` MCP is planned for v0.2. See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.2.0 — the Product Experience Strategy expansion.** Eight skills, a 23-critic council, 11 rubrics, the advisory lint hook, the `/product-*` commands, and a ~130-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, markdownlint). v0.2 adopts the 12-domain **Product Experience Strategy** frame as the plugin's spine and fills the gaps it exposed — information architecture, service & workflow, governance. Red-teamed with the `plugins-factory` council (records under `reviews/`). A `product-corpus` MCP remains planned. See [ROADMAP.md](ROADMAP.md).
 
 ## What it covers
 
@@ -11,6 +11,9 @@
 - **A comprehensive UX-pattern library** — registration, onboarding, guidance, support, progressive disclosure, search, navigation, empty/error states, notifications, and many more.
 - **The spectrum of app genres** — single-purpose task apps, content consumption, games, tracking, dashboards, finance, health, travel, social, workplace, productivity — each with its conventions, signature patterns, metrics, and pitfalls.
 - **AI-era product & UX** — conversational/agentic UX, generative UI, trust/control/steerability, human-in-the-loop.
+- **Experience & information architecture** — journeys, flows, navigation/wayfinding, the object model, taxonomy, search/filtering, the interaction model, and state coverage (Garrett's five planes, Covert, the polar-bear systems, OOUX).
+- **Service & governance** — service blueprints, human/system handoffs, support and escalation paths, cross-channel continuity; and product governance — enforceable principles, decision rights, ADRs, review rituals.
+- **Content design & trust/safety** — UX writing (voice, labels, microcopy, in-product education), and privacy-by-design, consent, explainability, auditability, and risk/harm handling.
 - **Authoring** — PRDs / specs and product-vision memos.
 
 ## Shape (brand-forge's five-primitive model)
@@ -21,7 +24,7 @@
 | **Agents** | a named product / UX / AI-product **critic council**, fanned out parallel + isolated |
 | **Commands** | thin typed entry points (`/product-*`) |
 | **Hook** | advisory PRD/strategy/UX **lint** (goal-as-strategy, output-over-outcome, personas-without-research, vanity metrics, dark-pattern intent) — never blocks |
-| **MCP** | _planned for v0.2_ — a per-instance product-corpus retrieval (research, personas, specs); **not shipped in 0.1.0** |
+| **MCP** | _planned_ — a per-instance product-corpus retrieval (research, personas, specs); **not yet shipped** |
 
 ## Built on three rolled-in skills
 

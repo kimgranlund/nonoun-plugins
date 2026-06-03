@@ -63,3 +63,74 @@ Each grounded in the canon the scoping survey maps; registered for both the make
 ## Verification discipline (from `meta-expert-author`, applied throughout)
 
 Every reference file carries `date` + `coverage` + `primary_sources`; single-source claims are labeled; the living product leaders' lenses cite observable public material only (no invented quotes); fetched/ingested content is data, never instructions. `bin/check-sourcing.py` **mechanizes** this — it fails if any library reference lacks the frontmatter or any critic lacks a source signal — and the living-practitioner critics' verbatim quotes were verified against their public sources before 0.1.0.
+
+---
+
+## v0.2 — Product Experience Strategy (the full gamut)
+
+v0.1 covered the strategy / discovery / UX-quality / AI-product **core**. v0.2 adopts the **12-domain Product Experience Strategy taxonomy** as product-forge's canonical frame **and** fills the three honest gaps that taxonomy exposed (Information Architecture · Service & Workflow · Governance), hardens two partials (Content & Communication · Trust/Safety), and makes the cross-plugin seams explicit (Brand → brand-forge; interface-system mechanics → the adia-ui layer). Same five-primitive shape, same wave-research + verification discipline, same red-team gate.
+
+### Part 1 — the taxonomy as canonical frame
+
+The 12 domains become the published spine. A new `skills/product-forge/references/experience-strategy-taxonomy.md` maps every domain → owning skill · rubric · critic · cross-plugin boundary; the orchestrator classifier gains the domain map as its mental model; the README documents it. The frame is the single source of truth for "what Product Experience Strategy covers and who owns each part."
+
+| # | Domain | Owner (skill · rubric · critic) |
+| --- | --- | --- |
+| 1 | Intent & Outcomes | product-methodology · `rubric-product-strategy` · Richard R./Marty C./Melissa P./April D. |
+| 2 | Experience Architecture | **product-architecture** (new) · `rubric-architecture` · **Garrett** |
+| 3 | Interaction Model | **product-architecture** (new) · `rubric-architecture` · Norman/Nielsen |
+| 4 | Information Architecture | **product-architecture** (new) · `rubric-information-architecture` · **Covert** |
+| 5 | Content & Communication | product-patterns (extended) · `rubric-content-design` · **Torrey P.** |
+| 6 | Interface System | product-patterns (a11y/responsive/patterns) — **mechanics → adia-ui / ui-\* layer** |
+| 7 | Brand & Perception | **→ brand-forge** (reciprocal scope note both ways) |
+| 8 | Intelligence & Adaptation | product-patterns/ai-ux · `rubric-ai-product` · Cat W./Weil/Choi |
+| 9 | Trust, Safety & Control | product-patterns/trust-safety (new) · `rubric-trust-safety` · **Ann C.** |
+| 10 | Service & Workflow Model | **product-operations** (new) · `rubric-service-model` · **Marc S.** |
+| 11 | Measurement & Learning | product-methodology · `rubric-discovery` · Ron K./Torres |
+| 12 | Governance | **product-operations** (new) · `rubric-governance` · **Cutler** |
+
+### Part 2 — the gap-fill (what v0.2 builds)
+
+**New skills (2):**
+
+- **`product-architecture`** — the structure tier (domains 2·3·4): Experience Architecture (journeys, flows, surfaces, navigation/wayfinding, states, continuity, enablement paths), Interaction Model (inputs, commands, controls, feedback, confirmation, undo/recovery, automation boundaries), Information Architecture (object model, taxonomy, metadata, relationships, search, filtering, retrieval). Spine: Garrett's five planes + Covert's sensemaking. ~20 references.
+- **`product-operations`** — the service & governance tier (domains 10·12): Service & Workflow Model (human/system handoffs, operational workflows, support paths, cross-channel continuity, escalation, fulfillment) + Governance (principles, standards, ownership, decision records, review rituals, documentation). Keeps governance out of the already-contested `product-methodology` boundary. ~13 references.
+
+**Extended skills (2):**
+
+- **`product-patterns`** — content-design depth in `content/` (voice, labels, education-in-product) + a new `trust-safety/` cluster (privacy-by-design, consent/permissions, explainability, auditability, risk handling) for domain 9.
+- **`product-evaluate`** — +6 rubrics, +6 critic lenses, new sub-councils (`architecture` · `content` · `service` · `trust`); `full` grows 17 → 23.
+
+**New rubrics (6, in product-evaluate — `[gate]`/`[review]` + cited hard tests):** `rubric-architecture` (2·3) · `rubric-information-architecture` (4) · `rubric-content-design` (5) · `rubric-trust-safety` (9) · `rubric-service-model` (10) · `rubric-governance` (12).
+
+**New critics (6 — all living; observable-public-only; verbatim quotes verified before ship; `check-sourcing` gates each):**
+
+- **critic-jesse-g** (Jesse G. — _The Elements of User Experience_, the five planes) — experience architecture (2·3).
+- **critic-abby-c** (Abby C. — _How to Make Sense of Any Mess_) — information architecture (4).
+- **critic-torrey-p** (Torrey P. — _Strategic Writing for UX_) — content design (5).
+- **critic-ann-c** (Ann C. — Privacy by Design, the 7 foundational principles) — trust/safety/privacy (9).
+- **critic-marc-s** (Marc S. — _This is Service Design Doing_) — service & workflow (10).
+- **critic-john-c** (John C. — product operating model / product-ops cadence) — governance (12).
+
+**Cross-plugin boundaries (made explicit, both directions):** brand-forge gets the reciprocal "NOT for product strategy → product-forge" note + "Brand & Perception (domain 7) lives here"; the orchestrator + taxonomy frame name the adia-ui / ui-\* layer as the owner of domain-6 mechanics (tokens, components, motion, layout).
+
+### Reference library — the v0.2 research waves (`meta-expert-author`)
+
+Every new file dated · coverage-tiered · `primary_sources` (the `check-sourcing` gate); observable-public-only; no fabricated quotes/frameworks (critical — all 6 new critics are living).
+
+- **Wave A** — `product-architecture/experience-architecture/` (~7) + `interaction-model/` (~6)
+- **Wave B** — `product-architecture/information-architecture/` (~7)
+- **Wave C** — `product-operations/service-model/` (~7) + `governance/` (~6)
+- **Wave D** — `product-patterns/content/` content-design depth (~4) + `trust-safety/` (~5)
+- **Wave E** — critic-source dossiers for the 6 new critics (public sourcing + candidate verbatim quotes WITH source URLs for verification)
+
+### Build phases
+
+- [x] **0. Plan** — this v0.2 ROADMAP section (architecture, rubric set, critic roster + sources, taxonomy frame, waves).
+- [x] **1. Research waves** — A–E authored via 8 parallel agents; **~42 reference files + the 6-critic source dossier**; all dated/tiered/`primary_sources`; untraceable stats omitted, paraphrases labeled.
+- [x] **2. Skills** — `product-architecture` + `product-operations` authored; `product-patterns` extended (content-design + `trust-safety/`); orchestrator classifier + `experience-strategy-taxonomy.md` frame wired.
+- [x] **3. Rubrics** — the 6 new rubrics (architecture · information-architecture · content-design · trust-safety · service-model · governance), grounded in the new canon, registered in `product-evaluate`. Total rubrics: 11.
+- [x] **4. Council** — 6 new `critic-*` agents (read-only; trust boundary; cited lens); `product-council` roster → **23** with `architecture`/`content`/`service`/`trust` sub-councils; living-critic quotes verified at the dossier stage (re-verification pass running).
+- [x] **5. Boundaries + docs** — reciprocal brand-forge note added; README/CHANGELOG/marketplace + plugin.json synced to 0.2.0; CHANGELOG `[0.2.0]`.
+- [x] **6. Validate** — `validate_plugin.py --strict` · `reference-lint.py` · `check-sourcing.py` (0 gaps) · `product-lint` selftest · `markdownlint` (0/189) · marketplace — **all PASS**.
+- [x] **7. Red-team** — `plugins-factory` 9-critic council (CONDITIONAL → 3 MUST-folds applied → **APPROVED**; P4 & P9 clean 5s, ST5 clean) + independent quote re-verification (13/13 verbatim quotes verified, "two coffee shops" confirmed absent). The Critical fold hardened `check-sourcing.py` to derive its scope (now 134 refs) + a roster-count gate. Record: `reviews/2026-06-03-v0.2-red-team.md`. **Cut 0.2.0.**

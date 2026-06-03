@@ -3,7 +3,8 @@ name: product-patterns
 description: >-
   The UX / interaction / flow pattern library for product work — registration, onboarding, guidance,
   search, navigation, forms, empty/error states, notifications, progressive disclosure, monetization
-  patterns, accessibility, and AI-product UX (chat, generative UI, agentic, trust/control). Use it to
+  patterns, accessibility, content design (voice, labels, microcopy), trust & safety (privacy, consent,
+  explainability), and AI-product UX (chat, generative UI, agentic, trust/control). Use it to
   pick the right pattern for a screen or flow, check a design against the canonical form + accessibility,
   or ground the ux-quality rubric. Triggers: "what pattern for X", "design this onboarding/search/
   paywall", "is this the right UX", "AI chat / agentic UX", "empty state", "error handling". NOT for
@@ -28,13 +29,18 @@ Load `${CLAUDE_PLUGIN_ROOT}/skills/product-patterns/references/substrate/pattern
 | --- | --- |
 | `flows/` | registration-signup · onboarding · guidance-coachmarks · permissions-consent · settings-preferences |
 | `interaction/` | navigation-ia · search · progressive-disclosure · forms · personalization |
-| `content/` | empty-states · feeds-consumption · notifications |
+| `content/` | empty-states · feeds-consumption · notifications · content-design-principles · voice-and-tone · labels-and-nomenclature · education-in-product |
 | `feedback/` | error-handling · feedback-and-states · help-support · microcopy |
 | `monetization/` | paywalls-upgrades · social-proof · gamification · dark-patterns _(the line NOT to cross)_ |
 | `substrate/` | accessibility · responsive-mobile · laws-of-ux · pattern-taxonomy-index |
 | `ai-ux/` | conversational-chat · generative-ui · agentic-workflows · trust-control-steerability · uncertainty-citations · human-in-the-loop |
+| `trust-safety/` | privacy-by-design · consent-and-permissions · explainability-and-transparency · auditability-and-control · risk-and-harm-handling |
 
 Each file lives at `${CLAUDE_PLUGIN_ROOT}/skills/product-patterns/references/<axis>/<name>.md`.
+
+## Boundary with product-architecture (read before routing)
+
+This skill owns the **reusable unit** — a specific pattern for one screen or flow. The **system** it sits in — the journey/flow architecture, the navigation system, the object model, the interaction model — is `product-architecture`. If the request is about how search, navigation, or IA works _as a system_ (not a single search box or nav bar), route up to `product-architecture` and settle the structure first, then come back here for the screen-level pattern. (This mirrors the reciprocal rule in `product-architecture`.)
 
 ## Posture
 
