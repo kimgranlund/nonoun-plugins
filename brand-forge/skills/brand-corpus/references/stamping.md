@@ -13,6 +13,8 @@ hold a seed or a stewarded brand. Build down the stack before stamping ahead of 
 
 ## The two forms
 
+The form is a **destination decision the user makes** — `/brand-stamp` always asks which; it never defaults to one (the two artifacts target different hosts, so a wrong guess wastes the stamp).
+
 | | **plugin** | **docs** |
 |---|---|---|
 | **For** | Claude Code / Cowork | Claude chat / Projects |
