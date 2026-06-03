@@ -60,7 +60,7 @@ Three levels, all `--a-*`:
 
 - **Color scheme** uses `light-dark()` at the token layer — never swap tokens by hand. Toggle with `<toggle-scheme-ui scheme="auto" target=":root" persist>`.
 - **Density** scales spacing via `--a-density` set at a provider boundary (`<div style="--a-density: 0.8">`).
-- **Zero raw colors, zero raw px ≥ 3** in component CSS — always a token. This is mechanized by the lint (phase c) and by the MCP's `check_anti_patterns`.
+- **Zero raw colors, zero raw px ≥ 3** in component CSS — always a token. This is mechanized by the `adia-lint` hook and by the MCP's `check_anti_patterns`.
 
 ## "Registers" — typographic treatments, opt-in
 

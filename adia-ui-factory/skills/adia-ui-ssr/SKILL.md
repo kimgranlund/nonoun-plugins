@@ -1,9 +1,10 @@
 ---
 name: adia-ui-ssr
 description: >
-  Architect and author an adia-ui app inside an SSR framework (Next / Nuxt / SvelteKit / Astro) —
-  guarded dynamic-import registration in lifecycle hooks, framework routing (never <router-ui>),
-  server-side data fetch + initial props, cookie/session state. Use when consuming the components under SSR.
+  Architect and wire an adia-ui app inside an SSR framework (Next / Nuxt / SvelteKit / Astro) —
+  client-only registration in lifecycle hooks, framework routing (never <router-ui>), server-side
+  data fetch + initial props, cookie/session state. Use when consuming the components under SSR; if
+  the rendering mode isn't decided yet, start with adia-ui-factory. (Author components with adia-ui-compose.)
 ---
 
 # adia-ui-ssr — components inside an SSR framework
@@ -19,7 +20,7 @@ Full depth: **`${CLAUDE_PLUGIN_ROOT}/references/ssr-integration.md`** (it labels
 3. **Server data → props** — fetch with the framework's mechanism (Server Components / `useAsyncData` / `load`), pass as initial props, refresh on the client.
 4. **State → cookies/session** — the shell re-mounts per navigation, so cross-cutting state (sidebar, nav, optimistic UI) goes in cookies/`localStorage`/session, not component-lifetime signals.
 5. **Property binding** — attributes are strings; set objects/arrays as properties (React `ref`, Vue `:prop`, Svelte `bind:`).
-6. **Verify** — the browser gate (`adia-ui-verify`, phase c).
+6. **Verify** — the browser gate (`adia-ui-verify`).
 
 ## Non-negotiables
 

@@ -2,16 +2,20 @@
 """adia-lint — advisory authoring-smell checker for adia-ui apps (the mechanizable slice).
 
 SCOPE (be honest): pattern-matchable STRUCTURAL smells in component/page source — shadow-DOM use,
-raw colors, the dead `--a-font` token, ::slotted, width on :scope, the SSR context traps (top-level
-kit import, double route-owner), and hardcoded overlay `open`. It does NOT judge whether the UI is
-good, on-spec, or accessible — that lives in the skills (adia-ui-compose / -spa / -ssr / -verify)
-and the a2ui MCP's check_anti_patterns. A clean adia-lint says "no structural tells," never "this is right."
+raw colors, raw px ≥ 3, the dead `--a-font` token, ::slotted, width on :scope, the SSR context traps
+(top-level kit import + double route-owner — detected only in files carrying a framework signal, so a
+bare registration module won't trip it), and hardcoded overlay `open`. Foundation/token sheets (under a
+styles/ or tokens/ dir, named tokens/theme/host/palette/…, or marked `/* adia-lint: foundation */`) are
+exempt from the color/px checks. It does NOT judge whether the UI is good, on-spec, or accessible — that
+lives in the skills (adia-ui-compose / -spa / -ssr / -verify) and the a2ui MCP's check_anti_patterns.
+A clean adia-lint says "no structural tells," never "this is right."
 
 Usage:
   adia-lint <file>...        # lint files; exit 1 if any smell found, else 0
   adia-lint -                # lint stdin as a generic source file
   adia-lint --hook           # PostToolUse hook mode: read event JSON on stdin, lint the written
                              #   source file, print advisory findings, ALWAYS exit 0 (never blocks)
+  adia-lint selftest         # run built-in fixtures (seeded smells + a clean file + the hook exit-0 invariant)
 Stdlib only (Python 3.8+).
 """
 import json
@@ -38,11 +42,28 @@ BOOL_TRUE = re.compile(r"\bdefault:\s*true\b")
 ATTR_TYPO = re.compile(r"\battr:\s*['\"]")
 OVERLAY_OPEN = re.compile(r"<(?:modal|drawer)-ui\b[^>]*?(?<![:.\w])\bopen\b(?!\s*=\s*\{)")
 TOPLEVEL_IMPORT = re.compile(r"""^\s*import\s+['"]@adia-ai/web-components['"]\s*;?\s*$""")
-TOKENISH_CSS = re.compile(r"(?:token|theme|foundation|palette|host|scheme|colou?r)", re.I)
+PX_GE = re.compile(r"(?<![\w.-])(\d+)px\b")   # integer px values; fractional (1.5px) deliberately not matched
+FOUNDATION_OPT_IN = re.compile(r"adia-lint:\s*foundation", re.I)
+# Genuine token/foundation SHEETS are exempt from color/px — matched by exact stem or a styles/ dir,
+# NOT a path substring (so a `color-picker` / `theme-toggle` component is still linted).
+FOUNDATION_STEMS = {"tokens", "token", "theme", "themes", "foundation", "foundations",
+                    "palette", "palettes", "host", "reset", "resets", "scheme", "schemes",
+                    "color", "colors"}
 
 
 def _ext(path):
     return os.path.splitext(path or "")[1].lower()
+
+
+def _is_foundation_css(path, text):
+    """A genuine token/foundation sheet — exempt from color/px (component sheets are not)."""
+    segs = (path or "").replace("\\", "/").split("/")
+    if "styles" in segs or "tokens" in segs:
+        return True
+    stem = os.path.splitext(segs[-1])[0].lower() if segs else ""
+    if stem in FOUNDATION_STEMS:
+        return True
+    return bool(FOUNDATION_OPT_IN.search(text[:1000]))
 
 
 def lint_text(text, path=""):
@@ -50,7 +71,7 @@ def lint_text(text, path=""):
     ext = _ext(path)
     findings = []
     is_ssr = bool(SSR_SIGNAL.search(text)) or ext in (".vue", ".svelte", ".astro")
-    is_tokenish = bool(TOKENISH_CSS.search(path))
+    is_tokenish = _is_foundation_css(path, text)
 
     for i, line in enumerate(text.splitlines(), 1):
         s = line.strip()[:90]
@@ -72,6 +93,14 @@ def lint_text(text, path=""):
                     if HEXCOLOR.search(decl) or FUNCCOLOR.search(decl):
                         findings.append(("RAW-COLOR", i, s,
                                          "component CSS is token-only — replace the literal with var(--a-*) (foundation/token files excepted)"))
+                        break
+            if not is_tokenish and not line.lstrip().startswith("@"):  # skip @media/@container/@scope at-rules
+                for decl in line.split(";"):
+                    if "/*" in decl:                                   # author-annotated carve-out
+                        continue
+                    if any(int(v) >= 3 for v in PX_GE.findall(decl)):
+                        findings.append(("RAW-PX", i, s,
+                                         "no raw px ≥ 3 in component CSS — use var(--a-space-*); 1–2px hairlines exempt, annotate a deliberate exception with a comment"))
                         break
         if ext in CODE_EXT:
             if BOOL_TRUE.search(line):
@@ -142,7 +171,56 @@ def _hook():
     return 0  # NEVER block
 
 
+def _selftest():
+    """Built-in fixtures: each seeded smell must fire, clean files must stay quiet, --hook must exit 0."""
+    import io
+    cases = [
+        ("components/x/x.css",
+         "@scope (x) {\n"
+         "  :scope { color:#f00; width:100%; font-family:var(--a-font); padding:24px; }\n"
+         "  :scope > [slot=a]::slotted(p) { margin:0; }\n"
+         "}",
+         {"RAW-COLOR", "SCOPE-EXTENT", "DEAD-FONT-TOKEN", "SLOTTED", "RAW-PX"}),
+        ("styles/theme.css", ":root { --a-bg: light-dark(#fff, #000); }", set()),
+        ("components/color-picker/color-picker.css",
+         "@scope (color-picker) {\n  :scope { background:#abc; padding:40px; }\n}",
+         {"RAW-COLOR", "RAW-PX"}),
+        ("providers/p.tsx",
+         "'use client';\nimport '@adia-ai/web-components';\n"
+         "export default () => (<admin-shell><router-ui/><modal-ui open>x</modal-ui></admin-shell>);",
+         {"SSR-TOPLEVEL-IMPORT", "SSR-DOUBLE-ROUTER", "HARDCODED-OPEN"}),
+        ("core/clean.js",
+         "import { UIElement } from '@adia-ai/web-components/core/element.js';\n"
+         "class UIX extends UIElement { connected() { this.innerHTML = '<col-ui></col-ui>'; } }",
+         set()),
+    ]
+    ok = True
+    for name, text, expected in cases:
+        got = {f[0] for f in lint_text(text, name)}
+        if expected - got:
+            ok = False
+            print(f"selftest: {name} MISSING {sorted(expected - got)} (got {sorted(got)})", file=sys.stderr)
+        if not expected and got:
+            ok = False
+            print(f"selftest: {name} expected clean, got {sorted(got)}", file=sys.stderr)
+    saved_in, saved_out = sys.stdin, sys.stdout    # never-block invariant: --hook exits 0 even on smelly input
+    try:
+        sys.stdin = io.StringIO(json.dumps({"tool_input": {"file_path": "x.css",
+                                "content": "@scope (x) {\n :scope { color:#f00; }\n}"}}))
+        sys.stdout = io.StringIO()
+        rc = _hook()
+    finally:
+        sys.stdin, sys.stdout = saved_in, saved_out
+    if rc != 0:
+        ok = False
+        print("selftest: --hook did not exit 0 on smelly input", file=sys.stderr)
+    print("selftest: PASS" if ok else "selftest: FAIL")
+    return 0 if ok else 1
+
+
 def main(argv):
+    if argv and argv[0] == "selftest":
+        return _selftest()
     if "--hook" in argv:
         return _hook()
     args = [a for a in argv if a == "-" or not a.startswith("-")]

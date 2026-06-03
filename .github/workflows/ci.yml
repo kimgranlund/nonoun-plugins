@@ -46,3 +46,6 @@ jobs:
 
       - name: adia-ui-factory scaffolder selftest
         run: python3 adia-ui-factory/bin/adia-scaffold selftest
+
+      - name: adia-ui-factory lint selftest
+        run: python3 adia-ui-factory/bin/adia-lint selftest

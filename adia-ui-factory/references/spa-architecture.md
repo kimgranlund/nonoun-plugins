@@ -109,4 +109,4 @@ A control mutates the route; an observer or CSS reflects the route **into** the 
 
 ## Exit gate
 
-A surface isn't done when it compiles — it's done when it passes the **browser gate** (zero console errors on load, non-zero bounding boxes, and you've *read* the screenshot) plus the a11y and git checks. That gate is the `adia-ui-verify` skill (phase c). Re-baseline git at the start of every turn, stage explicit allowlists (never `git add -A` on a shared clone), and confirm the branch before committing.
+A surface isn't done when it compiles — it's done when it passes the **browser gate** (zero console errors on load, non-zero bounding boxes, and you've *read* the screenshot) plus the a11y and git checks. That gate is the `adia-ui-verify` skill. Re-baseline git at the start of every turn, stage explicit allowlists (never `git add -A` on a shared clone), and confirm the branch before committing.

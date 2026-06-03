@@ -2,6 +2,8 @@
 
 Wiring chat / streaming / AI features into an app. This is **app-level LLM use** — distinct from *generating UI markup*, which is the a2ui MCP's `generate_ui` (see the boundary at the end). All of the below is from the framework's own `@adia-ai/llm` package.
 
+> **Snapshot, not a spec.** The exact signatures, `StreamChunk` field names, and `<chat-shell-ui>` API below are verified against `@adia-ai/llm` **v0.7.8** (the pinned MCP's sibling). LLM client APIs drift fast — treat precise names as a starting point, confirm against the installed version, and lean on the **smart-proxy contract** (stable) rather than memorizing fields.
+
 ## Import & the core API
 
 ```js

@@ -1,6 +1,6 @@
 # Authoring a project component
 
-When no catalog primitive composes to the need, author a light-DOM custom element. The discipline below is what separates a component that themes, scales, and survives HMR from one that fights the system. It mirrors the framework's own audit gates — the lint hook (phase c) and the MCP's `check_anti_patterns` mechanize the catchable parts.
+When no catalog primitive composes to the need, author a light-DOM custom element. The discipline below is what separates a component that themes, scales, and survives HMR from one that fights the system. It mirrors the framework's own audit gates — the `adia-lint` hook and the MCP's `check_anti_patterns` mechanize the catchable parts.
 
 ## The skeleton
 

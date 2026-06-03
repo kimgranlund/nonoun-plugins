@@ -31,8 +31,8 @@ Why it matters: routing ownership, component registration, and state placement a
 | Stand up a new app / host | `adia-ui-spa` or `adia-ui-ssr` (`/adia-scaffold`) | mode-specific scaffold |
 | Build a screen · author a component · theme | **`adia-ui-compose`** | mode-independent — shared core |
 | Wire routing / state / data-flow | `adia-ui-spa` or `adia-ui-ssr` (`/adia-wire`) | mode-specific |
-| Chat / AI features · generate UI | `adia-ui-llm` | shared *(phase c)* |
-| QA / a11y / ship | `adia-ui-verify` | shared exit gate *(phase c)* |
+| Chat / AI features · generate UI | `adia-ui-llm` | shared |
+| QA / a11y / ship | `adia-ui-verify` | shared exit gate |
 | Inventory an existing app | this skill (`/adia-orient`) | report mode + structure + gaps |
 
 `compose`, `llm`, and `verify` are **mode-independent**; `spa` and `ssr` own the architecture. Most real work is: scaffold (mode) → compose (shared) → wire (mode) → verify (shared).

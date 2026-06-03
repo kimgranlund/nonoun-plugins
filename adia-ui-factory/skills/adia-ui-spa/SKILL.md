@@ -1,9 +1,10 @@
 ---
 name: adia-ui-spa
 description: >
-  Architect and author an adia-ui app in SPA mode — static host document, the four-axis structure,
+  Architect and wire an adia-ui app in SPA mode — static host document, the four-axis structure,
   content-less <router-ui> routing, the client DataClient/projection data-flow, single-owner state.
-  Use when the app is a client-rendered SPA (Vite / vanilla).
+  Use when the app is a client-rendered SPA (Vite / vanilla); if the rendering mode isn't decided
+  yet, start with adia-ui-factory. (Author the components themselves with adia-ui-compose.)
 ---
 
 # adia-ui-spa — the client-rendered path
@@ -20,7 +21,7 @@ Full depth: **`${CLAUDE_PLUGIN_ROOT}/references/spa-architecture.md`**. Compose 
 4. **Routing** — content-less `<router-ui>`: routes *without* `content`, CSS shows the active view.
 5. **Data-flow** — `DataClient.read(projection)` → pure `runMapper` → loader; the UI sees projections only.
 6. **State** — single owner per piece; control mutates the route, observer/CSS reflects it back.
-7. **Verify** — the browser gate (`adia-ui-verify`, phase c).
+7. **Verify** — the browser gate (`adia-ui-verify`).
 
 ## Non-negotiables
 

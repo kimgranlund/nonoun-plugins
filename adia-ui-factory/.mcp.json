@@ -2,7 +2,7 @@
   "mcpServers": {
     "a2ui": {
       "command": "npx",
-      "args": ["-y", "@adia-ai/a2ui-mcp"]
+      "args": ["-y", "@adia-ai/a2ui-mcp@0.7.8"]
     }
   }
 }

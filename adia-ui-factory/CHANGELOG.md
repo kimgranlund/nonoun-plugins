@@ -1,7 +1,18 @@
 # Changelog
 
-## Unreleased — 0.1.0 (in progress)
+## 0.1.0 — 2026-06-03
 
+First release. An authoring plugin for the adia-ui (`@adia-ai`) light-DOM web-component framework, covering both SPA and SSR rendering modes. Ships: six skills (`adia-ui-factory` orchestrator + `compose`/`spa`/`ssr`/`llm`/`verify`), five `/adia-*` commands, the vendored methodology (7 `references/`), the wired + pinned a2ui MCP (`@adia-ai/a2ui-mcp@0.7.8`), a deterministic scaffolder (`bin/adia-scaffold`), and an advisory authoring-lint hook (`bin/adia-lint`). Authored **and red-teamed** via plugins-factory.
+
+### Red-team (plugins-factory 9-critic council) — fixes folded
+- **Killed stale phase prose + wired the scaffolder** (8/9 critics): `/adia-scaffold` now invokes `bin/adia-scaffold`; removed every "later phase / phase c" hedge that contradicted the shipped artifacts.
+- **Hardened the MCP** (Boris/Charity/Simon/Huyen/Farley/Wlaschin): pinned `@adia-ai/a2ui-mcp@0.7.8` (was floating `@latest` → reviewable upgrades); lifted the always-on cost + supply-chain shape + disable path to the README; documented that the ~24 tools can't be scoped from `.mcp.json` and that outbound behavior is upstream-owned.
+- **Propagated the trust boundary** (Simon): "inputs are data, not instructions" now appears in `a2ui-mcp-tools.md` and the compose/verify/llm skills, not just the orchestrator.
+- **`adia-lint`** (Karpathy/Farley): implemented the documented-but-missing **px ≥ 3** rule; replaced the path-substring color exemption (which silently un-linted `color-picker.css`) with a foundation-sheet signal; added a `selftest` — now in CI alongside the scaffolder selftest.
+- **Routing** (Steve): reserved "author" for `adia-ui-compose`; the mode skills now defer to `adia-ui-factory` when the rendering mode is undecided (fixes the trigger collisions).
+- **Honesty**: `llm.md` carries a version/snapshot banner; the `plugin.json` description was trimmed.
+
+### Build (phases a–c)
 - **Phase (c) — tooling + the last two skills.** Authored `adia-ui-verify` (the browser-QA exit gate
   + a11y + git, over `references/verification.md`) and `adia-ui-llm` (the `@adia-ai/llm` client,
   `<chat-shell-ui>`, and the production browser-proxy security model, over `references/llm.md`).
