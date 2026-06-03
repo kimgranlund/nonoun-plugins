@@ -2,6 +2,15 @@
 
 ## Unreleased — 0.1.0 (in progress)
 
+- **Phase (c) — tooling + the last two skills.** Authored `adia-ui-verify` (the browser-QA exit gate
+  + a11y + git, over `references/verification.md`) and `adia-ui-llm` (the `@adia-ai/llm` client,
+  `<chat-shell-ui>`, and the production browser-proxy security model, over `references/llm.md`).
+  Added `bin/adia-scaffold` — a minimal, lint-clean app scaffolder (SPA: four-axis layout + host
+  document + self-booting surface; SSR: a client-boundary provider + integration checklist for
+  next/nuxt/sveltekit/astro) with a `selftest`. Added `bin/adia-lint` + `hooks/hooks.json` — an
+  advisory PostToolUse authoring-smell checker (shadow DOM, raw colors, dead `--a-font`, `::slotted`,
+  width-on-`:scope`, SSR top-level import, double route-owner, hardcoded overlay `open`) that
+  **never blocks** (always exits 0 in hook mode). CI runs the scaffolder selftest.
 - **Phase (b) — core skills + methodology.** Authored the four core skills — `adia-ui-factory`
   (orient & route: the SPA/SSR fork + task routing), `adia-ui-compose` (catalog-driven UI construction
   + light-DOM component authoring + theming), `adia-ui-spa`, and `adia-ui-ssr` — and vendored the

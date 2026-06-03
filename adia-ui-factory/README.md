@@ -2,7 +2,7 @@
 
 **Author and verify apps built on the adia-ui (`@adia-ai`) framework** — a zero-dependency, light-DOM vanilla web-component library. A self-contained Claude Code plugin: it bundles the *authoring methodology* and wires the framework's existing **a2ui MCP** as the live substrate for catalog retrieval, UI generation, and validation.
 
-> **Status: scaffolding (v0.1.0, in progress).** This is the phase-(a) skeleton — structure, manifest, MCP wiring, and honest skill/command stubs. Skill content is authored in subsequent phases (see `ROADMAP.md`).
+> **Status: v0.1.0, feature-complete pending red-team.** Phases (a)–(c) are in — the six skills, the vendored methodology, the wired a2ui MCP, the deterministic scaffolder (`bin/adia-scaffold`), and the advisory authoring-lint hook (`bin/adia-lint`). Phase (d) is the adversarial red-team (see `ROADMAP.md`).
 
 ## The shape
 
@@ -19,9 +19,9 @@ adia-ui-factory/
 │   ├── adia-ui-llm/          app LLM features — @adia-ai/llm, chat, streaming   [shared]
 │   └── adia-ui-verify/       browser-QA gate + a11y + git discipline   [shared]
 ├── commands/                 /adia-scaffold · compose · wire · verify · orient
-├── references/               vendored methodology (SPA best-practices + SSR rendering-model)   [phase b]
-├── bin/                      adia-scaffold (deterministic app scaffolder)   [phase c]
-└── hooks/                    advisory authoring-lint on component/page writes   [phase c]
+├── references/               vendored methodology (component-model · authoring · spa · ssr · a2ui-mcp · llm · verification)
+├── bin/                      adia-scaffold (deterministic app scaffolder) · adia-lint (advisory smell checker)
+└── hooks/                    hooks.json — runs adia-lint on component/page writes (advisory, never blocks)
 ```
 
 ## What it bundles vs. wires

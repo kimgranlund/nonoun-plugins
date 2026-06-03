@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""adia-scaffold — lay the minimal bones of an adia-ui app (structure, not opinions).
+
+It scaffolds the load-bearing skeleton and stops — exact package paths, versions, and the first
+real screen are yours (and the a2ui MCP's), because those are what drift. Modes:
+
+  adia-scaffold spa <name> [-o DIR] [--force]
+      A client-rendered app: the four-axis layout (spec/ plan/ app/ skills/), a static host
+      document (cascade-ordered links + one registration script), and a self-booting placeholder
+      surface.
+
+  adia-scaffold ssr <name> --framework {next,nuxt,sveltekit,astro} [-o DIR] [--force]
+      The adia integration layer to drop into an EXISTING framework app: a client-boundary provider
+      (deferred registration) for the chosen framework + a README integration checklist.
+
+  adia-scaffold selftest
+      Scaffold each shape to a temp dir and assert the expected files exist. Exit 1 on failure.
+
+Refuses to overwrite existing files unless --force. Stdlib only (Python 3.8+).
+"""
+import argparse
+import os
+import re
+import sys
+import tempfile
+
+
+def _slug(name):
+    s = re.sub(r"[^a-z0-9]+", "-", (name or "").strip().lower()).strip("-")
+    return s or "app"
+
+
+def _tag(name):
+    """A valid custom-element tag (must contain a hyphen)."""
+    s = _slug(name)
+    return s if "-" in s else f"{s}-app"
+
+
+def _cls(tag):
+    return "UI" + "".join(p.capitalize() for p in tag.split("-"))
+
+
+# ---- SPA templates ---------------------------------------------------------
+
+def _spa_files(name):
+    tag, title = _tag(name), name.strip() or _slug(name)
+    cls = _cls(tag)
+    return {
+        "spec/BRIEF.md": f"# {title} — brief\n\nWhat this app is, who it's for, the one job it does.\n",
+        "plan/ROADMAP.md": f"# {title} — roadmap\n\n- [ ] First surface\n",
+        "skills/.gitkeep": "# app-specific expert skill goes here (optional)\n",
+        "app/shared/.gitkeep": "# cross-surface source: DataClient, loaders, mappers, images\n",
+        f"app/{tag}/src/index.html": _SPA_HTML.format(tag=tag, title=title),
+        f"app/{tag}/src/index.css": _SPA_PAGE_CSS.format(tag=tag),
+        f"app/{tag}/src/components/{tag}/{tag}.js": _SPA_JS.format(tag=tag, cls=cls, title=title),
+        f"app/{tag}/src/components/{tag}/{tag}.css": _SPA_CSS.format(tag=tag),
+    }
+
+
+_SPA_HTML = """<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+
+  <!-- Cascade order is load-bearing (later wins). Paths assume the kit is served at
+       /packages/web-components — adjust to how YOU serve @adia-ai (npm, a Vite alias, a CDN). -->
+  <link rel="stylesheet" href="/packages/web-components/styles/host.css" />   <!-- foundation: tokens + resets + page frame -->
+  <link rel="stylesheet" href="/packages/web-components/styles/index.css" />  <!-- barrel: every component's CSS (link BOTH) -->
+  <link rel="stylesheet" href="./index.css" />                               <!-- page framing -->
+  <link rel="stylesheet" href="./components/{tag}/{tag}.css" />              <!-- the surface's chrome -->
+
+  <!-- One registration script: registers every primitive (including router-ui). -->
+  <script type="module" src="/packages/web-components/index.js"></script>
+  <script type="module" src="./components/{tag}/{tag}.js"></script>
+</head>
+<body>
+  <{tag}></{tag}>
+</body>
+</html>
+"""
+
+_SPA_PAGE_CSS = """/* Page framing — size + center the surface. Tokens only; never re-roll :where(html,body). */
+{tag} {{
+  display: block;
+  max-inline-size: 80rem;
+  margin-inline: auto;
+}}
+"""
+
+_SPA_JS = """import {{ defineIfFree }} from '@adia-ai/web-components/core/register.js';
+import {{ UIElement }} from '@adia-ai/web-components/core/element.js';
+
+class {cls} extends UIElement {{
+  #booted = false;
+  connected() {{
+    if (this.#booted) return; // the callback re-fires whenever the element moves in the DOM
+    this.#booted = true;
+    this.innerHTML = `
+      <col-ui gap="4">
+        <text-ui variant="heading">{title}</text-ui>
+        <text-ui>Scaffolded by adia-ui-factory. Build the real surface with /adia-compose.</text-ui>
+      </col-ui>`;
+  }}
+}}
+defineIfFree('{tag}', {cls});
+export {{ {cls} }};
+"""
+
+_SPA_CSS = """@scope ({tag}) {{
+  :where(:scope) {{          /* zero-specificity tokens — themes + consumers override cleanly */
+    --{tag}-gap: var(--a-space-4);
+  }}
+  :scope {{                  /* base — size-agnostic: the CONSUMER owns width/height */
+    display: block;
+    padding: var(--a-space-4);
+  }}
+}}
+"""
+
+
+# ---- SSR templates ---------------------------------------------------------
+
+_SSR = {
+    "next": {
+        "path": "app/providers/adia-provider.tsx",
+        "hook": "useEffect",
+        "link": "<Link> from next/link + app/**/page.tsx",
+        "bind": "a ref + useEffect to set non-string props",
+        "body": """'use client';
+import { useEffect } from 'react';
+
+// Client-boundary registration. A top-level `import '@adia-ai/web-components'` throws
+// `HTMLElement is not defined` during SSR — defer it into useEffect. Mount <AdiaProvider> high.
+export function AdiaProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    import('@adia-ai/web-components')
+      .then(() => import('@adia-ai/web-modules/shell'))
+      .then(() => import('@adia-ai/web-components/css'));
+  }, []);
+  return <>{children}</>;
+}
+""",
+    },
+    "nuxt": {
+        "path": "components/AdiaKit.client.vue",
+        "hook": "onMounted",
+        "link": "<NuxtLink> + pages/**.vue",
+        "bind": ":prop= (property binding)",
+        "body": """<script setup lang=\"ts\">
+import { onMounted } from 'vue';
+
+// .client.vue is Nuxt's SSR boundary; register on the client only.
+onMounted(async () => {
+  await import('@adia-ai/web-components');
+  await import('@adia-ai/web-modules/shell');
+  await import('@adia-ai/web-components/css');
+});
+</script>
+
+<template>
+  <slot />
+</template>
+""",
+    },
+    "sveltekit": {
+        "path": "src/lib/AdiaKit.svelte",
+        "hook": "onMount",
+        "link": "<a href> + src/routes/**/+page.svelte",
+        "bind": "bind:value (two-way)",
+        "body": """<script>
+  import { onMount } from 'svelte';
+
+  // onMount is SvelteKit's hydration barrier — register on the client only.
+  onMount(async () => {
+    await import('@adia-ai/web-components');
+    await import('@adia-ai/web-modules/shell');
+    await import('@adia-ai/web-components/css');
+  });
+</script>
+
+<slot />
+""",
+    },
+    "astro": {
+        "path": "src/components/AdiaKit.astro",
+        "hook": "a client <script>",
+        "link": "<a href> (or <ViewTransitions/>)",
+        "bind": "drop to a framework island for reactive props",
+        "body": """---
+// CSS is server-safe (no browser APIs); JS registration runs in the browser <script>.
+import '@adia-ai/web-components/css';
+---
+<slot />
+<script>
+  import '@adia-ai/web-components';
+  import '@adia-ai/web-modules/shell';
+</script>
+""",
+    },
+}
+
+
+def _ssr_files(name, framework):
+    spec = _SSR[framework]
+    title = name.strip() or _slug(name)
+    readme = _SSR_README.format(
+        title=title, framework=framework, path=spec["path"],
+        hook=spec["hook"], link=spec["link"], bind=spec["bind"])
+    return {spec["path"]: spec["body"], "README.md": readme}
+
+
+_SSR_README = """# {title} — adia-ui integration ({framework})
+
+Drop `{path}` into your {framework} app and mount it high (around the layout/root).
+
+Integration checklist (the `adia-ui-ssr` skill owns the depth):
+
+1. **Registration is client-only.** This provider defers the kit import into {hook}; never import
+   `@adia-ai/web-components` at server module top-level (it throws `HTMLElement is not defined`).
+2. **Routing stays the framework's.** Do NOT mount `<router-ui>` — exactly one route owner. Use {link}.
+3. **Data:** fetch on the server, pass as initial props, refresh on the client.
+4. **State:** cross-cutting state (sidebar, nav, optimistic UI) goes in cookies/session — the shell
+   re-mounts per navigation, so component-lifetime signals are lost.
+5. **Props:** set non-string props as properties ({bind}), not stringified attributes.
+6. **CSS:** import the kit CSS once (server-safe).
+"""
+
+
+# ---- writer ----------------------------------------------------------------
+
+def _write(root, files, force):
+    written, skipped = [], []
+    for rel, content in files.items():
+        dest = os.path.join(root, rel)
+        if os.path.exists(dest) and not force:
+            skipped.append(rel)
+            continue
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(content)
+        written.append(rel)
+    return written, skipped
+
+
+def _scaffold(mode, name, framework, outdir, force):
+    files = _spa_files(name) if mode == "spa" else _ssr_files(name, framework)
+    root = os.path.join(outdir, _slug(name))
+    written, skipped = _write(root, files, force)
+    return root, written, skipped
+
+
+def _selftest():
+    ok = True
+    with tempfile.TemporaryDirectory() as tmp:
+        _, w, _ = _scaffold("spa", "Demo App", None, tmp, False)
+        need = [f for f in w if f.endswith(("index.html", "demo-app.js", "demo-app.css"))]
+        if not any(f.endswith("index.html") for f in w) or len(w) < 6:
+            print("selftest: SPA scaffold incomplete", file=sys.stderr); ok = False
+        for fw in ("next", "nuxt", "sveltekit", "astro"):
+            _, w2, _ = _scaffold("ssr", f"demo-{fw}", fw, tmp, False)
+            if not any("README.md" == f for f in w2) or len(w2) != 2:
+                print(f"selftest: SSR/{fw} scaffold incomplete: {w2}", file=sys.stderr); ok = False
+    print("selftest: PASS" if ok else "selftest: FAIL")
+    return 0 if ok else 1
+
+
+def main(argv):
+    p = argparse.ArgumentParser(prog="adia-scaffold", add_help=True,
+                                description="Lay the minimal bones of an adia-ui app.")
+    sub = p.add_subparsers(dest="mode", required=True)
+    for m in ("spa", "ssr"):
+        sp = sub.add_parser(m)
+        sp.add_argument("name")
+        sp.add_argument("-o", "--out", default=".")
+        sp.add_argument("--force", action="store_true")
+        if m == "ssr":
+            sp.add_argument("--framework", required=True,
+                            choices=sorted(_SSR.keys()))
+    sub.add_parser("selftest")
+    args = p.parse_args(argv)
+
+    if args.mode == "selftest":
+        return _selftest()
+
+    framework = getattr(args, "framework", None)
+    root, written, skipped = _scaffold(args.mode, args.name, framework, args.out, args.force)
+    label = args.mode.upper() + (f"/{framework}" if framework else "")
+    print(f"adia-scaffold [{label}] → {root}")
+    for f in written:
+        print(f"  + {f}")
+    for f in skipped:
+        print(f"  · {f} (exists; --force to overwrite)")
+    if not written:
+        print("  (nothing written)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

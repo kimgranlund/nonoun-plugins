@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""adia-lint — advisory authoring-smell checker for adia-ui apps (the mechanizable slice).
+
+SCOPE (be honest): pattern-matchable STRUCTURAL smells in component/page source — shadow-DOM use,
+raw colors, the dead `--a-font` token, ::slotted, width on :scope, the SSR context traps (top-level
+kit import, double route-owner), and hardcoded overlay `open`. It does NOT judge whether the UI is
+good, on-spec, or accessible — that lives in the skills (adia-ui-compose / -spa / -ssr / -verify)
+and the a2ui MCP's check_anti_patterns. A clean adia-lint says "no structural tells," never "this is right."
+
+Usage:
+  adia-lint <file>...        # lint files; exit 1 if any smell found, else 0
+  adia-lint -                # lint stdin as a generic source file
+  adia-lint --hook           # PostToolUse hook mode: read event JSON on stdin, lint the written
+                             #   source file, print advisory findings, ALWAYS exit 0 (never blocks)
+Stdlib only (Python 3.8+).
+"""
+import json
+import os
+import re
+import sys
+
+CODE_EXT = (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx")
+STYLE_EXT = (".css",)
+MARKUP_EXT = (".html", ".htm", ".vue", ".svelte", ".astro", ".tsx", ".jsx")
+LINT_EXT = tuple(sorted(set(CODE_EXT + STYLE_EXT + MARKUP_EXT)))
+
+SSR_SIGNAL = re.compile(
+    r"""['"]use client['"]|\buseEffect\b|\bonMounted\b|\bonMount\b|"""
+    r"""from\s+['"](?:react|vue|svelte|next|nuxt|@sveltejs|astro)|"""
+    r"""getServerSideProps|defineNuxtComponent""", re.I)
+
+HEXCOLOR = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+FUNCCOLOR = re.compile(r"\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\s*\(")
+DEAD_FONT = re.compile(r"var\(\s*--a-font\s*[,)]")
+SCOPE_EXTENT = re.compile(
+    r":scope(?:\[[^\]]*\])?\s*\{[^{}]*?\b(?:width|height|inline-size|block-size)\s*:", re.S)
+BOOL_TRUE = re.compile(r"\bdefault:\s*true\b")
+ATTR_TYPO = re.compile(r"\battr:\s*['\"]")
+OVERLAY_OPEN = re.compile(r"<(?:modal|drawer)-ui\b[^>]*?(?<![:.\w])\bopen\b(?!\s*=\s*\{)")
+TOPLEVEL_IMPORT = re.compile(r"""^\s*import\s+['"]@adia-ai/web-components['"]\s*;?\s*$""")
+TOKENISH_CSS = re.compile(r"(?:token|theme|foundation|palette|host|scheme|colou?r)", re.I)
+
+
+def _ext(path):
+    return os.path.splitext(path or "")[1].lower()
+
+
+def lint_text(text, path=""):
+    """Return a list of (NAME, line, snippet, why) advisory findings."""
+    ext = _ext(path)
+    findings = []
+    is_ssr = bool(SSR_SIGNAL.search(text)) or ext in (".vue", ".svelte", ".astro")
+    is_tokenish = bool(TOKENISH_CSS.search(path))
+
+    for i, line in enumerate(text.splitlines(), 1):
+        s = line.strip()[:90]
+        if "attachShadow" in line:
+            findings.append(("SHADOW-DOM", i, s,
+                             "adia-ui is light-DOM — never attachShadow; it breaks the token cascade + @scope"))
+        if "::slotted(" in line:
+            findings.append(("SLOTTED", i, s,
+                             "light DOM has no ::slotted — style projected content via :scope > [slot=\"x\"]"))
+        if ext in STYLE_EXT:
+            if DEAD_FONT.search(line):
+                findings.append(("DEAD-FONT-TOKEN", i, s,
+                                 "--a-font is not a real token (resolves to UA serif) — floor to var(--a-font-family-ui)"))
+            if not is_tokenish:
+                for decl in line.split(";"):  # per-declaration: a literal on a line that also has a var() still counts
+                    d = decl.strip()
+                    if not d or d.startswith(("//", "/*", "*")) or "var(" in decl or "light-dark(" in decl:
+                        continue
+                    if HEXCOLOR.search(decl) or FUNCCOLOR.search(decl):
+                        findings.append(("RAW-COLOR", i, s,
+                                         "component CSS is token-only — replace the literal with var(--a-*) (foundation/token files excepted)"))
+                        break
+        if ext in CODE_EXT:
+            if BOOL_TRUE.search(line):
+                findings.append(("BOOL-DEFAULT-TRUE", i, s,
+                                 "a boolean prop defaulting true can't be turned off by absence — flip the name so absent = false"))
+            if ATTR_TYPO.search(line):
+                findings.append(("ATTR-TYPO", i, s,
+                                 "did you mean `attribute:`? `attr:` is silently ignored in a property definition"))
+        if is_ssr:
+            if "<router-ui" in line:
+                findings.append(("SSR-DOUBLE-ROUTER", i, s,
+                                 "in SSR the framework router owns routing — don't also mount <router-ui> (two route owners)"))
+            if TOPLEVEL_IMPORT.search(line):
+                findings.append(("SSR-TOPLEVEL-IMPORT", i, s,
+                                 "a top-level kit import throws `HTMLElement is not defined` on the server — defer it into a client hook"))
+        if ext in MARKUP_EXT and OVERLAY_OPEN.search(line):
+            findings.append(("HARDCODED-OPEN", i, s,
+                             "drive overlays via the .open property, not a hardcoded `open` attribute (it bricks the page)"))
+
+    if ext in STYLE_EXT:
+        for m in SCOPE_EXTENT.finditer(text):
+            ln = text.count("\n", 0, m.start()) + 1
+            findings.append(("SCOPE-EXTENT", ln, ":scope { … width/height … }",
+                             "the component is size-agnostic — let the consumer own width/height; don't set extent on :scope"))
+
+    findings.sort(key=lambda f: (f[1], f[0]))
+    return findings
+
+
+def _render(path, findings):
+    out = [f"adia-lint: {len(findings)} structural smell(s) in {path or '<stdin>'}"]
+    for name, ln, snip, why in findings:
+        out.append(f"  [{name}] line {ln}: {snip}")
+        out.append(f"      → {why}")
+    return "\n".join(out)
+
+
+def _lint_path(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return lint_text(f.read(), path)
+    except OSError:
+        return []
+
+
+def _hook():
+    try:
+        event = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError):
+        return 0
+    ti = event.get("tool_input", {}) or {}
+    path = ti.get("file_path", "") or ""
+    if _ext(path) not in LINT_EXT:
+        return 0  # only component/page source; stay quiet otherwise
+    text = ti.get("content")
+    if text is None:
+        if not os.path.isfile(path):
+            return 0
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            return 0
+    findings = lint_text(text, path)
+    if findings:
+        print(_render(path, findings))
+        print("  (advisory — adia-ui authoring smells; the skills + a2ui MCP own the judgment)")
+    return 0  # NEVER block
+
+
+def main(argv):
+    if "--hook" in argv:
+        return _hook()
+    args = [a for a in argv if a == "-" or not a.startswith("-")]
+    if not args:
+        print(__doc__.strip().split("\n\n", 1)[0], file=sys.stderr)
+        return 2
+    total = 0
+    for path in args:
+        if path == "-":
+            findings = lint_text(sys.stdin.read(), "<stdin>")
+            path = "<stdin>"
+        else:
+            findings = _lint_path(path)
+        if findings:
+            total += len(findings)
+            print(_render(path, findings))
+    return 1 if total else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

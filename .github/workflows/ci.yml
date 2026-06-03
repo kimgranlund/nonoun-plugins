@@ -43,3 +43,6 @@ jobs:
 
       - name: reference-lint — adia-ui-factory
         run: python3 "$PF/bin/reference-lint.py" adia-ui-factory
+
+      - name: adia-ui-factory scaffolder selftest
+        run: python3 adia-ui-factory/bin/adia-scaffold selftest
