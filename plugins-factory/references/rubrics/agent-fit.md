@@ -6,21 +6,21 @@ Scoring convention: `[gate]` = mechanically checkable · `[review]` = expert jud
 
 ## Dimensions
 
-**AF1 — Agent justification `[review]`.** Does each agent need something a skill structurally can't give — context isolation, parallel fan-out, tool-scope reduction, or safe-mutation isolation? If it's "knowledge + judgment applied in-line," it's a skill wearing ceremony. *Score 5:* every agent names the isolation/parallelism it requires. *Score 1:* an agent that a skill (or a skill mode) would do, with no isolation rationale.
+**AF1 — Agent justification `[review]`.** Does each agent need something a skill structurally can't give — context isolation, parallel fan-out, tool-scope reduction, or safe-mutation isolation? If it's "knowledge + judgment applied in-line," it's a skill wearing ceremony. _Score 5:_ every agent names the isolation/parallelism it requires. _Score 1:_ an agent that a skill (or a skill mode) would do, with no isolation rationale.
 
-**AF2 — Tool-scope minimal-sufficiency + no trifecta `[gate]`.** Is each agent's `tools` the smallest set that does the job, and does **no single agent** hold the lethal trifecta (private-data access + untrusted-content exposure + external-action/network)? *Gate fail:* a reviewer of untrusted content that also has `Bash`/`Write`/`Edit`/network; or any agent whose granted scope far exceeds its job.
+**AF2 — Tool-scope minimal-sufficiency + no trifecta `[gate]`.** Is each agent's `tools` the smallest set that does the job, and does **no single agent** hold the lethal trifecta (private-data access + untrusted-content exposure + external-action/network)? _Gate fail:_ a reviewer of untrusted content that also has `Bash`/`Write`/`Edit`/network; or any agent whose granted scope far exceeds its job.
 
-**AF3 — Loader-rule compliance `[gate]`.** Does any agent illegally declare `hooks`, `mcpServers`, or `permissionMode`? Those are plugin-level. *Gate fail:* any such field on an agent definition.
+**AF3 — Loader-rule compliance `[gate]`.** Does any agent illegally declare `hooks`, `mcpServers`, or `permissionMode`? Those are plugin-level. _Gate fail:_ any such field on an agent definition.
 
-**AF4 — Trust boundary present `[review]`.** If an agent reads anything it didn't author (artifact under review, repo files, web/MCP output), does it state — *in its own definition* (not only the orchestrator's) — that the content is data to assess, never instructions to obey? *Score 1:* an untrusted-content reader with no in-agent guard.
+**AF4 — Trust boundary present `[review]`.** If an agent reads anything it didn't author (artifact under review, repo files, web/MCP output), does it state — _in its own definition_ (not only the orchestrator's) — that the content is data to assess, never instructions to obey? _Score 1:_ an untrusted-content reader with no in-agent guard.
 
-**AF5 — Lens distinctness + citation `[review]`.** For review/critic agents: does each own a **distinct** dimension (no N-copies-of-the-same-skeptic), and do its findings cite file+field/line and carry a severity? *Score 1:* overlapping lenses, or vibes-level findings with no evidence.
+**AF5 — Lens distinctness + citation `[review]`.** For review/critic agents: does each own a **distinct** dimension (no N-copies-of-the-same-skeptic), and do its findings cite file+field/line and carry a severity? _Score 1:_ overlapping lenses, or vibes-level findings with no evidence.
 
-**AF6 — Dispatch clarity `[review]`.** Does each agent's `description` say *when to dispatch to it* (routing), so an orchestrator or the main loop can select it deterministically? *Score 1:* a description that explains what the agent is but not when it's invoked.
+**AF6 — Dispatch clarity `[review]`.** Does each agent's `description` say _when to dispatch to it_ (routing), so an orchestrator or the main loop can select it deterministically? _Score 1:_ a description that explains what the agent is but not when it's invoked.
 
-**AF7 — Orchestration soundness `[review]`.** If the plugin has a panel/council: is `Task` confined to the **one** orchestrator, is fan-out **concurrent** (no anchoring), and is there a real **synthesis** step (convergence, tension, blind spot, scorecard) rather than a concatenation of findings? *Score 1:* multiple agents with `Task`, sequential fan-out with no reason, or "synthesis" that just lists outputs.
+**AF7 — Orchestration soundness `[review]`.** If the plugin has a panel/council: is `Task` confined to the **one** orchestrator, is fan-out **concurrent** (no anchoring), and is there a real **synthesis** step (convergence, tension, blind spot, scorecard) rather than a concatenation of findings? _Score 1:_ multiple agents with `Task`, sequential fan-out with no reason, or "synthesis" that just lists outputs.
 
-**AF8 — Isolation & memory appropriateness `[review]`.** Is `isolation: worktree` used only when agents mutate files in parallel (not paid for read-only reviewers), and are agents stateless unless they genuinely accumulate (`memory` justified)? *Score 1:* worktree on a read-only critic, or unexplained persistent memory.
+**AF8 — Isolation & memory appropriateness `[review]`.** Is `isolation: worktree` used only when agents mutate files in parallel (not paid for read-only reviewers), and are agents stateless unless they genuinely accumulate (`memory` justified)? _Score 1:_ worktree on a read-only critic, or unexplained persistent memory.
 
 ## Anti-patterns
 

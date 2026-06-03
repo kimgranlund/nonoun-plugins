@@ -5,7 +5,6 @@ description: >
   Plugins-factory council critic — Andrej Karpathy. Whether "well-bundled" is a verifiable property or a vibe, and jagged capability across components. Invoked by the plugin-council orchestrator to adversarially review a plugin.
 ---
 
-
 # Andrej Karpathy — Jagged Capability and Verifiability
 
 ## Synopsis

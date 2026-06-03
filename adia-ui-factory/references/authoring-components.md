@@ -52,13 +52,13 @@ Every component stylesheet is scoped to its tag and split into a zero-specificit
 }
 ```
 
-**Why two blocks:** `:where(:scope)` is zero-specificity, so a parent theme provider or a consumer override beats your defaults without `!important`. Collapsing into a single `:scope` block breaks theme switching. The base block consumes the component's *own* tokens (`--my-thing-*`), which alias the system tokens (`--a-*`) — so re-theming flows through one indirection layer.
+**Why two blocks:** `:where(:scope)` is zero-specificity, so a parent theme provider or a consumer override beats your defaults without `!important`. Collapsing into a single `:scope` block breaks theme switching. The base block consumes the component's _own_ tokens (`--my-thing-*`), which alias the system tokens (`--a-*`) — so re-theming flows through one indirection layer.
 
 ## Invariants
 
 - **Token-only.** No raw `#hex` / `rgb()` / `oklch()` and no raw px ≥ 3 in component CSS — always `var(--a-*)` (border-hairlines 1–2px are the only carve-out, with a comment).
-- **Size-agnostic chrome.** Never set `width`/`height`/`inline-size` on the tag's `:scope`. The component owns *intrinsic* sizing (`min-height`, `padding`, `gap`); the **consumer** (a layout primitive or explicit style) owns extent. Width-on-tag fights the placer and the resizable frame.
-- **Light DOM only.** Never `attachShadow`. No `::slotted()` (a shadow-DOM API) — style slotted content via `:scope > [slot="x"]`. To *read* projected children, use `logicalChildren` / `logicalSlotted` from `@adia-ai/web-components/core/logical-children` — plain `this.children` misses children rendered through `${items.map(…)}` and the `display:contents` trap.
+- **Size-agnostic chrome.** Never set `width`/`height`/`inline-size` on the tag's `:scope`. The component owns _intrinsic_ sizing (`min-height`, `padding`, `gap`); the **consumer** (a layout primitive or explicit style) owns extent. Width-on-tag fights the placer and the resizable frame.
+- **Light DOM only.** Never `attachShadow`. No `::slotted()` (a shadow-DOM API) — style slotted content via `:scope > [slot="x"]`. To _read_ projected children, use `logicalChildren` / `logicalSlotted` from `@adia-ai/web-components/core/logical-children` — plain `this.children` misses children rendered through `${items.map(…)}` and the `display:contents` trap.
 - **Guard define and boot.** `defineIfFree` guards re-definition; also guard the boot (`#booted` flag in `connected()`) — the callback fires again whenever the element moves in the DOM, which otherwise double-renders.
 - **Symmetric lifecycle.** Every `addEventListener` in `connected()` has a matching `removeEventListener` in `disconnected()`. Use a stable handler reference (private field `#onClick = (e) => …`), not an inline arrow — `removeEventListener` needs reference equality.
 - **Data down, events up.** Sub-components receive state via properties (`.rec = …`) and emit `CustomEvent`s; they never reach into a parent's internals.

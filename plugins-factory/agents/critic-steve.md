@@ -5,7 +5,6 @@ description: >
   Plugins-factory council critic — Steve Yegge. Marketplace-as-platform, namespacing, plugin granularity, and the monolith-vs-fragment boundary. Invoked by the plugin-council orchestrator to adversarially review a plugin.
 ---
 
-
 # Steve Yegge — Platform Engineer
 
 ## Synopsis

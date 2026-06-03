@@ -8,6 +8,7 @@ You are convening the **plugin council**: an adversarial review where named engi
 Request: **$ARGUMENTS**
 
 Parse it as `[selector] [plugin]`:
+
 - Selector is `full-panel` (default), `single-critic <name>`, or a dimension-targeted subset.
 - Everything else is the **plugin under review**.
 

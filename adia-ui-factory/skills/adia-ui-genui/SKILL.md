@@ -51,7 +51,7 @@ A2UI is a message union (`createSurface` · `updateComponents` · `updateDataMod
 
 A gen-UI surface is done when it **renders in `<a2ui-root>` with zero console errors** and:
 
-- **Validated before render** `[gate]` — `validate_schema` + `check_anti_patterns` pass on the A2UI before it reaches a root. *(Self-verified: no shipped check observes whether you validated before `root.doc =` — the discipline is yours.)*
+- **Validated before render** `[gate]` — `validate_schema` + `check_anti_patterns` pass on the A2UI before it reaches a root. _(Self-verified: no shipped check observes whether you validated before `root.doc =` — the discipline is yours.)_
 - **Resolvers registered** `[gate]` — every `resource:`/`api:` scheme the UI references has a `registerResolver`, registered before render.
 - **One root per surface** `[gate]` — a single render root owns a surface; no competing roots.
 - **Grounded corpus** `[review]` — retrieved chunks trace to real pages (for a custom corpus).
@@ -69,4 +69,4 @@ A new render mode, resolver scheme, or corpus workflow? Add it here + the depth 
 
 - `${CLAUDE_PLUGIN_ROOT}/references/genui-a2ui.md` — render roots, the A2UI message format, `registerResolver`, the loop, and corpus core-vs-custom.
 - `${CLAUDE_PLUGIN_ROOT}/references/a2ui-mcp-tools.md` — the MCP tools (`generate_ui`/`refine_ui`/`search_chunks`/`validate_schema`/…).
-- `adia-ui-llm` — if the experience *also* has a chat/LLM feature (a different concern).
+- `adia-ui-llm` — if the experience _also_ has a chat/LLM feature (a different concern).

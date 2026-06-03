@@ -6,5 +6,9 @@
   // MD041 first-line-heading OFF — command files are prompt bodies (frontmatter + the prompt), not titled documents.
   "MD041": false,
   // MD024 — changelogs legitimately repeat a section heading (e.g. "Red-team") across version entries.
-  "MD024": { "siblings_only": true }
+  "MD024": { "siblings_only": true },
+  // MD028 blanks-in-blockquote OFF — eval-prompts.md is a catalog of distinct blockquoted prompt-cards separated by blank lines; CommonMark/GitHub render those as separate quotes, which is the intent.
+  "MD028": false,
+  // MD060 table-column-style OFF — prettier owns table formatting (incl. empty-cell whitespace). Prettier emits 2-space empty cells; MD060's "compact" style wants 1-space, an unwinnable conflict on legitimately-blank comparison-matrix corners. Let the formatter own tables.
+  "MD060": false
 }

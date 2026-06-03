@@ -27,6 +27,7 @@ Consumer migrations. The framework MIGRATION GUIDE (in the framework repo) is th
    ```
 
    …or a shipped codemod. **Flag, don't auto-apply, judgment items** (below).
+
 4. **Verify** — `adia-lint` clean of `LEGACY-SHELL`/`NATIVE-PRIMITIVE`; build/render; then the **leftover-drift grep** across `.css`/`.js`/`.md`/`.json`; browser probe.
 5. **Report** — per-axis counts, manual-review list, gate results, next actions.
 

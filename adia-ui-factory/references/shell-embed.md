@@ -5,11 +5,11 @@ load-size: ~1.5k tokens
 required-for: [adia-ui-shells — embed path]
 ---
 
-# adia-embed-shell — embedded surface  *(FORTHCOMING)*
+# adia-embed-shell — embedded surface _(FORTHCOMING)_
 
 > **Status: emerging.** There is **no `<adia-embed-shell>` web-module shipped yet.** This is the official promotion-in-progress of the **embedded-app pattern** (the patient-labs / population-health surfaces). Build to the pattern below today; when the shell ships, re-bake this reference (paired with the pinned a2ui MCP snapshot) and the API firms up. Treat exact shapes here as **[PATTERN]** (verified from the embedded app), not **[SHELL-API]** (doesn't exist yet).
 
-An **embedded surface** is a self-contained light-DOM custom element that a *host page* (an EHR, another SaaS) positions and sizes — adia-ui owns the surface, the host owns the frame.
+An **embedded surface** is a self-contained light-DOM custom element that a _host page_ (an EHR, another SaaS) positions and sizes — adia-ui owns the surface, the host owns the frame.
 
 ## The pattern (today) **[PATTERN]**
 

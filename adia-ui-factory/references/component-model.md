@@ -1,6 +1,6 @@
 # The adia-ui component model
 
-How to *think* about the catalog. The **live** catalog is the a2ui MCP (`get_component_map`, `lookup_component`, `get_traits`) — query it for exact names, props, and counts; don't memorize them here (they drift per release). This file teaches the vocabulary so the MCP's answers make sense.
+How to _think_ about the catalog. The **live** catalog is the a2ui MCP (`get_component_map`, `lookup_component`, `get_traits`) — query it for exact names, props, and counts; don't memorize them here (they drift per release). This file teaches the vocabulary so the MCP's answers make sense.
 
 ## Three tiers
 
@@ -8,7 +8,7 @@ How to *think* about the catalog. The **live** catalog is the a2ui MCP (`get_com
 | --- | --- | --- | --- |
 | **Primitives** | `@adia-ai/web-components` | Atomic custom elements — controls, layout, display, overlays | `<button-ui>` `<input-ui>` `<select-ui>` `<table-ui>` `<card-ui>` `<modal-ui>` `<drawer-ui>` |
 | **Layout primitives** | (same) | The box model — never hand-roll a bare `<div>` for layout | `<col-ui>` `<row-ui>` `<grid-ui>` `<stack-ui>` `<page-ui>` `<section-ui>` |
-| **Traits** | (subpath) | Reusable *behaviors* attached to any element — not data, not components | `pressable` `focusable` `draggable` `ripple` `scale-press` `roving-tabindex` `focus-trap` |
+| **Traits** | (subpath) | Reusable _behaviors_ attached to any element — not data, not components | `pressable` `focusable` `draggable` `ripple` `scale-press` `roving-tabindex` `focus-trap` |
 | **Composites / shells** | `@adia-ai/web-modules` | Multi-component surfaces / page chrome | `<admin-shell>` `<admin-sidebar>` `<chat-shell>` `<editor-shell>` |
 
 **Naming:** kebab-case with a `-ui` **suffix** (`<button-ui>`, not `<a-button>`). Shells/composites carry a domain prefix (`<admin-*>`, `<chat-*>`).
@@ -64,7 +64,7 @@ Three levels, all `--a-*`:
 
 ## "Registers" — typographic treatments, opt-in
 
-A *register* (e.g. `verse`, `prose`) is a typographic treatment applied two ways together: **link the register stylesheet** (`styles/verse.css`) **and** put the **attribute** on the surface (`<my-surface verse>`). One without the other is a no-op — a common smell. Body/UI text defaults to `--a-font-family-ui`; registers opt a subtree into a different family/rhythm.
+A _register_ (e.g. `verse`, `prose`) is a typographic treatment applied two ways together: **link the register stylesheet** (`styles/verse.css`) **and** put the **attribute** on the surface (`<my-surface verse>`). One without the other is a no-op — a common smell. Body/UI text defaults to `--a-font-family-ui`; registers opt a subtree into a different family/rhythm.
 
 ## Where this is incomplete
 

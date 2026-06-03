@@ -23,7 +23,7 @@ The check every surface passes before it ships. **Mode-independent.** Full depth
 
 **"Tests pass, ship it" is the anti-pattern.** Unit tests are necessary, not sufficient — the browser gate is what catches the 0×0 host, the clipped content, and the console error that no unit test sees. If you haven't rendered it and read the screenshot, it isn't verified.
 
-The advisory `adia-lint` hook mechanizes the *structural* slice on write (shadow DOM, raw color/px, `::slotted`, native-primitive leaks, legacy shell shapes, SSR traps); the framework's `audit:shell-composition` / `audit:native-primitive-leak` cover more, but they **run in the @adia-ai app repo — they are not shipped here and this plugin can't invoke them.** Everything else in the rubric below — the render, the screenshot read, a11y — is **self-verified**: no shipped script enforces it, you must actually do it. The hook never blocks.
+The advisory `adia-lint` hook mechanizes the _structural_ slice on write (shadow DOM, raw color/px, `::slotted`, native-primitive leaks, legacy shell shapes, SSR traps); the framework's `audit:shell-composition` / `audit:native-primitive-leak` cover more, but they **run in the @adia-ai app repo — they are not shipped here and this plugin can't invoke them.** Everything else in the rubric below — the render, the screenshot read, a11y — is **self-verified**: no shipped script enforces it, you must actually do it. The hook never blocks.
 
 ## Verify rubric `[gate]`
 

@@ -17,7 +17,7 @@ The knowledge base behind the plugin lifecycle tool. SKILL.md is the router; dep
 ## The spine
 
 | File | Topic | Key question |
-|---|---|---|
+| --- | --- | --- |
 | `rubrics/plugins-holistic.md` | Holistic Plugin Quality | Does this plugin address all nine load-bearing dimensions (P1 fitness · P2 component fit · P3 boundary cohesion · P4 dependency legality · P5 manifest/packaging · P6 context economy · P7 routing · P8 evolution · P9 security)? |
 
 ## Plugin-distinctive drill-down rubrics (P2–P6)
@@ -25,7 +25,7 @@ The knowledge base behind the plugin lifecycle tool. SKILL.md is the router; dep
 Each is paired 1:1 with a foundation; `${CLAUDE_PLUGIN_ROOT}/bin/check-foundations-coverage.py` gates the pairing.
 
 | Rubric (`rubrics/`) | Foundation (`foundations/`) | Holistic dim |
-|---|---|---|
+| --- | --- | --- |
 | `component-fit.md` | `component-fit-foundations.md` | P2 |
 | `boundary-cohesion.md` | `plugin-cohesion-foundations.md` | P3 |
 | `dependency-and-sharing.md` | `dependency-and-sharing-foundations.md` | P4 |
@@ -36,17 +36,17 @@ Each is paired 1:1 with a foundation; `${CLAUDE_PLUGIN_ROOT}/bin/check-foundatio
 
 A plugin's **fitness**, **routing**, **evolution**, and **security** are skill concerns one layer up. Rather than re-derive them (the redundancy `expert-council-design` and the critics flag), the spine scores them with four rubrics **co-located** from `skills-studio` and bundled in `rubrics/` — so the plugin stays self-contained (decision A), with zero `../` cross-plugin paths:
 
-| Holistic dim | Scored against (co-located) |
-|---|---|
-| P1 Plugin Fitness | `rubrics/cold-start-orientation.md` |
-| P7 Routing & Discoverability | `rubrics/skills-authoring.md` |
-| P8 Evolution & Maintenance | `rubrics/skill-extensibility.md` |
-| P9 Security & Trust | `rubrics/security-and-scope-containment.md` |
+| Holistic dim                 | Scored against (co-located)                 |
+| ---------------------------- | ------------------------------------------- |
+| P1 Plugin Fitness            | `rubrics/cold-start-orientation.md`         |
+| P7 Routing & Discoverability | `rubrics/skills-authoring.md`               |
+| P8 Evolution & Maintenance   | `rubrics/skill-extensibility.md`            |
+| P9 Security & Trust          | `rubrics/security-and-scope-containment.md` |
 
 ## Technical reference & method
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `plugin-architecture.md` | The plugin technical model: `plugin.json` fields, the component set (skills/agents/commands/hooks/MCP/LSP/monitors/themes/bin), `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PLUGIN_DATA}`, the path-traversal limit, `marketplace.json`, namespacing, install scopes, validation. The source of truth P5 + P4 build against. |
 | `frontmatter.md` | Component frontmatter (skill / agent / command) + the **tool-use allowlist discipline** + the loader rule — how to write each component's YAML contract well. P2 / P7 / P9. |
 | `carve-method.md` | The library→plugins carve method: map the real composition graph → cluster by domain → resolve shared infra (co-locate / `dependencies` / symlink) → flag orphans + dead components → emit a boundary proposal. |
@@ -56,7 +56,7 @@ A plugin's **fitness**, **routing**, **evolution**, and **security** are skill c
 ## Dimension scoring convention
 
 | Tag | Meaning |
-|---|---|
+| --- | --- |
 | `[gate]` | Scoreable mechanically — `validate_plugin.py` output, path-legality, counts, kebab-case. Can be an automated CI check. |
 | `[review]` | Requires expert judgment — boundary coherence, component-fit appropriateness, always-on-cost justification. |
 | `[hypothesis]` | Stated as an observable property but not yet empirically verified across real plugins. Track with telemetry before treating as fact. |
@@ -64,7 +64,7 @@ A plugin's **fitness**, **routing**, **evolution**, and **security** are skill c
 ## Adversarial evals (critique mode)
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `critics/eval-prompts.md` | Entry file for **critique** mode: the 9-critic roster, four modes (single / full-panel / synthesis / topical), plugin topical sections, synthesis prompts (S1–S11), severity rubric. |
 | `agents/critic-[name].md` | One **agent** per critic (promoted from prose personas to isolated parallel agents) — domain-general, reused from `skills-studio`; the plugin-domain framing lives in `eval-prompts.md`. Dispatched by the `plugin-council` orchestrator. |
 
@@ -76,7 +76,7 @@ A plugin's **fitness**, **routing**, **evolution**, and **security** are skill c
 
 Structure each rubric with:
 
-```
+```text
 §The Problem — why this rubric exists; what breaks without it
 §First Principles — 3-5 grounded principles, not platitudes
 §The Rubric — scored dimensions (1-5) with explicit [gate]/[review]/[hypothesis] labels + a mechanical Test

@@ -2,7 +2,7 @@
 
 Consuming adia-ui components **inside an SSR framework** (Next.js, Nuxt, SvelteKit, Astro, …). Same components, same UI, **wildly different architecture** from the SPA path — the framework owns routing, registration must be deferred to the client, and state can't live in component-lifetime signals.
 
-> **Honesty about sources.** The framework's `rendering-model` doc explicitly covers Next/Nuxt/SvelteKit/Astro — those patterns are marked **[D]** (documented) below. Frameworks it names in its routing table but doesn't give wiring for (Remix, Rails/Turbo, Django/HTMX, Phoenix) are marked **[G]** — the *rule* (one route owner; client-only registration) holds, but the wiring is your framework's standard pattern, not something the kit ships. Don't present **[G]** patterns as kit-guaranteed.
+> **Honesty about sources.** The framework's `rendering-model` doc explicitly covers Next/Nuxt/SvelteKit/Astro — those patterns are marked **[D]** (documented) below. Frameworks it names in its routing table but doesn't give wiring for (Remix, Rails/Turbo, Django/HTMX, Phoenix) are marked **[G]** — the _rule_ (one route owner; client-only registration) holds, but the wiring is your framework's standard pattern, not something the kit ships. Don't present **[G]** patterns as kit-guaranteed.
 
 ## Why SSR is different
 
@@ -93,11 +93,11 @@ Fetch on the server with your framework's mechanism (`getServerSideProps`/Server
 
 ## State — cookies/session, not component signals
 
-**[D]** Because the shell re-mounts per navigation in SSR, cross-cutting state (sidebar open/collapsed, active nav, optimistic UI) must live in **cookies / `localStorage` / a server session** — *not* in client-only signals scoped to a component's lifetime, which reset on every page. Read/write with `cookies()` (Next), `useCookie()` (Nuxt), `event.cookies` (SvelteKit). The shell primitives read those stores fine.
+**[D]** Because the shell re-mounts per navigation in SSR, cross-cutting state (sidebar open/collapsed, active nav, optimistic UI) must live in **cookies / `localStorage` / a server session** — _not_ in client-only signals scoped to a component's lifetime, which reset on every page. Read/write with `cookies()` (Next), `useCookie()` (Nuxt), `event.cookies` (SvelteKit). The shell primitives read those stores fine.
 
 ## Property binding (attributes are strings)
 
-A light-DOM custom element only gets *string* attributes from markup; objects/arrays/booleans must be set as **properties**. **[D]**
+A light-DOM custom element only gets _string_ attributes from markup; objects/arrays/booleans must be set as **properties**. **[D]**
 
 - **React:** `ref` + `useEffect` to set `el.value`; read events off `e.detail`. (`<slider-ui ref={r}/>`, then `r.current.value = v`.)
 - **Vue:** `:value="v"` sets the property (not the attribute); `@change="v = $event.detail.value"`.

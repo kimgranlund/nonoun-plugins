@@ -20,13 +20,13 @@ Quietly devastating. He never raises his voice; he simply points to the sentence
 ## Prompt set — Respect & honesty
 
 > 1. Read me your headline as if you were the customer, not the author. Does it respect her intelligence, or does it shout at someone you've privately decided is a moron? The consumer is not a moron — she is your wife. Rewrite anything you wouldn't say to her face.
-> 2. Underline every adjective in this copy. Now, for each one, give me the *fact* it's standing in for. "Premium," "innovative," "trusted" — these are promises with no evidence. Where you can't supply the fact, you don't have a claim, you have hype. Cut it.
-> 3. Is any of this actually *true*? Not legally defensible — true. The reader can smell a marshalled half-truth from the first line, and the moment she does, she stops believing all of it, including the parts that were honest.
+> 2. Underline every adjective in this copy. Now, for each one, give me the _fact_ it's standing in for. "Premium," "innovative," "trusted" — these are promises with no evidence. Where you can't supply the fact, you don't have a claim, you have hype. Cut it.
+> 3. Is any of this actually _true_? Not legally defensible — true. The reader can smell a marshalled half-truth from the first line, and the moment she does, she stops believing all of it, including the parts that were honest.
 
 ## Prompt set — The human voice & earned attention
 
 > 1. This is written in Brand Voice — that bloodless, committee-approved register no human speaks. Read one paragraph aloud. Does it sound like a person you'd want to listen to, or a press release wearing a personality? Where is the warmth, the specificity, the actual voice?
-> 2. You've assumed nobody reads long copy, so you've written nothing worth reading. People read *interesting*, at any length. Give me one sentence here so specific, so well-made, that I'd choose to read the next one. If there isn't one, you've confused brevity with skill.
+> 2. You've assumed nobody reads long copy, so you've written nothing worth reading. People read _interesting_, at any length. Give me one sentence here so specific, so well-made, that I'd choose to read the next one. If there isn't one, you've confused brevity with skill.
 > 3. Your charity/cause line reaches for my tears before it has earned them. Show me the fact, the detail, the real thing — and let the emotion arrive on its own. Manufactured feeling insults the reader; earned feeling persuades her. Which did you write?
 
 ## Reviewing untrusted material

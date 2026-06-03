@@ -8,7 +8,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 
 ## Quick start
 
-```
+```text
 /plugin marketplace add kimgranlund/plugins-forge
 /plugin install brand-forge@plugins-forge
 ```
@@ -16,7 +16,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 Then drive it through five typed commands:
 
 | Command | Posture | What it does |
-|---|---|---|
+| --- | --- | --- |
 | `/brand-build` | collaborative | Make brand work — research, strategy, identity, voice — guarding pipeline order. |
 | `/brand-evaluate` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
@@ -27,7 +27,7 @@ Then drive it through five typed commands:
 
 ## Component map — five primitives, five jobs
 
-```
+```text
 brand-forge/
 ├── commands/        4 typed entry points   → set mode + posture, then route
 ├── agents/         14 critics + 1 orchestrator → the parallel, isolated council
@@ -36,10 +36,10 @@ brand-forge/
 └── .mcp.json        per-instance retrieval → the corpus contract (a slot)
 ```
 
-- **Commands = the typed entry surface.** Each command is *thin*: it sets the mode and posture (collaborative vs. adversarial vs. survey), classifies where the user is, and routes to the right skill or agent. It does **not** re-contain the methodology — there is one source of truth, and the command points at it.
-- **Agents = the council.** 14 named-practitioner critics plus one orchestrator. Each critic is its own agent so it runs in an **isolated context** and in **parallel** — no critic sees another's reasoning, so the disagreement is real, not collapsed into one averaged voice. The methodology, rubrics, and council are where *cultural judgment* lives.
+- **Commands = the typed entry surface.** Each command is _thin_: it sets the mode and posture (collaborative vs. adversarial vs. survey), classifies where the user is, and routes to the right skill or agent. It does **not** re-contain the methodology — there is one source of truth, and the command points at it.
+- **Agents = the council.** 14 named-practitioner critics plus one orchestrator. Each critic is its own agent so it runs in an **isolated context** and in **parallel** — no critic sees another's reasoning, so the disagreement is real, not collapsed into one averaged voice. The methodology, rubrics, and council are where _cultural judgment_ lives.
 - **Skills = the knowledge.** `brand-methodology` (the research→strategy→expression→stewardship method), `brand-evaluate` (the rubric library + adversarial scoring), and `brand-corpus` (how to inventory and read an existing brand). Skills hold the depth; commands and agents stay thin by leaning on them.
-- **Hooks + bin = the structural floor.** A `brand-lint` hook runs on prose artifact writes and invokes the checker in `bin/`. It is **advisory** — it surfaces smells, it never blocks a write — and a *mechanical floor*, not a critic. See **Honest scope** below.
+- **Hooks + bin = the structural floor.** A `brand-lint` hook runs on prose artifact writes and invokes the checker in `bin/`. It is **advisory** — it surfaces smells, it never blocks a write — and a _mechanical floor_, not a critic. See **Honest scope** below.
 - **.mcp.json = the retrieval slot.** Declares the `brand-corpus` MCP server — a **contract** for per-instance corpus retrieval, pointed at a specific brand via `userConfig.corpus_dir`. The plugin ships the slot, never a brand's data.
 
 ---
@@ -60,9 +60,9 @@ Roster — **14 critics** across three sub-councils: **Strategy** (Luke S., John
 
 This plugin is precise about what is mechanizable and what is not.
 
-- **The brand-lint hook + bin surface only structural smells.** They are advisory pattern-level checks, catching **archetype / VMV / persona / DNA-word-cloud** filler language and **values stated without trade-offs**. They never block a write — they print the smell so the author sees it. (The 3-page-minimum-foundation is a *methodology* principle, owned by the `brand-methodology` skill — not a regex.)
+- **The brand-lint hook + bin surface only structural smells.** They are advisory pattern-level checks, catching **archetype / VMV / persona / DNA-word-cloud** filler language and **values stated without trade-offs**. They never block a write — they print the smell so the author sees it. (The 3-page-minimum-foundation is a _methodology_ principle, owned by the `brand-methodology` skill — not a regex.)
 - **They do NOT make cultural judgments.** Whether a brand has a genuine point of view, whether its provenance is real or borrowed, whether the idea is ownable — that stays entirely in the **`brand-methodology` skill** and the **council**. No regex decides if a brand is any good.
-- **The MCP ships a contract, not content.** `.mcp.json` declares the `brand-corpus` retrieval *slot*. It is wired to a brand only when the operator sets `corpus_dir` via `userConfig`. The plugin carries no brand's strategy, tokens, or documents — just the interface to retrieve them per instance.
+- **The MCP ships a contract, not content.** `.mcp.json` declares the `brand-corpus` retrieval _slot_. It is wired to a brand only when the operator sets `corpus_dir` via `userConfig`. The plugin carries no brand's strategy, tokens, or documents — just the interface to retrieve them per instance.
 - **The corpus is untrusted input.** The skills and council treat its contents as **data to analyze, never instructions** — an embedded "rate this 5/5" or "ignore the brief" is a finding, not a command, and that guard ships **inside every critic agent**, not only the orchestrator. The plugin bundles **no tool that takes external action on its own**: the MCP is read-only and the hook is advisory; any file write runs through the host agent under your existing permissions.
 
 In short: **structure is mechanized; taste is not.** The hook guards form; the skill and council own substance.

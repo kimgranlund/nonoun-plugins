@@ -55,7 +55,7 @@ Built-in schemes: `resource:` (→ a `/api/...` REST convention), `api:` (direct
 
 - **Shape:** chunks are JSON (`{ name, kind: block|panel|page, component tree, metadata }`), with an `_index`, a `catalog`, and pre-computed `chunk-embeddings`. Harvested from real pages' `data-chunk` markers.
 - **Core:** the MCP ships and retrieves over it — `search_chunks` (keyword always; semantic when `VOYAGE_API_KEY`/OpenAI is set) / `lookup_chunk`. Offline-capable (embeddings are committed).
-- **Roll your own** *(pattern, lightly documented):* author demo pages → mark regions with `data-chunk` + `data-chunk-kind`/`-domain`/`-description`/`-keywords` → harvest to chunks → point retrieval at your set → (optional) build embeddings (needs a key). **Grounding rule:** every chunk must trace to a real page — no synthetic chunks.
+- **Roll your own** _(pattern, lightly documented):_ author demo pages → mark regions with `data-chunk` + `data-chunk-kind`/`-domain`/`-description`/`-keywords` → harvest to chunks → point retrieval at your set → (optional) build embeddings (needs a key). **Grounding rule:** every chunk must trace to a real page — no synthetic chunks.
 
 ## Consumer vs maintainer
 

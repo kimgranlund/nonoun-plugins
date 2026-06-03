@@ -69,7 +69,7 @@ connected() { if (this.#booted) return; this.#booted = true; this.#load(); }
 <script type="module">import('/islands/analytics-panel.js');</script>  <!-- client-only registration -->
 ```
 
-Rule: exactly one route owner *per scope* — the framework routes the page; a content-less `<router-ui>` may route tabs **inside** the island. Never let the island's router fight the framework's.
+Rule: exactly one route owner _per scope_ — the framework routes the page; a content-less `<router-ui>` may route tabs **inside** the island. Never let the island's router fight the framework's.
 
 ## Section registration & connection
 
@@ -79,6 +79,6 @@ Rule: exactly one route owner *per scope* — the framework routes the page; a c
 
 ## Routing & state ownership
 
-- **Content-less `<router-ui>`** for in-DOM/in-island tabs: routes *without* `content`; CSS shows the active view. A content-mode route fetches + `innerHTML`-replaces — wrong for stamped views.
+- **Content-less `<router-ui>`** for in-DOM/in-island tabs: routes _without_ `content`; CSS shows the active view. A content-mode route fetches + `innerHTML`-replaces — wrong for stamped views.
 - **Own the URL** when you need query params: `history.replaceState(...)` and reflect `data-route-path` yourself; don't set `router.routes` (it path-routes and clobbers query params).
 - **Single owner** per piece of state — the route owns the active view, the component owns selection/toggles, the DataClient owns fetched data. A control mutates the route; an observer/CSS reflects it back — never a second source of truth.

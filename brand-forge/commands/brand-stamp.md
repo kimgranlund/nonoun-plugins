@@ -9,7 +9,7 @@ Request: **$ARGUMENTS** — parse as `[form] [corpus] [name]` (form ∈ `plugin`
 
 1. **Ask which shape — always.** If the user did not explicitly name a form, **stop and ask** which they want. Each emits into its **own folder** under `-o <out>` (`<out>/plugin/`, `<out>/skill/`, `<out>/mcp/`) and is **kept pure** — the plugin never carries the cloud skill or the standalone-MCP packaging.
    - `plugin` → **Claude Code / Cowork**: an installable plugin — corpus + the read-only `brand-corpus` **stdio MCP** + a thin brand skill. **Bundled** snapshot by default; `--linked` points the MCP at a live `corpus_dir`.
-   - `skill` → **Claude chat (cloud)**: a standard **Agent Skill folder** — `SKILL.md` + the corpus bundled in `references/` (one folder per layer). **No MCP, no scripts** — cloud can't run local processes, so the corpus travels *inside* the skill.
+   - `skill` → **Claude chat (cloud)**: a standard **Agent Skill folder** — `SKILL.md` + the corpus bundled in `references/` (one folder per layer). **No MCP, no scripts** — cloud can't run local processes, so the corpus travels _inside_ the skill.
    - `mcp` → **standalone deployable MCP**: the stdio server + the corpus (bundled or `--linked`) + a `README.md` with the `claude mcp add` recipe. For self-hosting / wiring the MCP on its own (a cloud connector needs an HTTP transport — see its README).
 
    Never assume — the three target different hosts and runtimes, so a wrong guess wastes the stamp. (`plugin`/`mcp` use the folder convention + the MCP; `skill` bundles the corpus as the skill's own references.)

@@ -14,9 +14,9 @@ Copy what you need, delete what you don't. Every component dir is optional excep
 
 ## (a) Annotated directory layout
 
-A plugin bundling every component type. **Note where the `.claude-plugin/` boundary sits**: only the manifest is inside it; everything the runtime *executes* is at the root.
+A plugin bundling every component type. **Note where the `.claude-plugin/` boundary sits**: only the manifest is inside it; everything the runtime _executes_ is at the root.
 
-```
+```text
 my-plugin/                          # the plugin ROOT (this whole dir is copied into the cache on install)
 ├── .claude-plugin/
 │   └── plugin.json                 # THE MANIFEST — the ONLY thing in here. `name` is the only required field.
@@ -55,7 +55,7 @@ my-plugin/                          # the plugin ROOT (this whole dir is copied 
 # persistent state writes to:      ${CLAUDE_PLUGIN_DATA}/...          (survives updates — NEVER write state to the ROOT)
 ```
 
-**Wrong** (the silent-failure layout): putting a component *inside* `.claude-plugin/`. `.claude-plugin/skills/...` does **not** load — the loader only reads the manifest there. Components live at the root.
+**Wrong** (the silent-failure layout): putting a component _inside_ `.claude-plugin/`. `.claude-plugin/skills/...` does **not** load — the loader only reads the manifest there. Components live at the root.
 
 ---
 
@@ -136,7 +136,7 @@ A marketplace's manifest. `name` (kebab) + `owner{name}` + a `plugins[]` array; 
 
 ## (d) `hooks/hooks.json` — minimal, using `${CLAUDE_PLUGIN_ROOT}`
 
-A hook guarantees execution on an event. Reference bundled scripts via `${CLAUDE_PLUGIN_ROOT}` (the ephemeral cache path to *this* plugin) so the path resolves wherever it's installed. **Document every hook's side-effect** (P9): does it mutate? block? on which events/matchers?
+A hook guarantees execution on an event. Reference bundled scripts via `${CLAUDE_PLUGIN_ROOT}` (the ephemeral cache path to _this_ plugin) so the path resolves wherever it's installed. **Document every hook's side-effect** (P9): does it mutate? block? on which events/matchers?
 
 ```json
 {
@@ -156,7 +156,7 @@ A hook guarantees execution on an event. Reference bundled scripts via `${CLAUDE
 }
 ```
 
-Side-effect note for the above (keep one per hook in your README/CHANGELOG): *non-blocking; runs the formatter on the edited file after every `Edit`/`Write`; mutates the file in place; no network.* A **blocking** hook (one that can reject the action) is reserved for genuine policy gates — state that explicitly, because a silent blocking hook is a P9 finding. A malformed `hooks.json` blocks the **entire** plugin, so validate it.
+Side-effect note for the above (keep one per hook in your README/CHANGELOG): _non-blocking; runs the formatter on the edited file after every `Edit`/`Write`; mutates the file in place; no network._ A **blocking** hook (one that can reject the action) is reserved for genuine policy gates — state that explicitly, because a silent blocking hook is a P9 finding. A malformed `hooks.json` blocks the **entire** plugin, so validate it.
 
 ---
 
@@ -166,10 +166,10 @@ Run this before `validate_plugin.py`; it is the human-readable form of the P4/P5
 
 - [ ] **Manifest-only in `.claude-plugin/`** — only `plugin.json` (and `marketplace.json` at a marketplace root). No `skills/`, `agents/`, `hooks/`, etc. inside it.
 - [ ] **All components at the ROOT** — `skills/`, `commands/`, `agents/`, `hooks/hooks.json`, `.mcp.json`, `bin/`, `output-styles/`, `themes/`, `monitors/`, `settings.json` are all root-level.
-- [ ] **`./`-relative paths, no `..`** — every path the plugin references stays inside its own root. The install test: *does it resolve when the dir is copied alone into a version-keyed cache?*
+- [ ] **`./`-relative paths, no `..`** — every path the plugin references stays inside its own root. The install test: _does it resolve when the dir is copied alone into a version-keyed cache?_
 - [ ] **No cross-plugin `../` or `$ref`** — shared infra is co-located, declared in `dependencies`, or symlinked within the same marketplace. (P4 — the break-on-install axis.)
 - [ ] **State in `${CLAUDE_PLUGIN_DATA}`** — persistent writes go there; the ROOT is the ephemeral cache copy. Bundled read-only assets are referenced via `${CLAUDE_PLUGIN_ROOT}`.
 - [ ] **`name` is kebab-case and matches the directory.** It's the only required manifest field.
-- [ ] **`version` in exactly one place** — `plugin.json` *or* the marketplace entry, not both (omit both → SHA-per-commit).
+- [ ] **`version` in exactly one place** — `plugin.json` _or_ the marketplace entry, not both (omit both → SHA-per-commit).
 - [ ] **No component inside a path that starts `.claude-plugin/`** — the single most common silent-load failure.
 - [ ] **Every hook's side-effect documented; bundled agents declare no `hooks`/`mcpServers`/`permissionMode`.** (P9 + loader rule.)

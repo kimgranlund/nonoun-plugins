@@ -19,7 +19,7 @@ Full depth: **`${CLAUDE_PLUGIN_ROOT}/references/spa-architecture.md`**. Compose 
 1. **Host document** — one static index.html: cascade-ordered CSS links (`host.css` → `styles/index.css` → opt-in register → page → component) and **one** registration script (`/packages/web-components/index.js`).
 2. **Four-axis layout** — `spec/` (design) · `plan/` (execution) · `app/` (source) · `skills/` (optional expert skill).
 3. **Surface container** — a self-booting custom element that fetches data and renders its subtree in `connected()`. (Standalone pages can use the page-trio; app surfaces fold it into the container.)
-4. **Routing** — content-less `<router-ui>`: routes *without* `content`, CSS shows the active view.
+4. **Routing** — content-less `<router-ui>`: routes _without_ `content`, CSS shows the active view.
 5. **Data-flow** — `DataClient.read(projection)` → pure `runMapper` → loader; the UI sees projections only.
 6. **State** — single owner per piece; control mutates the route, observer/CSS reflects it back.
 7. **Verify** — the browser gate (`adia-ui-verify`).

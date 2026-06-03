@@ -15,7 +15,7 @@ primary_sources:
 
 # Plugin Cohesion — Foundational Knowledge Document
 
-The theory behind P3: a plugin's scope is bounded on *both* sides. Too broad taxes every install; too narrow scatters one workflow across fragments. The target is one coherent job with rich internal granularity.
+The theory behind P3: a plugin's scope is bounded on _both_ sides. Too broad taxes every install; too narrow scatters one workflow across fragments. The target is one coherent job with rich internal granularity.
 
 ## The Core Claim
 
@@ -24,28 +24,28 @@ Cohesion is the property that a plugin does **one coherent job**, and every comp
 - **Upper bound — the kitchen sink.** A plugin scoped to "all our team's tooling" imposes a per-session tax on everyone who installs it (its standing context is always-on) and a "which capability do I reach for?" routing tax on the model. Backstage names this directly as "the monolithic plugin problem." VS Code's entire activation-event system exists to mitigate the cost of broad extensions ("the `*` event activates on startup… use it sparingly").
 - **Lower bound — the fragment.** Splitting one coherent workflow across several plugins forces users to discover, install, enable, and version-coordinate pieces that only work together. It defeats the point of a plugin (consistent, shareable tooling) and creates hidden cross-plugin coupling.
 
-The official framing is a toggle: plugins "are designed to toggle on and off as needed… enable them when you need specific capabilities and disable them when you don't to reduce system prompt context." A plugin earns its boundary when a user would enable/disable *the whole set* as one coherent capability. That is the cohesion test.
+The official framing is a toggle: plugins "are designed to toggle on and off as needed… enable them when you need specific capabilities and disable them when you don't to reduce system prompt context." A plugin earns its boundary when a user would enable/disable _the whole set_ as one coherent capability. That is the cohesion test.
 
 ## The unit of cohesion is the job-to-be-done, not the org chart
 
-Anthropic's own reference plugins demonstrate the pattern: `code-review` bundles one command + five parallel review agents; `feature-dev` ships a command + `code-explorer`/`code-architect`/`code-reviewer` agents around one structured workflow; `plugin-dev` bundles a command + 3 agents + 7 skills *all about plugin development*. The unifying thread is never component count — it is **one coherent job-to-be-done**. A good plugin's job fits one sentence: "Deployment automation tools," "Dependency analysis for Claude Code sessions."
+Anthropic's own reference plugins demonstrate the pattern: `code-review` bundles one command + five parallel review agents; `feature-dev` ships a command + `code-explorer`/`code-architect`/`code-reviewer` agents around one structured workflow; `plugin-dev` bundles a command + 3 agents + 7 skills _all about plugin development_. The unifying thread is never component count — it is **one coherent job-to-be-done**. A good plugin's job fits one sentence: "Deployment automation tools," "Dependency analysis for Claude Code sessions."
 
 The Composio marketplace taxonomy makes the same point at the catalog level: plugins are organized into functional domains, and "this taxonomy suggests plugins should solve focused domain problems rather than cross-cutting concerns." Cohere around a domain; resist cross-cutting scope.
 
 ## Internal granularity ≠ external fragmentation
 
-The most important nuance: **ship rich internal granularity inside one cohesive plugin, rather than fragmenting into many micro-plugins.** ESLint gives the cleanest version — because a shareable config is just a package, "you can export as many configs as you'd like from the same package." The translation to plugins: prefer several well-named skills (and agents, and a hook) *inside* one domain plugin over a constellation of one-skill plugins the user must assemble. The *plugin* boundary is the domain; the *internal* structure can be as granular as the work demands.
+The most important nuance: **ship rich internal granularity inside one cohesive plugin, rather than fragmenting into many micro-plugins.** ESLint gives the cleanest version — because a shareable config is just a package, "you can export as many configs as you'd like from the same package." The translation to plugins: prefer several well-named skills (and agents, and a hook) _inside_ one domain plugin over a constellation of one-skill plugins the user must assemble. The _plugin_ boundary is the domain; the _internal_ structure can be as granular as the work demands.
 
-This dissolves the apparent tension between cohesion and completeness. A `design-system` plugin can bundle 25 skills and still be perfectly cohesive — because all 25 serve the one job "turn brand intent into a production design system." The defect would be bundling those 25 *plus* an accounting skill *plus* a repo-audit skill: now three jobs share a directory.
+This dissolves the apparent tension between cohesion and completeness. A `design-system` plugin can bundle 25 skills and still be perfectly cohesive — because all 25 serve the one job "turn brand intent into a production design system." The defect would be bundling those 25 _plus_ an accounting skill _plus_ a repo-audit skill: now three jobs share a directory.
 
 ## The discriminating tests
 
 Two questions separate a coherent boundary from a defective one:
 
-1. **The split test (catches kitchen sinks):** would a user ever want *exactly half* of this plugin and none of the other half? If yes — if a meaningful population wants the design-tokens half but never the brand-strategy half — those are two plugins. Generation, serialization, reference, diagnosis, and strategy are genuinely different toggles even within one domain.
-2. **The merge test (catches fragments):** does this plugin *only function* when a specific sibling is also enabled, with that requirement undeclared? If yes, it's a fragment — either declare the `dependencies` edge or merge it back into one coherent plugin.
+1. **The split test (catches kitchen sinks):** would a user ever want _exactly half_ of this plugin and none of the other half? If yes — if a meaningful population wants the design-tokens half but never the brand-strategy half — those are two plugins. Generation, serialization, reference, diagnosis, and strategy are genuinely different toggles even within one domain.
+2. **The merge test (catches fragments):** does this plugin _only function_ when a specific sibling is also enabled, with that requirement undeclared? If yes, it's a fragment — either declare the `dependencies` edge or merge it back into one coherent plugin.
 
-The `dependencies` mechanism is the release valve for *genuinely* separable concerns: two plugins each independently useful, one building on the other. Use it when both halves stand alone, not to paper over an over-fragmented design.
+The `dependencies` mechanism is the release valve for _genuinely_ separable concerns: two plugins each independently useful, one building on the other. Use it when both halves stand alone, not to paper over an over-fragmented design.
 
 ## Cohesion and context cost are linked
 
@@ -64,10 +64,10 @@ Cohesion's degenerate case: a "plugin" that is one skill which should never have
 
 ## Source Citations
 
-1. Anthropic. *Customize Claude Code with plugins.* https://claude.com/blog/claude-code-plugins
-2. Anthropic. *anthropics/claude-code — plugins/README.md.* https://github.com/anthropics/claude-code/blob/main/plugins/README.md
-3. ComposioHQ. *awesome-claude-plugins.* https://github.com/ComposioHQ/awesome-claude-plugins
-4. InfoQ. *Backstage: Everything is a Plugin.* https://www.infoq.com/presentations/backstage-plugin/
-5. VS Code. *Activation Events.* https://code.visualstudio.com/api/references/activation-events
-6. ESLint. *Shareable Configs.* https://eslint.org/docs/latest/extend/shareable-configs
-7. Obsidian. *Plugin Guidelines.* https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
+1. Anthropic. _Customize Claude Code with plugins._ <https://claude.com/blog/claude-code-plugins>
+2. Anthropic. _anthropics/claude-code — plugins/README.md._ <https://github.com/anthropics/claude-code/blob/main/plugins/README.md>
+3. ComposioHQ. _awesome-claude-plugins._ <https://github.com/ComposioHQ/awesome-claude-plugins>
+4. InfoQ. _Backstage: Everything is a Plugin._ <https://www.infoq.com/presentations/backstage-plugin/>
+5. VS Code. _Activation Events._ <https://code.visualstudio.com/api/references/activation-events>
+6. ESLint. _Shareable Configs._ <https://eslint.org/docs/latest/extend/shareable-configs>
+7. Obsidian. _Plugin Guidelines._ <https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines>

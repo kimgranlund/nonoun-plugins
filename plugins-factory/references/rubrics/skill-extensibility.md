@@ -6,19 +6,14 @@ version: "0.1.0"
 
 # Skill Extensibility — Best Practices Rubric
 
-**A skill is a living operating document, not a frozen prompt.** If a skill cannot absorb
-new evidence, repeated failures, better tools, new edge cases, and changed project constraints,
-it will drift out of alignment with the work it is supposed to govern. If it absorbs everything
-without discipline, it becomes a bloated junk drawer that weakens the agent that reads it.
+**A skill is a living operating document, not a frozen prompt.** If a skill cannot absorb new evidence, repeated failures, better tools, new edge cases, and changed project constraints, it will drift out of alignment with the work it is supposed to govern. If it absorbs everything without discipline, it becomes a bloated junk drawer that weakens the agent that reads it.
 
 Skill extensibility is the discipline of allowing skills to learn without losing shape.
 
-A good skill evolves in response to observed use. It promotes repeated procedures into mechanisms,
-moves cold-start noise into references, turns recurring mistakes into hard rules, adds evals for
-new failure modes, and retires instructions that no longer earn their context cost. The skill
-gets more capable over time without becoming larger in every invocation.
+A good skill evolves in response to observed use. It promotes repeated procedures into mechanisms, moves cold-start noise into references, turns recurring mistakes into hard rules, adds evals for new failure modes, and retires instructions that no longer earn their context cost. The skill gets more capable over time without becoming larger in every invocation.
 
 **Companion docs** (most live in the parent `skills-studio` library; only `skills-authoring.md` and `security-and-scope-containment.md` are bundled here):
+
 - `skills-authoring.md` — the anatomy of a well-formed skill
 - `harness-design.md` — what belongs in the harness vs. the skill
 - `progressive-context-construction.md` — how context grows only when task state requires it
@@ -34,19 +29,11 @@ gets more capable over time without becoming larger in every invocation.
 
 Most skill libraries fail in one of two ways.
 
-**Static decay**: the skill is written once and treated as complete. The environment changes,
-tools change, recurring agent failures appear, user expectations shift, but the skill does not
-adapt. Agents continue to follow stale instructions because the skill remains authoritative even
-after reality has moved on.
+**Static decay**: the skill is written once and treated as complete. The environment changes, tools change, recurring agent failures appear, user expectations shift, but the skill does not adapt. Agents continue to follow stale instructions because the skill remains authoritative even after reality has moved on.
 
-**Unbounded accumulation**: every new observation becomes another paragraph in `SKILL.md`.
-Every edge case becomes a new warning. Every failure becomes a new rule. Every tool becomes a
-new mode. The skill technically learns, but it learns by getting heavier. Eventually the agent
-loads too much context, sees too many rules at equal weight, and performs worse despite having
-more information.
+**Unbounded accumulation**: every new observation becomes another paragraph in `SKILL.md`. Every edge case becomes a new warning. Every failure becomes a new rule. Every tool becomes a new mode. The skill technically learns, but it learns by getting heavier. Eventually the agent loads too much context, sees too many rules at equal weight, and performs worse despite having more information.
 
-Skill extensibility solves the tension: skills must be able to change, but every change must
-have a destination, a promotion path, and a retirement path.
+Skill extensibility solves the tension: skills must be able to change, but every change must have a destination, a promotion path, and a retirement path.
 
 The extensible skill system answers six questions:
 
@@ -65,9 +52,7 @@ Without those answers, skill evolution becomes indistinguishable from context ac
 
 ### 1. Skills learn from observed use, not author intuition
 
-A skill should not grow because an author can imagine a future case. It should grow because the
-system has observed a repeated need, a real failure, a recurring ambiguity, or a measurable quality
-gap.
+A skill should not grow because an author can imagine a future case. It should grow because the system has observed a repeated need, a real failure, a recurring ambiguity, or a measurable quality gap.
 
 The primary inputs to skill evolution are:
 
@@ -82,8 +67,7 @@ The primary inputs to skill evolution are:
 - telemetry showing repeated patterns
 - changed project constraints
 
-Speculative additions are allowed only when clearly marked as experimental and kept out of
-cold-start context until proven useful.
+Speculative additions are allowed only when clearly marked as experimental and kept out of cold-start context until proven useful.
 
 ### 2. Extension requires placement discipline
 
@@ -92,7 +76,7 @@ Not every improvement belongs in `SKILL.md`.
 The extension target should match the function of the new knowledge:
 
 | New evidence | Proper destination |
-|---|---|
+| --- | --- |
 | A recurring activation ambiguity | skill description / trigger phrasing / routing eval |
 | A recurring hard failure | hard rule or failure-recovery reference |
 | A repeated deterministic procedure | script, hook, validator, or workflow |
@@ -103,14 +87,11 @@ The extension target should match the function of the new knowledge:
 | A task-specific lesson | local memory or project note |
 | A stale warning | delete or demote |
 
-The extensible skill does not ask "where can I paste this?" It asks "what is the narrowest durable
-home for this evidence?"
+The extensible skill does not ask "where can I paste this?" It asks "what is the narrowest durable home for this evidence?"
 
 ### 3. Cold-start context is protected real estate
 
-A skill can become more capable without making every invocation heavier. `SKILL.md` should remain
-the routing layer: posture, activation conditions, modes, load conditions, tool citations, and
-verification targets. Most new knowledge should land in deferred references, evals, or mechanisms.
+A skill can become more capable without making every invocation heavier. `SKILL.md` should remain the routing layer: posture, activation conditions, modes, load conditions, tool citations, and verification targets. Most new knowledge should land in deferred references, evals, or mechanisms.
 
 Cold-start additions require a higher bar:
 
@@ -134,16 +115,11 @@ Good extension:
 
 > "Before publishing, run `scripts/check-release-tag.mjs --strict --json`; do not continue if it exits non-zero."
 
-The first records a lesson. The second changes behavior. The best extensions either improve
-routing, reduce ambiguity, mechanize repeated work, strengthen verification, or prevent a known
-failure from recurring.
+The first records a lesson. The second changes behavior. The best extensions either improve routing, reduce ambiguity, mechanize repeated work, strengthen verification, or prevent a known failure from recurring.
 
 ### 5. Every extension has a regression surface
 
-Changing a skill is changing an operating system for agents. Even a small description edit can
-alter routing. A new hard rule can conflict with existing rules. A new mode can steal tasks from
-an older mode. A new reference can increase context load. A new script citation can fail in
-environments where the script is unavailable.
+Changing a skill is changing an operating system for agents. Even a small description edit can alter routing. A new hard rule can conflict with existing rules. A new mode can steal tasks from an older mode. A new reference can increase context load. A new script citation can fail in environments where the script is unavailable.
 
 Skill extension therefore requires regression thinking:
 
@@ -165,9 +141,7 @@ experimental → active → senior/load-bearing → deprecated → archived
 
 Each state has different extension rules.
 
-Experimental skills can change quickly. Active skills need targeted evals. Senior skills need
-regression gates before behavior changes. Deprecated skills should receive only critical fixes.
-Archived skills should not receive new behavior.
+Experimental skills can change quickly. Active skills need targeted evals. Senior skills need regression gates before behavior changes. Deprecated skills should receive only critical fixes. Archived skills should not receive new behavior.
 
 Without lifecycle states, every skill is treated as equally safe to mutate, which is false.
 
@@ -179,9 +153,7 @@ Skill extensibility is not "add more docs." It is a closed loop:
 observe → classify → place → verify → monitor → prune/promote/mechanize
 ```
 
-A failure observed but not classified remains anecdote. A classified failure not placed remains
-tribal knowledge. A placed update not verified is a hypothesis. A verified update not monitored
-may drift. A monitored pattern not pruned or promoted becomes bloat.
+A failure observed but not classified remains anecdote. A classified failure not placed remains tribal knowledge. A placed update not verified is a hypothesis. A verified update not monitored may drift. A monitored pattern not pruned or promoted becomes bloat.
 
 ---
 
@@ -192,7 +164,7 @@ may drift. A monitored pattern not pruned or promoted becomes bloat.
 Does the skill change in response to observed evidence, or in response to speculation?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Every meaningful skill change cites an evidence source: eval failure, repeated invocation pattern, incident, telemetry, user correction, or changed project constraint. Speculative additions are labeled experimental and excluded from cold-start context. |
 | **4 — Good** | Most changes are evidence-backed. Some author-judgment additions exist but are low-risk and reviewed later. |
 | **3 — Adequate** | Changes are usually sensible but not traceable to evidence. The skill improves, but the reason for each change is often implicit. |
@@ -208,7 +180,7 @@ Does the skill change in response to observed evidence, or in response to specul
 Does new knowledge land in the right layer?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | New information is routed to the narrowest correct destination: cold-start only for routing/safety, references for detailed knowledge, scripts/hooks/validators for deterministic procedures, evals for failure cases, harness for cross-cutting invariants. |
 | **4 — Good** | Most additions land correctly. Some content lives in `SKILL.md` that could be deferred, but not enough to degrade performance. |
 | **3 — Adequate** | Placement is inconsistent. Useful additions exist, but `SKILL.md` mixes routing, procedures, examples, and long explanations. |
@@ -224,7 +196,7 @@ Does new knowledge land in the right layer?
 Does the skill become more capable without increasing the context loaded on every invocation?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Cold-start surface remains stable over time. New capabilities are exposed through concise mode entries, load conditions, and tool citations. Context growth happens in references and mechanisms, not in the always-loaded surface. |
 | **4 — Good** | Cold-start grows slowly and intentionally. Additions are periodically audited and pruned. |
 | **3 — Adequate** | Cold-start grows with each release but remains usable. No formal budget, but no immediate bloat crisis. |
@@ -240,7 +212,7 @@ Does the skill become more capable without increasing the context loaded on ever
 Does each extension define what behavior should change?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Each extension states the intended behavioral delta: which tasks route differently, which procedure is replaced, which failure is prevented, which verification is added, or which action is now forbidden. |
 | **4 — Good** | Major extensions define behavioral deltas. Minor edits do not always document the expected behavior change. |
 | **3 — Adequate** | The intended behavior change can be inferred from the edit, but is rarely stated. |
@@ -256,7 +228,7 @@ Does each extension define what behavior should change?
 Are skill changes evaluated against old and adjacent behavior?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Skill changes run relevant routing and behavioral evals. Adjacent skills are checked for activation conflicts. Senior skills have regression floors. Rollback path is clear. |
 | **4 — Good** | Major changes run evals. Small edits are reviewed manually. Adjacent-skill conflict checks happen when routing language changes. |
 | **3 — Adequate** | Some eval coverage exists, but skill changes can still alter behavior without detection. |
@@ -272,7 +244,7 @@ Are skill changes evaluated against old and adjacent behavior?
 Does repeated skill behavior get promoted into mechanisms or higher-level rules when appropriate?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Repeated deterministic procedures are promoted into scripts/hooks/validators/workflows. Repeated cross-cutting failures are promoted to harness rules. Repeated routing failures become eval cases. Promotion thresholds are explicit. |
 | **4 — Good** | Common repeated procedures are mechanized. Promotion happens, but thresholds are partly informal. |
 | **3 — Adequate** | Some scripts and rules exist, but repeated procedures often remain as prose. |
@@ -288,7 +260,7 @@ Does repeated skill behavior get promoted into mechanisms or higher-level rules 
 Does the skill delete, demote, or archive stale knowledge?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Pruning is part of the lifecycle. Stale rules, dead examples, unused references, unused scripts, and obsolete modes are removed or archived. Deletions are treated as improvements, not loss. |
 | **4 — Good** | Periodic cleanup happens. Some stale material remains but does not mislead agents. |
 | **3 — Adequate** | Pruning occurs only when bloat becomes obvious. The skill remains mostly usable. |
@@ -304,7 +276,7 @@ Does the skill delete, demote, or archive stale knowledge?
 Is there an explicit process for proposing, reviewing, landing, and monitoring skill changes?
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Skill changes have a lightweight governance flow: proposal, evidence, placement decision, expected behavioral delta, eval/verification, release note, monitoring period. Senior skills require stronger review. |
 | **4 — Good** | Review and release notes exist for major skill changes. Minor changes may bypass formal review. |
 | **3 — Adequate** | Changes are reviewed by humans but without a consistent template. |
@@ -317,8 +289,7 @@ Is there an explicit process for proposing, reviewing, landing, and monitoring s
 
 ## §Extension Targets
 
-An extensible skill library needs clear destinations for learning. Without destinations, every
-lesson lands in the same place.
+An extensible skill library needs clear destinations for learning. Without destinations, every lesson lands in the same place.
 
 ### 1. `SKILL.md`
 
@@ -334,8 +305,7 @@ Use for content the agent needs at activation or mode selection time:
 - verification targets
 - stop conditions
 
-Do not use for long examples, long procedures, incident history, repeated deterministic steps, or
-full domain background.
+Do not use for long examples, long procedures, incident history, repeated deterministic steps, or full domain background.
 
 ### 2. `references/`
 
@@ -349,8 +319,7 @@ Use for deferred knowledge:
 - migration notes
 - edge-case catalogs
 
-Every reference needs a load condition. A reference without a load condition is an invitation to
-preemptive loading.
+Every reference needs a load condition. A reference without a load condition is an invitation to preemptive loading.
 
 ### 3. `scripts/`, hooks, validators, workflows
 
@@ -429,8 +398,7 @@ Capture evidence from actual use:
 - context bloat trace
 - failed verification
 
-Observation should be concrete. "The agent got confused" is not enough. Capture what it saw,
-what it did, what it should have done, and what would have prevented the failure.
+Observation should be concrete. "The agent got confused" is not enough. Capture what it saw, what it did, what it should have done, and what would have prevented the failure.
 
 ### Step 2 — Classify
 
@@ -481,8 +449,7 @@ The verification should test the intended behavioral delta, not just the syntax 
 
 ### Step 5 — Monitor
 
-Watch the next few invocations. Did the update actually change behavior? Did it introduce a new
-failure? Did it increase context load? Did agents use the new reference or mechanism?
+Watch the next few invocations. Did the update actually change behavior? Did it introduce a new failure? Did it increase context load? Did agents use the new reference or mechanism?
 
 ### Step 6 — Prune, promote, or mechanize
 
@@ -505,8 +472,7 @@ After enough use:
 
 **Root cause**: no placement model. Adding text feels safer than deciding where knowledge belongs.
 
-**Correction**: every addition must declare its destination type: routing, rule, reference, mechanism,
-eval, harness, or changelog. Append-only is not a valid destination.
+**Correction**: every addition must declare its destination type: routing, rule, reference, mechanism, eval, harness, or changelog. Append-only is not a valid destination.
 
 ---
 
@@ -516,8 +482,7 @@ eval, harness, or changelog. Append-only is not a valid destination.
 
 **Root cause**: treating every observed failure as generalizable.
 
-**Correction**: one-off failures usually become eval cases or reference notes first. Promote to hard
-rule only after repetition or high blast radius.
+**Correction**: one-off failures usually become eval cases or reference notes first. Promote to hard rule only after repetition or high blast radius.
 
 ---
 
@@ -527,8 +492,7 @@ rule only after repetition or high blast radius.
 
 **Root cause**: authoring from imagined taxonomy rather than observed use.
 
-**Correction**: mark speculative content as experimental and keep it out of cold-start. Promote only
-after observed invocation or eval evidence.
+**Correction**: mark speculative content as experimental and keep it out of cold-start. Promote only after observed invocation or eval evidence.
 
 ---
 
@@ -538,8 +502,7 @@ after observed invocation or eval evidence.
 
 **Root cause**: confusing capability with always-loaded context.
 
-**Correction**: protect cold-start. Add load conditions and deferred references. Promote repeated
-deterministic steps into mechanisms instead of prose.
+**Correction**: protect cold-start. Add load conditions and deferred references. Promote repeated deterministic steps into mechanisms instead of prose.
 
 ---
 
@@ -549,8 +512,7 @@ deterministic steps into mechanisms instead of prose.
 
 **Root cause**: treating the document edit as the fix.
 
-**Correction**: every serious failure creates an eval case first or alongside the doc change. If the
-failure can recur, it must be testable.
+**Correction**: every serious failure creates an eval case first or alongside the doc change. If the failure can recur, it must be testable.
 
 ---
 
@@ -560,8 +522,7 @@ failure can recur, it must be testable.
 
 **Root cause**: incident-driven additions without reconciliation.
 
-**Correction**: classify lessons by scope and precedence. If two rules conflict, define when each
-applies or delete one.
+**Correction**: classify lessons by scope and precedence. If two rules conflict, define when each applies or delete one.
 
 ---
 
@@ -571,20 +532,17 @@ applies or delete one.
 
 **Root cause**: writing instructions is easier than building a mechanism.
 
-**Correction**: apply the mechanization threshold. If the procedure is repeated, testable, and
-failure-prone, promote it out of prose.
+**Correction**: apply the mechanization threshold. If the procedure is repeated, testable, and failure-prone, promote it out of prose.
 
 ---
 
 ### AP-08 — Silent behavior changes
 
-**Symptom**: a skill description edit changes which tasks activate the skill, but no one notices
-until adjacent behavior breaks.
+**Symptom**: a skill description edit changes which tasks activate the skill, but no one notices until adjacent behavior breaks.
 
 **Root cause**: no routing eval or release note for skill behavior changes.
 
-**Correction**: treat activation language as executable behavior. Run routing evals on trigger,
-description, and mode-name changes.
+**Correction**: treat activation language as executable behavior. Run routing evals on trigger, description, and mode-name changes.
 
 ---
 
@@ -594,8 +552,7 @@ description, and mode-name changes.
 
 **Root cause**: fear of losing context.
 
-**Correction**: move history to changelog or references. `SKILL.md` is the operating surface, not
-the archive.
+**Correction**: move history to changelog or references. `SKILL.md` is the operating surface, not the archive.
 
 ---
 
@@ -605,48 +562,35 @@ the archive.
 
 **Root cause**: skill changes lack ownership and review.
 
-**Correction**: every non-trivial extension needs a short change record: evidence, destination,
-expected behavior, verification, owner.
+**Correction**: every non-trivial extension needs a short change record: evidence, destination, expected behavior, verification, owner.
 
 ---
 
 ## §Hard Tests
 
-1. **The evidence test**: Pick the last 10 skill changes. For each, identify the evidence that
-   justified it. If evidence is missing, classify the change as speculative.
+1. **The evidence test**: Pick the last 10 skill changes. For each, identify the evidence that justified it. If evidence is missing, classify the change as speculative.
 
-2. **The destination test**: For each new paragraph in `SKILL.md`, ask whether it should instead
-   be a reference, mechanism, eval, harness rule, or changelog entry.
+2. **The destination test**: For each new paragraph in `SKILL.md`, ask whether it should instead be a reference, mechanism, eval, harness rule, or changelog entry.
 
-3. **The cold-start delta test**: Compare cold-start token count before and after the last 5
-   skill releases. Capability should increase faster than cold-start size.
+3. **The cold-start delta test**: Compare cold-start token count before and after the last 5 skill releases. Capability should increase faster than cold-start size.
 
-4. **The behavior-delta test**: For each extension, state what a future agent should do differently.
-   If there is no behavioral delta, the addition may be documentation noise.
+4. **The behavior-delta test**: For each extension, state what a future agent should do differently. If there is no behavioral delta, the addition may be documentation noise.
 
-5. **The regression test**: Change a trigger phrase or mode name. Run routing evals. If there is
-   no routing eval, activation behavior is unprotected.
+5. **The regression test**: Change a trigger phrase or mode name. Run routing evals. If there is no routing eval, activation behavior is unprotected.
 
-6. **The incident-to-eval test**: Pick the last 3 serious skill failures. Does each have a
-   corresponding eval case? If not, the skill is learning by memory, not by regression protection.
+6. **The incident-to-eval test**: Pick the last 3 serious skill failures. Does each have a corresponding eval case? If not, the skill is learning by memory, not by regression protection.
 
-7. **The mechanization-candidate test**: Identify repeated procedures still described in prose.
-   Which meet the mechanization threshold?
+7. **The mechanization-candidate test**: Identify repeated procedures still described in prose. Which meet the mechanization threshold?
 
 8. **The stale-content test**: Find content not used in 90 days. Delete, archive, or justify it.
 
-9. **The conflict test**: Search for rules that use "always" and "never." Do any conflict with
-   later exceptions? If yes, rewrite with explicit scope.
+9. **The conflict test**: Search for rules that use "always" and "never." Do any conflict with later exceptions? If yes, rewrite with explicit scope.
 
-10. **The fresh-agent test**: Give the skill to a fresh agent. Does the agent understand activation,
-    mode selection, load conditions, and verification without reading the changelog or incident
-    history?
+10. **The fresh-agent test**: Give the skill to a fresh agent. Does the agent understand activation, mode selection, load conditions, and verification without reading the changelog or incident history?
 
-11. **The rollback test**: Revert the last extension. What behavior regresses? If the answer is
-    unclear, the extension's value was never specified.
+11. **The rollback test**: Revert the last extension. What behavior regresses? If the answer is unclear, the extension's value was never specified.
 
-12. **The bloat-accounting test**: For every 100 lines added to a skill, how many lines were deleted,
-    moved to references, or mechanized? If the answer is zero, the system is append-only.
+12. **The bloat-accounting test**: For every 100 lines added to a skill, how many lines were deleted, moved to references, or mechanized? If the answer is zero, the system is append-only.
 
 ---
 
@@ -697,15 +641,13 @@ If you are deciding how a skill should absorb a new lesson, repeated failure, ne
 new edge case, or changed project constraint → read skill-extensibility.md.
 ```
 
-Use this document when the question is not "how do I author a skill from scratch?" but
-"how should this existing skill change without becoming unstable or bloated?"
+Use this document when the question is not "how do I author a skill from scratch?" but "how should this existing skill change without becoming unstable or bloated?"
 
 ---
 
 ## §Summary
 
-Skill extensibility is not the ability to append more knowledge. It is the ability to adapt
-without degrading the operating surface.
+Skill extensibility is not the ability to append more knowledge. It is the ability to adapt without degrading the operating surface.
 
 ```txt
 Observed evidence becomes classified learning.
@@ -716,5 +658,4 @@ Cross-cutting invariant becomes harness.
 Stale or unused learning gets pruned.
 ```
 
-The skill improves when future agents behave better with less ambiguity, less repeated work,
-and no unnecessary increase in cold-start context.
+The skill improves when future agents behave better with less ambiguity, less repeated work, and no unnecessary increase in cold-start context.

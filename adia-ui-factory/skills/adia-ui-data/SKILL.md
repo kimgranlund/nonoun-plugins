@@ -29,10 +29,7 @@ Depth + code shapes: `${CLAUDE_PLUGIN_ROOT}/references/data-and-hydration.md`.
 
 ## Step 2 — pick the hydration path (by rendering mode)
 
-| Context | Hydration |
-| SPA static host | the surface **self-boots** — fetch in `connected()`, render its subtree (`#booted` guard) |
-| SSR framework | **server fetch → initial props → client refresh** (the framework fetches; props seed the components) |
-| **hybrid** (SPA island in an SSR page) | the server renders the page and passes **seed data as props/attributes**; the island **registers + boots on the client** and owns its own state + in-island routing (content-less `<router-ui>`). The framework owns the page; the island owns itself. |
+| Context | Hydration | | SPA static host | the surface **self-boots** — fetch in `connected()`, render its subtree (`#booted` guard) | | SSR framework | **server fetch → initial props → client refresh** (the framework fetches; props seed the components) | | **hybrid** (SPA island in an SSR page) | the server renders the page and passes **seed data as props/attributes**; the island **registers + boots on the client** and owns its own state + in-island routing (content-less `<router-ui>`). The framework owns the page; the island owns itself. |
 
 ## Section wiring & registration
 
@@ -61,5 +58,5 @@ A new data-flow or hydration pattern emerges (e.g. a new hybrid topology, a sync
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/data-and-hydration.md` — the patterns with code shapes, the three hydration paths (incl. the hybrid island), section registration, the attribution rule, and the router-ui query-param pattern. *Load when wiring data/state/hydration.*
+- `${CLAUDE_PLUGIN_ROOT}/references/data-and-hydration.md` — the patterns with code shapes, the three hydration paths (incl. the hybrid island), section registration, the attribution rule, and the router-ui query-param pattern. _Load when wiring data/state/hydration._
 - host wiring: `adia-ui-spa` / `adia-ui-ssr` · the UI: `adia-ui-compose` · project layout: `project-shapes.md`.

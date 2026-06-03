@@ -7,7 +7,7 @@
 
 - **Corpus distribution hygiene** — every bundled corpus now ships a per-layer `INDEX.md`; the plugin form takes `--version` (re-baking a corpus is a release — bump it); and `stamping.md` documents size-tiered retrieval (small inline / large indexed-MCP) and keeps the source-of-truth corpus in the consumer's version-controlled workspace, never in the plugin.
 
-- **Tool-scoped the council (security).** All 15 brand-council agents now declare a `tools:` allowlist — the 14 critics `Read, Grep, Glob`, the orchestrator `+ Task` — so a reviewer reading an untrusted brand artifact/corpus is *structurally* read-only, not merely instructed to be. Matches plugins-factory and closes the same trifecta-class gap brand-forge's own critics flag in others.
+- **Tool-scoped the council (security).** All 15 brand-council agents now declare a `tools:` allowlist — the 14 critics `Read, Grep, Glob`, the orchestrator `+ Task` — so a reviewer reading an untrusted brand artifact/corpus is _structurally_ read-only, not merely instructed to be. Matches plugins-factory and closes the same trifecta-class gap brand-forge's own critics flag in others.
 
 ## 0.1.0 — 2026-06-02
 

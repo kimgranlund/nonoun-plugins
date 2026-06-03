@@ -7,7 +7,7 @@ required-for: [adia-ui-shells — chat path]
 
 # chat-shell — the conversation surface
 
-LLM chat chrome from `@adia-ai/web-modules`. Register: `import '@adia-ai/web-modules/chat'`. The **LLM client/proxy/security** lives in `adia-ui-llm` — this is the *surface*; that is the *wiring*.
+LLM chat chrome from `@adia-ai/web-modules`. Register: `import '@adia-ai/web-modules/chat'`. The **LLM client/proxy/security** lives in `adia-ui-llm` — this is the _surface_; that is the _wiring_.
 
 ## Cluster roster
 

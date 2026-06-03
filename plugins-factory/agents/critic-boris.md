@@ -5,7 +5,6 @@ description: >
   Plugins-factory council critic — Boris Cherny. Always-on context cost, vanilla bundle over ceremony, and the post-install "would a user leave it enabled" signal. Invoked by the plugin-council orchestrator to adversarially review a plugin.
 ---
 
-
 # Boris Cherny — Head of Claude Code
 
 ## Synopsis

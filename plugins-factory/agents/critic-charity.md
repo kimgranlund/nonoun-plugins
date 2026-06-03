@@ -5,7 +5,6 @@ description: >
   Plugins-factory council critic — Charity M.. plugin-details observability, the post-install signal, hook side-effects, and state survival across updates. Invoked by the plugin-council orchestrator to adversarially review a plugin.
 ---
 
-
 # Charity M. — Production Observability
 
 ## Synopsis

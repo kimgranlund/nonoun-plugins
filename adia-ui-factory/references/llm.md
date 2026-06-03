@@ -1,6 +1,6 @@
 # LLM features with `@adia-ai/llm`
 
-Wiring chat / streaming / AI features into an app. This is **app-level LLM use** — distinct from *generating UI markup*, which is the a2ui MCP's `generate_ui` (see the boundary at the end). All of the below is from the framework's own `@adia-ai/llm` package.
+Wiring chat / streaming / AI features into an app. This is **app-level LLM use** — distinct from _generating UI markup_, which is the a2ui MCP's `generate_ui` (see the boundary at the end). All of the below is from the framework's own `@adia-ai/llm` package.
 
 > **Snapshot, not a spec.** The exact signatures, `StreamChunk` field names, and `<chat-shell-ui>` API below are verified against `@adia-ai/llm` **v0.7.8** (the pinned MCP's sibling). LLM client APIs drift fast — treat precise names as a starting point, confirm against the installed version, and lean on the **smart-proxy contract** (stable) rather than memorizing fields.
 
@@ -43,6 +43,7 @@ Anthropic, OpenAI, and Gemini, **auto-detected from the model name** (`claude*` 
   ```
 
   A reference server lives at `@adia-ai/llm`'s `server.js` (`POST /api/chat`).
+
 - **Passthrough proxy (LOCAL DEV ONLY):** a `proxyUrl` matching `/api/llm/<provider>/…` (e.g. a Vite dev proxy). The browser sends the real upstream body **and the real key in headers** — anyone with DevTools can read it. The package logs a loud one-time warning. **Never deploy this shape.**
 
 When authoring: default to the smart-proxy pattern; only use passthrough behind a Vite dev proxy, and say so explicitly.
@@ -69,8 +70,8 @@ Set `proxy-url` (or, dev-only, an `apiKey`) and it auto-sends on submit; otherwi
 
 Two separate paths — don't conflate them:
 
-- **`@adia-ai/llm`** — a generic chat/streaming client for *your app's* AI features (a chat box, a summarize button). Knows nothing about A2UI.
-- **a2ui MCP `generate_ui`** — turns an intent into A2UI component markup (retrieval-first, LLM fallback). Use it to *build UI*, then `validate_schema` / `check_anti_patterns` (see `a2ui-mcp-tools.md`).
+- **`@adia-ai/llm`** — a generic chat/streaming client for _your app's_ AI features (a chat box, a summarize button). Knows nothing about A2UI.
+- **a2ui MCP `generate_ui`** — turns an intent into A2UI component markup (retrieval-first, LLM fallback). Use it to _build UI_, then `validate_schema` / `check_anti_patterns` (see `a2ui-mcp-tools.md`).
 - The bridge (`createAdapter` from `@adia-ai/llm/bridge`) is what the A2UI generation pipeline uses internally to call an LLM for that fallback — you rarely call it directly.
 
 ## Not in the package (don't assume)

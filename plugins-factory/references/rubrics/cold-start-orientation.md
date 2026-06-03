@@ -11,6 +11,7 @@ version: "0.1.0"
 **Grounding:** The CS evaluator topical section (CS1–CS5 in `eval-prompts.md`) operationalizes this rubric as adversarial prompts. The CS2 gate ("Quick Start present with all three elements") is the mechanically-checkable floor; the dimensions below score the quality above that floor. The fresh-context test (V2 in `eval-prompts.md`) and the bypass test (D2 in `skills-authoring.md`) address related but distinct properties.
 
 **Companion docs:**
+
 - `rubric-foundations.md` (in `skills-studio` — not bundled here) — what rubrics are and why they structure judgment
 - `skills-authoring.md` (in `skills-studio` — not bundled here) — D1 description quality, D2 discoverability
 - `harness-design.md` (in `skills-studio` — not bundled here) — D1 structural clarity, D4 skill surfacing
@@ -64,7 +65,7 @@ Does a `## Quick Start` section (or equivalent orientation block by any name) ex
 The section must contain all three: (a) at least one worked example prompt showing what a user would actually type, (b) what to provide/bring (2–4 bullet points), and (c) a mode table or equivalent path-selection guide.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Quick Start present within 50 lines. All three elements present. Example is specific and realistic (not a placeholder like "use [skill] for your goal"). Mode table maps user situations to mode names in one clause per row. |
 | **4 — Good** | Quick Start present. All three elements present but one is thin (e.g., mode table has vague trigger conditions, or example uses a generic scenario). |
 | **3 — Adequate** | Quick Start present but missing one of the three elements (example, bring list, or mode table). |
@@ -82,7 +83,7 @@ Can a user answer "use [skill-name]" helpfully from the first visible screen (li
 "Helpfully" means: the agent responding can name what to provide, offer a first clarifying question or first step, and set expectations for the output shape.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Lines 1–40 contain enough to respond to "use [skill]" without scrolling: the Quick Start example anchors the task, the bring list names inputs, the mode table routes the user. An agent reading only the first screen responds usefully. |
 | **4 — Good** | First screen enables a useful but incomplete response — the agent can explain what the skill does and ask a clarifying question but cannot set full output expectations. |
 | **3 — Adequate** | First screen enables the agent to confirm the skill is the right one but not to specify what the user should provide or what they'll receive. |
@@ -100,7 +101,7 @@ Is at least one worked example embedded in SKILL.md itself — not delegated to 
 An embedded example shows: a specific user prompt (what they typed), the topology/mode selected, and the output shape (what they received). A reference to a worked example ("see `references/examples/example-a.md` for a worked example") does not pass this gate.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | At least one fully worked example embedded in SKILL.md. The example is specific: a real user prompt (not "example goal"), a selected mode/topology, and a description of the output received. |
 | **4 — Good** | An embedded example exists but is partial — the prompt is specific but the output is described abstractly, or the example lacks the mode/topology selection. |
 | **3 — Adequate** | A brief inline example exists (a one-line prompt with no output description) or a partial walkthrough. |
@@ -118,7 +119,7 @@ Is the worked example realistic and specific enough to work with — or is it a 
 A specific example names a real domain, a real constraint, and a real success criterion. A generic example ("use [skill] to achieve [goal]") teaches nothing about what the skill handles.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Example prompt names a real domain ("our OAuth auth migration," "a read-only document search MCP"), real constraints ("all existing tests must stay green," "agent must never write"), and a clear success criterion. Output description matches the skill's actual artifact shape. |
 | **4 — Good** | Example has a specific domain but a generic constraint or success criterion. Output description is accurate but not tied to the specific example. |
 | **3 — Adequate** | Example has a real domain but uses placeholder language for constraints ("some task," "relevant criteria"). Output description is abstract. |
@@ -136,7 +137,7 @@ For each key concept that appears in the Quick Start or first screen (e.g., "blu
 Count the undefined concepts in the first screen.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Every concept introduced in the Quick Start or first screen has an inline definition at its first appearance. No concept is used before it is defined. |
 | **4 — Good** | 0–1 undefined concepts in the first screen. The undefined concept is a general term a technically literate reader would know. |
 | **3 — Adequate** | 2–3 undefined concepts — the user encounters specialized vocabulary they cannot look up without loading a reference file. |
@@ -154,7 +155,7 @@ Can a user identify which mode applies to their situation after one read of the 
 Each mode table row should have: the mode name, a one-clause trigger condition, and (optionally) what it produces. "PLAN — select and wire a loop" is a name and a verb phrase; it's adequate. "PLAN — you have a goal and want the right topology selected and a blueprint emitted" is a trigger condition; it's excellent.
 
 | Score | Evidence |
-|---|---|
+| --- | --- |
 | **5 — Excellent** | Mode table maps user situations to modes in one clause per row (e.g., "You have a goal; want the topology selected → PLAN"). A user can self-classify without reading further. Mode names are distinctive — no two are synonymous. |
 | **4 — Good** | Mode table exists. Most rows have clear trigger conditions. 1 row uses abstract language ("advanced use") that requires reading further. |
 | **3 — Adequate** | Mode table exists but trigger conditions are verb-only ("select," "compose," "evaluate") — the user knows what the mode does but not when to use it. |
@@ -168,24 +169,20 @@ Each mode table row should have: the mode name, a one-clause trigger condition, 
 ## §Anti-Patterns
 
 ### AP-CO-1 — The reference-delegated example
-**Symptom:** SKILL.md references a worked example in `references/examples/` or a link to another file. The agent following the skill loads it on demand — but a first-time user arriving at the skill for orientation cannot see it.
-**Root cause:** The SKILL.md was written for load-on-demand reference use, not cold-start orientation.
-**Correction:** Embed a brief but complete example directly in the Quick Start (3–5 lines showing prompt → selected path → output shape). The external worked example can stay; the Quick Start example is additional, not a replacement.
+
+**Symptom:** SKILL.md references a worked example in `references/examples/` or a link to another file. The agent following the skill loads it on demand — but a first-time user arriving at the skill for orientation cannot see it. **Root cause:** The SKILL.md was written for load-on-demand reference use, not cold-start orientation. **Correction:** Embed a brief but complete example directly in the Quick Start (3–5 lines showing prompt → selected path → output shape). The external worked example can stay; the Quick Start example is additional, not a replacement.
 
 ### AP-CO-2 — The mode menu without trigger conditions
-**Symptom:** The mode table lists mode names with action verbs ("Select," "Compose," "Evaluate") but no user-situation trigger conditions. The user knows what each mode does but not which one applies.
-**Root cause:** Mode descriptions were written from the agent's perspective ("this mode selects") rather than the user's ("use this mode when you have X").
-**Correction:** Rewrite each mode table row as a trigger condition: "You have [situation] → [Mode]."
+
+**Symptom:** The mode table lists mode names with action verbs ("Select," "Compose," "Evaluate") but no user-situation trigger conditions. The user knows what each mode does but not which one applies. **Root cause:** Mode descriptions were written from the agent's perspective ("this mode selects") rather than the user's ("use this mode when you have X"). **Correction:** Rewrite each mode table row as a trigger condition: "You have [situation] → [Mode]."
 
 ### AP-CO-3 — The vocabulary barrier at entry
-**Symptom:** The Quick Start introduces specialized terms ("blueprint," "selection eval," "[gate]/[review]") without definition. These terms are defined in reference files the user hasn't loaded yet.
-**Root cause:** Authors write for readers who already know the skill; the Quick Start inherits that vocabulary.
-**Correction:** Add a one-sentence inline definition at each term's first appearance in the first 50 lines: "`[gate]` = mechanically checkable (pass/fail by inspection); `[review]` = requires expert judgment (scored 1–5 with evidence)."
+
+**Symptom:** The Quick Start introduces specialized terms ("blueprint," "selection eval," "[gate]/[review]") without definition. These terms are defined in reference files the user hasn't loaded yet. **Root cause:** Authors write for readers who already know the skill; the Quick Start inherits that vocabulary. **Correction:** Add a one-sentence inline definition at each term's first appearance in the first 50 lines: "`[gate]` = mechanically checkable (pass/fail by inspection); `[review]` = requires expert judgment (scored 1–5 with evidence)."
 
 ### AP-CO-4 — The generic worked example
-**Symptom:** The worked example uses placeholder language: "use [skill] to achieve [goal]." It demonstrates format but not substance.
-**Root cause:** Authors template-out the example to keep it broadly applicable, producing something that is technically correct but operationally useless.
-**Correction:** Replace with a real domain, real constraint, and real success criterion. The example should be narrow enough to be specific and broad enough to generalize.
+
+**Symptom:** The worked example uses placeholder language: "use [skill] to achieve [goal]." It demonstrates format but not substance. **Root cause:** Authors template-out the example to keep it broadly applicable, producing something that is technically correct but operationally useless. **Correction:** Replace with a real domain, real constraint, and real success criterion. The example should be narrow enough to be specific and broad enough to generalize.
 
 ---
 

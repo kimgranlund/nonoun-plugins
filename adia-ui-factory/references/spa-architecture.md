@@ -94,7 +94,7 @@ DataClient.read({ type: 'LabRecommendationSet', params })   ← the only surface
       → CorpusLoader.load*()                                 ← fetches the source data
 ```
 
-- Components consume **projections only** — no backend calls, no re-deriving projections in the view, no per-view reshaping (the projection type *is* the contract).
+- Components consume **projections only** — no backend calls, no re-deriving projections in the view, no per-view reshaping (the projection type _is_ the contract).
 - **Attribution is structural:** every `mutate` requires an `action_source`; the client throws without it.
 
   ```js
@@ -113,4 +113,4 @@ A control mutates the route; an observer or CSS reflects the route **into** the 
 
 ## Exit gate
 
-A surface isn't done when it compiles — it's done when it passes the **browser gate** (zero console errors on load, non-zero bounding boxes, and you've *read* the screenshot) plus the a11y and git checks. That gate is the `adia-ui-verify` skill. Re-baseline git at the start of every turn, stage explicit allowlists (never `git add -A` on a shared clone), and confirm the branch before committing.
+A surface isn't done when it compiles — it's done when it passes the **browser gate** (zero console errors on load, non-zero bounding boxes, and you've _read_ the screenshot) plus the a11y and git checks. That gate is the `adia-ui-verify` skill. Re-baseline git at the start of every turn, stage explicit allowlists (never `git add -A` on a shared clone), and confirm the branch before committing.

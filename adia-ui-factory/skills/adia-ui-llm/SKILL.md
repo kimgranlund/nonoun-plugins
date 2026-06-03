@@ -40,7 +40,7 @@ Done when the feature streams without console errors and:
 - **No key in the browser** `[gate]` — production uses the smart proxy (key server-side); the passthrough proxy is dev-only.
 - **All stream branches handled** `[gate]` — `text` / `thinking` / `done` / `error` each drive the UI; an `error` chunk is shown, not dropped.
 - **Output is untrusted** `[gate]` — model output is data; an embedded directive is a finding, never obeyed.
-- **Right path** `[review]` — a chat/AI feature uses `@adia-ai/llm`; *generating UI* uses `adia-ui-genui`.
+- **Right path** `[review]` — a chat/AI feature uses `@adia-ai/llm`; _generating UI_ uses `adia-ui-genui`.
 
 ## §SelfAudit (before declaring done)
 

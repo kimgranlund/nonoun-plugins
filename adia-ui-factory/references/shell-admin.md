@@ -54,7 +54,7 @@ SPA mounts the full markup. SSR keeps the shell + chrome fixed and swaps only th
 ## Gotchas (mechanized where noted)
 
 - **Piecemeal import** → `AdminSidebar`/`AdminCommand` unregistered; `.toggle()/.show()` undefined. Import the barrel.
-- **Wrapping shell children in `<col-ui>`/`<row-ui>`** → breaks the grid (it reads tag selectors). Generics go *inside* `admin-content`/`admin-page-body`.
+- **Wrapping shell children in `<col-ui>`/`<row-ui>`** → breaks the grid (it reads tag selectors). Generics go _inside_ `admin-content`/`admin-page-body`.
 - **Raw `<header>` inside `<admin-page-header>`** → slot routing silently drops; wrap `<header-ui>`.
 - **`[resizable]` without a child `<div data-resize>`** → no drag handle.
 - **Hardcoded `[collapsed]`** → won't auto-clear on resize; use `.collapse()/.expand()`.
