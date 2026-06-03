@@ -4,7 +4,9 @@
 SCOPE (be honest): pattern-matchable STRUCTURAL smells in component/page source — shadow-DOM use,
 raw colors, raw px ≥ 3, the dead `--a-font` token, ::slotted, width on :scope, the SSR context traps
 (top-level kit import + double route-owner — detected only in files carrying a framework signal, so a
-bare registration module won't trip it), and hardcoded overlay `open`. Foundation/token sheets (under a
+bare registration module won't trip it), hardcoded overlay `open`, native-primitive leaks (raw
+`<button>`/`<input>` where a `*-ui` exists), and retired shell shapes (the ADR-0024 data-attribute
+forms). Foundation/token sheets (under a
 styles/ or tokens/ dir, named tokens/theme/host/palette/…, or marked `/* adia-lint: foundation */`) are
 exempt from the color/px checks. It does NOT judge whether the UI is good, on-spec, or accessible — that
 lives in the skills (adia-ui-compose / -spa / -ssr / -verify) and the a2ui MCP's check_anti_patterns.
@@ -41,6 +43,10 @@ SCOPE_EXTENT = re.compile(
 BOOL_TRUE = re.compile(r"\bdefault:\s*true\b")
 ATTR_TYPO = re.compile(r"\battr:\s*['\"]")
 OVERLAY_OPEN = re.compile(r"<(?:modal|drawer)-ui\b[^>]*?(?<![:.\w])\bopen\b(?!\s*=\s*\{)")
+NATIVE_PRIMITIVE = re.compile(r"<(?:button|input|select|textarea|dialog)(?![\w-])")  # raw native, not a *-ui
+LEGACY_SHELL = re.compile(
+    r"data-chat-(?:messages|input|empty|name)|data-editor-body|data-canvas\b|data-sidebar="
+    r"|data-pane-(?:side|grow)|<aside-ui\b|<dialog\s+data-command")  # retired shell shapes (ADR-0024)
 TOPLEVEL_IMPORT = re.compile(r"""^\s*import\s+['"]@adia-ai/web-components['"]\s*;?\s*$""")
 PX_GE = re.compile(r"(?<![\w.-])(\d+)px\b")   # integer px values; fractional (1.5px) deliberately not matched
 FOUNDATION_OPT_IN = re.compile(r"adia-lint:\s*foundation", re.I)
@@ -119,6 +125,13 @@ def lint_text(text, path=""):
         if ext in MARKUP_EXT and OVERLAY_OPEN.search(line):
             findings.append(("HARDCODED-OPEN", i, s,
                              "drive overlays via the .open property, not a hardcoded `open` attribute (it bricks the page)"))
+        if (ext in MARKUP_EXT and "slot=" not in line and not s.startswith(("<!--", "//", "*", "/*"))
+                and NATIVE_PRIMITIVE.search(line)):
+            findings.append(("NATIVE-PRIMITIVE", i, s,
+                             "use the *-ui primitive (button-ui / input-ui / select-ui / textarea-ui / modal-ui) — raw natives skip focus rings, theming, and form association; a deliberate slotted trigger (with slot=) is the exception"))
+        if LEGACY_SHELL.search(line):
+            findings.append(("LEGACY-SHELL", i, s,
+                             "retired shell shape (ADR-0024, v0.4.0) — use the bespoke tag (chat-thread / chat-composer / chat-empty · admin-sidebar / admin-command · editor-canvas · pane-ui)"))
 
     if ext in STYLE_EXT:
         for m in SCOPE_EXTENT.finditer(text):
@@ -193,6 +206,12 @@ def _selftest():
          "import { UIElement } from '@adia-ai/web-components/core/element.js';\n"
          "class UIX extends UIElement { connected() { this.innerHTML = '<col-ui></col-ui>'; } }",
          set()),
+        ("markup/natives.html",
+         "<col-ui>\n  <button>Save</button>\n  <input type=\"text\">\n  <button-ui slot=\"trigger\">ok</button-ui>\n</col-ui>",
+         {"NATIVE-PRIMITIVE"}),
+        ("markup/legacy.html",
+         "<chat-shell>\n  <section data-chat-messages></section>\n  <chat-input-ui data-chat-input></chat-input-ui>\n</chat-shell>",
+         {"LEGACY-SHELL"}),
     ]
     ok = True
     for name, text, expected in cases:
