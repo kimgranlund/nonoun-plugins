@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — 0.2.0 (in progress)
+
+Re-carve to manage real adia-ui project types (see `reviews/2026-06-03-v0.2-recarve.md`), with every skill authored to plugins-factory's v0.2 hardened skill-architecture standard — rubrics/gates over prose.
+
+- **Phase 1a** — rebuilt the `adia-ui-factory` orchestrator to the hardened standard: four cited-signal classifiers (rendering mode incl. **hybrid** · project shape · shell · task), an **Orientation Record** verify target with a `[gate]` rubric (route only on evidence, never a guess), §SelfAudit, §Teach, and a load-when references manifest. Added `references/project-shapes.md` (the shapes · four-axis · page-trio/DUO + an embedded structure rubric `[gate]`). The routing table targets the full 11-skill roster (`project` · `shells` · `data` · `genui` · `migrate` marked *building*).
+
 ## 0.1.0 — 2026-06-03
 
 First release. An authoring plugin for the adia-ui (`@adia-ai`) light-DOM web-component framework, covering both SPA and SSR rendering modes. Ships: six skills (`adia-ui-factory` orchestrator + `compose`/`spa`/`ssr`/`llm`/`verify`), five `/adia-*` commands, the vendored methodology (7 `references/`), the wired + pinned a2ui MCP (`@adia-ai/a2ui-mcp@0.7.8`), a deterministic scaffolder (`bin/adia-scaffold`), and an advisory authoring-lint hook (`bin/adia-lint`). Authored **and red-teamed** via plugins-factory.
