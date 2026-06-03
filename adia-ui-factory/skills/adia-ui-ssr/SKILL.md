@@ -29,6 +29,18 @@ Full depth: **`${CLAUDE_PLUGIN_ROOT}/references/ssr-integration.md`** (it labels
 - **State out of signals** — anything that must survive a navigation lives in cookies/session.
 - **Properties, not attributes**, for non-string data.
 
+## Verify target
+
+Done when the app **renders client-side** (`adia-ui-verify`) with zero console errors — components upgrade after the client-boundary import, the framework router (not `<router-ui>`) drives navigation, server data appears via initial props, and non-string props are set as properties. A server render that throws `HTMLElement is not defined`, or a double route owner, is an automatic fail.
+
+## §SelfAudit (before declaring done)
+
+Registration deferred to a client hook (no top-level kit import on the server); the framework owns routing (no `<router-ui>`); cross-cutting state in cookies/session, not signals; non-string data set as properties. **Not done** if a top-level import throws on the server, `<router-ui>` co-exists with the framework router, or shell state lives in component-lifetime signals.
+
+## Data, state & hybrid
+
+Server fetch → props is the SSR seam; the **shared data-flow + hydration patterns** (DataClient/projection, property-API, the attribution `[gate]`, signals) live in `adia-ui-data`. Mounting a **client-only SPA island** inside an SSR page — a self-contained surface with its own state + in-island `<router-ui>` — is the **hybrid** topology, and `adia-ui-data` owns its boundary rules.
+
 ## Honesty about coverage
 
 The framework **documents** Next / Nuxt / SvelteKit / Astro patterns — follow them. For frameworks it only names in its routing table (Remix, Rails/Turbo, Django/HTMX, Phoenix), the **rules hold** (one route owner; client-only registration) but the wiring is that stack's standard pattern, not kit-shipped — say so, don't fabricate. A few things (Astro reactive binding, non-Vite icon loaders, the React-≤18 ref wrapper) are genuinely undocumented; reason from framework conventions and check `mcp__a2ui__search_chunks`.

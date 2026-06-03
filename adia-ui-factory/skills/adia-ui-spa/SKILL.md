@@ -33,6 +33,18 @@ Full depth: **`${CLAUDE_PLUGIN_ROOT}/references/spa-architecture.md`**. Compose 
 - **Single-owner state** — no shadow copies; the route is the source of truth for the active view.
 - **Guards** — `defineIfFree` for define, a `#booted` flag for boot (the callback re-fires on DOM moves).
 
+## Verify target
+
+Done when the surface **renders in the browser** (`adia-ui-verify`) with zero console errors and non-zero bounding boxes, the host links + registration are correct (primitives styled, elements upgraded), and a state change round-trips. "Compiles" / "tests pass" is not the gate.
+
+## §SelfAudit (before declaring done)
+
+Both `host.css` + `styles/index.css` linked; one registration script; routing content-less; state single-owner; every mutation carries `action_source`; define + boot guards present. **Not done** if primitives render unstyled (missing barrel), a view re-`innerHTML`s on switch, or state has a shadow copy.
+
+## Data, state & hybrid
+
+This skill wires the SPA **host**; the **data-flow, hydration, and section-wiring patterns are shared** → `adia-ui-data` (DataClient/projection, signals, property-API, the attribution `[gate]`). A SPA surface can also run as an **island inside an SSR page** — `adia-ui-data` owns that hybrid boundary.
+
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/spa-architecture.md` — host doc, four-axis, page-trio, router, data-flow, state, git.
