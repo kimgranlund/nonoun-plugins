@@ -4,6 +4,7 @@ description: >
   Verify an adia-ui app — the browser-QA gate (zero console errors, non-zero bounding boxes, read
   the screenshot), accessibility (region roles, keyboard, AA contrast), and git coordination
   discipline. Use before shipping a surface, in either rendering mode.
+version: 0.2.0
 ---
 
 # adia-ui-verify — the exit gate
@@ -22,7 +23,20 @@ The check every surface passes before it ships. **Mode-independent.** Full depth
 
 **"Tests pass, ship it" is the anti-pattern.** Unit tests are necessary, not sufficient — the browser gate is what catches the 0×0 host, the clipped content, and the console error that no unit test sees. If you haven't rendered it and read the screenshot, it isn't verified.
 
-The advisory `adia-lint` hook catches *structural* smells on write (shadow DOM, raw colors, `::slotted`, SSR traps); it is not a substitute for this gate, and it never blocks.
+The advisory `adia-lint` hook catches *structural* smells on write (shadow DOM, raw color/px, `::slotted`, native-primitive leaks, legacy shell shapes, SSR traps); the framework's `audit:shell-composition` / `audit:native-primitive-leak` are the mechanized layer of the rubric below. None replaces the browser render, and the hook never blocks.
+
+## Verify rubric `[gate]`
+
+A surface ships only when all pass:
+- **Renders** `[gate]` — loads with zero `console.error`/`pageerror`; key elements have non-zero bounding boxes.
+- **Screenshot read** `[gate]` — you looked at the `deviceScaleFactor: 2` capture (DOM-present-but-clipped shows only in pixels).
+- **Accessible** `[gate]` — region role + label; a keyboard path per interaction; AA contrast; overlays via `.open`.
+- **Structurally clean** `[gate]` — `adia-lint` reports no smells; the framework `audit:shell-composition` / `audit:native-primitive-leak` pass.
+- **Git-clean** `[review]` — re-baselined; explicit allowlist; right branch.
+
+## §SelfAudit (before declaring done)
+
+Rendered in a real browser (zero console errors, non-zero boxes, screenshot **read**); a11y checked; `adia-lint` + `audit:*` clean; git re-baselined on the correct branch. **Not done** if "tests pass" stood in for a render, the screenshot wasn't read, or structural smells remain.
 
 ## Reference
 
