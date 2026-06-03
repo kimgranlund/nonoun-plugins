@@ -50,7 +50,7 @@ A2UI is a message union (`createSurface` · `updateComponents` · `updateDataMod
 ## Verify target — the gen-UI rubric `[gate]`
 
 A gen-UI surface is done when it **renders in `<a2ui-root>` with zero console errors** and:
-- **Validated before render** `[gate]` — `validate_schema` + `check_anti_patterns` pass on the A2UI before it reaches a root.
+- **Validated before render** `[gate]` — `validate_schema` + `check_anti_patterns` pass on the A2UI before it reaches a root. *(Self-verified: no shipped check observes whether you validated before `root.doc =` — the discipline is yours.)*
 - **Resolvers registered** `[gate]` — every `resource:`/`api:` scheme the UI references has a `registerResolver`, registered before render.
 - **One root per surface** `[gate]` — a single render root owns a surface; no competing roots.
 - **Grounded corpus** `[review]` — retrieved chunks trace to real pages (for a custom corpus).

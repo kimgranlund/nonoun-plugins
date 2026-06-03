@@ -62,16 +62,16 @@ All shapes use the **four-axis layout** (`spec/ plan/ app/ skills/`) and the **p
 
 | Task | Skill |
 |---|---|
-| lay out / scaffold an app or surface | `adia-ui-project` *(v0.2 — building)* |
+| lay out / scaffold an app or surface | `adia-ui-project` |
 | build a screen · author a component · theme | `adia-ui-compose` |
-| pick / wire a shell | `adia-ui-shells` *(v0.2 — building)* |
+| pick / wire a shell | `adia-ui-shells` |
 | architect the host (SPA) | `adia-ui-spa` |
 | integrate under a framework (SSR) | `adia-ui-ssr` |
-| hydration · fetch/CRUD · state · section wiring · hybrid | `adia-ui-data` *(v0.2 — building)* |
+| hydration · fetch/CRUD · state · section wiring · hybrid | `adia-ui-data` |
 | chat / streaming / `@adia-ai/llm` | `adia-ui-llm` |
-| generative-UI experience (a2ui runtime + corpus) | `adia-ui-genui` *(v0.2 — building)* |
+| generative-UI experience (a2ui runtime + corpus) | `adia-ui-genui` |
 | QA / a11y / ship | `adia-ui-verify` |
-| upgrade / port / mode-change | `adia-ui-migrate` *(v0.2 — building)* |
+| upgrade / port / mode-change | `adia-ui-migrate` |
 
 ## The Orientation Record — the verify target
 

@@ -28,6 +28,7 @@ This plugin wires `@adia-ai/a2ui-mcp` (declared in `.mcp.json`, run via `npx`). 
 
 **Generate** (host LLM in stdio):
 - `generate_ui` — produce A2UI/markup for a described surface.
+- `refine_ui` — iterate on a generated surface (multi-turn refinement; carry a `sessionId`).
 - `plan_app_state` — plan an app's state shape.
 
 **Validate** (offline):

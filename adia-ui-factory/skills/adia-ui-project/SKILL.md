@@ -43,7 +43,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/bin/adia-scaffold" page <name> -o <surface-dir> [
 python3 "${CLAUDE_PLUGIN_ROOT}/bin/adia-scaffold" component <tag> -o <dir>
 ```
 
-The bin emits the byte-stable layout (four-axis dirs, the cascade-ordered host, the page-trio loader, the two-block `@scope` component) so the structure never drifts. Compose the real content afterward with `adia-ui-compose`.
+The bin emits the byte-stable pieces — the **single-surface** host (SPA/SSR) + four-axis dirs, plus page-trio/DUO and components — so those never drift. **Rollup and shared-foundation** shapes don't have a one-shot bin mode yet: compose them by applying these primitives per `project-shapes.md` (each sub-page via `page`, each surface under `app/<name>/`). Compose the real content afterward with `adia-ui-compose`.
 
 ## The page-trio vs page-DUO gate
 

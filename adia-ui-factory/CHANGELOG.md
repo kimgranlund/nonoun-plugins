@@ -1,9 +1,20 @@
 # Changelog
 
-## Unreleased — 0.2.0 (in progress)
+## 0.2.0 — 2026-06-03
 
-Re-carve to manage real adia-ui project types (see `reviews/2026-06-03-v0.2-recarve.md`), with every skill authored to plugins-factory's v0.2 hardened skill-architecture standard — rubrics/gates over prose.
+The v0.2 re-carve: from 6 skills to **11**, each rebuilt to plugins-factory's hardened skill-architecture standard (cold-start surface · modes · per-mode verify target · a `[gate]` rubric · §SelfAudit · load-on-demand references), now covering the full consumer authoring lifecycle for adia-ui apps. See `reviews/2026-06-03-v0.2-recarve.md`.
 
+**New skills:** `adia-ui-project` (project shapes · four-axis · page-trio/DUO), `adia-ui-shells` (admin/chat/editor/simple + the forthcoming embed), `adia-ui-data` (hydration · fetch/CRUD · section wiring · hybrid SPA-in-SSR), `adia-ui-genui` (the a2ui generative-UI loop + corpus), `adia-ui-migrate` (version-upgrade / port sweep discipline). **Hardened:** the orchestrator + compose/spa/ssr/llm/verify. **Tooling:** `bin/adia-scaffold` gains `page`/`component`; `bin/adia-lint` gains `RAW-PX` + `NATIVE-PRIMITIVE` + `LEGACY-SHELL`. **16 references** + two new commands (`/adia-migrate`, `/adia-genui`).
+
+### Red-team (plugins-factory 9-critic council) — fixes folded
+No runtime Critical (trust boundary universal across all 11 skills, MCP pinned, hook never-blocks, no agent-trifecta). Folded:
+- **Cut 0.2.0** (8/9 critics; 2 flagged the drift Critical): bumped `plugin.json` 0.1.0→0.2.0, added the 2 missing skill `version`s (spa/ssr), rewrote the README to the 11-skill shape, dated this entry.
+- **Commands ↔ skills** (Steve/Charity): fixed the dangling "Step 0" reference in 3 commands; repointed `/adia-scaffold`→`adia-ui-project` and `/adia-wire`→`adia-ui-data`; added `/adia-migrate` + `/adia-genui`; documented the curated spine.
+- **`[gate]` honesty** (Karpathy/Charity): corrected the false "framework `audit:*` is the mechanized layer" claim (those run in the app repo, not here) and marked the render / validate-before-render / a11y gates as **self-verified**, distinct from the `adia-lint`-mechanized ones.
+- **MCP ledger** (Huyen): added `refine_ui` to `a2ui-mcp-tools.md`; **shell-ref links** made reference-lint-guardable; **scaffolder claim** (Elon): the project skill no longer implies the bin one-shots rollup/shared-foundation.
+- **Accepted tension** (Elon vs Steve/Boris/Huyen): keep 11 skills (the signed-off carve); the genui↔llm and migrate↔verify merges were weighed and declined — the boundaries are clean (Huyen verified) and comprehensiveness was the chosen trade.
+
+### Build (phases 1a–5)
 - **Phase 1a** — rebuilt the `adia-ui-factory` orchestrator to the hardened standard: four cited-signal classifiers (rendering mode incl. **hybrid** · project shape · shell · task), an **Orientation Record** verify target with a `[gate]` rubric (route only on evidence, never a guess), §SelfAudit, §Teach, and a load-when references manifest. Added `references/project-shapes.md` (the shapes · four-axis · page-trio/DUO + an embedded structure rubric `[gate]`). The routing table targets the full 11-skill roster (`project` · `shells` · `data` · `genui` · `migrate` marked *building*).
 - **Phase 1b** — added the `adia-ui-project` skill (modes: new-app · add-surface · add-page · add-component · inventory; the page-trio/DUO choice as a `[gate]`; the `project-shapes.md` structure rubric as the verify target; the layout **mechanized** by the scaffolder, not hand-rolled). Extended `bin/adia-scaffold` with `page` (trio default, `--duo` for declarative) and `component` sub-commands — both emit lint-clean output and are covered by the scaffolder selftest.
 - **Phase 2 — shells.** Added the `adia-ui-shells` skill (one skill: a shell-selection decision table · the shared conventions · a shell-composition rubric `[gate]` as the verify target) with load-on-demand per-shell references `shell-admin.md` · `shell-chat.md` · `shell-editor.md` · `shell-simple.md`, plus `shell-embed.md` — the forthcoming `adia-embed-shell`, documented from the embedded-app pattern and clearly labeled emerging (`[PATTERN]` not `[SHELL-API]`). Extended `bin/adia-lint` with `NATIVE-PRIMITIVE` (raw `<button>`/`<input>` where a `*-ui` exists; slotted-trigger exception) and `LEGACY-SHELL` (retired ADR-0024 data-attribute shapes) audits — both selftested, generated scaffold output stays clean.

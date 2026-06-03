@@ -1,6 +1,6 @@
 {
   "name": "adia-ui-factory",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Author and verify apps built on the adia-ui (@adia-ai) light-DOM web-component framework — scaffold, compose, wire, and verify across both SPA and SSR rendering modes. Wires the a2ui MCP for catalog retrieval, UI generation, and validation.",
   "author": {
     "name": "Kim",

@@ -46,7 +46,7 @@ A composed shell is done when it passes (gate = all `[gate]` hold) and renders (
 - **No native-primitive leak** `[gate]` — controls are `*-ui`, not raw `<button>`/`<input>` (mechanized: `adia-lint` `NATIVE-PRIMITIVE`; framework `audit:shell-composition`).
 - **One route owner** `[gate]` — SSR uses the framework outlet, not `<router-ui>`.
 
-`adia-lint` mechanizes the legacy-shape + native-primitive gates on write; the rest are read against the per-shell reference.
+`adia-lint` mechanizes the legacy-shape + native-primitive gates on write (the framework's `audit:shell-composition` covers more, but runs in the @adia-ai app repo, not here); the **other gates are self-verified** against the per-shell reference.
 
 ## §SelfAudit (before declaring done)
 
@@ -58,5 +58,5 @@ A new shell ships (e.g. `adia-embed-shell` firming up)? Add a `shell-<name>.md` 
 
 ## References (load only the shell in play)
 
-- `${CLAUDE_PLUGIN_ROOT}/references/shell-admin.md` · `shell-chat.md` · `shell-editor.md` · `shell-simple.md` · `shell-embed.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/shell-admin.md` · `${CLAUDE_PLUGIN_ROOT}/references/shell-chat.md` · `${CLAUDE_PLUGIN_ROOT}/references/shell-editor.md` · `${CLAUDE_PLUGIN_ROOT}/references/shell-simple.md` · `${CLAUDE_PLUGIN_ROOT}/references/shell-embed.md`
 - compose the children with `adia-ui-compose`; wire data/state with `adia-ui-data`; the SSR route-outlet rule is in `adia-ui-ssr`.

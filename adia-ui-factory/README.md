@@ -2,26 +2,31 @@
 
 **Author and verify apps built on the adia-ui (`@adia-ai`) framework** — a zero-dependency, light-DOM vanilla web-component library. A self-contained Claude Code plugin: it bundles the *authoring methodology* and wires the framework's existing **a2ui MCP** as the live substrate for catalog retrieval, UI generation, and validation.
 
-> **Status: v0.1.0 — feature-complete, red-teamed.** The six skills, the vendored methodology, the pinned a2ui MCP, the deterministic scaffolder (`bin/adia-scaffold`), and the advisory authoring-lint hook (`bin/adia-lint`) are all in, and the plugins-factory 9-critic council pass has been run and its fixes folded (`CHANGELOG.md`).
+> **Status: v0.2.0 — feature-complete, red-teamed.** Eleven skills across the full app-authoring lifecycle, the vendored methodology (16 load-on-demand references), the pinned a2ui MCP, two bins (`adia-scaffold` + `adia-lint`), and the advisory hook are in; the plugins-factory 9-critic council pass has been run and its fixes folded (`CHANGELOG.md`). Every skill is built to plugins-factory's hardened skill-architecture standard (cold-start surface · modes · per-mode verify target · a `[gate]` rubric · §SelfAudit · load-when references).
 
 ## The shape
 
-`adia-ui-factory` is organized around one architectural axis — the **rendering mode** — over a shared UI-construction core:
+`adia-ui-factory` is organized as the **app-authoring lifecycle** (orient → scaffold → compose/shell → wire → verify → migrate) over the load-bearing **rendering-mode** fork:
 
 ```
 adia-ui-factory/
 ├── .mcp.json                 → wires @adia-ai/a2ui-mcp@0.7.8 (npx) — catalog, retrieval, generate_ui, validate
-├── skills/
-│   ├── adia-ui-factory/      orchestrator — classify mode (SPA/SSR) + task, route   [shared]
-│   ├── adia-ui-compose/      construct the UI — catalog literacy, component authoring, theming   [shared]
-│   ├── adia-ui-spa/          SPA architecture — static host, <router-ui>, DataClient/projection
-│   ├── adia-ui-ssr/          SSR architecture — Next/Nuxt/SvelteKit/Astro, guarded registration, server data
-│   ├── adia-ui-llm/          app LLM features — @adia-ai/llm, chat, streaming   [shared]
-│   └── adia-ui-verify/       browser-QA gate + a11y + git discipline   [shared]
-├── commands/                 /adia-scaffold · compose · wire · verify · orient
-├── references/               vendored methodology (component-model · authoring · spa · ssr · a2ui-mcp · llm · verification)
-├── bin/                      adia-scaffold (deterministic app scaffolder) · adia-lint (advisory smell checker)
-└── hooks/                    hooks.json — runs adia-lint on writes; lints only adia-ui source (.js/.css/.html/…), silent otherwise; advisory, never blocks
+├── skills/                   (11)
+│   ├── adia-ui-factory/      orient & route — classify mode + shape + shell + task (the hub)
+│   ├── adia-ui-project/      project shapes · four-axis layout · page-trio/DUO · scaffold
+│   ├── adia-ui-compose/      construct the UI — catalog literacy, component authoring, theming + registers
+│   ├── adia-ui-shells/       choose & compose a shell — admin · chat · editor · simple · embed (forthcoming)
+│   ├── adia-ui-spa/          SPA architecture — static host, content-less <router-ui>
+│   ├── adia-ui-ssr/          SSR integration — Next/Nuxt/SvelteKit/Astro, client-only registration
+│   ├── adia-ui-data/         data · state · hydration · fetch/CRUD · section wiring · hybrid SPA-in-SSR
+│   ├── adia-ui-llm/          app LLM features — @adia-ai/llm, chat, streaming, the smart proxy
+│   ├── adia-ui-genui/        generative-UI experiences — the a2ui runtime, generate_ui, corpus
+│   ├── adia-ui-verify/       the exit gate — browser QA + a11y + git
+│   └── adia-ui-migrate/      version upgrades · port-to-adia · the sweep discipline
+├── commands/                 /adia-scaffold · compose · wire · verify · orient · migrate · genui  (a curated spine; the other skills route via the orchestrator)
+├── references/ (16)          per-shell + per-shape + per-concern, each load-on-demand
+├── bin/                      adia-scaffold (scaffolder: shapes · page · component) · adia-lint (advisory smell checker)
+└── hooks/                    hooks.json — runs adia-lint on writes; advisory, never blocks
 ```
 
 ## What it bundles vs. wires

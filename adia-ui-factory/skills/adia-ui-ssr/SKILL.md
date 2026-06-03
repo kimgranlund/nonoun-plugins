@@ -5,6 +5,7 @@ description: >
   client-only registration in lifecycle hooks, framework routing (never <router-ui>), server-side
   data fetch + initial props, cookie/session state. Use when consuming the components under SSR; if
   the rendering mode isn't decided yet, start with adia-ui-factory. (Author components with adia-ui-compose.)
+version: 0.2.0
 ---
 
 # adia-ui-ssr — components inside an SSR framework

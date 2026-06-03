@@ -5,6 +5,7 @@ description: >
   content-less <router-ui> routing, the client DataClient/projection data-flow, single-owner state.
   Use when the app is a client-rendered SPA (Vite / vanilla); if the rendering mode isn't decided
   yet, start with adia-ui-factory. (Author the components themselves with adia-ui-compose.)
+version: 0.2.0
 ---
 
 # adia-ui-spa — the client-rendered path

@@ -5,9 +5,9 @@ argument-hint: [spa|ssr] [what to wire]
 
 Wire routing, state, and data-flow for an adia-ui app. **$ARGUMENTS**
 
-The wiring is **opposite** across modes — determine the mode first (first argument, or `adia-ui-factory` Step 0), then hand off:
+Determine the mode first (first argument, or the `adia-ui-factory` classifiers), then hand off:
 
-- **SPA → `adia-ui-spa`** — content-less `<router-ui>`, `DataClient`/projection data-flow, single-owner state.
-- **SSR → `adia-ui-ssr`** — the framework router (never `<router-ui>`), server fetch → props, cookie/session state, property binding.
+- **Host wiring (mode-specific):** SPA → `adia-ui-spa` (content-less `<router-ui>`); SSR → `adia-ui-ssr` (framework router, never `<router-ui>`).
+- **Data-flow · hydration · fetch/CRUD · section wiring (any mode) → `adia-ui-data`** — DataClient/projection, signals, property-API, the attribution gate, and the hybrid SPA-in-SSR boundary.
 
-The skill owns the patterns; don't restate them here.
+The skills own the patterns; don't restate them here.
