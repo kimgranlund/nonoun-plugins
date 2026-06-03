@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`plugins-forge` is a **Claude Code plugin marketplace** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Two catalog plugins today:
+`plugins-forge` is a **Claude Code plugin marketplace** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Three catalog plugins today:
 
 - **`brand-forge/`** — build and evaluate brands grounded in cultural authority (the catalog's product example).
+- **`adia-ui-factory/`** — author and verify apps on the adia-ui (`@adia-ai`) light-DOM web-component framework, across both SPA and SSR rendering modes; wires the published `@adia-ai/a2ui-mcp` for catalog retrieval/generation/validation, and ships a deterministic scaffolder + an advisory authoring-lint hook. Authored and red-teamed via plugins-factory.
 - **`plugins-factory/`** — the plugin-lifecycle tool used to author and red-team plugins (including the others). It's a normal catalog plugin anyone can install — **and** this repo auto-enables it for itself via `.claude/settings.json`, so it's loaded whenever you work here. The build tool ships with the workshop.
 
 There is no build system, package manager, or test suite. Plugins are markdown + Python (stdlib only). "Running" the code means installing the plugin into Claude Code; "testing" means smoke-testing the Python bins (see [Commands](#commands)).
