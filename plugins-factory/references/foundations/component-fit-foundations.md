@@ -52,6 +52,8 @@ An MCP server's tool definitions are paid on *every* session the plugin is enabl
 
 A bundled MCP that exposes 30 endpoint-shaped tools fails component fit *and* context economy simultaneously — it is the AP-P4 "API-wrapper MCP" anti-pattern.
 
+**Worked exemplar — the inverse of the wrapper.** The `brand-corpus` MCP in the sibling **brand-forge** plugin is a clean reference for the *good* shape: five **task-level, read-only** tools (`list_brand_documents`, `search_brand`, `fetch_brand_section`, `outline_brand_document`, `get_brand_tokens`) scoped to **one directory** via an env var and path-guarded against `..`/symlink escape. It is intent-level (`search_brand`, not `open`+`read`+`stat`), not endpoint-shaped — and it shows that an MCP need not wrap an *external* service: a curated, read-only perimeter over a **local document set** is a legitimate MCP when *retrieval is the intent*. Its language-agnostic contract is documented in `brand-forge/skills/brand-corpus/references/mcp-wiring.md`.
+
 ## Why "everything a skill" is the silent default failure
 
 The path of least resistance is to make every capability a skill, because skills are the most flexible primitive and the recommended starting point. But two task-shapes are actively *wrong* as skills:

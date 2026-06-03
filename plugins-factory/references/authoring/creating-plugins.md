@@ -56,6 +56,8 @@ Example table for a repo-ops plugin:
 
 That table *is* the layout: this plugin has `hooks/`, `.mcp.json`, `agents/`, `skills/`, `commands/`. Now the manifest writes itself.
 
+> **Recipe — a document corpus + a read-only retrieval MCP → a plugin.** A common authoring pattern: you have a document set (a brand corpus, a design system, a runbook library) and want to ship it so an agent can *retrieve* it. The fit is always the same three parts: **the documents** (bundled, or pointed at via `userConfig`) + a **read-only, directory-scoped MCP** (intent-level tools — `list` / `search` / `fetch` / `outline`, not `open`+`read`+`stat`) + a **thin skill** telling the model when to query it. The sibling **brand-forge** plugin's `/brand-stamp` *mechanizes exactly this* (corpus → installable plugin, bundled or `--linked`); read its output, or `brand-forge/bin/brand-stamp`, as the worked example before hand-rolling one.
+
 ---
 
 ## Step 3 — Scaffold the layout from the template
