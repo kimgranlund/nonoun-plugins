@@ -1,24 +1,20 @@
 # Project `.claude/`
 
-Project-scoped Claude Code config for **working in this repo** — authoring and red-teaming the plugins that live under `*/` (currently `brand-forge/`). These components load for anyone running Claude Code from this repo; they are **not** shipped to plugin users.
+Project-scoped Claude Code config for **working in this repo** — building and red-teaming the catalog plugins (`brand-forge/`, `plugins-factory/`). Nothing here ships to plugin users; it's repo-local.
 
-> **Don't confuse these with a plugin's own components.** `brand-forge/{skills,agents,commands,hooks}/` are *distributed* — they ship when someone installs the plugin. The identically-named folders under `.claude/` are *repo-local dev tools* that never leave this repo. Same file format, different audience.
+## `settings.json` — auto-enables the lifecycle tool
 
-## The harness lives here: `skills/plugins-factory/`
+This repo's `settings.json` declares the `plugins-forge` marketplace (`extraKnownMarketplaces`) and enables **`plugins-factory`** by default (`enabledPlugins`), so the plugin-lifecycle tool loads whenever you — or a collaborator who trusts the project — work here. That's why its `/plugin-*` commands and critic council are available against the catalog plugins without a manual install. (Working in the repo installs the **published** version from GitHub; for live local edits to the tool itself, test with `claude --plugin-dir plugins-factory` or bump + `/plugin marketplace update`.)
 
-The repo's plugin-lifecycle harness, **`plugins-factory`**, lives at `skills/plugins-factory/` — a full plugin (it keeps its own `.claude-plugin/plugin.json`) that auto-loads as a **project-scope `@skills-dir` plugin** whenever you work here, in-place (no install, no marketplace entry). It is the main inhabitant of this directory and the tool used to build and red-team the catalog plugins. Because it's a real plugin, it's also shareable. The loose `skills/` · `agents/` · `commands/` slots below remain for any *other* ad-hoc repo tooling.
+- `settings.json` — shared project settings (checked in → every collaborator). Holds the `extraKnownMarketplaces` + `enabledPlugins` above.
+- `settings.local.json` — personal settings/permissions (git-ignored).
 
-## What goes where
+## `skills/` · `agents/` · `commands/` — ad-hoc repo tooling
+
+Empty slots for any *repo-local* dev tools you want to add — distinct from a distributed plugin's own components (those live inside `brand-forge/` / `plugins-factory/` and ship on install). One file/folder per component:
 
 | Path | One per | Becomes | Frontmatter | Shape to copy |
 |---|---|---|---|---|
-| `skills/<name>/SKILL.md` | skill (a folder) | a loadable skill | `name`, `description` (+ trigger phrases) | `brand-forge/skills/brand-methodology/SKILL.md` |
+| `skills/<name>/SKILL.md` | skill (a folder) | a loadable skill | `name`, `description` (+ triggers) | `brand-forge/skills/brand-methodology/SKILL.md` |
 | `agents/<name>.md` | subagent | a dispatchable agent | `name`, `description` | `brand-forge/agents/critic-john-h.md` |
 | `commands/<name>.md` | command | `/<name>` | `description`, `argument-hint` | `brand-forge/commands/brand-orient.md` |
-
-Skills may carry supporting docs in `<name>/references/`, loaded on demand — keep `SKILL.md` a table of contents (the pattern the brand-forge skills follow).
-
-## Settings
-
-- `settings.json` — shared project settings (checked in). Add it when there's something to share.
-- `settings.local.json` — your personal settings/permissions (git-ignored).

@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "plugins-forge": {
+      "source": {
+        "source": "github",
+        "repo": "kimgranlund/plugins-forge"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "plugins-factory@plugins-forge": true
+  }
+}

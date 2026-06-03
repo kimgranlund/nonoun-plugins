@@ -1,7 +1,7 @@
 name: ci
 
 # Catalog gates — validate every catalog plugin + the marketplace manifest with plugins-factory's
-# own tooling (the repo's @skills-dir harness validates itself and its siblings). Stdlib Python only.
+# own tooling (the catalog's plugins-factory validates itself and its sibling). Stdlib Python only.
 on:
   push:
   pull_request:
@@ -10,7 +10,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     env:
-      PF: .claude/skills/plugins-factory
+      PF: plugins-factory
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

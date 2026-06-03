@@ -14,6 +14,13 @@
       "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — with an adversarial 14-critic council that runs as parallel isolated agents.",
       "category": "design",
       "tags": ["brand", "brand-strategy", "design", "identity", "voice", "council"]
+    },
+    {
+      "name": "plugins-factory",
+      "source": "./plugins-factory",
+      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
+      "category": "developer-tools",
+      "tags": ["plugins", "claude-code", "marketplace", "packaging", "lifecycle", "carve", "meta"]
     }
   ]
 }

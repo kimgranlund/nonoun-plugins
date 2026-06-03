@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`plugins-forge` is a **Claude Code plugin marketplace** plus its own authoring harness. Two distinct things live here:
+`plugins-forge` is a **Claude Code plugin marketplace** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Two catalog plugins today:
 
-- **The catalog** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Currently one: **`brand-forge/`**.
-- **The harness** — **`plugins-factory`** (the plugin-lifecycle factory) lives at **`.claude/skills/plugins-factory/`** and auto-loads as a project-scope `@skills-dir` plugin whenever you work here. It is *not* in the catalog — it's the tool you use to build and red-team the catalog plugins. It keeps its own `plugin.json`, so it's also shareable.
+- **`brand-forge/`** — build and evaluate brands grounded in cultural authority (the catalog's product example).
+- **`plugins-factory/`** — the plugin-lifecycle tool used to author and red-team plugins (including the others). It's a normal catalog plugin anyone can install — **and** this repo auto-enables it for itself via `.claude/settings.json`, so it's loaded whenever you work here. The build tool ships with the workshop.
 
 There is no build system, package manager, or test suite. Plugins are markdown + Python (stdlib only). "Running" the code means installing the plugin into Claude Code; "testing" means smoke-testing the Python bins (see [Commands](#commands)).
 
@@ -47,9 +47,9 @@ Every critic agent, the orchestrator, and the evaluate/council skills repeat the
 
 `bin/brand-lint`'s `SMELLS` regexes mechanize the methodology's "bullshit filter" (archetypes, vision/mission/values, personas, brand-DNA/essence, values-without-trade-offs). The conceptual source of truth is `skills/brand-methodology/` (the Foundation Canon). If you change what counts as a smell in one, reconcile the other.
 
-## The harness: plugins-factory (`.claude/skills/plugins-factory/`)
+## The lifecycle tool: plugins-factory (`plugins-factory/`)
 
-The repo's own plugin-lifecycle tool, auto-loaded in-place as a project-scope `@skills-dir` plugin (no install). Use it to author and judge the catalog plugins:
+A catalog plugin that doubles as this repo's own toolchain — anyone can install it (`/plugin install plugins-factory@plugins-forge`), and the repo auto-enables it for itself via `.claude/settings.json` (`enabledPlugins`) so it's loaded whenever you work here. Use it to author and judge the catalog plugins:
 
 - **Commands** — `/plugin-author` · `/plugin-carve` · `/plugin-edit` (build) and `/plugin-score` · `/plugin-critique` · `/plugin-promote` (judge), namespaced `plugins-factory:` when loaded.
 - **Skills** — `plugin-build` (the maker) and `plugin-evaluate` (the judge), over one shared rubric spine in `references/`.
@@ -76,7 +76,7 @@ echo '{"foundation":"...","strategy":"...","idea":"...","identity":"...","expres
   | python3 brand-forge/bin/brand-stack -
 
 # harness gates (run by .github/workflows/ci.yml on every push/PR):
-PF=.claude/skills/plugins-factory
+PF=plugins-factory
 python3 "$PF/bin/validate_plugin.py" selftest
 python3 "$PF/bin/validate_plugin.py" plugin brand-forge --strict   # validate a catalog plugin
 python3 "$PF/bin/validate_plugin.py" marketplace .
@@ -88,7 +88,8 @@ Install / iterate inside Claude Code:
 
 ```
 /plugin marketplace add kimgranlund/plugins-forge
-/plugin install brand-forge@plugins-forge
+/plugin install brand-forge@plugins-forge        # the product
+/plugin install plugins-factory@plugins-forge    # the lifecycle tool (also auto-enabled here via .claude/settings.json)
 ```
 
 ## Conventions
