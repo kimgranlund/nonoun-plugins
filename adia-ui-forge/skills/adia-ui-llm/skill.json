@@ -1,0 +1,33 @@
+{
+  "name": "adia-ui-llm",
+  "version": "0.1.0",
+  "description": "Maintainer (PRODUCER) skill for @adia-ai/llm — the provider-agnostic LLM client at packages/llm/ that the adia-ui chat-shell and the A2UI generation pipeline depend on. Owns the provider adapters (anthropic / openai / gemini), the shared SSE parser, the model registry (models.ts), the unified chat() / streamChat() / createClient() facade, the createAdapter() bridge, the browser(proxyUrl)+Node duality, and StubLLMAdapter. Every mode names a real verify target (the built package, a real chat() round-trip, or the deterministic stub). Use whenever the user wants to ADD A PROVIDER ADAPTER / MODIFY AN ADAPTER / EVOLVE THE MODEL REGISTRY / WORK ON SSE STREAMING / CHANGE THE BRIDGE-FACADE CONTRACT / TOUCH THE BROWSER-PROXY BOUNDARY / FIX THE STUB. Triggers on \"add a new LLM provider\", \"fix the @adia-ai/llm SSE adapter\", \"the anthropic adapter drops cache tokens\", \"add a model to the registry\", \"streamChat yields a wrong chunk\", \"change chat()/streamChat()\", \"passthrough vs smart proxy\", \"stopReason normalization\", \"stub returns wrong A2UI\", \"teach adia-ui-llm\". Does NOT trigger for: WIRING the client into an app or chat box (CONSUMER side — the adia-ui-factory plugin's adia-ui-llm skill), generation-pipeline / corpus internals (adia-ui-a2ui), authoring web-components or the in-monorepo bridge surface against an unchanged client (adia-ui-authoring), cutting a release (adia-ui-release), or general LLM-streaming tutorials.",
+  "status": "stable",
+  "authors": ["kim.granlund"],
+  "codeowners": [],
+  "tags": ["adia-ui", "llm", "anthropic", "openai", "gemini", "sse", "streaming", "model-registry", "provider-adapter", "chat", "streamchat", "createadapter", "proxy", "stub", "provider-agnostic"],
+  "depends_on": [],
+  "peer_skills": ["adia-ui-authoring", "adia-ui-a2ui", "adia-ui-release", "adia-ui-gen-review", "adia-ui-dogfood"],
+  "environment": {
+    "portable": false,
+    "requires": ["the @adia-ai monorepo with packages/llm/ (src/adapters/{anthropic,openai,gemini,sse,index}.ts, src/models.ts, src/llm-bridge.ts, src/llm-stub.ts)"],
+    "rationale": "The @adia-ai/llm client source exists only in the @adia-ai monorepo; every verify command (npm run build for the package, a real chat()/streamChat() round-trip, the stub) and every audited source path (packages/llm/**) is substrate-side."
+  },
+  "files": [
+    "SKILL.md",
+    "CHANGELOG.md",
+    "skill.json",
+    "references/adapter-contract.md",
+    "references/streaming-sse.md",
+    "references/model-registry.md",
+    "references/bridge-facade.md",
+    "references/browser-proxy-boundary.md",
+    "references/add-a-provider.md",
+    "references/teach-protocol.md",
+    "scripts/audit-llm-roster.mjs",
+    "scripts/teach-route.mjs",
+    "evals/routing-corpus.json",
+    "evals/adversarial-corpus.json",
+    "evals/teach-routing-cases.json"
+  ]
+}

@@ -51,6 +51,24 @@
         "spa",
         "llm-ui"
       ]
+    },
+    {
+      "name": "adia-ui-forge",
+      "source": "./adia-ui-forge",
+      "description": "Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).",
+      "category": "developer-tools",
+      "tags": [
+        "adia-ui",
+        "a2ui",
+        "gen-ui",
+        "web-components",
+        "web-modules",
+        "llm",
+        "framework-authoring",
+        "component-library",
+        "release-engineering",
+        "maintainer"
+      ]
     }
   ]
 }

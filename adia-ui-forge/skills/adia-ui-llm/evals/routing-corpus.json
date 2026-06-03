@@ -1,0 +1,30 @@
+{
+  "skill": "adia-ui-llm",
+  "description": "Routing corpus — does a phrase route to adia-ui-llm (the @adia-ai/llm PRODUCER/maintainer skill) or to a sibling / the consumer-side skill / off-topic? The producer/consumer split is the sharpest boundary: MAINTAINING the client is here; WIRING it into an app is the adia-ui-factory consumer skill.",
+  "minimums_per_spec": {
+    "trigger_phrases": 10,
+    "adversarial_phrases": 5
+  },
+  "phrases": [
+    { "id": "t1", "phrase": "add a new LLM provider adapter to @adia-ai/llm", "should_route_to_llm": true },
+    { "id": "t2", "phrase": "fix the SSE parser in the anthropic adapter", "should_route_to_llm": true },
+    { "id": "t3", "phrase": "the anthropic adapter drops cache_read tokens in parseResponse", "should_route_to_llm": true },
+    { "id": "t4", "phrase": "add a model to the MODELS registry and the detectProvider branch", "should_route_to_llm": true },
+    { "id": "t5", "phrase": "streamChat yields a malformed StreamChunk near the end", "should_route_to_llm": true },
+    { "id": "t6", "phrase": "change the ChatResult shape returned by chat()", "should_route_to_llm": true },
+    { "id": "t7", "phrase": "why does the browser get a 401 but node works — passthrough vs smart proxy", "should_route_to_llm": true },
+    { "id": "t8", "phrase": "stopReason is being normalized to end and hiding truncation", "should_route_to_llm": true },
+    { "id": "t9", "phrase": "the StubLLMAdapter returns the wrong A2UI JSON", "should_route_to_llm": true },
+    { "id": "t10", "phrase": "createAdapter returns the stub even though a key is set", "should_route_to_llm": true },
+    { "id": "t11", "phrase": "the gemini adapter builds the wrong streamGenerateContent URL", "should_route_to_llm": true },
+    { "id": "t12", "phrase": "lower the maxTokens default in the bridge", "should_route_to_llm": true },
+    { "id": "t13", "phrase": "openai finish_reason length should propagate raw as truncation", "should_route_to_llm": true },
+    { "id": "t14", "phrase": "make sure adia-ui-llm knows about a new provider's caching mechanism", "should_route_to_llm": true },
+    { "id": "a1", "phrase": "wire @adia-ai/llm into my chat box with a chat-shell-ui", "should_route_to_llm": false, "expected_alternative": "adia-ui-factory consumer adia-ui-llm skill" },
+    { "id": "a2", "phrase": "what proxy should I deploy to keep my API key off the browser", "should_route_to_llm": false, "expected_alternative": "adia-ui-factory consumer adia-ui-llm skill" },
+    { "id": "a3", "phrase": "generate a dashboard UI from this intent", "should_route_to_llm": false, "expected_alternative": "adia-ui-a2ui" },
+    { "id": "a4", "phrase": "add a slot to button-ui and update its yaml contract", "should_route_to_llm": false, "expected_alternative": "adia-ui-authoring" },
+    { "id": "a5", "phrase": "cut a release and bump the @adia-ai/llm version tag", "should_route_to_llm": false, "expected_alternative": "adia-ui-release" },
+    { "id": "a6", "phrase": "explain how server-sent events work in general", "should_route_to_llm": false, "expected_alternative": "off-topic" }
+  ]
+}

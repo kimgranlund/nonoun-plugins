@@ -1,0 +1,73 @@
+{
+  "skill": "adia-ui-llm",
+  "description": "Deterministic §Teach branch routing — one case per branch in scripts/teach-route.mjs. Verifies the payload lands at the expected branch + reference (or non-reference target). Run via the shared run-skill-evals.mjs (--corpus=teach) or teach-router.mjs runEval.",
+  "minimums_per_spec": {
+    "one_case_per_branch": true,
+    "adversarial_fraction": 0
+  },
+  "cases": [
+    {
+      "id": "tr-source-edit",
+      "payload": "a new response field the adapter must map in parseResponse",
+      "expected_branch": "source-edit",
+      "expected_landing_pattern": "packages/llm/src",
+      "rationale": "Per-adapter field encoded by the source — not a skill landing."
+    },
+    {
+      "id": "tr-add-provider",
+      "payload": "a new gotcha when you add a new provider adapter",
+      "expected_branch": "add-provider",
+      "expected_landing_pattern": "add-a-provider\\.md",
+      "rationale": "A step/gotcha in the add-a-4th-provider recipe."
+    },
+    {
+      "id": "tr-streaming",
+      "payload": "a new StreamChunk type emitted by the SSE parser",
+      "expected_branch": "streaming",
+      "expected_landing_pattern": "streaming-sse\\.md",
+      "rationale": "SSE / chunk-protocol fact."
+    },
+    {
+      "id": "tr-model-registry",
+      "payload": "a new id-naming convention detectProvider must learn for the model registry",
+      "expected_branch": "model-registry",
+      "expected_landing_pattern": "model-registry\\.md",
+      "rationale": "MODELS / DEFAULT_MODEL / detectProvider rule."
+    },
+    {
+      "id": "tr-bridge-facade",
+      "payload": "a change to how createAdapter falls back to the stub and the lazy-load gate",
+      "expected_branch": "bridge-facade",
+      "expected_landing_pattern": "bridge-facade\\.md",
+      "rationale": "Facade / bridge / stub rule."
+    },
+    {
+      "id": "tr-proxy-boundary",
+      "payload": "a new rule about the passthrough proxy and key in browser safety",
+      "expected_branch": "proxy-boundary",
+      "expected_landing_pattern": "browser-proxy-boundary\\.md",
+      "rationale": "Proxy-flavor / production-host / key-safety fact."
+    },
+    {
+      "id": "tr-adapter-contract",
+      "payload": "a cross-adapter rule about the usage mapping and raw stopReason in buildRequest discipline",
+      "expected_branch": "adapter-contract",
+      "expected_landing_pattern": "adapter-contract\\.md",
+      "rationale": "Cross-adapter shape rule — the default branch."
+    },
+    {
+      "id": "tr-methodology",
+      "payload": "a new posture principle and a new selfaudit axis for the skill",
+      "expected_branch": "methodology",
+      "expected_landing_pattern": "SKILL\\.md",
+      "rationale": "Posture / mission shift lands inline in SKILL.md."
+    },
+    {
+      "id": "tr-journal",
+      "payload": "a one-off debugging story about how I debugged a flaky stream once",
+      "expected_branch": "journal",
+      "expected_landing_pattern": "journal",
+      "rationale": "Arc story — NEGATIVE, not a skill landing."
+    }
+  ]
+}

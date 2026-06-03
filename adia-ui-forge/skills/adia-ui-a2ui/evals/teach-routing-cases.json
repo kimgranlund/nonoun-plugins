@@ -1,0 +1,100 @@
+{
+  "skill": "adia-ui-a2ui",
+  "description": "Deterministic §Teach branch routing — one payload per branch in scripts/teach-route.mjs. Live-run by the shared eval runner via teach-route.mjs --payload=... --json.",
+  "minimums_per_spec": {
+    "total_cases": 13
+  },
+  "cases": [
+    {
+      "id": "tr-substrate",
+      "payload": "the corpus chunk json now carries a derivation field recording its source demo",
+      "expected_branch": "substrate-chunk",
+      "expected_landing_pattern": "substrate",
+      "rationale": "A pure chunk-data fact lands in the substrate (corpus), not a skill reference."
+    },
+    {
+      "id": "tr-mcp-tool",
+      "payload": "add a new mcp tool inspect_chunk_keywords to the server",
+      "expected_branch": "mcp-tool",
+      "expected_landing_pattern": "mcp-tool-reference\\.md",
+      "rationale": "New MCP tool / schema lands in the tool reference."
+    },
+    {
+      "id": "tr-mcp-workflow",
+      "payload": "document the operator workflow for the feedback loop after a run",
+      "expected_branch": "mcp-workflow",
+      "expected_landing_pattern": "mcp-pipeline-ops\\.md",
+      "rationale": "An operator-side pipeline workflow lands in pipeline-ops."
+    },
+    {
+      "id": "tr-strategy",
+      "payload": "add a new compose strategy called template-match to the engine registry",
+      "expected_branch": "strategy",
+      "expected_landing_pattern": "strategy-engines\\.md",
+      "rationale": "A new strategy / engine lands in strategy-engines."
+    },
+    {
+      "id": "tr-calibration",
+      "payload": "we retuned the strong_retrieval threshold constant",
+      "expected_branch": "calibration",
+      "expected_landing_pattern": "zettel-calibration\\.md",
+      "rationale": "A calibration constant / threshold tune lands in zettel-calibration."
+    },
+    {
+      "id": "tr-semantic-fail",
+      "payload": "a new way to lift a semantic fail by fixing the dominant pattern root",
+      "expected_branch": "semantic-fail",
+      "expected_landing_pattern": "semantic-fail-lifting\\.md",
+      "rationale": "A semantic-fail recovery pattern lands in semantic-fail-lifting."
+    },
+    {
+      "id": "tr-fragment",
+      "payload": "a new fragment-graph node type alongside the leverage rule",
+      "expected_branch": "fragment",
+      "expected_landing_pattern": "fragment-graph\\.md",
+      "rationale": "Fragment-graph / extraction knowledge lands in fragment-graph."
+    },
+    {
+      "id": "tr-chunk-authoring",
+      "payload": "a new chunk authoring rule about html-first training signal order",
+      "expected_branch": "chunk-authoring",
+      "expected_landing_pattern": "chunk-authoring\\.md",
+      "rationale": "A chunk-authoring procedure rule lands in chunk-authoring."
+    },
+    {
+      "id": "tr-corpus-pitfall",
+      "payload": "a cross-cut corpus pitfall about synonym keyword coverage",
+      "expected_branch": "corpus-pitfall",
+      "expected_landing_pattern": "corpus-discipline\\.md",
+      "rationale": "A corpus/retrieval pitfall lands in corpus-discipline."
+    },
+    {
+      "id": "tr-anti-pattern",
+      "payload": "a new pipeline anti-pattern rule for popover without trigger element",
+      "expected_branch": "anti-pattern",
+      "expected_landing_pattern": "anti-patterns\\.md",
+      "rationale": "A new anti-pattern rule lands in anti-patterns."
+    },
+    {
+      "id": "tr-eval-gap",
+      "payload": "a recurring eval gap diagnosis pattern for coverage drop",
+      "expected_branch": "eval-gap",
+      "expected_landing_pattern": "eval-diagnostics\\.md",
+      "rationale": "An eval-gap diagnosis pattern lands in eval-diagnostics."
+    },
+    {
+      "id": "tr-methodology",
+      "payload": "a new posture principle that shifts how we approach the pipeline",
+      "expected_branch": "methodology",
+      "expected_landing_pattern": "SKILL\\.md",
+      "rationale": "A methodology / posture shift lands inline in SKILL.md (the only branch that does)."
+    },
+    {
+      "id": "tr-journal",
+      "payload": "a one-off debugging story for the journal that will not repeat",
+      "expected_branch": "journal",
+      "expected_landing_pattern": "journal",
+      "rationale": "An arc-specific story is the negative case — journal, never the skill."
+    }
+  ]
+}

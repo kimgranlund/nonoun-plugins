@@ -1,0 +1,31 @@
+{
+  "skill": "adia-ui-a2ui",
+  "description": "Routing corpus — does a phrase route to adia-ui-a2ui (the A2UI/gen-ui pipeline substrate-author skill) or to a sibling/off-topic?",
+  "minimums_per_spec": {
+    "trigger_phrases": 10,
+    "adversarial_phrases": 5
+  },
+  "phrases": [
+    { "id": "t1", "phrase": "validate this A2UI document", "should_route_to_a2ui": true },
+    { "id": "t2", "phrase": "harvest a chunk from this HTML demo", "should_route_to_a2ui": true },
+    { "id": "t3", "phrase": "zettel coverage dropped after the last change", "should_route_to_a2ui": true },
+    { "id": "t4", "phrase": "extract a fragment from this repeated subtree", "should_route_to_a2ui": true },
+    { "id": "t5", "phrase": "tune the STRONG_MATCH threshold", "should_route_to_a2ui": true },
+    { "id": "t6", "phrase": "run check_anti_patterns on this rendered HTML", "should_route_to_a2ui": true },
+    { "id": "t7", "phrase": "refine composition with an OAuth row", "should_route_to_a2ui": true },
+    { "id": "t8", "phrase": "MRR dropped in the chunk retrieval eval", "should_route_to_a2ui": true },
+    { "id": "t9", "phrase": "add an MCP tool to the a2ui server", "should_route_to_a2ui": true },
+    { "id": "t10", "phrase": "audit the training data corpus for drift", "should_route_to_a2ui": true },
+    { "id": "t11", "phrase": "diagnose this eval gap and regression", "should_route_to_a2ui": true },
+    { "id": "t12", "phrase": "run the MCP pipeline: generate_ui then validate_schema", "should_route_to_a2ui": true },
+    { "id": "t13", "phrase": "lift a semantic fail under sixty", "should_route_to_a2ui": true },
+    { "id": "t14", "phrase": "why did the composer emit composition-match instead of composition-iterated", "should_route_to_a2ui": true },
+    { "id": "a1", "phrase": "build a settings page from existing primitives", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-authoring" },
+    { "id": "a2", "phrase": "add a slot to button-ui and update its yaml contract", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-authoring" },
+    { "id": "a3", "phrase": "cut a release and bump the version tag", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-release" },
+    { "id": "a4", "phrase": "score the generated UI quality in apps/genui", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-gen-review" },
+    { "id": "a5", "phrase": "run a broad visual QA sweep across site and playgrounds", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-dogfood" },
+    { "id": "a6", "phrase": "fix the @adia-ai/llm SSE adapter", "should_route_to_a2ui": false, "expected_alternative": "adia-ui-llm" },
+    { "id": "a7", "phrase": "explain how React state management works", "should_route_to_a2ui": false, "expected_alternative": "off-topic" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "adia-ui-forge",
+  "version": "0.1.0",
+  "description": "Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).",
+  "author": {
+    "name": "Kim",
+    "email": "kim@sublimeheroics.com"
+  },
+  "homepage": "https://github.com/kimgranlund/plugins-forge",
+  "license": "MIT",
+  "keywords": [
+    "adia-ui",
+    "a2ui",
+    "gen-ui",
+    "web-components",
+    "web-modules",
+    "llm",
+    "framework-authoring",
+    "component-library",
+    "release-engineering",
+    "maintainer"
+  ]
+}

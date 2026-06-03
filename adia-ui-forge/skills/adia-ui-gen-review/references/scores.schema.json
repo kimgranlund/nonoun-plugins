@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "adia-ui-gen-review/scores",
+  "title": "Gen UI Review Scores — per cycle",
+  "description": "Formal contract for review/cycle-N/scores.json. Every downstream tool that reads cycle data must validate against this schema.",
+  "type": "object",
+  "required": ["schemaVersion", "cycleNumber", "completedAt", "engine", "prompts"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "2.0.1", "description": "Allows downstream tools to detect incompatible schema evolution." },
+    "cycleNumber": { "type": "integer", "minimum": 1 },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "engine": { "type": "string", "enum": ["zettel", "auto", "free-form", "mcp", "all"] },
+    "status": { "type": "string", "enum": ["COMPLETE", "OPEN", "INTERRUPTED"] },
+    "humanQA": {
+      "type": "object",
+      "description": "Mandatory human QA checkpoint result — must be present for status=COMPLETE",
+      "required": ["completedAt", "sampledPrompts", "passCount", "failCount"],
+      "properties": {
+        "completedAt": { "type": "string", "format": "date-time" },
+        "sampledPrompts": { "type": "array", "items": { "type": "string" }, "minItems": 5 },
+        "passCount": { "type": "integer" },
+        "failCount": { "type": "integer" },
+        "notes": { "type": "string" }
+      }
+    },
+    "prompts": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/PromptScore" }
+    },
+    "aggregate": {
+      "type": "object",
+      "properties": {
+        "passingCount": { "type": "integer" },
+        "failingCount": { "type": "integer" },
+        "renderFailureCount": { "type": "integer" },
+        "meanScore": { "type": "number" },
+        "delta": { "type": ["number", "null"] }
+      }
+    }
+  },
+  "definitions": {
+    "PromptScore": {
+      "type": "object",
+      "required": ["promptSlug", "groupSlug", "cycle", "status"],
+      "properties": {
+        "promptSlug": { "type": "string" },
+        "groupSlug": { "type": "string" },
+        "cycle": { "type": "integer" },
+        "specProduced": {
+          "type": "boolean",
+          "description": "Whether the Phase-1 spec sub-skill successfully produced an A-spec (replaces rubric-spec scoring)"
+        },
+        "rubricDecompose": {
+          "type": "object",
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "renderFailure": { "type": "boolean" },
+            "findings": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "rubricScore": {
+          "type": "object",
+          "properties": {
+            "score": { "type": "integer", "minimum": 0, "maximum": 105 },
+            "delta": { "type": ["number", "null"] },
+            "d1": { "type": "integer" }, "d2": { "type": "integer" },
+            "d3": { "type": "integer" }, "d4": { "type": "integer" },
+            "d5": { "type": "integer" }, "d6mechanical": { "type": "integer" },
+            "dimensionBreakdown": { "type": "object" }
+          }
+        },
+        "rubricCosmetic": {
+          "type": "object",
+          "properties": {
+            "p1Count": { "type": "integer" },
+            "p2Count": { "type": "integer" },
+            "p3Count": { "type": "integer" },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["severity", "location", "issue"],
+                "properties": {
+                  "severity": { "type": "string", "enum": ["P1", "P2", "P3"] },
+                  "location": { "type": "string" },
+                  "issue": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "rootCauses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "description", "skill"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["WRONG_CHUNK","EMPTY_CHUNK","WRONG_COMPONENT","MISSING_PROPS","WRONG_NESTING","TRANSPILER_GAP","RETRIEVAL_SCORE","FREE_FORM_HALLUC","COSMETIC_ONLY"]
+              },
+              "description": { "type": "string" },
+              "skill": { "type": "string" }
+            }
+          }
+        },
+        "fixPlan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rank", "action", "file", "impact", "skill"],
+            "properties": {
+              "rank": { "type": "integer" },
+              "action": { "type": "string" },
+              "file": { "type": "string" },
+              "impact": { "type": "string" },
+              "skill": { "type": "string" }
+            }
+          }
+        },
+        "status": { "type": "string", "enum": ["PASSING", "FAILING", "RENDER_FAILURE"] }
+      }
+    }
+  }
+}

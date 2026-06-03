@@ -1,0 +1,30 @@
+{
+  "skill": "adia-ui-forge",
+  "description": "Routing corpus for the orchestrator — does a phrase (a) get recognized as framework-maintenance work the forge owns, and (b) route to the correct owning skill? Adversarial cases are app-consumption (hand off to adia-ui-factory), excluded ops, or off-topic. Guards the orchestrator's two gates: the scope check and the subsystem classifier.",
+  "minimums_per_spec": {
+    "trigger_phrases": 10,
+    "adversarial_phrases": 5
+  },
+  "phrases": [
+    { "id": "t1", "phrase": "add a new button-ui primitive with @scope tokens", "should_route_to_forge": true, "expected_route": "adia-ui-authoring" },
+    { "id": "t2", "phrase": "author an editor-shell cluster in web-modules", "should_route_to_forge": true, "expected_route": "adia-ui-authoring" },
+    { "id": "t3", "phrase": "promote this inline page UI into a reusable web-module", "should_route_to_forge": true, "expected_route": "adia-ui-authoring" },
+    { "id": "t4", "phrase": "harvest a chunk into the a2ui corpus", "should_route_to_forge": true, "expected_route": "adia-ui-a2ui" },
+    { "id": "t5", "phrase": "the gen-ui retrieval MRR regressed after the corpus change", "should_route_to_forge": true, "expected_route": "adia-ui-a2ui" },
+    { "id": "t6", "phrase": "add an MCP tool to the a2ui server", "should_route_to_forge": true, "expected_route": "adia-ui-a2ui" },
+    { "id": "t7", "phrase": "add a gemini provider adapter to @adia-ai/llm", "should_route_to_forge": true, "expected_route": "adia-ui-llm" },
+    { "id": "t8", "phrase": "fix the SSE streaming terminal in the llm client", "should_route_to_forge": true, "expected_route": "adia-ui-llm" },
+    { "id": "t9", "phrase": "evolve the model registry in models.ts", "should_route_to_forge": true, "expected_route": "adia-ui-llm" },
+    { "id": "t10", "phrase": "score the generated UI in apps/genui against the ideal spec", "should_route_to_forge": true, "expected_route": "adia-ui-gen-review" },
+    { "id": "t11", "phrase": "run a native-primitive-leak sweep across the playgrounds and catalog", "should_route_to_forge": true, "expected_route": "adia-ui-dogfood" },
+    { "id": "t12", "phrase": "visual-probe the components site for zero-area hosts", "should_route_to_forge": true, "expected_route": "adia-ui-dogfood" },
+    { "id": "t13", "phrase": "cut v0.6.22 and tag the lockstep", "should_route_to_forge": true, "expected_route": "adia-ui-release" },
+    { "id": "t14", "phrase": "author the MIGRATION GUIDE for the breaking prop rename", "should_route_to_forge": true, "expected_route": "adia-ui-release" },
+    { "id": "a1", "phrase": "build a settings page in my app from existing adia-ui primitives", "should_route_to_forge": false, "expected_alternative": "adia-ui-factory (consumer composition)" },
+    { "id": "a2", "phrase": "wire the published @adia-ai/a2ui-mcp into my SPA", "should_route_to_forge": false, "expected_alternative": "adia-ui-factory (consumer wiring)" },
+    { "id": "a3", "phrase": "add @adia-ai/llm to my chat app and stream a response", "should_route_to_forge": false, "expected_alternative": "adia-ui-factory (consuming the client, not producing the package)" },
+    { "id": "a4", "phrase": "deploy the demo site to the VM and rotate the exe.dev secrets", "should_route_to_forge": false, "expected_alternative": "out-of-scope (excluded ops; not in this plugin)" },
+    { "id": "a5", "phrase": "apply the v0.6 migration guide to sweep my downstream app", "should_route_to_forge": false, "expected_alternative": "adia-ui-factory (consumer applies the guide the forge authors)" },
+    { "id": "a6", "phrase": "explain how custom elements and the shadow DOM work in general", "should_route_to_forge": false, "expected_alternative": "off-topic" }
+  ]
+}
