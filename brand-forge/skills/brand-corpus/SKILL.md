@@ -102,6 +102,10 @@ is actually there* before you write.
 When the MCP is available, **query it before structuring** so your corpus reflects reality rather
 than assumption.
 
+→ **Standing up the MCP** — the language-agnostic tool contract, the canonical `BRAND_CORPUS_DIR`
+env var (alias `BRAND_CORPUS_ROOT`), choosing a Python vs TS implementation, and the three ways to
+register it (bundled in a plugin / standalone / published): [`references/mcp-wiring.md`](references/mcp-wiring.md).
+
 ## Boundaries
 
 - This skill organizes documents; it does not **write** the strategy (`brand-methodology`) or

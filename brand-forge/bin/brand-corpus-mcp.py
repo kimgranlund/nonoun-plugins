@@ -3,7 +3,7 @@
 
 The live-data complement to the `brand-corpus` skill (which teaches corpus structure). It demonstrates
 the MCP-as-curated-perimeter pattern: a small set of TASK-LEVEL, read-only tools scoped to one
-directory (BRAND_CORPUS_DIR) — not a 1:1 filesystem wrapper. Point it at a brand's corpus via the
+directory (canonical env BRAND_CORPUS_DIR, alias BRAND_CORPUS_ROOT) — not a 1:1 filesystem wrapper. Point it at a brand's corpus via the
 plugin's `corpus_dir` userConfig; unset, the tools return a clear "configure corpus_dir" message
 rather than failing.
 
@@ -17,7 +17,10 @@ import re
 import sys
 
 NAME, VERSION = "brand-corpus", "0.1.0"
-CORPUS = os.environ.get("BRAND_CORPUS_DIR", "").strip()
+# Canonical corpus-root env var is BRAND_CORPUS_DIR; BRAND_CORPUS_ROOT is accepted as a back-compat
+# alias (some hand-wired servers — e.g. an earlier Node build — used the ROOT name). See
+# skills/brand-corpus/references/mcp-wiring.md.
+CORPUS = (os.environ.get("BRAND_CORPUS_DIR") or os.environ.get("BRAND_CORPUS_ROOT") or "").strip()
 
 TOOLS = [
     {"name": "list_brand_documents",
