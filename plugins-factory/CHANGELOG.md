@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-06-03
+
+- **`skill-architecture.md` — "Harden with structure, not prose."** Made explicit the discipline of moving every guarantee into a structure rather than a prose instruction, in order of strength: mechanized check · tool-scope · **embedded output rubric** (named dimensions, `[gate]` labels, an explicit pass threshold) · named verify target · §SelfAudit · anti-pattern gallery · progressive disclosure. The test: *if a requirement is enforced only by a polite sentence, it is not hardened.* The not-thin checklist now requires an embedded output rubric for judgment-heavy output and that every requirement be carried by a structure. Rubrics and gates over traditional prompting.
+
 ## 0.2.0 — 2026-06-03
 
 Evolved **skill + agent authoring** — closing the methodology gap that was producing thin, single-`SKILL.md` skills.

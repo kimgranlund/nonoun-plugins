@@ -1,6 +1,6 @@
 {
   "name": "plugins-factory",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — build a plugin and judge it with the same rubrics, foundations, and 9-critic council (the critics run as parallel isolated agents). Bundles an advisory PostToolUse hook that validates plugin.json / marketplace.json on save (fires on Write|Edit, reads the written manifest, prints only, never blocks).",
   "author": {
     "name": "Kim",

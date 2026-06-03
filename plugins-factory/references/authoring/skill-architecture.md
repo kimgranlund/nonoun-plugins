@@ -88,13 +88,27 @@ A skill takes a stance, and the stance shapes its surface:
 - **Teacher** — first-principles + worked examples (a methodology skill).
 Name the posture in the seed; it tells the agent how to read the rest.
 
+## Harden with structure, not prose
+
+The difference between a hardened skill and a prompt is **where the guarantee lives.** "Always validate the output," "be careful to X," "make sure to Y" are prose — they hold only when the model happens to remember. A hardened skill moves each guarantee into a *structure the model can't skip.* Prefer, in rough order of strength:
+
+1. **Mechanized check** — a script/lint/gate that *runs*: the catch is code, not a reminder. The strongest hardening; use it for anything repeatable with a clear pass/fail.
+2. **Tool-scope** — for agents, a structural interlock (the `tools:` allowlist) no instruction can override.
+3. **Embedded output rubric** — for judgment-heavy output, ship a rubric the skill scores its own output against: named dimensions, each `[gate]`/`[review]`/`[hypothesis]` labeled, with an explicit **pass threshold** (e.g. "every `[gate]` ≥ 3/5 before proceeding"). This replaces "produce good output" with a measured bar — the gen-review / wireframe-checkpoint pattern. A skill whose quality bar is a rubric is hardened; one whose bar is an adjective is not.
+4. **Named verify target** — a real external signal that proves done (a render, product state, a tool becoming callable, a cited artifact), per mode — never "tests pass" / "looks right."
+5. **§SelfAudit** — a mechanical pre-done checklist the skill runs on itself, including the trust boundary when it reads untrusted content.
+6. **Anti-pattern gallery** — the failure modes named with their tells; teaching by negation hardens against the specific ways the task goes wrong.
+7. **Progressive disclosure (context hardening)** — load references on explicit conditions, never preemptively, and prefer structured output (tables, labeled findings) over free-form prose. A lean, on-demand context is more reliable than a bloated one.
+
+The test for any requirement in a skill: **if it is enforced only by a polite sentence, it is not hardened.** Promote it to a gate, a rubric dimension, a verify target, a script, or a tool-scope. Reserve prose for genuine judgment — and even then, give the judgment a rubric to score against. This is not optional polish; it is the difference between a skill and a wish.
+
 ## Build against the standard
 
 A rich skill is grounded, not guessed. For each load-bearing concern, read its foundation before writing that part and build to its rubric (see `build-against-the-standard.md` for the full bridge): the description/cold-start surface (`cold-start-orientation`), the inversion + verify discipline (`skills-authoring`), the extensibility/teach layer (`skill-extensibility`), the trust boundary (`security-and-scope-containment`), and progressive disclosure (the context-economy foundation). Then run the build-time red-team (at minimum the security + structure critics) on your own draft before shipping.
 
 ## The not-thin checklist
 
-A skill is rich enough to ship when it has: a **cold-start mode table**, a **Quick Start in the first screen**, **named verify targets per mode**, a **loading manifest** with per-reference load-when, an **anti-pattern gallery**, a **§SelfAudit** (if multi-mode), and a **§Teach** path. Missing three or more of these and it's thin — restructure before adding content.
+A skill is rich enough to ship when it has: a **cold-start mode table**, a **Quick Start in the first screen**, **named verify targets per mode**, a **loading manifest** with per-reference load-when, an **embedded output rubric** wherever the output is judgment-heavy, an **anti-pattern gallery**, a **§SelfAudit** (if multi-mode), and a **§Teach** path. Above all — **every requirement is carried by a structure (a gate, a rubric dimension, a verify target, a script, or a tool-scope), not a bare instruction.** Missing three or more of these and it's thin; relying on prose where a structure belongs and it's soft. Restructure before adding content.
 
 ## See also
 
