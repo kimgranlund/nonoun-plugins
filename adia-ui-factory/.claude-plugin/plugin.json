@@ -1,0 +1,12 @@
+{
+  "name": "adia-ui-factory",
+  "version": "0.1.0",
+  "description": "Author and verify apps built on the adia-ui (@adia-ai) light-DOM web-component framework — scaffold the app + host, compose screens and author components from the catalog, wire state/routing/data/LLM, and verify in the browser — across both SPA and SSR-framework rendering modes. Wires the a2ui MCP for catalog/pattern retrieval, UI generation, and validation.",
+  "author": {
+    "name": "Kim",
+    "email": "kim@sublimeheroics.com"
+  },
+  "homepage": "https://github.com/kimgranlund/plugins-forge",
+  "license": "MIT",
+  "keywords": ["adia-ui", "a2ui", "web-components", "app-authoring", "ssr", "spa", "scaffolding", "llm-ui"]
+}

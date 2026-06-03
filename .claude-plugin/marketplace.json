@@ -11,16 +11,46 @@
     {
       "name": "brand-forge",
       "source": "./brand-forge",
-      "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — with an adversarial 14-critic council that runs as parallel isolated agents.",
+      "description": "Build and evaluate brands grounded in cultural authority \u2014 strategy, identity, voice, stewardship \u2014 with an adversarial 14-critic council that runs as parallel isolated agents.",
       "category": "design",
-      "tags": ["brand", "brand-strategy", "design", "identity", "voice", "council"]
+      "tags": [
+        "brand",
+        "brand-strategy",
+        "design",
+        "identity",
+        "voice",
+        "council"
+      ]
     },
     {
       "name": "plugins-factory",
       "source": "./plugins-factory",
-      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
+      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard \u2014 component fit, boundary cohesion, dependency legality \u2014 judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author\u00b7carve\u00b7edit; judge with /plugin-score\u00b7critique\u00b7promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
       "category": "developer-tools",
-      "tags": ["plugins", "claude-code", "marketplace", "packaging", "lifecycle", "carve", "meta"]
+      "tags": [
+        "plugins",
+        "claude-code",
+        "marketplace",
+        "packaging",
+        "lifecycle",
+        "carve",
+        "meta"
+      ]
+    },
+    {
+      "name": "adia-ui-factory",
+      "source": "./adia-ui-factory",
+      "description": "Author and verify apps on the adia-ui (@adia-ai) light-DOM web-component framework \u2014 scaffold, compose, wire (SPA + SSR), and verify \u2014 leaning on the a2ui MCP for catalog retrieval, generation, and validation.",
+      "category": "developer-tools",
+      "tags": [
+        "adia-ui",
+        "a2ui",
+        "web-components",
+        "app-authoring",
+        "ssr",
+        "spa",
+        "llm-ui"
+      ]
     }
   ]
 }
