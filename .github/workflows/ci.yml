@@ -1,0 +1,37 @@
+name: ci
+
+# Marketplace gates — validate every bundled plugin + the marketplace manifest with
+# plugins-studio's own tooling (it validates itself and its siblings). Stdlib Python only.
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: validator selftest
+        run: python3 plugins-studio/bin/validate_plugin.py selftest
+
+      - name: validate plugin — plugins-studio
+        run: python3 plugins-studio/bin/validate_plugin.py plugin plugins-studio --strict
+
+      - name: validate plugin — brand-studio
+        run: python3 plugins-studio/bin/validate_plugin.py plugin brand-studio --strict
+
+      - name: validate marketplace
+        run: python3 plugins-studio/bin/validate_plugin.py marketplace .
+
+      - name: foundations ↔ rubrics coverage
+        run: cd plugins-studio && python3 bin/check-foundations-coverage.py
+
+      - name: reference-lint — plugins-studio
+        run: python3 plugins-studio/bin/reference-lint.py plugins-studio
+
+      - name: reference-lint — brand-studio
+        run: python3 plugins-studio/bin/reference-lint.py brand-studio

@@ -1,0 +1,19 @@
+{
+  "name": "brand-studio",
+  "version": "0.1.0",
+  "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, and stewardship — with an adversarial named-critic council. Modes are typed commands (/brand-build, /brand-evaluate, /brand-council, /brand-orient); the council runs as 14 parallel isolated critic agents + an orchestrator; methodology/evaluation/corpus knowledge are skills; a brand-corpus MCP gives per-instance retrieval; and an advisory brand-lint hook surfaces structural smells on prose artifact writes (it never blocks). Self-contained.",
+  "author": {
+    "name": "Kim",
+    "email": "kim@sublimeheroics.com"
+  },
+  "homepage": "https://github.com/nonoun/nonoun-plugins",
+  "license": "MIT",
+  "keywords": ["brand", "brand-strategy", "design", "identity", "voice", "council", "cultural-authority"],
+  "userConfig": {
+    "corpus_dir": {
+      "type": "directory",
+      "description": "Path to this brand's corpus (documents, tokens, strategy files) for the brand-corpus MCP. Optional — leave unset to run methodology, evaluation, and council without live corpus retrieval.",
+      "sensitive": false
+    }
+  }
+}

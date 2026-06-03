@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+
+# Personal Claude Code settings (shared .claude/ content stays tracked)
+.claude/settings.local.json
