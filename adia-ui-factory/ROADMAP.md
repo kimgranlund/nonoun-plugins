@@ -1,15 +1,21 @@
 # Roadmap
 
-Phased build (via plugins-factory's `author` method):
+## Shipped
 
-- **[a] Skeleton** ✅ — structure + `plugin.json` + marketplace entry + a2ui MCP wiring + stubs (validates clean).
-- **[b] Core skills** ✅ — `adia-ui-factory` (decision tree), `adia-ui-compose` (catalog literacy + component authoring + theming), `adia-ui-spa`, `adia-ui-ssr`, plus five vendored `references/` (component-model, authoring-components, spa-architecture, ssr-integration, a2ui-mcp-tools) and the five commands wired as thin routers.
-- **[c] Tooling** ✅ — `adia-ui-llm` + `adia-ui-verify` skills (over `references/llm.md` + `references/verification.md`); `bin/adia-scaffold` (deterministic per-mode app scaffolder, with `selftest`); `bin/adia-lint` + `hooks/hooks.json` — the advisory authoring-lint hook (raw colors, `attachShadow`, `::slotted`, width-on-`:scope`, dead `--a-font`, top-level import in SSR, double route-owner, hardcoded overlay `open`); never blocks.
-- **[d] Validate + red-team** ✅ — `validate_plugin.py --strict` + `reference-lint` + the scaffolder/lint selftests all green in CI; ran the full plugins-factory 9-critic council (no Criticals; Majors folded — see CHANGELOG). Result: APPROVED with follow-ups below.
+- **v0.1.0** ✅ — the 6-skill plugin (orchestrator + compose/spa/ssr/llm/verify), the scaffolder + advisory lint hook, the wired a2ui MCP; built and red-teamed via plugins-factory.
+- **v0.2.0** ✅ — the re-carve to **11 hardened skills** across the full authoring lifecycle (added `project` · `shells` · `data` · `genui` · `migrate`; hardened the rest to plugins-factory's skill-architecture standard — mode + verify target + `[gate]` rubric + §SelfAudit + load-on-demand references). `bin/adia-scaffold` gained `page`/`component`; `bin/adia-lint` gained px / native-primitive / legacy-shell audits. Full 9-critic council pass folded — see `reviews/2026-06-03-v0.2-red-team.md`.
 
-## Open (deferred from the red-team)
-- **Re-bake discipline** — the vendored methodology + the pinned MCP (`@0.7.8`) are a coupled snapshot; bump and re-verify both together when the framework version moves. No automated drift check yet (e.g. linting `mcp__a2ui__*` references against the live `get_component_map`).
-- **a2ui MCP context cost (P6)** — pinned + documented + disable-path given, but Claude Code starts a plugin's MCP on enable and the tool set can't be scoped from `.mcp.json`; a methodology-only user still pays ~24 tool defs. Native per-server gating is an upstream/host limitation; revisit if it lands.
-- **`adia-ui-llm` cohesion (Steve/Elon/Karpathy)** — the one skill that's a runtime-feature rather than structure. Considered: demote to a `compose` sub-reference, or split to a sibling `adia-ai-llm` plugin. Kept for now (LLM/chat is core to the kit's purpose); reconsider if the roster grows.
-- **Command namespace (Steve, RD4)** — commands are `/adia-*` while skills are `adia-ui-*`; `/adia-verify` is the most collision-prone at marketplace scale. Consider aligning to `/adia-ui-*` before external adoption (breaking rename — cheap now, costly later).
-- **SSR top-level-import lint blind spot (Karpathy)** — `adia-lint` flags the kit's top-level import only in files with a framework signal, to avoid false-positives on the legit SPA registration script; a bare `register.ts` module won't trip it. Documented as a known limitation; a smarter per-project signal could close it.
+## Open (deferred from the v0.2 red-team)
+
+- **Re-bake discipline + a `tools/list` snapshot** — the vendored methodology and the pinned MCP (`@0.7.8`) are a coupled snapshot; bump and re-verify together on a framework move. Commit a `tools/list` capture so the "~24 tools" count is auditable and a version bump is a reviewable tool-surface diff. No automated reference↔catalog drift check yet.
+- **a2ui MCP context cost (P6)** — pinned + documented + disable-path given, but the host starts the MCP on enable and the tool set can't be scoped from `.mcp.json`; a methodology-only user pays ~24 tool defs. Upstream/host limit; revisit if per-server gating lands.
+- **Mechanize the render gate** — the highest-value verify gate (browser render + *read* the screenshot) is self-verified; a `bin/adia-probe` (Playwright) could return a machine-checkable verdict.
+- **Uniform snapshot banners** — add the "verified-against-version; the MCP is authoritative" banner to every reference that states concrete API (the per-shell refs especially).
+- **Command namespace** — commands are `/adia-*`, skills `adia-ui-*`; consider aligning to `/adia-ui-*` before external adoption (a breaking rename — cheapest now).
+- **Skill-count tension (Elon vs Steve/Boris/Huyen)** — 11 skills is the chosen comprehensiveness↔cost trade; the `genui`↔`llm` and `migrate`↔`verify` merges stay declined unless the cost proves too high in real use.
+- **`adia-embed-shell`** — currently the embedded-app *pattern* (`references/shell-embed.md`, labeled emerging); re-bake the shell reference when the official web-module ships.
+- **SSR top-level-import lint blind spot** — `adia-lint` flags the kit's top-level import only in framework-signal files; a bare `register.ts` won't trip it. Known limitation.
+
+## Next plugin
+
+- **`adia-ui-forge`** — the maintainer-side plugin (authoring the framework *itself*: new library components, git releases, training-data/corpus, the token/CSS system). Carved and built after adia-ui-factory, same discipline, against plugins-factory's v0.2 skill/agent-architecture standard.
