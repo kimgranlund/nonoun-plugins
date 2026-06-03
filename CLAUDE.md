@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`nonoun-plugins` is a **Claude Code plugin marketplace** plus its own authoring harness. Two distinct things live here:
+`plugins-forge` is a **Claude Code plugin marketplace** plus its own authoring harness. Two distinct things live here:
 
 - **The catalog** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Currently one: **`brand-forge/`**.
 - **The harness** — **`plugins-factory`** (the plugin-lifecycle factory) lives at **`.claude/skills/plugins-factory/`** and auto-loads as a project-scope `@skills-dir` plugin whenever you work here. It is *not* in the catalog — it's the tool you use to build and red-team the catalog plugins. It keeps its own `plugin.json`, so it's also shareable.
@@ -87,8 +87,8 @@ python3 "$PF/bin/reference-lint.py" brand-forge                    # doc/command
 Install / iterate inside Claude Code:
 
 ```
-/plugin marketplace add nonoun/nonoun-plugins
-/plugin install brand-forge@nonoun-plugins
+/plugin marketplace add kimgranlund/plugins-forge
+/plugin install brand-forge@plugins-forge
 ```
 
 ## Conventions

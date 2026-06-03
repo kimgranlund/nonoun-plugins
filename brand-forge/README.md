@@ -9,8 +9,8 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 ## Quick start
 
 ```
-/plugin marketplace add nonoun/nonoun-plugins
-/plugin install brand-forge@nonoun-plugins
+/plugin marketplace add kimgranlund/plugins-forge
+/plugin install brand-forge@plugins-forge
 ```
 
 Then drive it through four typed commands:

@@ -6,7 +6,7 @@
     "name": "Kim",
     "email": "kim@sublimeheroics.com"
   },
-  "homepage": "https://github.com/nonoun/nonoun-plugins",
+  "homepage": "https://github.com/kimgranlund/plugins-forge",
   "license": "MIT",
   "keywords": ["plugins", "claude-code", "marketplace", "packaging", "component-fit", "carve", "lifecycle", "meta"]
 }
