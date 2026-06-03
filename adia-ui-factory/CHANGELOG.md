@@ -5,6 +5,7 @@
 Re-carve to manage real adia-ui project types (see `reviews/2026-06-03-v0.2-recarve.md`), with every skill authored to plugins-factory's v0.2 hardened skill-architecture standard — rubrics/gates over prose.
 
 - **Phase 1a** — rebuilt the `adia-ui-factory` orchestrator to the hardened standard: four cited-signal classifiers (rendering mode incl. **hybrid** · project shape · shell · task), an **Orientation Record** verify target with a `[gate]` rubric (route only on evidence, never a guess), §SelfAudit, §Teach, and a load-when references manifest. Added `references/project-shapes.md` (the shapes · four-axis · page-trio/DUO + an embedded structure rubric `[gate]`). The routing table targets the full 11-skill roster (`project` · `shells` · `data` · `genui` · `migrate` marked *building*).
+- **Phase 1b** — added the `adia-ui-project` skill (modes: new-app · add-surface · add-page · add-component · inventory; the page-trio/DUO choice as a `[gate]`; the `project-shapes.md` structure rubric as the verify target; the layout **mechanized** by the scaffolder, not hand-rolled). Extended `bin/adia-scaffold` with `page` (trio default, `--duo` for declarative) and `component` sub-commands — both emit lint-clean output and are covered by the scaffolder selftest.
 
 ## 0.1.0 — 2026-06-03
 

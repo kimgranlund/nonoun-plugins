@@ -13,6 +13,14 @@ real screen are yours (and the a2ui MCP's), because those are what drift. Modes:
       The adia integration layer to drop into an EXISTING framework app: a client-boundary provider
       (deferred registration) for the chosen framework + a README integration checklist.
 
+  adia-scaffold page <name> [-o DIR] [--duo] [--force]
+      Add a page to a surface: a page-trio (<name>.html + .contents.html + .contents.js exporting
+      setup) — or a page-DUO (no .contents.js) with --duo, for a purely declarative page.
+
+  adia-scaffold component <tag> [-o DIR] [--force]
+      Add a light-DOM component folder: components/<tag>/<tag>.{js,css} (a lint-clean skeleton —
+      self-booting container, two-block @scope, token-only).
+
   adia-scaffold selftest
       Scaffold each shape to a temp dir and assert the expected files exist. Exit 1 on failure.
 
@@ -228,6 +236,78 @@ Integration checklist (the `adia-ui-ssr` skill owns the depth):
 """
 
 
+# ---- page & component templates --------------------------------------------
+
+_PAGE_HTML = """<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <link rel="stylesheet" href="/packages/web-components/styles/host.css" />
+  <link rel="stylesheet" href="/packages/web-components/styles/index.css" />
+  <script type="module" src="/packages/web-components/index.js"></script>
+</head>
+<body>
+  <main id="page-root"><p>Loading…</p></main>
+  <script type="module">
+    // page-trio loader: fetch the fragment, inject it, then run setup() if a .contents.js exists.
+    const root = document.getElementById('page-root');
+    root.innerHTML = await (await fetch('./{slug}.contents.html')).text();
+{js_import}  </script>
+</body>
+</html>
+"""
+
+_PAGE_CONTENTS = """<col-ui gap="4">
+  <text-ui variant="heading">{title}</text-ui>
+  <text-ui>Page scaffold. Compose the real content with /adia-compose.</text-ui>
+</col-ui>
+"""
+
+_PAGE_JS = """export default function setup(root) {
+  // Wire behavior here: events, property-API (e.g. el.columns = [...]), data fetch, streaming.
+  // Register any custom components this page uses via a side-effect import.
+}
+"""
+
+_COMPONENT_JS = """import {{ defineIfFree }} from '@adia-ai/web-components/core/register.js';
+import {{ UIElement }} from '@adia-ai/web-components/core/element.js';
+
+class {cls} extends UIElement {{
+  #booted = false;
+  connected() {{
+    if (this.#booted) return; // the callback re-fires whenever the element moves in the DOM
+    this.#booted = true;
+    this.innerHTML = `<col-ui gap="2"><text-ui>{tag}</text-ui></col-ui>`;
+  }}
+}}
+defineIfFree('{tag}', {cls});
+export {{ {cls} }};
+"""
+
+
+def _page_files(name, duo):
+    slug, title = _slug(name), (name.strip() or _slug(name))
+    js_import = "" if duo else f"    (await import('./{slug}.contents.js')).default?.(root);\n"
+    files = {
+        f"{slug}.html": _PAGE_HTML.format(slug=slug, title=title, js_import=js_import),
+        f"{slug}.contents.html": _PAGE_CONTENTS.format(title=title),
+    }
+    if not duo:
+        files[f"{slug}.contents.js"] = _PAGE_JS
+    return files, slug
+
+
+def _component_files(name):
+    tag = _tag(name)
+    cls = _cls(tag)
+    return {
+        f"components/{tag}/{tag}.js": _COMPONENT_JS.format(tag=tag, cls=cls),
+        f"components/{tag}/{tag}.css": _SPA_CSS.format(tag=tag),
+    }, tag
+
+
 # ---- writer ----------------------------------------------------------------
 
 def _write(root, files, force):
@@ -262,6 +342,18 @@ def _selftest():
             _, w2, _ = _scaffold("ssr", f"demo-{fw}", fw, tmp, False)
             if not any("README.md" == f for f in w2) or len(w2) != 2:
                 print(f"selftest: SSR/{fw} scaffold incomplete: {w2}", file=sys.stderr); ok = False
+        pf, _ = _page_files("Live View", False)
+        wpt, _ = _write(os.path.join(tmp, "pg"), pf, False)
+        if not (any(f.endswith("live-view.html") for f in wpt) and any(f.endswith("live-view.contents.js") for f in wpt)):
+            print("selftest: page-trio incomplete", file=sys.stderr); ok = False
+        pfd, _ = _page_files("Static Note", True)
+        wpd, _ = _write(os.path.join(tmp, "pgd"), pfd, False)
+        if any(f.endswith(".contents.js") for f in wpd) or len(wpd) != 2:
+            print("selftest: page-DUO should have no .contents.js", file=sys.stderr); ok = False
+        cf, _ = _component_files("data-badge")
+        wc, _ = _write(os.path.join(tmp, "cmp"), cf, False)
+        if not any(f.endswith(os.path.join("data-badge", "data-badge.js")) for f in wc):
+            print("selftest: component incomplete", file=sys.stderr); ok = False
     print("selftest: PASS" if ok else "selftest: FAIL")
     return 0 if ok else 1
 
@@ -278,15 +370,33 @@ def main(argv):
         if m == "ssr":
             sp.add_argument("--framework", required=True,
                             choices=sorted(_SSR.keys()))
+    pg = sub.add_parser("page")
+    pg.add_argument("name")
+    pg.add_argument("-o", "--out", default=".")
+    pg.add_argument("--duo", action="store_true")
+    pg.add_argument("--force", action="store_true")
+    cm = sub.add_parser("component")
+    cm.add_argument("name")
+    cm.add_argument("-o", "--out", default=".")
+    cm.add_argument("--force", action="store_true")
     sub.add_parser("selftest")
     args = p.parse_args(argv)
 
     if args.mode == "selftest":
         return _selftest()
 
-    framework = getattr(args, "framework", None)
-    root, written, skipped = _scaffold(args.mode, args.name, framework, args.out, args.force)
-    label = args.mode.upper() + (f"/{framework}" if framework else "")
+    if args.mode == "page":
+        files, _ = _page_files(args.name, args.duo)
+        root, label = args.out, ("PAGE/DUO" if args.duo else "PAGE")
+        written, skipped = _write(root, files, args.force)
+    elif args.mode == "component":
+        files, _ = _component_files(args.name)
+        root, label = args.out, "COMPONENT"
+        written, skipped = _write(root, files, args.force)
+    else:
+        framework = getattr(args, "framework", None)
+        root, written, skipped = _scaffold(args.mode, args.name, framework, args.out, args.force)
+        label = args.mode.upper() + (f"/{framework}" if framework else "")
     print(f"adia-scaffold [{label}] → {root}")
     for f in written:
         print(f"  + {f}")
