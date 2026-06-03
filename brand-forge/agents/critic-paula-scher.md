@@ -1,5 +1,6 @@
 ---
 name: critic-paula-scher
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Paula S.. Liquid/flexible identity, recognition at scale, the bold gesture, editorial refusal. Invoked by the brand-council orchestrator to adversarially review brand work.
 ---

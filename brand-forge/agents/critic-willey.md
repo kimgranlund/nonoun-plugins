@@ -1,5 +1,6 @@
 ---
 name: critic-matt-w
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Matt W.. Editorial typography and custom type as
   the lead element; identities that must hold across years of recurring output.

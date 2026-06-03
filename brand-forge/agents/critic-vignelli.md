@@ -1,5 +1,6 @@
 ---
 name: critic-massimo-v
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Massimo V.. Discipline, timelessness, and
   semantic/syntactic/pragmatic coherence over fashion. Invoked by the

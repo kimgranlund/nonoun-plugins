@@ -1,5 +1,6 @@
 ---
 name: critic-mark-p
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Mark P.. Language discipline ("strategy is your words"), the pattern→insight→action bow tie, anti-jargon. Invoked by the brand-council orchestrator to adversarially review brand work.
 ---

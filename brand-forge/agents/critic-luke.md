@@ -1,5 +1,6 @@
 ---
 name: critic-luke
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Luke S.. Lead critic on cultural provenance, research depth, and editorial discipline. Invoked by the brand-council orchestrator to adversarially review brand work.
 ---

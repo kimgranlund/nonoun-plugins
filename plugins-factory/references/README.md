@@ -48,6 +48,7 @@ A plugin's **fitness**, **routing**, **evolution**, and **security** are skill c
 | File | Purpose |
 |---|---|
 | `plugin-architecture.md` | The plugin technical model: `plugin.json` fields, the component set (skills/agents/commands/hooks/MCP/LSP/monitors/themes/bin), `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PLUGIN_DATA}`, the path-traversal limit, `marketplace.json`, namespacing, install scopes, validation. The source of truth P5 + P4 build against. |
+| `frontmatter.md` | Component frontmatter (skill / agent / command) + the **tool-use allowlist discipline** + the loader rule — how to write each component's YAML contract well. P2 / P7 / P9. |
 | `carve-method.md` | The library→plugins carve method: map the real composition graph → cluster by domain → resolve shared infra (co-locate / `dependencies` / symlink) → flag orphans + dead components → emit a boundary proposal. |
 | `authoring/build-against-the-standard.md` | The bi-directional bridge: each dimension → foundation → rubric → ship-gate → critic. **Read first for any author/carve/edit.** |
 | `authoring/creating-plugins.md` + `plugin-template.md` | The creation workflow + copy-pasteable `plugin.json` / `marketplace.json` / layout template. |

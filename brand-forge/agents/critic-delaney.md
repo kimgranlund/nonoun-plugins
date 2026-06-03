@@ -1,5 +1,6 @@
 ---
 name: critic-tim-d
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — Tim D.. The premium brief; the sentence built to
   last decades; clever AND relevant; writing for the serious audience, not the broadest.

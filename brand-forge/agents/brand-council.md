@@ -1,5 +1,6 @@
 ---
 name: brand-council
+tools: Read, Grep, Glob, Task
 description: Brand-council orchestrator. Convenes the named-critic panel — fans out the relevant critic sub-agents (strategy / design / voice / full) in parallel, collects severity-classified findings, runs the cross-critic synthesis, and returns a panel verdict. Invoked via /brand-council.
 ---
 

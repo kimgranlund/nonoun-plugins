@@ -1,5 +1,6 @@
 ---
 name: critic-george-l
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — George L.. The Big Idea; the synthesis of word and
   image; the connective leap; the nerve to make a cultural moment, not just an ad.

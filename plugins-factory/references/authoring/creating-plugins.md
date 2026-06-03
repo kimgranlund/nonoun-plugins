@@ -69,6 +69,8 @@ Copy the directory tree from `plugin-template.md` and create only the dirs the f
 
 State has a law too: **persistent state goes in `${CLAUDE_PLUGIN_DATA}`, never the plugin ROOT.** The root is the version-keyed cache copy — ephemeral, replaced on update. Bundled scripts are referenced via `${CLAUDE_PLUGIN_ROOT}` (also ephemeral, fine for read-only bundled assets).
 
+Each component you scaffold is a markdown file whose **frontmatter is its contract** — write it per [`../frontmatter.md`](../frontmatter.md): a third-person *what + when* `description` (the routing surface, P7), and for any agent a **`tools:` allowlist** (a read-only reviewer is `Read, Grep, Glob` — a structural guarantee, not a hoped-for instruction; the loader forbids `hooks`/`mcpServers`/`permissionMode` on bundled agents, P9).
+
 ---
 
 ## Step 4 — Wire `plugin.json` + the marketplace entry

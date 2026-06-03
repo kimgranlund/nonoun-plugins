@@ -1,5 +1,6 @@
 ---
 name: critic-david-a
+tools: Read, Grep, Glob
 description: >
   Brand-council critic — David A.. Respect for the reader; earned, honest,
   human copy; long copy people actually read; facts marshalled to read like prose.
