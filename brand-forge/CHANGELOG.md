@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **`/brand-stamp`** — emit a finished brand corpus as a distributable artifact: a **plugin** (corpus + the read-only `brand-corpus` MCP + a thin brand skill, for Claude Code / Cowork — bundled snapshot or `--linked` to a live corpus) or **skill + documents** (the flat-convention corpus as knowledge, for Claude chat). Mechanized by `bin/brand-stamp`; the plugin form is authored to pass plugins-factory's `validate_plugin.py`. Maps onto the two corpus conventions (folder → plugin, flat → docs).
+- **`/brand-stamp`** — emit a finished brand corpus as a distributable artifact, in one of **three pure, separate** forms (each to its own folder under `-o`): **plugin** (`<out>/plugin/<brand>-brand/` — corpus + the stdio `brand-corpus` MCP + a thin skill, for Claude Code / Cowork; bundled or `--linked`), **skill** (`<out>/skill/<brand>-brand/` — a standard Agent Skill with the corpus bundled in `references/`, for Claude chat; no MCP/scripts), and **mcp** (`<out>/mcp/<brand>-brand-mcp/` — the standalone server + corpus + a `claude mcp add` README). The command **always asks** which form. Mechanized by `bin/brand-stamp`; the plugin form is authored to pass plugins-factory's `validate_plugin.py`.
 - **`brand-corpus` MCP wiring** captured in `skills/brand-corpus/references/mcp-wiring.md` — the language-agnostic tool contract, Python-vs-TS guidance, and the three registration recipes (bundled / standalone / published). `brand-corpus-mcp.py` now also accepts the `BRAND_CORPUS_ROOT` env alias.
 
 ## 0.1.0 — 2026-06-02

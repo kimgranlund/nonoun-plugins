@@ -2,7 +2,7 @@
   "name": "plugins-forge",
   "owner": {
     "name": "Kim",
-    "email": "kim@sublimeheroics.com"
+    "email": "kim.granlund@gmail.com"
   },
   "metadata": {
     "description": "Best-in-class reference Claude Code plugins, authored and red-teamed with plugins-factory. Each is a self-contained worked example of the five-primitive component model (skill / agent / command / hook / MCP)."

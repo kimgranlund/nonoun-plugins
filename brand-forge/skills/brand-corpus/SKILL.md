@@ -108,10 +108,11 @@ register it (bundled in a plugin / standalone / published): [`references/mcp-wir
 
 ## Stamping the corpus into a distributable
 
-A finished corpus is *emitted* for a host via **`/brand-stamp`** (mechanized by `bin/brand-stamp`):
-a **plugin** (corpus + the `brand-corpus` MCP, for Claude Code / Cowork) or **skill + documents**
-(flat knowledge, for Claude chat). The two forms map onto this skill's two conventions —
-folder → plugin, flat → docs. → [`references/stamping.md`](references/stamping.md).
+A finished corpus is *emitted* for a host via **`/brand-stamp`** (mechanized by `bin/brand-stamp`), in
+one of three **pure, separate** forms — each to its own folder: a **plugin** (corpus + the stdio
+`brand-corpus` MCP, for Claude Code / Cowork), a **cloud skill** (the corpus bundled in a skill's
+`references/`, for Claude chat — no MCP/scripts), or a **standalone MCP** (the server + corpus + a
+`claude mcp add` recipe). → [`references/stamping.md`](references/stamping.md).
 
 ## Boundaries
 
