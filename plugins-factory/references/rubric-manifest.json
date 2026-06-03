@@ -138,6 +138,20 @@
         "manifest-and-packaging"
       ],
       "empirical_applications": 0
+    },
+    {
+      "name": "agent-fit",
+      "file": "rubrics/agent-fit.md",
+      "version": "0.1.0",
+      "layer": "authoring",
+      "primary_critic": "chip-huyen",
+      "key_question": "Is each bundled agent the right primitive (needs isolation / parallelism / tool-reduction), minimally tool-scoped without the lethal trifecta, loader-rule-clean, and — if a reviewer — a distinct cited lens under a sound orchestration?",
+      "dimensions": 8,
+      "minimum_scale": "solo",
+      "dependencies": [
+        "component-fit"
+      ],
+      "empirical_applications": 0
     }
   ],
   "adoption_contract": {

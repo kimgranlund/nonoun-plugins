@@ -47,6 +47,7 @@ The shared spine. **Load each rubric before scoring — never from memory.**
 - **Holistic** (the entry point for any review): `rubrics/plugins-holistic.md` — the 9 dimensions P1–P9.
 - **Plugin-distinctive deep-dives (P2–P6)**, each paired 1:1 with a foundation: `component-fit` · `boundary-cohesion` · `dependency-and-sharing` · `manifest-and-packaging` · `context-economy`.
 - **P1/P7/P8/P9** are scored against the co-located rubrics `cold-start-orientation` · `skills-authoring` · `skill-extensibility` · `security-and-scope-containment` (a plugin's fitness, routing, evolution, and security are skill concerns one layer up).
+- **Agents (a P2 specialization):** when the plugin bundles agents, also load `rubrics/agent-fit.md` — agent justification, tool-scope + the lethal trifecta, the loader rule, lens distinctness, and orchestration soundness. A skill rubric doesn't fit an agent.
 
 The `[gate]` dimensions are mechanically checkable (run `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py` for manifest validity, path legality, layout purity, the loader rule); `[review]` dimensions need expert judgment and the council. A green validator does **not** discharge the `[review]` sub-criteria.
 

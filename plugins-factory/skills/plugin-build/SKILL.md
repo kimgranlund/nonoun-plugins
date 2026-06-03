@@ -25,6 +25,7 @@ This file is a table of contents. The depth lives in the shared spine under `${C
 3. **Shared infrastructure must survive the install boundary.** Installed plugins are copied into a version-keyed cache and **cannot reference files outside their own directory** — a `../shared` path or cross-plugin `$ref` *breaks at install*. Resolve shared infra by co-location, `dependencies:`, or same-marketplace symlink — never `..`.
 4. **Cohesion is bounded on both sides** — neither kitchen-sink nor fragment. Ship internal granularity (many well-named skills) inside *one* domain plugin.
 5. **A plugin executes arbitrary code with the user's privileges.** A hook fires on your events, a bundled MCP starts on enable, a `bin/` joins your PATH. Security is a first-class dimension — document every hook's side-effect, scope bundled MCPs, never let a bundled agent hold the lethal trifecta.
+6. **Components are authored to depth, not stubbed.** A skill is a progressively-disclosed compendium — a cold-start mode surface + load-on-demand `references/` + a named verify target per mode — not a lone `SKILL.md`; an agent earns an isolated context or it's a skill. Build skills against `authoring/skill-architecture.md` and agents against `authoring/agent-architecture.md`. A thin single-file skill is a defect, not a starting point.
 
 ## The component-fit decision is the first move, not the last
 
@@ -42,7 +43,7 @@ Unlike a skill (one primitive), a plugin's central authoring act is **assigning 
 
 | Sub-mode | What it does | Read |
 |---|---|---|
-| `author` | New plugin: intent → component-fit pass → boundary check → wire `plugin.json` + marketplace entry → `validate_plugin.py` → build-time red-team → package | `build-against-the-standard.md` + `creating-plugins.md` + `plugin-template.md` |
+| `author` | New plugin: intent → component-fit pass → boundary check → wire `plugin.json` + marketplace entry → `validate_plugin.py` → build-time red-team → package | `build-against-the-standard.md` + `creating-plugins.md` + `plugin-template.md` + `authoring/skill-architecture.md` / `agent-architecture.md` (per component) |
 | `carve` | A skill library → a plugin-boundary proposal: map the real composition graph, cluster by domain, resolve shared infra (co-locate / `dependencies` / symlink), flag orphans + dead components | `carve-method.md` (+ `${CLAUDE_PLUGIN_ROOT}/agents/carve-analyst.md` for the graph fan-out) |
 | `edit` | Targeted fix — a mis-fit component, a kitchen-sink boundary, an illegal `../` dependency, bloated always-on context, a routing collision | `build-against-the-standard.md` + the relevant rubric |
 
@@ -79,6 +80,7 @@ Built against `build-against-the-standard.md` (each live dimension grounded in i
 |---|---|
 | `authoring/build-against-the-standard.md` | **first** — dimension → foundation → rubric → ship-gate → critic |
 | `authoring/creating-plugins.md` + `plugin-template.md` | `author` — workflow + copy-pasteable `plugin.json` / `marketplace.json` / layout |
+| `authoring/skill-architecture.md` · `authoring/agent-architecture.md` | authoring a **skill** or **agent** — structure it so it isn't thin (cold-start surface, modes, progressive disclosure, verify targets); when an agent earns isolation vs. stays a skill |
 | `carve-method.md` (+ `agents/carve-analyst.md`) | `carve` — library→plugins method + the composition-graph fan-out subagent |
 | `plugin-architecture.md` | the technical model — manifest fields, components, path variables, marketplace, namespacing, scopes, validation |
 | `rubrics/*.md` + `rubric-manifest.json` | the dimension you're building — `component-fit`, `boundary-cohesion`, `dependency-and-sharing`, `manifest-and-packaging`, `context-economy` (P2–P6); `cold-start-orientation`, `skills-authoring`, `skill-extensibility`, `security-and-scope-containment` (P1/P7/P8/P9, co-located) |
@@ -87,6 +89,6 @@ Built against `build-against-the-standard.md` (each live dimension grounded in i
 ## Boundaries
 
 - **Scoring / auditing / critiquing an existing plugin** → `plugin-evaluate`. This skill builds; that one judges.
-- **Authoring or fixing one skill's content** → `skills-studio`. This skill bundles skills; it does not write them.
+- **Deep standalone skill lifecycle** (routing evals, packaging a skill that ships on its own) → `skills-studio`. Authoring the skills/agents *inside a plugin* is this skill's job — build them to depth against `authoring/skill-architecture.md` + `authoring/agent-architecture.md`, not as stubs.
 - **Renaming / merging / retiring skills** (the restructuring a carve recommends) → `skills-refactor`.
 - **A single MCP server's tools / schemas** → `core-mcp-best-practices`. **An agent loop** → `core-agent-loops`.

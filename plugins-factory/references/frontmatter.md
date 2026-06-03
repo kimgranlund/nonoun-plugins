@@ -61,3 +61,7 @@ work** (they add supporting files, invocation control, and auto-loading).
 
 → The field-by-field model and version-sensitive additions live in `plugin-architecture.md` and the official
 reference; description-routing quality is scored by `rubrics/skills-authoring.md`.
+
+→ This is the field *contract*. For how to **structure** a skill so it isn't thin (cold-start surface, modes,
+progressive disclosure, verify targets) see `authoring/skill-architecture.md`; for when an agent earns its own
+context and how to define one (tool-scope, trust boundary, persona, orchestration) see `authoring/agent-architecture.md`.
