@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`nonoun-plugins` is a **Claude Code plugin marketplace** — a collection of self-contained, reference-quality plugins. `.claude-plugin/marketplace.json` is the marketplace manifest; each plugin lives in its own top-level directory with its own `.claude-plugin/plugin.json`. Currently one plugin: **`brand-studio/`**.
+`nonoun-plugins` is a **Claude Code plugin marketplace** plus its own authoring harness. Two distinct things live here:
+
+- **The catalog** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Currently one: **`brand-forge/`**.
+- **The harness** — **`plugins-factory`** (the plugin-lifecycle factory) lives at **`.claude/skills/plugins-factory/`** and auto-loads as a project-scope `@skills-dir` plugin whenever you work here. It is *not* in the catalog — it's the tool you use to build and red-team the catalog plugins. It keeps its own `plugin.json`, so it's also shareable.
 
 There is no build system, package manager, or test suite. Plugins are markdown + Python (stdlib only). "Running" the code means installing the plugin into Claude Code; "testing" means smoke-testing the Python bins (see [Commands](#commands)).
 
@@ -14,9 +17,9 @@ There is no build system, package manager, or test suite. Plugins are markdown +
 - Each plugin must be **self-contained — zero cross-plugin dependencies.** Don't reach into a sibling plugin.
 - Keep the four descriptions in sync — `marketplace.json`'s entry, the plugin's `plugin.json`, its `README.md`, and `CHANGELOG.md` restate the same scope, and drift between them is a defect.
 
-## The five-primitive model (brand-studio's architecture)
+## The catalog product: brand-forge (the five-primitive model)
 
-brand-studio is deliberately built as a worked example of the five Claude Code plugin primitives, **each doing the one job it is uniquely good at.** This separation *is* the architecture — respect the boundaries when editing.
+brand-forge is the marketplace's one distributable plugin — deliberately built as a worked example of the five Claude Code plugin primitives, **each doing the one job it is uniquely good at.** This separation *is* the architecture — respect the boundaries when editing.
 
 | Primitive | Location | Job | Invariant |
 |---|---|---|---|
@@ -44,29 +47,48 @@ Every critic agent, the orchestrator, and the evaluate/council skills repeat the
 
 `bin/brand-lint`'s `SMELLS` regexes mechanize the methodology's "bullshit filter" (archetypes, vision/mission/values, personas, brand-DNA/essence, values-without-trade-offs). The conceptual source of truth is `skills/brand-methodology/` (the Foundation Canon). If you change what counts as a smell in one, reconcile the other.
 
+## The harness: plugins-factory (`.claude/skills/plugins-factory/`)
+
+The repo's own plugin-lifecycle tool, auto-loaded in-place as a project-scope `@skills-dir` plugin (no install). Use it to author and judge the catalog plugins:
+
+- **Commands** — `/plugin-author` · `/plugin-carve` · `/plugin-edit` (build) and `/plugin-score` · `/plugin-critique` · `/plugin-promote` (judge), namespaced `plugins-factory:` when loaded.
+- **Skills** — `plugin-build` (the maker) and `plugin-evaluate` (the judge), over one shared rubric spine in `references/`.
+- **Agents** — a 9-critic council (`critic-boris … critic-david-f`) + a `plugin-council` orchestrator that fans them out in parallel isolated contexts, plus `carve-analyst`. Every critic is tool-scoped to `Read, Grep, Glob` (read-only — they review *untrusted* plugins, so they must not be able to execute).
+- **Gates (`bin/`)** — `validate_plugin.py` (manifest/layout/path static validator + `selftest` + an advisory `hook` mode), `check-foundations-coverage.py`, and `reference-lint.py` (fails on doc/command refs that don't resolve). All three run in CI (`.github/workflows/ci.yml`) against every catalog plugin.
+
+Self-contained (four cross-cutting rubrics co-located from the external `skills-studio`; zero cross-plugin paths) and authored by, and red-teamed against, its own 9-dimension standard — see its `reviews/` and `ROADMAP.md`.
+
 ## Commands
 
-No build/lint/test harness. Validate by smoke-testing the bins (Python 3.8+, stdlib only):
+Catalog plugins are markdown + stdlib Python — smoke-test their bins, then validate them with the harness gates (Python 3.8+):
 
 ```bash
 # brand-lint: structural smell checker. Exit 1 = smells found; --hook mode ALWAYS exits 0.
-python3 brand-studio/bin/brand-lint path/to/artifact.md
-echo "..." | python3 brand-studio/bin/brand-lint -
+python3 brand-forge/bin/brand-lint path/to/artifact.md
+echo "..." | python3 brand-forge/bin/brand-lint -
 
 # brand-corpus MCP: JSON-RPC 2.0 over newline-delimited stdin/stdout
-printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python3 brand-studio/bin/brand-corpus-mcp.py
-BRAND_CORPUS_DIR=/path/to/corpus python3 brand-studio/bin/brand-corpus-mcp.py   # point at a real corpus
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python3 brand-forge/bin/brand-corpus-mcp.py
+BRAND_CORPUS_DIR=/path/to/corpus python3 brand-forge/bin/brand-corpus-mcp.py   # point at a real corpus
 
 # brand-stack: render the Brand Stack one-pager SVG from the six tiers
 echo '{"foundation":"...","strategy":"...","idea":"...","identity":"...","expression":"...","output":"..."}' \
-  | python3 brand-studio/bin/brand-stack -
+  | python3 brand-forge/bin/brand-stack -
+
+# harness gates (run by .github/workflows/ci.yml on every push/PR):
+PF=.claude/skills/plugins-factory
+python3 "$PF/bin/validate_plugin.py" selftest
+python3 "$PF/bin/validate_plugin.py" plugin brand-forge --strict   # validate a catalog plugin
+python3 "$PF/bin/validate_plugin.py" marketplace .
+python3 "$PF/bin/reference-lint.py" brand-forge                    # doc/command refs must resolve
+( cd "$PF" && python3 bin/check-foundations-coverage.py )
 ```
 
 Install / iterate inside Claude Code:
 
 ```
 /plugin marketplace add nonoun/nonoun-plugins
-/plugin install brand-studio@nonoun-plugins
+/plugin install brand-forge@nonoun-plugins
 ```
 
 ## Conventions
@@ -74,4 +96,4 @@ Install / iterate inside Claude Code:
 - **Python**: stdlib only, target 3.8+. Hooks and the MCP resolve paths via the `${CLAUDE_PLUGIN_ROOT}` env var, with a fallback relative to the script.
 - **MCP tools** are task-level and read-only; `_safe()` rejects path traversal / symlink escape outside the corpus. Tool-level failures return `isError: true` so the model can tell a failure from real content.
 - **Frontmatter**: skills use `name` + `description` (with trigger phrases); agents use `name` + `description`; commands use `description` + `argument-hint`.
-- **Provenance**: brand-studio was authored and red-teamed with the `plugins-studio` skill — use it for plugin-lifecycle work (carving components, wiring manifests, adversarial review).
+- **Provenance**: brand-forge was authored and red-teamed with **plugins-factory** (the harness above) — use its `/plugin-*` commands for plugin-lifecycle work (carving components, wiring manifests, adversarial review).

@@ -5,22 +5,15 @@
     "email": "kim@sublimeheroics.com"
   },
   "metadata": {
-    "description": "Best-in-class reference Claude Code plugins, authored and red-teamed with plugins-studio. Each is a self-contained worked example of the five-primitive component model (skill / agent / command / hook / MCP)."
+    "description": "Best-in-class reference Claude Code plugins, authored and red-teamed with plugins-factory. Each is a self-contained worked example of the five-primitive component model (skill / agent / command / hook / MCP)."
   },
   "plugins": [
     {
-      "name": "brand-studio",
-      "source": "./brand-studio",
+      "name": "brand-forge",
+      "source": "./brand-forge",
       "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — with an adversarial 14-critic council that runs as parallel isolated agents.",
       "category": "design",
       "tags": ["brand", "brand-strategy", "design", "identity", "voice", "council"]
-    },
-    {
-      "name": "plugins-studio",
-      "source": "./plugins-studio",
-      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
-      "category": "developer-tools",
-      "tags": ["plugins", "claude-code", "marketplace", "packaging", "lifecycle", "carve", "meta"]
     }
   ]
 }

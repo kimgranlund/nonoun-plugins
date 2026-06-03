@@ -1,0 +1,34 @@
+{
+  "$schema": "https://anthropic.com/schemas/skill-evals.v1.json",
+  "skill": "plugins-factory",
+  "version": "0.1.0",
+  "description": "Routing corpus for the plugin lifecycle tool (author/carve/edit + score/critique/promote). Triggers cover building, carving, packaging, and evaluating Claude Code plugins + marketplaces. Adversarials route to the siblings that own adjacent layers: skill content (skills-studio), skill restructuring (skills-refactor), MCP tool design (core-mcp-best-practices), agent loops (core-agent-loops), domain-expert skills (meta-expert-author), app scaffolds (meta-app-scaffold).",
+  "trigger_phrases": [
+    "package these skills into a plugin",
+    "author a Claude Code plugin for our design system",
+    "carve our skill library into coherent plugins",
+    "what plugins should these skills become?",
+    "should this be a plugin or a standalone skill?",
+    "should this be a plugin, a skill, or an MCP?",
+    "build a marketplace.json for our plugins",
+    "review my plugin.json",
+    "audit this plugin's architecture",
+    "score this plugin against best practices",
+    "is this plugin well-bundled and ready to ship?",
+    "run the critic panel on this plugin",
+    "what components should this plugin bundle — hooks, skills, agents?",
+    "how should I split these capabilities into plugins?",
+    "is this plugin a kitchen sink?",
+    "review our plugin marketplace before we publish"
+  ],
+  "adversarial_phrases": [
+    "create a skill for writing DB migrations",
+    "rename core-foo to foo and fix the references",
+    "merge these two skills into one",
+    "design the tool schemas for our MCP server",
+    "design the agent loop / orchestration for this goal",
+    "build a comprehensive domain-expert skill like ref-dashboard",
+    "scaffold a new reference app under apps/"
+  ],
+  "notes": "Adversarials route to siblings that stay separate: authoring/scoring one skill's content -> skills-studio; renaming/merging/retiring/splitting skills -> skills-refactor; a single MCP server's tool schemas/perimeter -> core-mcp-best-practices; agent-loop orchestration -> core-agent-loops; a domain-expert knowledge skill -> meta-expert-author; an apps/ reference-app scaffold (borrows the plugin layout but is not a distributable plugin) -> meta-app-scaffold. plugins-factory owns the plugin bundle: whether to package, what to bundle, how to share legally, and whether the bundle is well-architected."
+}
