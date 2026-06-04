@@ -54,13 +54,13 @@ The foundation is the small set of **load-bearing** documents a brand actually s
 
 → Full detail: [`references/foundation-canon.md`](references/foundation-canon.md) _(Extension point: a mature corpus adds positioning-territory, category-design, and competitive-archaeology references alongside this one.)_
 
-## The three seats — provoke, make, review
+## The three seats — aspire, make, review
 
-Brand work moves through three distinct seats: the **Muse** _provokes_ (opens the option space, before), the **Team** _makes_ (converges on the work, the middle), and the **Council** _reviews_ (breaks it adversarially, after). Keep them distinct — **no seat judges its own work**, because a maker who reviews their own work grades on a curve.
+Brand work moves through three distinct seats: the **Muse** supplies the _pull_ (the aspiration the work moves toward — an ideal, a provocation, or a guiding concept), the **Team** _makes_ (converges the work, the middle), and the **Council** _reviews_ (judges it against the aspiration, after). Keep them distinct — **no seat judges its own work**, because a maker who reviews their own work grades on a curve.
 
-The **Team** is a set of on-demand making roles — Strategic Planner, Creative Director, Copywriter, Art Director, Design Director, Product/UX Designer, and Brand Steward — each adopted as the task needs and defined in the reference. The **Muse** is the generative provocateur (the `brand-muse` agent · `/brand-muse`); the **Council** is the named-critic panel (the `brand-evaluate` skill + critic agents · `/brand-council`).
+The **Team** is a set of on-demand making roles — Strategic Planner, Creative Director, Copywriter, Art Director, Design Director, Product/UX Designer, and Brand Steward — each adopted as the task needs and defined in the reference. The **Muse** is the aspirational attractor (the `brand-muse` agent · `/brand-muse`); the **Council** is the named-critic panel (the `brand-evaluate` skill + critic agents · `/brand-council`).
 
-The loop is **provoke → make → review → remake**: the Muse widens the options, the Team grounds and converges, the Council names what fails, the Team remakes or defends the line on the record. The handoffs are where work is won or lost — above all the **creative brief**, the strategy→expression pivot. Nothing skips to expression without a foundation, and nothing ships without surviving review.
+The loop is **aspire → make → review → remake**: the Muse names the pull, the Team converges toward it, the Council judges against it, the Team remakes or defends the line on the record. The handoffs are where work is won or lost — above all the **creative brief**, the strategy→expression pivot. Nothing skips to expression without a foundation, and nothing ships without surviving review.
 
 → The full model (the seats, the loop, the one invariant): [`references/creative-collaboration.md`](references/creative-collaboration.md). How the seats staff each phase of a brand + its corpus: [`references/team-operations-by-phase.md`](references/team-operations-by-phase.md).
 

@@ -1,6 +1,6 @@
 # brand-forge
 
-**Build and evaluate brands grounded in cultural authority — strategy, identity, voice, and stewardship — across three working seats: a generative Muse, the maker Team, and an adversarial named-critic Council.** A self-contained Claude Code plugin with zero cross-plugin dependencies.
+**Build and evaluate brands grounded in cultural authority — strategy, identity, voice, and stewardship — across three working seats: an aspirational Muse, the maker Team, and an adversarial named-critic Council.** A self-contained Claude Code plugin with zero cross-plugin dependencies.
 
 This plugin is published as a **best-in-class reference**: it exercises all five Claude Code plugin primitives, each doing the one job it is uniquely good at, so future plugin authors can copy the shape rather than reinvent it.
 
@@ -18,7 +18,7 @@ Then drive it through six typed commands:
 | Command | Posture | What it does |
 | --- | --- | --- |
 | `/brand-build` | collaborative | Make brand work — research, strategy, identity, voice — guarding pipeline order. |
-| `/brand-muse` | generative | Convene the Muse — divergent provocation that opens the option space _before_ the team converges. |
+| `/brand-muse` | generative | Convene the Muse — the aspirational pull (an ideal, a provocation, or a guiding concept) the work should move toward. |
 | `/brand-evaluate` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
@@ -31,29 +31,29 @@ Then drive it through six typed commands:
 ```text
 brand-forge/
 ├── commands/        6 typed entry points   → set mode + posture, then route
-├── agents/         14 critics + orchestrator + Muse → the review council + the provocateur
+├── agents/         14 critics + orchestrator + Muse → the review council + the aspirational pull
 ├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)
 └── .mcp.json        per-instance retrieval → the corpus contract (a slot)
 ```
 
 - **Commands = the typed entry surface.** Each command is _thin_: it sets the mode and posture (collaborative vs. adversarial vs. survey), classifies where the user is, and routes to the right skill or agent. It does **not** re-contain the methodology — there is one source of truth, and the command points at it.
-- **Agents = the council _and_ the Muse.** 14 named-practitioner critics plus one orchestrator make up the review **Council** — each critic its own agent in an **isolated context**, in **parallel**, so no critic sees another's reasoning and the disagreement is real. The **Muse** (`brand-muse`) is the generative counterpart: a single provocateur agent that opens the option space _before_ the team converges. Critics review backward; the Muse explores forward. The methodology, rubrics, council, and muse are where _cultural judgment_ lives.
+- **Agents = the council _and_ the Muse.** 14 named-practitioner critics plus one orchestrator make up the review **Council** — each critic its own agent in an **isolated context**, in **parallel**, so no critic sees another's reasoning and the disagreement is real. The **Muse** (`brand-muse`) is the aspirational counterpart: a single agent that holds the _pull_ — the ideal, provocation, or concept the work should move toward. The Council judges work backward against the standard; the Muse sets that standard forward. The methodology, rubrics, council, and muse are where _cultural judgment_ lives.
 - **Skills = the knowledge.** `brand-methodology` (the research→strategy→expression→stewardship method), `brand-evaluate` (the rubric library + adversarial scoring), and `brand-corpus` (how to inventory and read an existing brand). Skills hold the depth; commands and agents stay thin by leaning on them.
 - **Hooks + bin = the structural floor.** A `brand-lint` hook runs on prose artifact writes and invokes the checker in `bin/`. It is **advisory** — it surfaces smells, it never blocks a write — and a _mechanical floor_, not a critic. See **Honest scope** below.
 - **.mcp.json = the retrieval slot.** Declares the `brand-corpus` MCP server — a **contract** for per-instance corpus retrieval, pointed at a specific brand via `userConfig.corpus_dir`. The plugin ships the slot, never a brand's data.
 
 ---
 
-## The three seats — provoke · make · review
+## The three seats — aspire · make · review
 
 brand-forge organizes brand work the way a real studio does — into three distinct seats — and keeps them separate so **no seat judges its own work**:
 
-- **The Muse** _provokes_ (before) — the generative `brand-muse` agent (`/brand-muse`) opens the option space with grounded provocations, so the team converges on a _choice_, not the first safe default.
+- **The Muse** supplies the _pull_ — the generative `brand-muse` agent (`/brand-muse`) holds the aspiration the work moves toward (an ideal, a provocation, or a guiding concept), so the team converges on something better than the category average.
 - **The Team** _makes_ (the middle) — the methodology's on-demand making roles (Strategic Planner, Creative Director, Copywriter, Art/Design Director, Product/UX, Brand Steward) converge the work.
 - **The Council** _reviews_ (after) — the named critics break the finished work, adversarially and isolated.
 
-The loop is **provoke → make → review → remake**. The full model, the handoffs, and the one invariant live in the `brand-methodology` skill (its `creative-collaboration` reference); how the seats staff each phase of a brand and its corpus is in the `team-operations-by-phase` reference.
+The loop is **aspire → make → review → remake**. The full model, the handoffs, and the one invariant live in the `brand-methodology` skill (its `creative-collaboration` reference); how the seats staff each phase of a brand and its corpus is in the `team-operations-by-phase` reference.
 
 ## The council-as-agents design note
 
@@ -89,10 +89,10 @@ Treat brand-forge as a pattern library for plugin authors. The shapes it demonst
 3. **Skills as the single source of depth**, kept DRY behind the commands and agents.
 4. **A hook + bin pair that mechanizes only the mechanizable** — an honest structural floor, with judgment left to skills.
 5. **An MCP declared as a per-instance slot** via `userConfig`, shipping the contract and not the data.
-6. **The operational-roles triad** — separating **provoke** (Muse), **make** (Team), and **review** (Council) into distinct seats so no seat judges its own work. This pattern is generalized for any plugin in **plugins-factory**'s operational-roles authoring reference.
+6. **The operational-roles triad** — separating the **pull** (Muse), the **making** (Team), and the **review** (Council) into distinct seats so no seat judges its own work. This pattern is generalized for any plugin in **plugins-factory**'s operational-roles authoring reference.
 
 ---
 
 ## Provenance
 
-brand-forge was authored, validated, and red-teamed via **`plugins-factory`** — the plugin lifecycle studio that carves components, wires `plugin.json` / `marketplace.json`, validates structure, and runs the adversarial plugin-architecture review. Each release carries its adversarial review in `reviews/` (`2026-06-03-v0.2-red-team.md`, `2026-06-04-v0.3-red-team.md`). Self-contained by design: zero cross-plugin dependencies.
+brand-forge was authored, validated, and red-teamed via **`plugins-factory`** — the plugin lifecycle studio that carves components, wires `plugin.json` / `marketplace.json`, validates structure, and runs the adversarial plugin-architecture review. Each release carries its adversarial review in `reviews/` (`2026-06-03-v0.2-red-team.md`, `2026-06-04-v0.3-red-team.md`, `2026-06-04-v0.4-red-team.md`). Self-contained by design: zero cross-plugin dependencies.

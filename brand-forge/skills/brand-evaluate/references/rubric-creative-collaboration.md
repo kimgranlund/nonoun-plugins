@@ -1,6 +1,6 @@
 # Rubric — Creative Collaboration (ways of working)
 
-Scores **how a brand engagement is run** — the three-seat discipline (Muse provokes · Team makes · Council reviews) — not the artifact it produced. Use it when a brand looks weak and you suspect the _process_ is why: the tell of a broken process is work that was never provoked, never gated, or never independently reviewed. See `brand-methodology` → the three seats and team-operations-by-phase.
+Scores **how a brand engagement is run** — the three-seat discipline (Muse pulls · Team makes · Council reviews) — not the artifact it produced. Use it when a brand looks weak and you suspect the _process_ is why: the tell of a broken process is work with no aspiration pulling it, never gated, or never independently reviewed. See `brand-methodology` → the three seats and team-operations-by-phase.
 
 Score each dimension 1–5 with **evidence** (point to the actual artifacts, handoffs, or their absence) and **the test**. Dimensions marked _(directional)_ resist mechanical scoring — score as a lens, lean on judgment, do not average the number into a grade.
 
@@ -10,21 +10,21 @@ Score each dimension 1–5 with **evidence** (point to the actual artifacts, han
 
 _Did anyone judge their own work?_
 
-- **1** — One person provoked, made, and approved it all (the lone genius). No independent review exists.
+- **1** — One person set the aspiration, made, and approved it all (the lone genius). No independent review exists.
 - **3** — A reviewer existed but the maker was in the room "explaining" the work, or the same seat made and signed off.
-- **5** — Maker, reviewer, and provocateur are distinct; the work passed a **cold read** (no author rationale that isn't in the artifact).
+- **5** — Maker, reviewer, and Muse are distinct; the work passed a **cold read** (no author rationale that isn't in the artifact).
 
 **Hard test:** remove the author from the room — does the work still stand on the artifact alone? If it needed the author present, it failed. Self-approved work → cap at 2.
 
-## D2 — Provocation before convergence _(directional)_
+## D2 — The aspirational pull _(directional)_
 
-_Was the chosen direction a choice, or the first safe default?_
+_Is the work pulled toward a real aspiration, or drifting to the category average?_
 
-- **1** — The first obvious idea, shipped. No alternative was ever on the table.
-- **3** — Some alternatives existed but were minor variations of the same safe answer.
-- **5** — A real spread was generated and most of it was deliberately killed; the chosen direction beat genuinely different options, each traceable to a root.
+- **1** — No articulated aspiration; the work sits at the category average, indistinguishable from three competitors.
+- **3** — An aspiration exists on paper, but the work drifted toward the safe middle anyway.
+- **5** — A clear aspiration was named (an ideal, a provocation, or a guiding concept, traced to a root) and the work visibly reaches for it, well past the category average.
 
-**Hard test:** name three directions that were considered and _rejected_, and why. If none can be named, divergence never happened → cap at 2.
+**Hard test:** name the aspiration and point to where the work moves toward it. If the work is indistinguishable from three competitors, the pull failed → cap at 2.
 
 ## D3 — Foundation before expression
 
@@ -70,8 +70,8 @@ _Is there an owner of coherence over time — or will this drift?_
 
 ## Anti-patterns (each forces a cap or a flag)
 
-- **The lone genius** — one seat provokes, makes, and approves. → D1 ≤ 2.
-- **The first-idea brand** — shipped the obvious answer; nothing was diverged or killed. → D2 ≤ 2.
+- **The lone genius** — one seat sets the aspiration, makes, and approves. → D1 ≤ 2.
+- **The category-average brand** — no aspiration named; the work is indistinguishable from competitors. → D2 ≤ 2.
 - **Decoration-first** — expression built before a written foundation; strategy back-filled to justify it. → D3 ≤ 2.
 - **The applause council** — a review that only complimented; no Critical/Major and no stated reason for the pass. → D4 ≤ 2.
 - **The un-briefed engagement** — strategy and expression blur with no creative brief between them. → D5 ≤ 2.

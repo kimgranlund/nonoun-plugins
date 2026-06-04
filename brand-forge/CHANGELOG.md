@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0] — 2026-06-04
+
+The Muse, corrected: **from provocateur to aspirational attractor.** v0.3 cast the Muse as a divergent provocateur; that was one _mode_ mistaken for the whole seat. The Muse is an **attractor** — an aspirational goal, set of principles, ideal, or concept that exerts a **gravitational pull** in a direction, so the work moves toward something better than the category average. The Maker is pulled toward it; the Council judges against it.
+
+### Changed
+
+- **`brand-muse` reframed as the aspirational attractor.** The pull can be a positive ideal, a **provocation** (radical differentiation — when the truest direction is away from the mainstream, which is sometimes exactly right), a guiding concept to emulate, or a principle set. The six lenses are recast from "ways to diverge" to "ways to set or strengthen the pull" (name the ideal · the differentiating provocation · the adjacent-world exemplar · the contrarian angle · the principles · the pull-check). Provocation is now one mode, not the definition.
+- **`creative-collaboration.md` + `team-operations-by-phase.md`** rewritten around the attractor: the loop is **aspire → make → review → remake**; the Muse is a standing orientation the work is pulled toward, not a one-time brainstorm; the Council judges against the aspiration it set.
+- **`rubric-creative-collaboration.md`** reframed to the attractor (its header, the D1 anchor, and D2): D2 moves from "provocation before convergence" to "the aspirational pull" — does the work reach for a real aspiration, or drift to the category average?
+- The generalized pattern in **plugins-factory** (`operational-roles.md`, v0.2.4) is corrected in lockstep: the third seat is the **aspirational attractor** (near-universal — a north-star / principles / ideal), staffed as a generative agent only where taste makes the aspiration a live judgment; provocation is one form the pull takes.
+
+### Why
+
+The v0.3 framing ("the provocateur opens the option space") confused the Muse with one of its modes and made the seat look narrowly creative. As an attractor, the Muse is what keeps any work — brand, product, or system — from converging on the average; provocation is simply the pull pointing _away_ from the mainstream when that is the right direction.
+
 ## [0.3.0] — 2026-06-04
 
 The **three-seat model**, made explicit and mechanized. Brand work was always "made by a Team and reviewed by a Council"; this release adds the missing generative seat — the **Muse** — promotes it to a real agent, and gives all three seats a shared model, a ways-of-working rubric, and per-phase methodologies.

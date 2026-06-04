@@ -81,7 +81,7 @@ Built against `build-against-the-standard.md` (each live dimension grounded in i
 | `authoring/build-against-the-standard.md` | **first** — dimension → foundation → rubric → ship-gate → critic |
 | `authoring/creating-plugins.md` + `plugin-template.md` | `author` — workflow + copy-pasteable `plugin.json` / `marketplace.json` / layout |
 | `authoring/skill-architecture.md` · `authoring/agent-architecture.md` | authoring a **skill** or **agent** — structure it so it isn't thin (cold-start surface, modes, progressive disclosure, verify targets); when an agent earns isolation vs. stays a skill |
-| `authoring/operational-roles.md` | authoring a plugin that **orchestrates** work — the Maker / Critic / Provocateur seats, the loop, the one invariant, and when the third (provocateur) seat is earned vs. omitted |
+| `authoring/operational-roles.md` | authoring a plugin that **orchestrates** work — the Maker / Critic / Muse seats, the loop, the one invariant, and how to right-size the aspirational (Muse) seat by domain |
 | `carve-method.md` (+ `agents/carve-analyst.md`) | `carve` — library→plugins method + the composition-graph fan-out subagent |
 | `plugin-architecture.md` | the technical model — manifest fields, components, path variables, marketplace, namespacing, scopes, validation |
 | `rubrics/*.md` + `rubric-manifest.json` | the dimension you're building — `component-fit`, `boundary-cohesion`, `dependency-and-sharing`, `manifest-and-packaging`, `context-economy` (P2–P6); `cold-start-orientation`, `skills-authoring`, `skill-extensibility`, `security-and-scope-containment` (P1/P7/P8/P9, co-located) |
