@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1] — 2026-06-04
+
+Fixed a command-name collision that made `/brand-evaluate` unreachable.
+
+- **`/brand-evaluate` → `/brand-score`.** The command shared its slug with the `brand-evaluate` skill — and a plugin's commands and skills occupy **one** `/<plugin>:<slug>` invocation namespace (they are two file-formats of one primitive), so the skill shadowed the command and `/brand-evaluate` returned "Unknown command." Renamed the command to a distinct verb (`/brand-score`), mirroring plugins-factory's `/plugin-score` → `plugin-evaluate` pairing; the `brand-evaluate` skill is unchanged and is still the scoring knowledge the command routes to. The collision class is now gated by `validate_plugin.py`.
+
 ## [0.4.0] — 2026-06-04
 
 The Muse, corrected: **from provocateur to aspirational attractor.** v0.3 cast the Muse as a divergent provocateur; that was one _mode_ mistaken for the whole seat. The Muse is an **attractor** — an aspirational goal, set of principles, ideal, or concept that exerts a **gravitational pull** in a direction, so the work moves toward something better than the category average. The Maker is pulled toward it; the Council judges against it.

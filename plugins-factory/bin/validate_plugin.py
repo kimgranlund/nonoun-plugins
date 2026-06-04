@@ -178,6 +178,21 @@ def _check_layout(plugin_dir, data):
                 errors.append(f"agent `agents/{entry}` declares loader-forbidden field(s) "
                               f"{illegal} — plugin-shipped agents cannot carry hooks/mcpServers/permissionMode")
 
+    # COMMAND ↔ SKILL slug collision — commands AND skills both resolve as `/<plugin>:<slug>`
+    # (plugin-architecture.md §Namespacing). A command and a skill that share a slug collide: the
+    # skill claims the namespace and the command is unreachable ("Unknown command: /<plugin>:<slug>").
+    def _dir_slugs(sub, is_skill=False):
+        d = os.path.join(plugin_dir, sub)
+        if not os.path.isdir(d):
+            return set()
+        if is_skill:
+            return {n for n in os.listdir(d) if os.path.isfile(os.path.join(d, n, "SKILL.md"))}
+        return {os.path.splitext(n)[0] for n in os.listdir(d) if n.endswith(".md")}
+    for slug in sorted(_dir_slugs("commands") & _dir_slugs("skills", is_skill=True)):
+        errors.append(f"command `commands/{slug}.md` and skill `skills/{slug}/` share the slug "
+                      f"`{slug}`: both resolve to `/<plugin>:{slug}`, so the skill shadows the command "
+                      f"and `/{slug}` is unreachable — rename one (commands are verbs; skills are domains)")
+
     if os.path.isfile(os.path.join(plugin_dir, "CLAUDE.md")):
         warnings.append("a root CLAUDE.md is NOT loaded as plugin context — ship instructions as a skill")
 
@@ -378,6 +393,17 @@ def _selftest():
         if not any("loader-forbidden" in e for e in errs):
             failures.append("layout: agent declaring mcpServers not caught")
         _rmtree(tmp2)
+
+        # command ↔ skill slug collision must ERROR (the /<plugin>:<slug> shadowing class)
+        tmp3 = tempfile.mkdtemp(prefix="plugins-factory-selftest-")
+        os.makedirs(os.path.join(tmp3, "commands"))
+        os.makedirs(os.path.join(tmp3, "skills", "evaluate"))
+        open(os.path.join(tmp3, "commands", "evaluate.md"), "w").write("---\ndescription: x\n---\nbody\n")
+        open(os.path.join(tmp3, "skills", "evaluate", "SKILL.md"), "w").write("---\nname: evaluate\ndescription: x\n---\nbody\n")
+        errs, _ = validate_plugin_manifest({"name": "x"}, tmp3)
+        if not any("share the slug" in e for e in errs):
+            failures.append("layout: command↔skill slug collision not caught")
+        _rmtree(tmp3)
     finally:
         _rmtree(tmp)
 
@@ -386,7 +412,7 @@ def _selftest():
         for f in failures:
             print(f"  - {f}")
         return 1
-    print(f"validate_plugin.py selftest: PASS ({len(cases)} manifest fixtures + loader-rule + 3 on-disk layout fixtures)")
+    print(f"validate_plugin.py selftest: PASS ({len(cases)} manifest fixtures + loader-rule + 4 on-disk layout fixtures)")
     return 0
 
 

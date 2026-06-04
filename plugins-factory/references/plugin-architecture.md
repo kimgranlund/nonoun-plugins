@@ -257,9 +257,18 @@ These are not alternatives at the same level; they sit at different layers.
 
 ## 6. Validation, namespacing, scopes, security
 
-### Namespacing
+### Namespacing & naming
 
-Plugin skills are invoked as **`/plugin-name:skill-name`** — the `name` field is the namespace, which prevents collisions between plugins (two plugins can each ship a `review` skill without clashing).
+**Commands and skills are one invocation namespace.** `commands/*.md` (flat markdown) and `skills/<name>/SKILL.md` (a directory) are two file-formats of the **same** primitive — each registers a `/plugin-name:slug` skill, model- and slash-invocable. The official guidance is **"use `skills/` for new plugins"**; `commands/` is the legacy flat form (Claude Code docs: _Plugins reference_, _Create plugins_). Three consequences:
+
+- **Cross-plugin collisions are handled for you.** The `name` field is the namespace prefix (`/my-plugin:review`), so two plugins can each ship a `review` slug without clashing. **Do not hand-prefix slugs to avoid cross-plugin collision** — the namespace already does it. (A domain prefix on the _bare_ slug, e.g. `/brand-build`, is a defensible style choice for a self-describing bare form — at the cost of a `/brand-forge:brand-build` stutter.)
+- **A slug must be unique _across_ `commands/` + `skills/` within a plugin.** A `commands/<slug>.md` and a `skills/<slug>/` both define `/plugin:<slug>`; the skill shadows the command and `/<slug>` becomes unreachable (`Unknown command: /plugin:<slug>`). `validate_plugin.py` errors on this collision (and `claude plugin validate` is the official check).
+- **Agents are a separate surface.** Subagents (`agents/*.md`) are dispatched by an orchestrator or the `/agents` list, not the `/plugin:slug` skill router — so an agent _may_ share a name with a command/skill without colliding (e.g. a `/brand-council` command + a `brand-council` orchestrator agent).
+
+**Naming conventions** — all kebab-case; no `claude` / `anthropic` prefixes (reserved):
+
+- **Commands = imperative verbs** (`/deploy`, `/brand-score`); **skills = domain nouns** (`code-review`, `brand-methodology`); **agents = roles** (`code-reviewer`, `critic-boris`). Keep a command's slug distinct from its skill's — the working pattern is a verb-command routing to a differently-named knowledge skill (this plugin's `/plugin-score` → `plugin-evaluate`).
+- Descriptive over clever; one capability per name; moderate length.
 
 ### Validation & inspection
 

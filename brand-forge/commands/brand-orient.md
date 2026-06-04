@@ -16,4 +16,4 @@ Run the two-step orient:
    - **Drifting** — what exists but is inconsistent, stale, or off its own stated strategy.
    - **Missing** — what a coherent brand needs that isn't here at all (e.g. no grounded positioning, no point of view, no voice spec).
 
-Then close with a **short, structured next-step plan** — a few concrete moves in priority order, each pointing at the right next command (`/brand-build` to make, `/brand-evaluate` to score, `/brand-council` for a hostile read). Keep it tight; orientation should leave the user knowing exactly what to do next.
+Then close with a **short, structured next-step plan** — a few concrete moves in priority order, each pointing at the right next command (`/brand-build` to make, `/brand-score` to score, `/brand-council` for a hostile read). Keep it tight; orientation should leave the user knowing exactly what to do next.

@@ -37,7 +37,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <p class='sub'><b>6</b> catalog plugins · <a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>
 <nav><a href='#brand-forge'>brand-forge</a><a href='#plugins-factory'>plugins-factory</a><a href='#adia-ui-factory'>adia-ui-factory</a><a href='#adia-ui-forge'>adia-ui-forge</a><a href='#product-forge'>product-forge</a><a href='#agent-ops'>agent-ops</a></nav>
 <section class='card' id='brand-forge'>
-<h2><code>brand-forge</code> <span class='ver'>v0.4.0</span> <span class='cat'>design</span></h2>
+<h2><code>brand-forge</code> <span class='ver'>v0.4.1</span> <span class='cat'>design</span></h2>
 <p class='desc'>Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).</p>
 <div class='chips'><span class='chip'>brand</span><span class='chip'>brand-strategy</span><span class='chip'>design</span><span class='chip'>identity</span><span class='chip'>voice</span><span class='chip'>council</span></div>
 <div class='sec'><h3>Skills <span class='n'>3</span></h3>
@@ -53,15 +53,15 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Commands <span class='n'>6</span></h3>
 <div class='cmd'><code>/brand-build</code> <span class='d'>— Start a collaborative Build-mode brand engagement (strategy, research, identity, voice).</span></div>
 <div class='cmd'><code>/brand-council</code> <span class='d'>— Convene the brand council — adversarial critique from named practitioners.</span></div>
-<div class='cmd'><code>/brand-evaluate</code> <span class='d'>— Adversarially evaluate existing brand work against the rubrics.</span></div>
 <div class='cmd'><code>/brand-muse</code> <span class='d'>— Convene the Muse — name the aspiration the work should be pulled toward (an ideal, a provocation, or a guiding concept).</span></div>
 <div class='cmd'><code>/brand-orient</code> <span class='d'>— Orient — inventory the brand corpus and propose next steps.</span></div>
+<div class='cmd'><code>/brand-score</code> <span class='d'>— Adversarially evaluate existing brand work against the rubrics.</span></div>
 <div class='cmd'><code>/brand-stamp</code> <span class='d'>— Stamp a finished brand corpus into a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP.</span></div>
 </div>
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stamp</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 9</div></div>
 </section>
 <section class='card' id='plugins-factory'>
-<h2><code>plugins-factory</code> <span class='ver'>v0.2.4</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>plugins-factory</code> <span class='ver'>v0.2.5</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).</p>
 <div class='chips'><span class='chip'>plugins</span><span class='chip'>claude-code</span><span class='chip'>marketplace</span><span class='chip'>packaging</span><span class='chip'>lifecycle</span><span class='chip'>carve</span><span class='chip'>meta</span></div>
 <div class='sec'><h3>Skills <span class='n'>2</span></h3>
@@ -136,7 +136,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → forge-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>forge-lint</code> · <code>lib</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 52</div></div>
 </section>
 <section class='card' id='product-forge'>
-<h2><code>product-forge</code> <span class='ver'>v0.3.0</span> <span class='cat'>product</span></h2>
+<h2><code>product-forge</code> <span class='ver'>v0.3.1</span> <span class='cat'>product</span></h2>
 <p class='desc'>Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, and runnable methodology playbooks.</p>
 <div class='chips'><span class='chip'>product-strategy</span><span class='chip'>product-management</span><span class='chip'>ux</span><span class='chip'>user-research</span><span class='chip'>personas</span><span class='chip'>jobs-to-be-done</span><span class='chip'>ux-patterns</span><span class='chip'>app-genres</span><span class='chip'>discovery</span><span class='chip'>positioning</span><span class='chip'>ai-product</span><span class='chip'>council</span><span class='chip'>information-architecture</span><span class='chip'>service-design</span><span class='chip'>content-design</span><span class='chip'>governance</span><span class='chip'>experience-strategy</span></div>
 <div class='sec'><h3>Skills <span class='n'>8</span></h3>
@@ -156,10 +156,10 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 </div>
 <div class='sec'><h3>Commands <span class='n'>7</span></h3>
 <div class='cmd'><code>/product-council</code> <span class='d'>— Convene the adversarial product critic council (parallel, isolated) on an artifact.</span></div>
-<div class='cmd'><code>/product-evaluate</code> <span class='d'>— Score a product artifact (strategy, PRD, UX, AI-product) against the rubrics, with evidence.</span></div>
+<div class='cmd'><code>/product-discover</code> <span class='d'>— Plan/run user research and define evidence-grounded personas.</span></div>
 <div class='cmd'><code>/product-method</code> <span class='d'>— Pick and run a product methodology — route through the process spine to the right runnable playbook for where you are.</span></div>
 <div class='cmd'><code>/product-orient</code> <span class='d'>— Orient on a product/PM/UX task — classify it and route to the owning product-forge skill (or the council).</span></div>
-<div class='cmd'><code>/product-research</code> <span class='d'>— Plan/run user research and define evidence-grounded personas.</span></div>
+<div class='cmd'><code>/product-score</code> <span class='d'>— Score a product artifact (strategy, PRD, UX, AI-product) against the rubrics, with evidence.</span></div>
 <div class='cmd'><code>/product-strategy</code> <span class='d'>— Make product strategy / discovery / PRD / vision — grounded in the methodology canon.</span></div>
 <div class='cmd'><code>/product-ux</code> <span class='d'>— Design a UX flow/screen with the right pattern, grounded in the pattern library + the app-genre conventions.</span></div>
 </div>

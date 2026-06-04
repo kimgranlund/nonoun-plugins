@@ -19,7 +19,7 @@ Then drive it through six typed commands:
 | --- | --- | --- |
 | `/brand-build` | collaborative | Make brand work — research, strategy, identity, voice — guarding pipeline order. |
 | `/brand-muse` | generative | Convene the Muse — the aspirational pull (an ideal, a provocation, or a guiding concept) the work should move toward. |
-| `/brand-evaluate` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
+| `/brand-score` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
 | `/brand-stamp` | package | Emit a finished corpus as a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP — each to its own folder. |

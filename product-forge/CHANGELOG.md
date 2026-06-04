@@ -2,6 +2,12 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.1] — 2026-06-04
+
+Fixed two command-name collisions (the same class as brand-forge 0.4.1).
+
+- **`/product-evaluate` → `/product-score`** and **`/product-research` → `/product-discover`.** Each command shared its slug with a same-named skill (`product-evaluate`, `product-research`); since a plugin's commands and skills occupy one `/<plugin>:<slug>` invocation namespace, the skills shadowed the commands and `/product-evaluate` / `/product-research` were unreachable ("Unknown command"). Renamed the commands to distinct verbs; the skills are unchanged and remain what the commands route to. The collision class is now gated by `validate_plugin.py`.
+
 ## [0.3.0] — 2026-06-03
 
 The **methodology layer** — adds the runnable _how_ beside the frameworks (the _what_), the rubrics (the _score_), and the critics (the _who_). A machine-readable **method-card** schema + a process-spine frame map the common-sense methodologies a team actually runs, sequenced on the Double Diamond.
