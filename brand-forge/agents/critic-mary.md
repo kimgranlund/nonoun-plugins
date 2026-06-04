@@ -1,5 +1,5 @@
 ---
-name: critic-mary-norris
+name: critic-mary
 tools: Read, Grep, Glob
 description: >
   Brand-council critic — Mary N.. Editorial discipline through correction;

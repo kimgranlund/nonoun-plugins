@@ -1,5 +1,5 @@
 ---
-name: critic-brian-collins
+name: critic-brian
 tools: Read, Grep, Glob
 description: >
   Brand-council critic — Brian C.. Transformation over artifact (who does the customer become?), existential brand questions, financial-creative fluency. Invoked by the brand-council orchestrator to adversarially review brand work.

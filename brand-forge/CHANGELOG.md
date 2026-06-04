@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.2] — 2026-06-04
+
+- **Critic agent slugs shortened to first names** — `critic-nick-law` → `critic-nick`, `critic-brian-collins` → `critic-brian`, `critic-paula-scher` → `critic-paula`, `critic-mary-norris` → `critic-mary`, `critic-rory-sutherland` → `critic-rory` — so all 14 critics use a single-name slug (matching `critic-luke`, `critic-john-h`, …). Internal rename only: the personas, their real-name attributions in the agent bodies, and the council's behavior are unchanged; the `brand-council` roster is updated to match.
+
 ## [0.4.1] — 2026-06-04
 
 Fixed a command-name collision that made `/brand-evaluate` unreachable.

@@ -26,8 +26,8 @@ You convene named product, UX, and AI-era practitioners to critique an artifact 
 | **architecture** | `critic-jesse-g` · `critic-abby-c` · `critic-don-n` · `critic-jakob-n` | the five planes · IA / sensemaking · interaction model · heuristics |
 | **content** | `critic-torrey-p` · `critic-kathy-s` · `critic-jakob-n` | strategic content design · make-users-awesome · clarity |
 | **service** | `critic-marc-s` · `critic-john-c` · `critic-teresa-t` | service design / whole journey · operating model & governance · research grounding |
-| **trust** | `critic-ann-c` · `critic-cat-wu` · `critic-kevin-w` | privacy by design · AI trust / control · model-era deployment |
-| **ai-product** | `critic-cat-wu` · `critic-meaghan-choi` · `critic-kevin-w` · `critic-garry-t` | capability-led/eval-driven PM · design craft · model-maximalism · founder/PMF |
+| **trust** | `critic-ann-c` · `critic-cat` · `critic-kevin-w` | privacy by design · AI trust / control · model-era deployment |
+| **ai-product** | `critic-cat` · `critic-meaghan` · `critic-kevin-w` · `critic-garry-t` | capability-led/eval-driven PM · design craft · model-maximalism · founder/PMF |
 | **full** | all 23 | the whole panel |
 
 Default to `strategy` for a strategy/PRD artifact, `discovery` for a research/opportunity artifact, `ux` for a flow/screen, `architecture` for a journey/flow/IA/object-model, `content` for UX writing/microcopy, `service` for a service/support/ops/governance artifact, `trust` for a privacy/safety/consent surface, `ai-product` for an AI surface, `full` when asked or when the artifact spans concerns. `single-critic <name>` is supported.

@@ -18,9 +18,9 @@ You convene and synthesize the brand council. **The council reviews, evaluates, 
 
 | Sub-council | Critic agents |
 | --- | --- |
-| **Strategy** (6) | `critic-luke` _(lead — cultural provenance)_, `critic-john-h`, `critic-mark-p`, `critic-nick-law`, `critic-brian-collins`, `critic-rory-sutherland` |
-| **Design** (4) | `critic-paula-scher`, `critic-massimo-v`, `critic-matt-w`, `critic-jessica-w` |
-| **Voice** (4) | `critic-david-a`, `critic-george-l`, `critic-tim-d`, `critic-mary-norris` |
+| **Strategy** (6) | `critic-luke` _(lead — cultural provenance)_, `critic-john-h`, `critic-mark-p`, `critic-nick`, `critic-brian`, `critic-rory` |
+| **Design** (4) | `critic-paula`, `critic-massimo-v`, `critic-matt-w`, `critic-jessica-w` |
+| **Voice** (4) | `critic-david-a`, `critic-george-l`, `critic-tim-d`, `critic-mary` |
 
 `luke` carries the lead weight on most engagements — cultural authority is the dominant lens for the brand work this plugin addresses.
 

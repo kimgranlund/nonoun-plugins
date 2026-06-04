@@ -1,5 +1,5 @@
 ---
-name: critic-nick-law
+name: critic-nick
 tools: Read, Grep, Glob
 description: >
   Brand-council critic — Nick L.. Applied creativity, the inventive↔expressive balance, creative infrastructure that scales. Invoked by the brand-council orchestrator to adversarially review brand work.
