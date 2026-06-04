@@ -1,6 +1,6 @@
 ---
 description: Orient on a product/PM/UX task — classify it and route to the owning product-forge skill (or the council).
-argument-hint: [task or artifact]
+argument-hint: "[task or artifact]"
 ---
 
 Orient for product work. **$ARGUMENTS**

@@ -1,6 +1,6 @@
 ---
 description: Author or modify an adia-ui primitive, composite shell, trait, or token (web-components / web-modules).
-argument-hint: [component or change]
+argument-hint: "[component or change]"
 ---
 
 Author framework UI. **$ARGUMENTS**

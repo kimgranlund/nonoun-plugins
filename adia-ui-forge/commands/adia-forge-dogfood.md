@@ -1,6 +1,6 @@
 ---
 description: Run a static + visual QA sweep across the framework's surfaces (components, apps, playgrounds, catalog).
-argument-hint: [scope or mode]
+argument-hint: "[scope or mode]"
 ---
 
 Dogfood-sweep the framework. **$ARGUMENTS**

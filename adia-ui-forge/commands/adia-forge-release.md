@@ -1,6 +1,6 @@
 ---
 description: Cut/ship a release or author a migration guide for the @adia-ai packages (release-engineering discipline).
-argument-hint: [release or migration task]
+argument-hint: "[release or migration task]"
 ---
 
 Release engineering. **$ARGUMENTS**

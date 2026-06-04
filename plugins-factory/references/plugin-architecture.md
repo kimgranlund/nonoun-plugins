@@ -53,7 +53,7 @@ The `name` is used for **namespacing** components: for plugin `plugin-dev`, the 
 | `lspServers` | string\|array\|object | no | LSP config path(s) or inline — own merge rules. |
 | `experimental.themes` | string\|array | no | **REPLACES** default `themes/`. Experimental. |
 | `experimental.monitors` | string\|array | no | **REPLACES** default `monitors/`. Experimental. |
-| `userConfig` | object | no | Values prompted at enable time; exposed as `${user_config.KEY}`. |
+| `userConfig` | object | no | Values prompted at enable time; exposed as `${user_config.KEY}`. Each option **requires** `title` + `type` + `description` — see **userConfig options** below. |
 | `channels` | array | no | Message-injection channels bound to a bundled MCP server. |
 | `dependencies` | array | no | Other plugins required; optional semver constraints. |
 
@@ -71,6 +71,31 @@ Claude Code **ignores top-level fields it does not recognize**, so one `plugin.j
   "author": { "name": "Dev Team", "email": "dev@company.com" }
 }
 ```
+
+### userConfig options (the enable-time prompt schema)
+
+`userConfig` is a map of **option name → option schema** (the MCPB/DXT `user_config` form). Each option is prompted at enable time and surfaced as `${user_config.<name>}` in MCP/LSP config, hook commands, and (non-sensitive) skill/agent content. **`claude plugin install` validates this schema and refuses the install on any violation** — a malformed option is not a soft warning, it blocks the plugin. Every option **requires three fields**:
+
+| Field | Required | Notes |
+|---|---|---|
+| `title` | **yes** (string) | The label shown in the enable-time prompt. Omitting it fails the install (`userConfig.<k>.title: expected string, received undefined`). |
+| `type` | **yes** | One of `string` · `number` · `boolean` · `directory` · `file`. |
+| `description` | **yes** (string) | One line explaining the value. |
+| `sensitive` | no (boolean) | `true` routes the value to secure storage (not `settings.json`) and withholds it from skill/agent content. Keep sensitive counts small. |
+| `required` / `multiple` / `default` | no | Optional UX/semantics. |
+
+```json
+"userConfig": {
+  "corpus_dir": {
+    "title": "Brand corpus directory",
+    "type": "directory",
+    "description": "Path to this brand's corpus for the retrieval MCP. Optional — unset runs without live corpus.",
+    "sensitive": false
+  }
+}
+```
+
+`bin/validate_plugin.py` reproduces this check offline (CI + the on-save advisory hook), so a missing `title`/`type`/`description` is caught before it ever reaches an install.
 
 `{ "name": "deployment-tools" }` alone is also valid.
 

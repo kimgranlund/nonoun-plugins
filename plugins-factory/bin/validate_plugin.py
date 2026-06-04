@@ -20,6 +20,9 @@ Checks (ERROR -> exit 1 · warn -> advisory unless --strict):
     - `version` (if present) is semver (ERROR)
     - component path fields are `./`-relative with NO `..` traversal (ERROR on `..`);
       absolute / `~` / UNC / drive-relative paths flagged (warn — won't resolve after install)
+    - `userConfig` options each carry `title` (str), `type` (string|number|boolean|directory|file),
+      and `description` (str) — all three required (ERROR; mirrors `claude plugin install`, which
+      rejects the install otherwise); non-bool `sensitive`/`required`/`multiple` warn
   PLUGIN (layout — when given a dir)
     - .claude-plugin/ purity: a component dir anywhere under .claude-plugin/ (even nested) ERRORs
       (it will silently NOT load); other subdirs of .claude-plugin/ warn
@@ -28,6 +31,11 @@ Checks (ERROR -> exit 1 · warn -> advisory unless --strict):
       WHOLE plugin) (ERROR)
     - LOADER RULE: a bundled agents/*.md whose frontmatter declares `hooks`, `mcpServers`, or
       `permissionMode` ERRORs (the loader forbids it — capability smuggling; rubric P9 / ST3)
+    - FRONTMATTER FLOW-COLLECTION TRAP: a command/agent/skill frontmatter value that opens an
+      unquoted `[`/`{` flow collection and is unterminated or has trailing tokens (e.g.
+      `argument-hint: [spa|ssr] [app name]`) ERRORs — YAML fails to parse and the loader silently
+      drops the WHOLE frontmatter block; a clean collection in a string key (description/
+      argument-hint/name/title) warns (quote it)
     - a root CLAUDE.md won't load as context (warn)
   MARKETPLACE
     - valid JSON; `name` kebab + not reserved (ERROR); `owner.name` present (ERROR)
@@ -54,7 +62,16 @@ KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 # frontmatter top-level key (no leading whitespace, before the colon)
 FM_KEY = re.compile(r"^([A-Za-z_][\w-]*)\s*:")
+# top-level frontmatter `key: value` with an inline (non-empty) scalar value
+FM_KEYVAL = re.compile(r"^([A-Za-z_][\w-]*):[ \t]+(\S.*?)[ \t]*$")
 LOADER_FORBIDDEN = {"hooks", "mcpServers", "permissionMode"}
+
+# userConfig option schema (MCPB user_config form, mirrored by `claude plugin validate`):
+# each option REQUIRES `title` (str), `type` (enum below), and `description` (str).
+USERCONFIG_TYPES = {"string", "number", "boolean", "directory", "file"}
+# frontmatter keys whose value is meant to be a plain string — a flow collection ([…]/{…}) there
+# is a smell (parsed as a list/map) even when it parses; flagged as a warning.
+SCALAR_FM_KEYS = {"description", "argument-hint", "name", "title"}
 
 COMPONENT_PATH_FIELDS = [
     "skills", "commands", "agents", "hooks", "mcpServers",
@@ -130,6 +147,90 @@ def _extract_frontmatter(text: str) -> str:
     return "\n".join(out)
 
 
+def _flow_trap_severity(value: str):
+    """Classify an unquoted frontmatter scalar for the YAML flow-collection trap.
+
+    A value that opens a flow collection (`[` or `{`) is parsed as a list/map, never a string. If
+    that collection is unterminated, or has any trailing tokens after its matching close, the YAML
+    parser raises "Unexpected token" and the loader drops the ENTIRE frontmatter block (every field
+    silently lost). Quoting the value fixes it.
+
+      `[a|b] [c]`  -> 'error'  (trailing `[c]` after the first `]`)
+      `[a|b`       -> 'error'  (never closed)
+      `[a|b]`      -> 'warn'   (clean collection, but a string was intended)
+      `"[a|b] [c]"`-> None     (already quoted — safe)
+    Returns None | 'warn' | 'error'.
+    """
+    v = value.strip()
+    if not v or v[0] in ("\"", "'") or v[0] not in "[{":
+        return None
+    depth, in_str, end = 0, None, -1
+    for i, c in enumerate(v):
+        if in_str:
+            if c == in_str:
+                in_str = None
+        elif c in ("\"", "'"):
+            in_str = c
+        elif c in "[{":
+            depth += 1
+        elif c in "]}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    if end == -1:
+        return "error"
+    return "error" if v[end + 1:].strip() else "warn"
+
+
+def _frontmatter_traps(fm_text: str, rel: str):
+    """Scan a frontmatter block for the flow-collection trap. Returns (errors, warnings)."""
+    errors, warnings = [], []
+    for line in fm_text.splitlines():
+        m = FM_KEYVAL.match(line)
+        if not m:
+            continue
+        key, val = m.group(1), m.group(2)
+        sev = _flow_trap_severity(val)
+        if sev == "error":
+            errors.append(f"`{rel}` frontmatter `{key}:` opens a YAML flow collection that is "
+                          f"unterminated or has trailing tokens — the parser fails and the WHOLE "
+                          f"frontmatter block is silently dropped at load; quote the value")
+        elif sev == "warn" and key in SCALAR_FM_KEYS:
+            warnings.append(f"`{rel}` frontmatter `{key}:` value starts with `[`/`{{` so it parses "
+                            f"as a list/map, not a string — quote it")
+    return errors, warnings
+
+
+def _validate_user_config(uc):
+    """Validate the `userConfig` block against the option schema enforced by `claude plugin
+    install` / `claude plugin validate`. Returns (errors, warnings)."""
+    errors, warnings = [], []
+    if uc is None:
+        return errors, warnings
+    if not isinstance(uc, dict):
+        return (["`userConfig` must be an object (option-name -> option-schema)"], [])
+    for key, opt in uc.items():
+        loc = f"userConfig.{key}"
+        if not isinstance(opt, dict):
+            errors.append(f"{loc} must be an object")
+            continue
+        title = opt.get("title")
+        if not isinstance(title, str) or not title.strip():
+            errors.append(f"{loc} missing required string `title` — rejected at install; the "
+                          f"enable-time prompt has no label without it")
+        typ = opt.get("type")
+        if not isinstance(typ, str) or typ not in USERCONFIG_TYPES:
+            errors.append(f"{loc}.type must be one of {sorted(USERCONFIG_TYPES)}: got {typ!r}")
+        desc = opt.get("description")
+        if not isinstance(desc, str) or not desc.strip():
+            errors.append(f"{loc} missing required string `description`")
+        for boolfield in ("sensitive", "required", "multiple"):
+            if boolfield in opt and not isinstance(opt[boolfield], bool):
+                warnings.append(f"{loc}.{boolfield} should be a boolean: got {opt[boolfield]!r}")
+    return errors, warnings
+
+
 # ----------------------------------------------------------------------------- layout (dir-mode)
 def _check_layout(plugin_dir, data):
     errors, warnings = [], []
@@ -178,6 +279,32 @@ def _check_layout(plugin_dir, data):
                 errors.append(f"agent `agents/{entry}` declares loader-forbidden field(s) "
                               f"{illegal} — plugin-shipped agents cannot carry hooks/mcpServers/permissionMode")
 
+    # FRONTMATTER FLOW-COLLECTION TRAP — an unquoted `key: [..]`/`{..}` value that is unterminated
+    # or carries trailing tokens (e.g. `argument-hint: [spa|ssr] [app name]`) makes the YAML parser
+    # fail; the loader then drops the WHOLE frontmatter block (description/argument-hint lost). This
+    # is invisible to a path/JSON check, which is how it shipped — so scan every component's md.
+    fm_targets = []
+    for sub in ("commands", "agents"):
+        d = os.path.join(plugin_dir, sub)
+        if os.path.isdir(d):
+            for entry in sorted(os.listdir(d)):
+                if entry.endswith(".md"):
+                    fm_targets.append((os.path.join(d, entry), f"{sub}/{entry}"))
+    skills_dir = os.path.join(plugin_dir, "skills")
+    if os.path.isdir(skills_dir):
+        for entry in sorted(os.listdir(skills_dir)):
+            sm = os.path.join(skills_dir, entry, "SKILL.md")
+            if os.path.isfile(sm):
+                fm_targets.append((sm, f"skills/{entry}/SKILL.md"))
+    for fp, rel in fm_targets:
+        try:
+            text = open(fp, encoding="utf-8").read()
+        except OSError:
+            continue
+        e_fm, w_fm = _frontmatter_traps(_extract_frontmatter(text), rel)
+        errors += e_fm
+        warnings += w_fm
+
     # COMMAND ↔ SKILL slug collision — commands AND skills both resolve as `/<plugin>:<slug>`
     # (plugin-architecture.md §Namespacing). A command and a skill that share a slug collide: the
     # skill claims the namespace and the command is unreachable ("Unknown command: /<plugin>:<slug>").
@@ -225,6 +352,10 @@ def validate_plugin_manifest(data, plugin_dir=None):
                 warnings.append(f"`{field}` uses a non-relative path (won't resolve after install): {p!r}")
             elif not p.startswith("./"):
                 warnings.append(f"`{field}` path should be `./`-relative: {p!r}")
+
+    e_uc, w_uc = _validate_user_config(data.get("userConfig"))
+    errors += e_uc
+    warnings += w_uc
 
     if plugin_dir and os.path.isdir(plugin_dir):
         e2, w2 = _check_layout(plugin_dir, data)
@@ -339,6 +470,15 @@ def _selftest():
         ("plugin `..` path", "plugin", {"name": "x", "skills": "../shared/skills/"}, True),
         ("plugin `foo/../bar` mid-segment", "plugin", {"name": "x", "agents": "./a/../b/"}, True),
         ("plugin tilde path is warn", "plugin", {"name": "x", "agents": ["~/a.md"]}, False),
+        ("userConfig good", "plugin",
+         {"name": "x", "userConfig": {"k": {"title": "K", "type": "directory", "description": "d"}}}, False),
+        ("userConfig missing title", "plugin",
+         {"name": "x", "userConfig": {"k": {"type": "directory", "description": "d"}}}, True),
+        ("userConfig missing description", "plugin",
+         {"name": "x", "userConfig": {"k": {"title": "K", "type": "string"}}}, True),
+        ("userConfig bad type", "plugin",
+         {"name": "x", "userConfig": {"k": {"title": "K", "type": "folder", "description": "d"}}}, True),
+        ("userConfig not an object", "plugin", {"name": "x", "userConfig": []}, True),
     ]
     good_mkt = {"name": "my-marketplace", "owner": {"name": "Kim"},
                 "plugins": [{"name": "design-system", "source": "./plugins/ds"},
@@ -372,6 +512,18 @@ def _selftest():
     if _agent_declares_illegal("name: a\ndescription: ok\n") != []:
         failures.append("loader-rule: false-positive on a clean agent")
 
+    # flow-collection-trap unit tests (pure function)
+    _flow_cases = {
+        "[spa|ssr] [app name]": "error",   # trailing tokens after the first `]`
+        "[a|b": "error",                    # never closed
+        "[what to build]": "warn",          # clean collection, string intended
+        '"[a|b] [c]"': None,                # already quoted
+        "just a string": None,              # plain scalar
+    }
+    for raw, expect in _flow_cases.items():
+        if _flow_trap_severity(raw) != expect:
+            failures.append(f"flow-trap: {raw!r} -> {_flow_trap_severity(raw)!r}, expected {expect!r}")
+
     # on-disk layout fixtures (exercise the dir branch the payload tests can't reach)
     tmp = tempfile.mkdtemp(prefix="plugins-factory-selftest-")
     try:
@@ -404,6 +556,20 @@ def _selftest():
         if not any("share the slug" in e for e in errs):
             failures.append("layout: command↔skill slug collision not caught")
         _rmtree(tmp3)
+
+        # command frontmatter flow-collection trap must ERROR; a quoted value must be clean
+        tmp4 = tempfile.mkdtemp(prefix="plugins-factory-selftest-")
+        os.makedirs(os.path.join(tmp4, "commands"))
+        bad = os.path.join(tmp4, "commands", "bad.md")
+        open(bad, "w").write("---\ndescription: d\nargument-hint: [spa|ssr] [app name]\n---\nbody\n")
+        errs, _ = validate_plugin_manifest({"name": "x"}, tmp4)
+        if not any("flow collection" in e for e in errs):
+            failures.append("layout: command frontmatter flow-collection trap not caught")
+        open(bad, "w").write('---\ndescription: d\nargument-hint: "[spa|ssr] [app name]"\n---\nbody\n')
+        errs, _ = validate_plugin_manifest({"name": "x"}, tmp4)
+        if any("flow collection" in e for e in errs):
+            failures.append("layout: quoted argument-hint wrongly flagged as a flow-collection trap")
+        _rmtree(tmp4)
     finally:
         _rmtree(tmp)
 
@@ -412,7 +578,8 @@ def _selftest():
         for f in failures:
             print(f"  - {f}")
         return 1
-    print(f"validate_plugin.py selftest: PASS ({len(cases)} manifest fixtures + loader-rule + 4 on-disk layout fixtures)")
+    print(f"validate_plugin.py selftest: PASS ({len(cases)} manifest fixtures + loader-rule + "
+          f"flow-trap unit + 5 on-disk layout fixtures)")
     return 0
 
 

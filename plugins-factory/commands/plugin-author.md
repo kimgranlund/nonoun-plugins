@@ -1,6 +1,6 @@
 ---
 description: Author a new Claude Code plugin from intent — component-fit pass, wire the manifest, validate, red-team.
-argument-hint: [what you're packaging]
+argument-hint: "[what you're packaging]"
 ---
 
 You are in **author** mode: a collaborative build. Posture is _partner, not vendor_ — think alongside the user and produce a real, shippable plugin.

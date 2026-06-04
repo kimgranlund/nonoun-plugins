@@ -1,6 +1,6 @@
 ---
 description: Stamp a finished brand corpus into a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP.
-argument-hint: [plugin|skill|mcp] [corpus path] [brand name]
+argument-hint: "[plugin|skill|mcp] [corpus path] [brand name]"
 ---
 
 You are in **stamp** mode: package a finished brand corpus into a shareable, host-appropriate artifact.

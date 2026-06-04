@@ -1,6 +1,6 @@
 ---
 description: Make product strategy / discovery / PRD / vision — grounded in the methodology canon.
-argument-hint: [what to produce]
+argument-hint: "[what to produce]"
 ---
 
 Make product strategy work. **$ARGUMENTS**

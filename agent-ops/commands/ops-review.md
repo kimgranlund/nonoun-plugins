@@ -1,6 +1,6 @@
 ---
 description: Review a whole repo's architecture — a multi-wave audit → a cascade-ranked refactor backlog (P0–P3) + a tier-1 patterns doc to preserve.
-argument-hint: [repo path]
+argument-hint: "[repo path]"
 ---
 
 Review the repo architecture. **$ARGUMENTS**

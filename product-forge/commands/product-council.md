@@ -1,6 +1,6 @@
 ---
 description: Convene the adversarial product critic council (parallel, isolated) on an artifact.
-argument-hint: [artifact + optional sub-council: strategy|discovery|ux|ai-product|full]
+argument-hint: "[artifact + optional sub-council: strategy|discovery|ux|ai-product|full]"
 ---
 
 Convene the product council. **$ARGUMENTS**

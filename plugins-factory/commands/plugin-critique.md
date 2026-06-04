@@ -1,6 +1,6 @@
 ---
 description: Convene the 9-critic plugin council — adversarial review from named engineers running as parallel isolated agents.
-argument-hint: [full-panel|single-critic <name>] [path to plugin]
+argument-hint: "[full-panel|single-critic <name>] [path to plugin]"
 ---
 
 You are convening the **plugin council**: an adversarial review where named engineers critique a plugin from their own distinct, uncompromising lenses. This is the harshest read in the studio.

@@ -2,6 +2,10 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.1] — 2026-06-04
+
+- **Quoted `argument-hint` frontmatter** across all commands — normalizes the value to a string (YAML was parsing the unquoted `[..]` as a flow list) and satisfies plugins-factory's new frontmatter flow-collection lint. No behavior change.
+
 ## [0.1.0] — 2026-06-03
 
 Initial release — the operations-and-architecture plugin for agentic systems and the repos they live in. Carved and de-repo'd from four mature global skills into one self-contained catalog plugin.

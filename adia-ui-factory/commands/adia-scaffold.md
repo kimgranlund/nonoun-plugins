@@ -1,6 +1,6 @@
 ---
 description: Scaffold a new adia-ui app — pick the rendering mode (SPA / SSR-framework), lay out the structure, wire the host.
-argument-hint: [spa|ssr] [app name]
+argument-hint: "[spa|ssr] [app name]"
 ---
 
 Scaffold a new adia-ui app. **$ARGUMENTS**

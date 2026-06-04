@@ -1,6 +1,6 @@
 ---
 description: Pick and run a product methodology — route through the process spine to the right runnable playbook for where you are.
-argument-hint: [the goal, or the phase you're in]
+argument-hint: "[the goal, or the phase you're in]"
 ---
 
 Run a product methodology. **$ARGUMENTS**

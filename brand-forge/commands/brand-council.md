@@ -1,6 +1,6 @@
 ---
 description: Convene the brand council — adversarial critique from named practitioners.
-argument-hint: [strategy|design|voice|full] [artifact]
+argument-hint: "[strategy|design|voice|full] [artifact]"
 ---
 
 You are convening the **brand council**: an adversarial review where named practitioners critique the work from their own distinct, uncompromising points of view. This is the harshest read in the studio.

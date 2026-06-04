@@ -173,3 +173,5 @@ Run this before `validate_plugin.py`; it is the human-readable form of the P4/P5
 - [ ] **`version` in exactly one place** — `plugin.json` _or_ the marketplace entry, not both (omit both → SHA-per-commit).
 - [ ] **No component inside a path that starts `.claude-plugin/`** — the single most common silent-load failure.
 - [ ] **Every hook's side-effect documented; bundled agents declare no `hooks`/`mcpServers`/`permissionMode`.** (P9 + loader rule.)
+- [ ] **Quote any command/agent frontmatter value that starts with `[` or `{`.** YAML reads `argument-hint: [spa|ssr] [app name]` as a flow sequence with trailing tokens → parse error → the loader silently drops the **entire** frontmatter block (description + argument-hint gone). Always write it as a quoted string: `argument-hint: "[spa|ssr] [app name]"`.
+- [ ] **Each `userConfig` option declares `title` + `type` + `description`.** All three are required — `claude plugin install` refuses the plugin otherwise. `type` ∈ `string|number|boolean|directory|file`. (See `plugin-architecture.md` → userConfig options.)

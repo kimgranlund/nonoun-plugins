@@ -1,6 +1,6 @@
 ---
 description: Verify an adia-ui surface in the browser (QA + a11y gate).
-argument-hint: [path]
+argument-hint: "[path]"
 ---
 
 Verify an adia-ui surface before shipping. **$ARGUMENTS**

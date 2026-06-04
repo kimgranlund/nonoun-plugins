@@ -1,6 +1,6 @@
 ---
 description: Orient on an agent / agentic-workflow / repo task — classify it and route to the owning agent-ops skill (or the council).
-argument-hint: [task or artifact]
+argument-hint: "[task or artifact]"
 ---
 
 Orient for agent-ops work. **$ARGUMENTS**

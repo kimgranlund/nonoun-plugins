@@ -1,6 +1,6 @@
 ---
 description: Work on the A2UI / gen-ui generation engine — compose strategies, chunk corpus, retrieval, validator, runtime, MCP server.
-argument-hint: [pipeline task]
+argument-hint: "[pipeline task]"
 ---
 
 Work on the A2UI / gen-ui engine. **$ARGUMENTS**

@@ -1,6 +1,6 @@
 ---
 description: Fix or improve an existing plugin — a mis-fit component, a kitchen-sink boundary, an illegal dependency, bloated context.
-argument-hint: [path to plugin] [what's wrong]
+argument-hint: "[path to plugin] [what's wrong]"
 ---
 
 You are in **edit** mode: a targeted fix to an existing plugin, against the same standard it will be scored by.

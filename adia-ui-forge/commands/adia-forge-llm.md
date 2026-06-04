@@ -1,6 +1,6 @@
 ---
 description: Maintain the @adia-ai/llm client — provider adapters (anthropic/openai/gemini), SSE streaming, model registry, the bridge facade.
-argument-hint: [llm task]
+argument-hint: "[llm task]"
 ---
 
 Maintain the LLM client. **$ARGUMENTS**

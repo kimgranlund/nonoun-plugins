@@ -1,6 +1,6 @@
 ---
 description: Convene the Muse — name the aspiration the work should be pulled toward (an ideal, a provocation, or a guiding concept).
-argument-hint: [brief or what you're exploring]
+argument-hint: "[brief or what you're exploring]"
 ---
 
 You are convening the **Muse**: the aspirational seat of the studio. Where `/brand-council` gives the harshest _review_ (judging work against the standard, after it exists), the Muse supplies the _pull_ — the ideal, provocation, or concept the work should move toward. It sets the direction; it does not make finished work and does not judge.

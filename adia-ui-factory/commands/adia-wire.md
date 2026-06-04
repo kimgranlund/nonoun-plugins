@@ -1,6 +1,6 @@
 ---
 description: Wire an adia-ui app's routing, state, and data-flow (mode-aware).
-argument-hint: [spa|ssr] [what to wire]
+argument-hint: "[spa|ssr] [what to wire]"
 ---
 
 Wire routing, state, and data-flow for an adia-ui app. **$ARGUMENTS**

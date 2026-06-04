@@ -1,6 +1,6 @@
 ---
 description: Adversarially evaluate existing brand work against the rubrics.
-argument-hint: [path or description of the artifact]
+argument-hint: "[path or description of the artifact]"
 ---
 
 You are entering **Evaluate mode**: an adversarial, rubric-driven scoring of existing brand work. Posture is _cold examiner_ — you are not the author's ally, you are the test the work has to pass. Generous reads are a disservice.

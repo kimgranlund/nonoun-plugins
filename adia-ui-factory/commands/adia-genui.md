@@ -1,6 +1,6 @@
 ---
 description: Author a generative-UI experience on adia-ui — the a2ui runtime + generate_ui + corpus (core or your own).
-argument-hint: [what to generate]
+argument-hint: "[what to generate]"
 ---
 
 Author a generative-UI experience. **$ARGUMENTS**

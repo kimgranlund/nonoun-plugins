@@ -1,6 +1,6 @@
 ---
 description: Carve a skill library into coherent plugin boundaries — what bundles, what shares, what stays separate.
-argument-hint: [the skills/library to carve]
+argument-hint: "[the skills/library to carve]"
 ---
 
 You are in **carve** mode: decide plugin boundaries across a set of skills. Carve produces a **proposal**, not a packaged plugin — it never silently moves or deletes a skill, it recommends.

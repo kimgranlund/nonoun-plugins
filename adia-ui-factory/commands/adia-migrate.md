@@ -1,6 +1,6 @@
 ---
 description: Migrate an adia-ui app — upgrade across @adia-ai versions, port to adia-ui, or change rendering mode.
-argument-hint: [upgrade|port|mode] [target]
+argument-hint: "[upgrade|port|mode] [target]"
 ---
 
 Migrate an adia-ui app. **$ARGUMENTS**

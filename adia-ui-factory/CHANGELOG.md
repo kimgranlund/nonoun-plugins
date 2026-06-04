@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-06-04
+
+- **Quoted `argument-hint` frontmatter.** `/adia-migrate`, `/adia-scaffold`, and `/adia-wire` used multi-bracket hints (e.g. `[spa|ssr] [app name]`) that YAML parsed as a flow sequence with trailing tokens → parse error → the loader dropped their **entire** frontmatter (description + hint) at load. All command hints are now quoted strings.
+
 ## 0.2.0 — 2026-06-03
 
 The v0.2 re-carve: from 6 skills to **11**, each rebuilt to plugins-factory's hardened skill-architecture standard (cold-start surface · modes · per-mode verify target · a `[gate]` rubric · §SelfAudit · load-on-demand references), now covering the full consumer authoring lifecycle for adia-ui apps. See `reviews/2026-06-03-v0.2-recarve.md`.

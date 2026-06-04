@@ -1,6 +1,6 @@
 ---
 description: Score a product artifact (strategy, PRD, UX, AI-product) against the rubrics, with evidence.
-argument-hint: [artifact path or description]
+argument-hint: "[artifact path or description]"
 ---
 
 Evaluate a product artifact. **$ARGUMENTS**

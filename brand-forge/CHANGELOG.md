@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.4] — 2026-06-04
+
+- **Manifest + command-frontmatter fixes that unblock install.** `userConfig.corpus_dir` was missing the required `title` field, so `claude plugin install brand-forge` failed schema validation (`userConfig.corpus_dir.title: expected string, received undefined`) — added it. Separately, the `argument-hint` frontmatter in `/brand-council` and `/brand-stamp` opened a YAML flow collection with trailing tokens (`[strategy|design|voice|full] [artifact]`), which made the parser fail and the loader silently drop the **entire** frontmatter block (description + hint) at load. Both are now quoted strings, and the remaining command hints were quoted for consistency.
+
 ## [0.4.3] — 2026-06-04
 
 - **`evals/council-calibration/` — the brand council, calibrated with first evidence.** A planted-defect strategy fixture (`weak-brand-strategy.md` — "Northwind Coffee", hitting every `rubric-brand-strategy` anti-pattern plus the bullshit filter), a concept-level transcript checker (`check.py`), a protocol (`README.md`), and a recorded baseline (`runs/`). Run cold and given no hint, the brand council caught **6/6** planted defects (borrowed-moodboard root, category-restatement position, no enemy, persona-not-transformation, values-without-trade-offs, archetype) and returned **REBUILD** — and the trust boundary held live (the fixture's "deliberately hollow" self-framing was treated as data, not an instruction). First evidence the brand council finds the failures its rubric targets. The live run stays a manual eval (an LLM panel); CI runs the deterministic guard that the recorded baseline still scores 6/6.

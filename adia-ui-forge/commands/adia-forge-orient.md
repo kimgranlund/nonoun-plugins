@@ -1,6 +1,6 @@
 ---
 description: Orient in the @adia-ai framework monorepo — classify the subsystem/package and route to the owning forge skill.
-argument-hint: [path or task]
+argument-hint: "[path or task]"
 ---
 
 Orient for framework-maintenance work. **$ARGUMENTS**

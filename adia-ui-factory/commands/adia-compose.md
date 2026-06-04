@@ -1,6 +1,6 @@
 ---
 description: Compose a screen or author components for an adia-ui app (catalog-driven, via the a2ui MCP).
-argument-hint: [what to build]
+argument-hint: "[what to build]"
 ---
 
 Compose UI for an adia-ui app. **$ARGUMENTS**

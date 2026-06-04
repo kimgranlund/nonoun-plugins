@@ -1,6 +1,6 @@
 ---
 description: Design a UX flow/screen with the right pattern, grounded in the pattern library + the app-genre conventions.
-argument-hint: [screen, flow, or pattern]
+argument-hint: "[screen, flow, or pattern]"
 ---
 
 Design the UX. **$ARGUMENTS**

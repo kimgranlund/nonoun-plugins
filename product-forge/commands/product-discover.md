@@ -1,6 +1,6 @@
 ---
 description: Plan/run user research and define evidence-grounded personas.
-argument-hint: [research question or persona]
+argument-hint: "[research question or persona]"
 ---
 
 Do user research. **$ARGUMENTS**

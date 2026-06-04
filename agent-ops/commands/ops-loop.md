@@ -1,6 +1,6 @@
 ---
 description: Design and wire the right agent loop / orchestration for a goal — emit a runnable Orchestration Blueprint with a real gate, termination, and budget.
-argument-hint: [goal + success criterion]
+argument-hint: "[goal + success criterion]"
 ---
 
 Design the agent loop. **$ARGUMENTS**

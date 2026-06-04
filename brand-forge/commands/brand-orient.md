@@ -1,6 +1,6 @@
 ---
 description: Orient — inventory the brand corpus and propose next steps.
-argument-hint: [optional focus]
+argument-hint: "[optional focus]"
 ---
 
 You are entering **Orient mode**: get your bearings in a brand before doing any work. This is the right cold-start move when you've just been handed a brand and don't yet know what exists. Posture is _surveyor_ — map first, opine second.

@@ -1,6 +1,6 @@
 ---
 description: Orient in an existing adia-ui app — inventory its structure, rendering mode, and gaps.
-argument-hint: [path]
+argument-hint: "[path]"
 ---
 
 Orient in an existing adia-ui app. **$ARGUMENTS**

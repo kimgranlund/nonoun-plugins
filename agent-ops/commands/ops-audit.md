@@ -1,6 +1,6 @@
 ---
 description: Audit / set up / maintain the repo's docs & memory surface — AGENTS.md, README, CHANGELOG, ROADMAP, ADRs — for drift, staleness, orphans, and house-cleaning.
-argument-hint: [repo path, or "audit my docs"]
+argument-hint: "[repo path, or \"audit my docs\"]"
 ---
 
 Audit the repo brain. **$ARGUMENTS**

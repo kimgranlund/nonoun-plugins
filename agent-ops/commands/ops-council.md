@@ -1,6 +1,6 @@
 ---
 description: Convene the agentic-UX critic council — an adversarial, multi-critic review of an agentic workflow or system.
-argument-hint: [workflow / system to review]
+argument-hint: "[workflow / system to review]"
 ---
 
 Run the agentic council. **$ARGUMENTS**

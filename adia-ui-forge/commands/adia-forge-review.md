@@ -1,6 +1,6 @@
 ---
 description: Score generated gen-ui output against an ideal spec and drive corpus fixes (closed-loop quality review).
-argument-hint: [prompt or gallery scope]
+argument-hint: "[prompt or gallery scope]"
 ---
 
 Review generated gen-ui quality. **$ARGUMENTS**

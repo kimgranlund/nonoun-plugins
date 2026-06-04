@@ -1,6 +1,6 @@
 ---
 description: Score or design the UX of an agentic workflow — trust, control, observability, steerability, reversibility — from the operator's seat.
-argument-hint: [workflow / transcript / spec]
+argument-hint: "[workflow / transcript / spec]"
 ---
 
 Score the agentic-workflow UX. **$ARGUMENTS**
