@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7 — 2026-06-04
+
+- **`evals/council-calibration/` — the council-calibration eval, with first evidence.** The non-deterministic half of the behavioral suite: a planted-defect fixture (`build-fixture.py` → `mega-helper`, gate-clean but a kitchen-sink bundling four unrelated domains with a 1:1 API-wrapper MCP), a concept-level transcript checker (`check.py`), a protocol (`README.md`), and a recorded baseline (`runs/`). Run cold and given **no hint**, the `plugin-council` caught **2/2** planted judgment defects (P3 boundary, P2 component-fit) that every deterministic gate passes, BLOCKED the fixture, and surfaced emergent findings (an unscoped destructive CRUD MCP → P9, copy-pasted tool schemas, a non-functional server loop). First concrete evidence the council finds the defects no regex can. The live council run stays a periodic manual eval (an LLM panel is not a CI gate); CI runs the deterministic guards — the fixture must stay gate-clean (so it isolates judgment) and the recorded baseline must still score 2/2.
+
 ## 0.2.6 — 2026-06-04
 
 - **Added a README.** The lifecycle tool now ships the documentation it requires of every plugin — the command / skill / agent / gate surface, the nine-dimension standard, honest scope, and provenance. (It was the one catalog plugin missing one.)

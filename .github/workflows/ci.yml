@@ -47,8 +47,12 @@ jobs:
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 
-      - name: plugins-factory — behavioral gate-evals
-        run: python3 "$PF/evals/behavioral-gates.py"
+      - name: plugins-factory — eval suite (behavioral gates + calibration-fixture isolation)
+        run: |
+          python3 "$PF/evals/behavioral-gates.py"
+          python3 "$PF/evals/council-calibration/build-fixture.py" /tmp/pf-council-fixture
+          python3 "$PF/bin/validate_plugin.py" plugin /tmp/pf-council-fixture --strict
+          python3 "$PF/evals/council-calibration/check.py" "$PF/evals/council-calibration/runs/2026-06-04-mega-helper-baseline.md"
 
       - name: reference-lint — plugins-factory
         run: python3 "$PF/bin/reference-lint.py" "$PF"
