@@ -108,14 +108,16 @@ def call(name, args):
         except OSError as e:
             return (f"{name}: cannot read — {e}", True)
         if name == "fetch_brand_section":
-            return (text[:20000], False)
+            return (text[:20000] + ("\n…[truncated at 20000 chars]" if len(text) > 20000 else ""), False)
         heads = [ln.rstrip() for ln in text.splitlines() if ln.lstrip().startswith("#")]
         return ("Outline:\n" + ("\n".join(heads) if heads else "  (no headings)"), False)
     if name == "get_brand_tokens":
         for cand in ("tokens.json", "design-tokens.json", "tokens.css", "01-foundation/tokens.json"):
             full = _safe(cand)
             if full and os.path.isfile(full):
-                return (f"# {cand}\n" + open(full, encoding="utf-8", errors="replace").read()[:20000], False)
+                raw = open(full, encoding="utf-8", errors="replace").read()
+                body = raw[:20000] + ("\n…[truncated at 20000 chars]" if len(raw) > 20000 else "")
+                return (f"# {cand}\n" + body, False)
         return ("get_brand_tokens: no tokens file found (looked for tokens.json / design-tokens.json / tokens.css).", False)
     return (f"unknown tool: {name}", True)
 

@@ -72,10 +72,6 @@ echo "..." | python3 brand-forge/bin/brand-lint -
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python3 brand-forge/bin/brand-corpus-mcp.py
 BRAND_CORPUS_DIR=/path/to/corpus python3 brand-forge/bin/brand-corpus-mcp.py   # point at a real corpus
 
-# brand-stack: render the Brand Stack one-pager SVG from the six tiers
-echo '{"foundation":"...","strategy":"...","idea":"...","identity":"...","expression":"...","output":"..."}' \
-  | python3 brand-forge/bin/brand-stack -
-
 # harness gates (run by .github/workflows/ci.yml on every push/PR):
 PF=plugins-factory
 python3 "$PF/bin/validate_plugin.py" selftest

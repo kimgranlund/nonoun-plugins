@@ -29,7 +29,7 @@ Then drive it through five typed commands:
 
 ```text
 brand-forge/
-├── commands/        4 typed entry points   → set mode + posture, then route
+├── commands/        5 typed entry points   → set mode + posture, then route
 ├── agents/         14 critics + 1 orchestrator → the parallel, isolated council
 ├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)
