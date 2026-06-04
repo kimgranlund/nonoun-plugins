@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 — 2026-06-04
+
+- **`bin/check-manifest-sync.py` — a new CI gate against declared-state drift.** Mechanizes CLAUDE.md's "keep the four descriptions in sync — drift is a defect" rule and the version↔CHANGELOG honesty the manifest validator can't see (it checks each manifest in isolation). Three checks per plugin: **C1** `plugin.json` version equals the latest dated CHANGELOG release and no "Unreleased" section carries shipped content; **C2** every "N commands / N-critic" count stated in the description / README / marketplace entry matches the real `commands/` + `agents/critic-*.md` counts; **C3** every cited `/command` resolves to a file (sibling plugin names and path fragments are excluded). Ships a `selftest` (clean + drifted fixtures, proven to bite) and runs over all six catalog plugins in CI. This is the gate that would have caught the brand-forge v0.1→v0.2 drift the 2026-06-03 red-team found by hand.
+
 ## 0.2.1 — 2026-06-03
 
 - **`skill-architecture.md` — "Harden with structure, not prose."** Made explicit the discipline of moving every guarantee into a structure rather than a prose instruction, in order of strength: mechanized check · tool-scope · **embedded output rubric** (named dimensions, `[gate]` labels, an explicit pass threshold) · named verify target · §SelfAudit · anti-pattern gallery · progressive disclosure. The test: _if a requirement is enforced only by a polite sentence, it is not hardened._ The not-thin checklist now requires an embedded output rubric for judgment-heavy output and that every requirement be carried by a structure. Rubrics and gates over traditional prompting.

@@ -55,7 +55,7 @@ A catalog plugin that doubles as this repo's own toolchain — anyone can instal
 - **Commands** — `/plugin-author` · `/plugin-carve` · `/plugin-edit` (build) and `/plugin-score` · `/plugin-critique` · `/plugin-promote` (judge), namespaced `plugins-factory:` when loaded.
 - **Skills** — `plugin-build` (the maker) and `plugin-evaluate` (the judge), over one shared rubric spine in `references/`.
 - **Agents** — a 9-critic council (`critic-boris … critic-david-f`) + a `plugin-council` orchestrator that fans them out in parallel isolated contexts, plus `carve-analyst`. Every critic is tool-scoped to `Read, Grep, Glob` (read-only — they review _untrusted_ plugins, so they must not be able to execute).
-- **Gates (`bin/`)** — `validate_plugin.py` (manifest/layout/path static validator + `selftest` + an advisory `hook` mode), `check-foundations-coverage.py`, and `reference-lint.py` (fails on doc/command refs that don't resolve). All three run in CI (`.github/workflows/ci.yml`) against every catalog plugin.
+- **Gates (`bin/`)** — `validate_plugin.py` (manifest/layout/path static validator + `selftest` + an advisory `hook` mode), `check-foundations-coverage.py`, `reference-lint.py` (fails on doc/command refs that don't resolve), and `check-manifest-sync.py` (fails on declared-state drift — version↔CHANGELOG, description count claims, cited commands). All four run in CI (`.github/workflows/ci.yml`) against every catalog plugin.
 
 Self-contained (four cross-cutting rubrics co-located from the external `skills-studio`; zero cross-plugin paths) and authored by, and red-teamed against, its own 9-dimension standard — see its `reviews/` and `ROADMAP.md`.
 

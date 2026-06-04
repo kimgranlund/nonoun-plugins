@@ -65,6 +65,13 @@ jobs:
       - name: reference-lint — agent-ops
         run: python3 "$PF/bin/reference-lint.py" agent-ops
 
+      - name: manifest-sync gate (selftest + every plugin)
+        run: |
+          python3 "$PF/bin/check-manifest-sync.py" selftest
+          for p in brand-forge plugins-factory adia-ui-factory adia-ui-forge product-forge agent-ops; do
+            python3 "$PF/bin/check-manifest-sync.py" "$p"
+          done
+
       - name: brand-forge MCP guard selftest
         run: python3 brand-forge/bin/brand-corpus-mcp.py selftest
 
