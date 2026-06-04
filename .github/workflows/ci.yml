@@ -38,6 +38,9 @@ jobs:
       - name: validate marketplace
         run: python3 "$PF/bin/validate_plugin.py" marketplace .
 
+      - name: catalog index.html up to date
+        run: python3 gen-index.py --check
+
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 

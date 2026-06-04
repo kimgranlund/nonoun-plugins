@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>plugins-forge — catalog</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#9da7b3;--acc:#58a6ff;--chip:#21262d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+header h1{margin:0 0 6px;font-size:30px;letter-spacing:-.02em}
+header .sub{color:var(--mut);margin:0 0 18px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px}
+nav a{background:var(--chip);border:1px solid var(--bd);border-radius:20px;padding:5px 13px;font-size:13px;color:var(--fg)}
+nav a:hover{border-color:var(--acc);text-decoration:none}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:22px 24px;margin:0 0 22px;scroll-margin-top:16px}
+.card h2{margin:0 0 4px;font-size:22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ver{font:12px/1 ui-monospace,monospace;color:var(--mut);border:1px solid var(--bd);border-radius:6px;padding:3px 7px}
+.cat{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#3fb950;border:1px solid #2ea04344;background:#2ea04318;border-radius:6px;padding:3px 8px}
+.desc{color:var(--fg);margin:6px 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.chip{background:var(--chip);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-size:12px;color:var(--mut)}
+.sec{border-top:1px solid var(--bd);padding:13px 0 3px}
+.sec h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut)}
+.sec h3 .n{color:var(--acc)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.skill{margin:0 0 7px}
+.skill b{color:var(--fg)}.skill .d{color:var(--mut)}
+.list{display:flex;flex-wrap:wrap;gap:6px}
+.list .it{background:var(--chip);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-size:12.5px}
+.cmd{margin:0 0 5px}.cmd code{color:var(--acc)}.cmd .d{color:var(--mut)}
+.muted{color:var(--mut)}
+footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top:28px;padding-top:16px}
+</style></head><body><div class='wrap'>
+<header><h1>plugins-forge</h1>
+<p class='sub'>Best-in-class reference Claude Code plugins, authored and red-teamed with plugins-factory. Each is a self-contained worked example of the five-primitive component model (skill / agent / command / hook / MCP).</p>
+<p class='sub'><b>6</b> catalog plugins · <a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>
+<nav><a href='#brand-forge'>brand-forge</a><a href='#plugins-factory'>plugins-factory</a><a href='#adia-ui-factory'>adia-ui-factory</a><a href='#adia-ui-forge'>adia-ui-forge</a><a href='#product-forge'>product-forge</a><a href='#agent-ops'>agent-ops</a></nav>
+<section class='card' id='brand-forge'>
+<h2><code>brand-forge</code> <span class='ver'>v0.1.0</span> <span class='cat'>design</span></h2>
+<p class='desc'>Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — with an adversarial 14-critic council that runs as parallel isolated agents.</p>
+<div class='chips'><span class='chip'>brand</span><span class='chip'>brand-strategy</span><span class='chip'>design</span><span class='chip'>identity</span><span class='chip'>voice</span><span class='chip'>council</span></div>
+<div class='sec'><h3>Skills <span class='n'>3</span></h3>
+<div class='skill'><b><code>brand-corpus</code></b> <span class='d'>— Canonical structure and stewardship for a brand&#x27;s documentation — the layered 01-foundation … 08-evaluation corpus, the two output conventions (flat double-hyphen filenames for a Claude Project; nested folders for a filesystem), corpus matu…</span></div>
+<div class='skill'><b><code>brand-evaluate</code></b> <span class='d'>— Adversarial evaluation of brand work — strategy, briefs, identity, voice, expression systems. Names failures (it does not flatter), scores each dimension with evidence and the test that revealed the finding, and runs the critic council.</span></div>
+<div class='skill'><b><code>brand-methodology</code></b> <span class='d'>— Senior-practitioner methodology for building a brand from cultural authority — not aesthetics.</span></div>
+</div>
+<div class='sec'><h3>Agents <span class='n'>15</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>brand-council</code></span></div>
+<div class='muted' style='font-size:12.5px;margin-bottom:5px'>14 critics</div>
+<div class='list'><span class='it'>critic-david-a</span><span class='it'>critic-brian-collins</span><span class='it'>critic-tim-d</span><span class='it'>critic-john-h</span><span class='it'>critic-george-l</span><span class='it'>critic-luke</span><span class='it'>critic-mary-norris</span><span class='it'>critic-nick-law</span><span class='it'>critic-paula-scher</span><span class='it'>critic-mark-p</span><span class='it'>critic-rory-sutherland</span><span class='it'>critic-massimo-v</span><span class='it'>critic-jessica-w</span><span class='it'>critic-matt-w</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>5</span></h3>
+<div class='cmd'><code>/brand-build</code> <span class='d'>— Start a collaborative Build-mode brand engagement (strategy, research, identity, voice).</span></div>
+<div class='cmd'><code>/brand-council</code> <span class='d'>— Convene the brand council — adversarial critique from named practitioners.</span></div>
+<div class='cmd'><code>/brand-evaluate</code> <span class='d'>— Adversarially evaluate existing brand work against the rubrics.</span></div>
+<div class='cmd'><code>/brand-orient</code> <span class='d'>— Orient — inventory the brand corpus and propose next steps.</span></div>
+<div class='cmd'><code>/brand-stamp</code> <span class='d'>— Stamp a finished brand corpus into a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP.</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stack</code> · <code>brand-stamp</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 6</div></div>
+</section>
+<section class='card' id='plugins-factory'>
+<h2><code>plugins-factory</code> <span class='ver'>v0.2.1</span> <span class='cat'>developer-tools</span></h2>
+<p class='desc'>Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).</p>
+<div class='chips'><span class='chip'>plugins</span><span class='chip'>claude-code</span><span class='chip'>marketplace</span><span class='chip'>packaging</span><span class='chip'>lifecycle</span><span class='chip'>carve</span><span class='chip'>meta</span></div>
+<div class='sec'><h3>Skills <span class='n'>2</span></h3>
+<div class='skill'><b><code>plugin-build</code></b> <span class='d'>— Build Claude Code plugins — author a new plugin from intent, carve a skill library into plugin boundaries, or edit an existing plugin.</span></div>
+<div class='skill'><b><code>plugin-evaluate</code></b> <span class='d'>— Evaluate Claude Code plugins adversarially — score a plugin against the 9-dimension architecture rubric library, run the 9-critic council (plugin-council), or run a full promote review to an APPROVED / CONDITIONAL / BLOCKED verdict.</span></div>
+</div>
+<div class='sec'><h3>Agents <span class='n'>11</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>carve-analyst</code></span><span class='it'><code>plugin-council</code></span></div>
+<div class='muted' style='font-size:12.5px;margin-bottom:5px'>9 critics</div>
+<div class='list'><span class='it'>critic-boris</span><span class='it'>critic-charity</span><span class='it'>critic-elon</span><span class='it'>critic-david-f</span><span class='it'>critic-chip-h</span><span class='it'>critic-andrej-k</span><span class='it'>critic-simon</span><span class='it'>critic-steve</span><span class='it'>critic-scott-w</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>6</span></h3>
+<div class='cmd'><code>/plugin-author</code> <span class='d'>— Author a new Claude Code plugin from intent — component-fit pass, wire the manifest, validate, red-team.</span></div>
+<div class='cmd'><code>/plugin-carve</code> <span class='d'>— Carve a skill library into coherent plugin boundaries — what bundles, what shares, what stays separate.</span></div>
+<div class='cmd'><code>/plugin-critique</code> <span class='d'>— Convene the 9-critic plugin council — adversarial review from named engineers running as parallel isolated agents.</span></div>
+<div class='cmd'><code>/plugin-edit</code> <span class='d'>— Fix or improve an existing plugin — a mis-fit component, a kitchen-sink boundary, an illegal dependency, bloated context.</span></div>
+<div class='cmd'><code>/plugin-promote</code> <span class='d'>— Complete plugin review — holistic scan + rubric deep-dives + the 9-critic council → APPROVED / CONDITIONAL / BLOCKED.</span></div>
+<div class='cmd'><code>/plugin-score</code> <span class='d'>— Score a plugin against the 9-dimension architecture rubric library, with evidence cited from its files.</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-foundations-coverage.py</code> · <code>reference-lint.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
+</section>
+<section class='card' id='adia-ui-factory'>
+<h2><code>adia-ui-factory</code> <span class='ver'>v0.2.0</span> <span class='cat'>developer-tools</span></h2>
+<p class='desc'>Author and verify apps on the adia-ui (@adia-ai) light-DOM web-component framework — scaffold, compose, wire (SPA + SSR), and verify — leaning on the a2ui MCP for catalog retrieval, generation, and validation.</p>
+<div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>web-components</span><span class='chip'>app-authoring</span><span class='chip'>ssr</span><span class='chip'>spa</span><span class='chip'>llm-ui</span></div>
+<div class='sec'><h3>Skills <span class='n'>11</span></h3>
+<div class='skill'><b><code>adia-ui-compose</code></b> <span class='d'>— Construct adia-ui UI (mode-independent) — audit the component catalog via the a2ui MCP, compose screens from light-DOM primitives + shells, author project-specific light-DOM components (render/style split, token-only CSS, size-agnostic), an…</span></div>
+<div class='skill'><b><code>adia-ui-data</code></b> <span class='d'>— Wire data, state, and hydration for an adia-ui (@adia-ai) app — content hydration, fetch/CRUD workflows, how UI sections connect and register, and the data-flow patterns (signals · Service/Controller/Command · DataClient/projection · proper…</span></div>
+<div class='skill'><b><code>adia-ui-factory</code></b> <span class='d'>— Cold-start orchestrator for authoring apps on the adia-ui (@adia-ai) framework. Run FIRST on any adia-ui app work — it classifies the rendering mode (SPA / SSR-framework / hybrid), the project shape (single-surface / rollup / shared-foundat…</span></div>
+<div class='skill'><b><code>adia-ui-genui</code></b> <span class='d'>— Author a generative-UI experience on adia-ui (@adia-ai) — mount the a2ui runtime (&lt;a2ui-root&gt; / &lt;gen-root&gt;), feed it generated A2UI (generate_ui / refine_ui via the a2ui MCP), wire data resolvers (registerResolver), and ground generation in…</span></div>
+<div class='skill'><b><code>adia-ui-llm</code></b> <span class='d'>— Wire LLM-powered features into an adia-ui app — the @adia-ai/llm client (Anthropic/OpenAI/Gemini), streaming chat, the &lt;chat-shell-ui&gt; web-module, and the production browser proxy — plus UI generation via the a2ui MCP.</span></div>
+<div class='skill'><b><code>adia-ui-migrate</code></b> <span class='d'>— Migrate an adia-ui (@adia-ai) app — upgrade across framework versions, port an existing/non-adia app TO adia-ui, or change rendering mode (SPA↔SSR).</span></div>
+<div class='skill'><b><code>adia-ui-project</code></b> <span class='d'>— Lay out and scaffold an adia-ui (@adia-ai) app&#x27;s structure — pick the project shape (single-surface / rollup / shared-foundation), the four-axis layout, and page-trio vs page-DUO; scaffold a new app, add a surface, add a page, or add a comp…</span></div>
+<div class='skill'><b><code>adia-ui-shells</code></b> <span class='d'>— Choose and compose an adia-ui (@adia-ai) shell — the page-chrome web-modules from @adia-ai/web-modules: admin-shell (full app frame), chat-shell (LLM conversation), editor-shell (canvas + panes), simple-shell (marketing/error/landing), and…</span></div>
+<div class='skill'><b><code>adia-ui-spa</code></b> <span class='d'>— Architect and wire an adia-ui app in SPA mode — static host document, the four-axis structure, content-less &lt;router-ui&gt; routing, the client DataClient/projection data-flow, single-owner state.</span></div>
+<div class='skill'><b><code>adia-ui-ssr</code></b> <span class='d'>— Architect and wire an adia-ui app inside an SSR framework (Next / Nuxt / SvelteKit / Astro) — client-only registration in lifecycle hooks, framework routing (never &lt;router-ui&gt;), server-side data fetch + initial props, cookie/session state.</span></div>
+<div class='skill'><b><code>adia-ui-verify</code></b> <span class='d'>— Verify an adia-ui app — the browser-QA gate (zero console errors, non-zero bounding boxes, read the screenshot), accessibility (region roles, keyboard, AA contrast), and git coordination discipline.</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>7</span></h3>
+<div class='cmd'><code>/adia-compose</code> <span class='d'>— Compose a screen or author components for an adia-ui app (catalog-driven, via the a2ui MCP).</span></div>
+<div class='cmd'><code>/adia-genui</code> <span class='d'>— Author a generative-UI experience on adia-ui — the a2ui runtime + generate_ui + corpus (core or your own).</span></div>
+<div class='cmd'><code>/adia-migrate</code> <span class='d'>— Migrate an adia-ui app — upgrade across @adia-ai versions, port to adia-ui, or change rendering mode.</span></div>
+<div class='cmd'><code>/adia-orient</code> <span class='d'>— Orient in an existing adia-ui app — inventory its structure, rendering mode, and gaps.</span></div>
+<div class='cmd'><code>/adia-scaffold</code> <span class='d'>— Scaffold a new adia-ui app — pick the rendering mode (SPA / SSR-framework), lay out the structure, wire the host.</span></div>
+<div class='cmd'><code>/adia-verify</code> <span class='d'>— Verify an adia-ui surface in the browser (QA + a11y gate).</span></div>
+<div class='cmd'><code>/adia-wire</code> <span class='d'>— Wire an adia-ui app&#x27;s routing, state, and data-flow (mode-aware).</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → adia-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>adia-lint</code> · <code>adia-scaffold</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>a2ui</code></div></div>
+</section>
+<section class='card' id='adia-ui-forge'>
+<h2><code>adia-ui-forge</code> <span class='ver'>v0.1.0</span> <span class='cat'>developer-tools</span></h2>
+<p class='desc'>Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).</p>
+<div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>gen-ui</span><span class='chip'>web-components</span><span class='chip'>web-modules</span><span class='chip'>llm</span><span class='chip'>framework-authoring</span><span class='chip'>component-library</span><span class='chip'>release-engineering</span><span class='chip'>maintainer</span></div>
+<div class='sec'><h3>Skills <span class='n'>7</span></h3>
+<div class='skill'><b><code>adia-ui-a2ui</code></b> <span class='d'>— Work on the A2UI / gen-ui generation engine in packages/a2ui/ (compose, chunk corpus, retrieval, validator, runtime, MCP server).</span></div>
+<div class='skill'><b><code>adia-ui-authoring</code></b> <span class='d'>— Author or modify code INSIDE the adia-ui (@adia-ai) monorepo — primitives (packages/web-components/), composite shells / clusters (packages/web-modules/), their demos, the @adia-ai/llm bridge surface, the trait catalog, and the &lt;name&gt;.yaml…</span></div>
+<div class='skill'><b><code>adia-ui-dogfood</code></b> <span class='d'>— Six-mode static + visual sweep across `site/components/*`, `apps/`, `playgrounds/`, `catalog/` in a framework-monorepo checkout.</span></div>
+<div class='skill'><b><code>adia-ui-forge</code></b> <span class='d'>— Cold-start orchestrator for authoring and maintaining the adia-ui (@adia-ai) framework itself — the producer side.</span></div>
+<div class='skill'><b><code>adia-ui-gen-review</code></b> <span class='d'>— Closed-loop Gen UI output quality reviewer for the @adia-ai monorepo. For each pre-hydrated seed prompt in the Gen UI gallery, the skill (A) derives an ideal-output specification using AdiaUI first principles, (B) screenshots the canvas and…</span></div>
+<div class='skill'><b><code>adia-ui-llm</code></b> <span class='d'>— Maintain `@adia-ai/llm` — the provider-agnostic LLM client (`packages/llm/`) that the adia-ui chat-shell and the A2UI generation pipeline call.</span></div>
+<div class='skill'><b><code>adia-ui-release</code></b> <span class='d'>— Release engineer for an @adia-ai-style lockstep monorepo — cut / tag / publish / deploy, author release notes + audit-history ledgers, and author the MIGRATION GUIDE for breaking cuts (the producer side of migrations).</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>7</span></h3>
+<div class='cmd'><code>/adia-forge-a2ui</code> <span class='d'>— Work on the A2UI / gen-ui generation engine — compose strategies, chunk corpus, retrieval, validator, runtime, MCP server.</span></div>
+<div class='cmd'><code>/adia-forge-author</code> <span class='d'>— Author or modify an adia-ui primitive, composite shell, trait, or token (web-components / web-modules).</span></div>
+<div class='cmd'><code>/adia-forge-dogfood</code> <span class='d'>— Run a static + visual QA sweep across the framework&#x27;s surfaces (components, apps, playgrounds, catalog).</span></div>
+<div class='cmd'><code>/adia-forge-llm</code> <span class='d'>— Maintain the @adia-ai/llm client — provider adapters (anthropic/openai/gemini), SSE streaming, model registry, the bridge facade.</span></div>
+<div class='cmd'><code>/adia-forge-orient</code> <span class='d'>— Orient in the @adia-ai framework monorepo — classify the subsystem/package and route to the owning forge skill.</span></div>
+<div class='cmd'><code>/adia-forge-release</code> <span class='d'>— Cut/ship a release or author a migration guide for the @adia-ai packages (release-engineering discipline).</span></div>
+<div class='cmd'><code>/adia-forge-review</code> <span class='d'>— Score generated gen-ui output against an ideal spec and drive corpus fixes (closed-loop quality review).</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → forge-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>forge-lint</code> · <code>lib</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 52</div></div>
+</section>
+<section class='card' id='product-forge'>
+<h2><code>product-forge</code> <span class='ver'>v0.3.0</span> <span class='cat'>product</span></h2>
+<p class='desc'>Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, and runnable methodology playbooks.</p>
+<div class='chips'><span class='chip'>product-strategy</span><span class='chip'>product-management</span><span class='chip'>ux</span><span class='chip'>user-research</span><span class='chip'>personas</span><span class='chip'>jobs-to-be-done</span><span class='chip'>ux-patterns</span><span class='chip'>app-genres</span><span class='chip'>discovery</span><span class='chip'>positioning</span><span class='chip'>ai-product</span><span class='chip'>council</span><span class='chip'>information-architecture</span><span class='chip'>service-design</span><span class='chip'>content-design</span><span class='chip'>governance</span><span class='chip'>experience-strategy</span></div>
+<div class='sec'><h3>Skills <span class='n'>8</span></h3>
+<div class='skill'><b><code>product-architecture</code></b> <span class='d'>— The structural layer of product experience, beneath the individual patterns: experience architecture (journeys, flows, navigation, states, enablement), the interaction model (inputs, commands, feedback, undo/recovery, automation boundaries)…</span></div>
+<div class='skill'><b><code>product-evaluate</code></b> <span class='d'>— Evaluate a product artifact adversarially — score a strategy, discovery plan, PRD, UX/flow, or AI-product surface against the matching rubric (product-strategy · discovery · prd-quality · ux-quality · ai-product), or convene the critic coun…</span></div>
+<div class='skill'><b><code>product-forge</code></b> <span class='d'>— Cold-start orchestrator for product strategy, management, and UX work. Run FIRST when the task&#x27;s shape is undecided — it classifies the work (strategy · discovery · PRD-spec · vision · user-research · persona · architecture/IA · interaction…</span></div>
+<div class='skill'><b><code>product-genres</code></b> <span class='d'>— The app-genre taxonomy for product work — the conventions, signature patterns, key metrics, and pitfalls of each kind of app: single-purpose task, content consumption, games, tracking, dashboards, finance, health, travel, social, workplace/…</span></div>
+<div class='skill'><b><code>product-methodology</code></b> <span class='d'>— The product strategy + management methodology, as working method — discovery, jobs-to-be-done, the strategy kernel, the product operating model + the four big risks, positioning, prioritization, experimentation, growth/activation, PRD/spec…</span></div>
+<div class='skill'><b><code>product-operations</code></b> <span class='d'>— The service-and-governance layer — the system around the product. Two axes: the service model (blueprints, human/system handoffs, support paths, cross-channel continuity, escalation, fulfillment) and governance (principles, standards, owner…</span></div>
+<div class='skill'><b><code>product-patterns</code></b> <span class='d'>— The UX / interaction / flow pattern library for product work — registration, onboarding, guidance, search, navigation, forms, empty/error states, notifications, progressive disclosure, monetization patterns, accessibility, content design (v…</span></div>
+<div class='skill'><b><code>product-research</code></b> <span class='d'>— User &amp; persona definition and the research methods behind them — interviewing (The Mom Test), JTBD/switch discovery, behavioral-vs-attitudinal method choice, survey design, research ops; the Value Proposition Canvas (jobs/pains/gains), goal…</span></div>
+</div>
+<div class='sec'><h3>Agents <span class='n'>24</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>product-council</code></span></div>
+<div class='muted' style='font-size:12.5px;margin-bottom:5px'>23 critics</div>
+<div class='list'><span class='it'>critic-marty-c</span><span class='it'>critic-cat-wu</span><span class='it'>critic-ann-c</span><span class='it'>critic-clayton-c</span><span class='it'>critic-alan-c</span><span class='it'>critic-abby-c</span><span class='it'>critic-john-c</span><span class='it'>critic-shreyas-d</span><span class='it'>critic-april-d</span><span class='it'>critic-jesse-g</span><span class='it'>critic-ron-k</span><span class='it'>critic-steve-k</span><span class='it'>critic-meaghan-choi</span><span class='it'>critic-jakob-n</span><span class='it'>critic-don-n</span><span class='it'>critic-melissa-p</span><span class='it'>critic-torrey-p</span><span class='it'>critic-richard-r</span><span class='it'>critic-kathy-s</span><span class='it'>critic-marc-s</span><span class='it'>critic-garry-t</span><span class='it'>critic-teresa-t</span><span class='it'>critic-kevin-w</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>7</span></h3>
+<div class='cmd'><code>/product-council</code> <span class='d'>— Convene the adversarial product critic council (parallel, isolated) on an artifact.</span></div>
+<div class='cmd'><code>/product-evaluate</code> <span class='d'>— Score a product artifact (strategy, PRD, UX, AI-product) against the rubrics, with evidence.</span></div>
+<div class='cmd'><code>/product-method</code> <span class='d'>— Pick and run a product methodology — route through the process spine to the right runnable playbook for where you are.</span></div>
+<div class='cmd'><code>/product-orient</code> <span class='d'>— Orient on a product/PM/UX task — classify it and route to the owning product-forge skill (or the council).</span></div>
+<div class='cmd'><code>/product-research</code> <span class='d'>— Plan/run user research and define evidence-grounded personas.</span></div>
+<div class='cmd'><code>/product-strategy</code> <span class='d'>— Make product strategy / discovery / PRD / vision — grounded in the methodology canon.</span></div>
+<div class='cmd'><code>/product-ux</code> <span class='d'>— Design a UX flow/screen with the right pattern, grounded in the pattern library + the app-genre conventions.</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → product-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-methods.py</code> · <code>check-sourcing.py</code> · <code>product-lint</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 152</div></div>
+</section>
+<section class='card' id='agent-ops'>
+<h2><code>agent-ops</code> <span class='ver'>v0.1.0</span> <span class='cat'>developer-tools</span></h2>
+<p class='desc'>Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops &amp; teams, the control plane, harness &amp; context engineering, agentic-workflow UX, and repo memory/docs + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).</p>
+<div class='chips'><span class='chip'>agent</span><span class='chip'>agentic</span><span class='chip'>agent-loops</span><span class='chip'>orchestration</span><span class='chip'>harness</span><span class='chip'>context-engineering</span><span class='chip'>repo-ops</span><span class='chip'>agents-md</span><span class='chip'>repo-review</span><span class='chip'>council</span></div>
+<div class='sec'><h3>Skills <span class='n'>5</span></h3>
+<div class='skill'><b><code>agent-loops</code></b> <span class='d'>— Builder-seat methodology that selects, parameterizes, and wires the right agent loop / orchestration mechanism for a goal — and emits a concrete, executable Orchestration Blueprint (termination · verification gate · context strategy · budge…</span></div>
+<div class='skill'><b><code>agent-ops</code></b> <span class='d'>— Cold-start orchestrator for agentic-systems engineering and agent-driven repo work.</span></div>
+<div class='skill'><b><code>agentic-ux</code></b> <span class='d'>— Designs, guides, and evaluates the UX of agentic workflows — how human end-users direct, oversee, contain, and improve semi-autonomous coding agents across the full lifecycle.</span></div>
+<div class='skill'><b><code>repo-ops</code></b> <span class='d'>— Turn any repo into a brain for LLM coding agents — a less-wasteful, self-healing, continuously-learning memory layer over its declarative memory (entry files, ADRs, postmortems, runbooks) and procedural memory (skills under `.agents/skills/…</span></div>
+<div class='skill'><b><code>repo-review</code></b> <span class='d'>— Opinionated, framework-agnostic multi-wave repo review orchestrator. Produces a rubric, knowledge-foundation docs, cascade-ranked refactor backlog (3 P0 / 3 P1 / 6 P2 / ∞ P3 — items missing a tier cascade down, never dropped), and a tier-1…</span></div>
+</div>
+<div class='sec'><h3>Agents <span class='n'>13</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>agentic-council</code></span></div>
+<div class='muted' style='font-size:12.5px;margin-bottom:5px'>12 critics</div>
+<div class='list'><span class='it'>critic-harrison-c</span><span class='it'>critic-boris-c</span><span class='it'>critic-sarah-g</span><span class='it'>critic-mitchell-h</span><span class='it'>critic-andrej-k</span><span class='it'>critic-geoffrey-l</span><span class='it'>critic-mcp</span><span class='it'>critic-karri-s</span><span class='it'>critic-garry-t</span><span class='it'>critic-amelia-w</span><span class='it'>critic-simon-w</span><span class='it'>critic-walden-y</span></div>
+</div>
+<div class='sec'><h3>Commands <span class='n'>6</span></h3>
+<div class='cmd'><code>/ops-audit</code> <span class='d'>— Audit / set up / maintain the repo&#x27;s docs &amp; memory surface — AGENTS.md, README, CHANGELOG, ROADMAP, ADRs — for drift, staleness, orphans, an…</span></div>
+<div class='cmd'><code>/ops-council</code> <span class='d'>— Convene the agentic-UX critic council — an adversarial, multi-critic review of an agentic workflow or system.</span></div>
+<div class='cmd'><code>/ops-loop</code> <span class='d'>— Design and wire the right agent loop / orchestration for a goal — emit a runnable Orchestration Blueprint with a real gate, termination, and…</span></div>
+<div class='cmd'><code>/ops-orient</code> <span class='d'>— Orient on an agent / agentic-workflow / repo task — classify it and route to the owning agent-ops skill (or the council).</span></div>
+<div class='cmd'><code>/ops-review</code> <span class='d'>— Review a whole repo&#x27;s architecture — a multi-wave audit → a cascade-ranked refactor backlog (P0–P3) + a tier-1 patterns doc to preserve.</span></div>
+<div class='cmd'><code>/ops-ux</code> <span class='d'>— Score or design the UX of an agentic workflow — trust, control, observability, steerability, reversibility — from the operator&#x27;s seat.</span></div>
+</div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → doc-hygiene</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>audit-history.py</code> · <code>check-self-contained.py</code> · <code>check-sourcing.py</code> · <code>check_blueprint.py</code> · <code>doc-hygiene</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 75</div></div>
+</section>
+<footer>Generated from <code>.claude-plugin/marketplace.json</code> + each plugin's structure by <code>gen-index.py</code> — re-run to refresh. Each plugin is self-contained and red-teamed with <code>plugins-factory</code>.</footer>
+</div></body></html>
