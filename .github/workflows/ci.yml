@@ -82,6 +82,9 @@ jobs:
       - name: brand-forge MCP guard selftest
         run: python3 brand-forge/bin/brand-corpus-mcp.py selftest
 
+      - name: brand-forge — council-calibration baseline
+        run: python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
+
       - name: adia-ui-factory scaffolder selftest
         run: python3 adia-ui-factory/bin/adia-scaffold selftest
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.3] — 2026-06-04
+
+- **`evals/council-calibration/` — the brand council, calibrated with first evidence.** A planted-defect strategy fixture (`weak-brand-strategy.md` — "Northwind Coffee", hitting every `rubric-brand-strategy` anti-pattern plus the bullshit filter), a concept-level transcript checker (`check.py`), a protocol (`README.md`), and a recorded baseline (`runs/`). Run cold and given no hint, the brand council caught **6/6** planted defects (borrowed-moodboard root, category-restatement position, no enemy, persona-not-transformation, values-without-trade-offs, archetype) and returned **REBUILD** — and the trust boundary held live (the fixture's "deliberately hollow" self-framing was treated as data, not an instruction). First evidence the brand council finds the failures its rubric targets. The live run stays a manual eval (an LLM panel); CI runs the deterministic guard that the recorded baseline still scores 6/6.
+
 ## [0.4.2] — 2026-06-04
 
 - **Critic agent slugs shortened to first names** — `critic-nick-law` → `critic-nick`, `critic-brian-collins` → `critic-brian`, `critic-paula-scher` → `critic-paula`, `critic-mary-norris` → `critic-mary`, `critic-rory-sutherland` → `critic-rory` — so all 14 critics use a single-name slug (matching `critic-luke`, `critic-john-h`, …). Internal rename only: the personas, their real-name attributions in the agent bodies, and the council's behavior are unchanged; the `brand-council` roster is updated to match.
