@@ -15,4 +15,4 @@ Do this:
 
 3. **Invoke the methodology.** Hand off to the **`brand-methodology`** skill and run the appropriate stage. Let the skill own the method — your job here is to set posture, route, and keep the work honest.
 
-If the corpus MCP is configured, pull relevant prior brand material before you build so you extend the brand rather than reinvent it. When strategy is settled and you want a hostile read, point them at `/brand-evaluate` or `/brand-council`.
+If the corpus MCP is configured, pull relevant prior brand material before you build so you extend the brand rather than reinvent it. If you're at the start of a hard creative problem — or the first obvious idea is hardening into _the_ answer — convene the Muse first (`/brand-muse`) to widen the options before you converge. When the work exists and you want a hostile read, point them at `/brand-evaluate` or `/brand-council`. The seats stay distinct: **the Muse provokes, you make, the council reviews** — and no seat judges its own work.

@@ -54,23 +54,15 @@ The foundation is the small set of **load-bearing** documents a brand actually s
 
 → Full detail: [`references/foundation-canon.md`](references/foundation-canon.md) _(Extension point: a mature corpus adds positioning-territory, category-design, and competitive-archaeology references alongside this one.)_
 
-## The generative team
+## The three seats — provoke, make, review
 
-Brand work is **made** by a team and **reviewed** by a council. The team produces; the council (see the `brand-evaluate` skill and the plugin's critic agents) adversarially tears the work apart. Keep the seats distinct — a maker who also judges their own work grades on a curve.
+Brand work moves through three distinct seats: the **Muse** _provokes_ (opens the option space, before), the **Team** _makes_ (converges on the work, the middle), and the **Council** _reviews_ (breaks it adversarially, after). Keep them distinct — **no seat judges its own work**, because a maker who reviews their own work grades on a curve.
 
-Treat these eight roles as on-demand knowledge: adopt the seat whose job the current task needs.
+The **Team** is a set of on-demand making roles — Strategic Planner, Creative Director, Copywriter, Art Director, Design Director, Product/UX Designer, and Brand Steward — each adopted as the task needs and defined in the reference. The **Muse** is the generative provocateur (the `brand-muse` agent · `/brand-muse`); the **Council** is the named-critic panel (the `brand-evaluate` skill + critic agents · `/brand-council`).
 
-| Role | Owns | Asks |
-| --- | --- | --- |
-| **Strategic Planner** | Research → position → foundation | "What is the real cultural root, and what do we stand against?" |
-| **Creative Muse** | Provocation, reference, the unexpected angle | "What if the obvious framing is wrong?" |
-| **Creative Director** | The idea and its integrity across everything | "Is this one idea, expressed many ways — or many ideas?" |
-| **Copywriter** | Voice, naming, the words that carry meaning | "Does this sound like only us, or like the category?" |
-| **Art Director** | The visual idea, image, composition | "Does the picture _say_ the strategy, or just decorate it?" |
-| **Design Director** | The system — type, color, layout, coherence | "Will this hold across 200 surfaces and three years?" |
-| **Product / UX Designer** | The brand as _experienced_ in the product | "Does using the thing feel like the brand claims to?" |
+The loop is **provoke → make → review → remake**: the Muse widens the options, the Team grounds and converges, the Council names what fails, the Team remakes or defends the line on the record. The handoffs are where work is won or lost — above all the **creative brief**, the strategy→expression pivot. Nothing skips to expression without a foundation, and nothing ships without surviving review.
 
-The team **makes**; the council **reviews**. Strategy hands a written foundation to the makers; the makers hand finished work to the council; the council names what fails. Nothing skips to expression without a foundation, and nothing ships without surviving review.
+→ The full model (the seats, the loop, the one invariant): [`references/creative-collaboration.md`](references/creative-collaboration.md). How the seats staff each phase of a brand + its corpus: [`references/team-operations-by-phase.md`](references/team-operations-by-phase.md).
 
 ## Standing constraints
 

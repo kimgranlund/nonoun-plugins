@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0] — 2026-06-04
+
+The **three-seat model**, made explicit and mechanized. Brand work was always "made by a Team and reviewed by a Council"; this release adds the missing generative seat — the **Muse** — promotes it to a real agent, and gives all three seats a shared model, a ways-of-working rubric, and per-phase methodologies.
+
+### Added
+
+- **The Muse — a generative provocateur agent** (`agents/brand-muse.md`) + the **`/brand-muse`** command, symmetric to `/brand-council`. Read-only and trust-bounded like the critics, but generative: it opens the option space with grounded provocations (cultural inversion · adjacent-world raid · contrarian / psycho-logic · constraint flip · find-the-enemy · kill-the-safe-version) _before_ the team converges. The Muse explores forward; the Council attacks backward.
+- **`creative-collaboration.md`** (in `brand-methodology`) — the three-seat model: Muse (provoke) · Team (make) · Council (review), the **provoke → make → review → remake** loop, the handoffs (above all the creative brief), and the one invariant: _no seat judges its own work_ (self-review grades on a curve).
+- **`team-operations-by-phase.md`** — how the seats staff each phase of building a brand and its corpus (research · strategy · expression · stewardship), grounded in agency practice (account planning; the creative brief as the strategist→creative pivot; the design crit; brand governance), with each phase's lead seat, ritual, handoff gate, and failure mode.
+- **`rubric-creative-collaboration.md`** — a new Process family in `brand-evaluate` that scores the _ways of working_, not the artifact: seat separation, provocation-before-convergence, foundation-before-expression, council survival, phase discipline, steward continuity.
+
+### Changed
+
+- **The Team gains a Brand Steward** — the role the stewardship phase had no seat for: the owner of coherence over time (guidelines, governance, the decision log). In the same pass the **Creative Muse became its own seat** (the generative provocateur, now the `brand-muse` agent) rather than a Team making-role, leaving seven convergent making-roles on the Team.
+- `brand-methodology` SKILL now frames the three seats + the loop and points to the new references; `/brand-build` routes to `/brand-muse` for divergence.
+- The operational-roles pattern (Maker · Critic · Provocateur) this release formalizes is generalized into **plugins-factory** so any plugin can reuse it.
+
 ## [0.2.0] — 2026-06-03
 
 - **`/brand-stamp`** — emit a finished brand corpus as a distributable artifact, in one of **three pure, separate** forms (each to its own folder under `-o`): **plugin** (`<out>/plugin/<brand>-brand/` — corpus + the stdio `brand-corpus` MCP + a thin skill, for Claude Code / Cowork; bundled or `--linked`), **skill** (`<out>/skill/<brand>-brand/` — a standard Agent Skill with the corpus bundled in `references/`, for Claude chat; no MCP/scripts), and **mcp** (`<out>/mcp/<brand>-brand-mcp/` — the standalone server + corpus + a `claude mcp add` README). The command **always asks** which form. Mechanized by `bin/brand-stamp`; the plugin form is authored to pass plugins-factory's `validate_plugin.py`.

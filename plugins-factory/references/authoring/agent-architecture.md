@@ -64,7 +64,7 @@ Persona matters for **review** agents (it produces diverse, non-redundant judgme
 
 ## Orchestration — the council pattern
 
-The highest-value agent shape is a panel: **fan out isolated lenses in parallel → collect cited, severity-classified findings → synthesize across them.** The synthesis is the point — the individual critiques are inputs to it (convergence where ≥2 agree, the productive tension, the blind spot all of them miss, the scorecard). Worked examples ship in this plugin: `agents/plugin-council.md` (the orchestrator) fanning out `agents/critic-*.md` (the lenses); brand-forge's `brand-council` is the same shape. Rules:
+The highest-value agent shape is a panel: **fan out isolated lenses in parallel → collect cited, severity-classified findings → synthesize across them.** The synthesis is the point — the individual critiques are inputs to it (convergence where ≥2 agree, the productive tension, the blind spot all of them miss, the scorecard). Worked examples ship in this plugin: `agents/plugin-council.md` (the orchestrator) fanning out `agents/critic-*.md` (the lenses); brand-forge's `brand-council` is the same shape. The council is the **Critic** seat of a broader operational triad (Maker · Critic · Provocateur) — see `operational-roles.md` for when a plugin also needs a _Maker_ or a generative _Provocateur_ seat, how they integrate, and the trap of relabeling a red team (a Critic) as a provocateur. Rules:
 
 - The orchestrator is the **only** agent with `Task`; nesting beyond one level is a smell.
 - Fan out **concurrently** (one message, many dispatches) so an earlier lens can't anchor a later one.
@@ -81,4 +81,5 @@ Before shipping an agent, confirm: it needs **isolation or parallelism or tool-r
 - `references/frontmatter.md` — the agent field contract + the loader rule.
 - `references/rubrics/agent-fit.md` — the scoring rubric (the eval side of this doc).
 - `references/authoring/skill-architecture.md` — the default; reach here only when isolation/parallelism is required.
+- `references/authoring/operational-roles.md` — the Maker / Critic / Provocateur seat pattern this council fits into.
 - `references/critics/eval-prompts.md` + `agents/plugin-council.md` — the council pattern, instantiated.
