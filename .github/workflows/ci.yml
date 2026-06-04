@@ -32,6 +32,9 @@ jobs:
       - name: validate plugin — product-forge
         run: python3 "$PF/bin/validate_plugin.py" plugin product-forge --strict
 
+      - name: validate plugin — agent-ops
+        run: python3 "$PF/bin/validate_plugin.py" plugin agent-ops --strict
+
       - name: validate marketplace
         run: python3 "$PF/bin/validate_plugin.py" marketplace .
 
@@ -49,6 +52,9 @@ jobs:
 
       - name: reference-lint — product-forge
         run: python3 "$PF/bin/reference-lint.py" product-forge
+
+      - name: reference-lint — agent-ops
+        run: python3 "$PF/bin/reference-lint.py" agent-ops
 
       - name: adia-ui-factory scaffolder selftest
         run: python3 adia-ui-factory/bin/adia-scaffold selftest
@@ -68,3 +74,12 @@ jobs:
 
       - name: product-forge — lint selftest
         run: python3 product-forge/bin/product-lint selftest
+
+      - name: agent-ops — gates (sourcing + self-contained + selftests)
+        run: |
+          python3 agent-ops/bin/check-sourcing.py selftest
+          python3 agent-ops/bin/check-sourcing.py agent-ops
+          python3 agent-ops/bin/check-self-contained.py selftest
+          python3 agent-ops/bin/check-self-contained.py agent-ops
+          python3 agent-ops/bin/doc-hygiene selftest
+          python3 agent-ops/bin/audit-history.py selftest

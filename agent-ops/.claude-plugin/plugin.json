@@ -1,0 +1,26 @@
+{
+  "name": "agent-ops",
+  "version": "0.1.0",
+  "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs (AGENTS.md · README · CHANGELOG · ROADMAP · ADRs) + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).",
+  "author": {
+    "name": "Kim",
+    "email": "kim@sublimeheroics.com"
+  },
+  "homepage": "https://github.com/kimgranlund/plugins-forge",
+  "license": "MIT",
+  "keywords": [
+    "agent",
+    "agentic",
+    "agent-loops",
+    "orchestration",
+    "harness",
+    "context-engineering",
+    "repo-ops",
+    "agents-md",
+    "documentation",
+    "repo-review",
+    "architecture",
+    "council",
+    "ops"
+  ]
+}

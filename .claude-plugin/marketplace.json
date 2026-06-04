@@ -94,6 +94,24 @@
         "governance",
         "experience-strategy"
       ]
+    },
+    {
+      "name": "agent-ops",
+      "source": "./agent-ops",
+      "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).",
+      "category": "developer-tools",
+      "tags": [
+        "agent",
+        "agentic",
+        "agent-loops",
+        "orchestration",
+        "harness",
+        "context-engineering",
+        "repo-ops",
+        "agents-md",
+        "repo-review",
+        "council"
+      ]
     }
   ]
 }
