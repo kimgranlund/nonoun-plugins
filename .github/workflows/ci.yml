@@ -47,6 +47,9 @@ jobs:
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 
+      - name: plugins-factory — behavioral gate-evals
+        run: python3 "$PF/evals/behavioral-gates.py"
+
       - name: reference-lint — plugins-factory
         run: python3 "$PF/bin/reference-lint.py" "$PF"
 

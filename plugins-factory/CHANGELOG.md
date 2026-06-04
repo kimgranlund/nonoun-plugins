@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.6 — 2026-06-04
+
+- **Added a README.** The lifecycle tool now ships the documentation it requires of every plugin — the command / skill / agent / gate surface, the nine-dimension standard, honest scope, and provenance. (It was the one catalog plugin missing one.)
+- **`evals/behavioral-gates.py` — the deterministic behavioral-eval suite** (ROADMAP'd). Builds throwaway fixture plugins, each carrying one known structural defect, runs the `bin/` gates against them, and asserts each is caught — plus a golden clean fixture that must pass every gate. Covers the `../`-dependency (P4), command↔skill collision (P7), agent-smuggling-`mcpServers` (P9), version↔CHANGELOG drift (P8), description count-claim (P5), and dangling-reference classes; wired into CI. It turns "the harness catches a bad plugin" from an assertion into a tested property. The non-deterministic other half — asserting on the critic council's emitted scorecard — stays a documented manual eval (see ROADMAP).
+
 ## 0.2.5 — 2026-06-04
 
 - **`validate_plugin.py` — command↔skill slug-collision gate.** Commands (`commands/*.md`) and skills (`skills/<name>/`) are two file-formats of one primitive sharing the `/<plugin>:<slug>` invocation namespace; a command and a skill with the same slug collide (the skill shadows the command → `Unknown command: /<plugin>:<slug>`). The validator now errors on this within a plugin (selftest fixture added; runs in CI via the existing `--strict` steps). This is the gate that would have caught the brand-forge `/brand-evaluate` and product-forge `/product-evaluate` · `/product-research` collisions (fixed in brand-forge 0.4.1 / product-forge 0.3.1).

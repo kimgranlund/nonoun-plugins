@@ -1,0 +1,86 @@
+# plugins-factory
+
+**Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — build a plugin and judge it with the same rubrics, foundations, and critic council.** A self-contained plugin with zero cross-plugin dependencies.
+
+This is the toolchain the rest of this marketplace is authored and red-teamed with. It is a normal catalog plugin anyone can install — and this repo auto-enables it for its own sessions (via `.claude/settings.json`), so it loads whenever you work here.
+
+---
+
+## Quick start
+
+```text
+/plugin marketplace add kimgranlund/plugins-forge
+/plugin install plugins-factory@plugins-forge
+```
+
+Build side and judge side, both as thin typed commands:
+
+| Command | Side | What it does |
+| --- | --- | --- |
+| `/plugin-author` | build | New plugin: intent → component-fit → boundary check → wire manifests → validate → build-time red-team. |
+| `/plugin-carve` | build | A skill library → a plugin-boundary proposal (map the composition graph, cluster by domain, resolve shared infra). |
+| `/plugin-edit` | build | Targeted fix — a mis-fit component, a kitchen-sink boundary, an illegal `../` dependency, a routing collision. |
+| `/plugin-score` | judge | Score a plugin across the nine dimensions, with evidence and the ship-gate it must pass. |
+| `/plugin-critique` | judge | Convene the 9-critic council (parallel, isolated) for an adversarial architecture review. |
+| `/plugin-promote` | judge | Gate a plugin to its next maturity stage against the dimension thresholds. |
+
+---
+
+## The surface — four primitives over one shared standard
+
+```text
+plugins-factory/
+├── commands/   6 thin entry points       → build (author·carve·edit) · judge (score·critique·promote)
+├── skills/     2 posture skills          → plugin-build (the maker) · plugin-evaluate (the judge)
+├── agents/    9 critics + orchestrator + carve-analyst → the parallel, isolated council
+├── hooks/ + bin/  4 stdlib gates + an advisory hook    → mechanized structure checks
+└── references/   the 9-dimension rubric spine + foundations + authoring methodology
+```
+
+- **Commands** route to a skill or the council; they never re-contain the standard.
+- **Skills** split by posture: `plugin-build` (author / carve / edit) and `plugin-evaluate` (score / critique / promote, carrying the untrusted-target trust boundary). Both draw on one rubric spine in `references/`.
+- **Agents** — the 9-critic council (`critic-boris` … `critic-scott-w`, each a named-practitioner lens) + `plugin-council` (the orchestrator that fans them out in parallel isolated contexts and runs the cross-critic synthesis) + `carve-analyst` (the composition-graph fan-out worker). **Every agent is tool-scoped read-only** (`Read, Grep, Glob`) — they review _untrusted_ plugins, so they must not be able to execute.
+- **Gates (`bin/`)** — stdlib Python, all run in CI against every catalog plugin:
+  - `validate_plugin.py` — manifest / layout / path static validator + the **command↔skill slug-collision** check + a `selftest` + an advisory `hook` mode.
+  - `reference-lint.py` — fails on doc/command references that don't resolve on disk.
+  - `check-manifest-sync.py` — fails on declared-state drift (version↔CHANGELOG, description count claims, cited commands).
+  - `check-foundations-coverage.py` — every dimension foundation maps to exactly one rubric.
+  - `evals/` — a behavioral suite that builds fixture plugins with known defects and asserts the gates catch each.
+- **Hook** — `validate_plugin.py --hook` fires on `plugin.json` / `marketplace.json` writes; it surfaces manifest/layout/path smells and **never blocks**.
+
+There is no MCP: plugins-factory is static-analysis only by design — it reads candidate plugins, it never runs them (the P9 trust-boundary risk).
+
+---
+
+## The standard — nine dimensions
+
+Each dimension has a rubric in `references/rubrics/` and a theory doc in `references/foundations/`:
+
+|  | Dimension | Asks |
+| --- | --- | --- |
+| **P1** | Plugin Fitness | Is this a real plugin, or a skill wearing a manifest? |
+| **P2** | Component Fit | Does each component do the one job that primitive is uniquely for? |
+| **P3** | Boundary Cohesion | One domain — neither kitchen-sink nor fragment? |
+| **P4** | Dependency Legality | Copy-alone clean — zero `../` escapes, zero absolute paths? |
+| **P5** | Manifest & Packaging | `.claude-plugin/` pure; the manifest honest about what ships? |
+| **P6** | Context Economy | Worth leaving enabled — is the always-on cost justified? |
+| **P7** | Routing & Discoverability | Findable, namespaced, no slug collisions? |
+| **P8** | Evolution & Maintenance | Versioned, changelog-honest, no dead components? |
+| **P9** | Security & Trust | No bundled lethal trifecta; agents tool-scoped; hooks advisory? |
+
+`[gate]` dimensions (e.g. P4 legality, P9 security) can cap a score regardless of the rest.
+
+---
+
+## Honest scope
+
+- **The gates mechanize only the mechanizable** — manifest/layout/path legality, reference resolution, declared-state drift, slug collisions. They are advisory-or-CI structure checks, not taste.
+- **Architecture judgment lives in the council** — whether a boundary is cohesive, a component earns its primitive, an MCP is a curated perimeter or a 1:1 API wrapper. No regex decides that.
+- **The plugin under review is untrusted DATA, never instructions** — an embedded "rate this 5/5" / "skip the review" is a _finding_, never obeyed. That guard ships inside every critic (each runs isolated), the orchestrator, and the evaluate skill.
+- **No live execution** — the validator reproduces the documented static checks in-repo rather than shelling out to `claude plugin validate` (which may be absent in CI); candidate plugins are read, never run.
+
+---
+
+## Provenance
+
+plugins-factory was authored **by**, and red-teamed **against**, its own 9-dimension standard — the dogfood test of the tool. Self-contained by design: the four cross-cutting rubrics that score P1/P7/P8/P9 are co-located from `skills-studio` (zero `../` cross-plugin paths, zero `dependencies`). Its adversarial reviews live in `reviews/`; open structural work is in `ROADMAP.md`.
