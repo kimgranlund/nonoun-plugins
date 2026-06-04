@@ -7,6 +7,15 @@ primary_sources:
   - "Nielsen Norman Group. \"Democratize User Research in 5 Steps.\" https://www.nngroup.com/articles/democratize-user-research/"
   - "User Interviews. \"Ethical Guidelines for Research\" (UX Research Field Guide). https://www.userinterviews.com/ux-research-field-guide-chapter/ethical-inclusive-research"
   - "User Interviews. \"The User Researcher's Guide to Data Privacy Regulations: GDPR, CCPA, CPRA.\" https://www.userinterviews.com/blog/the-user-researchers-guide-to-gdpr"
+method: research-ops
+phase: govern
+domains: [11, 12]
+timebox: "ongoing"
+cadence: continuous
+participants: [research-ops lead, researchers, "the wider org"]
+inputs: ["demand for research", "tooling", "a governance / ethics need"]
+produces: "the research operating system — recruiting, cadence, repository, ethics, democratization"
+rubric: rubric-discovery
 ---
 
 # Research Operations: Recruiting, Cadence, Repositories, Democratization, Ethics

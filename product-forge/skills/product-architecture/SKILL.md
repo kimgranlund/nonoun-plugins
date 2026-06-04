@@ -9,7 +9,6 @@ description: >-
   journey / flows", "the interaction model", "how should search / filtering work", "what states does this
   need". NOT a single reusable screen pattern (product-patterns), strategy (product-methodology), research
   (product-research), or scoring (product-evaluate).
-version: 0.1.0
 ---
 
 # product-architecture — the structure of the experience
@@ -29,6 +28,7 @@ Structure before surface (Garrett: the lower planes constrain the upper — sett
 | how is the whole experience organized? journeys, flows, surfaces, states, enablement | `experience-architecture/` | `jjg-five-planes.md` · `journeys-and-maps.md` · `flows-and-task-design.md` · `navigation-and-wayfinding.md` · `surfaces-and-screens.md` · `states-and-continuity.md` · `enablement-paths.md` |
 | how does the user act on it? inputs, commands, feedback, undo, automation | `interaction-model/` | `inputs-and-controls.md` · `commands-and-actions.md` · `feedback-and-confirmation.md` · `undo-and-recovery.md` · `automation-boundaries.md` · `direct-manipulation.md` |
 | how is the content/data structured? objects, taxonomy, metadata, search, filtering | `information-architecture/` | `covert-sensemaking.md` · `polar-bear-foundations.md` · `object-model.md` · `taxonomy-and-classification.md` · `metadata-and-relationships.md` · `search-systems.md` · `filtering-and-faceting.md` |
+| _run a structured method_ — map a backbone, validate an IA, model the objects | `methods/` | `story-mapping.md` · `ia-validation.md` · `ooux-orca.md` |
 
 Each file lives at `${CLAUDE_PLUGIN_ROOT}/skills/product-architecture/references/<axis>/<name>.md`. Start at the named entry, then follow its in-file cross-references.
 

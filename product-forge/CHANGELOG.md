@@ -2,6 +2,22 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.0] — 2026-06-03
+
+The **methodology layer** — adds the runnable _how_ beside the frameworks (the _what_), the rubrics (the _score_), and the critics (the _who_). A machine-readable **method-card** schema + a process-spine frame map the common-sense methodologies a team actually runs, sequenced on the Double Diamond.
+
+### Added
+
+- **The method-card schema** — every methodology carries a frontmatter card (`method · phase · domains · timebox · cadence · participants · inputs · produces · de_risks · rubric`) + a fixed playbook body (when-to / when-NOT · the run · roles · failure modes · good-vs-bad · hand-off · sourcing).
+- **`bin/check-methods.py`** — the gate that enforces the schema: every `references/methods/` card must be complete, `phase` ∈ the seven spine phases, `cadence` ∈ {one-off / per-decision / recurring / continuous}, `domains` ⊆ 1–12, `produces` non-empty, optional `de_risks` ⊆ Marty C.'s four risks, and `rubric` must resolve in product-evaluate. Has a `selftest`; **wired into CI** alongside `check-sourcing` and `product-lint`.
+- **The process-spine frame** — `skills/product-forge/references/process-spine.md`: the Double Diamond → seven phases + the indexed method library (which method for where you are); the companion to the taxonomy frame.
+- **6 new methodology playbooks** — Design Sprint, Story Mapping, Usability Testing, IA validation (card sort + tree test), Service Blueprinting, OOUX/ORCA — each cross-referencing (not restating) its concept reference, to avoid content-tier duplication.
+- **5 research methods retrofitted with cards** — interviewing, JTBD discovery, survey design, research ops, behavioral-vs-attitudinal are now first-class indexed methods (**11 carded playbooks** total).
+
+### Changed
+
+- The `methods/` axis is wired into the owning skills' cold-start tables and the orchestrator classifier + References. The orchestrator's sub-council list corrected to the full v0.2 set (architecture / content / service / trust).
+
 ## [0.2.0] — 2026-06-03
 
 The **Product Experience Strategy** expansion — adopts the 12-domain taxonomy as the plugin's canonical frame and fills the gaps it exposed (information architecture, service & workflow, governance), hardens content design and trust/safety, and makes the cross-plugin boundaries explicit. Built via the same wave-based research + verification discipline as 0.1.0.

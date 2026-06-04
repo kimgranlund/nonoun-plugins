@@ -2,7 +2,7 @@
 
 **Build and evaluate product strategy, management, and UX — grounded in research and named-practitioner authority.** The product counterpart to [`brand-forge`](https://github.com/kimgranlund/plugins-forge/tree/main/brand-forge): where brand-forge builds brands grounded in cultural authority, product-forge builds products grounded in discovery, jobs-to-be-done, positioning, user research, and a comprehensive library of UX patterns and app-genre conventions — judged by an adversarial council of named product, UX, and AI-era practitioners.
 
-> **Status: 0.2.0 — the Product Experience Strategy expansion.** Eight skills, a 23-critic council, 11 rubrics, the advisory lint hook, the `/product-*` commands, and a ~130-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, markdownlint). v0.2 adopts the 12-domain **Product Experience Strategy** frame as the plugin's spine and fills the gaps it exposed — information architecture, service & workflow, governance. Red-teamed with the `plugins-factory` council (records under `reviews/`). A `product-corpus` MCP remains planned. See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.3.0 — the methodology layer.** Eight skills, a 23-critic council, 11 rubrics, **11 runnable methodology playbooks** on a machine-readable method-card schema, the advisory lint hook, the `/product-*` commands, and a ~135-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, **`check-methods.py`**, markdownlint). v0.3 adds the runnable _how_ — a **process-spine** frame (Double Diamond → seven phases) beside the v0.2 Product Experience Strategy taxonomy frame. Red-teamed with the `plugins-factory` council (records under `reviews/`). A `product-corpus` MCP remains planned. See [ROADMAP.md](ROADMAP.md).
 
 ## What it covers
 
@@ -15,6 +15,7 @@
 - **Service & governance** — service blueprints, human/system handoffs, support and escalation paths, cross-channel continuity; and product governance — enforceable principles, decision rights, ADRs, review rituals.
 - **Content design & trust/safety** — UX writing (voice, labels, microcopy, in-product education), and privacy-by-design, consent, explainability, auditability, and risk/harm handling.
 - **Authoring** — PRDs / specs and product-vision memos.
+- **Runnable methodologies** — the process playbooks a team actually runs (Design Sprint, story mapping, usability testing, IA validation, service blueprinting, OOUX, the research methods, …), sequenced on the Double Diamond, each with a method card (`phase · timebox · produces · rubric`).
 
 ## Shape (brand-forge's five-primitive model)
 

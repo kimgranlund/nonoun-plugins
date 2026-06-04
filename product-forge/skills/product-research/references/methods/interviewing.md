@@ -6,6 +6,16 @@ primary_sources:
   - "Teresa T.. *Continuous Discovery Habits: Discover Products that Create Customer Value and Business Value*. Product Talk LLC, 2021."
   - "Product Talk — \"Story-Based Customer Interviews Uncover Much-Needed Context.\" https://www.producttalk.org/2024/04/story-based-customer-interviews/"
   - "Steve Portigal. *Interviewing Users: How to Uncover Compelling Insights*. 2nd ed., Rosenfeld Media, 2023. https://rosenfeldmedia.com/books/interviewing-users-second-edition/"
+method: interviewing
+phase: discover
+domains: [1, 11]
+timebox: "30–60 min per interview"
+cadence: recurring
+participants: [interviewer, participant, notetaker]
+inputs: ["a research question", "recruited participants", "a discussion guide"]
+produces: "validated user insight — the real need, context, and problem behind what people say"
+de_risks: [value, usability]
+rubric: rubric-discovery
 ---
 
 # Customer Interviewing as a Discipline

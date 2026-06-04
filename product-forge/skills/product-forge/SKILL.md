@@ -9,7 +9,6 @@ description: >-
   skill", "orient me on this product / PM / UX task". If the task already names a clear artifact (a PRD,
   a persona, a specific pattern, an evaluation), route straight to the owning skill instead of orienting.
   NOT for brand strategy (brand-forge) or building UI components on a framework (adia-ui-factory).
-version: 0.1.0
 ---
 
 # product-forge — orient & route
@@ -35,10 +34,11 @@ The entry point for all product / PM / UX work. It turns a vague request into a 
 | a UX/interaction/flow pattern for a screen or flow (onboarding, search, forms, empty states, AI-chat…) | **product-patterns** |
 | the STRUCTURE of an experience — journeys/flows, navigation, information architecture, the object model, the interaction model, states | **product-architecture** |
 | the SERVICE around the product (blueprint, support, handoffs, escalation, fulfillment) or product GOVERNANCE (principles, decision rights, ADRs, review rituals) | **product-operations** |
+| run a named methodology / "how do we actually _do_ X" / which method fits this phase | the **process-spine** frame → the owning skill's `methods/` |
 | an app-genre's conventions / "what makes a good `<genre>` app" / cross-genre metrics | **product-genres** |
 | score / critique / audit / red-team an existing product, strategy, PRD, or UX | **product-evaluate** (+ the **product-council** agent) |
 
-When two apply (e.g. a strategy doc that also needs a PRD), route to the one that owns the **first artifact you'll produce**, then hand off. When the job is to _evaluate_, route to `product-evaluate` and pick the sub-council (`strategy` · `discovery` · `ux` · `ai-product` · `full`).
+When two apply (e.g. a strategy doc that also needs a PRD), route to the one that owns the **first artifact you'll produce**, then hand off. When the job is to _evaluate_, route to `product-evaluate` and pick the sub-council (`strategy` · `discovery` · `ux` · `architecture` · `content` · `service` · `trust` · `ai-product` · `full`).
 
 ## The routed plan — the verify target
 
@@ -70,5 +70,6 @@ A new task type or app genre? Add its row to the classifier here, create or exte
 ## References (load the one the route selects)
 
 - the **experience-strategy-taxonomy** frame — `${CLAUDE_PLUGIN_ROOT}/skills/product-forge/references/experience-strategy-taxonomy.md`: the 12-domain map of Product Experience Strategy → owning skill · rubric · critic · cross-plugin boundary. Load it for a broad request or to place a sub-topic.
+- the **process-spine** frame — `${CLAUDE_PLUGIN_ROOT}/skills/product-forge/references/process-spine.md`: the Double Diamond → seven phases + the index of runnable methodologies (which method for where you are). Load it for "how do we actually _do_ this", or to pick a method for a phase.
 - the owning skill — **product-methodology · product-research · product-architecture · product-operations · product-patterns · product-genres · product-evaluate** — holds the depth; load it on the matched route.
 - the **product-council** agent — convene it (via `product-evaluate`) for an adversarial, multi-critic review.

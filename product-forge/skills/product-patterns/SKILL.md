@@ -10,7 +10,6 @@ description: >-
   paywall", "is this the right UX", "AI chat / agentic UX", "empty state", "error handling". NOT for
   app-genre conventions (product-genres), user research (product-research), or product strategy
   (product-methodology).
-version: 0.1.0
 ---
 
 # product-patterns — the UX pattern library

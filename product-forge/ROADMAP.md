@@ -134,3 +134,29 @@ Every new file dated · coverage-tiered · `primary_sources` (the `check-sourcin
 - [x] **5. Boundaries + docs** — reciprocal brand-forge note added; README/CHANGELOG/marketplace + plugin.json synced to 0.2.0; CHANGELOG `[0.2.0]`.
 - [x] **6. Validate** — `validate_plugin.py --strict` · `reference-lint.py` · `check-sourcing.py` (0 gaps) · `product-lint` selftest · `markdownlint` (0/189) · marketplace — **all PASS**.
 - [x] **7. Red-team** — `plugins-factory` 9-critic council (CONDITIONAL → 3 MUST-folds applied → **APPROVED**; P4 & P9 clean 5s, ST5 clean) + independent quote re-verification (13/13 verbatim quotes verified, "two coffee shops" confirmed absent). The Critical fold hardened `check-sourcing.py` to derive its scope (now 134 refs) + a roster-count gate. Record: `reviews/2026-06-03-v0.2-red-team.md`. **Cut 0.2.0.**
+
+---
+
+## v0.3 — the methodology layer
+
+The taxonomy maps the **surfaces** of an experience; the rubrics **score** them; the critics **judge** them. v0.3 adds the missing layer — the runnable **methodologies** a team executes (the _how_) — as a distinct, machine-readable artifact: a **method card** + a fixed playbook body, indexed by a process-spine frame and enforced by a gate.
+
+### The schema (signed off)
+
+- **Method card** (frontmatter). _Typed / validated:_ `phase` (the 7 spine phases) · `cadence` (one-off / per-decision / recurring / continuous) · `domains` (1–12) · `produces` (non-empty) · `rubric` (must resolve — the maker↔judge link) · `de_risks` (optional; values from Marty C.'s four risks {value / usability / feasibility / viability}, or omitted for methods that produce a decision rather than de-risk a build-risk). _Descriptive (presence-checked):_ `method · timebox · participants · inputs`.
+- **Playbook body** (fixed order): name + def · when-to / when-NOT · the run (steps with who · timebox · output) · roles · failure modes · good-vs-bad + a single decisive test · hand-off · sourcing.
+- **Placement**: `references/methods/` inside each owning skill (provenance picked up by `check-sourcing`'s derived scan; cards enforced by `check-methods`).
+
+### Build phases
+
+- [x] **0. Schema** — the method card + playbook skeleton, proven with the `design-sprint` exemplar + the `process-spine` frame.
+- [x] **1. Playbooks** — 6 new (design-sprint, story-mapping, usability-testing, ia-validation, service-blueprinting, ooux-orca), each cross-referencing its concept ref (no duplication); + the 5 v0.1 research methods retrofitted with cards = **11 carded playbooks**.
+- [x] **2. Gate** — `bin/check-methods.py` (card completeness · `phase` & `cadence` enums · `domains` 1–12 · `produces` non-empty · `de_risks` risk-enum · `rubric` resolves) + selftest; all 11 cards PASS. Wired into CI alongside `check-sourcing` and `product-lint` (the v0.3 red-team's Critical).
+- [x] **3. Wiring** — `methods/` axis into the owning skills' cold-start tables; the process-spine into the orchestrator classifier + References; the spine frame marks playbook-vs-concept honestly.
+- [x] **4. Docs + validate** — CHANGELOG `[0.3.0]`, README, plugin.json / marketplace synced to 0.3.0; full gate suite green (validate --strict · reference-lint · check-sourcing · check-methods · product-lint · marketplace · markdownlint 0/196).
+- [x] **5. Red-team** — `plugins-factory` 9-critic council (CONDITIONAL → 3 MUST-folds applied → **APPROVED**; P4 & P9 clean 5s, ST5 clean; `check-methods` confirmed to earn its place + avoid the v0.2 allowlist trap). Folds: wired product-forge into CI; fixed the `de_risks` two-domain schema error (now an optional risk-enum) + tightened `check-methods`; dropped the skill `version` drift, trimmed the description, added `/product-method`. Record: `reviews/2026-06-03-v0.3-red-team.md`. **Cut 0.3.0.**
+
+### Deferred (post-0.3.0)
+
+- Dedicated playbooks for the concept-served methods (Build–Measure–Learn, continuous-discovery cadence, riskiest-assumption test, working-backwards run, A/B test run, ADR/RAPID) — currently run from their framework references; cards may follow.
+- Wire `check-methods.py` into CI alongside the other product-forge-local gates.

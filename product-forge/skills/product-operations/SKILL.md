@@ -9,7 +9,6 @@ description: >-
   "cross-channel", "our product principles", "who decides / RACI", "write an ADR", "the review cadence".
   NOT product strategy (product-methodology), the on-screen experience structure (product-architecture),
   or scoring (product-evaluate).
-version: 0.1.0
 ---
 
 # product-operations — the service & governance layer
@@ -28,6 +27,7 @@ Design the whole journey, not the screen (Marc S.: front-stage UI rests on back-
 | --- | --- | --- |
 | how is this delivered as a service? blueprint, handoffs, support, channels, ops | `service-model/` | `service-blueprints.md` · `service-design-method.md` · `handoffs-human-system.md` · `support-paths.md` · `cross-channel-continuity.md` · `escalation-and-exceptions.md` · `fulfillment-and-ops.md` |
 | how is this governed? principles, standards, ownership, decisions, rituals, docs | `governance/` | `product-principles.md` · `standards-and-systems.md` · `ownership-and-raci.md` · `decision-records-adr.md` · `review-rituals.md` · `documentation-as-system.md` |
+| _run a structured method_ — facilitate a service blueprint | `methods/` | `service-blueprinting.md` |
 
 Each file lives at `${CLAUDE_PLUGIN_ROOT}/skills/product-operations/references/<axis>/<name>.md`. Start at the named entry, then follow its in-file cross-references.
 

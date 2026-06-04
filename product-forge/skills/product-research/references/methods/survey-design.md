@@ -7,6 +7,16 @@ primary_sources:
   - "Sean Ellis. \"Using Product/Market Fit to Drive Sustainable Growth.\" GrowthHackers / Medium. https://medium.com/growthhackers/using-product-market-fit-to-drive-sustainable-growth-58e9124ee8db"
   - "Sean Ellis. \"The Startup Pyramid.\" Startup Marketing Blog. https://www.startup-marketing.com/the-startup-pyramid/"
   - "Rahul Vohra. \"How Superhuman Built an Engine to Find Product/Market Fit.\" First Round Review. https://review.firstround.com/how-superhuman-built-an-engine-to-find-product-market-fit/"
+method: survey-design
+phase: measure
+domains: [11]
+timebox: "design + field over days"
+cadence: per-decision
+participants: [researcher, "a representative sample"]
+inputs: ["a precise question", "a sample frame", "a piloted instrument"]
+produces: "quantified attitudes and segment signal at scale (including the PMF signal)"
+de_risks: [value]
+rubric: rubric-discovery
 ---
 
 # Survey Design: Pitfalls, Sampling, and When Surveys Lie

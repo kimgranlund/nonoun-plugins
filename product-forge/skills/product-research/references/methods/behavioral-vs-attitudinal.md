@@ -6,6 +6,15 @@ primary_sources:
   - "Nielsen Norman Group. \"Attitudinal vs. Behavioral Research in UX.\" https://www.nngroup.com/articles/attitudinal-behavioral/"
   - "Nielsen Norman Group. \"UX Research Methods: Glossary.\" https://www.nngroup.com/articles/research-methods-glossary/"
   - "Jakob N. (Nielsen Norman Group). \"First Rule of Usability? Don't Listen to Users.\" https://www.nngroup.com/articles/first-rule-of-usability-dont-listen-to-users/"
+method: behavioral-vs-attitudinal
+phase: frame
+domains: [11]
+timebox: "a short selection step"
+cadence: per-decision
+participants: [researcher, pm]
+inputs: ["the question / what you need to learn", "the constraints (time, access, stage)"]
+produces: "the right-fit research method (the behavioral×attitudinal / qual×quant placement)"
+rubric: rubric-discovery
 ---
 
 # Behavioral vs. Attitudinal: Say vs. Do, Qual vs. Quant

@@ -9,7 +9,6 @@ description: >-
   "what metric for X", "is this on-genre", "fintech onboarding", "game retention", "dashboard design".
   NOT for individual UX patterns (product-patterns), user research (product-research), or strategy
   (product-methodology).
-version: 0.1.0
 ---
 
 # product-genres — the app-genre taxonomy

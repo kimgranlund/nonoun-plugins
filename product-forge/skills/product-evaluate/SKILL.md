@@ -9,7 +9,6 @@ description: >-
   "critique this", "red-team this strategy", "run the product council", "promote this". NOT for MAKING
   the artifact (product-methodology / product-research / product-patterns) — this skill judges; those
   make.
-version: 0.1.0
 ---
 
 # product-evaluate — the judge

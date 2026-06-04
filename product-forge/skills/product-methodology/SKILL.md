@@ -10,7 +10,6 @@ description: >-
   this", "product vision / manifesto", "what's our north-star metric". NOT for scoring an existing
   artifact (product-evaluate), user-research method/persona craft (product-research), UX patterns
   (product-patterns), or app-genre conventions (product-genres).
-version: 0.1.0
 ---
 
 # product-methodology — the maker
@@ -38,6 +37,7 @@ Discovery before solutions (test the four risks before building); **outcomes ove
 | write the PRD / spec | `spec/` | `prd-modern.md` · `working-backwards-prfaq.md` · `one-pager-and-narrative.md` |
 | write a vision / manifesto / reframe | `vision/` | `manifesto.md` · `reframe.md` · `case-for.md` · `synthesis.md` |
 | who are the practitioners + their lenses? | `canon/` | `figures-strategy-pm.md` |
+| _run a structured method_ — de-risk a bet in a week | `methods/` | `design-sprint.md` |
 
 Each file lives at `${CLAUDE_PLUGIN_ROOT}/skills/product-methodology/references/<axis>/<name>.md`. The practitioner profiles in `${CLAUDE_PLUGIN_ROOT}/skills/product-methodology/references/canon/figures-strategy-pm.md` also ground the critic council.
 

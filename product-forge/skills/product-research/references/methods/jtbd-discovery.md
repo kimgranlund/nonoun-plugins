@@ -7,6 +7,16 @@ primary_sources:
   - "Intercom — \"Bob Moesta on unpacking customer motivations with Jobs-to-be-Done.\" https://www.intercom.com/blog/podcasts/bob-moesta-on-unpacking-customer-motivations-with-jobs-to-be-done/"
   - "The Re-Wired Group — \"Milkshakes in the Morning\" case study. https://therewiredgroup.com/case-studies/milkshakes/"
   - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck*. HarperBusiness, 2016 (the mattress / milkshake interviews)."
+method: jtbd-discovery
+phase: discover
+domains: [1, 11]
+timebox: "~1 hr per interview"
+cadence: recurring
+participants: [interviewer, "recent switchers"]
+inputs: ["recent switchers (people who just hired or fired a solution)", "the timeline technique"]
+produces: "the job, the forces of progress, and the switch triggers"
+de_risks: [value]
+rubric: rubric-discovery
 ---
 
 # JTBD Switch Interviews (Moesta / Re-Wired lineage)

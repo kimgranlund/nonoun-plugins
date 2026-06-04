@@ -9,7 +9,6 @@ description: >-
   Triggers: "user research", "interview users", "define a persona", "is this persona real", "journey
   map", "segment the users", "what method for X". NOT for UX patterns (product-patterns), app genres
   (product-genres), or strategy frameworks (product-methodology).
-version: 0.1.0
 ---
 
 # product-research — user & persona definition + research methods
@@ -22,7 +21,7 @@ The discipline of learning what users actually need — and turning it into pers
 
 | Axis | Files |
 | --- | --- |
-| `methods/` | interviewing · jtbd-discovery · behavioral-vs-attitudinal · survey-design · research-ops |
+| `methods/` | interviewing · jtbd-discovery · behavioral-vs-attitudinal · survey-design · research-ops · usability-testing |
 | `personas/` | jobs-pains-gains · goal-directed-personas · segmentation · persona-antipatterns |
 | `synthesis/` | journey-mapping · opportunity-framing · research-to-decision |
 

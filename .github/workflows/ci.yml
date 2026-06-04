@@ -29,6 +29,9 @@ jobs:
       - name: validate plugin — adia-ui-factory
         run: python3 "$PF/bin/validate_plugin.py" plugin adia-ui-factory --strict
 
+      - name: validate plugin — product-forge
+        run: python3 "$PF/bin/validate_plugin.py" plugin product-forge --strict
+
       - name: validate marketplace
         run: python3 "$PF/bin/validate_plugin.py" marketplace .
 
@@ -44,8 +47,24 @@ jobs:
       - name: reference-lint — adia-ui-factory
         run: python3 "$PF/bin/reference-lint.py" adia-ui-factory
 
+      - name: reference-lint — product-forge
+        run: python3 "$PF/bin/reference-lint.py" product-forge
+
       - name: adia-ui-factory scaffolder selftest
         run: python3 adia-ui-factory/bin/adia-scaffold selftest
 
       - name: adia-ui-factory lint selftest
         run: python3 adia-ui-factory/bin/adia-lint selftest
+
+      - name: product-forge — sourcing gate (selftest + scan)
+        run: |
+          python3 product-forge/bin/check-sourcing.py selftest
+          python3 product-forge/bin/check-sourcing.py product-forge
+
+      - name: product-forge — method-card gate (selftest + scan)
+        run: |
+          python3 product-forge/bin/check-methods.py selftest
+          python3 product-forge/bin/check-methods.py product-forge
+
+      - name: product-forge — lint selftest
+        run: python3 product-forge/bin/product-lint selftest
