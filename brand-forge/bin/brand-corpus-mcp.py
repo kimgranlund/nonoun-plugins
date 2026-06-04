@@ -164,7 +164,76 @@ def main():
     return 0
 
 
+def selftest():
+    """Exercise the path guard (`_safe`/`_md_files`) against traversal, absolute-path, symlink, and
+    prefix-sibling escape, plus a tools smoke. This server is copied verbatim into every stamped
+    artifact (brand-stamp `_copy_mcp`), so this test travels with the hand-rolled guard and catches
+    divergence across copies. No external corpus needed. Exit 0 = pass, 1 = fail."""
+    import tempfile
+    import shutil
+    global CORPUS
+    fails = []
+    def check(cond, label):
+        if not cond:
+            fails.append(label)
+    tmp = tempfile.mkdtemp(prefix="brand-corpus-selftest-")
+    try:
+        corpus = os.path.join(tmp, "corpus")
+        outside = os.path.join(tmp, "outside")
+        evil = os.path.join(tmp, "corpus-evil")  # prefix-sibling: shares the "corpus" prefix, must NOT pass
+        os.makedirs(os.path.join(corpus, "01-foundation"))
+        os.makedirs(outside)
+        os.makedirs(evil)
+        open(os.path.join(corpus, "01-foundation", "strategy.md"), "w", encoding="utf-8").write("# Strategy\nhello world\n")
+        open(os.path.join(corpus, "tokens.json"), "w", encoding="utf-8").write('{"color":"red"}\n')
+        open(os.path.join(outside, "secret.md"), "w", encoding="utf-8").write("# SECRET\n")
+        open(os.path.join(evil, "secret.md"), "w", encoding="utf-8").write("# SECRET\n")
+        link = os.path.join(corpus, "escape")
+        try:
+            os.symlink(outside, link)
+            symlinks_ok = True
+        except (OSError, NotImplementedError):
+            symlinks_ok = False  # e.g. Windows without privilege — skip just the symlink assertion
+
+        CORPUS = corpus
+        # _safe: legitimate paths resolve…
+        check(_safe("01-foundation/strategy.md") is not None, "valid corpus path was rejected")
+        check(_safe("") is not None, "corpus root was rejected")
+        # …and every escape is refused
+        check(_safe("../outside/secret.md") is None, "parent traversal accepted")
+        check(_safe("../../etc/passwd") is None, "deep traversal accepted")
+        check(_safe("/etc/passwd") is None, "absolute path accepted")
+        check(_safe("../corpus-evil/secret.md") is None, "prefix-sibling accepted (trailing os.sep guard missing)")
+        if symlinks_ok:
+            check(_safe("escape/secret.md") is None, "symlink escape accepted")
+        # _md_files: enumeration includes the real doc, never advertises an escaped one
+        listed = _md_files()
+        check("01-foundation/strategy.md" in listed, "valid doc not enumerated")
+        check(not any("secret" in p for p in listed), "escaped doc was enumerated")
+        # call(): the guard holds at the tool layer, and the read tools work
+        _, err = call("fetch_brand_section", {"path": "../outside/secret.md"})
+        check(err, "fetch_brand_section served a path outside the corpus")
+        txt, err = call("list_brand_documents", {})
+        check(not err and "strategy.md" in txt, "list_brand_documents failed")
+        txt, err = call("get_brand_tokens", {})
+        check(not err and "color" in txt, "get_brand_tokens failed")
+        txt, err = call("search_brand", {"query": "hello"})
+        check(not err and "strategy.md" in txt, "search_brand failed")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    if fails:
+        sys.stderr.write("brand-corpus-mcp selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("brand-corpus-mcp selftest: OK")
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "selftest":
+        sys.exit(selftest())
     try:
         sys.exit(main())
     except (BrokenPipeError, KeyboardInterrupt):
