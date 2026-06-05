@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.5] — 2026-06-04
+
+- **The aspiration is now a precondition of making — a soft gate.** Before the Team converges, the Muse's pull must be at least lightly named; brand work reasoned toward _nothing_ drifts to the category average. `/brand-build` gains an explicit **"name the pull before you converge"** step (set a provisional, revisable direction — or convene the Muse — _before_ invoking the methodology); `brand-methodology` adds a **"no convergence toward nothing"** standing constraint and names aspire-first as the loop's precondition; `creative-collaboration.md` states it on the loop. It is a _soft_ blocker throughout — cleared by **naming** a direction, never by stopping, and "lightly declared and developed over time" is the healthy state. Mirrors the generalized rule in plugins-factory `operational-roles.md` (R2/R4).
+
 ## [0.4.4] — 2026-06-04
 
 - **Manifest + command-frontmatter fixes that unblock install.** `userConfig.corpus_dir` was missing the required `title` field, so `claude plugin install brand-forge` failed schema validation (`userConfig.corpus_dir.title: expected string, received undefined`) — added it. Separately, the `argument-hint` frontmatter in `/brand-council` and `/brand-stamp` opened a YAML flow collection with trailing tokens (`[strategy|design|voice|full] [artifact]`), which made the parser fail and the loader silently drop the **entire** frontmatter block (description + hint) at load. Both are now quoted strings, and the remaining command hints were quoted for consistency.

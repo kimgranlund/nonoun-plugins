@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.4] — 2026-06-04
+
+- **The aspiration is now a precondition of making — a soft gate.** Before a maker converges on substantive work, the **Vision / North-Star** the work serves (product-forge's domain attractor — the `vision/` axis: manifesto · reframe · case-for + the north-star metric) must be at least lightly named; product work reasoned toward _nothing_ drifts to the category average. The four maker commands gain an explicit **"name the pull first"** step before the `Invoke` hand-off (`/product-strategy` → the Vision / North-Star; `/product-discover` → the hypothesis/outcome the research illuminates; `/product-ux` → the outcome the screen serves; `/product-method` → the outcome the method clarifies). The `product-methodology` maker skill adds a **"name the pull before you converge"** preamble above its cold-start table, pointing at the `vision/` axis; the `product-forge` router gains an **"Aspiration named" `[soft-gate]`** dimension on the Orientation rubric. It is a _soft_ blocker throughout — cleared by **naming** a provisional, revisable direction, never by stopping; "lightly declared and developed over time" is the healthy state. Mirrors the generalized rule in plugins-factory `operational-roles.md` (the Maker's precondition, R2/R4) and brand-forge 0.4.5. No new commands, skills, or critics — the soft gate adds no surface.
+
 ## [0.3.3] — 2026-06-04
 
 - **Quoted `argument-hint` frontmatter** across all commands — normalizes the value to a string (YAML was parsing the unquoted `[..]` as a flow list/map) and satisfies plugins-factory's new frontmatter flow-collection lint. No behavior change.

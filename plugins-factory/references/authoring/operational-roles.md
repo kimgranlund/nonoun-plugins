@@ -31,6 +31,12 @@ The owner of the **standard** is never the owner of the **work**. This is the lo
 
 The rhythm is **aspiration → convergence → critique**. The correction the attractor framing makes precise: _divergence is not the point — direction is._ Knapp's Design Sprint hard-codes **Diverge → Decide** and IDEO's rule is to **"defer judgment"** while generating, but Knapp's own lesson is that brainstorming _alone_ fails — generation pays off only when pulled toward an aspiration and then converged. The handoffs: the Muse hands the Maker _an articulated aspiration and the direction it implies_ (an ideal, a provocation, or a concept — traced to a real root); the Maker hands the Critic _finished work for a cold read_; the Critic hands back _findings measured against the aspiration_; the Maker remakes or defends the line.
 
+## The aspiration is the Maker's precondition — a soft blocker if absent
+
+The loop has a starting **precondition**, not just an order. A Maker converging toward _no declared pull_ has nothing to converge _toward_, so "converge" degrades to "pick the most probable option" — the category average. The attractor is therefore a **gate on the Maker**: before substantive making, the domain aspiration must be **at least lightly named** (one sentence of direction is enough, and it is expected to evolve as the work teaches you what it wants to be).
+
+It is a **soft** gate — cleared by _setting a provisional pull_, never a hard stop. An undeclared aspiration is a finding the maker flow clears for itself: surface the gap, name a light revisable direction (or run a quick Muse pass), _then_ converge. "Lightly declared and developed over time" is the healthy state; "no sense of the pull at all" is the blocker. Realize it as the **first move of every `/x-build` entry**. The check is behavioral, not mechanical — the aspiration lives in the _work_, not the plugin's files, so no static gate can see it; the maker command carries it.
+
 ## The third seat: name it for the domain, and staff it by judgment
 
 The attractor is near-universal — but how explicit and how _staffed_ it is scales with the **taste-dependence** of the problem. Name it for the domain; make it a live generative agent only where the aspiration is a continuous creative judgment rather than a fixed document.
@@ -63,9 +69,9 @@ Relabeling your review stage as "the muse," or bolting on a second adversarial p
 Score only if the plugin orchestrates make/review work with an articulated aspiration. Dimensions; `[gate]` fails the pattern outright.
 
 - **R1 — Seat separation `[gate]`.** Maker and Critic are distinct, and the separation is _structural_ (separate tool-scoped agents), not a prose instruction. A maker that reviews its own output fails.
-- **R2 — The attractor is real and right-sized.** There is an articulated aspiration the work is pulled toward (an ideal, principles, or a provocation), named for the domain — and it is staffed proportionately (a generative agent only where taste makes it a live judgment; a written north-star otherwise). A muse _agent_ bolted onto convergent, testable work is a finding; so is work with no aspiration at all.
+- **R2 — The attractor is real and right-sized.** There is an articulated aspiration the work is pulled toward (an ideal, principles, or a provocation), named for the domain — and it is staffed proportionately (a generative agent only where taste makes it a live judgment; a written north-star otherwise). A muse _agent_ bolted onto convergent, testable work is a finding; so is work with no aspiration at all — and the maker flow must **establish at least a light, provisional pull before it converges** (the soft precondition above): a `/x-build` that reasons straight to a finished artifact with no declared direction fails R2.
 - **R3 — Muse ≠ red team `[gate]`.** If a Muse seat exists, it is _generative and forward_ (it sets an aspiration that doesn't exist yet); it is not the review seat relabeled. A "muse" that returns findings about what already exists fails.
-- **R4 — Loop integration.** The handoffs are defined (what passes between seats) and the order is aspire → make → review → remake — not a vague "they collaborate."
+- **R4 — Loop integration.** The handoffs are defined (what passes between seats) and the order is aspire → make → review → remake — not a vague "they collaborate." **Aspire precedes make**: the Maker does not converge before the pull is at least lightly named (the soft precondition).
 - **R5 — Naming fit.** The attractor carries a domain name (Muse / Vision / Design principles), signalling _what kind_ of pull it supplies.
 
 **Pass threshold:** R1 and R3 must pass; the rest raise quality. A plugin with no orchestration is exempt — most plugins are.

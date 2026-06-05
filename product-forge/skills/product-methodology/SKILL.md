@@ -24,6 +24,8 @@ Discovery before solutions (test the four risks before building); **outcomes ove
 
 ## Cold start — the question → the axis
 
+**Name the pull before you converge.** Product work reasoned toward _nothing_ drifts to the category average, so before making, the Vision / North-Star this work serves must be **at least lightly named** — one sentence of direction is enough, and it will evolve. Reach for the `vision/` axis first (manifesto · reframe · case-for · the north-star metric). This is a **soft gate**: an undeclared aspiration is cleared by _naming_ a provisional, revisable direction, not by stopping.
+
 | The work is… | Axis | Start at |
 | --- | --- | --- |
 | is there a real strategy here? what's the diagnosis? | `strategy/` | `rumelt-kernel.md` · `strategy-vs-roadmap.md` · `product-strategy-stack.md` |

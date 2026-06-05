@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 — 2026-06-04
+
+- **The design intent is now a precondition of making — a soft gate.** Before the maker converges on structure or UI, the app's **design intent** (the `BRIEF` — what this UI is reaching for) must be **at least lightly named**; composition reasoned toward _nothing_ drifts to "build the catalog" / feature improvisation. `adia-ui-project` gains a **"Step 0 — name the design intent [soft-gate]"** section before picking the shape (name a provisional pull, trace it in `spec/BRIEF` or inline); `adia-ui-compose` and `adia-ui-genui` each add a short design-intent soft-gate check before their loop (and for genui it also grounds corpus retrieval); `/adia-scaffold` and `/adia-genui` gain a one-line gate near the top. It is a _soft_ blocker throughout — cleared by **naming** a revisable direction, never by stopping, and "lightly declared and developed over time" is the healthy state. Mirrors the generalized rule in plugins-factory `operational-roles.md`.
+
 ## 0.2.1 — 2026-06-04
 
 - **Quoted `argument-hint` frontmatter.** `/adia-migrate`, `/adia-scaffold`, and `/adia-wire` used multi-bracket hints (e.g. `[spa|ssr] [app name]`) that YAML parsed as a flow sequence with trailing tokens → parse error → the loader dropped their **entire** frontmatter (description + hint) at load. All command hints are now quoted strings.

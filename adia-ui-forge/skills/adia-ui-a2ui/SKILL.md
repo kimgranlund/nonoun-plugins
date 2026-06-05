@@ -30,6 +30,8 @@ On bare activation ("use adia-ui-a2ui" with no further direction), render the me
 
 > **Plan-Execute-Verify loop is load-bearing** — every mode below MUST close the **plan → execute → verify** loop. Read `## §Plan-Execute-Verify` below BEFORE selecting a mode; name the verify-target up front for whichever mode you pick. The mode procedure is "execute"; it's incomplete without "verify against reality".
 
+> **Soft gate — name the generation philosophy before you converge.** Before picking a mode, confirm the **design principles** the pipeline serves — the generation philosophy this change is reasoned toward (faithful retrieval over hallucination, leverage-ruled reuse, eval-first calibration) — are at least lightly named. Pipeline work reasoned toward no stated pull drifts to the average composition. One sentence is enough and it will evolve; if none is stated, set a provisional one. This is a soft gate, cleared by _naming_ a direction, not by stopping.
+
 | Mode | Trigger phrase / situation | Entry reference |
 | --- | --- | --- |
 | **1. Run MCP pipeline (consumer)** | "run the MCP pipeline", "generate_ui then validate", "compose_from_chunks", "refine_composition", "report_issue" | [mcp-pipeline-ops](references/mcp-pipeline-ops.md) → [mcp-tool-reference](references/mcp-tool-reference.md) |

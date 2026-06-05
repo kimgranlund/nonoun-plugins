@@ -5,6 +5,8 @@ argument-hint: "[spa|ssr] [app name]"
 
 Scaffold a new adia-ui app. **$ARGUMENTS**
 
+**Name the design intent first [soft-gate]:** the design intent (the `BRIEF` — what this UI is reaching for) must be **at least lightly named**, one sentence is enough and it will evolve; absent, set a provisional, revisable pull and proceed. This is a **soft gate**, cleared by _naming_ a direction, not by stopping.
+
 1. **Pick mode + shape** via the `adia-ui-factory` classifiers (or the first argument) — or ask when it's greenfield. The shapes + four-axis layout are owned by **`adia-ui-project`** (load it for the decision).
 2. **Lay the skeleton deterministically** with the bundled scaffolder:
    - SPA → `python3 "${CLAUDE_PLUGIN_ROOT}/bin/adia-scaffold" spa <name>`

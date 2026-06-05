@@ -65,6 +65,7 @@ The skill cannot produce a real blueprint without these. If any is missing, **as
 
 | Input | Why it is load-bearing | If absent |
 | --- | --- | --- |
+| **Design principles / aspiration** — the design philosophy the loop is reasoned toward (simplicity · transparency · a well-crafted ACI · the control-plane-first thesis) | The north-star pull; a loop reasoned toward no declared principles drifts to the category average | Name a provisional, revisable set — a **soft gate**, cleared by naming a direction, not by stopping |
 | **Goal** — the feature/plan/task to achieve | The job the loop exists to do; shapes topology selection | Cannot proceed — ask |
 | **Success criterion** — how "done/good" is decided, objectively where possible | Becomes the **verification gate** and the **termination goal-gate**; the single most important input | Ask; if truly none exists, that fact downgrades every gate to self-judgment and is itself the headline risk |
 | **Constraints / budget** — token, cost, latency, wall-clock, unattended-vs-watched | Sets hard caps, fan-out width, and whether the multi-agent premium is affordable | Default to a stated budget and flag it |

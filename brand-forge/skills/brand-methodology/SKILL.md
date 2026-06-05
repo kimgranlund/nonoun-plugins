@@ -60,12 +60,13 @@ Brand work moves through three distinct seats: the **Muse** supplies the _pull_ 
 
 The **Team** is a set of on-demand making roles — Strategic Planner, Creative Director, Copywriter, Art Director, Design Director, Product/UX Designer, and Brand Steward — each adopted as the task needs and defined in the reference. The **Muse** is the aspirational attractor (the `brand-muse` agent · `/brand-muse`); the **Council** is the named-critic panel (the `brand-evaluate` skill + critic agents · `/brand-council`).
 
-The loop is **aspire → make → review → remake**: the Muse names the pull, the Team converges toward it, the Council judges against it, the Team remakes or defends the line on the record. The handoffs are where work is won or lost — above all the **creative brief**, the strategy→expression pivot. Nothing skips to expression without a foundation, and nothing ships without surviving review.
+The loop is **aspire → make → review → remake**: the Muse names the pull, the Team converges toward it, the Council judges against it, the Team remakes or defends the line on the record. **Aspire comes first, as a precondition** — the Team does not converge toward nothing; if no pull is named, the work drifts to the category average, so name at least a light, revisable one before making (a soft gate, cleared by _naming_ a direction, not a hard stop). The handoffs are where work is won or lost — above all the **creative brief**, the strategy→expression pivot. Nothing skips to expression without a foundation, and nothing ships without surviving review.
 
 → The full model (the seats, the loop, the one invariant): [`references/creative-collaboration.md`](references/creative-collaboration.md). How the seats staff each phase of a brand + its corpus: [`references/team-operations-by-phase.md`](references/team-operations-by-phase.md).
 
 ## Standing constraints
 
+- **No convergence toward nothing.** Before the Team makes, the aspiration the work is pulled toward must be at least lightly named (the Muse's seat). Making with no pull drifts to the category average; an unnamed aspiration is a _soft_ gate — set a provisional, revisable pull first, don't stop.
 - **No values without trade-offs.** A value you would never sacrifice anything for is decoration. If "quality" costs you nothing, it is not a value — it is a wish.
 - **Cultural research ≠ market research.** Surveys, TAM, and competitor audits map the _market_. Archaeology maps the _culture_ — lived practice, primary sources, originators. You need the second to build a brand; the first only tells you the landscape.
 - **No expression before strategy.** If asked to "design the logo / palette / voice" with no written foundation, stop and produce (or demand) the foundation first. Decoration on top of an undecided position is the work you will throw away.

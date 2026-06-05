@@ -39,6 +39,8 @@ On bare activation ("use adia-ui-llm" with no further direction), render the men
 
 > **Plan-Execute-Verify is load-bearing** — every mode below MUST close the **plan → execute → verify** loop. Read `## §Plan-Execute-Verify` BEFORE selecting a mode; name the verify target up front. The mode procedure is "execute"; it is incomplete without "verify against the built package / a real `chat()` call / the stub".
 
+> **Soft gate — name the client-contract philosophy before you converge.** Before picking a mode, confirm the **design principles** the package serves — the client-contract philosophy this change is reasoned toward (a stable public surface, faithful provider-byte relay, raw `stopReason` never normalized, no key to the browser) — are at least lightly named. A change reasoned toward no stated pull drifts to the average adapter and quietly erodes the contract. One sentence is enough and it will evolve; if none is stated, set a provisional one. This is a soft gate, cleared by _naming_ a direction, not by stopping.
+
 | Mode | Trigger phrase / situation | Entry reference |
 | --- | --- | --- |
 | **1. Add a NEW provider adapter** | "add a new LLM provider", "wire up DeepSeek / Mistral / Cohere", "4th adapter" | [add-a-provider](references/add-a-provider.md) → [adapter-contract](references/adapter-contract.md) |

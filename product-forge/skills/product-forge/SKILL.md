@@ -53,6 +53,7 @@ Genre:  <app genre, if a build/UX task> — signal: <…>   (informs product-gen
 - **Evidence** `[gate]` — the task is set by a cited signal (the request's words, the artifact in hand), not an assumption.
 - **Ambiguity surfaced** `[gate]` — a genuinely unclear task is asked, never guessed.
 - **Make-vs-judge** `[gate]` — "produce an artifact" routes to a maker skill; "is this good" routes to `product-evaluate` + the council. Don't let a maker grade its own work.
+- **Aspiration named** `[soft-gate]` — if routing to a maker, the Vision / North-Star the work serves is at least lightly named (a sentence, revisable), or naming it is the first task. Cleared by _naming_ a direction, not by stopping; a maker reasoning toward nothing drifts to the category average.
 - **Scope check** `[gate]` — brand/positioning-as-culture → `brand-forge`; building UI components on a framework → `adia-ui-factory`; this plugin owns _product_ strategy / management / UX.
 
 ## Posture

@@ -47,6 +47,8 @@ The **Brand Steward** is the seat most teams forget, and its absence is why bran
 
 This is the documented shape of creative process, with one correction the attractor framing makes precise: **divergence is not the point — _direction_ is.** Jake Knapp's Design Sprint hard-codes **Diverge → Decide**, and IDEO's rule is to **"defer judgment"** while generating — but Knapp's own lesson is that brainstorming _alone_ fails. Generation pays off only when it is pulled toward an aspiration and then converged. The Muse supplies that pull; when it takes the form of a provocation, you **"murder your darlings"** (Quiller-Couch, 1914) to escape the obvious _toward_ a better direction, not merely away from the safe one.
 
+**The loop has a precondition: aspire comes first.** The Team cannot converge toward nothing — without a named pull, "converge" collapses to "pick the safest option," which is the category average. So the aspiration must be **at least lightly named before the making starts** — a sentence is enough, and it is meant to evolve. This is a **soft gate, not a hard stop**: if no pull is set, name a provisional one (or convene the Muse) and proceed — the gate is cleared by _naming_ a direction. "Lightly declared and developed over time" is the healthy state; "no sense of the pull at all" is the blocker.
+
 **The handoffs are where work is won or lost:**
 
 - **Muse → Team** is _the articulated aspiration and the direction it implies_ — an ideal to reach for, a provocation to commit to, or a concept to emulate, each traced to a real root. The Team converges toward it.

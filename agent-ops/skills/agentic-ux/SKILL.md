@@ -77,9 +77,10 @@ What the skill needs to start:
 Before producing or scoring:
 
 1. **Determine the lens.** Is this a **design** task (produce/improve a workflow UX), an **evaluate** task (score an existing one), or a **council** task (adversarial critique)? When ambiguous, ask or default per the workflow below.
-2. **Identify the lifecycle(s) in scope** — cold-start / orientation / generative / analysis / improving. Load `references/workflow-lifecycles.md`.
-3. **Determine which rubric(s) apply** — `rubric-agentic-ux.md` (human-facing experience), `rubric-agentic-architecture.md` (architecture & utility), or both.
-4. **State the plan** (lens, lifecycle, rubric(s), critics) before producing. Do not design or score from memory — load the files.
+2. **Name the design philosophy / workflow aspiration** (design mode). The operator-seat principles the UX is reasoned toward — what it should feel like to drive (trust · control · observability · steerability · reversibility); a UX reasoned toward none drifts to the category average. If none is articulated, name a provisional, revisable one — a **soft gate**, cleared by naming a direction, not by stopping.
+3. **Identify the lifecycle(s) in scope** — cold-start / orientation / generative / analysis / improving. Load `references/workflow-lifecycles.md`.
+4. **Determine which rubric(s) apply** — `rubric-agentic-ux.md` (human-facing experience), `rubric-agentic-architecture.md` (architecture & utility), or both.
+5. **State the plan** (lens, lifecycle, rubric(s), critics) before producing. Do not design or score from memory — load the files.
 
 ### Default workflow
 

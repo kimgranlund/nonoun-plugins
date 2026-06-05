@@ -27,6 +27,10 @@ The skill is not a generator. It's the cold-start triage menu, the workflow reci
 
 When an agent or human edits authoring-side AdiaUI code, prevent contract drift, lifecycle leaks, token bypass, and cross-package coupling at the source. Surface the right reference at the right time; do not replay the catalogue.
 
+## §DesignPrinciplesSoftGate
+
+Before you pick a mode and converge, confirm the **design principles** — the framework philosophy this change is reasoned toward (light-DOM composability, token-driven styling, contract-first authoring, no lifecycle leaks) — are **at least lightly named**. Authoring reasoned toward _no_ stated principle drifts to the average primitive: a box that works but extends nothing. One sentence of direction is enough, and it is expected to evolve. This plugin has no standalone design-principles document yet — only per-artifact guardrails — so naming the pull also means naming the principles themselves, even provisionally (e.g. "this primitive should embody light-DOM composability and token-driven styling, and add no lifecycle the next author can leak"). This is a **soft gate**: an undeclared principle set is cleared by _naming_ a provisional, revisable direction — never by stopping. "Lightly declared and developed over time" is the healthy state; "no sense of the pull at all" is the blocker.
+
 ## §ColdStartTriage
 
 On bare activation ("use adia-ui-authoring" with no further direction), render the menu below verbatim and wait. **Do not auto-load any references; the user picks the mode.** Each mode names the entry-point reference; the seed body stays thin because each mode's procedure lives on disk.

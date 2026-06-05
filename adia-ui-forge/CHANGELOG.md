@@ -2,6 +2,10 @@
 
 All notable changes to **adia-ui-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.2] — 2026-06-04
+
+- **Aspiration is now a precondition of making — a soft gate.** Before a maker skill converges, the **design principles** (the framework philosophy the change is reasoned toward — light-DOM composability, token-driven styling, contract-first authoring, no lifecycle leaks) must be at least lightly named; authoring reasoned toward _nothing_ drifts to the average primitive. `adia-ui-authoring` gains a **§DesignPrinciplesSoftGate** section before its cold-start menu; `adia-ui-a2ui` and `adia-ui-llm` get a brief domain-fitted equivalent at their cold-start (the generation philosophy; the client-contract philosophy); `/adia-forge-author` gains a one-line **"name the design principles before you converge"** gate. Because this plugin has no standalone design-principles document — only per-artifact guardrails — the gate also nudges the maintainer to **name the principles themselves, even provisionally** (they were previously implicit). It is a _soft_ blocker throughout — cleared by **naming** a provisional, revisable direction, never by stopping. Mirrors brand-forge v0.4.5 and the generalized rule in plugins-factory `operational-roles.md`.
+
 ## [0.1.1] — 2026-06-04
 
 - **Quoted `argument-hint` frontmatter** across all commands — normalizes the value to a string (YAML was parsing the unquoted `[..]` as a flow list) and satisfies plugins-factory's new frontmatter flow-collection lint. No behavior change.

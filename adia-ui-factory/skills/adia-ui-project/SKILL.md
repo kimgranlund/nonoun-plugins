@@ -25,6 +25,10 @@ Owns the **shape of the app on disk** — the shapes, the four-axis layout, the 
 | **add-component** | add a custom element | `components/<tag>/<tag>.{js,css}` exists and lints clean (`adia-lint`) |
 | **inventory** | assess an existing app | a structure-rubric scorecard with each gap cited to a path |
 
+## Step 0 — name the design intent [soft-gate]
+
+Before laying out any structure, confirm the app's **design intent is at least lightly named** — what this UI is reaching for, captured as a brief, a one-line thesis, or an explicit user goal. Structure reasoned toward _nothing_ drifts to "build the catalog" / feature improvisation. If no intent is stated, name a provisional, revisable pull in one sentence (e.g. "a real-time analytics dashboard for on-call engineers") and proceed. This is a **soft gate**: an undeclared design intent is cleared by _naming_ a direction, not by stopping — "lightly declared and developed over time" is the healthy state. Record it where it belongs: the `BRIEF` in the app's `spec/` axis (`spec/BRIEF`), or state it inline if the work is too small for a file.
+
 ## Step 1 — pick the shape (decide on a cited signal)
 
 Three shapes; the decision table + full layouts are in `${CLAUDE_PLUGIN_ROOT}/references/project-shapes.md` — load it before laying one out. In one line: **single-surface** (one entry, one surface), **rollup** (many sibling sub-pages under one app), **shared-foundation** (sibling apps over `app/shared/`). All use the four-axis layout (`spec/ plan/ app/ skills/`).

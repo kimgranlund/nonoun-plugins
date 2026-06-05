@@ -2,6 +2,10 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.2] — 2026-06-04
+
+- **The aspiration is now a precondition of making — a soft gate.** Before a Builder-seat maker converges, the **design principles** the work is reasoned toward must be at least lightly named; a loop or workflow reasoned toward no declared philosophy drifts to the category average. The attractor here is a written design-principle set (Anthropic's three — maintain simplicity · prioritize transparency · carefully craft the agent-computer interface — plus `agent-loops`' control-plane-first thesis for loops, and the operator-seat principles — trust · control · observability · steerability · reversibility — for UX), not a convened agent. `/ops-loop` and `/ops-ux` gain a **"name the pull first"** line before the skill hand-off; `agent-loops` adds a **Design principles / aspiration** row at the head of its Step 1 — Ingestion table; `agentic-ux` adds a **name the design philosophy** step at the head of its Decomposition. It is a _soft_ blocker throughout — cleared by **naming** a provisional, revisable direction, never by stopping. Mirrors the generalized rule in plugins-factory `operational-roles.md`.
+
 ## [0.1.1] — 2026-06-04
 
 - **Quoted `argument-hint` frontmatter** across all commands — normalizes the value to a string (YAML was parsing the unquoted `[..]` as a flow list) and satisfies plugins-factory's new frontmatter flow-collection lint. No behavior change.

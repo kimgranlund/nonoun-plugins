@@ -29,7 +29,7 @@ This file is a table of contents. The depth lives in the shared spine under `${C
 
 ## The component-fit decision is the first move, not the last
 
-Unlike a skill (one primitive), a plugin's central authoring act is **assigning each capability to a primitive** — _before_ writing the manifest, because the manifest shape follows from it. Write the fit table first (`capability → primitive → why`). That table **is** P2's evidence and the skeleton of the `plugin.json`:
+Unlike a skill (one primitive), a plugin's central authoring act is **assigning each capability to a primitive** — _before_ writing the manifest, because the manifest shape follows from it. The fit table has its own precondition: **name the plugin's one-sentence job first** — the intent the components are pulled toward (the aspiration-precondition from `authoring/operational-roles.md`, applied to plugin-building). A fit table assembled with no clear one-job intent has nothing to cohere around and drifts to a kitchen-sink; an unnamed intent is a _soft_ gate — state a provisional one-liner, then build. Write the fit table first (`capability → primitive → why`). That table **is** P2's evidence and the skeleton of the `plugin.json`:
 
 - must **run** on an event (lint, format, policy, notify)? → **hook** (`hooks/hooks.json`)
 - touches an **external/stateful system**? → **MCP** (`.mcp.json`), intent-level tools only
@@ -72,7 +72,7 @@ Fold surviving Critical/Major findings back via `edit` before packaging. That is
 
 ## §SelfAudit (before declaring done)
 
-Built against `build-against-the-standard.md` (each live dimension grounded in its foundation); component-fit declared for every capability; `plugin.json` passes `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py`; no `../` cross-plugin path; every hook's side-effect documented; the build-time red-team ran (Simon + Wlaschin floor, or full-panel by stakes) and surviving Critical/Major findings were folded in. **Not done** when the manifest validates but a capability uses the wrong primitive, a shared dependency uses `../`, a hook's side-effect is undocumented, or no critic ever saw the draft.
+Built against `build-against-the-standard.md` (each live dimension grounded in its foundation); component-fit declared for every capability; `plugin.json` passes `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py`; no `../` cross-plugin path; every hook's side-effect documented; the build-time red-team ran (Simon + Wlaschin floor, or full-panel by stakes) and surviving Critical/Major findings were folded in. **Not done** when the manifest validates but a capability uses the wrong primitive, a shared dependency uses `../`, a hook's side-effect is undocumented, no critic ever saw the draft, or the plugin's one-sentence job was never named (the components cohere around nothing).
 
 ## References (the shared spine)
 
