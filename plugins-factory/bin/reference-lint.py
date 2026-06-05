@@ -6,10 +6,11 @@ renamed or absent file. This is the gate that would have caught the two stale-re
 the 2026-06-02 build-time red-team found by hand — `scripts/validate_plugin.py` after the tooling
 moved to `bin/`, and `eval-as-*.md` after the critic personas became `agents/critic-*.md`.
 
-It scans the LIVE component/reference docs (skips narrative history: reviews/, ROADMAP, CHANGELOG)
-and, for each backtick- or link-wrapped token that looks like an INTERNAL file reference, checks it
-resolves relative to the plugin root, the file's own dir, or ${CLAUDE_PLUGIN_ROOT}. Illustrative
-example paths, globs, placeholders, and URLs are skipped, so a clean tree lints clean.
+It scans the LIVE component/reference docs (skips narrative history: reviews/, ROADMAP, CHANGELOG,
+and any git-ignored content — e.g. bundled example corpora that never ship) and, for each backtick-
+or link-wrapped token that looks like an INTERNAL file reference, checks it resolves relative to the
+plugin root, the file's own dir, or ${CLAUDE_PLUGIN_ROOT}. Illustrative example paths, globs,
+placeholders, and URLs are skipped, so a clean tree lints clean.
 
 Usage:
   reference-lint.py <plugin-dir> [--json]
@@ -19,6 +20,7 @@ Stdlib only (Python 3.8+).
 import json
 import os
 import re
+import subprocess
 import sys
 
 EXTS = (".md", ".py", ".json")
@@ -76,15 +78,43 @@ def _resolves(tok, plugin_root, file_dir):
     return any(os.path.exists(os.path.normpath(os.path.join(b, rel))) for b in bases)
 
 
+def _git_ignored(plugin_root):
+    """(ignored_dirs, ignored_files) as abs paths under plugin_root.
+
+    Git-ignored content (e.g. a bundled example corpus) never ships and is absent
+    in CI, so it must not gate. Empty sets when git is unavailable or this is not a
+    repo — the linter then scans everything, as before.
+    """
+    dirs, files = set(), set()
+    try:
+        out = subprocess.run(
+            ["git", "-C", plugin_root, "ls-files", "--others", "--ignored",
+             "--exclude-standard", "--directory"],
+            capture_output=True, text=True, check=True, timeout=15).stdout
+    except Exception:
+        return dirs, files
+    for line in out.splitlines():
+        entry = line.strip()
+        if not entry:
+            continue
+        ap = os.path.normpath(os.path.join(plugin_root, entry))
+        (dirs if entry.endswith("/") else files).add(ap)
+    return dirs, files
+
+
 def lint(plugin_root):
     plugin_root = os.path.abspath(plugin_root)
+    ignored_dirs, ignored_files = _git_ignored(plugin_root)
     findings = []
     for dirpath, dirnames, files in os.walk(plugin_root):
-        dirnames[:] = [d for d in dirnames if d not in ("reviews", ".git")]
+        dirnames[:] = [d for d in dirnames if d not in ("reviews", ".git")
+                       and os.path.normpath(os.path.join(dirpath, d)) not in ignored_dirs]
         for fn in sorted(files):
             if not fn.endswith(".md") or fn in SKIP_BASENAMES:
                 continue
             fp = os.path.join(dirpath, fn)
+            if os.path.normpath(fp) in ignored_files:
+                continue
             rel = os.path.relpath(fp, plugin_root)
             file_dir = os.path.dirname(fp)
             in_fence = False

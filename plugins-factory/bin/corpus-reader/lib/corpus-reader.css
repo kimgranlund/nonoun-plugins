@@ -1,0 +1,790 @@
+/* corpus-reader — a small static documentation reader.
+ *
+ * One token layer. Two OKLCH axes — a hue axis and a chroma (colorfulness) axis
+ * — feed semantic, role-named color tokens (each a light-dark(light, dark) pair),
+ * so only per-token lightness stays inline. Typography, spacing, radius, and
+ * layout are role-named too (rem), and a token may reference another where a
+ * value is genuinely shared. Theme follows the OS via `color-scheme: light dark`.
+ * Layout: a sticky nav header [ name | menu ], then a `toc | content` grid.
+ */
+
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  color-scheme: light dark;
+
+  /* --- Hue axis — OKLCH H (0–360), the palette's only hue inputs --- */
+  --hue-neutral: 234; /* surfaces, text, borders */
+  --hue-accent: 234;
+  --hue-positive: 152; /* "active" status — green */
+  --hue-caution: 85; /* "draft" status — amber */
+  --hue-alert: 50; /* "needed" status — orange */
+
+  /* --- Chroma axis — OKLCH C (colorfulness), by intensity --- */
+  --chroma-flat: 0; /* achromatic — pure white / black */
+  --chroma-trace: 0.006; /* surfaces + borders */
+  --chroma-dim: 0.012; /* neutral text */
+  --chroma-soft: 0.04; /* soft washes — accent tint, shadow */
+  --chroma-muted: 0.06; /* status fills */
+  --chroma-edge: 0.09; /* status borders */
+  --chroma-vivid: 0.13; /* accent + status text */
+
+  /* --- Color — semantic; light-dark(light, dark) over the hue + chroma axes --- */
+  --bg: light-dark(
+    oklch(0.985 var(--chroma-trace) var(--hue-neutral)),
+    oklch(0.215 var(--chroma-trace) var(--hue-neutral))
+  );
+  --surface: light-dark(
+    oklch(1 var(--chroma-flat) var(--hue-neutral)),
+    oklch(0.245 var(--chroma-trace) var(--hue-neutral))
+  );
+  --surface-sunken: light-dark(
+    oklch(0.966 var(--chroma-trace) var(--hue-neutral)),
+    oklch(0.278 var(--chroma-trace) var(--hue-neutral))
+  );
+  --fg: light-dark(
+    oklch(0.27 var(--chroma-dim) var(--hue-neutral)),
+    oklch(0.92 var(--chroma-dim) var(--hue-neutral))
+  );
+  --muted: light-dark(
+    oklch(0.505 var(--chroma-dim) var(--hue-neutral)),
+    oklch(0.72 var(--chroma-dim) var(--hue-neutral))
+  );
+  --faint: light-dark(
+    oklch(0.62 var(--chroma-dim) var(--hue-neutral)),
+    oklch(0.585 var(--chroma-dim) var(--hue-neutral))
+  );
+  --border: light-dark(
+    oklch(0.895 var(--chroma-trace) var(--hue-neutral)),
+    oklch(0.34 var(--chroma-trace) var(--hue-neutral))
+  );
+  --border-soft: light-dark(
+    oklch(0.932 var(--chroma-trace) var(--hue-neutral)),
+    oklch(0.295 var(--chroma-trace) var(--hue-neutral))
+  );
+  --accent: light-dark(
+    oklch(0.62 var(--chroma-vivid) var(--hue-accent)),
+    oklch(0.74 var(--chroma-vivid) var(--hue-accent))
+  );
+  --accent-soft: light-dark(
+    oklch(0.95 var(--chroma-soft) var(--hue-accent)),
+    oklch(0.32 var(--chroma-soft) var(--hue-accent))
+  );
+
+  --nav-bg: light-dark(
+    oklch(0.985 var(--chroma-trace) var(--hue-neutral) / 0.8),
+    oklch(0.215 var(--chroma-trace) var(--hue-neutral) / 0.8)
+  );
+  --shadow-color: light-dark(
+    oklch(0.45 var(--chroma-soft) var(--hue-neutral) / 0.1),
+    oklch(0 var(--chroma-flat) 0 / 0.45)
+  );
+  --shadow: 0 1px 2px var(--shadow-color), 0 8px 28px var(--shadow-color);
+
+  --scroll-thumb: light-dark(
+    oklch(0.55 var(--chroma-dim) var(--hue-neutral) / 0.4),
+    oklch(0.75 var(--chroma-dim) var(--hue-neutral) / 0.36)
+  );
+  --scroll-thumb-hover: light-dark(
+    oklch(0.5 var(--chroma-dim) var(--hue-neutral) / 0.62),
+    oklch(0.8 var(--chroma-dim) var(--hue-neutral) / 0.55)
+  );
+
+  /* status tags — fg / bg / border per state */
+  --tag-fg: var(--muted);
+  --tag-bg: var(--surface-sunken);
+  --tag-border: var(--border-soft);
+  --tag-ok-fg: light-dark(
+    oklch(0.52 var(--chroma-vivid) var(--hue-positive)),
+    oklch(0.8 var(--chroma-vivid) var(--hue-positive))
+  );
+  --tag-ok-bg: light-dark(
+    oklch(0.95 var(--chroma-muted) var(--hue-positive)),
+    oklch(0.32 var(--chroma-muted) var(--hue-positive))
+  );
+  --tag-ok-border: light-dark(
+    oklch(0.86 var(--chroma-edge) var(--hue-positive)),
+    oklch(0.45 var(--chroma-edge) var(--hue-positive))
+  );
+  --tag-warn-fg: light-dark(
+    oklch(0.56 var(--chroma-vivid) var(--hue-caution)),
+    oklch(0.83 var(--chroma-vivid) var(--hue-caution))
+  );
+  --tag-warn-bg: light-dark(
+    oklch(0.95 var(--chroma-muted) var(--hue-caution)),
+    oklch(0.3 var(--chroma-muted) var(--hue-caution))
+  );
+  --tag-warn-border: light-dark(
+    oklch(0.87 var(--chroma-edge) var(--hue-caution)),
+    oklch(0.42 var(--chroma-edge) var(--hue-caution))
+  );
+  --tag-alert-fg: light-dark(
+    oklch(0.57 var(--chroma-vivid) var(--hue-alert)),
+    oklch(0.79 var(--chroma-vivid) var(--hue-alert))
+  );
+  --tag-alert-bg: light-dark(
+    oklch(0.95 var(--chroma-muted) var(--hue-alert)),
+    oklch(0.32 var(--chroma-muted) var(--hue-alert))
+  );
+  --tag-alert-border: light-dark(
+    oklch(0.88 var(--chroma-edge) var(--hue-alert)),
+    oklch(0.45 var(--chroma-edge) var(--hue-alert))
+  );
+
+  /* --- Typography — font-size by role --- */
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+
+  --font-size-display: 2.375rem; /* home hero */
+  --font-size-title: 2rem; /* page H1 */
+  --font-size-heading: 1.45rem; /* H2, error title */
+  --font-size-subheading: 1.1875rem; /* H3 */
+  --font-size-tile-title: 1.0625rem; /* section tile heading */
+  --font-size-brand: 0.9375rem; /* nav wordmark */
+  --font-size-body: 1rem; /* prose, H4 */
+  --font-size-ui: 0.875rem; /* buttons, menu, tables */
+  --font-size-code: var(--font-size-ui); /* code spans + blocks (same step) */
+  --font-size-detail: 0.8125rem; /* toc, meta */
+  --font-size-caption: 0.75rem; /* tags, summaries, badges, nested toc */
+  --font-size-eyebrow: 0.6875rem; /* uppercase section labels */
+
+  --line-height-body: 1.65;
+  --line-height-heading: 1.25;
+
+  /* --- Space — density steps, then role aliases --- */
+  --space-hair: 0.25rem;
+  --space-tight: 0.5rem;
+  --space-snug: 0.75rem;
+  --space-base: 1rem;
+  --space-wide: 1.5rem;
+  --space-roomy: 2rem;
+  --space-spacious: 2.5rem;
+
+  --space-gutter: var(--space-wide); /* page + header horizontal inset */
+  --space-column-gap: 2.75rem; /* toc ↔ content */
+  --space-tile-gap: 1.25rem; /* section-tile grid */
+  --space-prose: 1.05rem; /* paragraph / list rhythm */
+
+  /* --- Radius — by surface role --- */
+  --radius-control: 0.375rem; /* buttons, menu items, badges, images */
+  --radius-code: 0.3125rem; /* inline code */
+  --radius-surface: 0.625rem; /* panels, code blocks */
+  --radius-card: 0.875rem; /* section tiles */
+  --radius-pill: 999px; /* tags, scrollbar thumb */
+
+  /* --- Layout --- */
+  --header-height: 3.375rem;
+  --layout-max-width: 72.5rem;
+  --content-max-width: 51rem;
+  --toc-width: 15.5rem;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-height) + var(--space-base));
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+::selection {
+  background: var(--accent-soft);
+}
+img {
+  max-width: 100%;
+}
+
+/* ============================================================
+   CUSTOM-ELEMENT HOSTS
+   The reader is a <cr-*> component tree. The hosts are transparent to
+   layout (display: contents) — the inner .cr-* boxes and the .cr-body grid
+   carry all styling, so the component refactor changes nothing visually.
+   ============================================================ */
+cr-shell {
+  display: block;
+}
+cr-ui-header,
+cr-ui-nav,
+cr-ui-body,
+cr-ui-toc,
+cr-ui-page,
+cr-ui-diagram-viewer {
+  display: contents;
+}
+
+/* ============================================================
+   NAV HEADER  [ name | menu ]
+   ============================================================ */
+.cr-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-base);
+  padding: 0 var(--space-gutter);
+  background: var(--nav-bg);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.cr-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-tight);
+  color: var(--fg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.cr-brand:hover {
+  text-decoration: none;
+}
+.cr-brand-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0.25rem var(--accent-soft);
+}
+.cr-brand-name {
+  font-size: var(--font-size-brand);
+}
+
+.cr-menu-btn {
+  font: inherit;
+  font-size: var(--font-size-ui);
+  font-weight: 550;
+  color: var(--fg);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 0.375rem 0.875rem;
+  cursor: pointer;
+}
+.cr-menu-btn::after {
+  content: " ▾";
+  color: var(--faint);
+}
+.cr-menu-btn:hover {
+  border-color: var(--accent);
+}
+.cr-menu-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ============================================================
+   MENU PANEL (dropdown)
+   ============================================================ */
+.cr-menu-panel {
+  position: fixed;
+  top: var(--header-height);
+  right: var(--space-base);
+  z-index: 49;
+  width: min(22.5rem, calc(100vw - 2rem));
+  max-height: calc(100vh - var(--header-height) - var(--space-wide));
+  overflow: auto;
+  padding: var(--space-tight);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow);
+}
+.cr-menu-panel[hidden] {
+  display: none;
+}
+.cr-mp-sec {
+  padding: var(--space-tight) 0;
+}
+.cr-mp-sec + .cr-mp-sec {
+  border-top: 1px solid var(--border-soft);
+}
+.cr-mp-sec-title {
+  font-size: var(--font-size-eyebrow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  padding: var(--space-tight) var(--space-snug) 0.125rem;
+}
+.cr-mp-page {
+  display: block;
+  padding: 0.4375rem var(--space-snug);
+  border-radius: var(--radius-control);
+  color: var(--fg);
+  font-size: var(--font-size-ui);
+}
+.cr-mp-page:hover {
+  background: var(--surface-sunken);
+  text-decoration: none;
+}
+.cr-mp-page.cr-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.cr-mp-root {
+  font-weight: 600;
+}
+
+/* ============================================================
+   BODY GRID  ( toc | content )
+   ============================================================ */
+.cr-body {
+  display: grid;
+  grid-template-columns: var(--toc-width) minmax(0, 1fr);
+  gap: var(--space-column-gap);
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-gutter);
+}
+.cr-body.cr-home {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ============================================================
+   TABLE OF CONTENTS
+   ============================================================ */
+.cr-toc {
+  position: sticky;
+  top: var(--header-height);
+  align-self: start;
+  max-height: calc(100vh - var(--header-height));
+  overflow: auto;
+  padding: var(--space-roomy) var(--space-hair) var(--space-spacious);
+  font-size: var(--font-size-detail);
+}
+.cr-home .cr-toc {
+  display: none;
+}
+.cr-toc-title {
+  font-size: var(--font-size-eyebrow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  margin-bottom: var(--space-tight);
+}
+.cr-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 2px solid var(--border-soft);
+}
+.cr-toc-item a {
+  display: block;
+  padding: 0.25rem 0 0.25rem 0.875rem;
+  margin-left: -2px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.cr-toc-item.cr-l3 a {
+  padding-left: 1.75rem;
+  font-size: var(--font-size-caption);
+}
+.cr-toc-item a:hover {
+  color: var(--fg);
+  text-decoration: none;
+}
+.cr-toc-item.cr-active a {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   CONTENT — container, meta, tags
+   ============================================================ */
+.cr-content {
+  max-width: var(--content-max-width);
+  padding: var(--space-roomy) 0 6rem;
+  min-width: 0;
+}
+
+.cr-meta {
+  font-size: var(--font-size-detail);
+  color: var(--muted);
+  margin-bottom: var(--space-hair);
+}
+.cr-meta a {
+  color: var(--muted);
+}
+.cr-meta span {
+  color: var(--faint);
+  margin: 0 0.375rem;
+}
+.cr-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.625rem 0 var(--space-wide);
+}
+.cr-tag {
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  padding: 0.125rem 0.5625rem;
+  border-radius: var(--radius-pill);
+  color: var(--tag-fg);
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+}
+.cr-tag-active {
+  color: var(--tag-ok-fg);
+  background: var(--tag-ok-bg);
+  border-color: var(--tag-ok-border);
+}
+.cr-tag-draft {
+  color: var(--tag-warn-fg);
+  background: var(--tag-warn-bg);
+  border-color: var(--tag-warn-border);
+}
+.cr-tag-needed,
+.cr-tag-deprecated {
+  color: var(--tag-alert-fg);
+  background: var(--tag-alert-bg);
+  border-color: var(--tag-alert-border);
+}
+
+/* ============================================================
+   MARKDOWN TYPOGRAPHY (scoped to .cr-md so it never leaks to home)
+   ============================================================ */
+.cr-md h1,
+.cr-md h2,
+.cr-md h3,
+.cr-md h4 {
+  line-height: var(--line-height-heading);
+  font-weight: 680;
+  letter-spacing: -0.01em;
+  scroll-margin-top: calc(var(--header-height) + var(--space-base));
+}
+.cr-md h1 {
+  font-size: var(--font-size-title);
+  margin: 0 0 0.5rem;
+}
+.cr-md h2 {
+  font-size: var(--font-size-heading);
+  margin: 1.75rem 0 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+.cr-md h3 {
+  font-size: var(--font-size-subheading);
+  margin: 1.5rem 0 0.5rem;
+}
+.cr-md h4 {
+  font-size: var(--font-size-body);
+  margin: 1.3rem 0 0.4rem;
+}
+.cr-md p,
+.cr-md ul,
+.cr-md ol {
+  margin: 0 0 var(--space-prose);
+}
+.cr-md li {
+  margin: 0.3rem 0;
+}
+.cr-md li > ul,
+.cr-md li > ol {
+  margin: 0.3rem 0;
+}
+.cr-md a {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  text-underline-offset: 2px;
+}
+.cr-md strong {
+  font-weight: 660;
+  color: var(--fg);
+}
+.cr-md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.2rem 0;
+}
+.cr-md blockquote {
+  margin: 0 0 var(--space-prose);
+  padding: 0.125rem 1.125rem;
+  color: var(--muted);
+  border-left: 3px solid var(--border);
+}
+.cr-md img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-control);
+}
+
+.cr-md code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+  background: var(--surface-sunken);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-code);
+  border: 1px solid var(--border-soft);
+}
+.cr-md pre {
+  margin: 0 0 1.2rem;
+  padding: 0.875rem 1rem;
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-surface);
+  line-height: 1.5;
+}
+.cr-md pre code {
+  font-size: var(--font-size-code);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.cr-md table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+  margin: 0 0 1.2rem;
+  font-size: var(--font-size-ui);
+}
+.cr-md th,
+.cr-md td {
+  border: 1px solid var(--border);
+  padding: 0.4375rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.cr-md thead th {
+  background: var(--surface-sunken);
+  font-weight: 650;
+}
+.cr-md tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--surface-sunken) 55%, transparent);
+}
+
+.cr-md .mermaid {
+  margin: 0 0 1.2rem;
+  text-align: center;
+}
+
+/* ============================================================
+   HOME — hero + section tiles
+   ============================================================ */
+.cr-hero {
+  padding: var(--space-roomy) 0 var(--space-tight);
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 1.75rem;
+}
+.cr-hero h1 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.75rem;
+}
+.cr-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.125rem;
+  margin: 0 0 1.125rem;
+  font-weight: 550;
+}
+
+.cr-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+  gap: var(--space-tile-gap);
+  padding-bottom: 5rem;
+}
+.cr-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 1.125rem 1.25rem 0.75rem;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.cr-tile:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--border));
+  box-shadow: var(--shadow);
+}
+.cr-tile h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem;
+  font-size: var(--font-size-tile-title);
+  font-weight: 680;
+  margin: 0 0 0.75rem;
+}
+.cr-tile-id {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-control);
+}
+.cr-tile ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cr-tile li {
+  padding: 0.4375rem 0;
+  border-top: 1px solid var(--border-soft);
+}
+.cr-tile li:first-child {
+  border-top: 0;
+}
+.cr-tile li a {
+  font-weight: 550;
+}
+.cr-sum {
+  display: block;
+  font-size: var(--font-size-caption);
+  line-height: 1.45;
+  color: var(--muted);
+  margin-top: 0.125rem;
+}
+
+/* ============================================================
+   STATES
+   ============================================================ */
+.cr-loading {
+  color: var(--faint);
+}
+.cr-error {
+  max-width: 38rem;
+}
+.cr-error h1 {
+  font-size: var(--font-size-heading);
+}
+.cr-error pre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  padding: 0.75rem 0.875rem;
+}
+
+/* ============================================================
+   SCROLLBARS — hidden by default; a thin thumb appears on container
+   hover/focus. A transparent gutter is reserved, so revealing the
+   thumb never reflows content. (The window keeps its native scrollbar.)
+   ============================================================ */
+.cr-menu-panel,
+.cr-toc,
+.cr-md pre,
+.cr-md table {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+.cr-menu-panel:hover,
+.cr-menu-panel:focus-within,
+.cr-toc:hover,
+.cr-toc:focus-within,
+.cr-md pre:hover,
+.cr-md table:hover {
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* WebKit / Blink */
+.cr-menu-panel::-webkit-scrollbar,
+.cr-toc::-webkit-scrollbar,
+.cr-md pre::-webkit-scrollbar,
+.cr-md table::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.cr-menu-panel::-webkit-scrollbar-track,
+.cr-toc::-webkit-scrollbar-track,
+.cr-md pre::-webkit-scrollbar-track,
+.cr-md table::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cr-menu-panel::-webkit-scrollbar-thumb,
+.cr-toc::-webkit-scrollbar-thumb,
+.cr-md pre::-webkit-scrollbar-thumb,
+.cr-md table::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+  background-clip: padding-box;
+}
+.cr-menu-panel:hover::-webkit-scrollbar-thumb,
+.cr-menu-panel:focus-within::-webkit-scrollbar-thumb,
+.cr-toc:hover::-webkit-scrollbar-thumb,
+.cr-toc:focus-within::-webkit-scrollbar-thumb,
+.cr-md pre:hover::-webkit-scrollbar-thumb,
+.cr-md table:hover::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+}
+.cr-menu-panel::-webkit-scrollbar-thumb:hover,
+.cr-toc::-webkit-scrollbar-thumb:hover,
+.cr-md pre::-webkit-scrollbar-thumb:hover,
+.cr-md table::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 53.5rem) {
+  .cr-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .cr-toc {
+    display: none;
+  }
+  .cr-content {
+    padding-top: 1.375rem;
+  }
+}

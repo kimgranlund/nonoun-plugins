@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Corpus Reader</title>
+    <link rel="stylesheet" href="lib/corpus-reader.css" />
+    <!-- Code syntax highlighting themes (light / dark, swapped by OS preference) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css"
+      media="(prefers-color-scheme: dark)"
+    />
+  </head>
+  <body>
+    <!-- The whole reader is a web-component tree; the shell boots itself. -->
+    <cr-shell></cr-shell>
+
+    <!-- Rendering libraries (pinned). Classic scripts, so the UMD globals
+         (marked / hljs / mermaid) exist before the deferred module runs.
+         marked is required; highlight + mermaid are progressive enhancement. -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script type="module" src="lib/corpus-reader.js"></script>
+  </body>
+</html>
