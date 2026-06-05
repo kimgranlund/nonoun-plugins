@@ -3,14 +3,14 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "Jesse G., *The Elements of User Experience* (New Riders, 2002/2010) — the structure plane: interaction design as the design of how the system behaves in response to the user."
-  - "Nielsen Norman Group — Flow Charts & User Flows (nngroup.com); UX Mapping Methods Compared (nngroup.com/articles/ux-mapping-cheat-sheet)."
+  - "NN/g — Flow Charts & User Flows (nngroup.com); UX Mapping Methods Compared (nngroup.com/articles/ux-mapping-cheat-sheet)."
   - "Alan C., Robert Reimann, David Cronin, *About Face: The Essentials of Interaction Design* (Wiley) — goal-directed flows and the role of error states."
-  - "Donald Norman, *The Design of Everyday Things* (Basic Books, rev. ed. 2013) — error as a property of the system, the gulfs of execution and evaluation."
+  - "Don N., *The Design of Everyday Things* (Basic Books, rev. ed. 2013) — error as a property of the system, the gulfs of execution and evaluation."
 ---
 
 # Flows & Task Design
 
-This is the working method for designing at the **flow** level — the structure plane in Garrett's stack, where you decide how the system behaves as a user moves through a task. A flow is the sequence of screens, decisions, and system responses that carries a user from intent to completion. Designing flows is a design act in its own right, distinct from designing screens: you can have beautiful screens strung together into an incoherent flow, and you can have plain screens in a flow so well-sequenced it feels effortless. The discipline here is **modeling the whole flow before drawing any screen** — mapping the happy path, then deliberately enumerating every branch, error, and dead-end the happy path conveniently ignores. The tell of an amateur flow is that only the happy path was designed; the tell of a professional one is that the edges were designed _on purpose._
+This is the working method for designing at the **flow** level — the structure plane in Jesse G.'s stack, where you decide how the system behaves as a user moves through a task. A flow is the sequence of screens, decisions, and system responses that carries a user from intent to completion. Designing flows is a design act in its own right, distinct from designing screens: you can have beautiful screens strung together into an incoherent flow, and you can have plain screens in a flow so well-sequenced it feels effortless. The discipline here is **modeling the whole flow before drawing any screen** — mapping the happy path, then deliberately enumerating every branch, error, and dead-end the happy path conveniently ignores. The tell of an amateur flow is that only the happy path was designed; the tell of a professional one is that the edges were designed _on purpose._
 
 ## Task flow vs. user flow vs. wireflow
 
@@ -49,7 +49,7 @@ A **decision point** is a fork in the flow — a place where the path diverges b
 
 A **dead-end** is a state from which the user cannot make progress and cannot recover within the flow: an error screen with no next action, a permission wall with no request-access path, a "no results" with no way to broaden, a confirmation that traps the user with no exit. Dead-ends are the single most common flow defect and the easiest to find once you look. The rule: **every state must offer at least one forward or recovery action.** This connects directly to Don N.'s framing — a good system minimizes the **gulf of execution** (the user can always see what to do next) and the **gulf of evaluation** (the user can always tell what just happened and whether it worked). A dead-end is a gulf the design left open.
 
-Norman's reframing of error is load-bearing for flow design: **error is a property of the system, not a failing of the user.** "When people err, change the system so that type of error will be reduced or eliminated." This means error branches are not afterthoughts bolted on — they are first-class parts of the flow, designed to prevent the error where possible (constraints, good defaults, confirmation only for destructive acts) and to recover gracefully where not (clear message, preserved input, an obvious next step).
+Don N.'s reframing of error is load-bearing for flow design: **error is a property of the system, not a failing of the user.** "When people err, change the system so that type of error will be reduced or eliminated." This means error branches are not afterthoughts bolted on — they are first-class parts of the flow, designed to prevent the error where possible (constraints, good defaults, confirmation only for destructive acts) and to recover gracefully where not (clear message, preserved input, an obvious next step).
 
 ## Flow diagramming as a design act
 
@@ -88,4 +88,4 @@ The fastest single test: take the flow diagram and try to find a node with no ou
 
 ## One labeled caveat
 
-The flow taxonomy (task flow / user flow / wireflow) follows NN/g's mapping vocabulary and is standard practice. The happy-path-plus-edges discipline and the dead-end framing are widely taught interaction-design practice rather than a single named framework; they are presented here as method. The specific Norman claims — error as a system property, the gulfs of execution and evaluation — are from _The Design of Everyday Things_ (rev. ed. 2013) and are accurately characterized, though the verbatim phrasing was cross-checked against the well-known summaries of the book rather than a paginated edition in this session. Cooper's _About Face_ is cited for goal-directed flow design and the primacy of error handling; confirm specific page references against the print edition if quoting directly.
+The flow taxonomy (task flow / user flow / wireflow) follows NN/g's mapping vocabulary and is standard practice. The happy-path-plus-edges discipline and the dead-end framing are widely taught interaction-design practice rather than a single named framework; they are presented here as method. The specific Don N. claims — error as a system property, the gulfs of execution and evaluation — are from _The Design of Everyday Things_ (rev. ed. 2013) and are accurately characterized, though the verbatim phrasing was cross-checked against the well-known summaries of the book rather than a paginated edition in this session. Alan C.'s _About Face_ is cited for goal-directed flow design and the primacy of error handling; confirm specific page references against the print edition if quoting directly.

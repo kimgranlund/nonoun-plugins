@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — 10 Design Guidelines for Reporting Errors in Forms (nngroup.com/articles/errors-forms-design-guidelines)"
+  - "NN/g — 10 Design Guidelines for Reporting Errors in Forms (nngroup.com/articles/errors-forms-design-guidelines)"
   - "Baymard Institute — Usability Testing of Inline Form Validation (baymard.com/blog/inline-form-validation)"
   - "Baymard Institute — Checkout Optimization: From 16 Form Fields to 8 Fields (baymard.com/blog/checkout-optimization-from-16-fields-to-8)"
   - "Luke Wroblewski — Web Form Design: Filling in the Blanks (Rosenfeld Media, 2008); Best Practices for Form Design (static.lukew.com/webforms_lukew.pdf)"
@@ -72,7 +72,7 @@ Email
 ⚠ Enter a complete email, e.g. jane@example.com   ← icon + plain, fix-oriented text, by the field
 ```
 
-Wording principle (NN/g + Nielsen's heuristics): an error message says **what happened, why, and what to do next**, in human language — never an error code, never blame ("Invalid input" tells the user nothing; `Enter a complete email, e.g. jane@example.com` tells them everything).
+Wording principle (NN/g + Jakob N.'s heuristics): an error message says **what happened, why, and what to do next**, in human language — never an error code, never blame ("Invalid input" tells the user nothing; `Enter a complete email, e.g. jane@example.com` tells them everything).
 
 ## Multi-step wizards
 

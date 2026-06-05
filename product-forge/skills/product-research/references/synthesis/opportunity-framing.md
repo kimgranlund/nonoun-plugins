@@ -8,7 +8,7 @@ primary_sources:
   - "Teresa T., Continuous Discovery Habits: Discover Products that Create Customer Value and Business Value (Product Talk LLC, 2021)"
   - "IDEO.org Design Kit — How Might We (designkit.org/methods/how-might-we)"
   - "Interaction Design Foundation — What is How Might We (HMW)? (interaction-design.org/literature/topics/how-might-we)"
-  - "Nielsen Norman Group — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)"
+  - "NN/g — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)"
 ---
 
 # Opportunity Framing: Turning Insights Into Opportunities
@@ -21,7 +21,7 @@ Research produces _insights_; a roadmap needs _opportunities_. Opportunity frami
 
 ## What qualifies as an opportunity
 
-Torres's test for an _actionable_ opportunity is specificity along four axes. A good opportunity is **specific**, occurs at a **specific moment in time**, occurs in a **specific context**, and is experienced by a **specific customer**. The opposite — a vague wish — is the most common framing failure.
+Teresa T.'s test for an _actionable_ opportunity is specificity along four axes. A good opportunity is **specific**, occurs at a **specific moment in time**, occurs in a **specific context**, and is experienced by a **specific customer**. The opposite — a vague wish — is the most common framing failure.
 
 | Axis | Vague (reject) | Specific (use) |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ Torres's test for an _actionable_ opportunity is specificity along four axes. A 
 | **Context** | "Onboarding is confusing" | "A first-time user, on mobile, can't tell which step they're on during setup" |
 | **Phrasing** | A feature in disguise | A need expressed as a need |
 
-Torres's warning about over-broad framing is precise: when customers say vague things like _"I wish this was easier to use,"_ it _"opens the door to all usability improvements"_ — the opportunity is so wide it constrains nothing and prioritizes nothing. The fix is to anchor it to a moment: re-frame to _"a specific moment in time from customer stories."_ A single rich interview story, Torres notes, _"might elicit dozens of opportunities"_ — the synthesis work is decomposing that broad wish into the specific moments hiding inside it.
+Teresa T.'s warning about over-broad framing is precise: when customers say vague things like _"I wish this was easier to use,"_ it _"opens the door to all usability improvements"_ — the opportunity is so wide it constrains nothing and prioritizes nothing. The fix is to anchor it to a moment: re-frame to _"a specific moment in time from customer stories."_ A single rich interview story, Teresa T. notes, _"might elicit dozens of opportunities"_ — the synthesis work is decomposing that broad wish into the specific moments hiding inside it.
 
 ---
 
@@ -85,7 +85,7 @@ Opportunity framing is not a standalone deliverable — it is the step that popu
 
 Two structural payoffs depend entirely on framing quality:
 
-- **Opportunities are compared as a space before any is chosen.** Torres's first move on an outcome is to _"compare and contrast the opportunity space"_ — to ask _"what opportunities are available and what customer needs, pain points, and desires should be addressed."_ That comparison only works if each entry is a real, distinct need; solutions-in-disguise can't be weighed against each other on customer importance.
+- **Opportunities are compared as a space before any is chosen.** Teresa T.'s first move on an outcome is to _"compare and contrast the opportunity space"_ — to ask _"what opportunities are available and what customer needs, pain points, and desires should be addressed."_ That comparison only works if each entry is a real, distinct need; solutions-in-disguise can't be weighed against each other on customer importance.
 - **Connected edges expose off-strategy work.** Because every solution must trace up through an opportunity to the outcome, a feature with no opportunity above it has nowhere to attach — the tree reveals it as off-strategy by construction. A badly framed opportunity (a solution in a need's clothing) breaks this guarantee: it lets a pre-chosen feature masquerade as a validated need.
 
 The hand-off, in sequence: **research insight → framed opportunity (need, specific, customer's words) → placed in the opportunity space → selected → opened with a HMW → solutions explored.** Frame the opportunity wrong and every downstream step inherits the error.

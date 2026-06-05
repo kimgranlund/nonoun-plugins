@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "P. Jonathon Phillips, Carina A. Hahn, Peter C. Fontana, et al. *Four Principles of Explainable Artificial Intelligence.* NIST Interagency Report (NISTIR) 8312, September 2021. DOI 10.6028/NIST.IR.8312. https://nvlpubs.nist.gov/nistpubs/ir/2021/nist.ir.8312.pdf"
-  - "Megan Chan. \"Explainable AI in Chat Interfaces.\" Nielsen Norman Group, 2025-12-12. https://www.nngroup.com/articles/explainable-ai"
+  - "Megan Chan. \"Explainable AI in Chat Interfaces.\" NN/g, 2025-12-12. https://www.nngroup.com/articles/explainable-ai"
   - "Regulation (EU) 2016/679 (GDPR), Articles 13–15 & 22 — information about, and safeguards on, solely-automated decisions ('meaningful information about the logic involved'). https://gdpr-info.eu/art-22-gdpr/"
 ---
 

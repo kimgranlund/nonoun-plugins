@@ -10,7 +10,7 @@ primary_sources:
 
 # RICE, ICE, and how to frame a prioritization decision
 
-Scoring frameworks rank a backlog; they do not produce judgment. RICE and ICE are useful because they force a few honest estimates into the open and make items comparable — and dangerous because a tidy number invites teams to stop thinking. This file gives the two canonical frames as their authors defined them, the two _ways of valuing_ a choice (ROI vs. opportunity cost), the risk-surfacing complement (the pre-mortem), and the anti-pattern that swallows all of them — **scoring theater**. It pairs with `doshi-lno.md`, which governs effort _per task once chosen_; RICE/ICE govern _which_ items get chosen at all.
+Scoring frameworks rank a backlog; they do not produce judgment. RICE and ICE are useful because they force a few honest estimates into the open and make items comparable — and dangerous because a tidy number invites teams to stop thinking. This file gives the two canonical frames as their authors defined them, the two _ways of valuing_ a choice (ROI vs. opportunity cost), the risk-surfacing complement (the pre-mortem), and the anti-pattern that swallows all of them — **scoring theater**. It pairs with `lno-and-levels.md`, which governs effort _per task once chosen_; RICE/ICE govern _which_ items get chosen at all.
 
 ## RICE (Intercom)
 
@@ -51,7 +51,7 @@ ICE is built for **speed and volume** — ranking a large backlog of cheap exper
 
 Both frames produce a _ratio_ (value over effort/ease), and ratios share a bias: they reward **quick wins and low-hanging fruit** — high ratio, low _absolute_ impact — because easy things score well on the denominator. This is ROI thinking, and left unchecked it fills a roadmap with comfortable small wins.
 
-The corrective is **opportunity-cost thinking**: the true cost of a choice is the _best alternative you gave up_, not the resources it consumed. Under this lens a high-ROI quick win that crowds out a much larger bet is _expensive_, because its real price is the bigger thing you didn't do. The practical move: after scoring, ask of the top of the list — "what larger bet are these easy wins displacing, and is that trade worth it?" RICE/ICE rank the items in front of you; opportunity cost asks whether the _right_ items are in front of you at all. (This is the same reallocation logic that `doshi-lno.md` applies to effort within a chosen task, lifted to the level of which initiatives make the list.)
+The corrective is **opportunity-cost thinking**: the true cost of a choice is the _best alternative you gave up_, not the resources it consumed. Under this lens a high-ROI quick win that crowds out a much larger bet is _expensive_, because its real price is the bigger thing you didn't do. The practical move: after scoring, ask of the top of the list — "what larger bet are these easy wins displacing, and is that trade worth it?" RICE/ICE rank the items in front of you; opportunity cost asks whether the _right_ items are in front of you at all. (This is the same reallocation logic that `lno-and-levels.md` applies to effort within a chosen task, lifted to the level of which initiatives make the list.)
 
 ## Pre-mortems (the risk complement)
 
@@ -99,4 +99,4 @@ Failure modes to watch: ranking on a denominator (Ease/Effort) so the backlog fi
 
 ## Note on attribution and scope
 
-RICE (Intercom / Sean McBride) and ICE (Sean Ellis) are widely-used industry frames, not academic instruments — included here as the canonical lightweight scorers. The pre-mortem and its 30% prospective-hindsight figure trace to Klein (HBR 2007) and Mitchell/Russo/Pennington (1989) respectively. The opportunity-cost-over-ROI framing and the LNO effort model are treated at length in `doshi-lno.md`; this file cites them as complementary lenses, not as its own contribution.
+RICE (Intercom / Sean McBride) and ICE (Sean Ellis) are widely-used industry frames, not academic instruments — included here as the canonical lightweight scorers. The pre-mortem and its 30% prospective-hindsight figure trace to Klein (HBR 2007) and Mitchell/Russo/Pennington (1989) respectively. The opportunity-cost-over-ROI framing and the LNO effort model are treated at length in `lno-and-levels.md`; this file cites them as complementary lenses, not as its own contribution.

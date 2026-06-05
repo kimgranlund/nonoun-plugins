@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "G. Lynn Shostack, 'Designing Services That Deliver,' Harvard Business Review 62, no. 1 (Jan–Feb 1984): 133–139. The origin of service blueprinting and the 'line of visibility.'"
-  - "Nielsen Norman Group — 'Service Blueprints: Definition' (Sarah Gibbons). https://www.nngroup.com/articles/service-blueprints-definition/"
+  - "NN/g — 'Service Blueprints: Definition' (Sarah Gibbons). https://www.nngroup.com/articles/service-blueprints-definition/"
   - "Valarie A. Zeithaml, Mary Jo Bitner & Dwayne D. Gremler, *Services Marketing* — the four-line blueprint convention (line of interaction, line of visibility, line of internal interaction, line of implementation)."
   - "Marc S., Markus Edgar Hormess, Adam Lawrence & Jakob Schneider, *This Is Service Design Doing* (O'Reilly, 2018, ISBN 9781491927182) — blueprinting as a core service-design method."
 ---

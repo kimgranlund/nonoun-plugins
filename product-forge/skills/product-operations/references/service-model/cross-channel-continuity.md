@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — 'Service Blueprints: Definition' (Sarah Gibbons): blueprints support understanding 'complex, omnichannel experiences' across touchpoints. https://www.nngroup.com/articles/service-blueprints-definition/"
+  - "NN/g — 'Service Blueprints: Definition' (Sarah Gibbons): blueprints support understanding 'complex, omnichannel experiences' across touchpoints. https://www.nngroup.com/articles/service-blueprints-definition/"
   - "Marc S. et al., *This Is Service Design Doing* (O'Reilly, 2018, ISBN 9781491927182) — channels and touchpoints across a single sequence."
   - "Industry distinction multichannel / cross-channel / omnichannel as a maturity continuum (presence → coordination → unification), and the 'repeat your story' frustration statistics (CX literature, 2024–2026). Practitioner consensus; verify specific percentages before citing."
 ---

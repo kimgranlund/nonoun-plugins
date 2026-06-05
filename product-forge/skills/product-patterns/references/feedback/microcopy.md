@@ -3,9 +3,9 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "Kinneret Yifrah — *Microcopy: The Complete Guide*, 2nd ed. (Nemala, 2019). ISBN 9789655727944. https://www.microcopybook.com/"
-  - "Nielsen Norman Group — 'The 3 I's of Microcopy: Inform, Influence, and Interact' (Maria Rosala). https://www.nngroup.com/articles/3-is-of-microcopy/"
-  - "Nielsen Norman Group — 'Error-Message Guidelines' (Page Laubheimer). https://www.nngroup.com/articles/error-message-guidelines/"
-  - "Nielsen Norman Group — 'UI Copy: UX Guidelines for Command Names and Keyboard Shortcuts' / 'UX Copy Sizes' (Anna Kaley, Kate Moran). https://www.nngroup.com/articles/ui-copy/ , https://www.nngroup.com/articles/ux-copy-sizes/"
+  - "NN/g — 'The 3 I's of Microcopy: Inform, Influence, and Interact' (Maria Rosala). https://www.nngroup.com/articles/3-is-of-microcopy/"
+  - "NN/g — 'Error-Message Guidelines' (Page Laubheimer). https://www.nngroup.com/articles/error-message-guidelines/"
+  - "NN/g — 'UI Copy: UX Guidelines for Command Names and Keyboard Shortcuts' / 'UX Copy Sizes' (Anna Kaley, Kate Moran). https://www.nngroup.com/articles/ui-copy/ , https://www.nngroup.com/articles/ux-copy-sizes/"
   - "Mailchimp — *Content Style Guide* (voice & tone). https://styleguide.mailchimp.com/voice-and-tone/"
   - "Laws of UX — 'Tesler's Law' (conservation of complexity). https://lawsofux.com/teslers-law/"
 ---

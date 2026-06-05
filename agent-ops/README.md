@@ -29,11 +29,11 @@
 
 ## The council (12 named critics, three sub-councils)
 
-- **UX & Quality** — Amelia W. · Sarah Gibbons · Geoffrey L. · Karri S.
+- **UX & Quality** — Amelia W. · Sarah G. · Geoffrey L. · Karri S.
 - **Architecture & Utility** — Walden Y. · Harrison C. · Mitchell H. · the MCP / tool-perimeter lens
-- **Agentic-systems builders** — Boris Cherny (Claude Code) · Garry T. (YC) · Andrej Karpathy · Simon Willison
+- **Agentic-systems builders** — Boris C. · Garry T. · Andrej K. · Simon W.
 
-Living practitioners are sourced observable-public-only. The verbatim quotes were **verified by hand** (web-fetch) against each person's public work; separately and mechanically, `check-sourcing.py` gates that every critic carries a source signal — it does not itself verify a quote's accuracy (only a human can).
+Each critic is a lens distilled from a real, widely recognized software / AI-agent engineering practitioner; the display names are obscured to `First L.`, and the attributions, bios, and sources live in a git-ignored `agents/.name-map.md` (kept out of the repo by design). Living practitioners are sourced observable-public-only. The verbatim quotes were **verified by hand** (web-fetch) against each practitioner's public work; separately and mechanically, `check-sourcing.py` gates that every critic carries a source signal — it does not itself verify a quote's accuracy (only a human can).
 
 ## Provenance
 

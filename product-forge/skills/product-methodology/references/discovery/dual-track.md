@@ -23,7 +23,7 @@ Each track produces a different output and runs to a different standard of done.
 
 |  | Discovery track | Delivery track |
 | --- | --- | --- |
-| **The work** | _"the work that we do to decide what to build"_ (Torres) — interviews, assumption tests, prototypes | The work to build, ship, and maintain production-quality software |
+| **The work** | _"the work that we do to decide what to build"_ (Teresa T.) — interviews, assumption tests, prototypes | The work to build, ship, and maintain production-quality software |
 | **Output** | Validated backlog items — ideas that have cleared the riskiest assumptions | Releasable, instrumented software |
 | **Standard of done** | "We have enough evidence to commit / kill / iterate" | Production quality: tested, performant, scalable, reliable |
 | **Speed posture** | _"validate our ideas the fastest, cheapest way possible"_ (Marty C.) | Predictable, frequent, reliable shipping |

@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Clayton M. Clayton C., Scott Cook, Taddy Hall. \"Marketing Malpractice: The Cause and the Cure.\" *Harvard Business Review* 83, no. 12 (December 2005). https://hbr.org/2005/12/marketing-malpractice-the-cause-and-the-cure"
-  - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
-  - "Sean Silverthorne. \"Clay Clayton C.'s Milkshake Marketing.\" *HBS Working Knowledge*, Feb 2011. https://www.library.hbs.edu/working-knowledge/clay-christensens-milkshake-marketing"
+  - "Clayton C., Scott Cook, Taddy Hall. \"Marketing Malpractice: The Cause and the Cure.\" *Harvard Business Review* 83, no. 12 (December 2005). https://hbr.org/2005/12/marketing-malpractice-the-cause-and-the-cure"
+  - "Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
+  - "Sean Silverthorne. \"Clayton C.'s Milkshake Marketing.\" *HBS Working Knowledge*, Feb 2011 (exact URL in the git-ignored `agents/.name-map.md`)."
   - "Anthony W. Ulwick / Strategyn. \"Market Segmentation is Soured by Milkshake Marketing.\" https://strategyn.com/market-segmentation-is-soured-by-milkshake-marketing/"
   - "Philip Kotler, Kevin Lane Keller. *Marketing Management* (segmentation bases: demographic, geographic, psychographic, behavioral). Pearson, multiple editions."
 ---

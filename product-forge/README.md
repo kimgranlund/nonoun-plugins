@@ -11,7 +11,7 @@
 - **A comprehensive UX-pattern library** — registration, onboarding, guidance, support, progressive disclosure, search, navigation, empty/error states, notifications, and many more.
 - **The spectrum of app genres** — single-purpose task apps, content consumption, games, tracking, dashboards, finance, health, travel, social, workplace, productivity — each with its conventions, signature patterns, metrics, and pitfalls.
 - **AI-era product & UX** — conversational/agentic UX, generative UI, trust/control/steerability, human-in-the-loop.
-- **Experience & information architecture** — journeys, flows, navigation/wayfinding, the object model, taxonomy, search/filtering, the interaction model, and state coverage (Garrett's five planes, Covert, the polar-bear systems, OOUX).
+- **Experience & information architecture** — journeys, flows, navigation/wayfinding, the object model, taxonomy, search/filtering, the interaction model, and state coverage (Jesse G.'s five planes, Abby C., the polar-bear systems, OOUX).
 - **Service & governance** — service blueprints, human/system handoffs, support and escalation paths, cross-channel continuity; and product governance — enforceable principles, decision rights, ADRs, review rituals.
 - **Content design & trust/safety** — UX writing (voice, labels, microcopy, in-product education), and privacy-by-design, consent, explainability, auditability, and risk/harm handling.
 - **Authoring** — PRDs / specs and product-vision memos.

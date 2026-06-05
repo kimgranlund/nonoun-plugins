@@ -5,12 +5,12 @@ primary_sources:
   - "Jules Walter, \"How to develop product sense.\" Lenny's Newsletter, 2022. https://www.lennysnewsletter.com/p/product-sense"
   - "Shreyas D., \"PM Career Skills Map\" (Analytical / Execution / Product sense), thread. x.com/shreyas/status/1264621650663727104 (May 24, 2020)."
   - "Shreyas D., \"Key elements of Product Sense.\" x.com/shreyas/status/1270799017417437184 (June 2020)."
-  - "Shreyas D., \"World-class Product Sense in Practice\" (course overview). https://maven.com/shreyas-doshi/product-sense"
+  - "Shreyas D., \"World-class Product Sense in Practice\" (course overview, maven.com). Exact URL in the git-ignored `agents/.name-map.md`."
 ---
 
 # Product sense, execution sense, analytical sense — and how to grow taste
 
-"Product sense" is treated, wrongly, as innate taste you either have or don't. The practitioners who teach it treat it as a **learnable skill** — pattern recognition built deliberately from exposure, feedback, and reflection, like any craft. This file covers the three "senses" Shreyas D. maps for a PM, Jules Walter's definition of product sense and his concrete program for developing it, and why this matters for prioritization: the judgment that tells a genuine Leverage task from comfortable Overhead (see `doshi-lno.md`) _is_ product sense in action. Where a specific verbatim definition isn't canonical, it is labeled below.
+"Product sense" is treated, wrongly, as innate taste you either have or don't. The practitioners who teach it treat it as a **learnable skill** — pattern recognition built deliberately from exposure, feedback, and reflection, like any craft. This file covers the three "senses" Shreyas D. maps for a PM, Jules Walter's definition of product sense and his concrete program for developing it, and why this matters for prioritization: the judgment that tells a genuine Leverage task from comfortable Overhead (see `lno-and-levels.md`) _is_ product sense in action. Where a specific verbatim definition isn't canonical, it is labeled below.
 
 ## The three senses (Shreyas D.'s PM skills map)
 
@@ -78,7 +78,7 @@ The discipline that makes this work is **feedback and reflection**, not exposure
 
 ## Why this lives next to prioritization
 
-Product sense is not a soft adjacency to prioritization — it is the faculty prioritization frameworks _can't_ supply. RICE and ICE rank items but can't tell you whether your Impact estimate is wise; LNO sorts effort by leverage but relies on you to recognize which task is genuinely Leverage versus Overhead dressed up as Leverage (see `doshi-lno.md`). Each of those judgments — _is this impact real, is this task high-leverage, is this "execution problem" actually a strategy problem_ — is product/analytical sense doing its job. The practical consequence: **a junior PM's mis-prioritization is usually a sense gap, not a process gap**, and it closes with the same deliberate practice above — better to coach the judgment than to add another scoring column. Taste is the input the frameworks assume and never provide.
+Product sense is not a soft adjacency to prioritization — it is the faculty prioritization frameworks _can't_ supply. RICE and ICE rank items but can't tell you whether your Impact estimate is wise; LNO sorts effort by leverage but relies on you to recognize which task is genuinely Leverage versus Overhead dressed up as Leverage (see `lno-and-levels.md`). Each of those judgments — _is this impact real, is this task high-leverage, is this "execution problem" actually a strategy problem_ — is product/analytical sense doing its job. The practical consequence: **a junior PM's mis-prioritization is usually a sense gap, not a process gap**, and it closes with the same deliberate practice above — better to coach the judgment than to add another scoring column. Taste is the input the frameworks assume and never provide.
 
 ## The "am I training taste, or just logging hours?" test
 

@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group (nngroup.com). UX pattern guidance across navigation, forms, error handling, empty states, notifications, search, modals, and onboarding (the practitioner standard). https://www.nngroup.com/"
+  - "NN/g (nngroup.com). UX pattern guidance across navigation, forms, error handling, empty states, notifications, search, modals, and onboarding (the practitioner standard). https://www.nngroup.com/"
   - "Jon Yablonski. *Laws of UX* (lawsofux.com) and *Laws of UX*, O'Reilly 2020 / 2nd ed. 2024 — the cognitive heuristics cross-referenced below. https://lawsofux.com/"
   - "Interaction Design Foundation. \"What are User Interface (UI) Design Patterns?\" https://www.interaction-design.org/literature/topics/ui-design-patterns"
   - "Jenifer Tidwell, Charles Brewer & Aynne Valencia. *Designing Interfaces: Patterns for Effective Interaction Design*. 3rd ed., O'Reilly, 2020 — the canonical interface-pattern catalogue this taxonomy is consistent with."
@@ -73,7 +73,7 @@ Patterns that close the loop after an action, communicate state, or report an ou
 - **Empty states** — what a zero-data screen shows: explain, illustrate, and offer the first action. _(NN/g: empty states are an onboarding opportunity, not a dead end.)_
 - **Confirmation & undo** — confirm destructive or irreversible actions; prefer _undo_ over a confirm dialog where feasible. _(NN/g: undo respects user control better than nagging confirms.)_
 - **Notifications & badges** — surface events without derailing the task; respect a notification budget. (Deceptive twin: _nagging_; → dark-patterns.)
-- **System status / banners** — persistent indication of degraded, offline, or maintenance state. _(Nielsen heuristic #1: visibility of system status.)_
+- **System status / banners** — persistent indication of degraded, offline, or maintenance state. _(Jakob N. heuristic #1: visibility of system status.)_
 - **Success / completion states** — reward task completion; the satisfying close of a Zeigarnik loop. _(Peak-End Rule: the end shapes the memory.)_
 - **Error & fallback pages** — 404 / 500 / offline screens that orient and offer a way back.
 

@@ -2,14 +2,14 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — Designing Empty States in Complex Applications: 3 Guidelines (nngroup.com/articles/empty-state-interface-design)"
-  - "Nielsen Norman Group — 3 Guidelines for Search Engine \"No Results\" Pages (nngroup.com/articles/search-no-results-serp)"
-  - "Nielsen Norman Group — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
+  - "NN/g — Designing Empty States in Complex Applications: 3 Guidelines (nngroup.com/articles/empty-state-interface-design)"
+  - "NN/g — 3 Guidelines for Search Engine \"No Results\" Pages (nngroup.com/articles/search-no-results-serp)"
+  - "NN/g — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
 ---
 
 # Empty States
 
-An empty state is what a surface shows when it has no content to display. It is the most under-designed and over-consequential screen in most products: it is frequently the **first** screen a new user sees, and a blank panel reads as "broken," "nothing happened," or "I did something wrong." The discipline here is to treat every place that can be empty as a designed state with a job — communicate status, teach the feature, and hand the user a way forward — rather than as the absence of a screen. Nielsen Norman Group's framing is that well-designed empty states "communicate system status, increase learnability of the system, and deliver direct pathways for key tasks."
+An empty state is what a surface shows when it has no content to display. It is the most under-designed and over-consequential screen in most products: it is frequently the **first** screen a new user sees, and a blank panel reads as "broken," "nothing happened," or "I did something wrong." The discipline here is to treat every place that can be empty as a designed state with a job — communicate status, teach the feature, and hand the user a way forward — rather than as the absence of a screen. NN/g's framing is that well-designed empty states "communicate system status, increase learnability of the system, and deliver direct pathways for key tasks."
 
 The single most important move is to **distinguish which empty state you are in**, because the three are not interchangeable and a recommendation that fixes one breaks another.
 

@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: deep
 primary_sources:
-  - "Jakob N.. \"The Power of Defaults.\" Nielsen Norman Group, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
-  - "Alita Kendrick. \"Toggle-Switch Guidelines.\" Nielsen Norman Group, 2018-07-29. https://www.nngroup.com/articles/toggle-switch-guidelines/"
-  - "Jakob N.. \"Reset and Cancel Buttons.\" Nielsen Norman Group, 2000-04-15. https://www.nngroup.com/articles/reset-and-cancel-buttons/"
-  - "Jakob N.. \"User Control and Freedom (Usability Heuristic #3).\" Nielsen Norman Group. https://www.nngroup.com/articles/user-control-and-freedom/"
+  - "Jakob N. \"The Power of Defaults.\" NN/g, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
+  - "Alita Kendrick. \"Toggle-Switch Guidelines.\" NN/g, 2018-07-29. https://www.nngroup.com/articles/toggle-switch-guidelines/"
+  - "Jakob N. \"Reset and Cancel Buttons.\" NN/g, 2000-04-15. https://www.nngroup.com/articles/reset-and-cancel-buttons/"
+  - "Jakob N. \"User Control and Freedom (Usability Heuristic #3).\" NN/g. https://www.nngroup.com/articles/user-control-and-freedom/"
   - "Jon Yablonski. \"Hick's Law\" and \"Miller's Law.\" Laws of UX. https://lawsofux.com/"
 ---
 
@@ -13,7 +13,7 @@ primary_sources:
 
 Settings are where a product admits it can't be one thing for everyone — and where, done badly, it offloads its own indecision onto the user as a wall of switches. The discipline is the inverse of how settings usually grow: **most users never open settings, so the real product is the default; settings exist for the minority who need to deviate, organized so they can find the one control they came for.** This reference covers settings information architecture, sensible defaults, preference centers, account management, and a good-vs-bad rubric. The first principle dominates everything: **a setting is a decision you failed to make for the user** — sometimes the right call, often a tax.
 
-> NN/g's governing finding (Nielsen, _The Power of Defaults_): most users stick with defaults and never visit customization, so the default isn't a fallback — it _is_ the experience for the majority. Spend your effort choosing the default well before you spend it on the settings screen.
+> NN/g's governing finding (Jakob N., _The Power of Defaults_): most users stick with defaults and never visit customization, so the default isn't a fallback — it _is_ the experience for the majority. Spend your effort choosing the default well before you spend it on the settings screen.
 
 ---
 
@@ -21,8 +21,8 @@ Settings are where a product admits it can't be one thing for everyone — and w
 
 Because the bulk of users never change them, defaults are the highest-leverage design decision in this whole surface. NN/g's guidance:
 
-- **Choose the default that serves the most users**, and treat it as the primary design, not a placeholder. Nielsen: pre-populate with "the most common value," and let the default double as a "just-in-time" instruction about the expected choice.
-- **Default to the user's benefit, not the company's.** Nielsen warns that consistently defaulting to the option that profits you (the expensive plan, the data-sharing toggle) loses credibility. Pre-ticked "subscribe me" and opt-out-by-default tracking are dark patterns precisely because they exploit default-stickiness.
+- **Choose the default that serves the most users**, and treat it as the primary design, not a placeholder. Jakob N.: pre-populate with "the most common value," and let the default double as a "just-in-time" instruction about the expected choice.
+- **Default to the user's benefit, not the company's.** Jakob N. warns that consistently defaulting to the option that profits you (the expensive plan, the data-sharing toggle) loses credibility. Pre-ticked "subscribe me" and opt-out-by-default tracking are dark patterns precisely because they exploit default-stickiness.
 - **Make defaults safe and reversible.** A good default is one a user can live with untouched _and_ easily change; pair sensible defaults with a clean path back to them (see "reset," below).
 - **Fewer settings, better defaults.** Every preference you add is a decision you've punted to a user who mostly won't make it. Before adding a setting, ask whether a better default would remove the need.
 
@@ -70,9 +70,9 @@ The deeper rule: **decide and disclose the save model.** Either changes apply in
 
 Settings must honor NN/g's Heuristic #3, **User Control and Freedom**: users make mistakes and need a clearly marked, low-cost way out. But the classic "Reset" button is itself a hazard.
 
-- **Avoid the form-clearing Reset button.** Nielsen is blunt: "The Web would be a happier place if virtually all Reset buttons were removed," because users "click the button by mistake when they wanted to click Submit. Bang — all your work is gone!" Don't place a destructive reset adjacent to Save.
+- **Avoid the form-clearing Reset button.** Jakob N. is blunt: "The Web would be a happier place if virtually all Reset buttons were removed," because users "click the button by mistake when they wanted to click Submit. Bang — all your work is gone!" Don't place a destructive reset adjacent to Save.
 - **The legitimate exception is reset-to-_defaults_** in a complex settings panel — restoring "safer or more normal values" after a user has wandered far from sane settings. This is a recovery affordance, not a field-clearer, and should be labeled as such and confirmed.
-- **Prefer inherent undoability.** Nielsen: make entries undoable by design — neutral/default options always available — so users can revert a choice without relying on an error-prone button. Autosaved toggles are easy to flip back; that _is_ the undo.
+- **Prefer inherent undoability.** Jakob N.: make entries undoable by design — neutral/default options always available — so users can revert a choice without relying on an error-prone button. Autosaved toggles are easy to flip back; that _is_ the undo.
 - **Confirm or make reversible the destructive stuff.** Account deletion, data wipes, and plan downgrades need confirmation, a grace/undo window where feasible, and clear consequences — never a single unguarded click.
 
 ---
@@ -105,7 +105,7 @@ The account section is where identity and the relationship live, and it has a du
 - **Bad defaults, especially self-serving ones** — pre-checked marketing, tracking on by default, the expensive option pre-selected; exploits default-stickiness and burns trust.
 - **Deep, schema-shaped IA** — controls nested under internal feature names, three levels down, with no search; the user can't find the one switch they came for.
 - **The save-model ambiguity** — a screen that looks instant but silently needs Save, or toggles that don't actually apply until a hidden Apply; lost changes.
-- **The adjacent Reset button** — destructive "clear all" next to Save, fired by accident (Nielsen's canonical warning).
+- **The adjacent Reset button** — destructive "clear all" next to Save, fired by accident (Jakob N.'s canonical warning).
 - **All-or-nothing notifications** — one master switch, so the only escape from noise is total silence or uninstall.
 - **Hidden or missing account deletion / data export** — friction-as-retention; a dark pattern and often illegal.
 - **Color-only state** — a toggle whose on/off reads only by hue, illegible to colorblind users and ambiguous to everyone.

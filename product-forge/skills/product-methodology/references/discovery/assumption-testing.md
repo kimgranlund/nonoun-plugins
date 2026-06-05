@@ -4,7 +4,7 @@ coverage: expanded
 primary_sources:
   - "Teresa T., 'Assumption Testing: Everything You Need to Know to Get Started' (producttalk.org/assumption-testing)"
   - "Teresa T., *Continuous Discovery Habits: Discover Products that Create Customer Value and Business Value* (Product Talk LLC, 2021)"
-  - "David J. Bland & Alexander Osterwalder, *Testing Business Ideas* (Wiley, 2019) — the assumptions map (importance × evidence). Torres adopts this two-axis model."
+  - "David J. Bland & Alexander Osterwalder, *Testing Business Ideas* (Wiley, 2019) — the assumptions map (importance × evidence). Teresa T. adopts this two-axis model."
   - "Marty C., *Inspired: How to Create Tech Products Customers Love*, 2nd ed. (Wiley, 2017) — Part IV, Product Discovery; 'The Four Big Risks' (svpg.com)"
 ---
 
@@ -12,21 +12,21 @@ primary_sources:
 
 Assumption testing is the discipline that turns a solution from a bet into a sequence of cheap, falsifiable questions. The core move, in Teresa T.'s framing, is to stop testing whole ideas and start testing the **single riskiest assumption** behind an idea — because _"assumption tests make it clear that we're testing a single assumption and not the whole idea. These tests are faster and take less work."_ This reference defines what an assumption is, how to enumerate the assumptions inside a solution, how to find the riskiest one with the assumption map, and how to test it with the smallest prototype that could change your mind. It is the solution-space companion to `opportunity-solution-tree.md`, whose bottom row is exactly these tests.
 
-> The reframe that makes everything cheap: an idea has many assumptions, and most are safe. Torres's definition — _"an assumption is a belief that may or may not be true… the assumptions that need to be true for your idea to succeed."_ You do not test the idea. You find the few beliefs that are both **critical** and **unproven**, and you test those, one at a time, before committing engineering capacity.
+> The reframe that makes everything cheap: an idea has many assumptions, and most are safe. Teresa T.'s definition — _"an assumption is a belief that may or may not be true… the assumptions that need to be true for your idea to succeed."_ You do not test the idea. You find the few beliefs that are both **critical** and **unproven**, and you test those, one at a time, before committing engineering capacity.
 
 ---
 
 ## What an assumption is — and the five categories
 
-An assumption is any belief that **must be true for the idea to work**. The skill is enumerating them, and the trap is that teams list only the assumptions they already believe (which are, by definition, the ones least worth testing). Torres uses five categories as a generator — _"the point is to generate assumptions across the categories, increasing the likelihood that you uncover the riskiest assumptions"_ — and they map cleanly onto Marty C.'s four big risks (see `four-big-risks.md`), with **ethical** added as a fifth lens.
+An assumption is any belief that **must be true for the idea to work**. The skill is enumerating them, and the trap is that teams list only the assumptions they already believe (which are, by definition, the ones least worth testing). Teresa T. uses five categories as a generator — _"the point is to generate assumptions across the categories, increasing the likelihood that you uncover the riskiest assumptions"_ — and they map cleanly onto Marty C.'s four big risks (see `four-big-risks.md`), with **ethical** added as a fifth lens.
 
-| Category | The question Torres asks of the solution | Maps to Marty C.'s risk |
+| Category | The question Teresa T. asks of the solution | Maps to Marty C.'s risk |
 | --- | --- | --- |
 | **Desirability** | _"Why do we think our customers want this solution and why do we think they'll be willing to do what we need them to do to get value from it?"_ | Value |
 | **Viability** | _"Why do we think this solution will be good for our business?"_ | Business viability |
 | **Feasibility** | _"Why do we think we can build this solution?"_ | Feasibility |
 | **Usability** | _"Why do we think the customer will be able to use this solution?"_ | Usability |
-| **Ethical** | _"Is there any potential harm in building this solution?"_ | (Torres's addition) |
+| **Ethical** | _"Is there any potential harm in building this solution?"_ | (Teresa T.'s addition) |
 
 The categories are a checklist against blind spots, not a taxonomy to file neatly. A single solution will spawn many assumptions per category; the goal of the enumeration step is **breadth** — surface more than feels comfortable — because you cannot prioritize a risk you never wrote down.
 
@@ -34,7 +34,7 @@ The categories are a checklist against blind spots, not a taxonomy to file neatl
 
 ## Generating assumptions: simulate the experience step by step
 
-The most reliable generator Torres gives is **story mapping the solution** — walking through each step the customer would take to get value, and asking at every step "what has to be true here?" Mapping the experience _"is an effective way to generate different types of assumptions, including desirability and usability assumptions, while also surfacing feasibility, viability, and ethical assumptions as well."_
+The most reliable generator Teresa T. gives is **story mapping the solution** — walking through each step the customer would take to get value, and asking at every step "what has to be true here?" Mapping the experience _"is an effective way to generate different types of assumptions, including desirability and usability assumptions, while also surfacing feasibility, viability, and ethical assumptions as well."_
 
 The mechanism: a flat description of a solution ("a setup wizard") hides its assumptions; a **step-by-step simulation** ("the user lands here → sees this → clicks this → expects that → receives this") exposes a separate belief at every transition. Each arrow is a place the idea can fail. Walking the steps converts one vague bet into a row of specific, checkable beliefs.
 
@@ -53,7 +53,7 @@ This is why story mapping appears in both discovery references: in `dual-track.m
 
 ## The assumption map: importance × evidence
 
-Enumerating assumptions produces too many to test. The prioritization tool Torres uses is the **assumption map**, a two-axis model from David Bland and Alex Osterwalder's _Testing Business Ideas_ that plots each assumption on **how important it is** (critical → less critical to the idea's success) against **how much evidence** you already have (strong → weak). The combination, not either axis alone, locates risk.
+Enumerating assumptions produces too many to test. The prioritization tool Teresa T. uses is the **assumption map**, a two-axis model from David Bland and Alex Osterwalder's _Testing Business Ideas_ that plots each assumption on **how important it is** (critical → less critical to the idea's success) against **how much evidence** you already have (strong → weak). The combination, not either axis alone, locates risk.
 
 ```text
               IMPORTANT (critical to the idea)
@@ -70,7 +70,7 @@ Enumerating assumptions produces too many to test. The prioritization tool Torre
               UNIMPORTANT (peripheral to the idea)
 ```
 
-> The whole map exists to find one quadrant. Torres: _"Our riskiest assumptions are the assumptions that are critical to the success of our idea where we have little evidence that suggests that they are safe."_ That is the **top-right** — important **and** unproven. These are the **leap-of-faith assumptions**; they are the only ones worth a test right now.
+> The whole map exists to find one quadrant. Teresa T.: _"Our riskiest assumptions are the assumptions that are critical to the success of our idea where we have little evidence that suggests that they are safe."_ That is the **top-right** — important **and** unproven. These are the **leap-of-faith assumptions**; they are the only ones worth a test right now.
 
 The map disciplines three reflexes:
 

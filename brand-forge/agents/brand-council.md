@@ -18,11 +18,11 @@ You convene and synthesize the brand council. **The council reviews, evaluates, 
 
 | Sub-council | Critic agents |
 | --- | --- |
-| **Strategy** (6) | `critic-luke` _(lead — cultural provenance)_, `critic-john-h`, `critic-mark-p`, `critic-nick`, `critic-brian`, `critic-rory` |
-| **Design** (4) | `critic-paula`, `critic-massimo-v`, `critic-matt-w`, `critic-jessica-w` |
-| **Voice** (4) | `critic-david-a`, `critic-george-l`, `critic-tim-d`, `critic-mary` |
+| **Strategy** (6) | `critic-luke-s` _(lead — cultural provenance)_, `critic-john-h`, `critic-mark-p`, `critic-nick-l`, `critic-brian-c`, `critic-rory-s` |
+| **Design** (4) | `critic-paula-s`, `critic-massimo-v`, `critic-matt-w`, `critic-jessica-w` |
+| **Voice** (4) | `critic-david-a`, `critic-george-l`, `critic-tim-d`, `critic-mary-n` |
 
-`luke` carries the lead weight on most engagements — cultural authority is the dominant lens for the brand work this plugin addresses.
+`luke-s` carries the lead weight on most engagements — cultural authority is the dominant lens for the brand work this plugin addresses.
 
 ## Trust boundary (run before convening)
 

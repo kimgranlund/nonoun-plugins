@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 """check-sourcing.py — the council provenance gate for agent-ops.
 
-agent-ops's council renders named — often living — practitioners (Amelia W., Litt, Gibbons,
-Karri S., Yan, Chase, Mitchell H., Cherny, Tan, Karpathy, Willison). A fabricated quote or an unsourced
-lens is the worst failure mode. This gate turns "every critic is sourced" from author discipline into
-a verifiable property: every `agents/critic-*.md` MUST carry a source signal — an explicit Sourcing
-block, a URL, or a year citation — and the council roster's stated critic count (`agents/*council*.md`)
-MUST match the number of `critic-*.md` files on disk, so the roster can't drift from the tree.
+agent-ops's council renders lenses distilled from real, widely recognized software / AI-agent
+engineering practitioners. Their identifying attributions, bios, and sources are kept OUT of the
+committed files by design and live in the git-ignored `agents/.name-map.md`; each committed
+`agents/critic-*.md` carries only the obscured `First L.` display name plus a pointer to that map.
+A fabricated quote or an unsourced lens is the worst failure mode, so this gate turns "every critic
+is provenanced" from author discipline into a verifiable property: every `agents/critic-*.md` MUST
+carry a source signal — an explicit Sourcing block, a URL, a year citation, OR a reference to the
+git-ignored `.name-map.md` where the real attribution/sources live — and the council roster's stated
+critic count (`agents/*council*.md`) MUST match the number of `critic-*.md` files on disk, so the
+roster can't drift from the tree.
 
 Unlike product-forge, agent-ops does NOT gate library-reference frontmatter: its references are ported,
 already-sourced methodology (citing Anthropic, NN/g, papers in prose), not a dated research library.
-The living-practitioner council is the provenance surface that needs the gate.
+The distilled-practitioner council is the provenance surface that needs the gate.
 
 It does NOT verify a quote is accurate (only a human / web-fetch can) — but it guarantees no critic
-ships unsourced. Run it in CI alongside validate_plugin.py / reference-lint.py.
+ships without a provenance pointer. Run it in CI alongside validate_plugin.py / reference-lint.py.
 
 Usage:
-  check-sourcing.py <plugin-dir>   # exit 0 if every critic is sourced + count matches, 1 if any gap
+  check-sourcing.py <plugin-dir>   # exit 0 if every critic is provenanced + count matches, 1 if any gap
   check-sourcing.py selftest
 Stdlib only (Python 3.8+).
 """
@@ -24,7 +28,8 @@ import os
 import re
 import sys
 
-SOURCE_SIGNAL = re.compile(r"Sourcing|https?://|(?:19|20)\d\d")  # a Sourcing block, a URL, or a year
+# A Sourcing block, a URL, a year, or a pointer to the git-ignored name-map that holds the real source.
+SOURCE_SIGNAL = re.compile(r"Sourcing|https?://|(?:19|20)\d\d|\.name-map\.md")
 ROSTER_COUNT = re.compile(r"\((\d+)\s+critics?\)")
 
 

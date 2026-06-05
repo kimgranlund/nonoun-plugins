@@ -12,7 +12,7 @@
 - **Mechanize the render gate** — the highest-value verify gate (browser render + _read_ the screenshot) is self-verified; a `bin/adia-probe` (Playwright) could return a machine-checkable verdict.
 - **Uniform snapshot banners** — add the "verified-against-version; the MCP is authoritative" banner to every reference that states concrete API (the per-shell refs especially).
 - **Command namespace** — commands are `/adia-*`, skills `adia-ui-*`; consider aligning to `/adia-ui-*` before external adoption (a breaking rename — cheapest now).
-- **Skill-count tension (Elon vs Steve/Boris/Huyen)** — 11 skills is the chosen comprehensiveness↔cost trade; the `genui`↔`llm` and `migrate`↔`verify` merges stay declined unless the cost proves too high in real use.
+- **Skill-count tension (Elon vs Steve/Boris/Chip H.)** — 11 skills is the chosen comprehensiveness↔cost trade; the `genui`↔`llm` and `migrate`↔`verify` merges stay declined unless the cost proves too high in real use.
 - **`adia-embed-shell`** — currently the embedded-app _pattern_ (`references/shell-embed.md`, labeled emerging); re-bake the shell reference when the official web-module ships.
 - **SSR top-level-import lint blind spot** — `adia-lint` flags the kit's top-level import only in framework-signal files; a bare `register.ts` won't trip it. Known limitation.
 

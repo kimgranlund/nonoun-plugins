@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Steve K.. *Rocket Surgery Made Easy: The Do-It-Yourself Guide to Finding and Fixing Usability Problems*. New Riders, 2009. https://sensible.com/rocket-surgery-made-easy/"
-  - "Jakob N. (Nielsen Norman Group). \"Why You Only Need to Test with 5 Users.\" 2000. https://www.nngroup.com/articles/why-you-only-need-to-test-with-5-users/"
-  - "Nielsen Norman Group. \"Thinking Aloud: The #1 Usability Tool.\" https://www.nngroup.com/articles/thinking-aloud-the-1-usability-tool/"
-  - "Jakob N. (Nielsen Norman Group). \"Severity Ratings for Usability Problems.\" https://www.nngroup.com/articles/how-to-rate-the-severity-of-usability-problems/"
+  - "Steve K. *Rocket Surgery Made Easy: The Do-It-Yourself Guide to Finding and Fixing Usability Problems*. New Riders, 2009. https://sensible.com/rocket-surgery-made-easy/"
+  - "Jakob N. (NN/g). \"Why You Only Need to Test with 5 Users.\" 2000. https://www.nngroup.com/articles/why-you-only-need-to-test-with-5-users/"
+  - "NN/g. \"Thinking Aloud: The #1 Usability Tool.\" https://www.nngroup.com/articles/thinking-aloud-the-1-usability-tool/"
+  - "Jakob N. (NN/g). \"Severity Ratings for Usability Problems.\" https://www.nngroup.com/articles/how-to-rate-the-severity-of-usability-problems/"
 method: usability-testing
 phase: make
 domains: [2, 3, 5, 6]
@@ -20,7 +20,7 @@ rubric: rubric-ux-quality
 
 # Usability Testing — watch 5 people try the real task, fix what breaks
 
-A **moderated think-aloud test** (Krug / NN/g): recruit a few representative users, give them real task scenarios, have them narrate their thoughts while they attempt the tasks, and **observe in silence** — then fix the most serious problems and run it again. It is the cheapest honest answer to one question: _can a real person actually use this?_ The method is behavioral, not attitudinal — it watches what people **do**, because what they **say** they'd do is unreliable (see `behavioral-vs-attitudinal.md`). The output is not a satisfaction score; it is a ranked list of the problems that stop people, with the worst ones fixed.
+A **moderated think-aloud test** (Steve K. / NN/g): recruit a few representative users, give them real task scenarios, have them narrate their thoughts while they attempt the tasks, and **observe in silence** — then fix the most serious problems and run it again. It is the cheapest honest answer to one question: _can a real person actually use this?_ The method is behavioral, not attitudinal — it watches what people **do**, because what they **say** they'd do is unreliable (see `behavioral-vs-attitudinal.md`). The output is not a satisfaction score; it is a ranked list of the problems that stop people, with the worst ones fixed.
 
 ## When to run it · when NOT
 
@@ -30,7 +30,7 @@ A **moderated think-aloud test** (Krug / NN/g): recruit a few representative use
 
 | # | Step | Who | Timebox | Output |
 | --- | --- | --- | --- | --- |
-| 1 | **Recruit & screen** — find people representative of real users (a screener, not whoever's nearby); Krug's stance is "recruit loosely, grade on a curve" — close-enough beats waiting | facilitator | ahead of the day | 3–5 booked sessions, one per slot |
+| 1 | **Recruit & screen** — find people representative of real users (a screener, not whoever's nearby); Steve K.'s stance is "recruit loosely, grade on a curve" — close-enough beats waiting | facilitator | ahead of the day | 3–5 booked sessions, one per slot |
 | 2 | **Set the room** — the participant + one facilitator; the team watches on a separate screen/stream and takes notes; record screen + audio with consent | facilitator | 5 min/session | a watching team, a recording |
 | 3 | **Warm up & set expectations** — reassure: "we're testing the _site_, not you; there are no wrong answers; if something's confusing that's our fault" — to defeat the politeness reflex | facilitator | 5 min | a participant who'll be honest |
 | 4 | **Give a task scenario, then shut up** — hand them a realistic _task_ ("buy a ticket to a show next Friday under \$50"), never a leading question ("do you find this easy?"); ask them to **think aloud** — narrate what they see, expect, and try | facilitator → participant | ~30 min/session | observed attempts + a running narration |
@@ -40,7 +40,7 @@ A **moderated think-aloud test** (Krug / NN/g): recruit a few representative use
 
 ## Roles
 
-A **facilitator** (one person — sets tasks, keeps the participant thinking aloud, and **stays neutral**: asks, never leads, never rescues). **3–5 representative users**, run **one at a time** (a usability test is 1:1; a room of users is a focus group, a different and weaker instrument for this question). The **team as observers** — designers, PM, engineers watching live: the witnessing is half the value, because a problem a maker _sees_ a user hit lands far harder than the same problem in a report they didn't watch (the maker-in-the-room principle, shared with `interviewing.md`). Krug's whole framing is that anyone on the team can facilitate — this is DIY, not a specialist's ritual.
+A **facilitator** (one person — sets tasks, keeps the participant thinking aloud, and **stays neutral**: asks, never leads, never rescues). **3–5 representative users**, run **one at a time** (a usability test is 1:1; a room of users is a focus group, a different and weaker instrument for this question). The **team as observers** — designers, PM, engineers watching live: the witnessing is half the value, because a problem a maker _sees_ a user hit lands far harder than the same problem in a report they didn't watch (the maker-in-the-room principle, shared with `interviewing.md`). Steve K.'s whole framing is that anyone on the team can facilitate — this is DIY, not a specialist's ritual.
 
 ## Failure modes
 
@@ -71,4 +71,4 @@ The ranked problem list flows into the build: the top usability problems become 
 
 ## Sourcing
 
-The DIY think-aloud protocol — loose recruiting, real task scenarios, observe-don't-help, fix-the-worst-and-repeat — is Steve K.'s _Rocket Surgery Made Easy_ (New Riders, 2009), the practitioner standard, alongside NN/g's _Thinking Aloud: The #1 Usability Tool_. The small-_n_ rationale is **Jakob N.'s guidance**, not a measured law: in _Why You Only Need to Test with 5 Users_ (NN/g, 2000), Nielsen argues — from a mathematical model he and Tom Landauer derived — that about **five users typically surface the large majority (~85%) of a design's usability problems**, with steeply diminishing returns after that, so testing a few users and iterating beats one big study. Treat that figure as Nielsen's modeled estimate and the basis for the iterate-in-small-rounds posture — _not_ a hard guarantee that five users find a fixed fraction of problems in any given test (it varies with the design and the tasks; Nielsen's own counsel is to run more, smaller rounds rather than one large one). Severity rating (frequency × impact × persistence) is NN/g's _Severity Ratings for Usability Problems_. This is a behavioral, qualitative, scripted-use method in the NN/g taxonomy (`behavioral-vs-attitudinal.md`); it is distinct from the discovery interview (`interviewing.md`) and the survey (`survey-design.md`), and complementary to them.
+The DIY think-aloud protocol — loose recruiting, real task scenarios, observe-don't-help, fix-the-worst-and-repeat — is Steve K.'s _Rocket Surgery Made Easy_ (New Riders, 2009), the practitioner standard, alongside NN/g's _Thinking Aloud: The #1 Usability Tool_. The small-_n_ rationale is **Jakob N.'s guidance**, not a measured law: in _Why You Only Need to Test with 5 Users_ (NN/g, 2000), Jakob N. argues — from a mathematical model he and Tom Landauer derived — that about **five users typically surface the large majority (~85%) of a design's usability problems**, with steeply diminishing returns after that, so testing a few users and iterating beats one big study. Treat that figure as Jakob N.'s modeled estimate and the basis for the iterate-in-small-rounds posture — _not_ a hard guarantee that five users find a fixed fraction of problems in any given test (it varies with the design and the tasks; Jakob N.'s own counsel is to run more, smaller rounds rather than one large one). Severity rating (frequency × impact × persistence) is NN/g's _Severity Ratings for Usability Problems_. This is a behavioral, qualitative, scripted-use method in the NN/g taxonomy (`behavioral-vs-attitudinal.md`); it is distinct from the discovery interview (`interviewing.md`) and the survey (`survey-design.md`), and complementary to them.

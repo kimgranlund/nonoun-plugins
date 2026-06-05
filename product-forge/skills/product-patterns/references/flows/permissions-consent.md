@@ -2,11 +2,11 @@
 date: 2026-06-03
 coverage: deep
 primary_sources:
-  - "Maria Rosala. \"3 Design Considerations for Effective Mobile-App Permission Requests.\" Nielsen Norman Group, 2019-04-28. https://www.nngroup.com/articles/permission-requests/"
-  - "Nielsen Norman Group. \"Priming and User Interfaces.\" https://www.nngroup.com/articles/priming/"
-  - "Nielsen Norman Group. \"Cookie Permissions: 6 Design Guidelines\" (video). https://www.nngroup.com/videos/cookie-permissions-guidelines/"
+  - "Maria Rosala. \"3 Design Considerations for Effective Mobile-App Permission Requests.\" NN/g, 2019-04-28. https://www.nngroup.com/articles/permission-requests/"
+  - "NN/g. \"Priming and User Interfaces.\" https://www.nngroup.com/articles/priming/"
+  - "NN/g. \"Cookie Permissions: 6 Design Guidelines\" (video). https://www.nngroup.com/videos/cookie-permissions-guidelines/"
   - "P. Wijesekera, A. Beznosov, S. Egelman, et al. \"Android Permissions Remystified: A Field Study on Contextual Integrity.\" USENIX Security 2015. https://www.usenix.org/system/files/conference/usenixsecurity15/sec15-paper-wijesekera.pdf"
-  - "Jakob N.. \"The Power of Defaults.\" Nielsen Norman Group, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
+  - "Jakob N. \"The Power of Defaults.\" NN/g, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
 ---
 
 # Permissions & Consent
@@ -81,7 +81,7 @@ This timing discipline mirrors academic findings on contextual integrity: Wijese
 Consent (cookies, tracking, data processing) is a sibling of permissions with a legal spine (GDPR, ePrivacy, ATT). The UX principles converge on one idea: **consent must be a genuine, informed, symmetric choice — not a manufactured yes.**
 
 - **Symmetric effort.** Accepting and rejecting must be equally easy. A prominent "Accept all" beside a buried, multi-click "Reject" is a dark pattern and, under GDPR-style regimes, not valid consent. NN/g's cookie guidance is explicit that decline must be as reachable as accept.
-- **No pre-ticked boxes.** Nielsen's defaults principle plus consent law: opt-in must be an affirmative act; pre-checked consent is invalid and exploitative. Choose defaults that protect the user, because most users never change them.
+- **No pre-ticked boxes.** Jakob N.'s defaults principle plus consent law: opt-in must be an affirmative act; pre-checked consent is invalid and exploitative. Choose defaults that protect the user, because most users never change them.
 - **Granular, not all-or-nothing where required.** Let users consent per purpose (analytics vs marketing) rather than forcing one bundled switch.
 - **Plain-language framing of the trade.** State what data, for what purpose, to whose benefit — "We use location to show nearby stores," not "to enhance services." Privacy framing should let the user weigh the actual exchange.
 - **Reversible.** A standing, findable way to review and withdraw consent (a privacy/permissions center) — withdrawal as easy as granting.

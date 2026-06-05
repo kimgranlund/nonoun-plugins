@@ -8,8 +8,12 @@ This gate turns "everything is sourced" from author discipline into a verifiable
   - every knowledge-library reference — any `*.md` under `skills/<skill>/references/`, EXCEPT the
     rubric files under a `rubrics/` dir (scored references that intentionally carry no frontmatter) —
     MUST carry YAML frontmatter with `date`, `coverage`, and `primary_sources`;
-  - every council critic (`agents/critic-*.md`) MUST carry a source signal — an explicit Sourcing
-    block, a URL, or a year citation;
+  - every council critic (`agents/critic-*.md`) MUST be sourced — EITHER by carrying an inline source
+    signal (an explicit Sourcing block, a URL, or a year citation) OR — because the critics' real
+    identities, bios, and sources are deliberately obscured out of the repo — by having a complete
+    provenance block in the git-ignored `agents/.name-map.md` (a `## <slug>` heading carrying both a
+    `real_name:` and a `sources:` line). The guarantee is unchanged — nothing ships unsourced — but the
+    attribution for an obscured critic lives in the name map, not in the committed agent file;
   - the council roster's stated critic count (`agents/product-council.md`, "Roster (N critics)") MUST
     match the number of `critic-*.md` files on disk, so the roster can't drift from the tree.
 
@@ -60,6 +64,27 @@ def _library_refs(root):
     return out
 
 
+def _namemap_provenance(agdir):
+    """Slugs that have a COMPLETE provenance block in the git-ignored agents/.name-map.md —
+    a `## <slug>` heading whose block carries both a `real_name:` and a `sources:` line. The map is
+    intentionally absent from the repo (it holds the obscured real identities); when present it is the
+    out-of-repo source-of-truth for a critic's attribution. Returns a set of slugs (empty if no map)."""
+    nm = os.path.join(agdir, ".name-map.md")
+    if not os.path.isfile(nm):
+        return set()
+    text = open(nm, encoding="utf-8", errors="replace").read()
+    sourced = set()
+    # split into per-critic blocks on "## <slug>" headings, keep the slug + its body
+    parts = re.split(r"(?m)^##\s+(critic-[^\s—-]+(?:-[a-z])?)\b", text)
+    # parts = [pre, slug1, body1, slug2, body2, ...]
+    for i in range(1, len(parts) - 1, 2):
+        slug, body = parts[i], parts[i + 1]
+        if re.search(r"(?mi)^\s*-\s*\*\*real_name:\*\*", body) and \
+           re.search(r"(?mi)^\s*-\s*\*\*sources:\*\*", body):
+            sourced.add(slug)
+    return sourced
+
+
 def check(root):
     root = os.path.abspath(root)
     findings = []
@@ -73,16 +98,21 @@ def check(root):
         if missing:
             findings.append((rel, "missing frontmatter: " + ", ".join(missing)))
     agdir = os.path.join(root, "agents")
+    namemap_sourced = _namemap_provenance(agdir)
     critic_files = []
     if os.path.isdir(agdir):
         for fn in sorted(os.listdir(agdir)):
             if not (fn.startswith("critic-") and fn.endswith(".md")):
                 continue
             critic_files.append(fn)
+            slug = fn[:-3]  # strip ".md"
             text = open(os.path.join(agdir, fn), encoding="utf-8", errors="replace").read()
-            if not SOURCE_SIGNAL.search(text):
+            # a critic is sourced by an inline signal OR by a complete name-map provenance block
+            if not SOURCE_SIGNAL.search(text) and slug not in namemap_sourced:
                 findings.append((os.path.join("agents", fn),
-                                 "critic carries no source signal (Sourcing block / URL / year)"))
+                                 "critic is unsourced: no inline source signal (Sourcing block / URL / "
+                                 "year) and no complete provenance block (real_name + sources) in the "
+                                 "git-ignored agents/.name-map.md"))
     # roster-count integrity: the council's stated count must match the critic files on disk
     council = os.path.join(agdir, "product-council.md")
     if critic_files and os.path.isfile(council):
@@ -112,17 +142,28 @@ def _selftest():
             "---\nname: critic-sourced\n---\nGrounded in <https://example.com> (2020).\n")
         open(os.path.join(ag, "critic-bare.md"), "w").write(
             "---\nname: critic-bare\n---\nNo source signal in this body.\n")
-        # roster says 9 but only 2 critic-*.md files exist → must be flagged
+        # an obscured critic with NO inline signal but a complete name-map block → must be CLEAN
+        open(os.path.join(ag, "critic-obs-c.md"), "w").write(
+            "---\nname: critic-obs-c\n---\nObscured lens, no inline year or URL here.\n")
+        # an obscured critic whose name-map block is INCOMPLETE (no sources) → must still be flagged
+        open(os.path.join(ag, "critic-half-c.md"), "w").write(
+            "---\nname: critic-half-c\n---\nObscured lens, no inline signal.\n")
+        open(os.path.join(ag, ".name-map.md"), "w").write(
+            '## critic-obs-c — "Obs C."\n\n- **real_name:** Some Person\n- **sources:** public talks.\n\n'
+            '## critic-half-c — "Half C."\n\n- **real_name:** Other Person\n- **lens:** a lens, but no sources line.\n')
+        # roster says 9 but only 4 critic-*.md files exist → must be flagged
         open(os.path.join(ag, "product-council.md"), "w").write("## Roster (9 critics) + sub-councils\n")
         rels = {r for r, _ in check(d)}
         for expect_flag in ("skills/product-patterns/references/flows/bad.md",
                             os.path.join("agents", "critic-bare.md"),
+                            os.path.join("agents", "critic-half-c.md"),
                             os.path.join("agents", "product-council.md")):
             if expect_flag not in rels:
                 ok = False
                 print(f"selftest: failed to flag {expect_flag}", file=sys.stderr)
         for expect_clean in ("skills/product-patterns/references/flows/good.md",
                             os.path.join("agents", "critic-sourced.md"),
+                            os.path.join("agents", "critic-obs-c.md"),
                             "skills/product-evaluate/references/rubrics/rubric-x.md"):
             if expect_clean in rels:
                 ok = False

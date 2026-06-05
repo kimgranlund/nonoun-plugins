@@ -4,7 +4,7 @@ coverage: foundational
 primary_sources:
   - "G. Lynn Shostack, 'Designing Services That Deliver,' Harvard Business Review 62, no. 1 (Jan–Feb 1984): 133–139. The origin of service blueprinting, the line of visibility, and the 'What if?' planning purpose."
   - "Marc S., Markus Edgar Hormess, Adam Lawrence & Jakob Schneider, *This Is Service Design Doing* (O'Reilly, 2018, ISBN 9781491927182). Blueprinting as a facilitated, collaborative method — the workshop, not just the artifact."
-  - "Nielsen Norman Group — 'Service Blueprinting' (Alita Joyce / Sarah Gibbons). https://www.nngroup.com/articles/service-blueprinting/ — running the workshop and the line-of-visibility convention."
+  - "NN/g — 'Service Blueprinting' (Alita Joyce / Sarah Gibbons). https://www.nngroup.com/articles/service-blueprinting/ — running the workshop and the line-of-visibility convention."
 method: service-blueprinting
 phase: structure
 domains: [2, 10]

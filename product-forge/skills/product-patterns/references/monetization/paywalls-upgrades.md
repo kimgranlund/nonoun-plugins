@@ -4,7 +4,7 @@ coverage: expanded
 primary_sources:
   - "RevenueCat — 'State of Subscription Apps' report + paywall optimization studies (trial length, hard vs. freemium conversion, paywall timing). https://www.revenuecat.com/state-of-subscription-apps/ , https://www.revenuecat.com/blog/growth/"
   - "Lenny Rachitsky / Elena Verou & practitioners — freemium vs. free-trial model framing (PLG). https://www.lennysnewsletter.com/p/freemium-vs-free-trial"
-  - "Nielsen Norman Group — 'The Paywall Experience' / subscription & pricing UX research. https://www.nngroup.com/articles/paywall/"
+  - "NN/g — 'The Paywall Experience' / subscription & pricing UX research. https://www.nngroup.com/articles/paywall/"
   - "Harry Brignull — *Deceptive Patterns*: 'Hidden subscription', 'Hard to cancel', 'Forced action', 'Sneaking'. https://www.deceptive.design/types"
   - "US FTC — 'Negative Option Rule' / 'click-to-cancel' and *Bringing Dark Patterns to Light* (2022). https://www.ftc.gov/legal-library/browse/rules/negative-option-rule , https://www.ftc.gov/reports/bringing-dark-patterns-light"
 ---

@@ -9,7 +9,7 @@ primary_sources:
 
 # The Polar Bear Foundations
 
-This is the canonical structural vocabulary for information architecture, from Rosenfeld, Morville & Arango's _Information Architecture: For the Web and Beyond_ — known universally as **"the polar bear book"** after its O'Reilly cover animal, and the text that established IA as a distinct practice (1st ed. 1998; 4th ed. 2015 added Arango and "beyond the web"). Where Covert supplies the _why_ (language and meaning), the polar bear book supplies the **anatomy**: it decomposes any information environment into four interacting systems, and gives you the two directions from which structure gets built. When product-forge audits an IA, this is the parts list it checks against — every system present, each doing its job, the whole findable.
+This is the canonical structural vocabulary for information architecture, from Rosenfeld, Morville & Arango's _Information Architecture: For the Web and Beyond_ — known universally as **"the polar bear book"** after its O'Reilly cover animal, and the text that established IA as a distinct practice (1st ed. 1998; 4th ed. 2015 added Arango and "beyond the web"). Where Abby C. supplies the _why_ (language and meaning), the polar bear book supplies the **anatomy**: it decomposes any information environment into four interacting systems, and gives you the two directions from which structure gets built. When product-forge audits an IA, this is the parts list it checks against — every system present, each doing its job, the whole findable.
 
 The book's animating test is **findability**: can a user find what they need? Morville's companion book _Ambient Findability_ (2005) makes the stakes plain — "if you can't find it, you can't use it." An IA is good to the exact degree that the right thing is findable by the people who need it, by whatever path they take.
 
@@ -57,7 +57,7 @@ Neither direction alone is sufficient. **Top-down gives orientation; bottom-up g
 Two standing failure modes the book warns about:
 
 - **Hierarchy depth is a real trade-off.** _Flat_ hierarchies (many siblings, few levels) minimize clicks and stay scannable but can overload a single screen with choices; _deep_ hierarchies (few siblings, many levels) tidy each screen but bury content and multiply wrong turns. There's no universal winner — depth should track how many top-level categories users can _meaningfully distinguish_. The practical bias is "as flat as the content honestly allows."
-- **The org chart is not an IA.** The single most common organization failure is structuring the product around the _company's_ internal divisions rather than the _user's_ mental model. Users don't know or care which department owns a feature; a scheme that mirrors the org chart optimizes for the wrong audience. (Covert's ontology work and card sorting both exist partly to break this reflex.)
+- **The org chart is not an IA.** The single most common organization failure is structuring the product around the _company's_ internal divisions rather than the _user's_ mental model. Users don't know or care which department owns a feature; a scheme that mirrors the org chart optimizes for the wrong audience. (Abby C.'s ontology work and card sorting both exist partly to break this reflex.)
 
 ## Tells of good vs. bad (for scoring)
 

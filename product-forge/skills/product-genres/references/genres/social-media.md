@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Jakob N.. \"Participation Inequality: The 90-9-1 Rule for Social Features and Online Communities.\" Nielsen Norman Group, 2006. https://www.nngroup.com/articles/participation-inequality/"
+  - "Jakob N. \"Participation Inequality: The 90-9-1 Rule for Social Features and Online Communities.\" NN/g, 2006. https://www.nngroup.com/articles/participation-inequality/"
   - "Robert E. Kraut & Paul Resnick. *Building Successful Online Communities: Evidence-Based Social Design*. MIT Press, 2012. https://direct.mit.edu/books/monograph/2912/"
   - "Nir Eyal. *Hooked: How to Build Habit-Forming Products*. Portfolio/Penguin, 2014 (Hook Model: trigger → action → variable reward → investment)."
   - "Sarah T. Roberts. *Behind the Screen: Content Moderation in the Shadows of Social Media*. Yale University Press, 2019. https://yalebooks.yale.edu/book/9780300235883/behind-the-screen/"
@@ -57,7 +57,7 @@ The defensive half of the genre, and inseparable from it. User-facing controls (
 
 ## Key metrics
 
-- **Participation inequality (the 90-9-1 distribution).** The genre's foundational metric, named by **Jakob N. (NN/g, 2006)**: in many online communities **~90% lurk (never contribute), ~9% contribute occasionally, and ~1% account for almost all contribution.** Nielsen is explicit that the exact split varies by platform and that the rule is a heuristic, not a law — but the _shape_ (a vast silent base, a tiny creating top) is the defining reality the content-ladder and growth strategy exist to address. Quote the shape; flag the exact numbers as a heuristic.
+- **Participation inequality (the 90-9-1 distribution).** The genre's foundational metric, named by **Jakob N. (NN/g, 2006)**: in many online communities **~90% lurk (never contribute), ~9% contribute occasionally, and ~1% account for almost all contribution.** Jakob N. is explicit that the exact split varies by platform and that the rule is a heuristic, not a law — but the _shape_ (a vast silent base, a tiny creating top) is the defining reality the content-ladder and growth strategy exist to address. Quote the shape; flag the exact numbers as a heuristic.
 - **DAU/MAU (stickiness ratio)** — daily over monthly actives, the standard proxy for habit strength. A high ratio means the engagement loop is genuinely habitual; it's the number the Hook Model is ultimately trying to move. (Industry-standard metric; "good" thresholds vary widely by product and are not a fixed benchmark.)
 - **Network-effect / liquidity metrics** — connections per user, time-to-first-follow/friend, share of users who reach an activation threshold (the "magic number" of connections beyond which retention jumps). Specific magic-number figures attributed to particular companies are **widely repeated as folklore and rarely from primary sources — label any such number as anecdotal.**
 - **Creation-funnel metrics** — lurker→reactor→creator conversion, % of MAU who post, content produced per active user. These operationalize moving people up the ladder and are the leading indicator of whether the network can sustain its own content.

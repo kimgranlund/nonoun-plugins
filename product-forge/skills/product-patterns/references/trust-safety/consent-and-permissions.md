@@ -5,7 +5,7 @@ primary_sources:
   - "Regulation (EU) 2016/679 (GDPR), Article 4(11) (definition of consent) and Article 7 — 'Conditions for consent,' incl. Art. 7(3) 'it shall be as easy to withdraw as to give consent.' https://gdpr-info.eu/art-7-gdpr/"
   - "European Data Protection Board. *Guidelines 03/2022 on Deceptive Design Patterns in Social Media Platform Interfaces* (adopted Feb 2023). https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-032022-deceptive-design-patterns-social-media_en"
   - "California Civil Code §1798.140(l) (CCPA/CPRA) — consent obtained through 'dark patterns' is not consent; and CPPA consumer-rights overview. https://oag.ca.gov/privacy/ccpa"
-  - "Maria Rosala. \"3 Design Considerations for Effective Mobile-App Permission Requests.\" Nielsen Norman Group, 2019-04-28. https://www.nngroup.com/articles/permission-requests/"
+  - "Maria Rosala. \"3 Design Considerations for Effective Mobile-App Permission Requests.\" NN/g, 2019-04-28. https://www.nngroup.com/articles/permission-requests/"
 ---
 
 # Consent & Permissions

@@ -60,10 +60,10 @@ The loop is **aspire → make → review → remake**. The full model, the hando
 The council is the heart of this plugin, and it is deliberately built from **individual agents**, not a single prompt that role-plays many critics:
 
 - **14 critics, 1 orchestrator.** `/brand-council` invokes the **orchestrator agent**, which fans out the sub-council relevant to the request (`strategy` · `design` · `voice` · `full`; default `strategy`).
-- **Parallel + isolated.** Each critic runs in its own context window. They cannot anchor on each other, so a Massimo V. and a Walsh genuinely pull in different directions instead of converging on a safe consensus.
+- **Parallel + isolated.** Each critic runs in its own context window. They cannot anchor on each other, so a Massimo V. and a Jessica W. genuinely pull in different directions instead of converging on a safe consensus.
 - **Severity-classified, cited findings.** Every critic returns Critical / Major / Minor findings that quote the specific part of the artifact. The orchestrator then runs a **B–S synthesis** to reconcile agreements, surface the real disagreements, and resolve to one prioritized verdict.
 
-Roster — **14 critics** across three sub-councils: **Strategy** (Luke S., John H., Mark P., Nick L., Brian C., Rory S.) · **Design** (Paula S., Massimo V., Matt W., Walsh) · **Voice** (David A., Lois, Tim D., Mary N.). `strategy` is the default; `design` and `voice` convene their sub-council; `full` convenes all 14 in parallel. (The orchestrator agent is the single source of truth for this roster.)
+Roster — **14 critics** across three sub-councils: **Strategy** (Luke S., John H., Mark P., Nick L., Brian C., Rory S.) · **Design** (Paula S., Massimo V., Matt W., Jessica W.) · **Voice** (David A., George L., Tim D., Mary N.). `strategy` is the default; `design` and `voice` convene their sub-council; `full` convenes all 14 in parallel. (The orchestrator agent is the single source of truth for this roster.)
 
 ---
 

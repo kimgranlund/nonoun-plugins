@@ -64,7 +64,7 @@ Authoring is not done at "passes `validate_plugin.py`." Run the council (`plugin
 
 | When | Pass |
 | --- | --- |
-| **Every produced plugin** (floor) | `critic-simon` (hook/MCP blast radius, trust) + `critic-scott-w` (manifest correctness, illegal layout/state) |
+| **Every produced plugin** (floor) | `critic-simon-w` (hook/MCP blast radius, trust) + `critic-scott-w` (manifest correctness, illegal layout/state) |
 | **Bundles a hook or MCP**, a **marketplace**, or a **multi-plugin carve** | `full-panel` (all 9) + synthesis — the shared-infra and trust lenses compound |
 | **A targeted edit** | the one or two critics who own that dimension |
 
@@ -72,7 +72,7 @@ Fold surviving Critical/Major findings back via `edit` before packaging. That is
 
 ## §SelfAudit (before declaring done)
 
-Built against `build-against-the-standard.md` (each live dimension grounded in its foundation); component-fit declared for every capability; `plugin.json` passes `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py`; no `../` cross-plugin path; every hook's side-effect documented; the build-time red-team ran (Simon + Wlaschin floor, or full-panel by stakes) and surviving Critical/Major findings were folded in. **Not done** when the manifest validates but a capability uses the wrong primitive, a shared dependency uses `../`, a hook's side-effect is undocumented, no critic ever saw the draft, or the plugin's one-sentence job was never named (the components cohere around nothing).
+Built against `build-against-the-standard.md` (each live dimension grounded in its foundation); component-fit declared for every capability; `plugin.json` passes `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py`; no `../` cross-plugin path; every hook's side-effect documented; the build-time red-team ran (Simon W. + Scott W. floor, or full-panel by stakes) and surviving Critical/Major findings were folded in. **Not done** when the manifest validates but a capability uses the wrong primitive, a shared dependency uses `../`, a hook's side-effect is undocumented, no critic ever saw the draft, or the plugin's one-sentence job was never named (the components cohere around nothing).
 
 ## References (the shared spine)
 

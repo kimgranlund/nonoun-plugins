@@ -6,7 +6,7 @@ primary_sources:
   - "Chris Spiek & Bob Moesta (The Re-Wired Group). The \"Switch\" interview and Forces of Progress diagram. https://jobstobedone.org/radio/unpacking-the-progress-making-forces-diagram/"
   - "Intercom — \"Bob Moesta on unpacking customer motivations with Jobs-to-be-Done.\" https://www.intercom.com/blog/podcasts/bob-moesta-on-unpacking-customer-motivations-with-jobs-to-be-done/"
   - "The Re-Wired Group — \"Milkshakes in the Morning\" case study. https://therewiredgroup.com/case-studies/milkshakes/"
-  - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck*. HarperBusiness, 2016 (the mattress / milkshake interviews)."
+  - "Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck*. HarperBusiness, 2016 (the mattress / milkshake interviews)."
 method: jtbd-discovery
 phase: discover
 domains: [1, 11]
@@ -21,7 +21,7 @@ rubric: rubric-discovery
 
 # JTBD Switch Interviews (Moesta / Re-Wired lineage)
 
-This file covers the **Switch interview** — the investigative method, developed by Bob Moesta and Chris Spiek at The Re-Wired Group, for reconstructing the timeline and the forces behind a single real purchase decision. It is the _method_ half of Jobs-to-be-Done. The _theory_ half — Clayton C.'s "customers hire products to make progress in a circumstance" — lives in `../../../product-methodology/references/jtbd/christensen-jtbd.md`; that file deliberately stays Clayton C.-canonical and flags this Moesta practice as a distinct lineage. Read this one for **how to run the interview**.
+This file covers the **Switch interview** — the investigative method, developed by Bob Moesta and Chris Spiek at The Re-Wired Group, for reconstructing the timeline and the forces behind a single real purchase decision. It is the _method_ half of Jobs-to-be-Done. The _theory_ half — Clayton C.'s "customers hire products to make progress in a circumstance" — lives in `../../../product-methodology/references/jtbd/jobs-to-be-done.md`; that file deliberately stays Clayton C.-canonical and flags this Moesta practice as a distinct lineage. Read this one for **how to run the interview**.
 
 > The goal of a switch interview, in Moesta's framing, is to reverse-engineer one decision: to recover _"the causal mechanism that caused someone to switch"_ — what was going on in their life that made the old way intolerable, and what gave them the energy to buy the new thing on the day they bought it.
 

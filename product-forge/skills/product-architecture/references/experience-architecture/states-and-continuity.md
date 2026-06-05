@@ -5,7 +5,7 @@ primary_sources:
   - "Scott Hurff, *Designing Products People Love* (O'Reilly, 2016) — the UI Stack: the five states (blank, loading, partial, error, ideal)."
   - "Scott Hurff — “The Best Way to Improve Your App's User Experience” / the UI Stack (scotthurff.com/posts/why-your-user-interface-is-awkward-youre-ignoring-the-ui-stack)."
   - "37signals (Jason Fried, David Heinemeier Hansson, Matthew Linderman), *Getting Real* (2006) — the original three-state solution (blank / regular / error) the UI Stack extends."
-  - "Nielsen Norman Group — Skeleton Screens & response-time / progress-indicator guidance; Empty States guidance."
+  - "NN/g — Skeleton Screens & response-time / progress-indicator guidance; Empty States guidance."
 ---
 
 # States & Continuity
@@ -86,4 +86,4 @@ The fastest single test for states: open any data screen and force each conditio
 
 ## One labeled caveat
 
-The five-state UI Stack (blank/loading/partial/error/ideal) is accurately attributed to Scott Hurff (_Designing Products People Love_, O'Reilly 2016) and his widely-circulated UI Stack post, and its lineage from 37signals' three-state solution in _Getting Real_ (2006) is well documented. "Offline" and "success" are added here as practical extensions, not part of Hurff's original five — they are labeled as such. NN/g's response-time thresholds (0.1s / 1s / 10s, originating with Miller 1968 and Card/Robertson/Mackinlay, popularized by Nielsen) and skeleton-screen guidance are standard and accurately characterized; confirm exact figures against NN/g's current articles if precise numbers are quoted. Continuity/resumability is presented as synthesized working method rather than a single named framework.
+The five-state UI Stack (blank/loading/partial/error/ideal) is accurately attributed to Scott Hurff (_Designing Products People Love_, O'Reilly 2016) and his widely-circulated UI Stack post, and its lineage from 37signals' three-state solution in _Getting Real_ (2006) is well documented. "Offline" and "success" are added here as practical extensions, not part of Hurff's original five — they are labeled as such. NN/g's response-time thresholds (0.1s / 1s / 10s, originating with Miller 1968 and Card/Robertson/Mackinlay, popularized by Jakob N.) and skeleton-screen guidance are standard and accurately characterized; confirm exact figures against NN/g's current articles if precise numbers are quoted. Continuity/resumability is presented as synthesized working method rather than a single named framework.

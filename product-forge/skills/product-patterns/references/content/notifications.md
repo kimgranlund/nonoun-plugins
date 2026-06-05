@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — Five Mistakes in Designing Mobile Push Notifications (nngroup.com/articles/push-notification)"
-  - "Nielsen Norman Group — Indicators, Validations, and Notifications: Pick the Correct Communication Option (nngroup.com/articles/indicators-validations-notifications)"
-  - "Nielsen Norman Group — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
+  - "NN/g — Five Mistakes in Designing Mobile Push Notifications (nngroup.com/articles/push-notification)"
+  - "NN/g — Indicators, Validations, and Notifications: Pick the Correct Communication Option (nngroup.com/articles/indicators-validations-notifications)"
+  - "NN/g — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
 ---
 
 # Notifications

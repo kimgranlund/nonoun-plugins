@@ -68,7 +68,7 @@ Not every apparent overlap is shared infrastructure. Two plugins that each conta
 - The `carve` mode's step 4 (`carve-method.md`) is _exactly_ this decision, run for every shared-infra item: co-locate / `dependencies` / symlink, never `../`.
 - P4's mechanical test in `plugins-holistic.md` is the **install test**: for every referenced path, does it resolve after copy-into-cache? Plus the dead-weight grep.
 - The validator `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py` statically flags `../`-traversal in component paths and `source` fields; the deeper `$ref`-escapes-the-plugin check is a `[review]` item the evaluator runs.
-- Owning critics: **Wlaschin** (make the illegal layout unrepresentable) and **Simon** (a cross-boundary reference is also an attack-surface question).
+- Owning critics: **Scott W.** (make the illegal layout unrepresentable) and **Simon W.** (a cross-boundary reference is also an attack-surface question).
 
 ## Source Citations
 

@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — 'Service Blueprints: Definition' (Sarah Gibbons) — the line of internal interaction and cross-team handoff seams. https://www.nngroup.com/articles/service-blueprints-definition/"
+  - "NN/g — 'Service Blueprints: Definition' (Sarah Gibbons) — the line of internal interaction and cross-team handoff seams. https://www.nngroup.com/articles/service-blueprints-definition/"
   - "Jakob N., '10 Usability Heuristics for User Interface Design' (1994, updated) — #1 Visibility of System Status, applied to handoff transparency. https://www.nngroup.com/articles/ten-usability-heuristics/"
   - "Industry practice on AI-to-human / warm transfer in contact centers — the 'warm handoff' and conversation-context transfer pattern (call-center and CX literature, 2024–2026). Practitioner consensus, not a single canonical author; verify specific statistics before citing."
 ---
@@ -50,7 +50,7 @@ The handoff that matters most in modern products is the AI-or-bot to human escal
 
 - **Escalate on multiple, combined triggers** — not one. The robust set: a **confidence threshold** (the model is unsure), **sentiment detection** (the user is frustrated), an **explicit request** ("talk to a human"), a **repetition/loop signal** (the user has rephrased the same thing twice), and **compliance rules** (some topics must go to a human regardless of confidence). Relying on confidence alone strands frustrated users who the model _thinks_ it's handling.
 - **Never trap the user.** An explicit "talk to a human" must always be honored — a bot that refuses or loops the user back to itself is a recognized dark pattern and a trust-killer. The escape hatch is non-negotiable (this is the operational mirror of the FTC's hard-to-cancel stance; see `support-paths.md`).
-- **Set expectations at the moment of transfer.** State what's happening and the likely wait ("I'm connecting you to an agent — about a 2-minute wait"). Silence during a transfer reads as a dropped call. This is Nielsen's heuristic #1, _visibility of system status_, applied to the handoff itself.
+- **Set expectations at the moment of transfer.** State what's happening and the likely wait ("I'm connecting you to an agent — about a 2-minute wait"). Silence during a transfer reads as a dropped call. This is Jakob N.'s heuristic #1, _visibility of system status_, applied to the handoff itself.
 - **Hand off the context, not the user.** Pass the summary forward so the human opens with the situation, not "how can I help?" The measure of a good AI→human handoff is whether the human's first sentence proves they already know why the user is there.
 
 ## Graceful degradation

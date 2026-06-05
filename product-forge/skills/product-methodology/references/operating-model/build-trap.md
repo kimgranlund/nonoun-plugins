@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Melissa P., *Escaping the Build Trap: How Effective Product Management Creates Real Value* (O'Reilly, 2018)"
-  - "Melissa P., 'The Product Kata', melissaperri.com, 2015"
+  - "Melissa P., 'The Product Kata' (author site, 2015 — exact URL in the git-ignored `agents/.name-map.md`)"
   - "Mike Rother, *Toyota Kata* (McGraw-Hill, 2009) — the improvement-kata source Melissa P. adapts"
 ---
 
@@ -66,7 +66,7 @@ The build trap hides behind activity and good intentions. Diagnostic tells:
 
 A document is in the trap when it specifies _what to build_ and _by when_ but never states _which outcome it must move_ or _how we will know it worked_. The smell is a feature list with no falsifiable success metric attached.
 
-This is the same failure Marty C. attacks from the operating-model side: a feature factory is the organizational form of the build trap, and "set goals only for outcomes, never outputs" is the same prescription in different words (see `cagan-operating-model.md` and `four-big-risks.md`).
+This is the same failure Marty C. attacks from the operating-model side: a feature factory is the organizational form of the build trap, and "set goals only for outcomes, never outputs" is the same prescription in different words (see `product-operating-model.md` and `four-big-risks.md`).
 
 ---
 

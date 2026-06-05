@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Jakob N. (2012). Usability 101: Introduction to Usability. Nielsen Norman Group. https://www.nngroup.com/articles/usability-101-introduction-to-usability/"
-  - "Nielsen Norman Group. How to Measure Learnability of a User Interface. https://www.nngroup.com/articles/measure-learnability/"
-  - "Nielsen Norman Group. Time on Task (usability metric). https://www.nngroup.com/articles/time-on-task/"
+  - "Jakob N. (2012). Usability 101: Introduction to Usability. NN/g. https://www.nngroup.com/articles/usability-101-introduction-to-usability/"
+  - "NN/g. How to Measure Learnability of a User Interface. https://www.nngroup.com/articles/measure-learnability/"
+  - "NN/g. Time on Task (usability metric). https://www.nngroup.com/articles/time-on-task/"
   - "MakeUseOf — 8 apps that do one thing perfectly (and nothing else) (practitioner survey; observational). https://www.makeuseof.com/apps-that-do-one-thing-perfectly-and-nothing-else/"
   - "Doug McIlroy, Unix philosophy — 'Make each program do one thing well' (Bell System Technical Journal, 1978; foundational design lineage, not an app metric)"
 ---
@@ -34,7 +34,7 @@ These are the field's working expectations. Most are observational — synthesiz
 
 ## The metrics that matter
 
-The genre's north star is the cost of one completed loop, not engagement. Borrow the measurable usability constructs from Nielsen's five quality components (NN/g, 2012): **learnability** ("how easy is it for users to accomplish basic tasks the first time they encounter the design?") and **efficiency** ("once users have learned the design, how quickly can they perform tasks?").
+The genre's north star is the cost of one completed loop, not engagement. Borrow the measurable usability constructs from Jakob N.'s five quality components (NN/g, 2012): **learnability** ("how easy is it for users to accomplish basic tasks the first time they encounter the design?") and **efficiency** ("once users have learned the design, how quickly can they perform tasks?").
 
 - **Time on task** — the duration from launch to completed action. NN/g defines time on task as the time users take to complete a task and frames it as the canonical indicator of interface efficiency; a rising time-on-task is a direct signal of friction. This is the genre's primary number.
 - **Task success / completion rate** — the percentage of attempts that reach "done" without abandonment or error. For a utility, anything materially below ceiling means the one thing is not reliably doable.

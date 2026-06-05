@@ -2,16 +2,16 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — 'Usability Heuristic #10: Help and Documentation' (Jakob N., 1994; updated). https://www.nngroup.com/articles/help-and-documentation/"
-  - "Nielsen Norman Group — 'Help and Documentation (Usability Heuristic #10)' video. https://www.nngroup.com/videos/help-and-documentation/"
-  - "Nielsen Norman Group — 'Onboarding Tutorials vs. Contextual Help' (research summary). https://www.nngroup.com/articles/onboarding-tutorials/"
-  - "Nielsen Norman Group — 'Empty States in Application Design' (Kate Moran / Page Laubheimer). https://www.nngroup.com/articles/empty-state-interface-design/"
+  - "NN/g — 'Usability Heuristic #10: Help and Documentation' (Jakob N., 1994; updated). https://www.nngroup.com/articles/help-and-documentation/"
+  - "NN/g — 'Help and Documentation (Usability Heuristic #10)' video. https://www.nngroup.com/videos/help-and-documentation/"
+  - "NN/g — 'Onboarding Tutorials vs. Contextual Help' (research summary). https://www.nngroup.com/articles/onboarding-tutorials/"
+  - "NN/g — 'Empty States in Application Design' (Kate Moran / Page Laubheimer). https://www.nngroup.com/articles/empty-state-interface-design/"
   - "Laws of UX — 'Tesler's Law' (the conservation of complexity) and 'Doherty Threshold' (Jon Yablonski). https://lawsofux.com/teslers-law/ , https://lawsofux.com/doherty-threshold/"
 ---
 
 # In-Product Help and Support
 
-This reference covers the patterns that help a user who is stuck — in-product help (tooltips, contextual panels, guided assistance), support entry points (where you ask for human help), the self-serve-vs-escalation gradient, and contextual documentation. The governing principle, straight from Nielsen's tenth heuristic, is that **the best help is the help you never need** — but since some help is always necessary, the job is to deliver it _at the moment of need, scoped to the task, without hijacking the workflow_. Help that is comprehensive but un-findable, or findable but un-actionable, has failed the heuristic regardless of how much was written.
+This reference covers the patterns that help a user who is stuck — in-product help (tooltips, contextual panels, guided assistance), support entry points (where you ask for human help), the self-serve-vs-escalation gradient, and contextual documentation. The governing principle, straight from Jakob N.'s tenth heuristic, is that **the best help is the help you never need** — but since some help is always necessary, the job is to deliver it _at the moment of need, scoped to the task, without hijacking the workflow_. Help that is comprehensive but un-findable, or findable but un-actionable, has failed the heuristic regardless of how much was written.
 
 > The framing to hold onto: help is not a content-completeness problem, it is a _delivery-timing_ problem. The same sentence is a great tooltip next to the field it explains and a useless modal thrown in the user's face on launch. Judge a help pattern by whether it reaches the user where and when the question actually arises.
 

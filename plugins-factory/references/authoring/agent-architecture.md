@@ -6,7 +6,7 @@ An **agent** is a sub-context worker: it runs in its own isolated context window
 
 ## When NOT to make an agent (the default)
 
-Reach for a **skill** first. A bundled agent earns its place only if it needs something a skill structurally cannot give. If the task is "knowledge + judgment the main loop applies in-line," it's a skill (or a mode of one) — wrapping it in an agent adds a context hop, a tool-scope surface, and a dispatch decision for zero benefit. The Elon test (CF4): _for each agent, name the isolation it requires, or delete it and ship the skill._
+Reach for a **skill** first. A bundled agent earns its place only if it needs something a skill structurally cannot give. If the task is "knowledge + judgment the main loop applies in-line," it's a skill (or a mode of one) — wrapping it in an agent adds a context hop, a tool-scope surface, and a dispatch decision for zero benefit. The Elon M. test (CF4): _for each agent, name the isolation it requires, or delete it and ship the skill._
 
 ## When an agent IS the right primitive
 

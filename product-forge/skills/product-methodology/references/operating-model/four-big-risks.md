@@ -88,7 +88,7 @@ A team can run a "discovery phase" and clear none of the four risks. The test fo
 
 1. **The four-named-risks test.** Ask the team to state, for this specific feature, the current status of each of the four risks. A team that has done the work can answer all four crisply; a team that cannot name them by risk has not de-risked — it has scheduled.
 2. **The evidence test.** For each risk, what _evidence_ moved it from "unknown" to "acceptable"? Evidence means an observation that could have come out the other way (a user failed the task; customers did not sign up; legal flagged a blocker). "We discussed it and felt good" is not evidence.
-3. **The kill test.** Did anything get changed or killed because a risk test failed? Discovery that never invalidates anything is confirmation, not discovery — the conclusion was fixed before the evidence (see `build-trap.md` and `cagan-operating-model.md`).
+3. **The kill test.** Did anything get changed or killed because a risk test failed? Discovery that never invalidates anything is confirmation, not discovery — the conclusion was fixed before the evidence (see `build-trap.md` and `product-operating-model.md`).
 4. **The pre-build test.** Were all four addressed **before** committing engineering capacity to building the real thing? Risks confronted only after build is the build trap; the entire value of the framework is that it front-loads the learning to where it is cheap.
 
 If the team cannot name the four risks, point to falsifiable evidence for each, show something it changed or killed, and confirm it happened before build — then it has not de-risked, regardless of how many discovery meetings it held.

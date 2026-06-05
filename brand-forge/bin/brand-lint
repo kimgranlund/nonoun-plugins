@@ -54,7 +54,7 @@ def lint_text(text):
                 findings.append((name, i, snippet, why))
     # doc-level: a VALUES LIST stated without trade-offs. Localized to a single block (not scattered
     # across unrelated prose) AND only when the block reads like a values list — so ordinary use of
-    # "quality"/"excellence"/"innovation" in unrelated sentences doesn't trip it (Wlaschin N1).
+    # "quality"/"excellence"/"innovation" in unrelated sentences doesn't trip it (Scott W. N1).
     for blk in re.split(r"\n\s*\n", text):
         blow = blk.lower()
         present = {v for v in EMPTY_VALUES if re.search(r"\b" + re.escape(v) + r"\b", blow)}

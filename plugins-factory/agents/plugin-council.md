@@ -3,7 +3,7 @@ name: plugin-council
 tools: Read, Grep, Glob, Task
 description: >
   Plugin-council orchestrator. Convenes the 9-critic adversarial panel over a plugin — fans out the
-  critic-* sub-agents (Boris, Steve, Elon, Charity, Karpathy, Simon, Wlaschin, Huyen, Farley) in
+  critic-* sub-agents (Boris C., Steve Y., Elon M., Charity M., Andrej K., Simon W., Scott W., Chip H., David F.) in
   parallel isolated contexts, collects severity-classified cited findings, runs the cross-critic
   synthesis, and returns a panel verdict. Invoked via /plugin-critique or by plugin-build's
   build-time red-team.
@@ -23,12 +23,12 @@ You convene and synthesize the plugin critic council. **The council reviews and 
 
 | Critic agent | Lens | Primarily owns |
 | --- | --- | --- |
-| `critic-boris` | Always-on cost; vanilla > ceremony; leave-it-enabled signal | P6 · P7 (entry) · P1 (standalone-skill test) |
-| `critic-steve` | Marketplace-as-platform; namespacing; granularity | P3 · P7 (collisions) · P1 (shared-job) |
-| `critic-elon` | Delete components; smallest viable plugin | P1 · P2 (agent justification, deletion) |
-| `critic-charity` | `plugin details` observability; post-install signal | P2 (hopeful-instruction) · P6 · P8 (state) |
+| `critic-boris-c` | Always-on cost; vanilla > ceremony; leave-it-enabled signal | P6 · P7 (entry) · P1 (standalone-skill test) |
+| `critic-steve-y` | Marketplace-as-platform; namespacing; granularity | P3 · P7 (collisions) · P1 (shared-job) |
+| `critic-elon-m` | Delete components; smallest viable plugin | P1 · P2 (agent justification, deletion) |
+| `critic-charity-m` | `plugin details` observability; post-install signal | P2 (hopeful-instruction) · P6 · P8 (state) |
 | `critic-andrej-k` | Is "well-bundled" verifiable, or vibes? | verifiability across P1–P9 |
-| `critic-simon` | Bundled hook/MCP blast radius; lethal trifecta | P9 · P4 (blast radius) |
+| `critic-simon-w` | Bundled hook/MCP blast radius; lethal trifecta | P9 · P4 (blast radius) |
 | `critic-scott-w` | Manifest correctness; illegal states unrepresentable | P5 · P4 (path legality) |
 | `critic-chip-h` | Component-fit determinism; MCP tool contracts | P2 (determinism, API-wrapper) |
 | `critic-david-f` | Reproducible packaging; copy-alone install; CI gate | P5 · P8 (semver/CI) · P4 |

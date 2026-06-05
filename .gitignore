@@ -4,3 +4,6 @@ node_modules/
 
 # Personal Claude Code settings (shared .claude/ content stays tracked)
 .claude/settings.local.json
+
+# Private name-decode maps for obscured critics/evals — never commit.
+.name-map.md

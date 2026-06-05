@@ -5,7 +5,7 @@ description: >-
   strategy kernel, the product operating model + the four big risks, positioning, prioritization,
   experimentation, growth/activation, PRD/spec authoring, and product-vision memos. The MAKER skill:
   produce a strategy, discovery plan, opportunity framing, PRD, or vision doc grounded in the canon
-  (Marty C., Torres, Melissa P., Richard R., Clayton C., April D., Shreyas D., Ron K.). Triggers: "product strategy",
+  (Marty C., Teresa T., Melissa P., Richard R., Clayton C., April D., Shreyas D., Ron K.). Triggers: "product strategy",
   "should we build X", "frame the opportunity", "write a PRD / PR-FAQ", "position this", "prioritize
   this", "product vision / manifesto", "what's our north-star metric". NOT for scoring an existing
   artifact (product-evaluate), user-research method/persona craft (product-research), UX patterns
@@ -28,13 +28,13 @@ Discovery before solutions (test the four risks before building); **outcomes ove
 
 | The work is… | Axis | Start at |
 | --- | --- | --- |
-| is there a real strategy here? what's the diagnosis? | `strategy/` | `rumelt-kernel.md` · `strategy-vs-roadmap.md` · `product-strategy-stack.md` |
-| how should the team operate? did we de-risk? | `operating-model/` | `cagan-operating-model.md` · `four-big-risks.md` · `build-trap.md` · `empowered-teams.md` |
+| is there a real strategy here? what's the diagnosis? | `strategy/` | `strategy-kernel.md` · `strategy-vs-roadmap.md` · `product-strategy-stack.md` |
+| how should the team operate? did we de-risk? | `operating-model/` | `product-operating-model.md` · `four-big-risks.md` · `build-trap.md` · `empowered-teams.md` |
 | are we in contact with the problem? | `discovery/` | `continuous-discovery.md` · `opportunity-solution-tree.md` · `dual-track.md` · `assumption-testing.md` · `idea-to-prototype.md` |
-| what job, in what circumstance? | `jtbd/` | `christensen-jtbd.md` · `ulwick-odi.md` · `jtbd-variants-map.md` |
-| how do we frame it against alternatives? | `positioning/` | `dunford-positioning.md` · `category-and-alternatives.md` |
-| what do we do first, and why? | `prioritization/` | `doshi-lno.md` · `rice-ice-and-frames.md` · `product-sense.md` |
-| is the metric/experiment trustworthy? | `experimentation/` | `kohavi-trustworthy.md` · `metric-design.md` |
+| what job, in what circumstance? | `jtbd/` | `jobs-to-be-done.md` · `ulwick-odi.md` · `jtbd-variants-map.md` |
+| how do we frame it against alternatives? | `positioning/` | `positioning-method.md` · `category-and-alternatives.md` |
+| what do we do first, and why? | `prioritization/` | `lno-and-levels.md` · `rice-ice-and-frames.md` · `product-sense.md` |
+| is the metric/experiment trustworthy? | `experimentation/` | `trustworthy-experiments.md` · `metric-design.md` |
 | how does it activate, retain, grow? | `growth/` | `activation-aha-habit.md` · `hook-model.md` · `retention-engagement.md` · `pmf.md` |
 | write the PRD / spec | `spec/` | `prd-modern.md` · `working-backwards-prfaq.md` · `one-pager-and-narrative.md` |
 | write a vision / manifesto / reframe | `vision/` | `manifesto.md` · `reframe.md` · `case-for.md` · `synthesis.md` |

@@ -81,7 +81,7 @@ The point of the map: **pick the loop and technique from the lifecycle, not from
 
 **Operator's job.** Decompose the question, fan out the search, and synthesize the returns — without letting the parallel investigation fragment into incoherent conclusions.
 
-**Loop that fits.** Fan out subagents into isolated context windows for parallel search/summarization, each returning a summary; the orchestrator synthesizes. This is the one lifecycle where subagent fan-out is clearly right — the subtasks are read-only and independent, so the context-fragmentation cost Yan warns about is low (no conflicting _write_ decisions to reconcile).
+**Loop that fits.** Fan out subagents into isolated context windows for parallel search/summarization, each returning a summary; the orchestrator synthesizes. This is the one lifecycle where subagent fan-out is clearly right — the subtasks are read-only and independent, so the context-fragmentation cost Walden Y. warns about is low (no conflicting _write_ decisions to reconcile).
 
 **Failure modes.** Fragmentation with conflicting conclusions when the analysis isn't truly independent; or a synthesis that merges summaries without the traces, losing the reasoning. Keep the question decomposed into genuinely independent sub-questions.
 

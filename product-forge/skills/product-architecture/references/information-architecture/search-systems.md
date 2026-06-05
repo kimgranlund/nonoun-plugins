@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — “Search: Visible and Simple” (nngroup.com/articles/search-visible-and-simple)."
-  - "Nielsen Norman Group — “Scoped Search: Dangerous, but Sometimes Useful” (nngroup.com/articles/scoped-search)."
-  - "Nielsen Norman Group — “Designing Search Suggestions” and search-related guidance (nngroup.com)."
+  - "NN/g — “Search: Visible and Simple” (nngroup.com/articles/search-visible-and-simple)."
+  - "NN/g — “Scoped Search: Dangerous, but Sometimes Useful” (nngroup.com/articles/scoped-search)."
+  - "NN/g — “Designing Search Suggestions” and search-related guidance (nngroup.com)."
   - "Louis Rosenfeld, Peter Morville & Jorge Arango, *Information Architecture: For the Web and Beyond*, 4th ed. (O'Reilly, 2015) — search systems as one of the four IA systems."
 ---
 
@@ -72,4 +72,4 @@ The discipline: **read search logs to fix navigation and taxonomy, not only to f
 
 ## One labeled caveat
 
-The scoped-search guidance (global-by-default, the silent-scope false-zero trap, "dangerous but sometimes useful"), the search-suggestion guidance, and the "search: visible and simple" stance are Nielsen Norman Group positions, confirmed against their published articles by those titles in this session; phrasings are paraphrased rather than quoted. The four-stage decomposition of a search system is a synthesis framing for this skill, consistent with NN/g and the polar bear book's treatment of search as one of the four IA systems but not a single named model from one source. The search-log signal list (zero-result mining, refinement rate, pogo-sticking) reflects standard search-analytics practice. A specific viral statistic on query-reformulation success rates was deliberately omitted as untraceable to a credible primary source. Confirm any verbatim quotation against the cited NN/g articles before publishing.
+The scoped-search guidance (global-by-default, the silent-scope false-zero trap, "dangerous but sometimes useful"), the search-suggestion guidance, and the "search: visible and simple" stance are NN/g positions, confirmed against their published articles by those titles in this session; phrasings are paraphrased rather than quoted. The four-stage decomposition of a search system is a synthesis framing for this skill, consistent with NN/g and the polar bear book's treatment of search as one of the four IA systems but not a single named model from one source. The search-log signal list (zero-result mining, refinement rate, pogo-sticking) reflects standard search-analytics practice. A specific viral statistic on query-reformulation success rates was deliberately omitted as untraceable to a credible primary source. Confirm any verbatim quotation against the cited NN/g articles before publishing.

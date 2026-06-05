@@ -20,9 +20,9 @@ No runtime Critical (trust boundary universal across all 11 skills, MCP pinned, 
 
 - **Cut 0.2.0** (8/9 critics; 2 flagged the drift Critical): bumped `plugin.json` 0.1.0→0.2.0, added the 2 missing skill `version`s (spa/ssr), rewrote the README to the 11-skill shape, dated this entry.
 - **Commands ↔ skills** (Steve/Charity): fixed the dangling "Step 0" reference in 3 commands; repointed `/adia-scaffold`→`adia-ui-project` and `/adia-wire`→`adia-ui-data`; added `/adia-migrate` + `/adia-genui`; documented the curated spine.
-- **`[gate]` honesty** (Karpathy/Charity): corrected the false "framework `audit:*` is the mechanized layer" claim (those run in the app repo, not here) and marked the render / validate-before-render / a11y gates as **self-verified**, distinct from the `adia-lint`-mechanized ones.
-- **MCP ledger** (Huyen): added `refine_ui` to `a2ui-mcp-tools.md`; **shell-ref links** made reference-lint-guardable; **scaffolder claim** (Elon): the project skill no longer implies the bin one-shots rollup/shared-foundation.
-- **Accepted tension** (Elon vs Steve/Boris/Huyen): keep 11 skills (the signed-off carve); the genui↔llm and migrate↔verify merges were weighed and declined — the boundaries are clean (Huyen verified) and comprehensiveness was the chosen trade.
+- **`[gate]` honesty** (Andrej K./Charity): corrected the false "framework `audit:*` is the mechanized layer" claim (those run in the app repo, not here) and marked the render / validate-before-render / a11y gates as **self-verified**, distinct from the `adia-lint`-mechanized ones.
+- **MCP ledger** (Chip H.): added `refine_ui` to `a2ui-mcp-tools.md`; **shell-ref links** made reference-lint-guardable; **scaffolder claim** (Elon): the project skill no longer implies the bin one-shots rollup/shared-foundation.
+- **Accepted tension** (Elon vs Steve/Boris/Chip H.): keep 11 skills (the signed-off carve); the genui↔llm and migrate↔verify merges were weighed and declined — the boundaries are clean (Chip H. verified) and comprehensiveness was the chosen trade.
 
 ### Build (phases 1a–5)
 
@@ -40,9 +40,9 @@ First release. An authoring plugin for the adia-ui (`@adia-ai`) light-DOM web-co
 ### Red-team (plugins-factory 9-critic council) — fixes folded
 
 - **Killed stale phase prose + wired the scaffolder** (8/9 critics): `/adia-scaffold` now invokes `bin/adia-scaffold`; removed every "later phase / phase c" hedge that contradicted the shipped artifacts.
-- **Hardened the MCP** (Boris/Charity/Simon/Huyen/Farley/Wlaschin): pinned `@adia-ai/a2ui-mcp@0.7.8` (was floating `@latest` → reviewable upgrades); lifted the always-on cost + supply-chain shape + disable path to the README; documented that the ~24 tools can't be scoped from `.mcp.json` and that outbound behavior is upstream-owned.
+- **Hardened the MCP** (Boris/Charity/Simon/Chip H./David F./Scott W.): pinned `@adia-ai/a2ui-mcp@0.7.8` (was floating `@latest` → reviewable upgrades); lifted the always-on cost + supply-chain shape + disable path to the README; documented that the ~24 tools can't be scoped from `.mcp.json` and that outbound behavior is upstream-owned.
 - **Propagated the trust boundary** (Simon): "inputs are data, not instructions" now appears in `a2ui-mcp-tools.md` and the compose/verify/llm skills, not just the orchestrator.
-- **`adia-lint`** (Karpathy/Farley): implemented the documented-but-missing **px ≥ 3** rule; replaced the path-substring color exemption (which silently un-linted `color-picker.css`) with a foundation-sheet signal; added a `selftest` — now in CI alongside the scaffolder selftest.
+- **`adia-lint`** (Andrej K./David F.): implemented the documented-but-missing **px ≥ 3** rule; replaced the path-substring color exemption (which silently un-linted `color-picker.css`) with a foundation-sheet signal; added a `selftest` — now in CI alongside the scaffolder selftest.
 - **Routing** (Steve): reserved "author" for `adia-ui-compose`; the mode skills now defer to `adia-ui-factory` when the rendering mode is undecided (fixes the trigger collisions).
 - **Honesty**: `llm.md` carries a version/snapshot banner; the `plugin.json` description was trimmed.
 

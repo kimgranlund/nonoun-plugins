@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — Infinite Scrolling: When to Use It, When to Avoid It (nngroup.com/articles/infinite-scrolling-tips)"
-  - "Nielsen Norman Group — Infinite Scrolling Is Not for Every Website (nngroup.com/articles/infinite-scrolling)"
-  - "Nielsen Norman Group — Item-List Pagination Preferences and \"View All\" (nngroup.com/articles/item-list-view-all)"
+  - "NN/g — Infinite Scrolling: When to Use It, When to Avoid It (nngroup.com/articles/infinite-scrolling-tips)"
+  - "NN/g — Infinite Scrolling Is Not for Every Website (nngroup.com/articles/infinite-scrolling)"
+  - "NN/g — Item-List Pagination Preferences and \"View All\" (nngroup.com/articles/item-list-view-all)"
   - "Laws of UX — Zeigarnik Effect (lawsofux.com/zeigarnik-effect)"
   - "Laws of UX — Peak-End Rule (lawsofux.com/peak-end-rule)"
 ---

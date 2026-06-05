@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Shreyas D.. LNO Framework. coda.io/@shreyas/lno-framework"
+  - "Shreyas D. LNO Framework. coda.io/@shreyas/lno-framework"
   - "Shreyas D. (2021). LNO Effectiveness Framework (thread, tweet 21/). x.com/shreyas/status/1399061782560350208"
   - "Shreyas D. (2021). The 3 levels of product work (thread, tweet 16/). x.com/shreyas/status/1399055728858439682"
-  - "Lenny Rachitsky (2022). Shreyas D. on pre-mortems, the LNO framework, the three levels of product work, why most execution problems are strategy problems, and ROI vs. opportunity cost thinking. Lenny's Podcast, episode 3. lennysnewsletter.com/p/episode-3-shreyas-doshi"
+  - "Lenny Rachitsky (2022). Shreyas D. on pre-mortems, the LNO framework, the three levels of product work, why most execution problems are strategy problems, and ROI vs. opportunity cost thinking. Lenny's Podcast, episode 3 (lennysnewsletter.com/p/episode-3)."
 ---
 
 # Shreyas D.'s Prioritization as a Working Method

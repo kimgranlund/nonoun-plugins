@@ -5,12 +5,12 @@ primary_sources:
   - "S. R. Ranganathan, *Colon Classification* (Madras Library Association, 1933) — the first faceted (analytico-synthetic) classification; the PMEST facet formula."
   - "Donna Spencer, *Card Sorting: Designing Usable Categories* (Rosenfeld Media, 2009)."
   - "Heather Hedden, *The Accidental Taxonomist*, 2nd ed. (Information Today, 2016); and “Faceted Classification and Faceted Taxonomies” (hedden-information.com)."
-  - "Nielsen Norman Group — “Card Sorting vs. Tree Testing” and “Open vs. Closed Card Sorting” (nngroup.com)."
+  - "NN/g — “Card Sorting vs. Tree Testing” and “Open vs. Closed Card Sorting” (nngroup.com)."
 ---
 
 # Taxonomy & Classification
 
-This is the working method for the _arrangement_ layer of IA: how the agreed concepts get grouped, named, and structured into a navigable system — and, just as importantly, how you **validate** that structure with users instead of shipping the org chart. Taxonomy is where Covert's ontology (settled meanings) becomes Rosenfeld/Morville's organization system (a usable shape). Heather Hedden's working definition: a taxonomy is **a controlled vocabulary arranged to support findability** — not merely a list of approved terms, but those terms organized by their relationships. The recurring product failure here is mistaking _a tree the company likes_ for _a structure users can navigate_; this file is mostly about not doing that.
+This is the working method for the _arrangement_ layer of IA: how the agreed concepts get grouped, named, and structured into a navigable system — and, just as importantly, how you **validate** that structure with users instead of shipping the org chart. Taxonomy is where Abby C.'s ontology (settled meanings) becomes Rosenfeld/Morville's organization system (a usable shape). Heather Hedden's working definition: a taxonomy is **a controlled vocabulary arranged to support findability** — not merely a list of approved terms, but those terms organized by their relationships. The recurring product failure here is mistaking _a tree the company likes_ for _a structure users can navigate_; this file is mostly about not doing that.
 
 ## Controlled vocabulary first
 
@@ -77,4 +77,4 @@ The fix is procedural, not cosmetic: forage labels from research, build with an 
 
 ## One labeled caveat
 
-S. R. Ranganathan's authorship of faceted (analytico-synthetic) classification, _Colon Classification_ (1933), and the **PMEST** facet formula are firmly established and confirmed across multiple references (Britannica, Wikipedia, library-science sources) in this session; the "too limiting and finite" critique of enumerative schemes is attributed to Ranganathan via those secondary summaries rather than to a page in the 1933 text. Donna Spencer's _Card Sorting: Designing Usable Categories_ (Rosenfeld Media, 2009) is the standard primary reference for card sorting; the open/closed/hybrid distinction and tree-testing-as-validation are confirmed against Nielsen Norman Group's published guidance. Heather Hedden's taxonomy/faceted-taxonomy definitions are from _The Accidental Taxonomist_ and her site. Confirm any verbatim quotation against the cited print sources before publishing.
+S. R. Ranganathan's authorship of faceted (analytico-synthetic) classification, _Colon Classification_ (1933), and the **PMEST** facet formula are firmly established and confirmed across multiple references (Britannica, Wikipedia, library-science sources) in this session; the "too limiting and finite" critique of enumerative schemes is attributed to Ranganathan via those secondary summaries rather than to a page in the 1933 text. Donna Spencer's _Card Sorting: Designing Usable Categories_ (Rosenfeld Media, 2009) is the standard primary reference for card sorting; the open/closed/hybrid distinction and tree-testing-as-validation are confirmed against NN/g's published guidance. Heather Hedden's taxonomy/faceted-taxonomy definitions are from _The Accidental Taxonomist_ and her site. Confirm any verbatim quotation against the cited print sources before publishing.

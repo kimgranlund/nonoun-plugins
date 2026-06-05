@@ -86,7 +86,7 @@ Trust is the central problem (NN/g 2026). It cannot be designed _in_ by reassura
 
 ### 3. Match the loop shape to the lifecycle
 
-P-E-V (Plan → Execute → Validate) is the spine, but its instantiation differs by lifecycle. **Explore→Plan→Code→Commit** (Anthropic) fits feature work; **Spec→Plan→Tasks→Implement** (Spec-Driven Development; GitHub Spec-Kit, Kiro, BMAD) fits larger builds; the **think→code→execute→verify→repeat** agentic loop (Willison) fits tight iteration; an unbounded **ralph loop** (Huntley) fits greenfield bootstrapping and almost nothing else. Choosing the wrong loop for the lifecycle is a leading cause of agentic failure.
+P-E-V (Plan → Execute → Validate) is the spine, but its instantiation differs by lifecycle. **Explore→Plan→Code→Commit** (Anthropic) fits feature work; **Spec→Plan→Tasks→Implement** (Spec-Driven Development; GitHub Spec-Kit, Kiro, BMAD) fits larger builds; the **think→code→execute→verify→repeat** agentic loop (Simon W.) fits tight iteration; an unbounded **ralph loop** (Huntley) fits greenfield bootstrapping and almost nothing else. Choosing the wrong loop for the lifecycle is a leading cause of agentic failure.
 
 ### 4. Autonomy is earned by reversibility and verifiability
 
@@ -94,7 +94,7 @@ The operator-side mirror of the builder's blast-radius principle: you can safely
 
 ### 5. The human owns the verify target, even when the agent runs the check
 
-Willison's three irreducible human pillars are **goal definition, tool preparation, and verification**. The agent can execute the check, but the operator must name what "done against reality" means _before_ execution — npm publish → curl the registry; UI change → render in a browser; API change → integration test against a running server. An operator who has not named the verify target will accept the first green signal as success.
+Simon W.'s three irreducible human pillars are **goal definition, tool preparation, and verification**. The agent can execute the check, but the operator must name what "done against reality" means _before_ execution — npm publish → curl the registry; UI change → render in a browser; API change → integration test against a running server. An operator who has not named the verify target will accept the first green signal as success.
 
 ### 6. Corrections must graduate to the right enforcement tier
 
@@ -150,7 +150,7 @@ Can the operator shape, inspect, edit, and prune what the agent knows — and do
 
 ### Dimension 3 [gate] — Observability & legibility
 
-_primary: Sarah Gibbons (`critic-sarah-g`)_
+_primary: Sarah G. (`critic-sarah-g`)_
 
 Can the operator see what the agent is doing, considered, and changed — at the right altitude?
 
@@ -204,7 +204,7 @@ When the agent is wrong, can the operator cleanly undo, and is the damage bounde
 
 ### Dimension 6 `[gate]`/`[review]` — Loop closure: P-E-V from the operator's side
 
-_primary: Sarah Gibbons (`critic-sarah-g`)_
+_primary: Sarah G. (`critic-sarah-g`)_
 
 Does the operator define the goal, prepare the tools, and name the verify target — so the Plan→Execute→Validate loop actually closes against reality?
 
@@ -278,7 +278,7 @@ Does the agentic UX (and the operator's practice) support the full workflow life
 
 ### AP-05 — YOLO without a sandbox
 
-**Symptom:** no-per-step-approval mode is enabled with live network access, real credentials, and no budget/test guardrails. **Root cause:** autonomy granted without the structural containment that makes it safe. **Correction:** YOLO requires a sandbox: no/limited network, scoped credentials, budget and step limits, and a strong test suite as backpressure (Willison). Autonomy and containment are granted together or not at all.
+**Symptom:** no-per-step-approval mode is enabled with live network access, real credentials, and no budget/test guardrails. **Root cause:** autonomy granted without the structural containment that makes it safe. **Correction:** YOLO requires a sandbox: no/limited network, scoped credentials, budget and step limits, and a strong test suite as backpressure (Simon W.). Autonomy and containment are granted together or not at all.
 
 ### AP-06 — Context hoarding
 
@@ -326,7 +326,7 @@ Does the agentic UX (and the operator's practice) support the full workflow life
 
 **Geoffrey Huntley — Ralph / "you are using Claude Code wrong" (2025).** The ralph loop (`while :; do cat PROMPT.md | claude-code; done`) with fresh context per iteration, one task per loop, guarded by _signs, specs, and backpressure_. "Deterministically bad in a non-deterministic world"; "no way in heck would I use Ralph in an existing code base." The proof point (CURSED, a language built over ~3 months) and the explicit fit/anti-fit boundary ground AP-04 and Principle 3. (ghuntley.com/ralph, ghuntley.com/loop)
 
-**Simon Willison — Designing Agentic Loops (2025).** The think→code→execute→verify→repeat loop and the three irreducible human pillars: **goal definition, tool preparation, verification**. Also the canonical YOLO-mode safety analysis (containers without internet, scoped credentials, budget limits, test suites). Grounds Principle 5 and AP-05. (simonwillison.net/2025/Sep/30/designing-agentic-loops/)
+**Simon W. — Designing Agentic Loops (2025).** The think→code→execute→verify→repeat loop and the three irreducible human pillars: **goal definition, tool preparation, verification**. Also the canonical YOLO-mode safety analysis (containers without internet, scoped credentials, budget limits, test suites). Grounds Principle 5 and AP-05. (see `agents/.name-map.md` for the source)
 
 **NN/g (Nielsen Norman Group) — State of UX 2026.** Names **trust** as the defining design problem for AI experiences, often shipped "before they are ready." The basis for trust-as-central-outcome rather than trust-as-dimension. (nngroup.com)
 
@@ -336,6 +336,6 @@ Does the agentic UX (and the operator's practice) support the full workflow life
 
 **Spec-Driven Development — GitHub Spec-Kit, AWS Kiro, BMAD-METHOD.** Specs as executable first-class artifacts; the Spec → Plan → Tasks → Implement loop (Spec-Kit works across 30+ agents); Kiro's spec → design → tasks → implementation. The brownfield-safe alternative to open loops, referenced in Principle 3 and AP-04. (github.com/github/spec-kit, martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)
 
-**Andrej Karpathy — "agentic engineering."** Designing systems, constraints, and feedback loops so AI writes code reliably — the framing under which calibrated trust and verification are engineering problems, not hopes. (machinelearningmastery.com/7-agentic-ai-trends-to-watch-in-2026/)
+**Andrej K. — "agentic engineering."** Designing systems, constraints, and feedback loops so AI writes code reliably — the framing under which calibrated trust and verification are engineering problems, not hopes. (machinelearningmastery.com/7-agentic-ai-trends-to-watch-in-2026/)
 
 **Self-improving loops — Reflexion (Princeton/MIT), SICA (ICLR 2025), MemSkill.** Verbal self-reflection in persistent memory (Reflexion), self-editing scaffolding (SICA), and evolving skill sets (MemSkill) — the research frontier behind the "improving" lifecycle and the feedback-graduation ladder. (openreview.net/pdf?id=rShJCyLsOr)

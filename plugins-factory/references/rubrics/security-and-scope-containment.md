@@ -266,7 +266,7 @@ Does the system distinguish autonomous-safe actions from gated actions?
 
 6. **The least-privilege test**: for a read-only task (code review, documentation), list every active tool. Any write, push, deploy, or delete tool that is active is a least-privilege violation. Count the violations.
 
-7. **The Musk test**: why does this agent have access to production? What is the minimum access required for the task it is currently performing? What would need to be true for it to have exactly that minimum, and nothing more? The gap between current access and minimum required access is the attack surface.
+7. **The Elon M. test**: why does this agent have access to production? What is the minimum access required for the task it is currently performing? What would need to be true for it to have exactly that minimum, and nothing more? The gap between current access and minimum required access is the attack surface.
 
 8. **The trifecta test**: check simultaneously whether this agent (a) processes content from untrusted sources, (b) has access to credentials or private data, and (c) has tools that communicate externally. If all three: what is the architectural mechanism separating the content-processing context from the action-taking context? "The model follows instructions not to" is not an architectural mechanism. Dual LLM, scope-restricted tool sets enforced at the infrastructure level, or physical process separation are architectural mechanisms. If none of these are present, the trifecta is active without structural defense — regardless of individual dimension scores.
 

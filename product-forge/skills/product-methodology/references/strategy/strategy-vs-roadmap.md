@@ -5,20 +5,20 @@ primary_sources:
   - "Shreyas D., 'Good Product Strategy, Bad Product Strategy', Medium (medium.com/@shreyashere/good-product-strategy-bad-product-strategy-826cdfe74818)"
   - "Shreyas D. (2021), 'Stages of strategy maturity' (thread, tweet 12/), x.com/shreyas/status/1399048843270901760"
   - "Shreyas D., 'Mission: Why / Vision: What / Strategy: How / Roadmap: When', x.com/shreyas/status/1460848932116844550"
-  - "Shreyas D. on Lenny's Podcast, ep. 3: 'why most execution problems are strategy problems', lennysnewsletter.com/p/episode-3-shreyas-doshi"
+  - "Shreyas D. on Lenny's Podcast, ep. 3: 'why most execution problems are strategy problems' (lennysnewsletter.com/p/episode-3)"
   - "Shreyas D. on X: 'Most Execution problems are really 1) Strategy problems, or 2) Interpersonal problems, or 3) Culture problems', x.com/shreyas/status/1316573473934696449"
   - "Richard R., *Good Strategy/Bad Strategy: The Difference and Why It Matters* (Crown Business, 2011)"
 ---
 
 # A Roadmap Is Not a Strategy
 
-A roadmap, an OKR list, and a feature backlog are all answers to the question _what will we do, and when?_ A strategy answers a different question: _why will doing that win, given the obstacle in front of us?_ The first set is a plan; only the second is a strategy. This reference is the working method for telling them apart — what a real strategy contains that a plan never does, why the substitution happens, and Shreyas D.'s load-bearing reframe that **most of what we file under "execution failure" is actually strategy failure leaking downward.** It pairs with `rumelt-kernel.md` (the underlying theory of good vs bad strategy) and applies it to the artifacts product teams actually ship.
+A roadmap, an OKR list, and a feature backlog are all answers to the question _what will we do, and when?_ A strategy answers a different question: _why will doing that win, given the obstacle in front of us?_ The first set is a plan; only the second is a strategy. This reference is the working method for telling them apart — what a real strategy contains that a plan never does, why the substitution happens, and Shreyas D.'s load-bearing reframe that **most of what we file under "execution failure" is actually strategy failure leaking downward.** It pairs with `strategy-kernel.md` (the underlying theory of good vs bad strategy) and applies it to the artifacts product teams actually ship.
 
 > Shreyas D.'s mnemonic for keeping the layers distinct, restated verbatim: **"Mission: Why · Vision: What · Strategy: How · Segmentation: Who · Positioning: Where · Roadmap: When."** A roadmap lives at _when_. A strategy lives at _how we win_. Confusing the two is the single most common product-strategy defect.
 
 ## The core idea: a plan tells you what; a strategy tells you why it works
 
-Richard R.'s distinction (see `rumelt-kernel.md`) is that a strategy is _a way through a difficulty_ — it must name an obstacle and a coherent approach to overcoming it. A plan assumes the path is already clear and just schedules the steps. The tell is brutal and fast: **a strategy can be wrong; a plan cannot.** A roadmap that says "ship onboarding redesign in Q2, billing v2 in Q3" cannot be falsified — it is a list of intentions, and intentions are always achievable on paper. A strategy that says "we win by becoming the obviously-safe default for regulated buyers, so we concentrate on security surface and defer IC features" _can_ be proven wrong by reality. That falsifiability is the signature that you are holding a strategy and not a calendar.
+Richard R.'s distinction (see `strategy-kernel.md`) is that a strategy is _a way through a difficulty_ — it must name an obstacle and a coherent approach to overcoming it. A plan assumes the path is already clear and just schedules the steps. The tell is brutal and fast: **a strategy can be wrong; a plan cannot.** A roadmap that says "ship onboarding redesign in Q2, billing v2 in Q3" cannot be falsified — it is a list of intentions, and intentions are always achievable on paper. A strategy that says "we win by becoming the obviously-safe default for regulated buyers, so we concentrate on security surface and defer IC features" _can_ be proven wrong by reality. That falsifiability is the signature that you are holding a strategy and not a calendar.
 
 Three artifacts routinely impersonate a strategy. None of them is one:
 
@@ -77,7 +77,7 @@ Given any artifact labeled "strategy," run these passes in order. The first fail
 
 ## Tells and anti-patterns
 
-These are pattern-matchable smells that a "strategy" is actually a plan. Drawn from Shreyas D.'s _Good Product Strategy, Bad Product Strategy_ (which explicitly synthesizes Richard R.) and the Richard R. hallmarks in `rumelt-kernel.md`:
+These are pattern-matchable smells that a "strategy" is actually a plan. Drawn from Shreyas D.'s _Good Product Strategy, Bad Product Strategy_ (which explicitly synthesizes Richard R.) and the Richard R. hallmarks in `strategy-kernel.md`:
 
 - **The roadmap-as-strategy swap** — the "strategy" is a Gantt chart or a quarter-by-quarter feature sequence. Order without a why.
 - **The OKR-list swap** — a stack of target metrics with no approach. Goals mistaken for strategy.

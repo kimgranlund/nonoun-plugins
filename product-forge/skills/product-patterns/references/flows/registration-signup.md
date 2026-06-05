@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Raluca Budiu. \"Login Walls Stop Users in Their Tracks.\" Nielsen Norman Group, 2014-03-02. https://www.nngroup.com/articles/login-walls/"
-  - "Raluca Budiu. \"A Checklist for Registration and Login Forms on Mobile.\" Nielsen Norman Group, 2017-06-04. https://www.nngroup.com/articles/checklist-registration-login/"
-  - "Aurora Harley, Kim Flaherty. \"'Get Started' Stops Users.\" Nielsen Norman Group, 2017-08-20. https://www.nngroup.com/articles/get-started/"
-  - "Bruce Tognazzini. \"How to Achieve Painless Registration.\" AskTog / Nielsen Norman Group. https://www.nngroup.com/articles/how-achieve-painless-registration/"
+  - "Raluca Budiu. \"Login Walls Stop Users in Their Tracks.\" NN/g, 2014-03-02. https://www.nngroup.com/articles/login-walls/"
+  - "Raluca Budiu. \"A Checklist for Registration and Login Forms on Mobile.\" NN/g, 2017-06-04. https://www.nngroup.com/articles/checklist-registration-login/"
+  - "Aurora Harley, Kim Flaherty. \"'Get Started' Stops Users.\" NN/g, 2017-08-20. https://www.nngroup.com/articles/get-started/"
+  - "Bruce Tognazzini. \"How to Achieve Painless Registration.\" AskTog / NN/g. https://www.nngroup.com/articles/how-achieve-painless-registration/"
   - "Jon Yablonski. \"Hick's Law\" and \"Postel's Law.\" Laws of UX. https://lawsofux.com/"
 ---
 

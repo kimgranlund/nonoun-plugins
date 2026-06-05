@@ -2,8 +2,8 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Page Laubheimer — 'Onboarding Tutorials vs. Contextual Help.' Nielsen Norman Group, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
-  - "Jakob N. — '10 Usability Heuristics for User Interface Design,' Heuristic #6 'Recognition Rather Than Recall' and #10 'Help and Documentation.' Nielsen Norman Group. https://www.nngroup.com/articles/ten-usability-heuristics/ , https://www.nngroup.com/articles/help-and-documentation/"
+  - "Page Laubheimer — 'Onboarding Tutorials vs. Contextual Help.' NN/g, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
+  - "Jakob N. — '10 Usability Heuristics for User Interface Design,' Heuristic #6 'Recognition Rather Than Recall' and #10 'Help and Documentation.' NN/g. https://www.nngroup.com/articles/ten-usability-heuristics/ , https://www.nngroup.com/articles/help-and-documentation/"
   - "John M. Carroll — *The Nurnberg Funnel: Designing Minimalist Instruction for Practical Computer Skill* (MIT Press, 1990). ISBN 9780262031455. (The 'paradox of the active user.')"
   - "Sarah Richards — *Content Design* (Content Design London, 2017; 2nd ed. 2023). ISBN 9781527209183."
 ---
@@ -29,7 +29,7 @@ A recurring decision: when a user needs to learn something, does it belong **in 
 
 - **Prefer fixing the interface over documenting around it.** The cheapest education is the kind you didn't have to write because the design explains itself. If a doc exists only to explain a confusing label or flow, the real fix is the label or flow (this is the content-design instinct — see `content-design-principles.md` — and the Tesler's-Law point in `../flows/guidance-coachmarks.md`). A help article is not a substitute for a comprehensible UI.
 - **In-product for the immediate and task-bound; docs for the deep and reference.** Put in the interface what the user needs _to take the next step right now_ — a one-line hint, an example, a label that needs no explanation. Put in documentation what is _long, occasional, or reference-shaped_: comprehensive how-tos, troubleshooting, edge cases, admin/setup guides a user consults deliberately. Don't dump reference-length content into a tooltip; don't hide a one-line clarification in a doc.
-- **Connect the two with a findable backstop.** Nielsen's Heuristic #10 (_Help and Documentation_) holds even for the best self-explanatory product: provide help that is "easy to search, focused on the user's task, list[s] concrete steps," and is reachable on demand (a persistent "?" or help surface). The interface handles the moment; the docs handle depth; a clear path links them.
+- **Connect the two with a findable backstop.** Jakob N.'s Heuristic #10 (_Help and Documentation_) holds even for the best self-explanatory product: provide help that is "easy to search, focused on the user's task, list[s] concrete steps," and is reachable on demand (a persistent "?" or help surface). The interface handles the moment; the docs handle depth; a clear path links them.
 - **Make in-product help recallable, not one-shot.** Anything taught in the UI should be dismissible _and_ retrievable — a user who closed a hint too fast must be able to get it back. (Mechanics in `../flows/guidance-coachmarks.md`.)
 
 ## Teaching without blocking
@@ -37,7 +37,7 @@ A recurring decision: when a user needs to learn something, does it belong **in 
 The active-user paradox means the _manner_ of teaching matters as much as the content: education must teach **without standing between the user and the task.**
 
 - **Never gate the product behind a lesson.** A mandatory, un-skippable tutorial wall is the canonical violation — the active user mashes "Skip," so the effort taught nothing and annoyed someone. Always allow skip/defer.
-- **Let the interface teach itself.** Recognition over recall (Nielsen's Heuristic #6): make options, actions, and state _visible_ so the user doesn't have to be taught and then remember. A well-designed affordance is silent education. The strongest learnability comes from a UI legible enough to need little explanation.
+- **Let the interface teach itself.** Recognition over recall (Jakob N.'s Heuristic #6): make options, actions, and state _visible_ so the user doesn't have to be taught and then remember. A well-designed affordance is silent education. The strongest learnability comes from a UI legible enough to need little explanation.
 - **Seed the product so it demonstrates itself.** Pre-populating with sample data, a template, or a worked example teaches the end-state by showing it — the user learns by seeing a populated product, not by reading about an empty one. (As an onboarding device this is covered in `../flows/onboarding.md`; as _education_, the point is that a concrete example often teaches better than prose.)
 - **Layer it (progressive disclosure).** Offer a short hint that expands to detail on request, rather than front-loading a paragraph. The user pulls more only if they want it.
 - **Teach by doing for complex tasks.** When a genuinely multi-step task must be taught, an interactive walkthrough (user performs each step in the real UI, action-gated) beats a passive lesson — doing-it sticks where being-told-it doesn't. (Form details: `../flows/guidance-coachmarks.md`.)

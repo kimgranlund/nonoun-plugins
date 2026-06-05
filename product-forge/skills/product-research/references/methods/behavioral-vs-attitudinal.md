@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Christian Rohrer (Nielsen Norman Group). \"When to Use Which User-Experience Research Methods.\" https://www.nngroup.com/articles/which-ux-research-methods/"
-  - "Nielsen Norman Group. \"Attitudinal vs. Behavioral Research in UX.\" https://www.nngroup.com/articles/attitudinal-behavioral/"
-  - "Nielsen Norman Group. \"UX Research Methods: Glossary.\" https://www.nngroup.com/articles/research-methods-glossary/"
-  - "Jakob N. (Nielsen Norman Group). \"First Rule of Usability? Don't Listen to Users.\" https://www.nngroup.com/articles/first-rule-of-usability-dont-listen-to-users/"
+  - "Christian Rohrer (NN/g). \"When to Use Which User-Experience Research Methods.\" https://www.nngroup.com/articles/which-ux-research-methods/"
+  - "NN/g. \"Attitudinal vs. Behavioral Research in UX.\" https://www.nngroup.com/articles/attitudinal-behavioral/"
+  - "NN/g. \"UX Research Methods: Glossary.\" https://www.nngroup.com/articles/research-methods-glossary/"
+  - "Jakob N. (NN/g). \"First Rule of Usability? Don't Listen to Users.\" https://www.nngroup.com/articles/first-rule-of-usability-dont-listen-to-users/"
 method: behavioral-vs-attitudinal
 phase: frame
 domains: [11]
@@ -19,7 +19,7 @@ rubric: rubric-discovery
 
 # Behavioral vs. Attitudinal: Say vs. Do, Qual vs. Quant
 
-The most important single distinction in choosing a research method is **what people _say_ versus what people _do_.** They diverge constantly, and a method that measures one cannot answer a question about the other. This reference lays out the Nielsen Norman Group framework — Christian Rohrer's research-methods map — that organizes the entire method landscape along that axis (plus a second axis, qualitative vs. quantitative), so that a discovery review can tell whether a team used a method that is actually _valid_ for the question it asked.
+The most important single distinction in choosing a research method is **what people _say_ versus what people _do_.** They diverge constantly, and a method that measures one cannot answer a question about the other. This reference lays out the NN/g framework — Christian Rohrer's research-methods map — that organizes the entire method landscape along that axis (plus a second axis, qualitative vs. quantitative), so that a discovery review can tell whether a team used a method that is actually _valid_ for the question it asked.
 
 ## The say–do gap
 

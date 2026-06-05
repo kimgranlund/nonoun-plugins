@@ -5,8 +5,8 @@ primary_sources:
   - "Think with Google (EMEA). \"Time-to-make-a-plan moments in travel\" / digital-traveler touchpoint research — surveyed travelers use ~7 touchpoints for inspiration and up to ~10 for research. https://www.thinkwithgoogle.com/intl/en-emea/consumer-insights/consumer-trends/travel-research-process-make-a-plan-moments/"
   - "Think with Google. \"How to adapt to the new digital traveler\" (digital traveler data; cross-device journeys take longer and involve more touchpoints). https://www.thinkwithgoogle.com/intl/en-cee/consumer-insights/consumer-trends/digital-traveler-data/"
   - "Baymard Institute. *E-Commerce Cart & Checkout Usability* — checkout-form and cart-abandonment usability research applicable to booking flows. https://baymard.com/research/checkout-usability"
-  - "Nielsen Norman Group. \"Few Guesses, More Success: 4 Principles to Reduce Cognitive Load in Forms.\" https://www.nngroup.com/articles/4-principles-reduce-cognitive-load/"
-  - "Nielsen Norman Group. \"Progressive Disclosure.\" https://www.nngroup.com/articles/progressive-disclosure/"
+  - "NN/g. \"Few Guesses, More Success: 4 Principles to Reduce Cognitive Load in Forms.\" https://www.nngroup.com/articles/4-principles-reduce-cognitive-load/"
+  - "NN/g. \"Progressive Disclosure.\" https://www.nngroup.com/articles/progressive-disclosure/"
 ---
 
 # Travel as a Product Genre

@@ -292,7 +292,7 @@ These are not alternatives at the same level; they sit at different layers.
 
 **Naming conventions** — all kebab-case; no `claude` / `anthropic` prefixes (reserved):
 
-- **Commands = imperative verbs** (`/deploy`, `/brand-score`); **skills = domain nouns** (`code-review`, `brand-methodology`); **agents = roles** (`code-reviewer`, `critic-boris`). Keep a command's slug distinct from its skill's — the working pattern is a verb-command routing to a differently-named knowledge skill (this plugin's `/plugin-score` → `plugin-evaluate`).
+- **Commands = imperative verbs** (`/deploy`, `/brand-score`); **skills = domain nouns** (`code-review`, `brand-methodology`); **agents = roles** (`code-reviewer`, `critic-boris-c`). Keep a command's slug distinct from its skill's — the working pattern is a verb-command routing to a differently-named knowledge skill (this plugin's `/plugin-score` → `plugin-evaluate`).
 - Descriptive over clever; one capability per name; moderate length.
 
 ### Validation & inspection

@@ -5,7 +5,7 @@ primary_sources:
   - "Harry Brignull. *Deceptive Patterns: Exposing the Tricks Tech Companies Use to Control You*. Testimonium Ltd, 2023. ISBN 9781739454302."
   - "Harry Brignull et al. \"Types of Deceptive Pattern.\" Deceptive Design (deceptive.design), the canonical taxonomy. https://www.deceptive.design/types"
   - "Federal Trade Commission. *Bringing Dark Patterns to Light* (Staff Report). September 2022. https://www.ftc.gov/reports/bringing-dark-patterns-light — full PDF: https://www.ftc.gov/system/files/ftc_gov/pdf/P214800%20Dark%20Patterns%20Report%209.14.2022%20-%20FINAL.pdf"
-  - "Nielsen Norman Group (Kate Moran & Tim Neusesser). \"Deceptive Patterns in UX: How to Recognize and Avoid Them.\" https://www.nngroup.com/articles/deceptive-patterns/"
+  - "NN/g (Kate Moran & Tim Neusesser). \"Deceptive Patterns in UX: How to Recognize and Avoid Them.\" https://www.nngroup.com/articles/deceptive-patterns/"
   - "Colin M. Gray, Yubo Kou, Bryan Battles, Joseph Hoggatt, Austin L. Toombs. \"The Dark (Patterns) Side of UX Design.\" *Proceedings of the 2018 CHI Conference* (CHI '18). DOI 10.1145/3173574.3174108 — origin of the five-category taxonomy (nagging, obstruction, sneaking, interface interference, forced action)."
 ---
 

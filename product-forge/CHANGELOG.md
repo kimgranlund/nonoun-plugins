@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.5] — 2026-06-05
+
+- **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; council roster, references, and the sourcing gate updated; council behavior unchanged.
+
 ## [0.3.4] — 2026-06-04
 
 - **The aspiration is now a precondition of making — a soft gate.** Before a maker converges on substantive work, the **Vision / North-Star** the work serves (product-forge's domain attractor — the `vision/` axis: manifesto · reframe · case-for + the north-star metric) must be at least lightly named; product work reasoned toward _nothing_ drifts to the category average. The four maker commands gain an explicit **"name the pull first"** step before the `Invoke` hand-off (`/product-strategy` → the Vision / North-Star; `/product-discover` → the hypothesis/outcome the research illuminates; `/product-ux` → the outcome the screen serves; `/product-method` → the outcome the method clarifies). The `product-methodology` maker skill adds a **"name the pull before you converge"** preamble above its cold-start table, pointing at the `vision/` axis; the `product-forge` router gains an **"Aspiration named" `[soft-gate]`** dimension on the Orientation rubric. It is a _soft_ blocker throughout — cleared by **naming** a provisional, revisable direction, never by stopping; "lightly declared and developed over time" is the healthy state. Mirrors the generalized rule in plugins-factory `operational-roles.md` (the Maker's precondition, R2/R4) and brand-forge 0.4.5. No new commands, skills, or critics — the soft gate adds no surface.
@@ -12,7 +16,7 @@ All notable changes to **product-forge** are documented here. Format follows [Ke
 
 ## [0.3.2] — 2026-06-04
 
-- **Critic agent slugs shortened to first names** — `critic-cat-wu` → `critic-cat`, `critic-meaghan-choi` → `critic-meaghan` — so all 23 critics use a single-name slug. Internal rename only: personas, real-name attributions, and council behavior unchanged; the `product-council` roster updated.
+- **Critic agent slugs shortened** — the two AI-product critic slugs were collapsed to the short `critic-cat-w` / `critic-meaghan-c` form, so all 23 critics use a single-name slug. Internal rename only: personas, attributions, and council behavior unchanged; the `product-council` roster updated.
 
 ## [0.3.1] — 2026-06-04
 
@@ -54,7 +58,7 @@ The **Product Experience Strategy** expansion — adopts the 12-domain taxonomy 
 
 ### Reviewed
 
-- **Verified all 6 new (living) critics' verbatim quotes against their public sources** before ship; the famous "two coffee shops" line was confirmed **NOT** Marc S.'s (it is 31 Volts, 2008) and excluded, and Covert's IA definition uses the correct "make it _more_ understandable" wording. `bin/check-sourcing.py` enforces the provenance floor across the new references and critics.
+- **Verified all 6 new (living) critics' verbatim quotes against their public sources** before ship; the famous "two coffee shops" line was confirmed **NOT** Marc S.'s (it is 31 Volts, 2008) and excluded, and Abby C.'s IA definition uses the correct "make it _more_ understandable" wording. `bin/check-sourcing.py` enforces the provenance floor across the new references and critics.
 
 ### Planned (next)
 
@@ -75,7 +79,7 @@ Initial release — the product counterpart to `brand-forge`: a brand-forge-styl
 
 ### Reviewed
 
-- Red-teamed with the `plugins-factory` 9-critic council (CONDITIONAL → folded): reconciled the build-state docs, removed the phantom-MCP claim (deferred to v0.2), **verified the living-practitioner critics' verbatim quotes against their public sources** (corrected one Cat W. misquote + Choi's title), added the `check-sourcing.py` provenance gate, and made the README sibling links copy-alone-safe. Record under `reviews/`.
+- Red-teamed with the `plugins-factory` 9-critic council (CONDITIONAL → folded): reconciled the build-state docs, removed the phantom-MCP claim (deferred to v0.2), **verified the living-practitioner critics' verbatim quotes against their public sources** (corrected one Cat W. misquote + Meaghan C.'s title), added the `check-sourcing.py` provenance gate, and made the README sibling links copy-alone-safe. Record under `reviews/`.
 
 ### Planned (v0.2)
 

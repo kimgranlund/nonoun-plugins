@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Ann C.. \"Privacy by Design: The 7 Foundational Principles.\" Information & Privacy Commissioner of Ontario, Canada. Originally published August 2009, revised January 2011. https://www.ipc.on.ca/wp-content/uploads/resources/7foundationalprinciples.pdf"
+  - "Ann C. \"Privacy by Design: The 7 Foundational Principles.\" Information & Privacy Commissioner of Ontario, Canada. Originally published August 2009, revised January 2011. https://www.ipc.on.ca/wp-content/uploads/resources/7foundationalprinciples.pdf"
   - "Helen Nissenbaum. *Privacy in Context: Technology, Policy, and the Integrity of Social Life*. Stanford University Press, 2010 (contextual-integrity theory of privacy as appropriate information flow)."
   - "Regulation (EU) 2016/679 (GDPR), Article 25 — 'Data protection by design and by default.' https://gdpr-info.eu/art-25-gdpr/"
 ---

@@ -2,11 +2,11 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — Filters vs. Facets: Definitions (nngroup.com/articles/filters-vs-facets)"
-  - "Nielsen Norman Group — Ecommerce Search UX, including Faceted Search (report) (nngroup.com/reports/ecommerce-ux-search-including-faceted-search)"
-  - "Nielsen Norman Group — Designing Search Suggestions / autocomplete (nngroup.com/videos/designing-search-suggestions)"
-  - "Nielsen Norman Group — Mobile Faceted Search with a Tray (nngroup.com/articles/mobile-faceted-search)"
-  - "Nielsen Norman Group — The Difference Between Information Architecture (IA) and Navigation (nngroup.com/articles/ia-vs-navigation)"
+  - "NN/g — Filters vs. Facets: Definitions (nngroup.com/articles/filters-vs-facets)"
+  - "NN/g — Ecommerce Search UX, including Faceted Search (report) (nngroup.com/reports/ecommerce-ux-search-including-faceted-search)"
+  - "NN/g — Designing Search Suggestions / autocomplete (nngroup.com/videos/designing-search-suggestions)"
+  - "NN/g — Mobile Faceted Search with a Tray (nngroup.com/articles/mobile-faceted-search)"
+  - "NN/g — The Difference Between Information Architecture (IA) and Navigation (nngroup.com/articles/ia-vs-navigation)"
 ---
 
 # Search, Filtering & Faceting

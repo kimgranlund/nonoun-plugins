@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Rob Fitzpatrick. *The Mom Test: How to Talk to Customers & Learn If Your Business Is a Good Idea When Everyone Is Lying to You*. 2013. Book site: https://www.momtestbook.com/"
-  - "Teresa T.. *Continuous Discovery Habits: Discover Products that Create Customer Value and Business Value*. Product Talk LLC, 2021."
+  - "Teresa T. *Continuous Discovery Habits: Discover Products that Create Customer Value and Business Value*. Product Talk LLC, 2021."
   - "Product Talk — \"Story-Based Customer Interviews Uncover Much-Needed Context.\" https://www.producttalk.org/2024/04/story-based-customer-interviews/"
   - "Steve Portigal. *Interviewing Users: How to Uncover Compelling Insights*. 2nd ed., Rosenfeld Media, 2023. https://rosenfeldmedia.com/books/interviewing-users-second-edition/"
 method: interviewing
@@ -26,7 +26,7 @@ Customer interviewing is the most over-claimed and under-practiced method in pro
 
 The premise of _The Mom Test_ is in its title. If you ask your mother whether your business idea is good, she will say yes — she loves you and does not want to hurt your feelings. Customers do the same thing without realizing it: faced with a founder visibly invested in an idea, they default to politeness, optimism, and helpfulness, and they answer the question they think you want answered. Fitzpatrick's framing is that the problem is not the customer's honesty but **the questions you asked** — bad questions all but force a useless answer, and the burden is on the interviewer to ask questions that "even your mom can't lie to you about."
 
-The deeper mechanism (Torres makes this explicit, citing Kahneman) is cognitive: when people are asked to generalize ("what do you usually do," "would you use this"), they answer fast from **System 1** — automatic, low-effort recall that is cheap but distorted by aspirational bias (people describe their idealized selves), recency, and the availability heuristic. Ask what someone likes to watch and you hear "documentaries" while last night's reality-TV binge goes unmentioned. The interview's whole job is to route around System 1 by anchoring every question in a **specific, datable past event** the person cannot smoothly idealize.
+The deeper mechanism (Teresa T. makes this explicit, citing Kahneman) is cognitive: when people are asked to generalize ("what do you usually do," "would you use this"), they answer fast from **System 1** — automatic, low-effort recall that is cheap but distorted by aspirational bias (people describe their idealized selves), recency, and the availability heuristic. Ask what someone likes to watch and you hear "documentaries" while last night's reality-TV binge goes unmentioned. The interview's whole job is to route around System 1 by anchoring every question in a **specific, datable past event** the person cannot smoothly idealize.
 
 ## The Mom Test: three rules
 
@@ -38,9 +38,9 @@ Fitzpatrick reduces good interviewing to three rules. They are about what the **
 
 ## Story-based, not opinion-based
 
-The single most consequential move, on which Fitzpatrick and Torres agree completely, is to **collect specific stories about past behavior, not opinions, generalizations, or predictions.** An opinion is what a person believes about themselves in the abstract; a story is what they actually did on a specific day. Only the second is evidence.
+The single most consequential move, on which Fitzpatrick and Teresa T. agree completely, is to **collect specific stories about past behavior, not opinions, generalizations, or predictions.** An opinion is what a person believes about themselves in the abstract; a story is what they actually did on a specific day. Only the second is evidence.
 
-Torres's worked contrast: ask the generic "what do you like to do?" and you get a thin, idealized summary — _"I like to download shows on my iPhone."_ Open instead with **"Tell me about the last time you watched Netflix"** and you get the usable, contextual thing — _"I downloaded episodes ahead of time so I could watch Breaking Bad on my flight."_ The second answer carries the trigger, the constraint, and the workaround; the first carries nothing you can design against.
+Teresa T.'s worked contrast: ask the generic "what do you like to do?" and you get a thin, idealized summary — _"I like to download shows on my iPhone."_ Open instead with **"Tell me about the last time you watched Netflix"** and you get the usable, contextual thing — _"I downloaded episodes ahead of time so I could watch Breaking Bad on my flight."_ The second answer carries the trigger, the constraint, and the workaround; the first carries nothing you can design against.
 
 ```text
                        OPINION-BASED                       STORY-BASED
@@ -78,7 +78,7 @@ Words are cheap; the antidote to compliments and fluff is to look for **commitme
 
 ## Continuous, not a phase
 
-Interviewing is not a study you run before building. In Torres's model it is a **weekly habit held by the team that builds the product** — "at a minimum, weekly touchpoints with customers, by the team building the product." Cadence matters more than batch size: one real conversation every week, indefinitely, beats a thirty-interview blitz once a year, because the blitz validates a bet once and is then defended, while the weekly habit keeps correcting the bet against reality. The practical enabler is to **automate recruiting** so a conversation lands on the calendar every week without a fresh act of will, and to keep each interview small enough to repeat.
+Interviewing is not a study you run before building. In Teresa T.'s model it is a **weekly habit held by the team that builds the product** — "at a minimum, weekly touchpoints with customers, by the team building the product." Cadence matters more than batch size: one real conversation every week, indefinitely, beats a thirty-interview blitz once a year, because the blitz validates a bet once and is then defended, while the weekly habit keeps correcting the bet against reality. The practical enabler is to **automate recruiting** so a conversation lands on the calendar every week without a fresh act of will, and to keep each interview small enough to repeat.
 
 ## Rigorous vs. weak (scoring rubric)
 
@@ -96,4 +96,4 @@ A discovery rubric can score an interview — or a set of them — on these axes
 
 ## Note on scope and lineage (labeled)
 
-This file covers the _discovery / generative_ interview — open exploration of a person's world to find problems worth solving. It is distinct from, and should not be conflated with, two adjacent practices: the **JTBD switch interview** (Moesta / Re-Wired Group — a structured reconstruction of one purchase decision; see `jtbd-discovery.md`), and the **moderated usability test** (observing a person attempt tasks with a prototype — a _behavioral_ method; see `behavioral-vs-attitudinal.md`). _The Mom Test_ is a practitioner book by a startup founder, not peer-reviewed research; its rules are widely adopted craft heuristics, and the System-1 mechanism Torres invokes is grounded in Kahneman's _Thinking, Fast and Slow_. Steve Portigal's _Interviewing Users_ is the fuller craft reference for moderation technique (rapport, silence, the "uncomfortable pause") and is cited here as the deeper treatment of the interviewer's behavior in the room.
+This file covers the _discovery / generative_ interview — open exploration of a person's world to find problems worth solving. It is distinct from, and should not be conflated with, two adjacent practices: the **JTBD switch interview** (Moesta / Re-Wired Group — a structured reconstruction of one purchase decision; see `jtbd-discovery.md`), and the **moderated usability test** (observing a person attempt tasks with a prototype — a _behavioral_ method; see `behavioral-vs-attitudinal.md`). _The Mom Test_ is a practitioner book by a startup founder, not peer-reviewed research; its rules are widely adopted craft heuristics, and the System-1 mechanism Teresa T. invokes is grounded in Kahneman's _Thinking, Fast and Slow_. Steve Portigal's _Interviewing Users_ is the fuller craft reference for moderation technique (rapport, silence, the "uncomfortable pause") and is cited here as the deeper treatment of the interviewer's behavior in the room.

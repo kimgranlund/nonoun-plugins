@@ -28,7 +28,7 @@ companion_documents:
 
 The central failure mode is **architecture that demos well but doesn't compound into utility**: it fragments context across agents that can't see each other, reinvents every integration as bespoke glue, hides its state so an interruption loses everything, and tolerates recurring errors instead of engineering them out. Complexity gets mistaken for capability. A workflow can be architecturally impressive and still cost the operator more than it saves.
 
-This rubric is owned by the **Architecture & Utility sub-council** — Walden Y., Harrison C., Mitchell H., and the MCP/interoperability seat. It deliberately carries an unresolved tension: **Yan's single-threaded continuous context vs. Chase's durable multi-agent orchestration.** Dimensions A2 and A3 surface that tension rather than pretending it has one answer; the right resolution is workflow-specific, and the rubric's job is to force the choice into the open.
+This rubric is owned by the **Architecture & Utility sub-council** — Walden Y., Harrison C., Mitchell H., and the MCP/interoperability seat. It deliberately carries an unresolved tension: **Walden Y.'s single-threaded continuous context vs. Harrison C.'s durable multi-agent orchestration.** Dimensions A2 and A3 surface that tension rather than pretending it has one answer; the right resolution is workflow-specific, and the rubric's job is to force the choice into the open.
 
 **Companion docs:**
 
@@ -74,7 +74,7 @@ Per the MCP position: standard interfaces turn an M×N integration explosion int
 
 ### 4. Orchestration needs coordination, or it shouldn't parallelize
 
-Per Harrison C., answering Yan: multi-agent work is defensible _if_ it is backed by durable shared state and explicit human-in-the-loop checkpoints that prevent and catch conflicting decisions. Fire-and-forget fan-out scales agent count but not reliability. If you can't name what reconciles parallel decisions, don't run them in parallel.
+Per Harrison C., answering Walden Y.: multi-agent work is defensible _if_ it is backed by durable shared state and explicit human-in-the-loop checkpoints that prevent and catch conflicting decisions. Fire-and-forget fan-out scales agent count but not reliability. If you can't name what reconciles parallel decisions, don't run them in parallel.
 
 ### 5. State should be durable, inspectable, and resumable
 
@@ -122,7 +122,7 @@ If the workflow coordinates multiple agents or steps, is coordination backed by 
 
 | Score | Evidence |
 | --- | --- |
-| **5 — Excellent** | Topology is explicit. Multi-agent is used only where justified, and each branch's decisions are reconciled through durable shared state; human-in-the-loop checkpoints sit at meaningful points; the conflicting-decision failure mode is structurally prevented. **Or:** the workflow is deliberately single-threaded with continuous context (Yan's baseline) and says so explicitly. |
+| **5 — Excellent** | Topology is explicit. Multi-agent is used only where justified, and each branch's decisions are reconciled through durable shared state; human-in-the-loop checkpoints sit at meaningful points; the conflicting-decision failure mode is structurally prevented. **Or:** the workflow is deliberately single-threaded with continuous context (Walden Y.'s baseline) and says so explicitly. |
 | **4 — Good** | Coordination is mostly sound; shared state exists; checkpoints present with a few gaps. |
 | **3 — Adequate** | Coordination by convention; some shared state; checkpoints ad hoc. Holds at small scale. |
 | **2 — Poor** | Fan-out with weak coordination; branches can make conflicting decisions; few or no checkpoints. |
@@ -234,13 +234,13 @@ Is agent state durable, inspectable, and resumable — and does that let one hum
 
 ## §Hard Tests
 
-1. **The continuity-trace test.** Follow one task end to end. Where does it stop sharing a brain? The first break is the architecture's coherence ceiling. _(Yan)_
+1. **The continuity-trace test.** Follow one task end to end. Where does it stop sharing a brain? The first break is the architecture's coherence ceiling. _(Walden Y.)_
 
 2. **The M×N test.** Add a hypothetical new tool. Is the integration cost M+N (speaks a standard) or M×N (hand-wired to everything)? _(MCP)_
 
-3. **The conflict test.** Point two parallel branches at the same shared surface. What reconciles their conflicting implicit decisions? If nothing, the merge is incoherent by construction. _(Yan / Chase)_
+3. **The conflict test.** Point two parallel branches at the same shared surface. What reconciles their conflicting implicit decisions? If nothing, the merge is incoherent by construction. _(Walden Y. / Harrison C.)_
 
-4. **The interruption test.** Kill a long run halfway. Does it resume from a checkpoint with state intact, or restart from zero? _(Chase)_
+4. **The interruption test.** Kill a long run halfway. Does it resume from a checkpoint with state intact, or restart from zero? _(Harrison C.)_
 
 5. **The self-check test.** What can the agent run to verify its own work with no human in the loop? If the answer is "nothing," the harness is missing its core. _(Mitchell H.)_
 
@@ -248,7 +248,7 @@ Is agent state durable, inspectable, and resumable — and does that let one hum
 
 7. **The deletion test.** What could you remove from this architecture and lose no utility the operator would miss? Whatever you name should probably go. _(utility / Principle 1)_
 
-8. **The oversight-at-scale test.** Could one human keep N runs in flight and stay on-the-loop, or does supervision cost rise linearly with agent count? _(Chase)_
+8. **The oversight-at-scale test.** Could one human keep N runs in flight and stay on-the-loop, or does supervision cost rise linearly with agent count? _(Harrison C.)_
 
 ---
 
@@ -262,7 +262,7 @@ Is agent state durable, inspectable, and resumable — and does that let one hum
 
 **Anthropic — Model Context Protocol; A2A / Linux Foundation.** The interoperability standard turning M×N integration into M+N; A2A extends it to cross-vendor agent-to-agent communication. Grounds Dimension A1 and Principle 3. (anthropic.com/news/model-context-protocol, linuxfoundation.org A2A)
 
-**Mitchell H. — Harness Engineering ("My AI Adoption Journey," 2026).** Agent = Model + Harness; "anytime you find an agent makes a mistake, you engineer a solution such that the agent never makes that mistake again"; "agents are much more efficient when they produce the right result the first time." Grounds Dimensions A4–A5 and Principles 6–7. (mitchellh.com/writing/my-ai-adoption-journey, martinfowler.com harness-engineering-memo)
+**Mitchell H. — Harness Engineering ("My AI Adoption Journey," 2026).** Agent = Model + Harness; "anytime you find an agent makes a mistake, you engineer a solution such that the agent never makes that mistake again"; "agents are much more efficient when they produce the right result the first time." Grounds Dimensions A4–A5 and Principles 6–7. (martinfowler.com harness-engineering-memo)
 
 **Anthropic — Effective Context Engineering for AI Agents.** Compaction, structured note-taking, and sub-agent context isolation — the disciplines behind context integrity (A3) and the cost-of-fragmentation argument. (anthropic.com/engineering/effective-context-engineering-for-ai-agents)
 

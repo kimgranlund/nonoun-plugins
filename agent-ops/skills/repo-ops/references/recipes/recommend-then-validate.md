@@ -120,7 +120,7 @@ Job isolation ensures the validator can't share state with the recommender — Y
 
 ## Iterating within a budget (autoresearch DNA)
 
-> Inspired by Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) — autonomous propose-evaluate-iterate within a fixed budget. Repo-fixer scopes the spirit, not the overnight unattended shape: bounded rounds, deterministic eval, every iteration logged to the audit history ledger.
+> Inspired by the `autoresearch` project — autonomous propose-evaluate-iterate within a fixed budget. Repo-fixer scopes the spirit, not the overnight unattended shape: bounded rounds, deterministic eval, every iteration logged to the audit history ledger.
 
 The base pattern above is one round. For high-finding-count audits or `strict` strictness, that single round may leave fixes on the table — vetoed because of a _fixable_ issue (e.g., a proposed AGENTS.md compression would still exceed 200 lines, but a tighter version wouldn't).
 

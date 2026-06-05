@@ -3,8 +3,8 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Mailchimp — *Content Style Guide*, 'Voice and Tone.' https://styleguide.mailchimp.com/voice-and-tone/"
-  - "Nielsen Norman Group — 'The Four Dimensions of Tone of Voice' (Kate Moran). https://www.nngroup.com/articles/tone-of-voice-dimensions/"
-  - "Nielsen Norman Group — 'The Impact of Tone of Voice on Users' Brand Perception' (Kate Moran, Kim Salazar). https://www.nngroup.com/articles/tone-voice-users/"
+  - "NN/g — 'The Four Dimensions of Tone of Voice' (Kate Moran). https://www.nngroup.com/articles/tone-of-voice-dimensions/"
+  - "NN/g — 'The Impact of Tone of Voice on Users' Brand Perception' (Kate Moran, Kim Salazar). https://www.nngroup.com/articles/tone-voice-users/"
   - "Sarah Richards, *Content Design* (Content Design London, 2017; 2nd ed. 2023). ISBN 9781527209183."
 ---
 
@@ -23,7 +23,7 @@ The distinction is operational, not academic — it tells you what to fix when c
 - **Read the user's state first.** Tone is chosen from _the reader's_ emotional state, not the writer's mood: someone hitting an error is frustrated or anxious; someone finishing setup is relieved or proud. Match the tone to where they are.
 - **The diagnostic.** If copy feels wrong everywhere, your **voice** is mis-defined or unevenly applied. If copy feels wrong _only in a specific moment_ (a joke in an error, a flat "Success." after a hard task), your **tone** is mismatched to the situation. Fix the right layer.
 
-## Nielsen's four dimensions: making voice/tone concrete
+## Jakob N.'s four dimensions: making voice/tone concrete
 
 "Be friendly but professional" is unactionable. NN/g (Kate Moran) makes voice and tone measurable with **four dimensions, each a 3-point scale with a neutral midpoint** — so any string, and any product's voice, can be placed precisely:
 

@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Tim Neusesser (2022). Infinite Scrolling: When to Use It, When to Avoid It. Nielsen Norman Group. https://www.nngroup.com/articles/infinite-scrolling-tips/"
+  - "Tim Neusesser (2022). Infinite Scrolling: When to Use It, When to Avoid It. NN/g. https://www.nngroup.com/articles/infinite-scrolling-tips/"
   - "Bryan Kim (2023). Do You Have Lightning In a Bottle? How to Benchmark Your Social App. Andreessen Horowitz (a16z). https://a16z.com/do-you-have-lightning-in-a-bottle-how-to-benchmark-your-social-app/"
   - "Sequoia Capital Data Science. Retention. https://articles.sequoiacap.com/retention"
   - "Lenny Rachitsky (2020). What is good retention? (Issue 29; benchmark survey of 20+ growth experts). https://www.lennysnewsletter.com/p/what-is-good-retention-issue-29"

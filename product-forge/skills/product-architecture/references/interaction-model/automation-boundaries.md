@@ -5,7 +5,7 @@ primary_sources:
   - "Raja Parasuraman, Thomas B. Sheridan & Christopher D. Wickens, “A Model for Types and Levels of Human Interaction with Automation,” IEEE Transactions on Systems, Man, and Cybernetics—Part A, 30(3): 286–297 (2000)."
   - "Thomas B. Sheridan & William L. Verplank, *Human and Computer Control of Undersea Teleoperators* (MIT Man-Machine Systems Lab, 1978) — the original ten levels of automation."
   - "Eric Horvitz, “Principles of Mixed-Initiative User Interfaces,” Proceedings of CHI ’99 (ACM, 1999) — expected-value of acting vs. asking; cost of intervention."
-  - "Nielsen Norman Group — “The Role of Automation in UX” / human-in-the-loop guidance (nngroup.com/articles)."
+  - "NN/g — “The Role of Automation in UX” / human-in-the-loop guidance (nngroup.com/articles)."
 ---
 
 # Automation Boundaries

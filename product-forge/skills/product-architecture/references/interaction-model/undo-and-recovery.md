@@ -5,16 +5,16 @@ primary_sources:
   - "Aza Raskin, “Never Use a Warning When you Mean Undo,” A List Apart (2007) — undo over warnings, habituation, confirmation fatigue (alistapart.com/article/neveruseawarning)."
   - "Jef Raskin, *The Humane Interface* (Addison-Wesley, 2000) — universal undo, the user is never to blame, forgiving systems."
   - "Jakob N. — “10 Usability Heuristics,” Heuristic #3 “User Control and Freedom” (emergency exit, undo/redo) and Heuristic #5 “Error Prevention” (nngroup.com/articles/ten-usability-heuristics). First published 1994."
-  - "Nielsen Norman Group — “Reset and Cancel Buttons” / guidance on undo vs. confirmation dialogs (nngroup.com/articles)."
+  - "NN/g — “Reset and Cancel Buttons” / guidance on undo vs. confirmation dialogs (nngroup.com/articles)."
 ---
 
 # Undo & Recovery
 
-This is the working method for reversibility — the property that lets a user act without fear, because anything they do can be taken back. It is the most humane principle in interaction design and the most under-built. The thesis, which runs through both Raskins (Aza and Jef) and Nielsen's heuristics: **make actions reversible by default, and you remove the need for most warnings, most confirmations, and most of the anxiety that makes users hesitant and slow.** This file covers undo/redo, "forgiveness" / safe-by-default, error recovery, and the central argument that confirmation dialogs are a worse safety mechanism than undo.
+This is the working method for reversibility — the property that lets a user act without fear, because anything they do can be taken back. It is the most humane principle in interaction design and the most under-built. The thesis, which runs through both Raskins (Aza and Jef) and Jakob N.'s heuristics: **make actions reversible by default, and you remove the need for most warnings, most confirmations, and most of the anxiety that makes users hesitant and slow.** This file covers undo/redo, "forgiveness" / safe-by-default, error recovery, and the central argument that confirmation dialogs are a worse safety mechanism than undo.
 
 ## Reversibility as the organizing principle
 
-Nielsen's Heuristic #3, **User Control and Freedom**, states it directly: users frequently act by mistake and need a clearly marked **"emergency exit"** — and **support for undo and redo** — to leave an unwanted state "without having to go through an extended process." The deeper claim, from Jef Raskin's _The Humane Interface_, is that a humane system treats the user's mistakes as the system's responsibility: an interface should be **forgiving**, so that exploration is safe and no single action can quietly cause irreversible loss.
+Jakob N.'s Heuristic #3, **User Control and Freedom**, states it directly: users frequently act by mistake and need a clearly marked **"emergency exit"** — and **support for undo and redo** — to leave an unwanted state "without having to go through an extended process." The deeper claim, from Jef Raskin's _The Humane Interface_, is that a humane system treats the user's mistakes as the system's responsibility: an interface should be **forgiving**, so that exploration is safe and no single action can quietly cause irreversible loss.
 
 The operational reframe: instead of asking "how do I stop the user from doing the wrong thing?", ask **"how do I make the wrong thing recoverable?"** The first question leads to walls (confirmations, disabled states, locked features) that slow everyone to protect against the rare error. The second leads to undo, which lets everyone move fast _and_ recover. Reversibility converts a high-stakes interface into a low-stakes one, and low stakes is where users explore, learn, and trust.
 
@@ -45,7 +45,7 @@ Two rules across the ladder. **Match the undo window to when regret arrives:** a
 
 ## Safe-by-default and error prevention
 
-The best recovery is the error that never happens — Nielsen's Heuristic #5, **Error Prevention**, ranks above good error messages. Design the defaults so the dangerous path takes deliberate effort:
+The best recovery is the error that never happens — Jakob N.'s Heuristic #5, **Error Prevention**, ranks above good error messages. Design the defaults so the dangerous path takes deliberate effort:
 
 - **Non-destructive defaults.** The default action, the default button, and the path of least resistance should all be the safe one. A "Reset" that wipes a form should never be adjacent to and styled like "Submit" (NN/g's classic warning) — users hit it by accident, and there's nothing to undo.
 - **Separate the dangerous from the routine.** Don't place destructive verbs where confirm-muscle-memory lands; don't make Delete the primary-styled button; put irreversible actions behind a slightly less casual gesture.
@@ -54,7 +54,7 @@ The best recovery is the error that never happens — Nielsen's Heuristic #5, **
 
 ## Error recovery: when something does go wrong
 
-When an error reaches the user, recovery is the design surface — Nielsen's Heuristic #9, "Help users recognize, diagnose, and recover from errors":
+When an error reaches the user, recovery is the design surface — Jakob N.'s Heuristic #9, "Help users recognize, diagnose, and recover from errors":
 
 - **Say what happened, in plain language, where it happened.** No codes-only, no blaming the user ("invalid input" → "Email needs an @ — try `name@example.com`").
 - **Offer the way out, not just the diagnosis.** Pair every error with the action that fixes it ("Retry", "Restore the previous version", "Edit the field"), so recovery is one step, not a research project.

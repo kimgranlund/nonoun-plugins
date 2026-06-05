@@ -21,7 +21,7 @@ The builder-side mirror is the agentic-coding rubric, which scores whether a _sy
 
 ## The human's three irreducible pillars
 
-Across every loop shape, three responsibilities stay with the operator and cannot be delegated to the agent (Simon Willison):
+Across every loop shape, three responsibilities stay with the operator and cannot be delegated to the agent (Simon W.):
 
 1. **Goal definition** — what "done" means, stated before the loop starts.
 2. **Tool preparation** — giving the agent the tools and access the loop needs.
@@ -59,7 +59,7 @@ The loop's integrity comes from naming the verify target _before_ execution. An 
 
 ## Variant 4 — Orchestrated loops (orchestrator-workers, evaluator-optimizer)
 
-**Shape.** Anthropic's multi-agent patterns: an **orchestrator** decomposes work to **workers** and synthesizes; an **evaluator-optimizer** pairs a generator with a critic that loops until quality passes. **When.** Decomposable work with clear sub-boundaries (orchestrator-workers) or work with a clear quality signal a critic can check (evaluator-optimizer). **Lifecycle fit.** Analysis (fan-out) and large Generative builds. **Fails when.** The orchestration has no durable shared state or checkpoints (Chase) — or it parallelizes work whose implicit decisions must agree, producing conflicting merges (Yan). This is exactly the A2/A3 tension; choose the topology deliberately, not by reflex.
+**Shape.** Anthropic's multi-agent patterns: an **orchestrator** decomposes work to **workers** and synthesizes; an **evaluator-optimizer** pairs a generator with a critic that loops until quality passes. **When.** Decomposable work with clear sub-boundaries (orchestrator-workers) or work with a clear quality signal a critic can check (evaluator-optimizer). **Lifecycle fit.** Analysis (fan-out) and large Generative builds. **Fails when.** The orchestration has no durable shared state or checkpoints (Harrison C.) — or it parallelizes work whose implicit decisions must agree, producing conflicting merges (Walden Y.). This is exactly the A2/A3 tension; choose the topology deliberately, not by reflex.
 
 ---
 

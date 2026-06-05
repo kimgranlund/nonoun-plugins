@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Donna Spencer, *Card Sorting: Designing Usable Categories* (Rosenfeld Media, 2009). https://rosenfeldmedia.com/books/card-sorting/"
-  - "Nielsen Norman Group — “Card Sorting vs. Tree Testing,” “Tree Testing: Fast, Iterative Evaluation of Menu Labels and Categories,” “Card Sorting: How Many Users to Test,” and “Open vs. Closed Card Sorting” (nngroup.com)."
+  - "NN/g — “Card Sorting vs. Tree Testing,” “Tree Testing: Fast, Iterative Evaluation of Menu Labels and Categories,” “Card Sorting: How Many Users to Test,” and “Open vs. Closed Card Sorting” (nngroup.com)."
   - "Tom Tullis & Larry Wood, “How Many Users Are Enough for a Card-Sorting Study?” (UPA Conference, 2004) — the source of NN/g's ≈15-users guidance."
 method: ia-validation
 phase: structure
@@ -84,4 +84,4 @@ A **validated** structure flows into the build of the navigation and labeling sy
 
 ## Sourcing
 
-Card sorting and its open/closed/hybrid variants are from Donna Spencer, _Card Sorting: Designing Usable Categories_ (Rosenfeld Media, 2009), the standard reference. The card-sort participant guidance (≈15 users for a ~0.90 correlation; ~30 for large studies) is **Nielsen Norman Group's, citing Tullis & Wood's 2004 UPA study** — attributed, not invented. Tree testing as the evaluative "reverse card sort," its naked-hierarchy discipline, the success/directness/time metrics, and the ≈50-participant quantitative / ~5 qualitative split are from **NN/g's** "Card Sorting vs. Tree Testing" and "Tree Testing" articles. The pairing logic (card sort generates and labels the structure; tree test proves people can navigate to a target in it) and the IA vocabulary it exercises are established in `taxonomy-and-classification.md` and `polar-bear-foundations.md`. Confirm any verbatim quotation or exact figure against the cited print/source pages before publishing.
+Card sorting and its open/closed/hybrid variants are from Donna Spencer, _Card Sorting: Designing Usable Categories_ (Rosenfeld Media, 2009), the standard reference. The card-sort participant guidance (≈15 users for a ~0.90 correlation; ~30 for large studies) is **NN/g's, citing Tullis & Wood's 2004 UPA study** — attributed, not invented. Tree testing as the evaluative "reverse card sort," its naked-hierarchy discipline, the success/directness/time metrics, and the ≈50-participant quantitative / ~5 qualitative split are from **NN/g's** "Card Sorting vs. Tree Testing" and "Tree Testing" articles. The pairing logic (card sort generates and labels the structure; tree test proves people can navigate to a target in it) and the IA vocabulary it exercises are established in `taxonomy-and-classification.md` and `polar-bear-foundations.md`. Confirm any verbatim quotation or exact figure against the cited print/source pages before publishing.

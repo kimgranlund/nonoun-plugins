@@ -12,7 +12,7 @@ The measure of a skill is whether it compounds over invocations. The first time 
 
 This rubric is the **universal scoring layer** above the practitioner's checklist in `SKILLS-best-practices.md` (chat-ui). It is applicable to any agent skill system, not just Claude Code. The checklist says "here's how to do it"; this rubric says "here's how to measure whether you did it well."
 
-**Grounding**: Anthropic official guidance at `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`; Boris Cherny's principles from BORIS-feedback.md; production patterns from SKILLS-best-practices.md.
+**Grounding**: Anthropic official guidance at `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`; the Boris C. lens from BORIS-feedback.md; production patterns from SKILLS-best-practices.md.
 
 **Companion docs:**
 
@@ -72,7 +72,7 @@ The discipline is knowing which category a skill belongs in — and NOT adding s
 
 ### 5. Plan-Execute-Verify is the loop every skill must close
 
-Per Boris: _"Give Claude a way to verify its work. If Claude has that feedback loop, it will 2-3x the quality."_ A skill that doesn't define the verify target is a slop generator with extra ceremony. The verify target must be named in the skill, per the mode that invoked it:
+Per the Boris C. lens: _"Give Claude a way to verify its work. If Claude has that feedback loop, it will 2-3x the quality."_ A skill that doesn't define the verify target is a slop generator with extra ceremony. The verify target must be named in the skill, per the mode that invoked it:
 
 - Release skill: curl registry.npmjs.org → 200
 - Authoring skill: build verify passes + demo page renders
@@ -81,7 +81,7 @@ Per Boris: _"Give Claude a way to verify its work. If Claude has that feedback l
 
 ### 6. Build for the model six months from now
 
-Per Boris's manager Ben (Lenny's podcast): _"Build for the model six months from now."_ Don't over-engineer the skill to compensate for current-model limitations that improving memory/context will obsolete. The right question isn't "how do we compensate for what the model can't do today" — it's "what will still be needed when context is 2M tokens and the model rarely forgets?"
+Per the same lineage's product guidance: _"Build for the model six months from now."_ Don't over-engineer the skill to compensate for current-model limitations that improving memory/context will obsolete. The right question isn't "how do we compensate for what the model can't do today" — it's "what will still be needed when context is 2M tokens and the model rarely forgets?"
 
 Re-examine the ceremony quarterly. Anything still load-bearing earns its keep; anything obsoleted by improved model capability gets retired.
 
@@ -231,7 +231,7 @@ Does the skill have a canonical home for deferred, excluded, and planned work �
 
 ### AP-05 — Spec-before-prototype (ship → measure → write, not write → ship → measure)
 
-**Symptom**: A vision document + best-practices guide authored before any skill evals exist. The docs explain the pattern; no empirical validation that the pattern actually works. **Root cause**: Writing the theory first because it feels like progress. **Correction**: Per Boris B4 and §8 anti-pattern 8 of VISION-extensibility: ship the skill first, run held-out eval prompts, observe what the model actually does with it, then write the meta-docs to explain the pattern. Docs authored before evals are educated guesses, not lessons.
+**Symptom**: A vision document + best-practices guide authored before any skill evals exist. The docs explain the pattern; no empirical validation that the pattern actually works. **Root cause**: Writing the theory first because it feels like progress. **Correction**: Per the Boris C. lens (B4) and §8 anti-pattern 8 of VISION-extensibility: ship the skill first, run held-out eval prompts, observe what the model actually does with it, then write the meta-docs to explain the pattern. Docs authored before evals are educated guesses, not lessons.
 
 ### AP-06 — Cross-contamination between arc history and skill body
 
@@ -257,6 +257,6 @@ Does the skill have a canonical home for deferred, excluded, and planned work �
 
 6. **The audit test**: run `scripts/audit-<skill>-roster.mjs` (or equivalent). If there is no such script, ask: what would it check? The inability to answer suggests the skill doesn't have checkable invariants — which means either it's too vague (a problem) or it's genuinely standalone (fine, but then why is it treated as senior?).
 
-7. **The Boris test**: read §13.8 of SKILLS-best-practices. Would Boris, with his vanilla-first discipline, look at this skill and say "I can see why this level of ceremony is justified"? Or would he say "this is a 50-line CLAUDE.md problem that someone turned into a 1500-line senior skill"?
+7. **The Boris C. test**: read §13.8 of SKILLS-best-practices. Would Boris C., with his vanilla-first discipline, look at this skill and say "I can see why this level of ceremony is justified"? Or would he say "this is a 50-line CLAUDE.md problem that someone turned into a 1500-line senior skill"?
 
 8. **The roadmap test**: verify `ROADMAP.md` exists with Planned / Deferred / Out of scope sections. Then grep CHANGELOG.md and SKILL.md for: "planned", "future", "out of scope", "not yet", "TODO", "considered but". Any match found outside `ROADMAP.md` means the convention is not being enforced and that content needs to migrate.

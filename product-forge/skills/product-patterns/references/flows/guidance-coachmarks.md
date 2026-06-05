@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: deep
 primary_sources:
-  - "Aurora Harley. \"Instructional Overlays and Coach Marks for Mobile Apps.\" Nielsen Norman Group, 2014-02-16. https://www.nngroup.com/articles/mobile-instructional-overlay/"
-  - "Page Laubheimer. \"Onboarding Tutorials vs. Contextual Help.\" Nielsen Norman Group, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
-  - "Nielsen Norman Group. \"Tooltips in the User Interface\" (video) and \"Help and Documentation (Usability Heuristic #10).\" https://www.nngroup.com/articles/help-and-documentation/"
+  - "Aurora Harley. \"Instructional Overlays and Coach Marks for Mobile Apps.\" NN/g, 2014-02-16. https://www.nngroup.com/articles/mobile-instructional-overlay/"
+  - "Page Laubheimer. \"Onboarding Tutorials vs. Contextual Help.\" NN/g, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
+  - "NN/g. \"Tooltips in the User Interface\" (video) and \"Help and Documentation (Usability Heuristic #10).\" https://www.nngroup.com/articles/help-and-documentation/"
   - "Jon Yablonski. \"Tesler's Law\" (conservation of complexity). Laws of UX. https://lawsofux.com/"
 ---
 

@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Page Laubheimer, 'AI Hallucinations: What Designers Need to Know', Nielsen Norman Group (nngroup.com/articles/ai-hallucinations), 2025-02-07"
-  - "Megan Chan, 'Explainable AI in Chat Interfaces', Nielsen Norman Group (nngroup.com/articles/explainable-ai), 2025-12-12"
-  - "Georgia Kenderova, Maria Rosala & Tanner Kohler, '10 Guidelines for Designing Your Site's AI Chatbots', Nielsen Norman Group (nngroup.com/articles/ai-chatbots-design-guidelines), 2026-04-24"
+  - "Page Laubheimer, 'AI Hallucinations: What Designers Need to Know', NN/g (nngroup.com/articles/ai-hallucinations), 2025-02-07"
+  - "Megan Chan, 'Explainable AI in Chat Interfaces', NN/g (nngroup.com/articles/explainable-ai), 2025-12-12"
+  - "Georgia Kenderova, Maria Rosala & Tanner Kohler, '10 Guidelines for Designing Your Site's AI Chatbots', NN/g (nngroup.com/articles/ai-chatbots-design-guidelines), 2026-04-24"
 ---
 
 # Uncertainty, Citations & Honest Framing

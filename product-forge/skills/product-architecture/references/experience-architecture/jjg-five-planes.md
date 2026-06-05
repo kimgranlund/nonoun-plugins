@@ -6,9 +6,9 @@ primary_sources:
   - "Jesse G., *The Elements of User Experience* diagram / chapter excerpts (jjg.net/elements)."
 ---
 
-# The Five Planes (Garrett)
+# The Five Planes (Jesse G.)
 
-This is the working method for using Jesse G.'s five planes as the structural spine of an experience architecture — not as a summary of the book, but as a procedure for laying out a product so that every layer rests on the one beneath it. Garrett's framework decomposes user experience into five planes stacked from abstract to concrete: **strategy → scope → structure → skeleton → surface**, built bottom-up. Its single load-bearing claim is the dependency rule: **the surface depends on the skeleton, which depends on the structure, which depends on the scope, which depends on the strategy.** Each plane is a chance to solve a different problem, and a decision on a higher plane is only as sound as the plane below it. Get the order wrong — pick a navigation pattern before you know the strategy — and you are decorating a foundation that may not hold.
+This is the working method for using Jesse G.'s five planes as the structural spine of an experience architecture — not as a summary of the book, but as a procedure for laying out a product so that every layer rests on the one beneath it. Jesse G.'s framework decomposes user experience into five planes stacked from abstract to concrete: **strategy → scope → structure → skeleton → surface**, built bottom-up. Its single load-bearing claim is the dependency rule: **the surface depends on the skeleton, which depends on the structure, which depends on the scope, which depends on the strategy.** Each plane is a chance to solve a different problem, and a decision on a higher plane is only as sound as the plane below it. Get the order wrong — pick a navigation pattern before you know the strategy — and you are decorating a foundation that may not hold.
 
 ## The five planes, bottom to top
 
@@ -24,9 +24,9 @@ Read them from the ground up, because that is the order in which they get decide
 
 The plane names are deliberately not "phases." Work overlaps in time; the dependency is logical, not strictly sequential. But the constraint always flows the same direction: lower planes bound higher ones.
 
-## The dual nature (Garrett's two-axis grid)
+## The dual nature (Jesse G.'s two-axis grid)
 
-Garrett's diagram is not a single column — it is split vertically into **two halves** that run up through every plane, because a product is simultaneously two things: a **software interface** (a tool you use to get tasks done) and a **hypertext / information system** (a body of content you move through). Most real products are a blend, and the split tells you which discipline owns each plane.
+Jesse G.'s diagram is not a single column — it is split vertically into **two halves** that run up through every plane, because a product is simultaneously two things: a **software interface** (a tool you use to get tasks done) and a **hypertext / information system** (a body of content you move through). Most real products are a blend, and the split tells you which discipline owns each plane.
 
 ```text
                  SOFTWARE-INTERFACE side        HYPERTEXT / INFORMATION side
@@ -51,8 +51,8 @@ The practical payoff: when you hit a plane, you immediately know which two quest
 
 Treat the stack as a checklist you walk bottom-up before committing to any visible design. The discipline is to refuse to answer a higher plane until the one below is resolved.
 
-1. **Strategy first, and write it down.** Garrett is explicit that "the most common reason for the failure of websites is not technology. It's not user experience either. The most common reason… is the lack of a clearly articulated strategy." Name the product objectives (what the business gets) and the user needs (what users get) — separately, so you can see where they conflict. This plane is the same territory the product-strategy references cover; the planes inherit a strategy, they don't manufacture one.
-2. **Derive scope from strategy, not from a wish list.** A feature earns a place in scope only if it serves a stated objective or need. Garrett's value in writing scope down is twofold: it forces you to decide what you're building, and it forces you to decide what you're _not_ building. A scope plane that contains everything anyone asked for has skipped the derivation.
+1. **Strategy first, and write it down.** Jesse G. is explicit that "the most common reason for the failure of websites is not technology. It's not user experience either. The most common reason… is the lack of a clearly articulated strategy." Name the product objectives (what the business gets) and the user needs (what users get) — separately, so you can see where they conflict. This plane is the same territory the product-strategy references cover; the planes inherit a strategy, they don't manufacture one.
+2. **Derive scope from strategy, not from a wish list.** A feature earns a place in scope only if it serves a stated objective or need. Jesse G.'s value in writing scope down is twofold: it forces you to decide what you're building, and it forces you to decide what you're _not_ building. A scope plane that contains everything anyone asked for has skipped the derivation.
 3. **Turn scope into structure.** Now — and only now — decide the interaction model (how the tool responds to the user) and the information architecture (how content is organized and connected). This is where flows (`flows-and-task-design.md`) and IA take shape.
 4. **Lay the structure onto a skeleton.** Wireframe placement: where navigation, content, and controls sit on each screen. The skeleton makes the abstract structure usable; it is the level of "what goes where," not "what color."
 5. **Apply the surface last.** Visual and sensory design composes the skeleton into the thing the user perceives. Surface decisions cannot fix a broken structure — they can only present whatever structure exists.
@@ -78,4 +78,4 @@ When reviewing an experience architecture against this spine, ask in order:
 
 ## One labeled caveat
 
-The plane names, the bottom-up dependency rule, and the dual-nature (software-interface vs. hypertext) split are unambiguous and consistent across Garrett's book, his published diagram, and every secondary summary. The exact wording quoted here ("The most common reason… is the lack of a clearly articulated strategy") is attributed to _The Elements of User Experience_ and cross-checked against widely reproduced excerpts rather than against a page-numbered print edition in this session; confirm verbatim wording and edition (2002 vs. 2010) against the print copy before quoting for publication. Note also that the second edition broadened the framing from "the Web" to user-centered product design generally — the planes are identical, only the examples differ.
+The plane names, the bottom-up dependency rule, and the dual-nature (software-interface vs. hypertext) split are unambiguous and consistent across Jesse G.'s book, his published diagram, and every secondary summary. The exact wording quoted here ("The most common reason… is the lack of a clearly articulated strategy") is attributed to _The Elements of User Experience_ and cross-checked against widely reproduced excerpts rather than against a page-numbered print edition in this session; confirm verbatim wording and edition (2002 vs. 2010) against the print copy before quoting for publication. Note also that the second edition broadened the framing from "the Web" to user-centered product design generally — the planes are identical, only the examples differ.

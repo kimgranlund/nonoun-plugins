@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Aurora Harley, Kim Flaherty. \"'Get Started' Stops Users.\" Nielsen Norman Group, 2017-08-20. https://www.nngroup.com/articles/get-started/"
-  - "Kim Salazar. \"Mobile-App Onboarding: An Analysis of Components and Techniques.\" Nielsen Norman Group. https://www.nngroup.com/articles/mobile-app-onboarding/"
-  - "Page Laubheimer. \"Onboarding Tutorials vs. Contextual Help.\" Nielsen Norman Group, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
-  - "Jakob N.. \"The Power of Defaults.\" Nielsen Norman Group, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
+  - "Aurora Harley, Kim Flaherty. \"'Get Started' Stops Users.\" NN/g, 2017-08-20. https://www.nngroup.com/articles/get-started/"
+  - "Kim Salazar. \"Mobile-App Onboarding: An Analysis of Components and Techniques.\" NN/g. https://www.nngroup.com/articles/mobile-app-onboarding/"
+  - "Page Laubheimer. \"Onboarding Tutorials vs. Contextual Help.\" NN/g, 2023-02-12. https://www.nngroup.com/articles/onboarding-tutorials/"
+  - "Jakob N. \"The Power of Defaults.\" NN/g, 2005-09-25. https://www.nngroup.com/articles/the-power-of-defaults/"
   - "Jon Yablonski. \"Goal-Gradient Effect\" and \"Zeigarnik Effect.\" Laws of UX. https://lawsofux.com/"
 ---
 
@@ -36,7 +36,7 @@ The dominant anti-pattern is front-loading setup — import your data, connect i
 - **Seed the product so it works on first open.** Pre-populate with sample data, a template, or a worked example so the empty product _demonstrates the end state_ before the user has entered anything.
 - **Defer heavy setup until it pays for itself.** Don't gate first value on a full CSV import, every integration, or a complete profile. Ask for each piece of setup at the moment it unlocks something the user now wants.
 - **Customize content, not chrome.** NN/g (Salazar): content customization (what the product is about, for me) can create a relevant first experience; _visual_ customization in onboarding — "pick a theme color" — is friction that doesn't move activation. Spend the user's first attention on relevance, not decoration.
-- **Defaults are silent onboarding.** Nielsen's "Power of Defaults": most users never open settings, so a well-chosen default both reduces effort and acts as a "just-in-time" instruction about the expected choice. Optimize the default path rather than asking the user to configure it.
+- **Defaults are silent onboarding.** Jakob N.'s "Power of Defaults": most users never open settings, so a well-chosen default both reduces effort and acts as a "just-in-time" instruction about the expected choice. Optimize the default path rather than asking the user to configure it.
 
 ---
 

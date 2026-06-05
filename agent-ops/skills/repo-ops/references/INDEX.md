@@ -97,7 +97,7 @@ The artifacts compound, not the agents. Agents stay deterministic; humans curate
 | ✅ | `recipes/cold-start-harvest.md` | Importing existing learnings (inventory → triage → archive-not-delete → human-reviewed supersession) | All |
 | ✅ | `recipes/concurrent-learnings-merge.md` | Multi-contributor sync-and-reason: timestamp ADRs, AGENTS.md changesets, post-merge redundancy scan, supersession protocol | 5 |
 | ✅ | `recipes/continuous-learning-loop.md` | Anthropic iterate pattern + ADR-on-change + postmortem-on-incident | 5 |
-| ✅ | `recipes/external-reference-verification.md` | WebFetch-powered probe for cited URLs (Karpathy autoresearch DNA); catches live-link-stale-content | 3 |
+| ✅ | `recipes/external-reference-verification.md` | WebFetch-powered probe for cited URLs (`autoresearch` DNA); catches live-link-stale-content | 3 |
 | ✅ | `recipes/findings-index-readout.md` | Close the read side of the audit ledger — `.brain/findings/INDEX.md` aggregates all `findings[]` across `audit-history/*.json`; status taxonomy with auto-promotion to CLOSED-LATER; hand-curated `## Graduations` section | 5 |
 | ✅ | `recipes/greenfield-setup.md` | Day-one setup with `.brain/` layout that ships all 5 promises from first commit | All |
 | ✅ | `recipes/harvest-repo-brain.md` | **Flow operation**: lift findings from `.brain/` + `docs/conventions/` into agent memory at `~/.claude/projects/<repo>/memory/` and (optionally) emit a portable bundle for cross-repo ingestion | Cross-cutting |

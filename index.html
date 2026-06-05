@@ -37,7 +37,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <p class='sub'><b>6</b> catalog plugins · <a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>
 <nav><a href='#brand-forge'>brand-forge</a><a href='#plugins-factory'>plugins-factory</a><a href='#adia-ui-factory'>adia-ui-factory</a><a href='#adia-ui-forge'>adia-ui-forge</a><a href='#product-forge'>product-forge</a><a href='#agent-ops'>agent-ops</a></nav>
 <section class='card' id='brand-forge'>
-<h2><code>brand-forge</code> <span class='ver'>v0.4.4</span> <span class='cat'>design</span></h2>
+<h2><code>brand-forge</code> <span class='ver'>v0.4.6</span> <span class='cat'>design</span></h2>
 <p class='desc'>Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).</p>
 <div class='chips'><span class='chip'>brand</span><span class='chip'>brand-strategy</span><span class='chip'>design</span><span class='chip'>identity</span><span class='chip'>voice</span><span class='chip'>council</span></div>
 <div class='sec'><h3>Skills <span class='n'>3</span></h3>
@@ -45,10 +45,10 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='skill'><b><code>brand-evaluate</code></b> <span class='d'>— Adversarial evaluation of brand work — strategy, briefs, identity, voice, expression systems. Names failures (it does not flatter), scores each dimension with evidence and the test that revealed the finding, and runs the critic council.</span></div>
 <div class='skill'><b><code>brand-methodology</code></b> <span class='d'>— Senior-practitioner methodology for building a brand from cultural authority — not aesthetics.</span></div>
 </div>
-<div class='sec'><h3>Agents <span class='n'>16</span></h3>
-<div class='list' style='margin-bottom:7px'><span class='it'><code>brand-council</code></span><span class='it'><code>brand-muse</code></span></div>
+<div class='sec'><h3>Agents <span class='n'>17</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>.name-map</code></span><span class='it'><code>brand-council</code></span><span class='it'><code>brand-muse</code></span></div>
 <div class='muted' style='font-size:12.5px;margin-bottom:5px'>14 critics</div>
-<div class='list'><span class='it'>critic-david-a</span><span class='it'>critic-brian</span><span class='it'>critic-tim-d</span><span class='it'>critic-john-h</span><span class='it'>critic-george-l</span><span class='it'>critic-luke</span><span class='it'>critic-mary</span><span class='it'>critic-nick</span><span class='it'>critic-paula</span><span class='it'>critic-mark-p</span><span class='it'>critic-rory</span><span class='it'>critic-massimo-v</span><span class='it'>critic-jessica-w</span><span class='it'>critic-matt-w</span></div>
+<div class='list'><span class='it'>critic-brian-c</span><span class='it'>critic-david-a</span><span class='it'>critic-george-l</span><span class='it'>critic-jessica-w</span><span class='it'>critic-john-h</span><span class='it'>critic-luke-s</span><span class='it'>critic-mark-p</span><span class='it'>critic-mary-n</span><span class='it'>critic-massimo-v</span><span class='it'>critic-matt-w</span><span class='it'>critic-nick-l</span><span class='it'>critic-paula-s</span><span class='it'>critic-rory-s</span><span class='it'>critic-tim-d</span></div>
 </div>
 <div class='sec'><h3>Commands <span class='n'>6</span></h3>
 <div class='cmd'><code>/brand-build</code> <span class='d'>— Start a collaborative Build-mode brand engagement (strategy, research, identity, voice).</span></div>
@@ -61,17 +61,17 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stamp</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 9</div></div>
 </section>
 <section class='card' id='plugins-factory'>
-<h2><code>plugins-factory</code> <span class='ver'>v0.2.8</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>plugins-factory</code> <span class='ver'>v0.2.10</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).</p>
 <div class='chips'><span class='chip'>plugins</span><span class='chip'>claude-code</span><span class='chip'>marketplace</span><span class='chip'>packaging</span><span class='chip'>lifecycle</span><span class='chip'>carve</span><span class='chip'>meta</span></div>
 <div class='sec'><h3>Skills <span class='n'>2</span></h3>
 <div class='skill'><b><code>plugin-build</code></b> <span class='d'>— Build Claude Code plugins — author a new plugin from intent, carve a skill library into plugin boundaries, or edit an existing plugin.</span></div>
 <div class='skill'><b><code>plugin-evaluate</code></b> <span class='d'>— Evaluate Claude Code plugins adversarially — score a plugin against the 9-dimension architecture rubric library, run the 9-critic council (plugin-council), or run a full promote review to an APPROVED / CONDITIONAL / BLOCKED verdict.</span></div>
 </div>
-<div class='sec'><h3>Agents <span class='n'>11</span></h3>
-<div class='list' style='margin-bottom:7px'><span class='it'><code>carve-analyst</code></span><span class='it'><code>plugin-council</code></span></div>
+<div class='sec'><h3>Agents <span class='n'>12</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>.name-map</code></span><span class='it'><code>carve-analyst</code></span><span class='it'><code>plugin-council</code></span></div>
 <div class='muted' style='font-size:12.5px;margin-bottom:5px'>9 critics</div>
-<div class='list'><span class='it'>critic-boris</span><span class='it'>critic-charity</span><span class='it'>critic-elon</span><span class='it'>critic-david-f</span><span class='it'>critic-chip-h</span><span class='it'>critic-andrej-k</span><span class='it'>critic-simon</span><span class='it'>critic-steve</span><span class='it'>critic-scott-w</span></div>
+<div class='list'><span class='it'>critic-andrej-k</span><span class='it'>critic-boris-c</span><span class='it'>critic-charity-m</span><span class='it'>critic-chip-h</span><span class='it'>critic-david-f</span><span class='it'>critic-elon-m</span><span class='it'>critic-scott-w</span><span class='it'>critic-simon-w</span><span class='it'>critic-steve-y</span></div>
 </div>
 <div class='sec'><h3>Commands <span class='n'>6</span></h3>
 <div class='cmd'><code>/plugin-author</code> <span class='d'>— Author a new Claude Code plugin from intent — component-fit pass, wire the manifest, validate, red-team.</span></div>
@@ -81,10 +81,10 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='cmd'><code>/plugin-promote</code> <span class='d'>— Complete plugin review — holistic scan + rubric deep-dives + the 9-critic council → APPROVED / CONDITIONAL / BLOCKED.</span></div>
 <div class='cmd'><code>/plugin-score</code> <span class='d'>— Score a plugin against the 9-dimension architecture rubric library, with evidence cited from its files.</span></div>
 </div>
-<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-foundations-coverage.py</code> · <code>check-manifest-sync.py</code> · <code>reference-lint.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-foundations-coverage.py</code> · <code>check-manifest-sync.py</code> · <code>corpus-reader</code> · <code>reference-lint.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
 </section>
 <section class='card' id='adia-ui-factory'>
-<h2><code>adia-ui-factory</code> <span class='ver'>v0.2.1</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>adia-ui-factory</code> <span class='ver'>v0.2.2</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Author and verify apps on the adia-ui (@adia-ai) light-DOM web-component framework — scaffold, compose, wire (SPA + SSR), and verify — leaning on the a2ui MCP for catalog retrieval, generation, and validation.</p>
 <div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>web-components</span><span class='chip'>app-authoring</span><span class='chip'>ssr</span><span class='chip'>spa</span><span class='chip'>llm-ui</span></div>
 <div class='sec'><h3>Skills <span class='n'>11</span></h3>
@@ -112,7 +112,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → adia-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>adia-lint</code> · <code>adia-scaffold</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>a2ui</code></div></div>
 </section>
 <section class='card' id='adia-ui-forge'>
-<h2><code>adia-ui-forge</code> <span class='ver'>v0.1.1</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>adia-ui-forge</code> <span class='ver'>v0.1.2</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).</p>
 <div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>gen-ui</span><span class='chip'>web-components</span><span class='chip'>web-modules</span><span class='chip'>llm</span><span class='chip'>framework-authoring</span><span class='chip'>component-library</span><span class='chip'>release-engineering</span><span class='chip'>maintainer</span></div>
 <div class='sec'><h3>Skills <span class='n'>7</span></h3>
@@ -136,7 +136,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → forge-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>forge-lint</code> · <code>lib</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 52</div></div>
 </section>
 <section class='card' id='product-forge'>
-<h2><code>product-forge</code> <span class='ver'>v0.3.3</span> <span class='cat'>product</span></h2>
+<h2><code>product-forge</code> <span class='ver'>v0.3.5</span> <span class='cat'>product</span></h2>
 <p class='desc'>Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, and runnable methodology playbooks.</p>
 <div class='chips'><span class='chip'>product-strategy</span><span class='chip'>product-management</span><span class='chip'>ux</span><span class='chip'>user-research</span><span class='chip'>personas</span><span class='chip'>jobs-to-be-done</span><span class='chip'>ux-patterns</span><span class='chip'>app-genres</span><span class='chip'>discovery</span><span class='chip'>positioning</span><span class='chip'>ai-product</span><span class='chip'>council</span><span class='chip'>information-architecture</span><span class='chip'>service-design</span><span class='chip'>content-design</span><span class='chip'>governance</span><span class='chip'>experience-strategy</span></div>
 <div class='sec'><h3>Skills <span class='n'>8</span></h3>
@@ -149,10 +149,10 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='skill'><b><code>product-patterns</code></b> <span class='d'>— The UX / interaction / flow pattern library for product work — registration, onboarding, guidance, search, navigation, forms, empty/error states, notifications, progressive disclosure, monetization patterns, accessibility, content design (v…</span></div>
 <div class='skill'><b><code>product-research</code></b> <span class='d'>— User &amp; persona definition and the research methods behind them — interviewing (The Mom Test), JTBD/switch discovery, behavioral-vs-attitudinal method choice, survey design, research ops; the Value Proposition Canvas (jobs/pains/gains), goal…</span></div>
 </div>
-<div class='sec'><h3>Agents <span class='n'>24</span></h3>
-<div class='list' style='margin-bottom:7px'><span class='it'><code>product-council</code></span></div>
+<div class='sec'><h3>Agents <span class='n'>25</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>.name-map</code></span><span class='it'><code>product-council</code></span></div>
 <div class='muted' style='font-size:12.5px;margin-bottom:5px'>23 critics</div>
-<div class='list'><span class='it'>critic-marty-c</span><span class='it'>critic-cat</span><span class='it'>critic-ann-c</span><span class='it'>critic-clayton-c</span><span class='it'>critic-alan-c</span><span class='it'>critic-abby-c</span><span class='it'>critic-john-c</span><span class='it'>critic-shreyas-d</span><span class='it'>critic-april-d</span><span class='it'>critic-jesse-g</span><span class='it'>critic-ron-k</span><span class='it'>critic-steve-k</span><span class='it'>critic-meaghan</span><span class='it'>critic-jakob-n</span><span class='it'>critic-don-n</span><span class='it'>critic-melissa-p</span><span class='it'>critic-torrey-p</span><span class='it'>critic-richard-r</span><span class='it'>critic-kathy-s</span><span class='it'>critic-marc-s</span><span class='it'>critic-garry-t</span><span class='it'>critic-teresa-t</span><span class='it'>critic-kevin-w</span></div>
+<div class='list'><span class='it'>critic-abby-c</span><span class='it'>critic-alan-c</span><span class='it'>critic-ann-c</span><span class='it'>critic-april-d</span><span class='it'>critic-cat-w</span><span class='it'>critic-clayton-c</span><span class='it'>critic-don-n</span><span class='it'>critic-garry-t</span><span class='it'>critic-jakob-n</span><span class='it'>critic-jesse-g</span><span class='it'>critic-john-c</span><span class='it'>critic-kathy-s</span><span class='it'>critic-kevin-w</span><span class='it'>critic-marc-s</span><span class='it'>critic-marty-c</span><span class='it'>critic-meaghan-c</span><span class='it'>critic-melissa-p</span><span class='it'>critic-richard-r</span><span class='it'>critic-ron-k</span><span class='it'>critic-shreyas-d</span><span class='it'>critic-steve-k</span><span class='it'>critic-teresa-t</span><span class='it'>critic-torrey-p</span></div>
 </div>
 <div class='sec'><h3>Commands <span class='n'>7</span></h3>
 <div class='cmd'><code>/product-council</code> <span class='d'>— Convene the adversarial product critic council (parallel, isolated) on an artifact.</span></div>
@@ -166,7 +166,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → product-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-methods.py</code> · <code>check-sourcing.py</code> · <code>product-lint</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 152</div></div>
 </section>
 <section class='card' id='agent-ops'>
-<h2><code>agent-ops</code> <span class='ver'>v0.1.1</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>agent-ops</code> <span class='ver'>v0.1.3</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops &amp; teams, the control plane, harness &amp; context engineering, agentic-workflow UX, and repo memory/docs + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).</p>
 <div class='chips'><span class='chip'>agent</span><span class='chip'>agentic</span><span class='chip'>agent-loops</span><span class='chip'>orchestration</span><span class='chip'>harness</span><span class='chip'>context-engineering</span><span class='chip'>repo-ops</span><span class='chip'>agents-md</span><span class='chip'>repo-review</span><span class='chip'>council</span></div>
 <div class='sec'><h3>Skills <span class='n'>5</span></h3>
@@ -176,10 +176,10 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='skill'><b><code>repo-ops</code></b> <span class='d'>— Turn any repo into a brain for LLM coding agents — a less-wasteful, self-healing, continuously-learning memory layer over its declarative memory (entry files, ADRs, postmortems, runbooks) and procedural memory (skills under `.agents/skills/…</span></div>
 <div class='skill'><b><code>repo-review</code></b> <span class='d'>— Opinionated, framework-agnostic multi-wave repo review orchestrator. Produces a rubric, knowledge-foundation docs, cascade-ranked refactor backlog (3 P0 / 3 P1 / 6 P2 / ∞ P3 — items missing a tier cascade down, never dropped), and a tier-1…</span></div>
 </div>
-<div class='sec'><h3>Agents <span class='n'>13</span></h3>
-<div class='list' style='margin-bottom:7px'><span class='it'><code>agentic-council</code></span></div>
+<div class='sec'><h3>Agents <span class='n'>14</span></h3>
+<div class='list' style='margin-bottom:7px'><span class='it'><code>.name-map</code></span><span class='it'><code>agentic-council</code></span></div>
 <div class='muted' style='font-size:12.5px;margin-bottom:5px'>12 critics</div>
-<div class='list'><span class='it'>critic-harrison-c</span><span class='it'>critic-boris-c</span><span class='it'>critic-sarah-g</span><span class='it'>critic-mitchell-h</span><span class='it'>critic-andrej-k</span><span class='it'>critic-geoffrey-l</span><span class='it'>critic-mcp</span><span class='it'>critic-karri-s</span><span class='it'>critic-garry-t</span><span class='it'>critic-amelia-w</span><span class='it'>critic-simon-w</span><span class='it'>critic-walden-y</span></div>
+<div class='list'><span class='it'>critic-amelia-w</span><span class='it'>critic-andrej-k</span><span class='it'>critic-boris-c</span><span class='it'>critic-garry-t</span><span class='it'>critic-geoffrey-l</span><span class='it'>critic-harrison-c</span><span class='it'>critic-karri-s</span><span class='it'>critic-mcp</span><span class='it'>critic-mitchell-h</span><span class='it'>critic-sarah-g</span><span class='it'>critic-simon-w</span><span class='it'>critic-walden-y</span></div>
 </div>
 <div class='sec'><h3>Commands <span class='n'>6</span></h3>
 <div class='cmd'><code>/ops-audit</code> <span class='d'>— Audit / set up / maintain the repo&#x27;s docs &amp; memory surface — AGENTS.md, README, CHANGELOG, ROADMAP, ADRs — for drift, staleness, orphans, an…</span></div>

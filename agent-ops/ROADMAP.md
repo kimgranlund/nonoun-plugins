@@ -27,17 +27,17 @@ A single, **full-spectrum plugin for authoring, operating, and reviewing agentic
 
 ## Council (all source critics activated + builders added)
 
-- **UX & Quality:** Amelia W. · Sarah Gibbons · Geoffrey L. · Karri S.
+- **UX & Quality:** Amelia W. · Sarah G. · Geoffrey L. · Karri S.
 - **Architecture & Utility:** Walden Y. · Harrison C. · Mitchell H. · (the MCP / tool-perimeter lens)
-- **Agentic-systems builders (added per sign-off):** Boris Cherny (Claude Code) · Garry T. (YC) · Andrej Karpathy · Simon Willison
+- **Agentic-systems builders (added per sign-off):** Boris C. · Garry T. · Andrej K. · Simon W.
 
-All 8 source critics **activated** (no deferral). Living practitioners: observable-public-only sourcing, verbatim quotes verified, `check-sourcing.py` provenance gate — the product-forge anti-fabrication discipline.
+All 8 source critics **activated** (no deferral). Critic display names are obscured to `First L.`; the real practitioner attributions/bios/sources live in a git-ignored `agents/.name-map.md`. Living practitioners: observable-public-only sourcing, verbatim quotes verified, `check-sourcing.py` provenance gate — the product-forge anti-fabrication discipline.
 
 ## Build phases
 
 - [x] **0. Scaffold + port** — `plugin.json`, marketplace entry, this ROADMAP; 104 files cp'd from the four skills (SKILL.md + references + rubrics + the two gate scripts + blueprint schema).
 - [x] **1. De-repo / self-containment** — neutralize ~10 external skill references (`skills-studio`, `core-mcp-best-practices`, `meta-expert-author`, `ui-audit-*`, `arch-pattern`, `plan-*`, …) → the plugin's own siblings or generalized; cross-skill references rewired to the plugin's own skill names; confirm the scripts are stdlib-only; make the "recommends tooling for the _audited_ repo, not the plugin's own deps" boundary explicit.
-- [x] **2. Council** — convert `references/council/eval-as-*.md` personas → `agents/critic-*.md` (trust-boundary block, read-only tools); author the four added builder critics (Cherny · Tan · Karpathy · Willison), sourced; the `agentic-council` orchestrator; **verify every living critic's verbatim quotes** against public sources.
+- [x] **2. Council** — convert `references/council/eval-as-*.md` personas → `agents/critic-*.md` (trust-boundary block, read-only tools); author the four added builder critics (Boris C. · Garry T. · Andrej K. · Simon W.), sourced; the `agentic-council` orchestrator; **verify every living critic's verbatim quotes** against public sources.
 - [x] **3. Orchestrator + commands + hook** — the `agent-ops` orchestrator skill; the `/ops-*` commands; the advisory doc-hygiene hook.
 - [x] **4. Gates** — wire `audit-history.py` + `check_blueprint.py` + `blueprint.json`; adapt `check-sourcing.py` for the council; add the gates to CI.
 - [x] **5. Validate** — `validate_plugin.py --strict` · `reference-lint.py` · `check-sourcing.py` · script selftests · markdownlint · marketplace — all PASS.

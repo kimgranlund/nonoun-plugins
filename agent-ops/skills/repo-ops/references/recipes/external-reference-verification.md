@@ -7,14 +7,14 @@ peers:
   - recommend-then-validate.md
   - ../audit-patterns/audit-history-ledger.md
 primary_sources:
-  - https://github.com/karpathy/autoresearch — autonomous propose-evaluate-iterate (spirit-source)
+  - the `autoresearch` project (autonomous propose-evaluate-iterate; spirit-source)
   - https://github.com/lycheeverse/lychee — link checker (the *liveness* check this recipe complements)
 status: research-verified
 ---
 
 # External-reference verification (WebFetch-powered)
 
-> _"You're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `program.md` Markdown files that provide context to the AI agents."_ — Andrej Karpathy, [autoresearch](https://github.com/karpathy/autoresearch)
+> _"You're not touching any of the Python files like you normally would as a researcher. Instead, you are programming the `program.md` Markdown files that provide context to the AI agents."_ — the `autoresearch` project
 
 The premise: **`lychee` tells you a link is broken; it doesn't tell you the live link points to outdated content.** External-reference verification fetches the current state of cited URLs, library docs, and spec pages, compares to what the doc claims, and proposes specific corrections.
 

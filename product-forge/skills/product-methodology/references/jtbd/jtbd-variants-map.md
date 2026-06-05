@@ -2,7 +2,7 @@
 date: 2026-06-03
 coverage: deep
 primary_sources:
-  - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
+  - "Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
   - "Anthony W. Ulwick. *Jobs to be Done: Theory to Practice*. IDEA BITE PRESS, 2016. Strategyn, https://strategyn.com/jobs-to-be-done/"
   - "Bob Moesta. *Demand-Side Sales 101: Stop Selling and Help Your Customers Make Progress*. Lioncrest, 2020. The Re-Wired Group, https://therewiredgroup.com/"
   - "Alan Klement. \"Know the Two — Very — Different Interpretations of Jobs to be Done.\" jtbd.info. https://jtbd.info/know-the-two-very-different-interpretations-of-jobs-to-be-done-5a18b748bd89"
@@ -11,7 +11,7 @@ primary_sources:
 
 # JTBD variants: Clayton C. vs. Ulwick vs. Moesta
 
-"Jobs-to-be-Done" is not one method. It is a name shared by at least three lineages that agree on a slogan — _people don't buy products, they hire them to get a job done_ — and then diverge, sometimes contradicting each other, on what a "job" is, how you find it, and what you do with it. Treating them as interchangeable is the single most common JTBD mistake. This file maps the genuine differences, says when to reach for each, and — importantly — labels the disagreements that are _not_ settled rather than papering over them. Read `christensen-jtbd.md` and `ulwick-odi.md` first for each camp's canon; this is the comparison.
+"Jobs-to-be-Done" is not one method. It is a name shared by at least three lineages that agree on a slogan — _people don't buy products, they hire them to get a job done_ — and then diverge, sometimes contradicting each other, on what a "job" is, how you find it, and what you do with it. Treating them as interchangeable is the single most common JTBD mistake. This file maps the genuine differences, says when to reach for each, and — importantly — labels the disagreements that are _not_ settled rather than papering over them. Read `jobs-to-be-done.md` and `ulwick-odi.md` first for each camp's canon; this is the comparison.
 
 ## The three lineages at a glance
 

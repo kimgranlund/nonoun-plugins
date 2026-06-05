@@ -60,7 +60,7 @@ The official guidance is explicit that a plugin is a _packaging/distribution_ ch
 
 - P5's `[gate]` dimensions are exactly the statically-checkable rules above; `${CLAUDE_PLUGIN_ROOT}/bin/validate_plugin.py` mechanizes them and the rubric's tests invoke it.
 - The `author` workflow makes these true _as it builds_ (the manifest follows the component-fit table), not after.
-- Owning critics: **Farley** (reproducible, idempotent packaging + the CI gate) and **Wlaschin** (make the illegal layout/state unrepresentable).
+- Owning critics: **David F.** (reproducible, idempotent packaging + the CI gate) and **Scott W.** (make the illegal layout/state unrepresentable).
 
 ## Source Citations
 

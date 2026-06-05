@@ -2,17 +2,17 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Jakob N. / Nielsen Norman Group — Progressive Disclosure (nngroup.com/articles/progressive-disclosure), 2006"
-  - "Nielsen Norman Group — Progressive Disclosure (video) (nngroup.com/videos/progressive-disclosure)"
+  - "Jakob N. / NN/g — Progressive Disclosure (nngroup.com/articles/progressive-disclosure), 2006"
+  - "NN/g — Progressive Disclosure (video) (nngroup.com/videos/progressive-disclosure)"
   - "Interaction Design Foundation — Progressive Disclosure (glossary) (ixdf.org/literature/book/the-glossary-of-human-computer-interaction/progressive-disclosure)"
   - "Jakob N. / Laws of UX — Jakob's Law (lawsofux.com/jakobs-law)"
 ---
 
 # Progressive Disclosure
 
-Progressive disclosure is the single most reliable lever for taming interface complexity without amputating capability. The idea, formalized by Jakob N., is to **show the few options that matter to most users now, and defer the rest to a second layer that's available on request.** Done well, the novice sees a simple screen and the expert can still reach everything — the complexity isn't removed, it's _staged_. This reference covers the canonical Nielsen form, the crucial distinction from **staged** disclosure, and the discipline of choosing the split (which is where most attempts fail).
+Progressive disclosure is the single most reliable lever for taming interface complexity without amputating capability. The idea, formalized by Jakob N., is to **show the few options that matter to most users now, and defer the rest to a second layer that's available on request.** Done well, the novice sees a simple screen and the expert can still reach everything — the complexity isn't removed, it's _staged_. This reference covers the canonical Jakob N. form, the crucial distinction from **staged** disclosure, and the discipline of choosing the split (which is where most attempts fail).
 
-> Nielsen's definition: progressive disclosure **"defers advanced or rarely used features to a secondary screen, making applications easier to learn and less error-prone."** The mechanics: _"Initially, show users only a few of the most important options. Offer a larger set of specialized options upon request."_ A consequence he stresses: in such a design, **the very fact that something appears on the initial display tells users it's important.**
+> Jakob N.'s definition: progressive disclosure **"defers advanced or rarely used features to a secondary screen, making applications easier to learn and less error-prone."** The mechanics: _"Initially, show users only a few of the most important options. Offer a larger set of specialized options upon request."_ A consequence he stresses: in such a design, **the very fact that something appears on the initial display tells users it's important.**
 
 ## When to use it
 
@@ -20,7 +20,7 @@ Reach for progressive disclosure when:
 
 - **The full feature set would overwhelm the initial view,** but you can't simply delete the advanced parts (some users genuinely need them).
 - **Usage is heavily skewed** — a small set of options serves the majority of sessions, and a long tail of options serves occasional power needs.
-- **You want to raise learnability and lower error rate** without sacrificing depth. Nielsen's claim is concrete: progressive disclosure **"improves 3 of usability's 5 components: learnability, efficiency of use, and error rate."** Beginners aren't confronted with options they don't understand (fewer errors), and experts aren't slowed because the advanced layer is one obvious click away.
+- **You want to raise learnability and lower error rate** without sacrificing depth. Jakob N.'s claim is concrete: progressive disclosure **"improves 3 of usability's 5 components: learnability, efficiency of use, and error rate."** Beginners aren't confronted with options they don't understand (fewer errors), and experts aren't slowed because the advanced layer is one obvious click away.
 
 Do **not** reach for it when the "advanced" options are actually needed by most users on most visits — hiding frequently-used controls behind a disclosure is a net cost, not a simplification.
 
@@ -43,14 +43,14 @@ Secondary layer (advanced / rarely used)
 └───────────────────────────────────┘
 ```
 
-Two requirements make or break it (Nielsen):
+Two requirements make or break it (Jakob N.):
 
 1. **Get the split right between initial and secondary features.** Put the frequently-used items up front; push the rest down. Too much on layer one defeats the purpose; the wrong things on layer one strand the majority in the advanced layer.
 2. **Make the progression obvious.** The mechanism must be simple and clearly labeled, with strong "information scent" so users can predict what the second layer holds — otherwise they never discover it.
 
 ## Progressive vs. staged disclosure (don't conflate them)
 
-These are different patterns with different shapes, and Nielsen separates them explicitly.
+These are different patterns with different shapes, and Jakob N. separates them explicitly.
 
 |  | **Progressive disclosure** | **Staged disclosure** |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ These are different patterns with different shapes, and Nielsen separates them e
 | Navigation shape | **Hierarchical** (drill down on demand) | **Linear** (proceed through ordered steps) |
 | Primary benefit | Learnability — hide rarely-used depth | Simplicity _per step_ — fewer choices on screen at once |
 
-The litmus test: **progressive disclosure is hierarchical and optional** (many users never open layer two, because they're done); **staged disclosure is linear and sequential** (users advance through steps because later steps are required to complete the task). A multi-step checkout that defers payment details to a later screen is _staged_ disclosure — not progressive. Nielsen notes staged disclosure "requires a thorough task analysis to understand which options are used together and which are better thought of as separate stages." (For the staged/wizard pattern in depth, see `forms.md`.)
+The litmus test: **progressive disclosure is hierarchical and optional** (many users never open layer two, because they're done); **staged disclosure is linear and sequential** (users advance through steps because later steps are required to complete the task). A multi-step checkout that defers payment details to a later screen is _staged_ disclosure — not progressive. Jakob N. notes staged disclosure "requires a thorough task analysis to understand which options are used together and which are better thought of as separate stages." (For the staged/wizard pattern in depth, see `forms.md`.)
 
 ## Defaults vs. advanced: the real design work
 

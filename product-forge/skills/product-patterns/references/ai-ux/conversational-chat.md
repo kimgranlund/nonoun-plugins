@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Georgia Kenderova, Maria Rosala & Tanner Kohler, '10 Guidelines for Designing Your Site's AI Chatbots', Nielsen Norman Group (nngroup.com/articles/ai-chatbots-design-guidelines), 2026-04-24"
-  - "Raluca Budiu, Feifei Liu, Emma Cionca & Amy Zhang, 'The 6 Types of Conversations with Generative AI', Nielsen Norman Group (nngroup.com/articles/AI-conversation-types), 2023-11-10"
-  - "Megan Chan, 'Explainable AI in Chat Interfaces', Nielsen Norman Group (nngroup.com/articles/explainable-ai), 2025-12-12"
+  - "Georgia Kenderova, Maria Rosala & Tanner Kohler, '10 Guidelines for Designing Your Site's AI Chatbots', NN/g (nngroup.com/articles/ai-chatbots-design-guidelines), 2026-04-24"
+  - "Raluca Budiu, Feifei Liu, Emma Cionca & Amy Zhang, 'The 6 Types of Conversations with Generative AI', NN/g (nngroup.com/articles/AI-conversation-types), 2023-11-10"
+  - "Megan Chan, 'Explainable AI in Chat Interfaces', NN/g (nngroup.com/articles/explainable-ai), 2025-12-12"
 ---
 
 # Conversational & Chat UX

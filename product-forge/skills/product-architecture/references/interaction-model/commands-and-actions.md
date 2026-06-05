@@ -4,7 +4,7 @@ coverage: expanded
 primary_sources:
   - "Jef Raskin, *The Humane Interface: New Directions for Designing Interactive Systems* (Addison-Wesley, 2000) — commands, noun-verb vs. verb-noun construction, monotony, habituation."
   - "Apple Human Interface Guidelines — “Menus” and “Keyboard shortcuts” (developer.apple.com/design/human-interface-guidelines)."
-  - "Nielsen Norman Group — “Command-Line Interfaces & Command Palettes” / accelerators in the 10 Usability Heuristics, Heuristic #7 “Flexibility and Efficiency of Use” (nngroup.com/articles/ten-usability-heuristics)."
+  - "NN/g — “Command-Line Interfaces & Command Palettes” / accelerators in the 10 Usability Heuristics, Heuristic #7 “Flexibility and Efficiency of Use” (nngroup.com/articles/ten-usability-heuristics)."
   - "WAI-ARIA Authoring Practices — Menu and Menubar pattern (w3.org/WAI/ARIA/apg/patterns/menubar)."
 ---
 

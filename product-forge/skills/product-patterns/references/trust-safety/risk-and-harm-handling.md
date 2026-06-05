@@ -4,7 +4,7 @@ coverage: foundational
 primary_sources:
   - "Eric Meyer & Sara Wachter-Boettcher. *Design for Real Life.* A Book Apart, 2016 — the 'stress cases' (not edge cases) reframing and worst-case / vulnerable-user thinking."
   - "OWASP Foundation. \"Abuse Case Cheat Sheet\" and the 'Secure by Default' principle (OWASP Developer Guide / Top 10 Proactive Controls C5). https://cheatsheetseries.owasp.org/cheatsheets/Abuse_Case_Cheat_Sheet.html ; https://owasp.org/www-project-proactive-controls/"
-  - "Jakob N.. \"Confirmation Dialogs\" / error-prevention heuristic (Heuristic 5, 'Error Prevention'). Nielsen Norman Group. https://www.nngroup.com/articles/ten-usability-heuristics/"
+  - "Jakob N. \"Confirmation Dialogs\" / error-prevention heuristic (Heuristic 5, 'Error Prevention'). NN/g. https://www.nngroup.com/articles/ten-usability-heuristics/"
 ---
 
 # Designing for Risk & Harm
@@ -44,7 +44,7 @@ The deliverable is a list of harms the feature enables and the design defense fo
 
 ## Safety / secure by default
 
-The single highest-leverage harm control is the default, because most users never change settings (Nielsen's defaults principle) and because the out-of-the-box state is the state that ships to everyone. OWASP's **secure-by-default** principle: products should "start in a secure state without requiring... configuration," and the default settings should be "the most secure settings possible." Generalized to harm: the default should be the _safest_ state, and the user should have to deliberately opt _into_ risk, never accidentally fall into it.
+The single highest-leverage harm control is the default, because most users never change settings (Jakob N.'s defaults principle) and because the out-of-the-box state is the state that ships to everyone. OWASP's **secure-by-default** principle: products should "start in a secure state without requiring... configuration," and the default settings should be "the most secure settings possible." Generalized to harm: the default should be the _safest_ state, and the user should have to deliberately opt _into_ risk, never accidentally fall into it.
 
 | Domain | Safe default (ship this) | Unsafe default (the harm) |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ You cannot prevent every harmful action without making the product unusable; har
 The graduated friction ladder, lightest to heaviest — match the rung to harm × reversibility (the calibration in `trust-control-steerability.md`):
 
 1. **None.** Reversible, low-stakes (draft, archive, anything with undo) — don't add friction; add reversibility instead.
-2. **Undo window.** The action proceeds but is reversible for a period ("Undo send"; trash for 30 days) — protects against mistakes without interrupting the common case. The preferred control where possible (Nielsen H3, and `auditability-and-control.md`).
+2. **Undo window.** The action proceeds but is reversible for a period ("Undo send"; trash for 30 days) — protects against mistakes without interrupting the common case. The preferred control where possible (Jakob N. H3, and `auditability-and-control.md`).
 3. **Confirmation.** "Are you sure?" — weak, because users click through it. Use only when undo is impossible, and make it _informative_ ("This permanently deletes 1,240 files") not reflexive ("Are you sure?").
 4. **Type-to-confirm / re-authenticate.** For high-stakes irreversible actions (delete account, wire funds, drop a database) — require typing the resource name or re-entering a password, defeating the click-through reflex. Friction proportional to permanence.
 5. **Cooling-off / delay.** For the most consequential and abuse-prone (account deletion with a grace period, a large transfer with a hold, a cancel-account flow that can be reversed for 14 days) — time itself is the safety mechanism, undoing impulse and giving harm a chance to be caught.
@@ -145,4 +145,4 @@ A product passes when the worst plausible user — careless, hostile, or in cris
 
 ## One labeled caveat
 
-The "stress cases" reframing, the quoted reasoning that calling them "edge cases" gives "permission to ignore them," and the Facebook "Year in Review" example are from Meyer & Wachter-Boettcher's _Design for Real Life_ (A Book Apart, 2016), cross-checked against the authors' published talks and A List Apart excerpts in this session rather than against the print pagination. Abuse cases and the attacker's-perspective rationale are OWASP's (Abuse Case Cheat Sheet); secure-by-default ("most secure settings possible," "start in a secure state") is OWASP's Developer Guide / Proactive Controls C5. The undo-over-confirm and error-prevention guidance is Nielsen's Heuristics 3 and 5 (NN/g). AI-specific red-teaming is a **fast-evolving area** — the principle (adversarially probe for harmful/jailbroken outputs before release) is well-established and durable, but specific methods, taxonomies, and tooling change quickly; treat the practice as sound and verify current technique before relying on a specific method. Risk × reversibility calibration is developed in `ai-ux/trust-control-steerability.md`; the undo/lifecycle surface in `auditability-and-control.md`; stress-case tone in `feedback/microcopy.md`.
+The "stress cases" reframing, the quoted reasoning that calling them "edge cases" gives "permission to ignore them," and the Facebook "Year in Review" example are from Meyer & Wachter-Boettcher's _Design for Real Life_ (A Book Apart, 2016), cross-checked against the authors' published talks and A List Apart excerpts in this session rather than against the print pagination. Abuse cases and the attacker's-perspective rationale are OWASP's (Abuse Case Cheat Sheet); secure-by-default ("most secure settings possible," "start in a secure state") is OWASP's Developer Guide / Proactive Controls C5. The undo-over-confirm and error-prevention guidance is Jakob N.'s Heuristics 3 and 5 (NN/g). AI-specific red-teaming is a **fast-evolving area** — the principle (adversarially probe for harmful/jailbroken outputs before release) is well-established and durable, but specific methods, taxonomies, and tooling change quickly; treat the practice as sound and verify current technique before relying on a specific method. Risk × reversibility calibration is developed in `ai-ux/trust-control-steerability.md`; the undo/lifecycle surface in `auditability-and-control.md`; stress-case tone in `feedback/microcopy.md`.

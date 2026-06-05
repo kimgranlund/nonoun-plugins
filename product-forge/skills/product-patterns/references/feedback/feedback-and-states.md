@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
+  - "NN/g — Visibility of System Status (Usability Heuristic #1) (nngroup.com/articles/visibility-system-status)"
   - "Jakob N. / NN/g — Response Time Limits: The 3 Important Limits (nngroup.com/articles/response-times-3-important-limits)"
-  - "Nielsen Norman Group — Skeleton Screens 101 (nngroup.com/articles/skeleton-screens)"
-  - "Nielsen Norman Group — Confirmation Dialogs Can Prevent User Errors (If Not Overused) (nngroup.com/articles/confirmation-dialog)"
+  - "NN/g — Skeleton Screens 101 (nngroup.com/articles/skeleton-screens)"
+  - "NN/g — Confirmation Dialogs Can Prevent User Errors (If Not Overused) (nngroup.com/articles/confirmation-dialog)"
   - "Aza Raskin / A List Apart — Never Use a Warning When You Mean Undo (alistapart.com/article/neveruseawarning)"
   - "MDN Web Docs — ARIA live regions (developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions)"
 ---

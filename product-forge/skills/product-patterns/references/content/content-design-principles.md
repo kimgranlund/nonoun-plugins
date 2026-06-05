@@ -5,7 +5,7 @@ primary_sources:
   - "Sarah Richards, *Content Design* (Content Design London, 2017; 2nd ed. 2023). ISBN 9781527209183. https://contentdesign.london/the-content-design-book"
   - "PlainLanguage.gov — Federal Plain Language Guidelines, and the Plain Writing Act of 2010 (P.L. 111-274). https://www.plainlanguage.gov/guidelines/ , https://www.govinfo.gov/app/details/PLAW-111publ274"
   - "Digital.gov — 'An introduction to plain language.' https://digital.gov/resources/an-introduction-to-plain-language/"
-  - "Nielsen Norman Group — 'Match Between the System and the Real World (Usability Heuristic #2)' (Jakob N. / Maria Rosala). https://www.nngroup.com/articles/match-system-real-world/"
+  - "NN/g — 'Match Between the System and the Real World (Usability Heuristic #2)' (Jakob N. / Maria Rosala). https://www.nngroup.com/articles/match-system-real-world/"
   - "Torrey P., *Strategic Writing for UX* (O'Reilly, 1st ed. 2019; 2nd ed. 2025) — the dual-goal premise (name both the user's goal and the organization's goal for a screen) and the voice chart. https://www.oreilly.com/library/view/strategic-writing-for/9781492049388/"
 ---
 
@@ -30,7 +30,7 @@ The single sharpest test of which mode you're in: **if a user reads this wrong, 
 Content design begins with research into the actual need, expressed in the user's own words — not the organisation's framing of it. Richards' method is to write the need as a user-need statement and design content against it, then verify against real data on how users search for and digest the information.
 
 - **Name the need as a job, not a topic.** "Renew a passport" (a job) tells you what content must enable; "Passport information" (a topic) is an org-shaped bucket that invites a content dump.
-- **Use the user's words, not the institution's.** If users search "how much does it cost," the heading is about cost, in those words — not "Fee schedule." This is the content-design face of Nielsen's Heuristic #2, _Match between the system and the real world_: "speak the users' language, with words, phrases, and concepts familiar to the user, rather than system-oriented terms."
+- **Use the user's words, not the institution's.** If users search "how much does it cost," the heading is about cost, in those words — not "Fee schedule." This is the content-design face of Jakob N.'s Heuristic #2, _Match between the system and the real world_: "speak the users' language, with words, phrases, and concepts familiar to the user, rather than system-oriented terms."
 - **Answer the question, then stop.** Content earns its place by serving a need; if no user need maps to a paragraph, cut it. GOV.UK's discipline was ruthless deletion — content with no demonstrated need is removed, not reworded.
 - **Pick the right form for the need, not the default form.** Content design is medium-agnostic: the answer to a need might be a table, a calculator, a short video, a single sentence, or a diagram — prose is one option among several, not the assumed one.
 

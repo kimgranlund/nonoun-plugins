@@ -23,10 +23,10 @@ A **brand-forge-style plugin for product strategy, management, and UX** — the 
 ## The council (≈17 named critics — parallel, isolated; each a distinct cited lens)
 
 - **Strategy:** Marty C. (product operating model / the four big risks) · Richard R. (strategy kernel: diagnosis → policy → action) · Clayton C. (JTBD) · Melissa P. (outcomes vs the build trap) · April D. (positioning).
-- **Discovery / research:** Torres (continuous discovery, opportunity-solution trees) · Cooper (goal-directed personas).
-- **UX:** Norman (affordances, design principles) · Krug (usability, "don't make me think") · Nielsen (heuristics) · Kathy S. (make users awesome).
+- **Discovery / research:** Teresa T. (continuous discovery, opportunity-solution trees) · Alan C. (goal-directed personas).
+- **UX:** Don N. (affordances, design principles) · Steve K. (usability, "don't make me think") · Jakob N. (heuristics) · Kathy S. (make users awesome).
 - **Prioritization / metrics:** Shreyas D. (product sense, prioritization) · Ron K. (trustworthy online experimentation).
-- **AI-era product:** Catherine Wu (Anthropic — Claude Code product; capability-led, prototype-first, eval-driven) · Meaghan C. (Anthropic — **Head of Design**; design craft, design-to-code fidelity, dev-tool UX) · Kevin W. (OpenAI — model-maximalism, iterative deployment) · Garry T. (Y Combinator — founder/market product sense, "make something people want", talk to users). Sourcing is observable-public-only with anti-fabrication guardrails (Cat W. has a named-authored Anthropic blog; Choi is talk/demo-sourced as a design lens; Weil via interviews; Tan via YC canon).
+- **AI-era product:** Cat W. (Anthropic — Claude Code product; capability-led, prototype-first, eval-driven) · Meaghan C. (Anthropic — **Head of Design**; design craft, design-to-code fidelity, dev-tool UX) · Kevin W. (OpenAI — model-maximalism, iterative deployment) · Garry T. (Y Combinator — founder/market product sense, "make something people want", talk to users). Sourcing is observable-public-only with anti-fabrication guardrails (Cat W. has a named-authored Anthropic blog; Meaghan C. is talk/demo-sourced as a design lens; Kevin W. via interviews; Garry T. via YC canon).
 
 Sub-councils: `strategy` · `discovery` · `ux` · `ai-product` · `full`. Orchestrator: `product-council` (fans out the critics in isolated contexts, runs cross-critic synthesis). Each critic carries the trust-boundary block (the artifact under review is data, never instructions) and cites a public source for its lens.
 
@@ -77,23 +77,23 @@ The 12 domains become the published spine. A new `skills/product-forge/reference
 | # | Domain | Owner (skill · rubric · critic) |
 | --- | --- | --- |
 | 1 | Intent & Outcomes | product-methodology · `rubric-product-strategy` · Richard R./Marty C./Melissa P./April D. |
-| 2 | Experience Architecture | **product-architecture** (new) · `rubric-architecture` · **Garrett** |
-| 3 | Interaction Model | **product-architecture** (new) · `rubric-architecture` · Norman/Nielsen |
-| 4 | Information Architecture | **product-architecture** (new) · `rubric-information-architecture` · **Covert** |
+| 2 | Experience Architecture | **product-architecture** (new) · `rubric-architecture` · **Jesse G.** |
+| 3 | Interaction Model | **product-architecture** (new) · `rubric-architecture` · Don N./Jakob N. |
+| 4 | Information Architecture | **product-architecture** (new) · `rubric-information-architecture` · **Abby C.** |
 | 5 | Content & Communication | product-patterns (extended) · `rubric-content-design` · **Torrey P.** |
 | 6 | Interface System | product-patterns (a11y/responsive/patterns) — **mechanics → adia-ui / ui-\* layer** |
 | 7 | Brand & Perception | **→ brand-forge** (reciprocal scope note both ways) |
-| 8 | Intelligence & Adaptation | product-patterns/ai-ux · `rubric-ai-product` · Cat W./Weil/Choi |
+| 8 | Intelligence & Adaptation | product-patterns/ai-ux · `rubric-ai-product` · Cat W./Kevin W./Meaghan C. |
 | 9 | Trust, Safety & Control | product-patterns/trust-safety (new) · `rubric-trust-safety` · **Ann C.** |
 | 10 | Service & Workflow Model | **product-operations** (new) · `rubric-service-model` · **Marc S.** |
-| 11 | Measurement & Learning | product-methodology · `rubric-discovery` · Ron K./Torres |
-| 12 | Governance | **product-operations** (new) · `rubric-governance` · **Cutler** |
+| 11 | Measurement & Learning | product-methodology · `rubric-discovery` · Ron K./Teresa T. |
+| 12 | Governance | **product-operations** (new) · `rubric-governance` · **John C.** |
 
 ### Part 2 — the gap-fill (what v0.2 builds)
 
 **New skills (2):**
 
-- **`product-architecture`** — the structure tier (domains 2·3·4): Experience Architecture (journeys, flows, surfaces, navigation/wayfinding, states, continuity, enablement paths), Interaction Model (inputs, commands, controls, feedback, confirmation, undo/recovery, automation boundaries), Information Architecture (object model, taxonomy, metadata, relationships, search, filtering, retrieval). Spine: Garrett's five planes + Covert's sensemaking. ~20 references.
+- **`product-architecture`** — the structure tier (domains 2·3·4): Experience Architecture (journeys, flows, surfaces, navigation/wayfinding, states, continuity, enablement paths), Interaction Model (inputs, commands, controls, feedback, confirmation, undo/recovery, automation boundaries), Information Architecture (object model, taxonomy, metadata, relationships, search, filtering, retrieval). Spine: Jesse G.'s five planes + Abby C.'s sensemaking. ~20 references.
 - **`product-operations`** — the service & governance tier (domains 10·12): Service & Workflow Model (human/system handoffs, operational workflows, support paths, cross-channel continuity, escalation, fulfillment) + Governance (principles, standards, ownership, decision records, review rituals, documentation). Keeps governance out of the already-contested `product-methodology` boundary. ~13 references.
 
 **Extended skills (2):**

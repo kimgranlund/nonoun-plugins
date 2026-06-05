@@ -29,7 +29,7 @@ Two rules carry across every phase. **The lead seat changes by phase** — the P
 - **Leads:** Creative Director (the gatekeeper — coordinates and gates against the brief; does not execute), with the **Copywriter + Art Director** pairing, the **Design Director** (who systematizes a territory into type/color/iconography), and the **Product / UX Designer** (who carries the brand across digital surfaces).
 - **Muse — the pull:** hold the aspiration as the gravity for the visual and verbal idea — raid a distant world for a mechanism to emulate (not a competitor's surface), and let the ideal, not the category, bend the execution.
 - **Team produces:** the identity, voice/tone, the expression system, the product expression.
-- **Council reviews:** the `design` sub-council (Massimo V., Paula S., Matt W., Walsh) for the visual idea and system; the `voice` sub-council (David A., Lois, Tim D., Mary N.) for copy and naming.
+- **Council reviews:** the `design` sub-council (Massimo V., Paula S., Matt W., Jessica W.) for the visual idea and system; the `voice` sub-council (David A., George L., Tim D., Mary N.) for copy and naming.
 - **Ritual:** the **design review / crit** — fresh eyes, critique of the work and not the person.
 - **Handoff out → Stewardship.** Artifact: the expression system. **Gate:** is it downstream of the written strategy, or is it decoration?
 - **Failure mode:** expression untethered from strategy ("wrong in ways that are expensive to unwind"); craft admired in isolation; moodboards dominated by other _brands_ rather than primary cultural sources.

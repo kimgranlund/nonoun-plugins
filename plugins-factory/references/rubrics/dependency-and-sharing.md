@@ -8,7 +8,7 @@ version: "0.1.0"
 
 The drill-down for holistic **P4** — the library make-or-break. An installed plugin is copied into a version-keyed cache and cannot reach outside its own directory, so every shared resource must be resolved legally or the plugin ships dangling references on first install. This rubric scores whether sharing is legal and whether anything dead is bundled.
 
-Theory: `../foundations/dependency-and-sharing-foundations.md`. Primary critic: **Scott W.** (make the illegal layout unrepresentable) with **Simon Willison** (cross-boundary references are attack surface) second.
+Theory: `../foundations/dependency-and-sharing-foundations.md`. Primary critic: **Scott W.** (make the illegal layout unrepresentable) with **Simon W.** (cross-boundary references are attack surface) second.
 
 ---
 

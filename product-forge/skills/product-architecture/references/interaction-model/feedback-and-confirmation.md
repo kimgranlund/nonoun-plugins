@@ -3,18 +3,18 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Don N., *The Design of Everyday Things*, Revised & Expanded Edition (Basic Books, 2013) — Gulf of Execution, Gulf of Evaluation, the Seven Stages of Action, feedback."
-  - "Donald A. Norman & Stephen W. Draper (eds.), *User Centered System Design* (Lawrence Erlbaum, 1986) — first formulation of the gulfs of execution and evaluation."
+  - "Don N. & Stephen W. Draper (eds.), *User Centered System Design* (Lawrence Erlbaum, 1986) — first formulation of the gulfs of execution and evaluation."
   - "Jakob N. — “10 Usability Heuristics for User Interface Design,” Heuristic #1 “Visibility of System Status” (nngroup.com/articles/ten-usability-heuristics). First published 1994."
   - "Aza Raskin, “Never Use a Warning When you Mean Undo,” A List Apart (2007) — habituation, confirmation fatigue (alistapart.com/article/neveruseawarning)."
 ---
 
 # Feedback & Confirmation
 
-This is the working method for the system's half of the conversation: how the product tells the user what state it's in, what just happened, and whether their action took effect. The frame is Norman's: every interaction crosses two gulfs, and feedback is what closes the second one. The companion problem is confirmation — when to interrupt the user to ask "are you sure?" and when that interruption is friction that trains the user to ignore you. Get feedback wrong and the user can't tell if the system heard them; over-confirm and you've built a button that everyone clicks reflexively.
+This is the working method for the system's half of the conversation: how the product tells the user what state it's in, what just happened, and whether their action took effect. The frame is Don N.'s: every interaction crosses two gulfs, and feedback is what closes the second one. The companion problem is confirmation — when to interrupt the user to ask "are you sure?" and when that interruption is friction that trains the user to ignore you. Get feedback wrong and the user can't tell if the system heard them; over-confirm and you've built a button that everyone clicks reflexively.
 
-## Norman's two gulfs (the spine)
+## Don N.'s two gulfs (the spine)
 
-Norman frames every interaction as bridging two gulfs across the **Seven Stages of Action** (goal → plan → specify → perform → perceive → interpret → compare). First formulated in _User Centered System Design_ (1986) and central to _The Design of Everyday Things_:
+Don N. frames every interaction as bridging two gulfs across the **Seven Stages of Action** (goal → plan → specify → perform → perceive → interpret → compare). First formulated in _User Centered System Design_ (1986) and central to _The Design of Everyday Things_:
 
 - **Gulf of Execution** — the gap between the user's intention and the actions the system allows. "How do I do this? What can I do? Is this control the one I want?" Bridged by good affordances, signifiers, mapping, and constraints — the _input_ side (see `inputs-and-controls.md`).
 - **Gulf of Evaluation** — the gap between the system's state and the user's understanding of it. "Did it work? What state is it in now? Is this what I wanted?" Bridged by **feedback** — the system making its status perceivable and interpretable. This is the gulf feedback exists to close.
@@ -23,7 +23,7 @@ The operational consequence: every action the user takes is a question, and the 
 
 ## Visibility of system status (Heuristic #1)
 
-Nielsen's first heuristic is the operational rule for the gulf of evaluation: **"The system should always keep users informed about what is going on, through appropriate feedback within a reasonable time."** Three timing bands govern what "appropriate" means (Nielsen's classic response-time limits):
+Jakob N.'s first heuristic is the operational rule for the gulf of evaluation: **"The system should always keep users informed about what is going on, through appropriate feedback within a reasonable time."** Three timing bands govern what "appropriate" means (Jakob N.'s classic response-time limits):
 
 - **~0.1s — feels instantaneous.** Direct-manipulation feedback (a button depresses, a dragged object follows the cursor) must land in this window or the link between action and reaction breaks. No spinner needed; the change _is_ the feedback.
 - **~1s — keeps the flow of thought.** The user notices the delay but stays oriented; no special indicator needed beyond the eventual result, though a subtle busy cue helps.

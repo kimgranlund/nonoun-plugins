@@ -4,14 +4,14 @@ coverage: foundational
 primary_sources:
   - "Regulation (EU) 2016/679 (GDPR), Article 15 (right of access), Article 17 (right to erasure / 'right to be forgotten'), Article 20 (right to data portability). https://gdpr-info.eu/art-20-gdpr/"
   - "California Consumer Privacy Act / CPRA — consumer rights to know, access, delete, correct, and opt-out. State of California DOJ. https://oag.ca.gov/privacy/ccpa"
-  - "Jakob N.. \"10 Usability Heuristics for User Interface Design.\" Nielsen Norman Group, 1994 / updated 2024 — esp. Heuristic 3, 'User Control and Freedom' (the 'emergency exit' / undo principle). https://www.nngroup.com/articles/ten-usability-heuristics/"
+  - "Jakob N. \"10 Usability Heuristics for User Interface Design.\" NN/g, 1994 / updated 2024 — esp. Heuristic 3, 'User Control and Freedom' (the 'emergency exit' / undo principle). https://www.nngroup.com/articles/ten-usability-heuristics/"
 ---
 
 # Auditability & Control
 
 Once a product holds data about a person and acts on their behalf, the question becomes: can the person see, move, correct, undo, and delete what the system holds and does — or are they locked out of their own record? This reference is about that control surface: data access and portability (export), deletion and the account/data lifecycle, audit trails and history, reversibility, and the consolidated "show me everything you know about me" view. It is the operational backstop to `privacy-by-design.md` (which is about not over-collecting in the first place) and `consent-and-permissions.md` (whose "withdraw as easily as you grant" right lives in exactly this control surface). The load-bearing principle: **the user, not just the operator, must have read and write access to their own record** — to inspect it, take a copy, fix it, reverse what the system did, and have it erased. A system the user can only feed and never inspect or unwind is a one-way mirror.
 
-> Two standards anchor this. From data-protection law (GDPR Art. 20), the user has a right to receive their data "in a structured, commonly used and machine-readable format" and to transmit it elsewhere — portability, not just viewing. From usability (Nielsen's Heuristic 3, "User Control and Freedom"), users "often perform actions by mistake" and need "a clearly marked 'emergency exit'... support[ing] undo and redo." Control is both a legal entitlement and a usability floor.
+> Two standards anchor this. From data-protection law (GDPR Art. 20), the user has a right to receive their data "in a structured, commonly used and machine-readable format" and to transmit it elsewhere — portability, not just viewing. From usability (Jakob N.'s Heuristic 3, "User Control and Freedom"), users "often perform actions by mistake" and need "a clearly marked 'emergency exit'... support[ing] undo and redo." Control is both a legal entitlement and a usability floor.
 
 The legal scaffolding (GDPR Articles 15/17/20, CCPA/CPRA) is durable and citable; the design patterns that satisfy it (an account dashboard, an export button, an activity log, an undo) are well-established usability practice. This file describes the **design implications** of those rights, not a compliance opinion.
 
@@ -70,7 +70,7 @@ The tell of good auditability: the user can answer "what happened to my account 
 
 ## Reversibility — undo over confirm
 
-Control is hollow if the user can see what happened but can't unwind it. Nielsen's third heuristic, "User Control and Freedom," is the principle: because "users often perform actions by mistake," the system needs "a clearly marked 'emergency exit'" and should "support undo and redo." The design hierarchy, strongest to weakest:
+Control is hollow if the user can see what happened but can't unwind it. Jakob N.'s third heuristic, "User Control and Freedom," is the principle: because "users often perform actions by mistake," the system needs "a clearly marked 'emergency exit'" and should "support undo and redo." The design hierarchy, strongest to weakest:
 
 1. **Undo.** The action happens immediately and is fully reversible afterward (sent → "Undo send"; deleted → restorable from trash for N days). This is the gold standard: it keeps the product fast _and_ safe, and it beats a confirmation dialog because it doesn't interrupt the common case.
 2. **Reversible-by-design.** The action is non-destructive (archive instead of delete; draft instead of publish), so "undo" is just doing the inverse.
@@ -100,7 +100,7 @@ The tell of an honest lifecycle: "delete" deletes (with a clear, lawful exceptio
 - **Deletion that's deactivation.** "Delete my account" silently retains the data; the user is told a comforting untruth (a dark pattern, and a GDPR Art. 17 failure).
 - **Inferred-data blackout.** What the user typed is visible; what the system concluded about them is hidden — the consequential layer withheld.
 - **Invisible action.** A system (especially an agent) acts on the user's behalf with no reviewable log — the user reconstructs events from their damage.
-- **Confirm instead of undo.** A wall of "are you sure?" dialogs the user clicks through, where reversible-by-design or undo would actually protect them (Nielsen H3).
+- **Confirm instead of undo.** A wall of "are you sure?" dialogs the user clicks through, where reversible-by-design or undo would actually protect them (Jakob N. H3).
 - **Unreachable rights.** Access/export/delete exist only as an email-the-company process with no timeline — present on paper, useless in practice.
 
 ---
@@ -110,7 +110,7 @@ The tell of an honest lifecycle: "delete" deletes (with a clear, lawful exceptio
 1. **Access — including inferred.** Can the user see what's held _and what the system inferred_ about them, with why/how-long/who-else — or only the data they typed?
 2. **Portable.** Is there an export in a structured, machine-readable format the user can actually take elsewhere (GDPR Art. 20) — or a hostage PDF / no export?
 3. **Auditable.** Can the user see what happened to their account and what the system did on their behalf, from a reachable log — or only infer it from consequences?
-4. **Reversible.** Does the product favor undo and reversible-by-design over click-through confirmations, and reach for confirmation only on the genuinely irreversible (Nielsen H3)?
+4. **Reversible.** Does the product favor undo and reversible-by-design over click-through confirmations, and reach for confirmation only on the genuinely irreversible (Jakob N. H3)?
 5. **Honest lifecycle.** Does "delete" actually erase (with a clear lawful-retention exception list and propagation to copies), and can the user leave with their data — or does "delete" mean "hide"?
 
 A product passes when a user can open one place, see everything the system holds and concluded about them, take a usable copy, fix what's wrong, review and unwind what the system did, and truly delete it all when they leave. It fails when the user is locked inside their own record — able to add but not inspect, to leave but not take their data, to "delete" without anything being deleted.
@@ -119,4 +119,4 @@ A product passes when a user can open one place, see everything the system holds
 
 ## One labeled caveat
 
-This file describes **design implications, not legal advice or a compliance opinion**. The GDPR rights are Articles 15 (access), 16 (rectification), 17 (erasure), and 20 (portability, incl. the verbatim "structured, commonly used and machine-readable format"); the CCPA/CPRA rights to know, delete, correct, and opt-out track the California DOJ overview. Specific timelines (GDPR's "without undue delay" / one month; CCPA's 45 days) and lawful-retention exceptions vary by jurisdiction and data type — treat the _rights_ as durable and verify current statutory detail before relying on a number. "User Control and Freedom" (undo/redo, "emergency exit") is Nielsen's Heuristic 3 (NN/g, 1994 / updated 2024). The autonomy-logging and risk × reversibility connections are developed in `ai-ux/trust-control-steerability.md`; friction-as-safety in `risk-and-harm-handling.md`.
+This file describes **design implications, not legal advice or a compliance opinion**. The GDPR rights are Articles 15 (access), 16 (rectification), 17 (erasure), and 20 (portability, incl. the verbatim "structured, commonly used and machine-readable format"); the CCPA/CPRA rights to know, delete, correct, and opt-out track the California DOJ overview. Specific timelines (GDPR's "without undue delay" / one month; CCPA's 45 days) and lawful-retention exceptions vary by jurisdiction and data type — treat the _rights_ as durable and verify current statutory detail before relying on a number. "User Control and Freedom" (undo/redo, "emergency exit") is Jakob N.'s Heuristic 3 (NN/g, 1994 / updated 2024). The autonomy-logging and risk × reversibility connections are developed in `ai-ux/trust-control-steerability.md`; friction-as-safety in `risk-and-harm-handling.md`.

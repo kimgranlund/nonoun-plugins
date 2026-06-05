@@ -56,9 +56,9 @@ Each technique below is a powerful tool with a **narrow fit envelope**. The defi
 
 **Fits.** Analysis/exploration (the clear win), and large decomposable generative builds with hard file boundaries.
 
-**Risks & limits.** This is the heart of the **Yan↔Chase tension**. Yan: parallel subagents make conflicting implicit decisions, and a summary-only handoff drops the reasoning the next step needs — "actions carry implicit decisions, and conflicting decisions carry bad results." Chase: multi-agent is fine _if_ backed by durable shared state and human-in-the-loop checkpoints. Both are right within their envelope.
+**Risks & limits.** This is the heart of the **Walden Y.↔Harrison C. tension**. Walden Y.: parallel subagents make conflicting implicit decisions, and a summary-only handoff drops the reasoning the next step needs — "actions carry implicit decisions, and conflicting decisions carry bad results." Harrison C.: multi-agent is fine _if_ backed by durable shared state and human-in-the-loop checkpoints. Both are right within their envelope.
 
-**Safe property.** Subtasks genuinely independent (read-only analysis is the safest case); full-trace synthesis, not summary-only; or durable shared state + checkpoints when subagents write. **Rubric/critic**: Arch A2 (Chase), A3 (Yan).
+**Safe property.** Subtasks genuinely independent (read-only analysis is the safest case); full-trace synthesis, not summary-only; or durable shared state + checkpoints when subagents write. **Rubric/critic**: Arch A2 (Harrison C.), A3 (Walden Y.).
 
 ---
 
@@ -72,13 +72,13 @@ Each technique below is a powerful tool with a **narrow fit envelope**. The defi
 
 **Risks & limits.** Unverifiable tasks are the trap: if the operator can't verify the PR, the async run just relocates the uncertainty. Spec ambiguity → confidently wrong PR. And many PRs → a review bottleneck that quietly re-bounds the human.
 
-**Safe property.** Well-specified + verifiable + sandboxed + reviewed at the PR boundary. **Rubric/critic**: Arch A6 (durable state, oversight-at-scale — Chase); UX D3 (observability of what the run did), D6 (the PR review _is_ the verify step).
+**Safe property.** Well-specified + verifiable + sandboxed + reviewed at the PR boundary. **Rubric/critic**: Arch A6 (durable state, oversight-at-scale — Harrison C.); UX D3 (observability of what the run did), D6 (the PR review _is_ the verify step).
 
 ---
 
 ## YOLO mode (no per-step approval)
 
-**What.** Auto-accept every agent action with no per-step approval. In Willison's words, "so dangerous, but it's also key to getting the most productive results."
+**What.** Auto-accept every agent action with no per-step approval. In Simon W.'s words, "so dangerous, but it's also key to getting the most productive results."
 
 **How to run.** Only inside containment: a container without internet, scoped (non-production) credentials, budget and step limits, and a strong test suite as backpressure. "If a credential can spend money, set a tight budget limit."
 
@@ -100,7 +100,7 @@ Each technique below is a powerful tool with a **narrow fit envelope**. The defi
 
 **Risks & limits.** Drift (the agent reinforces its own mistakes), unverified self-edits to live behavior, and over-trusting the agent's self-assessment of what's worth keeping.
 
-**Safe property.** Human-curated graduations; inspectable, reversible self-edits; lessons that earn their place against evidence. **Rubric/critic**: UX D7 (feedback compounding — Litt), Arch A4 (harness — Mitchell H.).
+**Safe property.** Human-curated graduations; inspectable, reversible self-edits; lessons that earn their place against evidence. **Rubric/critic**: UX D7 (feedback compounding — Geoffrey L.), Arch A4 (harness — Mitchell H.).
 
 ---
 
@@ -110,9 +110,9 @@ Each technique below is a powerful tool with a **narrow fit envelope**. The defi
 
 **Fits.** Any long-horizon task in any lifecycle where context grows toward the window limit.
 
-**Risks & limits.** Compaction that drops the decisions/traces the work depends on; notes that go stale; isolation that fragments coherence (Yan again).
+**Risks & limits.** Compaction that drops the decisions/traces the work depends on; notes that go stale; isolation that fragments coherence (Walden Y. again).
 
-**Safe property.** Compaction preserves decisions and traces; notes are curated, not just appended; isolation reserved for genuinely independent subtasks. **Rubric/critic**: UX D2 (context & memory curation — Litt), Arch A3 (context architecture & integrity — Yan).
+**Safe property.** Compaction preserves decisions and traces; notes are curated, not just appended; isolation reserved for genuinely independent subtasks. **Rubric/critic**: UX D2 (context & memory curation — Geoffrey L.), Arch A3 (context architecture & integrity — Walden Y.).
 
 ---
 
@@ -120,4 +120,4 @@ Each technique below is a powerful tool with a **narrow fit envelope**. The defi
 
 - **design mode**: pick the technique from the lifecycle and stakes (`workflow-lifecycles.md`), then name the property that makes it safe _before_ committing to it.
 - **evaluate mode**: when a workflow uses one of these, apply the meta-rule — can the operator name the safety property? If not, that's a Major finding on UX D1/D5 or Arch A2/A4.
-- **council mode**: route ralph/orchestration questions to Yan + Chase + Mitchell H.; YOLO/blast-radius questions to Karri S. + Amelia W.; self-improving questions to Litt + Mitchell H..
+- **council mode**: route ralph/orchestration questions to Walden Y. + Harrison C. + Mitchell H.; YOLO/blast-radius questions to Karri S. + Amelia W.; self-improving questions to Geoffrey L. + Mitchell H.

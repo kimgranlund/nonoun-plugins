@@ -142,7 +142,7 @@ Is each capability's primitive named and justified — or defaulted?
 
 ### AP-CF4 — The kitchen-sink primitive set
 
-**Symptom**: The plugin uses all five primitives "because it can" — a hook, an MCP, three agents, ten skills — when two would do. **Root cause**: Over-fitting; mistaking primitive variety for sophistication. **Correction**: Use the fewest primitives the shapes require (Elon's lens). Minimalism is not the defect; mismatch is.
+**Symptom**: The plugin uses all five primitives "because it can" — a hook, an MCP, three agents, ten skills — when two would do. **Root cause**: Over-fitting; mistaking primitive variety for sophistication. **Correction**: Use the fewest primitives the shapes require (Elon M.'s lens). Minimalism is not the defect; mismatch is.
 
 ---
 

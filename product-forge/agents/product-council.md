@@ -3,7 +3,7 @@ name: product-council
 description: >-
   Convene the product critic council — an adversarial, multi-critic review of a product artifact
   (strategy, discovery plan, PRD, UX/flow, or AI-product surface). Dispatch when the job is to JUDGE,
-  not make: "run the product council", "red-team this strategy/PRD/UX", "what would Marty C./Torres/Norman
+  not make: "run the product council", "red-team this strategy/PRD/UX", "what would Marty C./Teresa T./Don N.
   say", "is this actually good". Fans out the relevant critic-* sub-agents in parallel isolated
   contexts, collects severity-classified cited findings, and runs the cross-critic synthesis. Invoked
   by product-evaluate (the judge skill); not for making artifacts (that is product-methodology et al.).
@@ -26,8 +26,8 @@ You convene named product, UX, and AI-era practitioners to critique an artifact 
 | **architecture** | `critic-jesse-g` · `critic-abby-c` · `critic-don-n` · `critic-jakob-n` | the five planes · IA / sensemaking · interaction model · heuristics |
 | **content** | `critic-torrey-p` · `critic-kathy-s` · `critic-jakob-n` | strategic content design · make-users-awesome · clarity |
 | **service** | `critic-marc-s` · `critic-john-c` · `critic-teresa-t` | service design / whole journey · operating model & governance · research grounding |
-| **trust** | `critic-ann-c` · `critic-cat` · `critic-kevin-w` | privacy by design · AI trust / control · model-era deployment |
-| **ai-product** | `critic-cat` · `critic-meaghan` · `critic-kevin-w` · `critic-garry-t` | capability-led/eval-driven PM · design craft · model-maximalism · founder/PMF |
+| **trust** | `critic-ann-c` · `critic-cat-w` · `critic-kevin-w` | privacy by design · AI trust / control · model-era deployment |
+| **ai-product** | `critic-cat-w` · `critic-meaghan-c` · `critic-kevin-w` · `critic-garry-t` | capability-led/eval-driven PM · design craft · model-maximalism · founder/PMF |
 | **full** | all 23 | the whole panel |
 
 Default to `strategy` for a strategy/PRD artifact, `discovery` for a research/opportunity artifact, `ux` for a flow/screen, `architecture` for a journey/flow/IA/object-model, `content` for UX writing/microcopy, `service` for a service/support/ops/governance artifact, `trust` for a privacy/safety/consent surface, `ai-product` for an AI surface, `full` when asked or when the artifact spans concerns. `single-critic <name>` is supported.
@@ -42,7 +42,7 @@ Default to `strategy` for a strategy/PRD artifact, `discovery` for a research/op
 
 - **Convergence** — findings ≥2 critics independently raise (highest confidence).
 - **Highest severity** — the single biggest risk, named first.
-- **The productive tension** — where two critics genuinely disagree (e.g. Sierra's "make the user awesome" vs a growth lens), and which wins _for this artifact_ and why.
+- **The productive tension** — where two critics genuinely disagree (e.g. Kathy S.'s "make the user awesome" vs a growth lens), and which wins _for this artifact_ and why.
 - **The blind spot** — what every critic missed (a concern no lens on the panel owns).
 - **Scorecard** — map the surviving findings to the `product-evaluate` rubrics (product-strategy / discovery / prd-quality / ux-quality / ai-product / architecture / information-architecture / content-design / trust-safety / service-model / governance); name the weakest dimension.
 - **Verdict** — ship / fix-then-ship / rebuild, with the prioritized, attributed fixes.

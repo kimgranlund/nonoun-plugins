@@ -12,7 +12,7 @@ primary_sources:
 
 # The Product Strategy Stack
 
-Product work has a natural altitude: a long-range _destination_, a chosen _way to get there_, the _bets and objectives_ that carry the approach, and the _roadmap_ of concrete work. This reference is the working method for the stack — vision → strategy → bets/objectives → roadmap — using Marty C.'s definitions of each layer and his insight-driven account of how strategy is actually made, with Gibson Biddle's DHM model as a concrete lens for what a good strategy concentrates on. It is the constructive companion to `strategy-vs-roadmap.md` (which diagnoses the failure of collapsing the stack) and `rumelt-kernel.md` (the underlying good/bad-strategy theory).
+Product work has a natural altitude: a long-range _destination_, a chosen _way to get there_, the _bets and objectives_ that carry the approach, and the _roadmap_ of concrete work. This reference is the working method for the stack — vision → strategy → bets/objectives → roadmap — using Marty C.'s definitions of each layer and his insight-driven account of how strategy is actually made, with Gibson Biddle's DHM model as a concrete lens for what a good strategy concentrates on. It is the constructive companion to `strategy-vs-roadmap.md` (which diagnoses the failure of collapsing the stack) and `strategy-kernel.md` (the underlying good/bad-strategy theory).
 
 > Marty C.'s one-line framing of the two top layers, paraphrased from _Vision vs. Strategy_ and his Product Experience interview: **the product vision describes the destination — how you will make customers' lives better — and the product strategy is how you decide which problems to solve now in order to get there.** Vision is the _what/where we're going_; strategy is the _how we'll get there_. Collapse them and you get an inspiring poster with no path, or a path to nowhere in particular.
 
@@ -39,7 +39,7 @@ Where the vision is the destination, **the product strategy is how you decide wh
 
 ### Bets / objectives — the strategy made assignable
 
-Strategy becomes executable by being converted into **outcome-based objectives for each team** (OKRs are Marty C.'s preferred instrument). Leadership supplies each team a problem to solve plus the strategic context; the team owns the solution (see `cagan-operating-model.md` and `empowered-teams.md`). The objective is an _outcome_ ("raise activation from A to B"), not an output ("ship the redesign") — encoding an output here re-introduces the build trap one layer up (`build-trap.md`).
+Strategy becomes executable by being converted into **outcome-based objectives for each team** (OKRs are Marty C.'s preferred instrument). Leadership supplies each team a problem to solve plus the strategic context; the team owns the solution (see `product-operating-model.md` and `empowered-teams.md`). The objective is an _outcome_ ("raise activation from A to B"), not an output ("ship the redesign") — encoding an output here re-introduces the build trap one layer up (`build-trap.md`).
 
 ### Roadmap — the concrete work, derived last
 
@@ -49,7 +49,7 @@ The roadmap is the sequence of work the empowered team chooses to pursue its obj
 
 Marty C.'s most useful contribution at the strategy layer is _how_ a real strategy is generated, not just what it contains. In _Changing How You Decide Which Problems To Solve_ and the SVPG strategy series, he frames product strategy as four sequential moves:
 
-1. **Focus.** Choices mean focus — "deciding what few things you really need to do, and therefore all the things you won't do." Most companies fail here by trying to do too much at once and diluting effort. (This is Richard R.'s concentration of force in product clothing; see `rumelt-kernel.md`.)
+1. **Focus.** Choices mean focus — "deciding what few things you really need to do, and therefore all the things you won't do." Most companies fail here by trying to do too much at once and diluting effort. (This is Richard R.'s concentration of force in product clothing; see `strategy-kernel.md`.)
 2. **Leverage insights.** Once focused, strategy "depends on insights," and "insights come from study and thought." Marty C.'s three principal sources: **data** (where most product insights come from — quantitative analysis of how the product is actually used), **qualitative learning** from talking directly to customers, and **new enabling technologies** that change what's now possible. A strategy with no insight is just a reshuffled opinion.
 3. **Convert insights into action.** Translate the chosen insights into **objectives assigned to specific teams**, each with the strategic context they need to solve the problem. This is the seam where the strategy stack meets the operating model.
 4. **Manage the work.** Active management of the strategy "without resorting to micro-management" — keeping the bets coherent and adjusting as learnings arrive, since the strategy is a living thing.

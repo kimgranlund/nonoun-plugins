@@ -10,8 +10,8 @@
 
 Yes — both planted judgment defects, independently and hard:
 
-- **P3 kitchen-sink — caught.** Elon: _"four unrelated jobs in one bundle … four products with commas between them."_ Steve: _"textbook kitchen sink; the partition is trivial."_ Five critics converged on it. Scored **P3 = 1**.
-- **P2 API-wrapper MCP — caught.** Huyen: _"the canonical API-wrapper anti-pattern, self-confessed … 24 endpoint-shaped tools, not a curated task perimeter … no task-level shaping."_ Scored **P2 = 1**.
+- **P3 kitchen-sink — caught.** Elon M.: _"four unrelated jobs in one bundle … four products with commas between them."_ Steve Y.: _"textbook kitchen sink; the partition is trivial."_ Five critics converged on it. Scored **P3 = 1**.
+- **P2 API-wrapper MCP — caught.** Chip H.: _"the canonical API-wrapper anti-pattern, self-confessed … 24 endpoint-shaped tools, not a curated task perimeter … no task-level shaping."_ Scored **P2 = 1**.
 
 The deterministic gates passed this fixture clean; the council blocked it. That is the calibration claim made concrete — the instrument finds the defects no regex can.
 
@@ -19,8 +19,8 @@ The deterministic gates passed this fixture clean; the council blocked it. That 
 
 The council went further than the two planted defects — evidence it is doing real review, not matching a known answer key:
 
-- **P9 destructive MCP (the panel's #1 blocker).** Simon flagged that the wrapper's `delete_user … delete_payment` tools, with a free-form `body` and no scoping or confirmation, ship enabled in a "handy toolbox" bundle — a safety risk the user never vetted. Scored **P9 = 1**. (Not planted as a defect; surfaced from the fixture's contents.)
-- **Broken tool contracts.** All 24 tools share an identical `{id, body}` schema — wrong for `list_*` / `get_*` / `delete_*`. Huyen caught the copy-pasted schema dishonesty.
+- **P9 destructive MCP (the panel's #1 blocker).** Simon W. flagged that the wrapper's `delete_user … delete_payment` tools, with a free-form `body` and no scoping or confirmation, ship enabled in a "handy toolbox" bundle — a safety risk the user never vetted. Scored **P9 = 1**. (Not planted as a defect; surfaced from the fixture's contents.)
+- **Broken tool contracts.** All 24 tools share an identical `{id, body}` schema — wrong for `list_*` / `get_*` / `delete_*`. Chip H. caught the copy-pasted schema dishonesty.
 - **The blind spot it named about itself:** the fixture's `api-mcp.py` declares 24 tools but implements no server loop, so the MCP may be non-functional while still costing full always-on context. Correct — the fixture's MCP is a `TOOLS` list with no JSON-RPC handler.
 
 ## Scorecard (council, P1–P9)

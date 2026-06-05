@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "ITIL / IT Service Management incident-priority convention — P1–P4 severity, response-time vs. resolution-time SLAs, and priority = impact × urgency. Industry-standard framework (AXELOS ITIL); the specific minute/hour benchmarks vary by vendor — verify against the org's own SLA before quoting."
-  - "Nielsen Norman Group — 'Service Blueprints: Definition' (Sarah Gibbons): blueprints expose 'fail points' and dependencies, the basis for exception routing. https://www.nngroup.com/articles/service-blueprints-definition/"
+  - "NN/g — 'Service Blueprints: Definition' (Sarah Gibbons): blueprints expose 'fail points' and dependencies, the basis for exception routing. https://www.nngroup.com/articles/service-blueprints-definition/"
   - "Jakob N., '10 Usability Heuristics' (1994, updated) — #9 'Help users recognize, diagnose, and recover from errors' and #1 'Visibility of system status,' applied to the unhappy path. https://www.nngroup.com/articles/ten-usability-heuristics/"
 ---
 
@@ -62,11 +62,11 @@ For each band, set BOTH:  response SLA (time to acknowledge)
 And state the coverage window (24×7 vs. business hours).
 ```
 
-The UX move: **make the priority and its SLA legible to the user.** "This is a P1, we're on it 24×7, you'll hear from a human within the hour" converts anxiety into trust. Silence on a broken thing — no acknowledgment, no timeframe — is the worst experience, regardless of how fast the eventual fix lands (Nielsen heuristic #1, visibility of system status, applied to the exception).
+The UX move: **make the priority and its SLA legible to the user.** "This is a P1, we're on it 24×7, you'll hear from a human within the hour" converts anxiety into trust. Silence on a broken thing — no acknowledgment, no timeframe — is the worst experience, regardless of how fast the eventual fix lands (Jakob N. heuristic #1, visibility of system status, applied to the exception).
 
 ## Recovery: the unhappy path is still a path
 
-When something breaks for the user, recovery design is governed by Nielsen's error heuristic (#9): help them **recognize, diagnose, and recover.**
+When something breaks for the user, recovery design is governed by Jakob N.'s error heuristic (#9): help them **recognize, diagnose, and recover.**
 
 - **Recognize** — say plainly that something went wrong, in human language, not an error code. "Your payment didn't go through" beats "Error 402."
 - **Diagnose** — give the user enough to understand _why_ and whether it's on them or you. Blameless where it's the system's fault.

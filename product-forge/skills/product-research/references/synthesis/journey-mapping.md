@@ -2,18 +2,18 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — Journey Mapping 101 (nngroup.com/articles/journey-mapping-101)"
-  - "Nielsen Norman Group — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)"
-  - "Nielsen Norman Group — Service Blueprints: Definition (nngroup.com/articles/service-blueprints-definition)"
-  - "Nielsen Norman Group — Approaches to Journey Mapping: 2 Critical Decisions To Make Before You Begin (nngroup.com/articles/journey-mapping-approaches)"
-  - "Nielsen Norman Group — 7 Ways to Analyze a Customer-Journey Map (nngroup.com/articles/analyze-customer-journey-map)"
-  - "Nielsen Norman Group — UX Mapping Methods Compared: A Cheat Sheet (nngroup.com/articles/ux-mapping-cheat-sheet)"
+  - "NN/g — Journey Mapping 101 (nngroup.com/articles/journey-mapping-101)"
+  - "NN/g — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)"
+  - "NN/g — Service Blueprints: Definition (nngroup.com/articles/service-blueprints-definition)"
+  - "NN/g — Approaches to Journey Mapping: 2 Critical Decisions To Make Before You Begin (nngroup.com/articles/journey-mapping-approaches)"
+  - "NN/g — 7 Ways to Analyze a Customer-Journey Map (nngroup.com/articles/analyze-customer-journey-map)"
+  - "NN/g — UX Mapping Methods Compared: A Cheat Sheet (nngroup.com/articles/ux-mapping-cheat-sheet)"
   - "McKinsey & Company — From Moments to Journeys: A Paradigm Shift in Customer Experience Excellence (mckinsey.com)"
 ---
 
 # Journey Maps, Blueprints, and the Moments That Matter
 
-A journey map is the synthesis artifact that turns scattered research into one shared narrative of how a person tries to reach a goal. Nielsen Norman Group's working definition: a journey map is _"a visualization of the process that a person goes through in order to accomplish a goal."_ In its most basic form _"journey mapping starts by compiling a series of user actions into a timeline,"_ then _"the timeline is fleshed out with user thoughts and emotions to create a narrative."_ This reference defines the standard NN/g anatomy, the four map types you must choose between before you draw, how to read a finished map for opportunities, and the one failure mode that voids the whole exercise — drawing the map from the team's assumptions instead of from research.
+A journey map is the synthesis artifact that turns scattered research into one shared narrative of how a person tries to reach a goal. NN/g's working definition: a journey map is _"a visualization of the process that a person goes through in order to accomplish a goal."_ In its most basic form _"journey mapping starts by compiling a series of user actions into a timeline,"_ then _"the timeline is fleshed out with user thoughts and emotions to create a narrative."_ This reference defines the standard NN/g anatomy, the four map types you must choose between before you draw, how to read a finished map for opportunities, and the one failure mode that voids the whole exercise — drawing the map from the team's assumptions instead of from research.
 
 > Why the artifact exists at all: NN/g frames the value as alignment, not decoration. A journey map _"forces conversation and an aligned mental model,"_ and produces _"a shared artifact"_ a team uses to _"communicate an understanding of your user or service to all involved."_ The deliverable is the shared understanding; the poster is a side effect.
 

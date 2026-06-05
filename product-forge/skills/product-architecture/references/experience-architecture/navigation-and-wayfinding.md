@@ -5,7 +5,7 @@ primary_sources:
   - "Peter Pirolli & Stuart Card, “Information Foraging,” *Psychological Review* 106(4), 643–675 (1999) — origin of information scent, developed at Xerox PARC."
   - "Peter Pirolli, *Information Foraging Theory: Adaptive Interaction with Information* (Oxford University Press, 2007)."
   - "Louis Rosenfeld, Peter Morville & Jorge Arango, *Information Architecture for the Web and Beyond* (O'Reilly, 4th ed. 2015) — embedded vs. supplemental navigation systems."
-  - "Nielsen Norman Group — Information Foraging: A Theory of How People Navigate on the Web (nngroup.com/articles/information-foraging)."
+  - "NN/g — Information Foraging: A Theory of How People Navigate on the Web (nngroup.com/articles/information-foraging)."
   - "Steve K., *Don't Make Me Think, Revisited* (New Riders, 2014) — the wayfinding questions and the persistent navigation conventions."
 ---
 
@@ -27,7 +27,7 @@ Supplemental systems sit outside this structure and serve as safety nets and acc
 
 ## The three wayfinding questions
 
-Krug's framing reduces good navigation to three questions a user must always be able to answer at a glance. Use them as the acceptance test for any screen.
+Steve K.'s framing reduces good navigation to three questions a user must always be able to answer at a glance. Use them as the acceptance test for any screen.
 
 1. **"Where am I?"** — Orientation. The user can tell, without thinking, what part of the product they're in. Provided by: a highlighted current item in global nav, a breadcrumb, a clear page heading, section-distinct local nav. NN/g calls failing to indicate the current location the single most common navigation mistake.
 2. **"Where can I go?"** — Options. The available moves are visible (not hidden behind ambiguous icons), and their labels predict where they lead (scent — see below).
@@ -72,4 +72,4 @@ The fastest single test: open any deep screen cold and ask the three questions. 
 
 ## One labeled caveat
 
-The three-systems taxonomy (global/local/contextual, embedded vs. supplemental) is the standard Rosenfeld/Morville/Arango model from _Information Architecture for the Web and Beyond_ and is uncontroversial. Information Foraging Theory and information scent are correctly attributed to Pirolli & Card (PARC, 1999 _Psychological Review_ paper) and Pirolli's 2007 OUP book — these are real, peer-reviewed primary sources; the conceptual claims (scent, patches, satisficing, leaving when scent drops) are accurately characterized, but verbatim quotations should be confirmed against the paper/book before publication. The three wayfinding questions are Krug's well-known formulation from _Don't Make Me Think_; the exact phrasing here is a faithful paraphrase rather than a direct quote.
+The three-systems taxonomy (global/local/contextual, embedded vs. supplemental) is the standard Rosenfeld/Morville/Arango model from _Information Architecture for the Web and Beyond_ and is uncontroversial. Information Foraging Theory and information scent are correctly attributed to Pirolli & Card (PARC, 1999 _Psychological Review_ paper) and Pirolli's 2007 OUP book — these are real, peer-reviewed primary sources; the conceptual claims (scent, patches, satisficing, leaving when scent drops) are accurately characterized, but verbatim quotations should be confirmed against the paper/book before publication. The three wayfinding questions are Steve K.'s well-known formulation from _Don't Make Me Think_; the exact phrasing here is a faithful paraphrase rather than a direct quote.

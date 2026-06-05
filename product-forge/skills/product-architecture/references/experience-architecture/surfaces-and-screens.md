@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "Jesse G., *The Elements of User Experience* (New Riders, 2002/2010) — the surface plane and the distinction between structure, skeleton, and surface."
-  - "Nielsen Norman Group — Channels, Devices, Touchpoints, and Cross-Channel Experiences (nngroup.com/articles/channels-devices-touchpoints) and Omnichannel UX guidance."
+  - "NN/g — Channels, Devices, Touchpoints, and Cross-Channel Experiences (nngroup.com/articles/channels-devices-touchpoints) and Omnichannel UX guidance."
   - "Scott Hurff, *Designing Products People Love* (O'Reilly, 2016) — surface/screen states (the UI Stack), referenced for screen-level inventory."
   - "Jaime Levy, *UX Strategy* (O'Reilly, 2015) — multi-platform / multi-device product surface planning."
 ---
@@ -22,7 +22,7 @@ These three get used interchangeably and shouldn't be.
 | **Surface** | A distinct rendered place the product appears within a channel (the web app, a marketing email, a push notification, a home-screen widget) | Mid |
 | **Screen / view** | A single composed view within a surface (the dashboard screen, the settings screen) | Finest |
 
-Garrett's planes apply at the screen level (a screen is structure → skeleton → surface in his sense of "surface" as the sensory layer); _this_ reference uses "surface" in the product-architecture sense — a whole place the product lives. The distinction matters because the decisions differ: which **channels** to be in is strategy; which **surfaces** within them and what each owns is experience architecture; what each **screen** looks like is interaction/visual design.
+Jesse G.'s planes apply at the screen level (a screen is structure → skeleton → surface in his sense of "surface" as the sensory layer); _this_ reference uses "surface" in the product-architecture sense — a whole place the product lives. The distinction matters because the decisions differ: which **channels** to be in is strategy; which **surfaces** within them and what each owns is experience architecture; what each **screen** looks like is interaction/visual design.
 
 ## The surface inventory
 
@@ -88,4 +88,4 @@ The fastest single test: pick the product's most common real event (a completed 
 
 ## One labeled caveat
 
-The surface/screen/channel distinction and the surface-strategy heuristics (context, interaction budget, persistence, reach) are synthesized from cross-channel/omnichannel UX practice (NN/g) and multi-platform UX-strategy writing (Levy) rather than from a single canonical named framework — they are presented here as working method, well-grounded in the cited sources but not a verbatim model from one author. Garrett's surface plane is cited precisely (the sensory layer of a screen) and should not be confused with this reference's product-level use of "surface." Hurff's UI Stack is referenced only for the screen-state inventory it supplies (covered fully in `states-and-continuity.md`). The "broken promise" hand-off defect is a named-here observation, not a cited term; confirm any specific omnichannel statistic against NN/g's current articles before publication.
+The surface/screen/channel distinction and the surface-strategy heuristics (context, interaction budget, persistence, reach) are synthesized from cross-channel/omnichannel UX practice (NN/g) and multi-platform UX-strategy writing (Levy) rather than from a single canonical named framework — they are presented here as working method, well-grounded in the cited sources but not a verbatim model from one author. Jesse G.'s surface plane is cited precisely (the sensory layer of a screen) and should not be confused with this reference's product-level use of "surface." Hurff's UI Stack is referenced only for the screen-state inventory it supplies (covered fully in `states-and-continuity.md`). The "broken promise" hand-off defect is a named-here observation, not a cited term; confirm any specific omnichannel statistic against NN/g's current articles before publication.

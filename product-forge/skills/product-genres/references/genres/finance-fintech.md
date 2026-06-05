@@ -7,7 +7,7 @@ primary_sources:
   - "Baymard Institute. *E-Commerce Cart & Checkout Usability* (ongoing large-scale usability research program; cart-abandonment benchmark aggregates 49 studies, 2006–2023). https://baymard.com/research/checkout-usability"
   - "Baymard Institute. \"How Users Perceive Security During the Checkout Flow.\" https://baymard.com/blog/perceived-security-of-payment-form"
   - "Federal Trade Commission. \"Collecting, Using, or Sharing Consumer Health Information? Look to HIPAA, the FTC Act, and the Health Breach Notification Rule\" — illustrative of the FTC-Act \"unfair or deceptive practices\" frame that also governs fintech claims. https://www.ftc.gov/business-guidance/resources/collecting-using-or-sharing-consumer-health-information-look-hipaa-ftc-act-health-breach"
-  - "Nielsen Norman Group. \"Few Guesses, More Success: 4 Principles to Reduce Cognitive Load in Forms.\" https://www.nngroup.com/articles/4-principles-reduce-cognitive-load/"
+  - "NN/g. \"Few Guesses, More Success: 4 Principles to Reduce Cognitive Load in Forms.\" https://www.nngroup.com/articles/4-principles-reduce-cognitive-load/"
 ---
 
 # Finance & Fintech as a Product Genre

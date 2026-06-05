@@ -6,7 +6,7 @@ primary_sources:
   - "Harry Brignull — *Deceptive Patterns* and deceptive.design type catalogue: 'Fake social proof', 'Fake scarcity', 'Fake urgency'. https://www.deceptive.design/types"
   - "US FTC — *Bringing Dark Patterns to Light* (Staff Report, Sept. 2022) and the Rule on the Use of Consumer Reviews and Testimonials (fake-review rule, 2024). https://www.ftc.gov/reports/bringing-dark-patterns-light , https://www.ftc.gov/legal-library/browse/rules/rule-use-consumer-reviews-testimonials"
   - "Baymard Institute — e-commerce reviews & trust-signal UX research (respond to negative reviews; don't censor; trust-signal dosage). https://baymard.com/blog/"
-  - "Nielsen Norman Group — 'Social Proof in the User Experience' / testimonials & ratings research. https://www.nngroup.com/articles/social-proof-ux/"
+  - "NN/g — 'Social Proof in the User Experience' / testimonials & ratings research. https://www.nngroup.com/articles/social-proof-ux/"
 ---
 
 # Social Proof, Reviews, and the Line into Manipulation

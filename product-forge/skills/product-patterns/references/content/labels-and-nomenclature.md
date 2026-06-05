@@ -2,11 +2,11 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — 'Match Between the System and the Real World (Usability Heuristic #2)' (Jakob N. / Maria Rosala). https://www.nngroup.com/articles/match-system-real-world/"
+  - "NN/g — 'Match Between the System and the Real World (Usability Heuristic #2)' (Jakob N. / Maria Rosala). https://www.nngroup.com/articles/match-system-real-world/"
   - "Louis Rosenfeld, Peter Morville & Jorge Arango — *Information Architecture for the Web and Beyond*, 4th ed. (O'Reilly, 2015), ch. on Labeling Systems. ISBN 9781491911686."
   - "Donna Spencer — *Card Sorting: Designing Usable Categories* (Rosenfeld Media, 2009). ISBN 9781933820026."
-  - "Nielsen Norman Group — 'Tree Testing: Fast, Iterative Evaluation of Menu Labels and Categories' and 'Card Sorting vs. Tree Testing.' https://www.nngroup.com/articles/tree-testing/ , https://www.nngroup.com/articles/card-sorting-tree-testing-differences/"
-  - "Nielsen Norman Group — 'UI Copy: UX Guidelines for Command Names and Keyboard Shortcuts' (Anna Kaley). https://www.nngroup.com/articles/ui-copy/"
+  - "NN/g — 'Tree Testing: Fast, Iterative Evaluation of Menu Labels and Categories' and 'Card Sorting vs. Tree Testing.' https://www.nngroup.com/articles/tree-testing/ , https://www.nngroup.com/articles/card-sorting-tree-testing-differences/"
+  - "NN/g — 'UI Copy: UX Guidelines for Command Names and Keyboard Shortcuts' (Anna Kaley). https://www.nngroup.com/articles/ui-copy/"
 ---
 
 # Labels and Nomenclature
@@ -26,7 +26,7 @@ Labels fail in aggregate, not individually — a label that's fine alone becomes
 
 ## Speak the user's language
 
-The governing heuristic is Nielsen's #2, _Match between the system and the real world_: the system "should speak the users' language, with words, phrases, and concepts familiar to the user, rather than system-oriented terms," and should follow real-world conventions so information appears in a natural, logical order. Applied to labels:
+The governing heuristic is Jakob N.'s #2, _Match between the system and the real world_: the system "should speak the users' language, with words, phrases, and concepts familiar to the user, rather than system-oriented terms," and should follow real-world conventions so information appears in a natural, logical order. Applied to labels:
 
 - **User words beat internal words.** Label by what the user calls the thing, not what the team calls it in standups. "Invoices," not "Billing artifacts." "Sign in," not "Authenticate."
 - **No invented brand-words in functional labels.** A made-up name for a navigation item ("Synergy Hub," "MyZone") carries no information scent — the user can't predict what's behind it. Brand-flavored naming belongs to brand-forge's identity work; _functional_ labels in the interface must be predictable first. (A product can have a branded _name_ and still label its functions plainly.)

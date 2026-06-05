@@ -1,6 +1,6 @@
 # Rubric: agent-fit
 
-Scores a **bundled agent's design**. Component-fit (P2) asks "is this the right primitive?"; agent-fit drills into the agents that answer pulled toward "agent" — is each one justified, minimally scoped, loader-legal, and (if a reviewer) a distinct cited lens? Build against `references/authoring/agent-architecture.md`; this is its scoring face. Primary critic: Huyen (component-fit) with Simon (security) on the trifecta/loader dimensions.
+Scores a **bundled agent's design**. Component-fit (P2) asks "is this the right primitive?"; agent-fit drills into the agents that answer pulled toward "agent" — is each one justified, minimally scoped, loader-legal, and (if a reviewer) a distinct cited lens? Build against `references/authoring/agent-architecture.md`; this is its scoring face. Primary critic: Chip H. (component-fit) with Simon W. (security) on the trifecta/loader dimensions.
 
 Scoring convention: `[gate]` = mechanically checkable · `[review]` = expert judgment · `[hypothesis]` = observable but unverified.
 

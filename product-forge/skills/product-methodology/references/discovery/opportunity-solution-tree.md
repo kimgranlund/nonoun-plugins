@@ -46,7 +46,7 @@ The tree has exactly four layers, top to bottom. The shape is the discipline: ea
 
 ## Get the outcome right first: three altitudes
 
-Most bad trees are bad because they are rooted in the wrong kind of metric. Torres distinguishes three altitudes, and only the middle one is the correct root for a discovery tree.
+Most bad trees are bad because they are rooted in the wrong kind of metric. Teresa T. distinguishes three altitudes, and only the middle one is the correct root for a discovery tree.
 
 | Altitude | Example | Use as the tree root? |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ Most bad trees are bad because they are rooted in the wrong kind of metric. Torr
 
 ## Building a tree, in order
 
-Torres lays out a deliberate sequence. The order is the point — doing these steps out of order is how teams jump to solutions.
+Teresa T. lays out a deliberate sequence. The order is the point — doing these steps out of order is how teams jump to solutions.
 
 1. **Check prerequisites.** Have a theory of your target customer, a defined product outcome, and a handful of customer interviews (≈3–4) already done. Do not start the tree from zero.
 2. **Place the outcome at the top.** One product outcome. This sets scope for everything below.

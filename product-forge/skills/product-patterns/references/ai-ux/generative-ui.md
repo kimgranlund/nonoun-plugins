@@ -2,8 +2,8 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Kate Moran & Sarah Gibbons, 'Generative UI and Outcome-Oriented Design', Nielsen Norman Group (nngroup.com/articles/generative-ui), 2024-03-22"
-  - "Kate Moran & Sarah Gibbons, 'GenUI: AI-Generated Interfaces' (video), Nielsen Norman Group (nngroup.com/videos/genui-ai-generated-interfaces), 2024"
+  - "Kate Moran & Sarah Gibbons, 'Generative UI and Outcome-Oriented Design', NN/g (nngroup.com/articles/generative-ui), 2024-03-22"
+  - "Kate Moran & Sarah Gibbons, 'GenUI: AI-Generated Interfaces' (video), NN/g (nngroup.com/videos/genui-ai-generated-interfaces), 2024"
   - "Greg Nudelman, 'Secrets of Agentic UX: Emerging Design Patterns for Human Interaction with AI Agents', UX Magazine (uxmag.com/articles/secrets-of-agentic-ux-emerging-design-patterns-for-human-interaction-with-ai-agents), 2025-04-22"
 ---
 

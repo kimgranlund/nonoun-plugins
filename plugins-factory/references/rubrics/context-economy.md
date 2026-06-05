@@ -8,7 +8,7 @@ version: "0.1.0"
 
 The drill-down for holistic **P6**. Every enabled plugin pays a standing context tax on every session. This rubric scores whether that tax is minimal and justified, and whether the plugin's richness lives behind load-on-demand boundaries — so the plugin is worth leaving enabled.
 
-Theory: `../foundations/context-economy-foundations.md`. Primary critic: **Boris Cherny** (vanilla > ceremony) with **Andrej Karpathy** (is the cost buying verifiable capability?) second.
+Theory: `../foundations/context-economy-foundations.md`. Primary critic: **Boris C.** (vanilla > ceremony) with **Andrej K.** (is the cost buying verifiable capability?) second.
 
 ---
 

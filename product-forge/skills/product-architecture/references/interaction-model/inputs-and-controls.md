@@ -4,21 +4,21 @@ coverage: foundational
 primary_sources:
   - "Don N., *The Design of Everyday Things*, Revised & Expanded Edition (Basic Books, 2013) — affordances, signifiers, mapping, constraints. Signifier introduced/elaborated in the 2013 edition."
   - "Don N., “Affordances and Design” (jnd.org/affordances-and-design) — the affordance-vs-signifier clarification."
-  - "Nielsen Norman Group — “Checkboxes vs. Radio Buttons” (nngroup.com/articles/checkboxes-vs-radio-buttons)."
-  - "Nielsen Norman Group — “Toggle-Switch Guidelines” (nngroup.com/articles/toggle-switch-guidelines)."
-  - "Nielsen Norman Group — “Slider Design: Rules of Thumb” (nngroup.com/articles/gui-slider-controls)."
+  - "NN/g — “Checkboxes vs. Radio Buttons” (nngroup.com/articles/checkboxes-vs-radio-buttons)."
+  - "NN/g — “Toggle-Switch Guidelines” (nngroup.com/articles/toggle-switch-guidelines)."
+  - "NN/g — “Slider Design: Rules of Thumb” (nngroup.com/articles/gui-slider-controls)."
 ---
 
 # Inputs & Controls
 
 This is the working method for the lowest layer of the interaction model: the physical and logical means by which a user acts on the product. Before commands, feedback, or automation exist, the user must be able to point, type, speak, toggle, or drag — and the system must signal what is touchable and what each control will do. Two failures dominate here, and both are diagnosable on sight: choosing a control whose semantics don't match the choice the user is making (a toggle where a radio belongs), and shipping a thing the user can act on but cannot _see_ that they can act on (an affordance with no signifier). This file is about getting both right.
 
-## Norman's vocabulary: affordance, signifier, mapping, constraint
+## Don N.'s vocabulary: affordance, signifier, mapping, constraint
 
-Norman's four terms are the spine of input design, and the affordance/signifier pair is the one product people most often blur. Keep them separate.
+Don N.'s four terms are the spine of input design, and the affordance/signifier pair is the one product people most often blur. Keep them separate.
 
 - **Affordance** — a relationship between an object and an agent that determines _what action is possible_. A button affords pushing; a list affords scrolling; a draggable card affords moving. Affordances are about capability, not appearance. An affordance can exist and be completely invisible.
-- **Signifier** — the perceivable signal that _communicates where and how_ to act. Norman introduced the term in the 2013 edition precisely because the design community had stretched "affordance" to mean "the visual cue," which it never was. His one-line split: **"Affordances determine what actions are possible. Signifiers communicate where the action should take place."** A crosswalk is a signifier; the road's traversability is the affordance.
+- **Signifier** — the perceivable signal that _communicates where and how_ to act. Don N. introduced the term in the 2013 edition precisely because the design community had stretched "affordance" to mean "the visual cue," which it never was. His one-line split: **"Affordances determine what actions are possible. Signifiers communicate where the action should take place."** A crosswalk is a signifier; the road's traversability is the affordance.
 - **Mapping** — the relationship between controls and their effects. Good mapping exploits spatial and cultural analogies (a volume slider that goes up for louder; stove knobs laid out like the burners). Bad mapping forces the user to memorize an arbitrary lookup.
 - **Constraint** — a limit designed into the system that reduces the space of possible actions, so the user can't take a wrong one. Physical (a SIM card fits one way), logical (only one radio in a group can be on), cultural (red means stop), semantic (the situation rules out an action). Constraints prevent errors before they happen — the cheapest error handling there is.
 

@@ -39,7 +39,7 @@ plugins-factory/
 
 - **Commands** route to a skill or the council; they never re-contain the standard.
 - **Skills** split by posture: `plugin-build` (author / carve / edit) and `plugin-evaluate` (score / critique / promote, carrying the untrusted-target trust boundary). Both draw on one rubric spine in `references/`.
-- **Agents** — the 9-critic council (`critic-boris` … `critic-scott-w`, each a named-practitioner lens) + `plugin-council` (the orchestrator that fans them out in parallel isolated contexts and runs the cross-critic synthesis) + `carve-analyst` (the composition-graph fan-out worker). **Every agent is tool-scoped read-only** (`Read, Grep, Glob`) — they review _untrusted_ plugins, so they must not be able to execute.
+- **Agents** — the 9-critic council (`critic-boris-c` … `critic-david-f`, each a distilled practitioner lens under an obscured `First L.` display name) + `plugin-council` (the orchestrator that fans them out in parallel isolated contexts and runs the cross-critic synthesis) + `carve-analyst` (the composition-graph fan-out worker). **Every agent is tool-scoped read-only** (`Read, Grep, Glob`) — they review _untrusted_ plugins, so they must not be able to execute.
 - **Gates (`bin/`)** — stdlib Python, all run in CI against every catalog plugin:
   - `validate_plugin.py` — manifest / layout / path static validator + the **command↔skill slug-collision** check + a `selftest` + an advisory `hook` mode.
   - `reference-lint.py` — fails on doc/command references that don't resolve on disk.

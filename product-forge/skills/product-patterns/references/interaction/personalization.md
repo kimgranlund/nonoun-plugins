@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: deep
 primary_sources:
-  - "Nielsen Norman Group — 6 Tips for Successful Personalization (nngroup.com/articles/personalization)"
-  - "Jakob N. / Nielsen Norman Group — Personalization is Over-Rated (nngroup.com/articles/personalization-is-over-rated)"
-  - "Nielsen Norman Group — Customization vs. Personalization in the User Experience (nngroup.com/articles/customization-personalization)"
+  - "NN/g — 6 Tips for Successful Personalization (nngroup.com/articles/personalization)"
+  - "Jakob N. / NN/g — Personalization is Over-Rated (nngroup.com/articles/personalization-is-over-rated)"
+  - "NN/g — Customization vs. Personalization in the User Experience (nngroup.com/articles/customization-personalization)"
   - "Omer Tene & Jules Polonetsky — A Theory of Creepy: Technology, Privacy, and Shifting Social Norms, Yale Journal of Law & Technology, Vol. 16 (2013) (yjolt.org/theory-creepy-technology-privacy-and-shifting-social-norms)"
   - "M. Petrova et al. — The Phenomenon of Creepiness in a Digital Marketing World, Psychology & Marketing (Wiley, 2026) (onlinelibrary.wiley.com/doi/10.1002/mar.70089)"
 ---
@@ -22,14 +22,14 @@ NN/g draws the line by **who holds control:**
 - **Customization** gives control to the **user** — the person configures layout, content, or functionality to fit their own goals. It "works well under the assumption that users know best what their goals and needs are," and relies on the user's natural intelligence rather than the system's inference.
 - **Personalization** gives control to the **system** — developers set up logic to identify a user (as a type, a role, or an individual) and deliver content/functionality matched to them. It runs on the system's _assumptions_ about the user's needs.
 
-The consequential asymmetry: customization is the user telling you what they want (high signal, low error); personalization is the system _guessing_ (lower signal, error-prone). Nielsen's blunt corollary — _"I am the one entity in the world to know exactly what I need right now"_ — is why he favors giving users clear options over stereotyping them.
+The consequential asymmetry: customization is the user telling you what they want (high signal, low error); personalization is the system _guessing_ (lower signal, error-prone). Jakob N.'s blunt corollary — _"I am the one entity in the world to know exactly what I need right now"_ — is why he favors giving users clear options over stereotyping them.
 
 ## Defaults-as-personalization (the reliable lever)
 
 The highest-yield, lowest-risk form of "personalization" is rarely an algorithm — it's a **well-chosen default.** A good default serves the common case so well that most users never customize and never need to be profiled. This connects directly to progressive disclosure (`progressive-disclosure.md`): **defaults are the primary act of complexity management,** and they personalize without surveillance.
 
 - **Context-derived defaults** (locale → language/currency; device → layout; time/place → relevant content) personalize the experience using signals the user already volunteered, with no profiling and no creepiness risk.
-- Nielsen is explicit that even a personalized site **needs strong defaults regardless:** _"a website that relies on personalization needs a good default design to greet first-time users… personalization is proven not to substitute for good basic design."_ The default state is what every new and logged-out user sees — get that wrong and no personalization layer recovers it.
+- Jakob N. is explicit that even a personalized site **needs strong defaults regardless:** _"a website that relies on personalization needs a good default design to greet first-time users… personalization is proven not to substitute for good basic design."_ The default state is what every new and logged-out user sees — get that wrong and no personalization layer recovers it.
 - Prefer **opt-out defaults that are individually overridable** over hidden inference. A sensible default the user can change beats a clever guess the user can't see or correct.
 
 ## Recommendations: the case where personalization earns its keep
@@ -73,9 +73,9 @@ Staying on the right side of the line — practical synthesis:
 
 ## Anti-patterns
 
-- **Personalization as a substitute for navigable IA / good defaults** — Nielsen's "poor excuse for not designing a navigable website."
+- **Personalization as a substitute for navigable IA / good defaults** — Jakob N.'s "poor excuse for not designing a navigable website."
 - **No good default state** — relying on personalization so heavily that first-time and logged-out users get a broken or empty experience.
-- **Setup-heavy personalization** — demanding configuration users won't do (the active-user paradox); Nielsen cites Firefly's failure on exactly this.
+- **Setup-heavy personalization** — demanding configuration users won't do (the active-user paradox); Jakob N. cites Firefly's failure on exactly this.
 - **Over-fitting to one signal** — letting a single action (a gift purchase, one search) hijack the whole experience.
 - **Recommending the already-owned / just-bought** — visibly failing to model intent.
 - **Filter-bubble lock-in** — recommendations that narrow rather than widen discovery, with no escape to browse everything.

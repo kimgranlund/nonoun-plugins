@@ -60,7 +60,7 @@ Cohesion's degenerate case: a "plugin" that is one skill which should never have
 - The `carve` mode's step 5 (`carve-method.md`) is the granularity decision: cluster by job, avoid both poles, ship internal granularity inside domain plugins.
 - P3's mechanical test in `plugins-holistic.md` is the split/merge test; P1 catches the "shouldn't be a plugin at all" degenerate case.
 - The five-way design-family split in the carve proposal (`design-system` / `design-tokens` / `design-knowledge` / `design-review` / `brand-forge`) is the worked example: looks like fragmentation, is actually five distinct jobs each independently useful — the split test passes for each.
-- Owning critic: **Steve Yegge** (platform vs product, the granularity and namespacing call).
+- Owning critic: **Steve Y.** (platform vs product, the granularity and namespacing call).
 
 ## Source Citations
 

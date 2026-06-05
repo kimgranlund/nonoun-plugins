@@ -8,7 +8,7 @@ version: "0.1.0"
 
 The drill-down for holistic **P3**. A plugin's scope is bounded on both sides: too broad (kitchen sink) taxes every install; too narrow (fragment) scatters one workflow across pieces that only work together. This rubric scores whether the bundle is one coherent job with rich internal granularity.
 
-Theory: `../foundations/plugin-cohesion-foundations.md`. Primary critic: **Steve Yegge** (platform vs product, granularity).
+Theory: `../foundations/plugin-cohesion-foundations.md`. Primary critic: **Steve Y.** (platform vs product, granularity).
 
 ---
 

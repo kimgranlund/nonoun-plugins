@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "James Allen, Frederick F. Reichheld, Barney Hamilton & Rob Markey, 'Closing the Delivery Gap: How to Achieve True Customer-Led Growth' (Bain & Company, 2005) — 362 firms: 80% believed they delivered a superior experience; only 8% of their customers agreed. https://media.bain.com/bainweb/PDFs/cms/hotTopics/closingdeliverygap.pdf"
-  - "Nielsen Norman Group — 'Service Blueprints: Definition' (Sarah Gibbons): backstage actions and support processes, the line of internal interaction. https://www.nngroup.com/articles/service-blueprints-definition/"
+  - "NN/g — 'Service Blueprints: Definition' (Sarah Gibbons): backstage actions and support processes, the line of internal interaction. https://www.nngroup.com/articles/service-blueprints-definition/"
   - "Gina Oh / IBM Design — 'Customer Experiences Mirror Backstage Employee Experience' — broken backstage employee experience bleeds through the line of visibility into frontstage CX. https://medium.com/design-ibm/customer-experiences-mirror-backstage-employee-experience-240848b3b8f5"
   - "Marc S. et al., *This Is Service Design Doing* (O'Reilly, 2018, ISBN 9781491927182) — the 'human-centered' principle includes staff; back-of-house is in scope."
 ---

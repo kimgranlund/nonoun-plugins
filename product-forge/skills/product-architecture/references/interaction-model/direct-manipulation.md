@@ -6,7 +6,7 @@ primary_sources:
   - "Ben Shneiderman et al., *Designing the User Interface: Strategies for Effective Human-Computer Interaction* (Pearson) — direct manipulation refined across editions."
   - "Larry Tesler — modeless design; the “Don't Mode Me In” / “NO MODES” principle (nomodes.com). Mode defined in Tesler’s writing and Wikipedia, “Mode (user interface).”"
   - "Jef Raskin, *The Humane Interface* (Addison-Wesley, 2000) — modes, modelessness, quasimodes, and the cost of modal errors."
-  - "Nielsen Norman Group — “Direct Manipulation: Definition” (nngroup.com/articles/direct-manipulation)."
+  - "NN/g — “Direct Manipulation: Definition” (nngroup.com/articles/direct-manipulation)."
 ---
 
 # Direct Manipulation & Modelessness

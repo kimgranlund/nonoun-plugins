@@ -126,8 +126,8 @@ Any **ERROR** = the plugin is not done. The validator checks the manifest fields
 
 | When | Pass |
 | --- | --- |
-| **Every plugin, before ship (the floor)** | `critique single-critic simon` (blast radius of bundled hooks/MCP, trust posture) **+** `single-critic wlaschin` (manifest correctness, illegal layout/state). Cheap; catches the two highest-frequency failure classes. |
-| **Bundles a hook or an MCP**, OR a **marketplace**, OR a **multi-plugin carve** | `critique full-panel` + synthesis — all 9 lenses. (A shared-infra P4 mistake multiplies across every plugin in a marketplace, so Simon's + Wlaschin's lenses compound.) |
+| **Every plugin, before ship (the floor)** | `critique single-critic critic-simon-w` (blast radius of bundled hooks/MCP, trust posture) **+** `single-critic critic-scott-w` (manifest correctness, illegal layout/state). Cheap; catches the two highest-frequency failure classes. |
+| **Bundles a hook or an MCP**, OR a **marketplace**, OR a **multi-plugin carve** | `critique full-panel` + synthesis — all 9 lenses. (A shared-infra P4 mistake multiplies across every plugin in a marketplace, so Simon W.'s + Scott W.'s lenses compound.) |
 | **A targeted edit** to one concern | the 1–2 critics owning that dimension (the bridge's "Red-team lens" column). |
 
 ---

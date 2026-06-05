@@ -2,18 +2,18 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Alan C.. \"Defending Personas.\" Medium, 2018. https://mralancooper.medium.com/defending-personas-2657fe26dd0f"
-  - "Page Laubheimer. \"3 Persona Types: Lightweight, Qualitative, and Statistical.\" Nielsen Norman Group, 2020. https://www.nngroup.com/articles/persona-types/"
-  - "Kim Salazar. \"Why Personas Fail.\" Nielsen Norman Group, 2020. https://www.nngroup.com/articles/why-personas-fail/"
+  - "Alan C. \"Defending Personas.\" Medium, 2018 (exact URL in the git-ignored `agents/.name-map.md`)."
+  - "Page Laubheimer. \"3 Persona Types: Lightweight, Qualitative, and Statistical.\" NN/g, 2020. https://www.nngroup.com/articles/persona-types/"
+  - "Kim Salazar. \"Why Personas Fail.\" NN/g, 2020. https://www.nngroup.com/articles/why-personas-fail/"
   - "Interaction Design Foundation. \"Are AI-Generated Synthetic Users Replacing Personas?\" https://www.interaction-design.org/literature/article/ai-vs-researched-personas"
-  - "User Interviews. \"5 Ways to Communicate With the Anti-Persona\" (citing the Nielsen Norman Group definition of an anti-persona). https://www.userinterviews.com/blog/5-ways-to-communicate-with-the-antipersona"
+  - "User Interviews. \"5 Ways to Communicate With the Anti-Persona\" (citing the NN/g definition of an anti-persona). https://www.userinterviews.com/blog/5-ways-to-communicate-with-the-antipersona"
 ---
 
 # Persona Anti-Patterns
 
 Personas fail far more often than they fail _to exist_. The common failure is not a missing persona but a **persona-shaped object that carries no research** — vivid, confident, and wrong. This reference catalogs the recurring anti-patterns so they can be _named_ in a critique and _scored_ against, and pairs each with the remedy. It is the adversarial companion to the goal-directed-personas reference in this axis: that file says how to do it; this one says how it goes wrong.
 
-The unifying diagnosis (Cooper's): the easy thing "is to do 'personas' without really doing personas," and the "bowdlerized versions, while easier to create and use, didn't actually work." Most persona failure is some flavor of that.
+The unifying diagnosis (Alan C.'s): the easy thing "is to do 'personas' without really doing personas," and the "bowdlerized versions, while easier to create and use, didn't actually work." Most persona failure is some flavor of that.
 
 ## Anti-pattern 1: Demographic theater ("Sarah, 34, loves brunch")
 
@@ -24,7 +24,7 @@ Why it's seductive and why it fails:
 - **Seductive:** it's fast (no research), it's vivid (easy to remember), and demographic data is cheap and available.
 - **Fails because demographics correlate, they don't cause.** As Clayton C. put it (see segmentation reference), being a given age "does not cause you to buy a product." A persona keyed on demographics tells you who, never why — and it actively imports stereotype and bias into the product. Two people in the same demographic bracket want opposite things; the same person wants different things in different circumstances.
 
-**Remedy:** define the persona by **goals, motivations, and behavior** (Cooper). Demographic details are allowed only as a thin layer of believability _on top of_ a researched behavioral pattern — never as the substance. A useful test: delete every demographic attribute. If nothing about the design implication changes, the demographics were decoration (fine). If the persona now says _nothing at all_, it was demographic theater (not fine).
+**Remedy:** define the persona by **goals, motivations, and behavior** (Alan C.). Demographic details are allowed only as a thin layer of believability _on top of_ a researched behavioral pattern — never as the substance. A useful test: delete every demographic attribute. If nothing about the design implication changes, the demographics were decoration (fine). If the persona now says _nothing at all_, it was demographic theater (not fine).
 
 ## Anti-pattern 2: Personas without research (the proto-persona masquerade)
 
@@ -42,13 +42,13 @@ If a persona can't say which tier it's in, treat it as proto (a guess). Personas
 
 ## Anti-pattern 3: Persona sprawl (one per feature / stakeholder)
 
-Producing a dozen-plus personas — frequently one per feature, segment, or department — so that "designing for the personas" means designing for everyone, which means designing for the elastic user again. Cooper contrasts his firm's discipline ("narrowing the focus was the key to good design, so we tightly restricted the number of personas") with teams that built "hundreds of personas, one for each feature they wanted to inflict on their users."
+Producing a dozen-plus personas — frequently one per feature, segment, or department — so that "designing for the personas" means designing for everyone, which means designing for the elastic user again. Alan C. contrasts his firm's discipline ("narrowing the focus was the key to good design, so we tightly restricted the number of personas") with teams that built "hundreds of personas, one for each feature they wanted to inflict on their users."
 
 **Remedy:** keep a small cast and **designate one primary per interface** (the single-primary principle; see goal-directed-personas). Use secondary/supplemental/negative classifications to acknowledge others without diffusing the focus.
 
 ## Anti-pattern 4: Personas as feature justification
 
-Inventing or bending personas _after_ decisions are made, to rationalize features the team already wants to build. Cooper's example: Microsoft "invented personas to defend the features that the engineers cooked up in their ivory towers," which he calls "a 180 degree inversion of reality." The persona becomes a rhetorical shield, not a design input.
+Inventing or bending personas _after_ decisions are made, to rationalize features the team already wants to build. Alan C.'s example: Microsoft "invented personas to defend the features that the engineers cooked up in their ivory towers," which he calls "a 180 degree inversion of reality." The persona becomes a rhetorical shield, not a design input.
 
 **Remedy:** personas are an _input_ to design, created from research _before_ the bet is chosen, and they must be able to _veto_ a feature ("the primary wouldn't want this"). A persona that can never say no is theater.
 
@@ -115,4 +115,4 @@ HEALTHY  (qualitative, goal-defined, operational)
 
 ## Note on scope (labeled)
 
-This catalog is synthesized from a small set of authoritative-but-secondary practitioner sources (Cooper's own essay; NN/g articles; the Interaction Design Foundation) rather than a single canonical text — persona anti-patterns live in practitioner literature, not in one book. The named patterns (demographic theater, proto-masquerade, sprawl, justification, shelfware, staleness) are widely recurring and cross-corroborated across these sources; treat the _taxonomy_ as a practical convenience, not a standardized framework. The underlying principles (research-grounded, goal-defined, operational, current) trace directly to Cooper and to NN/g. (Labeled as a practitioner synthesis.)
+This catalog is synthesized from a small set of authoritative-but-secondary practitioner sources (Alan C.'s own essay; NN/g articles; the Interaction Design Foundation) rather than a single canonical text — persona anti-patterns live in practitioner literature, not in one book. The named patterns (demographic theater, proto-masquerade, sprawl, justification, shelfware, staleness) are widely recurring and cross-corroborated across these sources; treat the _taxonomy_ as a practical convenience, not a standardized framework. The underlying principles (research-grounded, goal-defined, operational, current) trace directly to Alan C. and to NN/g. (Labeled as a practitioner synthesis.)

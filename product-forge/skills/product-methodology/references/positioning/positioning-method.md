@@ -2,8 +2,8 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "April D.. *Obviously Awesome: How to Nail Product Positioning so Customers Get It, Buy It, Love It*. Ambient Press, 2019. ISBN 978-1-9990230-0-3."
-  - "April D., aprildunford.com — writing and talks on positioning method. https://www.aprildunford.com/"
+  - "April D. *Obviously Awesome: How to Nail Product Positioning so Customers Get It, Buy It, Love It*. Ambient Press, 2019. ISBN 978-1-9990230-0-3."
+  - "April D. — writing and talks on positioning method (author site in the git-ignored `agents/.name-map.md`)."
 ---
 
 # Positioning as a working method (April D.)

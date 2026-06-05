@@ -3,18 +3,18 @@ date: 2026-06-03
 coverage: foundational
 primary_sources:
   - "Jakob N. / Laws of UX — Jakob's Law (lawsofux.com/jakobs-law). Formulated 2000."
-  - "Nielsen Norman Group — The Difference Between Information Architecture (IA) and Navigation (nngroup.com/articles/ia-vs-navigation)"
-  - "Nielsen Norman Group — Menu-Design Checklist: 17 UX Guidelines (nngroup.com/articles/menu-design)"
-  - "Nielsen Norman Group — Breadcrumb Navigation (nngroup.com/articles/breadcrumbs)"
-  - "Nielsen Norman Group — Tabs, Used Right (nngroup.com/articles/tabs-used-right)"
-  - "Nielsen Norman Group — Information Architecture: 3 Key Models / Flat vs. Deep Hierarchies (nngroup.com/topic/information-architecture)"
+  - "NN/g — The Difference Between Information Architecture (IA) and Navigation (nngroup.com/articles/ia-vs-navigation)"
+  - "NN/g — Menu-Design Checklist: 17 UX Guidelines (nngroup.com/articles/menu-design)"
+  - "NN/g — Breadcrumb Navigation (nngroup.com/articles/breadcrumbs)"
+  - "NN/g — Tabs, Used Right (nngroup.com/articles/tabs-used-right)"
+  - "NN/g — Information Architecture: 3 Key Models / Flat vs. Deep Hierarchies (nngroup.com/topic/information-architecture)"
 ---
 
 # Navigation & Information Architecture
 
 Information architecture (IA) and navigation are not the same thing, and the most common navigation defects are really IA defects wearing a UI costume. NN/g draws the line cleanly: **IA is the structure** — how content is categorized, labeled, and related; **navigation is the UI** that lets users move through that structure. Get the IA wrong and no menu styling can save you; get it right and even a plain menu works. This reference is the working manual for the interaction-layer patterns that surface an IA — menus, tabs, breadcrumbs, the hub-and-spoke shape — and for the one law that governs all of them: **users arrive with expectations formed everywhere else.**
 
-> **Jakob's Law (Nielsen, 2000):** _"Users spend most of their time on other sites. This means that users prefer your site to work the same way as all the other sites they already know."_ The cumulative effect of meeting that expectation is lower cognitive load — users spend mental energy on their task, not on decoding your interface. The cost of violating it is paid in every session.
+> **Jakob's Law (Jakob N., 2000):** _"Users spend most of their time on other sites. This means that users prefer your site to work the same way as all the other sites they already know."_ The cumulative effect of meeting that expectation is lower cognitive load — users spend mental energy on their task, not on decoding your interface. The cost of violating it is paid in every session.
 
 ## When to use which navigation pattern
 

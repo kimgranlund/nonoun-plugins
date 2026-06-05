@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.6] — 2026-06-05
+
+- **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; rosters/refs updated; council behavior unchanged.
+
 ## [0.4.5] — 2026-06-04
 
 - **The aspiration is now a precondition of making — a soft gate.** Before the Team converges, the Muse's pull must be at least lightly named; brand work reasoned toward _nothing_ drifts to the category average. `/brand-build` gains an explicit **"name the pull before you converge"** step (set a provisional, revisable direction — or convene the Muse — _before_ invoking the methodology); `brand-methodology` adds a **"no convergence toward nothing"** standing constraint and names aspire-first as the loop's precondition; `creative-collaboration.md` states it on the loop. It is a _soft_ blocker throughout — cleared by **naming** a direction, never by stopping, and "lightly declared and developed over time" is the healthy state. Mirrors the generalized rule in plugins-factory `operational-roles.md` (R2/R4).
@@ -14,7 +18,7 @@
 
 ## [0.4.2] — 2026-06-04
 
-- **Critic agent slugs shortened to first names** — `critic-nick-law` → `critic-nick`, `critic-brian-collins` → `critic-brian`, `critic-paula-scher` → `critic-paula`, `critic-mary-norris` → `critic-mary`, `critic-rory-sutherland` → `critic-rory` — so all 14 critics use a single-name slug (matching `critic-luke`, `critic-john-h`, …). Internal rename only: the personas, their real-name attributions in the agent bodies, and the council's behavior are unchanged; the `brand-council` roster is updated to match.
+- **Critic agent slugs shortened** — the trailing surname was dropped from the five critic slugs that carried one, so the roster uses shorter single-token slugs. Internal rename only: the personas, their attributions in the agent bodies, and the council's behavior are unchanged; the `brand-council` roster is updated to match.
 
 ## [0.4.1] — 2026-06-04
 

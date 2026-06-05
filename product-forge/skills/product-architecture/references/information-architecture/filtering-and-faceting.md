@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — “Filters vs. Facets: Definitions” (nngroup.com/articles/filters-vs-facets)."
-  - "Nielsen Norman Group — “Batch vs. Interactive Filtering: User Intent Affects Filter Design” (nngroup.com/articles/applying-filters)."
-  - "Nielsen Norman Group — “Mobile Faceted Search with a Tray” (nngroup.com/articles/mobile-faceted-search)."
+  - "NN/g — “Filters vs. Facets: Definitions” (nngroup.com/articles/filters-vs-facets)."
+  - "NN/g — “Batch vs. Interactive Filtering: User Intent Affects Filter Design” (nngroup.com/articles/applying-filters)."
+  - "NN/g — “Mobile Faceted Search with a Tray” (nngroup.com/articles/mobile-faceted-search)."
   - "S. R. Ranganathan, *Colon Classification* (Madras Library Association, 1933) — faceted classification, the theory under faceted navigation."
 ---
 
@@ -78,4 +78,4 @@ Faceting's characteristic failure is the **over-narrowed empty set** — the use
 
 ## One labeled caveat
 
-The filter-vs-facet definitions ("anything that analyzes a set of content and excludes some items" / "multiple filters that comprehensively describe a set of content"), the counts-prevent-zero-results point, the interactive-vs-batch (and the "refresh too soon / shift position" hazard), the mobile filter-tray pattern, and the applied-filters-visibility finding are all Nielsen Norman Group positions, confirmed against their articles by those titles in this session and paraphrased rather than quoted. The faceted-classification lineage to Ranganathan's _Colon Classification_ (1933) is firmly established. The URL-state trade-off (shareability/back-button vs. URL-explosion) is documented across NN/g and SEO/Google Search guidance; specific percentages from secondary blog sources were omitted as not traceable to a primary measurement. Confirm any verbatim quotation against the cited NN/g articles before publishing.
+The filter-vs-facet definitions ("anything that analyzes a set of content and excludes some items" / "multiple filters that comprehensively describe a set of content"), the counts-prevent-zero-results point, the interactive-vs-batch (and the "refresh too soon / shift position" hazard), the mobile filter-tray pattern, and the applied-filters-visibility finding are all NN/g positions, confirmed against their articles by those titles in this session and paraphrased rather than quoted. The faceted-classification lineage to Ranganathan's _Colon Classification_ (1933) is firmly established. The URL-state trade-off (shareability/back-button vs. URL-explosion) is documented across NN/g and SEO/Google Search guidance; specific percentages from secondary blog sources were omitted as not traceable to a primary measurement. Confirm any verbatim quotation against the cited NN/g articles before publishing.

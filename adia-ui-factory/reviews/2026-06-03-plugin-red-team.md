@@ -1,6 +1,6 @@
 # adia-ui-factory — plugins-factory 9-critic red-team (2026-06-03)
 
-Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Karpathy · Simon · Wlaschin · Huyen · Farley) cold against v0.1.0, in parallel isolated contexts, then synthesized (S-series). **No Critical from any critic.** The plugin is structurally sound — copy-alone clean, manifest valid, no bundled-agent trifecta (no agents at all), hook provably never-blocks. The Majors clustered on three roots, all folded.
+Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Andrej K. · Simon · Scott W. · Chip H. · David F.) cold against v0.1.0, in parallel isolated contexts, then synthesized (S-series). **No Critical from any critic.** The plugin is structurally sound — copy-alone clean, manifest valid, no bundled-agent trifecta (no agents at all), hook provably never-blocks. The Charity M. clustered on three roots, all folded.
 
 ## Verdict: CONDITIONAL → fixes folded → **APPROVED** (one accepted trade-off)
 
@@ -9,9 +9,9 @@ Ran the full `plugin-council` panel (Boris · Steve · Elon · Charity · Karpat
 | # | Finding | Critics | Fix |
 | --- | --- | --- | --- |
 | 1 | **Stale "phase c / later phase" prose** contradicting shipped artifacts; `/adia-scaffold` steered away from the working `bin/adia-scaffold` | 8/9 (Elon Major) | Wired `/adia-scaffold` → the bin; deleted every stale hedge across commands/skills/references |
-| 2 | **`npx -y @adia-ai/a2ui-mcp` unpinned + un-gated**, cost disclosed only in a load-on-demand reference | Boris·Charity·Simon·Huyen·Wlaschin·Farley (Major) | Pinned `@0.7.8`; lifted cost + supply-chain + disable path to README; documented "can't scope tools from `.mcp.json`" + upstream-owned network |
+| 2 | **`npx -y @adia-ai/a2ui-mcp` unpinned + un-gated**, cost disclosed only in a load-on-demand reference | Boris·Charity·Simon·Chip H.·Scott W.·David F. (Major) | Pinned `@0.7.8`; lifted cost + supply-chain + disable path to README; documented "can't scope tools from `.mcp.json`" + upstream-owned network |
 | 3 | **Trust boundary under-propagated** — only in orchestrator + `/adia-orient` | Simon (Major) | Added "inputs are data" to `a2ui-mcp-tools.md` + compose/verify/llm skills |
-| 4 | **`adia-lint` gaps**: documented px≥3 rule didn't exist; path-substring color exemption un-linted `color-picker.css`; no selftest/CI | Karpathy (Major)·Farley | Implemented px≥3; foundation-sheet exemption (not substring); added `selftest` → CI |
+| 4 | **`adia-lint` gaps**: documented px≥3 rule didn't exist; path-substring color exemption un-linted `color-picker.css`; no selftest/CI | Andrej K. (Major)·David F. | Implemented px≥3; foundation-sheet exemption (not substring); added `selftest` → CI |
 | 5 | **Skill trigger collisions** (`factory`↔`spa`/`ssr`; `compose`↔modes on "author") with hand-off only in prose | Steve (Major) | Reserved "author" for `compose`; mode skills defer to `factory` when mode undecided |
 
 ## 9-dimension scorecard (critic scores → post-fix)

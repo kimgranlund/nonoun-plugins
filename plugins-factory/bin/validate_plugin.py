@@ -268,7 +268,7 @@ def _check_layout(plugin_dir, data):
     agents_dir = os.path.join(plugin_dir, "agents")
     if os.path.isdir(agents_dir):
         for entry in sorted(os.listdir(agents_dir)):
-            if not entry.endswith(".md"):
+            if entry.startswith(".") or not entry.endswith(".md"):  # skip dotfiles (e.g. a git-ignored .name-map.md)
                 continue
             try:
                 text = open(os.path.join(agents_dir, entry), encoding="utf-8").read()
@@ -288,7 +288,7 @@ def _check_layout(plugin_dir, data):
         d = os.path.join(plugin_dir, sub)
         if os.path.isdir(d):
             for entry in sorted(os.listdir(d)):
-                if entry.endswith(".md"):
+                if entry.endswith(".md") and not entry.startswith("."):  # skip dotfiles
                     fm_targets.append((os.path.join(d, entry), f"{sub}/{entry}"))
     skills_dir = os.path.join(plugin_dir, "skills")
     if os.path.isdir(skills_dir):
@@ -313,8 +313,8 @@ def _check_layout(plugin_dir, data):
         if not os.path.isdir(d):
             return set()
         if is_skill:
-            return {n for n in os.listdir(d) if os.path.isfile(os.path.join(d, n, "SKILL.md"))}
-        return {os.path.splitext(n)[0] for n in os.listdir(d) if n.endswith(".md")}
+            return {n for n in os.listdir(d) if not n.startswith(".") and os.path.isfile(os.path.join(d, n, "SKILL.md"))}
+        return {os.path.splitext(n)[0] for n in os.listdir(d) if n.endswith(".md") and not n.startswith(".")}
     for slug in sorted(_dir_slugs("commands") & _dir_slugs("skills", is_skill=True)):
         errors.append(f"command `commands/{slug}.md` and skill `skills/{slug}/` share the slug "
                       f"`{slug}`: both resolve to `/<plugin>:{slug}`, so the skill shadows the command "

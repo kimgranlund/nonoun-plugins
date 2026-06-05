@@ -2,10 +2,10 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Page Laubheimer (2017). Dashboards: Making Charts and Data Easy to Read and Use (preattentive attributes; at-a-glance design). Nielsen Norman Group. https://www.nngroup.com/articles/dashboards-preattentive/"
+  - "Page Laubheimer (2017). Dashboards: Making Charts and Data Easy to Read and Use (preattentive attributes; at-a-glance design). NN/g. https://www.nngroup.com/articles/dashboards-preattentive/"
   - "Stephen Few (2006/2013). Information Dashboard Design: Displaying Data for At-a-Glance Monitoring. Analytics Press. ISBN 9781938377006"
   - "Edward Tufte (1983/2001). The Visual Display of Quantitative Information (data-ink ratio; chartjunk). Graphics Press. ISBN 9780961392147"
-  - "Nielsen Norman Group. Clutter-Free: One of the 3 Cs for Better Charts. https://www.nngroup.com/articles/clutter-charts/"
+  - "NN/g. Clutter-Free: One of the 3 Cs for Better Charts. https://www.nngroup.com/articles/clutter-charts/"
   - "Datadog. Best practices to prevent alert fatigue (practitioner; observational on alert volumes). https://www.datadoghq.com/blog/best-practices-to-prevent-alert-fatigue/"
   - "Monte Carlo. Alert Fatigue Is Killing Your Data Quality Strategy (practitioner; observational). https://montecarlo.ai/blog-alert-fatigue-monitoring-strategy"
 ---

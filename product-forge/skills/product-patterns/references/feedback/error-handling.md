@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Nielsen Norman Group — Error-Message Guidelines (nngroup.com/articles/error-message-guidelines)"
-  - "Nielsen Norman Group — 10 Usability Heuristics for User Interface Design — #5 Error Prevention, #9 Help Users Recognize, Diagnose, and Recover from Errors (nngroup.com/articles/ten-usability-heuristics)"
-  - "Nielsen Norman Group — 10 Design Guidelines for Reporting Errors in Forms (nngroup.com/articles/errors-forms-design-guidelines)"
+  - "NN/g — Error-Message Guidelines (nngroup.com/articles/error-message-guidelines)"
+  - "NN/g — 10 Usability Heuristics for User Interface Design — #5 Error Prevention, #9 Help Users Recognize, Diagnose, and Recover from Errors (nngroup.com/articles/ten-usability-heuristics)"
+  - "NN/g — 10 Design Guidelines for Reporting Errors in Forms (nngroup.com/articles/errors-forms-design-guidelines)"
   - "W3C Web Accessibility Initiative — Accessibility Principles (POUR) (w3.org/WAI/fundamentals/accessibility-principles)"
   - "W3C WAI — ARIA19: Using role=alert or Live Regions to Identify Errors (w3.org/WAI/WCAG21/Techniques/aria/ARIA19)"
 ---

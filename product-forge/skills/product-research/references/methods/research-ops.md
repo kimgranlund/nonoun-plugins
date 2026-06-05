@@ -3,8 +3,8 @@ date: 2026-06-03
 coverage: deep
 primary_sources:
   - "Emma Boulton. \"The Eight Pillars of User Research.\" ResearchOps Community / Medium. https://medium.com/researchops-community/the-eight-pillars-of-user-research-1bcd2820d75a"
-  - "Kate Kaplan (Nielsen Norman Group). \"ResearchOps 101.\" 2020-08-16. https://www.nngroup.com/articles/research-ops-101/"
-  - "Nielsen Norman Group. \"Democratize User Research in 5 Steps.\" https://www.nngroup.com/articles/democratize-user-research/"
+  - "Kate Kaplan (NN/g). \"ResearchOps 101.\" 2020-08-16. https://www.nngroup.com/articles/research-ops-101/"
+  - "NN/g. \"Democratize User Research in 5 Steps.\" https://www.nngroup.com/articles/democratize-user-research/"
   - "User Interviews. \"Ethical Guidelines for Research\" (UX Research Field Guide). https://www.userinterviews.com/ux-research-field-guide-chapter/ethical-inclusive-research"
   - "User Interviews. \"The User Researcher's Guide to Data Privacy Regulations: GDPR, CCPA, CPRA.\" https://www.userinterviews.com/blog/the-user-researchers-guide-to-gdpr"
 method: research-ops
@@ -24,7 +24,7 @@ Research operations (ResearchOps / ReOps) is the **plumbing that lets research h
 
 ## What ResearchOps covers — NN/g's six areas
 
-Nielsen Norman Group (Kate Kaplan) defines ResearchOps as _"the orchestration and optimization of people, processes, and craft in order to amplify the value and impact of research at scale"_ — a collective term for the efforts that support researchers in planning, conducting, and applying quality research. NN/g groups the work into **six operational areas**:
+NN/g (Kate Kaplan) defines ResearchOps as _"the orchestration and optimization of people, processes, and craft in order to amplify the value and impact of research at scale"_ — a collective term for the efforts that support researchers in planning, conducting, and applying quality research. NN/g groups the work into **six operational areas**:
 
 | Area | What it covers |
 | --- | --- |
@@ -43,7 +43,7 @@ The field's foundational map predates NN/g's framing: Emma Boulton's **Eight Pil
 
 Recruiting is the single operational task that most often kills a research habit, because every study restarts the search for participants from scratch. The operational fixes:
 
-- **A standing pipeline, not a fresh hunt.** Maintain a screened panel or participant pool (with consent to be re-contacted) so the next session is a scheduling problem, not a sourcing problem. This is the mechanism that makes Torres-style _weekly_ contact sustainable: a customer conversation lands on the calendar without a fresh act of will.
+- **A standing pipeline, not a fresh hunt.** Maintain a screened panel or participant pool (with consent to be re-contacted) so the next session is a scheduling problem, not a sourcing problem. This is the mechanism that makes Teresa T.-style _weekly_ contact sustainable: a customer conversation lands on the calendar without a fresh act of will.
 - **Screeners that protect validity.** A screener recruits the _right_ people and excludes the wrong ones (professional survey-takers, people outside the target job). Over-broad screeners pollute findings; over-narrow ones starve the pipeline.
 - **Incentives, handled as policy.** Fair compensation for participants' time, budgeted and standardized (amount by session length/type), paid reliably. Incentives must compensate, not coerce — an incentive large enough to override a person's real preferences corrupts both ethics and data.
 - **Scheduling and no-show management.** Over-recruit modestly, send reminders, and track no-show rates; a 30% no-show rate silently doubles your recruiting cost.

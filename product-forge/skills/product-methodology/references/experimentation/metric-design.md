@@ -4,14 +4,14 @@ coverage: expanded
 primary_sources:
   - "Ron K., Diane Tang & Ya Xu (2020). Trustworthy Online Controlled Experiments: A Practical Guide to A/B Testing. Cambridge University Press, ch. 6-7. ISBN 9781108724265. DOI 10.1017/9781108653985"
   - "Ron K., Deng, Frasca, Longbotham, Walker & Xu (2012). Trustworthy Online Controlled Experiments: Five Puzzling Outcomes Explained. Proceedings of the 18th ACM SIGKDD (KDD '12)"
-  - "Amplitude / John C.. The North Star Playbook. https://amplitude.com/books/north-star and https://info.amplitude.com/rs/138-CDN-550/images/Amplitude-The-North-Star-Playbook.pdf"
+  - "Amplitude / John C. The North Star Playbook. https://amplitude.com/books/north-star and https://info.amplitude.com/rs/138-CDN-550/images/Amplitude-The-North-Star-Playbook.pdf"
   - "Amplitude. Every Product Needs a North Star Metric: Here's How to Find Yours. https://amplitude.com/blog/product-north-star-metric"
   - "Reforge / Brian Balfour & Casey Winters. Input metrics vs output metrics (leading vs lagging) — Reforge growth curriculum, summarized at https://www.reforge.com/blog/north-star-metric-growth"
 ---
 
 # Metric Design as a Working Method
 
-A product team drowns in numbers; the discipline is deciding, in advance, which few numbers are allowed to make decisions — and how they relate. This reference is the working manual for designing that metric set: the goal / driver / guardrail roles a metric can play, the surrogate-metric trap that quietly inverts a team's incentives, how to construct an Overall Evaluation Criterion (OEC), and how to select a North Star metric. The experimentation backbone is Ron K., Tang & Xu's _Trustworthy Online Controlled Experiments_ (Cambridge, 2020), whose chapters 6-7 are the standard treatment of metrics for experimentation; the North-Star material is from Amplitude's _North Star Playbook_ and the Reforge input/output framing. (For the trust mechanics of reading a single experiment result — SRM, Twyman's law, novelty effects — see the sibling `experimentation/kohavi-trustworthy.md`; this file is about designing the metrics themselves.)
+A product team drowns in numbers; the discipline is deciding, in advance, which few numbers are allowed to make decisions — and how they relate. This reference is the working manual for designing that metric set: the goal / driver / guardrail roles a metric can play, the surrogate-metric trap that quietly inverts a team's incentives, how to construct an Overall Evaluation Criterion (OEC), and how to select a North Star metric. The experimentation backbone is Ron K., Tang & Xu's _Trustworthy Online Controlled Experiments_ (Cambridge, 2020), whose chapters 6-7 are the standard treatment of metrics for experimentation; the North-Star material is from Amplitude's _North Star Playbook_ and the Reforge input/output framing. (For the trust mechanics of reading a single experiment result — SRM, Twyman's law, novelty effects — see the sibling `experimentation/trustworthy-experiments.md`; this file is about designing the metrics themselves.)
 
 > The one-line discipline: you do not get to pick which metric "won" after the data arrives. You define the roles each metric plays — what you are trying to move, what moves first, and what you refuse to break — before the experiment runs.
 

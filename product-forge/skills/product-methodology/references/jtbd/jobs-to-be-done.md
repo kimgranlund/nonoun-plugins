@@ -2,8 +2,8 @@
 date: 2026-06-03
 coverage: foundational
 primary_sources:
-  - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
-  - "Clayton M. Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. \"Know Your Customers' Jobs to Be Done.\" *Harvard Business Review*, September 2016."
+  - "Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. *Competing Against Luck: The Story of Innovation and Customer Choice*. HarperBusiness, 2016."
+  - "Clayton C., Taddy Hall, Karen Dillon, David S. Duncan. \"Know Your Customers' Jobs to Be Done.\" *Harvard Business Review*, September 2016."
   - "Theodore Levitt, attributed (the \"quarter-inch hole\" formulation), as cited by Clayton C. in *Competing Against Luck* and across his teaching."
   - "The Re-Wired Group (Bob Moesta), \"Milkshakes in the Morning\" case study. https://therewiredgroup.com/case-studies/milkshakes/"
 ---

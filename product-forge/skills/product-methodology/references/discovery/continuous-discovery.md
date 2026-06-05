@@ -33,7 +33,7 @@ The unifying point: **discovery is defined by frequency and ownership, not by vo
 
 ## The product trio
 
-The habit is held by a small cross-functional group Torres calls the **product trio**: a **product manager, a designer, and a software engineer** — the people who, together, decide what to build and then build it. (Torres notes the trio commonly draws on others — user researchers, data analysts, domain experts — but the three roles are the core that must share the discovery work.)
+The habit is held by a small cross-functional group Teresa T. calls the **product trio**: a **product manager, a designer, and a software engineer** — the people who, together, decide what to build and then build it. (Teresa T. notes the trio commonly draws on others — user researchers, data analysts, domain experts — but the three roles are the core that must share the discovery work.)
 
 Why three roles, together, and not a hand-off:
 
@@ -47,7 +47,7 @@ Why three roles, together, and not a hand-off:
 
 ## The discovery / delivery cadence
 
-Torres draws a clean line between the two kinds of work a product team does, and the central claim of the method is that they run **in parallel**, continuously — not as sequential phases.
+Teresa T. draws a clean line between the two kinds of work a product team does, and the central claim of the method is that they run **in parallel**, continuously — not as sequential phases.
 
 - **Discovery** — _"the work that we do to decide what to build."_
 - **Delivery** — _"the work that we do to build, ship, and maintain a production-level product."_
@@ -70,7 +70,7 @@ This does not mean infinite research before any build. It means **small, steady 
 
 ## Small research activities: the two core moves
 
-"Small research activities" is not vague. Torres names two activities that make up the bulk of the weekly habit:
+"Small research activities" is not vague. Teresa T. names two activities that make up the bulk of the weekly habit:
 
 1. **Interviewing to discover opportunities** — surfacing unmet customer needs, pain points, and desires from real experience. (These opportunities become the middle layer of the opportunity solution tree; see the companion reference.)
 2. **Assumption testing to evaluate solutions** — small experiments that test the riskiest assumptions behind a candidate solution, _before_ committing to build it.
@@ -83,7 +83,7 @@ The first feeds the **opportunity space** (what to address); the second feeds th
 
 The single most consequential interviewing move in the method: **collect specific stories about past behavior, not opinions, generalizations, or predictions.** This is the difference between an interview that yields a real opportunity and one that yields a comforting fiction.
 
-The reasoning, in Torres's framing:
+The reasoning, in Teresa T.'s framing:
 
 - When people are asked to **generalize** ("what do you usually do," "what do you like"), they answer fast, from **System 1** — automatic, low-effort thinking that "saves energy and effort, but is prone to errors (e.g. cognitive biases)."
 - Those fast answers are distorted by **aspirational bias** (people describe their idealized selves), **recency bias**, and the **availability heuristic** — they report the easy-to-recall, not the true. Ask what someone likes to watch and you hear "documentaries" while last night's reality TV goes unmentioned.
@@ -96,7 +96,7 @@ The contrast in practice:
 | "What do you like/dislike about X?" · "What do you usually do?" | A summary, a generalization, an opinion — System 1, idealized. | **Reject.** Not evidence of behavior. |
 | "Tell me about the **last time** you did X." | A specific story, from beginning to end, grounded in real past behavior. | **Use.** This is the unit of discovery. |
 
-A worked example from Torres: ask the generalizing question and you get _"I like to download shows on my iPhone."_ Open with **"Tell me about the last time you watched Netflix"** and you get the real, usable thing — _"I downloaded episodes to my phone ahead of time so that I could watch Breaking Bad on my flight."_ The second answer carries context, motivation, and constraint; the first carries none.
+A worked example from Teresa T.: ask the generalizing question and you get _"I like to download shows on my iPhone."_ Open with **"Tell me about the last time you watched Netflix"** and you get the real, usable thing — _"I downloaded episodes to my phone ahead of time so that I could watch Breaking Bad on my flight."_ The second answer carries context, motivation, and constraint; the first carries none.
 
 Two operating rules follow:
 

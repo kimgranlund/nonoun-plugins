@@ -75,7 +75,7 @@ The real test of context economy is behavioral: **do users leave the plugin enab
 
 - P6's mechanical proxy is the **always-on audit**: read `claude plugin details` (or the planned `context-cost.py`) and check whether anything other than terse descriptions dominates the always-on number. An MCP's tool defs or verbose descriptions dominating = a context-economy failure.
 - The `[hypothesis]` sub-dimension (stays-enabled-by-default) is explicitly unverified in v0.1 — tracked for calibration, not asserted.
-- Owning critics: **Boris** (vanilla > ceremony; the standing-cost discipline) and **Karpathy** (is the cost actually paying for verifiable capability?).
+- Owning critics: **Boris C.** (vanilla > ceremony; the standing-cost discipline) and **Andrej K.** (is the cost actually paying for verifiable capability?).
 
 ## Source Citations
 

@@ -2,9 +2,9 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "Nielsen Norman Group — Journey Mapping 101 (nngroup.com/articles/journey-mapping-101)."
-  - "Nielsen Norman Group — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)."
-  - "Nielsen Norman Group — 7 Ways to Analyze a Customer-Journey Map (nngroup.com/articles/analyze-customer-journey-map)."
+  - "NN/g — Journey Mapping 101 (nngroup.com/articles/journey-mapping-101)."
+  - "NN/g — Customer Journey Maps: When and How to Create Them (nngroup.com/articles/customer-journey-mapping)."
+  - "NN/g — 7 Ways to Analyze a Customer-Journey Map (nngroup.com/articles/analyze-customer-journey-map)."
   - "G. Lynn Shostack, “Designing Services That Deliver,” Harvard Business Review (Jan 1984) — origin of the service blueprint."
   - "Jan Carlzon, *Moments of Truth* (Ballinger, English ed. 1987) — the term popularized for frontline customer interactions; phrase originally introduced by SAS strategy consultant Richard Normann."
 ---

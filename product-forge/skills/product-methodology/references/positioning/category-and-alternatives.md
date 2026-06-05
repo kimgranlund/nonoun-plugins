@@ -2,15 +2,15 @@
 date: 2026-06-03
 coverage: expanded
 primary_sources:
-  - "April D.. *Sales Pitch: How to Craft a Story to Stand Out and Win*. Ambient Press, 2023. ISBN 978-1-9990230-2-7."
-  - "April D.. *Obviously Awesome: How to Nail Product Positioning so Customers Get It, Buy It, Love It*. Ambient Press, 2019. ISBN 978-1-9990230-0-3."
+  - "April D. *Sales Pitch: How to Craft a Story to Stand Out and Win*. Ambient Press, 2023. ISBN 978-1-9990230-2-7."
+  - "April D. *Obviously Awesome: How to Nail Product Positioning so Customers Get It, Buy It, Love It*. Ambient Press, 2019. ISBN 978-1-9990230-0-3."
   - "April D., \"How to build a killer sales pitch.\" Lenny's Newsletter. https://www.lennysnewsletter.com/p/how-to-build-a-killer-sales-pitch"
-  - "April D., aprildunford.com — books, writing, and talks on positioning. https://www.aprildunford.com/"
+  - "April D. — books, writing, and talks on positioning (author site in the git-ignored `agents/.name-map.md`)."
 ---
 
 # Category, competitive alternatives, and the Sales Pitch (April D.)
 
-April D.'s two books form one argument across two surfaces. _Obviously Awesome_ (2019) is the positioning method — how you decide the context a product lives in (covered as a method in `dunford-positioning.md`). _Sales Pitch_ (2023) is the delivery — how you turn that positioning into a story a salesperson (or a landing page, or a founder) actually tells. This file focuses on the two ideas that bind them: **competitive alternatives** (the "do nothing," the spreadsheet, the intern) and **market category** as the strongest lever on perception — and then the **Sales Pitch structure** that operationalizes both. The throughline: positioning is the input; the sales pitch is the output; alternatives and category are the hinge.
+April D.'s two books form one argument across two surfaces. _Obviously Awesome_ (2019) is the positioning method — how you decide the context a product lives in (covered as a method in `positioning-method.md`). _Sales Pitch_ (2023) is the delivery — how you turn that positioning into a story a salesperson (or a landing page, or a founder) actually tells. This file focuses on the two ideas that bind them: **competitive alternatives** (the "do nothing," the spreadsheet, the intern) and **market category** as the strongest lever on perception — and then the **Sales Pitch structure** that operationalizes both. The throughline: positioning is the input; the sales pitch is the output; alternatives and category are the hinge.
 
 ## Competitive alternatives: what they'd do if you didn't exist
 

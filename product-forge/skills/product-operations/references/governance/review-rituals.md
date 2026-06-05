@@ -3,7 +3,7 @@ date: 2026-06-03
 coverage: expanded
 primary_sources:
   - "Matt Ström, “Critique vs. review: a brief guide to design feedback” (mattstromawn.com) — “critique makes designs better; review makes decisions about them.”"
-  - "Nielsen Norman Group, “Design Critiques: Encourage a Positive Culture to Improve Products” (nngroup.com/articles/design-critiques)."
+  - "NN/g, “Design Critiques: Encourage a Positive Culture to Improve Products” (nngroup.com/articles/design-critiques)."
   - "Figma, “How we run design critiques at Figma” (figma.com/blog/design-critiques-at-figma)."
   - "Marty C., *INSPIRED: How to Create Tech Products Customers Love* (2nd ed., 2017) — product reviews, the role of the decider, and operating cadence."
 ---

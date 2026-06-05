@@ -198,7 +198,7 @@ _Mechanization split: `validate_plugin.py` mechanically ERRORs on the **loader r
 | **2** | A hook mutates or blocks silently, OR a bundled agent + MCP combination gives an injection foothold, OR untrusted-content handling is "the model is told to be careful." |
 | **1** | Lethal trifecta live in a bundled agent (reads untrusted content + private data access + external action), or a hidden destructive hook. Model behavior is the only defense. |
 
-**Go deeper**: `security-and-scope-containment.md` _(co-located)_, `agents/critic-simon.md`. **Test** (the bundled-trifecta test): for each bundled agent/skill, does it (a) access private data, (b) process untrusted content, (c) take external actions? Two present = elevated; all three in one component = structural separation required. Then: is any hook's side-effect undocumented, or any bundled agent declaring `mcpServers`/`hooks`/`permissionMode`?
+**Go deeper**: `security-and-scope-containment.md` _(co-located)_, `agents/critic-simon-w.md`. **Test** (the bundled-trifecta test): for each bundled agent/skill, does it (a) access private data, (b) process untrusted content, (c) take external actions? Two present = elevated; all three in one component = structural separation required. Then: is any hook's side-effect undocumented, or any bundled agent declaring `mcpServers`/`hooks`/`permissionMode`?
 
 ---
 

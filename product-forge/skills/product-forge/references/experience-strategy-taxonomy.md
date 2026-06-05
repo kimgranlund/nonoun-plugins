@@ -15,17 +15,17 @@ The canonical frame for **what "product experience strategy" covers and who owns
 | # | Domain | Sub-topics | Owning skill | Rubric | Critic lens |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Intent & Outcomes | user/business goals, promises, success metrics, experience principles | product-methodology | rubric-product-strategy | Richard R. · Marty C. · Melissa P. · April D. |
-| 2 | Experience Architecture | journeys, flows, surfaces, navigation, wayfinding, states, continuity, enablement | product-architecture | rubric-architecture | Garrett |
-| 3 | Interaction Model | inputs, commands, controls, feedback, confirmation, undo/recovery, automation boundaries | product-architecture | rubric-architecture | Norman · Nielsen |
-| 4 | Information Architecture | object model, taxonomy, metadata, relationships, search, filtering, retrieval | product-architecture | rubric-information-architecture | Covert |
+| 2 | Experience Architecture | journeys, flows, surfaces, navigation, wayfinding, states, continuity, enablement | product-architecture | rubric-architecture | Jesse G. |
+| 3 | Interaction Model | inputs, commands, controls, feedback, confirmation, undo/recovery, automation boundaries | product-architecture | rubric-architecture | Don N. · Jakob N. |
+| 4 | Information Architecture | object model, taxonomy, metadata, relationships, search, filtering, retrieval | product-architecture | rubric-information-architecture | Abby C. |
 | 5 | Content & Communication | voice, labels, microcopy, guidance, education, empty states, help | product-patterns (`content/`) | rubric-content-design | Torrey P. |
-| 6 | Interface System | layout, components, **tokens, motion**, responsive, accessibility mechanics | product-patterns (`substrate/`) — **mechanics → adia-ui / ui-\* layer** | rubric-ux-quality (a11y / pattern) | Norman · Nielsen |
+| 6 | Interface System | layout, components, **tokens, motion**, responsive, accessibility mechanics | product-patterns (`substrate/`) — **mechanics → adia-ui / ui-\* layer** | rubric-ux-quality (a11y / pattern) | Don N. · Jakob N. |
 | 7 | Brand & Perception | identity, tone, expressiveness, trust/quality signals, emotional affordance | **→ brand-forge** | (brand-forge) | (brand-forge council) |
-| 8 | Intelligence & Adaptation | personalization, recommendations, context, memory, agentic assistance, automation | product-patterns (`ai-ux/`) | rubric-ai-product | Cat W. · Weil · Choi |
+| 8 | Intelligence & Adaptation | personalization, recommendations, context, memory, agentic assistance, automation | product-patterns (`ai-ux/`) | rubric-ai-product | Cat W. · Kevin W. · Meaghan C. |
 | 9 | Trust, Safety & Control | privacy, consent, permissions, explainability, reversibility, auditability, risk | product-patterns (`trust-safety/`) | rubric-trust-safety | Ann C. |
 | 10 | Service & Workflow Model | handoffs, operational workflows, support, cross-channel, escalation, fulfillment | product-operations (`service-model/`) | rubric-service-model | Marc S. |
-| 11 | Measurement & Learning | analytics, research, experiments, quality signals, feedback loops, iteration | product-methodology · product-research | rubric-discovery | Ron K. · Torres |
-| 12 | Governance | principles, standards, ownership, decision records, review rituals, documentation | product-operations (`governance/`) | rubric-governance | Cutler |
+| 11 | Measurement & Learning | analytics, research, experiments, quality signals, feedback loops, iteration | product-methodology · product-research | rubric-discovery | Ron K. · Teresa T. |
+| 12 | Governance | principles, standards, ownership, decision records, review rituals, documentation | product-operations (`governance/`) | rubric-governance | John C. |
 
 ## Cross-plugin boundaries (the frame spans three plugins)
 

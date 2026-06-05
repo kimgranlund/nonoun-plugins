@@ -11,7 +11,7 @@ primary_sources:
 
 # Outcome-Driven Innovation (Ulwick / ODI)
 
-Outcome-Driven Innovation (ODI) is Tony Ulwick's method for turning Jobs-to-be-Done from a lens into an operating procedure. Where Clayton C.'s JTBD is a _theory_ — customers hire products to make progress (see `christensen-jtbd.md`) — Ulwick's claim is that the theory is not actionable until you make the job _measurable_. ODI is the bridge: it decomposes a job into a stable process and then attaches a fixed set of quantified "desired outcomes" to that process, so a team can survey customers and learn precisely which outcomes are under-served (the opportunities) and which are over-served (the waste). Ulwick developed ODI at Strategyn beginning in 1991; the canonical text is _Jobs to be Done: Theory to Practice_ (2016).
+Outcome-Driven Innovation (ODI) is Tony Ulwick's method for turning Jobs-to-be-Done from a lens into an operating procedure. Where Clayton C.'s JTBD is a _theory_ — customers hire products to make progress (see `jobs-to-be-done.md`) — Ulwick's claim is that the theory is not actionable until you make the job _measurable_. ODI is the bridge: it decomposes a job into a stable process and then attaches a fixed set of quantified "desired outcomes" to that process, so a team can survey customers and learn precisely which outcomes are under-served (the opportunities) and which are over-served (the waste). Ulwick developed ODI at Strategyn beginning in 1991; the canonical text is _Jobs to be Done: Theory to Practice_ (2016).
 
 ## ODI's premise: a job is a stable process, and needs are metrics
 

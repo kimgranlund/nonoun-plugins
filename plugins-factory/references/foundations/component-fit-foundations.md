@@ -72,13 +72,13 @@ Two boundaries are soft and shift with the harness version:
 
 ## When not to over-fit
 
-Component fit is not an excuse to use all five primitives in every plugin. A plugin that ships a hook, an MCP, two agents, six skills, and three commands "because it can" is a complexity liability (Elon's lens). Use the _fewest_ primitives that the capabilities' shapes require. A pure knowledge plugin is correctly all-skills; a pure enforcement plugin is correctly all-hooks. The defect is _mismatch_, not _minimalism_.
+Component fit is not an excuse to use all five primitives in every plugin. A plugin that ships a hook, an MCP, two agents, six skills, and three commands "because it can" is a complexity liability (Elon M.'s lens). Use the _fewest_ primitives that the capabilities' shapes require. A pure knowledge plugin is correctly all-skills; a pure enforcement plugin is correctly all-hooks. The defect is _mismatch_, not _minimalism_.
 
 ## Implications for plugins-factory
 
 - The `author` workflow's **first move** is the component-fit pass — the `capability → primitive → why` table — _before_ the manifest, because the manifest shape follows from it (`build-against-the-standard.md` §"The component-fit decision is the first move").
 - P2 in `plugins-holistic.md` carries two mechanical tests: the **guarantee test** (every must-run capability not a hook is a defect) and the **wrapper test** (a bundled MCP with >~25 tools or 1:1-endpoint shape is a wrapper).
-- The critic who owns this dimension is **Huyen** (the determinism boundary: workflow vs agent, tool contracts) with **Elon** as the delete-first second lens.
+- The critic who owns this dimension is **Chip H.** (the determinism boundary: workflow vs agent, tool contracts) with **Elon M.** as the delete-first second lens.
 
 ## Source Citations
 

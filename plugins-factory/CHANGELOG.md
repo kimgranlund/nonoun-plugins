@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10 — 2026-06-05
+
+- **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; orchestrator roster + eval-prompt corpus + README updated; council behavior unchanged.
+
 ## 0.2.9 — 2026-06-04
 
 - **`operational-roles.md` — the aspiration is now the Maker's _precondition_, a soft blocker if absent.** A Maker that converges toward no declared pull has nothing to converge toward, so "converge" degrades to the category average. The doctrine adds an explicit precondition: before substantive making, the domain attractor (Muse / Vision / design-principles) must be **at least lightly named** — one sentence, expected to evolve — and it is a _soft_ gate, cleared by naming a provisional direction, never a hard stop, realized as the first move of every `/x-build` entry. The check is behavioral, not mechanical (the aspiration lives in the work, not the plugin's files, so no static gate sees it). Rubric **R2** now fails a maker that reasons straight to a finished artifact with no declared direction; **R4** requires aspire-to-precede-make. `plugin-build` applies the rule to itself — naming the plugin's one-sentence job (its intent) is the aspiration-precondition before the component-fit table. Wired in lockstep into every catalog plugin's maker flow.
@@ -53,7 +57,7 @@ Initial release as a **plugin**. plugins-factory was re-cast from a single mega-
 
 - **Commands** — six thin, typed entry points (`/plugin-author`, `/plugin-carve`, `/plugin-edit`, `/plugin-score`, `/plugin-critique`, `/plugin-promote`) that set mode + posture and route to a skill or the council, without re-containing the methodology.
 - **Skills** — split by posture: `plugin-build` (the maker — author/carve/edit) and `plugin-evaluate` (the judge — score/critique/promote, carrying the untrusted-target trust boundary). Both draw on one shared standard.
-- **Agents** — the 9-critic council promoted from prose personas to **isolated parallel agents** (`critic-boris … critic-david-f`) plus a `plugin-council` orchestrator that fans them out and runs the cross-critic synthesis; `carve-analyst` (the composition-graph fan-out worker) retained.
+- **Agents** — the 9-critic council promoted from prose personas to **isolated parallel agents** (`critic-boris-c … critic-david-f`) plus a `plugin-council` orchestrator that fans them out and runs the cross-critic synthesis; `carve-analyst` (the composition-graph fan-out worker) retained.
 - **Hook** — an advisory `validate_plugin.py hook` on `plugin.json` / `marketplace.json` writes (surfaces manifest/layout/path smells, never blocks).
 - **Shared spine (`references/`)** — the 9-dimension rubric library, the 5 foundation↔rubric pairs, `plugin-architecture.md`, `carve-method.md`, the authoring bridge, and the critic prompt corpus (`eval-prompts.md`), referenced by both skills via `${CLAUDE_PLUGIN_ROOT}`.
 - **Bin** — `validate_plugin.py` (plugin + marketplace static validators, `selftest`, and the advisory `hook` mode), `check-foundations-coverage.py`, and `reference-lint.py` (fails on doc/command references that don't resolve on disk).
