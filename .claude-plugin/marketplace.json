@@ -11,7 +11,7 @@
     {
       "name": "brand-forge",
       "source": "./brand-forge",
-      "description": "Build and evaluate brands grounded in cultural authority \u2014 strategy, identity, voice, stewardship \u2014 across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).",
+      "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).",
       "category": "design",
       "tags": [
         "brand",
@@ -25,7 +25,7 @@
     {
       "name": "plugins-factory",
       "source": "./plugins-factory",
-      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard \u2014 component fit, boundary cohesion, dependency legality \u2014 judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author\u00b7carve\u00b7edit; judge with /plugin-score\u00b7critique\u00b7promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
+      "description": "Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).",
       "category": "developer-tools",
       "tags": [
         "plugins",
@@ -35,39 +35,6 @@
         "lifecycle",
         "carve",
         "meta"
-      ]
-    },
-    {
-      "name": "adia-ui-factory",
-      "source": "./adia-ui-factory",
-      "description": "Author and verify apps on the adia-ui (@adia-ai) light-DOM web-component framework \u2014 scaffold, compose, wire (SPA + SSR), and verify \u2014 leaning on the a2ui MCP for catalog retrieval, generation, and validation.",
-      "category": "developer-tools",
-      "tags": [
-        "adia-ui",
-        "a2ui",
-        "web-components",
-        "app-authoring",
-        "ssr",
-        "spa",
-        "llm-ui"
-      ]
-    },
-    {
-      "name": "adia-ui-forge",
-      "source": "./adia-ui-forge",
-      "description": "Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).",
-      "category": "developer-tools",
-      "tags": [
-        "adia-ui",
-        "a2ui",
-        "gen-ui",
-        "web-components",
-        "web-modules",
-        "llm",
-        "framework-authoring",
-        "component-library",
-        "release-engineering",
-        "maintainer"
       ]
     },
     {

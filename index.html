@@ -34,8 +34,8 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 </style></head><body><div class='wrap'>
 <header><h1>plugins-forge</h1>
 <p class='sub'>Best-in-class reference Claude Code plugins, authored and red-teamed with plugins-factory. Each is a self-contained worked example of the five-primitive component model (skill / agent / command / hook / MCP).</p>
-<p class='sub'><b>6</b> catalog plugins · <a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>
-<nav><a href='#brand-forge'>brand-forge</a><a href='#plugins-factory'>plugins-factory</a><a href='#adia-ui-factory'>adia-ui-factory</a><a href='#adia-ui-forge'>adia-ui-forge</a><a href='#product-forge'>product-forge</a><a href='#agent-ops'>agent-ops</a></nav>
+<p class='sub'><b>4</b> catalog plugins · <a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>
+<nav><a href='#brand-forge'>brand-forge</a><a href='#plugins-factory'>plugins-factory</a><a href='#product-forge'>product-forge</a><a href='#agent-ops'>agent-ops</a></nav>
 <section class='card' id='brand-forge'>
 <h2><code>brand-forge</code> <span class='ver'>v0.4.6</span> <span class='cat'>design</span></h2>
 <p class='desc'>Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).</p>
@@ -82,58 +82,6 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='cmd'><code>/plugin-score</code> <span class='d'>— Score a plugin against the 9-dimension architecture rubric library, with evidence cited from its files.</span></div>
 </div>
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-foundations-coverage.py</code> · <code>check-manifest-sync.py</code> · <code>corpus-reader</code> · <code>reference-lint.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
-</section>
-<section class='card' id='adia-ui-factory'>
-<h2><code>adia-ui-factory</code> <span class='ver'>v0.2.2</span> <span class='cat'>developer-tools</span></h2>
-<p class='desc'>Author and verify apps on the adia-ui (@adia-ai) light-DOM web-component framework — scaffold, compose, wire (SPA + SSR), and verify — leaning on the a2ui MCP for catalog retrieval, generation, and validation.</p>
-<div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>web-components</span><span class='chip'>app-authoring</span><span class='chip'>ssr</span><span class='chip'>spa</span><span class='chip'>llm-ui</span></div>
-<div class='sec'><h3>Skills <span class='n'>11</span></h3>
-<div class='skill'><b><code>adia-ui-compose</code></b> <span class='d'>— Construct adia-ui UI (mode-independent) — audit the component catalog via the a2ui MCP, compose screens from light-DOM primitives + shells, author project-specific light-DOM components (render/style split, token-only CSS, size-agnostic), an…</span></div>
-<div class='skill'><b><code>adia-ui-data</code></b> <span class='d'>— Wire data, state, and hydration for an adia-ui (@adia-ai) app — content hydration, fetch/CRUD workflows, how UI sections connect and register, and the data-flow patterns (signals · Service/Controller/Command · DataClient/projection · proper…</span></div>
-<div class='skill'><b><code>adia-ui-factory</code></b> <span class='d'>— Cold-start orchestrator for authoring apps on the adia-ui (@adia-ai) framework. Run FIRST on any adia-ui app work — it classifies the rendering mode (SPA / SSR-framework / hybrid), the project shape (single-surface / rollup / shared-foundat…</span></div>
-<div class='skill'><b><code>adia-ui-genui</code></b> <span class='d'>— Author a generative-UI experience on adia-ui (@adia-ai) — mount the a2ui runtime (&lt;a2ui-root&gt; / &lt;gen-root&gt;), feed it generated A2UI (generate_ui / refine_ui via the a2ui MCP), wire data resolvers (registerResolver), and ground generation in…</span></div>
-<div class='skill'><b><code>adia-ui-llm</code></b> <span class='d'>— Wire LLM-powered features into an adia-ui app — the @adia-ai/llm client (Anthropic/OpenAI/Gemini), streaming chat, the &lt;chat-shell-ui&gt; web-module, and the production browser proxy — plus UI generation via the a2ui MCP.</span></div>
-<div class='skill'><b><code>adia-ui-migrate</code></b> <span class='d'>— Migrate an adia-ui (@adia-ai) app — upgrade across framework versions, port an existing/non-adia app TO adia-ui, or change rendering mode (SPA↔SSR).</span></div>
-<div class='skill'><b><code>adia-ui-project</code></b> <span class='d'>— Lay out and scaffold an adia-ui (@adia-ai) app&#x27;s structure — pick the project shape (single-surface / rollup / shared-foundation), the four-axis layout, and page-trio vs page-DUO; scaffold a new app, add a surface, add a page, or add a comp…</span></div>
-<div class='skill'><b><code>adia-ui-shells</code></b> <span class='d'>— Choose and compose an adia-ui (@adia-ai) shell — the page-chrome web-modules from @adia-ai/web-modules: admin-shell (full app frame), chat-shell (LLM conversation), editor-shell (canvas + panes), simple-shell (marketing/error/landing), and…</span></div>
-<div class='skill'><b><code>adia-ui-spa</code></b> <span class='d'>— Architect and wire an adia-ui app in SPA mode — static host document, the four-axis structure, content-less &lt;router-ui&gt; routing, the client DataClient/projection data-flow, single-owner state.</span></div>
-<div class='skill'><b><code>adia-ui-ssr</code></b> <span class='d'>— Architect and wire an adia-ui app inside an SSR framework (Next / Nuxt / SvelteKit / Astro) — client-only registration in lifecycle hooks, framework routing (never &lt;router-ui&gt;), server-side data fetch + initial props, cookie/session state.</span></div>
-<div class='skill'><b><code>adia-ui-verify</code></b> <span class='d'>— Verify an adia-ui app — the browser-QA gate (zero console errors, non-zero bounding boxes, read the screenshot), accessibility (region roles, keyboard, AA contrast), and git coordination discipline.</span></div>
-</div>
-<div class='sec'><h3>Commands <span class='n'>7</span></h3>
-<div class='cmd'><code>/adia-compose</code> <span class='d'>— Compose a screen or author components for an adia-ui app (catalog-driven, via the a2ui MCP).</span></div>
-<div class='cmd'><code>/adia-genui</code> <span class='d'>— Author a generative-UI experience on adia-ui — the a2ui runtime + generate_ui + corpus (core or your own).</span></div>
-<div class='cmd'><code>/adia-migrate</code> <span class='d'>— Migrate an adia-ui app — upgrade across @adia-ai versions, port to adia-ui, or change rendering mode.</span></div>
-<div class='cmd'><code>/adia-orient</code> <span class='d'>— Orient in an existing adia-ui app — inventory its structure, rendering mode, and gaps.</span></div>
-<div class='cmd'><code>/adia-scaffold</code> <span class='d'>— Scaffold a new adia-ui app — pick the rendering mode (SPA / SSR-framework), lay out the structure, wire the host.</span></div>
-<div class='cmd'><code>/adia-verify</code> <span class='d'>— Verify an adia-ui surface in the browser (QA + a11y gate).</span></div>
-<div class='cmd'><code>/adia-wire</code> <span class='d'>— Wire an adia-ui app&#x27;s routing, state, and data-flow (mode-aware).</span></div>
-</div>
-<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → adia-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>adia-lint</code> · <code>adia-scaffold</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>a2ui</code></div></div>
-</section>
-<section class='card' id='adia-ui-forge'>
-<h2><code>adia-ui-forge</code> <span class='ver'>v0.1.2</span> <span class='cat'>developer-tools</span></h2>
-<p class='desc'>Author and maintain the adia-ui (@adia-ai) framework itself — primitives (web-components), composite shells (web-modules), the A2UI / gen-ui generation engine and its training corpus, the @adia-ai/llm client, quality sweeps, and release engineering across all @adia-ai packages. The maintainer counterpart to adia-ui-factory (the consumer/app-author plugin).</p>
-<div class='chips'><span class='chip'>adia-ui</span><span class='chip'>a2ui</span><span class='chip'>gen-ui</span><span class='chip'>web-components</span><span class='chip'>web-modules</span><span class='chip'>llm</span><span class='chip'>framework-authoring</span><span class='chip'>component-library</span><span class='chip'>release-engineering</span><span class='chip'>maintainer</span></div>
-<div class='sec'><h3>Skills <span class='n'>7</span></h3>
-<div class='skill'><b><code>adia-ui-a2ui</code></b> <span class='d'>— Work on the A2UI / gen-ui generation engine in packages/a2ui/ (compose, chunk corpus, retrieval, validator, runtime, MCP server).</span></div>
-<div class='skill'><b><code>adia-ui-authoring</code></b> <span class='d'>— Author or modify code INSIDE the adia-ui (@adia-ai) monorepo — primitives (packages/web-components/), composite shells / clusters (packages/web-modules/), their demos, the @adia-ai/llm bridge surface, the trait catalog, and the &lt;name&gt;.yaml…</span></div>
-<div class='skill'><b><code>adia-ui-dogfood</code></b> <span class='d'>— Six-mode static + visual sweep across `site/components/*`, `apps/`, `playgrounds/`, `catalog/` in a framework-monorepo checkout.</span></div>
-<div class='skill'><b><code>adia-ui-forge</code></b> <span class='d'>— Cold-start orchestrator for authoring and maintaining the adia-ui (@adia-ai) framework itself — the producer side.</span></div>
-<div class='skill'><b><code>adia-ui-gen-review</code></b> <span class='d'>— Closed-loop Gen UI output quality reviewer for the @adia-ai monorepo. For each pre-hydrated seed prompt in the Gen UI gallery, the skill (A) derives an ideal-output specification using AdiaUI first principles, (B) screenshots the canvas and…</span></div>
-<div class='skill'><b><code>adia-ui-llm</code></b> <span class='d'>— Maintain `@adia-ai/llm` — the provider-agnostic LLM client (`packages/llm/`) that the adia-ui chat-shell and the A2UI generation pipeline call.</span></div>
-<div class='skill'><b><code>adia-ui-release</code></b> <span class='d'>— Release engineer for an @adia-ai-style lockstep monorepo — cut / tag / publish / deploy, author release notes + audit-history ledgers, and author the MIGRATION GUIDE for breaking cuts (the producer side of migrations).</span></div>
-</div>
-<div class='sec'><h3>Commands <span class='n'>7</span></h3>
-<div class='cmd'><code>/adia-forge-a2ui</code> <span class='d'>— Work on the A2UI / gen-ui generation engine — compose strategies, chunk corpus, retrieval, validator, runtime, MCP server.</span></div>
-<div class='cmd'><code>/adia-forge-author</code> <span class='d'>— Author or modify an adia-ui primitive, composite shell, trait, or token (web-components / web-modules).</span></div>
-<div class='cmd'><code>/adia-forge-dogfood</code> <span class='d'>— Run a static + visual QA sweep across the framework&#x27;s surfaces (components, apps, playgrounds, catalog).</span></div>
-<div class='cmd'><code>/adia-forge-llm</code> <span class='d'>— Maintain the @adia-ai/llm client — provider adapters (anthropic/openai/gemini), SSE streaming, model registry, the bridge facade.</span></div>
-<div class='cmd'><code>/adia-forge-orient</code> <span class='d'>— Orient in the @adia-ai framework monorepo — classify the subsystem/package and route to the owning forge skill.</span></div>
-<div class='cmd'><code>/adia-forge-release</code> <span class='d'>— Cut/ship a release or author a migration guide for the @adia-ai packages (release-engineering discipline).</span></div>
-<div class='cmd'><code>/adia-forge-review</code> <span class='d'>— Score generated gen-ui output against an ideal spec and drive corpus fixes (closed-loop quality review).</span></div>
-</div>
-<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → forge-lint</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>forge-lint</code> · <code>lib</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div><div style='margin-bottom:4px'><b>Reference files:</b> 52</div></div>
 </section>
 <section class='card' id='product-forge'>
 <h2><code>product-forge</code> <span class='ver'>v0.3.5</span> <span class='cat'>product</span></h2>
