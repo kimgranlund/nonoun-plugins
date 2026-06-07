@@ -181,6 +181,7 @@
   /* --- Layout --- */
   --header-height: 3.375rem;
   --layout-max-width: 72.5rem;
+  --layout-max-width-wide: 90rem; /* home dashboard — wider than the prose-reading width */
   --content-max-width: 51rem;
   --toc-width: 15.5rem;
 }
@@ -380,6 +381,7 @@ cr-ui-diagram-viewer {
 }
 .cr-body.cr-home {
   grid-template-columns: minmax(0, 1fr);
+  max-width: var(--layout-max-width-wide);
 }
 
 /* ============================================================
@@ -440,6 +442,9 @@ cr-ui-diagram-viewer {
   max-width: var(--content-max-width);
   padding: var(--space-roomy) 0 6rem;
   min-width: 0;
+}
+.cr-home .cr-content {
+  max-width: none; /* the home is a tile dashboard, not prose — use the full track */
 }
 
 .cr-meta {
@@ -633,6 +638,7 @@ cr-ui-diagram-viewer {
 .cr-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+  align-items: start; /* short tiles keep their natural height — no stretch to the row */
   gap: var(--space-tile-gap);
   padding-bottom: 5rem;
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.13 — 2026-06-06
+
+- **corpus-reader: the home uses the width.** The section-tile home now spans a wider track (90rem, vs the 51rem prose-reading width) with `align-items: start`, so wide viewports get more tile columns and short tiles keep their natural height instead of stretching to the tallest in the row. Reading pages are unchanged (still the 51rem measure). Re-synced into the vendored copies.
+
 ## 0.2.12 — 2026-06-06
 
 - **corpus-reader: graceful `file://` guidance.** Opening `index.html` directly (`file://`) blocks ES modules + `fetch()`; the reader now detects this and shows a "serve over HTTP" instruction (with the exact command) instead of a blank page + console errors. Re-synced into the vendored copies.
