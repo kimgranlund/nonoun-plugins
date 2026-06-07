@@ -4,6 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Corpus Reader</title>
+    <script>
+      // file:// blocks ES modules + fetch() — guide the user to serve over HTTP instead of
+      // failing to a blank page. (Inline classic script: it runs even on file://.)
+      if (location.protocol === "file:") {
+        addEventListener("DOMContentLoaded", function () {
+          document.body.innerHTML =
+            "<div style='max-width:40rem;margin:12vh auto;padding:0 1.5rem;font:16px/1.6 system-ui,sans-serif'>" +
+            "<h1>Serve this over HTTP</h1>" +
+            "<p>The corpus-reader uses ES modules and <code>fetch()</code>, which browsers block on <code>file://</code>. From this folder, run:</p>" +
+            "<pre style='background:rgba(127,127,127,.15);padding:1rem;border-radius:8px;overflow:auto'>python3 -m http.server</pre>" +
+            "<p>then open <a href='http://localhost:8000/'>http://localhost:8000/</a></p></div>";
+        });
+      }
+    </script>
     <link rel="stylesheet" href="lib/corpus-reader.css" />
     <!-- Code syntax highlighting themes (light / dark, swapped by OS preference) -->
     <link

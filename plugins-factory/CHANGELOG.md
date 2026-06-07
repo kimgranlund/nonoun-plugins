@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.12 — 2026-06-06
+
+- **corpus-reader: graceful `file://` guidance.** Opening `index.html` directly (`file://`) blocks ES modules + `fetch()`; the reader now detects this and shows a "serve over HTTP" instruction (with the exact command) instead of a blank page + console errors. Re-synced into the vendored copies.
+
 ## 0.2.11 — 2026-06-06
 
 - **corpus-reader hardened + shared.** The bundled `bin/corpus-reader/` (a buildless static site that renders a markdown corpus) now sanitizes untrusted corpus markdown with **DOMPurify** and pins every CDN dependency with **Subresource-Integrity** hashes (fail-safe: prose degrades to escaped text if a script fails its integrity check). New `bin/sync-corpus-reader.py` makes plugins-factory the single source of truth and vendors the reader into brand-forge + product-forge; its `--check` drift gate runs in CI (cross-plugin symlinks don't survive install, so each plugin ships its own synced copy).
