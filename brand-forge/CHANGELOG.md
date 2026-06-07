@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.9] — 2026-06-06
+
+- **`/brand-corpus-export` restructured** — the corpus root is now clean, shareable Markdown (sections + README); the reader is tucked into a `<corpus>/site/` subfolder (copied machinery only — never a bundled example). Serve the corpus root, open `/site/`.
+
 ## [0.4.8] — 2026-06-06
 
 - **Add `/brand-corpus-export`** — lay out the engagement's deliverables as a Markdown corpus (ordered sections by pipeline stage), then build + serve them with the bundled corpus-reader as a self-contained, shareable brand site.

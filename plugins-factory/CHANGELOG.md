@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.14 — 2026-06-06
+
+- **corpus-reader: viewer-in-a-subfolder layout.** `build-sitemap.py ..` now generates the sitemap for a reader living in a `<corpus>/site/` subfolder (content in the parent) — `../`-relative paths, the viewer's own dir excluded from the scan. Lets an exported corpus keep its root as clean, browsable markdown with the app tucked into `site/`. Reader unchanged; the standalone content-beside-`index.html` layout still works. Re-synced into the vendored copies.
+
 ## 0.2.13 — 2026-06-06
 
 - **corpus-reader: the home uses the width.** The section-tile home now spans a wider track (90rem, vs the 51rem prose-reading width) with `align-items: start`, so wide viewports get more tile columns and short tiles keep their natural height instead of stretching to the tallest in the row. Reading pages are unchanged (still the 51rem measure). Re-synced into the vendored copies.

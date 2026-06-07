@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.8] — 2026-06-06
+
+- **`/product-corpus-export` restructured** — the corpus root is now clean, shareable Markdown (sections + README); the reader is tucked into a `<corpus>/site/` subfolder (copied machinery only — never a bundled example). Serve the corpus root, open `/site/`.
+
 ## [0.3.7] — 2026-06-06
 
 - **Add `/product-corpus-export`** — lay out the engagement's deliverables as a Markdown corpus (ordered sections from discovery → operations), then build + serve them with the bundled corpus-reader as a self-contained, shareable product site.

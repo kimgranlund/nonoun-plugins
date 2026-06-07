@@ -11,7 +11,10 @@ example.
 CORPUS_DIR defaults to the single sibling directory that contains `.md` files
 (e.g. the bundled `brand-corpus`). Page paths are written relative to this
 script's directory — where index.html lives — so the reader can fetch them
-directly. Re-run after the corpus changes. Python 3.8+, stdlib only.
+directly. Pass `..` to generate for a viewer that lives in a SUBFOLDER of the
+corpus (the `<corpus>/site/` export layout): paths come out `../<section>/…`,
+and this script's own directory is excluded from the scan. Re-run after the
+corpus changes. Python 3.8+, stdlib only.
 """
 import argparse
 import json
@@ -124,7 +127,7 @@ def main():
 
     entries = []
     for dirpath, dirnames, filenames in os.walk(corpus_abs):
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        dirnames[:] = [d for d in dirnames if not d.startswith(".") and os.path.join(dirpath, d) != ROOT]
         for fname in filenames:
             if not fname.endswith(".md") or fname.startswith("."):
                 continue

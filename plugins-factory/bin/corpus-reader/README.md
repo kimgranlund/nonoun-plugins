@@ -37,6 +37,8 @@ The page is a sticky `nav` (`[ name | menu ]`) over a `toc | content` grid. The 
 
 Put the corpus folder beside `index.html` and run `build-sitemap.py <folder>`. Page titles come from frontmatter `title:`, else the first `# H1`, else the filename; sections are the top-level subfolders (a leading `NN-` orders them and is stripped from the display name); the corpus title is the root `README` heading. Cross-document `.md` links and relative images are rewritten to work inside the router.
 
+**Viewer in a `site/` subfolder.** To keep the corpus root as clean, shareable markdown with the app tucked away, put this reader in a `site/` subfolder of the corpus and run `python3 build-sitemap.py ..` from there — paths come out `../<section>/…`, the `site/` dir is excluded from the scan, and you serve the corpus root and open `/site/`. (This is the layout the brand-forge / product-forge `*-corpus-export` commands generate.)
+
 Rendering uses marked + **DOMPurify** + highlight.js + mermaid, pinned via CDN in `index.html` with Subresource-Integrity (SRI) hashes. Corpus markdown is treated as **untrusted**: marked doesn't sanitize, so DOMPurify scrubs the rendered HTML (and mermaid runs `securityLevel: "strict"`). marked + DOMPurify are required — if either fails its integrity check, prose degrades to escaped text; highlight + mermaid are progressive enhancement. Swap the CDN tags for vendored copies in `lib/` if you need a fully offline reader.
 
 ## Note
