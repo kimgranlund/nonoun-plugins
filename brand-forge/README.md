@@ -23,6 +23,7 @@ Then drive it through six typed commands:
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
 | `/brand-stamp` | package | Emit a finished corpus as a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP — each to its own folder. |
+| `/brand-corpus-export` | export | Lay out the brand's deliverables as a Markdown corpus and read it as a navigable site (the bundled corpus-reader). |
 
 ---
 
@@ -30,7 +31,7 @@ Then drive it through six typed commands:
 
 ```text
 brand-forge/
-├── commands/        6 typed entry points   → set mode + posture, then route
+├── commands/        7 typed entry points   → set mode + posture, then route
 ├── agents/         14 critics + orchestrator + Muse → the review council + the aspirational pull
 ├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)

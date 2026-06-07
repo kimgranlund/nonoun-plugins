@@ -79,13 +79,34 @@ def main():
                     drift.append(f"{plugin}: stale (not in source)  bin/corpus-reader/{rel}")
 
     if check:
-        if drift:
-            print("corpus-reader drift — run `python3 bin/sync-corpus-reader.py` to fix:")
-            for d in drift:
-                print(f"  {d}")
-            print(f"RESULT: FAIL ({len(drift)} file(s) out of sync)")
+        # Security-wiring guard: the reader renders UNTRUSTED corpus markdown, so the
+        # XSS hardening must never silently regress. (Copies == source after the drift
+        # check, so asserting the source is sufficient.)
+        sec = []
+        idx = (SRC / "index.html").read_text(encoding="utf-8")
+        page = (SRC / "lib" / "components" / "cr-ui-page.js").read_text(encoding="utf-8")
+        if "purify.min.js" not in idx:
+            sec.append("index.html: DOMPurify <script> missing")
+        if idx.count('integrity="sha384-') < 6:
+            sec.append("index.html: fewer than 6 Subresource-Integrity (sha384) tags")
+        if "DOMPurify.sanitize" not in page:
+            sec.append("lib/components/cr-ui-page.js: rendered markdown is not DOMPurify-sanitized (XSS hardening regressed)")
+
+        if drift or sec:
+            if drift:
+                print("corpus-reader drift — run `python3 bin/sync-corpus-reader.py` to fix:")
+                for d in drift:
+                    print(f"  {d}")
+            if sec:
+                print("corpus-reader security wiring regressed (source):")
+                for s in sec:
+                    print(f"  {s}")
+            print(f"RESULT: FAIL ({len(drift)} drift, {len(sec)} security)")
             sys.exit(1)
-        print(f"RESULT: PASS (corpus-reader in sync across {len(TARGETS)} plugin(s); {len(files)} files each)")
+        print(
+            f"RESULT: PASS (corpus-reader in sync across {len(TARGETS)} plugin(s); "
+            f"{len(files)} files each; DOMPurify + SRI wiring intact)"
+        )
         return
 
     for tgt in TARGETS:

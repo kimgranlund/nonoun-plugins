@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.8] — 2026-06-06
+
+- **Add `/brand-corpus-export`** — lay out the engagement's deliverables as a Markdown corpus (ordered sections by pipeline stage), then build + serve them with the bundled corpus-reader as a self-contained, shareable brand site.
+
 ## [0.4.7] — 2026-06-06
 
 - **Bundle the corpus-reader** (`bin/corpus-reader/`) — generate a navigable site for a brand corpus (a folder of markdown) and read it locally (`build-sitemap.py` + `python3 -m http.server`). Vendored from plugins-factory and kept byte-identical by `sync-corpus-reader.py` (CI-gated); untrusted corpus markdown is sanitized (DOMPurify).
