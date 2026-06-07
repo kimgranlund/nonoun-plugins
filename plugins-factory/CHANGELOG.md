@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11 — 2026-06-06
+
+- **corpus-reader hardened + shared.** The bundled `bin/corpus-reader/` (a buildless static site that renders a markdown corpus) now sanitizes untrusted corpus markdown with **DOMPurify** and pins every CDN dependency with **Subresource-Integrity** hashes (fail-safe: prose degrades to escaped text if a script fails its integrity check). New `bin/sync-corpus-reader.py` makes plugins-factory the single source of truth and vendors the reader into brand-forge + product-forge; its `--check` drift gate runs in CI (cross-plugin symlinks don't survive install, so each plugin ships its own synced copy).
+
 ## 0.2.10 — 2026-06-05
 
 - **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; orchestrator roster + eval-prompt corpus + README updated; council behavior unchanged.

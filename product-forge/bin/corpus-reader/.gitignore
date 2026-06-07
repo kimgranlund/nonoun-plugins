@@ -1,0 +1,6 @@
+# Example corpus used only for local development — it carries licensed fonts
+# and is not part of this repo. Drop your own corpus in the same way.
+brand-corpus/
+
+# Generated per-corpus by build-sitemap.py — regenerate, don't commit.
+lib/sitemap.json

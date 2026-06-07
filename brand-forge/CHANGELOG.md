@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.7] — 2026-06-06
+
+- **Bundle the corpus-reader** (`bin/corpus-reader/`) — generate a navigable site for a brand corpus (a folder of markdown) and read it locally (`build-sitemap.py` + `python3 -m http.server`). Vendored from plugins-factory and kept byte-identical by `sync-corpus-reader.py` (CI-gated); untrusted corpus markdown is sanitized (DOMPurify).
+
 ## [0.4.6] — 2026-06-05
 
 - **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; rosters/refs updated; council behavior unchanged.

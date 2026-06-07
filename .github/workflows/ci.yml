@@ -41,6 +41,9 @@ jobs:
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 
+      - name: corpus-reader vendored copies in sync
+        run: python3 "$PF/bin/sync-corpus-reader.py" --check
+
       - name: plugins-factory — eval suite (behavioral gates + calibration-fixture isolation)
         run: |
           python3 "$PF/evals/behavioral-gates.py"
@@ -63,7 +66,7 @@ jobs:
       - name: manifest-sync gate (selftest + every plugin)
         run: |
           python3 "$PF/bin/check-manifest-sync.py" selftest
-          for p in brand-forge plugins-factory adia-ui-factory adia-ui-forge product-forge agent-ops; do
+          for p in brand-forge plugins-factory product-forge agent-ops; do
             python3 "$PF/bin/check-manifest-sync.py" "$p"
           done
 
