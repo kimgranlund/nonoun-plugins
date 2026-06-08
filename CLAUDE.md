@@ -87,7 +87,7 @@ python3 "$PF/bin/reference-lint.py" brand-forge                    # doc/command
 Install / iterate inside Claude Code:
 
 ```text
-/plugin marketplace add kimgranlund/plugins-forge
+/plugin marketplace add kimgranlund/claude-plugins
 /plugin install brand-forge@plugins-forge        # the product
 /plugin install plugins-factory@plugins-forge    # the lifecycle tool (also auto-enabled here via .claude/settings.json)
 ```

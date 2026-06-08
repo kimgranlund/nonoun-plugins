@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/kimgranlund/plugins-forge/agent-ops/blueprint/v1.json",
+  "$id": "https://github.com/kimgranlund/claude-plugins/agent-ops/blueprint/v1.json",
   "title": "Orchestration Blueprint — machine-readable sidecar (v1)",
   "description": "JSON sidecar for the 14-field PLAN/COMPOSE Orchestration Blueprint. Captures the structurally critical fields so illegal state combinations can be caught by a validator before the blueprint is run. The prose blueprint remains the primary artifact; this sidecar is the machine-checkable layer that makes Wlaschin-class illegal states unrepresentable. Validated by check_blueprint.py when --sidecar flag is passed.",
   "type": "object",

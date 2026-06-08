@@ -3,7 +3,7 @@
     "plugins-forge": {
       "source": {
         "source": "github",
-        "repo": "kimgranlund/plugins-forge"
+        "repo": "kimgranlund/claude-plugins"
       }
     }
   },

@@ -9,7 +9,7 @@ This is the toolchain the rest of this marketplace is authored and red-teamed wi
 ## Quick start
 
 ```text
-/plugin marketplace add kimgranlund/plugins-forge
+/plugin marketplace add kimgranlund/claude-plugins
 /plugin install plugins-factory@plugins-forge
 ```
 

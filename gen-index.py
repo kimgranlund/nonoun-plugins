@@ -169,7 +169,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
         "<header><h1>plugins-forge</h1>",
         f"<p class='sub'>{e(market_desc)}</p>",
         f"<p class='sub'><b>{len(plugins)}</b> catalog plugins · "
-        "<a href='https://github.com/kimgranlund/plugins-forge'>github.com/kimgranlund/plugins-forge</a></p></header>",
+        "<a href='https://github.com/kimgranlund/claude-plugins'>github.com/kimgranlund/claude-plugins</a></p></header>",
         "<nav>" + "".join(f"<a href='#{e(p['name'])}'>{e(p['name'])}</a>" for p in plugins) + "</nav>",
     ]
     for p in plugins:
