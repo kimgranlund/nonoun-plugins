@@ -152,14 +152,9 @@ export class UIPage extends UIElement {
   }
 
   #meta(route, meta) {
-    const sm = this.sitemap || {};
-    const sec = (sm.sections || []).filter(
-      (s) => route.split("/").indexOf(s.id) >= 0,
-    )[0];
-    let out =
-      "<div class='cr-meta'><a href='#/'>" + esc(sm.title || "Home") + "</a>";
-    if (sec) out += "<span>/</span>" + esc(sec.title);
-    out += "</div>";
+    // The breadcrumb lives in the sticky topbar (<cr-ui-body>); here we only
+    // surface the document's status/version/date tags above the prose.
+    let out = "";
     if (meta && (meta.status || meta.version || meta.date)) {
       out += "<div class='cr-tags'>";
       if (meta.status)

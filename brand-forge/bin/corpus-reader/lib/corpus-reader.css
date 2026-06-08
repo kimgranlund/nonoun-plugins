@@ -184,6 +184,7 @@
   --layout-max-width-wide: 90rem; /* home dashboard — wider than the prose-reading width */
   --content-max-width: 51rem;
   --toc-width: 15.5rem;
+  --sidebar-width: 18rem;
 }
 
 /* ============================================================
@@ -239,7 +240,9 @@ img {
    carry all styling, so the component refactor changes nothing visually.
    ============================================================ */
 cr-shell {
-  display: block;
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
 }
 cr-ui-header,
 cr-ui-nav,
@@ -251,130 +254,143 @@ cr-ui-diagram-viewer {
 }
 
 /* ============================================================
-   NAV HEADER  [ name | menu ]
+   APP SHELL — sticky sidebar | main column
    ============================================================ */
-.cr-nav {
+
+/* ---- Sidebar rail (sticky, full-height) ---- */
+.cr-side {
+  flex: 0 0 var(--sidebar-width);
+  width: var(--sidebar-width);
   position: sticky;
   top: 0;
-  z-index: 50;
-  height: var(--header-height);
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-base);
-  padding: 0 var(--space-gutter);
-  background: var(--nav-bg);
-  backdrop-filter: saturate(1.4) blur(12px);
-  -webkit-backdrop-filter: saturate(1.4) blur(12px);
-  border-bottom: 1px solid var(--border-soft);
+  flex-direction: column;
+  padding: var(--space-wide) var(--space-base) var(--space-roomy);
+  background: var(--surface);
+  border-right: 1px solid var(--border-soft);
 }
 
-.cr-brand {
-  display: inline-flex;
-  align-items: center;
+.cr-side-brand {
+  display: flex;
+  align-items: baseline;
   gap: var(--space-tight);
+  padding: var(--space-hair) var(--space-tight) var(--space-base);
   color: var(--fg);
-  font-weight: 650;
-  letter-spacing: -0.01em;
 }
-.cr-brand:hover {
+.cr-side-brand:hover {
   text-decoration: none;
 }
 .cr-brand-dot {
+  align-self: center;
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 0.25rem var(--accent-soft);
 }
-.cr-brand-name {
-  font-size: var(--font-size-brand);
+.cr-side-brand b {
+  font-size: var(--font-size-subheading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.cr-side-sub {
+  font-size: var(--font-size-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
-.cr-menu-btn {
-  font: inherit;
-  font-size: var(--font-size-ui);
-  font-weight: 550;
-  color: var(--fg);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  padding: 0.375rem 0.875rem;
-  cursor: pointer;
+/* ---- Persistent sidebar nav (sections → pages) ---- */
+.cr-side-nav {
+  display: block;
 }
-.cr-menu-btn::after {
-  content: " ▾";
-  color: var(--faint);
+.cr-nav-root {
+  font-weight: 600;
 }
-.cr-menu-btn:hover {
-  border-color: var(--accent);
+.cr-nav-group {
+  margin-top: var(--space-tight);
 }
-.cr-menu-btn[aria-expanded="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-/* ============================================================
-   MENU PANEL (dropdown)
-   ============================================================ */
-.cr-menu-panel {
-  position: fixed;
-  top: var(--header-height);
-  right: var(--space-base);
-  z-index: 49;
-  width: min(22.5rem, calc(100vw - 2rem));
-  max-height: calc(100vh - var(--header-height) - var(--space-wide));
-  overflow: auto;
-  padding: var(--space-tight);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-surface);
-  box-shadow: var(--shadow);
-}
-.cr-menu-panel[hidden] {
-  display: none;
-}
-.cr-mp-sec {
-  padding: var(--space-tight) 0;
-}
-.cr-mp-sec + .cr-mp-sec {
-  border-top: 1px solid var(--border-soft);
-}
-.cr-mp-sec-title {
+.cr-nav-group-title {
   font-size: var(--font-size-eyebrow);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--faint);
-  padding: var(--space-tight) var(--space-snug) 0.125rem;
+  margin: var(--space-snug) var(--space-tight) var(--space-hair);
 }
-.cr-mp-page {
+.cr-nav-link {
   display: block;
-  padding: 0.4375rem var(--space-snug);
+  padding: 0.375rem var(--space-snug);
   border-radius: var(--radius-control);
+  border: 1px solid transparent;
   color: var(--fg);
   font-size: var(--font-size-ui);
+  line-height: 1.35;
 }
-.cr-mp-page:hover {
+.cr-nav-link:hover {
   background: var(--surface-sunken);
   text-decoration: none;
 }
-.cr-mp-page.cr-active {
+.cr-nav-link.cr-active {
   background: var(--accent-soft);
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
   color: var(--accent);
   font-weight: 600;
 }
-.cr-mp-root {
+
+/* ---- Main column ---- */
+.cr-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Sticky topbar (breadcrumb) ---- */
+.cr-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-base);
+  min-height: var(--header-height);
+  padding: 0 var(--space-gutter);
+  background: var(--nav-bg);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.cr-crumb {
+  font-size: var(--font-size-detail);
+  color: var(--muted);
+}
+.cr-crumb a {
+  color: var(--muted);
+}
+.cr-crumb a:hover {
+  color: var(--fg);
+}
+.cr-crumb b {
+  color: var(--fg);
   font-weight: 600;
+}
+.cr-crumb span {
+  color: var(--faint);
+  margin: 0 0.375rem;
 }
 
 /* ============================================================
-   BODY GRID  ( toc | content )
+   BODY GRID  ( content | toc )
    ============================================================ */
 .cr-body {
   display: grid;
-  grid-template-columns: var(--toc-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--toc-width);
   gap: var(--space-column-gap);
+  width: 100%;
   max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 0 var(--space-gutter);
@@ -447,18 +463,6 @@ cr-ui-diagram-viewer {
   max-width: none; /* the home is a tile dashboard, not prose — use the full track */
 }
 
-.cr-meta {
-  font-size: var(--font-size-detail);
-  color: var(--muted);
-  margin-bottom: var(--space-hair);
-}
-.cr-meta a {
-  color: var(--muted);
-}
-.cr-meta span {
-  color: var(--faint);
-  margin: 0 0.375rem;
-}
 .cr-tags {
   display: flex;
   flex-wrap: wrap;
@@ -620,7 +624,7 @@ cr-ui-diagram-viewer {
   margin-bottom: 1.75rem;
 }
 .cr-hero h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--font-size-display);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -722,7 +726,7 @@ cr-ui-diagram-viewer {
    hover/focus. A transparent gutter is reserved, so revealing the
    thumb never reflows content. (The window keeps its native scrollbar.)
    ============================================================ */
-.cr-menu-panel,
+.cr-side,
 .cr-toc,
 .cr-md pre,
 .cr-md table {
@@ -730,8 +734,8 @@ cr-ui-diagram-viewer {
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.2s ease;
 }
-.cr-menu-panel:hover,
-.cr-menu-panel:focus-within,
+.cr-side:hover,
+.cr-side:focus-within,
 .cr-toc:hover,
 .cr-toc:focus-within,
 .cr-md pre:hover,
@@ -740,20 +744,20 @@ cr-ui-diagram-viewer {
 }
 
 /* WebKit / Blink */
-.cr-menu-panel::-webkit-scrollbar,
+.cr-side::-webkit-scrollbar,
 .cr-toc::-webkit-scrollbar,
 .cr-md pre::-webkit-scrollbar,
 .cr-md table::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-.cr-menu-panel::-webkit-scrollbar-track,
+.cr-side::-webkit-scrollbar-track,
 .cr-toc::-webkit-scrollbar-track,
 .cr-md pre::-webkit-scrollbar-track,
 .cr-md table::-webkit-scrollbar-track {
   background: transparent;
 }
-.cr-menu-panel::-webkit-scrollbar-thumb,
+.cr-side::-webkit-scrollbar-thumb,
 .cr-toc::-webkit-scrollbar-thumb,
 .cr-md pre::-webkit-scrollbar-thumb,
 .cr-md table::-webkit-scrollbar-thumb {
@@ -762,8 +766,8 @@ cr-ui-diagram-viewer {
   border-radius: var(--radius-pill);
   background-clip: padding-box;
 }
-.cr-menu-panel:hover::-webkit-scrollbar-thumb,
-.cr-menu-panel:focus-within::-webkit-scrollbar-thumb,
+.cr-side:hover::-webkit-scrollbar-thumb,
+.cr-side:focus-within::-webkit-scrollbar-thumb,
 .cr-toc:hover::-webkit-scrollbar-thumb,
 .cr-toc:focus-within::-webkit-scrollbar-thumb,
 .cr-md pre:hover::-webkit-scrollbar-thumb,
@@ -771,7 +775,7 @@ cr-ui-diagram-viewer {
   background: var(--scroll-thumb);
   background-clip: padding-box;
 }
-.cr-menu-panel::-webkit-scrollbar-thumb:hover,
+.cr-side::-webkit-scrollbar-thumb:hover,
 .cr-toc::-webkit-scrollbar-thumb:hover,
 .cr-md pre::-webkit-scrollbar-thumb:hover,
 .cr-md table::-webkit-scrollbar-thumb:hover {
@@ -782,7 +786,7 @@ cr-ui-diagram-viewer {
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 53.5rem) {
+@media (max-width: 64rem) {
   .cr-body {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
@@ -790,7 +794,18 @@ cr-ui-diagram-viewer {
   .cr-toc {
     display: none;
   }
-  .cr-content {
-    padding-top: 1.375rem;
+}
+@media (max-width: 48rem) {
+  cr-shell {
+    flex-direction: column;
+  }
+  .cr-side {
+    flex: none;
+    width: auto;
+    height: auto;
+    max-height: 45vh;
+    position: static;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-soft);
   }
 }

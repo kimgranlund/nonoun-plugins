@@ -1,8 +1,9 @@
 /**
- * <cr-ui-header> — the sticky top bar: [ brand | Menu ].
+ * <cr-ui-header> — the sticky left sidebar: [ wordmark / nav ].
  *
- * Properties: `sitemap` (title) and `route` (passed to the nav for the active
- * highlight). Owns the <cr-ui-nav> dropdown and the Menu button that toggles it.
+ * Properties: `sitemap` (wordmark subtitle + passed to the nav) and `route`
+ * (passed to the nav for the active highlight). Renders an <aside class="cr-side">
+ * rail holding the BZZR wordmark and a persistent <cr-ui-nav> list (no dropdown).
  */
 import { UIElement } from "./base.js";
 
@@ -14,8 +15,7 @@ export class UIHeader extends UIElement {
 
   static template = () => null;
 
-  #titleEl = null;
-  #btn = null;
+  #subEl = null;
   #nav = null;
   #built = false;
 
@@ -27,40 +27,31 @@ export class UIHeader extends UIElement {
     if (this.#built) return;
     this.#built = true;
 
-    const bar = document.createElement("header");
-    bar.className = "cr-nav";
+    const side = document.createElement("aside");
+    side.className = "cr-side";
+    side.setAttribute("aria-label", "Corpus navigation");
 
     const brand = document.createElement("a");
-    brand.className = "cr-brand";
+    brand.className = "cr-side-brand";
     brand.href = "#/";
     brand.setAttribute("aria-label", "Home");
     brand.innerHTML =
-      "<span class='cr-brand-dot' aria-hidden='true'></span><span class='cr-brand-name'></span>";
-    this.#titleEl = brand.querySelector(".cr-brand-name");
-
-    this.#btn = document.createElement("button");
-    this.#btn.className = "cr-menu-btn";
-    this.#btn.type = "button";
-    this.#btn.textContent = "Menu";
-    this.#btn.setAttribute("aria-haspopup", "true");
-    this.#btn.setAttribute("aria-expanded", "false");
+      "<span class='cr-brand-dot' aria-hidden='true'></span>" +
+      "<b>BZZR</b><span class='cr-side-sub'></span>";
+    this.#subEl = brand.querySelector(".cr-side-sub");
 
     this.#nav = document.createElement("cr-ui-nav");
-    this.#btn.addEventListener("click", () => {
-      this.#nav.open = !this.#nav.open;
-    });
-    this.#nav.addEventListener("cr:open-change", (e) => {
-      this.#btn.setAttribute("aria-expanded", String(e.detail.open));
-    });
 
-    bar.append(brand, this.#btn);
-    this.append(bar, this.#nav);
+    side.append(brand, this.#nav);
+    this.append(side);
   }
 
   render() {
     this.#build();
-    if (this.#titleEl)
-      this.#titleEl.textContent = this.sitemap?.title || "Corpus";
+    if (this.#subEl) {
+      const t = this.sitemap?.title || "Corpus";
+      this.#subEl.textContent = t.replace(/^BZZR\s*/i, "") || t;
+    }
     if (this.#nav) {
       this.#nav.sitemap = this.sitemap;
       this.#nav.active = this.route;
