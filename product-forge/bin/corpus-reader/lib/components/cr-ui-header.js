@@ -3,7 +3,8 @@
  *
  * Properties: `sitemap` (wordmark subtitle + passed to the nav) and `route`
  * (passed to the nav for the active highlight). Renders an <aside class="cr-side">
- * rail holding the BZZR wordmark and a persistent <cr-ui-nav> list (no dropdown).
+ * rail holding the corpus wordmark (derived from the sitemap title — no hardcoded
+ * brand) and a persistent <cr-ui-nav> list (no dropdown).
  */
 import { UIElement } from "./base.js";
 
@@ -15,6 +16,7 @@ export class UIHeader extends UIElement {
 
   static template = () => null;
 
+  #leadEl = null;
   #subEl = null;
   #nav = null;
   #built = false;
@@ -37,7 +39,8 @@ export class UIHeader extends UIElement {
     brand.setAttribute("aria-label", "Home");
     brand.innerHTML =
       "<span class='cr-brand-dot' aria-hidden='true'></span>" +
-      "<b>BZZR</b><span class='cr-side-sub'></span>";
+      "<b class='cr-side-lead'></b><span class='cr-side-sub'></span>";
+    this.#leadEl = brand.querySelector(".cr-side-lead");
     this.#subEl = brand.querySelector(".cr-side-sub");
 
     this.#nav = document.createElement("cr-ui-nav");
@@ -48,10 +51,12 @@ export class UIHeader extends UIElement {
 
   render() {
     this.#build();
-    if (this.#subEl) {
-      const t = this.sitemap?.title || "Corpus";
-      this.#subEl.textContent = t.replace(/^BZZR\s*/i, "") || t;
-    }
+    // Wordmark from the corpus title: bold lead word + muted remainder — generic, no
+    // hardcoded brand. "Acme Product Corpus" → "Acme" / "Product Corpus".
+    const title = this.sitemap?.title || "Corpus";
+    const sp = title.indexOf(" ");
+    if (this.#leadEl) this.#leadEl.textContent = sp > 0 ? title.slice(0, sp) : title;
+    if (this.#subEl) this.#subEl.textContent = sp > 0 ? title.slice(sp + 1) : "";
     if (this.#nav) {
       this.#nav.sitemap = this.sitemap;
       this.#nav.active = this.route;

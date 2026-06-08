@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.16 — 2026-06-08
+
+- **corpus-reader: its own README + a staleness-gated CHANGELOG.** The reader now ships a `README.md` (rewritten for the sidebar-nav layout) and a `CHANGELOG.md`. `sync-corpus-reader.py` gains `--changelog "…"` (prepend a dated entry + refresh a source fingerprint) and `--fingerprint`; its `--check` CI gate now also **fails if the reader's code changed without a CHANGELOG entry** — so the changelog can't silently go stale. Also fixed the sidebar wordmark to derive from the corpus title (it was hardcoded `"BZZR"`, so the generic reader showed the example's brand). Re-synced into the vendored copies.
+
 ## 0.2.15 — 2026-06-07
 
 - **corpus-reader: one common `<corpus>/site/` convention.** `build-sitemap.py --init <corpus>` now scaffolds the standard `site/` viewer (machinery only — never a bundled example) and builds its sitemap in a single command. Every plugin's `*-corpus-export` command calls this one tool, so generated corpus sites use an identical layout everywhere. Re-synced into the vendored copies.

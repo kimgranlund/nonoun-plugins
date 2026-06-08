@@ -1,45 +1,64 @@
 # corpus-reader
 
-A tiny static documentation reader for a folder of Markdown — the kind some plugins generate as a "corpus." Point it at a corpus, generate a sitemap, serve the folder, and read it as a navigable site: a sticky nav, a per-page table of contents, and a tile-grid index. Markdown, GFM tables, fenced code (syntax-highlighted), and `mermaid` diagrams all render client-side. No build step.
+A tiny **buildless** static reader for a folder of Markdown — the kind some plugins generate as a "corpus." Point it at a corpus, build a sitemap, serve the folder, and read it as a navigable site: a persistent sidebar nav, a per-page table of contents, a section-tile home, GFM tables, syntax-highlighted code, and `mermaid` diagrams — all rendered client-side. No build step, stdlib-only generator.
 
 ## Use it
 
-1. **Generate the sitemap** for your corpus (a sibling folder of `.md` files):
+**The common way — a `site/` viewer beside your corpus** (one command):
 
-   ```sh
-   python3 build-sitemap.py            # auto-detects a single corpus folder
-   python3 build-sitemap.py my-corpus  # or name it explicitly
-   ```
+```sh
+python3 build-sitemap.py --init <corpus-root>   # scaffold <corpus-root>/site/ + build the sitemap
+cd <corpus-root> && python3 -m http.server      # then open http://localhost:8000/site/
+```
 
-   This writes `lib/sitemap.json` — sections grouped by top-level folder, with a title + one-line summary per page.
+`--init` copies this reader (machinery only — never the bundled example) into `<corpus-root>/site/` and builds its sitemap, so the corpus root stays clean, shareable Markdown with the app tucked into `site/`. This is the single layout every plugin's `*-corpus-export` command produces. Re-run `--init` (or `build-sitemap.py ..` from inside `site/`) after editing the corpus.
 
-2. **Serve the folder** (the reader uses `fetch()`, which browsers block on `file://`):
+**Standalone — the reader and corpus together:**
 
-   ```sh
-   python3 -m http.server
-   ```
+```sh
+python3 build-sitemap.py            # auto-detects a single sibling corpus folder
+python3 build-sitemap.py my-corpus  # …or name it
+python3 -m http.server              # then open http://localhost:8000/
+```
 
-   Open http://localhost:8000/ . Re-run step 1 whenever the corpus changes.
+The reader uses ES modules + `fetch()`, so it must be **served over HTTP** — opening `index.html` from `file://` shows a "serve over HTTP" notice instead of rendering.
 
 ## Layout
 
+A sticky left **sidebar** | a **main column**:
+
+- **Sidebar** (`<cr-ui-header>`) — the corpus wordmark (derived from the sitemap title; no hardcoded brand) over a persistent **sections → pages** nav (`<cr-ui-nav>`, always visible, active page highlighted).
+- **Main** (`<cr-ui-body>`) — a sticky breadcrumb topbar over the `content | toc` grid: `<cr-ui-page>` renders the route, `<cr-ui-toc>` is the right-rail per-page table of contents. The home route (`#/`) is a grid of section tiles; a page route (`#/<path-to.md>`) renders that file.
+
+## Architecture
+
+The whole reader is a small custom-element tree — `<cr-shell>` loads `lib/sitemap.json`, owns the `#/<path>` hash route, and pushes `sitemap` + `route` down to the header and body.
+
 | File | Role |
 | --- | --- |
-| `index.html` | the shell — loads the reader + the rendering libraries |
-| `lib/corpus-reader.css` | styles (light / dark by OS preference) |
-| `lib/corpus-reader.js` | hash router, markdown render, ToC + scrollspy, the tile home |
+| `index.html` | the page shell — loads the reader + the render libraries (pinned + SRI) + a `file://` guard |
+| `lib/corpus-reader.js` | entry module — imports and registers the `<cr-*>` components |
+| `lib/components/` | the tree: `base.js` (a `UIElement` base with signal-style reactive properties) · `cr-shell` · `cr-ui-header` (sidebar) · `cr-ui-nav` · `cr-ui-body` (main) · `cr-ui-page` · `cr-ui-toc` · `cr-ui-diagram-viewer` · `util.js` |
+| `lib/corpus-reader.css` | one token layer (OKLCH hue + chroma axes → semantic tokens), light/dark by OS preference |
 | `lib/sitemap.json` | generated — the index the reader loads |
-| `build-sitemap.py` | the generator (Python 3.8+, stdlib only) |
-
-The page is a sticky `nav` (`[ name | menu ]`) over a `toc | content` grid. The home route (`#/`) is a grid of section tiles, each listing its pages; a page route (`#/<path-to.md>`) renders that file with its own table of contents.
+| `build-sitemap.py` | the generator + `--init` scaffolder (Python 3.8+, stdlib only) |
 
 ## Pointing at any corpus
 
-Put the corpus folder beside `index.html` and run `build-sitemap.py <folder>`. Page titles come from frontmatter `title:`, else the first `# H1`, else the filename; sections are the top-level subfolders (a leading `NN-` orders them and is stripped from the display name); the corpus title is the root `README` heading. Cross-document `.md` links and relative images are rewritten to work inside the router.
+Page titles come from frontmatter `title:`, else the first `# H1`, else the filename; sections are the top-level subfolders (a leading `NN-` orders them and is stripped from the display name); the corpus title (and the sidebar wordmark) come from the root `README` heading. Cross-document `.md` links and relative images are rewritten to work inside the router.
 
-**Viewer in a `site/` subfolder (the common layout).** To keep the corpus root as clean, shareable markdown with the app tucked away, run `python3 build-sitemap.py --init <corpus-root>` — it copies this reader into `<corpus-root>/site/` (machinery only, never an example) and builds the sitemap (`../<section>/…` paths, the `site/` dir excluded from the scan). Then serve the corpus root and open `/site/`. This single convention is what every plugin's `*-corpus-export` command uses, so generated corpus sites share an identical layout. (The lower-level `build-sitemap.py ..`, run from inside an existing `site/`, does just the sitemap step.)
+## Security — untrusted markdown
 
-Rendering uses marked + **DOMPurify** + highlight.js + mermaid, pinned via CDN in `index.html` with Subresource-Integrity (SRI) hashes. Corpus markdown is treated as **untrusted**: marked doesn't sanitize, so DOMPurify scrubs the rendered HTML (and mermaid runs `securityLevel: "strict"`). marked + DOMPurify are required — if either fails its integrity check, prose degrades to escaped text; highlight + mermaid are progressive enhancement. Swap the CDN tags for vendored copies in `lib/` if you need a fully offline reader.
+Rendering uses marked + **DOMPurify** + highlight.js + mermaid, pinned via CDN in `index.html` with **Subresource-Integrity** (SRI) hashes. Corpus markdown is treated as **untrusted**: marked doesn't sanitize, so DOMPurify scrubs the rendered HTML, and mermaid runs `securityLevel: "strict"`. marked + DOMPurify are required — if either fails its integrity check, prose degrades to escaped text; highlight + mermaid are progressive enhancement. (Swap the CDN tags for vendored copies in `lib/` for a fully offline reader.) The XSS wiring is CI-guarded — see _Maintenance_.
+
+## Maintenance
+
+This reader is the single source of truth at `plugins-factory/bin/corpus-reader/`; brand-forge and product-forge ship **vendored copies** (cross-plugin symlinks don't survive plugin install). `plugins-factory/bin/sync-corpus-reader.py` keeps the copies byte-identical and, as a CI gate (`--check`), also asserts the DOMPurify/SRI wiring is intact **and that the [CHANGELOG](CHANGELOG.md) hasn't gone stale** (a source fingerprint must match the latest `CHANGELOG.md` entry). After any code change, log it:
+
+```sh
+python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<what changed>"   # dated entry + refresh
+python3 plugins-factory/bin/sync-corpus-reader.py                                # re-sync the copies
+```
 
 ## Note
 
