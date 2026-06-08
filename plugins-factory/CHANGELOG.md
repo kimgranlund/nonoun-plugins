@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.15 — 2026-06-07
+
+- **corpus-reader: one common `<corpus>/site/` convention.** `build-sitemap.py --init <corpus>` now scaffolds the standard `site/` viewer (machinery only — never a bundled example) and builds its sitemap in a single command. Every plugin's `*-corpus-export` command calls this one tool, so generated corpus sites use an identical layout everywhere. Re-synced into the vendored copies.
+
 ## 0.2.14 — 2026-06-06
 
 - **corpus-reader: viewer-in-a-subfolder layout.** `build-sitemap.py ..` now generates the sitemap for a reader living in a `<corpus>/site/` subfolder (content in the parent) — `../`-relative paths, the viewer's own dir excluded from the scan. Lets an exported corpus keep its root as clean, browsable markdown with the app tucked into `site/`. Reader unchanged; the standalone content-beside-`index.html` layout still works. Re-synced into the vendored copies.

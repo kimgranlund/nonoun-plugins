@@ -16,15 +16,11 @@ Target corpus dir from the operator (default `./product-corpus`): **$ARGUMENTS**
    - `03-experience/` — information architecture, flows, UX patterns, wireframes
    - `04-operations/` — service design, metrics, governance, rollout
    Give each page a frontmatter `title:` (else its first `# H1` is used). Add `<corpus>/README.md` whose H1 is the product name — it becomes the site title + home hero. **Keep the corpus root clean markdown** — browsable/diffable on its own, with no app files mixed in.
-2. **Add the viewer** (machinery only — never a bundled example corpus):
+2. **Generate the viewer** — the common `<corpus>/site/` layout, in one command:
    ```sh
-   mkdir -p "<corpus>/site"
-   cp -R "${CLAUDE_PLUGIN_ROOT}/bin/corpus-reader/index.html" \
-         "${CLAUDE_PLUGIN_ROOT}/bin/corpus-reader/lib" \
-         "${CLAUDE_PLUGIN_ROOT}/bin/corpus-reader/build-sitemap.py" "<corpus>/site/"
-   rm -f "<corpus>/site/lib/sitemap.json"   # regenerated next
+   python3 "${CLAUDE_PLUGIN_ROOT}/bin/corpus-reader/build-sitemap.py" --init "<corpus>"
    ```
-3. **Build the index.** `cd "<corpus>/site" && python3 build-sitemap.py ..` — scans the parent corpus and writes `site/lib/sitemap.json` (paths resolve out to the sibling markdown).
-4. **Serve + read.** `cd "<corpus>" && python3 -m http.server`, then open **http://localhost:8000/site/** . Re-run step 3 after editing the corpus.
+   This copies the reader into `<corpus>/site/` (machinery only — never a bundled example) and builds its sitemap. Re-run it after editing the corpus.
+3. **Serve + read.** `cd "<corpus>" && python3 -m http.server`, then open **http://localhost:8000/site/** . Re-run step 2 after editing the corpus.
 
 **Verify:** the home tiles list your sections; a doc containing a raw `<script>` shows as text (DOMPurify sanitizes it). `<corpus>/` is self-contained + portable — zip/share it, or host it on any static server (the `site/` viewer renders the sibling markdown).

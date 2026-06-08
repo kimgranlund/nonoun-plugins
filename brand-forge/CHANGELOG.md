@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.10] — 2026-06-07
+
+- **`/brand-corpus-export` uses the shared `--init` convention** — generating the `<corpus>/site/` viewer is now a single `build-sitemap.py --init` call (the same tool every plugin uses), so the layout is identical across the catalog.
+
 ## [0.4.9] — 2026-06-06
 
 - **`/brand-corpus-export` restructured** — the corpus root is now clean, shareable Markdown (sections + README); the reader is tucked into a `<corpus>/site/` subfolder (copied machinery only — never a bundled example). Serve the corpus root, open `/site/`.

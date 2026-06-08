@@ -7,6 +7,12 @@ reader (index.html) loads. Works for any generated corpus, not just the bundled
 example.
 
     python3 build-sitemap.py [CORPUS_DIR] [--out lib/sitemap.json] [--title TITLE]
+    python3 build-sitemap.py --init <CORPUS_ROOT>   # scaffold <CORPUS_ROOT>/site/ + build
+
+The `--init` form is the **common `<corpus>/site/` convention**: it copies this reader
+(machinery only — never a bundled example corpus) into `<CORPUS_ROOT>/site/` and builds
+the sitemap there. Every plugin that generates a corpus site calls it, so the layout is
+identical everywhere: serve the corpus root, open `/site/`.
 
 CORPUS_DIR defaults to the single sibling directory that contains `.md` files
 (e.g. the bundled `brand-corpus`). Page paths are written relative to this
@@ -20,6 +26,8 @@ import argparse
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -103,12 +111,37 @@ def section_order(folder):
     return int(m.group(1)) if m else 9999
 
 
+def scaffold_site(corpus_root):
+    """The common `<corpus>/site/` convention: copy this reader (machinery only — never a
+    bundled example corpus) into `<corpus_root>/site/` and build its sitemap. Shared by
+    every plugin's corpus-export command so the generated layout is identical everywhere."""
+    corpus_root = os.path.abspath(corpus_root.rstrip("/"))
+    if not os.path.isdir(corpus_root):
+        sys.exit("error: not a directory: %s" % corpus_root)
+    site = os.path.join(corpus_root, "site")
+    os.makedirs(site, exist_ok=True)
+    shutil.copy2(os.path.join(ROOT, "index.html"), os.path.join(site, "index.html"))
+    shutil.copy2(os.path.join(ROOT, "build-sitemap.py"), os.path.join(site, "build-sitemap.py"))
+    lib_dst = os.path.join(site, "lib")
+    if os.path.isdir(lib_dst):
+        shutil.rmtree(lib_dst)
+    shutil.copytree(os.path.join(ROOT, "lib"), lib_dst, ignore=shutil.ignore_patterns("sitemap.json"))
+    subprocess.run([sys.executable, "build-sitemap.py", ".."], cwd=site, check=True)
+    print("scaffolded %s/site/ — serve the corpus root and open /site/" % corpus_root)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Generate lib/sitemap.json for the corpus-reader.")
     ap.add_argument("corpus", nargs="?", default=None, help="corpus directory (default: auto-detect)")
     ap.add_argument("--out", default=os.path.join("lib", "sitemap.json"), help="output path (default: lib/sitemap.json)")
     ap.add_argument("--title", default=None, help="corpus title (default: root README H1, else dir name)")
+    ap.add_argument("--init", metavar="CORPUS_ROOT", default=None,
+                    help="scaffold CORPUS_ROOT/site/ with this reader (machinery only) + build its sitemap — the common <corpus>/site/ layout")
     args = ap.parse_args()
+
+    if args.init is not None:
+        scaffold_site(args.init)
+        return
 
     corpus = args.corpus
     if not corpus:
