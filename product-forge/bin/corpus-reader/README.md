@@ -45,7 +45,13 @@ The whole reader is a small custom-element tree — `<cr-shell>` loads `lib/site
 
 ## Pointing at any corpus
 
-Page titles come from frontmatter `title:`, else the first `# H1`, else the filename; sections are the top-level subfolders (a leading `NN-` orders them and is stripped from the display name); the corpus title (and the sidebar wordmark) come from the root `README` heading. Cross-document `.md` links and relative images are rewritten to work inside the router.
+Page titles come from frontmatter `title:`, else the first `# H1`, else the filename; sections are the top-level subfolders (a leading `NN-` orders them and is stripped from the display name); the corpus title (and the sidebar wordmark) come from the root `README` heading. Cross-document `.md` links and relative images are rewritten to work inside the router, inline provenance tags (`[KNOWN]/[INFERRED]/[OPEN]/[SEEDED]`) are styled, and a frontmatter `status` feeds the home maturity bar.
+
+An optional `<corpus>/reader.config.json` adds polish without touching the reader:
+
+```json
+{ "title": "…", "sections": { "01-foundation": "one-line description shown on the home card" } }
+```
 
 ## Security — untrusted markdown
 

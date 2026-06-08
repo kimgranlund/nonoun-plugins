@@ -840,6 +840,12 @@ cr-ui-diagram-viewer {
   color: var(--fg);
   margin: 0;
 }
+.cr-card-desc {
+  font-size: var(--font-size-detail);
+  color: var(--muted);
+  line-height: 1.45;
+  margin-top: 0.5rem;
+}
 .cr-card-links {
   display: flex;
   flex-direction: column;

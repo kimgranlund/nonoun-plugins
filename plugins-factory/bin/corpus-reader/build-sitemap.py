@@ -20,7 +20,9 @@ script's directory — where index.html lives — so the reader can fetch them
 directly. Pass `..` to generate for a viewer that lives in a SUBFOLDER of the
 corpus (the `<corpus>/site/` export layout): paths come out `../<section>/…`,
 and this script's own directory is excluded from the scan. Re-run after the
-corpus changes. Python 3.8+, stdlib only.
+corpus changes. An optional `<corpus>/reader.config.json` —
+`{"title": "…", "sections": {"01-foo": "one-line description"}}` — adds a title
++ per-section card descriptions without touching the reader. Python 3.8+, stdlib only.
 """
 import argparse
 import json
@@ -175,6 +177,18 @@ def main():
     if not os.path.isdir(corpus_abs):
         sys.exit("error: not a directory: %s" % corpus)
 
+    # Optional per-corpus polish (never required): a title override + one-line section
+    # descriptions, from <corpus>/reader.config.json — the reader is unchanged without it.
+    cfg = {}
+    cfg_path = os.path.join(corpus_abs, "reader.config.json")
+    if os.path.isfile(cfg_path):
+        try:
+            with open(cfg_path, encoding="utf-8") as fh:
+                cfg = json.load(fh)
+        except (ValueError, OSError):
+            cfg = {}
+    cfg_sections = cfg.get("sections") or {}
+
     entries = []
     for dirpath, dirnames, filenames in os.walk(corpus_abs):
         dirnames[:] = [d for d in dirnames if not d.startswith(".") and os.path.join(dirpath, d) != ROOT]
@@ -233,8 +247,11 @@ def main():
     section_list = sorted(sections.values(), key=lambda s: (s["order"], s["title"].lower()))
     for section in section_list:
         del section["order"]  # ordering is now positional
+        desc = cfg_sections.get(section["id"])
+        if desc:
+            section["desc"] = desc
 
-    title = args.title or (root_pages[0]["title"] if root_pages else prettify(corpus))
+    title = args.title or cfg.get("title") or (root_pages[0]["title"] if root_pages else prettify(corpus))
 
     mode = "provenance" if sum(tot_prov.values()) else ("status" if sum(tot_status.values()) else "none")
     stats = {"mode": mode, "status": tot_status, "provenance": tot_prov,

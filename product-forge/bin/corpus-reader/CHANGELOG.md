@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: 94801c3a69179a7ba0d9929fbd3ccf93202832d19a52a6f3a17f3b9b22a8b501 -->
+<!-- source-fingerprint: 804782ea72a62d4c63e6964b2444572aae568be71776536e77fd1161d218ffde -->
+
+## 2026-06-08 — Home section cards gain optional one-line descriptions + a title override via <corpus>/reader.config.json (graceful — no config needed)
 
 ## 2026-06-08 — Adopt the new reader's patterns + layouts (web components kept): sidebar search + layer-label nav, mobile drawer, home hero + section cards + maturity/provenance stats bar + minibars, doc kicker + badges, inline provenance tags + path.md xrefs
 

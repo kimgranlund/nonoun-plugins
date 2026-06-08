@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.18 — 2026-06-08
+
+- **corpus-reader: optional `reader.config.json` for home polish.** A `<corpus>/reader.config.json` (`{"title": …, "sections": {"01-foo": "one-line description"}}`) now sets the corpus title and per-section **card descriptions** on the home — `build-sitemap.py` reads it, the cards render the descriptions, and everything degrades gracefully when there's no config. Re-synced into the vendored copies.
+
 ## 0.2.17 — 2026-06-08
 
 - **corpus-reader: the web-component reader gains the new reader's patterns + layouts.** The `<cr-*>` reader now has a sidebar **search** + layer-label nav, a **mobile drawer** (off-canvas + scrim), a home **hero + section cards + a maturity/provenance stats bar** with per-section minibars, and doc **kicker + badges** — plus inline provenance tags (`[KNOWN]/[INFERRED]/[OPEN]/[SEEDED]`) and `path.md` → in-site xref links. `build-sitemap.py` precomputes the status/provenance counts (graceful — the stats bar is omitted when a corpus has neither). Architecture unchanged (web components + OKLCH tokens, served over HTTP). Re-synced into the vendored copies.

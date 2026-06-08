@@ -154,6 +154,7 @@ export class UIPage extends UIElement {
         (num ? "<span class='cr-card-num'>" + esc(String(parseInt(num, 10))) + "</span>" : "") +
         "<h3>" + esc(s.title) + "</h3></div>" +
         this.#miniBar(s.id) +
+        (s.desc ? "<div class='cr-card-desc'>" + esc(s.desc) + "</div>" : "") +
         "<div class='cr-card-links'>";
       (s.pages || []).forEach((p) => {
         html += "<a href='#/" + enc(p.path) + "'>" + esc(p.title) + "</a>";
