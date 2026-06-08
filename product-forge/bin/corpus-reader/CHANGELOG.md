@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: 7c2339ecd33acd557ca4c20f867123ff3220811a592f718a24926e4ac018e300 -->
+<!-- source-fingerprint: 94801c3a69179a7ba0d9929fbd3ccf93202832d19a52a6f3a17f3b9b22a8b501 -->
+
+## 2026-06-08 — Adopt the new reader's patterns + layouts (web components kept): sidebar search + layer-label nav, mobile drawer, home hero + section cards + maturity/provenance stats bar + minibars, doc kicker + badges, inline provenance tags + path.md xrefs
 
 ## 2026-06-08 — Add README + a staleness-gated CHANGELOG; sidebar wordmark now derives from the corpus title (no hardcoded brand)
 

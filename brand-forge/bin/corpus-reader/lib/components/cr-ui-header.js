@@ -33,6 +33,9 @@ export class UIHeader extends UIElement {
     side.className = "cr-side";
     side.setAttribute("aria-label", "Corpus navigation");
 
+    const header = document.createElement("div");
+    header.className = "cr-side-header";
+
     const brand = document.createElement("a");
     brand.className = "cr-side-brand";
     brand.href = "#/";
@@ -43,9 +46,20 @@ export class UIHeader extends UIElement {
     this.#leadEl = brand.querySelector(".cr-side-lead");
     this.#subEl = brand.querySelector(".cr-side-sub");
 
+    const search = document.createElement("input");
+    search.className = "cr-search";
+    search.type = "search";
+    search.placeholder = "Search documents…";
+    search.autocomplete = "off";
+    search.setAttribute("aria-label", "Search documents");
+    search.addEventListener("input", () => {
+      if (this.#nav && this.#nav.filter) this.#nav.filter(search.value);
+    });
+
+    header.append(brand, search);
     this.#nav = document.createElement("cr-ui-nav");
 
-    side.append(brand, this.#nav);
+    side.append(header, this.#nav);
     this.append(side);
   }
 

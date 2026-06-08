@@ -35,33 +35,48 @@ export class UINav extends UIElement {
     this.#markActive();
   }
 
+  #link(p, extra) {
+    return (
+      "<a class='cr-nav-link" + (extra || "") + "' href='#/" + enc(p.path) +
+      "' data-search='" + esc((p.title + " " + p.path).toLowerCase()) + "'>" +
+      esc(p.title) + "</a>"
+    );
+  }
+
   #renderLinks() {
     const sm = this.sitemap || {};
     let html = "";
     (sm.rootPages || []).forEach((p) => {
-      html +=
-        "<a class='cr-nav-link cr-nav-root' href='#/" +
-        enc(p.path) +
-        "'>" +
-        esc(p.title) +
-        "</a>";
+      html += this.#link(p, " cr-nav-root");
     });
     (sm.sections || []).forEach((s) => {
+      const num = (String(s.id).match(/^\d+/) || [""])[0];
       html +=
         "<div class='cr-nav-group'><div class='cr-nav-group-title'>" +
-        esc(s.title) +
-        "</div>";
+        (num ? "<span class='cr-nav-ln'>" + esc(String(parseInt(num, 10))) + "</span>" : "") +
+        "<span>" + esc(s.title) + "</span></div>";
       (s.pages || []).forEach((p) => {
-        html +=
-          "<a class='cr-nav-link' href='#/" +
-          enc(p.path) +
-          "'>" +
-          esc(p.title) +
-          "</a>";
+        html += this.#link(p);
       });
       html += "</div>";
     });
     this.#nav.innerHTML = html;
+  }
+
+  /** Live-filter links by a query against each link's `data-search`; hide empty groups. */
+  filter(q) {
+    if (!this.#nav) return;
+    const query = (q || "").trim().toLowerCase();
+    this.#nav.querySelectorAll(".cr-nav-link").forEach((a) => {
+      const hit = !query || (a.dataset.search || "").indexOf(query) >= 0;
+      a.classList.toggle("cr-hide", !hit);
+    });
+    this.#nav.querySelectorAll(".cr-nav-group").forEach((g) => {
+      const any = [...g.querySelectorAll(".cr-nav-link")].some(
+        (a) => !a.classList.contains("cr-hide"),
+      );
+      g.classList.toggle("cr-hide", !any);
+    });
   }
 
   #markActive() {

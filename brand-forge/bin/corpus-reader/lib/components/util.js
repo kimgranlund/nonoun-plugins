@@ -84,3 +84,52 @@ export function rewriteLinks(root, pagePath) {
     img.loading = "lazy";
   });
 }
+
+const PROV_RE = /\[(KNOWN|INFERRED|OPEN|SEEDED)\]/g;
+
+/**
+ * Post-render decoration of corpus prose (operates on the already-sanitized DOM,
+ * text nodes only — never re-parses HTML, so it can't reintroduce markup the
+ * sanitizer dropped): wrap `[KNOWN]/[INFERRED]/[OPEN]/[SEEDED]` provenance markers
+ * in styled spans, and turn inline `code.md` references into in-site xref links.
+ * `resolve(basename)` returns the router path for a referenced `*.md`, or null.
+ */
+export function decorate(root, resolve) {
+  const texts = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (n.parentNode && n.parentNode.closest("a, code, pre, .cr-prov")) continue;
+    PROV_RE.lastIndex = 0;
+    if (PROV_RE.test(n.nodeValue)) texts.push(n);
+  }
+  texts.forEach((t) => {
+    const s = t.nodeValue;
+    const frag = document.createDocumentFragment();
+    let last = 0, m;
+    PROV_RE.lastIndex = 0;
+    while ((m = PROV_RE.exec(s))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      const span = document.createElement("span");
+      span.className = "cr-prov cr-prov-" + m[1].toLowerCase();
+      span.textContent = m[0];
+      frag.appendChild(span);
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    t.parentNode.replaceChild(frag, t);
+  });
+
+  if (typeof resolve !== "function") return;
+  root.querySelectorAll("code").forEach((c) => {
+    if (c.closest("pre, a")) return;
+    const txt = (c.textContent || "").trim();
+    if (!/^[\w./-]+\.md$/i.test(txt)) return;
+    const route = resolve(txt.split("/").pop());
+    if (!route) return;
+    const a = document.createElement("a");
+    a.className = "cr-xref";
+    a.href = "#/" + enc(route);
+    c.replaceWith(a);
+    a.appendChild(c);
+  });
+}

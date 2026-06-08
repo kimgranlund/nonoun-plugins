@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.17 — 2026-06-08
+
+- **corpus-reader: the web-component reader gains the new reader's patterns + layouts.** The `<cr-*>` reader now has a sidebar **search** + layer-label nav, a **mobile drawer** (off-canvas + scrim), a home **hero + section cards + a maturity/provenance stats bar** with per-section minibars, and doc **kicker + badges** — plus inline provenance tags (`[KNOWN]/[INFERRED]/[OPEN]/[SEEDED]`) and `path.md` → in-site xref links. `build-sitemap.py` precomputes the status/provenance counts (graceful — the stats bar is omitted when a corpus has neither). Architecture unchanged (web components + OKLCH tokens, served over HTTP). Re-synced into the vendored copies.
+
 ## 0.2.16 — 2026-06-08
 
 - **corpus-reader: its own README + a staleness-gated CHANGELOG.** The reader now ships a `README.md` (rewritten for the sidebar-nav layout) and a `CHANGELOG.md`. `sync-corpus-reader.py` gains `--changelog "…"` (prepend a dated entry + refresh a source fingerprint) and `--fingerprint`; its `--check` CI gate now also **fails if the reader's code changed without a CHANGELOG entry** — so the changelog can't silently go stale. Also fixed the sidebar wordmark to derive from the corpus title (it was hardcoded `"BZZR"`, so the generic reader showed the example's brand). Re-synced into the vendored copies.

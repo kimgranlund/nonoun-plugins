@@ -111,6 +111,23 @@ def section_order(folder):
     return int(m.group(1)) if m else 9999
 
 
+PROV_RE = re.compile(r"\[(KNOWN|INFERRED|OPEN|SEEDED)\]")
+
+
+def norm_status(s):
+    """Normalize a frontmatter status to a maturity bucket (else "")."""
+    s = (s or "").lower()
+    if "need" in s:
+        return "needed"
+    if "active" in s:
+        return "active"
+    if "work" in s:
+        return "working"
+    if "draft" in s:
+        return "draft"
+    return ""
+
+
 def scaffold_site(corpus_root):
     """The common `<corpus>/site/` convention: copy this reader (machinery only — never a
     bundled example corpus) into `<corpus_root>/site/` and build its sitemap. Shared by
@@ -174,6 +191,8 @@ def main():
 
     sections = {}
     root_pages = []
+    sec_status, sec_prov = {}, {}            # section folder -> {bucket: count}
+    tot_status, tot_prov = {}, {}            # corpus-wide totals
     for rel_index, rel_corpus, full in sorted(entries, key=lambda t: t[1].lower()):
         with open(full, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
@@ -189,15 +208,27 @@ def main():
             page["status"] = meta["status"]
 
         parts = rel_corpus.split("/")
-        if len(parts) == 1:
+        folder = parts[0] if len(parts) > 1 else None
+        if folder is None:
             root_pages.append(page)
         else:
-            folder = parts[0]
             section = sections.setdefault(
                 folder,
                 {"id": folder, "title": prettify(folder), "order": section_order(folder), "pages": []},
             )
             section["pages"].append(page)
+
+        # Maturity (frontmatter status) + provenance ([KNOWN]/[INFERRED]/[OPEN]/[SEEDED])
+        # counts feed the home stats bar. Graceful: omitted entirely when a corpus has none.
+        bucket = folder or "_root"
+        ns = norm_status(meta.get("status"))
+        if ns:
+            d = sec_status.setdefault(bucket, {}); d[ns] = d.get(ns, 0) + 1
+            tot_status[ns] = tot_status.get(ns, 0) + 1
+        for m in PROV_RE.findall(body):
+            k = m.lower()
+            d = sec_prov.setdefault(bucket, {}); d[k] = d.get(k, 0) + 1
+            tot_prov[k] = tot_prov.get(k, 0) + 1
 
     section_list = sorted(sections.values(), key=lambda s: (s["order"], s["title"].lower()))
     for section in section_list:
@@ -205,7 +236,12 @@ def main():
 
     title = args.title or (root_pages[0]["title"] if root_pages else prettify(corpus))
 
-    sitemap = {"title": title, "base": corpus, "rootPages": root_pages, "sections": section_list}
+    mode = "provenance" if sum(tot_prov.values()) else ("status" if sum(tot_status.values()) else "none")
+    stats = {"mode": mode, "status": tot_status, "provenance": tot_prov,
+             "secStatus": sec_status, "secProvenance": sec_prov}
+
+    sitemap = {"title": title, "base": corpus, "rootPages": root_pages,
+               "sections": section_list, "stats": stats}
 
     out_path = os.path.join(ROOT, args.out)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
