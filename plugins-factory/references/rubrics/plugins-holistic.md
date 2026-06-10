@@ -1,7 +1,7 @@
 ---
 date: 2026-06-02
 status: draft
-version: "0.1.0"
+version: "0.2.0"
 ---
 
 # Holistic Plugin Quality — 9-Dimension Meta-Rubric
@@ -9,6 +9,15 @@ version: "0.1.0"
 **A plugin is a distribution contract, not a folder of stuff.** It promises that a coherent capability set can be installed, toggled, versioned, and trusted as one unit — and that each capability inside it is the _right shape_ for its job. This rubric asks whether all nine load-bearing concerns are addressed, because a plugin that scores 5/5 on packaging can still fail if a single capability uses the wrong primitive or a shared dependency uses a path that breaks at install.
 
 This is a **synthesis rubric**, not a replacement for the individual rubrics. P2–P6 each point to a detailed drill-down rubric paired 1:1 with a foundation. P1, P7, P8, and P9 deliberately reference `skills-studio`'s existing rubrics (cold-start, skills-authoring, skill-extensibility, security-and-scope-containment) rather than duplicate them — a plugin's fitness, routing, evolution, and security concerns are the skill concerns one layer up.
+
+### Scoring a pre-carve candidate (a bare skill, not yet a plugin)
+
+When the target is a **skill being evaluated as a carve candidate** (no `plugin.json` yet), score "what the carve would inherit," and read these anchors with care — the 2026-06-10 calibration (`evals/rubric-calibration/`) found they behave differently pre-carve:
+
+- **P5** has no manifest to validate — score the proxy (`skill.json`) and the inherited layout; a candidate that fails _its own_ validator still scores low (that defect carves forward).
+- **P7's** "an explicit `/command` entry exists" anchor is **near-tautological** for any bare skill (it has none yet) — it measures the carve's to-do list, not the content's quality; don't let it alone pull an otherwise-routable candidate below 3.
+- **P1, P3, P6 are weak discriminators on a single well-authored skill** — the one-sentence/split-merge tests want multiple components, and progressive-disclosure doctrine makes P6 a 4–5 by construction. They bind hard on real multi-component bundles; pre-carve, treat a high score as "not yet tested" rather than "strong."
+- **P4, P5, P9 discriminate hardest pre-carve** — their mechanical/file-level tests (the install test, the validator, the bundled-data audit) separate "excellent skill" from "shippable plugin" where prose review can't.
 
 **Grounding**: Synthesized from the official Claude Code plugin reference (manifest, components, `${CLAUDE_PLUGIN_ROOT}`/`${CLAUDE_PLUGIN_DATA}`, marketplace, namespacing, validation, install scopes), Anthropic's Agent Skills + "Writing tools for agents" engineering guidance, and the packaging-cohesion wisdom of mature plugin ecosystems (VS Code activation events, ESLint shareable configs, Backstage's "monolithic plugin problem", Obsidian single-purpose guidance).
 
@@ -66,7 +75,7 @@ Should this be a plugin at all, and is its job one coherent sentence?
 | **2** | Should probably be a standalone skill or a single MCP — packaged as a plugin for no share/version/reuse reason — OR the scope spans clearly distinct jobs. |
 | **1** | No coherent job. A junk drawer of unrelated capabilities, or a personal experiment dressed as a distributable plugin. |
 
-**Go deeper**: `cold-start-orientation.md` _(co-located)_ (one-sentence orientation), `boundary-cohesion.md` (P3, the scope-width companion). **Test** (the one-sentence test): write the plugin's job in one sentence. If every component serves it → P1 ≥ 4. If naming the components forces "and also…" clauses → P1 ≤ 3.
+**Go deeper**: `cold-start-orientation.md` _(co-located)_ (one-sentence orientation), `boundary-cohesion.md` (P3, the scope-width companion). **Test** (the one-sentence test): write the plugin's job in one sentence. If every component serves it → P1 ≥ 4. If naming the components forces "and also…" clauses → P1 ≤ 3. **Test** (the personal-state test — added 2026-06-10): does the candidate entangle personal or live state with the distributable content — credentials/`.env`, a populated registry, cached per-user data, issued output artifacts, or real PII in "example" values? Personal state in the distribution root caps P1 ≤ 2 (it is a personal instance, not a shareable unit) and is also a P9 finding; the disposition is either "scrub-and-distribute" or "keep local" (a `keep-local` decision dissolves it by scope — record it).
 
 ---
 
@@ -176,11 +185,11 @@ Can the plugin grow and be updated without breaking installs?
 | --- | --- |
 | **5** | semver (or deliberate SHA mode) + `CHANGELOG.md`; invocation `name`s stable across releases; growth is additive (a new skill drops in without breaking existing `/name` shortcuts); persistent state in `${CLAUDE_PLUGIN_DATA}` (survives updates); `validate_plugin.py` wired into CI; obvious additive headroom in the domain. |
 | **4** | Versioned + changelogged + stable names + additive. Missing: a CI validate gate, or a documented update path for bundled deps. |
-| **3** | Versioned but no changelog discipline, OR growth requires touching existing wiring (a new component renames an old shortcut). |
+| **3** | Versioned but no changelog discipline, OR growth requires touching existing wiring (a new component renames an old shortcut), OR **high changelog _form_ but low _truth_** — disciplined-looking entries whose claims ("removed X", "wired Y as a gate") are stale or false against the tree (the declared-state-drift class `check-manifest-sync` exists to catch). |
 | **2** | No semver intent (version pinned in two places / never bumped), invocation names unstable across releases, or state in the ephemeral root (lost on update). |
 | **1** | No version, no changelog, no additive path. Every change is an ad-hoc append that risks breaking existing installs. |
 
-**Go deeper**: `skill-extensibility.md` _(co-located)_, `manifest-and-packaging.md` (versioning rules). **Test** (additive-growth test): would adding one new capability to this plugin break any existing component's invocation name or any installed user's shortcuts? If yes → P8 ≤ 3. Is the `version` set in exactly one place (`plugin.json` _or_ the marketplace entry, not both)?
+**Go deeper**: `skill-extensibility.md` _(co-located)_, `manifest-and-packaging.md` (versioning rules). **Test** (additive-growth test): would adding one new capability to this plugin break any existing component's invocation name or any installed user's shortcuts? If yes → P8 ≤ 3. Is the `version` set in exactly one place (`plugin.json` _or_ the marketplace entry, not both)? **Test** (the changelog-truth test — added 2026-06-10): take the last 2–3 CHANGELOG entries and verify each load-bearing claim against the tree (the file it says it removed is gone; the gate it says it wired is invoked). A disciplined-looking changelog with claims that don't hold caps P8 ≤ 3 — form is not truth.
 
 ---
 
@@ -198,7 +207,7 @@ _Mechanization split: `validate_plugin.py` mechanically ERRORs on the **loader r
 | **2** | A hook mutates or blocks silently, OR a bundled agent + MCP combination gives an injection foothold, OR untrusted-content handling is "the model is told to be careful." |
 | **1** | Lethal trifecta live in a bundled agent (reads untrusted content + private data access + external action), or a hidden destructive hook. Model behavior is the only defense. |
 
-**Go deeper**: `security-and-scope-containment.md` _(co-located)_, `agents/critic-simon-w.md`. **Test** (the bundled-trifecta test): for each bundled agent/skill, does it (a) access private data, (b) process untrusted content, (c) take external actions? Two present = elevated; all three in one component = structural separation required. Then: is any hook's side-effect undocumented, or any bundled agent declaring `mcpServers`/`hooks`/`permissionMode`?
+**Go deeper**: `security-and-scope-containment.md` _(co-located)_, `agents/critic-simon-w.md`. **Test** (the bundled-trifecta test): for each bundled agent/skill, does it (a) access private data, (b) process untrusted content, (c) take external actions? Two present = elevated; all three in one component = structural separation required. Then: is any hook's side-effect undocumented, or any bundled agent declaring `mcpServers`/`hooks`/`permissionMode`? **Test** (the `bin/` blast-radius probe — added 2026-06-10): for every bundled script reachable from a hook, command, or MCP, is its blast radius stated at the contract level (in SKILL.md / the command body / the hook doc) — not buried only in a docstring? A script that writes into the user's project, spawns a sub-process with the user's privileges, or strips a safety guard, with that effect documented only in code, caps P9 ≤ 3 (the user vetting the bundle never sees it).
 
 ---
 
@@ -234,6 +243,14 @@ These nine are **per-plugin** quality dimensions — properties a single plugin 
 
 **Symptom**: A bundled agent reads external content, holds credentials/private-data access, and can push/call out — each reviewed in isolation looked fine (P9 ✗). **Root cause**: The plugin's trust posture was never assessed as a combination; the loader's agent restrictions were treated as the whole defense. **Correction**: Audit each bundled agent for the trifecta; structurally separate reading-untrusted from acting-externally; document every hook's blast radius.
 
+### AP-P6 — The hollow component _(added 2026-06-10 — calibration finding)_
+
+**Symptom**: A component's body is thinner than its own description — a one-sentence SKILL.md under a routing blurb, a command that says "Run the pipeline" with no pipeline, a skill that restates its frontmatter and stops (P1/P2 ✗). The bundle passes every gate because the gates measure _excess_, not emptiness. **Root cause**: The whole rubric and critic corpus point at bloat — too many tools, too much always-on context, too-broad scope — so a plugin that fails by _vacancy_ generates almost no first-class findings; it adds routing surface and zero capability the base model lacks. **Correction**: For each component, compare body substance against its promise. A component whose description out-promises its body should be deepened or deleted — "lean by hollowness" is not "lean by design." (The council named this its own blind spot in both mega-helper N-runs: "the rubric measures bloat; emptiness sails through.")
+
+### AP-P7 — The dead-on-arrival wiring _(added 2026-06-10 — calibration finding)_
+
+**Symptom**: A `.mcp.json` (or hook) wires an entrypoint the static gates accept — paths legal, JSON well-typed — but the target never actually speaks its protocol: an MCP server file that defines a `TOOLS` list and exits with no JSON-RPC loop, a hook script that no-ops. The plugin ships **green and 100% non-functional**; every session pays the failed-startup cost. **Root cause**: Every review lens is static (manifests, paths, schemas, descriptions) — none asks "does the wired entrypoint answer?" Validation proves _wiring_, never _execution_. **Correction**: A liveness smoke test belongs in CI for any MCP-bearing or hook-bearing bundle — spawn it, send `initialize` + `tools/list`, require a JSON-RPC response within a timeout. ("The panel verifies wiring, never execution" — the council's other shared blind spot, named in both mega-helper N-runs. Note the trust asymmetry: liveness execution is safe in CI against a _trusted_ candidate; for an _untrusted_ review bundle the cold-read rule keeps this gap open by design — say so in the verdict.)
+
 ---
 
 ## §Hard Tests
@@ -254,6 +271,14 @@ These nine are **per-plugin** quality dimensions — properties a single plugin 
 
 8. **The collision scan** (P7): any pair of bundled skills with overlapping triggers and no hand-off? Is there a user-typable entry point at all?
 
-9. **The additive-growth test** (P8): would adding one capability break an existing invocation name? Is `version` set in exactly one place?
+9. **The additive-growth test** (P8): would adding one capability break an existing invocation name? Is `version` set in exactly one place? Then the **changelog-truth test**: do the last 2–3 entries' load-bearing claims hold against the tree?
+
+10. **The bundled-trifecta test** (P9): any single bundled agent/skill with private-data access + untrusted-content exposure + external-action capability? Any undocumented hook side-effect? Any `bin/` script whose blast radius (writes-to-project, sub-process spawn, guard-strip) is documented only in code?
+
+11. **The personal-state test** (P1/P9): does the candidate entangle personal or live state — credentials/`.env`, a populated registry, cached per-user data, issued output artifacts, real PII in "example" values — with the distributable content? Personal state in the distribution root = a fitness _and_ trust defect (scrub-and-distribute, or decide keep-local).
+
+12. **The liveness smoke test** (P2/P5): is every wired entrypoint (MCP server, hook script) actually live — does it answer its protocol when spawned, not merely resolve as a path? A dead-but-wired entrypoint ships green and non-functional. (CI-runnable against trusted candidates; held open by the cold-read rule for untrusted review bundles.)
+
+13. **The hollowness test** (P1/P2): for each component, is its body thinner than its description promises? A one-sentence skill under a rich routing blurb, or a command naming an action it doesn't implement, adds routing surface and zero capability — delete or deepen.
 
 10. **The bundled-trifecta test** (P9): any single bundled agent/skill with private-data access + untrusted-content exposure + external-action capability? Any undocumented hook side-effect?

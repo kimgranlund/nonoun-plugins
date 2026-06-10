@@ -12,8 +12,12 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **Fold the calibration learnings back into the instruments** — the recorded improvement candidates: the rubric's pre-carve scoring note + personal-state hard test + `bin/` blast-radius probe (from `evals/rubric-calibration/`), and the council's liveness smoke gate + hollowness probe (independently surfaced by both mega-helper N-runs).
-2. **More fixture shapes per council** (the remaining eval-depth item) — e.g. an API-wrapper-only plugin and a skill-wearing-a-manifest for plugins-factory; a borrowed-provenance deck for brand-forge's `design` sub-council.
+1. **A liveness smoke gate in CI** (the AP-P7 mechanization) — spawn each catalog plugin's bundled MCP, send `initialize` + `tools/list`, require a JSON-RPC response within a timeout. Turns the council's liveness *finding* into a deterministic gate; the cold-read rule keeps it CI-only (trusted candidates), never on untrusted review bundles.
+2. **More fixture shapes for the OTHER three councils** — plugins-factory now has two (excess `mega-helper` + vacancy `docs-studio`); brand-forge/product-forge/agent-ops still have one each (e.g. a borrowed-provenance deck for brand-forge's `design` sub-council; a metric-theater PRD for product-forge).
+
+## Shipped 2026-06-10 (seventh batch)
+
+- **Calibration learnings folded back into the instruments, then proven by a second fixture** (plugins-factory 0.2.26; rubric 0.2.0 + eval-prompts 0.2.0). Four rubric findings encoded (pre-carve scoring note, P1 personal-state test, P9 `bin/` blast-radius probe, P8 high-form/low-truth anchor); the council's two named blind spots became **AP-P6 hollowness / PF5** and **AP-P7 liveness / CF5**; a second fixture shape `docs-studio` (vacancy + deadness, coherent scope) proved both probes — **2/2 × 2 cold runs, BLOCKED**, P3 held high. A `check.py` precision fix (over-loose bare-label patterns removed) came free from cross-applying the checker.
 
 ## Shipped 2026-06-10 (sixth batch)
 

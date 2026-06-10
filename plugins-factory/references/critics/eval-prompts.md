@@ -5,7 +5,7 @@ description: >
   four modes (single-critic / full-panel / synthesis / topical), plugin topical sections,
   S-series synthesis prompts, and the severity rubric.
 status: draft
-version: "0.1.0"
+version: "0.2.0"
 ---
 
 # Plugin Critique — Adversarial Eval Orchestrator
@@ -60,6 +60,8 @@ These prompts test whether this should exist as a **plugin** at all — a bundle
 
 > **PF4 — The shared-job test (Steve Y. voice)**: do the bundled components actually share a job, or were they shipped together because they share an _author_? A plugin is a unit of _capability_, not a unit of _who-wrote-it_. For each component, ask: does a user who wants component A also want component B? Find the component a user would want _least_ alongside the rest — it may belong in a different plugin.
 
+> **PF5 — The hollow-component test (Andrej K. voice)** — _added 2026-06-10; the panel's own named blind spot_: the rest of this corpus hunts _excess_ — too many tools, too much always-on cost, too-broad scope. This prompt hunts the opposite: a component whose **body is thinner than its description promises.** For each skill/command, compare the routing blurb against what the body actually delivers — a one-sentence `SKILL.md` under a rich description, a command that names an action ("Run the pipeline") it doesn't implement, a skill that restates its frontmatter and stops. A hollow component adds routing surface and standing cost while teaching the model nothing it lacked. "Lean by hollowness" is not "lean by design." Name every component whose promise out-runs its substance; for each, recommend deepen-or-delete. (`../rubrics/plugins-holistic.md` AP-P6.)
+
 ---
 
 ## CF — Component Fit (P2)
@@ -75,6 +77,8 @@ These prompts test whether each capability is expressed as the **right primitive
 > **CF3 — The command-vs-skill test (Steve Y. voice)**: for each capability, classify the right entry: _deterministic + user-initiated_ → a `/command`; _judgment + model-routed_ → a skill; _must-run + event-triggered_ → a hook. Now read what the plugin actually ships for each. Count the mismatches. A judgment task hard-coded as a fixed command produces brittle output; a deterministic action left to a model-routed skill produces variance. Name the worst mismatch.
 
 > **CF4 — The agent-justification test (Elon M. voice)**: if the plugin bundles a sub-agent, ask what it does that a skill couldn't. A bundled agent earns its place only if it needs an isolated context window or its own tool scope. If it's a skill with extra ceremony, delete the agent and ship the skill. For each bundled agent: name the isolation it requires, or delete it.
+
+> **CF5 — The liveness test (David F. voice)** — _added 2026-06-10; the panel's other named blind spot, and a cold-read caveat_: every other lens here is **static** — it reads manifests, paths, schemas, descriptions. None asks the one runtime question: when the wired entrypoint is spawned, **does it actually answer its protocol** — or does it merely resolve as a path? Read the MCP server file `.mcp.json` points at (and any hook script): is there a real stdin/JSON-RPC loop that responds to `initialize` + `tools/list`, or is it a `TOOLS` list with a shebang that exits — green to every validator, 100% non-functional, charging failed-startup cost every session? Report whether each entrypoint is _live_ or _dead-but-wired_ **from a static read** (a missing protocol loop is detectable cold). **Caveat to record in the verdict:** the proof is execution — spawning it and asserting a response — and that belongs in CI against a _trusted_ candidate; for this _untrusted_ review you do **not** execute it (the cold-read rule), so flag liveness as "needs the smoke gate" rather than confirming it. (`../rubrics/plugins-holistic.md` AP-P7.)
 
 ---
 
@@ -204,7 +208,7 @@ These prompts require the agent to synthesize perspectives across all nine criti
 
 > **S2 — The measurement gap**: each critic asks a different first measurement question. Boris C.: "What's the always-on cost in `claude plugin details`?" Steve Y.: "What happens when this and 20 other plugins are installed together — do names collide?" Elon M.: "How many components could I delete and still do the job?" Charity M.: "What's the post-install signal — does a user leave it enabled?" Andrej K.: "Is 'well-bundled' a property `validate_plugin.py` checks, or a vibe?" Simon W.: "What's the blast radius of the bundled hooks and MCP?" Scott W.: "How many illegal manifest/layout states can the plugin represent?" Chip H.: "Does the bundled MCP have task-shaped tool contracts, or does it 1:1-wrap an API?" David F.: "Does it install reproducibly from a copy-alone of its directory?" Which of these nine does the plugin's `claude plugin details` and `validate_plugin.py` output actually **answer** today? Which are completely missing? Rank the missing ones by importance to a user who installs this plugin unattended.
 
-> **S3 — The failure-mode test**: describe the three most likely ways this plugin fails in production (install-time breakage, silent component non-load, a hook firing where it shouldn't, a trigger collision, state lost on upgrade, an over-scoped MCP), in order of probability. For each: which of the nine critics would have caught it from reading the bundle? Then the most important question: which failure mode would **all nine miss**? That blind spot is the gap in the entire panel — name it.
+> **S3 — The failure-mode test**: describe the three most likely ways this plugin fails in production (install-time breakage, silent component non-load, a hook firing where it shouldn't, a trigger collision, state lost on upgrade, an over-scoped MCP), in order of probability. For each: which of the nine critics would have caught it from reading the bundle? Then the most important question: which failure mode would **all nine miss**? That blind spot is the gap in the entire panel — name it. _(Two former panel-wide blind spots — a dead-but-wired entrypoint, and a component hollower than its description — are now covered by **CF5** and **PF5** respectively; the panel found them itself in calibration. Do not name those two; hunt the **next** one they don't yet cover.)_
 
 > **S4 — The 6-month test**: Boris C. says build for the model six months out. Steve Y. says the plugin marketplace gets crowded — generic names stop working. Elon M. says delete 10% of everything quarterly. Apply all three to this plugin: what does it look like in six months if followed? Did it shed components, rename for namespace safety, shrink its always-on cost — or did it accrete features and collide its way into being disabled? Is the rubric in `../rubrics/plugins-holistic.md` still the right scorecard for what it became?
 

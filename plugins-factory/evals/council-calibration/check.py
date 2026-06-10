@@ -13,15 +13,21 @@ import re
 import sys
 
 # planted defect -> phrasings that count as "the council caught it"
+# Concept-level phrasings (LLM panel → catch-RATE, not a deterministic gate). Two precision notes,
+# both surfaced by cross-applying this checker to the docs-studio fixture (2026-06-10):
+#   - bare dimension labels (\bp2\b/\bp3\b) are NOT used — they match the scorecard of *any* review.
+#   - this checker is valid only against ITS fixture (mega-helper), where the kitchen-sink/wrapper
+#     findings are genuine. Run cross-fixture, the phrasings can match a NEGATED mention ("unlike a
+#     kitchen sink", "the inverse of the API-wrapper") — an inherent limit of concept-regex matching.
 PLANTED = {
     "P3 kitchen-sink (four unrelated domains in one plugin)": [
-        r"kitchen.?sink", r"unrelated", r"four .*domains?", r"two jobs", r"boundary cohesion",
-        r"\bp3\b", r"split (?:it|the plugin|into|out)", r"does too (?:much|many)", r"grab.?bag",
-        r"belong(?:s)? in (?:separate|different)", r"distinct plugins?",
+        r"kitchen.?sink", r"unrelated (?:domains?|jobs?|capabilit)", r"four .*domains?", r"two jobs",
+        r"split (?:it|the plugin|into|out)", r"does too (?:much|many)", r"grab.?bag",
+        r"belong(?:s)? in (?:separate|different)", r"distinct plugins?", r"four-way partition",
     ],
     "P2 API-wrapper MCP (1:1 REST endpoints)": [
         r"api.?wrapper", r"1:1", r"one tool per endpoint", r"endpoint-shaped", r"wraps?\b[^.]*\bapi",
-        r"\bp2\b", r"passthrough", r"\bcrud\b", r"(?:25|twenty.?five|too many) tools", r"task-level",
+        r"passthrough", r"\bcrud\b", r"(?:25|twenty.?five|too many) tools", r"verb.?per.?(?:route|resource)",
     ],
 }
 
