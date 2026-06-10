@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.28 — 2026-06-10
+
+- **docs-studio council-calibration promoted to N=3** (a third cold run through the real `plugin-council`): **2/2 planted defects in 3/3 runs, BLOCKED ×3**, P3 held at 4 in every run (the coherent-scope isolation from the kitchen-sink/wrapper findings held). Run 3 demonstrated the updated S3 working as intended — with liveness + hollowness now *covered* probes (PF5/CF5), the panel surfaced the **next** blind spot ("no critic owns 'prove it works once' end-to-end") rather than re-reporting the two now closed. README rate table updated.
+
 ## 0.2.27 — 2026-06-10
 
 - **New gate: `bin/check-mcp-liveness.py` — the AP-P7 mechanization.** The council's liveness *finding* becomes a deterministic gate: it spawns each bundled MCP server, completes an `initialize` + `tools/list` handshake over newline-delimited stdio, and requires a well-formed JSON-RPC response carrying a tools array. A plugin with no `.mcp.json` is a clean skip. Static validation proves *wiring* (`validate_plugin.py`); this proves *execution* — closing the gap a dead-but-wired server (`docs-studio`'s `docs-mcp.py`) sails through. **Trust boundary:** it executes the server, so it is for trusted catalog plugins / CI only; the council reviewing untrusted bundles keeps liveness a cold-read finding (CF5). Ships with a `selftest` (PASS a live mini-server, FAIL a dead-but-wired one, clean-skip the empty case) and `plugin` / `marketplace` modes. Wired into CI (`selftest` + `marketplace .` — brand-forge's `brand-corpus` serves 5 tools; the other three skip until their MCP slots fill). Verified against `docs-studio`: correctly FAILs the planted dead server. CLAUDE.md + README gate enumerations updated.

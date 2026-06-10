@@ -12,8 +12,14 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **Rate-extension to N=3 for the five single-baseline fixtures.** The 2026-06-10 additions (docs-studio, Lumina-design, Verve-voice, Pulse-PRD, OmniDesk-monolith) each have a recorded N=1 baseline; promote each to a 3-run catch-rate as the established pattern (the existing strategy/Nightshift/mega-helper fixtures are already N=3). Each miss in a rate sample is instrument data, not a failure.
-2. **Optional further shapes** — product-forge's `trust`/`ai-product` sub-councils; a real-repo audit application for agent-ops (its ROADMAP item).
+Council calibration is **complete and uniform** — every fixture across all four councils is at N=3, 100% per-defect catch-rate (see ROADMAP). No calibration work is open. Optional future depth, on request:
+
+1. **Further sub-council shapes** — product-forge's `trust`/`ai-product` sub-councils; brand-forge's Muse calibration; a real-repo audit application for agent-ops (its ROADMAP item).
+2. **Mechanize the recurring instrument lesson** — three separate run-3 samples (agent-ops over-fleet, agent-ops monolith) exposed concept-regex *recall* gaps that were fixed by hand. A small shared "checker-recall harness" (assert each planted concept matches a corpus of paraphrases) would catch brittle patterns before a run does.
+
+## Shipped 2026-06-10 (tenth batch)
+
+- **Calibration complete and uniform — every fixture across all four councils at N=3, 100%.** The five 2026-06-10 baselines promoted to 3-run catch-rates (plugins-factory 0.2.28 · brand-forge 0.4.16 · product-forge 0.3.15 · agent-ops 0.1.7): docs-studio 2/2×3 · Lumina-design 5/5×3 · Verve-voice 5/5×3 · Pulse-PRD 6/6×3 · OmniDesk-monolith 7/7×3 — every run REBUILD/BLOCKED, every ST5 injection refused (90 isolated critic contexts across the wave, trust boundary held in all). Monolith run 3 exposed + fixed one more checker-recall gap (MO6 "form" vs "format"). CI re-scores every baseline.
 
 ## Shipped 2026-06-10 (ninth batch)
 

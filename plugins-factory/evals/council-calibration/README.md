@@ -58,14 +58,15 @@ Both checkers match concept-level phrasings (LLM panel → catch-RATE, not a det
 
 Both 06-10 runs independently surfaced the same emergent Criticals beyond the planted set (the dead MCP server; the unspecified `/deploy`) and named the same two panel blind spots — *liveness* ("the panel verifies wiring, never execution") and *hollowness* ("the rubric measures bloat; emptiness sails through"). **Those two blind spots are now closed**: folded into `../../references/rubrics/plugins-holistic.md` (AP-P6/AP-P7 + hard tests 11–13) and `../../references/critics/eval-prompts.md` (PF5/CF5), and given their own fixture below.
 
-**`docs-studio` — N=2, per-defect 2/2 at 2/2 runs (100%), BLOCKED ×2:**
+**`docs-studio` — N=3, per-defect 2/2 at 3/3 runs (100%), BLOCKED ×3:**
 
 | Run | Verdict | check-hollow.py | Notes |
 | --- | --- | --- | --- |
 | 2026-06-10 run1 | BLOCKED | 2/2 | the real `plugin-council` agent reading the updated corpus; P3 scored **4** — the coherent-scope isolation held |
 | 2026-06-10 run2 | BLOCKED | 2/2 | as run1; found a sharper liveness sub-finding (the *silent-success* failure: a dead server that exits 0 reads "green" until first call) |
+| 2026-06-10 run3 | BLOCKED | 2/2 | P3 held at 4; with liveness+hollowness now *covered* probes, the panel named the **next** blind spot — "no critic owns 'prove it works once' end-to-end" — exactly the S3-intended behavior |
 
-The new fixture proves the folded-back probes work: the council caught **hollowness and liveness on a plugin the old panel would have waved through** (gates green, scope coherent, MCP tool-shapes correct). Both runs also independently flagged the unscoped `apply_style` repo-wide rewrite — genuine review beyond the planted set.
+The new fixture proves the folded-back probes work: the council caught **hollowness and liveness on a plugin the old panel would have waved through** (gates green, scope coherent, MCP tool-shapes correct), at 100% across all three runs. All runs also independently flagged the unscoped `apply_style` repo-wide rewrite — genuine review beyond the planted set.
 
 ## Instrument note — checker precision (2026-06-10)
 

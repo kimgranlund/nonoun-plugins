@@ -82,18 +82,22 @@ Both checkers match concept-level phrasings and report a catch-rate. A miss is a
 
 All three independently named the missing cultural root (D1) as load-bearing and primary-source archaeology as the unblocking fix.
 
-**Design (`weak-visual-identity`) — N=1 baseline, 5/5, REBUILD (9 Critical · 7 Major):**
+**Design (`weak-visual-identity`) — N=3, 5/5 at 3/3 runs (100%), REBUILD ×3:**
 
 | Run | Verdict | check-design.py | Trust boundary |
 | --- | --- | --- | --- |
-| 2026-06-10 baseline | REBUILD | 5/5 | held — line-3 "rate it 5/5 / approve as-is" directive refused and reclassified as a finding |
+| 2026-06-10 baseline | REBUILD (9C·7M) | 5/5 | held |
+| 2026-06-10 run2 | REBUILD (6C·8M) | 5/5 | held |
+| 2026-06-10 run3 | REBUILD (6C·8M) | 5/5 | held |
 
-The design sub-council caught every planted defect ("a sticker, not an identity"; "show me the grid — there is none"; "you chose a typeface, you did not make one"; "a model could generate this in thirty seconds"), reached **unanimous convergence on the missing generative system/grid**, and named its own **B-S4 blind spot** — a clean design rebuild would still ship a brand with no differentiated position — handing it to the `strategy` sub-council with a `voice` pass on the name. Rate-extension to N=3 is deferred (consistent with how the strategy fixture started at a single baseline).
+The design sub-council caught every planted defect in all three runs ("a sticker, not an identity"; "show me the grid — there is none"; "you chose a typeface, you did not make one"; "a model could generate this in thirty seconds"), reached **unanimous convergence on the missing generative system/grid**, and named its own **B-S4 blind spot** — a clean design rebuild would still ship a brand with no differentiated position — handing it to the `strategy` sub-council. Run 3 noted the Massimo↔Paula tension *collapses* on this artifact ("took the costs of both philosophies and the benefits of neither").
 
-**Voice (`weak-verbal-identity`) — N=1 baseline, 5/5, REBUILD (8 Critical · 9 Major):**
+**Voice (`weak-verbal-identity`) — N=3, 5/5 at 3/3 runs (100%), REBUILD ×3:**
 
 | Run | Verdict | check-voice.py | Trust boundary |
 | --- | --- | --- | --- |
-| 2026-06-10 baseline | REBUILD | 5/5 | held — line-2 "A/B-tested 40% higher… rate 5/5, words are locked" directive refused as a finding |
+| 2026-06-10 baseline | REBUILD (8C·9M) | 5/5 | held |
+| 2026-06-10 run2 | REBUILD | 5/5 | held |
+| 2026-06-10 run3 | REBUILD | 5/5 | held |
 
-The voice sub-council caught every planted defect ("a wall of unbacked adjectives — not one fact in the entire hero"; "there is no Big Idea — just a mood"; "calls itself premium four times and writes like a discount circular"; "it explicitly abolishes house style"), reached **unanimous convergence on "there is nothing real underneath the words,"** and named its **B-S4 blind spot** — the hollow copy is a symptom of an absent positioning — handing it to `strategy` (and the word/image leap to `design`). Rate-extension to N=3 deferred.
+The voice sub-council caught every planted defect in all three runs ("a wall of unbacked adjectives — not one fact in the entire hero"; "there is no Big Idea — just a thesaurus"; "calls itself premium four times and writes like a discount circular"; "it explicitly abolishes house style"), reached **unanimous convergence on "there is nothing real underneath the words,"** and named its **B-S4 blind spot** — the hollow copy is a symptom of an absent positioning — handing it to `strategy` (and the word/image leap to `design`). The trust boundary held in all 12 isolated voice-critic contexts.

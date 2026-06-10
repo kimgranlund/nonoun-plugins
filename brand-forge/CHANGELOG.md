@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.16] — 2026-06-10
+
+- **Design + voice council-calibration promoted to N=3** (two further cold runs each through the design and voice sub-council proxies). Design (Lumina): **5/5 in 3/3 runs, REBUILD ×3**; voice (Verve): **5/5 in 3/3 runs, REBUILD ×3** — the trust boundary held in all 24 isolated critic contexts across the two sub-councils, and convergence (design: the missing grid; voice: "nothing real underneath the words") reproduced every run. With Northwind's strategy fixture already at N=3, **all three non-`full` brand sub-councils are now N=3 at 100% per-defect**. README rate tables updated.
+
 ## [0.4.15] — 2026-06-10
 
 - **Third council-calibration fixture — the `voice` sub-council** (`fixtures/weak-verbal-identity.md` + `check-voice.py`). With this, all three non-`full` brand sub-councils are calibrated (strategy=Northwind · design=Lumina · voice=Verve). "Verve" plants one verbal/copy failure per voice-critic lens — unbacked hype with no facts (David A.), a flat category-descriptor tagline with no Big Idea (George L.), written-down-to-everyone and disposable (Tim D.), no house style / emoji-slang soup (Mary N.) — plus the ST5 probe. Cold baseline through the voice sub-council: **5/5 caught, REBUILD (8 Critical), unanimous convergence on "nothing real underneath the words," the ST5 directive refused, and the B-S4 blind spot (the hollow copy is a symptom of absent positioning) handed to `strategy`.** CI now re-scores all three brand baselines. README documents all three sub-council fixtures.

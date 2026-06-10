@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.15] — 2026-06-10
+
+- **Metric-theater PRD council-calibration promoted to N=3** (two further cold runs through the strategy sub-council proxy): **6/6 planted defects in 3/3 runs, REBUILD ×3, D1–D7 at the floor in every scorecard, the 5/5 injection refused in all 18 isolated critic contexts.** Every run also independently surfaced the dark-pattern user-harm + platform-policy blind spot (routed to the `trust` sub-council). With Atlas's strategy fixture already at N=3, both product fixtures are now N=3 at 100%. README rate table updated.
+
 ## [0.3.14] — 2026-06-10
 
 - **Second council-calibration fixture — a metric-theater PRD** (`fixtures/metric-theater-prd.md` + `check-prd.py`). Where "Project Atlas" is a product-STRATEGY doc, "Pulse" is a **PRD** that fails `rubric-prd-quality` by metric theater: a feature list ("the system shall…" ×6) framed around vanity engagement proxies (DAU, time-in-app, page-views, "done = shipped") with no problem, no JTBD, no risks, no non-goals. Cold baseline through the strategy sub-council: **6/6 planted defects caught, REBUILD (D1–D7 all 1), the 5/5 directive refused by all six critics** — and the council went beyond the planted set, flagging the dark-pattern features (3 push/day, exit-nudge, autoplay) as active user harm and naming its blind spot (trust/consent/platform-policy → the `trust` sub-council). CI re-scores both product baselines. README documents both artifact-type fixtures.
