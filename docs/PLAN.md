@@ -12,9 +12,14 @@ A public, reference-quality Claude Code plugin marketplace where **every claim i
 
 ## Next
 
-2. **Per-corpus theme hook** (ROADMAP Track 1). A `theme.css` slot loaded after `corpus-reader.css` (the OKLCH tokens are the contract), pointed at by `reader.config.json`; ship a neutral default + one example theme. Done = a themed demo renders without touching reader code; sync + freshness gates green.
-3. **Vendored render libs — decide, then do or defer** (ROADMAP Track 1). Offline-capable exports vs. CDN pins + SRI; needs a license/update story. Done = a decision recorded here (D-n) and, if "do", the swap shipped behind the same security assertions.
-4. **Council-calibration coverage to 4/4 (I-7).** product-forge + agent-ops planted-defect fixtures + baselines, per `plugins-factory/evals/council-calibration/`. Done = both councils have a recorded baseline checked in CI.
+2. **agent-ops council-calibration (the I-7 remainder).** The fixture shape differs (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc). Done = a recorded baseline re-scored in CI, like the other three.
+3. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
+
+## Shipped 2026-06-10 (second batch)
+
+- Catalog-wide obscuring audit (the explicit ask): product-forge council fully obscured everywhere; one persona-context surname in brand-forge's ROADMAP fixed (`b4e3d98`, brand-forge 0.4.12).
+- Per-corpus **theme hook** + worked demo theme + CI assertions (`d605590`, plugins-factory 0.2.22); **D-7** recorded (CDN libs stay, vendoring deferred with triggers).
+- **product-forge council-calibration** (`6d3b990`, 0.3.12): Atlas fixture, checker, protocol, recorded cold baseline — 7/7 caught, 5/5 REBUILD, injection refused in all five isolated contexts; CI re-scores it.
 
 ## Shipped 2026-06-10 (the first PLAN batch — same-day)
 

@@ -8,9 +8,9 @@ The repo-level defect tracker and decision log — what's open (severity-ordered
 
 The `<cr-*>` web-component reader adopted the newer reader's patterns (sidebar search, layer-label nav, mobile drawer, home hero + cards + stats bar, doc kicker + badges, provenance tags, xrefs — plugins-factory 0.2.17/0.2.18) verified mechanically only: generator output asserted, ES modules parse, all gates green. The visual sign-off was attempted once, hit the `/site/`-vs-`/` 404 confusion, and never resumed. **Verify:** `cd plugins-factory/bin/corpus-reader && python3 -m http.server` → `http://localhost:8000/` — home (hero, Maturity bar, cards), a doc page (kicker, badges, ToC, code, mermaid), search filtering, the drawer under 52rem, light + dark.
 
-### I-7 · P3 — Council-calibration evals cover 2 of 4 plugins
+### I-7 · P3 — Council-calibration: agent-ops remains (3 of 4 plugins covered)
 
-plugins-factory and brand-forge have planted-defect fixtures + recorded baselines + CI-checked transcripts; product-forge (23 critics) and agent-ops (13 agents) have none — their councils are uncalibrated instruments. Track per the pattern in `plugins-factory/evals/council-calibration/`.
+plugins-factory, brand-forge, and product-forge (resolved 2026-06-10, `6d3b990` — 7/7 cold catch, unanimous REBUILD, trust boundary held in all 5 isolated contexts) have planted-defect fixtures + recorded baselines re-scored in CI. **agent-ops** has none — its council is an uncalibrated instrument. Its fixture needs a different shape (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc); follow `agent-ops`'s own gates (`check_blueprint.py`) when designing it.
 
 ### I-8 · P3 — `.name-map.md` is a single point of loss
 

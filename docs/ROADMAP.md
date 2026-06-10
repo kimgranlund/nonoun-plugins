@@ -6,12 +6,11 @@ The repo-level horizons, by track. This file aggregates what cuts across the cat
 
 The buildless web-component reader vendored into brand-forge + product-forge; single source in `plugins-factory/bin/corpus-reader/`, sync-gated with an XSS guard and a CHANGELOG freshness fingerprint.
 
-- **Now** — the browser visual pass (I-1) — the demo corpus (shipped `9cbee6f`) is the thing to look at.
-- **Next** — the per-corpus **theme hook**: a `theme.css` slot loaded after `corpus-reader.css` (the OKLCH tokens are the contract), pointed at by `reader.config.json`; ship a neutral default + one example theme.
+- **Now** — the browser visual pass (I-1) — the demo corpus (`9cbee6f`, now themed via `d605590`) is the thing to look at.
 - **Later**
   - **Baked single-file instance (`file://` support).** An opt-in build that inlines the sitemap + raw markdown + the component modules into one `index.html` (inline module scripts execute on `file://`; only *fetched* modules don't) — double-click distribution without abandoning D-2's architecture. Stdlib string-assembly; no pip renderer (D-5). Full-text search becomes possible here.
   - **Vendored render libs (offline mode).** Swap the pinned CDN marked/DOMPurify/highlight/mermaid for copies in `lib/` — kills the runtime CDN availability dependency for exported sites (SRI already covers integrity); needs a license/update story before default-on.
-- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`).
+- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`); the per-corpus **theme hook** + worked demo theme (`d605590`).
 
 ## Track 2 — verification & gates
 
@@ -19,7 +18,7 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 
 - **Now** — D-6 (clean-checkout-true gates) is encoded and replay-verified (`ffd0c6c`); the JS parse gate (I-3, `9cbee6f`), ci-path liveness (I-6, `d68d1f6`), and the CI badge (`d68d1f6`) all landed 2026-06-10.
 - **Later**
-  - **Council calibration to full coverage (I-7)** — product-forge + agent-ops planted-defect fixtures + baselines, per the existing pattern; then catch-*rates* over N runs instead of single baselines (the open half of plugins-factory's eval roadmap).
+  - **Council calibration to full coverage (I-7)** — product-forge landed 2026-06-10 (`6d3b990`: 7/7, unanimous REBUILD, trust boundary held ×5); **agent-ops remains** (different fixture shape); then catch-*rates* over N runs instead of single baselines (the open half of plugins-factory's eval roadmap).
   - **Context-cost estimator** (`context-cost.py`, from plugins-factory's roadmap) — mechanize the always-on token-cost claim per plugin.
   - **Vendored-rubric drift gate** — the four skills-studio rubrics co-located into plugins-factory have no checksum sync against their originals (named in its ROADMAP since 0.1).
 
