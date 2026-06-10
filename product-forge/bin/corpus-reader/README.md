@@ -29,7 +29,7 @@ The served layouts use ES modules + `fetch()`, so they must be **served over HTT
 python3 build-sitemap.py --bake <corpus-root>   # writes <corpus-root>/reader.html (--out overrides)
 ```
 
-The bake inlines the sitemap, every page's raw markdown, the reader CSS (+ the per-corpus theme), and the component modules into a single `reader.html` — an inline `<script type="module">` executes on `file://`; only *fetched* modules don't. Rendering is the same code path (marked parses, DOMPurify sanitizes); the render libraries stay CDN-pinned + SRI (tags lifted verbatim from `index.html`, one source for the pins), so a fully offline open degrades prose to escaped text per the standard fallback. Keep the file at the corpus root so relative images resolve; re-bake after edits (it's a snapshot).
+The bake inlines the sitemap, every page's raw markdown, the reader CSS (+ the per-corpus theme), and the component modules into a single `reader.html` — an inline `<script type="module">` executes on `file://`; only *fetched* modules don't. Rendering is the same code path (marked parses, DOMPurify sanitizes); the render libraries stay CDN-pinned + SRI (tags lifted verbatim from `index.html`, one source for the pins), so a fully offline open degrades prose to escaped text per the standard fallback. Because the content is inline, the sidebar search covers **full page text** in a baked file (served layouts search title/path/summary). Keep the file at the corpus root so relative images resolve; re-bake after edits (it's a snapshot).
 
 ## Layout
 

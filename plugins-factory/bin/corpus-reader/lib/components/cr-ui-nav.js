@@ -38,6 +38,7 @@ export class UINav extends UIElement {
   #link(p, extra) {
     return (
       "<a class='cr-nav-link" + (extra || "") + "' href='#/" + enc(p.path) +
+      "' data-path='" + esc(p.path) +
       "' data-search='" + esc((p.title + " " + p.path + " " + (p.summary || "")).toLowerCase()) + "'>" +
       esc(p.title) + "</a>"
     );
@@ -63,12 +64,28 @@ export class UINav extends UIElement {
     this.#nav.innerHTML = html;
   }
 
-  /** Live-filter links by a query against each link's `data-search`; hide empty groups. */
+  #contentLC = new Map(); // lazy lowercased page text, by path (baked builds only)
+
+  /** Live-filter links by a query against each link's `data-search` — and, in a baked
+   * single-file build, against the page's full inlined markdown (window.CORPUS_FILES),
+   * so search covers content, not just title/path/summary. Served layouts keep the
+   * metadata-only filter (content isn't local there). Hide empty groups. */
   filter(q) {
     if (!this.#nav) return;
     const query = (q || "").trim().toLowerCase();
+    const files = window.CORPUS_FILES || null;
     this.#nav.querySelectorAll(".cr-nav-link").forEach((a) => {
-      const hit = !query || (a.dataset.search || "").indexOf(query) >= 0;
+      let hit = !query || (a.dataset.search || "").indexOf(query) >= 0;
+      if (!hit && files) {
+        const path = a.dataset.path;
+        let lc = this.#contentLC.get(path);
+        if (lc === undefined) {
+          const raw = files[path];
+          lc = typeof raw === "string" ? raw.toLowerCase() : null;
+          this.#contentLC.set(path, lc);
+        }
+        hit = lc !== null && lc.indexOf(query) >= 0;
+      }
       a.classList.toggle("cr-hide", !hit);
     });
     this.#nav.querySelectorAll(".cr-nav-group").forEach((g) => {

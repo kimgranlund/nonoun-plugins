@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.24 — 2026-06-10
+
+- **corpus-reader: full-text search in baked builds.** With every page's markdown inlined (`--bake`), the sidebar filter now also matches **page content** — a metadata miss falls through to the inlined text (lazily lowercased + cached per page), and the search placeholder says "Search content…" in baked mode. Served layouts keep the metadata-only filter unchanged (content isn't local there). Re-synced into the vendored copies.
+
 ## 0.2.23 — 2026-06-10
 
 - **corpus-reader: baked single-file mode (`--bake`) — `file://` works.** `build-sitemap.py --bake <corpus>` emits **one self-contained `reader.html`** (double-click, no server): the sitemap, every page's raw markdown, the reader CSS + per-corpus theme, and the component modules concatenated into an inline `<script type="module">` (inline modules execute on `file://`; only fetched ones don't). Rendering is the identical code path — marked parses, DOMPurify sanitizes — and the CDN render-library tags are **lifted verbatim from `index.html`** so the version pins + SRI hashes keep one source; embedded JSON is `<`-escaped so corpus content (including the demo's raw-`<script>` probe) can never terminate the document. `cr-shell`/`cr-ui-page` now read inlined `window.CORPUS`/`CORPUS_FILES` when present and fetch otherwise; the served layouts are unchanged (the sitemap-scan refactor was proven **byte-identical** old-vs-new). CI bakes the demo each push and asserts data/bundle script-safety, SRI presence, sanitizer wiring, and that the extracted bundle parses. Re-synced into the vendored copies.

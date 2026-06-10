@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: b44a912a0cbc2438575727340a8451eb55a958c78c1808ff9653aee4256dbfd2 -->
+<!-- source-fingerprint: c9cca8aa8ada00be95e13df10763b0d78eccb8dea02c88872bd54ffb33730a17 -->
+
+## 2026-06-10 — Full-text search in baked builds: the sidebar filter also matches the inlined page markdown (lazy lowercased cache; served layouts keep the metadata filter); search placeholder reflects the mode
 
 ## 2026-06-10 — Baked single-file mode: build-sitemap.py --bake emits one self-contained reader.html that works on file:// (inline module + inlined sitemap/markdown/CSS+theme; CDN pins + SRI lifted verbatim from index.html); cr-shell/cr-ui-page read inlined window.CORPUS/CORPUS_FILES when present, fetch otherwise — served layouts unchanged (refactor proven byte-identical)
 

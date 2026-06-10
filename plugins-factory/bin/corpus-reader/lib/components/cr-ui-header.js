@@ -49,7 +49,8 @@ export class UIHeader extends UIElement {
     const search = document.createElement("input");
     search.className = "cr-search";
     search.type = "search";
-    search.placeholder = "Search documents…";
+    // Baked builds carry every page's markdown inline, so search covers content there.
+    search.placeholder = window.CORPUS_FILES ? "Search content…" : "Search documents…";
     search.autocomplete = "off";
     search.setAttribute("aria-label", "Search documents");
     search.addEventListener("input", () => {
