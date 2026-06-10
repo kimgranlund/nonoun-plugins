@@ -100,6 +100,11 @@ jobs:
       - name: brand-forge MCP guard selftest
         run: python3 brand-forge/bin/brand-corpus-mcp.py selftest
 
+      - name: MCP liveness gate (selftest + every bundled server actually serves)
+        run: |
+          python3 "$PF/bin/check-mcp-liveness.py" selftest
+          python3 "$PF/bin/check-mcp-liveness.py" marketplace .
+
       - name: brand-forge — council-calibration baseline
         run: python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
 

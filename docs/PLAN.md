@@ -12,8 +12,11 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **A liveness smoke gate in CI** (the AP-P7 mechanization) — spawn each catalog plugin's bundled MCP, send `initialize` + `tools/list`, require a JSON-RPC response within a timeout. Turns the council's liveness *finding* into a deterministic gate; the cold-read rule keeps it CI-only (trusted candidates), never on untrusted review bundles.
-2. **More fixture shapes for the OTHER three councils** — plugins-factory now has two (excess `mega-helper` + vacancy `docs-studio`); brand-forge/product-forge/agent-ops still have one each (e.g. a borrowed-provenance deck for brand-forge's `design` sub-council; a metric-theater PRD for product-forge).
+1. **More fixture shapes for the OTHER three councils** — plugins-factory now has two (excess `mega-helper` + vacancy `docs-studio`); the others still have one each, and brand-forge's `design`/`voice` sub-councils have **none** (northwind exercises only `strategy`). Highest-value: a borrowed-provenance / derivative visual-identity fixture for brand-forge's `design` sub-council; a metric-theater PRD for product-forge.
+
+## Shipped 2026-06-10 (eighth batch)
+
+- **CI liveness smoke gate — the AP-P7 mechanization** (plugins-factory 0.2.27). `bin/check-mcp-liveness.py` spawns each bundled MCP, requires a real `initialize`+`tools/list` handshake, and is wired into CI (`selftest` + `marketplace .`). brand-forge's `brand-corpus` serves 5 tools; the other three skip until their MCP slots fill. Proves *execution* where `validate_plugin.py` proves only *wiring* — verified to FAIL the `docs-studio` dead server. Trust-boundary-scoped to trusted catalog/CI (the council keeps liveness a cold-read finding for untrusted bundles).
 
 ## Shipped 2026-06-10 (seventh batch)
 

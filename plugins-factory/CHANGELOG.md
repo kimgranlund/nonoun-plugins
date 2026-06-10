@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.27 — 2026-06-10
+
+- **New gate: `bin/check-mcp-liveness.py` — the AP-P7 mechanization.** The council's liveness *finding* becomes a deterministic gate: it spawns each bundled MCP server, completes an `initialize` + `tools/list` handshake over newline-delimited stdio, and requires a well-formed JSON-RPC response carrying a tools array. A plugin with no `.mcp.json` is a clean skip. Static validation proves *wiring* (`validate_plugin.py`); this proves *execution* — closing the gap a dead-but-wired server (`docs-studio`'s `docs-mcp.py`) sails through. **Trust boundary:** it executes the server, so it is for trusted catalog plugins / CI only; the council reviewing untrusted bundles keeps liveness a cold-read finding (CF5). Ships with a `selftest` (PASS a live mini-server, FAIL a dead-but-wired one, clean-skip the empty case) and `plugin` / `marketplace` modes. Wired into CI (`selftest` + `marketplace .` — brand-forge's `brand-corpus` serves 5 tools; the other three skip until their MCP slots fill). Verified against `docs-studio`: correctly FAILs the planted dead server. CLAUDE.md + README gate enumerations updated.
+
 ## 0.2.26 — 2026-06-10
 
 - **Folded the calibration learnings back into the instruments, then proved them with a second fixture shape.** The two blind spots the council named on itself, and the four rubric findings from `evals/rubric-calibration/`, are now encoded:

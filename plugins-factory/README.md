@@ -33,7 +33,7 @@ plugins-factory/
 ├── commands/   6 thin entry points       → build (author·carve·edit) · judge (score·critique·promote)
 ├── skills/     2 posture skills          → plugin-build (the maker) · plugin-evaluate (the judge)
 ├── agents/    9 critics + orchestrator + carve-analyst → the parallel, isolated council
-├── hooks/ + bin/  4 stdlib gates + an advisory hook    → mechanized structure checks
+├── hooks/ + bin/  5 stdlib gates + an advisory hook    → mechanized structure + liveness checks
 └── references/   the 9-dimension rubric spine + foundations + authoring methodology
 ```
 
@@ -45,7 +45,8 @@ plugins-factory/
   - `reference-lint.py` — fails on doc/command references that don't resolve on disk.
   - `check-manifest-sync.py` — fails on declared-state drift (version↔CHANGELOG, description count claims, cited commands).
   - `check-foundations-coverage.py` — every dimension foundation maps to exactly one rubric.
-  - `evals/` — a behavioral suite that builds fixture plugins with known defects and asserts the gates catch each.
+  - `check-mcp-liveness.py` — spawns each bundled MCP server and requires a real `initialize`+`tools/list` handshake (the **AP-P7 dead-but-wired** defect: a server that defines tools and exits passes every static gate yet never serves). It **executes** the server, so it is for trusted catalog plugins / CI only — the council reviewing untrusted bundles keeps liveness a cold-read finding.
+  - `evals/` — a behavioral suite that builds fixture plugins with known defects and asserts the gates catch each (two council-calibration fixture shapes: `mega-helper` excess + `docs-studio` vacancy/deadness).
 - **Hook** — `validate_plugin.py --hook` fires on `plugin.json` / `marketplace.json` writes; it surfaces manifest/layout/path smells and **never blocks**.
 
 Also in `bin/`: **`corpus-reader/`** — a buildless static reader (web components + OKLCH tokens) that turns a generated corpus (a folder of Markdown) into a navigable site. The maker plugins' `*-corpus-export` commands scaffold it via `build-sitemap.py --init`; it is the single source, **vendored** into the consuming plugins (cross-plugin symlinks don't survive install), and `sync-corpus-reader.py` CI-gates the copies — plus the reader's DOMPurify/SRI wiring and its own fingerprint-gated `CHANGELOG.md` — against drift.
