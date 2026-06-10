@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 There is no build system, package manager, or test suite. Plugins are markdown + Python (stdlib only). "Running" the code means installing the plugin into Claude Code; "testing" means smoke-testing the Python bins (see [Commands](#commands)).
 
+Repo-level planning lives in `docs/` — [PLAN.md](docs/PLAN.md) (the current execution plan) · [ROADMAP.md](docs/ROADMAP.md) (cross-catalog horizons; per-plugin roadmaps stay in each plugin) · [ISSUES.md](docs/ISSUES.md) (open issues `I-n`, decisions `D-n`, resolved incidents `R-n`). A standing rule from the 2026-06-10 CI postmortem (R-1/D-6): **gates must be clean-checkout-true** — green locally must imply green on a fresh clone; gitignored local state must never be required by CI. Before pushing gate-affecting changes, replay the CI matrix against a clean clone (`git clone . /tmp/ci-repro`).
+
 ## Adding or changing a plugin
 
 - A plugin is a directory plus an entry in `.claude-plugin/marketplace.json` (`name`, `source`, `description`, `category`, `tags`).
