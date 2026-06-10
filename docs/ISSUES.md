@@ -30,6 +30,10 @@ Critic agents use `critic-<first>-<initial>` slugs with `First L.` display names
 
 Plugins are markdown + Python (3.8+, stdlib only); the reader is buildless web components. Verification is gates + selftests + the clean-clone replay — not a test framework. A pip-dependent build step (e.g. server-side markdown rendering) was declined 2026-06-08.
 
+### D-8 · 2026-06-10 — accounting-studio stays local (not a carve target)
+
+The rubric-calibration scoring (`plugins-factory/evals/rubric-calibration/2026-06-10-accounting-studio.md`) returned BLOCKED **as a plugin candidate** — the blockers being personal-state entanglement (live credentials, the owner's registry and client data, PII in doc examples, licensed fonts). Owner decision: the skill is a personal tool and **stays local** — no carve, no distribution — which dissolves the distribution blockers by scope rather than by remediation. The scored application remains valid as a rubric-calibration data point (it proved P4/P9 discriminate). Standing hygiene note regardless of locality: rotate the embedded API token and scrub the real-PII "examples" at the owner's convenience.
+
 ### D-7 · 2026-06-10 — Render libs stay CDN-pinned; vendoring deferred
 
 The reader's four render libraries (marked, DOMPurify, highlight.js, mermaid) remain CDN-pinned with Subresource Integrity. **Integrity** is covered by SRI; the residual risk is **availability** (a served export needs jsdelivr reachable). Vendoring ~700KB of third-party JS into the reader — and into every vendored copy and every `--init` export — buys offline capability nobody has needed yet, at the cost of repo/plugin weight and a license/update story. The manual swap stays documented in the reader README. **Revisit triggers:** a consumer needs an offline/air-gapped export, a CDN incident, or the baked single-file instance (which must settle lib distribution anyway).
