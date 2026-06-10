@@ -12,9 +12,13 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
-2. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap), plus more fixture shapes per council.
-3. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated.
+1. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap), plus more fixture shapes per council.
+2. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated.
+3. **Full-text search in the baked reader** — with every page's markdown inlined, the sidebar filter can search content, not just title/path/summary (follow-on to the bake).
+
+## Shipped 2026-06-10 (fourth batch)
+
+- **Baked single-file reader** (`--bake` → one self-contained `reader.html`, works on `file://` — double-click): inline module bundle + inlined sitemap/markdown/CSS+theme; same sanitize path; CDN pins + SRI single-sourced from `index.html`; script-injection-safe JSON embedding; CI bakes the demo and parse-checks the bundle each push; the served-mode refactor proven byte-identical. plugins-factory 0.2.23.
 
 ## Verified 2026-06-10
 

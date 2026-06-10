@@ -21,7 +21,15 @@ python3 build-sitemap.py my-corpus  # …or name it
 python3 -m http.server              # then open http://localhost:8000/
 ```
 
-The reader uses ES modules + `fetch()`, so it must be **served over HTTP** — opening `index.html` from `file://` shows a "serve over HTTP" notice instead of rendering.
+The served layouts use ES modules + `fetch()`, so they must be **served over HTTP** — opening `index.html` from `file://` shows a "serve over HTTP" notice instead of rendering.
+
+**Bake one file — `file://` works (double-click, no server):**
+
+```sh
+python3 build-sitemap.py --bake <corpus-root>   # writes <corpus-root>/reader.html (--out overrides)
+```
+
+The bake inlines the sitemap, every page's raw markdown, the reader CSS (+ the per-corpus theme), and the component modules into a single `reader.html` — an inline `<script type="module">` executes on `file://`; only *fetched* modules don't. Rendering is the same code path (marked parses, DOMPurify sanitizes); the render libraries stay CDN-pinned + SRI (tags lifted verbatim from `index.html`, one source for the pins), so a fully offline open degrades prose to escaped text per the standard fallback. Keep the file at the corpus root so relative images resolve; re-bake after edits (it's a snapshot).
 
 ## Layout
 

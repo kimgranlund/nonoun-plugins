@@ -202,11 +202,18 @@ export class UIPage extends UIElement {
   #renderDoc(route) {
     const token = ++this.#token;
     this.#article.innerHTML = "<p class='cr-loading'>Loading&hellip;</p>";
-    fetch(route)
-      .then((r) => {
-        if (!r.ok) throw new Error(r.status + " — " + route);
-        return r.text();
-      })
+    // Content source: a baked single-file build inlines every page's raw markdown as
+    // window.CORPUS_FILES (file:// blocks fetch); the served layouts fetch per route.
+    // Rendering is identical either way — marked parses, DOMPurify sanitizes.
+    const load = window.CORPUS_FILES
+      ? (Object.prototype.hasOwnProperty.call(window.CORPUS_FILES, route)
+          ? Promise.resolve(window.CORPUS_FILES[route])
+          : Promise.reject(new Error("not in the baked corpus — " + route)))
+      : fetch(route).then((r) => {
+          if (!r.ok) throw new Error(r.status + " — " + route);
+          return r.text();
+        });
+    load
       .then((text) => {
         if (token !== this.#token) return; // a newer route superseded this load
         const fm = splitFrontmatter(text);

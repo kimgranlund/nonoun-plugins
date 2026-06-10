@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: eec59236736d731425d5e76b762f3d443d0d26e53fb5856d1c4948e51e36cb00 -->
+<!-- source-fingerprint: b44a912a0cbc2438575727340a8451eb55a958c78c1808ff9653aee4256dbfd2 -->
+
+## 2026-06-10 — Baked single-file mode: build-sitemap.py --bake emits one self-contained reader.html that works on file:// (inline module + inlined sitemap/markdown/CSS+theme; CDN pins + SRI lifted verbatim from index.html); cr-shell/cr-ui-page read inlined window.CORPUS/CORPUS_FILES when present, fetch otherwise — served layouts unchanged (refactor proven byte-identical)
 
 ## 2026-06-10 — Per-corpus theme hook: reader.config.json "theme" names a stylesheet inside the corpus; build-sitemap emits it (containment-checked) and the shell injects it after corpus-reader.css — token overrides only by contract; demo-corpus ships a worked theme.css
 

@@ -27,11 +27,15 @@ export class UIShell extends UIElement {
     };
     window.addEventListener("hashchange", this.#onHash);
 
-    fetch("lib/sitemap.json")
-      .then((r) => {
-        if (!r.ok) throw new Error("lib/sitemap.json — " + r.status);
-        return r.json();
-      })
+    // Data source: a baked single-file build inlines the sitemap as window.CORPUS
+    // (file:// blocks fetch); the served layouts fetch it.
+    const load = window.CORPUS
+      ? Promise.resolve(window.CORPUS)
+      : fetch("lib/sitemap.json").then((r) => {
+          if (!r.ok) throw new Error("lib/sitemap.json — " + r.status);
+          return r.json();
+        });
+    load
       .then((sm) => {
         this.#sitemap = sm;
         document.title = sm.title || "Corpus";
