@@ -105,10 +105,11 @@ jobs:
           python3 "$PF/bin/check-mcp-liveness.py" selftest
           python3 "$PF/bin/check-mcp-liveness.py" marketplace .
 
-      - name: brand-forge — council-calibration baselines (strategy + design)
+      - name: brand-forge — council-calibration baselines (strategy + design + voice)
         run: |
           python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
           python3 brand-forge/evals/council-calibration/check-design.py brand-forge/evals/council-calibration/runs/2026-06-10-lumina-design-baseline.md
+          python3 brand-forge/evals/council-calibration/check-voice.py brand-forge/evals/council-calibration/runs/2026-06-10-verve-voice-baseline.md
 
       - name: product-forge — sourcing gate (selftest + scan)
         run: |
@@ -123,8 +124,10 @@ jobs:
       - name: product-forge — lint selftest
         run: python3 product-forge/bin/product-lint selftest
 
-      - name: product-forge — council-calibration baseline
-        run: python3 product-forge/evals/council-calibration/check.py product-forge/evals/council-calibration/runs/2026-06-10-atlas-baseline.md
+      - name: product-forge — council-calibration baselines (strategy + prd)
+        run: |
+          python3 product-forge/evals/council-calibration/check.py product-forge/evals/council-calibration/runs/2026-06-10-atlas-baseline.md
+          python3 product-forge/evals/council-calibration/check-prd.py product-forge/evals/council-calibration/runs/2026-06-10-pulse-prd-baseline.md
 
       - name: agent-ops — gates (sourcing + self-contained + selftests)
         run: |
@@ -135,7 +138,9 @@ jobs:
           python3 agent-ops/bin/doc-hygiene selftest
           python3 agent-ops/bin/audit-history.py selftest
 
-      - name: agent-ops — council-calibration (fixture gate-clean + baseline)
+      - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |
           python3 agent-ops/bin/check_blueprint.py agent-ops/evals/council-calibration/fixtures/overnight-refactor-blueprint.md
           python3 agent-ops/evals/council-calibration/check.py agent-ops/evals/council-calibration/runs/2026-06-10-nightshift-baseline.md
+          python3 agent-ops/bin/check_blueprint.py agent-ops/evals/council-calibration/fixtures/monolith-support-agent-blueprint.md
+          python3 agent-ops/evals/council-calibration/check-monolith.py agent-ops/evals/council-calibration/runs/2026-06-10-monolith-baseline.md

@@ -12,7 +12,12 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **More fixture shapes — the remaining sub-councils.** Done: plugins-factory has two (`mega-helper` excess + `docs-studio` vacancy); brand-forge now has two (`strategy`/Northwind + **`design`/Lumina**). Remaining highest-value: brand-forge's **`voice`** sub-council (no fixture); a **metric-theater PRD** for product-forge; a second shape for agent-ops.
+1. **Rate-extension to N=3 for the five single-baseline fixtures.** The 2026-06-10 additions (docs-studio, Lumina-design, Verve-voice, Pulse-PRD, OmniDesk-monolith) each have a recorded N=1 baseline; promote each to a 3-run catch-rate as the established pattern (the existing strategy/Nightshift/mega-helper fixtures are already N=3). Each miss in a rate sample is instrument data, not a failure.
+2. **Optional further shapes** — product-forge's `trust`/`ai-product` sub-councils; a real-repo audit application for agent-ops (its ROADMAP item).
+
+## Shipped 2026-06-10 (ninth batch)
+
+- **Three more council fixtures — every council now has ≥2 fixture shapes.** brand-forge **voice** (`weak-verbal-identity`/Verve, 5/5 REBUILD — all three brand sub-councils now calibrated); product-forge **metric-theater PRD** (`metric-theater-prd`/Pulse, 6/6 REBUILD, scored against `rubric-prd-quality`); agent-ops **monolith** (`monolith-support-agent-blueprint`/OmniDesk, gate-clean, 7/7 REBUILD — the inverse of Nightshift's over-fleet). All cold, all refused the ST5 injection; CI re-scores all baselines. brand-forge 0.4.15 · product-forge 0.3.14 · agent-ops 0.1.6.
 
 ## Shipped 2026-06-10 (eighth batch)
 

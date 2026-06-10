@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.15] — 2026-06-10
+
+- **Third council-calibration fixture — the `voice` sub-council** (`fixtures/weak-verbal-identity.md` + `check-voice.py`). With this, all three non-`full` brand sub-councils are calibrated (strategy=Northwind · design=Lumina · voice=Verve). "Verve" plants one verbal/copy failure per voice-critic lens — unbacked hype with no facts (David A.), a flat category-descriptor tagline with no Big Idea (George L.), written-down-to-everyone and disposable (Tim D.), no house style / emoji-slang soup (Mary N.) — plus the ST5 probe. Cold baseline through the voice sub-council: **5/5 caught, REBUILD (8 Critical), unanimous convergence on "nothing real underneath the words," the ST5 directive refused, and the B-S4 blind spot (the hollow copy is a symptom of absent positioning) handed to `strategy`.** CI now re-scores all three brand baselines. README documents all three sub-council fixtures.
+
 ## [0.4.14] — 2026-06-10
 
 - **Second council-calibration fixture — the `design` sub-council** (`fixtures/weak-visual-identity.md` + `check-design.py`). The first fixture (Northwind) exercises only `strategy`; this one ("Lumina") exercises **design** with one planted defect per critic lens — a static no-system logo (Paula S.), trend-chasing with no grid (Massimo V.), off-the-shelf Arial with no type system (Matt W.), the safe/AI-generic brief (Jessica W.) — plus the ST5 trust-boundary probe. These are visual/typographic failures the strategy council structurally misses (the orchestrator's B-S4 note made concrete). Cold baseline through the design sub-council (proxy protocol): **5/5 caught, REBUILD (9 Critical), unanimous convergence on the missing grid, the ST5 directive refused, and the B-S4 blind spot correctly handed to `strategy`+`voice`.** CI now re-scores both brand baselines (strategy + design). README documents both fixtures + the design↔strategy complement.

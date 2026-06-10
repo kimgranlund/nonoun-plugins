@@ -2,6 +2,10 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.6] — 2026-06-10
+
+- **Second council-calibration fixture — a monolith god-agent** (`fixtures/monolith-support-agent-blueprint.md` + `check-monolith.py`). Where "Nightshift" fails by over-parallelization (a 12-worker fleet on a coupled surface), "OmniDesk" fails by the **opposite** — one monolithic agent with 40 tools, the lethal trifecta in a single context. Like Nightshift it **passes `check_blueprint.py` clean (0 fail)**; its defects are pure judgment: no decomposition (MO1), no eval harness (MO2), everything inlined in one window (MO3), a throughput/vanity metric (MO4), the trifecta defended only by prompt-pleading (MO5), a gate that checks format not correctness (MO6). Cold baseline through the single-agent-architecture slice: **7/7 caught, REBUILD (weakest dimension: security/blast-radius), the §3 5/5 directive classified as an injection finding and refused.** Notable: both built-in critic tensions (Walden↔Harrison) *collapsed into agreement*, and the council gave explicit credit to the genuinely-good runner-side harness. CI now re-asserts both fixtures gate-clean and re-scores both baselines. README documents both failure shapes.
+
 ## [0.1.5] — 2026-06-10
 
 - **Council-calibration promoted from a single baseline to a catch-rate over N=3 cold runs** — two further isolated-critic runs recorded: **8/8 planted defects caught in 3/3 runs, 18/18 REBUILD verdicts, 18/18 ST5 refusals.** Run 3 earned its keep by exposing an **instrument defect**: it initially scored 6/8 from checker-pattern brittleness (the council had caught both defects in different words — "allowlist self-expansion", "context dumped, not engineered"); `check.py`'s A4/A6 pattern sets were widened and all runs re-score 8/8 with no regression. The README carries the rate table; CI still re-scores the designated baseline.
