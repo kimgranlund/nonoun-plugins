@@ -59,6 +59,7 @@ A catalog plugin that doubles as this repo's own toolchain — anyone can instal
 - **Skills** — `plugin-build` (the maker) and `plugin-evaluate` (the judge), over one shared rubric spine in `references/`.
 - **Agents** — a 9-critic council (`critic-boris-c … critic-david-f`) + a `plugin-council` orchestrator that fans them out in parallel isolated contexts, plus `carve-analyst`. Every critic is tool-scoped to `Read, Grep, Glob` (read-only — they review _untrusted_ plugins, so they must not be able to execute).
 - **Gates (`bin/`)** — `validate_plugin.py` (manifest/layout/path static validator + `selftest` + an advisory `hook` mode), `check-foundations-coverage.py`, `reference-lint.py` (fails on doc/command refs that don't resolve), and `check-manifest-sync.py` (fails on declared-state drift — version↔CHANGELOG, description count claims, cited commands). All four run in CI (`.github/workflows/ci.yml`) against every catalog plugin.
+- **Shared corpus-reader (`bin/corpus-reader/`)** — a buildless static site reader (web components + OKLCH tokens) that turns a generated corpus (a folder of Markdown) into a navigable site; the maker plugins' `*-corpus-export` commands scaffold it with `build-sitemap.py --init`. It is the single source, **vendored** into brand-forge + product-forge (cross-plugin symlinks don't survive install). `sync-corpus-reader.py` keeps the copies byte-identical and CI-gates them — plus the reader's DOMPurify/SRI wiring and its own fingerprint-gated `CHANGELOG.md` — against drift (`--changelog "…"` logs a reader change + refreshes the fingerprint).
 
 Self-contained (four cross-cutting rubrics co-located from the external `skills-studio`; zero cross-plugin paths) and authored by, and red-teamed against, its own 9-dimension standard — see its `reviews/` and `ROADMAP.md`.
 
@@ -81,6 +82,7 @@ python3 "$PF/bin/validate_plugin.py" selftest
 python3 "$PF/bin/validate_plugin.py" plugin brand-forge --strict   # validate a catalog plugin
 python3 "$PF/bin/validate_plugin.py" marketplace .
 python3 "$PF/bin/reference-lint.py" brand-forge                    # doc/command refs must resolve
+python3 "$PF/bin/sync-corpus-reader.py" --check                    # vendored corpus-reader in sync + CHANGELOG fresh
 ( cd "$PF" && python3 bin/check-foundations-coverage.py )
 ```
 

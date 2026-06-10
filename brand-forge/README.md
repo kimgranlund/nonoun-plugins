@@ -13,7 +13,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 /plugin install brand-forge@plugins-forge
 ```
 
-Then drive it through six typed commands:
+Then drive it through seven typed commands:
 
 | Command | Posture | What it does |
 | --- | --- | --- |

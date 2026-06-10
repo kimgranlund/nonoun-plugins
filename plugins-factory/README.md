@@ -48,6 +48,8 @@ plugins-factory/
   - `evals/` — a behavioral suite that builds fixture plugins with known defects and asserts the gates catch each.
 - **Hook** — `validate_plugin.py --hook` fires on `plugin.json` / `marketplace.json` writes; it surfaces manifest/layout/path smells and **never blocks**.
 
+Also in `bin/`: **`corpus-reader/`** — a buildless static reader (web components + OKLCH tokens) that turns a generated corpus (a folder of Markdown) into a navigable site. The maker plugins' `*-corpus-export` commands scaffold it via `build-sitemap.py --init`; it is the single source, **vendored** into the consuming plugins (cross-plugin symlinks don't survive install), and `sync-corpus-reader.py` CI-gates the copies — plus the reader's DOMPurify/SRI wiring and its own fingerprint-gated `CHANGELOG.md` — against drift.
+
 There is no MCP: plugins-factory is static-analysis only by design — it reads candidate plugins, it never runs them (the P9 trust-boundary risk).
 
 ---
