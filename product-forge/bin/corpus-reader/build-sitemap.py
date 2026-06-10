@@ -272,12 +272,26 @@ def main():
 
     title = args.title or cfg.get("title") or (root_pages[0]["title"] if root_pages else prettify(corpus))
 
+    # Optional per-corpus theme (reader.config.json "theme"): a stylesheet inside the
+    # corpus, emitted as an index-relative path the shell injects after corpus-reader.css.
+    theme_rel = None
+    if cfg.get("theme"):
+        corpus_norm = os.path.normpath(corpus_abs)  # corpus may be "..": normalize before containment
+        theme_abs = os.path.normpath(os.path.join(corpus_norm, cfg["theme"]))
+        if os.path.isfile(theme_abs) and theme_abs.startswith(corpus_norm + os.sep):
+            theme_rel = os.path.relpath(theme_abs, ROOT).replace(os.sep, "/")
+        else:
+            print("warning: reader.config.json theme not found in the corpus: %s" % cfg["theme"],
+                  file=sys.stderr)
+
     mode = "provenance" if sum(tot_prov.values()) else ("status" if sum(tot_status.values()) else "none")
     stats = {"mode": mode, "status": tot_status, "provenance": tot_prov,
              "secStatus": sec_status, "secProvenance": sec_prov}
 
     sitemap = {"title": title, "base": corpus, "rootPages": root_pages,
                "sections": section_list, "stats": stats}
+    if theme_rel:
+        sitemap["theme"] = theme_rel
 
     out_path = os.path.join(ROOT, args.out)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

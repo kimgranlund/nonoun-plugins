@@ -51,6 +51,10 @@ def referenced_paths(text):
         # quotes are shell syntax, never path content — drop them everywhere first
         toks = [t for t in TOKEN_SPLIT.split(line.replace('"', "").replace("'", "")) if t]
         for i, tok in enumerate(toks):
+            if tok in ("-c", "-m") and i and toks[i - 1].startswith("python"):
+                break                                       # the rest of the line is inline code, not paths
+            if tok.startswith("../"):
+                continue                                    # cwd-relative parent path — not repo-checkable
             if "/" in tok and (tok.endswith(SUFFIXES) or "*" in tok):
                 add(tok)
             elif tok == "python3" and i + 1 < len(toks):
@@ -78,6 +82,8 @@ def _selftest():
         "      - run: cd \"$PF\" && python3 bin/check-foundations-coverage.py\n"
         "      - run: test -f /tmp/demo/site/lib/sitemap.json\n"
         "      - run: for f in \"$PF\"/bin/corpus-reader/lib/components/*.js; do true; done\n"
+        "      - run: python3 -c \"assert x == 'gone-dir/literal.css'\"\n"  # inline code, not a path
+        "      - run: test -f ../outside.css\n"                             # parent-relative — skipped
     )
     refs = referenced_paths(fake)
     flagged = {cands[0] for _, cands in
@@ -86,7 +92,8 @@ def _selftest():
         if must_flag not in flagged:
             ok = False
             print(f"selftest: failed to flag {must_flag}", file=sys.stderr)
-    for must_pass in ("validate_plugin", "product-lint", "check-foundations", "components"):
+    for must_pass in ("validate_plugin", "product-lint", "check-foundations", "components",
+                      "literal.css", "outside.css"):
         if any(must_pass in f for f in flagged):
             ok = False
             print(f"selftest: false-flagged something matching {must_pass!r}: {flagged}", file=sys.stderr)

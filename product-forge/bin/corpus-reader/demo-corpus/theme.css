@@ -1,0 +1,12 @@
+/* Demo theme — a per-corpus skin, wired via reader.config.json: {"theme": "theme.css"}.
+ *
+ * The contract is the reader's :root token layer (lib/corpus-reader.css): override the
+ * OKLCH hue/chroma axes, semantic color tokens, fonts, spacing, or radii — never style
+ * the reader's selectors directly. Light/dark both keep working because the tokens are
+ * light-dark() pairs over the axes. Delete the "theme" line in reader.config.json to
+ * fall back to the reader's neutral look.
+ */
+:root {
+  --hue-accent: 200; /* the demo's look: a teal accent instead of the neutral blue */
+  --hue-positive: 165;
+}

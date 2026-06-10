@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.22 — 2026-06-10
+
+- **corpus-reader: per-corpus theme hook.** `reader.config.json` gains `"theme"` — a stylesheet **inside the corpus**, containment-checked by `build-sitemap.py` (escapes are warned + ignored) and injected by the shell after `corpus-reader.css`, so its `:root` token overrides win. Token overrides only, by contract (the OKLCH axes + semantic tokens); same trust class as corpus images; corpus-relative paths only. `demo-corpus/` ships a worked `theme.css` (teal accent) and CI asserts the theme path flows through both layouts (`demo-corpus/theme.css` standalone, `../theme.css` under `site/`). Re-synced into the vendored copies.
+
 ## 0.2.21 — 2026-06-10
 
 - **corpus-reader: four small pattern fixes.** The sidebar wordmark drops a leading separator from the subtitle (`"BZZR — Product Corpus"` → `BZZR` / `Product Corpus`); the sidebar search now also matches page **summaries** (not just title + path); the provenance stats count tags in **prose only** (a doc *about* the tag syntax no longer skews the bar); and `--init` drops a root `index.html` redirect → `site/` when the corpus root has none (never overwrites an existing file) — removing the `/site/`-vs-`/` 404 papercut. Re-synced into the vendored copies.

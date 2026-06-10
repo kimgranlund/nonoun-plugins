@@ -35,11 +35,25 @@ export class UIShell extends UIElement {
       .then((sm) => {
         this.#sitemap = sm;
         document.title = sm.title || "Corpus";
+        this.#applyTheme(sm.theme);
         this.#header.sitemap = sm;
         this.#body.sitemap = sm;
         this.#route();
       })
       .catch((err) => this.#bootError(err));
+  }
+
+  /** Per-corpus theme: a stylesheet the corpus ships (reader.config.json `"theme"`),
+   * loaded after corpus-reader.css so its `:root` token overrides win. Token overrides
+   * only, by contract — same trust class as corpus images; corpus-relative paths only
+   * (schemes / protocol-relative / absolute are ignored). */
+  #applyTheme(href) {
+    if (!href || typeof href !== "string") return;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith("/")) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
   }
 
   disconnected() {

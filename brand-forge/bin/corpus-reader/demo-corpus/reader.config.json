@@ -1,5 +1,6 @@
 {
   "title": "Demo Corpus",
+  "theme": "theme.css",
   "sections": {
     "01-overview": "What this corpus is and how the reader presents it.",
     "02-architecture": "How the reader renders untrusted markdown safely.",

@@ -50,8 +50,12 @@ Page titles come from frontmatter `title:`, else the first `# H1`, else the file
 An optional `<corpus>/reader.config.json` adds polish without touching the reader:
 
 ```json
-{ "title": "…", "sections": { "01-foundation": "one-line description shown on the home card" } }
+{ "title": "…", "theme": "theme.css", "sections": { "01-foundation": "one-line description shown on the home card" } }
 ```
+
+## Theming
+
+`"theme"` names a stylesheet **inside the corpus**, loaded after `corpus-reader.css` so its `:root` overrides win. The contract is the token layer — override the OKLCH hue/chroma axes or any semantic token (colors, fonts, spacing, radii), never the reader's selectors; light/dark keep working because tokens are `light-dark()` pairs. See `demo-corpus/theme.css` for a worked example. A theme is corpus-controlled styling — the same trust class as corpus images (scripts stay sanitized regardless); only corpus-relative paths are honored.
 
 ## Security — untrusted markdown
 

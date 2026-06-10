@@ -38,6 +38,10 @@ Critic agents use `critic-<first>-<initial>` slugs with `First L.` display names
 
 Plugins are markdown + Python (3.8+, stdlib only); the reader is buildless web components. Verification is gates + selftests + the clean-clone replay — not a test framework. A pip-dependent build step (e.g. server-side markdown rendering) was declined 2026-06-08.
 
+### D-7 · 2026-06-10 — Render libs stay CDN-pinned; vendoring deferred
+
+The reader's four render libraries (marked, DOMPurify, highlight.js, mermaid) remain CDN-pinned with Subresource Integrity. **Integrity** is covered by SRI; the residual risk is **availability** (a served export needs jsdelivr reachable). Vendoring ~700KB of third-party JS into the reader — and into every vendored copy and every `--init` export — buys offline capability nobody has needed yet, at the cost of repo/plugin weight and a license/update story. The manual swap stays documented in the reader README. **Revisit triggers:** a consumer needs an offline/air-gapped export, a CDN incident, or the baked single-file instance (which must settle lib distribution anyway).
+
 ### D-6 · 2026-06-10 — Gates must be clean-checkout-true
 
 Green on a maintainer tree must imply green on a fresh clone. Local-only state (gitignored files) may **add** assurance locally but must never be required by CI, and generated artifacts must derive from tracked content only. Encoded in `gen-index.py` (tracked-only walk), `reference-lint.py` (gitignored-target exemption), `check-sourcing.py` (public-checkout mode). The enforcement practice is R-1's replay.

@@ -52,9 +52,11 @@ jobs:
       - name: corpus-reader — demo corpus builds + --init scaffold
         run: |
           python3 "$PF/bin/corpus-reader/build-sitemap.py" demo-corpus
+          python3 -c "import json; assert json.load(open('plugins-factory/bin/corpus-reader/lib/sitemap.json')).get('theme') == 'demo-corpus/theme.css'"
           cp -R "$PF/bin/corpus-reader/demo-corpus" /tmp/demo
           python3 "$PF/bin/corpus-reader/build-sitemap.py" --init /tmp/demo
           test -f /tmp/demo/site/lib/sitemap.json
+          python3 -c "import json; assert json.load(open('/tmp/demo/site/lib/sitemap.json')).get('theme') == '../theme.css'"
 
       - name: corpus-reader — JS parses (ES modules)
         run: |
