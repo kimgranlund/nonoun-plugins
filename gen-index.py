@@ -13,9 +13,41 @@ import html
 import json
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def _tracked():
+    """Git-tracked paths (relative, '/'-separated) — the shipped catalog. None when git is unavailable."""
+    try:
+        out = subprocess.run(["git", "-C", ROOT, "ls-files", "-z"],
+                             capture_output=True, check=True)
+        return set(out.stdout.decode("utf-8", "replace").split("\0")) - {""}
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+TRACKED = _tracked()
+
+
+def _shipped(path):
+    """True if `path` is part of the shipped catalog.
+
+    The index documents what a fresh checkout contains, so only git-tracked content
+    counts — gitignored local files (example corpora, generated sitemaps, the
+    git-ignored critic name-maps) must not skew the render, or `--check` diverges
+    between a working tree and CI. Without git (tarball), fall back to skipping
+    dotfiles — which covers the known ignored-file classes.
+    """
+    if TRACKED is None:
+        return not os.path.basename(path).startswith(".")
+    rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+    if rel in TRACKED:
+        return True
+    prefix = rel + "/"
+    return any(t.startswith(prefix) for t in TRACKED)  # directories: shipped iff they contain tracked files
 
 
 def _frontmatter(path):
@@ -65,6 +97,8 @@ def _ls(path, suffix=None):
     out = []
     for fn in sorted(os.listdir(path)):
         if suffix and not fn.endswith(suffix):
+            continue
+        if not _shipped(os.path.join(path, fn)):
             continue
         out.append(fn)
     return out

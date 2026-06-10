@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.19 — 2026-06-10
+
+- **`reference-lint.py`: references to deliberately git-ignored targets are exempt from the resolve requirement.** Docs across the catalog cite `agents/.name-map.md` (the obscured-critic provenance file, git-ignored by design) — the linter required it to exist on disk, so it was green on a maintainer tree and structurally red on every fresh checkout (one of the three causes of the 2026-06-05 → 06-10 CI outage). An unresolved reference is now exempt iff `git check-ignore` confirms its target is ignored; outside a git context the strict behavior is unchanged.
+
 ## 0.2.18 — 2026-06-08
 
 - **corpus-reader: optional `reader.config.json` for home polish.** A `<corpus>/reader.config.json` (`{"title": …, "sections": {"01-foo": "one-line description"}}`) now sets the corpus title and per-section **card descriptions** on the home — `build-sitemap.py` reads it, the cards render the descriptions, and everything degrades gracefully when there's no config. Re-synced into the vendored copies.

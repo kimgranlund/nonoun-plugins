@@ -12,6 +12,12 @@ or link-wrapped token that looks like an INTERNAL file reference, checks it reso
 plugin root, the file's own dir, or ${CLAUDE_PLUGIN_ROOT}. Illustrative example paths, globs,
 placeholders, and URLs are skipped, so a clean tree lints clean.
 
+A reference whose TARGET is deliberately git-ignored (e.g. the obscured-critic
+`agents/.name-map.md`) is exempt from the resolve requirement: such files are by design absent
+from a fresh checkout, so requiring them on disk would make the gate green locally and
+permanently red in CI. The exemption only applies when `git check-ignore` confirms the path is
+ignored — outside a git context the strict behavior is unchanged.
+
 Usage:
   reference-lint.py <plugin-dir> [--json]
 Exit 0 = every internal reference resolves · 1 = unresolved reference(s) · 2 = bad invocation.
@@ -67,15 +73,35 @@ def _candidate(tok):
     return t if segs[0] in PLUGIN_DIRS else None  # first segment is a real plugin dir
 
 
-def _resolves(tok, plugin_root, file_dir):
-    """A bare `dir/file` may be plugin-root-relative OR skill-local — accept either."""
+def _ref_paths(tok, plugin_root, file_dir):
+    """The absolute path(s) a token may denote — plugin-root-relative OR skill-local."""
     if tok.startswith(PLUGIN_ROOT_VAR):
         rel, bases = tok[len(PLUGIN_ROOT_VAR):], [plugin_root]
     elif tok.startswith("./") or tok.startswith("../"):
         rel, bases = tok, [file_dir]
     else:
         rel, bases = tok, [plugin_root, file_dir]
-    return any(os.path.exists(os.path.normpath(os.path.join(b, rel))) for b in bases)
+    return [os.path.normpath(os.path.join(b, rel)) for b in bases]
+
+
+def _resolves(tok, plugin_root, file_dir):
+    """A bare `dir/file` may be plugin-root-relative OR skill-local — accept either."""
+    return any(os.path.exists(p) for p in _ref_paths(tok, plugin_root, file_dir))
+
+
+def _deliberately_ignored(plugin_root, paths):
+    """True when git confirms any candidate path is excluded by ignore rules — the tree
+    deliberately omits it (works for absent paths: check-ignore evaluates rules, not the fs).
+    False outside a git context, so non-repo lints keep the strict behavior."""
+    for p in paths:
+        try:
+            r = subprocess.run(["git", "-C", plugin_root, "check-ignore", "-q", "--", p],
+                               capture_output=True, timeout=15)
+            if r.returncode == 0:
+                return True
+        except Exception:
+            return False
+    return False
 
 
 def _git_ignored(plugin_root):
@@ -135,6 +161,8 @@ def lint(plugin_root):
                     cand = _candidate(raw)
                     if cand and cand not in seen and not _resolves(cand, plugin_root, file_dir):
                         seen.add(cand)
+                        if _deliberately_ignored(plugin_root, _ref_paths(cand, plugin_root, file_dir)):
+                            continue  # by-design-local target (git-ignored) — absent in a fresh checkout
                         findings.append((rel, i, cand, "does not resolve on disk"))
     return findings
 

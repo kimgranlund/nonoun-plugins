@@ -23,6 +23,18 @@ references can't silently fall out of coverage (the failure the v0.2 red-team ca
 It does NOT verify a quote is accurate (only a human / web-fetch can) — but it guarantees nothing
 ships unsourced. Run it in CI alongside validate_plugin.py / reference-lint.py.
 
+Two modes, decided by the tree being checked:
+  - FULL (the name-map file is present — the maintainer's working tree): obscured critics must
+    have a complete provenance block; incomplete blocks are failures.
+  - PUBLIC CHECKOUT (the name-map is ABSENT **and** `git check-ignore` confirms it is deliberately
+    excluded — every fresh clone / CI): critics without an inline signal DEFER to the name-map.
+    Deferrals are reported, not failed — a public tree cannot carry their provenance by design, so
+    the full provenance guarantee for obscured critics is enforced where the name-map lives (the
+    maintainer's machine), and CI enforces everything it can see (library frontmatter, inline
+    signals, roster-count integrity).
+Outside a git context an absent name-map still fails — absence is only excused when git proves it
+is intentional.
+
 Usage:
   check-sourcing.py <plugin-dir>   # exit 0 if all sourced, 1 if any gap, 2 on bad invocation
   check-sourcing.py selftest
@@ -30,6 +42,7 @@ Stdlib only (Python 3.8+).
 """
 import os
 import re
+import subprocess
 import sys
 
 REQUIRED_FM = ("date", "coverage", "primary_sources")
@@ -85,9 +98,24 @@ def _namemap_provenance(agdir):
     return sourced
 
 
+def _deliberately_ignored(repo_dir, path):
+    """True when git confirms `path` is excluded by ignore rules — i.e., this tree deliberately
+    omits it (a public checkout / CI), as opposed to the file being lost. Works for absent paths
+    (check-ignore evaluates the rules, not the filesystem); False outside a git context."""
+    try:
+        r = subprocess.run(["git", "-C", repo_dir, "check-ignore", "-q", "--", path],
+                           capture_output=True, timeout=15)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
 def check(root):
+    """Return (findings, deferred) — failures, plus critics whose provenance defers to the
+    deliberately-absent name-map (public-checkout mode only; informational, never a failure)."""
     root = os.path.abspath(root)
     findings = []
+    deferred = []
     for fp in _library_refs(root):
         rel = os.path.relpath(fp, root)
         fm = _frontmatter(open(fp, encoding="utf-8", errors="replace").read())
@@ -98,6 +126,9 @@ def check(root):
         if missing:
             findings.append((rel, "missing frontmatter: " + ", ".join(missing)))
     agdir = os.path.join(root, "agents")
+    namemap_path = os.path.join(agdir, ".name-map.md")
+    public_checkout = (not os.path.isfile(namemap_path)
+                       and _deliberately_ignored(agdir if os.path.isdir(agdir) else root, namemap_path))
     namemap_sourced = _namemap_provenance(agdir)
     critic_files = []
     if os.path.isdir(agdir):
@@ -109,10 +140,13 @@ def check(root):
             text = open(os.path.join(agdir, fn), encoding="utf-8", errors="replace").read()
             # a critic is sourced by an inline signal OR by a complete name-map provenance block
             if not SOURCE_SIGNAL.search(text) and slug not in namemap_sourced:
-                findings.append((os.path.join("agents", fn),
-                                 "critic is unsourced: no inline source signal (Sourcing block / URL / "
-                                 "year) and no complete provenance block (real_name + sources) in the "
-                                 "git-ignored agents/.name-map.md"))
+                if public_checkout:
+                    deferred.append(fn)  # provenance lives in the (deliberately absent) name-map
+                else:
+                    findings.append((os.path.join("agents", fn),
+                                     "critic is unsourced: no inline source signal (Sourcing block / URL / "
+                                     "year) and no complete provenance block (real_name + sources) in the "
+                                     "git-ignored agents/.name-map.md"))
     # roster-count integrity: the council's stated count must match the critic files on disk
     council = os.path.join(agdir, "product-council.md")
     if critic_files and os.path.isfile(council):
@@ -120,7 +154,7 @@ def check(root):
         if m and int(m.group(1)) != len(critic_files):
             findings.append((os.path.join("agents", "product-council.md"),
                              f"roster says {m.group(1)} critics but {len(critic_files)} critic-*.md files exist"))
-    return findings
+    return findings, deferred
 
 
 def _selftest():
@@ -153,7 +187,7 @@ def _selftest():
             '## critic-half-c — "Half C."\n\n- **real_name:** Other Person\n- **lens:** a lens, but no sources line.\n')
         # roster says 9 but only 4 critic-*.md files exist → must be flagged
         open(os.path.join(ag, "product-council.md"), "w").write("## Roster (9 critics) + sub-councils\n")
-        rels = {r for r, _ in check(d)}
+        rels = {r for r, _ in check(d)[0]}
         for expect_flag in ("skills/product-patterns/references/flows/bad.md",
                             os.path.join("agents", "critic-bare.md"),
                             os.path.join("agents", "critic-half-c.md"),
@@ -168,6 +202,26 @@ def _selftest():
             if expect_clean in rels:
                 ok = False
                 print(f"selftest: false-flagged {expect_clean}", file=sys.stderr)
+    # PUBLIC-CHECKOUT mode: name-map ABSENT but git-ignored → obscured critics DEFER, not fail.
+    # (Skipped silently when git is unavailable; CI exercises this mode on every clean clone.)
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            subprocess.run(["git", "init", "-q", d], capture_output=True, timeout=15, check=True)
+            open(os.path.join(d, ".gitignore"), "w").write(".name-map.md\n")
+            ag = os.path.join(d, "agents")
+            os.makedirs(ag)
+            open(os.path.join(ag, "critic-obs-c.md"), "w").write(
+                "---\nname: critic-obs-c\n---\nObscured lens, no inline year or URL here.\n")
+            findings, deferred = check(d)
+            critic_flags = [r for r, _ in findings if r.startswith("agents")]
+            if critic_flags:
+                ok = False
+                print(f"selftest: public-checkout mode flagged {critic_flags} (should defer)", file=sys.stderr)
+            if deferred != ["critic-obs-c.md"]:
+                ok = False
+                print(f"selftest: public-checkout mode deferred {deferred} (expected critic-obs-c.md)", file=sys.stderr)
+    except (OSError, subprocess.SubprocessError):
+        pass  # no git here — the mode is integration-tested by every CI clean clone
     print("selftest: PASS" if ok else "selftest: FAIL")
     return 0 if ok else 1
 
@@ -179,10 +233,12 @@ def main(argv):
     if len(args) != 1 or not os.path.isdir(args[0]):
         print("usage: check-sourcing.py <plugin-dir>", file=sys.stderr)
         return 2
-    findings = check(args[0])
+    findings, deferred = check(args[0])
     for rel, why in findings:
         print(f"  {rel}: {why}")
-    print(f"RESULT: {'PASS' if not findings else 'FAIL'} ({len(findings)} sourcing gap(s))")
+    note = (f"; {len(deferred)} critic(s) defer provenance to the git-ignored name-map "
+            f"(public checkout — run on the maintainer tree for the full gate)") if deferred else ""
+    print(f"RESULT: {'PASS' if not findings else 'FAIL'} ({len(findings)} sourcing gap(s){note})")
     return 1 if findings else 0
 
 
