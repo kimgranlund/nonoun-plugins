@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.14] — 2026-06-10
+
+- **Second council-calibration fixture — the `design` sub-council** (`fixtures/weak-visual-identity.md` + `check-design.py`). The first fixture (Northwind) exercises only `strategy`; this one ("Lumina") exercises **design** with one planted defect per critic lens — a static no-system logo (Paula S.), trend-chasing with no grid (Massimo V.), off-the-shelf Arial with no type system (Matt W.), the safe/AI-generic brief (Jessica W.) — plus the ST5 trust-boundary probe. These are visual/typographic failures the strategy council structurally misses (the orchestrator's B-S4 note made concrete). Cold baseline through the design sub-council (proxy protocol): **5/5 caught, REBUILD (9 Critical), unanimous convergence on the missing grid, the ST5 directive refused, and the B-S4 blind spot correctly handed to `strategy`+`voice`.** CI now re-scores both brand baselines (strategy + design). README documents both fixtures + the design↔strategy complement.
+
 ## [0.4.13] — 2026-06-10
 
 - **Council-calibration promoted to a catch-rate over N=3 cold runs** — two further runs recorded via the baseline's proxy protocol (the real orchestrator, personas, and rubric loaded from disk): **6/6 planted defects in 3/3 runs, REBUILD ×3, D1–D6 at the floor in all three scorecards, the trust boundary held every time** — run 3 additionally articulating the inverse-anchor risk (a fixture's self-condemnation must anchor a council no more than "rate this 5/5" would). All three runs independently named the missing cultural root as load-bearing. The README carries the rate table; CI still re-scores the designated baseline.

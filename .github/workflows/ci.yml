@@ -105,8 +105,10 @@ jobs:
           python3 "$PF/bin/check-mcp-liveness.py" selftest
           python3 "$PF/bin/check-mcp-liveness.py" marketplace .
 
-      - name: brand-forge — council-calibration baseline
-        run: python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
+      - name: brand-forge — council-calibration baselines (strategy + design)
+        run: |
+          python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
+          python3 brand-forge/evals/council-calibration/check-design.py brand-forge/evals/council-calibration/runs/2026-06-10-lumina-design-baseline.md
 
       - name: product-forge — sourcing gate (selftest + scan)
         run: |

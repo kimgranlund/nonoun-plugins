@@ -25,7 +25,7 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 ## Track 3 — catalog plugins (pointers, not restatements)
 
 - **plugins-factory** — rubric calibration to N≥3 real plugins; emit `scores/<plugin>.json` adoption-contract records; `carve-quality` rubric; marketplace publish workflow; dimension MECE audit. (Its `ROADMAP.md` is the source of truth.)
-- **brand-forge** — deeper council calibration (catch-rates, more fixtures, Muse calibration); stamp-output validation in CI; multi-lens Muse fan-out if aspiration diversity earns it.
+- **brand-forge** — council calibration now spans two sub-councils (`strategy`/Northwind 6/6 ×3 · **`design`/Lumina 5/5 baseline**); remaining: a `voice` sub-council fixture, design N=3, Muse calibration; stamp-output validation in CI; multi-lens Muse fan-out if aspiration diversity earns it.
 - **product-forge** — the **`product-corpus` MCP**, promised since 0.1.0 and still the headline gap (brand-forge's corpus MCP is the model); more carded method playbooks.
 - **agent-ops** — its v0.2 MCP slot; a council-calibration eval (shares I-7); first real-repo audit applications to validate the directional rubrics.
 

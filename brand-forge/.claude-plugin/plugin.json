@@ -1,6 +1,6 @@
 {
   "name": "brand-forge",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "description": "Build and evaluate brands grounded in cultural authority — strategy, identity, voice, and stewardship — across three working seats: an aspirational Muse (the gravitational pull toward an ideal, a provocation, or a guiding concept), the maker Team (the methodology's roles), and an adversarial named-critic Council (review). Modes are typed commands (/brand-build, /brand-muse, /brand-score, /brand-council, /brand-orient, /brand-stamp); the council runs as 14 parallel isolated critic agents + an orchestrator and the Muse as a generative agent; methodology/evaluation/corpus knowledge are skills; a brand-corpus MCP gives per-instance retrieval; and an advisory brand-lint hook surfaces structural smells on prose artifact writes (it never blocks). Self-contained.",
   "author": {
     "name": "Kim",

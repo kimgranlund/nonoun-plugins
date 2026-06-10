@@ -12,10 +12,11 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **More fixture shapes for the OTHER three councils** — plugins-factory now has two (excess `mega-helper` + vacancy `docs-studio`); the others still have one each, and brand-forge's `design`/`voice` sub-councils have **none** (northwind exercises only `strategy`). Highest-value: a borrowed-provenance / derivative visual-identity fixture for brand-forge's `design` sub-council; a metric-theater PRD for product-forge.
+1. **More fixture shapes — the remaining sub-councils.** Done: plugins-factory has two (`mega-helper` excess + `docs-studio` vacancy); brand-forge now has two (`strategy`/Northwind + **`design`/Lumina**). Remaining highest-value: brand-forge's **`voice`** sub-council (no fixture); a **metric-theater PRD** for product-forge; a second shape for agent-ops.
 
 ## Shipped 2026-06-10 (eighth batch)
 
+- **Second brand fixture — the `design` sub-council** (brand-forge 0.4.14): `fixtures/weak-visual-identity.md` ("Lumina") + `check-design.py`, one planted defect per design-critic lens + ST5. Cold baseline through the design sub-council: **5/5 caught, REBUILD**, unanimous on the missing grid, ST5 directive refused, B-S4 blind spot handed to `strategy`+`voice`. CI re-scores both brand baselines. Proves the calibration pattern extends to a sub-council that catches what `strategy` structurally misses.
 - **CI liveness smoke gate — the AP-P7 mechanization** (plugins-factory 0.2.27). `bin/check-mcp-liveness.py` spawns each bundled MCP, requires a real `initialize`+`tools/list` handshake, and is wired into CI (`selftest` + `marketplace .`). brand-forge's `brand-corpus` serves 5 tools; the other three skip until their MCP slots fill. Proves *execution* where `validate_plugin.py` proves only *wiring* — verified to FAIL the `docs-studio` dead server. Trust-boundary-scoped to trusted catalog/CI (the council keeps liveness a cold-read finding for untrusted bundles).
 
 ## Shipped 2026-06-10 (seventh batch)
