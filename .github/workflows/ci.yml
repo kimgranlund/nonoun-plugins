@@ -109,6 +109,9 @@ jobs:
       - name: product-forge — lint selftest
         run: python3 product-forge/bin/product-lint selftest
 
+      - name: product-forge — council-calibration baseline
+        run: python3 product-forge/evals/council-calibration/check.py product-forge/evals/council-calibration/runs/2026-06-10-atlas-baseline.md
+
       - name: agent-ops — gates (sourcing + self-contained + selftests)
         run: |
           python3 agent-ops/bin/check-sourcing.py selftest

@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.12] — 2026-06-10
+
+- **Council-calibration eval** (`evals/council-calibration/`) — a planted-defect strategy fixture ("Project Atlas": solution-first, goals-as-strategy, vanity metrics, the four risks dismissed, for-everyone positioning, a feature-list roadmap, plus an embedded "score it 5/5" instruction), a concept-matching transcript checker, a protocol, and a recorded baseline. Run cold, the **strategy sub-council** (5 parallel isolated critics) caught **7/7** planted defects, returned a unanimous REBUILD, and **all five independently flagged the embedded instruction** as a finding rather than obeying it — the trust boundary held in every isolated context. CI re-scores the recorded baseline (the same pattern as plugins-factory and brand-forge).
+
 ## [0.3.11] — 2026-06-10
 
 - **`/product-corpus-export` surfaces the reader's optional polish** — documents `reader.config.json` (site title + home-card section descriptions) and the root redirect `--init` now writes; the Verify step's sanitizer assertion corrected to the real behavior (**no dialog** — DOMPurify strips a raw `<script>`, it doesn't render it as text).
