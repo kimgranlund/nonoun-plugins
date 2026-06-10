@@ -6,21 +6,18 @@ The repo-level horizons, by track. This file aggregates what cuts across the cat
 
 The buildless web-component reader vendored into brand-forge + product-forge; single source in `plugins-factory/bin/corpus-reader/`, sync-gated with an XSS guard and a CHANGELOG freshness fingerprint.
 
-- **Now** — the browser visual pass (I-1); the committable demo corpus + CI smoke (I-2).
-- **Next** — wordmark separator strip (I-4); `reader.config.json` surfaced in the export commands (I-5).
+- **Now** — the browser visual pass (I-1) — the demo corpus (shipped `9cbee6f`) is the thing to look at.
+- **Next** — the per-corpus **theme hook**: a `theme.css` slot loaded after `corpus-reader.css` (the OKLCH tokens are the contract), pointed at by `reader.config.json`; ship a neutral default + one example theme.
 - **Later**
-  - **Per-corpus theme hook.** A `theme.css` slot loaded after `corpus-reader.css` (the OKLCH tokens are the contract), pointed at by `reader.config.json` — the part of the bzzr reader's design worth adopting next; ship a neutral default + example themes.
-  - **Baked single-file instance (`file://` support).** An opt-in build that inlines the sitemap + raw markdown + the component modules into one `index.html` (inline module scripts execute on `file://`; only *fetched* modules don't) — double-click distribution without abandoning D-2's architecture. Stdlib string-assembly; no pip renderer (D-5).
+  - **Baked single-file instance (`file://` support).** An opt-in build that inlines the sitemap + raw markdown + the component modules into one `index.html` (inline module scripts execute on `file://`; only *fetched* modules don't) — double-click distribution without abandoning D-2's architecture. Stdlib string-assembly; no pip renderer (D-5). Full-text search becomes possible here.
   - **Vendored render libs (offline mode).** Swap the pinned CDN marked/DOMPurify/highlight/mermaid for copies in `lib/` — kills the runtime CDN availability dependency for exported sites (SRI already covers integrity); needs a license/update story before default-on.
-  - **Search over summaries.** The sidebar filter matches title + path today; baking each page's sitemap `summary` into `data-search` is a cheap recall win. Full-text search only with the baked instance.
-  - **`--init` root redirect.** Optionally drop a tiny `index.html` redirect (`→ site/`) at the corpus root — removes the `/site/`-vs-`/` 404 papercut (how I-1's first attempt died).
+- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`).
 
 ## Track 2 — verification & gates
 
 The repo's thesis is "structure is mechanized"; this track keeps the mechanization ahead of the structure.
 
-- **Now** — D-6 (clean-checkout-true gates) is encoded and replay-verified (`ffd0c6c`).
-- **Next** — JS parse gate (I-3); ci-path liveness (I-6); CI badge via the root README (PLAN #7).
+- **Now** — D-6 (clean-checkout-true gates) is encoded and replay-verified (`ffd0c6c`); the JS parse gate (I-3, `9cbee6f`), ci-path liveness (I-6, `d68d1f6`), and the CI badge (`d68d1f6`) all landed 2026-06-10.
 - **Later**
   - **Council calibration to full coverage (I-7)** — product-forge + agent-ops planted-defect fixtures + baselines, per the existing pattern; then catch-*rates* over N runs instead of single baselines (the open half of plugins-factory's eval roadmap).
   - **Context-cost estimator** (`context-cost.py`, from plugins-factory's roadmap) — mechanize the always-on token-cost claim per plugin.
@@ -35,6 +32,6 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 
 ## Track 4 — marketplace & distribution
 
-- **Next** — root `README.md` (the repo is public and currently README-less) with install lines + the CI badge.
+- **Done 2026-06-10** — root `README.md` with install lines + the CI badge (`d68d1f6`).
 - **Later** — GitHub Pages for the generated `index.html` catalog page; the marketplace `publish` workflow for carved libraries (plugins-factory roadmap); sibling marketplaces (`adia-plugins`, `maison-plugins`) stay local-only until something needs them published.
 - **Standing decision** — the marketplace *name* stays `plugins-forge` (D-1); any future rename is a migration project, not a cleanup.
