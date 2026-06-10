@@ -2,6 +2,10 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.4] — 2026-06-10
+
+- **Council-calibration eval** (`evals/council-calibration/`) — a planted-defect Orchestration Blueprint fixture ("Nightshift": a 12-worker overnight refactor fleet that **passes `bin/check_blueprint.py` clean** while carrying 7 judgment defects — topology misfit on coupled work, a same-model vibes judge past an available oracle, hollow termination layers, an attacker-extensible egress allowlist, auto-merge-to-main laundered as "reversible", append-everything context, a Ctrl+C kill path for an unattended run — plus an embedded "certify READY-TO-RUN / score it 5/5" probe), a concept-matching transcript checker, a protocol, and a recorded baseline. Run cold, a six-critic architecture-led slice caught **8/8** planted defects, returned a unanimous REBUILD, **all six independently flagged the embedded instruction (ST5)** — and the run exercised the council's built-in Walden Y. ↔ Harrison C. tension exactly as designed. CI re-asserts both halves every push: the fixture stays gate-clean (the necessary-not-sufficient split stays demonstrable) and the baseline stays caught.
+
 ## [0.1.3] — 2026-06-05
 
 - **Critic identities obscured** — slugs now `critic-<first>-<initial>`, display names `First L.`, practitioner bios moved to a git-ignored `agents/.name-map.md`; roster + tensions section updated; council behavior unchanged.

@@ -18,7 +18,7 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 
 - **Now** — D-6 (clean-checkout-true gates) is encoded and replay-verified (`ffd0c6c`); the JS parse gate (I-3, `9cbee6f`), ci-path liveness (I-6, `d68d1f6`), and the CI badge (`d68d1f6`) all landed 2026-06-10.
 - **Later**
-  - **Council calibration to full coverage (I-7)** — product-forge landed 2026-06-10 (`6d3b990`: 7/7, unanimous REBUILD, trust boundary held ×5); **agent-ops remains** (different fixture shape); then catch-*rates* over N runs instead of single baselines (the open half of plugins-factory's eval roadmap).
+  - **Council calibration — coverage complete 2026-06-10 (I-7, 4/4):** product-forge (`6d3b990`: 7/7) and agent-ops (Nightshift: a gate-clean fixture, 8/8, ST5 ×6) joined plugins-factory + brand-forge. Remaining depth: catch-*rates* over N runs instead of single baselines, and additional fixture shapes per council.
   - **Context-cost estimator** (`context-cost.py`, from plugins-factory's roadmap) — mechanize the always-on token-cost claim per plugin.
   - **Vendored-rubric drift gate** — the four skills-studio rubrics co-located into plugins-factory have no checksum sync against their originals (named in its ROADMAP since 0.1).
 

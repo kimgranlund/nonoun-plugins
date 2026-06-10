@@ -4,10 +4,6 @@ The repo-level defect tracker and decision log — what's open (severity-ordered
 
 ## Open
 
-### I-7 · P3 — Council-calibration: agent-ops remains (3 of 4 plugins covered)
-
-plugins-factory, brand-forge, and product-forge (resolved 2026-06-10, `6d3b990` — 7/7 cold catch, unanimous REBUILD, trust boundary held in all 5 isolated contexts) have planted-defect fixtures + recorded baselines re-scored in CI. **agent-ops** has none — its council is an uncalibrated instrument. Its fixture needs a different shape (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc); follow `agent-ops`'s own gates (`check_blueprint.py`) when designing it.
-
 ### I-8 · P3 — `.name-map.md` is a single point of loss
 
 The obscured critics' real attributions exist **only** in git-ignored local files, now load-bearing for full-mode `check-sourcing` (D-4, 0.3.10). Losing the working tree loses the provenance. **Fix:** keep a private backup of the four name-maps outside this repo; never commit them.
@@ -43,6 +39,10 @@ The reader's four render libraries (marked, DOMPurify, highlight.js, mermaid) re
 Green on a maintainer tree must imply green on a fresh clone. Local-only state (gitignored files) may **add** assurance locally but must never be required by CI, and generated artifacts must derive from tracked content only. Encoded in `gen-index.py` (tracked-only walk), `reference-lint.py` (gitignored-target exemption), `check-sourcing.py` (public-checkout mode). The enforcement practice is R-1's replay.
 
 ## Resolved
+
+### I-7 · resolved 2026-06-10 — council-calibration coverage 4/4
+
+All four councils now have planted-defect fixtures + recorded cold baselines re-scored in CI: plugins-factory (mega-helper) · brand-forge (northwind, 6/6) · product-forge (Atlas, `6d3b990` — 7/7, unanimous REBUILD, injection refused ×5) · agent-ops (Nightshift, **a fixture that passes `check_blueprint.py` clean** — 8/8, unanimous REBUILD, injection refused ×6, the Walden↔Harrison tension exercised as designed). The remaining depth (catch-*rates* over N runs instead of single baselines) is tracked on the ROADMAP.
 
 ### I-1 · resolved 2026-06-10 — browser sign-off of the ported reader
 

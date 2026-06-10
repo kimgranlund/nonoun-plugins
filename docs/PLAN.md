@@ -8,16 +8,21 @@ A public, reference-quality Claude Code plugin marketplace where **every claim i
 
 ## Now
 
-1. **agent-ops council-calibration (the I-7 remainder — the last review finding that is mine to do).** The fixture shape differs (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc). Done = a recorded baseline re-scored in CI, like the other three.
+Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is resolved** (I-1…I-7; I-8 is a standing user action: keep a private backup of the name-maps). The next work promotes from Next on demand.
 
 ## Next
 
-2. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
-3. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap).
+1. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
+2. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap), plus more fixture shapes per council.
+3. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated.
 
 ## Verified 2026-06-10
 
 - **I-1 closed** — the maintainer's browser pass confirmed the reader renders well (demo corpus, themed): the pattern port + theme hook are visually verified, the last open item of the first batch.
+
+## Shipped 2026-06-10 (third batch)
+
+- **agent-ops council-calibration** (I-7 complete → **4/4 councils calibrated**): the Nightshift fixture passes `check_blueprint.py` clean while carrying 7 judgment defects + the injection probe; a six-critic architecture-led slice caught 8/8 cold, unanimous REBUILD, ST5 refused ×6; CI re-asserts fixture-gate-clean + baseline every push. agent-ops 0.1.4.
 
 ## Shipped 2026-06-10 (second batch)
 

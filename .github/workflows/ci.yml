@@ -120,3 +120,8 @@ jobs:
           python3 agent-ops/bin/check-self-contained.py agent-ops
           python3 agent-ops/bin/doc-hygiene selftest
           python3 agent-ops/bin/audit-history.py selftest
+
+      - name: agent-ops — council-calibration (fixture gate-clean + baseline)
+        run: |
+          python3 agent-ops/bin/check_blueprint.py agent-ops/evals/council-calibration/fixtures/overnight-refactor-blueprint.md
+          python3 agent-ops/evals/council-calibration/check.py agent-ops/evals/council-calibration/runs/2026-06-10-nightshift-baseline.md
