@@ -20,7 +20,7 @@ Target corpus dir from the operator (default `./brand-corpus`): **$ARGUMENTS**
    ```sh
    python3 "${CLAUDE_PLUGIN_ROOT}/bin/corpus-reader/build-sitemap.py" --init "<corpus>"
    ```
-   This copies the reader into `<corpus>/site/` (machinery only — never a bundled example) and builds its sitemap. Re-run it after editing the corpus.
+   This copies the reader into `<corpus>/site/` (machinery only — never a bundled example), builds its sitemap, and drops a root `index.html` redirect → `site/` if the corpus root has none. Re-run it after editing the corpus. Optional polish: a `<corpus>/reader.config.json` (`{"title": "…", "sections": {"00-strategy": "one-line description"}}`) sets the site title and the home cards' section descriptions.
 3. **Serve + read.** `cd "<corpus>" && python3 -m http.server`, then open **http://localhost:8000/site/** . Re-run step 2 after editing the corpus.
 
-**Verify:** the home tiles list your sections; a doc containing a raw `<script>` shows as text (DOMPurify sanitizes it). `<corpus>/` is self-contained + portable — zip/share it, or host it on any static server (the `site/` viewer renders the sibling markdown).
+**Verify:** the home cards list your sections (with descriptions if configured); a doc containing a raw `<script>` produces **no dialog** (DOMPurify strips it). `<corpus>/` is self-contained + portable — zip/share it, or host it on any static server (the `site/` viewer renders the sibling markdown).

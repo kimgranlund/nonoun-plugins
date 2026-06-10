@@ -146,6 +146,22 @@ def scaffold_site(corpus_root):
         shutil.rmtree(lib_dst)
     shutil.copytree(os.path.join(ROOT, "lib"), lib_dst, ignore=shutil.ignore_patterns("sitemap.json"))
     subprocess.run([sys.executable, "build-sitemap.py", ".."], cwd=site, check=True)
+    # Drop a redirect at the corpus root (only if nothing is there), so serving the root
+    # and opening / lands in the reader instead of a 404 — never overwrites a user's file.
+    root_index = os.path.join(corpus_root, "index.html")
+    if not os.path.exists(root_index):
+        try:
+            with open(os.path.join(site, "lib", "sitemap.json"), encoding="utf-8") as fh:
+                title = json.load(fh).get("title", "Corpus")
+        except (OSError, ValueError):
+            title = "Corpus"
+        with open(root_index, "w", encoding="utf-8") as fh:
+            fh.write('<!doctype html>\n<meta charset="utf-8">\n<title>%s</title>\n'
+                     '<meta http-equiv="refresh" content="0; url=site/">\n'
+                     '<script>location.replace("site/");</script>\n'
+                     '<p>Redirecting to the <a href="site/">corpus reader</a>…</p>\n'
+                     % title.replace("<", "&lt;"))
+        print("wrote %s (redirect → site/)" % root_index)
     print("scaffolded %s/site/ — serve the corpus root and open /site/" % corpus_root)
 
 
@@ -239,7 +255,10 @@ def main():
         if ns:
             d = sec_status.setdefault(bucket, {}); d[ns] = d.get(ns, 0) + 1
             tot_status[ns] = tot_status.get(ns, 0) + 1
-        for m in PROV_RE.findall(body):
+        # Count tags in prose only — fenced blocks and inline code mentioning a tag
+        # (e.g. a doc ABOUT the tag syntax) must not skew the stats bar.
+        prose = re.sub(r"`[^`\n]*`", "", re.sub(r"(?ms)^```.*?^```\s*$", "", body))
+        for m in PROV_RE.findall(prose):
             k = m.lower()
             d = sec_prov.setdefault(bucket, {}); d[k] = d.get(k, 0) + 1
             tot_prov[k] = tot_prov.get(k, 0) + 1

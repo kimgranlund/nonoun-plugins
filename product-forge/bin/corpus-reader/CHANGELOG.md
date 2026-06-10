@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: 804782ea72a62d4c63e6964b2444572aae568be71776536e77fd1161d218ffde -->
+<!-- source-fingerprint: 291376b3bc1eb61f082055aba6fec63a46b0c31ebf01c803866fd2d9c346109a -->
+
+## 2026-06-10 — Wordmark drops a leading separator from the subtitle; sidebar search also matches page summaries; provenance stats count prose only (not code spans/fences); --init drops a root index.html redirect → site/ when the corpus root has none
 
 ## 2026-06-10 — Committed demo-corpus/ — a tiny synthetic example a fresh clone renders out of the box; doubles as the CI smoke fixture (build + --init each push); CI also gains a JS parse gate over the components
 

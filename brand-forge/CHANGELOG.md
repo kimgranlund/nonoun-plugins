@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.11] — 2026-06-10
+
+- **`/brand-corpus-export` surfaces the reader's optional polish** — documents `reader.config.json` (site title + home-card section descriptions) and the root redirect `--init` now writes; the Verify step's sanitizer assertion corrected to the real behavior (**no dialog** — DOMPurify strips a raw `<script>`, it doesn't render it as text).
+
 ## [0.4.10] — 2026-06-07
 
 - **`/brand-corpus-export` uses the shared `--init` convention** — generating the `<corpus>/site/` viewer is now a single `build-sitemap.py --init` call (the same tool every plugin uses), so the layout is identical across the catalog.

@@ -38,7 +38,7 @@ export class UINav extends UIElement {
   #link(p, extra) {
     return (
       "<a class='cr-nav-link" + (extra || "") + "' href='#/" + enc(p.path) +
-      "' data-search='" + esc((p.title + " " + p.path).toLowerCase()) + "'>" +
+      "' data-search='" + esc((p.title + " " + p.path + " " + (p.summary || "")).toLowerCase()) + "'>" +
       esc(p.title) + "</a>"
     );
   }

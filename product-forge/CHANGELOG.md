@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.11] — 2026-06-10
+
+- **`/product-corpus-export` surfaces the reader's optional polish** — documents `reader.config.json` (site title + home-card section descriptions) and the root redirect `--init` now writes; the Verify step's sanitizer assertion corrected to the real behavior (**no dialog** — DOMPurify strips a raw `<script>`, it doesn't render it as text).
+
 ## [0.3.10] — 2026-06-10
 
 - **`check-sourcing.py` gains a public-checkout mode.** The 0.3.5 obscuring let a critic's provenance live in the git-ignored `agents/.name-map.md` — which made the gate impossible to pass on a fresh checkout (22 "unsourced" failures on CI; part of the 2026-06-05 → 06-10 outage). When the name-map is absent **and** `git check-ignore` proves it deliberately excluded, critics without inline signals now **defer** (reported in the RESULT line, never failed); with the map present the full strictness is unchanged, and an absent map outside a git context still fails. New selftest case covers the mode. The guarantee is honest: full provenance is enforced where the name-map exists (the maintainer tree); CI enforces everything visible in a public tree.

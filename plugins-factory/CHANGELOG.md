@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.21 — 2026-06-10
+
+- **corpus-reader: four small pattern fixes.** The sidebar wordmark drops a leading separator from the subtitle (`"BZZR — Product Corpus"` → `BZZR` / `Product Corpus`); the sidebar search now also matches page **summaries** (not just title + path); the provenance stats count tags in **prose only** (a doc *about* the tag syntax no longer skews the bar); and `--init` drops a root `index.html` redirect → `site/` when the corpus root has none (never overwrites an existing file) — removing the `/site/`-vs-`/` 404 papercut. Re-synced into the vendored copies.
+
 ## 0.2.20 — 2026-06-10
 
 - **corpus-reader: committed `demo-corpus/` + pipeline smoke + JS parse gate.** A tiny synthetic corpus (6 pages — statuses, provenance tags, xrefs, a table, mermaid, a sanitizer probe, `reader.config.json`) now ships with the reader, so a fresh clone renders out of the box instead of an empty shell (the only example was a 43MB gitignored local fixture). CI smoke-builds it every push (`build-sitemap.py` + `--init` into a tmp corpus) and gains a `node --check` parse gate over the reader's ES modules — both proven against planted failures before wiring. Synced into the vendored copies (installed plugins get the working example too).

@@ -66,11 +66,13 @@ export class UIHeader extends UIElement {
   render() {
     this.#build();
     // Wordmark from the corpus title: bold lead word + muted remainder — generic, no
-    // hardcoded brand. "Acme Product Corpus" → "Acme" / "Product Corpus".
+    // hardcoded brand. "Acme Product Corpus" → "Acme" / "Product Corpus"; a leading
+    // separator on the remainder is dropped ("Acme — Docs" → "Acme" / "Docs").
     const title = this.sitemap?.title || "Corpus";
     const sp = title.indexOf(" ");
     if (this.#leadEl) this.#leadEl.textContent = sp > 0 ? title.slice(0, sp) : title;
-    if (this.#subEl) this.#subEl.textContent = sp > 0 ? title.slice(sp + 1) : "";
+    if (this.#subEl)
+      this.#subEl.textContent = sp > 0 ? title.slice(sp + 1).replace(/^[\s—–|:·-]+/, "") : "";
     if (this.#nav) {
       this.#nav.sitemap = this.sitemap;
       this.#nav.active = this.route;
