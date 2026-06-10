@@ -6,11 +6,11 @@ The repo-level horizons, by track. This file aggregates what cuts across the cat
 
 The buildless web-component reader vendored into brand-forge + product-forge; single source in `plugins-factory/bin/corpus-reader/`, sync-gated with an XSS guard and a CHANGELOG freshness fingerprint.
 
-- **Now** — the browser visual pass (I-1) — the demo corpus (`9cbee6f`, now themed via `d605590`) is the thing to look at.
+- **Now** — nothing open; the next reader work promotes from Later (the baked `file://` instance is first in line).
 - **Later**
   - **Baked single-file instance (`file://` support).** An opt-in build that inlines the sitemap + raw markdown + the component modules into one `index.html` (inline module scripts execute on `file://`; only *fetched* modules don't) — double-click distribution without abandoning D-2's architecture. Stdlib string-assembly; no pip renderer (D-5). Full-text search becomes possible here.
   - **Vendored render libs (offline mode).** Swap the pinned CDN marked/DOMPurify/highlight/mermaid for copies in `lib/` — kills the runtime CDN availability dependency for exported sites (SRI already covers integrity); needs a license/update story before default-on.
-- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`); the per-corpus **theme hook** + worked demo theme (`d605590`).
+- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`); the per-corpus **theme hook** + worked demo theme (`d605590`); **I-1 browser sign-off confirmed** (maintainer: "demo renders well").
 
 ## Track 2 — verification & gates
 

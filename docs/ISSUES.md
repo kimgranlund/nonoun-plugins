@@ -4,10 +4,6 @@ The repo-level defect tracker and decision log — what's open (severity-ordered
 
 ## Open
 
-### I-1 · P1 — The ported corpus-reader has never had its browser pass
-
-The `<cr-*>` web-component reader adopted the newer reader's patterns (sidebar search, layer-label nav, mobile drawer, home hero + cards + stats bar, doc kicker + badges, provenance tags, xrefs — plugins-factory 0.2.17/0.2.18) verified mechanically only: generator output asserted, ES modules parse, all gates green. The visual sign-off was attempted once, hit the `/site/`-vs-`/` 404 confusion, and never resumed. **Verify:** `cd plugins-factory/bin/corpus-reader && python3 -m http.server` → `http://localhost:8000/` — home (hero, Maturity bar, cards), a doc page (kicker, badges, ToC, code, mermaid), search filtering, the drawer under 52rem, light + dark.
-
 ### I-7 · P3 — Council-calibration: agent-ops remains (3 of 4 plugins covered)
 
 plugins-factory, brand-forge, and product-forge (resolved 2026-06-10, `6d3b990` — 7/7 cold catch, unanimous REBUILD, trust boundary held in all 5 isolated contexts) have planted-defect fixtures + recorded baselines re-scored in CI. **agent-ops** has none — its council is an uncalibrated instrument. Its fixture needs a different shape (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc); follow `agent-ops`'s own gates (`check_blueprint.py`) when designing it.
@@ -47,6 +43,10 @@ The reader's four render libraries (marked, DOMPurify, highlight.js, mermaid) re
 Green on a maintainer tree must imply green on a fresh clone. Local-only state (gitignored files) may **add** assurance locally but must never be required by CI, and generated artifacts must derive from tracked content only. Encoded in `gen-index.py` (tracked-only walk), `reference-lint.py` (gitignored-target exemption), `check-sourcing.py` (public-checkout mode). The enforcement practice is R-1's replay.
 
 ## Resolved
+
+### I-1 · resolved 2026-06-10 — browser sign-off of the ported reader
+
+The maintainer confirmed the served reader renders well (the committed demo corpus, themed): the pattern port (0.2.17/0.2.18) plus the theme hook (0.2.22) are now visually verified, closing the mechanical-only verification gap. No visual defects reported from the pass.
 
 ### I-2 · resolved 2026-06-10 (`9cbee6f`) — committable demo corpus + pipeline smoke
 

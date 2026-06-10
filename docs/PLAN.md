@@ -8,12 +8,16 @@ A public, reference-quality Claude Code plugin marketplace where **every claim i
 
 ## Now
 
-1. **Browser sign-off of the ported reader (I-1, P1) — the only open item from the 2026-06-10 batch.** Everything else below shipped the same day. Done = the I-1 checklist (home with the demo corpus, a doc page, search, the drawer, light + dark) confirmed by a human in a served browser (`cd plugins-factory/bin/corpus-reader && python3 -m http.server` → `http://localhost:8000/`); anything off folds back as fixes via `sync-corpus-reader.py --changelog`.
+1. **agent-ops council-calibration (the I-7 remainder — the last review finding that is mine to do).** The fixture shape differs (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc). Done = a recorded baseline re-scored in CI, like the other three.
 
 ## Next
 
-2. **agent-ops council-calibration (the I-7 remainder).** The fixture shape differs (a planted-defect loop blueprint or repo-audit artifact, not a strategy doc). Done = a recorded baseline re-scored in CI, like the other three.
-3. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
+2. **Baked single-file reader instance** (ROADMAP Track 1 Later — promote when wanted). Inline module + inline data = `file://` double-click distribution; settles the D-7 lib question for exports.
+3. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap).
+
+## Verified 2026-06-10
+
+- **I-1 closed** — the maintainer's browser pass confirmed the reader renders well (demo corpus, themed): the pattern port + theme hook are visually verified, the last open item of the first batch.
 
 ## Shipped 2026-06-10 (second batch)
 
