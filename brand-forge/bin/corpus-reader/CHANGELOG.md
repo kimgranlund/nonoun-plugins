@@ -8,6 +8,8 @@ dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YY
 
 <!-- source-fingerprint: 804782ea72a62d4c63e6964b2444572aae568be71776536e77fd1161d218ffde -->
 
+## 2026-06-10 — Committed demo-corpus/ — a tiny synthetic example a fresh clone renders out of the box; doubles as the CI smoke fixture (build + --init each push); CI also gains a JS parse gate over the components
+
 ## 2026-06-08 — Home section cards gain optional one-line descriptions + a title override via <corpus>/reader.config.json (graceful — no config needed)
 
 ## 2026-06-08 — Adopt the new reader's patterns + layouts (web components kept): sidebar search + layer-label nav, mobile drawer, home hero + section cards + maturity/provenance stats bar + minibars, doc kicker + badges, inline provenance tags + path.md xrefs

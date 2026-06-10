@@ -1,0 +1,8 @@
+{
+  "title": "Demo Corpus",
+  "sections": {
+    "01-overview": "What this corpus is and how the reader presents it.",
+    "02-architecture": "How the reader renders untrusted markdown safely.",
+    "03-roadmap": "Where a corpus like this grows next."
+  }
+}

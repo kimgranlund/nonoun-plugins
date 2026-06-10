@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.20 — 2026-06-10
+
+- **corpus-reader: committed `demo-corpus/` + pipeline smoke + JS parse gate.** A tiny synthetic corpus (6 pages — statuses, provenance tags, xrefs, a table, mermaid, a sanitizer probe, `reader.config.json`) now ships with the reader, so a fresh clone renders out of the box instead of an empty shell (the only example was a 43MB gitignored local fixture). CI smoke-builds it every push (`build-sitemap.py` + `--init` into a tmp corpus) and gains a `node --check` parse gate over the reader's ES modules — both proven against planted failures before wiring. Synced into the vendored copies (installed plugins get the working example too).
+
 ## 0.2.19 — 2026-06-10
 
 - **`reference-lint.py`: references to deliberately git-ignored targets are exempt from the resolve requirement.** Docs across the catalog cite `agents/.name-map.md` (the obscured-critic provenance file, git-ignored by design) — the linter required it to exist on disk, so it was green on a maintainer tree and structurally red on every fresh checkout (one of the three causes of the 2026-06-05 → 06-10 CI outage). An unresolved reference is now exempt iff `git check-ignore` confirms its target is ignored; outside a git context the strict behavior is unchanged.

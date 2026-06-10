@@ -68,4 +68,4 @@ python3 plugins-factory/bin/sync-corpus-reader.py                               
 
 ## Note
 
-The bundled `brand-corpus/` is only an example to develop against — it is gitignored (it carries licensed fonts and is not part of this repo). Drop in your own corpus the same way.
+The committed **`demo-corpus/`** is a tiny synthetic example — a fresh clone renders it out of the box (`python3 build-sitemap.py demo-corpus`), it exercises the reader's features (statuses, provenance tags, xrefs, mermaid, the sanitizer probe), and CI smoke-builds it on every push. A larger local-only corpus may also sit beside the reader for development (e.g. a gitignored `brand-corpus/` — never committed; it can carry licensed assets). With more than one sibling corpus present, auto-detect refuses to guess — name the corpus explicitly.

@@ -44,6 +44,19 @@ jobs:
       - name: corpus-reader vendored copies in sync
         run: python3 "$PF/bin/sync-corpus-reader.py" --check
 
+      - name: corpus-reader — demo corpus builds + --init scaffold
+        run: |
+          python3 "$PF/bin/corpus-reader/build-sitemap.py" demo-corpus
+          cp -R "$PF/bin/corpus-reader/demo-corpus" /tmp/demo
+          python3 "$PF/bin/corpus-reader/build-sitemap.py" --init /tmp/demo
+          test -f /tmp/demo/site/lib/sitemap.json
+
+      - name: corpus-reader — JS parses (ES modules)
+        run: |
+          for f in "$PF"/bin/corpus-reader/lib/corpus-reader.js "$PF"/bin/corpus-reader/lib/components/*.js; do
+            cp "$f" /tmp/chk.mjs && node --check /tmp/chk.mjs || { echo "PARSE FAIL: $f"; exit 1; }
+          done
+
       - name: plugins-factory — eval suite (behavioral gates + calibration-fixture isolation)
         run: |
           python3 "$PF/evals/behavioral-gates.py"
