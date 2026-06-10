@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.12] — 2026-06-10
+
+- **Obscuring consistency** — a ROADMAP red-team attribution referenced a plugins-factory critic by real surname; now the obscured `First L.` form, per the catalog convention (a full-catalog audit found this to be the only persona-context name in any tracked file).
+
 ## [0.4.11] — 2026-06-10
 
 - **`/brand-corpus-export` surfaces the reader's optional polish** — documents `reader.config.json` (site title + home-card section descriptions) and the root redirect `--init` now writes; the Verify step's sanitizer assertion corrected to the real behavior (**no dialog** — DOMPurify strips a raw `<script>`, it doesn't render it as text).
