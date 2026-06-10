@@ -38,6 +38,11 @@ jobs:
       - name: catalog index.html up to date
         run: python3 gen-index.py --check
 
+      - name: workflow path liveness (selftest + check)
+        run: |
+          python3 check-ci-paths.py selftest
+          python3 check-ci-paths.py
+
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 
