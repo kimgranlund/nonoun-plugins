@@ -18,7 +18,7 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 
 - **Now** — D-6 (clean-checkout-true gates) is encoded and replay-verified (`ffd0c6c`); the JS parse gate (I-3, `9cbee6f`), ci-path liveness (I-6, `d68d1f6`), and the CI badge (`d68d1f6`) all landed 2026-06-10.
 - **Later**
-  - **Council calibration — coverage complete 2026-06-10 (I-7, 4/4):** product-forge (`6d3b990`: 7/7) and agent-ops (Nightshift: a gate-clean fixture, 8/8, ST5 ×6) joined plugins-factory + brand-forge. **Catch-rates at N=3 recorded same day for both new councils** (100% per-defect across runs; run 3 caught a checker-recall defect — the instrument calibrating itself). Remaining: N=3 re-runs for plugins-factory + brand-forge; additional fixture shapes per council.
+  - **Council calibration — complete on both axes 2026-06-10:** all four councils at **N=3 with 100% per-defect catch-rates** (pf 2/2 ×3 via the real `plugin-council` agent · brand 6/6 ×3 · product 7/7 ×3 · agent-ops 8/8 ×3; trust boundary held in every run); **rubric calibration N≥3 reached** (`plugins-factory/evals/rubric-calibration/` — three real carve targets, three discriminating verdicts, four recorded rubric improvements). Remaining depth: fold the improvements back into the instruments; additional fixture shapes per council.
   - **Context-cost estimator** (`context-cost.py`, from plugins-factory's roadmap) — mechanize the always-on token-cost claim per plugin.
   - **Vendored-rubric drift gate** — the four skills-studio rubrics co-located into plugins-factory have no checksum sync against their originals (named in its ROADMAP since 0.1).
 

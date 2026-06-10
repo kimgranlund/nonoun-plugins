@@ -31,3 +31,13 @@ A healthy council must **name both**. If it misses one, that is a real finding a
 ```
 
 `check.py` matches concept-level phrasings (it is tolerant of how the council words things) and reports `N/2 planted defects caught`. Recorded baselines live in `runs/`.
+
+## Catch-rate over N=3 cold runs
+
+| Run | Verdict | check.py | Notes |
+| --- | --- | --- | --- |
+| 2026-06-04 baseline | BLOCKED | 2/2 | full 9-critic panel |
+| 2026-06-10 run2 | BLOCKED | 2/2 | the real `plugin-council` agent; dispatch degradation recorded (no spawn tool in context → per-critic prompt sections run lens-isolated) |
+| 2026-06-10 run3 | BLOCKED | 2/2 | as run2; independently re-converged on the same instrument blind spot (runtime liveness) |
+
+**Per-defect catch-rate: 2/2 at 3/3 runs (100%), BLOCKED ×3.** Both 06-10 runs also independently surfaced the same emergent Criticals beyond the planted set (the dead MCP server; the unspecified `/deploy`) and independently named the same panel blind spot — *liveness* (the panel verifies wiring, never execution) — plus run2's "the rubric measures bloat; emptiness sails through." Both are recorded instrument-improvement candidates (a `tools/list` smoke gate; a hollowness probe), cross-referenced in `../rubric-calibration/README.md`.

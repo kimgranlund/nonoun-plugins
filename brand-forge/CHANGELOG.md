@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.13] — 2026-06-10
+
+- **Council-calibration promoted to a catch-rate over N=3 cold runs** — two further runs recorded via the baseline's proxy protocol (the real orchestrator, personas, and rubric loaded from disk): **6/6 planted defects in 3/3 runs, REBUILD ×3, D1–D6 at the floor in all three scorecards, the trust boundary held every time** — run 3 additionally articulating the inverse-anchor risk (a fixture's self-condemnation must anchor a council no more than "rate this 5/5" would). All three runs independently named the missing cultural root as load-bearing. The README carries the rate table; CI still re-scores the designated baseline.
+
 ## [0.4.12] — 2026-06-10
 
 - **Obscuring consistency** — a ROADMAP red-team attribution referenced a plugins-factory critic by real surname; now the obscured `First L.` form, per the catalog convention (a full-catalog audit found this to be the only persona-context name in any tracked file).

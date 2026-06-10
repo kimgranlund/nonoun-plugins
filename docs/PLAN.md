@@ -12,8 +12,12 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **Catch-rates for the remaining two councils** — plugins-factory (mega-helper) + brand-forge (northwind) re-runs to N=3, per the pattern now proven on product-forge + agent-ops (whose run 3 also demonstrated *why*: it caught a checker-recall defect).
-2. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated. Needs target selection (candidates: the global skills-studio carve targets).
+1. **Fold the calibration learnings back into the instruments** — the recorded improvement candidates: the rubric's pre-carve scoring note + personal-state hard test + `bin/` blast-radius probe (from `evals/rubric-calibration/`), and the council's liveness smoke gate + hollowness probe (independently surfaced by both mega-helper N-runs).
+2. **More fixture shapes per council** (the remaining eval-depth item) — e.g. an API-wrapper-only plugin and a skill-wearing-a-manifest for plugins-factory; a borrowed-provenance deck for brand-forge's `design` sub-council.
+
+## Shipped 2026-06-10 (sixth batch)
+
+- **Calibration coverage complete on both axes.** Councils: all four now at **N=3, 100% per-defect catch-rate** (plugins-factory 2/2 ×3 BLOCKED — run through the real `plugin-council` agent; brand-forge 6/6 ×3 REBUILD via the recorded proxy protocol; trust boundary held in every run of all four councils). Rubric: **N≥3 reached** — three real carve targets scored cold (BLOCKED / CONDITIONAL / CONDITIONAL) with per-application rubric findings: P4/P5/P9's mechanical tests validated as the strongest discriminators (they caught live credentials inside a would-be distributable and a candidate failing its own validator); P1/P3/P6/P7 annotated as weak pre-carve. plugins-factory 0.2.25 · brand-forge 0.4.13.
 
 ## Shipped 2026-06-10 (fifth batch)
 

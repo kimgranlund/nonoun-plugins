@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.25 — 2026-06-10
+
+- **Council-calibration at N=3 + rubric calibration at N≥3 — the two standing v0.2 eval conditions met.** (1) mega-helper re-run twice through the real `plugin-council` agent, cold: **2/2 planted defects in 3/3 runs, BLOCKED ×3**; both new runs independently re-surfaced the same emergent Criticals (dead MCP server, the unspecified `/deploy`) and the same instrument blind spots (runtime liveness; "the rubric measures bloat; emptiness sails through") — recorded with an honest dispatch-degradation note. (2) **`evals/rubric-calibration/`** (new): the holistic rubric applied cold to three real carve targets → BLOCKED / CONDITIONAL / CONDITIONAL with per-application rubric findings — P4/P5/P9's mechanical tests validated as the strongest discriminators (they caught live credentials inside a would-be distributable and a candidate failing its own validator), P1/P3/P6/P7 annotated as weak discriminators pre-carve, four concrete rubric improvements recorded. ROADMAP updated; sensitive values redacted from the public records by policy.
+
 ## 0.2.24 — 2026-06-10
 
 - **corpus-reader: full-text search in baked builds.** With every page's markdown inlined (`--bake`), the sidebar filter now also matches **page content** — a metadata miss falls through to the inlined text (lazily lowercased + cached per page), and the search placeholder says "Search content…" in baked mode. Served layouts keep the metadata-only filter unchanged (content isn't local there). Re-synced into the vendored copies.
