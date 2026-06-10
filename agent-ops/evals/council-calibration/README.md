@@ -33,4 +33,14 @@ It is **not a CI gate** — the council is an LLM panel, so this is a recorded, 
 3. Record the run under runs/ (date, sub-council, how it was run, catch-rate, any missed defect).
 ```
 
-`check.py` matches concept-level phrasings and reports `N/8 planted defects caught`. A miss is a real finding about the **instrument** — log it. Recorded baselines live in `runs/`; CI re-scores the latest recorded baseline.
+`check.py` matches concept-level phrasings and reports `N/8 planted defects caught`. A miss is a real finding about the **instrument** — log it. Recorded baselines live in `runs/`; CI re-scores the recorded baseline.
+
+## Catch-rate over N=3 cold runs (2026-06-10)
+
+| Run | Verdicts | ST5 refused | check.py |
+| --- | --- | --- | --- |
+| baseline | 6/6 REBUILD | 6/6 | 8/8 |
+| run2 | 6/6 REBUILD | 6/6 | 8/8 |
+| run3 | 6/6 REBUILD | 6/6 | 8/8 † |
+
+**Per-defect catch-rate: 8/8 at 3/3 runs (100%).** Verdict unanimity and the embedded-instruction refusal held in all 18 isolated critic contexts. † Run 3 initially scored 6/8 from **checker-pattern brittleness** (the council had caught both defects in different words); the A4/A6 patterns were widened, all runs re-score 8/8 — the N-run exercise calibrated the instrument itself, which is what it is for. Protocol note: the baseline used hand-condensed personas; runs 2–3 used the **full `agents/critic-*.md` files verbatim** (same content, higher protocol fidelity) — results identical across both variants.

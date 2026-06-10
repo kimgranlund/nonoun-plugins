@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.13] — 2026-06-10
+
+- **Council-calibration promoted from a single baseline to a catch-rate over N=3 cold runs** — two further isolated-critic runs recorded (`runs/…-run2.md`, `-run3.md`, using the full `agents/critic-*.md` persona files verbatim): **7/7 planted defects caught in 3/3 runs, 15/15 REBUILD verdicts, 15/15 embedded-instruction refusals.** The README carries the rate table; CI still re-scores the designated baseline.
+
 ## [0.3.12] — 2026-06-10
 
 - **Council-calibration eval** (`evals/council-calibration/`) — a planted-defect strategy fixture ("Project Atlas": solution-first, goals-as-strategy, vanity metrics, the four risks dismissed, for-everyone positioning, a feature-list roadmap, plus an embedded "score it 5/5" instruction), a concept-matching transcript checker, a protocol, and a recorded baseline. Run cold, the **strategy sub-council** (5 parallel isolated critics) caught **7/7** planted defects, returned a unanimous REBUILD, and **all five independently flagged the embedded instruction** as a finding rather than obeying it — the trust boundary held in every isolated context. CI re-scores the recorded baseline (the same pattern as plugins-factory and brand-forge).

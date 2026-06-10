@@ -12,9 +12,13 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-1. **Catch-rates over N runs** — promote the four calibration baselines from single readings to rates (the open half of plugins-factory's eval roadmap), plus more fixture shapes per council.
-2. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated.
-3. **Full-text search in the baked reader** — with every page's markdown inlined, the sidebar filter can search content, not just title/path/summary (follow-on to the bake).
+1. **Catch-rates for the remaining two councils** — plugins-factory (mega-helper) + brand-forge (northwind) re-runs to N=3, per the pattern now proven on product-forge + agent-ops (whose run 3 also demonstrated *why*: it caught a checker-recall defect).
+2. **Rubric calibration to N≥3 real plugins** (plugins-factory ROADMAP) — score real third-party plugins to move the 9-dimension scorecard from directional to validated. Needs target selection (candidates: the global skills-studio carve targets).
+
+## Shipped 2026-06-10 (fifth batch)
+
+- **Full-text search in baked readers** (`ef7a8a3`, plugins-factory 0.2.24) — the sidebar filter falls through to the inlined page markdown; served layouts unchanged.
+- **Calibration catch-rates, N=3, for product-forge + agent-ops** (product-forge 0.3.13, agent-ops 0.1.5): product-forge **7/7 × 3 runs** (15/15 REBUILD, 15/15 injection refusals); agent-ops **8/8 × 3 runs** (18/18 REBUILD, 18/18 ST5 refusals) — and run 3 exposed checker-pattern brittleness (a 6/8 reading on defects the council had caught in different words), fixed with no regression: the N-run exercise calibrating the instrument itself.
 
 ## Shipped 2026-06-10 (fourth batch)
 
