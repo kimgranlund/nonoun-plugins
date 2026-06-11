@@ -113,6 +113,11 @@ jobs:
           python3 "$PF/bin/check-trust-boundary.py" selftest
           python3 "$PF/bin/check-trust-boundary.py" marketplace .
 
+      - name: context-cost audit (P6 always-on context tax — selftest + per-plugin record)
+        run: |
+          python3 "$PF/bin/context-cost.py" selftest
+          python3 "$PF/bin/context-cost.py" marketplace .
+
       - name: checker-recall gate (council-calibration checkers aren't brittle)
         run: |
           python3 "$PF/bin/check-recall.py" selftest
