@@ -108,6 +108,11 @@ jobs:
           python3 "$PF/bin/check-mcp-liveness.py" selftest
           python3 "$PF/bin/check-mcp-liveness.py" marketplace .
 
+      - name: trust-boundary gate (every reviewer carries the untrusted-DATA-never-instructions guard)
+        run: |
+          python3 "$PF/bin/check-trust-boundary.py" selftest
+          python3 "$PF/bin/check-trust-boundary.py" marketplace .
+
       - name: checker-recall gate (council-calibration checkers aren't brittle)
         run: |
           python3 "$PF/bin/check-recall.py" selftest

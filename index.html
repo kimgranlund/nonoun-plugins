@@ -62,7 +62,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stamp</code> · <code>corpus-reader</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 9</div></div>
 </section>
 <section class='card' id='plugins-factory'>
-<h2><code>plugins-factory</code> <span class='ver'>v0.2.30</span> <span class='cat'>developer-tools</span></h2>
+<h2><code>plugins-factory</code> <span class='ver'>v0.2.31</span> <span class='cat'>developer-tools</span></h2>
 <p class='desc'>Run the Claude Code plugin lifecycle against one 9-dimension architecture standard — component fit, boundary cohesion, dependency legality — judged by a 9-critic council that runs as parallel isolated agents. Build with /plugin-author·carve·edit; judge with /plugin-score·critique·promote. Bundles an advisory hook that validates plugin.json/marketplace.json on save (never blocks).</p>
 <div class='chips'><span class='chip'>plugins</span><span class='chip'>claude-code</span><span class='chip'>marketplace</span><span class='chip'>packaging</span><span class='chip'>lifecycle</span><span class='chip'>carve</span><span class='chip'>meta</span></div>
 <div class='sec'><h3>Skills <span class='n'>2</span></h3>
@@ -82,7 +82,7 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='cmd'><code>/plugin-promote</code> <span class='d'>— Complete plugin review — holistic scan + rubric deep-dives + the 9-critic council → APPROVED / CONDITIONAL / BLOCKED.</span></div>
 <div class='cmd'><code>/plugin-score</code> <span class='d'>— Score a plugin against the 9-dimension architecture rubric library, with evidence cited from its files.</span></div>
 </div>
-<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-bake-safety.py</code> · <code>check-foundations-coverage.py</code> · <code>check-manifest-sync.py</code> · <code>check-mcp-liveness.py</code> · <code>check-recall.py</code> · <code>corpus-reader</code> · <code>reference-lint.py</code> · <code>sync-corpus-reader.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → validate_plugin.py</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>check-bake-safety.py</code> · <code>check-foundations-coverage.py</code> · <code>check-manifest-sync.py</code> · <code>check-mcp-liveness.py</code> · <code>check-recall.py</code> · <code>check-trust-boundary.py</code> · <code>corpus-reader</code> · <code>reference-lint.py</code> · <code>sync-corpus-reader.py</code> · <code>validate_plugin.py</code></div><div style='margin-bottom:4px'><b>MCP:</b> <span class='muted'>none (or planned)</span></div></div>
 </section>
 <section class='card' id='product-forge'>
 <h2><code>product-forge</code> <span class='ver'>v0.3.18</span> <span class='cat'>product</span></h2>
