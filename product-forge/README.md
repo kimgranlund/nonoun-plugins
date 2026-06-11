@@ -2,7 +2,7 @@
 
 **Build and evaluate product strategy, management, and UX — grounded in research and named-practitioner authority.** The product counterpart to [`brand-forge`](https://github.com/kimgranlund/claude-plugins/tree/main/brand-forge): where brand-forge builds brands grounded in cultural authority, product-forge builds products grounded in discovery, jobs-to-be-done, positioning, user research, and a comprehensive library of UX patterns and app-genre conventions — judged by an adversarial council of named product, UX, and AI-era practitioners.
 
-> **Status: 0.3.9 — the methodology layer + corpus export.** Eight skills, a 23-critic council, 11 rubrics, **11 runnable methodology playbooks** on a machine-readable method-card schema, the advisory lint hook, the `/product-*` commands (including `/product-corpus-export`, which lays the engagement's deliverables out as a navigable site via the bundled corpus-reader), and a ~135-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, **`check-methods.py`**, markdownlint). v0.3 adds the runnable _how_ — a **process-spine** frame (Double Diamond → seven phases) beside the v0.2 Product Experience Strategy taxonomy frame. Red-teamed with the `plugins-factory` council (records under `reviews/`). A `product-corpus` MCP remains planned. See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.3.16 — the methodology layer + corpus export + the product-corpus MCP.** Eight skills, a 23-critic council, 11 rubrics, **11 runnable methodology playbooks** on a machine-readable method-card schema, the advisory lint hook, the `/product-*` commands (including `/product-corpus-export`, which lays the engagement's deliverables out as a navigable site via the bundled corpus-reader), the **`product-corpus` MCP** (per-instance read-only retrieval over an exported corpus), and a ~135-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, **`check-methods.py`**, the MCP liveness + guard selftests, markdownlint). v0.3 adds the runnable _how_ — a **process-spine** frame (Double Diamond → seven phases) beside the v0.2 Product Experience Strategy taxonomy frame. Red-teamed with the `plugins-factory` council (records under `reviews/`). See [ROADMAP.md](ROADMAP.md).
 
 ## What it covers
 
@@ -25,7 +25,7 @@
 | **Agents** | a named product / UX / AI-product **critic council**, fanned out parallel + isolated |
 | **Commands** | thin typed entry points (`/product-*`) |
 | **Hook** | advisory PRD/strategy/UX **lint** (goal-as-strategy, output-over-outcome, personas-without-research, vanity metrics, dark-pattern intent) — never blocks |
-| **MCP** | _planned_ — a per-instance product-corpus retrieval (research, personas, specs); **not yet shipped** |
+| **MCP** | **`product-corpus`** — per-instance, read-only retrieval over an exported corpus (5 task-level tools: list / outline-corpus / search / fetch / outline-doc), scoped to one dir via the `corpus_dir` userConfig; mirrors brand-forge's `brand-corpus` MCP |
 
 ## Built on three rolled-in skills
 

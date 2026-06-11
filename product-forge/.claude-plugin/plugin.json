@@ -1,7 +1,7 @@
 {
   "name": "product-forge",
-  "version": "0.3.15",
-  "description": "Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, and runnable methodology playbooks.",
+  "version": "0.3.16",
+  "description": "Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, runnable methodology playbooks, and a product-corpus MCP for per-instance corpus retrieval.",
   "author": {
     "name": "Kim",
     "email": "kim@sublimeheroics.com"
@@ -26,5 +26,13 @@
     "content-design",
     "governance",
     "experience-strategy"
-  ]
+  ],
+  "userConfig": {
+    "corpus_dir": {
+      "title": "Product corpus directory",
+      "type": "directory",
+      "description": "Path to this product engagement's corpus (the folder a /product-corpus-export run writes: discovery, strategy, definition, experience, operations) for the product-corpus MCP. Optional — leave unset to run methodology, evaluation, and council without live corpus retrieval.",
+      "sensitive": false
+    }
+  }
 }

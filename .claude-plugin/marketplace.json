@@ -40,7 +40,7 @@
     {
       "name": "product-forge",
       "source": "./product-forge",
-      "description": "Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, and runnable methodology playbooks.",
+      "description": "Build and evaluate product strategy, management, and UX across the 12-domain Product Experience Strategy frame — grounded in research and named-practitioner authority, with rubrics, a 23-critic adversarial council, runnable methodology playbooks, and a product-corpus MCP for per-instance corpus retrieval.",
       "category": "product",
       "tags": [
         "product-strategy",

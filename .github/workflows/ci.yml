@@ -124,6 +124,9 @@ jobs:
       - name: product-forge — lint selftest
         run: python3 product-forge/bin/product-lint selftest
 
+      - name: product-forge — corpus MCP guard selftest
+        run: python3 product-forge/bin/product-corpus-mcp.py selftest
+
       - name: product-forge — council-calibration baselines (strategy + prd)
         run: |
           python3 product-forge/evals/council-calibration/check.py product-forge/evals/council-calibration/runs/2026-06-10-atlas-baseline.md

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "product-corpus": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/product-corpus-mcp.py"],
+      "env": {
+        "PRODUCT_CORPUS_DIR": "${user_config.corpus_dir}"
+      }
+    }
+  }
+}

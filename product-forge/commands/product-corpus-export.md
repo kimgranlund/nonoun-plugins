@@ -24,3 +24,5 @@ Target corpus dir from the operator (default `./product-corpus`): **$ARGUMENTS**
 3. **Serve + read.** `cd "<corpus>" && python3 -m http.server`, then open **http://localhost:8000/site/** . Re-run step 2 after editing the corpus.
 
 **Verify:** the home cards list your sections (with descriptions if configured); a doc containing a raw `<script>` produces **no dialog** (DOMPurify strips it). `<corpus>/` is self-contained + portable — zip/share it, or host it on any static server (the `site/` viewer renders the sibling markdown).
+
+**Live retrieval (optional).** The same `<corpus>/` is what the bundled **`product-corpus` MCP** reads: set the plugin's `corpus_dir` userConfig to this directory and the model gets read-only, task-level retrieval over it (`list_product_documents`, `outline_product_corpus`, `search_product`, `fetch_product_document`, `outline_product_document`) without re-loading the whole corpus into context. The MCP reads prose only and skips the `site/` viewer. Smoke-test it: `python3 "${CLAUDE_PLUGIN_ROOT}/bin/product-corpus-mcp.py" selftest`.

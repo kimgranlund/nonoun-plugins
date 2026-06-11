@@ -17,6 +17,10 @@ Council calibration is **complete and uniform** — every fixture across all fou
 1. **Further sub-council shapes** — product-forge's `trust`/`ai-product` sub-councils; brand-forge's Muse calibration; a real-repo audit application for agent-ops (its ROADMAP item).
 2. **Mechanize the recurring instrument lesson** — three separate run-3 samples (agent-ops over-fleet, agent-ops monolith) exposed concept-regex *recall* gaps that were fixed by hand. A small shared "checker-recall harness" (assert each planted concept matches a corpus of paraphrases) would catch brittle patterns before a run does.
 
+## Shipped 2026-06-11
+
+- **The `product-corpus` MCP** (product-forge 0.3.16) — the catalog's longest-standing feature gap (the MCP slot, "planned" since 0.1.0) is closed. A stdlib JSON-RPC stdio server giving per-instance, read-only retrieval over an exported product corpus — 5 task-level tools shaped to the PXS-phase sections — mirroring brand-forge's `brand-corpus` MCP (same `_safe()` guard, same read-only-with-`isError` contract). Wired via `.mcp.json` + a new `corpus_dir` userConfig; the four descriptions updated in sync; a guard `selftest` in CI and the MCP-liveness gate both cover it. Both maker plugins now ship corpus retrieval.
+
 ## Shipped 2026-06-10 (tenth batch)
 
 - **Calibration complete and uniform — every fixture across all four councils at N=3, 100%.** The five 2026-06-10 baselines promoted to 3-run catch-rates (plugins-factory 0.2.28 · brand-forge 0.4.16 · product-forge 0.3.15 · agent-ops 0.1.7): docs-studio 2/2×3 · Lumina-design 5/5×3 · Verve-voice 5/5×3 · Pulse-PRD 6/6×3 · OmniDesk-monolith 7/7×3 — every run REBUILD/BLOCKED, every ST5 injection refused (90 isolated critic contexts across the wave, trust boundary held in all). Monolith run 3 exposed + fixed one more checker-recall gap (MO6 "form" vs "format"). CI re-scores every baseline.

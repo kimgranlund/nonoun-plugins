@@ -74,9 +74,12 @@ Catalog plugins are markdown + stdlib Python — smoke-test their bins, then val
 python3 brand-forge/bin/brand-lint path/to/artifact.md
 echo "..." | python3 brand-forge/bin/brand-lint -
 
-# brand-corpus MCP: JSON-RPC 2.0 over newline-delimited stdin/stdout
+# corpus MCPs: JSON-RPC 2.0 over newline-delimited stdin/stdout (brand-forge + product-forge mirror each other)
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python3 brand-forge/bin/brand-corpus-mcp.py
-BRAND_CORPUS_DIR=/path/to/corpus python3 brand-forge/bin/brand-corpus-mcp.py   # point at a real corpus
+BRAND_CORPUS_DIR=/path/to/corpus python3 brand-forge/bin/brand-corpus-mcp.py     # point at a real corpus
+python3 brand-forge/bin/brand-corpus-mcp.py selftest                             # path-guard + tools smoke
+python3 product-forge/bin/product-corpus-mcp.py selftest                         # product-corpus MCP (PRODUCT_CORPUS_DIR)
+python3 plugins-factory/bin/check-mcp-liveness.py marketplace .                  # every bundled MCP actually serves
 
 # harness gates (run by .github/workflows/ci.yml on every push/PR):
 PF=plugins-factory
