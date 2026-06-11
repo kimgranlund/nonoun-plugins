@@ -32,5 +32,6 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 ## Track 4 — marketplace & distribution
 
 - **Done 2026-06-10** — root `README.md` with install lines + the CI badge (`d68d1f6`).
-- **Later** — GitHub Pages for the generated `index.html` catalog page; the marketplace `publish` workflow for carved libraries (plugins-factory roadmap); sibling marketplaces (`adia-plugins`, `maison-plugins`) stay local-only until something needs them published.
+- **Done 2026-06-11** — **GitHub Pages catalog** (`.github/workflows/pages.yml`): the generated `index.html` is published to [kimgranlund.github.io/claude-plugins](https://kimgranlund.github.io/claude-plugins/) on every push to main, re-asserting marketplace validity + catalog freshness before deploy. The page is a single self-contained file (no relative deps).
+- **Later** — the marketplace `publish` workflow for carved libraries (plugins-factory roadmap); sibling marketplaces (`adia-plugins`, `maison-plugins`) stay local-only until something needs them published.
 - **Standing decision** — the marketplace *name* stays `plugins-forge` (D-1); any future rename is a migration project, not a cleanup.

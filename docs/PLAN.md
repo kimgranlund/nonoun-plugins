@@ -19,6 +19,7 @@ Council calibration is **complete and uniform** — every fixture across all fou
 
 ## Shipped 2026-06-11
 
+- **GitHub Pages catalog** (`.github/workflows/pages.yml`) — the generated `index.html` is now browsable at [kimgranlund.github.io/claude-plugins](https://kimgranlund.github.io/claude-plugins/), redeployed on every push to main. The workflow re-asserts the catalog-relevant gates (marketplace validity + `gen-index --check` freshness) before publishing, and serves the committed page (what's served == what's reviewed). `index.html` is a single self-contained file, so it publishes alone with no broken links. Closes the Track 4 "Later" item.
 - **The `product-corpus` MCP** (product-forge 0.3.16) — the catalog's longest-standing feature gap (the MCP slot, "planned" since 0.1.0) is closed. A stdlib JSON-RPC stdio server giving per-instance, read-only retrieval over an exported product corpus — 5 task-level tools shaped to the PXS-phase sections — mirroring brand-forge's `brand-corpus` MCP (same `_safe()` guard, same read-only-with-`isError` contract). Wired via `.mcp.json` + a new `corpus_dir` userConfig; the four descriptions updated in sync; a guard `selftest` in CI and the MCP-liveness gate both cover it. Both maker plugins now ship corpus retrieval.
 
 ## Shipped 2026-06-10 (tenth batch)

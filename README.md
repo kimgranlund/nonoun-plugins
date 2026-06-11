@@ -23,7 +23,7 @@ A public **Claude Code plugin marketplace**: self-contained, reference-quality p
 | [`product-forge/`](product-forge/) | product strategy, management, and UX across the 12-domain Product Experience Strategy frame |
 | [`agent-ops/`](agent-ops/) | author, operate, and review agentic systems and the repos they live in |
 
-Each plugin's own `README.md` is its authoritative description; a generated catalog page lives at [`index.html`](index.html) (`gen-index.py`). The shared **corpus-reader** — a buildless static site for any folder-of-Markdown corpus — lives in [`plugins-factory/bin/corpus-reader/`](plugins-factory/bin/corpus-reader/) and is vendored into the plugins that use it.
+Each plugin's own `README.md` is its authoritative description; a generated catalog page (`gen-index.py`, gated fresh in CI) is browsable online at **[kimgranlund.github.io/claude-plugins](https://kimgranlund.github.io/claude-plugins/)** and lives in-repo at [`index.html`](index.html). The shared **corpus-reader** — a buildless static site for any folder-of-Markdown corpus — lives in [`plugins-factory/bin/corpus-reader/`](plugins-factory/bin/corpus-reader/) and is vendored into the plugins that use it.
 
 ## How this repo is verified
 

@@ -1,0 +1,54 @@
+name: Pages — publish the catalog
+
+# Publishes the generated marketplace catalog page (index.html) to GitHub Pages.
+# index.html is a single self-contained file (inline styles, no relative asset deps),
+# produced by gen-index.py from the marketplace + plugin metadata and gated fresh by
+# ci.yml (gen-index --check). This workflow re-asserts that freshness, then publishes
+# the committed catalog page — so what's served == what's reviewed on main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege for a Pages deploy: read the repo, write the Pages artifact, mint the deploy token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One catalog deploy at a time; never cancel a deploy mid-flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Pages (enables it on first run)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Guard + assemble the catalog (publish index.html only)
+        run: |
+          # Catalog-relevant gates only: the marketplace must be valid and the committed
+          # catalog page must match the tracked marketplace (clean-checkout-true, per D-6).
+          python3 plugins-factory/bin/validate_plugin.py marketplace .
+          python3 gen-index.py --check
+          mkdir -p _site
+          cp index.html _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
