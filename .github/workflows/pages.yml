@@ -5,6 +5,10 @@ name: Pages — publish the catalog
 # produced by gen-index.py from the marketplace + plugin metadata and gated fresh by
 # ci.yml (gen-index --check). This workflow re-asserts that freshness, then publishes
 # the committed catalog page — so what's served == what's reviewed on main.
+#
+# Pages was enabled once, out-of-band, with GitHub Actions as the build source
+# (`gh api --method POST repos/<owner>/<repo>/pages -f build_type=workflow`) — the
+# workflow GITHUB_TOKEN can deploy but cannot *create* the Pages site itself.
 
 on:
   push:
@@ -27,10 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Configure Pages (enables it on first run)
+      - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Guard + assemble the catalog (publish index.html only)
         run: |
           # Catalog-relevant gates only: the marketplace must be valid and the committed
