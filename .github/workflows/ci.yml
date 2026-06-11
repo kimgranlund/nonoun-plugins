@@ -145,6 +145,7 @@ jobs:
           python3 agent-ops/bin/check-self-contained.py agent-ops
           python3 agent-ops/bin/doc-hygiene selftest
           python3 agent-ops/bin/audit-history.py selftest
+          python3 agent-ops/bin/repo-memory-mcp.py selftest
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |

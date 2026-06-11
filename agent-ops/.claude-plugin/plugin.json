@@ -1,7 +1,7 @@
 {
   "name": "agent-ops",
-  "version": "0.1.8",
-  "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs (AGENTS.md · README · CHANGELOG · ROADMAP · ADRs) + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).",
+  "version": "0.1.9",
+  "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs (AGENTS.md · README · CHANGELOG · ROADMAP · ADRs) + architecture review — with a named-practitioner council, verifiable gates (loop blueprints, audit ledgers), and a repo-memory MCP for per-instance retrieval over a repo's agent docs + audit ledger.",
   "author": {
     "name": "Kim",
     "email": "kim@sublimeheroics.com"
@@ -22,5 +22,13 @@
     "architecture",
     "council",
     "ops"
-  ]
+  ],
+  "userConfig": {
+    "corpus_dir": {
+      "title": "Repo memory directory",
+      "type": "directory",
+      "description": "Path to a repo (or docs dir) whose agent memory the repo-memory MCP reads: AGENTS.md / CLAUDE.md / README / CHANGELOG / ROADMAP / ADRs + the .brain/audit-history/ ledger. Optional — leave unset to run the loops, council, and gates without live retrieval.",
+      "sensitive": false
+    }
+  }
 }

@@ -65,7 +65,7 @@
     {
       "name": "agent-ops",
       "source": "./agent-ops",
-      "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs + architecture review — with a named-practitioner council and verifiable gates (loop blueprints, audit ledgers).",
+      "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs + architecture review — with a named-practitioner council, verifiable gates (loop blueprints, audit ledgers), and a repo-memory MCP for per-instance retrieval over a repo's agent docs + audit ledger.",
       "category": "developer-tools",
       "tags": [
         "agent",

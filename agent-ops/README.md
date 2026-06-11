@@ -2,7 +2,7 @@
 
 **Author, operate, and review full-spectrum agentic systems — and the repos they live in.** The operations-and-architecture counterpart to the build plugins: it knows how to design agent loops and teams, judge what a running workflow is like to drive, keep a repo's agent-facing memory honest, and review a codebase's architecture.
 
-> **Status: 0.1.0 — carved + de-repo'd from four mature skills.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, and five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). A `product-corpus`-style MCP is planned for v0.2. See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.1.9 — carved from four mature skills, now with live retrieval.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`), and the **`repo-memory` MCP** (per-instance read-only retrieval over a repo's agent docs + `.brain/audit-history/` ledger). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). See [ROADMAP.md](ROADMAP.md).
 
 ## What it covers — two seats × two surfaces
 
@@ -25,7 +25,7 @@
 | **Commands** | `/ops-orient · ops-loop · ops-ux · ops-audit · ops-review · ops-council` |
 | **Hook** | advisory **`doc-hygiene`** on canonical-file writes (undated docs · entry-file bloat · CLAUDE/AGENTS drift) — reads the written `.md`, prints smell codes (never the file's content) to stderr, exits 0; never blocks |
 | **Gates (`bin/`)** | `audit-history.py` (audit ledger: `validate` + `liveness`) · `check_blueprint.py` + `schemas/blueprint.json` (the loop-blueprint validator) · `check-sourcing.py` (council provenance) · `check-self-contained.py` (the de-repo invariant) · `doc-hygiene` (`selftest`) — all stdlib, all in CI |
-| **MCP** | _planned for v0.2_ — per-instance retrieval of a repo's memory / audit history |
+| **MCP** | **`repo-memory`** — per-instance, read-only retrieval over a repo's agent memory (5 task-level tools: list / search / fetch / outline / read-audit-ledger), scoped to one dir via the `corpus_dir` userConfig; mirrors brand-forge's `brand-corpus` + product-forge's `product-corpus` MCPs |
 
 ## The council (12 named critics, three sub-councils)
 
