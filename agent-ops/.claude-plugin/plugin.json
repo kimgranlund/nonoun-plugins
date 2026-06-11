@@ -1,6 +1,6 @@
 {
   "name": "agent-ops",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in — agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs (AGENTS.md · README · CHANGELOG · ROADMAP · ADRs) + architecture review — with a named-practitioner council, verifiable gates (loop blueprints, audit ledgers), and a repo-memory MCP for per-instance retrieval over a repo's agent docs + audit ledger.",
   "author": {
     "name": "Kim",

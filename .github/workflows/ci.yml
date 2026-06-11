@@ -155,3 +155,8 @@ jobs:
           python3 agent-ops/evals/council-calibration/check.py agent-ops/evals/council-calibration/runs/2026-06-10-nightshift-baseline.md
           python3 agent-ops/bin/check_blueprint.py agent-ops/evals/council-calibration/fixtures/monolith-support-agent-blueprint.md
           python3 agent-ops/evals/council-calibration/check-monolith.py agent-ops/evals/council-calibration/runs/2026-06-10-monolith-baseline.md
+
+      - name: agent-ops — repo-review calibration (fixture builds + baseline)
+        run: |
+          python3 agent-ops/evals/repo-review-calibration/build-seeded-repo.py /tmp/seeded-smell-repo
+          python3 agent-ops/evals/repo-review-calibration/check.py agent-ops/evals/repo-review-calibration/runs/2026-06-11-seeded-repo-baseline.md
