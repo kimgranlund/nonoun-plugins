@@ -7,6 +7,7 @@ index.html (inline CSS, no JS, no external assets). Re-run after changing any pl
 
 Usage:  python3 gen-index.py            # writes ./index.html
         python3 gen-index.py --check    # exit 1 if index.html is missing or stale vs. a fresh render
+        python3 gen-index.py selftest   # unit-prove the tracked-only walk (R-1 regression guard) + --check staleness
 Stdlib only (Python 3.8+).
 """
 import html
@@ -275,5 +276,77 @@ def main(argv):
     return 0
 
 
+def selftest():
+    """Unit-prove the load-bearing behavior, anchored on R-1 (the 5-day outage, ISSUES.md R-1):
+    gen-index walked untracked files and leaked the gitignored `.name-map.md` into the committed
+    index.html as 4 phantom "orchestrators". This asserts the tracked-only walk (`_shipped`) excludes
+    untracked content — at the unit level AND through `collect()` (the actual leak path) — plus the
+    `--check` staleness contract and render determinism. No real catalog needed. Exit 0 = pass, 1 = fail.
+    """
+    import tempfile
+    import shutil
+    global ROOT, TRACKED
+    saved_root, saved_tracked = ROOT, TRACKED
+    fails = []
+    def check(cond, label):
+        if not cond:
+            fails.append(label)
+    tmp = tempfile.mkdtemp(prefix="gen-index-selftest-")
+    try:
+        def w(rel, content):
+            full = os.path.join(tmp, rel)
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            open(full, "w", encoding="utf-8").write(content)
+        # a minimal fixture catalog: one plugin with a TRACKED critic + an UNTRACKED .name-map (the R-1 leak file)
+        w(".claude-plugin/marketplace.json", json.dumps({
+            "metadata": {"description": "fixture"},
+            "plugins": [{"name": "demo-plugin", "description": "a demo", "category": "x", "tags": ["t"]}]}))
+        w("demo-plugin/.claude-plugin/plugin.json", json.dumps({"version": "9.9.9", "keywords": ["k"]}))
+        w("demo-plugin/agents/critic-foo.md", "---\nname: critic-foo\ndescription: a critic.\n---\n")
+        w("demo-plugin/agents/.name-map.md", "---\nname: SECRET\n---\nreal names here\n")  # gitignored, untracked
+        w("demo-plugin/skills/demo/SKILL.md", "---\nname: demo\ndescription: a skill.\n---\n")
+
+        ROOT = tmp
+        # TRACKED = what `git ls-files` would return — everything EXCEPT the untracked .name-map
+        TRACKED = {".claude-plugin/marketplace.json", "demo-plugin/.claude-plugin/plugin.json",
+                   "demo-plugin/agents/critic-foo.md", "demo-plugin/skills/demo/SKILL.md"}
+
+        # --- R-1 unit: the tracked-only guard ---
+        check(_shipped(os.path.join(tmp, "demo-plugin/agents/critic-foo.md")) is True, "tracked file rejected by _shipped")
+        check(_shipped(os.path.join(tmp, "demo-plugin/agents/.name-map.md")) is False, "R-1: untracked .name-map counted as shipped")
+        check(_shipped(os.path.join(tmp, "demo-plugin/agents")) is True, "dir with tracked children rejected")
+        # --- R-1 leak path: collect() must NOT surface the untracked .name-map as an orchestrator ---
+        d = collect("demo-plugin")
+        check("critic-foo" in d["critics"], "tracked critic not collected")
+        check(not any("name-map" in o for o in d["orchestrators"]), "R-1 REGRESSION: untracked .name-map leaked as an orchestrator")
+        check(d["version"] == "9.9.9" and [s[0] for s in d["skills"]] == ["demo"], "collect() basics wrong")
+        # --- determinism ---
+        market = json.load(open(os.path.join(tmp, ".claude-plugin", "marketplace.json"), encoding="utf-8"))
+        check(render(market) == render(market), "render is not idempotent")
+        # --- --check staleness contract ---
+        open(os.path.join(tmp, "index.html"), "w", encoding="utf-8").write("STALE")
+        check(main(["--check"]) == 1, "--check did not reject a stale index.html")
+        open(os.path.join(tmp, "index.html"), "w", encoding="utf-8").write(render(market))
+        check(main(["--check"]) == 0, "--check rejected a freshly-rendered index.html")
+        # --- tarball fallback (no git): TRACKED is None → dotfiles skipped, so .name-map still excluded ---
+        TRACKED = None
+        check(_shipped(os.path.join(tmp, "demo-plugin/agents/critic-foo.md")) is True
+              and _shipped(os.path.join(tmp, "demo-plugin/agents/.name-map.md")) is False,
+              "tarball fallback: dotfile leak not prevented")
+    finally:
+        ROOT, TRACKED = saved_root, saved_tracked
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    if fails:
+        sys.stderr.write("gen-index selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("gen-index selftest: OK (tracked-only walk / R-1 guard, --check staleness, determinism)")
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "selftest":
+        sys.exit(selftest())
     sys.exit(main(sys.argv[1:]))

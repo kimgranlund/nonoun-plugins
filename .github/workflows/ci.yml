@@ -35,8 +35,10 @@ jobs:
       - name: validate marketplace
         run: python3 "$PF/bin/validate_plugin.py" marketplace .
 
-      - name: catalog index.html up to date
-        run: python3 gen-index.py --check
+      - name: catalog index.html — selftest (R-1 guard) + up to date
+        run: |
+          python3 gen-index.py selftest
+          python3 gen-index.py --check
 
       - name: workflow path liveness (selftest + check)
         run: |
