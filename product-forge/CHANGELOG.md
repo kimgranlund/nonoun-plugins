@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.18] — 2026-06-11
+
+- **`bin/check-sourcing.py` docstring: a reciprocal note on the intentional divergence from agent-ops's same-named gate** (resolving the real-repo audit's P1-1, ISSUES D-9). The two are *not* a stale fork: they gate different provenance surfaces and can't share code (self-contained rule). product-forge's is the superset (a dated research library + a name-map-deferral design needing the FULL/PUBLIC-CHECKOUT split); agent-ops's is correctly narrower (no library; inline name-map pointers). No logic change.
+
 ## [0.3.17] — 2026-06-11
 
 - **Council-calibration PRD checker hardened against brittle concept-regex** (the new plugins-factory `check-recall.py` gate). `check-prd.py`'s MT5 and ST5 pattern sets gained matches for legitimate council wordings they'd otherwise miss ("intent must be reconstructed from scratch", a hyphenated "roadmap-is-locked", "never obeyed"). Both product checkers' recorded baselines + rate samples re-score full with **zero regression**; the paraphrase corpora live in `plugins-factory/evals/recall-corpus/` and are CI-asserted.

@@ -10,6 +10,14 @@ The obscured critics' real attributions exist **only** in git-ignored local file
 
 ## Decisions
 
+### D-10 · 2026-06-11 — The forked council-calibration checkers stay forked (dedup declined)
+
+The 2026-06-11 real-repo audit (`agent-ops/reviews/2026-06-11-claude-plugins-audit.md`) P0-3/P2-2 flagged the ~10 `evals/council-calibration/check*.py` checkers as ~70% structurally identical and proposed collapsing them into one parameterized `score_transcript(PLANTED, text)`. **The high-value half (rebalance ROI — freeze further calibration-depth, redirect to the missing coverage) was done** (the P0-1 repo-review fixture). The **mechanical dedup is consciously declined**: the 10 checkers live in 4 plugins, so the cleanest single shared core is **forbidden by the zero-cross-plugin-dependency rule**; a per-plugin core saves ~100 net lines but adds `_checklib.py` files + sys.path coupling in `check-recall.py`, for a P2-ranked gain. The duplication is **benign**: the shared part (the `main` + match loop) is ~25 stable lines that rarely change; the volatile part (the `PLANTED` patterns) is already per-checker and **recall-gated** (`check-recall.py`), which can't drift dangerously. Per the audit's own Mechanization-ROI lens, forcing this dedup would be the over-investment it warned against. Revisit only if the boilerplate starts changing often.
+
+### D-9 · 2026-06-11 — The two `check-sourcing.py` are intentionally independent, not drift
+
+The audit's P1-1 flagged `product-forge/bin/check-sourcing.py` (246 lines) vs `agent-ops/bin/check-sourcing.py` (98) as a silent-drift risk — judging by name + line-count. On inspection they are **correctly and intentionally different gates for different provenance surfaces**, and (per the self-contained rule) they *cannot* share code. product-forge gates a dated **research library** (per-reference `date`/`coverage`/`primary_sources` frontmatter) **plus** a council whose obscured critics may defer provenance to the git-ignored name-map — which needs the FULL/PUBLIC-CHECKOUT split (the D-4/R-1 fix). agent-ops has **no research library**, and its obscured critics each carry an **inline `.name-map.md` pointer** (a source signal present in every checkout), so it needs neither the library check nor the public-checkout mode — a simpler design that sidesteps R-1 rather than patching it (green CI on clean clones proves it). Both docstrings now state the relationship (agent-ops already did; product-forge's reciprocal note added). No unification — the divergence is by design.
+
 ### D-1 · 2026-06-08 — Marketplace name stays `plugins-forge`; repo is `claude-plugins`
 
 Renaming the marketplace name is breaking: install ids (`brand-forge@plugins-forge`), `~/.claude.json` install state, and sibling repos that enable `@plugins-forge`. The split (repo ≠ marketplace name) is a permanent papercut accepted deliberately. Revisit only under a forced migration.

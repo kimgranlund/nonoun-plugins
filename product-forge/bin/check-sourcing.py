@@ -23,6 +23,13 @@ references can't silently fall out of coverage (the failure the v0.2 red-team ca
 It does NOT verify a quote is accurate (only a human / web-fetch can) — but it guarantees nothing
 ships unsourced. Run it in CI alongside validate_plugin.py / reference-lint.py.
 
+agent-ops ships a `check-sourcing.py` of the same NAME but deliberately DIFFERENT scope — not a stale
+copy (the two can't share code; each plugin is self-contained, zero cross-plugin deps; see ISSUES D-9).
+agent-ops has no dated research library to gate, and its obscured critics each carry an INLINE
+`.name-map.md` pointer (a source signal present in every checkout), so it needs neither the library
+frontmatter check nor the FULL/PUBLIC-CHECKOUT split below. product-forge's surface is the superset
+(library + a name-map-deferral design), so its gate is the richer one. The divergence is by design.
+
 Two modes, decided by the tree being checked:
   - FULL (the name-map file is present — the maintainer's working tree): obscured critics must
     have a complete provenance block; incomplete blocks are failures.
