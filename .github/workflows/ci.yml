@@ -62,9 +62,10 @@ jobs:
 
       - name: corpus-reader — bake produces a safe single file
         run: |
+          python3 "$PF/bin/check-bake-safety.py" selftest
           cp -R "$PF/bin/corpus-reader/demo-corpus" /tmp/demo-bake
           python3 "$PF/bin/corpus-reader/build-sitemap.py" --bake /tmp/demo-bake
-          python3 -c 'import re; h=open("/tmp/demo-bake/reader.html",encoding="utf-8").read(); d=re.search("<script>\\n(window\\.CORPUS = .*?)\\n</script>",h,re.S).group(1); b=re.search("<script type=\"module\">\\n(.*?)\\n</script>",h,re.S).group(1); assert "window.CORPUS_FILES = {" in h; assert "</script>" not in d and "</script>" not in b; assert h.count("integrity=\"sha384-")>=6 and "purify.min.js" in h; assert "<script>alert(" not in h; open("/tmp/bk.mjs","w",encoding="utf-8").write(b)'
+          python3 "$PF/bin/check-bake-safety.py" /tmp/demo-bake/reader.html --emit-bundle /tmp/bk.mjs
           node --check /tmp/bk.mjs
 
       - name: corpus-reader — JS parses (ES modules)

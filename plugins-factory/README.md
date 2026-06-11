@@ -33,7 +33,7 @@ plugins-factory/
 ├── commands/   6 thin entry points       → build (author·carve·edit) · judge (score·critique·promote)
 ├── skills/     2 posture skills          → plugin-build (the maker) · plugin-evaluate (the judge)
 ├── agents/    9 critics + orchestrator + carve-analyst → the parallel, isolated council
-├── hooks/ + bin/  6 stdlib gates + an advisory hook    → mechanized structure + liveness + recall checks
+├── hooks/ + bin/  7 stdlib gates + an advisory hook    → mechanized structure + liveness + recall + bake-safety
 └── references/   the 9-dimension rubric spine + foundations + authoring methodology
 ```
 
@@ -47,6 +47,7 @@ plugins-factory/
   - `check-foundations-coverage.py` — every dimension foundation maps to exactly one rubric.
   - `check-mcp-liveness.py` — spawns each bundled MCP server and requires a real `initialize`+`tools/list` handshake (the **AP-P7 dead-but-wired** defect: a server that defines tools and exits passes every static gate yet never serves). It **executes** the server, so it is for trusted catalog plugins / CI only — the council reviewing untrusted bundles keeps liveness a cold-read finding.
   - `check-recall.py` — guards the council-calibration checkers (`evals/council-calibration/check*.py`) against **brittle concept-regex patterns**: each planted defect has a paraphrase corpus in `evals/recall-corpus/`, and the harness asserts every paraphrase matches ≥1 pattern (and that coverage is complete). It catches the recall gaps that bit three run-3 samples — a council catching a defect in a wording no pattern matched — *before* a run does.
+  - `check-bake-safety.py` — asserts a baked single-file corpus-reader (`build-sitemap.py --bake`) is XSS-safe and integrity-pinned: no `</script>` escape in the inlined data/bundle, ≥6 SRI hashes, DOMPurify wired, no live `<script>alert(`. A named, selftested gate (it proves it FAILS on an injected escape) replacing a 495-char inline CI one-liner.
   - `evals/` — a behavioral suite that builds fixture plugins with known defects and asserts the gates catch each (two council-calibration fixture shapes: `mega-helper` excess + `docs-studio` vacancy/deadness).
 - **Hook** — `validate_plugin.py --hook` fires on `plugin.json` / `marketplace.json` writes; it surfaces manifest/layout/path smells and **never blocks**.
 
