@@ -30,6 +30,7 @@ PLANTED = {
         r"no (?:decompos|sub-?agent|isolation)", r"decompos", r"40 tools", r"forty tools",
         r"separate.{0,20}(?:agent|tool)", r"split (?:the|into)", r"do(?:es|ing)? too much",
         r"one (?:huge|mega|giant) (?:agent|context)", r"should be (?:multiple|scoped|separate) agents",
+        r"fused into one", r"share(?:s|d)? one (?:brain|context)", r"that should be split",
     ],
     "MO2 no eval harness — UNVERIFIED, no golden set, pilot in prod": [
         r"no eval", r"eval (?:harness|set|suite|driven)", r"golden (?:set|answer)", r"offline (?:eval|test|set)",
@@ -42,6 +43,7 @@ PLANTED = {
         r"inlin\w+ (?:the )?(?:entire|full|whole|kb|knowledge)", r"no (?:retrieval|compaction|rag)",
         r"all 40 tool (?:defs|definitions)", r"full (?:history|knowledge base)", r"big (?:enough|window)",
         r"loads? (?:all|everything|the entire)", r"context (?:engineering|strategy)", r"window is big",
+        r"context (?:is )?dumped", r"dumped,? not engineered",
     ],
     "MO4 proxy/vanity success metric — throughput, no CSAT/re-open (Goodhart)": [
         r"proxy (?:metric|for|success)", r"vanity", r"goodhart", r"throughput", r"resolved.?(?:count|per hour)",

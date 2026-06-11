@@ -1,0 +1,42 @@
+{
+  "checker": "brand-forge/evals/council-calibration/check.py",
+  "_note": "Northwind (weak brand strategy) — the strategy sub-council's D1–D6 + bullshit filter.",
+  "defects": {
+    "D1 borrowed cultural root (no real provenance)": [
+      "the root is a moodboard of admired competitor brands",
+      "borrowed cultural provenance — a landscape, not a root",
+      "show me the receipts; there is no primary-source archaeology",
+      "the cool is lifted from other brands, not earned"
+    ],
+    "D2 category-restatement position (not exclusive)": [
+      "a category restatement any competitor could sign",
+      "the premium choice for discerning customers — undifferentiated and not exclusive",
+      "no ownable position; every rival could put their name on it",
+      "it restates the category instead of staking a claim"
+    ],
+    "D4 no enemy / no tension": [
+      "there is no enemy and no tension",
+      "a brand for everyone excludes no one",
+      "frictionless — it refuses nothing and stands against nothing",
+      "it stands for nothing"
+    ],
+    "D5 persona instead of transformation": [
+      "a demographic persona, not a transformation",
+      "Sarah is described, never changed — no before-and-after",
+      "it captures who the customer is, not who they become",
+      "a frozen persona in place of a becoming"
+    ],
+    "D6 values without trade-offs": [
+      "values without trade-offs",
+      "these values cost nothing and sacrifice nothing",
+      "ask what the brand would give up — nothing",
+      "tautological values you cannot disagree with"
+    ],
+    "bullshit filter: archetype / VMV doing strategy's job": [
+      "the Explorer archetype doing the strategy's job",
+      "a horoscope, not a strategy",
+      "vision/mission/values boilerplate standing in for a foundation",
+      "the VMV triplet doing the work a position should"
+    ]
+  }
+}

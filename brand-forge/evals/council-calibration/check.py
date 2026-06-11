@@ -19,7 +19,8 @@ PLANTED = {
     ],
     "D2 category-restatement position (not exclusive)": [
         r"category restatement", r"restates the category", r"any (?:rival|competitor|brand)", r"could sign",
-        r"not exclusive", r"undifferentiated", r"premium choice", r"sign their name", r"no (?:real )?position",
+        r"not exclusive", r"undifferentiated", r"premium choice", r"sign their name", r"no (?:real |ownable )?position",
+        r"(?:put|place)s? (?:their|its) name",
     ],
     "D4 no enemy / no tension": [
         r"no enemy", r"nothing to (?:oppose|stand against)", r"frictionless", r"for everyone", r"no tension",
@@ -31,6 +32,7 @@ PLANTED = {
     ],
     "D6 values without trade-offs": [
         r"trade.?off", r"sacrifice", r"costs? nothing", r"values .{0,20}(?:wish|decoration)", r"give up",
+        r"tautolog", r"can(?:not|'t) disagree",
     ],
     "bullshit filter: archetype / VMV doing strategy's job": [
         r"archetype", r"\bexplorer\b", r"horoscope", r"vision/mission/values", r"\bvmv\b",

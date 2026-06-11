@@ -12,13 +12,14 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 
 ## Next
 
-Council calibration is **complete and uniform** — every fixture across all four councils is at N=3, 100% per-defect catch-rate (see ROADMAP). No calibration work is open. Optional future depth, on request:
+Council calibration is **complete and uniform** — every fixture across all four councils is at N=3, 100% per-defect catch-rate (see ROADMAP), and the checkers are now recall-gated (see below). No calibration work is open. Optional future depth, on request:
 
 1. **Further sub-council shapes** — product-forge's `trust`/`ai-product` sub-councils; brand-forge's Muse calibration; a real-repo audit application for agent-ops (its ROADMAP item).
-2. **Mechanize the recurring instrument lesson** — three separate run-3 samples (agent-ops over-fleet, agent-ops monolith) exposed concept-regex *recall* gaps that were fixed by hand. A small shared "checker-recall harness" (assert each planted concept matches a corpus of paraphrases) would catch brittle patterns before a run does.
+2. **`context-cost.py`** — mechanize P6's always-on cost (the rubric's last `[hypothesis]` dimension; freshly relevant now two plugins ship MCP tool-defs).
 
 ## Shipped 2026-06-11
 
+- **Checker-recall harness** (`plugins-factory/bin/check-recall.py`, 0.2.29; brand-forge 0.4.17 · product-forge 0.3.17 · agent-ops 0.1.8) — mechanizes the recurring N-run lesson. Each council-calibration checker gets a paraphrase corpus (`plugins-factory/evals/recall-corpus/`) and the harness asserts every legitimate council wording matches ≥1 pattern, with full coverage (corpus keys == PLANTED keys), CI-gated over all 9 checkers. It **paid for itself on first run**: 31 brittle-pattern gaps across 7 checkers — mostly recurring lines ("a sticker, not an identity", "you chose a typeface, you did not make one", "context dumped, not engineered") the patterns would have missed in a real run. All 9 checkers widened; every baseline + rate sample re-scores full, zero regression. Closes the "mechanize the recurring instrument lesson" item.
 - **GitHub Pages catalog** (`.github/workflows/pages.yml`) — the generated `index.html` is now browsable at [kimgranlund.github.io/claude-plugins](https://kimgranlund.github.io/claude-plugins/), redeployed on every push to main. The workflow re-asserts the catalog-relevant gates (marketplace validity + `gen-index --check` freshness) before publishing, and serves the committed page (what's served == what's reviewed). `index.html` is a single self-contained file, so it publishes alone with no broken links. Closes the Track 4 "Later" item.
 - **The `product-corpus` MCP** (product-forge 0.3.16) — the catalog's longest-standing feature gap (the MCP slot, "planned" since 0.1.0) is closed. A stdlib JSON-RPC stdio server giving per-instance, read-only retrieval over an exported product corpus — 5 task-level tools shaped to the PXS-phase sections — mirroring brand-forge's `brand-corpus` MCP (same `_safe()` guard, same read-only-with-`isError` contract). Wired via `.mcp.json` + a new `corpus_dir` userConfig; the four descriptions updated in sync; a guard `selftest` in CI and the MCP-liveness gate both cover it. Both maker plugins now ship corpus retrieval.
 

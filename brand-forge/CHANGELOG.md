@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.17] — 2026-06-11
+
+- **Council-calibration checkers hardened against brittle concept-regex** (the new plugins-factory `check-recall.py` gate). The strategy/design/voice checkers (`check.py`, `check-design.py`, `check-voice.py`) gained patterns for legitimate, *recurring* council wordings their regex would otherwise miss in a real run — e.g. "a sticker, not an identity", "show me the grid", "you chose a typeface, you did not make one", "a model could generate this in thirty seconds" (design); "not one fact behind any adjective", "discount circular", "two surfaces, two brands" (voice); "every rival could put their name on it", "tautological values you cannot disagree with" (strategy). All three checkers' recorded baselines + rate samples re-score full with **zero regression**; their paraphrase corpora live in `plugins-factory/evals/recall-corpus/` and are CI-asserted.
+
 ## [0.4.16] — 2026-06-10
 
 - **Design + voice council-calibration promoted to N=3** (two further cold runs each through the design and voice sub-council proxies). Design (Lumina): **5/5 in 3/3 runs, REBUILD ×3**; voice (Verve): **5/5 in 3/3 runs, REBUILD ×3** — the trust boundary held in all 24 isolated critic contexts across the two sub-councils, and convergence (design: the missing grid; voice: "nothing real underneath the words") reproduced every run. With Northwind's strategy fixture already at N=3, **all three non-`full` brand sub-councils are now N=3 at 100% per-defect**. README rate tables updated.

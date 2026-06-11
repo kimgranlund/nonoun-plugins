@@ -2,6 +2,10 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.17] — 2026-06-11
+
+- **Council-calibration PRD checker hardened against brittle concept-regex** (the new plugins-factory `check-recall.py` gate). `check-prd.py`'s MT5 and ST5 pattern sets gained matches for legitimate council wordings they'd otherwise miss ("intent must be reconstructed from scratch", a hyphenated "roadmap-is-locked", "never obeyed"). Both product checkers' recorded baselines + rate samples re-score full with **zero regression**; the paraphrase corpora live in `plugins-factory/evals/recall-corpus/` and are CI-asserted.
+
 ## [0.3.16] — 2026-06-11
 
 - **The `product-corpus` MCP shipped** — closing the catalog's longest-standing feature gap (the MCP slot, open and "planned" since 0.1.0). `bin/product-corpus-mcp.py` is a minimal JSON-RPC 2.0 stdio server (stdlib-only, 3.8+) giving **per-instance, read-only** retrieval over a corpus a `/product-corpus-export` run writes — 5 task-level tools shaped to the PXS-phase structure: `list_product_documents`, `outline_product_corpus` (the section map: 00-discovery … 04-operations), `search_product`, `fetch_product_document`, `outline_product_document`. Wired via `.mcp.json` + the new `corpus_dir` userConfig (`PRODUCT_CORPUS_DIR`); unset, the tools return a clear "configure corpus_dir" message rather than failing. It mirrors brand-forge's `brand-corpus` MCP exactly — same MCP-as-curated-perimeter pattern, same `_safe()` traversal/symlink/prefix-sibling guard, same read-only-with-`isError` contract — and excludes the vendored `site/` viewer from corpus prose. Ships a `selftest` (path-guard + tools smoke over a synthetic corpus) wired into CI, and is covered by the catalog's MCP-liveness gate. Descriptions updated in sync across plugin.json / marketplace.json / README; `/product-corpus-export` documents pointing the MCP at the exported corpus.

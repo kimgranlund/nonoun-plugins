@@ -105,6 +105,11 @@ jobs:
           python3 "$PF/bin/check-mcp-liveness.py" selftest
           python3 "$PF/bin/check-mcp-liveness.py" marketplace .
 
+      - name: checker-recall gate (council-calibration checkers aren't brittle)
+        run: |
+          python3 "$PF/bin/check-recall.py" selftest
+          python3 "$PF/bin/check-recall.py"
+
       - name: brand-forge — council-calibration baselines (strategy + design + voice)
         run: |
           python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md

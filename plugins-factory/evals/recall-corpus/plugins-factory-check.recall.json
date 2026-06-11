@@ -1,0 +1,18 @@
+{
+  "checker": "plugins-factory/evals/council-calibration/check.py",
+  "_note": "mega-helper (failure by excess: kitchen-sink + API-wrapper MCP).",
+  "defects": {
+    "P3 kitchen-sink (four unrelated domains in one plugin)": [
+      "a kitchen-sink bundle with no shared job",
+      "four unrelated domains in one plugin",
+      "these belong in separate, distinct plugins",
+      "the clean partition is four-way — it does too much"
+    ],
+    "P2 API-wrapper MCP (1:1 REST endpoints)": [
+      "a textbook API-wrapper MCP — one tool per endpoint",
+      "25 endpoint-shaped tools, a 1:1 passthrough over the REST routes",
+      "a CRUD wrapper, not a curated task-level perimeter",
+      "verb-per-resource tools that wrap the API"
+    ]
+  }
+}

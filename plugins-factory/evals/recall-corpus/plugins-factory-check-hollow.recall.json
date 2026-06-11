@@ -1,0 +1,18 @@
+{
+  "checker": "plugins-factory/evals/council-calibration/check-hollow.py",
+  "_note": "docs-studio (failure by vacancy: hollow components + dead-but-wired MCP).",
+  "defects": {
+    "H hollow components — bodies thinner than their descriptions (AP-P6/PF5)": [
+      "the body is thinner than the description promises",
+      "a one-sentence skill under a rich routing blurb — a hollow stub",
+      "it adds routing surface and zero capability the base model lacked",
+      "the descriptions out-promise what is on disk; deepen or delete"
+    ],
+    "L dead-but-wired MCP — defines tools but never serves them (AP-P7/CF5)": [
+      "the MCP defines a TOOLS list and exits — there is no server loop",
+      "dead-but-wired: it never answers tools/list",
+      "the server is non-functional and can't respond to a single call",
+      "a liveness smoke test would catch it — no JSON-RPC dispatch, no __main__"
+    ]
+  }
+}

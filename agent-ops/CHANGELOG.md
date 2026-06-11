@@ -2,6 +2,10 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.8] — 2026-06-11
+
+- **Council-calibration checkers hardened against brittle concept-regex** (the new plugins-factory `check-recall.py` gate). Both agentic checkers gained patterns for legitimate council wordings their regex would otherwise miss in a real run — `check.py` (Nightshift): "decide locally" / "conflict at merge" (A1), "the judge's own approval — circular" (A2), "measures stall, not convergence" (A3), "widens the egress perimeter" (A4), "archaeology, not a rewind" (A5), "a round counter, not a decision trace" (A7); `check-monolith.py` (OmniDesk): "fused into one agent", "share one brain" (MO1), "context dumped, not engineered" (MO3). This is the same recall-gap class that scored two run-3 samples low before being fixed reactively — now caught proactively. Both checkers' recorded baselines + rate samples re-score full with **zero regression**; the paraphrase corpora live in `plugins-factory/evals/recall-corpus/` and are CI-asserted.
+
 ## [0.1.7] — 2026-06-10
 
 - **Monolith council-calibration promoted to N=3** (two further cold runs through the single-agent-architecture slice proxy): **7/7 planted defects in 3/3 runs, REBUILD ×3**, the §3 5/5 directive classified as an injection finding and refused in all 18 isolated contexts, and the Walden↔Harrison tension collapsing into agreement in every run. Run 3 earned its keep by exposing a **checker-recall miss** (Mitchell caught MO6 as "form, not correctness / grades its own homework", which the pattern keyed on "for**mat**" missed); `check-monolith.py`'s MO6 set was widened (`form|format`, "grades its own homework", "lint pass wearing") and all three runs re-score 7/7 with no regression — the instrument calibrating itself, mirroring the over-fleet fixture's run-3 A4/A6 fix. With Nightshift already at N=3, both agent-ops fixtures are now N=3 at 100%. README rate table updated.
