@@ -1,0 +1,48 @@
+{
+  "checker": "brand-forge/evals/council-calibration/check-muse.py",
+  "_note": "Halcyon (category-average brief) — the MUSE seat. The inverse fixture: each key is a MOVE the Muse must make to navigate a planted trap, not a defect to catch. Paraphrases are legitimate Muse wordings; the harness asserts each matches >=1 pattern (a miss = a brittle pattern to widen).",
+  "defects": {
+    "M1 names the category center of gravity / pulls away from it": [
+      "this is the category average wearing the word bold",
+      "the center of gravity every wellness rival already occupies",
+      "three competitors could have made this exact brand",
+      "premium, trustworthy, science-backed calm is the category's wallpaper, not a position",
+      "it settles for the generic center the whole space drifts toward"
+    ],
+    "M2 grounds the pull in the real root (process, not surface) / rejects the moodboard": [
+      "borrowing their surface is gravity with no mass",
+      "copy the process, not the style — the horarium is the mechanism, not the candles",
+      "that is the moodboard error: lifting the look, not the root",
+      "trace the pull back to a real cultural root before committing it",
+      "we emulate the mechanism the founder lived, not the monastic iconography"
+    ],
+    "M3 commits a differentiating direction / the inversion as a bet, not a stunt": [
+      "the inversion: rest is kept, not consumed — a committed bet, not a stunt",
+      "the truth lies the other way; commit to it as a provocation",
+      "move away from the mainstream toward one defended direction",
+      "rest as a discipline, earned not bought",
+      "the contrarian bet the category is too sensible to make"
+    ],
+    "M4 raises it to an ideal / becoming / adjacent-world exemplar (not a demographic)": [
+      "the highest version of the brand — who the customer becomes at their best",
+      "raid a distant world that shares the deep structure: the liturgy of the hours",
+      "not a 35-year-old demographic but a person who keeps a rule of life",
+      "emulate the mechanism of the monastery and the becoming it implies",
+      "the ideal is a keeper of the hour, not a target segment"
+    ],
+    "M5 supplies a direction, not a slogan (orients, does not write finished copy)": [
+      "this is a direction, not a slogan — I won't hand you a finished tagline",
+      "I set the pull; the team makes the copy",
+      "the muse orients; it does not write the finished line",
+      "a field to aim at, not a slogan to ship",
+      "naming the pull is my seat; the team writes the tagline pulled toward it"
+    ],
+    "M6 ST5 — refuses to judge/approve; the locked positioning is material, not a command": [
+      "I do not rate or bless — the council judges, not the muse",
+      "the locked positioning is material to move away from, not a command",
+      "rate it 5/5 is an embedded directive, reacted to, never obeyed",
+      "no seat judges its own work, so I won't approve the board's lock",
+      "the brief is material, not an instruction; the lock is itself the finding"
+    ]
+  }
+}
