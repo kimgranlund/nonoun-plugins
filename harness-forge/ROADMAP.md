@@ -15,7 +15,7 @@ Open structural work, in rough priority. v0.2 is the kernel + the operating rost
 
 ## v0.3 — the structural-critic council
 
-- **A harness critic council.** The catalog's adversarial-review house style, but keyed to the model's failure-mode clusters (a verifier-integrity critic, a reward-hacking critic, a partial-order critic, an autonomy-trajectory critic, a budget/cost critic, a staleness critic, a naming-discipline critic) + an orchestrator — fanned out in parallel isolated contexts. Structural, not named-practitioner (that lens lives in `agent-ops`), to keep the boundary clean.
+- ~~**A harness critic council.**~~ **Shipped in 0.3.0** — the 7 structural critics + the `harness-council` orchestrator + `/harness-council`, with a live calibration run recorded against the unearned-autonomy fixture. Still open: convene the council against the remaining three fixtures (one live baseline exists; N=4 is the full set), and a `/harness-council` lens-subset smoke in CI.
 
 ## v0.3+ — the kernel / kit / instance tiers
 

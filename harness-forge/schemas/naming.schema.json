@@ -5,24 +5,114 @@
   "description": "The controlled vocabularies and composition grammars every named artifact decomposes into. bin/naming.py consumes this data to validate a name of a given class; a name that fails the grammar is a defect caught mechanically. See references/agentic-systems-foundations/naming-conventions.md. The naming system is itself a cell in the ontology — extending a vocab is an ontology revision, never an ad-hoc coinage.",
   "type": "object",
   "vocab": {
-    "layer": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"],
-    "scope": ["call", "task", "workflow", "system", "fleet"],
-    "maturity": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"],
-    "tier": ["kernel", "kit", "forge", "factory", "ops"],
-    "operation": ["seed", "audit", "scan", "rank", "advance", "define", "create", "validate", "record", "distill", "regenerate", "conform", "author", "scaffold", "widen"],
-    "actor": ["auditor", "advancer", "distiller", "regenerator", "librarian", "builder", "scribe"],
-    "gateverb": ["gate", "propagate", "emit"]
+    "layer": [
+      "ontology",
+      "spec",
+      "rubric",
+      "policy",
+      "capability",
+      "methodology",
+      "protocol",
+      "ledger",
+      "pattern"
+    ],
+    "scope": [
+      "call",
+      "task",
+      "workflow",
+      "system",
+      "fleet"
+    ],
+    "maturity": [
+      "absent",
+      "defined",
+      "instantiated",
+      "validated",
+      "operating",
+      "regenerating",
+      "stale",
+      "deprecated"
+    ],
+    "tier": [
+      "kernel",
+      "kit",
+      "forge",
+      "factory",
+      "ops"
+    ],
+    "operation": [
+      "seed",
+      "audit",
+      "scan",
+      "rank",
+      "advance",
+      "define",
+      "create",
+      "validate",
+      "record",
+      "distill",
+      "regenerate",
+      "conform",
+      "author",
+      "scaffold",
+      "widen"
+    ],
+    "actor": [
+      "auditor",
+      "advancer",
+      "distiller",
+      "regenerator",
+      "librarian",
+      "builder",
+      "scribe",
+      "council"
+    ],
+    "gateverb": [
+      "gate",
+      "propagate",
+      "emit"
+    ]
   },
   "_block_note": "The `block` vocabulary is the closed set {lattice, frontier, cell, signal, kit} unioned with every `layer` value; bin/naming.py computes it.",
-  "block_extra": ["lattice", "frontier", "cell", "signal", "kit"],
+  "block_extra": [
+    "lattice",
+    "frontier",
+    "cell",
+    "signal",
+    "kit"
+  ],
   "slug": "[a-z0-9]+(?:-[a-z0-9]+)*",
   "grammars": {
-    "cell_id": { "template": "{layer}.{scope}.{slug}", "doc": "rubric.workflow.citation-integrity" },
-    "agent_file": { "template": "{slug}-{actor}.md", "doc": "cell-advancer.md, pattern-distiller.md" },
-    "skill_folder": { "template": "{block}-{operation}", "doc": "frontier-rank, cell-validate" },
-    "hook_script": { "template": "{gateverb}-{slug}", "doc": "gate-signal, propagate-staleness, emit-ledger" },
-    "layer_dir": { "template": "{layer}", "doc": "spec, never specs" },
-    "plugin": { "template": "{ns}-{tier}", "ns": "[a-z0-9]+(?:-[a-z0-9]+)*", "doc": "frontier-kernel, frontier-kit-corpus, harness-forge (the `forge`/`factory`/`ops` tiers are the claude-plugins marketplace family axis, added as a deliberate ontology revision so a catalog plugin's own name parses its own grammar)", "optional_suffix": "-{slug}" }
+    "cell_id": {
+      "template": "{layer}.{scope}.{slug}",
+      "doc": "rubric.workflow.citation-integrity"
+    },
+    "agent_file": {
+      "template": "{slug}-{actor}.md",
+      "doc": "cell-advancer.md, pattern-distiller.md"
+    },
+    "skill_folder": {
+      "template": "{block}-{operation}",
+      "doc": "frontier-rank, cell-validate"
+    },
+    "hook_script": {
+      "template": "{gateverb}-{slug}",
+      "doc": "gate-signal, propagate-staleness, emit-ledger"
+    },
+    "layer_dir": {
+      "template": "{layer}",
+      "doc": "spec, never specs"
+    },
+    "plugin": {
+      "template": "{ns}-{tier}",
+      "ns": "[a-z0-9]+(?:-[a-z0-9]+)*",
+      "doc": "frontier-kernel, frontier-kit-corpus, harness-forge (the `forge`/`factory`/`ops` tiers are the claude-plugins marketplace family axis, added as a deliberate ontology revision so a catalog plugin's own name parses its own grammar)",
+      "optional_suffix": "-{slug}"
+    },
+    "critic_file": {
+      "template": "critic-{slug}.md",
+      "doc": "critic-partial-order.md, critic-reward-hacking.md — the catalog's reviewer prefix; load-bearing, since check-trust-boundary gates agents/critic-*.md, so a critic named any other way silently escapes the guard gate"
+    }
   },
   "rules": [
     "Directories mirror enums byte-for-byte (singular): spec/, never specs/.",

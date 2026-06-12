@@ -1,0 +1,9 @@
+{
+  "cell_id": "rubric.task.parse-invoice",
+  "ts": "2026-06-12T09-00",
+  "harness": "calibration",
+  "kind": "gate",
+  "result": "pass",
+  "evidence": "3-run determinism on fixed input",
+  "validated_against": {}
+}

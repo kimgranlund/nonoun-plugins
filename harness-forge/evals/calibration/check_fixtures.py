@@ -52,6 +52,10 @@ def main():
     policy = open(os.path.join(FIX, "unearned-autonomy", ".harness", "policy", "trust-trajectory.md"), encoding="utf-8").read()
     expect("Tier 3" in policy and "unattended" in policy,
            "unearned-autonomy → the policy doc claims Tier 3 unattended (the contradiction the judge must catch)")
+    # F3's phantom signals — the live council's emergent find, folded back into the kernel (0.3.0)
+    r = run([os.path.join(BIN, "lattice.py"), "check", "--dir", os.path.join(FIX, "unearned-autonomy", ".harness")])
+    expect(r.returncode == 1 and "does not exist on disk" in r.stdout,
+           "unearned-autonomy → lattice.py check catches the phantom signal refs (asserted, not earned)")
 
     # F4 — stale-but-trusted: the rubric trusts a hash the spec asset no longer has
     r = run([os.path.join(BIN, "lattice.py"), "check", "--dir", os.path.join(FIX, "stale-but-trusted", ".harness")])

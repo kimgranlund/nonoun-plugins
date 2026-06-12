@@ -76,9 +76,9 @@ harness-forge **hydrates a project to run looping, latticed agentic workflows.**
 
 | Primitive | Location | Job | Invariant |
 | --- | --- | --- | --- |
-| **Commands** | `commands/*.md` (6) | Thin typed entry points — `/harness-seed · scan · next · advance · distill · audit` | Route to skills + `bin/`; never re-contain the model |
+| **Commands** | `commands/*.md` (7) | Thin typed entry points — `/harness-seed · scan · next · advance · distill · audit · council` | Route to skills + `bin/`; never re-contain the model |
 | **Skills** | `skills/{harness-build,harness-evaluate}/SKILL.md` | The operator (build) and the judge (evaluate), over `references/` | SKILL.md is a TOC; load `references/` on demand |
-| **Agents** | `agents/*.md` (4) | The operating roster — `harness-builder` (orchestrator) + `harness-advancer · harness-auditor · harness-distiller` | One cell per worker dispatch, fresh context; state lives on disk, not in conversation |
+| **Agents** | `agents/*.md` (12) | The operating roster — `harness-builder` (orchestrator) + `harness-advancer · harness-auditor · harness-distiller` — plus the **structural council**: `harness-council` (orchestrator) + 7 `critic-*` lenses, one per rubric dimension (H1–H7) | One cell per worker dispatch, fresh context; critics run `Read/Grep/Glob`-only in parallel isolated contexts (structural, *not* named-practitioner — that lens is agent-ops's) |
 | **Hook + gates** | `hooks/hooks.json` + `bin/harness-hook`; `bin/gate-signal · emit-ledger · propagate-staleness` + `bin/wire.py` | Advisory session lint (hook); the three gateverb species for the user's loop, installed by `wire.py` | The session hook **never blocks** (always exit 0); the blocking gate is **consent-wired** (`wire.py plan → apply → check`, below) |
 | **MCP** | `.mcp.json` + `bin/lattice-mcp.py` | Read-only `lattice-query` over `.harness/` state (`list_cells · get_cell · scan_frontier · read_ledger · get_signals`) | Read-only; the writing engine stays in `bin/`; `_safe()`-guarded |
 

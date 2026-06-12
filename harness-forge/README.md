@@ -48,9 +48,9 @@ The full theory is in `references/agentic-systems-foundations/` (the ontology, t
 ```text
 harness-forge/
 ├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · validate.py · wire.py · gate-signal · emit-ledger · propagate-staleness · harness-hook · lattice-mcp.py
-├── commands/   6 thin entry points          → seed · scan · next · advance · distill · audit
+├── commands/   7 thin entry points          → seed · scan · next · advance · distill · audit · council
 ├── skills/     2 posture skills             → harness-build (operate) · harness-evaluate (audit + score)
-├── agents/     4 operating actors           → harness-builder (orchestrator) · harness-advancer · harness-auditor · harness-distiller
+├── agents/     4 operators + the council    → harness-builder (orchestrator) · harness-advancer · harness-auditor · harness-distiller · harness-council + 7 critic-* structural critics (one per rubric dimension, parallel isolated)
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)
 ├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .harness/ state
 ├── schemas/    the typed data               → Cell · Lattice · Naming (self-hosting) · Signal
@@ -61,6 +61,7 @@ harness-forge/
 - **The one law that makes it real** — *computation routes to code, never to inference.* Selection, ranking, dependency readiness, and staleness propagation are deterministic scripts (`bin/lattice.py`), because a model-predicted computation is a hallucination surface. The model supplies the *judgment inside a cell*; the *bookkeeping between cells* is the kernel's. Every `bin/` script ships a `selftest`.
 - **Gates block, feedback injects, propagation cascades** — the three hook species from the typed grammar, all shipped. The plugin's *session* hook (`harness-hook`) is **advisory** (flags plural layer-dir drift and staleness, always exits 0). For *your worker loop*, `bin/wire.py apply` (offered by `/harness-seed`, **consent-gated, never silent**) installs into the project's own `.claude/settings.json`: `gate-signal` (PreToolUse **deny** on signals, rubrics, schemas, the ledger, the hooks, and the wiring itself — a worker cannot unwire the gate it runs under), `emit-ledger` (PostToolUse audit trail — engine-relevant writes are recorded mechanically), and `propagate-staleness` (PostToolUse cascade — editing a validated cell's asset flips it + hash-mismatched dependents stale, as a graph computation). `wire.py check` proves the wiring (exit 0 = wired); `wire.py unwire` reverses it exactly.
 - **The MCP is a curated read perimeter** — `lattice-query` surfaces the lattice cells, the frontier gap-set, the ledger, and the signals read-only; the engine that writes them stays in `bin/`.
+- **The council is structural, not named-practitioner** — `/harness-council` convenes 7 critics keyed to the model's failure-mode clusters (partial-order · verifier-integrity · reward-hacking · naming · budget · autonomy · staleness), each owning a rubric dimension, each `Read/Grep/Glob`-only (they review *untrusted* harnesses, so they cannot execute), fanned out **in parallel isolated contexts** by the `harness-council` orchestrator — which first runs the kernel's read-only gates as the deterministic anchor block, then synthesizes convergence, caps, and the **earned autonomy tier**. Named-practitioner critique stays in `agent-ops`; this panel judges *structure*.
 
 ---
 

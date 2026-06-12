@@ -228,6 +228,12 @@ def check(lat, d=None):
             # the validated-with-no-signal contradiction the signal-currency design forbids
             if not c.get("signal_refs"):
                 findings.append(f"{cell_id}: maturity `{c['maturity']}` but no signal_refs — validated against nothing")
+            # phantom signals: a cited signal that does not exist on disk is asserted, not earned
+            # (found by the live council run against the unearned-autonomy fixture — 0.3.0)
+            elif d:
+                for ref in c["signal_refs"]:
+                    if not os.path.isfile(ref if os.path.isabs(ref) else os.path.join(d, ref)):
+                        findings.append(f"{cell_id}: cites signal `{ref}` that does not exist on disk — asserted, not earned")
             # the partial order, violated retroactively: settled atop a dependency that never validated
             for dep in c.get("depends_on", []):
                 dc = by_id.get(dep)
@@ -358,6 +364,12 @@ def selftest():
         expect(any("stale-but-trusted" in f for f in sbf), f"check() missed stale-but-trusted: {sbf}")
         expect(not any("stale-but-trusted" in f for f in check(stale_lat)),
                "check() ran hash checks without d (cannot resolve assets)")
+        # phantom signals (the live council's emergent find): a cited signal file must exist on disk.
+        expect(any("does not exist on disk" in f for f in sbf), f"check() missed a phantom signal ref: {sbf}")
+        os.makedirs(os.path.join(hd, "signals"), exist_ok=True)
+        open(os.path.join(hd, "x"), "w").write("{}")          # the refs above are literally "x" — make it real
+        real = check(stale_lat, d=hd)
+        expect(not any("does not exist on disk" in f for f in real), f"check() flagged a real signal file: {real}")
 
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")

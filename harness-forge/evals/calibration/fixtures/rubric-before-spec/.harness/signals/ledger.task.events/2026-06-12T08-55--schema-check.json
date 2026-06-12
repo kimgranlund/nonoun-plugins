@@ -1,0 +1,9 @@
+{
+  "cell_id": "ledger.task.events",
+  "ts": "2026-06-12T08-55",
+  "harness": "schema-check",
+  "kind": "gate",
+  "result": "pass",
+  "evidence": "events.jsonl lines parse with operation+actor",
+  "validated_against": {}
+}

@@ -114,6 +114,11 @@ _CASES = [
     ("plugin", "frontier-kit-corpus", True),
     ("plugin", "harness-forge", True),              # the catalog family axis (forge) — must parse its own grammar
     ("plugin", "frontier-foundry", False),          # `foundry` still not a tier
+    ("agent_file", "harness-council.md", True),     # `council` joined the actor vocab (the 0.3.0 ontology revision)
+    ("critic_file", "critic-partial-order.md", True),
+    ("critic_file", "critic-reward-hacking.md", True),
+    ("critic_file", "critic-RewardHacking.md", False),  # casing drift
+    ("critic_file", "verifier-critic.md", False),   # suffix form escapes the trust-boundary gate's critic-* glob — rejected
 ]
 
 
@@ -129,7 +134,8 @@ def _dogfood():
     if os.path.isdir(agents_dir):
         for f in sorted(os.listdir(agents_dir)):
             if f.endswith(".md"):
-                ok, reason = validate(f, "agent_file")
+                cls = "critic_file" if f.startswith("critic-") else "agent_file"   # the reviewer prefix routes to its own class
+                ok, reason = validate(f, cls)
                 if not ok:
                     out.append(f"agent file `{f}`: {reason}")
     return out
