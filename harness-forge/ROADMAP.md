@@ -1,11 +1,11 @@
 # harness-forge — Roadmap
 
-Open structural work, in rough priority. v0.1 is the kernel + the operating roster, validated and selftested; the items below deepen it toward the full factory the foundations describe.
+Open structural work, in rough priority. v0.2 is the kernel + the operating roster + the consent-wired loop, validated and selftested; the items below deepen it toward the full factory the foundations describe.
 
 ## v0.2 — close the operating loop in the user's project
 
-- **The seed-into-loop gate installer.** `/harness-seed` currently scaffolds `.harness/` state; extend it to *wire the blocking gates into the user's worker loop* — install `gate-signal` as a PreToolUse(Write|Edit) deny on the protected verifier set, plus the budget/no-progress gate and the `emit-ledger` feedback hook, into the project's own `.claude/settings.json` (with the user's consent). The plugin session stays advisory; the user's autonomous loop gets the blocking enforcement the model requires.
-- **`emit-ledger` + `propagate-staleness` as project hooks.** Ship the two remaining gateverb scripts (feedback that injects fast-check findings into the loop; the staleness cascade as a write-time graph effect) and the installer that wires them.
+- ~~**The seed-into-loop gate installer.**~~ **Shipped in 0.2.0** — `bin/wire.py` (plan/apply/check/unwire, consent-gated, idempotent, self-protecting) + `/harness-seed` step 4. Still open from this line: the **budget/no-progress gate** as a wired hook (today budgets are policy the orchestrator enforces; a Stop-hook that halts a loop on budget exhaustion / repeated failure signatures is unbuilt).
+- ~~**`emit-ledger` + `propagate-staleness` as project hooks.**~~ **Shipped in 0.2.0** — both gateverb species, selftested, wired by the installer.
 - **A real first-slice walkthrough.** A recorded end-to-end run (seed → scan → advance an `ontology` + `spec` + `rubric` slice to `validated` → distill) on a toy project, committed under `evals/` as the kernel's behavioral baseline.
 
 ## v0.2 — calibration (the catalog standard)
@@ -23,8 +23,9 @@ Open structural work, in rough priority. v0.1 is the kernel + the operating rost
 - **Harness adapters.** `bin/validate.py` (v0.1.1) already runs a cell's verifier *command* and mints the signal from its exit status — the runner exists. Add pluggable, named verifier adapters (pytest, link-check, screenshot-diff, llm-judge) bound to rubric cells by configuration, so a cell's `validate` step selects a real check by name, not by the operator typing the command each time.
 - **A `lattice render` view.** A derived, human-readable lattice grid (layers × scopes, color by maturity) — a status surface over `lattice.json`, the canonical state staying the JSON.
 
-## Known limitations (v0.1)
+## Known limitations (v0.2)
 
-- The blocking gates ship as `bin/` tools but are not yet auto-installed into the user's loop (the v0.2 installer).
+- The blocking gates are installed **only by consent** (`wire.py apply`, offered by `/harness-seed`) — an unwired project's protection is the worker's narrow tool scope plus discipline, and `wire.py check` says which state you're in. A worker holding `Bash` can still route around any path-glob gate; keep workers Bash-less.
+- The wired hook copies in `.harness/hooks/` refresh on re-`apply`, not automatically on plugin update (`wire.py check` WARNs on drift).
 - The probe-cost ranking falls back to a constant until the ledger accrues history (by design — measured, not estimated).
 - No family kits yet — the kernel is domain-agnostic; cold-start precedent must be authored per project until kits land.

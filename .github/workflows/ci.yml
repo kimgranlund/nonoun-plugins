@@ -183,13 +183,18 @@ jobs:
           python3 harness-forge/bin/ledger.py selftest         # append-only + probe-cost + false-pass (unmeasured until a refuter exists)
           python3 harness-forge/bin/validate.py selftest       # the validation path: signal minted from a verifier's exit status, cell advanced only on pass
           python3 harness-forge/bin/harness-hook selftest      # advisory feedback, never blocks
-          python3 harness-forge/bin/gate-signal selftest       # protected-verifier deny-on-write
+          python3 harness-forge/bin/gate-signal selftest       # protected-verifier deny-on-write (segment-anchored)
+          python3 harness-forge/bin/emit-ledger selftest       # the audit-trail feedback hook (records writes, never blocks)
+          python3 harness-forge/bin/propagate-staleness selftest  # the staleness cascade (edited asset flips cell + dependents stale)
+          python3 harness-forge/bin/wire.py selftest           # the installer: unwired fails check, wired passes, merge non-destructive, the gate denies its own unwiring
           python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools
-          # seed → scan → check smoke on a real scaffolded lattice in a throwaway dir
+          # seed → scan → check → wire smoke on a real scaffolded project in a throwaway dir
           D="$(mktemp -d)"
           python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.harness"
           python3 harness-forge/bin/lattice.py scan --dir "$D/.harness"
           python3 harness-forge/bin/lattice.py check --dir "$D/.harness"   # the seeded lattice passes its own structural validator
+          python3 harness-forge/bin/wire.py apply --project "$D"           # the installer wires the seeded project...
+          python3 harness-forge/bin/wire.py check --project "$D"           # ...and the wiring check proves it (exit 0 = wired)
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |

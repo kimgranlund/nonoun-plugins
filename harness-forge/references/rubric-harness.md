@@ -1,7 +1,7 @@
 ---
 date: 2026-06-12
 status: draft
-version: "0.1.0"
+version: "0.2.0"
 ---
 
 # Rubric — Looping Agentic Harness
@@ -50,7 +50,7 @@ Are verifier assets mechanically protected, and is at least one check beyond the
 | **3** | Protections declared (frontmatter, prose) but not all mechanically enforced; reference scoring present but the worker can technically reach it. |
 | **1** | The worker can write its own signals/rubrics/tests. Reward hacking (overwritten tests, monkey-patched scorers, deleted assertions) is unprevented — and a clean scoreboard is exactly what a hack produces. |
 
-**Check**: `gate-signal` is **wired** as a PreToolUse deny in the worker loop's config — not merely present in `bin/` (a gate present-but-unwired is a false pass, the exact surface this dimension exists to catch); the signal was minted by `validate.py` from an external command's exit status, not hand-asserted by the worker; the worker carries no `Bash` (which routes around a path glob); reference-scoring present. **Cap**: a worker-writable or unwired verifier path caps the whole rubric ≤ 2.
+**Check**: `bin/wire.py check` exits 0 — the gate is **wired** as a PreToolUse deny in the project's loop config, not merely present in `bin/` (a gate present-but-unwired is a false pass, the exact surface this dimension exists to catch); the signal was minted by `validate.py` from an external command's exit status, not hand-asserted by the worker; the worker carries no `Bash` (which routes around a path glob); reference-scoring present. **Cap**: a worker-writable or unwired verifier path caps the whole rubric ≤ 2.
 
 ---
 

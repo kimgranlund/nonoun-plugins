@@ -14,7 +14,7 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 ```
 
 ```text
-/harness-seed   "invoice-parser — turn a PDF invoice into a typed record"   # scaffold .harness/ + the first slice
+/harness-seed   "invoice-parser — turn a PDF invoice into a typed record"   # scaffold .harness/ + the first slice + offer to wire the gates (consent-gated)
 /harness-scan                                                               # the open/stale gap set at the frontier
 /harness-next                                                               # the next cell, ranked, dependency-ready
 /harness-advance  spec.task.parse-invoice                                   # run define→create→validate on one cell
@@ -47,7 +47,7 @@ The full theory is in `references/agentic-systems-foundations/` (the ontology, t
 
 ```text
 harness-forge/
-├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · gate-signal · harness-hook · lattice-mcp.py
+├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · validate.py · wire.py · gate-signal · emit-ledger · propagate-staleness · harness-hook · lattice-mcp.py
 ├── commands/   6 thin entry points          → seed · scan · next · advance · distill · audit
 ├── skills/     2 posture skills             → harness-build (operate) · harness-evaluate (audit + score)
 ├── agents/     4 operating actors           → harness-builder (orchestrator) · harness-advancer · harness-auditor · harness-distiller
@@ -58,7 +58,7 @@ harness-forge/
 ```
 
 - **The one law that makes it real** — *computation routes to code, never to inference.* Selection, ranking, dependency readiness, and staleness propagation are deterministic scripts (`bin/lattice.py`), because a model-predicted computation is a hallucination surface. The model supplies the *judgment inside a cell*; the *bookkeeping between cells* is the kernel's. Every `bin/` script ships a `selftest`.
-- **Gates block, feedback injects** — the plugin's session hook (`harness-hook`) is **advisory** (it flags plural layer-dir drift and staleness, and always exits 0). The **blocking** protected-verifier gate (`gate-signal`) is shipped for *your* worker loop, where a worker writing its own signal/rubric/test is a reward-hacking surface — verifier assets become deny-on-write to workers **once you wire `gate-signal` into that loop's PreToolUse** (see [Honest scope](#honest-scope); the auto-installer is on the ROADMAP).
+- **Gates block, feedback injects, propagation cascades** — the three hook species from the typed grammar, all shipped. The plugin's *session* hook (`harness-hook`) is **advisory** (flags plural layer-dir drift and staleness, always exits 0). For *your worker loop*, `bin/wire.py apply` (offered by `/harness-seed`, **consent-gated, never silent**) installs into the project's own `.claude/settings.json`: `gate-signal` (PreToolUse **deny** on signals, rubrics, schemas, the ledger, the hooks, and the wiring itself — a worker cannot unwire the gate it runs under), `emit-ledger` (PostToolUse audit trail — engine-relevant writes are recorded mechanically), and `propagate-staleness` (PostToolUse cascade — editing a validated cell's asset flips it + hash-mismatched dependents stale, as a graph computation). `wire.py check` proves the wiring (exit 0 = wired); `wire.py unwire` reverses it exactly.
 - **The MCP is a curated read perimeter** — `lattice-query` surfaces the lattice cells, the frontier gap-set, the ledger, and the signals read-only; the engine that writes them stays in `bin/`.
 
 ---
@@ -68,8 +68,8 @@ harness-forge/
 - **The kernel mechanizes the mechanizable** — the lattice graph, the partial order, typed naming, staleness, the ledger, the false-pass metric. These are scripts with selftests, not taste.
 - **The judgment stays the model's** — defining what *done* means (the spec), writing a cell's asset, calibrating a rubric. No regex decides those; the engine routes them to the worker, and the rubric scores them.
 - **Autonomy is earned, not declared** — the trust trajectory advances a loop family by a *measured* false-pass rate (< ~5%) and zero reward-hacking incidents, read from the ledger. `ledger.py false-pass` returns **`unmeasured`** (not a misleading 0%) until an independent refuter exists — the absence of bad news is not evidence. The harness's own claim of "production-ready" is a finding, never a verdict.
-- **The protected-verifier gate is *shipped*, not yet *auto-wired* (the headline v0.1 limitation).** `gate-signal` is a real, selftested deny-on-write gate, and `validate.py` mints signals from an external command's exit status — so the loop genuinely closes. But the plugin's *session* hook is deliberately advisory-only (a blocking gate in a shared session would be hostile), and the **blocking** gate must be wired into *your* worker loop's PreToolUse config. Until you wire it (the auto-installer is on the ROADMAP), "the worker cannot write its own verifier" is enforced by the worker carrying no signal-write tools **plus your discipline** — not yet purely mechanically. Every "deny-on-write" claim in this plugin is scoped to "when `gate-signal` is wired."
-- **v0.1 is the kernel + the operating roster, validated and selftested.** The seed-into-loop gate installer, the structural-critic council, verifier-adapter library, calibration fixtures, and family **kits** are on the [ROADMAP](ROADMAP.md).
+- **The protected-verifier gate is wired by consent, never silently.** `gate-signal` is a real, selftested deny-on-write gate, `validate.py` mints signals from an external command's exit status, and `bin/wire.py apply` installs the blocking enforcement into *your* loop — but only after `wire.py plan` shows you exactly what changes and you say yes (the plugin's own session hook stays advisory by design; a blocking gate in a shared session would be hostile). The wiring state is **checked, not assumed**: `wire.py check` exit 0 is the mechanical claim "the worker cannot write its own verifier — or unwire the gate"; before that, the protection is the worker's narrow tool scope plus your discipline, and the plugin says so rather than overclaiming.
+- **v0.2 is the kernel + the operating roster + the wired loop, validated and selftested.** The structural-critic council, verifier-adapter library, calibration fixtures, and family **kits** are on the [ROADMAP](ROADMAP.md).
 
 ---
 

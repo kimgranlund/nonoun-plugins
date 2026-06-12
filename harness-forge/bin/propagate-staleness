@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""propagate-staleness — the CASCADE hook species: an edited asset invalidates its cell's evidence, as a graph effect.
+
+`gate-*` blocks, `emit-*` injects, `propagate-*` cascades (naming-conventions.md, Tier 3). A `validated`
+cell's signal attests a specific content hash; editing the asset after validation means the evidence no
+longer covers the content. This PostToolUse(Write|Edit) hook makes that a WRITE-TIME GRAPH COMPUTATION
+instead of a thing someone remembers: when the written path is some cell's `asset_ref`, the cell flips
+`stale`, every dependent whose `validated_against` hash no longer matches cascades `stale` too (the
+kernel's own `propagate_staleness`), the flip is recorded to the ledger, and the model is told via
+`additionalContext`. It NEVER blocks (the write already happened; the cascade is the consequence) —
+always exit 0, including on malformed input. No cell match → silent.
+
+Computation routes to code: the staleness graph walk is `lattice.py`'s, imported — never re-inferred.
+Wired by `bin/wire.py`, which copies this hook into the project's `.harness/hooks/` alongside a private
+`_lattice.py` byte-copy of the kernel. Resolves the harness at `$HARNESS_DIR`, else `./.harness`.
+
+Usage:
+  propagate-staleness --hook       # reads PostToolUse JSON on stdin; cascades staleness; ALWAYS exits 0
+  propagate-staleness selftest
+Stdlib only; Python 3.8+.
+"""
+import datetime
+import hashlib
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import lattice as _lat                  # plugin layout: bin/lattice.py is a sibling
+except ImportError:                          # wired layout: .harness/hooks/_lattice.py (private byte-copy)
+    import _lattice as _lat
+
+
+def _harness_dir():
+    return os.environ.get("HARNESS_DIR") or ".harness"
+
+
+def _hash(path):
+    try:
+        return "sha256:" + hashlib.sha256(open(path, "rb").read()).hexdigest()[:16]
+    except OSError:
+        return ""
+
+
+def _norm(p):
+    p = (p or "").replace("\\", "/")
+    return p[2:] if p.startswith("./") else p
+
+
+def cascade(path, d=None):
+    """Flip the cell owning `path` (and its hash-mismatched dependents) stale. Returns (flipped_ids, context)."""
+    d = d or _harness_dir()
+    if not path or not os.path.isfile(os.path.join(d, "lattice.json")):
+        return [], None
+    try:
+        lat = _lat.load(d)
+    except (OSError, ValueError):
+        return [], None                                            # unreadable lattice → a gate's problem, not a cascade's
+    p = _norm(path)
+    owners = [c for c in lat["cells"] if c.get("asset_ref") and (p == _norm(c["asset_ref"]) or p.endswith("/" + _norm(c["asset_ref"])))]
+    flipped = []
+    for cell in owners:
+        cell_id = _lat.cid(cell)
+        new_hash = _hash(path) or _hash(os.path.join(os.path.dirname(d.rstrip("/")) or ".", cell["asset_ref"]))
+        if cell["maturity"] in _lat.SETTLED:                       # its evidence predates the content now
+            cell["maturity"] = "stale"
+            flipped.append(cell_id)
+        flipped.extend(_lat.propagate_staleness(lat, cell_id, new_hash))
+    if not flipped:
+        return [], None
+    _lat.save(d, lat)
+    try:                                                           # the flip is itself a ledgered event
+        os.makedirs(os.path.join(d, "ledger"), exist_ok=True)
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"operation": "record", "actor": "hook:propagate-staleness",
+                                "ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                                "cell_id": flipped[0], "result": "stale",
+                                "rationale": f"asset edited after validation; cascade flipped {len(flipped)} cell(s)"},
+                               separators=(",", ":")) + "\n")
+    except OSError:
+        pass                                                       # the cascade still happened; emit-ledger owns trail alarms
+    ctx = (f"propagate-staleness: `{flipped[0]}` flipped STALE (its asset was edited after validation — the signal no "
+           f"longer covers the content){'; cascaded: ' + ', '.join(flipped[1:]) if len(flipped) > 1 else ''}. "
+           f"Re-validate via /harness-advance before trusting or building on it.")
+    return flipped, ctx
+
+
+def _hook():
+    try:
+        data = json.load(sys.stdin)
+        ti = data.get("tool_input") or data.get("toolInput") or {}
+        path = ti.get("file_path") or ti.get("path") or ti.get("file")
+    except Exception:
+        return 0                                                   # cascade never blocks
+    _, ctx = cascade(path)
+    if ctx:
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": ctx}}))
+    return 0
+
+
+def selftest():
+    import tempfile
+    fails = []
+    def expect(cond, label):
+        if not cond:
+            fails.append(label)
+    with tempfile.TemporaryDirectory() as root:
+        d = os.path.join(root, ".harness")
+        _lat.scaffold(d)
+        lat = _lat.seed_lattice("t")
+        spec_path = os.path.join(root, "spec-asset.md")
+        open(spec_path, "w").write("v1")
+        for c in lat["cells"]:
+            if _lat.cid(c) == "spec.task.first-slice":             # validated, with a real asset on disk
+                c["maturity"] = "validated"
+                c["asset_ref"] = spec_path
+            if _lat.cid(c) == "rubric.task.first-slice":           # a dependent validated against the OLD hash
+                c["maturity"] = "validated"
+                c["validated_against"] = {"spec.task.first-slice": "sha256:oldhash"}
+        _lat.save(d, lat)
+
+        open(spec_path, "w").write("v2 — edited after validation")
+        flipped, ctx = cascade(spec_path, d=d)
+        expect("spec.task.first-slice" in flipped, f"owner cell did not flip stale: {flipped}")
+        expect("rubric.task.first-slice" in flipped, f"hash-mismatched dependent did not cascade: {flipped}")
+        expect(ctx and "STALE" in ctx and "/harness-advance" in ctx, "cascade context missing or unactionable")
+        after = _lat.load(d)
+        expect(_lat.find(after, "spec.task.first-slice")["maturity"] == "stale", "owner not stale on disk")
+        expect(_lat.find(after, "rubric.task.first-slice")["maturity"] == "stale", "dependent not stale on disk")
+        ledger = open(os.path.join(d, "ledger", "events.jsonl"), encoding="utf-8").read()
+        expect("propagate-staleness" in ledger, "the flip was not ledgered")
+
+        flipped, ctx = cascade(spec_path, d=d)                     # idempotent: already stale → nothing to flip
+        expect(flipped == [] and ctx is None, f"re-cascade on a stale cell was not a no-op: {flipped}")
+        flipped, ctx = cascade(os.path.join(root, "unrelated.py"), d=d)
+        expect(flipped == [] and ctx is None, "non-asset write triggered a cascade")
+        flipped, ctx = cascade(spec_path, d=os.path.join(root, "nowhere"))
+        expect(flipped == [] and ctx is None, "missing harness did not stand down")
+    if fails:
+        sys.stderr.write("propagate-staleness selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("propagate-staleness selftest: OK (an edited validated asset flips its cell + hash-mismatched dependents "
+          "stale as a write-time graph effect, ledgered + surfaced; idempotent; silent on non-assets; never blocks)")
+    return 0
+
+
+def main(argv):
+    if argv and argv[0] == "selftest":
+        return selftest()
+    if argv and argv[0] == "--hook":
+        return _hook()
+    print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

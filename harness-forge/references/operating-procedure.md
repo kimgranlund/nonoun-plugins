@@ -1,7 +1,7 @@
 ---
 date: 2026-06-12
 status: draft
-version: "0.1.0"
+version: "0.2.0"
 ---
 
 # Operating Procedure — the loop, bound to the commands
@@ -20,7 +20,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
    lattice.py validity <cell>  → CAN ADVANCE / BLOCKED          │  (gate the move)
    dispatch harness-advancer (one cell, fresh context):            │
      define → create → validate                                 │
-     validation path writes signals/{cell}/…  (NOT the worker)  │  ← gate-signal protects it
+     validation path writes signals/{cell}/…  (NOT the worker)  │  ← gate-signal protects it (wired: wire.py check = 0)
      ledger.py append  (result + WHY + cost)                    │
                 │                                                │
                 ▼                                                │
@@ -36,7 +36,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
 
 ## The steps
 
-1. **Seed** (`/harness-seed`) — `lattice.py init` lays `.harness/` + the first thin slice (an ontology + spec + rubric + ledger task slice). The ledger schema sits in the first slice; provenance cannot be retrofitted.
+1. **Seed** (`/harness-seed`) — `lattice.py init` lays `.harness/` + the first thin slice (an ontology + spec + rubric + ledger task slice). The ledger schema sits in the first slice; provenance cannot be retrofitted. The seed's final step **offers to wire the blocking gates** into the project's own loop (`wire.py plan` → user consent → `apply` → `check`): the PreToolUse `gate-signal` deny, the `emit-ledger` audit trail, the `propagate-staleness` cascade. Wire before the first unattended pass — `wire.py check` exit 0 is the precondition for claiming the protection is mechanical.
 2. **Scan** (`/harness-scan`) — `lattice.py scan` sweeps the modality axis at the frontier scope. A missing whole layer outranks a missing slug.
 3. **Rank** (`/harness-next`) — `lattice.py rank` dependency-filters and orders. Probe cost from the ledger once history exists.
 4. **Advance** (`/harness-advance`) — gate with `lattice.py validity`, then the `harness-advancer` runs the engine; the validation path writes the signal; `ledger.py append` records the why.
