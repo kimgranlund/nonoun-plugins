@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Naming",
+  "title": "Typed naming grammar (self-hosting)",
+  "description": "The controlled vocabularies and composition grammars every named artifact decomposes into. bin/naming.py consumes this data to validate a name of a given class; a name that fails the grammar is a defect caught mechanically. See references/agentic-systems-foundations/naming-conventions.md. The naming system is itself a cell in the ontology — extending a vocab is an ontology revision, never an ad-hoc coinage.",
+  "type": "object",
+  "vocab": {
+    "layer": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"],
+    "scope": ["call", "task", "workflow", "system", "fleet"],
+    "maturity": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"],
+    "tier": ["kernel", "kit"],
+    "operation": ["seed", "audit", "scan", "rank", "advance", "define", "create", "validate", "record", "distill", "regenerate", "conform", "author", "scaffold", "widen"],
+    "actor": ["auditor", "advancer", "distiller", "regenerator", "librarian", "builder", "scribe"],
+    "gateverb": ["gate", "propagate", "emit"]
+  },
+  "_block_note": "The `block` vocabulary is the closed set {lattice, frontier, cell, signal, kit} unioned with every `layer` value; bin/naming.py computes it.",
+  "block_extra": ["lattice", "frontier", "cell", "signal", "kit"],
+  "slug": "[a-z0-9]+(?:-[a-z0-9]+)*",
+  "grammars": {
+    "cell_id": { "template": "{layer}.{scope}.{slug}", "doc": "rubric.workflow.citation-integrity" },
+    "agent_file": { "template": "{slug}-{actor}.md", "doc": "cell-advancer.md, pattern-distiller.md" },
+    "skill_folder": { "template": "{block}-{operation}", "doc": "frontier-rank, cell-validate" },
+    "hook_script": { "template": "{gateverb}-{slug}", "doc": "gate-signal, propagate-staleness, emit-ledger" },
+    "layer_dir": { "template": "{layer}", "doc": "spec, never specs" },
+    "plugin": { "template": "{ns}-{tier}", "ns": "[a-z0-9]+(?:-[a-z0-9]+)*", "doc": "frontier-kernel, frontier-kit-corpus", "optional_suffix": "-{slug}" }
+  },
+  "rules": [
+    "Directories mirror enums byte-for-byte (singular): spec/, never specs/.",
+    "The namespace never repeats inside members (BEM scoping applied to plugins).",
+    "Identity excludes state: cell IDs carry layer.scope.slug; maturity is a Property.",
+    "Casing by class: kebab-case plugins/skills/agents; snake_case scripts/tools; PascalCase schema $ids; dot-separated cell-id axes.",
+    "Gateverbs carry the control species: gate-* blocks, emit-* injects feedback, propagate-* cascades graph effects."
+  ]
+}

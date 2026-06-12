@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Cell",
+  "title": "Cell — one layer at one scope with a maturity state (the unit of the lattice)",
+  "description": "Identity is {layer}.{scope}.{slug}; maturity is a Property, never part of the identity. See references/agentic-systems-foundations/agentic-systems-ontology.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["layer", "scope", "slug", "maturity"],
+  "properties": {
+    "layer": {
+      "description": "The modality axis — the kind of declarative knowledge this cell carries.",
+      "enum": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"]
+    },
+    "scope": {
+      "description": "The grain axis — the size of the unit of work this cell governs.",
+      "enum": ["call", "task", "workflow", "system", "fleet"]
+    },
+    "slug": {
+      "description": "Kebab-case identifier, unique within (layer, scope).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "maturity": {
+      "description": "Exactly one state from the maturity machine. `blocked` is a condition flag, not a maturity state.",
+      "enum": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
+    },
+    "blocked": {
+      "description": "Condition flag — the advancement loop hit a budget cap or a no-progress signature. Surfaces the cell to the compass instead of burning tokens.",
+      "type": "boolean",
+      "default": false
+    },
+    "asset_ref": {
+      "description": "Repo-relative path to the artifact that instantiates this cell (the layer-dir file).",
+      "type": ["string", "null"]
+    },
+    "signal_refs": {
+      "description": "Paths to the validation signal artifacts under signals/{cell-id}/. The only currency accepted at scope boundaries.",
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "validated_against": {
+      "description": "Map of upstream cell-id -> content hash this cell was validated against. When an upstream hash changes, this cell flips to `stale` (propagate-staleness).",
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {}
+    },
+    "depends_on": {
+      "description": "Upstream cell-ids this cell requires (the dependency partial-order edges). Readiness is gated on these being `validated`.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(ontology|spec|rubric|policy|capability|methodology|protocol|ledger|pattern)\\.(call|task|workflow|system|fleet)\\.[a-z0-9-]+$" },
+      "default": []
+    },
+    "verifier": {
+      "description": "The rubric cell-id this cell's loop binds to. A cell advances only against a `validated` rubric (the verifier-maturity precondition).",
+      "type": ["string", "null"]
+    },
+    "budget": {
+      "description": "Loop budget primitives (policy instances). Exhaustion flips `blocked`.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iterations": { "type": "integer", "minimum": 1 },
+        "tokens": { "type": "integer", "minimum": 1 },
+        "wall_clock_s": { "type": "integer", "minimum": 1 },
+        "no_progress_n": { "type": "integer", "minimum": 1, "default": 3 }
+      },
+      "default": {}
+    },
+    "attempts": {
+      "description": "Count of engine passes run on this cell (read from the ledger).",
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    }
+  }
+}

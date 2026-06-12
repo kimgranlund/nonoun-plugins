@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Lattice",
+  "title": "Lattice — the full grid of cells for one project",
+  "description": "Canonical state in .harness/lattice.json; every other view (status renders, the frontier) is derived. See references/agentic-systems-foundations/lattice-model.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "cells"],
+  "properties": {
+    "version": {
+      "description": "Schema/format version of this lattice file.",
+      "type": "string"
+    },
+    "project": {
+      "description": "Human label for the project this lattice governs.",
+      "type": "string"
+    },
+    "created": {
+      "description": "ISO-8601 creation timestamp (stamped by the seed operation).",
+      "type": "string"
+    },
+    "frontier_scope": {
+      "description": "The current frontier of the trajectory — the largest scope at which the slice has validated footholds. The compass scans the modality axis at this scope.",
+      "enum": ["call", "task", "workflow", "system", "fleet"],
+      "default": "task"
+    },
+    "cells": {
+      "description": "The cells of the lattice. Each is a Cell (cell.schema.json).",
+      "type": "array",
+      "items": { "$ref": "cell.schema.json" }
+    }
+  }
+}

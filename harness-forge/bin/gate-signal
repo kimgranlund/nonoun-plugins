@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""gate-signal — the blocking protected-verifier gate, for the USER's worker loop (NOT the plugin session).
+
+Published reward-hacking rates run to double-digit percentages of rollouts, a meaningful fraction
+shipping deliberate exploit code (overwritten tests, monkey-patched scorers, deleted assertions). The
+first and strongest defense is mechanical, not instructed: verifier assets — signal directories, rubric
+files, eval suites, the naming/lattice schemas, and the hooks themselves — are DENY-ON-WRITE to worker
+agents. Signals are written only by the validation path. The worker never grades its own homework,
+structurally.
+
+This is the gate species (it BLOCKS — unlike `harness-hook`, which only advises). It is meant to be
+wired as a PreToolUse(Write|Edit) hook inside the user's autonomous WORKER loop — never into a shared
+interactive session — where a non-zero exit denies the write. The protected set is configurable via
+`HARNESS_PROTECTED` (newline- or comma-separated path globs); a sensible default ships.
+
+Usage:
+  gate-signal --hook          # reads PreToolUse JSON on stdin; exit 2 (+reason on stderr) = DENY a protected write
+  gate-signal check <path>    # exit 1 if <path> is protected (for scripting/testing)
+  gate-signal selftest
+Stdlib only; Python 3.8+.
+"""
+import fnmatch
+import json
+import os
+import sys
+
+DEFAULT_PROTECTED = [
+    "*/signals/*", "signals/*",
+    "*/rubric/*", "rubric/*",
+    "*.schema.json",
+    "*/hooks/*", "hooks/*",
+    "*/evals/*", "evals/*",
+    "*/lattice.json", "lattice.json",
+]
+
+
+def protected_globs():
+    env = os.environ.get("HARNESS_PROTECTED")
+    if env:
+        return [g.strip() for g in env.replace(",", "\n").splitlines() if g.strip()]
+    return DEFAULT_PROTECTED
+
+
+def is_protected(path, globs=None):
+    if not path:
+        return False
+    p = path.replace("\\", "/")
+    for g in (globs or protected_globs()):
+        if fnmatch.fnmatch(p, g) or fnmatch.fnmatch(os.path.basename(p), g):
+            return True
+    return False
+
+
+def selftest():
+    fails = []
+    def expect(cond, label):
+        if not cond:
+            fails.append(label)
+    for p in (".harness/signals/spec.task.x/2026-06-12T09-00--pytest.json",
+              ".harness/rubric/first-slice.md", ".harness/naming.schema.json",
+              ".harness/hooks/gate-signal", ".harness/lattice.json", "evals/suite.py"):
+        expect(is_protected(p), f"failed to protect a verifier asset: {p}")
+    for p in (".harness/spec/first-slice.md", "src/main.py", "README.md"):
+        expect(not is_protected(p), f"wrongly protected a worker-writable path: {p}")
+    # env override narrows/redefines the set
+    expect(is_protected("custom/secret.txt", ["custom/*"]), "explicit glob override did not protect")
+    if fails:
+        sys.stderr.write("gate-signal selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("gate-signal selftest: OK (denies worker writes to signals/rubric/schemas/hooks/evals/lattice; allows spec & source; honors HARNESS_PROTECTED)")
+    return 0
+
+
+def main(argv):
+    if argv and argv[0] == "selftest":
+        return selftest()
+    if argv and argv[0] == "check" and len(argv) > 1:
+        return 1 if is_protected(argv[1]) else 0
+    if argv and argv[0] == "--hook":
+        try:
+            data = json.load(sys.stdin)
+            ti = data.get("tool_input") or data.get("toolInput") or {}
+            path = ti.get("file_path") or ti.get("path") or ti.get("file")
+        except Exception:
+            return 0                                  # malformed input → do not block (fail-open on parse)
+        if is_protected(path):
+            sys.stderr.write(f"gate-signal: DENY — `{path}` is a protected verifier asset; workers are deny-on-write to it "
+                             f"(anti-reward-hacking). Signals are written only by the validation path.\n")
+            return 2                                   # non-zero = block the write
+        return 0
+    print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

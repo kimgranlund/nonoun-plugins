@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Signal",
+  "title": "Signal — the evidence artifact produced by validation",
+  "description": "The only currency accepted at scope boundaries. Written by the validation path, NEVER by the worker (the generator/critic split, made structural). Path: signals/{cell-id}/{ISO-ts}--{harness}.json. See references/agentic-systems-foundations/evals-and-verification.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cell_id", "ts", "harness", "kind", "result"],
+  "properties": {
+    "cell_id": {
+      "description": "The cell this signal validates ({layer}.{scope}.{slug}).",
+      "type": "string",
+      "pattern": "^(ontology|spec|rubric|policy|capability|methodology|protocol|ledger|pattern)\\.(call|task|workflow|system|fleet)\\.[a-z0-9-]+$"
+    },
+    "ts": {
+      "description": "ISO-8601 timestamp the signal was produced.",
+      "type": "string"
+    },
+    "harness": {
+      "description": "The verifier/adapter that produced this signal (e.g. link-check, pytest, llm-judge). Snake- or kebab-cased.",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Gate (mechanical, deterministic) or review (calibrated judgment).",
+      "enum": ["gate", "review"]
+    },
+    "result": {
+      "description": "The verdict. A cell advances to `validated` only on pass.",
+      "enum": ["pass", "fail"]
+    },
+    "evidence": {
+      "description": "Localized, actionable detail — where and why, not just pass/fail (a stack trace, a line number, a diff, a scored breakdown).",
+      "type": ["object", "string", "null"]
+    },
+    "validated_against": {
+      "description": "Map of upstream cell-id -> content hash this validation was computed against (copied onto the cell on pass; drives staleness propagation).",
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {}
+    },
+    "cost": {
+      "description": "Measured probe cost for this loop (feeds the compass's value function — probe cost is read from the ledger, not estimated).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tokens": { "type": "integer", "minimum": 0 },
+        "iterations": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

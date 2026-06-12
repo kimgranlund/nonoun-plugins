@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "lattice-query": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/lattice-mcp.py"],
+      "env": {
+        "HARNESS_DIR": "${user_config.harness_dir}"
+      }
+    }
+  }
+}

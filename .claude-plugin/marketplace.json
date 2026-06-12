@@ -79,6 +79,25 @@
         "repo-review",
         "council"
       ]
+    },
+    {
+      "name": "harness-forge",
+      "source": "./harness-forge",
+      "description": "Hydrate a project to run looping, latticed agentic workflows — a kernel that scaffolds and operates a typed knowledge lattice (nine layers × five scopes × a maturity state machine) via the engine (define→create→validate), the compass (scan→rank), and the regeneration loop. Ships an operating agent roster (a harness-builder orchestrator · cell-advancer · lattice-auditor · pattern-distiller · cell-regenerator), stdlib gates that mechanize typed naming, the partial order, anti-reward-hacking protected-verifier writes, and staleness, an advisory hook that flags naming/staleness on save (never blocks), and a read-only lattice-query MCP.",
+      "category": "developer-tools",
+      "tags": [
+        "agentic",
+        "harness",
+        "lattice",
+        "agent-loops",
+        "orchestration",
+        "evals",
+        "verification",
+        "autonomy",
+        "ledger",
+        "kernel",
+        "meta"
+      ]
     }
   ]
 }

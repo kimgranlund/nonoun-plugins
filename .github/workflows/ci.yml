@@ -32,6 +32,9 @@ jobs:
       - name: validate plugin — agent-ops
         run: python3 "$PF/bin/validate_plugin.py" plugin agent-ops --strict
 
+      - name: validate plugin — harness-forge
+        run: python3 "$PF/bin/validate_plugin.py" plugin harness-forge --strict
+
       - name: validate marketplace
         run: python3 "$PF/bin/validate_plugin.py" marketplace .
 
@@ -93,10 +96,13 @@ jobs:
       - name: reference-lint — agent-ops
         run: python3 "$PF/bin/reference-lint.py" agent-ops
 
+      - name: reference-lint — harness-forge
+        run: python3 "$PF/bin/reference-lint.py" harness-forge
+
       - name: manifest-sync gate (selftest + every plugin)
         run: |
           python3 "$PF/bin/check-manifest-sync.py" selftest
-          for p in brand-forge plugins-factory product-forge agent-ops; do
+          for p in brand-forge plugins-factory product-forge agent-ops harness-forge; do
             python3 "$PF/bin/check-manifest-sync.py" "$p"
           done
 
@@ -169,6 +175,19 @@ jobs:
           python3 agent-ops/bin/doc-hygiene selftest
           python3 agent-ops/bin/audit-history.py selftest
           python3 agent-ops/bin/repo-memory-mcp.py selftest
+
+      - name: harness-forge — kernel selftests (the lattice machinery proves itself)
+        run: |
+          python3 harness-forge/bin/naming.py selftest        # typed naming accepts the spec examples, rejects drift
+          python3 harness-forge/bin/lattice.py selftest        # partial order + verifier-maturity + staleness as graph computation
+          python3 harness-forge/bin/ledger.py selftest         # append-only + probe-cost + false-pass
+          python3 harness-forge/bin/harness-hook selftest      # advisory feedback, never blocks
+          python3 harness-forge/bin/gate-signal selftest       # protected-verifier deny-on-write
+          python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools
+          # seed → scan smoke on a real lattice in a throwaway dir
+          D="$(mktemp -d)"
+          python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.harness"
+          python3 harness-forge/bin/lattice.py scan --dir "$D/.harness"
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |
