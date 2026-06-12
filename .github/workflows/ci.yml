@@ -123,7 +123,7 @@ jobs:
         run: |
           python3 "$PF/bin/context-cost.py" selftest
           python3 "$PF/bin/context-cost.py" marketplace .
-          python3 "$PF/bin/context-cost.py" marketplace . --with-mcp   # folds the 3 live MCPs' served tool-defs into the total (executes servers; trusted/CI only)
+          python3 "$PF/bin/context-cost.py" marketplace . --with-mcp   # folds the 4 live MCPs' served tool-defs into the total (executes servers; trusted/CI only)
 
       - name: checker-recall gate (council-calibration checkers aren't brittle)
         run: |
@@ -178,16 +178,18 @@ jobs:
 
       - name: harness-forge — kernel selftests (the lattice machinery proves itself)
         run: |
-          python3 harness-forge/bin/naming.py selftest        # typed naming accepts the spec examples, rejects drift
-          python3 harness-forge/bin/lattice.py selftest        # partial order + verifier-maturity + staleness as graph computation
-          python3 harness-forge/bin/ledger.py selftest         # append-only + probe-cost + false-pass
+          python3 harness-forge/bin/naming.py selftest        # typed naming accepts the spec examples, rejects drift (+ dogfoods agents/*.md)
+          python3 harness-forge/bin/lattice.py selftest        # partial order + verifier-maturity + staleness + scaffold + check + transitions
+          python3 harness-forge/bin/ledger.py selftest         # append-only + probe-cost + false-pass (unmeasured until a refuter exists)
+          python3 harness-forge/bin/validate.py selftest       # the validation path: signal minted from a verifier's exit status, cell advanced only on pass
           python3 harness-forge/bin/harness-hook selftest      # advisory feedback, never blocks
           python3 harness-forge/bin/gate-signal selftest       # protected-verifier deny-on-write
           python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools
-          # seed → scan smoke on a real lattice in a throwaway dir
+          # seed → scan → check smoke on a real scaffolded lattice in a throwaway dir
           D="$(mktemp -d)"
           python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.harness"
           python3 harness-forge/bin/lattice.py scan --dir "$D/.harness"
+          python3 harness-forge/bin/lattice.py check --dir "$D/.harness"   # the seeded lattice passes its own structural validator
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |

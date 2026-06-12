@@ -112,8 +112,27 @@ _CASES = [
     ("layer_dir", "specs", False),                  # plural drift
     ("plugin", "frontier-kernel", True),
     ("plugin", "frontier-kit-corpus", True),
-    ("plugin", "frontier-foundry", False),          # `foundry` not a tier
+    ("plugin", "harness-forge", True),              # the catalog family axis (forge) — must parse its own grammar
+    ("plugin", "frontier-foundry", False),          # `foundry` still not a tier
 ]
+
+
+def _dogfood():
+    """Run the grammar over the plugin's OWN real artifacts — agents/*.md, the layer dirs, this plugin's name —
+    so the self-hosting claim is a mechanical fact, not a coincidence. Returns a list of failures."""
+    out = []
+    plugin = os.path.basename(_ROOT)
+    ok, reason = validate(plugin, "plugin")
+    if not ok:
+        out.append(f"the plugin's own name `{plugin}` fails its own grammar: {reason}")
+    agents_dir = os.path.join(_ROOT, "agents")
+    if os.path.isdir(agents_dir):
+        for f in sorted(os.listdir(agents_dir)):
+            if f.endswith(".md"):
+                ok, reason = validate(f, "agent_file")
+                if not ok:
+                    out.append(f"agent file `{f}`: {reason}")
+    return out
 
 
 def selftest():
@@ -122,6 +141,7 @@ def selftest():
         ok, reason = validate(name, cls)
         if ok != should:
             fails.append(f"{cls} `{name}`: expected {'PASS' if should else 'REJECT'}, got {'PASS' if ok else 'REJECT'} ({reason})")
+    fails += _dogfood()
     if fails:
         sys.stderr.write("naming selftest: FAIL\n")
         for f in fails:

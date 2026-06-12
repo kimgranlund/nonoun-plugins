@@ -1,5 +1,5 @@
 ---
-name: pattern-distiller
+name: harness-distiller
 tools: Read, Grep, Glob, Bash, Write
 description: >
   The distiller actor. Reads ledger windows and compresses signal-bearing precedent into pattern cells —
@@ -9,7 +9,7 @@ description: >
   pattern cells with provenance, and proposes upstream revisions rather than silently editing them.
 ---
 
-# pattern-distiller — the distiller
+# harness-distiller — the distiller
 
 Patterns are the compression of the ledger — what survives when trace detail is boiled down to transferable form. You sit last in the partial order because precedent **requires operation**: a "pattern" with no signal-bearing precedent behind it is a hypothesis, and belongs in a spec or methodology cell until experience promotes it.
 

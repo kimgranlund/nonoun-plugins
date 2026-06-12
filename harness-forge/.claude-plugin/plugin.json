@@ -1,7 +1,7 @@
 {
   "name": "harness-forge",
-  "version": "0.1.0",
-  "description": "Hydrate a project to run looping, latticed agentic workflows. A kernel that scaffolds and operates a typed knowledge lattice — nine declarative layers × five scopes × a maturity state machine — driven by the engine (define→create→validate at the smallest signal-yielding scope), the compass (scan→rank), and the regeneration loop (operate→ledger→distill→patterns). Ships an operating agent roster (a harness-builder orchestrator · cell-advancer · lattice-auditor · pattern-distiller · cell-regenerator), stdlib gates that mechanize typed naming, the dependency partial-order, anti-reward-hacking protected-verifier writes, budgets, and staleness propagation, an advisory hook that flags naming/staleness on save (never blocks), and a read-only lattice-query MCP over the project's .harness/ state. Self-contained.",
+  "version": "0.1.1",
+  "description": "Hydrate a project to run looping, latticed agentic workflows. A kernel that scaffolds and operates a typed knowledge lattice — nine declarative layers × five scopes × a maturity state machine — driven by the engine (define→create→validate at the smallest signal-yielding scope, the signal minted from a real verifier command's exit status), the compass (scan→rank), and the regeneration loop (operate→ledger→distill→patterns). Ships an operating agent roster (a harness-builder orchestrator · harness-advancer · harness-auditor · harness-distiller), stdlib gates that mechanize typed naming, the dependency partial-order, lattice structural validation, and staleness propagation, a blocking protected-verifier gate for the worker loop to wire, an advisory hook that flags naming/staleness on save (never blocks), and a read-only lattice-query MCP over the project's .harness/ state. Self-contained.",
   "author": {
     "name": "Kim",
     "email": "kim.granlund@gmail.com"

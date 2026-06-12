@@ -84,14 +84,20 @@ def probe_cost(events):
 
 
 def false_pass_rate(events):
-    """Fraction of validate=pass entries later contradicted by an independent check (a `refute` event on the same cell).
-    The number that gates unattended autonomy (practitioner convention: < ~5%). Measured, never self-reported."""
+    """Fraction of validate=pass entries later contradicted by an INDEPENDENT check (a `refute` event on the same cell).
+    The number that gates unattended autonomy (practitioner convention: < ~5%). Measured, never self-reported —
+    and CRUCIALLY, `unmeasured` when no independent refuter exists: a 0.0% with zero refute events is the ABSENCE
+    of bad news, not evidence of correctness, and must not read as an earned 0.0%. Returns (rate_or_None, fp, passes,
+    refute_count); rate is None ⇒ unmeasured (register an independent refuter before trusting autonomy)."""
     passes = [e for e in events if e.get("operation") == "validate" and e.get("result") == "pass"]
-    refuted_cells = {e.get("cell_id") for e in events if e.get("operation") == "refute"}
+    refutes = [e for e in events if e.get("operation") == "refute"]
+    if not refutes:                                   # no independent check has ever run → the rate is not measured
+        return None, 0, len(passes), 0
     if not passes:
-        return 0.0, 0, 0
+        return 0.0, 0, 0, len(refutes)
+    refuted_cells = {e.get("cell_id") for e in refutes}
     fp = sum(1 for e in passes if e.get("cell_id") in refuted_cells)
-    return round(fp / len(passes), 4), fp, len(passes)
+    return round(fp / len(passes), 4), fp, len(passes), len(refutes)
 
 
 def distill_window(events, n=20):
@@ -119,8 +125,12 @@ def selftest():
         cost = probe_cost(evs)
         expect(cost.get("spec", {}).get("task") == 3, f"probe cost (median of 2,4) wrong: {cost}")
 
-        rate, fp, tot = false_pass_rate(evs)
-        expect(fp == 1 and tot == 2 and rate == 0.5, f"false-pass (1 of 2) wrong: {rate} {fp}/{tot}")
+        rate, fp, tot, refn = false_pass_rate(evs)
+        expect(fp == 1 and tot == 2 and rate == 0.5 and refn == 1, f"false-pass (1 of 2) wrong: {rate} {fp}/{tot}")
+        # unmeasured when no refute source exists — two passes, zero refutes → None, NOT a misleading 0.0%
+        no_refute = [e for e in evs if e.get("operation") != "refute"]
+        urate, _, utot, urefn = false_pass_rate(no_refute)
+        expect(urate is None and utot == 2 and urefn == 0, f"false-pass should be unmeasured with no refuter, got {urate}")
 
         # append-only: a second append must not rewrite the first line.
         first_line = open(_path(d), encoding="utf-8").readline()
@@ -172,8 +182,12 @@ def main(argv):
         print(json.dumps(probe_cost(evs), indent=2))
         return 0
     if argv and argv[0] == "false-pass":
-        rate, fp, tot = false_pass_rate(evs)
-        print(f"false-pass rate: {rate:.1%} ({fp}/{tot})  — autonomy gate: < ~5% with zero reward-hacking incidents")
+        rate, fp, tot, refn = false_pass_rate(evs)
+        if rate is None:
+            print(f"false-pass rate: UNMEASURED — {tot} pass(es), 0 independent `refute` events. A 0% with no refuter is "
+                  f"the absence of bad news, not evidence; register an independent refuter before trusting autonomy.")
+        else:
+            print(f"false-pass rate: {rate:.1%} ({fp}/{tot}, {refn} refute source(s))  — autonomy gate: < ~5% with zero reward-hacking incidents")
         return 0
     if argv and argv[0] == "distill":
         for e in distill_window(evs, int(_flag(argv, "--n", "20"))):

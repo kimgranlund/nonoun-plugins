@@ -35,7 +35,7 @@ TOOLS = [
      "description": "Return the full record of one cell by its id ({layer}.{scope}.{slug}) — maturity, asset_ref, signals, dependencies, verifier, budget.",
      "inputSchema": {"type": "object", "properties": {"cell_id": {"type": "string"}}, "required": ["cell_id"]}},
     {"name": "scan_frontier",
-     "description": "Return the open/stale gap set at the lattice's frontier scope — the cells the compass would consider for the next engine pass.",
+     "description": "Return the open/stale gap set at the lattice's frontier scope — the raw scan (gap detection only), NOT the dependency-filtered ranking. This is what the compass scans, not what it would pick: run `lattice.py rank` for the actual priority-ordered, dependency-ready next cell.",
      "inputSchema": {"type": "object", "properties": {}}},
     {"name": "read_ledger",
      "description": "Return the most recent append-only ledger events (what happened, by whom, why). `n` defaults to 30.",
@@ -118,7 +118,9 @@ def call(name, args):
         for ln in lines[-n:]:
             try:
                 e = json.loads(ln)
-                out.append(f"  {e.get('operation','?'):10} {e.get('actor','?'):11} {e.get('cell_id','-')}  {e.get('result','')}  {e.get('rationale','')[:80]}")
+                why = e.get("rationale", "") or ""
+                why = (why[:79] + "…") if len(why) > 80 else why   # mark truncation, never silently drop the tail
+                out.append(f"  {e.get('operation','?'):10} {e.get('actor','?'):11} {e.get('cell_id','-')}  {e.get('result','')}  {why}")
             except ValueError:
                 continue
         return (f"Ledger (last {min(n, len(lines))} of {len(lines)}):\n" + ("\n".join(out) or "  (empty)"), False)

@@ -81,7 +81,8 @@ BRAND_CORPUS_DIR=/path/to/corpus python3 brand-forge/bin/brand-corpus-mcp.py    
 python3 brand-forge/bin/brand-corpus-mcp.py selftest                             # path-guard + tools smoke
 python3 product-forge/bin/product-corpus-mcp.py selftest                         # product-corpus MCP (PRODUCT_CORPUS_DIR)
 python3 agent-ops/bin/repo-memory-mcp.py selftest                                # repo-memory MCP (REPO_MEMORY_DIR)
-python3 plugins-factory/bin/check-mcp-liveness.py marketplace .                  # every bundled MCP actually serves (3 live)
+python3 harness-forge/bin/lattice-mcp.py selftest                                # lattice-query MCP (HARNESS_DIR)
+python3 plugins-factory/bin/check-mcp-liveness.py marketplace .                  # every bundled MCP actually serves (4 live)
 
 # harness gates (run by .github/workflows/ci.yml on every push/PR):
 PF=plugins-factory

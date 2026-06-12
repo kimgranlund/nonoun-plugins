@@ -50,15 +50,15 @@ harness-forge/
 ├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · gate-signal · harness-hook · lattice-mcp.py
 ├── commands/   6 thin entry points          → seed · scan · next · advance · distill · audit
 ├── skills/     2 posture skills             → harness-build (operate) · harness-evaluate (audit + score)
-├── agents/     5 operating actors           → harness-builder (orchestrator) · cell-advancer · lattice-auditor · pattern-distiller · cell-regenerator
+├── agents/     4 operating actors           → harness-builder (orchestrator) · harness-advancer · harness-auditor · harness-distiller
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)
 ├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .harness/ state
 ├── schemas/    the typed data               → Cell · Lattice · Naming (self-hosting) · Signal
-└── references/ the standard                 → the 15-doc agentic-systems foundations + the harness rubric + the operating procedure
+└── references/ the standard                 → the 14-file agentic-systems foundations + the harness rubric + the operating procedure
 ```
 
 - **The one law that makes it real** — *computation routes to code, never to inference.* Selection, ranking, dependency readiness, and staleness propagation are deterministic scripts (`bin/lattice.py`), because a model-predicted computation is a hallucination surface. The model supplies the *judgment inside a cell*; the *bookkeeping between cells* is the kernel's. Every `bin/` script ships a `selftest`.
-- **Gates block, feedback injects** — the plugin's session hook (`harness-hook`) is **advisory** (it flags plural layer-dir drift and staleness, and always exits 0). The **blocking** protected-verifier gate (`gate-signal`) is shipped for *your* worker loop, where a worker writing its own signal/rubric/test is a reward-hacking surface — verifier assets are deny-on-write to workers, mechanically.
+- **Gates block, feedback injects** — the plugin's session hook (`harness-hook`) is **advisory** (it flags plural layer-dir drift and staleness, and always exits 0). The **blocking** protected-verifier gate (`gate-signal`) is shipped for *your* worker loop, where a worker writing its own signal/rubric/test is a reward-hacking surface — verifier assets become deny-on-write to workers **once you wire `gate-signal` into that loop's PreToolUse** (see [Honest scope](#honest-scope); the auto-installer is on the ROADMAP).
 - **The MCP is a curated read perimeter** — `lattice-query` surfaces the lattice cells, the frontier gap-set, the ledger, and the signals read-only; the engine that writes them stays in `bin/`.
 
 ---
@@ -67,8 +67,9 @@ harness-forge/
 
 - **The kernel mechanizes the mechanizable** — the lattice graph, the partial order, typed naming, staleness, the ledger, the false-pass metric. These are scripts with selftests, not taste.
 - **The judgment stays the model's** — defining what *done* means (the spec), writing a cell's asset, calibrating a rubric. No regex decides those; the engine routes them to the worker, and the rubric scores them.
-- **Autonomy is earned, not declared** — the trust trajectory advances a loop family by a *measured* false-pass rate (< ~5%) and zero reward-hacking incidents, read from the ledger. The harness's own claim of "production-ready" is a finding, never a verdict.
-- **v0.1 is the kernel + the operating roster, validated and selftested.** The structural-critic council, the seed-into-loop gate installer, calibration fixtures, and family **kits** are on the [ROADMAP](ROADMAP.md).
+- **Autonomy is earned, not declared** — the trust trajectory advances a loop family by a *measured* false-pass rate (< ~5%) and zero reward-hacking incidents, read from the ledger. `ledger.py false-pass` returns **`unmeasured`** (not a misleading 0%) until an independent refuter exists — the absence of bad news is not evidence. The harness's own claim of "production-ready" is a finding, never a verdict.
+- **The protected-verifier gate is *shipped*, not yet *auto-wired* (the headline v0.1 limitation).** `gate-signal` is a real, selftested deny-on-write gate, and `validate.py` mints signals from an external command's exit status — so the loop genuinely closes. But the plugin's *session* hook is deliberately advisory-only (a blocking gate in a shared session would be hostile), and the **blocking** gate must be wired into *your* worker loop's PreToolUse config. Until you wire it (the auto-installer is on the ROADMAP), "the worker cannot write its own verifier" is enforced by the worker carrying no signal-write tools **plus your discipline** — not yet purely mechanically. Every "deny-on-write" claim in this plugin is scoped to "when `gate-signal` is wired."
+- **v0.1 is the kernel + the operating roster, validated and selftested.** The seed-into-loop gate installer, the structural-critic council, verifier-adapter library, calibration fixtures, and family **kits** are on the [ROADMAP](ROADMAP.md).
 
 ---
 

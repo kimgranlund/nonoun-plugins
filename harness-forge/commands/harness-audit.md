@@ -5,7 +5,7 @@ argument-hint: "[optional: --dir .harness]"
 
 Audit the harness. **$ARGUMENTS**
 
-Dispatch the **`lattice-auditor`** agent and invoke the **`harness-evaluate`** skill to score the harness against `references/rubric-harness.md`. The audit checks what the engine can't see in one pass:
+Dispatch the **`harness-auditor`** agent and invoke the **`harness-evaluate`** skill to score the harness against `references/rubric-harness.md`. The audit checks what the engine can't see in one pass:
 
 - **Lattice integrity** — no rubric-before-validated-spec, no cell bound to an unvalidated verifier, the ledger schema present in the first slice, no frozen (un-regenerating) cells while their environment moves.
 - **Anti-reward-hacking** — verifier assets (signals, rubrics, schemas, hooks) are mechanically deny-on-write to workers (`bin/gate-signal`); at least one check is computed from pristine reference the worker cannot reach; the validation path, not the worker, writes signals.

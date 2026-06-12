@@ -8,7 +8,7 @@
     "layer": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"],
     "scope": ["call", "task", "workflow", "system", "fleet"],
     "maturity": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"],
-    "tier": ["kernel", "kit"],
+    "tier": ["kernel", "kit", "forge", "factory", "ops"],
     "operation": ["seed", "audit", "scan", "rank", "advance", "define", "create", "validate", "record", "distill", "regenerate", "conform", "author", "scaffold", "widen"],
     "actor": ["auditor", "advancer", "distiller", "regenerator", "librarian", "builder", "scribe"],
     "gateverb": ["gate", "propagate", "emit"]
@@ -22,7 +22,7 @@
     "skill_folder": { "template": "{block}-{operation}", "doc": "frontier-rank, cell-validate" },
     "hook_script": { "template": "{gateverb}-{slug}", "doc": "gate-signal, propagate-staleness, emit-ledger" },
     "layer_dir": { "template": "{layer}", "doc": "spec, never specs" },
-    "plugin": { "template": "{ns}-{tier}", "ns": "[a-z0-9]+(?:-[a-z0-9]+)*", "doc": "frontier-kernel, frontier-kit-corpus", "optional_suffix": "-{slug}" }
+    "plugin": { "template": "{ns}-{tier}", "ns": "[a-z0-9]+(?:-[a-z0-9]+)*", "doc": "frontier-kernel, frontier-kit-corpus, harness-forge (the `forge`/`factory`/`ops` tiers are the claude-plugins marketplace family axis, added as a deliberate ontology revision so a catalog plugin's own name parses its own grammar)", "optional_suffix": "-{slug}" }
   },
   "rules": [
     "Directories mirror enums byte-for-byte (singular): spec/, never specs/.",

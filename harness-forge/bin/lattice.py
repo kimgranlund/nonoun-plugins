@@ -28,13 +28,31 @@ Usage:
 Exit codes are operation-specific (see each). Stdlib only; Python 3.8+.
 """
 import json
+import datetime
 import os
+import shutil
 import sys
+
+_ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 LAYERS = ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"]
 SCOPES = ["call", "task", "workflow", "system", "fleet"]
-ADVANCEABLE = {"absent", "defined", "instantiated", "stale"}          # maturities an engine pass may act on
-SETTLED = {"validated", "operating"}                                  # maturities that count as a foothold
+MATURITIES = ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
+ADVANCEABLE = {"absent", "defined", "instantiated", "regenerating", "stale"}   # maturities an engine pass may act on
+SETTLED = {"validated", "operating"}                                          # maturities that count as a foothold
+
+# The maturity state machine: which states may legally follow which (the transition relation the prose claimed
+# but did not encode). `deprecated` is terminal. An engine pass routes through `transition_ok` before mutating.
+TRANSITIONS = {
+    "absent": {"defined", "deprecated"},
+    "defined": {"instantiated", "deprecated"},
+    "instantiated": {"validated", "defined", "deprecated"},
+    "validated": {"operating", "regenerating", "stale", "deprecated"},
+    "operating": {"regenerating", "stale", "deprecated"},
+    "regenerating": {"instantiated", "validated", "deprecated"},
+    "stale": {"regenerating", "defined", "deprecated"},
+    "deprecated": set(),
+}
 
 # The layer partial order: which upstream layers (at the same scope) a layer requires a validated foothold in.
 # Ledger sits early (schema cannot be retrofitted) so it has no upstream layer dep; pattern sits last (needs operation).
@@ -148,6 +166,56 @@ def propagate_staleness(lat, changed_cell_id, new_hash):
     return flipped
 
 
+def transition_ok(frm, to):
+    """Is the maturity transition frm→to legal (the state machine)? Same-state is a no-op (always ok)."""
+    return frm == to or to in TRANSITIONS.get(frm, set())
+
+
+def scaffold(d):
+    """Lay the full durable tree: the nine layer dirs + signals/ + ledger/, and copy the naming schema in so the
+    naming gate is self-hosting in the project. Idempotent (exist_ok). Returns the list of created/ensured paths."""
+    made = []
+    for sub in LAYERS + ["signals", "ledger"]:
+        p = os.path.join(d, sub)
+        os.makedirs(p, exist_ok=True)
+        made.append(sub)
+    src = os.path.join(_ROOT, "schemas", "naming.schema.json")
+    dst = os.path.join(d, "naming.schema.json")
+    if os.path.isfile(src):
+        shutil.copyfile(src, dst)
+        made.append("naming.schema.json")
+    return made
+
+
+def check(lat):
+    """Lightweight structural + state-machine validation of a lattice (stdlib; the full JSON-Schema gate is roadmap).
+    Returns a list of findings (empty = sound). Catches the ill-typed cells raw json.load would let through."""
+    findings = []
+    seen = set()
+    for i, c in enumerate(lat.get("cells", [])):
+        where = f"cell[{i}]"
+        for k in ("layer", "scope", "slug", "maturity"):
+            if k not in c:
+                findings.append(f"{where}: missing required field `{k}`")
+        if c.get("layer") not in LAYERS:
+            findings.append(f"{where}: layer `{c.get('layer')}` not in the closed enum")
+        if c.get("scope") not in SCOPES:
+            findings.append(f"{where}: scope `{c.get('scope')}` not in the closed enum")
+        if c.get("maturity") not in MATURITIES:
+            findings.append(f"{where}: maturity `{c.get('maturity')}` not a valid state")
+        slug = c.get("slug", "")
+        if not slug or not all(ch.isalnum() or ch == "-" for ch in slug) or slug != slug.lower():
+            findings.append(f"{where}: slug `{slug}` is not kebab-case")
+        cell_id = cid(c) if all(k in c for k in ("layer", "scope", "slug")) else where
+        if cell_id in seen:
+            findings.append(f"{where}: duplicate cell id `{cell_id}`")
+        seen.add(cell_id)
+        # the validated-with-no-signal contradiction the signal-currency design forbids
+        if c.get("maturity") in SETTLED and not c.get("signal_refs"):
+            findings.append(f"{cell_id}: maturity `{c['maturity']}` but no signal_refs — validated against nothing")
+    return findings
+
+
 def seed_lattice(project):
     """A first slice: an ontology + spec foothold at task scope, plus the rubric that will verify the spec."""
     return {
@@ -209,17 +277,40 @@ def selftest():
     flipped = propagate_staleness(lat, "ontology.task.domain", "h2")
     expect("spec.task.x" in flipped and find(lat, "spec.task.x")["maturity"] == "stale", f"staleness did not propagate: {flipped}")
 
-    # the seed lattice is structurally sound (every cell well-typed).
+    # the seed lattice is structurally sound (every cell well-typed); check() passes it and catches ill-typed cells.
     seed = seed_lattice("p")
     expect(all(c["layer"] in LAYERS and c["scope"] in SCOPES for c in seed["cells"]), "seed lattice has an ill-typed cell")
+    expect(check(seed) == [], f"check() flagged a sound seed lattice: {check(seed)}")
+    bad = {"cells": [{"layer": "rubrics", "scope": "task", "slug": "X", "maturity": "done"},
+                     {"layer": "spec", "scope": "task", "slug": "y", "maturity": "validated"}]}  # validated, no signal
+    bf = check(bad)
+    expect(any("not in the closed enum" in f for f in bf), "check() missed a bad layer enum")
+    expect(any("not a valid state" in f for f in bf), "check() missed a bad maturity")
+    expect(any("not kebab-case" in f for f in bf), "check() missed a non-kebab slug")
+    expect(any("validated against nothing" in f for f in bf), "check() missed validated-with-no-signal")
+
+    # the state machine: legal vs. illegal transitions.
+    expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")
+    expect(not transition_ok("absent", "operating") and not transition_ok("deprecated", "validated"), "accepted an illegal transition")
+    # the maturity partition is total: every schema state is advanceable, settled, or explicitly terminal.
+    expect(set(MATURITIES) == ADVANCEABLE | SETTLED | {"deprecated"}, "maturity enum not partitioned by the engine sets")
+
+    # scaffold() lays the full durable tree (the CC1 fix — init was writing only lattice.json).
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        made = scaffold(td)
+        for layer in LAYERS:
+            expect(os.path.isdir(os.path.join(td, layer)), f"scaffold did not create layer dir {layer}/")
+        expect(os.path.isdir(os.path.join(td, "signals")) and os.path.isdir(os.path.join(td, "ledger")), "scaffold missed signals/ or ledger/")
+        expect("naming.schema.json" in made and os.path.isfile(os.path.join(td, "naming.schema.json")), "scaffold did not copy the naming schema")
 
     if fails:
         sys.stderr.write("lattice selftest: FAIL\n")
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
-    print("lattice selftest: OK (scan finds gaps; partial order blocks rubric-before-validated-spec; verifier-maturity "
-          "precondition enforced; rank dependency-filters; staleness propagates as a graph computation)")
+    print("lattice selftest: OK (scan/partial-order/verifier-maturity/rank/staleness; the state machine rejects illegal "
+          "transitions; check() catches ill-typed + validated-without-signal cells; scaffold lays the full tree)")
     return 0
 
 
@@ -233,11 +324,28 @@ def main(argv):
     d = _dir(argv)
     pos = [a for a in argv if not a.startswith("--") and a != d]
     if pos and pos[0] == "init":
+        if os.path.isfile(os.path.join(d, "lattice.json")) and "--force" not in argv:
+            print(f"{os.path.join(d, 'lattice.json')} already exists — refusing to clobber durable state. Pass --force to reseed.", file=sys.stderr)
+            return 2
         os.makedirs(d, exist_ok=True)
+        made = scaffold(d)                                  # the nine layer dirs + signals/ + ledger/ + the naming schema
         lat = seed_lattice(pos[1] if len(pos) > 1 else os.path.basename(os.getcwd()))
+        lat["created"] = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+        lat["produced_by"] = "harness-forge"               # the producing plugin (state-survival / migration anchor)
         save(d, lat)
-        print(f"seeded {os.path.join(d, 'lattice.json')} — {len(lat['cells'])} cells (ontology+spec+rubric+ledger task slice)")
+        print(f"seeded {os.path.join(d, 'lattice.json')} — {len(lat['cells'])} cells + scaffold ({', '.join(made)})")
         return 0
+    if pos and pos[0] == "check":
+        try:
+            lat = load(d)
+        except OSError:
+            print(f"no lattice at {d}/lattice.json", file=sys.stderr)
+            return 2
+        findings = check(lat)
+        for f in findings:
+            print(f"  [INVALID] {f}")
+        print(f"\nRESULT: {'PASS' if not findings else 'FAIL'} (lattice structural check) — {len(findings)} finding(s)")
+        return 0 if not findings else 1
     try:
         lat = load(d)
     except OSError:

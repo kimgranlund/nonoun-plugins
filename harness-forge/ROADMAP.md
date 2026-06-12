@@ -10,8 +10,8 @@ Open structural work, in rough priority. v0.1 is the kernel + the operating rost
 
 ## v0.2 — calibration (the catalog standard)
 
-- **Council-calibration fixtures.** Planted-defect harnesses (a rubric-before-spec lattice; a worker-writable signal directory; an unearned-autonomy claim; a frozen/un-regenerating lattice) + concept-regex checkers, proving `harness-evaluate` and the `lattice-auditor` catch each — the calibration discipline the other catalog plugins carry, with the recall corpus gated by `check-recall.py`.
-- **`bin/` behavioral gates in CI.** The three selftests already run; add a fixture that builds a `.harness/` with a planted partial-order violation and asserts `lattice.py validity` flags it (the gate proves itself on a real defect).
+- **Council-calibration fixtures.** Planted-defect harnesses (a rubric-before-spec lattice; a worker-writable signal directory; an unearned-autonomy claim; a frozen/un-regenerating lattice) + concept-regex checkers, proving `harness-evaluate` and the `harness-auditor` catch each — the calibration discipline the other catalog plugins carry, with the recall corpus gated by `check-recall.py`.
+- **`bin/` behavioral gates in CI.** The kernel selftests already run (naming · lattice incl. `check` · ledger · validate · harness-hook · gate-signal · lattice-mcp); add a fixture that builds a `.harness/` with a planted partial-order violation and asserts `lattice.py validity`/`check` flags it (the gate proves itself on a real defect), and one where `validate.py` runs a deliberately failing verifier and asserts the cell does **not** advance.
 
 ## v0.3 — the structural-critic council
 
@@ -20,7 +20,7 @@ Open structural work, in rough priority. v0.1 is the kernel + the operating rost
 ## v0.3+ — the kernel / kit / instance tiers
 
 - **Family kits.** The foundations name three tiers — invariant machinery (kernel), family bindings (kit), accreted project state (instance). v0.1 is the kernel. Ship **kits**: a `harness-forge-kit-*` family binding (seed corpora, family rubrics, harness adapters) for a concrete domain (a research loop, a coding loop, a docs loop), imported as precedent and marked as such.
-- **Harness adapters.** Pluggable verifier adapters (pytest, link-check, screenshot-diff, llm-judge) bound to rubric cells, so a cell's `validate` step routes to a real check by configuration, not by prose.
+- **Harness adapters.** `bin/validate.py` (v0.1.1) already runs a cell's verifier *command* and mints the signal from its exit status — the runner exists. Add pluggable, named verifier adapters (pytest, link-check, screenshot-diff, llm-judge) bound to rubric cells by configuration, so a cell's `validate` step selects a real check by name, not by the operator typing the command each time.
 - **A `lattice render` view.** A derived, human-readable lattice grid (layers × scopes, color by maturity) — a status surface over `lattice.json`, the canonical state staying the JSON.
 
 ## Known limitations (v0.1)

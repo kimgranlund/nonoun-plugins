@@ -18,7 +18,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
                 ▼                                                │
    /harness-advance                                              │
    lattice.py validity <cell>  → CAN ADVANCE / BLOCKED          │  (gate the move)
-   dispatch cell-advancer (one cell, fresh context):            │
+   dispatch harness-advancer (one cell, fresh context):            │
      define → create → validate                                 │
      validation path writes signals/{cell}/…  (NOT the worker)  │  ← gate-signal protects it
      ledger.py append  (result + WHY + cost)                    │
@@ -31,7 +31,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
    widen scope → rescan ALL modalities at the new scope
                 │
                 ▼
-   /harness-distill   ledger.py distill/cost/false-pass → pattern-distiller → upstream proposals
+   /harness-distill   ledger.py distill/cost/false-pass → harness-distiller → upstream proposals
 ```
 
 ## The steps
@@ -39,7 +39,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
 1. **Seed** (`/harness-seed`) — `lattice.py init` lays `.harness/` + the first thin slice (an ontology + spec + rubric + ledger task slice). The ledger schema sits in the first slice; provenance cannot be retrofitted.
 2. **Scan** (`/harness-scan`) — `lattice.py scan` sweeps the modality axis at the frontier scope. A missing whole layer outranks a missing slug.
 3. **Rank** (`/harness-next`) — `lattice.py rank` dependency-filters and orders. Probe cost from the ledger once history exists.
-4. **Advance** (`/harness-advance`) — gate with `lattice.py validity`, then the `cell-advancer` runs the engine; the validation path writes the signal; `ledger.py append` records the why.
+4. **Advance** (`/harness-advance`) — gate with `lattice.py validity`, then the `harness-advancer` runs the engine; the validation path writes the signal; `ledger.py append` records the why.
 5. **Rescan on signal** — validation reveals new gaps; do not pre-plan the whole grid.
 6. **Widen** — only from validated footholds; rescan all modalities at the new scope.
 7. **Distill** (`/harness-distill`) — route the ledger back into selection (probe cost), trust (false-pass), and regeneration (patterns).
