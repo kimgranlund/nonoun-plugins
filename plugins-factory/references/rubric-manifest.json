@@ -152,6 +152,23 @@
         "component-fit"
       ],
       "empirical_applications": 0
+    },
+    {
+      "name": "carve-quality",
+      "file": "rubrics/carve-quality.md",
+      "version": "0.1.0",
+      "layer": "composition",
+      "primary_critic": "steve-y",
+      "key_question": "Is this carve a sound partition of a library into plugins — real coupling graph mapped (incl. hidden $ref edges), boundaries cut at thin seams, every cross-boundary share resolved legally (zero `../`), every input node accounted for, an acyclic dependency graph, calibrated granularity, and a buildable proposal?",
+      "dimensions": 7,
+      "minimum_scale": "library",
+      "scores_artifact": "carve-proposal",
+      "note": "Scores a CARVE (a library→plugins boundary proposal, the output of /plugin-carve + carve-method.md) as one artifact — the set-level properties per-plugin scoring can't see. Composes with plugins-holistic, which scores each plugin the carve produces. D3 (shared-infra legality), D4 (acyclicity), and D5 (node accounting) are gates that cap the whole carve. No paired foundation file — grounded in references/carve-method.md plus the cohesion + dependency-and-sharing foundations.",
+      "dependencies": [
+        "boundary-cohesion",
+        "dependency-and-sharing"
+      ],
+      "empirical_applications": 0
     }
   ],
   "adoption_contract": {

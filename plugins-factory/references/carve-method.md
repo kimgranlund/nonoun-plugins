@@ -8,7 +8,7 @@ version: "0.1.0"
 
 **`carve` answers one question: given a pile of skills (or a whole library), what coherent domain plugins should they become — and how does shared infrastructure survive the install boundary?** It is not a sorting exercise. The catalog lies: it groups by name and layer, while the real coupling lives in `peer_skills`, "use X" routing pointers, and — the part that breaks carves — shared `$ref`/type wiring that no `peer_skills` array ever mentions. A clean-looking carve that splits two skills coupled through a shared schema, then references that schema with `../`, ships **dangling references on first install**. This method exists to prevent exactly that.
 
-Carve is scored by applying **P1** (each proposed plugin's fitness), **P3** (each boundary's cohesion), and **P4** (every shared-infra resolution's legality) _across the whole set_. P4 is the make-or-break axis — see step 4.
+Carve is scored by applying **P1** (each proposed plugin's fitness), **P3** (each boundary's cohesion), and **P4** (every shared-infra resolution's legality) _across the whole set_. P4 is the make-or-break axis — see step 4. The proposal **as one artifact** is then scored against **`rubrics/carve-quality.md`** — the set-level rubric for the partition itself (graph fidelity · cuts-at-the-joints · shared-infra legality · dependency-graph integrity · node accounting · granularity calibration · buildability), where a surviving `../`, a dependency cycle, or a silently-dropped node each caps the whole carve.
 
 > **Read order**: this file → `authoring/build-against-the-standard.md` (for the P1/P3/P4 gates the proposal must pass). For each plugin the carve proposes, `author` (`creating-plugins.md` + `plugin-template.md`) builds it.
 

@@ -15,7 +15,11 @@ Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is reso
 Council calibration is **complete and uniform** — every fixture across all four councils is at N=3, 100% per-defect catch-rate (see ROADMAP), and the checkers are now recall-gated (see below). No calibration work is open. Optional future depth, on request:
 
 1. **Further sub-council shapes** — product-forge's `trust`/`ai-product` sub-councils; brand-forge's Muse calibration; a real-repo audit application for agent-ops (its ROADMAP item).
-2. **`carve-quality.md` rubric** — score a carve (library→plugins boundary proposal) as an artifact, distinct from scoring a single plugin (plugins-factory ROADMAP item).
+2. **`--with-mcp` for `context-cost.py`** — fold the MCP tool-def slice into the always-on measurement (P6's single biggest concern is a wrapper MCP's tool-defs; today they're noted-not-counted, since counting them needs live execution like `check-mcp-liveness`).
+
+## Shipped 2026-06-12
+
+- **`carve-quality.md` — score a carve as ONE artifact** (plugins-factory 0.2.33), a standing v0.2 ROADMAP item and the gap `carve-method.md` itself named: a carve was scored only by re-applying the per-plugin P1/P3/P4 across the set, blind to the **set-level** properties (a partition yielding individually-fine plugins that nonetheless split a `$ref`-coupled pipeline and wire it `../`, or whose dependency graph cycles, or that silently dropped a skill). 7 MECE dimensions, each mapped to a carve-method step: graph fidelity · cuts-at-the-joints · shared-infra legality `[gate]` · dependency-graph integrity `[gate]` · node accounting `[gate]` · granularity calibration · buildable proposal. The three `[gate]` dims (a surviving `../`, a cycle, a silent drop) cap the whole carve — mirroring how P4/P9 cap a plugin; composes with `plugins-holistic` (which scores each plugin the carve *produces*). Registered in `rubric-manifest.json` (primary critic Steve Y., `scores_artifact: carve-proposal`, no paired foundation) and wired into `carve-method.md` §scoring + the `plugin-build` `carve` sub-mode so it's reachable, not orphaned. **Open:** `empirical_applications: 0` — apply it to a real carve to calibrate (true of the sibling rubrics too).
 
 ## Shipped 2026-06-11
 

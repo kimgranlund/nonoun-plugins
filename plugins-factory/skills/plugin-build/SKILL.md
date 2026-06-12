@@ -44,7 +44,7 @@ Unlike a skill (one primitive), a plugin's central authoring act is **assigning 
 | Sub-mode | What it does | Read |
 | --- | --- | --- |
 | `author` | New plugin: intent → component-fit pass → boundary check → wire `plugin.json` + marketplace entry → `validate_plugin.py` → build-time red-team → package | `build-against-the-standard.md` + `creating-plugins.md` + `plugin-template.md` + `authoring/skill-architecture.md` / `agent-architecture.md` (per component) |
-| `carve` | A skill library → a plugin-boundary proposal: map the real composition graph, cluster by domain, resolve shared infra (co-locate / `dependencies` / symlink), flag orphans + dead components | `carve-method.md` (+ `${CLAUDE_PLUGIN_ROOT}/agents/carve-analyst.md` for the graph fan-out) |
+| `carve` | A skill library → a plugin-boundary proposal: map the real composition graph, cluster by domain, resolve shared infra (co-locate / `dependencies` / symlink), flag orphans + dead components, then score the proposal as one artifact | `carve-method.md` (+ `${CLAUDE_PLUGIN_ROOT}/agents/carve-analyst.md` for the graph fan-out) + `rubrics/carve-quality.md` (score the partition) |
 | `edit` | Targeted fix — a mis-fit component, a kitchen-sink boundary, an illegal `../` dependency, bloated always-on context, a routing collision | `build-against-the-standard.md` + the relevant rubric |
 
 ## Ship-gates — every produced plugin must pass (each maps to a holistic dimension)
@@ -83,6 +83,7 @@ Built against `build-against-the-standard.md` (each live dimension grounded in i
 | `authoring/skill-architecture.md` · `authoring/agent-architecture.md` | authoring a **skill** or **agent** — structure it so it isn't thin (cold-start surface, modes, progressive disclosure, verify targets); when an agent earns isolation vs. stays a skill |
 | `authoring/operational-roles.md` | authoring a plugin that **orchestrates** work — the Maker / Critic / Muse seats, the loop, the one invariant, and how to right-size the aspirational (Muse) seat by domain |
 | `carve-method.md` (+ `agents/carve-analyst.md`) | `carve` — library→plugins method + the composition-graph fan-out subagent |
+| `rubrics/carve-quality.md` | `carve` — score the boundary proposal **as one artifact** (graph fidelity · cuts-at-the-joints · legality · dep-graph integrity · node accounting · granularity · buildability); composes with `plugins-holistic` (which scores each resulting plugin) |
 | `plugin-architecture.md` | the technical model — manifest fields, components, path variables, marketplace, namespacing, scopes, validation |
 | `rubrics/*.md` + `rubric-manifest.json` | the dimension you're building — `component-fit`, `boundary-cohesion`, `dependency-and-sharing`, `manifest-and-packaging`, `context-economy` (P2–P6); `cold-start-orientation`, `skills-authoring`, `skill-extensibility`, `security-and-scope-containment` (P1/P7/P8/P9, co-located) |
 | `foundations/*.md` | the theory grounding a dimension you're building |
