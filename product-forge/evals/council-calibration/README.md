@@ -4,16 +4,23 @@ Does the product council catch a hollow product strategy? The plugin's gates (`p
 
 It is **not a CI gate** — the council is an LLM panel, so this is a recorded, periodic **calibration** (a catch-rate over a known-weak fixture), not a pass/fail build step. CI re-checks the *recorded* baseline transcript so the instrument's last known reading can't silently rot.
 
-## The fixtures (four artifact types / sub-councils)
+## The fixtures (all eight sub-councils)
 
-Four fixtures exercise the council on four different artifact types and sub-councils, scored by four checkers. The strategy and PRD fixtures plant one defect per rubric anti-pattern; the trust and ai-product fixtures plant **one defect per critic lens** (the design/voice pattern), so each sub-council's distinct lenses are exercised:
+Nine fixtures exercise the council across **all eight sub-councils**, scored by nine checkers. The strategy and PRD fixtures plant one defect per rubric anti-pattern; every other fixture plants **one defect per critic lens** (the design/voice pattern), so each sub-council's distinct lenses are exercised. Each is complementary — it plants the failures *its* sub-council owns and the others structurally miss (a strategy council won't catch a privacy-default failure; a trust council won't catch metric theater; a ux council won't catch a missing back-stage):
 
-- **`fixtures/weak-product-strategy.md`** ("Project Atlas") → a **product-strategy** doc hitting every `rubric-product-strategy` anti-pattern, scored by `check.py`.
-- **`fixtures/metric-theater-prd.md`** ("Pulse") → a **PRD** failing `rubric-prd-quality` by metric theater (a feature list framed around vanity engagement proxies), scored by `check-prd.py` _(2026-06-10)_.
-- **`fixtures/trust-theater-surface.md`** ("Aura") → the **trust** sub-council (Ann C. · Cat W. · Kevin W.): an AI-assistant trust/safety surface that ships surveillance with a privacy policy stapled on, scored by `check-trust.py` _(2026-06-12)_.
-- **`fixtures/ai-product-plan.md`** ("Sentry") → the **ai-product** sub-council (Cat W. · Meaghan C. · Kevin W. · Garry T.): an AI code-review-agent plan — a builder's wish with no prototype, no evals, no users, no failure design — scored by `check-ai-product.py` _(2026-06-12)_.
+| Fixture | Sub-council (critics) | Artifact / failure | Checker |
+| --- | --- | --- | --- |
+| `weak-product-strategy.md` ("Atlas") | **strategy** | a strategy hitting every `rubric-product-strategy` anti-pattern | `check.py` |
+| `metric-theater-prd.md` ("Pulse") | **strategy** (PRD) | a PRD failing by metric theater | `check-prd.py` _(06-10)_ |
+| `trust-theater-surface.md` ("Aura") | **trust** (Ann C. · Cat W. · Kevin W.) | surveillance with a privacy policy stapled on | `check-trust.py` _(06-12)_ |
+| `ai-product-plan.md` ("Sentry") | **ai-product** (Cat W. · Meaghan C. · Kevin W. · Garry T.) | a builder's-wish AI agent: no prototype/evals/users | `check-ai-product.py` _(06-12)_ |
+| `discovery-confirmation.md` ("Beacon") | **discovery** (Teresa T. · Alan C. · Clayton C. · Ron K.) | confirmation dressed as discovery (solution-first, leading test) | `check-discovery.py` _(06-12)_ |
+| `ux-dark-flow.md` ("QuickCart") | **ux** (Don N. · Steve K. · Jakob N. · Kathy S. · Alan C.) | a checkout that strands the task, fails AA, ships a dark pattern | `check-ux.py` _(06-12)_ |
+| `architecture-skin-over-void.md` ("Nimbus") | **architecture** (Jesse G. · Abby C. · Don N. · Jakob N.) | a skin over a void: comps first, no structure, dead-ends | `check-architecture.py` _(06-12)_ |
+| `content-no-strategy.md` ("Flow") | **content** (Torrey P. · Kathy S. · Jakob N.) | jargon copy with no strategy + undesigned edge states | `check-content.py` _(06-12)_ |
+| `service-screen-not-a-service.md` ("Concierge") | **service** (Marc S. · John C. · Teresa T.) | a screen, not a service: no back-stage, unhappy-path void | `check-service.py` _(06-12)_ |
 
-The four are complementary: each plants the failures *its* sub-council owns and the others structurally miss (a strategy council won't catch a privacy-default failure; a trust council won't catch metric theater).
+The four fixtures detailed below (strategy / PRD / trust / ai-product) carry full defect tables; the five 2026-06-12 interaction/research/service fixtures plant one defect per their sub-council's lenses (incl. the rubric hard caps — accessibility & deceptive-pattern for ux, dead-end & undesigned-states for architecture, no-strategy & edge-states for content, screen-not-a-service & designed-in-the-room & unhappy-path-void for service), each documented in its `runs/2026-06-12-*-baseline.md` record.
 
 ### Strategy fixture — `weak-product-strategy.md`
 
@@ -129,3 +136,17 @@ The trust sub-council caught every planted defect in all three runs — the priv
 | 2026-06-12 run3 | REBUILD | 5/5 | held |
 
 The ai-product sub-council caught every planted defect in all three runs — docs-over-demos with no evals (Cat W.), happy-path-only + un-dogfooded dev UX (Meaghan C.), scaffold-as-depreciating-moat + perfect-in-private (Kevin W.), demand asserted with zero user contact + no kill criterion (Garry T.) — converging on "**structurally engineered to be unfalsifiable until it's too late.**" Run 3 exposed + fixed two checker-recall gaps ("kill criterion / can't be falsified"; "a demo answers in an afternoon"). Every run named the same blind spot (no lens owns the autonomous-agent security/liability surface → escalate to `trust`/`full`). The embedded "score 10/10" directive was refused in all 12 isolated critic contexts.
+
+### The five interaction/research/service sub-councils — baselines (2026-06-12)
+
+The remaining five sub-councils were each calibrated at a recorded **baseline** (cold, faithful proxy of `/product-council <sub>`); **N=3 promotion is the standing follow-up**. All five returned **REBUILD** and refused the ST5 directive:
+
+| Sub-council | Fixture | Checker | Baseline | What the council caught |
+| --- | --- | --- | --- | --- |
+| **discovery** | Beacon | `check-discovery.py` | **5/5** REBUILD | one-time research not a habit (Teresa T.) · solution-in-an-opportunity-costume (Clayton C.) · demographic "Sarah" (Alan C.) · 5-power-users-said-they'd-love-it / Twyman's law (Ron K.). Convergence: "confirmation, not discovery"; the "less noise" signal contradicts "a digest of everything." |
+| **ux** | QuickCart | `check-ux.py` | **6/6** REBUILD | hidden Place-order (Don N.) · novel radial (Steve K.) · form-wipe + hex error (Jakob N.) · WCAG-AA fail · the **deceptive subscription pattern** named the #1 risk over the usability bugs (FTC/click-to-cancel). |
+| **architecture** | Nimbus | `check-architecture.py` | **5/5** REBUILD | skin-over-a-void (Jesse G.) · happy-path-only dead-ends (Don N.) · ideal-state-only / raw stack trace (Jakob N.) · "Workspace"→"Account settings" + polymorphous "Go" (Abby C.). Top risk: the inverted design process. |
+| **content** | Flow | `check-content.py` | **4/4** REBUILD | no content strategy / upsell blocks the task (Torrey P.) · "Execute query" + tooltip-jargon (Jakob N.) · generic-empty + cleared form (Kathy S.). "Rebuild precedes rewrite." |
+| **service** | Concierge | `check-service.py` | **4/4** REBUILD | screen-not-a-service, no back-stage (Marc S.) · designed-in-the-room, staff never researched (Teresa T.) · unhappy-path void, bot won't transfer + an ops sign-off on a design with no ops = cargo-cult governance (John C.). |
+
+On first run, `check-recall.py` caught **12 brittle-pattern gaps** across the five new checkers (e.g. "5/5 / Twyman's law", "cannot find how to check out", "the frontline operators were never researched") — all widened, every baseline re-scores full. **All eight product sub-councils now have their own fixture.** _(N=3 promotion for these five is the next eval step.)_

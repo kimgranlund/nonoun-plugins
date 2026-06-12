@@ -2,6 +2,16 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.20] — 2026-06-12
+
+- **The five remaining sub-councils calibrated — `discovery` · `ux` · `architecture` · `content` · `service` — each at a recorded baseline. All eight product sub-councils now have their own fixture.** Each plants **one defect per critic lens** (incl. the rubric hard caps) and was run cold via a faithful proxy of `/product-council <sub>`; all five returned **REBUILD** and refused the ST5 directive:
+  - **discovery** (`discovery-confirmation.md`, "Beacon") → **5/5** (Teresa T. one-time-research-not-a-habit · Clayton C. solution-in-an-opportunity-costume · Alan C. demographic persona · Ron K. 5-power-users / Twyman's law). `check-discovery.py`.
+  - **ux** (`ux-dark-flow.md`, "QuickCart") → **6/6** (Don N. hidden primary action · Steve K. novel radial · Jakob N. form-wipe + hex error · WCAG-AA cap · the **deceptive subscription pattern** cap). `check-ux.py`.
+  - **architecture** (`architecture-skin-over-void.md`, "Nimbus") → **5/5** (Jesse G. skin-over-a-void · Don N. happy-path-only dead-ends · Jakob N. ideal-state-only / raw stack trace · Abby C. label↔destination mismatch). `check-architecture.py`.
+  - **content** (`content-no-strategy.md`, "Flow") → **4/4** (Torrey P. no content strategy / upsell-blocks-task · Jakob N. jargon labels with no scent · Kathy S. undesigned edge-state content). `check-content.py`.
+  - **service** (`service-screen-not-a-service.md`, "Concierge") → **4/4** (Marc S. screen-not-a-service · Teresa T. designed-in-the-room / staff-ignored · John C. unhappy-path void + cargo-cult ops sign-off). `check-service.py`.
+  - All five baselines re-scored in CI (the product step now runs all 9 checkers). Recall corpora added for all five (97 paraphrases); `check-recall.py` caught **12 brittle-pattern gaps on first run** ("5/5 / Twyman's law", "cannot find how to check out", "the frontline operators were never researched", …) — all widened, every baseline re-scores full. **N=3 promotion for these five is the standing follow-up** (baseline-first, the cadence the original fixtures used).
+
 ## [0.3.19] — 2026-06-12
 
 - **Council calibration extended to the last two sub-councils — `trust` and `ai-product` — both at N=3, 100%.** The strategy (Atlas) and PRD (Pulse) fixtures were calibrated 2026-06-10; these close the remaining un-calibrated council shapes, each planting **one defect per critic lens** (the design/voice pattern):

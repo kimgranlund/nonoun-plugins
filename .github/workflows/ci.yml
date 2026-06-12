@@ -147,12 +147,18 @@ jobs:
       - name: product-forge — corpus MCP guard selftest
         run: python3 product-forge/bin/product-corpus-mcp.py selftest
 
-      - name: product-forge — council-calibration baselines (strategy + prd + trust + ai-product)
+      - name: product-forge — council-calibration baselines (all 8 sub-councils)
         run: |
-          python3 product-forge/evals/council-calibration/check.py product-forge/evals/council-calibration/runs/2026-06-10-atlas-baseline.md
-          python3 product-forge/evals/council-calibration/check-prd.py product-forge/evals/council-calibration/runs/2026-06-10-pulse-prd-baseline.md
-          python3 product-forge/evals/council-calibration/check-trust.py product-forge/evals/council-calibration/runs/2026-06-12-aura-trust-baseline.md
-          python3 product-forge/evals/council-calibration/check-ai-product.py product-forge/evals/council-calibration/runs/2026-06-12-sentry-ai-product-baseline.md
+          P=product-forge/evals/council-calibration
+          python3 $P/check.py            $P/runs/2026-06-10-atlas-baseline.md
+          python3 $P/check-prd.py        $P/runs/2026-06-10-pulse-prd-baseline.md
+          python3 $P/check-trust.py      $P/runs/2026-06-12-aura-trust-baseline.md
+          python3 $P/check-ai-product.py $P/runs/2026-06-12-sentry-ai-product-baseline.md
+          python3 $P/check-discovery.py    $P/runs/2026-06-12-beacon-discovery-baseline.md
+          python3 $P/check-ux.py           $P/runs/2026-06-12-quickcart-ux-baseline.md
+          python3 $P/check-architecture.py $P/runs/2026-06-12-nimbus-architecture-baseline.md
+          python3 $P/check-content.py      $P/runs/2026-06-12-flow-content-baseline.md
+          python3 $P/check-service.py      $P/runs/2026-06-12-concierge-service-baseline.md
 
       - name: agent-ops — gates (sourcing + self-contained + selftests)
         run: |
