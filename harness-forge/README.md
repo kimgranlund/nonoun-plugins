@@ -54,6 +54,7 @@ harness-forge/
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)
 ├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .harness/ state
 ├── schemas/    the typed data               → Cell · Lattice · Naming (self-hosting) · Signal
+├── evals/      the behavioral evidence      → calibration fixtures (4 planted defects, gate-caught + judge-baselined) · the first-slice walkthrough (CI replays the whole loop)
 └── references/ the standard                 → the 14-file agentic-systems foundations + the harness rubric + the operating procedure
 ```
 
@@ -69,7 +70,7 @@ harness-forge/
 - **The judgment stays the model's** — defining what *done* means (the spec), writing a cell's asset, calibrating a rubric. No regex decides those; the engine routes them to the worker, and the rubric scores them.
 - **Autonomy is earned, not declared** — the trust trajectory advances a loop family by a *measured* false-pass rate (< ~5%) and zero reward-hacking incidents, read from the ledger. `ledger.py false-pass` returns **`unmeasured`** (not a misleading 0%) until an independent refuter exists — the absence of bad news is not evidence. The harness's own claim of "production-ready" is a finding, never a verdict.
 - **The protected-verifier gate is wired by consent, never silently.** `gate-signal` is a real, selftested deny-on-write gate, `validate.py` mints signals from an external command's exit status, and `bin/wire.py apply` installs the blocking enforcement into *your* loop — but only after `wire.py plan` shows you exactly what changes and you say yes (the plugin's own session hook stays advisory by design; a blocking gate in a shared session would be hostile). The wiring state is **checked, not assumed**: `wire.py check` exit 0 is the mechanical claim "the worker cannot write its own verifier — or unwire the gate"; before that, the protection is the worker's narrow tool scope plus your discipline, and the plugin says so rather than overclaiming.
-- **v0.2 is the kernel + the operating roster + the wired loop, validated and selftested.** The structural-critic council, verifier-adapter library, calibration fixtures, and family **kits** are on the [ROADMAP](ROADMAP.md).
+- **v0.2 is the kernel + the operating roster + the wired loop, validated, selftested, and behaviorally evidenced.** CI replays the whole loop end to end (`evals/first-slice-walkthrough/`) and proves the gates catch four planted defect classes while a clean control passes (`evals/calibration/`, with judge baselines recall-gated). The structural-critic council, verifier-adapter library, seed-stamped budgets, and family **kits** are on the [ROADMAP](ROADMAP.md).
 
 ---
 

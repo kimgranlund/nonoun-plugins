@@ -196,6 +196,15 @@ jobs:
           python3 harness-forge/bin/wire.py apply --project "$D"           # the installer wires the seeded project...
           python3 harness-forge/bin/wire.py check --project "$D"           # ...and the wiring check proves it (exit 0 = wired)
 
+      - name: harness-forge — calibration fixtures (every planted defect caught; clean control passes)
+        run: python3 harness-forge/evals/calibration/check_fixtures.py
+
+      - name: harness-forge — judge baselines (every planted headline named; positive control sound)
+        run: python3 harness-forge/evals/calibration/check_baselines.py
+
+      - name: harness-forge — first-slice walkthrough (the loop closes end to end, behaviorally)
+        run: python3 harness-forge/evals/first-slice-walkthrough/replay.py
+
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |
           python3 agent-ops/bin/check_blueprint.py agent-ops/evals/council-calibration/fixtures/overnight-refactor-blueprint.md

@@ -1,0 +1,33 @@
+{
+  "version": "1",
+  "project": "fixture-unwired-gate",
+  "created": "2026-06-12T09:00:00-07:00",
+  "produced_by": "harness-forge",
+  "frontier_scope": "task",
+  "cells": [
+    {
+      "layer": "ontology",
+      "scope": "task",
+      "slug": "domain",
+      "maturity": "validated",
+      "depends_on": [],
+      "signal_refs": ["signals/ontology.task.domain/2026-06-12T08-50--review.json"]
+    },
+    {
+      "layer": "spec",
+      "scope": "task",
+      "slug": "parse-invoice",
+      "maturity": "validated",
+      "depends_on": ["ontology.task.domain"],
+      "signal_refs": ["signals/spec.task.parse-invoice/2026-06-12T09-05--predicate-check.json"]
+    },
+    {
+      "layer": "ledger",
+      "scope": "task",
+      "slug": "events",
+      "maturity": "validated",
+      "depends_on": ["ontology.task.domain"],
+      "signal_refs": ["signals/ledger.task.events/2026-06-12T08-55--schema-check.json"]
+    }
+  ]
+}

@@ -27,6 +27,7 @@ Usage:
   lattice.py selftest
 Exit codes are operation-specific (see each). Stdlib only; Python 3.8+.
 """
+import hashlib
 import json
 import datetime
 import os
@@ -81,6 +82,14 @@ def save(d, lat):
 
 def find(lat, cell_id):
     return next((c for c in lat["cells"] if cid(c) == cell_id), None)
+
+
+def content_hash(path):
+    """The canonical 16-hex content hash signals and staleness compare (the same shape validate.py mints)."""
+    try:
+        return "sha256:" + hashlib.sha256(open(path, "rb").read()).hexdigest()[:16]
+    except OSError:
+        return ""
 
 
 def _validated_at(lat, layer, scope):
@@ -187,11 +196,16 @@ def scaffold(d):
     return made
 
 
-def check(lat):
-    """Lightweight structural + state-machine validation of a lattice (stdlib; the full JSON-Schema gate is roadmap).
-    Returns a list of findings (empty = sound). Catches the ill-typed cells raw json.load would let through."""
+def check(lat, d=None):
+    """Lightweight structural + state-machine + integrity validation of a lattice (stdlib; the full JSON-Schema
+    gate is roadmap). Returns a list of findings (empty = sound). Catches the ill-typed cells raw json.load would
+    let through, plus two RETROACTIVE integrity violations: a settled cell whose dependency never validated (the
+    partial order violated after the fact), and — when `d` is given so assets can be resolved — a settled cell
+    trusting a dependency whose on-disk content no longer matches the recorded hash (stale-but-trusted)."""
     findings = []
     seen = set()
+    by_id = {cid(c): c for c in lat.get("cells", []) if all(k in c for k in ("layer", "scope", "slug"))}
+    root = (os.path.dirname(d.rstrip("/")) or ".") if d else None
     for i, c in enumerate(lat.get("cells", [])):
         where = f"cell[{i}]"
         for k in ("layer", "scope", "slug", "maturity"):
@@ -210,20 +224,42 @@ def check(lat):
         if cell_id in seen:
             findings.append(f"{where}: duplicate cell id `{cell_id}`")
         seen.add(cell_id)
-        # the validated-with-no-signal contradiction the signal-currency design forbids
-        if c.get("maturity") in SETTLED and not c.get("signal_refs"):
-            findings.append(f"{cell_id}: maturity `{c['maturity']}` but no signal_refs — validated against nothing")
+        if c.get("maturity") in SETTLED:
+            # the validated-with-no-signal contradiction the signal-currency design forbids
+            if not c.get("signal_refs"):
+                findings.append(f"{cell_id}: maturity `{c['maturity']}` but no signal_refs — validated against nothing")
+            # the partial order, violated retroactively: settled atop a dependency that never validated
+            for dep in c.get("depends_on", []):
+                dc = by_id.get(dep)
+                if dc is None:
+                    findings.append(f"{cell_id}: depends on unknown cell `{dep}`")
+                elif dc.get("maturity") not in SETTLED:
+                    findings.append(f"{cell_id}: `{c['maturity']}` while dependency `{dep}` is `{dc.get('maturity')}` — "
+                                    f"the partial order was violated retroactively (a rubric before its spec scores vibes)")
+            # stale-but-trusted: the recorded validation hash no longer matches the asset on disk
+            if root:
+                for dep, recorded in (c.get("validated_against") or {}).items():
+                    ref = (by_id.get(dep) or {}).get("asset_ref")
+                    if not (recorded and ref):
+                        continue
+                    now = content_hash(ref if os.path.isabs(ref) else os.path.join(root, ref))
+                    if now and now != recorded:
+                        findings.append(f"{cell_id}: trusts `{dep}` at {recorded} but its asset now hashes {now} — "
+                                        f"stale-but-trusted (the evidence predates the content; re-validate)")
     return findings
 
 
 def seed_lattice(project):
-    """A first slice: an ontology + spec foothold at task scope, plus the rubric that will verify the spec."""
+    """A first slice: an ontology + spec foothold at task scope, plus the rubric that will verify the slice's WORK.
+    Bootstrap order matters: the spec validates FIRST (against a spec-quality predicate check, not the rubric — a
+    spec whose verifier is the rubric that depends on it is a circular wait, and the seed must never deadlock);
+    the rubric is then authored against the validated spec, and downstream work cells bind their `verifier` to it."""
     return {
         "version": "1", "project": project, "created": "", "frontier_scope": "task",
         "cells": [
             {"layer": "ontology", "scope": "task", "slug": "domain", "maturity": "defined", "depends_on": []},
             {"layer": "spec", "scope": "task", "slug": "first-slice", "maturity": "defined",
-             "depends_on": ["ontology.task.domain"], "verifier": "rubric.task.first-slice"},
+             "depends_on": ["ontology.task.domain"]},
             {"layer": "rubric", "scope": "task", "slug": "first-slice", "maturity": "defined",
              "depends_on": ["spec.task.first-slice"]},
             {"layer": "ledger", "scope": "task", "slug": "events", "maturity": "defined",
@@ -289,6 +325,40 @@ def selftest():
     expect(any("not kebab-case" in f for f in bf), "check() missed a non-kebab slug")
     expect(any("validated against nothing" in f for f in bf), "check() missed validated-with-no-signal")
 
+    # THE SEED MUST NEVER DEADLOCK: driving it in dependency order reaches full validation (the circular
+    # spec⟲rubric verifier wait the walkthrough surfaced — spec validates first, the rubric is authored against it).
+    boot = seed_lattice("boot")
+    for _ in range(len(boot["cells"]) + 1):
+        for c in boot["cells"]:
+            if c["maturity"] in ADVANCEABLE and advance_validity(boot, cid(c))[0]:
+                c["maturity"] = "validated"
+                c["signal_refs"] = ["signals/x.json"]
+    stuck = [cid(c) for c in boot["cells"] if c["maturity"] not in SETTLED]
+    expect(not stuck, f"the seeded first slice deadlocks — permanently stuck: {stuck}")
+
+    # retroactive partial-order violation: a settled cell atop a dependency that never validated.
+    retro = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "defined"},
+                       {"layer": "rubric", "scope": "task", "slug": "s", "maturity": "validated",
+                        "signal_refs": ["x"], "depends_on": ["spec.task.s"]}]}
+    expect(any("violated retroactively" in f for f in check(retro)), "check() missed a retro partial-order violation")
+
+    # stale-but-trusted: the recorded validation hash no longer matches the asset on disk (needs d to resolve).
+    import tempfile
+    with tempfile.TemporaryDirectory() as td2:
+        hd = os.path.join(td2, ".harness")
+        os.makedirs(hd)
+        asset = os.path.join(td2, "spec-asset.md")
+        open(asset, "w").write("v2 — moved on")
+        stale_lat = {"cells": [
+            {"layer": "spec", "scope": "task", "slug": "s", "maturity": "validated", "signal_refs": ["x"],
+             "depends_on": [], "asset_ref": "spec-asset.md"},
+            {"layer": "rubric", "scope": "task", "slug": "s", "maturity": "validated", "signal_refs": ["x"],
+             "depends_on": ["spec.task.s"], "validated_against": {"spec.task.s": "sha256:0ld0ld0ld0ld0ld0"}}]}
+        sbf = check(stale_lat, d=hd)
+        expect(any("stale-but-trusted" in f for f in sbf), f"check() missed stale-but-trusted: {sbf}")
+        expect(not any("stale-but-trusted" in f for f in check(stale_lat)),
+               "check() ran hash checks without d (cannot resolve assets)")
+
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")
     expect(not transition_ok("absent", "operating") and not transition_ok("deprecated", "validated"), "accepted an illegal transition")
@@ -310,7 +380,8 @@ def selftest():
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("lattice selftest: OK (scan/partial-order/verifier-maturity/rank/staleness; the state machine rejects illegal "
-          "transitions; check() catches ill-typed + validated-without-signal cells; scaffold lays the full tree)")
+          "transitions; check() catches ill-typed, validated-without-signal, retro-order-violated, and "
+          "stale-but-trusted cells; the seed bootstraps without deadlock; scaffold lays the full tree)")
     return 0
 
 
@@ -341,7 +412,7 @@ def main(argv):
         except OSError:
             print(f"no lattice at {d}/lattice.json", file=sys.stderr)
             return 2
-        findings = check(lat)
+        findings = check(lat, d=d)
         for f in findings:
             print(f"  [INVALID] {f}")
         print(f"\nRESULT: {'PASS' if not findings else 'FAIL'} (lattice structural check) — {len(findings)} finding(s)")

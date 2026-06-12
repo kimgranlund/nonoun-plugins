@@ -6,12 +6,12 @@ Open structural work, in rough priority. v0.2 is the kernel + the operating rost
 
 - ~~**The seed-into-loop gate installer.**~~ **Shipped in 0.2.0** — `bin/wire.py` (plan/apply/check/unwire, consent-gated, idempotent, self-protecting) + `/harness-seed` step 4. Still open from this line: the **budget/no-progress gate** as a wired hook (today budgets are policy the orchestrator enforces; a Stop-hook that halts a loop on budget exhaustion / repeated failure signatures is unbuilt).
 - ~~**`emit-ledger` + `propagate-staleness` as project hooks.**~~ **Shipped in 0.2.0** — both gateverb species, selftested, wired by the installer.
-- **A real first-slice walkthrough.** A recorded end-to-end run (seed → scan → advance an `ontology` + `spec` + `rubric` slice to `validated` → distill) on a toy project, committed under `evals/` as the kernel's behavioral baseline.
+- ~~**A real first-slice walkthrough.**~~ **Shipped in 0.2.1** — `evals/first-slice-walkthrough/replay.py` (CI) + `RUN.md`; it caught the seed's circular-verifier deadlock at authoring time. Still open: stamp default `budget` fields at seed (the positive-control baseline's one real weakness, H5).
 
 ## v0.2 — calibration (the catalog standard)
 
-- **Council-calibration fixtures.** Planted-defect harnesses (a rubric-before-spec lattice; a worker-writable signal directory; an unearned-autonomy claim; a frozen/un-regenerating lattice) + concept-regex checkers, proving `harness-evaluate` and the `harness-auditor` catch each — the calibration discipline the other catalog plugins carry, with the recall corpus gated by `check-recall.py`.
-- **`bin/` behavioral gates in CI.** The kernel selftests already run (naming · lattice incl. `check` · ledger · validate · harness-hook · gate-signal · lattice-mcp); add a fixture that builds a `.harness/` with a planted partial-order violation and asserts `lattice.py validity`/`check` flags it (the gate proves itself on a real defect), and one where `validate.py` runs a deliberately failing verifier and asserts the cell does **not** advance.
+- ~~**Council-calibration fixtures.**~~ **Shipped in 0.2.1** — `evals/calibration/`: four planted-defect fixtures + `check_fixtures.py` (the gates catch each defect; a clean control passes) + five judge baselines in `runs/` gated by `check_baselines.py` (concept recall, incl. the injection-quoted-not-obeyed assertion).
+- ~~**`bin/` behavioral gates in CI.**~~ **Shipped in 0.2.1** — the planted partial-order violation is `fixtures/rubric-before-spec/` (caught by `lattice.py check`); the failing-verifier-does-not-advance case is in `validate.py selftest`; the walkthrough is the end-to-end positive.
 
 ## v0.3 — the structural-critic council
 
