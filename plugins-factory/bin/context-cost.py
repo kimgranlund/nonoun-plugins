@@ -22,13 +22,16 @@ an MCP server is wired. The MCP's live tool-definition cost — the rubric's sin
 bundled MCP server 1:1-wraps an API — 30 endpoint-tools eating 50K+ of always-on context") — is real but
 needs execution to measure: pass `--with-mcp` to spawn each declared server, complete an `initialize` +
 `tools/list` handshake, and fold the served tools array's serialized size into the total (and WARN if
-those tool-defs dominate the budget). `--with-mcp` EXECUTES the server, so it is for TRUSTED catalog
-plugins / CI only (the same trust boundary as `check-mcp-liveness.py`) — never an untrusted bundle. The
-default static audit only NOTES that an MCP is wired.
+those tool-defs dominate the budget). `--with-mcp` EXECUTES the server (arbitrary code from the target's
+`.mcp.json`), so the same trust boundary as `check-mcp-liveness.py` applies — and is enforced in code,
+not just documented (I-12, 2026-06-13 self-red-team, Simon W.): `--with-mcp` **refuses by default** and
+requires an explicit `--trusted-source` flag OR `PLUGINS_FACTORY_TRUST_EXEC=1` in the env (CI sets it),
+exiting 3 otherwise. The **default static audit executes nothing** and needs no flag — only the opt-in
+`--with-mcp` path is gated. The static audit only NOTES that an MCP is wired.
 
 Usage:
-  context-cost.py plugin <dir>        [--warn-desc N] [--max-desc N] [--budget N] [--with-mcp]
-  context-cost.py marketplace <dir>   [--warn-desc N] [--max-desc N] [--budget N] [--with-mcp]
+  context-cost.py plugin <dir>        [--warn-desc N] [--max-desc N] [--budget N] [--with-mcp --trusted-source]
+  context-cost.py marketplace <dir>   [--warn-desc N] [--max-desc N] [--budget N] [--with-mcp --trusted-source]
   context-cost.py selftest
 Defaults: --warn-desc 1024 (the conventional terseness budget) · --max-desc 2048 (a body, not an ad) ·
 --budget off (per-plugin always-on char ceiling; opt-in) · --with-mcp off (static; opt-in, executes servers).
@@ -337,6 +340,28 @@ def cmd_selftest():
         _, findings = audit(tmp, with_mcp=True)
         expect(any(lv == "WARN" and "MCP tool-defs" in m for lv, m in findings), "did NOT flag a dominating wrapper MCP")
 
+    # interlock (I-12): --with-mcp REFUSES (exit 3) without a trust assertion; static is unaffected; a flag/env authorizes.
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk(tmp, "agents/critic-a.md", "x" * 30)
+        _mk_mcp(tmp, 3)
+        saved = os.environ.pop(TRUST_ENV, None)
+        _stdout = sys.stdout
+        try:
+            expect(main(["plugin", tmp, "--with-mcp"]) == 3, "--with-mcp did NOT refuse without a trust assertion")
+            sys.stdout = open(os.devnull, "w")  # the static call prints a report — suppress it in selftest
+            static_ok = main(["plugin", tmp]) == 0
+            sys.stdout.close()
+            sys.stdout = _stdout
+            expect(static_ok, "static audit (no --with-mcp) was blocked — interlock over-reached")
+            expect(_trust_ok(["plugin", tmp, "--with-mcp", TRUST_FLAG]), "--trusted-source flag did NOT authorize")
+            os.environ[TRUST_ENV] = "1"
+            expect(_trust_ok(["plugin", tmp, "--with-mcp"]), f"{TRUST_ENV}=1 did NOT authorize")
+        finally:
+            sys.stdout = _stdout
+            os.environ.pop(TRUST_ENV, None)
+            if saved is not None:
+                os.environ[TRUST_ENV] = saved
+
     if fails:
         sys.stderr.write("context-cost selftest: FAIL\n")
         for f in fails:
@@ -359,6 +384,15 @@ def _flag(argv, name, default):
     return default
 
 
+TRUST_FLAG = "--trusted-source"
+TRUST_ENV = "PLUGINS_FACTORY_TRUST_EXEC"
+
+
+def _trust_ok(argv):
+    """--with-mcp (the only executing path) is permitted only with an explicit trust assertion."""
+    return TRUST_FLAG in argv or os.environ.get(TRUST_ENV, "") not in ("", "0", "false", "False")
+
+
 def main(argv):
     if len(argv) == 1 and argv[0] == "selftest":
         return cmd_selftest()
@@ -366,6 +400,14 @@ def main(argv):
     max_desc = _flag(argv, "--max-desc", MAX_DESC)
     budget = _flag(argv, "--budget", None)
     with_mcp = "--with-mcp" in argv
+    if with_mcp and not _trust_ok(argv):
+        print(
+            f"RESULT: REFUSED — --with-mcp spawns each target's MCP server (arbitrary code from its\n"
+            f"  .mcp.json, with your full environment). The static audit is unaffected; re-run without\n"
+            f"  --with-mcp, or pass {TRUST_FLAG} (or set {TRUST_ENV}=1) only if you vetted this catalog.",
+            file=sys.stderr,
+        )
+        return 3
     pos = [a for a in argv if not a.startswith("--") and not a.lstrip("-").isdigit()]
     if len(pos) == 2 and pos[0] == "plugin":
         return cmd_plugin(pos[1], warn_desc, max_desc, budget, with_mcp)

@@ -8,19 +8,27 @@ session. Static validation proves WIRING; it never proves EXECUTION. This gate p
 spawns each declared server, completes an `initialize` + `tools/list` handshake over newline-delimited
 stdio, and requires a well-formed JSON-RPC response carrying a tools array.
 
-TRUST BOUNDARY — read before pointing this anywhere. This gate EXECUTES the server, so it is for
-TRUSTED catalog plugins only (our own, in CI). The critic council reviewing an UNTRUSTED bundle must
-NEVER execute it — there, liveness stays a cold-read finding (`references/critics/eval-prompts.md`
-CF5; `references/rubrics/plugins-holistic.md` AP-P7). Do not run this against an unvetted plugin.
+TRUST BOUNDARY — enforced in code, not just documented (I-12, 2026-06-13 self-red-team, Simon W.).
+This gate EXECUTES the server (its `.mcp.json` `command`/`args` run as a subprocess with the full
+ambient environment), so a malicious bundle's "server" is arbitrary code execution on the operator's
+machine — the lethal trifecta this plugin grades Score-1 in others. The old guard was this paragraph;
+prose is not a mechanism. Now the executing modes (`plugin`, `marketplace`) **refuse by default** and
+require an explicit per-invocation trust assertion: the `--trusted-source` flag OR the env marker
+`PLUGINS_FACTORY_TRUST_EXEC=1` (CI sets it; a human almost never does by accident). Without it, the gate
+exits 3 ("refused") and spawns nothing. The critic council reviewing an UNTRUSTED bundle still must
+NEVER execute it — there, liveness stays a cold-read finding (`references/critics/eval-prompts.md` CF5;
+`references/rubrics/plugins-holistic.md` AP-P7). `selftest` builds its own fixtures and needs no flag.
 
 A plugin with no `.mcp.json` is a clean SKIP (nothing wired = nothing to prove).
 
 Usage:
-  check-mcp-liveness.py plugin <dir>          # check one plugin's bundled MCP server(s)
-  check-mcp-liveness.py marketplace <dir>     # check every plugin listed in <dir>/.claude-plugin/marketplace.json
-  check-mcp-liveness.py selftest              # prove the gate: PASS a live server, FAIL a dead-but-wired one
+  check-mcp-liveness.py plugin <dir> --trusted-source         # check one plugin's bundled MCP server(s)
+  check-mcp-liveness.py marketplace <dir> --trusted-source    # check every plugin in <dir>/.claude-plugin/marketplace.json
+  check-mcp-liveness.py selftest                              # prove the gate (live PASS / dead FAIL) + the trust interlock
+  #   the flag may be omitted if PLUGINS_FACTORY_TRUST_EXEC=1 is set in the environment (how CI runs it)
 
-Exit 0 = every declared server served (or none declared); 1 = a wired server failed to serve.
+Exit 0 = every declared server served (or none declared); 1 = a wired server failed to serve;
+2 = usage error; 3 = refused (executing mode without a trust assertion).
 Stdlib only; Python 3.8+.
 """
 import json
@@ -176,21 +184,55 @@ def cmd_selftest():
         # also prove the empty case is a clean skip
         skip = check_plugin(tmp) == []
         # label shows the PROBE outcome + whether it matched expectation (✓/✗), so PASS/FAIL is never ambiguous
+        # interlock (I-12): the executing modes must REFUSE (exit 3) without a trust assertion, and a
+        # bare flag must authorize. Clear the env marker so the refusal path is exercised even in CI.
+        saved = os.environ.pop(TRUST_ENV, None)
+        try:
+            refused = main(["plugin", live]) == 3 and main(["marketplace", tmp]) == 3
+            flag_authorizes = _trust_ok(["plugin", live, TRUST_FLAG])
+            env_authorizes = (os.environ.update({TRUST_ENV: "1"}) or _trust_ok(["plugin", live]))
+        finally:
+            os.environ.pop(TRUST_ENV, None)
+            if saved is not None:
+                os.environ[TRUST_ENV] = saved
         print(f"  live server  -> probe says {'SERVED' if live_ok else 'DEAD'}   {'✓' if live_ok else '✗ expected SERVED'}")
         print(f"  dead server  -> probe says {'SERVED' if dead_ok else 'DEAD'}   {'✓ (correctly rejected)' if not dead_ok else '✗ expected DEAD'}")
         print(f"  no .mcp.json -> probe says {'SKIP' if skip else 'CHECKED'}   {'✓' if skip else '✗ expected SKIP'}")
-        ok = live_ok and (not dead_ok) and skip
+        print(f"  interlock    -> exec mode without trust {'REFUSED (exit 3)' if refused else 'RAN'}   {'✓' if refused else '✗ expected REFUSED'}")
+        print(f"  interlock    -> {TRUST_FLAG}/{TRUST_ENV} authorizes   {'✓' if (flag_authorizes and env_authorizes) else '✗ expected AUTHORIZED'}")
+        ok = live_ok and (not dead_ok) and skip and refused and flag_authorizes and env_authorizes
         print(f"\nRESULT: {'PASS' if ok else 'FAIL'} (mcp-liveness selftest)")
         return 0 if ok else 1
+
+
+TRUST_FLAG = "--trusted-source"
+TRUST_ENV = "PLUGINS_FACTORY_TRUST_EXEC"
+
+
+def _trust_ok(argv):
+    """An executing mode is permitted only with an explicit per-invocation trust assertion."""
+    return TRUST_FLAG in argv or os.environ.get(TRUST_ENV, "") not in ("", "0", "false", "False")
+
+
+def _refuse(mode, path):
+    print(
+        f"RESULT: REFUSED — {mode} mode spawns the target's MCP server (arbitrary code: its .mcp.json\n"
+        f"  command/args run with your full environment). Refusing to execute an unvetted bundle at {path!r}.\n"
+        f"  Pass {TRUST_FLAG} (or set {TRUST_ENV}=1) ONLY if you authored or vetted this catalog.",
+        file=sys.stderr,
+    )
+    return 3
 
 
 def main(argv):
     if len(argv) == 1 and argv[0] == "selftest":
         return cmd_selftest()
-    if len(argv) == 2 and argv[0] == "plugin":
-        return cmd_plugin(argv[1])
-    if len(argv) == 2 and argv[0] == "marketplace":
-        return cmd_marketplace(argv[1])
+    trusted = _trust_ok(argv)
+    pos = [a for a in argv if a != TRUST_FLAG]
+    if len(pos) == 2 and pos[0] == "plugin":
+        return cmd_plugin(pos[1]) if trusted else _refuse("plugin", pos[1])
+    if len(pos) == 2 and pos[0] == "marketplace":
+        return cmd_marketplace(pos[1]) if trusted else _refuse("marketplace", pos[1])
     print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip() if "Usage:" in __doc__ else "usage error", file=sys.stderr)
     return 2
 

@@ -112,7 +112,7 @@ jobs:
       - name: MCP liveness gate (selftest + every bundled server actually serves)
         run: |
           python3 "$PF/bin/check-mcp-liveness.py" selftest
-          python3 "$PF/bin/check-mcp-liveness.py" marketplace .
+          python3 "$PF/bin/check-mcp-liveness.py" marketplace . --trusted-source   # executes servers — the I-12 interlock refuses without this (trusted/CI only)
 
       - name: trust-boundary gate (every reviewer carries the untrusted-DATA-never-instructions guard)
         run: |
@@ -123,7 +123,7 @@ jobs:
         run: |
           python3 "$PF/bin/context-cost.py" selftest
           python3 "$PF/bin/context-cost.py" marketplace .
-          python3 "$PF/bin/context-cost.py" marketplace . --with-mcp   # folds the 4 live MCPs' served tool-defs into the total (executes servers; trusted/CI only)
+          python3 "$PF/bin/context-cost.py" marketplace . --with-mcp --trusted-source   # executes servers — the I-12 interlock refuses without --trusted-source (trusted/CI only)
 
       - name: checker-recall gate (council-calibration checkers aren't brittle)
         run: |
