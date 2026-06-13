@@ -4,7 +4,7 @@ The repo-level horizons, by track. This file aggregates what cuts across the cat
 
 ## Track 1 — corpus-reader (the shared product)
 
-The buildless web-component reader vendored into brand-forge + product-forge; single source in `plugins-factory/bin/corpus-reader/`, sync-gated with an XSS guard and a CHANGELOG freshness fingerprint.
+The buildless web-component reader vendored into brand-forge + product-forge; single source in `tools/corpus-reader/` (repo-root build tooling — relocated out of plugins-factory in D-14/I-11, since it serves the maker plugins, not the judge), sync-gated (`tools/sync-corpus-reader.py`) with an XSS guard and a CHANGELOG freshness fingerprint; `plugins-factory/bin/check-bake-safety.py` retains the bake-safety security gate.
 
 - **Now** — nothing open.
 - **Later**

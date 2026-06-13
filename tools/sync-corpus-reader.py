@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Sync the canonical corpus-reader into the plugins that vendor it.
 
-The single source of truth is `plugins-factory/bin/corpus-reader/`. brand-forge and
-product-forge ship their own *copy* (vendored), because cross-plugin symlinks do NOT
-survive plugin install — installed plugins are copied into a version-keyed cache and
-cannot reference files outside their own directory (plugin-architecture.md). So each
-plugin carries the reader; this script keeps the copies byte-identical to the source.
+The single source of truth is `tools/corpus-reader/` — repo-root build tooling alongside
+`gen-index.py`, relocated out of plugins-factory in D-14/I-11 (the reader serves the *maker*
+plugins, not the judge). brand-forge and product-forge ship their own *copy* (vendored), because
+cross-plugin symlinks do NOT survive plugin install — installed plugins are copied into a
+version-keyed cache and cannot reference files outside their own directory (plugin-architecture.md).
+So each plugin carries the reader; this script keeps the copies byte-identical to the source.
 
-    python3 bin/sync-corpus-reader.py            # copy source → each vendored target
-    python3 bin/sync-corpus-reader.py --check    # exit 1 if any copy drifts (CI gate)
-    python3 bin/sync-corpus-reader.py --changelog "what changed"   # log a reader change
-    python3 bin/sync-corpus-reader.py --fingerprint                # print the code fingerprint
+    python3 tools/sync-corpus-reader.py            # copy source → each vendored target
+    python3 tools/sync-corpus-reader.py --check    # exit 1 if any copy drifts (CI gate)
+    python3 tools/sync-corpus-reader.py --changelog "what changed"   # log a reader change
+    python3 tools/sync-corpus-reader.py --fingerprint                # print the code fingerprint
 
 Vendored copies are GENERATED — never hand-edit one. Edit the source, then re-sync.
 Generated/per-consumer files (the example corpus, the generated sitemap) are not copied.
@@ -28,9 +29,9 @@ import shutil
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent              # …/plugins-factory/bin
-SRC = HERE / "corpus-reader"
-ROOT = HERE.parent.parent                            # the marketplace root
+HERE = Path(__file__).resolve().parent              # …/tools
+SRC = HERE / "corpus-reader"                         # …/tools/corpus-reader (the canonical source)
+ROOT = HERE.parent                                   # the marketplace root (tools/ → root)
 TARGETS = [
     ROOT / "brand-forge" / "bin" / "corpus-reader",
     ROOT / "product-forge" / "bin" / "corpus-reader",
@@ -170,11 +171,11 @@ def main():
             stale.append("CHANGELOG.md missing or has no <!-- source-fingerprint: … --> marker")
         elif marker != source_fingerprint():
             stale.append('reader code changed since the last CHANGELOG entry — log it: '
-                         '`python3 bin/sync-corpus-reader.py --changelog "<summary>"`')
+                         '`python3 tools/sync-corpus-reader.py --changelog "<summary>"`')
 
         if drift or sec or stale:
             if drift:
-                print("corpus-reader drift — run `python3 bin/sync-corpus-reader.py` to fix:")
+                print("corpus-reader drift — run `python3 tools/sync-corpus-reader.py` to fix:")
                 for d in drift:
                     print(f"  {d}")
             if sec:

@@ -81,7 +81,7 @@ def _selftest():
         "      - run: python3 product-forge/bin/product-lint selftest\n"  # extensionless, exists
         "      - run: cd \"$PF\" && python3 bin/check-foundations-coverage.py\n"
         "      - run: test -f /tmp/demo/site/lib/sitemap.json\n"
-        "      - run: for f in \"$PF\"/bin/corpus-reader/lib/components/*.js; do true; done\n"
+        "      - run: for f in tools/corpus-reader/lib/components/*.js; do true; done\n"
         "      - run: python3 -c \"assert x == 'gone-dir/literal.css'\"\n"  # inline code, not a path
         "      - run: test -f ../outside.css\n"                             # parent-relative — skipped
     )

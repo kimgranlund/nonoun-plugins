@@ -51,29 +51,29 @@ jobs:
       - name: foundations ↔ rubrics coverage
         run: cd "$PF" && python3 bin/check-foundations-coverage.py
 
-      - name: corpus-reader vendored copies in sync
-        run: python3 "$PF/bin/sync-corpus-reader.py" --check
+      - name: corpus-reader vendored copies in sync (canonical lives in tools/, D-14)
+        run: python3 tools/sync-corpus-reader.py --check
 
       - name: corpus-reader — demo corpus builds + --init scaffold
         run: |
-          python3 "$PF/bin/corpus-reader/build-sitemap.py" demo-corpus
-          python3 -c "import json; assert json.load(open('plugins-factory/bin/corpus-reader/lib/sitemap.json')).get('theme') == 'demo-corpus/theme.css'"
-          cp -R "$PF/bin/corpus-reader/demo-corpus" /tmp/demo
-          python3 "$PF/bin/corpus-reader/build-sitemap.py" --init /tmp/demo
+          python3 tools/corpus-reader/build-sitemap.py demo-corpus
+          python3 -c "import json; assert json.load(open('tools/corpus-reader/lib/sitemap.json')).get('theme') == 'demo-corpus/theme.css'"
+          cp -R tools/corpus-reader/demo-corpus /tmp/demo
+          python3 tools/corpus-reader/build-sitemap.py --init /tmp/demo
           test -f /tmp/demo/site/lib/sitemap.json
           python3 -c "import json; assert json.load(open('/tmp/demo/site/lib/sitemap.json')).get('theme') == '../theme.css'"
 
       - name: corpus-reader — bake produces a safe single file
         run: |
           python3 "$PF/bin/check-bake-safety.py" selftest
-          cp -R "$PF/bin/corpus-reader/demo-corpus" /tmp/demo-bake
-          python3 "$PF/bin/corpus-reader/build-sitemap.py" --bake /tmp/demo-bake
+          cp -R tools/corpus-reader/demo-corpus /tmp/demo-bake
+          python3 tools/corpus-reader/build-sitemap.py --bake /tmp/demo-bake
           python3 "$PF/bin/check-bake-safety.py" /tmp/demo-bake/reader.html --emit-bundle /tmp/bk.mjs
           node --check /tmp/bk.mjs
 
       - name: corpus-reader — JS parses (ES modules)
         run: |
-          for f in "$PF"/bin/corpus-reader/lib/corpus-reader.js "$PF"/bin/corpus-reader/lib/components/*.js; do
+          for f in tools/corpus-reader/lib/corpus-reader.js tools/corpus-reader/lib/components/*.js; do
             cp "$f" /tmp/chk.mjs && node --check /tmp/chk.mjs || { echo "PARSE FAIL: $f"; exit 1; }
           done
 
