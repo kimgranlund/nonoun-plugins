@@ -26,14 +26,16 @@ block    := lattice | frontier | cell | signal | kit | {layer}
 ```
 operation := seed | audit | scan | rank | advance | define | create
            | validate | record | distill | regenerate | conform
-           | author | scaffold | widen
+           | author | scaffold | widen | block | unblock
 actor     := auditor | advancer | distiller | regenerator | librarian
-           | builder | scribe
+           | builder | scribe | council
 gateverb  := gate | propagate | emit
 ```
 
 Extending either tier is an ontology revision: a ledgered `regenerating` transition
-on this cell, never an ad-hoc coinage.
+on this cell, never an ad-hoc coinage. (Revisions on record: `council` actor, added
+0.3.0 for the structural council; `block`/`unblock` operations, added 0.4.1 for the
+bounded loop's stop-gate. The machine copy is `schemas/naming.schema.json`.)
 
 ## Tier 3 — Composition Grammars
 

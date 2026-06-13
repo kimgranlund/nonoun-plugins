@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.4.0"
+KERNEL_VERSION = "0.4.1"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -200,6 +200,92 @@ def set_blocked(lat, cell_id, blocked=True, reason=""):
     return c
 
 
+# ── The global run bound, in code (the council's convergent v0.4.0 Critical fix). The orchestrator no longer
+# "ticks" caps in its own context; the run's budget is persisted and the exhaustion verdict is COMPUTED here
+# (wall-clock from an absolute deadline — no counter; iterations/cells counted from the ledger). gate-budget
+# reads run_budget_exhausted() and denies every worker write once the run is spent — the hard global floor. ──
+def _run_path(d):
+    return os.path.join(d, "run", "budget.json")
+
+
+def _append_ledger_event(d, event):
+    """Append one event to ledger/events.jsonl inline (no ledger.py import — wired _lattice.py stays self-contained).
+    Best-effort: a ledger-write failure must never break the operation that triggered it."""
+    try:
+        os.makedirs(os.path.join(d, "ledger"), exist_ok=True)
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, separators=(",", ":")) + "\n")
+        return True
+    except OSError:
+        return False
+
+
+def _read_ledger_events(d):
+    """Read .harness/ledger/events.jsonl inline (no ledger.py import — keeps the wired _lattice.py self-contained)."""
+    p = os.path.join(d, "ledger", "events.jsonl")
+    out = []
+    try:
+        for line in open(p, encoding="utf-8"):
+            line = line.strip()
+            if line:
+                try:
+                    out.append(json.loads(line))
+                except ValueError:
+                    pass
+    except OSError:
+        pass
+    return out
+
+
+def run_budget_load(d):
+    try:
+        return json.load(open(_run_path(d), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def run_budget_start(d, now_iso, max_iterations=None, max_cells=None, deadline_iso=None):
+    """Persist the run's budget. `now_iso`/`deadline_iso` are passed in (the kernel's pure paths take no clock)."""
+    budget = {"start_ts": now_iso, "deadline_ts": deadline_iso,
+              "max_iterations": max_iterations, "max_cells": max_cells}
+    os.makedirs(os.path.join(d, "run"), exist_ok=True)
+    tmp = _run_path(d) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(budget, f, indent=2)
+    os.replace(tmp, _run_path(d))
+    return budget
+
+
+def run_budget_clear(d):
+    try:
+        os.remove(_run_path(d))
+        return True
+    except OSError:
+        return False
+
+
+def run_budget_exhausted(d, now_iso):
+    """(exhausted: bool, reason|None, detail). Computed from code — no agent counting. No active run ⇒ not exhausted."""
+    b = run_budget_load(d)
+    if b is None:
+        return False, None, {"active": False}
+    detail = {"active": True, "start_ts": b.get("start_ts")}
+    if b.get("deadline_ts"):
+        detail["deadline_ts"] = b["deadline_ts"]
+        if now_iso >= b["deadline_ts"]:                       # an absolute deadline needs no counter
+            return True, f"wall-clock deadline reached ({b['deadline_ts']})", detail
+    evs = [e for e in _read_ledger_events(d) if (e.get("ts") or "") >= (b.get("start_ts") or "")]
+    iters = sum(1 for e in evs if e.get("operation") == "validate")
+    detail["iterations"] = iters
+    if b.get("max_iterations") is not None and iters >= b["max_iterations"]:
+        return True, f"max-iterations reached ({iters}/{b['max_iterations']})", detail
+    cells = len({e.get("cell_id") for e in evs if e.get("operation") == "validate" and e.get("result") == "pass"})
+    detail["cells"] = cells
+    if b.get("max_cells") is not None and cells >= b["max_cells"]:
+        return True, f"max-cells reached ({cells}/{b['max_cells']})", detail
+    return False, None, detail
+
+
 def advance_validity(lat, cell_id):
     """Return (ok, reasons) — may an engine pass advance this cell right now?"""
     c = find(lat, cell_id)
@@ -274,6 +360,10 @@ def check(lat, d=None):
             for k in c:
                 if k not in known_keys:
                     findings.append(f"{where}: unknown field `{k}` (not in the cell schema — typo, or data that will be ignored)")
+        # blocked_reason without blocked is a representable illegal state (Scott/CV4 band-aid; the discriminated-union
+        # refactor that makes it unconstructable is ROADMAP). The reason describes a stop that isn't in effect.
+        if c.get("blocked_reason") and not c.get("blocked"):
+            findings.append(f"{where}: `blocked_reason` set but `blocked` is false — a stop reason on a cell that isn't stopped")
         if c.get("layer") not in layers:
             findings.append(f"{where}: layer `{c.get('layer')}` not in the closed enum")
         if c.get("scope") not in scopes:
@@ -388,6 +478,24 @@ def selftest():
     expect("blocked_reason" not in find(lat, "rubric.task.x"), "unblock did not clear the reason")
     expect(set_blocked(lat, "no.such.cell", True) is None, "set_blocked did not return None for a missing cell")
 
+    # the GLOBAL run bound (the council's convergent fix): exhaustion is computed from code, no agent counter.
+    import tempfile
+    with tempfile.TemporaryDirectory() as rb:
+        rd = os.path.join(rb, ".harness")
+        scaffold(rd)
+        nowi = "2026-06-13T12:00:00-07:00"
+        expect(run_budget_exhausted(rd, nowi) == (False, None, {"active": False}), "no-run was treated as exhausted")
+        run_budget_start(rd, nowi, max_iterations=2, deadline_iso="2026-06-13T12:30:00-07:00")
+        expect(not run_budget_exhausted(rd, nowi)[0], "fresh run exhausted")
+        with open(os.path.join(rd, "ledger", "events.jsonl"), "w") as f:   # 2 validate events since start → max-iterations
+            f.write('{"operation":"validate","actor":"a","cell_id":"spec.task.x","result":"fail","ts":"2026-06-13T12:05:00-07:00"}\n')
+            f.write('{"operation":"validate","actor":"a","cell_id":"spec.task.y","result":"fail","ts":"2026-06-13T12:06:00-07:00"}\n')
+        ex, why, _ = run_budget_exhausted(rd, nowi)
+        expect(ex and "max-iterations" in why, f"max-iterations not enforced from the ledger: {why}")
+        expect(run_budget_exhausted(rd, "2026-06-13T13:00:00-07:00")[0], "past the deadline not exhausted")  # wall-clock
+        run_budget_clear(rd)
+        expect(not run_budget_exhausted(rd, nowi)[0], "clear did not end the run")
+
     # staleness propagation: change ontology's hash → spec.task.x (validated against h1) flips to stale.
     flipped = propagate_staleness(lat, "ontology.task.domain", "h2")
     expect("spec.task.x" in flipped and find(lat, "spec.task.x")["maturity"] == "stale", f"staleness did not propagate: {flipped}")
@@ -455,6 +563,10 @@ def selftest():
     typo = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "validated",
                        "signal_refs": ["x"], "depends_on": [], "signl_refs": ["typo"]}]}
     expect(any("unknown field `signl_refs`" in f for f in check(typo)), "check() missed an off-schema (typo'd) key")
+    # blocked_reason without blocked is the illegal state Scott flagged.
+    orphan = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "defined",
+                         "depends_on": [], "blocked_reason": "no-progress"}]}
+    expect(any("`blocked` is false" in f for f in check(orphan)), "check() missed blocked_reason-without-blocked")
 
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")
@@ -548,10 +660,15 @@ def main(argv):
             print(f"no such cell: {pos[1]}", file=sys.stderr)
             return 2
         save(d, lat)
+        # ledger the decision (Charity/CV2): a block/unblock is the loop's most consequential act and must leave a
+        # trace — it is a Bash subprocess, so neither ledger.append nor the Write-only emit-ledger hook would see it.
+        _append_ledger_event(d, {"operation": "record", "actor": "orchestrator", "cell_id": pos[1],
+                                 "result": pos[0] + "ed", "ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                                 "rationale": (f"blocked: {reason}" if pos[0] == "block" else "unblocked — back in the ready set")})
         if pos[0] == "block":
-            print(f"blocked {pos[1]}" + (f" — {reason}" if reason else "") + " (falls out of rank/advance until unblocked)")
+            print(f"blocked {pos[1]}" + (f" — {reason}" if reason else "") + " (falls out of rank/advance until unblocked; ledgered)")
         else:
-            print(f"unblocked {pos[1]} — back in the ready set")
+            print(f"unblocked {pos[1]} — back in the ready set (ledgered)")
         return 0
     print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
     return 2

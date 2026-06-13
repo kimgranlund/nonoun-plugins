@@ -188,8 +188,10 @@ jobs:
           python3 harness-forge/bin/emit-ledger selftest       # the audit-trail feedback hook (records writes, never blocks)
           python3 harness-forge/bin/propagate-staleness selftest  # the staleness cascade (edited asset flips cell + dependents stale)
           python3 harness-forge/bin/wire.py selftest           # the installer: unwired fails check, wired passes, merge non-destructive, drift FAILS check + re-apply heals, gate denies its own unwiring
+          python3 harness-forge/bin/run-budget.py selftest     # the GLOBAL loop bound, in code: wall-clock + ledger-counted iterations/cells, no agent counter
           python3 harness-forge/bin/council-precheck.py selftest  # the one-call Step-0 driver (shrinks the council orchestrator's Bash surface)
-          python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools
+          python3 harness-forge/bin/harness-status.py selftest # the operator dashboard renders maturity/frontier/run-budget/wiring/gate-fires/ledger
+          python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools (scan_frontier marks blocked cells)
           # seed → scan → check → wire smoke on a real scaffolded project in a throwaway dir
           D="$(mktemp -d)"
           python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.harness"
@@ -207,8 +209,11 @@ jobs:
       - name: harness-forge — first-slice walkthrough (the loop closes end to end, behaviorally)
         run: python3 harness-forge/evals/first-slice-walkthrough/replay.py
 
-      - name: harness-forge — stop-gate (the wired circuit breaker halts a runaway loop)
+      - name: harness-forge — stop-gate (the per-cell circuit breaker halts a runaway loop)
         run: python3 harness-forge/evals/stop-gate/check.py
+
+      - name: harness-forge — global-bound (the run's caps enforced in code, no model agent)
+        run: python3 harness-forge/evals/global-bound/check.py
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |

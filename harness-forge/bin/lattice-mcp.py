@@ -102,8 +102,14 @@ def call(name, args):
     if name == "scan_frontier":
         fs = lat.get("frontier_scope", "task")
         gaps = [c for c in lat["cells"] if c["scope"] == fs and c["maturity"] in _OPEN]
-        body = "\n".join(f"  {c['maturity']:13} {_cid(c)}" for c in gaps) or "  (no open cells)"
-        return (f"Gap set at frontier scope `{fs}` ({len(gaps)}):\n{body}", False)
+        # mark blocked cells (Charity/CV2): a blocked gap is NOT available work — it's out of `rank` until
+        # unblocked, and advertising it as open would send an agent to grind a cell the stop-gate denies.
+        body = "\n".join(
+            f"  {c['maturity']:13} {_cid(c)}" + (f"  [BLOCKED: {c.get('blocked_reason','') or 'budget/no-progress'}]" if c.get("blocked") else "")
+            for c in gaps) or "  (no open cells)"
+        nblk = sum(1 for c in gaps if c.get("blocked"))
+        note = f" — {nblk} blocked (not ready; run `lattice.py rank` for the actual selectable set)" if nblk else ""
+        return (f"Gap set at frontier scope `{fs}` ({len(gaps)}{note}):\n{body}", False)
 
     if name == "read_ledger":
         p = _safe(os.path.join("ledger", "events.jsonl"))

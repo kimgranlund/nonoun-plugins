@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""check.py — the GLOBAL loop bound is enforced in code, proven with no model agent (the v0.4.1 eval).
+
+The v0.4.0 council's convergent Critical: "/harness-run is bounded by construction" was true only for the
+per-cell stop; the global caps (max-cells / max-iterations / wall-clock) were prose the orchestrator AGENT
+ticked. Chip H. noted the eval that would prove the global bound "cannot be written, because there is no
+code artifact to assert against." This release builds the artifact (`run-budget.py` + `gate-budget`'s global
+check), so the eval can be written — and here it is:
+
+  seed + wire → start a run budget → CONTROL: a write is allowed
+  → exhaust the budget (a wall-clock deadline in the past; then a max-iterations cap via the ledger)
+  → ASSERT: the WIRED gate-budget denies EVERY worker write (exit 2), from its installed location, with NO
+    model agent in the loop. The orchestrator's belief about its counter is irrelevant — code is the floor.
+
+Usage:
+  check.py            # run hermetically; exit 0 = the global bound is enforced in code
+  check.py selftest   # alias
+Stdlib only; Python 3.8+.
+"""
+import datetime
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+BIN = os.path.normpath(os.path.join(HERE, "..", "..", "bin"))
+sys.path.insert(0, BIN)
+import lattice as _lat  # noqa: E402
+
+
+def _now():
+    return datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _wired_gate(proj, payload_path):
+    """Run the INSTALLED gate-budget hook (from .harness/hooks/) against a write to payload_path. Returns exit code."""
+    gb = os.path.join(proj, ".harness", "hooks", "gate-budget")
+    r = subprocess.run([sys.executable, gb, "--hook"],
+                       input=json.dumps({"tool_input": {"file_path": payload_path}}),
+                       capture_output=True, text=True, cwd=proj)
+    return r.returncode
+
+
+def main():
+    fails = []
+    def expect(cond, label):
+        print(("  PASS  " if cond else "  FAIL  ") + label)
+        if not cond:
+            fails.append(label)
+
+    with tempfile.TemporaryDirectory() as proj:
+        d = os.path.join(proj, ".harness")
+        subprocess.run([sys.executable, os.path.join(BIN, "lattice.py"), "init", "gb-demo", "--dir", d], capture_output=True)
+        subprocess.run([sys.executable, os.path.join(BIN, "wire.py"), "apply", "--project", proj], capture_output=True)
+        write_path = ".harness/spec/anything.md"
+
+        # CONTROL: a fresh run budget with room → the wired gate-budget ALLOWS the write.
+        _lat.run_budget_start(d, _now(), max_iterations=5,
+                              deadline_iso=(datetime.datetime.now().astimezone() + datetime.timedelta(hours=1)).isoformat(timespec="seconds"))
+        expect(_wired_gate(proj, write_path) == 0, "control: a write is allowed while the run budget has room")
+
+        # EXHAUST via wall-clock: a deadline in the past → every write denied (the cap that needs no counter).
+        past = (datetime.datetime.now().astimezone() - datetime.timedelta(minutes=1)).isoformat(timespec="seconds")
+        _lat.run_budget_start(d, _now(), deadline_iso=past)
+        expect(_wired_gate(proj, write_path) == 2, "wall-clock: the wired gate denies EVERY write past the deadline (exit 2)")
+        # ...and it denies an UNRELATED path too (global, not per-cell): the whole loop is stopped.
+        expect(_wired_gate(proj, "src/main.py") == 2, "wall-clock: the global deny covers any path, not just a cell's asset")
+
+        # EXHAUST via max-iterations, counted from the LEDGER (not an agent): cap 2, ledger 2 validate events.
+        _lat.run_budget_start(d, _now(), max_iterations=2,
+                              deadline_iso=(datetime.datetime.now().astimezone() + datetime.timedelta(hours=1)).isoformat(timespec="seconds"))
+        expect(_wired_gate(proj, write_path) == 0, "control: under the iteration cap, writes are allowed")
+        os.makedirs(os.path.join(d, "ledger"), exist_ok=True)
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            for i in range(2):
+                f.write(json.dumps({"operation": "validate", "actor": "advancer", "cell_id": f"spec.task.c{i}",
+                                    "result": "fail", "ts": _now()}) + "\n")
+        expect(_wired_gate(proj, write_path) == 2, "max-iterations: 2 ledgered validates hit the cap → the wired gate denies (exit 2)")
+
+        # CLEAR: ending the run lifts the global deny (a fresh run must be started deliberately).
+        _lat.run_budget_clear(d)
+        expect(_wired_gate(proj, write_path) == 0, "clear: ending the run lifts the global deny")
+
+    if fails:
+        print(f"\nRESULT: FAIL — {len(fails)} assertion(s) broken")
+        return 1
+    print("\nRESULT: PASS (global-bound) — the loop's global caps (wall-clock + ledger-counted iterations) are enforced "
+          "by the wired gate-budget in CODE; an exhausted run denies every write with no model agent — 'bounded by "
+          "construction' is true, not prose")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

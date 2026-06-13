@@ -20,7 +20,7 @@ What `apply` does (and `plan` previews, byte-for-byte):
 Usage:
   wire.py plan    [--project DIR] [--harness-dir D]   # show exactly what apply would copy + merge; exit 0
   wire.py apply   [--project DIR] [--harness-dir D]   # do it (requires an existing harness dir — seed first)
-  wire.py check   [--project DIR] [--harness-dir D]   # exit 0 = wired (entries + files present); 1 = not; WARNs on copy drift
+  wire.py check   [--project DIR] [--harness-dir D]   # exit 0 = wired (entries + files present + no drift); 1 = not wired OR a copy has drifted from the plugin
   wire.py unwire  [--project DIR] [--harness-dir D]   # remove exactly our entries + copies; everything else preserved
   wire.py selftest
 Stdlib only; Python 3.8+.
@@ -181,7 +181,7 @@ def apply(project, hd):
 
 
 def check(project, hd, quiet=False):
-    problems, warns = [], []
+    problems = []                                          # drift is a PROBLEM now (CV1), so the old `warns` list is gone
     settings, err = _load_settings(project)
     if err:
         problems.append(err)
@@ -214,14 +214,12 @@ def check(project, hd, quiet=False):
     if any("STALE vs the plugin" in p for p in problems) and wired_ver and wired_ver != KERNEL_VERSION:
         problems.append("wired kernel is v{} but the installed plugin is v{} — `wire.py apply` to update".format(wired_ver, KERNEL_VERSION))
     if not quiet:
-        for w in warns:
-            print("WARN: {}".format(w))
         if problems:
             print("NOT WIRED — {} problem(s):".format(len(problems)))
             for p in problems:
                 print("  - {}".format(p))
         else:
-            print("WIRED — the blocking gate + both feedback hooks are installed in this project's loop.")
+            print("WIRED — the two blocking gates (gate-signal, gate-budget) + both feedback hooks are installed in this project's loop.")
     return 1 if problems else 0
 
 

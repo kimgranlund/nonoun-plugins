@@ -55,7 +55,9 @@
       "conform",
       "author",
       "scaffold",
-      "widen"
+      "widen",
+      "block",
+      "unblock"
     ],
     "actor": [
       "auditor",
@@ -73,7 +75,7 @@
       "emit"
     ]
   },
-  "_block_note": "The `block` vocabulary is the closed set {lattice, frontier, cell, signal, kit} unioned with every `layer` value; bin/naming.py computes it.",
+  "_block_note": "The `block` vocabulary is the closed set {lattice, frontier, cell, signal, kit} unioned with every `layer` value; bin/naming.py computes it. (NB: `block`/`unblock` are also OPERATION verbs on a cell's condition flag — distinct axis from the `block` object vocab; both are intentional, 0.4.1 ontology revision.)",
   "block_extra": [
     "lattice",
     "frontier",

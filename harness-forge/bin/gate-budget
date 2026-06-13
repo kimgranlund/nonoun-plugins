@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""gate-budget — the wired budget/no-progress STOP-gate: deny a worker write to a BLOCKED cell's asset.
+"""gate-budget — the wired STOP-gate: deny worker writes when the run is over budget (global) or the cell is blocked (per-cell).
 
-`gate-*` blocks (naming-conventions.md, Tier 3). This is the mechanical floor under the autonomous loop:
-when a cell is `blocked` — the orchestrator flipped it on a budget cap or a repeated-failure (no-progress)
-signature — the worker must not keep grinding it. A PreToolUse(Write|Edit) hook, this denies a write whose
-path is that blocked cell's `asset_ref` (exit 2 = deny), so the circuit breaker holds even if the worker
-ignores the instruction to stop. The DETECTION (when to block) is `ledger.py no-progress` + the budget,
-run by the orchestrator (`harness-builder`) between passes; the ENFORCEMENT (you can't touch a blocked
-cell) is here. Computation routes to code: the worker's own restraint is not trusted to bound the loop.
+`gate-*` blocks (naming-conventions.md, Tier 3). This is the mechanical floor under the autonomous loop, on
+two axes — and BOTH are computed in code, not trusted to the orchestrator's prose (the council's convergent
+v0.4.0 Critical: a loop's caps routed to inference is the routing law violated at the point of max blast radius):
+
+  GLOBAL — once the run budget is EXHAUSTED (`lattice.run_budget_exhausted`: an absolute wall-clock deadline,
+  or ledger-counted iterations/cells past the cap), this denies EVERY worker write. The orchestrator literally
+  cannot write past its budget, whatever it believes its counter says.
+
+  PER-CELL — when a cell is `blocked` (the no-progress circuit breaker flipped it), a write to that cell's
+  `asset_ref` is denied, so the worker can't grind a stuck cell.
+
+A PreToolUse(Write|Edit) hook; exit 2 = deny. The orchestrator (`harness-builder`) starts the run budget
+(`run-budget.py start`) and detects/blocks stuck cells between passes; the ENFORCEMENT of both bounds is here.
 
 Like `gate-signal` it fails OPEN on anything it can't parse (a malformed event, no lattice, an unmapped
 path → exit 0): a stop-gate that bricked every write on a parse hiccup would be worse than the runaway it
@@ -59,6 +65,17 @@ def blocked_cell_for(path, d=None):
     return None, None
 
 
+def run_exhausted(d=None):
+    """(exhausted, reason) for the active run budget — the GLOBAL ceiling, computed in the kernel from code."""
+    import datetime
+    d = d or _harness_dir()
+    try:
+        ex, why, _ = _lat.run_budget_exhausted(d, datetime.datetime.now().astimezone().isoformat(timespec="seconds"))
+        return ex, why
+    except Exception:                                     # noqa: BLE001 — a budget read error must fail open
+        return False, None
+
+
 def _hook():
     try:
         data = json.load(sys.stdin)
@@ -66,14 +83,36 @@ def _hook():
         path = ti.get("file_path") or ti.get("path") or ti.get("file")
     except Exception:
         return 0                                          # fail open on a parse error — never brick the loop
+    # GLOBAL bound first: once the run's budget is spent, deny EVERY worker write — the hard ceiling the
+    # orchestrator cannot exceed (the council's convergent Critical: the global caps must be code, not prose).
+    ex, why = run_exhausted()
+    if ex:
+        _ledger_deny(path, f"run-budget exhausted: {why}")
+        sys.stderr.write(f"gate-budget: DENY — the run budget is EXHAUSTED ({why}). The bounded loop has reached its "
+                         f"global cap; stop and hand back. Start a fresh run (`run-budget.py start …`) deliberately, "
+                         f"not automatically.\n")
+        return 2
+    # PER-CELL bound: a blocked cell's asset is deny-on-write (the no-progress circuit breaker).
     cell_id, reason = blocked_cell_for(path)
     if cell_id:
-        sys.stderr.write(f"gate-budget: DENY — `{cell_id}` is BLOCKED ({reason}). The loop hit a budget cap or a "
-                         f"no-progress signature on this cell; stop and surface it to the compass, do not keep "
-                         f"grinding. Unblock it deliberately (`lattice.py unblock {cell_id}`) only after changing "
-                         f"the approach.\n")
+        _ledger_deny(path, f"blocked cell {cell_id}: {reason}")
+        sys.stderr.write(f"gate-budget: DENY — `{cell_id}` is BLOCKED ({reason}). The loop hit a no-progress "
+                         f"signature on this cell; stop and surface it to the compass, do not keep grinding. "
+                         f"Unblock it deliberately (`lattice.py unblock {cell_id}`) only after changing the approach.\n")
         return 2                                          # non-zero = deny the write
     return 0
+
+
+def _ledger_deny(path, why):
+    """Record the deny so gate-fires are countable (Charity/CV2: the bounding mechanism must not be mute)."""
+    import datetime
+    d = _harness_dir()
+    try:
+        _lat._append_ledger_event(d, {"operation": "record", "actor": "hook:gate-budget", "result": "deny",
+                                      "ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+                                      "path": (path or "").replace("\\", "/"), "rationale": why})
+    except Exception:                                     # noqa: BLE001 — a logging failure must never change the gate verdict
+        pass
 
 
 def selftest():
@@ -110,13 +149,26 @@ def selftest():
         _lat.set_blocked(lat, "spec.task.first-slice", False)
         _lat.save(d, lat)
         expect(blocked_cell_for(".harness/spec/first-slice.md", d=d)[0] is None, "unblocked cell still denied")
+
+        # GLOBAL bound: an exhausted run budget denies EVERY write (computed from code, no agent counter)
+        import datetime
+        now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+        past = (datetime.datetime.now().astimezone() - datetime.timedelta(seconds=10)).isoformat(timespec="seconds")
+        ex, _, _ = _lat.run_budget_exhausted(d, now)
+        expect(not ex, "a project with no active run was treated as exhausted (would deny all writes)")
+        _lat.run_budget_start(d, now, deadline_iso=past)          # a deadline already in the past = exhausted
+        ex, why, _ = _lat.run_budget_exhausted(d, now)
+        expect(ex and "wall-clock" in (why or ""), f"the global run budget was not exhausted by a past deadline: {why}")
+        _lat.run_budget_clear(d)
+        expect(not _lat.run_budget_exhausted(d, now)[0], "clearing the run did not lift the global deny")
     if fails:
         sys.stderr.write("gate-budget selftest: FAIL\n")
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
-    print("gate-budget selftest: OK (denies a write to a blocked cell's asset, allows unrelated paths + unblocked "
-          "cells, fails open on no-harness; the wired circuit breaker that bounds even a runaway worker)")
+    print("gate-budget selftest: OK (GLOBAL: an exhausted run budget denies every write, computed from code; "
+          "PER-CELL: a blocked cell's asset is denied, unrelated paths + unblocked cells allowed; fails open on "
+          "no-harness — the wired circuit breaker that bounds even a runaway worker, on both axes)")
     return 0
 
 
