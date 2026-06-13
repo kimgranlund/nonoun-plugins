@@ -4,7 +4,7 @@ Project-scoped Claude Code config for **working in this repo** — building and 
 
 ## `settings.json` — auto-enables the lifecycle tool
 
-This repo's `settings.json` declares the `plugins-forge` marketplace (`extraKnownMarketplaces`) and enables **`plugins-factory`** by default (`enabledPlugins`), so the plugin-lifecycle tool loads whenever you — or a collaborator who trusts the project — work here. That's why its `/plugin-*` commands and critic council are available against the catalog plugins without a manual install. (Working in the repo installs the **published** version from GitHub; for live local edits to the tool itself, test with `claude --plugin-dir plugins-factory` or bump + `/plugin marketplace update`.)
+This repo's `settings.json` declares the `nonoun-plugins` marketplace (`extraKnownMarketplaces`) and enables **`plugins-factory`** by default (`enabledPlugins`), so the plugin-lifecycle tool loads whenever you — or a collaborator who trusts the project — work here. That's why its `/plugin-*` commands and critic council are available against the catalog plugins without a manual install. (Working in the repo installs the **published** version from GitHub; for live local edits to the tool itself, test with `claude --plugin-dir plugins-factory` or bump + `/plugin marketplace update`.)
 
 - `settings.json` — shared project settings (checked in → every collaborator). Holds the `extraKnownMarketplaces` + `enabledPlugins` above.
 - `settings.local.json` — personal settings/permissions (git-ignored).

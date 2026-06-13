@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gen-index.py — generate ./index.html documenting the plugins-forge catalog.
+"""gen-index.py — generate ./index.html documenting the nonoun-plugins catalog.
 
 Reads .claude-plugin/marketplace.json and walks each plugin's real structure (skills, agents,
 commands, hooks, bin gates, MCP, reference files) and emits one self-contained, dependency-free
@@ -166,6 +166,7 @@ def render(market):
     e = html.escape
     plugins = market.get("plugins", [])
     market_desc = market.get("metadata", {}).get("description", "")
+    market_name = market.get("name", "catalog")           # read the marketplace name — survives a rename, no code change
     css = """
 :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#9da7b3;--acc:#58a6ff;--chip:#21262d}
 *{box-sizing:border-box}
@@ -199,9 +200,9 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
     parts = [
         "<!doctype html>", '<html lang="en"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width,initial-scale=1">',
-        "<title>plugins-forge — catalog</title>",
+        f"<title>{e(market_name)} — catalog</title>",
         f"<style>{css}</style></head><body><div class='wrap'>",
-        "<header><h1>plugins-forge</h1>",
+        f"<header><h1>{e(market_name)}</h1>",
         f"<p class='sub'>{e(market_desc)}</p>",
         f"<p class='sub'><b>{len(plugins)}</b> catalog plugins · "
         "<a href='https://github.com/kimgranlund/claude-plugins'>github.com/kimgranlund/claude-plugins</a></p></header>",

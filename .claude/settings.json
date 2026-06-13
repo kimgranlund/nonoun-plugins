@@ -1,6 +1,6 @@
 {
   "extraKnownMarketplaces": {
-    "plugins-forge": {
+    "nonoun-plugins": {
       "source": {
         "source": "github",
         "repo": "kimgranlund/claude-plugins"
@@ -8,6 +8,6 @@
     }
   },
   "enabledPlugins": {
-    "plugins-factory@plugins-forge": true
+    "plugins-factory@nonoun-plugins": true
   }
 }

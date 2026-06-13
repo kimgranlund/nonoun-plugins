@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`plugins-forge` is a **Claude Code plugin marketplace** — distributable, reference-quality plugins listed in `.claude-plugin/marketplace.json`, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Catalog plugins:
+`nonoun-plugins` (the marketplace `name` in `.claude-plugin/marketplace.json`; the repo is `claude-plugins`) is a **Claude Code plugin marketplace** — distributable, reference-quality plugins, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Catalog plugins:
 
 - **`brand-forge/`** — build and evaluate brands grounded in cultural authority (the catalog's product example).
 - **`plugins-factory/`** — the plugin-lifecycle tool used to author and red-team plugins (including the others). It's a normal catalog plugin anyone can install — **and** this repo auto-enables it for itself via `.claude/settings.json`, so it's loaded whenever you work here. The build tool ships with the workshop.
@@ -56,7 +56,7 @@ Every critic agent, the orchestrator, and the evaluate/council skills repeat the
 
 ## The lifecycle tool: plugins-factory (`plugins-factory/`)
 
-A catalog plugin that doubles as this repo's own toolchain — anyone can install it (`/plugin install plugins-factory@plugins-forge`), and the repo auto-enables it for itself via `.claude/settings.json` (`enabledPlugins`) so it's loaded whenever you work here. Use it to author and judge the catalog plugins:
+A catalog plugin that doubles as this repo's own toolchain — anyone can install it (`/plugin install plugins-factory@nonoun-plugins`), and the repo auto-enables it for itself via `.claude/settings.json` (`enabledPlugins`) so it's loaded whenever you work here. Use it to author and judge the catalog plugins:
 
 - **Commands** — `/plugin-author` · `/plugin-carve` · `/plugin-edit` (build) and `/plugin-score` · `/plugin-critique` · `/plugin-promote` (judge), namespaced `plugins-factory:` when loaded.
 - **Skills** — `plugin-build` (the maker) and `plugin-evaluate` (the judge), over one shared rubric spine in `references/`.
@@ -137,8 +137,8 @@ Install / iterate inside Claude Code:
 
 ```text
 /plugin marketplace add kimgranlund/claude-plugins
-/plugin install brand-forge@plugins-forge        # the product
-/plugin install plugins-factory@plugins-forge    # the lifecycle tool (also auto-enabled here via .claude/settings.json)
+/plugin install brand-forge@nonoun-plugins        # the product
+/plugin install plugins-factory@nonoun-plugins    # the lifecycle tool (also auto-enabled here via .claude/settings.json)
 ```
 
 ## Conventions

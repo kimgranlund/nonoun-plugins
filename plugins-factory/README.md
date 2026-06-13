@@ -10,7 +10,7 @@ This is the toolchain the rest of this marketplace is authored and red-teamed wi
 
 ```text
 /plugin marketplace add kimgranlund/claude-plugins
-/plugin install plugins-factory@plugins-forge
+/plugin install plugins-factory@nonoun-plugins
 ```
 
 Build side and judge side, both as thin typed commands:

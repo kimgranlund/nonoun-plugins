@@ -1,17 +1,18 @@
-# claude-plugins — the `plugins-forge` marketplace
+# claude-plugins — the `nonoun-plugins` marketplace
 
 [![ci](https://github.com/kimgranlund/claude-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/kimgranlund/claude-plugins/actions/workflows/ci.yml)
 
-A public **Claude Code plugin marketplace**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with the catalog's own lifecycle tool. The marketplace *name* is `plugins-forge` (install ids end in `@plugins-forge`) while the repo is `claude-plugins` — deliberate; see [docs/ISSUES.md](docs/ISSUES.md) D-1.
+A public **Claude Code plugin marketplace**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with the catalog's own lifecycle tool. The marketplace *name* is `nonoun-plugins` (install ids end in `@nonoun-plugins`) while the repo is `claude-plugins` — see [docs/ISSUES.md](docs/ISSUES.md) D-12 (renamed from `plugins-forge` on 2026-06-13).
 
 ## Install
 
 ```text
 /plugin marketplace add kimgranlund/claude-plugins
-/plugin install brand-forge@plugins-forge
-/plugin install plugins-factory@plugins-forge
-/plugin install product-forge@plugins-forge
-/plugin install agent-ops@plugins-forge
+/plugin install brand-forge@nonoun-plugins
+/plugin install plugins-factory@nonoun-plugins
+/plugin install product-forge@nonoun-plugins
+/plugin install agent-ops@nonoun-plugins
+/plugin install harness-forge@nonoun-plugins
 ```
 
 ## Catalog

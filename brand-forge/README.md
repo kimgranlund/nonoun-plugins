@@ -10,7 +10,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 
 ```text
 /plugin marketplace add kimgranlund/claude-plugins
-/plugin install brand-forge@plugins-forge
+/plugin install brand-forge@nonoun-plugins
 ```
 
 Then drive it through seven typed commands:
