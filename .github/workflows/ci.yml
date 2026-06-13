@@ -135,6 +135,12 @@ jobs:
           python3 "$PF/bin/score-record.py" selftest
           for f in "$PF"/scores/*.json; do python3 "$PF/bin/score-record.py" validate "$f"; done
 
+      - name: assemble-marketplace gate (the carve publish step + a catalog round-trip)
+        run: |
+          python3 "$PF/bin/assemble-marketplace.py" selftest
+          python3 "$PF/bin/assemble-marketplace.py" assemble . --name nonoun-plugins --owner "Kim Granlund" --out /tmp/assembled.json
+          python3 -c "import json; m=json.load(open('/tmp/assembled.json')); assert len(m['plugins'])==5, m; print('assembled', len(m['plugins']), 'plugins, valid')"
+
       - name: brand-forge — council-calibration baselines (strategy + design + voice + muse)
         run: |
           python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md

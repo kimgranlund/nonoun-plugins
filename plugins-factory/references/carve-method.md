@@ -139,6 +139,17 @@ core-ui-types ◄── ui-audit         (both via `dependencies`)
 
 **(d) Per-plugin P1/P3/P4 self-check** — for each proposed plugin: one-sentence job (P1), split/merge verdict (P3), and every cross-boundary reference's resolution (P4). No proposal ships with an unresolved `../`.
 
+### Publish — assemble the library's `marketplace.json`
+
+Once the proposal is built into real plugin directories, **assemble the multi-plugin marketplace and validate the wiring in one mechanical step** — don't hand-write the `marketplace.json`:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/bin/assemble-marketplace.py assemble <library-dir> \
+  --name <kebab-marketplace-name> --owner "<owner>" [--allow-external <name> …] --out <library-dir>/.claude-plugin/marketplace.json
+```
+
+It discovers every `<library-dir>/*/.claude-plugin/plugin.json`, emits one entry per plugin (`source: ./<dir>`, `tags` from `keywords`, `category` from a `category` field), and **fails unless the carve is legal**: every plugin manifest validates, the assembled marketplace validates (including the cross-plugin **agent-name collision** check — D-13, so a carved library can't ship two councils that silently drop a critic), and the **`dependencies` graph resolves and is acyclic** (every dep is in the library or `--allow-external`-vouched; foundation plugins are sinks — the carve-quality D4 invariant, mechanized). This is the publish gate the proposal's step-7(b) dependency graph is checked against; a surviving `../`, an unresolved dep, or a cycle stops the publish, not the install.
+
 ---
 
 ## Worked micro-example (4 skills → 2 plugins + a shared dep)
