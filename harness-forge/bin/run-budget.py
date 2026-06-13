@@ -84,10 +84,14 @@ def main(argv):
         return selftest()
     d = argv[argv.index("--dir") + 1] if "--dir" in argv else ".harness"
     if argv and argv[0] == "start":
-        wc = _intflag(argv, "--wall-clock-s")
-        deadline = (_now() + datetime.timedelta(seconds=wc)).isoformat(timespec="seconds") if wc else None
-        b = _lat.run_budget_start(d, _now().isoformat(timespec="seconds"),
-                                  _intflag(argv, "--max-iterations"), _intflag(argv, "--max-cells"), deadline)
+        try:
+            wc = _intflag(argv, "--wall-clock-s")
+            deadline = (_now() + datetime.timedelta(seconds=wc)).isoformat(timespec="seconds") if wc else None
+            b = _lat.run_budget_start(d, _now().isoformat(timespec="seconds"),
+                                      _intflag(argv, "--max-iterations"), _intflag(argv, "--max-cells"), deadline)
+        except ValueError as e:
+            print(f"run-budget start: {e}", file=sys.stderr)   # vacuous / non-positive / non-int caps → clean error, not a traceback
+            return 2
         print(f"run-budget started: max-iterations={b['max_iterations']} max-cells={b['max_cells']} deadline={b['deadline_ts']}")
         return 0
     if argv and argv[0] == "clear":

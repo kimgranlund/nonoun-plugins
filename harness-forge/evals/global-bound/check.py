@@ -83,12 +83,28 @@ def main():
         _lat.run_budget_clear(d)
         expect(_wired_gate(proj, write_path) == 0, "clear: ending the run lifts the global deny")
 
+        # THE ARMING GAP, disclosed honestly (Andrej): with NO budget, the gate allows — the bound is enforced in
+        # code but ARMED by the orchestrator (it must `start` one). The eval asserts the bug-shaped truth so the
+        # claim stays scoped: "bounded ONCE a run is started," not "always bounded."
+        expect(_wired_gate(proj, write_path) == 0, "no budget = unbounded (the arming precondition — disclosed, not hidden)")
+
+        # the orchestrator's DOCUMENTED command (`run-budget.py start`, not the in-process function) produces an
+        # enforcing budget — proving step 0 of the loop actually arms the gate.
+        r = subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "start", "--wall-clock-s", "-60", "--dir", d],
+                           capture_output=True, text=True)   # a deadline 60s in the past = immediately exhausted
+        expect(r.returncode == 0, f"run-budget.py start (the CLI the orchestrator calls) failed: {r.stderr}")
+        expect(_wired_gate(proj, write_path) == 2, "the CLI-armed budget is enforced by the wired gate (step 0 works)")
+        # and the CLI refuses a vacuous budget (a 'bound' that bounds nothing)
+        r = subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "start", "--dir", d], capture_output=True, text=True)
+        expect(r.returncode == 2 and "bounds nothing" in r.stderr, "the CLI accepted a vacuous (capless) budget")
+
     if fails:
         print(f"\nRESULT: FAIL — {len(fails)} assertion(s) broken")
         return 1
-    print("\nRESULT: PASS (global-bound) — the loop's global caps (wall-clock + ledger-counted iterations) are enforced "
-          "by the wired gate-budget in CODE; an exhausted run denies every write with no model agent — 'bounded by "
-          "construction' is true, not prose")
+    print("\nRESULT: PASS (global-bound) — ONCE A RUN IS ARMED (the orchestrator's `run-budget.py start`, proven here via "
+          "the CLI), the global caps (wall-clock + ledger-counted iterations) are ENFORCED by the wired gate-budget in "
+          "CODE, with no model agent. The bound is enforced by code; arming it is the orchestrator's step 0 — and the "
+          "eval asserts that an un-armed run is (honestly) unbounded, so the claim stays scoped.")
     return 0
 
 

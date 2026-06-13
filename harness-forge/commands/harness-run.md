@@ -11,7 +11,7 @@ Dispatch the **`harness-builder`** orchestrator to run the engine **automaticall
 
 The orchestrator's loop:
 
-0. **start the run budget** — `run-budget.py start --max-iterations N --max-cells M --wall-clock-s S`. This persists the **global** ceiling; from here `gate-budget` denies *every* write once the run is exhausted (wall-clock deadline, or ledger-counted iterations/cells past the cap) — the loop cannot write past its budget.
+0. **start the run budget** — `run-budget.py start --max-iterations N --max-cells M --wall-clock-s S`. **This is what arms the gate** — without it there is no ceiling. It persists the **global** budget; from here `gate-budget` denies *every* write once the run is exhausted (wall-clock deadline, or ledger-counted iterations/cells past the cap) — once armed, the loop cannot write past its budget. (A cap-less budget is refused; `/harness-status` alarms if you forget. Do not skip this step before an unattended run.)
 1. **rank** — `lattice.py rank` for the top ready cell. No ready cell → **STOP** (frontier empty / all-blocked).
 2. **advance** — gate with `lattice.py validity`, then dispatch **one** `harness-advancer` (one cell, fresh context); `validate.py` mints the signal, `ledger.py append` records the why + cost.
 3. **detect + block** — `ledger.py no-progress`: any cell stuck on repeated failures is **blocked** (`lattice.py block`), so it leaves the ready set and `gate-budget` denies further writes to it.

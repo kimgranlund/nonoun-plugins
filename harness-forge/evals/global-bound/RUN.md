@@ -30,9 +30,14 @@ Nothing is decremented by the orchestrator. The kernel (`lattice.run_budget_exha
 
 The deny fires from the **installed** `.harness/hooks/gate-budget` (the wired location), end to end, with no orchestrator in the loop — the same standard `evals/stop-gate/` meets for the per-cell breaker.
 
-## The honest scope, now precise
+## The honest scope, now precise (the arming precondition)
 
-After this: "bounded by construction" is **true** for what code reaches — the per-cell no-progress stop, and the global wall-clock / iteration / cell ceilings (all enforced by the wired `gate-budget`). What remains the orchestrator's *discipline* is only the **graceful** stop (notice the budget is spent, report, hand back) — and even if it ignores that, the gate denies its writes. The floor is code; the courtesy is the agent's.
+The bound has two halves with different guarantees, and the v0.4.1 council made us name both:
+
+- **Enforcement is code.** Once a run budget exists, `gate-budget` denies every write past it — wall-clock, iterations, cells — with no agent in the path. The eval proves this, including via the orchestrator's actual CLI (`run-budget.py start`).
+- **Arming is the orchestrator's discipline.** The gate can only enforce a budget that *exists*, and the orchestrator creates it at step 0 (`run-budget.py start`). If it skips step 0, there is no budget and the gate allows writes — the eval asserts exactly this (`no budget = unbounded`), so the claim never overreaches. The gate genuinely cannot fail-closed without a budget: it can't tell a loop-write from ordinary manual editing.
+
+So "bounded by construction" means **once a run is armed.** The mitigations that keep the arming honest rather than silent: `run-budget.py start` refuses a *vacuous* budget (a cap-less "budget" bounds nothing); `/harness-status` **alarms** ("NO ACTIVE RUN BUDGET — if a loop is running it is UNBOUNDED"); and the budget file is deny-on-write to workers (a worker can't lift its own ceiling). What remains the orchestrator's *graceful* courtesy is only noticing the budget is spent and handing back — and even there, the gate denies its writes regardless.
 
 ## Replay
 

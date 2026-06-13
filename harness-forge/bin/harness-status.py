@@ -46,15 +46,19 @@ def render(project, hd=".harness", n=8):
     if blocked:
         out.append("  blocked:  " + ", ".join(f"{_lat.cid(c)} ({c.get('blocked_reason','?')})" for c in blocked))
 
-    # the run budget (the global bound)
+    # the run budget (the global bound) — show X/Y, not just the numerator, so an operator sees the cliff BEFORE it
     ex, why, det = _lat.run_budget_exhausted(d, datetime.datetime.now().astimezone().isoformat(timespec="seconds"))
     if not det.get("active"):
-        out.append("  run:      no active /harness-run budget")
+        # the alarm: "no budget" is benign only if no loop is running. If /harness-run is in flight, it is UNBOUNDED.
+        out.append("  run:      ⚠ NO ACTIVE RUN BUDGET — if /harness-run is executing now, the global gate is dark "
+                   "and the loop is UNBOUNDED. Start one (`run-budget.py start --max-iterations N …`) before an unattended run.")
     elif ex:
-        out.append(f"  run:      EXHAUSTED — {why} (gate-budget is denying writes; stop the loop)")
+        out.append(f"  run:      ⚠ EXHAUSTED — {why}; gate-budget is denying every write. Stop the loop / clear the run.")
     else:
-        out.append(f"  run:      active — {det.get('iterations',0)} iteration(s), {det.get('cells',0)} cell(s)"
-                   + (f", deadline {det['deadline_ts']}" if det.get('deadline_ts') else ""))
+        mi, mc = det.get("max_iterations"), det.get("max_cells")
+        i_s = f"{det.get('iterations',0)}/{mi} iters" if mi else f"{det.get('iterations',0)} iters"
+        c_s = f"{det.get('cells',0)}/{mc} cells" if mc else f"{det.get('cells',0)} cells"
+        out.append(f"  run:      active — {i_s} · {c_s}" + (f" · deadline {det['deadline_ts']}" if det.get('deadline_ts') else ""))
 
     # wiring + drift
     wired = _wire.check(project, hd, quiet=True)
@@ -84,7 +88,12 @@ def selftest():
         s = render(proj)
         for token in ("maturity:", "frontier:", "run:", "wiring:", "gate-fires:", "ledger:"):
             expect(token in s, f"status missing the {token} line")
-        expect("no active" in s and "NOT WIRED" in s, "a fresh unseeded-wiring project should show no run + NOT WIRED")
+        expect("NO ACTIVE RUN BUDGET" in s and "UNBOUNDED" in s and "NOT WIRED" in s,
+               "a fresh project must ALARM that no run budget = unbounded, + show NOT WIRED")
+        # an active budget renders X/Y (the caps, not just the numerator) so the operator sees the cliff before it
+        _lat.run_budget_start(d, "2026-06-13T12:00:00-07:00", max_iterations=8, max_cells=4)
+        expect("0/8 iters" in render(proj) and "0/4 cells" in render(proj), "the run line must show X/Y caps, not just the count")
+        _lat.run_budget_clear(d)
         # after a block + a wire, the dashboard reflects both
         _wire.apply(proj, ".harness")
         lat = _lat.load(d); _lat.set_blocked(lat, "spec.task.first-slice", True, reason="no-progress"); _lat.save(d, lat)

@@ -34,6 +34,9 @@ DEFAULT_PROTECTED = [
     ".harness/rubric/*",
     ".harness/hooks/*",
     ".harness/ledger/*",
+    ".harness/run/*",          # the run budget IS the global bound's verifier asset — a worker that could rewrite
+                               # budget.json (far-future deadline, null caps) would immortalize the run and lift the
+                               # ceiling gate-budget enforces. Deny-on-write, like signals and the wiring. (council v0.4.1)
     ".harness/lattice.json",
     ".harness/*.schema.json",
     ".claude/settings.json",
@@ -71,6 +74,7 @@ def selftest():
               ".harness/rubric/first-slice.md", ".harness/naming.schema.json",
               ".harness/hooks/gate-signal", ".harness/lattice.json",
               ".harness/ledger/events.jsonl",                       # the audit trail is tamper-evident
+              ".harness/run/budget.json",                           # the global bound — a worker cannot lift its own ceiling
               ".claude/settings.json",                              # the wiring itself — a worker cannot unwire the gate
               "/abs/project/.harness/signals/x/y.json",             # absolute paths anchor at the segment boundary
               "sub/project/.claude/settings.json"):

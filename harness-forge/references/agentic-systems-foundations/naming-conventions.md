@@ -17,7 +17,7 @@ layer    := ontology | spec | rubric | policy | capability
 scope    := call | task | workflow | system | fleet
 maturity := absent | defined | instantiated | validated | operating
            | regenerating | stale | deprecated
-tier     := kernel | kit
+tier     := kernel | kit | forge | factory | ops
 block    := lattice | frontier | cell | signal | kit | {layer}
 ```
 

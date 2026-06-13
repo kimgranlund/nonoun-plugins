@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.4.1"
+KERNEL_VERSION = "0.4.2"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -244,8 +244,39 @@ def run_budget_load(d):
         return None
 
 
+def _parse_ts(s):
+    """Parse an ISO-8601 timestamp into a datetime for ROBUST comparison (offset-aware, not string-lexicographic —
+    a DST shift or a UTC-vs-offset stamp would mis-order a raw string compare). Returns None if unparseable."""
+    if not s:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _ts_ge(a, b):
+    """a >= b as instants when both parse; falls back to string compare only if a side is unparseable."""
+    pa, pb = _parse_ts(a), _parse_ts(b)
+    if pa is not None and pb is not None:
+        return pa >= pb
+    return (a or "") >= (b or "")
+
+
 def run_budget_start(d, now_iso, max_iterations=None, max_cells=None, deadline_iso=None):
-    """Persist the run's budget. `now_iso`/`deadline_iso` are passed in (the kernel's pure paths take no clock)."""
+    """Persist the run's budget. Rejects a VACUOUS budget (no cap is no budget) and ill-typed caps — the bound that
+    bounds nothing is the illegal state the council flagged. `now_iso`/`deadline_iso` are passed in (pure paths take
+    no clock). If an unexhausted budget is already active, ledgers a `budget-reset` event so a self-extending loop is
+    tamper-evident in the append-only trail (Simon M1). Raises ValueError on a bad/vacuous budget."""
+    for name, v in (("max_iterations", max_iterations), ("max_cells", max_cells)):
+        if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
+            raise ValueError(f"{name} must be a positive integer or None, got {v!r}")
+    if max_iterations is None and max_cells is None and not deadline_iso:
+        raise ValueError("a vacuous run budget (no max-iterations, no max-cells, no wall-clock) bounds nothing — refused")
+    prior = run_budget_load(d)
+    if prior is not None and not run_budget_exhausted(d, now_iso)[0]:   # overwriting a live run → tamper-evident
+        _append_ledger_event(d, {"operation": "record", "actor": "orchestrator", "result": "budget-reset", "ts": now_iso,
+                                 "rationale": f"a new run budget replaced an active one (was start {prior.get('start_ts')})"})
     budget = {"start_ts": now_iso, "deadline_ts": deadline_iso,
               "max_iterations": max_iterations, "max_cells": max_cells}
     os.makedirs(os.path.join(d, "run"), exist_ok=True)
@@ -265,16 +296,18 @@ def run_budget_clear(d):
 
 
 def run_budget_exhausted(d, now_iso):
-    """(exhausted: bool, reason|None, detail). Computed from code — no agent counting. No active run ⇒ not exhausted."""
+    """(exhausted: bool, reason|None, detail). Computed from code — no agent counting. No active run ⇒ not exhausted.
+    `detail` carries the caps (max_iterations/max_cells) so an operator can see X/Y, not just the numerator (Charity)."""
     b = run_budget_load(d)
     if b is None:
         return False, None, {"active": False}
-    detail = {"active": True, "start_ts": b.get("start_ts")}
+    detail = {"active": True, "start_ts": b.get("start_ts"),
+              "max_iterations": b.get("max_iterations"), "max_cells": b.get("max_cells")}
     if b.get("deadline_ts"):
         detail["deadline_ts"] = b["deadline_ts"]
-        if now_iso >= b["deadline_ts"]:                       # an absolute deadline needs no counter
+        if _ts_ge(now_iso, b["deadline_ts"]):                 # an absolute deadline needs no counter (offset-robust)
             return True, f"wall-clock deadline reached ({b['deadline_ts']})", detail
-    evs = [e for e in _read_ledger_events(d) if (e.get("ts") or "") >= (b.get("start_ts") or "")]
+    evs = [e for e in _read_ledger_events(d) if e.get("ts") and _ts_ge(e["ts"], b.get("start_ts"))]
     iters = sum(1 for e in evs if e.get("operation") == "validate")
     detail["iterations"] = iters
     if b.get("max_iterations") is not None and iters >= b["max_iterations"]:
@@ -284,6 +317,42 @@ def run_budget_exhausted(d, now_iso):
     if b.get("max_cells") is not None and cells >= b["max_cells"]:
         return True, f"max-cells reached ({cells}/{b['max_cells']})", detail
     return False, None, detail
+
+
+def run_budget_check(d):
+    """Validate .harness/run/budget.json against run-budget.schema.json when present. Returns a list of findings."""
+    b = run_budget_load(d)
+    if b is None:
+        return []
+    findings = []
+    sch = _run_budget_schema()
+    props = (sch or {}).get("properties", {})
+    if sch and "start_ts" not in b:
+        findings.append("run/budget.json: missing required `start_ts`")
+    if sch:
+        for k in b:
+            if k not in props:
+                findings.append(f"run/budget.json: unknown field `{k}`")
+    for k in ("max_iterations", "max_cells"):
+        v = b.get(k)
+        if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
+            findings.append(f"run/budget.json: `{k}` must be a positive integer or null, got {v!r}")
+    if b.get("deadline_ts") and b.get("start_ts") and _parse_ts(b["deadline_ts"]) and _parse_ts(b["start_ts"]):
+        if _parse_ts(b["deadline_ts"]) < _parse_ts(b["start_ts"]):
+            findings.append("run/budget.json: `deadline_ts` is before `start_ts` (the run is born exhausted)")
+    if b.get("max_iterations") is None and b.get("max_cells") is None and not b.get("deadline_ts"):
+        findings.append("run/budget.json: vacuous budget — no cap of any kind (bounds nothing)")
+    return findings
+
+
+def _run_budget_schema():
+    for p in (os.path.join(_ROOT, "schemas", "run-budget.schema.json"),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas", "run-budget.schema.json")):
+        try:
+            return json.load(open(p, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    return None
 
 
 def advance_validity(lat, cell_id):
@@ -405,6 +474,8 @@ def check(lat, d=None):
                     if now and now != recorded:
                         findings.append(f"{cell_id}: trusts `{dep}` at {recorded} but its asset now hashes {now} — "
                                         f"stale-but-trusted (the evidence predates the content; re-validate)")
+    if d:                                                    # the run budget is durable .harness/ state — type-check it too
+        findings += run_budget_check(d)
     return findings
 
 
@@ -493,8 +564,30 @@ def selftest():
         ex, why, _ = run_budget_exhausted(rd, nowi)
         expect(ex and "max-iterations" in why, f"max-iterations not enforced from the ledger: {why}")
         expect(run_budget_exhausted(rd, "2026-06-13T13:00:00-07:00")[0], "past the deadline not exhausted")  # wall-clock
+        expect(run_budget_exhausted(rd, nowi)[2].get("max_iterations") == 2, "detail must carry the caps for the X/Y dashboard")
         run_budget_clear(rd)
         expect(not run_budget_exhausted(rd, nowi)[0], "clear did not end the run")
+        # the writer rejects the illegal states (vacuous / non-positive / non-int caps) — they can't be constructed.
+        for bad in (lambda: run_budget_start(rd, nowi),                                   # vacuous
+                    lambda: run_budget_start(rd, nowi, max_iterations=0),                 # < 1
+                    lambda: run_budget_start(rd, nowi, max_cells=-3),
+                    lambda: run_budget_start(rd, nowi, max_iterations="5")):              # not an int
+            try:
+                bad(); expect(False, "run_budget_start accepted an illegal budget")
+            except ValueError:
+                pass
+        # run_budget_check catches a hand-edited illegal budget.json (deadline before start, vacuous).
+        run_budget_start(rd, "2026-06-13T12:00:00-07:00", max_iterations=2)
+        import json as _json
+        _json.dump({"start_ts": "2026-06-13T12:00:00-07:00", "deadline_ts": "2026-06-13T11:00:00-07:00",
+                    "max_iterations": 2, "max_cells": None}, open(_run_path(rd), "w"))
+        expect(any("before `start_ts`" in f for f in run_budget_check(rd)), "check missed deadline-before-start")
+        _json.dump({"start_ts": "2026-06-13T12:00:00-07:00", "deadline_ts": None,
+                    "max_iterations": None, "max_cells": None}, open(_run_path(rd), "w"))
+        expect(any("vacuous" in f for f in run_budget_check(rd)), "check missed a vacuous budget.json")
+        # the budget round-trips its own schema cleanly when well-formed
+        run_budget_clear(rd); run_budget_start(rd, nowi, max_iterations=3, deadline_iso="2026-06-13T13:00:00-07:00")
+        expect(run_budget_check(rd) == [], f"check flagged a well-formed budget: {run_budget_check(rd)}")
 
     # staleness propagation: change ontology's hash → spec.task.x (validated against h1) flips to stale.
     flipped = propagate_staleness(lat, "ontology.task.domain", "h2")
@@ -590,7 +683,8 @@ def selftest():
         return 1
     print("lattice selftest: OK (scan/partial-order/verifier-maturity/rank/staleness; the state machine rejects illegal "
           "transitions; check() catches ill-typed, validated-without-signal, retro-order-violated, and "
-          "stale-but-trusted cells; block/unblock drops a cell from rank; the seed bootstraps without deadlock; scaffold lays the full tree)")
+          "stale-but-trusted cells; block/unblock drops a cell from rank; the run budget rejects vacuous/ill-typed caps "
+          "+ check() validates budget.json; the seed bootstraps without deadlock; scaffold lays the full tree)")
     return 0
 
 

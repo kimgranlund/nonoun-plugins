@@ -15,9 +15,10 @@ v0.4.0 Critical: a loop's caps routed to inference is the routing law violated a
 A PreToolUse(Write|Edit) hook; exit 2 = deny. The orchestrator (`harness-builder`) starts the run budget
 (`run-budget.py start`) and detects/blocks stuck cells between passes; the ENFORCEMENT of both bounds is here.
 
-Like `gate-signal` it fails OPEN on anything it can't parse (a malformed event, no lattice, an unmapped
+Like `gate-signal` it fails OPEN on anything it can't parse (a malformed event, no lattice/budget, an unmapped
 path → exit 0): a stop-gate that bricked every write on a parse hiccup would be worse than the runaway it
-guards. It denies ONLY a write to a cell that is, right now, blocked.
+guards. It denies on exactly two conditions — an exhausted run budget (any write) or a write to a blocked
+cell — and allows everything else.
 
 Wired by `bin/wire.py` into the project's own loop (alongside gate-signal/emit-ledger/propagate-staleness),
 reading the copied `_lattice.py`. Resolves the harness at `$HARNESS_DIR`, else `./.harness`.
