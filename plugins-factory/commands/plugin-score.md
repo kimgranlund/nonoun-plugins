@@ -13,3 +13,5 @@ Target: **$ARGUMENTS**
 4. **Score each dimension P1–P9** with (a) cited evidence and (b) the test that revealed it; mark any directional score.
 
 Output a per-dimension scorecard + a summary table + top issues by severity. A clean `validate_plugin.py` does **not** discharge the `[review]` dimensions — for those, escalate to `/plugin-critique`. For a complete review ending in a verdict, use `/plugin-promote`.
+
+5. **Emit a durable record** — don't let the scorecard evaporate into chat (the D8 audit-trail gap). Run `${CLAUDE_PLUGIN_ROOT}/bin/score-record.py write <plugin> --scores P1=…,…,P9=… [--verdict …] [--review reviews/<file>.md]` to write a validated `scores/<plugin>.json` in the `adoption_contract` shape. It survives the session, turns the next run into a regression diff instead of a fresh vibe, and is the substrate that moves the rubric's `empirical_applications` off zero.

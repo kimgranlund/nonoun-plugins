@@ -62,6 +62,7 @@ For the qualities that resist rubric scoring, invoke the **`plugin-council`** or
 3. **Score each dimension** with evidence + the test; mark any dimension whose score is directional.
 4. **Run the council** (`plugin-council`) for the `[review]` qualities — it names failures the rubric can't.
 5. **Synthesize**: severity-sorted findings, the single biggest risk first, and a clear ship / fix-then-ship / rebuild verdict.
+6. **Record it durably** (`score`/`promote`): `bin/score-record.py write <plugin> --scores P1=…,…,P9=… [--verdict …] [--review reviews/<file>.md]` writes a validated `scores/<plugin>.json`. A verdict that lives only in this transcript can't be diffed against the next run — the record is the D8 audit trail and what increments a rubric's `empirical_applications`. For an installed run, point `--dir` at `${CLAUDE_PLUGIN_DATA}` or the target repo, never the version-keyed cache root.
 
 ## §SelfAudit (before declaring done)
 

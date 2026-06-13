@@ -1,0 +1,23 @@
+{
+  "plugin": "plugins-factory",
+  "rubrics_adopted": [
+    "plugins-holistic/v0.1.0"
+  ],
+  "scores": {
+    "plugins-holistic/v0.1.0": {
+      "P1-plugin-fitness": 3,
+      "P2-component-fit": 3,
+      "P3-boundary-cohesion": 3,
+      "P4-dependency-legality": 4,
+      "P5-manifest-packaging": 3,
+      "P6-context-economy": 3,
+      "P7-routing-discoverability": 2,
+      "P8-evolution-maintenance": 2,
+      "P9-security-trust": 2
+    }
+  },
+  "last_scored": "2026-06-13",
+  "scored_by": "plugins-factory self-red-team (9-critic council + gate anchor + verification pass)",
+  "verdict": "CONDITIONAL",
+  "review": "reviews/2026-06-13-who-reviews-the-reviewer.md"
+}

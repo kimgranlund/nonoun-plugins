@@ -130,6 +130,11 @@ jobs:
           python3 "$PF/bin/check-recall.py" selftest
           python3 "$PF/bin/check-recall.py"
 
+      - name: score-record gate (the judge's durable D8 audit trail is well-formed)
+        run: |
+          python3 "$PF/bin/score-record.py" selftest
+          for f in "$PF"/scores/*.json; do python3 "$PF/bin/score-record.py" validate "$f"; done
+
       - name: brand-forge — council-calibration baselines (strategy + design + voice + muse)
         run: |
           python3 brand-forge/evals/council-calibration/check.py brand-forge/evals/council-calibration/runs/2026-06-04-northwind-baseline.md
