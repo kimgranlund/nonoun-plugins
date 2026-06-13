@@ -24,6 +24,8 @@ Usage:
   lattice.py rank [--dir DIR]                    # ranked, dependency-ready gaps
   lattice.py validity <cell-id> [--dir DIR]      # can this cell advance? exit 0 = yes
   lattice.py stale <cell-id> <hash> [--dir DIR]  # flip dependents of <cell-id> to stale; print + persist
+  lattice.py block <cell-id> [--reason R] [--dir DIR]    # flip the budget/no-progress stop flag (out of rank until unblocked)
+  lattice.py unblock <cell-id> [--dir DIR]               # clear it; the cell returns to the ready set
   lattice.py selftest
 Exit codes are operation-specific (see each). Stdlib only; Python 3.8+.
 """
@@ -40,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.3.1"
+KERNEL_VERSION = "0.4.0"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -167,6 +169,8 @@ def rank(lat):
             depended[dep] = depended.get(dep, 0) + 1
     out = []
     for c in gaps:
+        if c.get("blocked"):
+            continue                              # a blocked cell (budget cap / no-progress) is out of the ready set
         ok, reasons = ready(lat, c)
         if not ok:
             continue                              # not yet selectable — dependency filter
@@ -176,6 +180,24 @@ def rank(lat):
         out.append((round(priority, 3), c, reasons))
     out.sort(key=lambda t: -t[0])
     return out
+
+
+def set_blocked(lat, cell_id, blocked=True, reason=""):
+    """Flip a cell's `blocked` condition flag (the budget/no-progress stop). The flag is a Property, not a
+    maturity; a blocked cell falls out of `rank` and `advance_validity` until unblocked. This is a PROTECTED
+    write (lattice.json) — the orchestrator/harness sets it, never the worker (the worker is deny-on-write to
+    the lattice). Returns the cell, or None if absent."""
+    c = find(lat, cell_id)
+    if c is None:
+        return None
+    if blocked:
+        c["blocked"] = True
+        if reason:
+            c["blocked_reason"] = reason
+    else:
+        c.pop("blocked", None)
+        c.pop("blocked_reason", None)
+    return c
 
 
 def advance_validity(lat, cell_id):
@@ -356,6 +378,16 @@ def selftest():
     expect("rubric.task.x" in ranked, "rank dropped a ready gap")
     expect("rubric.task.y" not in ranked, "rank included a not-ready cell (dependency filter failed)")
 
+    # block/unblock (the budget stop flag): a blocked cell falls out of rank; advance_validity refuses it; unblock restores it.
+    set_blocked(lat, "rubric.task.x", True, reason="no-progress: 3 consecutive fails")
+    expect("rubric.task.x" not in [cid(c) for _, c, _ in rank(lat)], "a blocked cell was still ranked")
+    expect(not advance_validity(lat, "rubric.task.x")[0], "advance_validity allowed a blocked cell")
+    expect(find(lat, "rubric.task.x").get("blocked_reason"), "block did not record a reason")
+    set_blocked(lat, "rubric.task.x", False)
+    expect("rubric.task.x" in [cid(c) for _, c, _ in rank(lat)], "unblock did not restore the cell to the ready set")
+    expect("blocked_reason" not in find(lat, "rubric.task.x"), "unblock did not clear the reason")
+    expect(set_blocked(lat, "no.such.cell", True) is None, "set_blocked did not return None for a missing cell")
+
     # staleness propagation: change ontology's hash → spec.task.x (validated against h1) flips to stale.
     flipped = propagate_staleness(lat, "ontology.task.domain", "h2")
     expect("spec.task.x" in flipped and find(lat, "spec.task.x")["maturity"] == "stale", f"staleness did not propagate: {flipped}")
@@ -446,7 +478,7 @@ def selftest():
         return 1
     print("lattice selftest: OK (scan/partial-order/verifier-maturity/rank/staleness; the state machine rejects illegal "
           "transitions; check() catches ill-typed, validated-without-signal, retro-order-violated, and "
-          "stale-but-trusted cells; the seed bootstraps without deadlock; scaffold lays the full tree)")
+          "stale-but-trusted cells; block/unblock drops a cell from rank; the seed bootstraps without deadlock; scaffold lays the full tree)")
     return 0
 
 
@@ -508,6 +540,18 @@ def main(argv):
         flipped = propagate_staleness(lat, pos[1], pos[2])
         save(d, lat)
         print(f"propagate-staleness from {pos[1]}: flipped {len(flipped)} cell(s) → stale: {flipped}")
+        return 0
+    if len(pos) >= 2 and pos[0] in ("block", "unblock"):
+        reason = argv[argv.index("--reason") + 1] if "--reason" in argv else (pos[2] if len(pos) >= 3 else "")
+        c = set_blocked(lat, pos[1], blocked=(pos[0] == "block"), reason=reason)
+        if c is None:
+            print(f"no such cell: {pos[1]}", file=sys.stderr)
+            return 2
+        save(d, lat)
+        if pos[0] == "block":
+            print(f"blocked {pos[1]}" + (f" — {reason}" if reason else "") + " (falls out of rank/advance until unblocked)")
+        else:
+            print(f"unblocked {pos[1]} — back in the ready set")
         return 0
     print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
     return 2

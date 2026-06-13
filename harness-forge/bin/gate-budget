@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""gate-budget — the wired budget/no-progress STOP-gate: deny a worker write to a BLOCKED cell's asset.
+
+`gate-*` blocks (naming-conventions.md, Tier 3). This is the mechanical floor under the autonomous loop:
+when a cell is `blocked` — the orchestrator flipped it on a budget cap or a repeated-failure (no-progress)
+signature — the worker must not keep grinding it. A PreToolUse(Write|Edit) hook, this denies a write whose
+path is that blocked cell's `asset_ref` (exit 2 = deny), so the circuit breaker holds even if the worker
+ignores the instruction to stop. The DETECTION (when to block) is `ledger.py no-progress` + the budget,
+run by the orchestrator (`harness-builder`) between passes; the ENFORCEMENT (you can't touch a blocked
+cell) is here. Computation routes to code: the worker's own restraint is not trusted to bound the loop.
+
+Like `gate-signal` it fails OPEN on anything it can't parse (a malformed event, no lattice, an unmapped
+path → exit 0): a stop-gate that bricked every write on a parse hiccup would be worse than the runaway it
+guards. It denies ONLY a write to a cell that is, right now, blocked.
+
+Wired by `bin/wire.py` into the project's own loop (alongside gate-signal/emit-ledger/propagate-staleness),
+reading the copied `_lattice.py`. Resolves the harness at `$HARNESS_DIR`, else `./.harness`.
+
+Usage:
+  gate-budget --hook        # reads PreToolUse JSON on stdin; exit 2 (+reason) = DENY a write to a blocked cell
+  gate-budget check <path>  # exit 2 if <path> is a blocked cell's asset (scripting/testing)
+  gate-budget selftest
+Stdlib only; Python 3.8+.
+"""
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import lattice as _lat                  # plugin layout: bin/lattice.py is a sibling
+except ImportError:                          # wired layout: .harness/hooks/_lattice.py (private byte-copy)
+    import _lattice as _lat
+
+
+def _harness_dir():
+    return os.environ.get("HARNESS_DIR") or ".harness"
+
+
+def _norm(p):
+    p = (p or "").replace("\\", "/")
+    return p[2:] if p.startswith("./") else p
+
+
+def blocked_cell_for(path, d=None):
+    """Return the (cell_id, reason) of a BLOCKED cell whose asset_ref matches `path`, else (None, None)."""
+    d = d or _harness_dir()
+    if not path or not os.path.isfile(os.path.join(d, "lattice.json")):
+        return None, None
+    try:
+        lat = _lat.load(d)
+    except (OSError, ValueError):
+        return None, None
+    p = _norm(path)
+    for c in lat.get("cells", []):
+        ref = c.get("asset_ref")
+        if c.get("blocked") and ref and (p == _norm(ref) or p.endswith("/" + _norm(ref))):
+            return _lat.cid(c), (c.get("blocked_reason") or "budget/no-progress stop")
+    return None, None
+
+
+def _hook():
+    try:
+        data = json.load(sys.stdin)
+        ti = data.get("tool_input") or data.get("toolInput") or {}
+        path = ti.get("file_path") or ti.get("path") or ti.get("file")
+    except Exception:
+        return 0                                          # fail open on a parse error — never brick the loop
+    cell_id, reason = blocked_cell_for(path)
+    if cell_id:
+        sys.stderr.write(f"gate-budget: DENY — `{cell_id}` is BLOCKED ({reason}). The loop hit a budget cap or a "
+                         f"no-progress signature on this cell; stop and surface it to the compass, do not keep "
+                         f"grinding. Unblock it deliberately (`lattice.py unblock {cell_id}`) only after changing "
+                         f"the approach.\n")
+        return 2                                          # non-zero = deny the write
+    return 0
+
+
+def selftest():
+    import tempfile
+    fails = []
+    def expect(cond, label):
+        if not cond:
+            fails.append(label)
+    with tempfile.TemporaryDirectory() as root:
+        d = os.path.join(root, ".harness")
+        _lat.scaffold(d)
+        lat = _lat.seed_lattice("t")
+        for c in lat["cells"]:
+            if _lat.cid(c) == "spec.task.first-slice":
+                c["asset_ref"] = ".harness/spec/first-slice.md"
+        _lat.save(d, lat)
+
+        # not blocked → allowed
+        cid_, _ = blocked_cell_for(".harness/spec/first-slice.md", d=d)
+        expect(cid_ is None, "an unblocked cell's asset was treated as blocked")
+
+        # block it → its asset write is denied; an unrelated path stays allowed
+        lat = _lat.load(d)
+        _lat.set_blocked(lat, "spec.task.first-slice", True, reason="no-progress: 3 fails")
+        _lat.save(d, lat)
+        cid_, reason = blocked_cell_for(".harness/spec/first-slice.md", d=d)
+        expect(cid_ == "spec.task.first-slice" and "no-progress" in reason, f"blocked cell's asset not denied: {cid_}")
+        expect(blocked_cell_for("src/unrelated.py", d=d)[0] is None, "an unrelated path was denied")
+        expect(blocked_cell_for(".harness/spec/first-slice.md", d=os.path.join(root, "nowhere"))[0] is None,
+               "missing harness did not fail open")
+
+        # unblock → allowed again
+        lat = _lat.load(d)
+        _lat.set_blocked(lat, "spec.task.first-slice", False)
+        _lat.save(d, lat)
+        expect(blocked_cell_for(".harness/spec/first-slice.md", d=d)[0] is None, "unblocked cell still denied")
+    if fails:
+        sys.stderr.write("gate-budget selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("gate-budget selftest: OK (denies a write to a blocked cell's asset, allows unrelated paths + unblocked "
+          "cells, fails open on no-harness; the wired circuit breaker that bounds even a runaway worker)")
+    return 0
+
+
+def main(argv):
+    if argv and argv[0] == "selftest":
+        return selftest()
+    if argv and argv[0] == "check" and len(argv) > 1:
+        return 2 if blocked_cell_for(argv[1])[0] else 0
+    if argv and argv[0] == "--hook":
+        return _hook()
+    print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

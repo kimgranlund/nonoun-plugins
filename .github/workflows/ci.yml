@@ -184,6 +184,7 @@ jobs:
           python3 harness-forge/bin/validate.py selftest       # the validation path: signal minted from a verifier's exit status, cell advanced only on pass
           python3 harness-forge/bin/harness-hook selftest      # advisory feedback, never blocks
           python3 harness-forge/bin/gate-signal selftest       # protected-verifier deny-on-write (segment-anchored)
+          python3 harness-forge/bin/gate-budget selftest       # the wired stop-gate: deny a write to a blocked cell (bounds a runaway loop)
           python3 harness-forge/bin/emit-ledger selftest       # the audit-trail feedback hook (records writes, never blocks)
           python3 harness-forge/bin/propagate-staleness selftest  # the staleness cascade (edited asset flips cell + dependents stale)
           python3 harness-forge/bin/wire.py selftest           # the installer: unwired fails check, wired passes, merge non-destructive, drift FAILS check + re-apply heals, gate denies its own unwiring
@@ -205,6 +206,9 @@ jobs:
 
       - name: harness-forge — first-slice walkthrough (the loop closes end to end, behaviorally)
         run: python3 harness-forge/evals/first-slice-walkthrough/replay.py
+
+      - name: harness-forge — stop-gate (the wired circuit breaker halts a runaway loop)
+        run: python3 harness-forge/evals/stop-gate/check.py
 
       - name: agent-ops — council-calibration (both fixtures gate-clean + baselines)
         run: |

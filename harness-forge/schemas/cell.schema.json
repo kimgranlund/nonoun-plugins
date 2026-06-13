@@ -25,9 +25,13 @@
       "enum": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
     },
     "blocked": {
-      "description": "Condition flag — the advancement loop hit a budget cap or a no-progress signature. Surfaces the cell to the compass instead of burning tokens.",
+      "description": "Condition flag — the advancement loop hit a budget cap or a no-progress signature. A blocked cell falls out of rank/advance-validity until unblocked. Surfaces the cell to the compass instead of burning tokens.",
       "type": "boolean",
       "default": false
+    },
+    "blocked_reason": {
+      "description": "Why the cell was blocked (budget cap or no-progress signature), set alongside `blocked` by the orchestrator/stop-gate; cleared on unblock.",
+      "type": ["string", "null"]
     },
     "asset_ref": {
       "description": "Repo-relative path to the artifact that instantiates this cell (the layer-dir file).",

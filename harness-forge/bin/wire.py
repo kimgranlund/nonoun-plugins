@@ -37,7 +37,7 @@ try:
     KERNEL_VERSION = _lat.KERNEL_VERSION
 except Exception:                                     # noqa: BLE001 — degrade rather than crash the installer
     KERNEL_VERSION = "unknown"
-HOOK_FILES = ["gate-signal", "emit-ledger", "propagate-staleness"]
+HOOK_FILES = ["gate-signal", "gate-budget", "emit-ledger", "propagate-staleness"]
 LIB_COPY = ("lattice.py", "_lattice.py")              # kernel source → private copy name in .harness/hooks/
 VERSION_FILE = ".kernel-version"                      # stamped beside the copy so drift across a plugin update is detectable
 
@@ -50,7 +50,7 @@ def _cmd(hook, hd):
 
 def _entries(hd):
     return {
-        "PreToolUse": [_cmd("gate-signal", hd)],
+        "PreToolUse": [_cmd("gate-signal", hd), _cmd("gate-budget", hd)],
         "PostToolUse": [_cmd("emit-ledger", hd), _cmd("propagate-staleness", hd)],
     }
 
@@ -176,7 +176,7 @@ def apply(project, hd):
     _save_settings(project, settings)
     print("wired: {} hook file(s) in {}/hooks/ (kernel {}), {} new settings entr{} (re-apply is a no-op).".format(
         len(_copies(project, hd)), hd, KERNEL_VERSION, len(added), "y" if len(added) == 1 else "ies"))
-    print("the worker loop now runs: PreToolUse gate-signal (deny on verifier assets) + PostToolUse emit-ledger + propagate-staleness.")
+    print("the worker loop now runs: PreToolUse gate-signal (deny verifier-asset writes) + gate-budget (deny writes to a blocked cell) + PostToolUse emit-ledger + propagate-staleness.")
     return 0
 
 
@@ -311,6 +311,20 @@ def selftest():
         r = subprocess.run([sys.executable, prop, "selftest"], capture_output=True, text=True, cwd=project)
         expect(r.returncode == 0, "the copied propagate-staleness failed from its wired location: {}".format(r.stderr[-200:]))
 
+        # the WIRED gate-budget denies a write to a BLOCKED cell (the v0.4 stop-gate, from its installed location)
+        gb = os.path.join(project, hd, "hooks", "gate-budget")
+        expect(os.path.isfile(gb), "gate-budget was not copied by apply")
+        _lat.scaffold(os.path.join(project, hd))                    # ensure a lattice exists in the wired project
+        _lat.save(os.path.join(project, hd), {"cells": [{"layer": "spec", "scope": "task", "slug": "x",
+                  "maturity": "defined", "blocked": True, "blocked_reason": "no-progress",
+                  "asset_ref": ".harness/spec/x.md"}]})
+        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".harness/spec/x.md"}}',
+                           capture_output=True, text=True, cwd=project)
+        expect(r.returncode == 2, "the wired gate-budget did not DENY a write to a blocked cell (exit {})".format(r.returncode))
+        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".harness/spec/other.md"}}',
+                           capture_output=True, text=True, cwd=project)
+        expect(r.returncode == 0, "the wired gate-budget blocked an unrelated write")
+
         # CV1 — DRIFT IS A HARD FAILURE, and re-apply heals it (the staleness-plugin's own staleness gate):
         lib = os.path.join(project, hd, "hooks", LIB_COPY[1])
         with open(lib, "a", encoding="utf-8") as f:
@@ -341,9 +355,9 @@ def selftest():
             sys.stderr.write("  - {}\n".format(f))
         return 1
     print("wire selftest: OK (unwired fails check / wired passes; merge preserves unrelated state; idempotent; "
-          "refuses malformed settings; the installed gate denies protected writes INCLUDING its own unwiring; "
-          "the copied cascade runs on the private kernel copy; a drifted wired kernel FAILS check and re-apply heals it; "
-          "unwire restores exactly)")
+          "refuses malformed settings; the installed gate-signal denies protected writes INCLUDING its own unwiring; "
+          "the installed gate-budget denies a write to a blocked cell; the copied cascade runs on the private kernel "
+          "copy; a drifted wired kernel FAILS check and re-apply heals it; unwire restores exactly)")
     return 0
 
 

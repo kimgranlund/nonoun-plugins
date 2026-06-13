@@ -28,6 +28,7 @@ Developing an agentic system is **best-first search over a knowledge lattice**: 
 | **scan** | `/harness-scan` | sweep the modality axis at the frontier scope → the open/stale gap set | `lattice.py scan` |
 | **rank** | `/harness-next` | dependency-filter + order the gaps; name the next cell | `lattice.py rank` |
 | **advance** | `/harness-advance` | run define→create→validate on one cell; the harness-advancer agent; record to the ledger | `lattice.py validity` + `ledger.py append` |
+| **run** | `/harness-run` | the **bounded autonomous loop** — the harness-builder orchestrator advances the frontier under hard caps, blocking stuck cells via the wired no-progress stop-gate, and halts with a report | `lattice.py rank/block` + `ledger.py no-progress` + `gate-budget` |
 | **distill** | `/harness-distill` | distill ledger windows into pattern candidates | `ledger.py distill/cost/false-pass` |
 
 ## The engine (the inner loop)
@@ -55,7 +56,7 @@ Depth-first along **one thin vertical slice** to `validated`; widen — new laye
 
 ## Budgets and stop conditions (policy, not afterthoughts)
 
-Every loop carries an iteration cap, a token/dollar budget, a wall-clock limit, a no-progress detector, and a *separate* done-judge. Loop length, not model choice, dominates cost. **The no-progress detector is code, not the worker's self-assessment** — `bin/ledger.py no-progress` reads the ledger and flags any cell whose last N validates all failed (same failure signature N times → halt), exit 1 when a loop should stop. **Honest scope:** today the *operator* (or `/harness-advance` / the auditor) reads that detector and flips the cell's `blocked` condition; the **wired Stop-hook that calls it automatically on every pass is ROADMAP** — until it ships, "budgets are enforced" means the worker is *asked* to self-halt and the detector is *available* to check, not that an automatic circuit breaker fires (the same "say which state you're in, don't overclaim mechanical" discipline the plugin applies to `wire.py check`).
+Every loop carries an iteration cap, a token/dollar budget, a wall-clock limit, a no-progress detector, and a *separate* done-judge. Loop length, not model choice, dominates cost. **The stop-gate is wired, not asked.** Three pieces, all code: `bin/ledger.py no-progress` is the **detector** (a cell whose last N validates all failed — not the worker's self-assessment); the **`harness-builder` orchestrator** (`/harness-run`) runs the bounded loop under hard caps and, between passes, **blocks** any detected cell (`lattice.py block`); and the wired **`gate-budget`** hook **denies any further write to a blocked cell** (PreToolUse, exit 2). A blocked cell leaves the ready set (`rank` drops it) and the worker is mechanically barred from grinding it — so the circuit breaker holds even if the worker ignores the instruction to stop. When no ready cells remain the loop halts and reports. Run **attended** (the orchestrator surfaces at every stop, never fire-and-forget) until `ledger.py false-pass` shows a measured track record — autonomy is earned. `wire.py check` exit 0 is the precondition for the *mechanical* stop-gate; unwired, the detector still computes but enforcement is the worker's discipline (say which state the project is in).
 
 ## §SelfAudit
 

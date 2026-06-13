@@ -25,7 +25,7 @@ The engineer's job shifts from checking the work to **checking the system that c
 | **H2 Verifier maturity** `[gate]` | every loop binds to a `validated` rubric; rubrics demonstrate determinism + calibration | rubric cells' signals; no advance against an unvalidated verifier |
 | **H3 Anti-reward-hacking** `[gate]` | verifier assets deny-on-write to workers; signals minted by `validate.py` from an external exit status, not hand-asserted; ≥1 pristine-reference check | `wire.py check` exits 0 (the gate is **wired**, not merely present in `bin/` — present-but-unwired = false pass); worker carries no `Bash`; exploit scan of passing runs |
 | **H4 Naming discipline** `[gate]` | every named artifact parses the typed grammar; no plural/casing/vocab drift | `naming.py check` over created paths |
-| **H5 Budgets & stop conditions** `[review]` | iteration/token/wall-clock caps; no-progress detector; a *separate* done-judge | cell `budget` fields; the worker does not self-declare completion |
+| **H5 Budgets & stop conditions** `[review]` | bounded loop caps; no-progress detector; a *separate* done-judge | cell `budget` fields; `ledger.py no-progress` + the wired `gate-budget` (`wire.py check` = 0); the worker does not self-declare completion |
 | **H6 Autonomy tier** `[review]` `[hypothesis]` | the earned tier matches the measured false-pass rate (< ~5% gates unattended) + zero reward-hacking | `ledger.py false-pass`; the trust trajectory in `layer-policy.md` |
 | **H7 Regeneration** `[review]` | operating cells emit ledger entries; entries distill into patterns; revisions are ledgered, not silent | ledger coverage; pattern provenance |
 
