@@ -1,0 +1,22 @@
+{
+  "plugin": "brand-forge",
+  "rubrics_adopted": [
+    "plugins-holistic/v0.1.0"
+  ],
+  "scores": {
+    "plugins-holistic/v0.1.0": {
+      "P1-plugin-fitness": 5,
+      "P2-component-fit": 5,
+      "P3-boundary-cohesion": 4,
+      "P4-dependency-legality": 5,
+      "P5-manifest-packaging": 4,
+      "P6-context-economy": 5,
+      "P7-routing-discoverability": 5,
+      "P8-evolution-maintenance": 4,
+      "P9-security-trust": 5
+    }
+  },
+  "last_scored": "2026-06-13",
+  "scored_by": "plugins-factory plugin-evaluate \u2014 cold holistic scoring (calibration, PLAN #3)",
+  "verdict": "APPROVED"
+}

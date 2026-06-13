@@ -68,7 +68,7 @@
         "P8-evolution-maintenance": "rubrics/skill-extensibility.md",
         "P9-security-trust": "rubrics/security-and-scope-containment.md"
       },
-      "empirical_applications": 1
+      "empirical_applications": 3
     },
     {
       "name": "component-fit",
