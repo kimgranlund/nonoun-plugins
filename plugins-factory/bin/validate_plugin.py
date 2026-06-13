@@ -420,6 +420,68 @@ def validate_marketplace_manifest(data):
     return (errors, warnings)
 
 
+# Critic personas are reused across the catalog's councils by design (the same named practitioner, a
+# different per-plugin lens). Reuse means two plugins ship an `agents/critic-<name>.md` with the SAME
+# frontmatter `name:`. Claude Code resolves a BARE agent name with a SILENT DROP — "if two files declare
+# the same name, it keeps one and discards the other without warning" — so co-enabling two such plugins
+# makes one critic vanish. The fix (I-10): every council orchestrator dispatches its critics by the
+# plugin-SCOPED name (`<plugin>:critic-<name>`), which addresses each plugin's agent unambiguously. These
+# four collisions are known + intentional; ANY OTHER cross-plugin agent-name collision is an accident.
+KNOWN_AGENT_REUSE = {"critic-andrej-k", "critic-boris-c", "critic-garry-t", "critic-simon-w"}
+
+
+def _agent_names(plugin_dir):
+    """Every frontmatter `name:` under <plugin_dir>/agents/ (dotfiles like .name-map.md skipped)."""
+    out = []
+    adir = os.path.join(plugin_dir, "agents")
+    if not os.path.isdir(adir):
+        return out
+    for fn in sorted(os.listdir(adir)):
+        if not fn.endswith(".md") or fn.startswith("."):
+            continue
+        try:
+            head = open(os.path.join(adir, fn), encoding="utf-8").read(4096)
+        except OSError:
+            continue
+        m = re.search(r"^name:\s*(.+?)\s*$", head, re.M)
+        if m:
+            out.append(m.group(1).strip())
+    return out
+
+
+def check_cross_plugin_agents(market, base):
+    """Cross-plugin agent-`name` collision check (marketplace scope). Known persona-reuse → warning
+    (must be dispatched scoped); any other collision → error (a silent-drop accident)."""
+    errors, warnings = [], []
+    if not isinstance(market, dict) or not isinstance(market.get("plugins"), list):
+        return errors, warnings
+    byname = {}
+    for entry in market["plugins"]:
+        if not isinstance(entry, dict):
+            continue
+        pname = entry.get("name")
+        src = entry.get("source")
+        rel = src[2:] if isinstance(src, str) and src.startswith("./") else (src if isinstance(src, str) else pname)
+        pdir = os.path.join(base, rel) if rel else None
+        if not pdir or not os.path.isdir(pdir):
+            continue
+        for aname in _agent_names(pdir):
+            byname.setdefault(aname, set()).add(pname or rel)
+    for aname, plugins in sorted(byname.items()):
+        if len(plugins) < 2:
+            continue
+        who = ", ".join(sorted(plugins))
+        if aname in KNOWN_AGENT_REUSE:
+            warnings.append(f"agent `{aname}` is shared across [{who}] (known persona reuse) — each council "
+                            f"MUST dispatch it scoped as `<plugin>:{aname}`, never bare (Claude Code silently "
+                            f"drops one of two same-named agents)")
+        else:
+            errors.append(f"agent name `{aname}` collides across [{who}] — a bare-name dispatch silently drops "
+                          f"one. Make it unique, or (if intentional persona reuse) add it to KNOWN_AGENT_REUSE "
+                          f"and ensure every orchestrator dispatches it scoped.")
+    return errors, warnings
+
+
 # ----------------------------------------------------------------------------- file loading
 def _load_plugin_json(path):
     if os.path.isdir(path):
@@ -570,6 +632,26 @@ def _selftest():
         if any("flow collection" in e for e in errs):
             failures.append("layout: quoted argument-hint wrongly flagged as a flow-collection trap")
         _rmtree(tmp4)
+
+        # cross-plugin agent-name collision (I-10): an UNKNOWN shared name ERRORs; KNOWN persona-reuse WARNs.
+        tmp5 = tempfile.mkdtemp(prefix="plugins-factory-selftest-")
+        for p, agent in (("alpha", "critic-zztest-x"), ("beta", "critic-zztest-x")):
+            os.makedirs(os.path.join(tmp5, p, "agents"))
+            open(os.path.join(tmp5, p, "agents", f"{agent}.md"), "w").write(f"---\nname: {agent}\n---\nbody\n")
+        market = {"name": "m", "owner": {"name": "o"}, "plugins": [
+            {"name": "alpha", "source": "./alpha"}, {"name": "beta", "source": "./beta"}]}
+        ce, cw = check_cross_plugin_agents(market, tmp5)
+        if not any("collides across" in e for e in ce):
+            failures.append("cross-plugin: an unknown shared agent name was not flagged as an ERROR")
+        # a KNOWN-reuse name must WARN, never ERROR
+        for p in ("alpha", "beta"):
+            open(os.path.join(tmp5, p, "agents", "critic-boris-c.md"), "w").write("---\nname: critic-boris-c\n---\nbody\n")
+        ce2, cw2 = check_cross_plugin_agents(market, tmp5)
+        if any("critic-boris-c" in e for e in ce2):
+            failures.append("cross-plugin: known persona-reuse (critic-boris-c) wrongly ERRORed")
+        if not any("critic-boris-c" in w and "scoped" in w for w in cw2):
+            failures.append("cross-plugin: known persona-reuse (critic-boris-c) did not WARN to dispatch scoped")
+        _rmtree(tmp5)
     finally:
         _rmtree(tmp)
 
@@ -579,7 +661,7 @@ def _selftest():
             print(f"  - {f}")
         return 1
     print(f"validate_plugin.py selftest: PASS ({len(cases)} manifest fixtures + loader-rule + "
-          f"flow-trap unit + 5 on-disk layout fixtures)")
+          f"flow-trap unit + 5 on-disk layout fixtures + cross-plugin agent-collision)")
     return 0
 
 
@@ -651,6 +733,10 @@ def main(argv=None) -> int:
         else:
             data = _load_marketplace_json(args.path)
             errors, warnings = validate_marketplace_manifest(data)
+            base = args.path if os.path.isdir(args.path) else os.path.dirname(os.path.dirname(os.path.abspath(args.path)))
+            ce, cw = check_cross_plugin_agents(data, base)
+            errors += ce
+            warnings += cw
     except FileNotFoundError:
         print(f"FATAL: no manifest found at {args.path}", file=sys.stderr); return 2
     except json.JSONDecodeError as e:

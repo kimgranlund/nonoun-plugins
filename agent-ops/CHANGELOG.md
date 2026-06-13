@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.12] — 2026-06-13
+
+### Changed
+
+- **`agentic-council` now dispatches its critics by the plugin-scoped name** (`agent-ops:critic-<name>`), never the bare `critic-<name>` — resolving a cross-catalog collision surfaced by the plugins-factory self-red-team (I-10 / D-13). Four critic personas are reused across councils (`critic-boris-c`, `critic-andrej-k`, `critic-simon-w` are shared with plugins-factory; `critic-garry-t` with product-forge), and Claude Code resolves a bare agent name with a silent drop — "keeps one and discards the other without warning" — so co-enabling two such councils would make a critic vanish. Scoped dispatch binds each to *this* plugin's agent. The persona reuse is intentional and kept; only the dispatch is now qualified. (`plugins-factory/bin/validate_plugin.py marketplace` mechanizes the check — a warning for the known reuses, an error for any new collision.)
+
 ## [0.1.11] — 2026-06-11
 
 - **P0-1 from the real-repo audit closed — the `repo-review` skill now has behavioral coverage.** The audit (`reviews/2026-06-11`) flagged that agent-ops gates its agentic *council* but not its `repo-review`/`repo-ops` *skills* — a hole in "every claim is gated," in the plugin that audits other repos. New `evals/repo-review-calibration/`: `build-seeded-repo.py` writes a 4-file synthetic repo with **6 planted architectural smells** (god module · naming drift · declared-vs-actual contradiction · duplicated logic · command injection · no agent-memory/tests), built on demand so the catalog ships no intentional-vulnerability files; `check.py` scores a review transcript's catch-rate. Cold baseline through the real `repo-review` pipeline: **6/6 smells caught** (and it found *more* than planted — an emergent SQL-injection P0, an SSRF sink), the adversarial wave held command-injection at P0 against a "dead code → demote" challenge, and it honestly reported no Tier-1 patterns rather than padding. CI re-scores the baseline + rebuilds the fixture; the checker is recall-gated by `check-recall.py`. The audit's headline doctrine gap is closed.

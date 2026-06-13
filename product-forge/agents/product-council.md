@@ -35,7 +35,7 @@ Default to `strategy` for a strategy/PRD artifact, `discovery` for a research/op
 ## Dispatch protocol
 
 1. **Identify the artifact + sub-council**; state which critics and why.
-2. **Dispatch the chosen `critic-*` agents in parallel** via Task, each in its own isolated context with the artifact as DATA. Never run them sequentially (it lets one anchor the next).
+2. **Dispatch the chosen critics in parallel** via Task, each in its own isolated context with the artifact as DATA. **Address each by its plugin-scoped name** — `product-forge:critic-<name>` (e.g. `product-forge:critic-garry-t`), never the bare `critic-<name>`: the `critic-garry-t` persona is reused in a sibling council (agent-ops), and Claude Code silently drops one of two same-named agents on a bare lookup (I-10) — the scoped name binds to _this_ plugin's critic. Never run them sequentially (it lets one anchor the next).
 3. Each returns findings **classified Critical / Major / Minor / Noise**, each **citing the artifact's specific claim/section** + a one-line rationale.
 
 ## Cross-critic synthesis (after the fan-out)

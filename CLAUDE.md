@@ -23,6 +23,7 @@ Repo-level planning lives in `docs/` — [PLAN.md](docs/PLAN.md) (the current ex
 - A plugin is a directory plus an entry in `.claude-plugin/marketplace.json` (`name`, `source`, `description`, `category`, `tags`).
 - Each plugin must be **self-contained — zero cross-plugin dependencies.** Don't reach into a sibling plugin.
 - Keep the four descriptions in sync — `marketplace.json`'s entry, the plugin's `plugin.json`, its `README.md`, and `CHANGELOG.md` restate the same scope, and drift between them is a defect.
+- **Critic personas are reused across councils (`critic-boris-c`, `critic-andrej-k`, `critic-simon-w`, `critic-garry-t` appear in two plugins each), so a council orchestrator MUST dispatch its critics by the plugin-scoped name — `<plugin>:critic-<name>`, never bare `critic-<name>`.** Claude Code resolves a bare agent name with a *silent drop* (one of two same-named agents wins, undocumented), so a bare dispatch breaks when a sibling council is co-enabled (D-13/I-10). `plugins-factory/bin/validate_plugin.py marketplace .` warns on every known reuse and **errors** on any *new* cross-plugin agent-name collision (an unintended one); the four known reuses are allow-listed in `KNOWN_AGENT_REUSE`.
 
 ## The catalog product: brand-forge (the five-primitive model)
 

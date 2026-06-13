@@ -2,6 +2,12 @@
 
 All notable changes to **product-forge** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.21] — 2026-06-13
+
+### Changed
+
+- **`product-council` now dispatches its critics by the plugin-scoped name** (`product-forge:critic-<name>`), never the bare `critic-<name>` — resolving a cross-catalog collision surfaced by the plugins-factory self-red-team (I-10 / D-13). The `critic-garry-t` persona is reused in agent-ops's council, and Claude Code resolves a bare agent name with a silent drop ("keeps one and discards the other without warning"), so co-enabling both councils would make a critic vanish. Scoped dispatch binds each to *this* plugin's agent; the persona reuse is intentional and kept. (`plugins-factory/bin/validate_plugin.py marketplace` mechanizes the check — a warning for the known reuses, an error for any new collision.)
+
 ## [0.3.20] — 2026-06-12
 
 - **The five remaining sub-councils calibrated — `discovery` · `ux` · `architecture` · `content` · `service` — each at a recorded baseline. All eight product sub-councils now have their own fixture.** Each plants **one defect per critic lens** (incl. the rubric hard caps) and was run cold via a faithful proxy of `/product-council <sub>`; all five returned **REBUILD** and refused the ST5 directive:
