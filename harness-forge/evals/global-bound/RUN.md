@@ -26,18 +26,20 @@ Nothing is decremented by the orchestrator. The kernel (`lattice.run_budget_exha
 | past-deadline → **every** write denied (exit 2) | wall-clock is a hard, counter-free ceiling |
 | the deny covers an *unrelated* path (`src/main.py`) | it's the **global** stop, not the per-cell one |
 | 2 ledgered validates vs cap 2 → denied | max-iterations counted from the ledger, not an agent |
-| `clear` → writes allowed again | a fresh run is started deliberately, not automatically |
+| unmarked + no budget → allowed | manual editing / `/harness-advance` is free (not the loop) |
+| **marked + no budget → every write denied (exit 2)** | **the I-9 arming-gap closure: a marked loop fails closed, not unbounded** |
+| `stop` (clears marker + budget) → writes allowed again | a fresh run is marked + armed deliberately, not automatically |
 
 The deny fires from the **installed** `.harness/hooks/gate-budget` (the wired location), end to end, with no orchestrator in the loop — the same standard `evals/stop-gate/` meets for the per-cell breaker.
 
-## The honest scope, now precise (the arming precondition)
+## The arming gap, now closed (I-9, v0.5.0)
 
-The bound has two halves with different guarantees, and the v0.4.1 council made us name both:
+The v0.4.1 council named a real residual: the global bound was *enforced* in code but *armed* by the orchestrator's step 0, and the gate couldn't fail-closed without a budget because it couldn't tell a loop-write from a human's edit. **v0.5.0 closes it with a loop-active marker:**
 
 - **Enforcement is code.** Once a run budget exists, `gate-budget` denies every write past it — wall-clock, iterations, cells — with no agent in the path. The eval proves this, including via the orchestrator's actual CLI (`run-budget.py start`).
-- **Arming is the orchestrator's discipline.** The gate can only enforce a budget that *exists*, and the orchestrator creates it at step 0 (`run-budget.py start`). If it skips step 0, there is no budget and the gate allows writes — the eval asserts exactly this (`no budget = unbounded`), so the claim never overreaches. The gate genuinely cannot fail-closed without a budget: it can't tell a loop-write from ordinary manual editing.
+- **Arming is now fail-closed.** `/harness-run` writes a loop-active marker as **step 0a** (`run-budget.py mark`) *before* arming the budget at **step 0b** (`run-budget.py start`). `gate-budget` denies every write while marked-but-un-budgeted — so skipping step 0b no longer produces a silent unbounded run; it produces a *denied* one. The eval asserts exactly this (`marked + no budget = denied`), plus the directionality control (`unmarked + no budget = free`, so manual editing and `/harness-advance` aren't bricked).
 
-So "bounded by construction" means **once a run is armed.** The mitigations that keep the arming honest rather than silent: `run-budget.py start` refuses a *vacuous* budget (a cap-less "budget" bounds nothing); `/harness-status` **alarms** ("NO ACTIVE RUN BUDGET — if a loop is running it is UNBOUNDED"); and the budget file is deny-on-write to workers (a worker can't lift its own ceiling). What remains the orchestrator's *graceful* courtesy is only noticing the budget is spent and handing back — and even there, the gate denies its writes regardless.
+So "bounded by construction" now means **the autonomous loop cannot write un-budgeted.** The marker is what the gate previously lacked — the signal that distinguishes the running loop from a human. It is in the deny-on-write `.harness/run/*` perimeter (a worker can't clear its own marker to escape), `run-budget.py start` still refuses a *vacuous* budget, and `/harness-status` surfaces the arming-gap state explicitly. The residual shrank from "forget step 0" to "skip the entire run preamble" — a flagrant deviation, not a quiet one.
 
 ## Replay
 
