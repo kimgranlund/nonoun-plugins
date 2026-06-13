@@ -157,6 +157,59 @@ def components(plugin_dir):
     return rows
 
 
+def bin_payload(plugin_dir):
+    """Committed (git-tracked) install weight under bin/ — the DISTINCT axis the council named (I-11): bin/
+    files never load into context, so they cost nothing in always-on tokens, but they DO ship in every
+    install, and an off-job payload bundled there is invisible to the description-only always-on meter.
+    Returns {bytes, files, heaviest: (subtree, bytes, files), tracked: bool}. git-tracked only — clean-clone-
+    true, so gitignored local mass (e.g. dev font trees) is correctly excluded. Falls back to an unfiltered
+    walk outside a git repo (an installed plugin), flagged tracked=False so the number isn't over-trusted."""
+    bindir = os.path.join(plugin_dir, "bin")
+    if not os.path.isdir(bindir):
+        return {"bytes": 0, "files": 0, "heaviest": None, "tracked": True}
+    rels, tracked = [], True
+    try:
+        out = subprocess.run(["git", "-C", plugin_dir, "ls-files", "bin"], capture_output=True, text=True, timeout=15)
+        if out.returncode == 0 and out.stdout.strip():
+            rels = [r for r in out.stdout.splitlines() if r.strip()]
+        else:
+            tracked = False
+    except (OSError, subprocess.SubprocessError):
+        tracked = False
+    if not tracked:  # not a git repo (installed plugin) — best-effort walk, unfiltered
+        for root, _, files in os.walk(bindir):
+            for fn in files:
+                rels.append(os.path.relpath(os.path.join(root, fn), plugin_dir))
+    by_subtree = {}  # first path segment under bin/ → [bytes, files]
+    total_b = total_f = 0
+    for rel in rels:
+        ap = os.path.join(plugin_dir, rel)
+        if not os.path.isfile(ap):
+            continue
+        try:
+            sz = os.path.getsize(ap)
+        except OSError:
+            continue
+        total_b += sz
+        total_f += 1
+        parts = rel.split(os.sep)
+        seg = parts[1] if len(parts) > 2 else rel.split(os.sep)[-1]  # bin/<seg>/... else the bare file
+        agg = by_subtree.setdefault(seg, [0, 0])
+        agg[0] += sz
+        agg[1] += 1
+    heaviest = None
+    if by_subtree:
+        name, (b, f) = max(by_subtree.items(), key=lambda kv: kv[1][0])
+        heaviest = (name, b, f)
+    return {"bytes": total_b, "files": total_f, "heaviest": heaviest, "tracked": tracked}
+
+
+# A single bin/ subtree this large AND this dominant is the "off-job payload bundled in the toolbox" smell
+# (I-11) — worth a human confirming it serves the plugin's job. Exposed, not graded (P6 is a judgment).
+BIN_HEAVY_BYTES = 64 * 1024
+BIN_DOMINATE = 0.40
+
+
 def audit(plugin_dir, warn_desc=WARN_DESC, max_desc=MAX_DESC, budget=None, with_mcp=False):
     """Return (summary dict, findings). findings is a list of (level, message); level in {WARN, FAIL}."""
     rows = components(plugin_dir)
@@ -197,8 +250,16 @@ def audit(plugin_dir, warn_desc=WARN_DESC, max_desc=MAX_DESC, budget=None, with_
     if budget is not None and total > budget:
         findings.append(("FAIL", f"always-on total {total} chars exceeds --budget {budget}"))
 
+    # Install-payload axis (I-11) — distinct from always-on context: a single bin/ subtree that is both large
+    # and dominant is the off-job-toolbox smell, exposed for a human to judge job-fit (not graded, not failed).
+    bp = bin_payload(plugin_dir)
+    h = bp["heaviest"]
+    if h and h[1] >= BIN_HEAVY_BYTES and bp["bytes"] and h[1] / bp["bytes"] >= BIN_DOMINATE:
+        findings.append(("WARN", f"bin/{h[0]} is {h[1] // 1024:,}KB ({h[1] / bp['bytes']:.0%} of the {bp['bytes'] // 1024:,}KB tracked bin/ payload) — a single bundled subtree dominates install weight; confirm it serves this plugin's job (P1/P3 cohesion, install weight is NOT always-on context)"))
+
     summary = {"total": total, "tokens": total // 4, "by_cat": by_cat, "n": len(rows), "mcp": mcp,
-               "mcp_bytes": mcp_bytes, "mcp_served": mcp_served, "top": sorted(rows, key=lambda r: -r[2])[:5]}
+               "mcp_bytes": mcp_bytes, "mcp_served": mcp_served, "top": sorted(rows, key=lambda r: -r[2])[:5],
+               "bin_bytes": bp["bytes"], "bin_files": bp["files"], "bin_heaviest": h, "bin_tracked": bp["tracked"]}
     return summary, findings
 
 
@@ -217,6 +278,11 @@ def _report(name, plugin_dir, warn_desc, max_desc, budget, with_mcp=False):
     print(f"      by category: {cats}")
     if s["top"] and s["total"]:
         print("      heaviest:    " + "  ".join(f"{cat}/{nm} {c}c ({c / s['total']:.0%})" for cat, nm, c in s["top"] if c))
+    if s.get("bin_bytes"):
+        bh = s.get("bin_heaviest")
+        share = f", heaviest bin/{bh[0]} {bh[1] // 1024:,}KB/{bh[2]}f" if bh else ""
+        tag = "" if s.get("bin_tracked", True) else " (unfiltered — not a git checkout)"
+        print(f"      install:     bin/ {s['bin_bytes'] // 1024:,}KB / {s['bin_files']} tracked files{share}{tag}  ·  not always-on context")
     for level, msg in findings:
         print(f"      [{level}] {msg}")
     return not any(level == "FAIL" for level, _ in findings)
@@ -340,6 +406,26 @@ def cmd_selftest():
         _, findings = audit(tmp, with_mcp=True)
         expect(any(lv == "WARN" and "MCP tool-defs" in m for lv, m in findings), "did NOT flag a dominating wrapper MCP")
 
+    # install payload (I-11): a heavy, dominant bin/ subtree WARNs; a light/diffuse bin/ does not. (Outside a
+    # git repo, bin_payload falls back to an unfiltered walk — exercised here, with tracked=False reported.)
+    with tempfile.TemporaryDirectory() as tmp:
+        _mk(tmp, "agents/critic-a.md", "x" * 40)
+        os.makedirs(os.path.join(tmp, "bin", "fat-subtree"))
+        open(os.path.join(tmp, "bin", "fat-subtree", "blob.bin"), "w").write("Z" * (80 * 1024))
+        open(os.path.join(tmp, "bin", "gate.py"), "w").write("y" * 1024)
+        s, findings = audit(tmp)
+        expect(s.get("bin_bytes", 0) >= 80 * 1024, f"bin payload not measured: {s.get('bin_bytes')}")
+        expect(s.get("bin_tracked") is False, "fallback walk should report tracked=False outside a git repo")
+        expect(s["bin_heaviest"] and s["bin_heaviest"][0] == "fat-subtree", f"heaviest subtree wrong: {s.get('bin_heaviest')}")
+        expect(any(lv == "WARN" and "install weight" in m for lv, m in findings), "did NOT flag a dominating bin/ subtree")
+        expect(not any(lv == "FAIL" for lv, _ in findings), "install payload wrongly FAILed (it must only WARN)")
+    with tempfile.TemporaryDirectory() as tmp:  # a small bin/ must not warn
+        _mk(tmp, "agents/critic-a.md", "x" * 40)
+        os.makedirs(os.path.join(tmp, "bin"))
+        open(os.path.join(tmp, "bin", "gate.py"), "w").write("y" * 2048)
+        _, findings = audit(tmp)
+        expect(not any("install weight" in m for _, m in findings), "a small bin/ wrongly flagged")
+
     # interlock (I-12): --with-mcp REFUSES (exit 3) without a trust assertion; static is unaffected; a flag/env authorizes.
     with tempfile.TemporaryDirectory() as tmp:
         _mk(tmp, "agents/critic-a.md", "x" * 30)
@@ -369,7 +455,7 @@ def cmd_selftest():
         return 1
     print("context-cost selftest: OK (measures always-on cost incl. folded block scalars + --with-mcp tool-defs; "
           "FAILs a 2KB body-description and a --budget breach; WARNs a rich description, a dominating component, "
-          "and a wrapper MCP; terse passes clean)")
+          "a wrapper MCP, and a dominating bin/ install subtree; --with-mcp interlock refuses without trust; terse passes clean)")
     return 0
 
 
