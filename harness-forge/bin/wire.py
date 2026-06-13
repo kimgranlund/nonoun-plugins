@@ -31,8 +31,15 @@ import shutil
 import sys
 
 _BIN = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _BIN)
+try:
+    import lattice as _lat                            # the installer runs from the plugin; lattice.py is a sibling
+    KERNEL_VERSION = _lat.KERNEL_VERSION
+except Exception:                                     # noqa: BLE001 — degrade rather than crash the installer
+    KERNEL_VERSION = "unknown"
 HOOK_FILES = ["gate-signal", "emit-ledger", "propagate-staleness"]
 LIB_COPY = ("lattice.py", "_lattice.py")              # kernel source → private copy name in .harness/hooks/
+VERSION_FILE = ".kernel-version"                      # stamped beside the copy so drift across a plugin update is detectable
 
 
 def _cmd(hook, hd):
@@ -68,19 +75,25 @@ def _load_settings(project):
 
 
 def _merge(settings, hd):
-    """Merge our entries in. Returns (settings, list of added command strings)."""
+    """Merge our entries in. Returns (settings, list of added command strings). Idempotency spans ALL groups that
+    share our matcher (Simon/Scott): if the user already has two `Write|Edit` groups, a command present in *either*
+    is not re-added — apply stays a no-op no matter which group a prior wiring landed in. New commands go to the
+    first matching group (or a fresh one), never duplicated across groups."""
     added = []
     hooks = settings.setdefault("hooks", {})
     for event, cmds in _entries(hd).items():
         groups = hooks.setdefault(event, [])
-        group = next((g for g in groups if g.get("matcher") == MATCHER), None)
-        if group is None:
-            group = {"matcher": MATCHER, "hooks": []}
-            groups.append(group)
-        existing = {h.get("command") for h in group["hooks"]}
+        matching = [g for g in groups if g.get("matcher") == MATCHER]
+        existing = {h.get("command") for g in matching for h in g.get("hooks", [])}   # across every matcher group
+        if matching:
+            target = matching[0]
+        else:
+            target = {"matcher": MATCHER, "hooks": []}
+            groups.append(target)
         for cmd in cmds:
             if cmd not in existing:
-                group["hooks"].append({"type": "command", "command": cmd})
+                target.setdefault("hooks", []).append({"type": "command", "command": cmd})
+                existing.add(cmd)
                 added.append(cmd)
     return settings, added
 
@@ -151,14 +164,18 @@ def apply(project, hd):
     if err:
         print("wire.py: {}".format(err), file=sys.stderr)
         return 1
+    print("wire.py apply → editing the project at {}".format(os.path.abspath(project)))   # echo the absolute target before mutating (Simon)
+    dest = os.path.join(project, hd, "hooks")
     for src, dst in _copies(project, hd):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(src, dst)
         os.chmod(dst, 0o755)
+    with open(os.path.join(dest, VERSION_FILE), "w", encoding="utf-8") as f:   # stamp the wired kernel version
+        f.write(KERNEL_VERSION + "\n")
     settings, added = _merge(settings, hd)
     _save_settings(project, settings)
-    print("wired: {} hook file(s) in {}/hooks/, {} new settings entr{} (re-apply is a no-op).".format(
-        len(_copies(project, hd)), hd, len(added), "y" if len(added) == 1 else "ies"))
+    print("wired: {} hook file(s) in {}/hooks/ (kernel {}), {} new settings entr{} (re-apply is a no-op).".format(
+        len(_copies(project, hd)), hd, KERNEL_VERSION, len(added), "y" if len(added) == 1 else "ies"))
     print("the worker loop now runs: PreToolUse gate-signal (deny on verifier assets) + PostToolUse emit-ledger + propagate-staleness.")
     return 0
 
@@ -181,9 +198,21 @@ def check(project, hd, quiet=False):
         elif os.path.isfile(src):
             try:
                 if open(src, "rb").read() != open(dst, "rb").read():
-                    warns.append("copy drifted from the plugin: {} (re-run apply to refresh)".format(os.path.relpath(dst, project)))
+                    # CV1 — drift is a PROBLEM (exit non-zero), not a WARN: a stale wired kernel runs old graph
+                    # logic against signals the new engine mints. The H3 anchor must stop reading a drifted copy as healthy.
+                    problems.append("wired copy is STALE vs the plugin: {} — re-run `wire.py apply` to refresh".format(os.path.relpath(dst, project)))
             except OSError:
                 pass
+    # the version stamp makes the drift human-meaningful (and catches a missing stamp from a pre-0.3.1 wiring)
+    vpath = os.path.join(project, hd, "hooks", VERSION_FILE)
+    wired_ver = None
+    if os.path.isfile(vpath):
+        try:
+            wired_ver = open(vpath, encoding="utf-8").read().strip()
+        except OSError:
+            pass
+    if any("STALE vs the plugin" in p for p in problems) and wired_ver and wired_ver != KERNEL_VERSION:
+        problems.append("wired kernel is v{} but the installed plugin is v{} — `wire.py apply` to update".format(wired_ver, KERNEL_VERSION))
     if not quiet:
         for w in warns:
             print("WARN: {}".format(w))
@@ -208,6 +237,9 @@ def unwire(project, hd):
         if os.path.isfile(dst):
             os.remove(dst)
             gone += 1
+    vpath = os.path.join(project, hd, "hooks", VERSION_FILE)
+    if os.path.isfile(vpath):
+        os.remove(vpath)
     hooks_dir = os.path.join(project, hd, "hooks")
     if os.path.isdir(hooks_dir) and not os.listdir(hooks_dir):
         os.rmdir(hooks_dir)
@@ -252,6 +284,17 @@ def selftest():
         s2 = json.dumps(json.load(open(_settings_path(project))))
         expect(s2.count("gate-signal") == 1 and s2.count("emit-ledger") == 1, "re-apply duplicated entries")
 
+        # duplicate-matcher idempotency (Simon/Scott): our command already living in a SECOND Write|Edit
+        # group must not be re-added to the first. Hand-craft two PreToolUse Write|Edit groups, our gate in the 2nd.
+        s_dup = json.load(open(_settings_path(project)))
+        gate_cmd = _entries(hd)["PreToolUse"][0]
+        s_dup["hooks"]["PreToolUse"] = [{"matcher": MATCHER, "hooks": []},
+                                        {"matcher": MATCHER, "hooks": [{"type": "command", "command": gate_cmd}]}]
+        json.dump(s_dup, open(_settings_path(project), "w"))
+        expect(apply(project, hd) == 0, "apply failed against duplicate matcher groups")
+        s3 = json.dumps(json.load(open(_settings_path(project))))
+        expect(s3.count("gate-signal") == 1, "apply duplicated a command already present in a second matcher group")
+
         # the WIRED COPIES actually work from their installed location:
         gate = os.path.join(project, hd, "hooks", "gate-signal")
         r = subprocess.run([sys.executable, gate, "--hook"], input='{"tool_input":{"file_path":".harness/signals/x/y.json"}}',
@@ -267,6 +310,15 @@ def selftest():
         prop = os.path.join(project, hd, "hooks", "propagate-staleness")
         r = subprocess.run([sys.executable, prop, "selftest"], capture_output=True, text=True, cwd=project)
         expect(r.returncode == 0, "the copied propagate-staleness failed from its wired location: {}".format(r.stderr[-200:]))
+
+        # CV1 — DRIFT IS A HARD FAILURE, and re-apply heals it (the staleness-plugin's own staleness gate):
+        lib = os.path.join(project, hd, "hooks", LIB_COPY[1])
+        with open(lib, "a", encoding="utf-8") as f:
+            f.write("\n# drift injected by selftest\n")          # the wired kernel now differs from the plugin's
+        expect(check(project, hd, quiet=True) == 1, "check did not FAIL on a drifted wired kernel (CV1 regression)")
+        expect(apply(project, hd) == 0 and check(project, hd, quiet=True) == 0, "re-apply did not heal the drift")
+        expect(open(os.path.join(project, hd, "hooks", VERSION_FILE)).read().strip() == KERNEL_VERSION,
+               "apply did not stamp the kernel version")
 
         # a malformed settings file is never touched
         open(_settings_path(project), "w").write("{not json")
@@ -290,7 +342,8 @@ def selftest():
         return 1
     print("wire selftest: OK (unwired fails check / wired passes; merge preserves unrelated state; idempotent; "
           "refuses malformed settings; the installed gate denies protected writes INCLUDING its own unwiring; "
-          "the copied cascade runs on the private kernel copy; unwire restores exactly)")
+          "the copied cascade runs on the private kernel copy; a drifted wired kernel FAILS check and re-apply heals it; "
+          "unwire restores exactly)")
     return 0
 
 

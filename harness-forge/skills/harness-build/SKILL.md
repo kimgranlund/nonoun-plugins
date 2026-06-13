@@ -55,7 +55,7 @@ Depth-first along **one thin vertical slice** to `validated`; widen — new laye
 
 ## Budgets and stop conditions (policy, not afterthoughts)
 
-Every loop carries an iteration cap, a token/dollar budget, a wall-clock limit, a no-progress detector (same failure signature N times → halt and surface), and a *separate* done-judge. Loop length, not model choice, dominates cost. Budget exhaustion flips the cell's `blocked` condition and surfaces it to the compass instead of burning tokens.
+Every loop carries an iteration cap, a token/dollar budget, a wall-clock limit, a no-progress detector, and a *separate* done-judge. Loop length, not model choice, dominates cost. **The no-progress detector is code, not the worker's self-assessment** — `bin/ledger.py no-progress` reads the ledger and flags any cell whose last N validates all failed (same failure signature N times → halt), exit 1 when a loop should stop. **Honest scope:** today the *operator* (or `/harness-advance` / the auditor) reads that detector and flips the cell's `blocked` condition; the **wired Stop-hook that calls it automatically on every pass is ROADMAP** — until it ships, "budgets are enforced" means the worker is *asked* to self-halt and the detector is *available* to check, not that an automatic circuit breaker fires (the same "say which state you're in, don't overclaim mechanical" discipline the plugin applies to `wire.py check`).
 
 ## §SelfAudit
 

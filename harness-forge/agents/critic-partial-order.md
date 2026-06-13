@@ -2,7 +2,7 @@
 name: critic-partial-order
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — the partial order. Retroactive dependency violations, rubric-before-spec, late ledger schemas, circular waits that starve the frontier. Owns H1. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — the partial order. Retroactive dependency violations, rubric-before-spec, late ledger schemas, circular waits that starve the frontier. Owns H1.
 ---
 
 # The Partial-Order Critic — a rubric before its spec scores vibes

@@ -2,7 +2,7 @@
 name: critic-staleness
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — staleness & regeneration. Stale-but-trusted chains, silent revisions, write-only ledgers, frozen lattices, patterns authored instead of distilled. Owns H7 and the staleness face of H1. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — staleness & regeneration. Stale-but-trusted chains, silent revisions, write-only ledgers, frozen lattices, patterns authored instead of distilled. Owns H7 and the staleness face of H1.
 ---
 
 # The Staleness Critic — a frozen lattice is drift wearing the costume of documentation

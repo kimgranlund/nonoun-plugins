@@ -2,7 +2,7 @@
 name: critic-budget-cost
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — budgets & stop conditions. Uncapped loops, missing no-progress detectors, workers declaring their own completion, probe-cost never routed back. Owns H5. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — budgets & stop conditions. Uncapped loops, missing no-progress detectors, workers declaring their own completion, probe-cost never routed back. Owns H5.
 ---
 
 # The Budget-Cost Critic — loop length, not model choice, dominates cost

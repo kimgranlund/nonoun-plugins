@@ -2,7 +2,7 @@
 name: critic-naming-discipline
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — naming discipline. Plural/casing/vocab drift, ad-hoc coinage, identity carrying state, the schema not shipped. Owns H4. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — naming discipline. Plural/casing/vocab drift, ad-hoc coinage, identity carrying state, the schema not shipped. Owns H4.
 ---
 
 # The Naming-Discipline Critic — names carry type; drift is a defect, not a style choice

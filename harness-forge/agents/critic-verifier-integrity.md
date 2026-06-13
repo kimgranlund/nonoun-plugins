@@ -2,7 +2,7 @@
 name: critic-verifier-integrity
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — verifier integrity. Loops bound to unvalidated or uncalibrated rubrics, presence-predicates posing as verification, rubric coverage that lags the spec. Owns H2. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — verifier integrity. Loops bound to unvalidated or uncalibrated rubrics, presence-predicates posing as verification, rubric coverage that lags the spec. Owns H2.
 ---
 
 # The Verifier-Integrity Critic — a loop without a real verifier generates confident mistakes at scale

@@ -20,6 +20,7 @@ Usage:
   ledger.py query [--cell ID] [--op OP] [--dir DIR]
   ledger.py cost [--dir DIR]                      # probe cost per layer/scope
   ledger.py false-pass [--dir DIR]               # false-pass rate (gates autonomy: target < ~5%)
+  ledger.py no-progress [--n N] [--dir DIR]      # cells stuck repeating a failure ≥ N times → halt (the detector, in code)
   ledger.py distill [--n N] [--dir DIR]          # the last N events as a distillation window
   ledger.py selftest
 Stdlib only; Python 3.8+.
@@ -100,6 +101,33 @@ def false_pass_rate(events):
     return round(fp / len(passes), 4), fp, len(passes), len(refutes)
 
 
+def no_progress(events, n=3):
+    """The no-progress detector, as CODE — not a worker self-assessing (CV4/Chip: a detector is a computation,
+    and the routing law puts computations in code). For each cell, count its TRAILING run of consecutive
+    `validate`=`fail` events (a pass resets the run): a cell whose last `n` validates all failed is stuck
+    repeating a failure and must halt → flip `blocked` and surface to the compass, not burn more tokens.
+    Returns [{cell_id, fails, signature}] for cells over the threshold; `signature` is the shared failure
+    rationale when the trailing fails agree on one (a same-signature loop, the strongest stuck signal), else None.
+    This is the detector the wired Stop-hook (ROADMAP) will call; today the operator/auditor reads it directly."""
+    by_cell = {}
+    for e in events:
+        if e.get("operation") == "validate" and e.get("cell_id"):
+            by_cell.setdefault(e["cell_id"], []).append(e)
+    stuck = []
+    for cell_id, evs in by_cell.items():
+        run, sigs = 0, []
+        for e in reversed(evs):                           # newest-first; a pass ends the trailing fail-run
+            if e.get("result") == "fail":
+                run += 1
+                sigs.append((e.get("rationale") or "").strip())
+            else:
+                break
+        if run >= n:
+            sig = sigs[0] if sigs and len(set(sigs)) == 1 else None
+            stuck.append({"cell_id": cell_id, "fails": run, "signature": sig})
+    return sorted(stuck, key=lambda s: -s["fails"])
+
+
 def distill_window(events, n=20):
     return events[-n:]
 
@@ -132,6 +160,22 @@ def selftest():
         urate, _, utot, urefn = false_pass_rate(no_refute)
         expect(urate is None and utot == 2 and urefn == 0, f"false-pass should be unmeasured with no refuter, got {urate}")
 
+        # the no-progress detector (CV4): 3 consecutive same-signature fails on one cell → halt; a pass resets the run.
+        with tempfile.TemporaryDirectory() as d2:
+            for r in ("fail", "fail", "fail"):
+                append(d2, {"operation": "validate", "actor": "advancer", "cell_id": "capability.task.parse",
+                            "result": r, "rationale": "pytest: 2 assertions still red"})
+            append(d2, {"operation": "validate", "actor": "advancer", "cell_id": "spec.task.x", "result": "fail",
+                        "rationale": "one-off"})
+            stuck = no_progress(read(d2), 3)
+            expect(len(stuck) == 1 and stuck[0]["cell_id"] == "capability.task.parse" and stuck[0]["fails"] == 3,
+                   f"no-progress missed the stuck cell: {stuck}")
+            expect(stuck[0]["signature"] is not None, "no-progress should detect the shared failure signature")
+            # a pass resets the trailing run → no longer stuck
+            append(d2, {"operation": "validate", "actor": "advancer", "cell_id": "capability.task.parse",
+                        "result": "pass", "rationale": "green"})
+            expect(no_progress(read(d2), 3) == [], "a pass did not reset the no-progress run")
+
         # append-only: a second append must not rewrite the first line.
         first_line = open(_path(d), encoding="utf-8").readline()
         append(d, {"operation": "record", "actor": "scribe"})
@@ -149,7 +193,8 @@ def selftest():
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
-    print("ledger selftest: OK (append-only round-trip; query; probe-cost median; false-pass rate; rejects entry with no actor)")
+    print("ledger selftest: OK (append-only round-trip; query; probe-cost median; false-pass rate; "
+          "no-progress detector halts a repeated-failure loop and a pass resets it; rejects entry with no actor)")
     return 0
 
 
@@ -189,6 +234,16 @@ def main(argv):
         else:
             print(f"false-pass rate: {rate:.1%} ({fp}/{tot}, {refn} refute source(s))  — autonomy gate: < ~5% with zero reward-hacking incidents")
         return 0
+    if argv and argv[0] == "no-progress":
+        n = int(_flag(argv, "--n", "3"))
+        stuck = no_progress(evs, n)
+        if not stuck:
+            print(f"no-progress: none — no cell has {n} consecutive validate failures.")
+            return 0
+        for s in stuck:
+            sig = f" (same signature: {s['signature'][:60]})" if s["signature"] else " (varied signatures)"
+            print(f"  HALT  {s['cell_id']}  {s['fails']} consecutive fails{sig} → flip `blocked`, surface to the compass")
+        return 1                                          # exit 1 = at least one loop should halt
     if argv and argv[0] == "distill":
         for e in distill_window(evs, int(_flag(argv, "--n", "20"))):
             print(f"  {e.get('operation','?'):10} {e.get('cell_id','-')}  {e.get('rationale','')}")

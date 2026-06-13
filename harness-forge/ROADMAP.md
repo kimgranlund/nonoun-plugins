@@ -1,10 +1,15 @@
 # harness-forge — Roadmap
 
-Open structural work, in rough priority. v0.2 is the kernel + the operating roster + the consent-wired loop, validated and selftested; the items below deepen it toward the full factory the foundations describe.
+Open structural work, in rough priority. v0.3 is the kernel + the operating roster + the consent-wired loop + the structural council, validated, selftested, and twice dogfood-red-teamed; the items below deepen it toward the full factory the foundations describe.
 
-## v0.2 — close the operating loop in the user's project
+## v0.4 — the auto-loop + the second council's deferrals
 
-- ~~**The seed-into-loop gate installer.**~~ **Shipped in 0.2.0** — `bin/wire.py` (plan/apply/check/unwire, consent-gated, idempotent, self-protecting) + `/harness-seed` step 4. Still open from this line: the **budget/no-progress gate** as a wired hook (today budgets are policy the orchestrator enforces; a Stop-hook that halts a loop on budget exhaustion / repeated failure signatures is unbuilt).
+- **`/harness-run` + the orchestrator's return + the wired stop-gate (one release).** The `harness-builder` orchestrator was deleted in 0.3.1 (unreachable: no command drove it). It returns *together with* `/harness-run` — the autonomous multi-cell loop — and that loop is only safe behind the **wired** budget/no-progress Stop-hook: `ledger.py no-progress` (the detector) shipped in 0.3.1 as code; the PostToolUse hook that *calls* it to flip `blocked` automatically is the missing piece. Ship the three as a unit; an auto-loop without the stop-gate is the overnight-token-burn liability.
+- **The council as its own plugin (or a clean internal seam).** Two critics (Steve Y. C1, Boris C. C1) flagged that the kernel-user carries the council's 8 always-on agent descriptions for a path most operating sessions never take. The council reviews an *external* `.harness/` by path — it's separable. Evaluate splitting `harness-council` out vs. lazy-loading; disclose the cost (done) until then.
+- **Schema as the single source, not a second copy.** 0.3.1 made `check()` *read* the enums from `cell.schema.json` and catch unknown keys. The deeper move (Scott W.): a discriminated union on `maturity` so a `validated` cell **without** non-empty `signal_refs` is *unrepresentable*, not merely caught — the evidence becomes the verdict's payload, and "validated against nothing" stops being a runtime rule.
+- **Post-deploy observability (Charity M.).** A cheap `/harness-status` (no agent dispatch) — cell-maturity histogram, frontier count, last N ledger events, wiring + drift verdict, a gate-fire counter — and routing `emit-ledger`'s "broken audit trail" finding somewhere an *unattended* operator actually monitors (today it lands in `additionalContext`, silent when no human reads).
+- **Consent as a mechanism, not prose (Simon W.).** Move the plan→apply gate inside `wire.py apply` itself (`--confirm` + the abspath echo, already added) so consent doesn't live only in `harness-seed.md`'s instruction.
+- ~~**The seed-into-loop gate installer.**~~ **Shipped in 0.2.0** — `bin/wire.py` (plan/apply/check/unwire, consent-gated, idempotent, self-protecting, version-stamped) + `/harness-seed` step 4.
 - ~~**`emit-ledger` + `propagate-staleness` as project hooks.**~~ **Shipped in 0.2.0** — both gateverb species, selftested, wired by the installer.
 - ~~**A real first-slice walkthrough.**~~ **Shipped in 0.2.1** — `evals/first-slice-walkthrough/replay.py` (CI) + `RUN.md`; it caught the seed's circular-verifier deadlock at authoring time. Still open: stamp default `budget` fields at seed (the positive-control baseline's one real weakness, H5).
 

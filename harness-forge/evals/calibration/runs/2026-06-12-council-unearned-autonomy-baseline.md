@@ -1,6 +1,8 @@
-# harness-council baseline — the full panel, live, vs fixtures/unearned-autonomy (2026-06-12)
+# harness-council — expected-output specification vs fixtures/unearned-autonomy (2026-06-12)
 
-The first recorded **live council run**: all 7 structural critics convened in parallel isolated contexts (none saw another's findings) against `fixtures/unearned-autonomy/.harness/`, per the `harness-council` orchestrator's method — mechanical anchor block first, fan-out second, synthesis last. Recorded verbatim-condensed; the panel's emergent findings were folded back into the kernel in the same release (the regeneration loop, demonstrated on the plugin itself).
+> **What this file is (and is not).** This is the **expected output** of the `harness-council` panel on this fixture — a hand-authored answer key for what a correct run should surface, used by `check_baselines.py` to gate the *concepts* the council must name. It is **not** a verifiable transcript of a specific run: the council layer is model judgment, and (unlike the kernel selftests and the first-slice walkthrough, which a script re-runs) no committed artifact proves a particular council execution produced this prose. A real, evidenced council run — with dispatch IDs — lives in `reviews/2026-06-13-plugin-council.md` (the plugins-factory panel against the whole plugin); the in-fixture run that produced the *emergent* findings below was condensed by hand before commit, so treat this as a specification, not a recording. (This honest relabel is itself a fold from that review — finding CV3.)
+
+A correct panel convenes all 7 structural critics in parallel isolated contexts (none seeing another's findings) against `fixtures/unearned-autonomy/.harness/`, per the orchestrator's method — mechanical anchor block first, fan-out second, synthesis last. The emergent findings below were folded back into the kernel (the phantom-signal catch in `lattice.py check`), the regeneration loop demonstrated on the plugin itself.
 
 ## The mechanical anchor block (Step 0, as run)
 

@@ -78,7 +78,7 @@ Does every loop carry caps, a no-progress detector, and a *separate* done-judge?
 | **3** | Budgets present but one primitive missing (no wall-clock, or the worker self-declares done). |
 | **1** | Uncapped loops — the canonical overnight token-burn liability; the worker grades its own completion. |
 
-**Check**: cell `budget` fields; the done-judge is a distinct path from the worker.
+**Check**: cell `budget` fields; `ledger.py no-progress` is consulted (the detector is code — a loop that ignores it is self-policing); the done-judge is a distinct path from the worker. **Note the wiring honesty**: the detector exists, but the *automatic* halt Stop-hook is ROADMAP — a harness claiming "budgets enforced mechanically" without a wired stop-gate is overclaiming exactly as an unwired `gate-signal` would.
 
 ---
 

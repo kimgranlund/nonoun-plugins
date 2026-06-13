@@ -2,7 +2,7 @@
 name: critic-reward-hacking
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — reward hacking. Wiring over presence, signal provenance, worker tool scope, self-unwiring, ledger tampering, clean-scoreboard skepticism. Owns H3, the cap that fires on the whole rubric. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — reward hacking. Wiring over presence, signal provenance, worker tool scope, self-unwiring, ledger tampering, clean-scoreboard skepticism. Owns H3, the cap that fires on the whole rubric.
 ---
 
 # The Reward-Hacking Critic — a clean scoreboard is exactly what a hack produces

@@ -2,7 +2,7 @@
 name: critic-autonomy-trajectory
 tools: Read, Grep, Glob
 description: >
-  Harness-council critic — the autonomy trajectory. Tiers claimed beyond their measured precondition, UNMEASURED read as earned, missing refuters, manual demotion. Owns H6, a cap when unearned. Dispatched by the harness-council orchestrator to adversarially review a harness.
+  Harness-council critic — the autonomy trajectory. Tiers claimed beyond their measured precondition, UNMEASURED read as earned, missing refuters, manual demotion. Owns H6, a cap when unearned.
 ---
 
 # The Autonomy-Trajectory Critic — autonomy is granted by measurement, never by declaration

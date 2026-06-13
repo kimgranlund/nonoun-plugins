@@ -5,7 +5,7 @@ argument-hint: "[optional: --dir .harness]"
 
 Audit the harness. **$ARGUMENTS**
 
-Dispatch the **`harness-auditor`** agent and invoke the **`harness-evaluate`** skill to score the harness against `references/rubric-harness.md`. The audit checks what the engine can't see in one pass:
+Dispatch the **`harness-auditor`** agent — the single-pass read-only scorer — which scores the harness against `references/rubric-harness.md` (the one source the `harness-evaluate` skill and the `/harness-council` panel also draw on). For the adversarial multi-lens pass, use `/harness-council` (7 isolated critics); for a quick single-concern check, `/harness-council <lens>`. The audit checks what the engine can't see in one pass:
 
 - **Lattice integrity** — no rubric-before-validated-spec, no cell bound to an unvalidated verifier, the ledger schema present in the first slice, no frozen (un-regenerating) cells while their environment moves.
 - **Anti-reward-hacking** — the gate is **wired**, not merely present: `python3 "${CLAUDE_PLUGIN_ROOT}/bin/wire.py" check` exits 0 (verifier assets — signals, rubrics, schemas, hooks, the ledger, the wiring itself — deny-on-write to workers); at least one check is computed from pristine reference the worker cannot reach; the validation path (`bin/validate.py`), not the worker, writes signals.

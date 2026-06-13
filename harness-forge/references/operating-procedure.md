@@ -25,7 +25,7 @@ The seven-step loop from `agentic-systems-foundations/lattice-model.md`, wired t
                 │                                                │
                 ▼                                                │
    on signal → mark validated → RESCAN ───────────────────────►─┘  (validation reveals new gaps)
-   on budget/no-progress → flip blocked → back to /harness-next
+   on budget / no-progress (ledger.py no-progress) → flip blocked → back to /harness-next
                 │
                 ▼  (only when the slice's load-bearing cells carry signal)
    widen scope → rescan ALL modalities at the new scope

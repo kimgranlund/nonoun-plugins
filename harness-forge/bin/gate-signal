@@ -37,7 +37,9 @@ DEFAULT_PROTECTED = [
     ".harness/lattice.json",
     ".harness/*.schema.json",
     ".claude/settings.json",
-    "evals/*",
+    # NOTE: a bare `evals/*` was here — dropped (council/Simon). Wired into an arbitrary user project it would
+    # deny writes to the user's OWN test directory, which is not a harness verifier asset. A project that keeps
+    # its eval suite as a protected verifier asset opts in via HARNESS_PROTECTED.
 ]
 
 
@@ -67,7 +69,7 @@ def selftest():
             fails.append(label)
     for p in (".harness/signals/spec.task.x/2026-06-12T09-00--pytest.json",
               ".harness/rubric/first-slice.md", ".harness/naming.schema.json",
-              ".harness/hooks/gate-signal", ".harness/lattice.json", "evals/suite.py",
+              ".harness/hooks/gate-signal", ".harness/lattice.json",
               ".harness/ledger/events.jsonl",                       # the audit trail is tamper-evident
               ".claude/settings.json",                              # the wiring itself — a worker cannot unwire the gate
               "/abs/project/.harness/signals/x/y.json",             # absolute paths anchor at the segment boundary
@@ -76,10 +78,12 @@ def selftest():
     for p in (".harness/spec/first-slice.md", "src/main.py", "README.md",
               "docs/examples/lattice.json",                         # over-breadth regression: basename matching is gone
               "src/hooks/useAuth.ts",                               # a React hooks dir is not a verifier asset
-              "schemas/foo.schema.json"):                           # schemas outside .harness/ are the project's business
+              "schemas/foo.schema.json",                            # schemas outside .harness/ are the project's business
+              "evals/suite.py", "tests/evals/run.py"):              # the user's OWN eval/test dir is not a harness asset (Simon)
         expect(not is_protected(p), f"wrongly protected a worker-writable path: {p}")
-    # env override narrows/redefines the set
+    # env override narrows/redefines the set (a project that DOES keep evals as verifier assets opts in)
     expect(is_protected("custom/secret.txt", ["custom/*"]), "explicit glob override did not protect")
+    expect(is_protected("evals/suite.py", ["evals/*"]), "HARNESS_PROTECTED opt-in for evals/ did not protect")
     if fails:
         sys.stderr.write("gate-signal selftest: FAIL\n")
         for f in fails:

@@ -36,11 +36,33 @@ import sys
 
 _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# The kernel contract version. Bump it whenever this module's on-disk contract or graph behavior changes
+# (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
+# `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
+# (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
+KERNEL_VERSION = "0.3.1"
+
+# The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
+# hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
+# for the wired `_lattice.py` copy, which ships without a schema sibling. `check()` reads the schema when it
+# can, and `selftest` asserts these constants still equal the schema's enums — so a drift between the two
+# copies is a mechanical failure, not a silent divergence.
 LAYERS = ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"]
 SCOPES = ["call", "task", "workflow", "system", "fleet"]
 MATURITIES = ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
 ADVANCEABLE = {"absent", "defined", "instantiated", "regenerating", "stale"}   # maturities an engine pass may act on
 SETTLED = {"validated", "operating"}                                          # maturities that count as a foothold
+
+
+def _cell_schema():
+    """Load cell.schema.json (the single source for the cell contract), or None if unavailable (wired copy)."""
+    for p in (os.path.join(_ROOT, "schemas", "cell.schema.json"),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas", "cell.schema.json")):
+        try:
+            return json.load(open(p, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    return None
 
 # The maturity state machine: which states may legally follow which (the transition relation the prose claimed
 # but did not encode). `deprecated` is terminal. An engine pass routes through `transition_ok` before mutating.
@@ -77,7 +99,14 @@ def load(d):
 
 
 def save(d, lat):
-    json.dump(lat, open(os.path.join(d, "lattice.json"), "w", encoding="utf-8"), indent=2)
+    # Atomic write (CV1/Simon): the staleness cascade rewrites lattice.json on every PostToolUse edit; a
+    # plain truncating dump that is interrupted mid-write corrupts the canonical state. Write a temp file in
+    # the same dir, then os.replace — the same discipline wire.py already uses for the user's settings.json.
+    path = os.path.join(d, "lattice.json")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(lat, f, indent=2)
+    os.replace(tmp, path)
 
 
 def find(lat, cell_id):
@@ -206,16 +235,28 @@ def check(lat, d=None):
     seen = set()
     by_id = {cid(c): c for c in lat.get("cells", []) if all(k in c for k in ("layer", "scope", "slug"))}
     root = (os.path.dirname(d.rstrip("/")) or ".") if d else None
+    # cell.schema.json is the single source when present; the module constants are the portable fallback.
+    schema = _cell_schema()
+    props = (schema or {}).get("properties", {})
+    layers = props.get("layer", {}).get("enum", LAYERS)
+    scopes = props.get("scope", {}).get("enum", SCOPES)
+    maturities = props.get("maturity", {}).get("enum", MATURITIES)
+    required = (schema or {}).get("required", ["layer", "scope", "slug", "maturity"])
+    known_keys = set(props) if (schema and schema.get("additionalProperties") is False) else None
     for i, c in enumerate(lat.get("cells", [])):
         where = f"cell[{i}]"
-        for k in ("layer", "scope", "slug", "maturity"):
+        for k in required:
             if k not in c:
                 findings.append(f"{where}: missing required field `{k}`")
-        if c.get("layer") not in LAYERS:
+        if known_keys is not None:                          # additionalProperties:false — a typo'd key silently loses data
+            for k in c:
+                if k not in known_keys:
+                    findings.append(f"{where}: unknown field `{k}` (not in the cell schema — typo, or data that will be ignored)")
+        if c.get("layer") not in layers:
             findings.append(f"{where}: layer `{c.get('layer')}` not in the closed enum")
-        if c.get("scope") not in SCOPES:
+        if c.get("scope") not in scopes:
             findings.append(f"{where}: scope `{c.get('scope')}` not in the closed enum")
-        if c.get("maturity") not in MATURITIES:
+        if c.get("maturity") not in maturities:
             findings.append(f"{where}: maturity `{c.get('maturity')}` not a valid state")
         slug = c.get("slug", "")
         if not slug or not all(ch.isalnum() or ch == "-" for ch in slug) or slug != slug.lower():
@@ -370,6 +411,18 @@ def selftest():
         open(os.path.join(hd, "x"), "w").write("{}")          # the refs above are literally "x" — make it real
         real = check(stale_lat, d=hd)
         expect(not any("does not exist on disk" in f for f in real), f"check() flagged a real signal file: {real}")
+
+    # CV5 — the module enums must equal cell.schema.json's (the single source); drift between the two copies is a failure.
+    sch = _cell_schema()
+    if sch is not None:                                       # absent only in the wired _lattice.py copy
+        sp = sch["properties"]
+        expect(sp["layer"]["enum"] == LAYERS, "LAYERS drifted from cell.schema.json (single-source violation)")
+        expect(sp["scope"]["enum"] == SCOPES, "SCOPES drifted from cell.schema.json")
+        expect(sp["maturity"]["enum"] == MATURITIES, "MATURITIES drifted from cell.schema.json")
+    # the additionalProperties:false catch — a typo'd key is a finding, not silent data loss.
+    typo = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "validated",
+                       "signal_refs": ["x"], "depends_on": [], "signl_refs": ["typo"]}]}
+    expect(any("unknown field `signl_refs`" in f for f in check(typo)), "check() missed an off-schema (typo'd) key")
 
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")
