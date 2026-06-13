@@ -1,21 +1,34 @@
 # Plan
 
-The current execution plan — what ships next and what "done" means for each item (the verifying gate or check, per this repo's structure-is-mechanized doctrine). Horizon: weeks. Longer arcs live in [ROADMAP.md](ROADMAP.md); defects and decisions in [ISSUES.md](ISSUES.md); per-plugin feature plans in each plugin's `ROADMAP.md`. Snapshot: **2026-06-10**.
+The current execution plan — what ships next and what "done" means for each item (the verifying gate or check, per this repo's structure-is-mechanized doctrine). Horizon: weeks. Longer arcs live in [ROADMAP.md](ROADMAP.md); defects and decisions in [ISSUES.md](ISSUES.md); per-plugin feature plans in each plugin's `ROADMAP.md`. Snapshot: **2026-06-13**.
 
 ## Mission (what the repo is driving toward)
 
-A public, reference-quality Claude Code plugin marketplace where **every claim is gated**: four self-contained catalog plugins (brand-forge · plugins-factory · product-forge · agent-ops), authored and red-teamed by the catalog's own lifecycle tool, with CI that proves on every push what the docs declare. The near-term theme is closing the gap between *mechanically verified* and *actually verified end-to-end* — the corpus-reader's visual pass, a CI-exercisable demo corpus, and JS parse coverage.
+A public, reference-quality Claude Code plugin marketplace where **every claim is gated**: **five** self-contained catalog plugins (brand-forge · plugins-factory · product-forge · agent-ops · **harness-forge**), authored and red-teamed by the catalog's own lifecycle tool, with CI that proves on every push what the docs declare. The recurring theme is closing the gap between *mechanically verified* and *actually verified end-to-end* — and, as harness-forge proved across four red-team cycles, between *a safety claim in prose* and *the same property enforced in code*.
 
 ## Now
 
-Nothing in flight — **every finding from the 2026-06-10 Fable 5 review is resolved** (I-1…I-7; I-8 is a standing user action: keep a private backup of the name-maps). The next work promotes from Next on demand.
+Nothing in flight. **harness-forge reached a stable pause at v0.4.2** (2026-06-13) after eight releases in two days and **four plugins-factory council cycles** — the catalog's most battle-tested plugin. Its one genuine residual (the autonomous loop's arming gap) is tracked as **I-9**. The other four plugins are quiescent; the next cross-catalog priority is the **relative-maturity rebalance** the harness-forge arc surfaced (see Next).
 
 ## Next
 
-Council calibration is **complete and uniform** — every fixture across all four councils is at N=3, 100% per-defect catch-rate (see ROADMAP), and the checkers are now recall-gated (see below). No calibration work is open. Optional future depth, on request:
+Council calibration on the four maker/judge councils is **complete and uniform** (N=3, 100%, recall-gated — see ROADMAP). Open depth, in rough priority:
 
-1. **Calibrate the instruments against reality** — apply `carve-quality.md` to a real carve (`empirical_applications: 0`); the rubric library at large still needs N≥3 real-plugin scorings.
-2. **Emit `scores/<plugin>.json` adoption-contract records** — make score/promote *write* the record `rubric-manifest.json` already specifies (the D8 example-only gap); a marketplace `publish` workflow.
+1. **The relative-maturity rebalance (surfaced by the harness-forge arc).** harness-forge has had four plugins-factory red-teams + its own structural council; the four siblings have had fewer. The sharpest gap: **plugins-factory itself — the meta-tool that judged everything — has only one `reviews/` entry** (mega-helper). "Who reviews the reviewer?" is the highest-value sibling review: if its rubric/gates have blind spots, every judgment inherits them.
+2. **harness-forge v0.5 (deferred, per its ROADMAP):** the arming-step mechanization (I-9 — a loop-active marker the gate reads), streaming observability, the discriminated-union schema for `blocked`, a token/dollar budget meter, trust-trajectory automation, and the recurring **council-as-separate-plugin** question (flagged in 3 councils — a product call, tracked as D-11).
+3. **Calibrate the instruments against reality** — apply `carve-quality.md` to a real carve (`empirical_applications: 0`); the rubric library still needs N≥3 real-plugin scorings.
+4. **Emit `scores/<plugin>.json` adoption-contract records** + a marketplace `publish` workflow (the D8 example-only gap).
+
+## Shipped 2026-06-12 → 06-13 — harness-forge, the 5th catalog plugin (the lattice kernel)
+
+A new catalog plugin built from a 14-doc agentic-systems foundation the user seeded: **harness-forge hydrates a project to run looping, latticed agentic workflows** — a *kernel* that scaffolds and operates a typed knowledge lattice (9 layers × 5 scopes × an 8-state maturity machine) via the engine (define→create→validate), the compass (scan→rank), and the regeneration loop. Distinct from agent-ops (which *advises on and reviews* agentic systems) — harness-forge *is the running machine*. The one law it lives: **computation routes to code, never to inference** — and that law is what every red-team measured it against. The arc, eight releases in two days, **four plugins-factory council cycles** (the catalog's "authored AND red-teamed" discipline, applied four times) + its own in-house structural council:
+
+- **v0.1.0 → 0.1.1** — the kernel + operating roster, then the 1st council fold (ship `validate.py` so the loop's verdict is a verifier's exit status; honest-scope the "deny-on-write" claims; delete a dead agent; `false-pass` returns `unmeasured` not a flattering 0%).
+- **v0.2.0 → 0.2.1** — the consent-gated installer (`wire.py` wires the blocking gate + the two gateverb hooks into the project's *own* loop, with a hard kernel-drift gate); then the behavioral-evidence layer — 4 planted-defect calibration fixtures + 5 recall-gated judge baselines + the CI-replayed first-slice walkthrough (which caught a kernel deadlock at authoring time).
+- **v0.3.0 → 0.3.1** — the **7-critic structural council** (one per rubric dimension, parallel isolated, `Read/Grep/Glob`-only) + the `harness-council` orchestrator; calibrated by a *live* council run that found two emergent defects and **improved the kernel** (the phantom-signal `check`). Then the 2nd plugins-factory council fold (the vendored-copy drift gate; `ledger.py no-progress` as code; the schema as single source; `council-precheck.py` consolidating the orchestrator's Bash).
+- **v0.4.0 → 0.4.1 → 0.4.2** — the capstone: `/harness-run`, the **bounded autonomous loop** (`harness-builder` orchestrator restored). The 3rd council **converged 4-deep on a Critical** — "bounded by construction" was prose; the global caps were ticked by the orchestrator agent — fixed *in code* (`run-budget.py` + `gate-budget` deny every write once a run is exhausted, computed from a deadline + the ledger, no agent counter; `evals/global-bound/` proves it with no model agent). A 4th *focused* council then verified that fix and found one more genuine Critical the prior three couldn't (the budget file was writable by the worker it bounds → now protected; the run budget typed as the 5th schema; the arming precondition honest-scoped — **I-9**).
+
+Now **14 bin scripts · 9 commands · 12 agents · 5 behavioral evals · 5 schemas**, every release clean-clone-replayed and CI-green. The pattern held every round: each council found something real, the converged findings folded mechanically, and the claims got scoped to exactly what the code earns.
 
 ## Shipped 2026-06-12
 

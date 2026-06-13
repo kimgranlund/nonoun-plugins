@@ -1,14 +1,22 @@
 # Issues & decisions
 
-The repo-level defect tracker and decision log — what's open (severity-ordered, stable `I-n` ids), what was decided and why (`D-n`), and resolved incidents kept as postmortems (`R-n`). Per-plugin feature work stays in each plugin's own `ROADMAP.md`; this file holds what cuts across the catalog. Companions: [PLAN.md](PLAN.md) (what we're executing now) · [ROADMAP.md](ROADMAP.md) (horizons). Snapshot: **2026-06-10**.
+The repo-level defect tracker and decision log — what's open (severity-ordered, stable `I-n` ids), what was decided and why (`D-n`), and resolved incidents kept as postmortems (`R-n`). Per-plugin feature work stays in each plugin's own `ROADMAP.md`; this file holds what cuts across the catalog. Companions: [PLAN.md](PLAN.md) (what we're executing now) · [ROADMAP.md](ROADMAP.md) (horizons). Snapshot: **2026-06-13**.
 
 ## Open
+
+### I-9 · P2 — harness-forge's autonomous loop is bounded by code, but *armed* by the orchestrator (the arming gap)
+
+Surfaced by the 4th harness-forge council (`harness-forge/reviews/2026-06-13-plugin-council-v0.4.1.md`, Chip H. + Andrej K.). The `/harness-run` loop's global caps (max-cells/iterations/wall-clock) are **enforced in code** — `gate-budget` denies every write once `run-budget.py`'s persisted budget is exhausted (`evals/global-bound/` proves it with no model agent). But the gate only enforces a budget that *exists*, and the orchestrator creates it at step 0; **skip step 0 → no budget → the loop is unbounded.** Enforcement is code; *arming* is the orchestrator's discipline. The gate genuinely cannot fail-closed without a budget — it can't distinguish a loop-write from ordinary manual editing. **Mitigated, not closed (0.4.2):** every claim is scoped to "once a run is armed"; `run-budget.py start` refuses a vacuous (cap-less) budget; `/harness-status` *alarms* when none is active; the budget file is deny-on-write to workers. **Real fix (ROADMAP):** a loop-active marker `/harness-run` writes that `gate-budget` reads — a write during a marked-but-un-budgeted loop is denied. Not urgent (the loop is attended-until-earned by design); the honest scoping is the current contract.
 
 ### I-8 · P3 — `.name-map.md` is a single point of loss
 
 The obscured critics' real attributions exist **only** in git-ignored local files, now load-bearing for full-mode `check-sourcing` (D-4, 0.3.10). Losing the working tree loses the provenance. **Fix:** keep a private backup of the four name-maps outside this repo; never commit them.
 
 ## Decisions
+
+### D-11 · 2026-06-13 — harness-forge's structural council stays bundled (the split is deferred, not declined)
+
+Three harness-forge councils (Steve Y. + Boris C., 0.3.0 and 0.4.0) flagged that the plugin bundles three products under one manifest — the *kernel/runtime* (engine + the bounded `/harness-run` loop), the *judge* (the 7-critic structural council + `/harness-council`), and the *evals* — and that a kernel-only user carries the council's 8 always-on agent descriptions (~45% of the ~1.9K-token always-on tax) for a review path most operating sessions never take. The council reviews an **external** `.harness/` by path, so it is genuinely separable (a `harness-council` sibling plugin). **Deferred, not declined:** splitting is a real product decision (a second plugin to version, install, and keep in sync) and the maker/runtime/judge do share the rubric vocabulary + the foundations. Interim: the cost is **disclosed** (README "Honest scope" names it; `context-cost.py` measures it). Revisit when the council grows further, or when a real user wants the kernel without the judge. Parallels the brand-forge sub-council pattern (kept bundled because the sub-councils share the *same* job) vs. the plugins-factory pattern (separate from what it judges) — harness-forge sits between, and the call is "bundled until a user needs it apart."
 
 ### D-10 · 2026-06-11 — The forked council-calibration checkers stay forked (dedup declined)
 
