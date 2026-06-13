@@ -83,17 +83,27 @@ def main():
         _lat.run_budget_clear(d)
         expect(_wired_gate(proj, write_path) == 0, "clear: ending the run lifts the global deny")
 
-        # THE ARMING GAP, disclosed honestly (Andrej): with NO budget, the gate allows — the bound is enforced in
-        # code but ARMED by the orchestrator (it must `start` one). The eval asserts the bug-shaped truth so the
-        # claim stays scoped: "bounded ONCE a run is started," not "always bounded."
-        expect(_wired_gate(proj, write_path) == 0, "no budget = unbounded (the arming precondition — disclosed, not hidden)")
+        # THE ARMING GAP — now CLOSED by the loop-active marker (I-9, v0.5.0). Before, "no budget = unbounded" was a
+        # disclosed residual; now the marker distinguishes the running loop from a human editing, and a MARKED loop
+        # without a budget fails CLOSED.
+        # (a) Unmarked + no budget = manual editing / attended single-cell work → still allowed (the gate must not
+        #     brick a human's edits or `/harness-advance`). This is correct behavior, not the gap.
+        expect(_wired_gate(proj, write_path) == 0, "unmarked + no budget: manual editing / attended work is free (not the loop)")
+        # (b) MARK the loop (run-budget.py mark, step 0a) → still no budget → the wired gate now DENIES every write.
+        #     The arming gap is closed: an autonomous loop that skipped `start` (step 0b) cannot write un-budgeted.
+        subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "mark", "--dir", d], capture_output=True)
+        expect(_wired_gate(proj, write_path) == 2, "I-9: a MARKED loop with no budget is DENIED every write (the arming gap, fail-closed)")
+        expect(_wired_gate(proj, "src/main.py") == 2, "I-9: the marked-unbudgeted deny is global (covers any path, not just a cell asset)")
 
-        # the orchestrator's DOCUMENTED command (`run-budget.py start`, not the in-process function) produces an
-        # enforcing budget — proving step 0 of the loop actually arms the gate.
+        # the orchestrator's DOCUMENTED command (`run-budget.py start`, not the in-process function) arms a real
+        # budget AND keeps the marker → enforcing; proving step 0b actually arms the gate.
         r = subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "start", "--wall-clock-s", "-60", "--dir", d],
                            capture_output=True, text=True)   # a deadline 60s in the past = immediately exhausted
         expect(r.returncode == 0, f"run-budget.py start (the CLI the orchestrator calls) failed: {r.stderr}")
-        expect(_wired_gate(proj, write_path) == 2, "the CLI-armed budget is enforced by the wired gate (step 0 works)")
+        expect(_wired_gate(proj, write_path) == 2, "the CLI-armed budget is enforced by the wired gate (step 0b works)")
+        # `stop` ends the loop — clears BOTH marker and budget → free again (a fresh run must be started deliberately).
+        subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "stop", "--dir", d], capture_output=True)
+        expect(_wired_gate(proj, write_path) == 0, "stop: clearing the marker + budget lifts the deny (loop ended)")
         # and the CLI refuses a vacuous budget (a 'bound' that bounds nothing)
         r = subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "start", "--dir", d], capture_output=True, text=True)
         expect(r.returncode == 2 and "bounds nothing" in r.stderr, "the CLI accepted a vacuous (capless) budget")
@@ -101,10 +111,11 @@ def main():
     if fails:
         print(f"\nRESULT: FAIL — {len(fails)} assertion(s) broken")
         return 1
-    print("\nRESULT: PASS (global-bound) — ONCE A RUN IS ARMED (the orchestrator's `run-budget.py start`, proven here via "
-          "the CLI), the global caps (wall-clock + ledger-counted iterations) are ENFORCED by the wired gate-budget in "
-          "CODE, with no model agent. The bound is enforced by code; arming it is the orchestrator's step 0 — and the "
-          "eval asserts that an un-armed run is (honestly) unbounded, so the claim stays scoped.")
+    print("\nRESULT: PASS (global-bound) — the global caps (wall-clock + ledger-counted iterations) are ENFORCED by the "
+          "wired gate-budget in CODE, no model agent. The v0.4.1 arming gap is now CLOSED (I-9, v0.5.0): a loop MARKED "
+          "active (`run-budget.py mark`, step 0a) but un-budgeted fails CLOSED — every write denied — while manual "
+          "editing and attended single-cell work, which never set the marker, stay free. The residual shrank from "
+          "'forget step 0' to 'skip the entire run preamble', which `/harness-status` surfaces.")
     return 0
 
 

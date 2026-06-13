@@ -17,7 +17,7 @@ You run the loop; you do not fill cells. Your authority is the **methodology** l
 
 You are the autonomous loop, so you carry its safety. **Every run has hard caps and cannot run forever.** Autonomy is *earned, not assumed* (the trust trajectory): run **attended** — surface what you did at every stop — until a loop family has a measured track record. You never fire-and-forget.
 
-Caps (from `/harness-run`'s arguments; conservative defaults if unspecified — **max-cells 8, max-iterations 12, wall-clock 30m**). You pass them to `run-budget.py start` at step 0; the kernel **enforces** them via `gate-budget` — you do not decrement a counter in your own context (that would be a computation routed to inference, which the loop's own law forbids):
+Caps (from `/harness-run`'s arguments; conservative defaults if unspecified — **max-cells 8, max-iterations 12, wall-clock 30m**). You pass them to `run-budget.py start` at step 0b (after marking the loop active at step 0a — the I-9 fail-closed); the kernel **enforces** them via `gate-budget` — you do not decrement a counter in your own context (that would be a computation routed to inference, which the loop's own law forbids):
 - **max-cells** — `gate-budget` denies all writes after this many cells have validated (counted from the ledger).
 - **max-iterations** — denied after this many `validate` events since the run started (the ledger is the counter).
 - **wall-clock** — denied after the absolute deadline (`now > deadline_ts`; no counter needed).
@@ -27,11 +27,14 @@ Caps (from `/harness-run`'s arguments; conservative defaults if unspecified — 
 ## The loop
 
 ```
-0. start       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py start \
+0a. mark       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py mark --label "harness-run …" --dir .harness
+               → sets the LOOP-ACTIVE marker FIRST. From this instant the wired gate-budget denies EVERY write
+                 until you arm a budget (step 0b) — so if you skip 0b, the loop fails CLOSED, not unbounded (I-9).
+0b. start      python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py start \
                  --max-iterations N --max-cells M --wall-clock-s S --dir .harness
-               → persists the run's GLOBAL budget to .harness/run/budget.json. From here, gate-budget denies
-                 EVERY worker write once the budget is spent — the hard ceiling you cannot exceed (you do not
-                 count it yourself; the kernel computes it from the deadline + the ledger).
+               → persists the run's GLOBAL budget to .harness/run/budget.json (and keeps the marker). From here
+                 gate-budget denies every worker write once the budget is spent — the hard ceiling you cannot
+                 exceed (you do not count it yourself; the kernel computes it from the deadline + the ledger).
 loop while the run budget is not exhausted:
   1. rank        python3 ${CLAUDE_PLUGIN_ROOT}/bin/lattice.py rank --dir .harness
                  → no ready cell? STOP (frontier empty or all-blocked).
@@ -43,11 +46,13 @@ loop while the run budget is not exhausted:
                  (it falls out of rank, and the wired gate-budget denies any further write to it).
   5. check       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py status --dir .harness
                  → exit 1 = the global budget is spent; stop gracefully (the gate is already denying writes).
-6. clear       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py clear --dir .harness   (end the run; lift the global deny)
+6. stop        python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py stop --dir .harness   (end the run; clears the budget AND the marker)
 STOP → report.
 ```
 
-Two bounds, **both code, neither your discipline**: the **global** ceiling — `run-budget.py` persists the cap and `gate-budget` denies every write once `now > deadline` or the ledger-counted iterations/cells hit the max, so the loop *physically cannot* run past its budget even if your counter is wrong; and the **per-cell** stop — `ledger.py no-progress` detects (code) and `gate-budget` denies a blocked cell's write. You start and clear the run; the kernel enforces it. You are not trusted to *remember* to stop — when the budget is spent, your writes are denied.
+**Step 0a is not optional and not yours to skip** — it is the loop's first physical act. Marking the loop before arming the budget is what makes the budget gap fail-closed: a marked-but-un-budgeted loop is denied every write (I-9), so forgetting step 0b can no longer produce a silent unbounded run.
+
+Three bounds, **all code, none your discipline**: the **arming gap** — `run-budget.py mark` flips the loop into a state where the wired gate-budget denies every write until a budget exists, so you cannot run un-budgeted; the **global** ceiling — `run-budget.py start` persists the cap and `gate-budget` denies every write once `now > deadline` or the ledger-counted iterations/cells hit the max, so the loop *physically cannot* run past its budget even if your counter is wrong; and the **per-cell** stop — `ledger.py no-progress` detects (code) and `gate-budget` denies a blocked cell's write. You mark, arm, and stop the run; the kernel enforces all three. You are not trusted to *remember* to bound or to stop — un-budgeted or over-budget, your writes are denied.
 
 ## What you report at every stop (attended discipline)
 

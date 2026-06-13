@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.4.2"
+KERNEL_VERSION = "0.5.0"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -293,6 +293,58 @@ def run_budget_clear(d):
         return True
     except OSError:
         return False
+
+
+def _marker_path(d):
+    return os.path.join(d, "run", "loop-active.json")
+
+
+def loop_marker_set(d, now_iso, label=None):
+    """Mark that an AUTONOMOUS loop (`/harness-run`) is active — the I-9 arming-gap fix. This is the mechanical
+    signal, written by the loop driver as its FIRST step (step 0a, before the orchestrator arms the budget at
+    step 0b), that makes the budget gap fail-CLOSED: `gate-budget` denies every write while the marker is set but
+    no budget is armed. Attended single-cell work (`/harness-advance`) and manual editing never set the marker, so
+    the gate leaves them free — the marker is precisely what distinguishes 'the autonomous loop is running' from
+    'a human is editing'. `now_iso` is passed in (pure paths take no clock)."""
+    os.makedirs(os.path.join(d, "run"), exist_ok=True)
+    marker = {"active": True, "started_ts": now_iso, "label": label or "harness-run"}
+    tmp = _marker_path(d) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(marker, f, indent=2)
+    os.replace(tmp, _marker_path(d))
+    return marker
+
+
+def loop_marker_active(d):
+    """True iff an autonomous loop is marked active (the marker exists and is well-formed)."""
+    try:
+        return bool(json.load(open(_marker_path(d), encoding="utf-8")).get("active"))
+    except (OSError, ValueError):
+        return False
+
+
+def loop_marker_load(d):
+    try:
+        return json.load(open(_marker_path(d), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def loop_marker_clear(d):
+    try:
+        os.remove(_marker_path(d))
+        return True
+    except OSError:
+        return False
+
+
+def loop_unbudgeted(d):
+    """(True, detail) iff an autonomous loop is marked active but NO run budget is armed — the arming gap, now a
+    denial condition rather than a silent unbounded run. The gate-budget enforcement reads exactly this."""
+    if loop_marker_active(d) and run_budget_load(d) is None:
+        m = loop_marker_load(d) or {}
+        return True, f"loop marked active at {m.get('started_ts', '?')} ({m.get('label', 'harness-run')}) with no run budget armed"
+    return False, None
 
 
 def run_budget_exhausted(d, now_iso):
@@ -588,6 +640,15 @@ def selftest():
         # the budget round-trips its own schema cleanly when well-formed
         run_budget_clear(rd); run_budget_start(rd, nowi, max_iterations=3, deadline_iso="2026-06-13T13:00:00-07:00")
         expect(run_budget_check(rd) == [], f"check flagged a well-formed budget: {run_budget_check(rd)}")
+        # the loop-active marker (I-9 arming gap): un-marked = not an unbudgeted loop; marked + no budget = the gap
+        run_budget_clear(rd)
+        expect(not loop_unbudgeted(rd)[0] and not loop_marker_active(rd), "a fresh project was treated as a marked/unbudgeted loop")
+        loop_marker_set(rd, nowi, label="harness-run")
+        expect(loop_marker_active(rd) and loop_unbudgeted(rd)[0], "a marked loop with no budget was not flagged unbudgeted")
+        run_budget_start(rd, nowi, max_cells=8)
+        expect(not loop_unbudgeted(rd)[0], "arming a budget did not clear the arming-gap state")
+        run_budget_clear(rd); loop_marker_clear(rd)
+        expect(not loop_marker_active(rd) and not loop_unbudgeted(rd)[0], "clearing the marker did not end the loop state")
 
     # staleness propagation: change ontology's hash → spec.task.x (validated against h1) flips to stale.
     flipped = propagate_staleness(lat, "ontology.task.domain", "h2")
@@ -684,7 +745,8 @@ def selftest():
     print("lattice selftest: OK (scan/partial-order/verifier-maturity/rank/staleness; the state machine rejects illegal "
           "transitions; check() catches ill-typed, validated-without-signal, retro-order-violated, and "
           "stale-but-trusted cells; block/unblock drops a cell from rank; the run budget rejects vacuous/ill-typed caps "
-          "+ check() validates budget.json; the seed bootstraps without deadlock; scaffold lays the full tree)")
+          "+ check() validates budget.json; the I-9 loop-active marker makes a marked-but-unbudgeted loop detectable "
+          "(the arming gap, fail-closed); the seed bootstraps without deadlock; scaffold lays the full tree)")
     return 0
 
 

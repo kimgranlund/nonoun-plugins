@@ -48,10 +48,17 @@ def render(project, hd=".harness", n=8):
 
     # the run budget (the global bound) — show X/Y, not just the numerator, so an operator sees the cliff BEFORE it
     ex, why, det = _lat.run_budget_exhausted(d, datetime.datetime.now().astimezone().isoformat(timespec="seconds"))
-    if not det.get("active"):
-        # the alarm: "no budget" is benign only if no loop is running. If /harness-run is in flight, it is UNBOUNDED.
-        out.append("  run:      ⚠ NO ACTIVE RUN BUDGET — if /harness-run is executing now, the global gate is dark "
-                   "and the loop is UNBOUNDED. Start one (`run-budget.py start --max-iterations N …`) before an unattended run.")
+    unb, _ = _lat.loop_unbudgeted(d)
+    marked = _lat.loop_marker_active(d)
+    if unb:
+        # the I-9 state, now DETECTABLE (not a generic warning): a loop is marked active but un-budgeted, so the
+        # wired gate-budget is denying every write. The arming gap fails closed; the operator sees exactly why.
+        out.append("  run:      ⚠ ARMING GAP — a loop is MARKED ACTIVE but no budget is armed; gate-budget is denying "
+                   "every write. Arm a ceiling (`run-budget.py start --max-cells N --max-iterations M`) or end it (`run-budget.py stop`).")
+    elif not det.get("active"):
+        out.append("  run:      no active run budget — the loop is idle (manual edits + /harness-advance are free; "
+                   "/harness-run will `mark` then `start` to bound itself)." if not marked else
+                   "  run:      ⚠ loop marked active — arm a budget or `run-budget.py stop`.")
     elif ex:
         out.append(f"  run:      ⚠ EXHAUSTED — {why}; gate-budget is denying every write. Stop the loop / clear the run.")
     else:
@@ -88,8 +95,14 @@ def selftest():
         s = render(proj)
         for token in ("maturity:", "frontier:", "run:", "wiring:", "gate-fires:", "ledger:"):
             expect(token in s, f"status missing the {token} line")
-        expect("NO ACTIVE RUN BUDGET" in s and "UNBOUNDED" in s and "NOT WIRED" in s,
-               "a fresh project must ALARM that no run budget = unbounded, + show NOT WIRED")
+        # a fresh project (no budget, NO marker) is idle, not alarming — manual edits / /harness-advance are free
+        expect("no active run budget" in s and "idle" in s and "NOT WIRED" in s,
+               "a fresh unmarked project must read as idle (not a false UNBOUNDED alarm), + show NOT WIRED")
+        # I-9: MARK a loop with no budget → the dashboard shows the ARMING GAP (the gate is denying every write)
+        _lat.loop_marker_set(d, "2026-06-13T12:00:00-07:00", label="harness-run")
+        expect("ARMING GAP" in render(proj) and "denying every write" in render(proj),
+               "a marked-but-unbudgeted loop must surface the arming gap")
+        _lat.loop_marker_clear(d)
         # an active budget renders X/Y (the caps, not just the numerator) so the operator sees the cliff before it
         _lat.run_budget_start(d, "2026-06-13T12:00:00-07:00", max_iterations=8, max_cells=4)
         expect("0/8 iters" in render(proj) and "0/4 cells" in render(proj), "the run line must show X/Y caps, not just the count")

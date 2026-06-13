@@ -9,6 +9,11 @@ v0.4.0 Critical: a loop's caps routed to inference is the routing law violated a
   or ledger-counted iterations/cells past the cap), this denies EVERY worker write. The orchestrator literally
   cannot write past its budget, whatever it believes its counter says.
 
+  ARMING GAP (I-9) — an autonomous loop MARKED active (`/harness-run` sets the marker at step 0a) but with NO
+  budget armed (the orchestrator skipped step 0b) is denied every write — fail-CLOSED rather than silently
+  unbounded. The marker is what distinguishes the running loop from a human editing: attended single-cell work
+  (`/harness-advance`) and manual edits never set it, so they stay free.
+
   PER-CELL — when a cell is `blocked` (the no-progress circuit breaker flipped it), a write to that cell's
   `asset_ref` is denied, so the worker can't grind a stuck cell.
 
@@ -93,6 +98,21 @@ def _hook():
                          f"global cap; stop and hand back. Start a fresh run (`run-budget.py start …`) deliberately, "
                          f"not automatically.\n")
         return 2
+    # ARMING GAP (I-9): an autonomous loop MARKED active but with NO budget armed is denied every write — fail-CLOSED
+    # rather than silently unbounded. The marker is set by `/harness-run` (step 0a) before the budget (step 0b); a write
+    # while marked-but-un-budgeted means the orchestrator skipped arming. Attended work (/harness-advance) and manual
+    # editing never set the marker, so this leaves them free.
+    try:
+        unb, detail = _lat.loop_unbudgeted(_harness_dir())
+    except Exception:                                     # noqa: BLE001 — a marker read error must fail open
+        unb, detail = False, None
+    if unb:
+        _ledger_deny(path, f"arming gap: {detail}")
+        sys.stderr.write(f"gate-budget: DENY — an autonomous loop is MARKED ACTIVE but no run budget is armed "
+                         f"({detail}). This is the arming gap: arm a ceiling with `run-budget.py start --max-cells N "
+                         f"--max-iterations M` (step 0), or end the loop with `run-budget.py stop`. A marked loop "
+                         f"cannot write without a budget.\n")
+        return 2
     # PER-CELL bound: a blocked cell's asset is deny-on-write (the no-progress circuit breaker).
     cell_id, reason = blocked_cell_for(path)
     if cell_id:
@@ -162,14 +182,28 @@ def selftest():
         expect(ex and "wall-clock" in (why or ""), f"the global run budget was not exhausted by a past deadline: {why}")
         _lat.run_budget_clear(d)
         expect(not _lat.run_budget_exhausted(d, now)[0], "clearing the run did not lift the global deny")
+
+        # ARMING GAP (I-9): a MARKED loop with no budget is denied; arming a budget or clearing the marker lifts it;
+        # an UNMARKED project (manual editing / /harness-advance) is never denied by this rule.
+        expect(not _lat.loop_unbudgeted(d)[0], "an unmarked project was treated as an unbudgeted loop (would deny manual edits)")
+        _lat.loop_marker_set(d, now, label="harness-run --max-cells 8")
+        unb, detail = _lat.loop_unbudgeted(d)
+        expect(unb and "no run budget" in (detail or ""), f"a marked loop with no budget was not flagged unbudgeted: {detail}")
+        _lat.run_budget_start(d, now, max_cells=8)                 # arm the ceiling → no longer the arming gap
+        expect(not _lat.loop_unbudgeted(d)[0], "arming a budget did not lift the arming-gap deny")
+        _lat.run_budget_clear(d)
+        expect(_lat.loop_unbudgeted(d)[0], "clearing the budget while still marked did not re-trip the arming gap")
+        _lat.loop_marker_clear(d)                                  # end the loop → free again
+        expect(not _lat.loop_unbudgeted(d)[0], "clearing the marker (stop) did not lift the arming-gap deny")
     if fails:
         sys.stderr.write("gate-budget selftest: FAIL\n")
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("gate-budget selftest: OK (GLOBAL: an exhausted run budget denies every write, computed from code; "
-          "PER-CELL: a blocked cell's asset is denied, unrelated paths + unblocked cells allowed; fails open on "
-          "no-harness — the wired circuit breaker that bounds even a runaway worker, on both axes)")
+          "ARMING GAP (I-9): a marked loop with no budget is denied, manual editing is not; PER-CELL: a blocked "
+          "cell's asset is denied, unrelated paths + unblocked cells allowed; fails open on no-harness — the wired "
+          "circuit breaker that bounds even a runaway worker, on three axes)")
     return 0
 
 
