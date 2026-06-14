@@ -81,12 +81,12 @@ SIGNALS = [
     ("roadmap",       _stem("roadmap", "plan", "todo"),                          ["spec"],                  "intended direction — candidate spec cells"),
     ("docs_dir",      _dir("docs", "doc", "documentation"),                      ["ontology", "spec"],      "the knowledge base — ontology + spec material"),
     ("adr",           _any(_dir("adr", "adrs", "decisions"), _stem("adr")),      ["policy", "ledger"],      "decision records — policy + provenance"),
-    ("spec",          _any(_dir("specs", "spec", "requirements", "rfcs"), _stem("prd", "spec", "requirements")), ["spec"], "explicit specs — what 'done' means, already written"),
-    ("protocol",      _any(_name("openapi.yaml", "openapi.json", "swagger.yaml", "swagger.json", "schema.graphql"), _ext(".proto", ".graphql"), _dir("proto", "protos", "api")), ["protocol"], "interface/wire contracts — the protocol layer"),
+    ("spec",          _any(_dir("specs", "spec", "requirements", "rfcs"), _stem("prd", "spec", "requirements"), _re(r"[-_](spec|probes|acceptance)\.(md|txt)$")), ["spec"], "explicit specs / probe lists / acceptance criteria — what 'done' means, already written"),
+    ("protocol",      _any(_name("openapi.yaml", "openapi.json", "swagger.yaml", "swagger.json", "schema.graphql"), _ext(".proto", ".graphql"), _re(r"\.d\.ts$"), _dir("proto", "protos", "api", "types", "typings")), ["protocol"], "interface/wire contracts — service APIs OR a library's typed public surface (.d.ts / types/)"),
     ("tests",         _any(_dir("test", "tests", "__tests__", "spec", "e2e"), _re(r"(^test_|\.test\.|_test\.|\.spec\.|_spec\.)")),  ["rubric"], "executable verification — rubric/verifier material"),
     ("ci",            _any(_dir("workflows", ".circleci"), _name(".gitlab-ci.yml", "jenkinsfile", "azure-pipelines.yml", ".travis.yml")), ["rubric"], "the existing automated gate — a real verifier the harness can mint signals from"),
     ("lint",          _name(".eslintrc", ".eslintrc.json", ".eslintrc.js", ".prettierrc", "ruff.toml", ".flake8", ".rubocop.yml", "tslint.json", ".golangci.yml"), ["rubric"], "static gates — rubric-layer signal"),
-    ("examples",      _dir("examples", "example", "samples", "templates", "cookbook"),  ["pattern"],        "worked examples — distilled patterns"),
+    ("examples",      _any(_dir("examples", "example", "samples", "templates", "cookbook", "recipes", "demo", "demos"), _re(r"case[-_ ]?study")),  ["pattern"],  "worked examples / case studies — distilled patterns"),
     ("git",           _dir(".git"),                                              ["ledger"],                "version history — the provenance substrate"),
 ]
 
@@ -233,6 +233,20 @@ def cmd_selftest():
         report = render(s)
         expect("PROJECT SURVEY" in report and "Lattice-layer signal" in report and "Frontier" in report, "report missing sections")
 
+    # a library project: the spec is a probe/-spec doc, the protocol is .d.ts/types/, the pattern is a case-study —
+    # the forms the service-oriented heuristics missed until the reactive-components dogfood (0.5.2).
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, "docs"))
+        os.makedirs(os.path.join(tmp, "types"))
+        for rel, body in [("README.md", "# lib"), ("package.json", "{}"), ("src.js", "x"),
+                          ("docs/gate1-probes.md", "x"), ("docs/feature-spec.md", "x"),
+                          ("types/api.d.ts", "x"), ("docs/case-study-x.md", "x")]:
+            open(os.path.join(tmp, rel), "w").write(body)
+        L = survey(tmp)["layers"]
+        expect(L["spec"][0] == "PRESENT", f"a -spec.md / probes doc should make spec PRESENT: {L['spec']}")
+        expect(L["protocol"][0] == "PRESENT", f"a .d.ts / types/ should make protocol PRESENT (library API contract): {L['protocol']}")
+        expect(L["pattern"][0] == "PRESENT", f"a case-study should make pattern PRESENT: {L['pattern']}")
+
     # a greenfield project (empty dir) → mostly ABSENT, never crashes
     with tempfile.TemporaryDirectory() as tmp:
         s = survey(tmp)
@@ -246,7 +260,8 @@ def cmd_selftest():
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("survey selftest: OK (finds README/ARCH/tests/CI/CHANGELOG/manifest, prunes node_modules, counts languages, "
-          "maps present/partial/absent across all nine layers, flags the ABSENT frontier; greenfield + brownfield both render)")
+          "maps present/partial/absent across all nine layers, flags the ABSENT frontier; detects library forms — a "
+          "probe/-spec doc → spec, .d.ts/types/ → protocol, a case-study → pattern; greenfield + brownfield + library all render)")
     return 0
 
 
