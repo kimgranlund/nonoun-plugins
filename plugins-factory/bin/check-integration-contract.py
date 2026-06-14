@@ -200,6 +200,39 @@ def check_hook_behavioral(plugin_dir, name):
     return out
 
 
+_PLUGIN_ROOT = "${CLAUDE_PLUGIN_ROOT}"
+
+
+def _commands_from_mcp(plugin_dir):
+    mp = os.path.join(plugin_dir, ".mcp.json")
+    cmds = []
+    if os.path.isfile(mp):
+        try:
+            m = json.load(open(mp, encoding="utf-8"))
+            for nm, srv in ((m.get("mcpServers", {}) or {}).items() if isinstance(m, dict) else []):
+                if isinstance(srv, dict):
+                    blob = " ".join([str(srv.get("command", ""))] + [str(a) for a in (srv.get("args") or [])])
+                    cmds.append((nm, blob))
+        except (OSError, json.JSONDecodeError):
+            pass
+    return cmds
+
+
+def check_host_resolution(plugin_dir):
+    """K — host-awareness: a bundled hook/MCP command that runs a bundled script must resolve it via
+    ${CLAUDE_PLUGIN_ROOT} (the host-provided root), not a bare or absolute path that won't survive install into
+    the host's plugin cache. The plugin must locate its own files THROUGH the host, never hardcoded."""
+    out = []
+    for cmd in _commands_from_hooks(plugin_dir):
+        if "bin/" in cmd and _PLUGIN_ROOT not in cmd:
+            out.append(("FAIL", "hooks.json runs a bundled script without ${{CLAUDE_PLUGIN_ROOT}} (a bare/absolute "
+                                "path won't resolve post-install): {}".format(cmd[:70])))
+    for nm, blob in _commands_from_mcp(plugin_dir):
+        if "bin/" in blob and _PLUGIN_ROOT not in blob:
+            out.append(("FAIL", ".mcp.json[{}] runs a bundled script without ${{CLAUDE_PLUGIN_ROOT}}: {}".format(nm, blob[:60])))
+    return out
+
+
 def check_plugin(plugin_dir, name=None, behavioral=False):
     """Return (findings, name). findings: list of (severity, message)."""
     name = name or os.path.basename(os.path.abspath(plugin_dir))
@@ -211,6 +244,7 @@ def check_plugin(plugin_dir, name=None, behavioral=False):
             if f.endswith(".md"):
                 findings += check_command(os.path.join(cmd_dir, f), skills, agents)
     findings += check_hooks_static(plugin_dir)
+    findings += check_host_resolution(plugin_dir)
     if behavioral:
         findings += check_hook_behavioral(plugin_dir, name)
     return findings, name
@@ -291,16 +325,25 @@ def cmd_selftest():
 
         # I — advisory hook: PostToolUse passes, a bundled PreToolUse fails.
         open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
-            {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "bin/lint --hook"}]}]}}))
+            {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/lint --hook"}]}]}}))
         expect(not any(s == "FAIL" for s, m in check_hooks_static(tmp)), "an advisory PostToolUse hook was failed")
         open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
-            {"hooks": {"PreToolUse": [{"matcher": "Write", "hooks": [{"type": "command", "command": "bin/gate --hook"}]}]}}))
+            {"hooks": {"PreToolUse": [{"matcher": "Write", "hooks": [{"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/gate --hook"}]}]}}))
         pre = check_hooks_static(tmp)
         expect(any(s == "FAIL" and "PreToolUse" in m for s, m in pre), "a bundled PreToolUse (blocking) hook was not failed")
 
-        # whole-plugin: with the PostToolUse hook restored, the fixture has 2 FAILs (inert + fat), 0 from hooks.
+        # K — host-awareness: a bundled hook command must resolve via ${CLAUDE_PLUGIN_ROOT}; a BARE bin/ path FAILs.
         open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
             {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "bin/lint --hook"}]}]}}))
+        expect(any(s == "FAIL" and "CLAUDE_PLUGIN_ROOT" in m for s, m in check_host_resolution(tmp)),
+               "a bare bin/ hook command (no ${CLAUDE_PLUGIN_ROOT}) was not failed by host-awareness (K)")
+        open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
+            {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/lint --hook"}]}]}}))
+        expect(not check_host_resolution(tmp), "a ${CLAUDE_PLUGIN_ROOT}-rooted hook command was wrongly failed by K")
+
+        # whole-plugin: with the PostToolUse hook restored, the fixture has 2 FAILs (inert + fat), 0 from hooks.
+        open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
+            {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/lint --hook"}]}]}}))
         findings, _ = check_plugin(tmp)
         expect(sum(1 for s, m in findings if s == "FAIL") == 2, "whole-plugin FAIL count wrong: {}".format(findings))
 
@@ -332,8 +375,9 @@ def cmd_selftest():
         return 1
     print("check-integration-contract selftest: OK (router-thinness — a thin skill/bin-routing command passes, an "
           "inert command + a >4000-char fat command FAIL; advisory-hook static — a PostToolUse hook passes, a bundled "
-          "PreToolUse FAILS; advisory-hook behavioral — an exit-0 advising hook passes, an exit-0-but-emits-block hook "
-          "+ a non-zero-exit hook FAIL, gated by the I-12 trust interlock; whole-plugin aggregates)")
+          "PreToolUse FAILS; host-awareness — a bare bin/ hook command FAILS, a ${CLAUDE_PLUGIN_ROOT}-rooted one passes; "
+          "advisory-hook behavioral — an exit-0 advising hook passes, an exit-0-but-emits-block hook + a non-zero-exit "
+          "hook FAIL, gated by the I-12 trust interlock; whole-plugin aggregates)")
     return 0
 
 
