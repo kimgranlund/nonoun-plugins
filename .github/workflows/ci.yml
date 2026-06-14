@@ -54,6 +54,9 @@ jobs:
       - name: corpus-reader vendored copies in sync (canonical lives in tools/, D-14)
         run: python3 tools/sync-corpus-reader.py --check
 
+      - name: host-detect (host-harness awareness — process-env signals only; Track 5 increment 3)
+        run: python3 tools/host-detect/host_detect.py selftest
+
       - name: corpus-reader — demo corpus builds + --init scaffold
         run: |
           python3 tools/corpus-reader/build-sitemap.py demo-corpus
