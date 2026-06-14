@@ -23,13 +23,13 @@ For every `●`/`◐` layer, **open the cited evidence and extract what the harn
 | Layer | What's present means | What to extract by reading it |
 | --- | --- | --- |
 | **ontology** | README / ARCHITECTURE / docs/ | the domain vocabulary, the core entities, the system's purpose — the starting ontology the harness should NOT re-invent |
-| **spec** | specs/ · PRD · ROADMAP · OpenAPI · ARCHITECTURE | what "done" already means here; which behaviors are specified vs assumed |
+| **spec** | specs/ · PRD · ROADMAP · PLAN · GOALS · BACKLOG · ISSUES · OpenAPI · ARCHITECTURE | what "done" already means here + the intended-but-not-done work (the planning/tracking docs name the frontier); which behaviors are specified vs assumed |
 | **rubric** | tests/ · CI · lint config | **how the project verifies itself today** — the real verifier `validate.py` can mint signals from (`validate.py <cell> -- <the project's test command>`) |
 | **policy** | SECURITY · CONTRIBUTING · ADRs | the guardrails, budgets, and decisions already in force |
 | **capability** | source + manifests | what the system can already do — the tools/code the agentic layer builds on |
 | **methodology** | AGENTS.md / CLAUDE.md / CONTRIBUTING | the operating methodology already in place (if there's an AGENTS.md, the project is already partly agentic — respect it) |
 | **protocol** | OpenAPI · GraphQL · proto · API dirs | the interface/wire contracts agents must honor |
-| **ledger** | CHANGELOG · git · ADRs | the provenance substrate — history the regeneration loop can distill |
+| **ledger** | CHANGELOG · git · ADRs · ISSUES (decisions/resolved) | the provenance substrate — history + the decision/resolved-incident trail the regeneration loop can distill |
 | **pattern** | examples/ · templates/ | distilled reusable knowledge already captured |
 
 ## Step 3 — map the survey onto a seed

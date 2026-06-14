@@ -67,6 +67,14 @@ def _re(pattern):
     rx = re.compile(pattern)
     return lambda b, p, d: (not d) and bool(rx.search(b))
 
+def _word(*stems):
+    """Match a stem as a hyphen/underscore-delimited word in a DOC basename — so `library-roadmap.md`,
+    `release-plan.md`, `open-issues.md` all match, not just the bare stem. Guarded to doc extensions so a
+    code file (`plan.py`) is never mistaken for a planning doc."""
+    rx = re.compile(r"(?:^|[-_])(" + "|".join(re.escape(s) for s in stems) + r")(?:[-_]|\.|$)")
+    _ok = ("", ".md", ".markdown", ".txt", ".rst")
+    return lambda b, p, d: (not d) and os.path.splitext(b)[1].lower() in _ok and bool(rx.search(b))
+
 def _any(*ms):
     return lambda b, p, d: any(m(b, p, d) for m in ms)
 
@@ -78,7 +86,8 @@ SIGNALS = [
     ("contributing",  _stem("contributing"),                                     ["methodology", "policy"], "how work is done + the guardrails on it"),
     ("security",      _stem("security"),                                         ["policy"],                "the safety constraints / threat posture"),
     ("changelog",     _stem("changelog", "history"),                             ["ledger"],                "provenance — what changed and when (the ledger seed)"),
-    ("roadmap",       _stem("roadmap", "plan", "todo"),                          ["spec"],                  "intended direction — candidate spec cells"),
+    ("roadmap",       _word("roadmap", "plan", "todo", "goals", "objectives", "backlog"), ["spec"],         "intended direction / goals / backlog — candidate spec cells (incl. infix forms like library-roadmap.md)"),
+    ("issues",        _word("issues", "bugs", "tickets"),                        ["spec", "ledger"],        "an issue / bug / decision tracker — open work (spec) + the decision & resolved-incident trail (ledger)"),
     ("docs_dir",      _dir("docs", "doc", "documentation"),                      ["ontology", "spec"],      "the knowledge base — ontology + spec material"),
     ("adr",           _any(_dir("adr", "adrs", "decisions"), _stem("adr")),      ["policy", "ledger"],      "decision records — policy + provenance"),
     ("spec",          _any(_dir("specs", "spec", "requirements", "rfcs"), _stem("prd", "spec", "requirements"), _re(r"[-_](spec|probes|acceptance)\.(md|txt)$")), ["spec"], "explicit specs / probe lists / acceptance criteria — what 'done' means, already written"),
@@ -93,13 +102,13 @@ SIGNALS = [
 # Layer → which signal-keys feed it; PRESENT if ≥1 strong signal, else ABSENT. capability is special (source code).
 LAYER_FEEDS = {
     "ontology":    ["readme", "architecture", "docs_dir"],
-    "spec":        ["spec", "architecture", "roadmap", "docs_dir", "protocol"],
+    "spec":        ["spec", "architecture", "roadmap", "docs_dir", "protocol", "issues"],
     "rubric":      ["tests", "ci", "lint"],
     "policy":      ["security", "contributing", "adr"],
     "capability":  ["__source__"],                       # filled from the stack profile (source files + a manifest)
     "methodology": ["agents_md", "contributing"],
     "protocol":    ["protocol"],
-    "ledger":      ["changelog", "git", "adr"],
+    "ledger":      ["changelog", "git", "adr", "issues"],
     "pattern":     ["examples"],
 }
 LAYER_ORDER = ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"]
@@ -207,8 +216,8 @@ def render(s):
     out.append("Key docs (✓ found / ✗ absent — the model reads the ✓ ones to build context):")
     labels = [("readme", "README"), ("architecture", "ARCHITECTURE"), ("agents_md", "AGENTS/CLAUDE.md"),
               ("docs_dir", "docs/"), ("spec", "specs/PRD"), ("adr", "ADRs"), ("protocol", "API/proto"),
-              ("tests", "tests"), ("ci", "CI"), ("changelog", "CHANGELOG"), ("roadmap", "ROADMAP"),
-              ("security", "SECURITY"), ("contributing", "CONTRIBUTING"), ("examples", "examples/")]
+              ("tests", "tests"), ("ci", "CI"), ("changelog", "CHANGELOG"), ("roadmap", "PLAN/ROADMAP"),
+              ("issues", "ISSUES"), ("security", "SECURITY"), ("contributing", "CONTRIBUTING"), ("examples", "examples/")]
     line = "  "
     for key, lab in labels:
         line += f"{'✓' if key in s['docs'] else '✗'} {lab}   "
@@ -299,6 +308,20 @@ def cmd_selftest():
         expect(L["protocol"]["strength"] == "strong", f"a .d.ts / types/ should make protocol strong (library API contract): {L['protocol']}")
         expect(L["pattern"]["strength"] == "strong", f"a case-study should make pattern strong: {L['pattern']}")
 
+    # planning/tracking docs the named-doc gap missed (0.5.8): GOALS / ISSUES / BACKLOG + an INFIX *-roadmap;
+    # an ISSUES tracker feeds the ledger layer too (open work + the decision/incident trail).
+    with tempfile.TemporaryDirectory() as tmp:
+        for rel in ("README.md", "GOALS.md", "ISSUES.md", "BACKLOG.md", "library-roadmap.md"):
+            open(os.path.join(tmp, rel), "w").write("x")
+        L = survey(tmp)["layers"]
+        expect(L["spec"]["strength"] == "strong", f"GOALS/ISSUES/BACKLOG + library-roadmap.md should make spec strong: {L['spec']}")
+        expect(L["ledger"]["strength"] == "strong", f"an ISSUES tracker should feed the ledger layer: {L['ledger']}")
+
+    # the doc-extension guard (0.5.8): a CODE file `plan.py` is source, NOT a planning doc — must not signal spec
+    with tempfile.TemporaryDirectory() as tmp:
+        open(os.path.join(tmp, "plan.py"), "w").write("x")
+        expect(survey(tmp)["layers"]["spec"]["strength"] == "none", "plan.py (source) was wrongly read as a planning doc → spec")
+
     # a greenfield project (empty dir) → mostly ABSENT, never crashes
     with tempfile.TemporaryDirectory() as tmp:
         s = survey(tmp)
@@ -327,7 +350,8 @@ def cmd_selftest():
     print("survey selftest: OK (finds README/ARCH/tests/CI/CHANGELOG/manifest, prunes node_modules, counts languages, "
           "reports signal-strength (strong/incidental/none) across all nine layers + the {strength,evidence} JSON shape, "
           "flags the weakest-signal frontier, never emits a PRESENT/ABSENT verdict; detects library forms — a probe/-spec "
-          "doc → spec, .d.ts/types/ → protocol, a case-study → pattern; greenfield + brownfield + library all render)")
+          "doc → spec, .d.ts/types/ → protocol, a case-study → pattern; planning docs — GOALS/ISSUES/BACKLOG + infix "
+          "*-roadmap.md → spec(+ledger), with a doc-extension guard so plan.py stays source; greenfield + brownfield + library all render)")
     return 0
 
 
