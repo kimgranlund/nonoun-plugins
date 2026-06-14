@@ -75,9 +75,14 @@ def render(project, hd=".agents/harness", n=8):
         c_s = f"{det.get('cells',0)}/{mc} cells" if mc else f"{det.get('cells',0)} cells"
         out.append(f"  run:      active — {i_s} · {c_s}" + (f" · deadline {det['deadline_ts']}" if det.get('deadline_ts') else ""))
 
-    # wiring + drift
-    wired = _wire.check(project, hd, quiet=True)
-    out.append(f"  wiring:   {'WIRED (gate-signal + gate-budget + feedback hooks)' if wired == 0 else 'NOT WIRED — the stop-gate is not installed (wire.py apply)'}")
+    # wiring + drift — three honest states: a drifted-but-installed wiring is STALE, not "NOT WIRED" (the gates
+    # ARE in the loop and running; saying "not wired" would tell the operator they have no protection when they do).
+    _wmsg = {
+        "wired": "WIRED (gate-signal + gate-budget + feedback hooks)",
+        "stale": "WIRED but STALE — the gates run, but a copy drifted from the plugin; `wire.py apply` to refresh",
+        "unwired": "NOT WIRED — the stop-gate is not installed (wire.py apply)",
+    }
+    out.append(f"  wiring:   {_wmsg[_wire.wire_status(project, hd)]}")
 
     # the ledger: gate-fire count + the tail
     evs = _lat._read_ledger_events(d)

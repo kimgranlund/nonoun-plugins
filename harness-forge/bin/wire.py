@@ -180,7 +180,10 @@ def apply(project, hd):
     return 0
 
 
-def check(project, hd, quiet=False):
+def _check_problems(project, hd):
+    """The list of wiring problems — empty == cleanly wired. Two KINDS: a 'missing' problem (a settings entry or
+    a hook file absent) means the project is genuinely unwired; a 'STALE'/'wired kernel is v…' problem means the
+    gates ARE installed and running but a copy drifted from the plugin (re-wire to refresh)."""
     problems = []                                          # drift is a PROBLEM now (CV1), so the old `warns` list is gone
     settings, err = _load_settings(project)
     if err:
@@ -213,9 +216,29 @@ def check(project, hd, quiet=False):
             pass
     if any("STALE vs the plugin" in p for p in problems) and wired_ver and wired_ver != KERNEL_VERSION:
         problems.append("wired kernel is v{} but the installed plugin is v{} — `wire.py apply` to update".format(wired_ver, KERNEL_VERSION))
+    return problems
+
+
+def wire_status(project, hd):
+    """Granular state for the dashboard: 'wired' (clean), 'stale' (the gates ARE installed and running but a copy
+    drifted from the plugin — `wire.py apply` to refresh), or 'unwired' (a settings entry or hook file is absent —
+    the gate is genuinely not in the loop). The distinction is load-bearing for honesty: a dashboard that cries
+    'NOT WIRED' at a functional-but-byte-stale wiring tells an operator they have NO protection when they do."""
+    problems = _check_problems(project, hd)
+    if not problems:
+        return "wired"
+    # 'stale' ONLY if every problem is a drift (copy/kernel byte-mismatch); any missing entry/file or a settings
+    # error means genuinely-not-wired (you cannot confirm the gate is in the loop) → fail safe to 'unwired'.
+    drift_only = all(("STALE vs the plugin" in p or p.startswith("wired kernel is v")) for p in problems)
+    return "stale" if drift_only else "unwired"
+
+
+def check(project, hd, quiet=False):
+    problems = _check_problems(project, hd)
     if not quiet:
         if problems:
-            print("NOT WIRED — {} problem(s):".format(len(problems)))
+            stale = wire_status(project, hd) == "stale"
+            print("{} — {} problem(s):".format("WIRED but STALE" if stale else "NOT WIRED", len(problems)))
             for p in problems:
                 print("  - {}".format(p))
         else:
@@ -271,6 +294,7 @@ def selftest():
 
         expect(apply(project, hd) == 0, "apply failed on a seeded project")
         expect(check(project, hd, quiet=True) == 0, "a wired project failed check")
+        expect(wire_status(project, hd) == "wired", "a cleanly wired project is not reported 'wired'")
         s = json.load(open(_settings_path(project)))
         expect(s.get("model") == "opus", "unrelated top-level setting clobbered")
         flat = json.dumps(s)
@@ -328,7 +352,9 @@ def selftest():
         with open(lib, "a", encoding="utf-8") as f:
             f.write("\n# drift injected by selftest\n")          # the wired kernel now differs from the plugin's
         expect(check(project, hd, quiet=True) == 1, "check did not FAIL on a drifted wired kernel (CV1 regression)")
+        expect(wire_status(project, hd) == "stale", "a drifted-but-installed wiring must read 'stale', not 'unwired' — the gates ARE in the loop (dashboard-honesty)")
         expect(apply(project, hd) == 0 and check(project, hd, quiet=True) == 0, "re-apply did not heal the drift")
+        expect(wire_status(project, hd) == "wired", "wire_status did not return to 'wired' after re-apply healed the drift")
         expect(open(os.path.join(project, hd, "hooks", VERSION_FILE)).read().strip() == KERNEL_VERSION,
                "apply did not stamp the kernel version")
 
@@ -347,6 +373,7 @@ def selftest():
         expect("echo unrelated" in flat3 and s3.get("model") == "opus", "unwire removed unrelated state")
         expect(not os.path.isfile(gate), "unwire left our copied files")
         expect(check(project, hd, quiet=True) == 1, "an unwired project passed check after unwire")
+        expect(wire_status(project, hd) == "unwired", "after unwire (entries+files removed) wire_status must read 'unwired'")
     if fails:
         sys.stderr.write("wire selftest: FAIL\n")
         for f in fails:
