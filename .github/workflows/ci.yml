@@ -202,6 +202,7 @@ jobs:
           python3 harness-forge/bin/run-budget.py selftest     # the GLOBAL loop bound, in code: wall-clock + ledger-counted iterations/cells, no agent counter
           python3 harness-forge/bin/council-precheck.py selftest  # the one-call Step-0 driver (shrinks the council orchestrator's Bash surface)
           python3 harness-forge/bin/harness-status.py selftest # the operator dashboard renders maturity/frontier/run-budget/wiring/gate-fires/ledger
+          python3 harness-forge/bin/survey.py selftest         # the assess-mode project inventory: finds docs, detects stack, maps present/partial/absent across the nine layers
           python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools (scan_frontier marks blocked cells)
           # seed → scan → check → wire smoke on a real scaffolded project in a throwaway dir
           D="$(mktemp -d)"

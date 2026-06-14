@@ -14,6 +14,7 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 ```
 
 ```text
+/harness-assess "."                                                         # survey an EXISTING project → map it onto the lattice → recommend the seed (best cold start)
 /harness-seed   "invoice-parser — turn a PDF invoice into a typed record"   # scaffold .harness/ + the first slice + offer to wire the gates (consent-gated)
 /harness-scan                                                               # the open/stale gap set at the frontier
 /harness-next                                                               # the next cell, ranked, dependency-ready
@@ -31,6 +32,7 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 
 Cold-start in plain language (each routes to the matching command):
 
+- *"I have an existing project — review its files and docs, and tell me how to apply harness-forge to it."* → `/harness-assess` (the best cold start for any real project)
 - *"Seed a harness for an invoice parser — turn a PDF invoice into a typed record."* → `/harness-seed`
 - *"Scan the frontier — what knowledge modalities are missing, ranked by risk × unlock ÷ probe-cost?"* → `/harness-scan`
 - *"Advance the next ready cell — run define → create → validate on the parse-invoice spec."* → `/harness-next` + `/harness-advance`
@@ -62,8 +64,8 @@ The full theory is in `references/agentic-systems-foundations/` (the ontology, t
 
 ```text
 harness-forge/
-├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · validate.py · wire.py · run-budget.py · council-precheck.py · harness-status.py · gate-signal · gate-budget · emit-ledger · propagate-staleness · harness-hook · lattice-mcp.py
-├── commands/   9 thin entry points          → seed · scan · next · advance · run · status · distill · audit · council
+├── bin/        the kernel (stdlib Python)   → lattice.py · ledger.py · naming.py · validate.py · wire.py · run-budget.py · council-precheck.py · harness-status.py · survey.py · gate-signal · gate-budget · emit-ledger · propagate-staleness · harness-hook · lattice-mcp.py
+├── commands/   10 thin entry points         → assess · seed · scan · next · advance · run · status · distill · audit · council
 ├── skills/     2 posture skills             → harness-build (operate) · harness-evaluate (audit + score)
 ├── agents/     4 operators + the council    → harness-builder (the bounded /harness-run loop) · harness-advancer · harness-auditor · harness-distiller · harness-council + 7 critic-* structural critics (one per rubric dimension, parallel isolated)
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)

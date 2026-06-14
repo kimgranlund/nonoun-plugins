@@ -24,6 +24,7 @@ Developing an agentic system is **best-first search over a knowledge lattice**: 
 
 | Mode | Command | What it does | Engine |
 | --- | --- | --- | --- |
+| **assess** | `/harness-assess` | survey an EXISTING project (any kind) to build context before seeding — inventory files + key docs, map them onto the nine layers (present/absent), recommend the seed. Read-only; proposes, never scaffolds. Read `references/project-survey.md` | `survey.py` (mechanical inventory) + the model's judgment |
 | **seed** | `/harness-seed` | scaffold `.harness/` (lattice.json, the nine layer dirs, signals/, ledger/, naming schema) + capture the first slice + **offer to wire the blocking gates into the project's loop** (consent-gated: `wire.py plan` → user OK → `apply` → `check`) | `lattice.py init` + `wire.py` |
 | **scan** | `/harness-scan` | sweep the modality axis at the frontier scope → the open/stale gap set | `lattice.py scan` |
 | **rank** | `/harness-next` | dependency-filter + order the gaps; name the next cell | `lattice.py rank` |
@@ -78,3 +79,4 @@ What stays the orchestrator's *discipline* is only the **graceful** stop — not
 | `references/agentic-systems-foundations/evals-and-verification.md` | designing the verifier — fast/deterministic/localized/actionable; generator-critic split; reward-hacking defenses |
 | `references/agentic-systems-foundations/naming-conventions.md` | before creating any named artifact (`bin/naming.py` enforces it) |
 | `references/operating-procedure.md` | the seven-step loop bound to the `bin/` commands |
+| `references/project-survey.md` | **assess mode** — applying harness-forge to an existing project: run `bin/survey.py`, read the present docs, map the project onto the lattice, recommend the seed |
