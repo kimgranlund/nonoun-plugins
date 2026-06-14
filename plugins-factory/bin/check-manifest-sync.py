@@ -7,7 +7,7 @@ This is the gate that would have caught the brand-forge v0.1->v0.2 drift the 202
 found by hand: a description that named four commands while the directory shipped five, and a
 CHANGELOG whose "Unreleased" features were already merged under the released version.
 
-Three checks, per plugin:
+Four checks, per plugin:
   C1  version <-> CHANGELOG : plugin.json `version` equals the latest dated CHANGELOG release, and no
                              "## Unreleased" section carries shipped content (this repo has no
                              separate dist — the directory IS the release).
@@ -17,6 +17,9 @@ Three checks, per plugin:
                              is NOT scanned — its entries describe historical releases.
   C3  cited commands exist : every `/<prefix>-<name>` slash-command cited in those descriptions, whose
                              prefix matches a real command's prefix, resolves to a commands/*.md file.
+  C4  enumeration complete : a parenthetical/bracketed list of >=3 same-prefix slash-commands is the
+                             conventionally-complete command set; if it OMITS a command that ships, it's
+                             the brand-forge drift (a description listing 6 of 7 commands) — now caught.
 
 Usage:
   check-manifest-sync.py <plugin-dir> [--json]   # scan one plugin
@@ -45,6 +48,8 @@ COUNT_CLAIMS = [
 # A slash-command citation starts at a token boundary (space, "(", backtick, line start) — the
 # lookbehind rejects path fragments like `../adia-ui-factory` or `host.com/x/y` that merely contain a slash.
 SLASH_CMD_RE = re.compile(r"(?<![\w./@-])/([a-z][a-z0-9]*(?:-[a-z0-9]+)+)")
+# A parenthetical or bracketed group (non-nested) — a conventionally-complete command enumeration lives here.
+PAREN_RE = re.compile(r"[(\[]([^()\[\]]+)[)\]]")
 
 
 def _read(path):
@@ -146,6 +151,31 @@ def check(plugin_root):
                         and tok not in siblings and tok not in c3_seen):
                     c3_seen.add(tok)
                     findings.append(("C3", f"{src} cites /{tok} but there is no commands/{tok}.md"))
+
+    # C4 — enumeration completeness: a parenthetical/bracketed list of >=3 same-prefix slash-commands is
+    # conventionally the COMPLETE command set; if it omits a command that ships, it's the brand-forge drift
+    # (a manifest that listed 6 of 7 commands). Only fires on an explicit (a, b, c) run — not a prose mention
+    # of one or two commands — so an intentional subset stated outside parens never trips it.
+    c4_seen = set()
+    if cmds:
+        by_prefix_all = {}
+        for c in cmds:
+            by_prefix_all.setdefault(c.split("-", 1)[0], set()).add(c)
+        for src, text in _description_sources(plugin_root):
+            for grp in PAREN_RE.findall(text):
+                listed = {m.group(1) for m in SLASH_CMD_RE.finditer(grp) if m.group(1) in cmds}
+                by_prefix = {}
+                for c in listed:
+                    by_prefix.setdefault(c.split("-", 1)[0], set()).add(c)
+                for pfx, enumed in by_prefix.items():
+                    full = by_prefix_all.get(pfx, set())
+                    missing = full - enumed
+                    if len(enumed) >= 3 and missing and (src, pfx, frozenset(missing)) not in c4_seen:
+                        c4_seen.add((src, pfx, frozenset(missing)))
+                        findings.append(("C4", f"{src} has a ({len(enumed)}-command) parenthetical list that enumerates "
+                                               f"{len(enumed)} of {len(full)} {pfx}-* commands but OMITS "
+                                               f"{', '.join('/' + m for m in sorted(missing))} — a complete-looking list "
+                                               f"that fell behind the directory (the brand-forge drift class)"))
     return findings
 
 
@@ -188,6 +218,22 @@ def selftest():
         for need in ("C1", "C2", "C3"):
             if need not in codes:
                 fails.append(f"drift plugin should raise {need}; got {sorted(codes)}")
+
+        # C4 — a parenthetical list of >=3 commands that OMITS a shipped one (the brand-forge drift class)
+        omit = os.path.join(tmp, "omit-forge")
+        _mk_plugin(omit, "1.0.0", "1.0.0",
+                   "Modes are typed commands (/omit-a, /omit-b, /omit-c).",   # lists 3, ships 4 → omits /omit-d
+                   ["omit-a", "omit-b", "omit-c", "omit-d"], 0)
+        ocodes = {c for c, _ in check(omit)}
+        if "C4" not in ocodes:
+            fails.append(f"omission plugin should raise C4 (a 3-of-4 parenthetical list); got {sorted(ocodes)}")
+        # a COMPLETE parenthetical list of the same shape must NOT fire C4
+        full = os.path.join(tmp, "full-forge")
+        _mk_plugin(full, "1.0.0", "1.0.0",
+                   "Modes are typed commands (/full-a, /full-b, /full-c).",   # lists 3, ships exactly those 3
+                   ["full-a", "full-b", "full-c"], 0)
+        if any(c == "C4" for c, _ in check(full)):
+            fails.append("a complete parenthetical command list wrongly fired C4")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     if fails:
