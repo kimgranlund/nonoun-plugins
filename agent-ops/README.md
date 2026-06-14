@@ -2,7 +2,23 @@
 
 **Author, operate, and review full-spectrum agentic systems — and the repos they live in.** The operations-and-architecture counterpart to the build plugins: it knows how to design agent loops and teams, judge what a running workflow is like to drive, keep a repo's agent-facing memory honest, and review a codebase's architecture.
 
-> **Status: 0.1.9 — carved from four mature skills, now with live retrieval.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`), and the **`repo-memory` MCP** (per-instance read-only retrieval over a repo's agent docs + `.brain/audit-history/` ledger). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.1.12 — carved from four mature skills, now with live retrieval.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`), and the **`repo-memory` MCP** (per-instance read-only retrieval over a repo's agent docs + `.brain/audit-history/` ledger). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). See [ROADMAP.md](ROADMAP.md).
+
+## Quick start
+
+```text
+/plugin marketplace add kimgranlund/claude-plugins
+/plugin install agent-ops@nonoun-plugins
+```
+
+**Example prompts** — cold-start in plain language (each routes to the matching `/ops-*` command):
+
+- *"I'm picking up an agentic repo — orient me: what's the system, and where are the gaps?"* → `/ops-orient`
+- *"Design the loop and control plane for an overnight refactoring agent — pick a topology and wire termination, verification, and a budget."* → `/ops-loop`
+- *"Review my workflow's agentic UX — what's it actually like to drive? Trust, control, observability, reversibility."* → `/ops-ux`
+- *"Audit this repo's AGENTS.md and docs for staleness, drift, and orphans."* → `/ops-audit`
+- *"Review this codebase's architecture and give me a cascade-ranked refactor backlog."* → `/ops-review`
+- *"Run the agentic council on our orchestration blueprint — named practitioners, parallel and isolated."* → `/ops-council`
 
 ## What it covers — two seats × two surfaces
 

@@ -26,6 +26,18 @@ Build side and judge side, both as thin typed commands:
 
 ---
 
+## Example prompts
+
+Cold-start in plain language (each routes to the matching command):
+
+- *"Author a Claude Code plugin that helps a team write database migrations safely."* → `/plugin-author`
+- *"Carve my skills library into well-bounded plugins — map the real composition graph and propose the boundaries."* → `/plugin-carve`
+- *"Score this plugin against the 9-dimension standard, with cited evidence and the ship-gate it must pass."* → `/plugin-score`
+- *"Run the 9-critic council on my plugin — an adversarial, parallel-isolated architecture review."* → `/plugin-critique`
+- *"My plugin bundles a hook and an MCP — red-team it for the lethal trifecta and a kitchen-sink boundary."* → `/plugin-critique`
+
+---
+
 ## The surface — four primitives over one shared standard
 
 ```text

@@ -27,6 +27,18 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 
 ---
 
+## Example prompts
+
+Cold-start in plain language (each routes to the matching command):
+
+- *"Seed a harness for an invoice parser — turn a PDF invoice into a typed record."* → `/harness-seed`
+- *"Scan the frontier — what knowledge modalities are missing, ranked by risk × unlock ÷ probe-cost?"* → `/harness-scan`
+- *"Advance the next ready cell — run define → create → validate on the parse-invoice spec."* → `/harness-next` + `/harness-advance`
+- *"Run the bounded loop for up to 8 cells under hard caps, then report and hand back."* → `/harness-run`
+- *"Audit the harness — what's the measured, earned autonomy tier (not the one it claims)?"* → `/harness-audit`
+
+---
+
 ## The model — best-first search over a knowledge lattice
 
 Developing an agentic system is converting uncertainty into **validated, typed knowledge assets**. The project's state at any moment is the state of those assets; "what should we work on next?" is a *selection function over a lattice of cells*, not a planning meeting.

@@ -27,6 +27,18 @@ Then drive it through seven typed commands:
 
 ---
 
+## Example prompts
+
+Cold-start in plain language (each routes to the matching command):
+
+- *"I have a folder of brand work — orient me: what's here, and what should I do next?"* → `/brand-orient`
+- *"Build the strategy and identity for a third-wave specialty-coffee roaster — ground it in coffee culture, not a moodboard."* → `/brand-build`
+- *"Convene the Muse for a rest-and-sleep brand: what ideal should it move toward — a provocation, an exemplar?"* → `/brand-muse`
+- *"Score this positioning statement against the strategy rubric, with cited evidence — be adversarial."* → `/brand-score`
+- *"Run the brand council on our draft identity — a hostile, parallel critique from named practitioners."* → `/brand-council`
+
+---
+
 ## Component map — five primitives, five jobs
 
 ```text
