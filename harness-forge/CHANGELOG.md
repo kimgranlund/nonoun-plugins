@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.10 — 2026-06-14
+
+- **Host-aware wiring (ROADMAP Track 5, increment 5 — the integration/host-portability track is now complete).** `wire.py` consumes a vendored `host-detect` (`bin/host_detect.py`, kept byte-identical to the canonical `tools/host-detect/` by `tools/sync-host-detect.py --check` in CI — the corpus-reader vendoring pattern; the self-contained rule forbids a cross-plugin import): `plan` and `apply` detect the host harness and **warn** when it isn't Claude Code, because the wiring writes Claude Code's `.claude/settings.json` hook format that another host won't honor (a known non-Claude host is named — e.g. "this looks like 'codex'"; an unknown host gets "assuming Claude Code"). It **never refuses** (the files are harmless where ignored) and is advisory-only (`_host_note` returns None and the installer proceeds even if `host_detect` is somehow absent). Silent under Claude Code, the normal case. This gives host-detect its first runtime consumer; full primitive portability across hosts (re-expressing the markdown primitives) remains a separate export effort. selftest-covered (silent under Claude Code; warns naming the host under Codex; "assuming Claude Code" under unknown). No KERNEL change. plugin.json 0.5.9 → 0.5.10.
+
 ## 0.5.9 — 2026-06-14
 
 - **Declare `stateNamespace: .agents/harness`** in `plugin.json` — the durable-state namespace this plugin writes (the lattice under `.agents/harness/`), now a *checked* property: plugins-factory's integration-contract J check (0.2.49) asserts the declaration sits under `.agents/` and matches what `bin/` actually writes (D-15 mechanized, no longer prose-only). No behavior change; KERNEL_VERSION unchanged. plugin.json 0.5.8 → 0.5.9.

@@ -55,7 +55,9 @@ jobs:
         run: python3 tools/sync-corpus-reader.py --check
 
       - name: host-detect (host-harness awareness — process-env signals only; Track 5 increment 3)
-        run: python3 tools/host-detect/host_detect.py selftest
+        run: |
+          python3 tools/host-detect/host_detect.py selftest
+          python3 tools/sync-host-detect.py --check   # the vendored harness-forge/bin/host_detect.py is byte-identical to canonical
 
       - name: corpus-reader — demo corpus builds + --init scaffold
         run: |

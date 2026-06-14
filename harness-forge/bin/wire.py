@@ -37,9 +37,34 @@ try:
     KERNEL_VERSION = _lat.KERNEL_VERSION
 except Exception:                                     # noqa: BLE001 — degrade rather than crash the installer
     KERNEL_VERSION = "unknown"
+try:
+    import host_detect as _hd                          # vendored sibling (tools/sync-host-detect keeps it byte-identical)
+except Exception:                                      # noqa: BLE001 — host-awareness is advisory; never crash the installer
+    _hd = None
 HOOK_FILES = ["gate-signal", "gate-budget", "emit-ledger", "propagate-staleness"]
 LIB_COPY = ("lattice.py", "_lattice.py")              # kernel source → private copy name in .agents/harness/hooks/
 VERSION_FILE = ".kernel-version"                      # stamped beside the copy so drift across a plugin update is detectable
+
+
+def _host_note(env=None):
+    """Host-awareness advisory (Track 5, increment 5): the wiring writes Claude Code's `.claude/settings.json`
+    hook format + `.agents/harness/hooks/` scripts. Under another host that format isn't honored. Detect the host
+    and WARN if it isn't Claude Code — never refuse (the files are harmless where ignored). Returns the warning or None."""
+    if _hd is None:
+        return None
+    try:
+        r = _hd.host_detect(env)
+    except Exception:                                  # noqa: BLE001
+        return None
+    if r["host"] == "claude-code":
+        return None
+    if r["host"] == "unknown":
+        return ("host-detect: couldn't identify the host harness from the environment — assuming Claude Code. The "
+                "wiring writes .claude/settings.json + .agents/harness/hooks/; if you are NOT in Claude Code it may "
+                "not take effect.")
+    return ("host-detect: this looks like '{0}', not Claude Code. harness-forge's wiring targets Claude Code's "
+            ".claude/settings.json hook format — '{0}' uses a different extension mechanism, so the gates may not be "
+            "honored here (a cross-host wiring adapter is roadmap; proceeding writes the Claude-Code format).".format(r["host"]))
 
 
 def _cmd(hook, hd):
@@ -140,6 +165,9 @@ def _copies(project, hd):
 
 def plan(project, hd):
     print("wire.py plan — what `apply` would do in {} (nothing has been changed):".format(os.path.abspath(project)))
+    _hn = _host_note()
+    if _hn:
+        print("  ⚠ " + _hn, file=sys.stderr)
     print("\n  copy into {}/hooks/ (the gate protects these once wired):".format(hd))
     for src, dst in _copies(project, hd):
         state = "refresh" if os.path.exists(dst) else "new"
@@ -165,6 +193,9 @@ def apply(project, hd):
         print("wire.py: {}".format(err), file=sys.stderr)
         return 1
     print("wire.py apply → editing the project at {}".format(os.path.abspath(project)))   # echo the absolute target before mutating (Simon)
+    _hn = _host_note()
+    if _hn:
+        print("  ⚠ " + _hn, file=sys.stderr)
     dest = os.path.join(project, hd, "hooks")
     for src, dst in _copies(project, hd):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -374,6 +405,14 @@ def selftest():
         expect(not os.path.isfile(gate), "unwire left our copied files")
         expect(check(project, hd, quiet=True) == 1, "an unwired project passed check after unwire")
         expect(wire_status(project, hd) == "unwired", "after unwire (entries+files removed) wire_status must read 'unwired'")
+
+    # host-awareness advisory (increment 5): silent under Claude Code; warns (naming the host) under another, or unknown.
+    expect(_host_note({"CLAUDECODE": "1"}) is None, "_host_note warned under Claude Code (should be silent)")
+    if _hd is not None:
+        cx = _host_note({"CODEX_SANDBOX": "seatbelt"})
+        expect(cx and "codex" in cx, "_host_note did not warn naming the host under a non-Claude host")
+        expect((_host_note({}) or "").startswith("host-detect:") and "assuming Claude Code" in (_host_note({}) or ""),
+               "_host_note did not warn under an unknown host")
     if fails:
         sys.stderr.write("wire selftest: FAIL\n")
         for f in fails:
@@ -382,7 +421,8 @@ def selftest():
     print("wire selftest: OK (unwired fails check / wired passes; merge preserves unrelated state; idempotent; "
           "refuses malformed settings; the installed gate-signal denies protected writes INCLUDING its own unwiring; "
           "the installed gate-budget denies a write to a blocked cell; the copied cascade runs on the private kernel "
-          "copy; a drifted wired kernel FAILS check and re-apply heals it; unwire restores exactly)")
+          "copy; a drifted wired kernel FAILS check and re-apply heals it; unwire restores exactly; the host-awareness "
+          "advisory is silent under Claude Code and warns under another/unknown host)")
     return 0
 
 
