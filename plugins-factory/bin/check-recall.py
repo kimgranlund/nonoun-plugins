@@ -16,15 +16,17 @@ patterns. A miss = a brittle pattern, surfaced as a CI failure to fix before it 
 It also enforces **coverage**: the corpus's defect keys must EQUAL the checker's PLANTED keys — every
 planted defect carries recall paraphrases, and a renamed/added defect can't silently lose coverage.
 
-What this gate does NOT measure (the honest boundary — 2026-06-13 self-red-team, Andrej K. + Chip H.):
-this validates **pattern-recall over a hand-authored corpus** — that a paraphrase someone *wrote to
-describe* a planted defect matches a checker pattern. The paraphrases and the patterns share an author,
-so a green run proves the patterns aren't brittle against *anticipated* wordings; it does **NOT** prove
-the council, run live, words a finding in a shape any pattern catches. That is the council's true
-catch-rate, and only a live panel measures it — the calibration `check.py` reports it as exactly that
-("a catch-rate, not a deterministic CI gate", `check.py:8`). The deeper fix is to re-source these
-corpora from real prior `runs/*.md` transcripts, so a match means "a wording the council actually
-produced still resolves" rather than "an author's paraphrase of its own pattern resolves" (ROADMAP I-13).
+What this gate measures (the honest boundary — 2026-06-13 self-red-team, Andrej K. + Chip H.; deeper fix
+landing 0.2.44): it validates **pattern-recall over a corpus of legitimate wordings**. For a corpus still
+author-paraphrased, that proves only the patterns aren't brittle against *anticipated* wordings (the
+paraphrases and patterns share an author) — NOT that the council, run live, words a finding in a shape a
+pattern catches (its true catch-rate; only a live panel measures that — the calibration `check.py` reports
+it as exactly that, "a catch-rate, not a deterministic CI gate", `check.py:8`). **The deeper fix is to
+RE-SOURCE each corpus from real `runs/*.md` transcripts** — then a match means "a wording the council
+*actually produced* still resolves", a measurement, not "the author's paraphrase of its own pattern
+resolves" (the closed loop). **`plugins-factory-check.recall.json` is re-sourced** (its phrasings are
+lifted from the three real mega-helper runs, see its `_provenance`); the remaining 17 corpora are tracked
+for the same treatment in I-13. A corpus marked `_provenance` is real-sourced; the rest remain anticipated.
 
 Usage:
   check-recall.py [corpus.json ...]   # default: every evals/recall-corpus/*.recall.json
