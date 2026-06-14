@@ -280,6 +280,10 @@ def cmd_selftest():
                "render() still emits a verdict word (PRESENT/PARTIAL/ABSENT) — I-14 requires strength-only")
         expect(all(set(s["layers"][l].keys()) == {"strength", "evidence"} for l in LAYER_ORDER),
                "a layer value is not the {strength, evidence} object shape (I-14 JSON contract)")
+        # key on the strength COLUMN (the load-bearing surface), not just the whole report — immune to an
+        # evidence filename that happens to contain a verdict word, and catches a verdict leaking into the data.
+        expect(all(s["layers"][l]["strength"] in ("strong", "incidental", "none") for l in LAYER_ORDER),
+               "a layer strength is not strength-vocab — a verdict word leaked into the data (I-14 contract)")
 
     # a library project: the spec is a probe/-spec doc, the protocol is .d.ts/types/, the pattern is a case-study —
     # the forms the service-oriented heuristics missed until the reactive-components dogfood (0.5.2).

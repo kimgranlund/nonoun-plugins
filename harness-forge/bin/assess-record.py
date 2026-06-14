@@ -103,6 +103,10 @@ def validate(rec):
                     errs.append(f"survey.layers[{lyr!r}].strength must be one of {sorted(STRENGTHS)}")
                 elif not isinstance(cell.get("evidence"), list):
                     errs.append(f"survey.layers[{lyr!r}].evidence must be a list")
+        if not isinstance(surv.get("stack"), dict):
+            errs.append("`survey.stack` must be an object")
+        if not isinstance(surv.get("survey_caveat"), str):
+            errs.append("`survey.survey_caveat` must be a string")
     rc = rec.get("recommendation")
     if not isinstance(rc, dict):
         errs.append("`recommendation` must be an object")
@@ -123,6 +127,10 @@ def validate(rec):
             errs.append(f"recommendation.frontier_order must be a list ⊆ {sorted(LAYERS)}")
         if not isinstance(rc.get("wire"), bool):
             errs.append("recommendation.wire must be a boolean")
+        if not isinstance(rc.get("seed_command"), str) or not rc.get("seed_command", "").strip():
+            errs.append("recommendation.seed_command must be a non-empty string")
+    if "_note" in rec and not isinstance(rec["_note"], str):
+        errs.append("`_note`, if present, must be a string")
     if not isinstance(rec.get("proposed_at"), str) or not _TS_RE.match(rec.get("proposed_at", "")):
         errs.append("`proposed_at` must be an ISO-8601 timestamp")
     if not isinstance(rec.get("proposed_by"), str) or not rec.get("proposed_by", "").strip():
@@ -160,6 +168,9 @@ def cmd_write(argv):
     root = _flag(argv, "--root", ".")
     # the survey half: a passed-in blob (--survey-json path|-) or run survey(root) now
     sj = _flag(argv, "--survey-json")
+    if not sj and not os.path.isdir(root):                  # surveying a non-dir yields a confidently-wrong all-none map
+        print(f"RESULT: INVALID — --root is not a directory: {root}", file=sys.stderr)
+        return 1
     try:
         if sj:
             blob = sys.stdin.read() if sj == "-" else open(sj, encoding="utf-8").read()
@@ -167,8 +178,11 @@ def cmd_write(argv):
         else:
             import survey as _survey
             surv = _survey.survey(root)
-    except (OSError, ValueError) as e:
+    except Exception as e:                                  # survey.py promises exit-0; a passed-in --survey-json is arbitrary JSON
         print(f"RESULT: INVALID — could not obtain survey: {e}", file=sys.stderr)
+        return 1
+    if not isinstance(surv, dict):                          # a JSON list/string/number is valid JSON but not a survey object
+        print(f"RESULT: INVALID — survey is not a JSON object (got {type(surv).__name__})", file=sys.stderr)
         return 1
     slice_txt = _flag(argv, "--slice", "")
     rec = {
@@ -274,6 +288,10 @@ def cmd_selftest():
     expect(validate({**good, "recommendation": {**good["recommendation"], "wire": "yes"}}) != [], "non-bool wire not caught")
     expect(validate({**good, "recommendation": {**good["recommendation"], "verifier_command": ""}}) != [], "empty verifier_command not caught")
     expect(validate({**good, "proposed_at": "June 14"}) != [], "non-ISO proposed_at not caught")
+    expect(validate({**good, "recommendation": {**good["recommendation"], "seed_command": ""}}) != [], "empty seed_command not caught")
+    expect(validate({**good, "_note": 123}) != [], "non-string _note not caught")
+    expect(validate({**good, "survey": {**good["survey"], "stack": ["x"]}}) != [], "non-dict survey.stack not caught")
+    expect(validate({**good, "survey": {**good["survey"], "survey_caveat": 9}}) != [], "non-string survey_caveat not caught")
     # round-trip through write → validate (suppress stdout — selftest output stays clean)
     with tempfile.TemporaryDirectory() as tmp:
         open(os.path.join(tmp, "README.md"), "w").write("# demo")     # a tiny project to survey
@@ -296,6 +314,25 @@ def cmd_selftest():
         expect(back["status"] == "PROPOSAL" and back["record_type"] == RECORD_TYPE, "round-trip lost the PROPOSAL markers")
         expect(set(back["survey"]["layers"]) == LAYERS, "round-trip lost the nine-layer survey")
         expect(back["recommendation"]["wire"] is True, "round-trip lost the wire bool")
+        # M1/m1 — bad survey input is refused CLEANLY (exit 1, never a traceback): a non-dict --survey-json
+        # (valid JSON, wrong shape) and a non-directory --root must both fail without crashing. (Suppress BOTH
+        # streams — these paths print their INVALID message to stderr.)
+        _stdout, _stderr = sys.stdout, sys.stderr
+        sys.stdout = open(os.devnull, "w")
+        sys.stderr = open(os.devnull, "w")
+        try:
+            badjson = os.path.join(tmp, "bad.json")
+            open(badjson, "w").write("[1, 2, 3]")          # valid JSON, but a list — not a survey object
+            rc_nd = cmd_write(["write", "x", "--root", tmp, "--slice", "s", "--frontier", "spec", "--scope", "task",
+                               "--verifier", "v", "--survey-json", badjson, "--dir", os.path.join(tmp, "a2")])
+            rc_badroot = cmd_write(["write", "x", "--root", os.path.join(tmp, "does-not-exist"), "--slice", "s",
+                                    "--frontier", "spec", "--scope", "task", "--verifier", "v", "--dir", os.path.join(tmp, "a3")])
+        finally:
+            sys.stdout.close()
+            sys.stderr.close()
+            sys.stdout, sys.stderr = _stdout, _stderr
+        expect(rc_nd == 1, "a non-dict --survey-json was not refused cleanly (M1 crash regression)")
+        expect(rc_badroot == 1, "a non-directory --root was not refused (m1)")
 
     if fails:
         sys.stderr.write("assess-record selftest: FAIL\n")
@@ -304,7 +341,9 @@ def cmd_selftest():
         return 1
     print("assess-record selftest: OK (validates the PROPOSAL shape; const-checks record_type/status so a record must "
           "announce itself as a proposal; enum-checks intent/strength/frontier/scope/mature against the kernel vocab; "
-          "rejects an incomplete nine-layer survey + a verdict-word strength + a non-bool wire; write→validate round-trips)")
+          "rejects an incomplete nine-layer survey + verdict-word strength + non-bool wire + empty seed_command + "
+          "non-string _note + bad stack/caveat; refuses a non-dict --survey-json + a non-dir --root without crashing; "
+          "write→validate round-trips)")
     return 0
 
 
