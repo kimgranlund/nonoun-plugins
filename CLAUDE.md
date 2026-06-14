@@ -135,12 +135,16 @@ python3 "$PF/bin/context-cost.py" marketplace .                  # P6 always-on 
 python3 "$PF/bin/context-cost.py" marketplace . --with-mcp --trusted-source  # + each live MCP's served tool-defs (~12.9K tok, 4 live MCPs); refuses without --trusted-source (executes servers — I-12)
 ```
 
-Install / iterate inside Claude Code:
+Install / iterate inside Claude Code. **Default to project-local** (D-16) — enable the plugin in the *project's* own `.claude/settings.json` so the plugin **and its wiring travel with the repo** (a fresh clone inherits exactly what that project opted into); reserve global/user scope for plugins you genuinely want in *every* project, and only when explicitly asked.
 
 ```text
+# project-local (THE DEFAULT) — in <project>/.claude/settings.json:
+{ "extraKnownMarketplaces": { "nonoun-plugins": { "source": { "source": "github", "repo": "kimgranlund/claude-plugins" } } },
+  "enabledPlugins": { "harness-forge@nonoun-plugins": true } }
+
+# …or interactively, choosing the PROJECT scope when prompted (NOT the user/global default):
 /plugin marketplace add kimgranlund/claude-plugins
-/plugin install brand-forge@nonoun-plugins        # the product
-/plugin install plugins-factory@nonoun-plugins    # the lifecycle tool (also auto-enabled here via .claude/settings.json)
+/plugin install plugins-factory@nonoun-plugins    # the lifecycle tool (this repo auto-enables it project-local via .claude/settings.json)
 ```
 
 ## Conventions
