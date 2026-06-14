@@ -70,6 +70,11 @@ def _candidate(tok):
         return None                            # pedagogical example, not a real ref
     if probe.startswith("./") or probe.startswith("../"):
         return t                               # file-dir-relative
+    # a dotfolder ref (.agents/, .harness/, .brain/, .github/…) is runtime/project state or external config,
+    # never an internal plugin file — and .agents/ would otherwise collide with the plugin's own agents/ dir
+    # once the leading dot is stripped by lstrip("./") above.
+    if probe.startswith("."):
+        return None
     return t if segs[0] in PLUGIN_DIRS else None  # first segment is a real plugin dir
 
 

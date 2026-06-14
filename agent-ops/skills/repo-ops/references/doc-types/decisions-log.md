@@ -17,7 +17,7 @@ status: research-verified
 
 # Decision log — what it actually is
 
-> **The canonical "decision log" is the index of all ADRs in `.brain/adrs/`. It is _not_ a separate folder.** This is the load-bearing nuance most teams get wrong.
+> **The canonical "decision log" is the index of all ADRs in `.agents/brain/adrs/`. It is _not_ a separate folder.** This is the load-bearing nuance most teams get wrong.
 
 ## The canonical meaning (cite-able)
 
@@ -27,7 +27,7 @@ Microsoft Azure Well-Architected Framework, AWS Prescriptive Guidance, and adr.g
 
 > "A collection of ADRs creates a decision log that captures the architectural decisions for a project." — AWS Prescriptive Guidance, _Architectural decision records_
 
-So when a repo has `.brain/adrs/0001-…md` … `0042-…md` and a `.brain/adrs/README.md` listing them, **that is the decision log**. There is no second folder needed.
+So when a repo has `.agents/brain/adrs/0001-…md` … `0042-…md` and a `.agents/brain/adrs/README.md` listing them, **that is the decision log**. There is no second folder needed.
 
 This skill delivers **Promise 5 (continuously-learning)** by ensuring the decision log is _navigable_ — an ADR folder without an index is a scrapyard.
 
@@ -37,15 +37,15 @@ The repo-fixer audit must accept both shapes and not flag either as wrong. Just 
 
 | Shape | What's on disk | When appropriate |
 | --- | --- | --- |
-| **Canonical (single-folder)** | `.brain/adrs/` containing all decisions; `.brain/adrs/README.md` is the log index | Default. Fits 90% of teams. |
-| **Split (two-folder)** | `.brain/adrs/` for big architecture decisions; `.brain/decisions/` for lighter day-to-day picks (tooling swaps, library choices, formatting conventions) | Larger orgs where ADR review is heavyweight and would gate routine choices |
+| **Canonical (single-folder)** | `.agents/brain/adrs/` containing all decisions; `.agents/brain/adrs/README.md` is the log index | Default. Fits 90% of teams. |
+| **Split (two-folder)** | `.agents/brain/adrs/` for big architecture decisions; `.agents/brain/decisions/` for lighter day-to-day picks (tooling swaps, library choices, formatting conventions) | Larger orgs where ADR review is heavyweight and would gate routine choices |
 
-The split is **a team convention, not industry standard**. Some teams find it useful: ADRs gate architecture, `.brain/decisions/` lets engineers move on a tooling swap without scheduling an architecture review. Other teams find it confusing — two homes invites drift over which decision goes where.
+The split is **a team convention, not industry standard**. Some teams find it useful: ADRs gate architecture, `.agents/brain/decisions/` lets engineers move on a tooling swap without scheduling an architecture review. Other teams find it confusing — two homes invites drift over which decision goes where.
 
 The audit's recommendation order:
 
-1. If only `.brain/adrs/` exists → recommend keeping it canonical; ensure `README.md` index is present and current.
-2. If only `.brain/decisions/` exists → recommend renaming to `.brain/adrs/` for tool/community alignment (ADR tooling expects `.brain/adrs/`).
+1. If only `.agents/brain/adrs/` exists → recommend keeping it canonical; ensure `README.md` index is present and current.
+2. If only `.agents/brain/decisions/` exists → recommend renaming to `.agents/brain/adrs/` for tool/community alignment (ADR tooling expects `.agents/brain/adrs/`).
 3. If both exist → recommend documenting the split rule in `AGENTS.md`'s "Where to find things" section so the agent knows which folder to write to.
 
 ## Generating the index
@@ -58,7 +58,7 @@ Three options, ordered by maintenance burden (lowest first):
 
 ```bash
 npm i -g adr-log
-adr-log -d .brain/adrs -i .brain/adrs/README.md
+adr-log -d .agents/brain/adrs -i .agents/brain/adrs/README.md
 ```
 
 Wrap the index in begin/end markers so subsequent runs only update that region:
@@ -79,7 +79,7 @@ Add to a pre-commit hook or CI workflow so the index never drifts from filenames
 [`adr-tools`](https://github.com/npryce/adr-tools) ships a similar generator. Lightly maintained as of April 2026 — works, but no recent releases.
 
 ```bash
-adr generate toc > .brain/adrs/README.md
+adr generate toc > .agents/brain/adrs/README.md
 ```
 
 ### Option 3 — Hand-written index
@@ -104,24 +104,24 @@ The hand-written form **adds the Status column**, which the auto-generated forms
 In the `Where to find things` section:
 
 ```markdown
-- **Architecture Decision Records:** `.brain/adrs/` — see `.brain/adrs/README.md` for the indexed log; newest-first
-- **Lightweight decisions** (if your team uses the split): `.brain/decisions/`
+- **Architecture Decision Records:** `.agents/brain/adrs/` — see `.agents/brain/adrs/README.md` for the indexed log; newest-first
+- **Lightweight decisions** (if your team uses the split): `.agents/brain/decisions/`
 ```
 
 In the `Memory primitives` section:
 
 ```markdown
-- **Before making architectural decisions**, consult the decision log at `.brain/adrs/README.md`. If your proposed change conflicts with an `Accepted` ADR, write a new ADR superseding it; don't silently override.
+- **Before making architectural decisions**, consult the decision log at `.agents/brain/adrs/README.md`. If your proposed change conflicts with an `Accepted` ADR, write a new ADR superseding it; don't silently override.
 ```
 
 ## Audit checks for the decision log
 
-1. **`.brain/adrs/` exists** (or `.brain/architecture/decisions/` — accepted alias).
-2. **An index file exists** at `.brain/adrs/README.md` listing all ADRs.
+1. **`.agents/brain/adrs/` exists** (or `.agents/brain/architecture/decisions/` — accepted alias).
+2. **An index file exists** at `.agents/brain/adrs/README.md` listing all ADRs.
 3. **The index is current** — every `NNNN-*.md` filename in the folder appears in the index. No orphans, no broken links.
 4. **The index sort order is meaningful** (chronological or by status group, not random).
 5. **AGENTS.md points at the index file**, not just the folder. Folder-only pointers force the agent to `ls` and guess.
-6. **If `.brain/decisions/` also exists**, AGENTS.md documents the split rule.
+6. **If `.agents/brain/decisions/` also exists**, AGENTS.md documents the split rule.
 
 The "index is current" check is the high-value one — it catches drift after a teammate adds an ADR but forgets to update the index.
 
@@ -129,10 +129,10 @@ The "index is current" check is the high-value one — it catches drift after a 
 
 - **No index** — folder of 40 ADRs, no `README.md`. The decision log exists but isn't navigable.
 - **Stale index** — index lists 18 ADRs; folder has 26. Catch with the audit + auto-generation.
-- **Two parallel logs that drift** — `.brain/adrs/` and `.brain/decisions/` both have ADRs about Postgres. Pick a rule and document it.
-- **Decision log as a single Markdown file** — `.brain/decisions.md` with all decisions in one document. Editing one decision rewrites file history; no per-decision audit trail. Strongly recommended against.
-- **Folder named `.brain/architecture-decisions/`** — works, but `.brain/adrs/` is what tooling expects. Prefer `.brain/adrs/`.
-- **Numbering reset on folder split** — if you split into `.brain/adrs/` and `.brain/decisions/`, do NOT restart numbering at 0001 in the second folder. Keep the global sequence so cross-references work.
+- **Two parallel logs that drift** — `.agents/brain/adrs/` and `.agents/brain/decisions/` both have ADRs about Postgres. Pick a rule and document it.
+- **Decision log as a single Markdown file** — `.agents/brain/decisions.md` with all decisions in one document. Editing one decision rewrites file history; no per-decision audit trail. Strongly recommended against.
+- **Folder named `.agents/brain/architecture-decisions/`** — works, but `.agents/brain/adrs/` is what tooling expects. Prefer `.agents/brain/adrs/`.
+- **Numbering reset on folder split** — if you split into `.agents/brain/adrs/` and `.agents/brain/decisions/`, do NOT restart numbering at 0001 in the second folder. Keep the global sequence so cross-references work.
 
 ## Cross-references
 

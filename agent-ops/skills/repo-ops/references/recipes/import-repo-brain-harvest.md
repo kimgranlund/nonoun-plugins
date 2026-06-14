@@ -10,7 +10,7 @@ status: research-verified
 
 # Import repo-ops harvest (consume a portable bundle into this brain)
 
-> **The premise.** Some other repo ran `harvest repo-ops --export` and produced a portable bundle. **`import repo-ops harvest`** ingests that bundle into _this_ repo's `.brain/` tree, then syncs the new content into the agent's memory at `~/.claude/projects/<this-repo>/memory/` so the next session catches everything immediately.
+> **The premise.** Some other repo ran `harvest repo-ops --export` and produced a portable bundle. **`import repo-ops harvest`** ingests that bundle into _this_ repo's `.agents/brain/` tree, then syncs the new content into the agent's memory at `~/.claude/projects/<this-repo>/memory/` so the next session catches everything immediately.
 
 This recipe is invoked by phrases like:
 
@@ -28,14 +28,14 @@ The bundle's `manifest.json` declares disposition per artifact. The importer res
 
 | Bundle artifact | Target | Collision rule |
 | --- | --- | --- |
-| `bundle/adrs/NNNN-*.md` | `.brain/adrs/` | Renumber on collision (next free `NNNN`); preserve original number in body as `Originally: 0007 (source-repo)` |
-| `bundle/postmortems/YYYY-MM-DD-*.md` | `.brain/postmortems/` | Date prefix is unique enough; on exact-match append `-imported` to filename |
-| `bundle/postmortems/_TEMPLATE.md` | `.brain/postmortems/_TEMPLATE.md` | If absent in target, install. If present, diff and prompt — don't auto-overwrite |
-| `bundle/runbooks-portable/*.md` | `.brain/runbooks/` | Same diff-and-prompt rule |
+| `bundle/adrs/NNNN-*.md` | `.agents/brain/adrs/` | Renumber on collision (next free `NNNN`); preserve original number in body as `Originally: 0007 (source-repo)` |
+| `bundle/postmortems/YYYY-MM-DD-*.md` | `.agents/brain/postmortems/` | Date prefix is unique enough; on exact-match append `-imported` to filename |
+| `bundle/postmortems/_TEMPLATE.md` | `.agents/brain/postmortems/_TEMPLATE.md` | If absent in target, install. If present, diff and prompt — don't auto-overwrite |
+| `bundle/runbooks-portable/*.md` | `.agents/brain/runbooks/` | Same diff-and-prompt rule |
 | `bundle/conventions-portable/*.md` | `docs/conventions/` | Same — never auto-overwrite |
-| `bundle/findings-schema.json` | (use to validate `.brain/findings/INDEX.md`) | If target has no `INDEX.md`, install one with the imported schema |
-| `bundle/audit-history-schema.json` | (use to validate `.brain/audit-history/`) | First imported audit lands in the same shape as the source |
-| `bundle/config.toml.example` | `.brain/config.toml` | If target has no config, install with imported defaults; otherwise diff-and-prompt |
+| `bundle/findings-schema.json` | (use to validate `.agents/brain/findings/INDEX.md`) | If target has no `INDEX.md`, install one with the imported schema |
+| `bundle/audit-history-schema.json` | (use to validate `.agents/brain/audit-history/`) | First imported audit lands in the same shape as the source |
+| `bundle/config.toml.example` | `.agents/brain/config.toml` | If target has no config, install with imported defaults; otherwise diff-and-prompt |
 | `bundle/agents-template.md` | (use to verify target `AGENTS.md` has parallel sections) | Read-only — informs the gap report |
 
 ## What does NOT get imported
@@ -58,8 +58,8 @@ User-confirmation gates marked **[gate]**.
    - No absolute user paths in any text file (warn-and-strip)
 
 3. **Detect target's brain layout.**
-   - `.brain/` exists? Use it.
-   - Only legacy `docs/{adrs,postmortems,...}/` exists? Recommend running base `repo-ops` to migrate to `.brain/` first; abort import unless user forces.
+   - `.agents/brain/` exists? Use it.
+   - Only legacy `docs/{adrs,postmortems,...}/` exists? Recommend running base `repo-ops` to migrate to `.agents/brain/` first; abort import unless user forces.
    - Neither exists? Recommend `greenfield-setup.md`; abort.
 
 4. **Plan the merges.** For each bundle artifact, compute:
@@ -76,9 +76,9 @@ User-confirmation gates marked **[gate]**.
    - Install schemas + config.toml if absent
 
 7. **Update local INDEX files.**
-   - `.brain/adrs/README.md` (if present): refresh the index to include imported ADRs with a `(imported from <source-repo>)` annotation
-   - `.brain/postmortems/INDEX.md`: same
-   - `.brain/findings/INDEX.md`: keep target's findings, but add an `Imported from <source>` section if the source had `## Graduations` content worth preserving
+   - `.agents/brain/adrs/README.md` (if present): refresh the index to include imported ADRs with a `(imported from <source-repo>)` annotation
+   - `.agents/brain/postmortems/INDEX.md`: same
+   - `.agents/brain/findings/INDEX.md`: keep target's findings, but add an `Imported from <source>` section if the source had `## Graduations` content worth preserving
 
 8. **Run a fresh audit.** Invoke the parent `repo-ops` audit on the freshly-imported state. The ledger entry will record the import as the audit's source event.
 
@@ -109,7 +109,7 @@ User-confirmation gates marked **[gate]**.
       ✓ permissions.allow += ["Bash(npm run verify:*)"] (proposed; user approved)
 
     Audit run:
-      ✓ Trip-wires green; ledger entry written to .brain/audit-history/2026-04-29-import-source.json
+      ✓ Trip-wires green; ledger entry written to .agents/brain/audit-history/2026-04-29-import-source.json
     ```
 
 ## Sanity checks
@@ -120,7 +120,7 @@ Refuse to import if any of these fail:
 - [ ] Bundle contains files outside the declared dispositions
 - [ ] Bundle contains absolute user paths or matches secret patterns (defense in depth)
 - [ ] Bundle size > 5 MB
-- [ ] Target has uncommitted changes in `.brain/` (require clean tree to make rollback safe)
+- [ ] Target has uncommitted changes in `.agents/brain/` (require clean tree to make rollback safe)
 - [ ] Target's git branch isn't main / a dedicated import branch (refuse to import on a release branch)
 
 Always require **explicit user confirmation** for:
@@ -132,10 +132,10 @@ Always require **explicit user confirmation** for:
 
 ## Rollback
 
-The import never touches anything outside `.brain/` + `docs/conventions/` + `~/.claude/projects/<repo>/memory/` + `.claude/settings.json`. To roll back:
+The import never touches anything outside `.agents/brain/` + `docs/conventions/` + `~/.claude/projects/<repo>/memory/` + `.claude/settings.json`. To roll back:
 
 ```bash
-git checkout -- .brain/ docs/conventions/ .claude/settings.json
+git checkout -- .agents/brain/ docs/conventions/ .claude/settings.json
 # memory files are user-scope; restore from a backup if needed
 ```
 

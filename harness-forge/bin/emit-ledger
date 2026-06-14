@@ -14,7 +14,7 @@ recorded), the failure is surfaced to the model as `additionalContext` — a bro
 loud finding, not a silent gap.
 
 Wired by `bin/wire.py` into the project's own `.claude/settings.json` (the plugin session ships only the
-advisory `harness-hook`). Resolves the harness at `$HARNESS_DIR`, else `./.harness` (hooks run with the
+advisory `harness-hook`). Resolves the harness at `$HARNESS_DIR`, else `./.agents/harness` (hooks run with the
 project as cwd).
 
 Usage:
@@ -31,7 +31,7 @@ LAYERS = ("ontology", "spec", "rubric", "policy", "capability", "methodology", "
 
 
 def _harness_dir():
-    return os.environ.get("HARNESS_DIR") or ".harness"
+    return os.environ.get("HARNESS_DIR") or ".agents/harness"
 
 
 def _relevant(path, d):
@@ -88,11 +88,11 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as root:
-        d = os.path.join(root, ".harness")
+        d = os.path.join(root, ".agents/harness")
         os.makedirs(os.path.join(d, "spec"))
         lp = os.path.join(d, "ledger", "events.jsonl")
 
-        ok, ctx = record(".harness/spec/first-slice.md", d=d)     # a layer write is recorded
+        ok, ctx = record(".agents/harness/spec/first-slice.md", d=d)     # a layer write is recorded
         expect(ok and ctx is None, "engine-relevant write was not recorded")
         ok, _ = record("src/spec/parser.md", d=d)                  # any layer-shaped dir counts
         expect(ok, "layer-shaped asset dir write was not recorded")
@@ -107,14 +107,14 @@ def selftest():
         expect(e["operation"] == "record" and e["actor"] == "hook:emit-ledger" and e["path"].endswith("first-slice.md"),
                f"audit event malformed: {e}")
 
-        ok, ctx = record(".harness/spec/x.md", d=os.path.join(root, "nowhere"))   # no harness → silent
+        ok, ctx = record(".agents/harness/spec/x.md", d=os.path.join(root, "nowhere"))   # no harness → silent
         expect(not ok and ctx is None, "missing harness did not stand down silently")
 
-        ro = os.path.join(root, "ro", ".harness")                  # a harness whose ledger cannot be written → LOUD
+        ro = os.path.join(root, "ro", ".agents/harness")                  # a harness whose ledger cannot be written → LOUD
         os.makedirs(os.path.join(ro, "ledger"))
         os.chmod(os.path.join(ro, "ledger"), 0o500)
         try:
-            ok, ctx = record(".harness/spec/y.md", d=ro)
+            ok, ctx = record(".agents/harness/spec/y.md", d=ro)
             expect(not ok and ctx and "could NOT record" in ctx, "broken audit trail was not surfaced as a finding")
         finally:
             os.chmod(os.path.join(ro, "ledger"), 0o700)

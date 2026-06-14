@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "project": "fixture-stale-but-trusted",
+  "project": "fixture-unearned-autonomy",
   "created": "2026-06-12T09:00:00-07:00",
   "produced_by": "harness-forge",
   "frontier_scope": "task",
@@ -11,7 +11,7 @@
       "slug": "domain",
       "maturity": "validated",
       "depends_on": [],
-      "signal_refs": ["signals/ontology.task.domain/2026-06-10T08-50--review.json"]
+      "signal_refs": ["signals/ontology.task.domain/2026-06-12T08-50--review.json"]
     },
     {
       "layer": "spec",
@@ -19,17 +19,15 @@
       "slug": "parse-invoice",
       "maturity": "validated",
       "depends_on": ["ontology.task.domain"],
-      "asset_ref": ".harness/spec/parse-invoice.md",
-      "signal_refs": ["signals/spec.task.parse-invoice/2026-06-10T09-05--predicate-check.json"]
+      "signal_refs": ["signals/spec.task.parse-invoice/2026-06-12T09-05--predicate-check.json"]
     },
     {
-      "layer": "rubric",
+      "layer": "policy",
       "scope": "task",
-      "slug": "parse-invoice",
-      "maturity": "validated",
+      "slug": "trust-trajectory",
+      "maturity": "defined",
       "depends_on": ["spec.task.parse-invoice"],
-      "validated_against": { "spec.task.parse-invoice": "sha256:9c2e41d07a55b8f0" },
-      "signal_refs": ["signals/rubric.task.parse-invoice/2026-06-10T10-00--calibration.json"]
+      "asset_ref": ".agents/harness/policy/trust-trajectory.md"
     },
     {
       "layer": "ledger",
@@ -37,7 +35,7 @@
       "slug": "events",
       "maturity": "validated",
       "depends_on": ["ontology.task.domain"],
-      "signal_refs": ["signals/ledger.task.events/2026-06-10T08-55--schema-check.json"]
+      "signal_refs": ["signals/ledger.task.events/2026-06-12T08-55--schema-check.json"]
     }
   ]
 }

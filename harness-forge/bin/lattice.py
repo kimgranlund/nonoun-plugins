@@ -5,7 +5,7 @@ The lattice is layers × scopes; a cell is one layer at one scope with a maturit
 work on next?" is a SELECTION FUNCTION over this grid, not a planning meeting — and selection, ranking,
 readiness, and staleness are deterministic graph computations, so they live in code, never in inference
 (the routing law: computation routes to code, a model-predicted computation is a hallucination surface).
-This script is that code. Canonical state is `.harness/lattice.json`; every other view is derived.
+This script is that code. Canonical state is `.agents/harness/lattice.json`; every other view is derived.
 
 Operations:
   - scan      — sweep the modality axis at the frontier scope → the open/stale gap set (detects gaps; does not rank)
@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.5.1"
+KERNEL_VERSION = "0.5.2"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -221,7 +221,7 @@ def _append_ledger_event(d, event):
 
 
 def _read_ledger_events(d):
-    """Read .harness/ledger/events.jsonl inline (no ledger.py import — keeps the wired _lattice.py self-contained)."""
+    """Read .agents/harness/ledger/events.jsonl inline (no ledger.py import — keeps the wired _lattice.py self-contained)."""
     p = os.path.join(d, "ledger", "events.jsonl")
     out = []
     try:
@@ -363,7 +363,7 @@ def loop_marker_stale(d, now_iso):
 
 
 def loop_marker_check(d):
-    """Validate `.harness/run/loop-active.json`'s shape when present (mirrors run_budget_check — Scott W., 0.5.3).
+    """Validate `.agents/harness/run/loop-active.json`'s shape when present (mirrors run_budget_check — Scott W., 0.5.3).
     Returns a list of findings; an absent marker is fine (no loop)."""
     m = loop_marker_load(d)
     if m is None:
@@ -419,7 +419,7 @@ def run_budget_exhausted(d, now_iso):
 
 
 def run_budget_check(d):
-    """Validate .harness/run/budget.json against run-budget.schema.json when present. Returns a list of findings."""
+    """Validate .agents/harness/run/budget.json against run-budget.schema.json when present. Returns a list of findings."""
     b = run_budget_load(d)
     if b is None:
         return []
@@ -498,6 +498,18 @@ def scaffold(d):
     if os.path.isfile(src):
         shutil.copyfile(src, dst)
         made.append("naming.schema.json")
+    # commit-vs-ignore hygiene: the run budget + loop marker under run/ are EPHEMERAL per-run state,
+    # regenerated each /harness-run — a stale committed run/budget.json or run/loop-active.json would
+    # wedge a fresh clone's wired gate. The durable knowledge (lattice.json, the layer assets, signals/,
+    # ledger/) IS committed. Written once; a user-customized .gitignore is left untouched.
+    gi = os.path.join(d, ".gitignore")
+    if not os.path.isfile(gi):
+        with open(gi, "w", encoding="utf-8") as f:
+            f.write("# Ephemeral per-run state (run budget + loop marker) — regenerated each /harness-run.\n"
+                    "# Never commit it: a stale run/ would wedge a fresh clone's budget gate. The durable\n"
+                    "# lattice (lattice.json, layer assets, signals/, ledger/) IS committed.\n"
+                    "run/\n")
+        made.append(".gitignore")
     return made
 
 
@@ -510,7 +522,9 @@ def check(lat, d=None):
     findings = []
     seen = set()
     by_id = {cid(c): c for c in lat.get("cells", []) if all(k in c for k in ("layer", "scope", "slug"))}
-    root = (os.path.dirname(d.rstrip("/")) or ".") if d else None
+    # the harness dir is `<project-root>/.agents/harness` by convention, so the project root that
+    # asset_refs resolve against is its GRANDPARENT (two dirnames up), not its parent.
+    root = (os.path.dirname(os.path.dirname(d.rstrip("/"))) or ".") if d else None
     # cell.schema.json is the single source when present; the module constants are the portable fallback.
     schema = _cell_schema()
     props = (schema or {}).get("properties", {})
@@ -573,7 +587,7 @@ def check(lat, d=None):
                     if now and now != recorded:
                         findings.append(f"{cell_id}: trusts `{dep}` at {recorded} but its asset now hashes {now} — "
                                         f"stale-but-trusted (the evidence predates the content; re-validate)")
-    if d:                                                    # the run/ files are durable .harness/ state — type-check them too
+    if d:                                                    # the run/ files are durable .agents/harness/ state — type-check them too
         findings += run_budget_check(d)
         findings += loop_marker_check(d)
     return findings
@@ -652,7 +666,7 @@ def selftest():
     # the GLOBAL run bound (the council's convergent fix): exhaustion is computed from code, no agent counter.
     import tempfile
     with tempfile.TemporaryDirectory() as rb:
-        rd = os.path.join(rb, ".harness")
+        rd = os.path.join(rb, ".agents/harness")
         scaffold(rd)
         nowi = "2026-06-13T12:00:00-07:00"
         expect(run_budget_exhausted(rd, nowi) == (False, None, {"active": False}), "no-run was treated as exhausted")
@@ -734,7 +748,7 @@ def selftest():
     # stale-but-trusted: the recorded validation hash no longer matches the asset on disk (needs d to resolve).
     import tempfile
     with tempfile.TemporaryDirectory() as td2:
-        hd = os.path.join(td2, ".harness")
+        hd = os.path.join(td2, ".agents/harness")
         os.makedirs(hd)
         asset = os.path.join(td2, "spec-asset.md")
         open(asset, "w").write("v2 — moved on")
@@ -784,6 +798,8 @@ def selftest():
             expect(os.path.isdir(os.path.join(td, layer)), f"scaffold did not create layer dir {layer}/")
         expect(os.path.isdir(os.path.join(td, "signals")) and os.path.isdir(os.path.join(td, "ledger")), "scaffold missed signals/ or ledger/")
         expect("naming.schema.json" in made and os.path.isfile(os.path.join(td, "naming.schema.json")), "scaffold did not copy the naming schema")
+        gi = os.path.join(td, ".gitignore")                # commit-vs-ignore hygiene: run/ is ignored, the rest committed
+        expect(os.path.isfile(gi) and "run/" in open(gi, encoding="utf-8").read(), "scaffold did not write a run/-ignoring .gitignore")
 
     if fails:
         sys.stderr.write("lattice selftest: FAIL\n")
@@ -799,7 +815,7 @@ def selftest():
 
 
 def _dir(argv):
-    return argv[argv.index("--dir") + 1] if "--dir" in argv else ".harness"
+    return argv[argv.index("--dir") + 1] if "--dir" in argv else ".agents/harness"
 
 
 def main(argv):

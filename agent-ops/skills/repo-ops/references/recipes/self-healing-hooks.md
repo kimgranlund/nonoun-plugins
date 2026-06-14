@@ -24,7 +24,7 @@ status: research-verified
 A self-healing repo:
 
 1. **Refuses to merge PRs** that introduce drift between CLAUDE.md and AGENTS.md.
-2. **Refuses to merge PRs** with broken intra-repo or external links in `.brain/` or `docs/`.
+2. **Refuses to merge PRs** with broken intra-repo or external links in `.agents/brain/` or `docs/`.
 3. **Refuses commits** that bloat AGENTS.md / CLAUDE.md past the 200-line ceiling.
 4. **Auto-archives** orphaned docs after a 30-day grace period.
 5. **Surfaces stale content** weekly (scheduled CI), not on a someone-remembered-to-look basis.
@@ -68,12 +68,12 @@ repos:
         language: system
         pass_filenames: false
 
-      # Trip-wire 3: docs in .brain/ or docs/ must have a date
+      # Trip-wire 3: docs in .agents/brain/ or docs/ must have a date
       - id: doc-frontmatter-date
-        name: .brain/*.md and docs/*.md must have date frontmatter or "Last reviewed:" line
+        name: .agents/brain/*.md and docs/*.md must have date frontmatter or "Last reviewed:" line
         entry: bash -c 'bash scripts/check-doc-dates.sh'
         language: system
-        files: '^(\.brain|docs)/.*\.md$'
+        files: '^(\.agents/brain|docs)/.*\.md$'
         pass_filenames: true
 ```
 
@@ -135,7 +135,7 @@ exit 1
 
 ```bash
 #!/usr/bin/env bash
-# Trip-wire: every .brain/*.md and docs/*.md must have a date.
+# Trip-wire: every .agents/brain/*.md and docs/*.md must have a date.
 set -euo pipefail
 fail=0
 for f in "$@"; do
@@ -160,7 +160,7 @@ name: Repo-brain (PR)
 
 on:
   pull_request:
-    paths: ['**.md', '.brain/**', 'docs/**', 'AGENTS.md', 'CLAUDE.md', '.cursor/**', '.windsurfrules', '.github/copilot-instructions.md']
+    paths: ['**.md', '.agents/brain/**', 'docs/**', 'AGENTS.md', 'CLAUDE.md', '.cursor/**', '.windsurfrules', '.github/copilot-instructions.md']
 
 jobs:
   links:
@@ -170,7 +170,7 @@ jobs:
       - name: Lychee link check
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --cache --max-cache-age=1d --no-progress '.brain/**/*.md' 'docs/**/*.md' '*.md'
+          args: --cache --max-cache-age=1d --no-progress '.agents/brain/**/*.md' 'docs/**/*.md' '*.md'
           fail: true
 
   drift-and-length:
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - run: |
-          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '.brain/**/*.md' 'docs/**/*.md' || true)
+          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '.agents/brain/**/*.md' 'docs/**/*.md' || true)
           if [ -n "$changed" ]; then
             bash scripts/check-doc-dates.sh $changed
           fi
@@ -227,7 +227,7 @@ jobs:
       - name: External link check (full)
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress '.brain/**/*.md' 'docs/**/*.md' '*.md'
+          args: --no-progress '.agents/brain/**/*.md' 'docs/**/*.md' '*.md'
           fail: false  # Don't fail; report
 
       - name: Stale-doc detection (mtime + frontmatter)
@@ -261,11 +261,11 @@ jobs:
 
 ```bash
 #!/usr/bin/env bash
-# Find docs in .brain/ or docs/ not referenced by any entry file or other doc.
+# Find docs in .agents/brain/ or docs/ not referenced by any entry file or other doc.
 set -euo pipefail
-all_docs=$(find .brain docs -type f -name '*.md' 2>/dev/null)
+all_docs=$(find .agents/brain docs -type f -name '*.md' 2>/dev/null)
 referenced=$(
-  cat AGENTS.md CLAUDE.md README.md .brain/**/*.md docs/**/*.md 2>/dev/null \
+  cat AGENTS.md CLAUDE.md README.md .agents/brain/**/*.md docs/**/*.md 2>/dev/null \
   | grep -oE '\[[^]]+\]\(([^)]+)\)' \
   | grep -oE '\(([^)]+)\)' \
   | tr -d '()' \
@@ -306,20 +306,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - name: Move stale orphans to .brain/archive/
+      - name: Move stale orphans to .agents/brain/archive/
         run: |
           # An orphan unmodified for 30+ days AND not in /archive/ → archive it.
           while IFS= read -r line; do
             [[ -z "$line" ]] && continue
             f=$(echo "$line" | cut -d' ' -f2)
-            [[ "$f" == .brain/archive/* ]] && continue
+            [[ "$f" == .agents/brain/archive/* ]] && continue
             [[ "$f" == docs/archive/* ]] && continue
             mtime=$(git log -1 --format=%ct -- "$f")
             now=$(date +%s)
             age_days=$(( (now - mtime) / 86400 ))
             if [ "$age_days" -gt 30 ]; then
-              mkdir -p .brain/archive
-              git mv "$f" ".brain/archive/$(basename "$f")"
+              mkdir -p .agents/brain/archive
+              git mv "$f" ".agents/brain/archive/$(basename "$f")"
               echo "Archived: $f (orphan for ${age_days}d)"
             fi
           done < <(bash scripts/find-orphan-docs.sh)

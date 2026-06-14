@@ -206,9 +206,9 @@ jobs:
           python3 harness-forge/bin/lattice-mcp.py selftest    # read-only MCP path guard + tools (scan_frontier marks blocked cells)
           # seed → scan → check → wire smoke on a real scaffolded project in a throwaway dir
           D="$(mktemp -d)"
-          python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.harness"
-          python3 harness-forge/bin/lattice.py scan --dir "$D/.harness"
-          python3 harness-forge/bin/lattice.py check --dir "$D/.harness"   # the seeded lattice passes its own structural validator
+          python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.agents/harness"
+          python3 harness-forge/bin/lattice.py scan --dir "$D/.agents/harness"
+          python3 harness-forge/bin/lattice.py check --dir "$D/.agents/harness"   # the seeded lattice passes its own structural validator
           python3 harness-forge/bin/wire.py apply --project "$D"           # the installer wires the seeded project...
           python3 harness-forge/bin/wire.py check --project "$D"           # ...and the wiring check proves it (exit 0 = wired)
 

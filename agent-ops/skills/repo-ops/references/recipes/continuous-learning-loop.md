@@ -22,7 +22,7 @@ status: research-verified
 A continuously-learning repo:
 
 1. **AGENTS.md gets smarter every week.** When the agent makes a mistake, the user (or the agent itself) adds a correction. Over weeks, the file converges on what's load-bearing for that repo.
-2. **Architectural decisions get captured at decision time** as ADRs in `.brain/adrs/`, not retroactively reconstructed from PR descriptions six months later.
+2. **Architectural decisions get captured at decision time** as ADRs in `.agents/brain/adrs/`, not retroactively reconstructed from PR descriptions six months later.
 3. **Incidents get post-mortems within 1 week.** Blameless. The post-mortem is linked from AGENTS.md's "Memory primitives" section so future agents know to check it.
 4. **The decision log compounds.** A repo with 100 ADRs has more institutional memory than one with 10, _as long as the index stays current and the AGENTS.md pointer stays accurate_.
 
@@ -75,7 +75,7 @@ The dated parenthetical is critical — it lets the user _delete_ the correction
 ## Architectural impact
 
 - [ ] No architectural change (no ADR needed)
-- [ ] Architectural change — ADR added at: `.brain/adrs/NNNN-*.md`
+- [ ] Architectural change — ADR added at: `.agents/brain/adrs/NNNN-*.md`
 - [ ] Architectural change — ADR exemption granted by: [name]
       Reason: [why no ADR]
 ```
@@ -90,21 +90,21 @@ The dated parenthetical is critical — it lets the user _delete_ the correction
     arch_files_changed=$(git diff --name-only $base...HEAD -- \
       'docs/ARCHITECTURE.md' 'package.json' 'pyproject.toml' \
       ':(top)*.config.*' ':(top)*.toml' ':(top)Dockerfile*' || true)
-    new_adrs=$(git diff --name-only $base...HEAD -- '.brain/adrs/*.md' | grep -c '^' || echo 0)
+    new_adrs=$(git diff --name-only $base...HEAD -- '.agents/brain/adrs/*.md' | grep -c '^' || echo 0)
     if [ -n "$arch_files_changed" ] && [ "$new_adrs" -eq 0 ]; then
       echo "::warning::PR changes likely-architectural files but adds no ADR. Verify exemption box is ticked."
     fi
 ```
 
-**The trip-wire.** `.brain/adrs/` should grow over time at a rate consistent with the repo's architectural-change rate. A 5-year-old repo with 2 ADRs is suspicious — either the team's not capturing decisions or they're capturing them somewhere else (PR descriptions, Slack, code comments). The audit flags repos with `<1 ADR per year of repo age` for `>1 year` repos.
+**The trip-wire.** `.agents/brain/adrs/` should grow over time at a rate consistent with the repo's architectural-change rate. A 5-year-old repo with 2 ADRs is suspicious — either the team's not capturing decisions or they're capturing them somewhere else (PR descriptions, Slack, code comments). The audit flags repos with `<1 ADR per year of repo age` for `>1 year` repos.
 
 ### Flow 3 — Postmortem-on-incident
 
-**The mechanism.** Within 1 week of a SEV-1 or SEV-2 incident, a blameless post-mortem lands in `.brain/postmortems/YYYY-MM-DD-name.md`. See `../doc-types/postmortem-pattern.md` for the template.
+**The mechanism.** Within 1 week of a SEV-1 or SEV-2 incident, a blameless post-mortem lands in `.agents/brain/postmortems/YYYY-MM-DD-name.md`. See `../doc-types/postmortem-pattern.md` for the template.
 
 The flow itself runs _outside_ the repo (incident response, retrospective meeting, write-up) — but the _artifact_ lands in the repo and gets indexed.
 
-**The trip-wire.** If the repo has had production incidents (heuristic: search `git log` for `revert`, `hotfix`, `incident`, `outage`, `rollback`) but `.brain/postmortems/` is empty, the audit flags it. False positives are fine — the prompt to write a post-mortem is the value.
+**The trip-wire.** If the repo has had production incidents (heuristic: search `git log` for `revert`, `hotfix`, `incident`, `outage`, `rollback`) but `.agents/brain/postmortems/` is empty, the audit flags it. False positives are fine — the prompt to write a post-mortem is the value.
 
 ## How AGENTS.md should expose the memory primitives
 
@@ -113,11 +113,11 @@ The "Memory primitives" section of AGENTS.md tells the agent _when to read_ each
 ```markdown
 ## Memory primitives
 
-- **Before architectural changes**, read `.brain/adrs/` newest-first. If
+- **Before architectural changes**, read `.agents/brain/adrs/` newest-first. If
   your proposed change conflicts with an `Accepted` ADR, write a new ADR
   superseding it; don't silently override.
 
-- **When debugging a production issue**, search `.brain/postmortems/` for
+- **When debugging a production issue**, search `.agents/brain/postmortems/` for
   prior occurrences. Many "new" bugs are repeats.
 
 - **When you make a mistake the user has to correct**, ask: "Should I add
@@ -125,7 +125,7 @@ The "Memory primitives" section of AGENTS.md tells the agent _when to read_ each
   is yes. Add a one-line correction with a dated parenthetical.
 
 - **When a runbook is needed for a recurring operation**, file it in
-  `.brain/runbooks/` rather than embedding it in AGENTS.md.
+  `.agents/brain/runbooks/` rather than embedding it in AGENTS.md.
 ```
 
 This section is what makes the loop _closed_ — without it, the artifacts exist in the repo but the agent doesn't know to consult them.
@@ -145,9 +145,9 @@ The opposite case: AGENTS.md was written once 5 years ago, never updated. ADRs d
 | Flow | Check | Severity if missing |
 | --- | --- | --- |
 | Iterate AGENTS.md | AGENTS.md last-modified date < 90 days for active repos (heuristic: repo has commits in last 90 days) | Advisory |
-| ADR-on-architectural-change | `.brain/adrs/` exists and contains ≥1 ADR per year of repo age (rough heuristic) | Medium |
+| ADR-on-architectural-change | `.agents/brain/adrs/` exists and contains ≥1 ADR per year of repo age (rough heuristic) | Medium |
 | ADR PR template | `.github/pull_request_template.md` includes architectural-impact checkbox | Low |
-| Postmortem-on-incident | If `git log` has incident-shaped commits, `.brain/postmortems/` is non-empty | Medium |
+| Postmortem-on-incident | If `git log` has incident-shaped commits, `.agents/brain/postmortems/` is non-empty | Medium |
 | AGENTS.md "Memory primitives" section | Section exists and points to ADRs + postmortems | High (closes the loop) |
 
 A repo can pass all the _self-healing_ checks (Promise 4) and still fail _continuously-learning_ (Promise 5) — they're orthogonal. The hooks keep the surface clean; the loop makes it grow smarter.
@@ -155,8 +155,8 @@ A repo can pass all the _self-healing_ checks (Promise 4) and still fail _contin
 ## Common anti-patterns
 
 - **AGENTS.md is in `Proposed` status forever** — corrections never get accepted into the canonical file. Loop is broken at the merge step.
-- **ADRs in PR descriptions** — they don't compound; nobody can find them. Move into `.brain/adrs/`.
-- **Post-mortems in private docs (Notion, Confluence)** — unreachable from the agent. Either move to `.brain/postmortems/` or link aggressively from AGENTS.md.
+- **ADRs in PR descriptions** — they don't compound; nobody can find them. Move into `.agents/brain/adrs/`.
+- **Post-mortems in private docs (Notion, Confluence)** — unreachable from the agent. Either move to `.agents/brain/postmortems/` or link aggressively from AGENTS.md.
 - **Memory primitives section missing from AGENTS.md** — artifacts exist, agent never reads them. Single most common loop break.
 - **Post-mortems blame individuals** — chills future post-mortem candor. Audit the _language_, not just existence.
 

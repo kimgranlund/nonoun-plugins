@@ -3,7 +3,7 @@
 
 The council's convergent v0.4.0 Critical: `/harness-run`'s caps (max-cells, max-iterations, wall-clock) lived
 only as prose a model agent "ticked" — a computation routed to inference at the loop's terminator. The fix
-lives in the kernel (`lattice.run_budget_*`): the run's budget is persisted to `.harness/run/budget.json`, and
+lives in the kernel (`lattice.run_budget_*`): the run's budget is persisted to `.agents/harness/run/budget.json`, and
 the exhaustion verdict is COMPUTED from code (wall-clock from an absolute deadline — no counter; iterations
 and cells counted from the ledger). `gate-budget` reads `run_budget_exhausted()` and denies every worker
 write once the run is spent. This CLI is how the orchestrator (`/harness-run`) starts and ends the run.
@@ -45,7 +45,7 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as root:
-        d = os.path.join(root, ".harness")
+        d = os.path.join(root, ".agents/harness")
         _lat.scaffold(d)
         now = _now().isoformat(timespec="seconds")
 
@@ -118,7 +118,7 @@ def _strflag(argv, name, default=None):
 def main(argv):
     if argv and argv[0] == "selftest":
         return selftest()
-    d = argv[argv.index("--dir") + 1] if "--dir" in argv else ".harness"
+    d = argv[argv.index("--dir") + 1] if "--dir" in argv else ".agents/harness"
     if argv and argv[0] == "mark":
         m = _lat.loop_marker_set(d, _now().isoformat(timespec="seconds"), _strflag(argv, "--label", "harness-run"))
         print(f"loop marked active: {m['label']} (started {m['started_ts']}). Arm a ceiling with "

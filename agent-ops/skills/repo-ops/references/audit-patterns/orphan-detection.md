@@ -16,16 +16,16 @@ status: research-verified
 
 # Orphan detection (delivers Promise 1, "less-wasteful")
 
-> **The premise.** A doc no one references is a doc no one reads — but it still costs tokens when a globbed `.brain/**/*.md` or `docs/**/*.md` load picks it up, still costs trust when a future reader finds it and can't tell whether it's current, and still drifts because no PR ever touches it. Orphans are the silent compounding cost of an unmaintained doc tree.
+> **The premise.** A doc no one references is a doc no one reads — but it still costs tokens when a globbed `.agents/brain/**/*.md` or `docs/**/*.md` load picks it up, still costs trust when a future reader finds it and can't tell whether it's current, and still drifts because no PR ever touches it. Orphans are the silent compounding cost of an unmaintained doc tree.
 
 ## The graph model
 
 Treat the repo as a directed graph:
 
-- **Nodes:** every Markdown file under `.brain/**` and `docs/**` plus the top-level entries (`AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, etc.).
+- **Nodes:** every Markdown file under `.agents/brain/**` and `docs/**` plus the top-level entries (`AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, etc.).
 - **Edges:** every relative-path link from one node to another (extracted by the same grammar `pointer-validation.md` uses).
 - **Roots:** `AGENTS.md` is the canonical root. `CLAUDE.md` (when fat), `README.md`, and `CONTRIBUTING.md` are secondary roots.
-- **Orphan:** any node in `.brain/**` or `docs/**` that is **not reachable** from any root.
+- **Orphan:** any node in `.agents/brain/**` or `docs/**` that is **not reachable** from any root.
 
 Reachability is transitive — if `AGENTS.md` links `ARCHITECTURE.md` and `ARCHITECTURE.md` links `docs/services/auth.md`, then `auth.md` is reachable.
 
@@ -40,20 +40,20 @@ Reachability is transitive — if `AGENTS.md` links `ARCHITECTURE.md` and `ARCHI
 
 ## The bash check
 
-Two-pass set-difference: build the set of _files in `.brain/` + `docs/`_, build the set of _files referenced from a root or its transitive closure_, diff.
+Two-pass set-difference: build the set of _files in `.agents/brain/` + `docs/`_, build the set of _files referenced from a root or its transitive closure_, diff.
 
 ```bash
 #!/usr/bin/env bash
-# scripts/find-orphan-docs.sh — find .brain/*.md and docs/*.md unreachable from any root.
+# scripts/find-orphan-docs.sh — find .agents/brain/*.md and docs/*.md unreachable from any root.
 set -euo pipefail
 
-all_docs=$(find .brain docs -type f -name '*.md' 2>/dev/null | sort -u)
+all_docs=$(find .agents/brain docs -type f -name '*.md' 2>/dev/null | sort -u)
 
 roots=()
 for r in AGENTS.md CLAUDE.md README.md CONTRIBUTING.md \
          .cursorrules .windsurfrules \
          .github/copilot-instructions.md .github/pull_request_template.md \
-         .brain/README.md .brain/INDEX.md docs/README.md docs/INDEX.md; do
+         .agents/brain/README.md .agents/brain/INDEX.md docs/README.md docs/INDEX.md; do
     [ -f "$r" ] && roots+=("$r")
 done
 
@@ -104,22 +104,22 @@ The doc is current but unpointed. Add a link from AGENTS.md's "Where to find thi
 
 ## Where to find things
 
-- **Architecture:** `.brain/architecture/`
-- **ADRs:** `.brain/adrs/`
+- **Architecture:** `.agents/brain/architecture/`
+- **ADRs:** `.agents/brain/adrs/`
 - **Onboarding:** `docs/onboarding.md`   <-- newly re-linked
-- **Post-mortems:** `.brain/postmortems/`
+- **Post-mortems:** `.agents/brain/postmortems/`
 ```
 
 ### (b) Archive — orphan is obsolete-but-historic
 
-Cutting loses institutional memory; keeping in place invites confusion. Move to `.brain/archive/`:
+Cutting loses institutional memory; keeping in place invites confusion. Move to `.agents/brain/archive/`:
 
 ```bash
-git mv docs/old-redis-setup.md .brain/archive/old-redis-setup.md
+git mv docs/old-redis-setup.md .agents/brain/archive/old-redis-setup.md
 git commit -m 'docs: archive old-redis-setup.md (orphan, obsolete since 2025-10 Redis -> Memorystore migration)'
 ```
 
-The `.brain/archive/` folder gets its own `README.md` listing what's in there and why it's archived. The audit _excludes_ `.brain/archive/**` from the orphan scan (everything in there is intentionally orphaned).
+The `.agents/brain/archive/` folder gets its own `README.md` listing what's in there and why it's archived. The audit _excludes_ `.agents/brain/archive/**` from the orphan scan (everything in there is intentionally orphaned).
 
 ### (c) Delete — if the orphan adds no value
 
@@ -144,22 +144,22 @@ Some files act as _indices_ — they enumerate every file in a folder, so every 
 
 | File                           | What it indexes                       |
 | ------------------------------ | ------------------------------------- |
-| `.brain/adrs/README.md`        | every ADR (`0001-*.md` … `NNNN-*.md`) |
-| `.brain/postmortems/README.md` | every postmortem                      |
-| `.brain/runbooks/README.md`    | every runbook                         |
+| `.agents/brain/adrs/README.md`        | every ADR (`0001-*.md` … `NNNN-*.md`) |
+| `.agents/brain/postmortems/README.md` | every postmortem                      |
+| `.agents/brain/runbooks/README.md`    | every runbook                         |
 | `docs/specs/INDEX.md`          | every spec                            |
 | `docs/journal/README.md`       | every dated journal entry             |
 
-Without them in the entry-file set, every ADR / postmortem / runbook / spec / journal entry shows up as an orphan — a false-positive cluster that drowns the real findings. Observed in the wild on 2026-04-29: an audit pass flagged seven ADRs as orphans because the orphan-scan didn't include `.brain/adrs/README.md` as a referencer. Adding it resolved all seven.
+Without them in the entry-file set, every ADR / postmortem / runbook / spec / journal entry shows up as an orphan — a false-positive cluster that drowns the real findings. Observed in the wild on 2026-04-29: an audit pass flagged seven ADRs as orphans because the orphan-scan didn't include `.agents/brain/adrs/README.md` as a referencer. Adding it resolved all seven.
 
 The rule is index-shaped: any folder with a `README.md` whose body is a _table_ listing the folder's files counts as a referencer. Apply this in the entry-file set:
 
 ```bash
 ENTRY_FILES=(
   "AGENTS.md" "CLAUDE.md" "README.md" "PLAN.md" "ROADMAP.md"
-  ".brain/adrs/README.md"          # ← add these
-  ".brain/postmortems/README.md"
-  ".brain/runbooks/README.md"
+  ".agents/brain/adrs/README.md"          # ← add these
+  ".agents/brain/postmortems/README.md"
+  ".agents/brain/runbooks/README.md"
   "docs/specs/INDEX.md"
   "docs/journal/README.md"
 )
@@ -171,11 +171,11 @@ Some docs are intentionally orphaned. Mark them so the audit doesn't keep flaggi
 
 | Convention                                      | What it does              |
 | ----------------------------------------------- | ------------------------- |
-| Place file under `.brain/archive/**`            | Excluded from orphan scan |
+| Place file under `.agents/brain/archive/**`            | Excluded from orphan scan |
 | Add YAML frontmatter `orphan: intentional`      | Excluded from orphan scan |
-| Add file to `.brain/ignore` (one path per line) | Excluded from orphan scan |
+| Add file to `.agents/brain/ignore` (one path per line) | Excluded from orphan scan |
 
-The skill recommends `.brain/archive/` as the default — it's the most discoverable. Frontmatter and ignorefile are escape hatches.
+The skill recommends `.agents/brain/archive/` as the default — it's the most discoverable. Frontmatter and ignorefile are escape hatches.
 
 ## Severity rubric
 
@@ -189,7 +189,7 @@ The skill recommends `.brain/archive/` as the default — it's the most discover
 
 ## What this pattern is NOT for
 
-- **Files outside `.brain/` and `docs/`** — orphan-detection scope is `.brain/**` and `docs/**`. Top-level files (`LICENSE`, `package.json`) aren't candidates.
+- **Files outside `.agents/brain/` and `docs/`** — orphan-detection scope is `.agents/brain/**` and `docs/**`. Top-level files (`LICENSE`, `package.json`) aren't candidates.
 - **Code files** — dead-code detection is a separate problem. This audit is about _documentation_.
 - **Folders with no `.md`** — assets-only folders (`docs/images/`) don't get scanned. They're referenced from inside `.md` files via `![alt](images/foo.png)`, which is a `pointer-validation.md` concern.
 

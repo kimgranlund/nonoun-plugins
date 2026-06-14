@@ -7,7 +7,7 @@ Flags, at write time, the structural smells `repo-ops` audits for on the canonic
                  (invisible to staleness detection)
   ENTRY-BLOAT    AGENTS.md / CLAUDE.md over the ~200-line entry-file ceiling (Anthropic); warns from 150
   DRIFT-RISK     a substantial CLAUDE.md that is NOT a thin pointer to AGENTS.md (a divergent second copy)
-  NO-FRONTMATTER a doc under a memory dir (.brain/ , docs/{adrs,postmortems,runbooks,decisions}/) with
+  NO-FRONTMATTER a doc under a memory dir (.agents/brain/ , docs/{adrs,postmortems,runbooks,decisions}/) with
                  no YAML frontmatter at all
 
 ADVISORY ONLY. `--hook` mode ALWAYS exits 0 — it never blocks a write; it prints suggestions to stderr.
@@ -26,7 +26,7 @@ import sys
 
 CANON = re.compile(r"(^|/)(README|CHANGELOG|ROADMAP|PLAN|BACKLOG|ARCHITECTURE|CONTRIBUTING|SECURITY)\.md$", re.I)
 ENTRY = re.compile(r"(^|/)(AGENTS|CLAUDE)\.md$")
-MEMORY = re.compile(r"(^|/)(\.brain|docs)/(adrs|postmortems|runbooks|decisions)/", re.I)
+MEMORY = re.compile(r"(^|/)(\.agents/brain|docs)/(adrs|postmortems|runbooks|decisions)/", re.I)
 DATEISH = re.compile(r"(?mi)^\s*date\s*:|_Last reviewed:")
 
 
@@ -68,7 +68,7 @@ def _selftest():
         "AGENTS.md": ("x\n" * 210, "ENTRY-BLOAT"),
         "CLAUDE.md": ("# rules\n" + "detail line\n" * 30, "DRIFT-RISK"),
         "README.md": ("# Title\n\nNo date here.\n", "UNDATED"),
-        os.path.join(".brain", "adrs", "0001-x.md"): ("# ADR\n\nbody\n", "NO-FRONTMATTER"),
+        os.path.join(".agents/brain", "adrs", "0001-x.md"): ("# ADR\n\nbody\n", "NO-FRONTMATTER"),
         os.path.join("docs", "guide.md"): ("---\ndate: 2026-06-03\n---\n# ok\n", None),
     }
     with tempfile.TemporaryDirectory() as d:

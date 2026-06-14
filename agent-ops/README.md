@@ -2,7 +2,7 @@
 
 **Author, operate, and review full-spectrum agentic systems — and the repos they live in.** The operations-and-architecture counterpart to the build plugins: it knows how to design agent loops and teams, judge what a running workflow is like to drive, keep a repo's agent-facing memory honest, and review a codebase's architecture.
 
-> **Status: 0.1.12 — carved from four mature skills, now with live retrieval.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`), and the **`repo-memory` MCP** (per-instance read-only retrieval over a repo's agent docs + `.brain/audit-history/` ledger). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). See [ROADMAP.md](ROADMAP.md).
+> **Status: 0.1.14 — carved from four mature skills, now with live retrieval.** Five skills, a 12-critic council, six `/ops-*` commands, an advisory doc-hygiene hook, five gates (`audit-history.py` · `check_blueprint.py` · `check-sourcing.py` · `check-self-contained.py` · `doc-hygiene`), and the **`repo-memory` MCP** (per-instance read-only retrieval over a repo's agent docs + `.agents/brain/audit-history/` ledger). Made self-contained (zero cross-plugin paths, enforced by a gate) and red-teamed with the `plugins-factory` council (CONDITIONAL → folded → APPROVED). See [ROADMAP.md](ROADMAP.md).
 
 ## Quick start
 

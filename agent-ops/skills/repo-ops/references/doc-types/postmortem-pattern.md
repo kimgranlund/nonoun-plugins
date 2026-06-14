@@ -14,7 +14,7 @@ status: research-verified
 
 # Post-mortem pattern
 
-> **Storage convention.** This skill recommends `.brain/postmortems/` (most common) or `.brain/incidents/` (also common). Avoid `.brain/traces/` — "traces" risks being read as observability traces (OpenTelemetry / Jaeger), which is a different concept.
+> **Storage convention.** This skill recommends `.agents/brain/postmortems/` (most common) or `.agents/brain/incidents/` (also common). Avoid `.agents/brain/traces/` — "traces" risks being read as observability traces (OpenTelemetry / Jaeger), which is a different concept.
 
 ## What a post-mortem is
 
@@ -63,7 +63,7 @@ Atlassian's split between _Detection / Response / Recovery_ maps cleanly to inci
 Recommended:
 
 ```text
-.brain/postmortems/
+.agents/brain/postmortems/
 ├── 2026-04-12-checkout-outage.md
 ├── 2026-03-08-payment-double-charge.md
 ├── 2026-01-22-search-degradation.md
@@ -72,7 +72,7 @@ Recommended:
 
 Filename pattern: `YYYY-MM-DD-short-incident-name.md`. The date prefix sorts chronologically.
 
-`.brain/incidents/` is an accepted alias. `.brain/post-mortems/` (with hyphen) also works. Pick one and stick with it.
+`.agents/brain/incidents/` is an accepted alias. `.agents/brain/post-mortems/` (with hyphen) also works. Pick one and stick with it.
 
 ## File template (Google SRE flavor)
 
@@ -156,24 +156,24 @@ User report at 14:27 UTC. Internal alert fired 14:29 UTC.
 In the `Where to find things` section:
 
 ```markdown
-- **Post-mortems:** `.brain/postmortems/` — newest-first; read when investigating recurring issues
+- **Post-mortems:** `.agents/brain/postmortems/` — newest-first; read when investigating recurring issues
 ```
 
 In the `Memory primitives` section:
 
 ```markdown
-- **When debugging a production issue**, search `.brain/postmortems/` for prior occurrences. Many "new" bugs are repeats of fixed-and-forgotten issues.
+- **When debugging a production issue**, search `.agents/brain/postmortems/` for prior occurrences. Many "new" bugs are repeats of fixed-and-forgotten issues.
 ```
 
 ## Audit checks for post-mortems
 
-1. **Folder exists** at `.brain/postmortems/` (or `.brain/incidents/` — accepted alias).
+1. **Folder exists** at `.agents/brain/postmortems/` (or `.agents/brain/incidents/` — accepted alias).
 2. **Filename pattern is consistent** (`YYYY-MM-DD-name.md`).
 3. **Each post-mortem has a `status:` field** (resolved / ongoing / blocked) and `date:`.
 4. **An index file (`README.md`) exists** in the folder, sorted newest-first.
-5. **`.brain/postmortems/` is referenced from AGENTS.md**.
+5. **`.agents/brain/postmortems/` is referenced from AGENTS.md**.
 
-The audit should NOT flag a missing `.brain/postmortems/` folder for projects that haven't had production incidents — heuristic: search commit log for `revert`, `incident`, `outage`, `hotfix` to estimate whether the project should have post-mortems.
+The audit should NOT flag a missing `.agents/brain/postmortems/` folder for projects that haven't had production incidents — heuristic: search commit log for `revert`, `incident`, `outage`, `hotfix` to estimate whether the project should have post-mortems.
 
 ## Trigger rules — when to write a post-mortem
 
@@ -187,11 +187,11 @@ A post-mortem is _not_ required for every bug. The skill recommends writing one 
 
 The point isn't ceremony — it's that the _mechanism_ of failure is captured _once_, in plain text, so the next session inherits the diagnosis instead of re-walking it. A post-mortem that says "we'll be more careful" is failing the test; one that says "we'll add `<specific trip-wire>`" passes.
 
-**Mapping to `repo-ops` artifacts.** When a post-mortem identifies a structural fix (new trip-wire, new convention, new generator), record the finding-to-fix pairing in `.brain/findings/INDEX.md` under `## Graduations`. The post-mortem is the narrative; the graduations table is the structured index. See [`../recipes/findings-index-readout.md`](../recipes/findings-index-readout.md).
+**Mapping to `repo-ops` artifacts.** When a post-mortem identifies a structural fix (new trip-wire, new convention, new generator), record the finding-to-fix pairing in `.agents/brain/findings/INDEX.md` under `## Graduations`. The post-mortem is the narrative; the graduations table is the structured index. See [`../recipes/findings-index-readout.md`](../recipes/findings-index-readout.md).
 
 ## Common anti-patterns
 
-- **Folder named `.brain/traces/`** — confused with observability traces.
+- **Folder named `.agents/brain/traces/`** — confused with observability traces.
 - **No date prefix on filename** — files don't sort chronologically.
 - **Post-mortem is a finger-pointing exercise** — violates blameless principle. Convert to systems-language.
 - **Action items without owners or due dates** — they don't get done.

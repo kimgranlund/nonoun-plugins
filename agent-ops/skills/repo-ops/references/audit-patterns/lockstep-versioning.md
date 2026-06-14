@@ -72,7 +72,7 @@ For AdiaUI's specific implementation, see that repo's `docs/specs/package-archit
 Once the gate is installed and passing, the post-publish admin:
 
 1. **Flip from `continue-on-error: true` to blocking.** Most cuts are added with the gate advisory (because the cut PR itself can't pass the gate — it's installing the gate against a misaligned repo). After the cut succeeds, flip to blocking.
-2. **Add the gate to** `.brain/findings/INDEX.md` Graduations.
+2. **Add the gate to** `.agents/brain/findings/INDEX.md` Graduations.
 3. **Cross-reference the postmortem** if the gate was prompted by an incident.
 
 ## Anti-patterns
@@ -84,5 +84,5 @@ Once the gate is installed and passing, the post-publish admin:
 ## Related
 
 - See [`feedback_npm_caret_on_0_0_x.md`](`~/.claude/projects/<repo>/memory/`) — the user-memory entry (now flagged as superseded by the policy).
-- See `.brain/postmortems/2026-05-02-corpus-caret-lock.md` — the postmortem that drove the gate's authoring.
+- See `.agents/brain/postmortems/2026-05-02-corpus-caret-lock.md` — the postmortem that drove the gate's authoring.
 - See `lockstep-release` skill — the procedural counterpart for cuts.

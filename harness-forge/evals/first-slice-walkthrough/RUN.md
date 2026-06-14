@@ -1,6 +1,6 @@
 # First-slice walkthrough — the kernel's behavioral baseline (recorded 2026-06-12, v0.2)
 
-Selftests prove the units; **this run proves the loop.** `replay.py` drives a real first slice on the README's toy project (invoice-parser) using only the public machinery — no hand-set maturities, no forged signals — and CI replays it hermetically on every push. There is deliberately **no committed baseline tree**: the wired copies it produces (`.harness/hooks/_lattice.py`) would drift against the kernel as it evolves; `replay.py --keep DIR` regenerates the positive control in seconds whenever the judge needs one to score.
+Selftests prove the units; **this run proves the loop.** `replay.py` drives a real first slice on the README's toy project (invoice-parser) using only the public machinery — no hand-set maturities, no forged signals — and CI replays it hermetically on every push. There is deliberately **no committed baseline tree**: the wired copies it produces (`.agents/harness/hooks/_lattice.py`) would drift against the kernel as it evolves; `replay.py --keep DIR` regenerates the positive control in seconds whenever the judge needs one to score.
 
 ## The run
 

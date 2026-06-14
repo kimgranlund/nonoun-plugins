@@ -3,7 +3,7 @@ name: browser-bundle-node-imports
 applies-to: monorepos with shared packages reachable from both Node and browser bundles
 severity: hard-runtime-regression (silent in tests)
 detected: 2026-05-12 (chat-ui v0.4.7 §72 follow-up)
-related-postmortem: chat-ui/.brain/postmortems/2026-05-12-browser-bundle-node-imports.md
+related-postmortem: chat-ui/.agents/brain/postmortems/2026-05-12-browser-bundle-node-imports.md
 ---
 
 # Audit pattern — Browser bundle crashes from top-level `import 'node:*'`
@@ -139,7 +139,7 @@ The `import.meta.glob(...)` pattern is Vite-specific. For non-Vite bundlers, swa
 
 - Loaders that walk a corpus directory at module init (`fs.readdirSync` → `Map` of records)
 - Cache files that hash + write fingerprints (`crypto.createHash` + `fs.writeFile`)
-- Issue reporters that write `.brain/findings/` JSONL files (`fs.appendFile`)
+- Issue reporters that write `.agents/brain/findings/` JSONL files (`fs.appendFile`)
 - Path resolvers that compute `__dirname` from `import.meta.url`
 
 In each case, the Node use case is real, but it must be guarded.
@@ -152,6 +152,6 @@ In each case, the Node use case is real, but it must be guarded.
 
 ## Reference incident
 
-chat-ui v0.4.7 §72 follow-up — `packages/a2ui/compose/strategies/zettel/composition-library.js` had top-level `import 'node:fs/path/url'` from the v0.4.4 §38 fragment-library → composition-library rename. Reached the browser via `gen-ui.contents.js → @adia-ai/a2ui-compose → core/reference.js → strategies/zettel/composition-library.js`. Fixed in commit `76dbcff2`. Postmortem: `/Users/kimba/Projects/chat-ui/.brain/postmortems/2026-05-12-browser-bundle-node-imports.md`. Latent for ~8 days. Detected by user runtime, not CI.
+chat-ui v0.4.7 §72 follow-up — `packages/a2ui/compose/strategies/zettel/composition-library.js` had top-level `import 'node:fs/path/url'` from the v0.4.4 §38 fragment-library → composition-library rename. Reached the browser via `gen-ui.contents.js → @adia-ai/a2ui-compose → core/reference.js → strategies/zettel/composition-library.js`. Fixed in commit `76dbcff2`. Postmortem: `/Users/kimba/Projects/chat-ui/.agents/brain/postmortems/2026-05-12-browser-bundle-node-imports.md`. Latent for ~8 days. Detected by user runtime, not CI.
 
 Sibling module `retrieval/component-catalog.js` had the same risk but was correctly dual-mode'd in an earlier arc. The pattern was known; the fix was not propagated. **The audit gap was: no one ran the discriminating grep across the package after fixing the first module.**

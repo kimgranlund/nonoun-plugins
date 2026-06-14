@@ -42,15 +42,15 @@ def main():
             fails.append(label)
 
     with tempfile.TemporaryDirectory() as proj:
-        d = os.path.join(proj, ".harness")
+        d = os.path.join(proj, ".agents/harness")
         _py("lattice.py", "init", "stop-gate-demo", "--dir", d)
         _py("wire.py", "apply", "--project", proj)
 
         # a capability cell stuck on pytest, with an asset + a no_progress budget of 3. Its upstream layers
         # (spec + ontology at task scope, per the partial order) must be validated for it to be rankable —
         # validate the two seed footholds so the control "it IS rankable before blocking" is real.
-        asset_rel = ".harness/capability/parse.py"
-        os.makedirs(os.path.join(proj, ".harness", "capability"), exist_ok=True)
+        asset_rel = ".agents/harness/capability/parse.py"
+        os.makedirs(os.path.join(proj, ".agents/harness", "capability"), exist_ok=True)
         open(os.path.join(proj, asset_rel), "w").write("def parse(): ...\n")
         lat = _lat.load(d)
         for c in lat["cells"]:
@@ -90,7 +90,7 @@ def main():
         gb2 = _py("gate-budget", "check", asset_rel, cwd=proj)
         expect(gb2.returncode == 2, "the WIRED gate-budget now DENIES a write to the blocked cell (exit 2 = halt)")
         # the wired hook, from its installed location, also denies (end to end)
-        wired_gb = os.path.join(proj, ".harness", "hooks", "gate-budget")
+        wired_gb = os.path.join(proj, ".agents/harness", "hooks", "gate-budget")
         r = subprocess.run([sys.executable, wired_gb, "--hook"],
                            input=json.dumps({"tool_input": {"file_path": asset_rel}}), capture_output=True, text=True, cwd=proj)
         expect(r.returncode == 2, "the installed gate-budget hook denies the blocked cell's write from its wired location")

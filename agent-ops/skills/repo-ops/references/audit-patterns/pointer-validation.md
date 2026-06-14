@@ -24,9 +24,9 @@ Five classes of broken pointer:
 
 | # | Class | Example | Severity |
 | --- | --- | --- | --- |
-| 1 | **Pointer to a renamed/moved file** | AGENTS.md says `docs/architecture.md`; file was moved to `.brain/architecture/overview.md` six months ago | High |
-| 2 | **Pointer to a never-existed file** | Author typo: `.brain/runbooks/databse.md` (missing the `a`) | High |
-| 3 | **Pointer to a folder without an index** | AGENTS.md says `.brain/adrs/`; folder exists but no `README.md` to land on | Medium |
+| 1 | **Pointer to a renamed/moved file** | AGENTS.md says `docs/architecture.md`; file was moved to `.agents/brain/architecture/overview.md` six months ago | High |
+| 2 | **Pointer to a never-existed file** | Author typo: `.agents/brain/runbooks/databse.md` (missing the `a`) | High |
+| 3 | **Pointer to a folder without an index** | AGENTS.md says `.agents/brain/adrs/`; folder exists but no `README.md` to land on | Medium |
 | 4 | **Pointer from canonical file to missing file** | AGENTS.md links `[Memory primitives](docs/memory.md)`; that file is gone | **Critical** |
 | 5 | **Repo-root file using `docs/`-relative paths** | `PLAN.md` at repo root has `[spec](./specs/foo.md)`; resolves to `./specs/foo.md` (404), should be `./docs/specs/foo.md` | **Critical** |
 
@@ -49,7 +49,7 @@ Observed in the wild on 2026-04-29: 25+ broken intra-repo links across `PLAN.md`
 | `CLAUDE.md` (when fat) | Same as AGENTS.md while it's still fat; once thin-pointered the only link is to AGENTS.md |
 | `README.md` | Human + agent landing |
 | `CONTRIBUTING.md` | Often points at `docs/dev-setup.md` etc. |
-| `.brain/**/*.md`, `docs/**/*.md` | Doc-to-doc links must resolve too |
+| `.agents/brain/**/*.md`, `docs/**/*.md` | Doc-to-doc links must resolve too |
 | `.cursor/rules/*.mdc`, `.windsurfrules`, `.github/copilot-instructions.md` | If fat, validate; if thin pointers to AGENTS.md, only the one link to validate |
 | `.github/pull_request_template.md` | Often points at ADR conventions / contribution guides |
 
@@ -72,7 +72,7 @@ candidates=(
     .github/copilot-instructions.md
     .github/pull_request_template.md
 )
-for f in .brain/**/*.md .brain/*.md docs/**/*.md docs/*.md .cursor/rules/*.mdc 2>/dev/null; do
+for f in .agents/brain/**/*.md .agents/brain/*.md docs/**/*.md docs/*.md .cursor/rules/*.mdc 2>/dev/null; do
     [ -f "$f" ] && candidates+=("$f")
 done
 
@@ -117,11 +117,11 @@ Dedupe is done by `sort -u` per file — the same target referenced 5 times in o
 
 ## The dedupe step (why it matters for the report)
 
-A 200-line AGENTS.md often references `.brain/adrs/` 4-6 times (Where-to-find-things, Memory-primitives, Conventions, etc.). Without dedupe, a single broken folder produces a 6-line report. Dedupe per-source-file before reporting; the same target broken from multiple files is genuinely worth multiple findings (it tells you _where_ to fix).
+A 200-line AGENTS.md often references `.agents/brain/adrs/` 4-6 times (Where-to-find-things, Memory-primitives, Conventions, etc.). Without dedupe, a single broken folder produces a 6-line report. Dedupe per-source-file before reporting; the same target broken from multiple files is genuinely worth multiple findings (it tells you _where_ to fix).
 
 ## Folder-pointer special case
 
-A pointer like `.brain/adrs/` is not a file — it's a folder. The check passes if:
+A pointer like `.agents/brain/adrs/` is not a file — it's a folder. The check passes if:
 
 1. The folder exists, AND
 2. The folder has a `README.md`, OR
@@ -141,7 +141,7 @@ If you want a one-shot "all links" pass, run both sequentially:
 
 ```bash
 bash scripts/check-pointers.sh   # intra-repo, fast, offline
-lychee --no-progress '.brain/**/*.md' 'docs/**/*.md' '*.md'   # external + intra-repo, network-bound
+lychee --no-progress '.agents/brain/**/*.md' 'docs/**/*.md' '*.md'   # external + intra-repo, network-bound
 ```
 
 The intra-repo check is allowed to be redundant with `lychee --offline`; what it adds is structured output the audit pipeline can ingest without parsing `lychee` JSON.
@@ -150,10 +150,10 @@ The intra-repo check is allowed to be redundant with `lychee --offline`; what it
 
 | Finding | Severity | Why |
 | --- | --- | --- |
-| Broken pointer **from AGENTS.md** to a canonical file (`.brain/adrs/`, `.brain/postmortems/`, `.brain/architecture/`) | **Critical** | Agent's primary memory map is wrong; trust collapses |
+| Broken pointer **from AGENTS.md** to a canonical file (`.agents/brain/adrs/`, `.agents/brain/postmortems/`, `.agents/brain/architecture/`) | **Critical** | Agent's primary memory map is wrong; trust collapses |
 | Broken pointer from any other entry file (`CLAUDE.md`, `README.md`, `.cursor/rules/`) | High | Agent following that tool will hit 404 |
-| Broken doc-to-doc pointer in `.brain/**` or `docs/**` | High | Reachable but breaks navigation graph |
-| Empty-folder pointer (`.brain/runbooks/` exists, no `.md` inside) | Medium | Agent lands but finds nothing actionable |
+| Broken doc-to-doc pointer in `.agents/brain/**` or `docs/**` | High | Reachable but breaks navigation graph |
+| Empty-folder pointer (`.agents/brain/runbooks/` exists, no `.md` inside) | Medium | Agent lands but finds nothing actionable |
 | Pointer with stale fragment (`docs/foo.md#old-section` where the file exists but the anchor doesn't) | Low | File loads, agent skim-reads; advisory |
 
 The fragment check (`#section-name` resolves to a real heading slug) is supported by `lychee --include-fragments` and is the cleanest way to catch class 5. Don't reimplement slug-generation in bash; pay the lychee dependency.
@@ -167,7 +167,7 @@ The fragment check (`#section-name` resolves to a real heading slug) is supporte
 
 ## How AGENTS.md's pointers become self-healing
 
-The pre-commit hook in `../recipes/self-healing-hooks.md` runs this check on every commit that touches `AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, or any file under `.brain/**` or `docs/**`. A broken pointer fails the commit — the author is forced to fix it locally. This is the cheapest place to catch it; by the time it reaches CI, the author has already context-switched.
+The pre-commit hook in `../recipes/self-healing-hooks.md` runs this check on every commit that touches `AGENTS.md`, `CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, or any file under `.agents/brain/**` or `docs/**`. A broken pointer fails the commit — the author is forced to fix it locally. This is the cheapest place to catch it; by the time it reaches CI, the author has already context-switched.
 
 The weekly cron (`repo-brain-weekly.yml`) re-runs the check across the whole repo (in case a PR touched a target without touching the source pointing at it — the canonical "rename without re-link" case).
 

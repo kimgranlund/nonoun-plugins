@@ -98,7 +98,7 @@ A common pattern: build/test/run commands appear in AGENTS.md, README.md, and CO
 
 ````bash
 # Heuristic: extract code-fenced shell blocks from each file, hash them, find duplicates.
-for f in AGENTS.md README.md CONTRIBUTING.md .brain/**/*.md docs/**/*.md; do
+for f in AGENTS.md README.md CONTRIBUTING.md .agents/brain/**/*.md docs/**/*.md; do
     [ -f "$f" ] || continue
     awk '/^```(bash|sh|shell)/,/^```$/' "$f" | sha256sum | awk -v f="$f" '{print f, $1}'
 done | sort -k2 | awk '{

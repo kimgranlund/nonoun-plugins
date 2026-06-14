@@ -2,7 +2,7 @@
 """harness-hook — advisory PostToolUse feedback for lattice artifacts (NEVER blocks).
 
 Feedback injects; gates block. This is the feedback species: on a Write|Edit it surfaces two findings
-about the project's `.harness/` lattice and exits 0 no matter what — it improves the loop, it does not
+about the project's `.agents/harness/` lattice and exits 0 no matter what — it improves the loop, it does not
 stop it (the blocking gate species ships separately as `gate-signal`, for the USER's own loop, where a
 worker writing its own verifier is a reward-hacking surface). Mirrors the catalog's advisory-hook
 discipline: `--hook` always exits 0.
@@ -76,8 +76,8 @@ def selftest():
     def expect(cond, label):
         if not cond:
             fails.append(label)
-    expect(any("spec/" in a for a in advise(".harness/specs/first.md")), "did not flag plural layer-dir drift (specs/)")
-    expect(any("downstream cells may go stale" in a or "stale" in a for a in advise(".harness/spec/task-x.md")), "did not flag staleness on a layer-dir write")
+    expect(any("spec/" in a for a in advise(".agents/harness/specs/first.md")), "did not flag plural layer-dir drift (specs/)")
+    expect(any("downstream cells may go stale" in a or "stale" in a for a in advise(".agents/harness/spec/task-x.md")), "did not flag staleness on a layer-dir write")
     if _naming is not None:
         expect(any("agent file" in a for a in advise("agents/cell-helper.md")), "did not flag a bad actor in an agent filename")
     expect(advise("src/main.py") == [], "advised on an unrelated, non-lattice path")

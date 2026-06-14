@@ -36,7 +36,7 @@ An ADR is **not** a design doc, RFC, spec, or proposal. Those describe future wo
 Standard:
 
 ```text
-.brain/adrs/
+.agents/brain/adrs/
 ├── 0001-record-architecture-decisions.md
 ├── 0002-use-postgres-not-mysql.md
 ├── 0003-rest-not-graphql.md
@@ -92,9 +92,9 @@ The widely-cited industry view (Microsoft Azure Well-Architected Framework, AWS 
 
 > "An Architectural Decision Record (ADR) captures a single AD and its rationale; **the collection of ADRs constitutes the decision log.**"
 
-So the canonical "decision log" is **the index of all ADRs** in `.brain/adrs/`, not a separate folder. Generate it from filenames + status fields, or maintain `.brain/adrs/README.md` as a hand-written index.
+So the canonical "decision log" is **the index of all ADRs** in `.agents/brain/adrs/`, not a separate folder. Generate it from filenames + status fields, or maintain `.agents/brain/adrs/README.md` as a hand-written index.
 
-Some teams _additionally_ maintain a lighter `.brain/decisions/` folder for non-architectural decisions (tooling picks, library swaps, day-to-day commitments). That's a **team convention, not industry standard** — but it's a useful split when ADRs feel too heavyweight for routine choices. The audit should detect both shapes and not flag either as wrong; just note which convention is in play.
+Some teams _additionally_ maintain a lighter `.agents/brain/decisions/` folder for non-architectural decisions (tooling picks, library swaps, day-to-day commitments). That's a **team convention, not industry standard** — but it's a useful split when ADRs feel too heavyweight for routine choices. The audit should detect both shapes and not flag either as wrong; just note which convention is in play.
 
 ## MADR 4.0.0 (Markdown Any Decision Records)
 
@@ -169,25 +169,25 @@ Origin: Olaf Zimmermann, SATURN 2012. Useful as a one-line summary line at the t
 - **`adr-log`**: generates a Markdown index from a folder of ADRs.
 - **`log4brains`**: web-based ADR browser; check current maintenance state before adopting.
 - **`adr-manager`**: web-UI ADR editor.
-- **For new projects, no tool is required.** `mkdir -p .brain/adrs && cp ~/.adr-templates/madr-minimal.md .brain/adrs/0001-record-architecture-decisions.md` is enough. Tooling adds friction; many teams now skip it.
+- **For new projects, no tool is required.** `mkdir -p .agents/brain/adrs && cp ~/.adr-templates/madr-minimal.md .agents/brain/adrs/0001-record-architecture-decisions.md` is enough. Tooling adds friction; many teams now skip it.
 
 ## How AGENTS.md should reference ADRs
 
 In the `Where to find things` section:
 
 ```markdown
-- **Architecture Decision Records:** `.brain/adrs/` — newest-first; read before making architectural changes
+- **Architecture Decision Records:** `.agents/brain/adrs/` — newest-first; read before making architectural changes
 ```
 
 In the `Memory primitives` section:
 
 ```markdown
-- **Before making architectural decisions**, read `.brain/adrs/` newest-first. If your proposed change conflicts with an `Accepted` ADR, write a new ADR superseding it; don't silently override.
+- **Before making architectural decisions**, read `.agents/brain/adrs/` newest-first. If your proposed change conflicts with an `Accepted` ADR, write a new ADR superseding it; don't silently override.
 ```
 
 ## Common anti-patterns
 
-- **No `.brain/adrs/` folder at all** — decisions live in random PR descriptions, Slack, code comments. Memory fragmentation.
+- **No `.agents/brain/adrs/` folder at all** — decisions live in random PR descriptions, Slack, code comments. Memory fragmentation.
 - **ADRs as RFCs** — files marked `Proposed` that never get marked `Accepted` or `Rejected`. Status drift.
 - **Editing accepted ADRs** — defeats the audit trail. Edits should be supersessions instead.
 - **No `Status:` field** — readers can't tell what's current.
@@ -196,11 +196,11 @@ In the `Memory primitives` section:
 
 ## Audit checks for ADRs
 
-1. **Folder exists** at `.brain/adrs/` (or close — `.brain/architecture/decisions/`, `adrs/`, etc.).
+1. **Folder exists** at `.agents/brain/adrs/` (or close — `.agents/brain/architecture/decisions/`, `adrs/`, etc.).
 2. **Numbering is consistent** (`NNNN-` four-digit, sequential).
 3. **Each ADR has a `Status:` field**.
 4. **No ADRs are in `Proposed` for >30 days** (probably abandoned — flag).
-5. **`.brain/adrs/` is referenced from AGENTS.md**.
+5. **`.agents/brain/adrs/` is referenced from AGENTS.md**.
 
 ## Cross-references
 

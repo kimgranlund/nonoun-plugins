@@ -25,7 +25,7 @@ Falls out as a free benefit: SOC2 / compliance / "show me what changed in the la
 ## The ledger structure
 
 ```text
-.brain/
+.agents/brain/
 ├── audit-history/
 │   ├── 2026-04-27.json
 │   ├── 2026-05-04.json
@@ -128,9 +128,9 @@ Some teams will not want every audit run committed to a public repo:
 
 The audit emits warnings if any finding message contains URL fragments matching common secret patterns (API keys, tokens, internal hostnames).
 
-## Closing the read side — `.brain/findings/INDEX.md`
+## Closing the read side — `.agents/brain/findings/INDEX.md`
 
-The ledger is _write-rich, read-poor_. Every audit emits structured findings, but nothing surfaces them — a future session would have to `cat` every JSON to know what's still open. The read-side closure is a generated `.brain/findings/INDEX.md` that folds every `findings[]` entry across the ledger into one sortable view, plus a hand-curated `## Graduations` table tracking finding-to-permanent-infrastructure pairs.
+The ledger is _write-rich, read-poor_. Every audit emits structured findings, but nothing surfaces them — a future session would have to `cat` every JSON to know what's still open. The read-side closure is a generated `.agents/brain/findings/INDEX.md` that folds every `findings[]` entry across the ledger into one sortable view, plus a hand-curated `## Graduations` table tracking finding-to-permanent-infrastructure pairs.
 
 Recipe: [`../recipes/findings-index-readout.md`](../recipes/findings-index-readout.md). Wire it into the same harvest cron that writes the ledger; the index regenerates on every run, the ledger stays append-only.
 

@@ -21,9 +21,9 @@ status: research-verified
 
 | Artifact | Merge story | Conflict risk |
 | --- | --- | --- |
-| ADRs (`.brain/adrs/<file>.md`) | One file per decision | **Only the next-number race** (two PRs both want `0042-`) |
-| Postmortems (`.brain/postmortems/YYYY-MM-DD-*.md`) | Date-prefixed, one per incident | Same-day collision → suffix `-2` |
-| Audit-history ledger (`.brain/audit-history/<date>.json`) | Append-only, dated | None — can't conflict |
+| ADRs (`.agents/brain/adrs/<file>.md`) | One file per decision | **Only the next-number race** (two PRs both want `0042-`) |
+| Postmortems (`.agents/brain/postmortems/YYYY-MM-DD-*.md`) | Date-prefixed, one per incident | Same-day collision → suffix `-2` |
+| Audit-history ledger (`.agents/brain/audit-history/<date>.json`) | Append-only, dated | None — can't conflict |
 | **AGENTS.md** (single file) | Standard git merge | **Semantic conflict undetected** |
 | **CHANGELOG.md** (single file) | Standard git merge | **Same problem** — and solved by the changesets ecosystem |
 | Runbooks, postmortems, ADRs being _edited_ (rare; they should be immutable) | Standard git merge | Should not be common; immutability is the design |
@@ -34,10 +34,10 @@ The hard cases are **single-file artifacts that multiple PRs want to extend simu
 
 ### Convention 1 — Timestamp-prefixed ADR filenames
 
-Replace `.brain/adrs/0042-postgres-choice.md` with **`.brain/adrs/2026-04-27-1342-postgres-choice.md`**.
+Replace `.agents/brain/adrs/0042-postgres-choice.md` with **`.agents/brain/adrs/2026-04-27-1342-postgres-choice.md`**.
 
 ```text
-.brain/adrs/
+.agents/brain/adrs/
 ├── 2026-04-12-1342-use-postgres.md
 ├── 2026-04-15-0930-deprecate-redis.md
 ├── 2026-04-27-1100-rest-not-graphql.md
@@ -55,7 +55,7 @@ Borrowed directly from [`changesets/changesets`](https://github.com/changesets/c
 **The rule:** PRs that want to modify AGENTS.md don't edit AGENTS.md. They drop a file:
 
 ```text
-.brain/changesets/2026-04-27-vitest-replaces-jest.md
+.agents/brain/changesets/2026-04-27-vitest-replaces-jest.md
 ```
 
 ```markdown
@@ -78,7 +78,7 @@ AGENTS.md is now wrong; this changeset corrects it.
 
 A **merge-time consolidation job** (run as a GitHub Action on every push to main, or on a scheduled cadence):
 
-1. Reads all `.brain/changesets/*.md` files in chronological order.
+1. Reads all `.agents/brain/changesets/*.md` files in chronological order.
 2. **Validates:** do any changesets target the same `target_section` with conflicting `operation`s?
    - Two `add` to "Conventions" with semantically-overlapping content → CONFLICT
    - One `add "use Vitest"` + one `add "use Jest"` for "Tests" → CONFLICT
@@ -113,7 +113,7 @@ The recipe **does not** auto-resolve conflicts. Resolution is a content decision
    - Was the older one superseded silently? (If yes, the older one needs `Status: Superseded`.)
    - Or should both be archived in favor of a fresh decision?
 4. **Human picks resolution.**
-5. **Write a new superseding ADR** (`.brain/adrs/<timestamp>-resolve-X-vs-Y.md`) with:
+5. **Write a new superseding ADR** (`.agents/brain/adrs/<timestamp>-resolve-X-vs-Y.md`) with:
    - Full citation of both originals
    - Resolution decision + reasoning
    - References both originals in `Supersedes:` field
@@ -124,12 +124,12 @@ This protocol stays human-in-the-loop. Per the v1.1 Yegge alignment: _artifacts 
 
 ## Configuration
 
-`.brain/config.toml`:
+`.agents/brain/config.toml`:
 
 ```toml
 [repo-ops.merge]
 adr_naming = "timestamp"          # "timestamp" | "sequential" | "hybrid"
-agents_md_changesets = true       # require .brain/changesets/ for AGENTS.md edits
+agents_md_changesets = true       # require .agents/brain/changesets/ for AGENTS.md edits
 changeset_consolidation = "merge" # "merge" (on merge to main) | "manual" | "release"
 
 [repo-ops.merge.conflict_detection]
@@ -144,7 +144,7 @@ require_human_approval = true     # cannot be set to false; documented as hard r
 
 - **Auto-resolving semantic conflicts.** The recipe explicitly forbids this. Conflict resolution is a content decision; humans must own it.
 - **Editing AGENTS.md directly when changesets are enabled.** The merge-time job will detect the orphan edits and warn, but discipline matters.
-- **Letting changesets accumulate without consolidation.** Once `.brain/changesets/` has >5 files unconsolidated, the audit emits a finding. Consolidate at least weekly.
+- **Letting changesets accumulate without consolidation.** Once `.agents/brain/changesets/` has >5 files unconsolidated, the audit emits a finding. Consolidate at least weekly.
 - **Renumbering ADRs after-the-fact** (sequential scheme). Breaks every link to the old number. If you must use sequential, lock the number at PR-merge time, not PR-creation time.
 - **Treating textual merge success as semantic merge success.** Git is a content-addressable store, not a semantic-conflict resolver.
 

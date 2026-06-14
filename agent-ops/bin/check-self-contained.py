@@ -63,7 +63,7 @@ def _selftest():
         open(os.path.join(sk, "bad.md"), "w").write(
             "see core-agent-loops and ops-repo, id https://schemas.adia.ai/x, path ../../.docs/y.md and scripts/z.py\n")
         open(os.path.join(sk, "good.md"), "w").write(
-            "see agent-loops and repo-ops; the audited repo's docs/adrs/ and .brain/ are fine; bin/check_blueprint.py\n")
+            "see agent-loops and repo-ops; the audited repo's docs/adrs/ and .agents/brain/ are fine; bin/check_blueprint.py\n")
         # narrative docs must be EXEMPT even with a source name (provenance)
         os.makedirs(os.path.join(d, "ignored-narrative"), exist_ok=True)
         open(os.path.join(d, "README.md"), "w").write("Carved from ops-repo and core-agent-loops.\n")

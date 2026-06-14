@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.14] — 2026-06-13
+
+### Changed
+
+- **Repo memory moved to the `.agents/` namespace: `.brain/` → `.agents/brain/`.** The repo-brain convention this skill teaches (the committed `audit-history/` ledger, the gitignored `cache/` + `cold-start/`, and every `adrs/` · `postmortems/` · `runbooks/` · `findings/` pointer it audits) now lives under a single top-level `.agents/` umbrella shared across the catalog's stateful plugins — agent-ops under `.agents/brain/`, harness-forge under `.agents/harness/` — instead of a scattered per-plugin dotfolder. `.agents/` is a **state** namespace, parallel to and distinct from Claude Code's `.claude/` **config** namespace. The change is a global rename across `repo-ops` (SKILL + every recipe / audit-pattern / doc-type / guidance reference), `bin/audit-history.py`, the `repo-memory` MCP, and the `corpus_dir` userConfig; the `REPO_MEMORY_DIR` env-var *name* is unchanged. The commit-vs-ignore split is unchanged — `.agents/brain/audit-history/` is committed; `.agents/brain/cache/` + `.agents/brain/cold-start/` are gitignored. **Migration:** `git mv .brain .agents/brain` (preserving the committed ledger) and update any project `.gitignore`.
+
 ## [0.1.13] — 2026-06-13
 
 ### Changed

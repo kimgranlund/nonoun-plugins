@@ -156,7 +156,7 @@ In the `Memory primitives` section:
 - **Before making changes that span multiple modules**, read `ARCHITECTURE.md` for the code map and cross-cutting concerns. Architecture-altering changes also require a new ADR.
 ```
 
-`ARCHITECTURE.md` at repo root is the recommended location (matklad's pattern). Avoid `.brain/architecture/index.md` unless you have a folder full of related docs.
+`ARCHITECTURE.md` at repo root is the recommended location (matklad's pattern). Avoid `.agents/brain/architecture/index.md` unless you have a folder full of related docs.
 
 ## Audit checks
 
@@ -164,7 +164,7 @@ In the `Memory primitives` section:
 2. **Code map covers all top-level src directories.** Diff `ls src/` against the headings in the code map; missing entries = staleness.
 3. **No directory mentioned in the code map is missing from disk.** Renames or removals that didn't update the doc.
 4. **Length is in 100–800 range.** Both extremes are flagged.
-5. **AGENTS.md references ARCHITECTURE.md**, not just `.brain/`.
+5. **AGENTS.md references ARCHITECTURE.md**, not just `.agents/brain/`.
 6. **`Last reviewed:` line or YAML `date:` is within the last 180 days.** Older = quarterly review missed.
 
 ## Common anti-patterns

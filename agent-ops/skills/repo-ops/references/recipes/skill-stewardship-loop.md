@@ -33,7 +33,7 @@ Each run produces 0–N findings. Triage by severity:
 | 5 | Description-vs-body divergence | body churn ≥ 100 lines | Skills whose body has evolved beyond the description |
 | 6 | Pairwise description similarity | Jaccard ≥ 0.6 | Likely-redundant skill pairs |
 
-Thresholds are **defined by the reliability-dial resolver** (`../guidance/reliability-dial.md` § "The resolver") per strictness — the single source of truth. `audit-skills.mjs` reads them from `.brain/config.toml` rather than hardcoding; the values above are the resolver's `normal`-level defaults.
+Thresholds are **defined by the reliability-dial resolver** (`../guidance/reliability-dial.md` § "The resolver") per strictness — the single source of truth. `audit-skills.mjs` reads them from `.agents/brain/config.toml` rather than hardcoding; the values above are the resolver's `normal`-level defaults.
 
 ## The triage flow
 

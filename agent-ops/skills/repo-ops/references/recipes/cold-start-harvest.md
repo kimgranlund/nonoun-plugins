@@ -42,11 +42,11 @@ find . -maxdepth 3 -type f \( \
 
 # Markdown not in canonical locations
 find . -name '*.md' -type f \
-  -not -path './.brain/adrs/*' \
-  -not -path './.brain/postmortems/*' \
-  -not -path './.brain/runbooks/*' \
-  -not -path './.brain/architecture/*' \
-  -not -path './.brain/archive/*' \
+  -not -path './.agents/brain/adrs/*' \
+  -not -path './.agents/brain/postmortems/*' \
+  -not -path './.agents/brain/runbooks/*' \
+  -not -path './.agents/brain/architecture/*' \
+  -not -path './.agents/brain/archive/*' \
   -not -path './node_modules/*' \
   -not -path './.git/*'
 
@@ -71,7 +71,7 @@ For each found artifact, classify:
 | --- | --- | --- |
 | **`keep`** | Already in the right place, current, correct | Leave alone; date-stamp if needed |
 | **`rehome`** | Good content, wrong location | Move to canonical location with provenance |
-| **`archive`** | Out of date but historically valuable | Move to `.brain/archive/` with provenance |
+| **`archive`** | Out of date but historically valuable | Move to `.agents/brain/archive/` with provenance |
 | **`supersede`** | Conflicts with another artifact | Write resolving ADR; mark both `Superseded` |
 | **`reconcile`** | Two artifacts both partially correct, partially wrong | Most expensive: extract truths, write merged canonical, archive originals |
 | **`delete`** | Never had value (e.g., `*-copy.md`, generated junk) | Move to archive, not delete (preserve the audit trail) |
@@ -82,19 +82,19 @@ For each found artifact, classify:
 | --- | --- |
 | Current fat `CLAUDE.md` and no `AGENTS.md` | `rehome`: rename to AGENTS.md, generalize wording, demote CLAUDE.md to symlink/pointer |
 | `STYLEGUIDE.md` overlapping with AGENTS.md "Conventions" | `reconcile`: pick canonical, demote other |
-| `NOTES.md` in root | Read carefully. ADR-shaped sections → extract to `.brain/adrs/` (`rehome`); rest → `archive` |
+| `NOTES.md` in root | Read carefully. ADR-shaped sections → extract to `.agents/brain/adrs/` (`rehome`); rest → `archive` |
 | `WIP_PLAN.md` | Almost always `archive`. If active work, extract goals into `docs/PLAN.md` |
-| `docs/legacy/`, `docs/old/`, `docs/_old_/` | `archive` to `.brain/archive/legacy-import-<date>/` |
+| `docs/legacy/`, `docs/old/`, `docs/_old_/` | `archive` to `.agents/brain/archive/legacy-import-<date>/` |
 | `*_BACKUP*.md`, `*-copy*.md` | `archive` (don't delete; weird ones may have unique content) |
-| GitHub issues with `incident` / `post-mortem` label | Read each. Substantive ones → `rehome` to `.brain/postmortems/` with provenance link to original issue |
-| PR descriptions with ADR-shaped content | `rehome`: extract to `.brain/adrs/` with provenance pointer to original PR |
+| GitHub issues with `incident` / `post-mortem` label | Read each. Substantive ones → `rehome` to `.agents/brain/postmortems/` with provenance link to original issue |
+| PR descriptions with ADR-shaped content | `rehome`: extract to `.agents/brain/adrs/` with provenance pointer to original PR |
 | Two `Accepted` ADRs about the same subject (after rehoming) | `supersede`: human reviews, writes resolving ADR |
 
 ## The 7 phases
 
 ### Phase 1 — Inventory (mechanical)
 
-Run the inventory commands above. Collect into a single `.brain/cold-start-inventory.md` (transient — deleted after phase 7):
+Run the inventory commands above. Collect into a single `.agents/brain/cold-start-inventory.md` (transient — deleted after phase 7):
 
 ```markdown
 # Cold-start inventory — 2026-04-27
@@ -105,7 +105,7 @@ Run the inventory commands above. Collect into a single `.brain/cold-start-inven
 | ./NOTES.md | 2023-11-04 | 60 lines | archive (extract `### Postgres decision` → ADR first) |
 | ./STYLEGUIDE.md | 2024-03-01 | 90 lines | reconcile with `CONTRIBUTING.md` |
 | ./docs/old/architecture-v1.md | 2022-06-15 | 410 lines | archive |
-| PR #144 body | (closed 2024-08-22) | — | rehome decision section → .brain/adrs/2024-08-22-graphql-rejection.md |
+| PR #144 body | (closed 2024-08-22) | — | rehome decision section → .agents/brain/adrs/2024-08-22-graphql-rejection.md |
 ```
 
 This file is the working artifact. Update it as triage progresses.
@@ -127,7 +127,7 @@ Anything matching the bulk-archive heuristics (legacy folders, \*\_BACKUP, untou
 ```text
 docs: cold-start harvest — bulk-archive 23 stale artifacts
 
-Moved to .brain/archive/legacy-import-2026-04-27/:
+Moved to .agents/brain/archive/legacy-import-2026-04-27/:
 - CLAUDE-OLD.md (last modified 2023-04)
 - NOTES_2023.md
 - docs/old/* (12 files)
@@ -199,7 +199,7 @@ Every harvested artifact must carry a provenance line:
 _Harvested from <original-path-or-source> on 2026-04-27 (cold-start harvest)._
 ```
 
-Run a sanity check: every file in `.brain/` modified during the harvest period either has a `_Last reviewed:_` line or a `_Harvested from..._` line. Files missing provenance get flagged.
+Run a sanity check: every file in `.agents/brain/` modified during the harvest period either has a `_Last reviewed:_` line or a `_Harvested from..._` line. Files missing provenance get flagged.
 
 ### Phase 7 — Re-audit
 
@@ -209,15 +209,15 @@ Run the full audit (`audit-existing-repo.md`) against the post-harvest state. Co
 - Promise 2 (token-optimized): AGENTS.md ≤200 lines
 - Promise 3 (less-stale): all docs dated; no broken cross-refs
 - Promise 4 (self-healing): hooks installed (per `self-healing-hooks.md`)
-- Promise 5 (continuously-learning): `.brain/adrs/` populated with both new and harvested ADRs; supersession chain intact
+- Promise 5 (continuously-learning): `.agents/brain/adrs/` populated with both new and harvested ADRs; supersession chain intact
 
 If the post-audit shows any `critical` findings, return to phase 5. Iterate until clean.
 
-After phase 7 passes: delete `.brain/cold-start-inventory.md` (it's transient working state, not preserved memory).
+After phase 7 passes: delete `.agents/brain/cold-start-inventory.md` (it's transient working state, not preserved memory).
 
 ## The non-negotiables
 
-1. **No deletes.** Every disposition is `archive` (move to `.brain/archive/`) or `rehome` (move with provenance). Even the "delete" disposition in the triage matrix is implemented as archive. Future archaeology may need the original.
+1. **No deletes.** Every disposition is `archive` (move to `.agents/brain/archive/`) or `rehome` (move with provenance). Even the "delete" disposition in the triage matrix is implemented as archive. Future archaeology may need the original.
 2. **No silent supersession.** When two artifacts conflict, the resolution writes a NEW ADR; the originals are _marked_ `Superseded`, not edited beyond the status field.
 3. **Provenance for everything imported.** No exceptions.
 4. **Time-bounded passes.** A 6-hour cold-start session is fine; a 6-week project is not. Iterate weekly until clean rather than blocking indefinitely.
@@ -238,7 +238,7 @@ These rules are conservative — they preserve learnings rather than compressing
 
 This recipe assumes everything you want to harvest lives **in the repo today**. Not in scope:
 
-- **Slack post-mortems** — the recipe can't fetch them. Two paths: (a) one-time manual import (effort scales with volume); (b) maintain `.brain/postmortems/external-index.md` linking to authoritative external locations
+- **Slack post-mortems** — the recipe can't fetch them. Two paths: (a) one-time manual import (effort scales with volume); (b) maintain `.agents/brain/postmortems/external-index.md` linking to authoritative external locations
 - **Notion / Confluence pages** — same
 - **GitHub issues from a different repo** — same
 - **Scattered Slack DMs / email** — never going to be harvested; the institutional knowledge that lives only there will need to be re-derived through the iterate pattern

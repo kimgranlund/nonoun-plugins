@@ -8,7 +8,7 @@ version: "0.2.0"
 
 Scores a looping, latticed agentic harness against the model in `agentic-systems-foundations/`. Seven dimensions, each `[gate]` (mechanically checkable, can cap the score) or `[review]` (calibrated judgment). The disqualifying tell across the whole rubric: **structure without earned signal** — an elegant lattice whose loops cannot evidence a verifier track record from the ledger has not earned what it claims. Two `[gate]` dimensions are hard caps: a reward-hackable verifier surface (H3) and an autonomy tier claimed beyond its measured precondition (H6).
 
-Read each score with evidence cited from the artifacts (`.harness/lattice.json`, the ledger, `signals/`, the gate scripts) and the `bin/` tools as the mechanical checks.
+Read each score with evidence cited from the artifacts (`.agents/harness/lattice.json`, the ledger, `signals/`, the gate scripts) and the `bin/` tools as the mechanical checks.
 
 ---
 
@@ -60,7 +60,7 @@ Does every named artifact parse the typed grammar — no plural, casing, or voca
 
 | Score | Evidence |
 | --- | --- |
-| **5** | Every created path passes `bin/naming.py`: layer dirs mirror the enum byte-for-byte (`spec/`, never `specs/`), agents are `{object}-{actor}.md`, hooks are `{gateverb}-{invariant}`, cell IDs are `{layer}.{scope}.{slug}` with state excluded from identity. The naming schema ships in `.harness/`. |
+| **5** | Every created path passes `bin/naming.py`: layer dirs mirror the enum byte-for-byte (`spec/`, never `specs/`), agents are `{object}-{actor}.md`, hooks are `{gateverb}-{invariant}`, cell IDs are `{layer}.{scope}.{slug}` with state excluded from identity. The naming schema ships in `.agents/harness/`. |
 | **3** | Mostly conformant; a few names drift (a plural dir, an off-vocab actor) and are caught only by review, not the gate. |
 | **1** | Ad-hoc names; directories and enums diverged; identity carries state (renamed on transition — a drift generator). |
 

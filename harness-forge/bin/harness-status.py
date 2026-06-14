@@ -3,7 +3,7 @@
 
 The council's observability finding (Charity, CV2): a running `/harness-run` was a black box, and `/harness-audit`
 / `/harness-council` are expensive multi-agent analyses, not a quick "is it healthy / what just happened." This
-is the missing cheap signal — a single read over `.harness/` + the wiring + the run budget, printing:
+is the missing cheap signal — a single read over `.agents/harness/` + the wiring + the run budget, printing:
   · cell maturity histogram + the frontier gap count
   · the active run budget (iterations/cells/deadline, or none)
   · the wiring verdict (and the kernel-drift check)
@@ -25,7 +25,7 @@ import lattice as _lat     # noqa: E402
 import wire as _wire       # noqa: E402
 
 
-def render(project, hd=".harness", n=8):
+def render(project, hd=".agents/harness", n=8):
     d = os.path.join(project, hd)
     out = [f"═══ harness-status · {os.path.abspath(project)} ═══"]
     try:
@@ -97,7 +97,7 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as proj:
-        d = os.path.join(proj, ".harness")
+        d = os.path.join(proj, ".agents/harness")
         _lat.scaffold(d)
         _lat.save(d, _lat.seed_lattice("status-demo"))
         s = render(proj)
@@ -122,7 +122,7 @@ def selftest():
         expect("0/8 iters" in render(proj) and "0/4 cells" in render(proj), "the run line must show X/Y caps, not just the count")
         _lat.run_budget_clear(d)
         # after a block + a wire, the dashboard reflects both
-        _wire.apply(proj, ".harness")
+        _wire.apply(proj, ".agents/harness")
         lat = _lat.load(d); _lat.set_blocked(lat, "spec.task.first-slice", True, reason="no-progress"); _lat.save(d, lat)
         _lat._append_ledger_event(d, {"operation": "record", "actor": "hook:gate-budget", "result": "deny",
                                       "rationale": "blocked cell", "ts": "2026-06-13T12:00:00-07:00"})
@@ -143,7 +143,7 @@ def main(argv):
     if argv and argv[0] == "selftest":
         return selftest()
     project = argv[argv.index("--project") + 1] if "--project" in argv else "."
-    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".harness"
+    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".agents/harness"
     n = int(argv[argv.index("-n") + 1]) if "-n" in argv else 8
     print(render(project, hd, n))
     return 0

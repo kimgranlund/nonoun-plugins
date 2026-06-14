@@ -23,7 +23,7 @@ status: research-verified
 >
 > **Not a new repo?** If your repo is older than ~3 months and has any documentation at all, use `cold-start-harvest.md` instead. That recipe handles the inventory + triage + supersede pattern this one skips.
 >
-> **Existing `docs/` layout?** If you already have `docs/adrs/`, `docs/postmortems/`, etc., the v1.5 `.brain/` layout is opt-in — both are recognized by the audit. The migration is one `git mv` documented in `audit-existing-repo.md` § Migration.
+> **Existing `docs/` layout?** If you already have `docs/adrs/`, `docs/postmortems/`, etc., the v1.5 `.agents/brain/` layout is opt-in — both are recognized by the audit. The migration is one `git mv` documented in `audit-existing-repo.md` § Migration.
 
 ## What this recipe delivers
 
@@ -52,7 +52,7 @@ _Last reviewed: 2026-04-27_
 ## Build / test / run        (commands)
 ## Conventions               (bullet list)
 ## Trust boundaries          (DO NOT modify / DO modify)
-## Where to find things      (pointers to .brain/)
+## Where to find things      (pointers to .agents/brain/)
 ## Memory primitives         (when to read ADRs / postmortems)
 ```
 
@@ -69,27 +69,27 @@ git add CLAUDE.md
 
 Windows + WSL teams often hit symlink-in-git issues — fall back to the thin-pointer alternative from `../standards/claude-md-convention.md`. Either is fine; never have both files fat.
 
-## Step 3 — `.brain/` directory tree + `.gitignore` (Promise 2, 5)
+## Step 3 — `.agents/brain/` directory tree + `.gitignore` (Promise 2, 5)
 
 ```bash
-mkdir -p .brain/{adrs,postmortems,runbooks,archive,architecture}
-touch .brain/{adrs,postmortems,runbooks,archive,architecture}/.gitkeep
+mkdir -p .agents/brain/{adrs,postmortems,runbooks,archive,architecture}
+touch .agents/brain/{adrs,postmortems,runbooks,archive,architecture}/.gitkeep
 ```
 
 Add an index `README.md` in each memory home (~10-20 lines each, `_Last reviewed:_` stamped). See `memory-organization.md` for the rationale on which folders go where and what each index file contains.
 
-Then add transient-state homes to `.gitignore`. `.brain/cache/` is the WebFetch cache populated by external-reference verification. `.brain/cold-start/working/` is the harvest-session scratch space. The persistent state (`adrs/`, `postmortems/`, `runbooks/`, `archive/`, `architecture/`, `audit-history/`, `changesets/`, `config.toml`) gets committed.
+Then add transient-state homes to `.gitignore`. `.agents/brain/cache/` is the WebFetch cache populated by external-reference verification. `.agents/brain/cold-start/working/` is the harvest-session scratch space. The persistent state (`adrs/`, `postmortems/`, `runbooks/`, `archive/`, `architecture/`, `audit-history/`, `changesets/`, `config.toml`) gets committed.
 
 ```bash
 cat >> .gitignore << 'EOF'
 
 # repo-ops transient state
-.brain/cache/
-.brain/cold-start/working/
+.agents/brain/cache/
+.agents/brain/cold-start/working/
 EOF
 ```
 
-> **Want `.brain/` entirely local?** Set `mode = "local-only"` in `.brain/config.toml` and gitignore the whole `.brain/` directory (instead of just the cache/cold-start subdirs). See `../guidance/reliability-dial.md` § Git sync. Promise 5 then applies to your local clone only — multi-contributor recipes and the auto-archive PR workflow become moot.
+> **Want `.agents/brain/` entirely local?** Set `mode = "local-only"` in `.agents/brain/config.toml` and gitignore the whole `.agents/brain/` directory (instead of just the cache/cold-start subdirs). See `../guidance/reliability-dial.md` § Git sync. Promise 5 then applies to your local clone only — multi-contributor recipes and the auto-archive PR workflow become moot.
 
 ## Step 4 — Bootstrap ADR `0001` (Promise 5)
 
@@ -110,16 +110,16 @@ the way it does.
 
 ## Decision
 We will use Architecture Decision Records as described by Michael Nygard.
-ADRs live in `.brain/adrs/` as `NNNN-kebab-case-title.md` with a `Status:`
+ADRs live in `.agents/brain/adrs/` as `NNNN-kebab-case-title.md` with a `Status:`
 field. The collection is the decision log.
 
 ## Consequences
 - Architectural decisions are captured at decision time, not retroactively.
-- New contributors read `.brain/adrs/` newest-first to understand commitments.
+- New contributors read `.agents/brain/adrs/` newest-first to understand commitments.
 - Decisions become harder to silently override — supersession requires a new ADR.
 ```
 
-Save as `.brain/adrs/0001-record-architecture-decisions.md`. Update `.brain/adrs/README.md`.
+Save as `.agents/brain/adrs/0001-record-architecture-decisions.md`. Update `.agents/brain/adrs/README.md`.
 
 ## Step 5 — Pre-commit hooks + CI (Promise 3, 4)
 
@@ -153,7 +153,7 @@ The architectural-impact checkbox closes the continuous-learning loop. Drop in `
 
 ## Architectural impact
 - [ ] No architectural change (no ADR needed)
-- [ ] Architectural change — ADR added at: `.brain/adrs/NNNN-*.md`
+- [ ] Architectural change — ADR added at: `.agents/brain/adrs/NNNN-*.md`
 - [ ] Architectural change — ADR exemption granted by: [name]
       Reason: [why no ADR]
 
@@ -171,7 +171,7 @@ Every doc gets a date — YAML frontmatter `date:` or inline `_Last reviewed: YY
 
 ```bash
 TODAY=$(date +%F)
-for f in AGENTS.md README.md CONTRIBUTING.md SECURITY.md .brain/**/*.md; do
+for f in AGENTS.md README.md CONTRIBUTING.md SECURITY.md .agents/brain/**/*.md; do
     [ -f "$f" ] || continue
     grep -q "_Last reviewed:" "$f" || \
         printf "\n_Last reviewed: %s_\n" "$TODAY" >> "$f"
@@ -180,9 +180,9 @@ done
 
 The pre-commit hook from Step 5 enforces this on future edits.
 
-## Step 8 — `.brain/config.toml` (optional: tune the strictness dial)
+## Step 8 — `.agents/brain/config.toml` (optional: tune the strictness dial)
 
-The hooks installed in Step 5 default to `strictness = "normal"`. To tune up or down, drop a `.brain/config.toml`:
+The hooks installed in Step 5 default to `strictness = "normal"`. To tune up or down, drop a `.agents/brain/config.toml`:
 
 ```toml
 [repo-ops]
@@ -194,22 +194,22 @@ version = "1.1"
 - **`normal`** — most production repos (default)
 - **`strict`** — regulated codebases, monorepos (every trip-wire blocks; multi-agent review for apply-mode fixes)
 
-See `../guidance/reliability-dial.md` for what each position changes per trip-wire. Skip this step entirely to use `normal` defaults — `.brain/config.toml` is an override, not a requirement.
+See `../guidance/reliability-dial.md` for what each position changes per trip-wire. Skip this step entirely to use `normal` defaults — `.agents/brain/config.toml` is an override, not a requirement.
 
 ## Step 9 — Verification checklist
 
 - [ ] `AGENTS.md` exists, ≤150 lines, has all 8 sections
 - [ ] `CLAUDE.md` is a symlink to `AGENTS.md` OR a ≤15-line pointer
-- [ ] `.brain/{adrs,postmortems,runbooks,archive,architecture}/` exist with README index files
-- [ ] `.brain/adrs/0001-record-architecture-decisions.md` is `Accepted`
-- [ ] `.gitignore` excludes `.brain/cache/` and `.brain/cold-start/working/`
+- [ ] `.agents/brain/{adrs,postmortems,runbooks,archive,architecture}/` exist with README index files
+- [ ] `.agents/brain/adrs/0001-record-architecture-decisions.md` is `Accepted`
+- [ ] `.gitignore` excludes `.agents/brain/cache/` and `.agents/brain/cold-start/working/`
 - [ ] `.pre-commit-config.yaml` present; `pre-commit install` ran
 - [ ] `scripts/check-*.sh` present and executable
 - [ ] `.github/workflows/repo-brain-{pr,weekly}.yml` present
 - [ ] `.github/pull_request_template.md` has architectural-impact checkbox
 - [ ] Every `.md` has `_Last reviewed:_` or YAML `date:`
 - [ ] `README.md` references `AGENTS.md` once (no duplicated build commands; see `../standards/readme-conventions.md`)
-- [ ] (Optional) `.brain/config.toml` present if non-default strictness desired
+- [ ] (Optional) `.agents/brain/config.toml` present if non-default strictness desired
 - [ ] `pre-commit run --all-files` passes
 
 12 boxes ticked → all 5 promises ship from day one.
@@ -220,8 +220,8 @@ See `../guidance/reliability-dial.md` for what each position changes per trip-wi
 chore: bootstrap repo-brain-compliant doc surface
 
 - AGENTS.md (canonical), CLAUDE.md → symlink
-- .brain/{adrs,postmortems,runbooks,archive,architecture}/
-- .gitignore for .brain/cache/, .brain/cold-start/working/
+- .agents/brain/{adrs,postmortems,runbooks,archive,architecture}/
+- .gitignore for .agents/brain/cache/, .agents/brain/cold-start/working/
 - ADR 0001 — Record architecture decisions
 - pre-commit hooks (drift, length, doc-date)
 - CI (PR-time link-check + weekly audit)
@@ -237,7 +237,7 @@ Delivers all 5 repo-ops promises from day one.
 - **Pre-commit installed but not run.** `pre-commit install` writes `.git/hooks/pre-commit`; clones don't pick it up. Document the install in `CONTRIBUTING.md`.
 - **Lychee with `fail: false` on PR.** Defeats the gate. `fail: true` on PR; `fail: false` only in scheduled audits.
 - **Stamping `_Last reviewed:_` programmatically and never touching it again.** The date should be re-stamped on real edits, not just the seed.
-- **Committing `.brain/cache/` or `.brain/cold-start/working/`.** Transient state belongs in `.gitignore`.
+- **Committing `.agents/brain/cache/` or `.agents/brain/cold-start/working/`.** Transient state belongs in `.gitignore`.
 
 ## Cross-references
 

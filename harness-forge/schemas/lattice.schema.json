@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "Lattice",
   "title": "Lattice — the full grid of cells for one project",
-  "description": "Canonical state in .harness/lattice.json; every other view (status renders, the frontier) is derived. See references/agentic-systems-foundations/lattice-model.md.",
+  "description": "Canonical state in .agents/harness/lattice.json; every other view (status renders, the frontier) is derived. See references/agentic-systems-foundations/lattice-model.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "cells"],

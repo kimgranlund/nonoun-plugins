@@ -19,7 +19,7 @@ status: research-verified
 
 **Anthropic's own guidance for CLAUDE.md is "under ~200 lines."** The same ergonomic ceiling applies to AGENTS.md — instruction quality drops as count rises. Long files are skimmed, ignored, or contradicted by their own later sections.
 
-If you have more than 200 lines of relevant content, push detail into linked subfolders (`ARCHITECTURE.md`, `.brain/adrs/`, `.brain/runbooks/`). The entry file should _navigate to_ depth, not _contain_ depth.
+If you have more than 200 lines of relevant content, push detail into linked subfolders (`ARCHITECTURE.md`, `.agents/brain/adrs/`, `.agents/brain/runbooks/`). The entry file should _navigate to_ depth, not _contain_ depth.
 
 ## What to include (per GitHub's 2,500-repo study)
 
@@ -44,7 +44,7 @@ Per Anthropic's best-practices doc and HumanLayer's writeup:
 
 - **Delete instructions Claude already follows correctly without being told.** "Use TypeScript" in a TS-only repo is noise.
 - **Delete instructions that contradict each other.** Diff your own AGENTS.md for self-contradictions.
-- **Delete TODOs, comments, work-in-progress notes.** Use `.brain/PLAN.md` instead.
+- **Delete TODOs, comments, work-in-progress notes.** Use `.agents/brain/PLAN.md` instead.
 - **Delete commands that fail.** A wrong `npm test` is worse than no `npm test`.
 
 ## Iteration pattern
@@ -89,10 +89,10 @@ run:    `cargo run --bin server`
 
 ## Where to find things
 - Architecture overview: `ARCHITECTURE.md`
-- ADRs: `.brain/adrs/`
-- Postmortems: `.brain/postmortems/`
-- Runbooks: `.brain/runbooks/`
-- Active plan: `.brain/PLAN.md`
+- ADRs: `.agents/brain/adrs/`
+- Postmortems: `.agents/brain/postmortems/`
+- Runbooks: `.agents/brain/runbooks/`
+- Active plan: `.agents/brain/PLAN.md`
 
 _Last reviewed: 2026-04-27_
 ```

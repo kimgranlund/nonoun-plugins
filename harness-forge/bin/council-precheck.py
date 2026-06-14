@@ -25,7 +25,7 @@ import ledger as _led      # noqa: E402
 import wire as _wire       # noqa: E402
 
 
-def anchor_block(project, hd=".harness"):
+def anchor_block(project, hd=".agents/harness"):
     """Return the deterministic Step-0 anchor block (a string the orchestrator pastes into each critic dispatch)."""
     d = os.path.join(project, hd)
     out = ["== MECHANICAL ANCHOR BLOCK (kernel gates, read-only — interpret, never re-derive) =="]
@@ -71,7 +71,7 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as proj:
-        d = os.path.join(proj, ".harness")
+        d = os.path.join(proj, ".agents/harness")
         _lat.scaffold(d)
         _lat.save(d, _lat.seed_lattice("precheck"))
         block = anchor_block(proj)
@@ -80,7 +80,7 @@ def selftest():
             expect(token in block, f"anchor block missing the {token} line")
         expect("NOT WIRED" in block, "a freshly seeded (unwired) project should report NOT WIRED")
         # after wiring, the block flips to WIRED — and the driver never executes anything in the harness
-        _wire.apply(proj, ".harness")
+        _wire.apply(proj, ".agents/harness")
         sys.stdout = open(os.devnull, "w")     # silence apply's print during the second pass
         block2 = anchor_block(proj)
         sys.stdout = sys.__stdout__
@@ -102,7 +102,7 @@ def main(argv):
         print(__doc__.split("Usage:")[1].split("Stdlib")[0].strip(), file=sys.stderr)
         return 2
     project = argv[argv.index("--project") + 1]
-    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".harness"
+    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".agents/harness"
     print(anchor_block(project, hd))
     return 0
 

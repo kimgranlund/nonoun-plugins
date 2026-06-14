@@ -102,7 +102,7 @@ If you have a fat `CLAUDE.md` and no `AGENTS.md`:
 1. **Copy** `CLAUDE.md` → `AGENTS.md` (`cp CLAUDE.md AGENTS.md`).
 2. **Generalize the wording.** Replace "Claude Code" / "Claude" with "LLM coding agents (Claude Code, Codex, Devin, Cursor, Windsurf, etc.)".
 3. **Add a `Where to find things` section** if missing.
-4. **Trim AGENTS.md to under ~200 lines.** Push detail into `.brain/`.
+4. **Trim AGENTS.md to under ~200 lines.** Push detail into `.agents/brain/`.
 5. **Replace `CLAUDE.md`** with either a symlink (`rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md`) or a thin pointer file.
 6. **Add `.cursor/rules/instructions.mdc`, `.windsurfrules`, `.github/copilot-instructions.md`** as thin pointers if those tools are used.
 7. **Commit clearly:** `docs: split CLAUDE.md → AGENTS.md (canonical) + CLAUDE.md (pointer)`.

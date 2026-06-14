@@ -11,7 +11,7 @@ not a layer; this script routes it back into the three downstream consumers that
   - distill    — recent event windows → pattern candidates for the regeneration loop
 
 Append-only is enforced mechanically by the protected-path gate (workers are deny-on-write to ledger/);
-this script only ever appends. State lives in `.harness/ledger/events.jsonl`.
+this script only ever appends. State lives in `.agents/harness/ledger/events.jsonl`.
 
 See references/agentic-systems-foundations/layer-ledger.md and evals-and-verification.md.
 
@@ -199,7 +199,7 @@ def selftest():
 
 
 def _dir(argv):
-    return argv[argv.index("--dir") + 1] if "--dir" in argv else ".harness"
+    return argv[argv.index("--dir") + 1] if "--dir" in argv else ".agents/harness"
 
 
 def _flag(argv, name, default=None):

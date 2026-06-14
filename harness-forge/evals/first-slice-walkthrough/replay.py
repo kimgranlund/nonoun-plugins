@@ -34,7 +34,7 @@ import lattice as _lat  # noqa: E402
 
 # ---- the toy project: each seeded cell's asset content + the REAL predicate that verifies it ----
 ASSETS = {
-    "ontology.task.domain": (".harness/ontology/domain.md", """# Ontology — invoice-parser (task scope)
+    "ontology.task.domain": (".agents/harness/ontology/domain.md", """# Ontology — invoice-parser (task scope)
 
 ## Entities
 Invoice · LineItem · Vendor · TypedRecord — an Invoice has 1..n LineItems and exactly one Vendor.
@@ -45,14 +45,14 @@ parse(pdf) → Invoice · validate(Invoice) → list[Violation] · to_record(Inv
 ## States
 received → parsed → validated → exported (a malformed PDF dead-ends in `rejected`, never a partial record)
 """),
-    "spec.task.first-slice": (".harness/spec/first-slice.md", """# spec.task.first-slice — parse one well-formed PDF invoice into a typed record
+    "spec.task.first-slice": (".agents/harness/spec/first-slice.md", """# spec.task.first-slice — parse one well-formed PDF invoice into a typed record
 
 ## Acceptance criteria (checkable predicates, not prose hopes)
 1. `parse(fixture.pdf)` returns an `Invoice` whose `total == sum(line.amount for line in lines)`.
 2. Every required field (vendor, date, total, currency) is present and typed — no silent defaults.
 3. A malformed PDF raises `InvoiceParseError`; it never returns a partial record.
 """),
-    "rubric.task.first-slice": (".harness/rubric/first-slice.md", """# rubric.task.first-slice — scores the slice's work against the spec
+    "rubric.task.first-slice": (".agents/harness/rubric/first-slice.md", """# rubric.task.first-slice — scores the slice's work against the spec
 
 | Score | Evidence |
 | --- | --- |
@@ -62,7 +62,7 @@ received → parsed → validated → exported (a malformed PDF dead-ends in `re
 
 D1 `[gate]` — the three acceptance predicates, run as code. D2 `[review]` — field-mapping judgment at the boundary.
 """),
-    "ledger.task.events": (".harness/ledger/SCHEMA.md", """# ledger.task.events — the append-only event schema
+    "ledger.task.events": (".agents/harness/ledger/SCHEMA.md", """# ledger.task.events — the append-only event schema
 
 One JSONL line per event: `operation` + `actor` required; `cell_id`, `result`, `rationale` (the WHY),
 `cost` {tokens, iterations} carried whenever known. Append-only — rewriting history is tampering.
@@ -70,16 +70,16 @@ One JSONL line per event: `operation` + `actor` required; `cell_id`, `result`, `
 }
 VERIFIERS = {  # real content predicates — the verdict is the command's exit status, never an opinion
     "ontology.task.domain":
-        "import sys; t = open('.harness/ontology/domain.md').read(); "
+        "import sys; t = open('.agents/harness/ontology/domain.md').read(); "
         "sys.exit(0 if all(s in t for s in ('## Entities', '## Operations', '## States')) else 1)",
     "spec.task.first-slice":
-        "import sys, re; t = open('.harness/spec/first-slice.md').read(); "
+        "import sys, re; t = open('.agents/harness/spec/first-slice.md').read(); "
         "sys.exit(0 if ('## Acceptance criteria' in t and len(re.findall(r'^\\d+\\.', t, re.M)) >= 3) else 1)",
     "rubric.task.first-slice":
-        "import sys; t = open('.harness/rubric/first-slice.md').read(); "
+        "import sys; t = open('.agents/harness/rubric/first-slice.md').read(); "
         "sys.exit(0 if ('[gate]' in t and '[review]' in t and '| 5 |' in t) else 1)",
     "ledger.task.events":
-        "import sys, json; lines = [l for l in open('.harness/ledger/events.jsonl') if l.strip()]; "
+        "import sys, json; lines = [l for l in open('.agents/harness/ledger/events.jsonl') if l.strip()]; "
         "sys.exit(0 if lines and all(set(('operation','actor')) <= set(json.loads(l)) for l in lines) else 1)",
 }
 
@@ -92,7 +92,7 @@ def sh(args, cwd, label, expect_zero=True):
 
 
 def walkthrough(proj):
-    hd = os.path.join(proj, ".harness")
+    hd = os.path.join(proj, ".agents/harness")
     print("== seed ==")
     sh([os.path.join(BIN, "lattice.py"), "init", "invoice-parser", "--dir", hd], proj, "seed")
     print("== wire (the consent step, pre-granted here) ==")

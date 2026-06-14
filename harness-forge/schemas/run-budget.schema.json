@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "RunBudget",
   "title": "RunBudget — the global ceiling of one /harness-run pass (the bound gate-budget enforces)",
-  "description": "Persisted at .harness/run/budget.json by lattice.run_budget_start; read by run_budget_exhausted, which gate-budget consults to deny every worker write once the run is spent. This is the highest-blast-radius durable state in the harness — it decides whether every write in the project is allowed — so it is typed and check-gated like the lattice. A vacuous budget (all caps null) is forbidden: a 'budget' that bounds nothing is a misconfiguration, not a run. See bin/run-budget.py and references/agentic-systems-foundations/layer-policy.md.",
+  "description": "Persisted at .agents/harness/run/budget.json by lattice.run_budget_start; read by run_budget_exhausted, which gate-budget consults to deny every worker write once the run is spent. This is the highest-blast-radius durable state in the harness — it decides whether every write in the project is allowed — so it is typed and check-gated like the lattice. A vacuous budget (all caps null) is forbidden: a 'budget' that bounds nothing is a misconfiguration, not a run. See bin/run-budget.py and references/agentic-systems-foundations/layer-policy.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["start_ts"],

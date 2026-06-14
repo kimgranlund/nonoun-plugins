@@ -8,21 +8,21 @@ date: 2026-05-06
 
 ## The drift class
 
-When a doc moves via `git mv` from one tree location to another (typically `docs/plans/X.md` → `.brain/archive/YYYY-Q/PLAN-X.md`), intra-repo links from other files break. **Each linking file has a _different_ relative-path depth** — sed alone can't fix them in one pass.
+When a doc moves via `git mv` from one tree location to another (typically `docs/plans/X.md` → `.agents/brain/archive/YYYY-Q/PLAN-X.md`), intra-repo links from other files break. **Each linking file has a _different_ relative-path depth** — sed alone can't fix them in one pass.
 
 Example drift surface (from the 2026-05-02 plan archival):
 
 ```text
 Linking file              Old → new
 ------------------------  ----------------------------------------------------------------
-CHANGELOG.md (root)       ./docs/plans/X.md        → ./.brain/archive/YYYY-Q/PLAN-X.md
+CHANGELOG.md (root)       ./docs/plans/X.md        → ./.agents/brain/archive/YYYY-Q/PLAN-X.md
 ROADMAP.md (root)         same
-docs/conventions/Y.md     ../plans/X.md            → ../../.brain/archive/YYYY-Q/PLAN-X.md
-docs/journal/YYYY/MM/Z.md ../../../plans/X.md      → ../../../../.brain/archive/YYYY-Q/PLAN-X.md
-packages/<pkg>/CHANGELOG  ../../../docs/plans/X.md → ../../../.brain/archive/YYYY-Q/PLAN-X.md
+docs/conventions/Y.md     ../plans/X.md            → ../../.agents/brain/archive/YYYY-Q/PLAN-X.md
+docs/journal/YYYY/MM/Z.md ../../../plans/X.md      → ../../../../.agents/brain/archive/YYYY-Q/PLAN-X.md
+packages/<pkg>/CHANGELOG  ../../../docs/plans/X.md → ../../../.agents/brain/archive/YYYY-Q/PLAN-X.md
 ```
 
-5 files, 4 different relative-path patterns. A `sed -i 's|docs/plans/X|.brain/archive/Y/PLAN-X|g'` doesn't work — the prefix segments differ.
+5 files, 4 different relative-path patterns. A `sed -i 's|docs/plans/X|.agents/brain/archive/Y/PLAN-X|g'` doesn't work — the prefix segments differ.
 
 ## Detection
 
@@ -43,19 +43,19 @@ ROOT = pathlib.Path("/path/to/repo")
 EDITS = [
     (ROOT / "CHANGELOG.md",
      "./docs/plans/X.md",
-     "./.brain/archive/2026-Q2/PLAN-X.md"),
+     "./.agents/brain/archive/2026-Q2/PLAN-X.md"),
     (ROOT / "ROADMAP.md",
      "./docs/plans/X.md",
-     "./.brain/archive/2026-Q2/PLAN-X.md"),
+     "./.agents/brain/archive/2026-Q2/PLAN-X.md"),
     (ROOT / "docs/conventions/Y.md",
      "../plans/X.md",
-     "../../.brain/archive/2026-Q2/PLAN-X.md"),
+     "../../.agents/brain/archive/2026-Q2/PLAN-X.md"),
     (ROOT / "docs/journal/2026/05/Z.md",
      "../../../plans/X.md",
-     "../../../../.brain/archive/2026-Q2/PLAN-X.md"),
+     "../../../../.agents/brain/archive/2026-Q2/PLAN-X.md"),
     (ROOT / "packages/foo/CHANGELOG.md",
      "../../../docs/plans/X.md",
-     "../../../.brain/archive/2026-Q2/PLAN-X.md"),
+     "../../../.agents/brain/archive/2026-Q2/PLAN-X.md"),
 ]
 
 for path, old, new in EDITS:

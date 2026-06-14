@@ -12,7 +12,7 @@ status: needs-research-enhancement
 
 # Recipe: audit an existing repo
 
-> **The end-to-end procedure** for running `repo-ops` against a real repo and producing an actionable gap report. Includes the v1.5 `.brain/` layout migration recipe.
+> **The end-to-end procedure** for running `repo-ops` against a real repo and producing an actionable gap report. Includes the v1.5 `.agents/brain/` layout migration recipe.
 
 ## Inputs
 
@@ -23,7 +23,7 @@ status: needs-research-enhancement
 ## Outputs
 
 - `stale-docs-audit.md` (or stdout) with the gap report
-- (If `apply-fixes`) edits to `AGENTS.md`, `CLAUDE.md`, etc., or new files in `.brain/`
+- (If `apply-fixes`) edits to `AGENTS.md`, `CLAUDE.md`, etc., or new files in `.agents/brain/`
 
 ## The 7-step procedure
 
@@ -46,16 +46,16 @@ ls -la .continue/ 2>/dev/null
 ls -la .github/copilot-instructions.md 2>/dev/null
 
 # Brain artifacts (v1.5 layout) + legacy docs/ tree
-find .brain docs -type f -name '*.md' 2>/dev/null
+find .agents/brain docs -type f -name '*.md' 2>/dev/null
 find . -maxdepth 2 \( -name 'CHANGELOG*.md' -o -name 'ARCHITECTURE.md' -o -name 'PLAN.md' -o -name 'ROADMAP.md' \) 2>/dev/null
 ```
 
 Build two sets:
 
 - **EntryFiles**: files found at the root that are entry candidates
-- **DocFiles**: files found anywhere under `.brain/` or `docs/`, plus well-known top-level docs (CHANGELOG.md, ARCHITECTURE.md, PLAN.md, ROADMAP.md)
+- **DocFiles**: files found anywhere under `.agents/brain/` or `docs/`, plus well-known top-level docs (CHANGELOG.md, ARCHITECTURE.md, PLAN.md, ROADMAP.md)
 
-**Git-sync mode detection.** Check `.gitignore`. If `.brain/` (the directory itself, not just `.brain/cache/` or `.brain/cold-start/`) appears in `.gitignore`, the repo is in `local-only` mode (per `../guidance/reliability-dial.md` § Git sync). The audit still runs against the working tree, but Promise 5 findings apply to the local clone only — multi-contributor recipes (`concurrent-learnings-merge.md`, `cold-start-harvest.md`) and the auto-archive PR workflow are moot in this mode and should be skipped.
+**Git-sync mode detection.** Check `.gitignore`. If `.agents/brain/` (the directory itself, not just `.agents/brain/cache/` or `.agents/brain/cold-start/`) appears in `.gitignore`, the repo is in `local-only` mode (per `../guidance/reliability-dial.md` § Git sync). The audit still runs against the working tree, but Promise 5 findings apply to the local clone only — multi-contributor recipes (`concurrent-learnings-merge.md`, `cold-start-harvest.md`) and the auto-archive PR workflow are moot in this mode and should be skipped.
 
 ### Step 2 — Pointer trace
 
@@ -104,11 +104,11 @@ For each of the standard memory homes, check existence and pointer-from-AGENTS.m
 
 | Home | Required? | If missing |
 | --- | --- | --- |
-| `.brain/adrs/` (or legacy `docs/adrs/`) | Recommended | "No ADR home — recommend introducing them. See `recipes/adr-introduction.md`." |
-| `.brain/decisions/` | Optional | If absent and no ADRs either, both flagged. |
-| `.brain/postmortems/` (or legacy `docs/postmortems/` / `docs/incidents/`) | Optional | Flag only if repo has had production incidents (heuristic: search for `incident`, `outage`, `post-mortem` in commit log). |
+| `.agents/brain/adrs/` (or legacy `docs/adrs/`) | Recommended | "No ADR home — recommend introducing them. See `recipes/adr-introduction.md`." |
+| `.agents/brain/decisions/` | Optional | If absent and no ADRs either, both flagged. |
+| `.agents/brain/postmortems/` (or legacy `docs/postmortems/` / `docs/incidents/`) | Optional | Flag only if repo has had production incidents (heuristic: search for `incident`, `outage`, `post-mortem` in commit log). |
 | `CHANGELOG.md` | Strongly recommended | Flag as gap if missing. |
-| `.brain/runbooks/` (or legacy `docs/runbooks/`) | Optional | Flag if production-facing repo. |
+| `.agents/brain/runbooks/` (or legacy `docs/runbooks/`) | Optional | Flag if production-facing repo. |
 
 ### Step 6 — Staleness probe
 
@@ -146,14 +146,14 @@ _Generated: 2026-04-27_
 
 ### NO ADR HOME
 The repo has architectural decisions scattered across PR descriptions and code
-comments but no `.brain/adrs/`. Recommend introducing ADRs.
+comments but no `.agents/brain/adrs/`. Recommend introducing ADRs.
 
 [continue per severity]
 
 ## Recommended fixes (ordered)
 
 1. Rename `CLAUDE.md` → `AGENTS.md`; create thin `CLAUDE.md` redirect.
-2. Create `.brain/adrs/` with `0001-record-architecture-decisions.md`.
+2. Create `.agents/brain/adrs/` with `0001-record-architecture-decisions.md`.
 3. Add "Where to find things" and "Memory primitives" sections to AGENTS.md.
 4. Update `.cursorrules` to be a thin pointer.
 5. Resolve drift between CLAUDE.md and .cursorrules: pnpm vs npm.
@@ -163,38 +163,38 @@ comments but no `.brain/adrs/`. Recommend introducing ADRs.
 [concrete diffs — not applied without explicit user confirmation]
 ```
 
-## Migration: legacy `docs/` layout → `.brain/`
+## Migration: legacy `docs/` layout → `.agents/brain/`
 
 If the audit finds memory artifacts in `docs/{adrs,postmortems,runbooks,archive,architecture}/` (the pre-v1.5 layout), the recommended migration is one git move that preserves history:
 
 ```bash
-mkdir -p .brain
+mkdir -p .agents/brain
 
 # Move each memory primitive that exists. Skip silently if absent.
-[ -d docs/adrs ]         && git mv docs/adrs         .brain/adrs
-[ -d docs/postmortems ]  && git mv docs/postmortems  .brain/postmortems
+[ -d docs/adrs ]         && git mv docs/adrs         .agents/brain/adrs
+[ -d docs/postmortems ]  && git mv docs/postmortems  .agents/brain/postmortems
 # Or if the repo used the docs/incidents alias:
-[ -d docs/incidents ] && [ ! -d .brain/postmortems ] && git mv docs/incidents .brain/postmortems
-[ -d docs/runbooks ]     && git mv docs/runbooks     .brain/runbooks
-[ -d docs/archive ]      && git mv docs/archive      .brain/archive
-[ -d docs/architecture ] && git mv docs/architecture .brain/architecture
-[ -d docs/repo-ops/audit-history ] && git mv docs/repo-ops/audit-history .brain/audit-history
+[ -d docs/incidents ] && [ ! -d .agents/brain/postmortems ] && git mv docs/incidents .agents/brain/postmortems
+[ -d docs/runbooks ]     && git mv docs/runbooks     .agents/brain/runbooks
+[ -d docs/archive ]      && git mv docs/archive      .agents/brain/archive
+[ -d docs/architecture ] && git mv docs/architecture .agents/brain/architecture
+[ -d docs/repo-ops/audit-history ] && git mv docs/repo-ops/audit-history .agents/brain/audit-history
 
 # Config + transient state homes
-[ -f .repo-ops.toml ] && git mv .repo-ops.toml .brain/config.toml
-[ -d .repo-ops/changesets ] && git mv .repo-ops/changesets .brain/changesets
+[ -f .repo-ops.toml ] && git mv .repo-ops.toml .agents/brain/config.toml
+[ -d .repo-ops/changesets ] && git mv .repo-ops/changesets .agents/brain/changesets
 
-git commit -m "chore: migrate memory layer to .brain/ (repo-ops v1.5)"
+git commit -m "chore: migrate memory layer to .agents/brain/ (repo-ops v1.5)"
 ```
 
 After the move, also update:
 
-- **`AGENTS.md`** — every "Where to find things" pointer (`docs/adrs/` → `.brain/adrs/`, etc.)
-- **`.gitignore`** — add `.brain/cache/` and `.brain/cold-start/working/` (transient state)
+- **`AGENTS.md`** — every "Where to find things" pointer (`docs/adrs/` → `.agents/brain/adrs/`, etc.)
+- **`.gitignore`** — add `.agents/brain/cache/` and `.agents/brain/cold-start/working/` (transient state)
 - **`.github/workflows/`** — rename `repo-fixer-*.yml` → `repo-brain-*.yml` if hooks were installed pre-v1.3
-- **Workflow path filters / lychee globs** — add `'.brain/**/*.md'` next to `'docs/**/*.md'` (verbatim recipes in `self-healing-hooks.md`)
+- **Workflow path filters / lychee globs** — add `'.agents/brain/**/*.md'` next to `'docs/**/*.md'` (verbatim recipes in `self-healing-hooks.md`)
 
-The audit recognizes either layout — **migration is opt-in for v1.5**, not enforced. Repos that prefer the established `docs/{adrs,...}/` convention can stay there; the audit's checks adapt. Greenfield setup defaults to `.brain/`.
+The audit recognizes either layout — **migration is opt-in for v1.5**, not enforced. Repos that prefer the established `docs/{adrs,...}/` convention can stay there; the audit's checks adapt. Greenfield setup defaults to `.agents/brain/`.
 
 **What stays at the repo root regardless of layout:**
 
@@ -212,7 +212,7 @@ When `apply-fixes` is on:
 2. **Never overwrite a file >50 lines** without showing a diff and asking.
 3. **Always commit each fix as a separate commit** with a clear message — this is reversible.
 4. **Never rewrite git history.**
-5. If asked to delete an orphaned doc, prefer **moving to `.brain/archive/`** with a date suffix over outright deletion.
+5. If asked to delete an orphaned doc, prefer **moving to `.agents/brain/archive/`** with a date suffix over outright deletion.
 
 ## Common findings on real repos
 
@@ -225,7 +225,7 @@ From running this audit across real-world projects, the most frequent gaps:
 5. **Stale build commands** — entry file says `npm` but repo migrated to pnpm/bun.
 6. **Orphaned `docs/old-plan.md`** — never cleaned up after being superseded.
 7. **Undated `ARCHITECTURE.md`** — no way to know if it's current.
-8. **Pre-v1.5 `docs/` layout** — opportunity to migrate to `.brain/` (see § Migration above).
+8. **Pre-v1.5 `docs/` layout** — opportunity to migrate to `.agents/brain/` (see § Migration above).
 
 ## Cross-references
 

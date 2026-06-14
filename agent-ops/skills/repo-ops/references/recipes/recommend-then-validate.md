@@ -32,7 +32,7 @@ This pattern is **required for `strict` strictness** (per `../guidance/reliabili
 The recommender emits a structured plan; the validator consumes it.
 
 ```yaml
-# .brain/fix-plan-2026-04-27.yaml (transient; consumed then discarded)
+# .agents/brain/fix-plan-2026-04-27.yaml (transient; consumed then discarded)
 strictness: normal
 findings_addressed:
   - id: DRIFT-CLAUDE-AGENTS
@@ -49,7 +49,7 @@ fixes:
       [diff body]
   - kind: archive
     file: docs/old-plan.md
-    move_to: .brain/archive/old-plan-2026-04-27.md
+    move_to: .agents/brain/archive/old-plan-2026-04-27.md
     reason: "Orphan, last modified 2024-08-15."
 ```
 
@@ -65,7 +65,7 @@ After a hypothetical fix, the validator re-runs the relevant trip-wires:
 | `edit` | Resulting file still <200 lines (entry files); frontmatter still valid; no new broken links introduced |
 | `archive` | File is genuinely orphaned (per `../audit-patterns/orphan-detection.md`); not within active grace window |
 | `create` | Path valid; doesn't conflict with existing file; YAML frontmatter present |
-| `delete` | **Always vetoed.** Move to `.brain/archive/` instead. Hard rule, no overrides. |
+| `delete` | **Always vetoed.** Move to `.agents/brain/archive/` instead. Hard rule, no overrides. |
 
 If any veto fires, the fix is dropped from the plan and a finding is emitted: `VETO — <fix> rejected because <rule>`. The PR opens with the surviving fixes only.
 
@@ -76,8 +76,8 @@ If any veto fires, the fix is dropped from the plan and a finding is emitted: `V
 Use the Claude Code subagent pattern. Main agent acts as recommender; spawns a validator subagent via the Agent tool with a fresh context.
 
 ```text
-1. Main agent runs the audit, builds fix plan, writes .brain/fix-plan-*.yaml
-2. Main agent spawns validator subagent: "Read .brain/fix-plan-*.yaml;
+1. Main agent runs the audit, builds fix plan, writes .agents/brain/fix-plan-*.yaml
+2. Main agent spawns validator subagent: "Read .agents/brain/fix-plan-*.yaml;
    dry-run each fix; emit veto report."
 3. Validator subagent returns veto list (fresh context — can't share rationalization)
 4. Main agent removes vetoed fixes from plan; opens PR with remainder
@@ -128,7 +128,7 @@ The iterate-within-budget extension: when the validator vetoes fixes, feed the v
 
 ### Configuration
 
-`.brain/config.toml`:
+`.agents/brain/config.toml`:
 
 ```toml
 [repo-ops.iteration]

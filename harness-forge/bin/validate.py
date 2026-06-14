@@ -53,11 +53,12 @@ def run_validation(d, cell_id, harness, command):
 
     ts = datetime.datetime.now().astimezone().isoformat(timespec="seconds").replace(":", "-")
     asset = cell.get("asset_ref")
-    against = {}
+    against = {}                                           # asset_refs are project-root-relative; the harness dir is
+    #                                                       <root>/.agents/harness, so the root is its grandparent.
     for dep in cell.get("depends_on", []):
         dc = _lat.find(lat, dep)
         if dc and dc.get("asset_ref"):
-            against[dep] = _hash(os.path.join(os.path.dirname(d.rstrip("/")) or ".", dc["asset_ref"]))
+            against[dep] = _hash(os.path.join(os.path.dirname(os.path.dirname(d.rstrip("/"))) or ".", dc["asset_ref"]))
     signal = {
         "cell_id": cell_id, "ts": ts, "harness": harness,
         "kind": "gate", "result": "pass" if passed else "fail",
@@ -78,7 +79,7 @@ def run_validation(d, cell_id, harness, command):
         cell["validated_against"] = against
         _lat.save(d, lat)
         if asset:
-            against[cell_id] = _hash(os.path.join(os.path.dirname(d.rstrip("/")) or ".", asset))
+            against[cell_id] = _hash(os.path.join(os.path.dirname(os.path.dirname(d.rstrip("/"))) or ".", asset))
         return True, signal, f"PASS — {cell_id} → validated (signal: {rel})"
     return False, signal, f"FAIL — {cell_id} not advanced ({harness} exited nonzero; signal: {rel})"
 
@@ -90,7 +91,7 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as root:
-        d = os.path.join(root, ".harness")
+        d = os.path.join(root, ".agents/harness")
         _lat.scaffold(d)
         lat = _lat.seed_lattice("t")
         # make the spec instantiable: give it an asset and a validated verifier
@@ -147,7 +148,7 @@ def main(argv):
         print("validate.py: no verifier command after `--`", file=sys.stderr)
         return 2
     cell_id = head[0]
-    d = head[head.index("--dir") + 1] if "--dir" in head else ".harness"
+    d = head[head.index("--dir") + 1] if "--dir" in head else ".agents/harness"
     harness = head[head.index("--harness") + 1] if "--harness" in head else os.path.basename(command[0])
     try:
         ok, _sig, msg = run_validation(d, cell_id, harness, command)

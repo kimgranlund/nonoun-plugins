@@ -15,7 +15,7 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 
 ```text
 /harness-assess "."                                                         # survey an EXISTING project → map it onto the lattice → recommend the seed (best cold start)
-/harness-seed   "invoice-parser — turn a PDF invoice into a typed record"   # scaffold .harness/ + the first slice + offer to wire the gates (consent-gated)
+/harness-seed   "invoice-parser — turn a PDF invoice into a typed record"   # scaffold .agents/harness/ + the first slice + offer to wire the gates (consent-gated)
 /harness-scan                                                               # the open/stale gap set at the frontier
 /harness-next                                                               # the next cell, ranked, dependency-ready
 /harness-advance  spec.task.parse-invoice                                   # run define→create→validate on one cell
@@ -45,7 +45,7 @@ Cold-start in plain language (each routes to the matching command):
 
 Developing an agentic system is converting uncertainty into **validated, typed knowledge assets**. The project's state at any moment is the state of those assets; "what should we work on next?" is a *selection function over a lattice of cells*, not a planning meeting.
 
-- **The lattice** — layers × scopes. A **cell** is one layer at one scope (`{layer}.{scope}.{slug}`) carrying one **maturity** state. Canonical state in `.harness/lattice.json`; every other view is derived.
+- **The lattice** — layers × scopes. A **cell** is one layer at one scope (`{layer}.{scope}.{slug}`) carrying one **maturity** state. Canonical state in `.agents/harness/lattice.json`; every other view is derived.
 - **The engine** — `define → create → validate` on one cell at the smallest scope that yields signal. One pass is one closed loop: the cell is its scope, the rubric+harness its verifier, the signal its stop condition.
 - **The compass** — *scan* (detect gaps across the modality axis) + *rank* (`(risk × unlock) ÷ probe-cost`, dependency-filtered). Two functions, never conflated.
 - **The regeneration loop** — operating cells emit ledger entries → entries distill into patterns → patterns propose upstream revisions. A frozen lattice is drift in the costume of documentation.
@@ -69,7 +69,7 @@ harness-forge/
 ├── skills/     2 posture skills             → harness-build (operate) · harness-evaluate (audit + score)
 ├── agents/     4 operators + the council    → harness-builder (the bounded /harness-run loop) · harness-advancer · harness-auditor · harness-distiller · harness-council + 7 critic-* structural critics (one per rubric dimension, parallel isolated)
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)
-├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .harness/ state
+├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .agents/harness/ state
 ├── schemas/    the typed data (6)           → Cell · Lattice · Naming (self-hosting) · Signal · RunBudget · LoopActive
 ├── evals/      the behavioral evidence      → calibration fixtures (4 planted defects) · the first-slice walkthrough · the stop-gate (per-cell breaker) · the global-bound (the run's caps enforced in code, no agent) — all CI-replayed
 └── references/ the standard                 → the 14-file agentic-systems foundations + the harness rubric + the operating procedure

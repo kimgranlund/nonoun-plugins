@@ -35,8 +35,8 @@ def _now():
 
 
 def _wired_gate(proj, payload_path):
-    """Run the INSTALLED gate-budget hook (from .harness/hooks/) against a write to payload_path. Returns exit code."""
-    gb = os.path.join(proj, ".harness", "hooks", "gate-budget")
+    """Run the INSTALLED gate-budget hook (from .agents/harness/hooks/) against a write to payload_path. Returns exit code."""
+    gb = os.path.join(proj, ".agents/harness", "hooks", "gate-budget")
     r = subprocess.run([sys.executable, gb, "--hook"],
                        input=json.dumps({"tool_input": {"file_path": payload_path}}),
                        capture_output=True, text=True, cwd=proj)
@@ -51,10 +51,10 @@ def main():
             fails.append(label)
 
     with tempfile.TemporaryDirectory() as proj:
-        d = os.path.join(proj, ".harness")
+        d = os.path.join(proj, ".agents/harness")
         subprocess.run([sys.executable, os.path.join(BIN, "lattice.py"), "init", "gb-demo", "--dir", d], capture_output=True)
         subprocess.run([sys.executable, os.path.join(BIN, "wire.py"), "apply", "--project", proj], capture_output=True)
-        write_path = ".harness/spec/anything.md"
+        write_path = ".agents/harness/spec/anything.md"
 
         # CONTROL: a fresh run budget with room → the wired gate-budget ALLOWS the write.
         _lat.run_budget_start(d, _now(), max_iterations=5,

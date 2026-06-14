@@ -61,23 +61,23 @@ pnpm build
 ## Trust boundaries
 
 - DO NOT modify: `db/migrations/`, `legal/`, `LICENSE`
-- DO modify: `src/`, `tests/`, `.brain/` (with care for ADRs)
+- DO modify: `src/`, `tests/`, `.agents/brain/` (with care for ADRs)
 
 ## Where to find things
 
 - **Architecture:** `ARCHITECTURE.md`
-- **Active plan:** `.brain/PLAN.md`
-- **Roadmap:** `.brain/ROADMAP.md`
-- **Architecture Decision Records:** `.brain/adrs/` (see also `.brain/adrs/README.md` for the index)
-- **Post-mortems:** `.brain/postmortems/`
-- **Runbooks:** `.brain/runbooks/`
+- **Active plan:** `.agents/brain/PLAN.md`
+- **Roadmap:** `.agents/brain/ROADMAP.md`
+- **Architecture Decision Records:** `.agents/brain/adrs/` (see also `.agents/brain/adrs/README.md` for the index)
+- **Post-mortems:** `.agents/brain/postmortems/`
+- **Runbooks:** `.agents/brain/runbooks/`
 - **Released changes:** `CHANGELOG.md`
 - **Contributor guide:** `CONTRIBUTING.md`
 
 ## Memory primitives
 
-- **Before making architectural decisions**, read `.brain/adrs/` newest-first.
-- **When debugging a production issue**, search `.brain/postmortems/`.
+- **Before making architectural decisions**, read `.agents/brain/adrs/` newest-first.
+- **When debugging a production issue**, search `.agents/brain/postmortems/`.
 
 ````
 
@@ -116,10 +116,10 @@ When auditing a repo:
 
 1. **Existence** — does `AGENTS.md` exist at the repo root?
 2. **Recommended sections present** — project overview, build/test/run, conventions, trust boundaries, where-to-find-things, memory primitives. (None are spec-mandated; all are recommended for navigability.)
-3. **Pointer integrity** — does each `.brain/...` reference point to a real path?
+3. **Pointer integrity** — does each `.agents/brain/...` reference point to a real path?
 4. **Freshness** — `_Last reviewed:_` line or YAML frontmatter `date:` present?
 5. **Other entry files are thin pointers or symlinks** — if `CLAUDE.md` / `.cursorrules` / `.windsurfrules` exist, they should redirect to (or symlink to) `AGENTS.md`, not duplicate content. See `claude-md-convention.md`.
-6. **Length** — under ~200 lines is the ergonomic target (per Anthropic's own CLAUDE.md guidance, which ports cleanly to AGENTS.md). Long instructions degrade adherence; push detail into `.brain/` subfolders.
+6. **Length** — under ~200 lines is the ergonomic target (per Anthropic's own CLAUDE.md guidance, which ports cleanly to AGENTS.md). Long instructions degrade adherence; push detail into `.agents/brain/` subfolders.
 
 ## Common anti-patterns
 

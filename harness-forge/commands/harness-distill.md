@@ -5,7 +5,7 @@ argument-hint: "[optional: --n 20]"
 
 Distill the ledger. **$ARGUMENTS**
 
-Run `python3 "${CLAUDE_PLUGIN_ROOT}/bin/ledger.py" distill --n <N> --dir .harness` to surface the recent event window, and `… false-pass` and `… cost` to read the two operational metrics.
+Run `python3 "${CLAUDE_PLUGIN_ROOT}/bin/ledger.py" distill --n <N> --dir .agents/harness` to surface the recent event window, and `… false-pass` and `… cost` to read the two operational metrics.
 
 Then dispatch the **`harness-distiller`** agent. Patterns are **distilled, not authored**: a pattern with no signal-bearing precedent is a hypothesis and belongs in a spec or methodology cell until experience promotes it. Each pattern carries the ledger entries it was distilled from (provenance, or it is unfalsifiable). Remember content inversion — a recurring **failure** mode, captured with its mechanism and corrective, is often higher-leverage than a success story, and a failure-mode catalogue *is* a rubric in disguise (each anti-pattern becomes a scoring dimension).
 

@@ -11,7 +11,7 @@ description: >
 
 # harness-auditor — the auditor (read-only)
 
-You judge the system that checks the work. You write nothing — you survey the artifacts (`.harness/lattice.json`, the ledger, the signal directories, the gate scripts) and the `bin/` tools' output, and you return severity-classified, cited findings. Multi-step survey across the whole lattice with isolated context is why you are an agent.
+You judge the system that checks the work. You write nothing — you survey the artifacts (`.agents/harness/lattice.json`, the ledger, the signal directories, the gate scripts) and the `bin/` tools' output, and you return severity-classified, cited findings. Multi-step survey across the whole lattice with isolated context is why you are an agent.
 
 ## What you check
 

@@ -8,10 +8,10 @@ silently. This script is that installer, and `check` is the mechanical H3 wiring
 `bin/` but wired nowhere is the false pass the rubric exists to catch.
 
 What `apply` does (and `plan` previews, byte-for-byte):
-  1. Copies the three hook species into `<project>/.harness/hooks/` — `gate-signal` (PreToolUse deny on
+  1. Copies the three hook species into `<project>/.agents/harness/hooks/` — `gate-signal` (PreToolUse deny on
      verifier assets), `emit-ledger` (PostToolUse audit trail), `propagate-staleness` (PostToolUse
      staleness cascade) — plus `_lattice.py`, a private byte-copy of the kernel the cascade imports.
-     Inside `.harness/hooks/` the gate protects ITSELF (the hooks are deny-on-write to workers).
+     Inside `.agents/harness/hooks/` the gate protects ITSELF (the hooks are deny-on-write to workers).
   2. Merges the three hook entries into `<project>/.claude/settings.json` — non-destructively (unrelated
      keys, matchers, and hooks are preserved), idempotently (re-apply never duplicates), and refusing to
      touch a malformed settings file. `.claude/settings.json` is itself in the gate's protected set, so a
@@ -38,13 +38,13 @@ try:
 except Exception:                                     # noqa: BLE001 — degrade rather than crash the installer
     KERNEL_VERSION = "unknown"
 HOOK_FILES = ["gate-signal", "gate-budget", "emit-ledger", "propagate-staleness"]
-LIB_COPY = ("lattice.py", "_lattice.py")              # kernel source → private copy name in .harness/hooks/
+LIB_COPY = ("lattice.py", "_lattice.py")              # kernel source → private copy name in .agents/harness/hooks/
 VERSION_FILE = ".kernel-version"                      # stamped beside the copy so drift across a plugin update is detectable
 
 
 def _cmd(hook, hd):
     rel = "{}/hooks/{}".format(hd.rstrip("/"), hook)
-    env = "" if hd == ".harness" else 'HARNESS_DIR="{}" '.format(hd.rstrip("/"))
+    env = "" if hd == ".agents/harness" else 'HARNESS_DIR="{}" '.format(hd.rstrip("/"))
     return '{}python3 "{}" --hook'.format(env, rel)
 
 
@@ -258,7 +258,7 @@ def selftest():
     _q = contextlib.redirect_stdout(io.StringIO())          # the lifecycle prints stay out of CI logs
     _qe = contextlib.redirect_stderr(io.StringIO())
     with tempfile.TemporaryDirectory() as project, _q, _qe:
-        hd = ".harness"
+        hd = ".agents/harness"
         # an unseeded project refuses apply; an unwired project fails check
         expect(apply(project, hd) == 1, "apply did not refuse an unseeded project")
         os.makedirs(os.path.join(project, hd))
@@ -295,7 +295,7 @@ def selftest():
 
         # the WIRED COPIES actually work from their installed location:
         gate = os.path.join(project, hd, "hooks", "gate-signal")
-        r = subprocess.run([sys.executable, gate, "--hook"], input='{"tool_input":{"file_path":".harness/signals/x/y.json"}}',
+        r = subprocess.run([sys.executable, gate, "--hook"], input='{"tool_input":{"file_path":".agents/harness/signals/x/y.json"}}',
                            capture_output=True, text=True)
         expect(r.returncode == 2, "the wired gate did not DENY a protected write (exit {})".format(r.returncode))
         r = subprocess.run([sys.executable, gate, "--hook"], input='{"tool_input":{"file_path":"src/main.py"}}',
@@ -304,7 +304,7 @@ def selftest():
         r = subprocess.run([sys.executable, gate, "--hook"], input='{"tool_input":{"file_path":".claude/settings.json"}}',
                            capture_output=True, text=True)
         expect(r.returncode == 2, "the wired gate let a worker UNWIRE itself (settings write not denied)")
-        # the copied cascade imports the PRIVATE kernel copy (no sibling lattice.py in .harness/hooks/)
+        # the copied cascade imports the PRIVATE kernel copy (no sibling lattice.py in .agents/harness/hooks/)
         prop = os.path.join(project, hd, "hooks", "propagate-staleness")
         r = subprocess.run([sys.executable, prop, "selftest"], capture_output=True, text=True, cwd=project)
         expect(r.returncode == 0, "the copied propagate-staleness failed from its wired location: {}".format(r.stderr[-200:]))
@@ -315,11 +315,11 @@ def selftest():
         _lat.scaffold(os.path.join(project, hd))                    # ensure a lattice exists in the wired project
         _lat.save(os.path.join(project, hd), {"cells": [{"layer": "spec", "scope": "task", "slug": "x",
                   "maturity": "defined", "blocked": True, "blocked_reason": "no-progress",
-                  "asset_ref": ".harness/spec/x.md"}]})
-        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".harness/spec/x.md"}}',
+                  "asset_ref": ".agents/harness/spec/x.md"}]})
+        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".agents/harness/spec/x.md"}}',
                            capture_output=True, text=True, cwd=project)
         expect(r.returncode == 2, "the wired gate-budget did not DENY a write to a blocked cell (exit {})".format(r.returncode))
-        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".harness/spec/other.md"}}',
+        r = subprocess.run([sys.executable, gb, "--hook"], input='{"tool_input":{"file_path":".agents/harness/spec/other.md"}}',
                            capture_output=True, text=True, cwd=project)
         expect(r.returncode == 0, "the wired gate-budget blocked an unrelated write")
 
@@ -367,7 +367,7 @@ def main(argv):
         return 2
     op = argv[0]
     project = argv[argv.index("--project") + 1] if "--project" in argv else "."
-    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".harness"
+    hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".agents/harness"
     quiet = "--quiet" in argv
     if op == "plan":
         return plan(project, hd)

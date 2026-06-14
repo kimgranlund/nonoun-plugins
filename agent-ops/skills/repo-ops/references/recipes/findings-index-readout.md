@@ -10,9 +10,9 @@ status: practice-verified
 
 # Findings index — closing the read side of the audit ledger
 
-> **The premise.** The audit ledger (`.brain/audit-history/*.json`) is _write-rich, read-poor_. Audits accumulate findings with severity codes (F-W1, F-S4, etc.) but nothing surfaces them — there's no list view, no "open findings" surface, no way to ask "what's still on the action surface?" without `cat`-ing every JSON file.
+> **The premise.** The audit ledger (`.agents/brain/audit-history/*.json`) is _write-rich, read-poor_. Audits accumulate findings with severity codes (F-W1, F-S4, etc.) but nothing surfaces them — there's no list view, no "open findings" surface, no way to ask "what's still on the action surface?" without `cat`-ing every JSON file.
 >
-> The read-side closure is a single generated Markdown file at `.brain/findings/INDEX.md` that folds every `findings[]` entry across the audit history into one sortable table. Plus a hand-curated `## Graduations` section that tracks finding-to-permanent-infrastructure pairs.
+> The read-side closure is a single generated Markdown file at `.agents/brain/findings/INDEX.md` that folds every `findings[]` entry across the audit history into one sortable table. Plus a hand-curated `## Graduations` section that tracks finding-to-permanent-infrastructure pairs.
 
 ## What this delivers
 
@@ -20,7 +20,7 @@ A repo with a healthy audit-history ledger but no findings index has _capture wi
 
 The findings-index closes that loop:
 
-1. **Surface OPEN findings.** Anything `fix_applied: false` rises to the top of the index. The first thing a new agent in the repo can do is grep `OPEN` in `.brain/findings/INDEX.md` and pick from the action surface.
+1. **Surface OPEN findings.** Anything `fix_applied: false` rises to the top of the index. The first thing a new agent in the repo can do is grep `OPEN` in `.agents/brain/findings/INDEX.md` and pick from the action surface.
 2. **Track graduations.** When a recurring finding-type prompts permanent infrastructure (a trip-wire, a generator, a convention), that pairing is recorded in the `## Graduations` section. The index becomes the institutional memory of _which findings became rules_.
 3. **Auto-close findings.** When a later audit emits `F-X-resolved`, the original `F-X` auto-promotes from OPEN to CLOSED-LATER. The ledger stays append-only; the index reflects the latest truth.
 4. **Refresh on the harvest cron.** Same cadence as the audit-history workflow. No new infrastructure, no second cron, just one extra script step.
@@ -28,7 +28,7 @@ The findings-index closes that loop:
 ## The minimum viable shape
 
 ```text
-.brain/
+.agents/brain/
 ├── audit-history/        # write side (per audit JSON)
 │   ├── 2026-04-27.json
 │   ├── 2026-04-28.json
@@ -76,13 +76,13 @@ This is the read-side answer to _"what do we do with findings beyond fixing them
 
 The reference implementation is a Node script that:
 
-1. Reads every `.brain/audit-history/*.json`.
+1. Reads every `.agents/brain/audit-history/*.json`.
 2. Tracks `audit_id` separately from filename (mismatches happen — one repo had `2026-04-29.json` containing `audit_id: "2026-04-29-001"`).
 3. Flattens all `findings[]` entries with their parent audit reference.
 4. Auto-promotes OPEN/DONE-WITH-FOLLOWUP to CLOSED-LATER when a `<id>-resolved` exists in a later audit.
 5. Sorts by status × severity × id.
 6. Preserves the existing `## Graduations` section if it exists; pre-seeds a stub on first run.
-7. Writes `.brain/findings/INDEX.md`.
+7. Writes `.agents/brain/findings/INDEX.md`.
 
 The script is mechanical (no LLM calls). Cheap enough to run on every cron firing.
 
@@ -98,9 +98,9 @@ Add one step to the daily harvest workflow, after the harvester:
   run: node scripts/build/findings-index.mjs
 ```
 
-Cheap (just JSON reads + a markdown write); always runs so the index reflects whatever `.brain/audit-history/` currently holds, even on runs where the harvester itself skipped (no material delta).
+Cheap (just JSON reads + a markdown write); always runs so the index reflects whatever `.agents/brain/audit-history/` currently holds, even on runs where the harvester itself skipped (no material delta).
 
-The PR-creator step that already bundles audit-history changes will pick up `.brain/findings/INDEX.md` automatically.
+The PR-creator step that already bundles audit-history changes will pick up `.agents/brain/findings/INDEX.md` automatically.
 
 ## When a finding "graduates"
 

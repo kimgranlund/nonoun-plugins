@@ -52,25 +52,25 @@ done
 
 ## Smell 2 — bloated subfolder docs
 
-**The check:** `find .brain docs -name '*.md' -not -path '.brain/adrs/*' -not -path '.brain/postmortems/*' -not -path '.brain/architecture/*'` and any file with `wc -l > 500`.
+**The check:** `find .agents/brain docs -name '*.md' -not -path '.agents/brain/adrs/*' -not -path '.agents/brain/postmortems/*' -not -path '.agents/brain/architecture/*'` and any file with `wc -l > 500`.
 
 **Why it matters:** unlike entry files, subfolder docs aren't loaded every session — but a bloated `docs/setup.md` (1200 lines) is a sign the doc has become a dumping ground rather than a focused unit. Split into a folder.
 
 **Exceptions:**
 
-- `.brain/adrs/<one>.md` can be any length — one ADR captures one decision in full.
-- `.brain/postmortems/<one>.md` can be any length — incidents need depth.
-- `.brain/architecture/<one>.md` may be long; consider splitting into multiple files in the folder if so.
+- `.agents/brain/adrs/<one>.md` can be any length — one ADR captures one decision in full.
+- `.agents/brain/postmortems/<one>.md` can be any length — incidents need depth.
+- `.agents/brain/architecture/<one>.md` may be long; consider splitting into multiple files in the folder if so.
 - `CHANGELOG.md` is append-only; it grows without bound.
 
 **Auto-detection:**
 
 ```bash
-find .brain docs -name '*.md' -type f \
-    -not -path '.brain/adrs/*' \
-    -not -path '.brain/postmortems/*' \
-    -not -path '.brain/architecture/*' \
-    -not -path '.brain/archive/*' \
+find .agents/brain docs -name '*.md' -type f \
+    -not -path '.agents/brain/adrs/*' \
+    -not -path '.agents/brain/postmortems/*' \
+    -not -path '.agents/brain/architecture/*' \
+    -not -path '.agents/brain/archive/*' \
     | while read f; do
         n=$(wc -l < "$f")
         if [ "$n" -gt 500 ]; then
@@ -121,7 +121,7 @@ Detailed in `redundancy-detection.md`. Token cost is 2× / 3× / Nx of the same 
 
 ```bash
 # Find files with YAML frontmatter >10 lines
-for f in .brain/**/*.md docs/**/*.md *.md; do
+for f in .agents/brain/**/*.md docs/**/*.md *.md; do
     [ -f "$f" ] || continue
     if head -1 "$f" | grep -q '^---'; then
         end=$(awk '/^---/{i++; if(i==2) print NR}' "$f")
@@ -155,11 +155,11 @@ for f in AGENTS.md CLAUDE.md; do
 done
 
 # 2. Subfolder bloat
-find .brain docs -name '*.md' -type f \
-    -not -path '.brain/adrs/*' \
-    -not -path '.brain/postmortems/*' \
-    -not -path '.brain/architecture/*' \
-    -not -path '.brain/archive/*' \
+find .agents/brain docs -name '*.md' -type f \
+    -not -path '.agents/brain/adrs/*' \
+    -not -path '.agents/brain/postmortems/*' \
+    -not -path '.agents/brain/architecture/*' \
+    -not -path '.agents/brain/archive/*' \
     | while read f; do
         n=$(wc -l < "$f")
         [ "$n" -gt 500 ] && echo "SUBFOLDER-BLOAT: $f = $n lines"

@@ -23,7 +23,7 @@ This pattern delivers **Promise 1 (less-wasteful)** and **Promise 3 (less-prone-
 
 ## The split
 
-|  | `.brain/PLAN.md` | `.brain/ROADMAP.md` |
+|  | `.agents/brain/PLAN.md` | `.agents/brain/ROADMAP.md` |
 | --- | --- | --- |
 | **Horizon** | This week / sprint / current iteration | This quarter / half / year |
 | **Granularity** | Specific tasks, owners, due dates | Themes, milestones, target months |
@@ -64,7 +64,7 @@ horizon: 2026-W17 (Apr 21 – Apr 27)
 
 ## Archive
 
-See `.brain/archive/plan-2026-W16.md`.
+See `.agents/brain/archive/plan-2026-W16.md`.
 ```
 
 ### Conventions
@@ -73,7 +73,7 @@ See `.brain/archive/plan-2026-W16.md`.
 - **Issue numbers**: link to the tracker so the plan is a _view_, not a parallel source of truth.
 - **Owners**: an unowned item drifts. If no one will own it this week, push it to the roadmap.
 - **Due dates**: explicit ISO dates beat "next week" — relative dates rot.
-- **Archive completed work weekly**: copy the "Done" section to `.brain/archive/plan-YYYY-Www.md` and clear it from `PLAN.md`. The archive is a free changelog.
+- **Archive completed work weekly**: copy the "Done" section to `.agents/brain/archive/plan-YYYY-Www.md` and clear it from `PLAN.md`. The archive is a free changelog.
 
 ### The TODO-graveyard anti-pattern
 
@@ -137,22 +137,22 @@ Many teams treat the issue tracker as truth and `PLAN.md` as a generated view. T
 | **Jira** | REST API; `jira-cli`, `gojira` | Heavier setup; usually only worth it for Jira-mandated orgs |
 | **Basecamp** | [Account export](https://docs.basecamp.com/article/29-export-your-account) | Coarser; better for archive than weekly plan |
 
-The pattern: a CI job (or pre-commit hook) regenerates `.brain/PLAN.md` from the tracker on a cron schedule, commits the diff. Now the agent reads a current plan without an API token.
+The pattern: a CI job (or pre-commit hook) regenerates `.agents/brain/PLAN.md` from the tracker on a cron schedule, commits the diff. Now the agent reads a current plan without an API token.
 
 ## How AGENTS.md links them
 
 In the `Where to find things` section:
 
 ```markdown
-- **Active plan:** `.brain/PLAN.md` — what's in flight this week
-- **Roadmap:** `.brain/ROADMAP.md` — quarterly horizon
+- **Active plan:** `.agents/brain/PLAN.md` — what's in flight this week
+- **Roadmap:** `.agents/brain/ROADMAP.md` — quarterly horizon
 ```
 
 In the `Memory primitives` section:
 
 ```markdown
-- **When picking up work**, start at `.brain/PLAN.md`. Items there are scoped for the current iteration.
-- **For longer-horizon questions** ("are we going to support X?"), check `.brain/ROADMAP.md` before proposing new work.
+- **When picking up work**, start at `.agents/brain/PLAN.md`. Items there are scoped for the current iteration.
+- **For longer-horizon questions** ("are we going to support X?"), check `.agents/brain/ROADMAP.md` before proposing new work.
 ```
 
 ## Audit checks
@@ -161,8 +161,8 @@ In the `Memory primitives` section:
 2. **PLAN.md updated within the last 14 days** (sprint cadence). Older = staleness flag.
 3. **ROADMAP.md updated within the last 90 days** (quarterly cadence). Older = staleness flag.
 4. **No items in PLAN.md with due dates >30 days past** (TODO graveyard).
-5. **`.brain/PLAN.md` and `.brain/ROADMAP.md` are referenced from AGENTS.md.**
-6. **Archive folder exists** if the team is using weekly archival (`.brain/archive/plan-YYYY-Www.md`).
+5. **`.agents/brain/PLAN.md` and `.agents/brain/ROADMAP.md` are referenced from AGENTS.md.**
+6. **Archive folder exists** if the team is using weekly archival (`.agents/brain/archive/plan-YYYY-Www.md`).
 
 ## Common anti-patterns
 

@@ -91,7 +91,7 @@ Examples of what it catches:
 
 ## Configuration
 
-`.brain/config.toml`:
+`.agents/brain/config.toml`:
 
 ```toml
 [repo-ops.external-ref-verification]
@@ -135,7 +135,7 @@ We import the _spirit_ — autonomous propose-evaluate within a budget, with Web
 
 ## Privacy & cost considerations
 
-- Don't fetch URLs from `.brain/postmortems/` (may contain incident-specific URLs that shouldn't leave the network)
+- Don't fetch URLs from `.agents/brain/postmortems/` (may contain incident-specific URLs that shouldn't leave the network)
 - Don't fetch URLs matching common internal-hostname patterns
 - Cap default at 30 fetches/run; tune via `max_fetches_per_run`
 - Cache aggressively — same URL, same week, same result (the 15-minute WebFetch cache is too short for multi-doc audits; recipe layer adds a 7-day cache by default)

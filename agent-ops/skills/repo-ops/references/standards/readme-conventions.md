@@ -83,7 +83,7 @@ For canonical build / test / run commands and contributor conventions, see [AGEN
 - **Contributing:** [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - **Security policy:** [`SECURITY.md`](./SECURITY.md)
 - **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)
-- **Decisions (ADRs):** [`.brain/adrs/`](.brain/adrs/)
+- **Decisions (ADRs):** [`.agents/brain/adrs/`](.agents/brain/adrs/)
 
 ## License
 
@@ -160,7 +160,7 @@ Three locations are equally valid (per GitHub docs):
 
 GitHub auto-renders all three. **Pick one — having two is confusing.**
 
-What does NOT go in: implementation details of past vulnerabilities (those go in `.brain/postmortems/` with sensitive details redacted), threat-model docs (`docs/threat-model.md`), compliance attestations (`docs/compliance/`).
+What does NOT go in: implementation details of past vulnerabilities (those go in `.agents/brain/postmortems/` with sensitive details redacted), threat-model docs (`docs/threat-model.md`), compliance attestations (`docs/compliance/`).
 
 ## CODE_OF_CONDUCT.md — behavior expectations
 

@@ -26,7 +26,7 @@ guards. It denies on exactly two conditions — an exhausted run budget (any wri
 cell — and allows everything else.
 
 Wired by `bin/wire.py` into the project's own loop (alongside gate-signal/emit-ledger/propagate-staleness),
-reading the copied `_lattice.py`. Resolves the harness at `$HARNESS_DIR`, else `./.harness`.
+reading the copied `_lattice.py`. Resolves the harness at `$HARNESS_DIR`, else `./.agents/harness`.
 
 Usage:
   gate-budget --hook        # reads PreToolUse JSON on stdin; exit 2 (+reason) = DENY a write to a blocked cell
@@ -41,12 +41,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     import lattice as _lat                  # plugin layout: bin/lattice.py is a sibling
-except ImportError:                          # wired layout: .harness/hooks/_lattice.py (private byte-copy)
+except ImportError:                          # wired layout: .agents/harness/hooks/_lattice.py (private byte-copy)
     import _lattice as _lat
 
 
 def _harness_dir():
-    return os.environ.get("HARNESS_DIR") or ".harness"
+    return os.environ.get("HARNESS_DIR") or ".agents/harness"
 
 
 def _norm(p):
@@ -157,33 +157,33 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as root:
-        d = os.path.join(root, ".harness")
+        d = os.path.join(root, ".agents/harness")
         _lat.scaffold(d)
         lat = _lat.seed_lattice("t")
         for c in lat["cells"]:
             if _lat.cid(c) == "spec.task.first-slice":
-                c["asset_ref"] = ".harness/spec/first-slice.md"
+                c["asset_ref"] = ".agents/harness/spec/first-slice.md"
         _lat.save(d, lat)
 
         # not blocked → allowed
-        cid_, _ = blocked_cell_for(".harness/spec/first-slice.md", d=d)
+        cid_, _ = blocked_cell_for(".agents/harness/spec/first-slice.md", d=d)
         expect(cid_ is None, "an unblocked cell's asset was treated as blocked")
 
         # block it → its asset write is denied; an unrelated path stays allowed
         lat = _lat.load(d)
         _lat.set_blocked(lat, "spec.task.first-slice", True, reason="no-progress: 3 fails")
         _lat.save(d, lat)
-        cid_, reason = blocked_cell_for(".harness/spec/first-slice.md", d=d)
+        cid_, reason = blocked_cell_for(".agents/harness/spec/first-slice.md", d=d)
         expect(cid_ == "spec.task.first-slice" and "no-progress" in reason, f"blocked cell's asset not denied: {cid_}")
         expect(blocked_cell_for("src/unrelated.py", d=d)[0] is None, "an unrelated path was denied")
-        expect(blocked_cell_for(".harness/spec/first-slice.md", d=os.path.join(root, "nowhere"))[0] is None,
+        expect(blocked_cell_for(".agents/harness/spec/first-slice.md", d=os.path.join(root, "nowhere"))[0] is None,
                "missing harness did not fail open")
 
         # unblock → allowed again
         lat = _lat.load(d)
         _lat.set_blocked(lat, "spec.task.first-slice", False)
         _lat.save(d, lat)
-        expect(blocked_cell_for(".harness/spec/first-slice.md", d=d)[0] is None, "unblocked cell still denied")
+        expect(blocked_cell_for(".agents/harness/spec/first-slice.md", d=d)[0] is None, "unblocked cell still denied")
 
         # GLOBAL bound: an exhausted run budget denies EVERY write (computed from code, no agent counter)
         import datetime

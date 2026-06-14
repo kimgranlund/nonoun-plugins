@@ -59,9 +59,9 @@ AGENTS.md  (~150 lines: agent persona, build/test/run, conventions, trust
 ARCHITECTURE.md  (~500 lines: system overview, component map,
                   data-flow diagrams, deployment topology)
    ↓ links to
-.brain/adrs/0001-*.md  (each ADR ~100 lines: one decision in depth)
-.brain/postmortems/2026-04-*.md  (each ~150 lines: one incident)
-.brain/runbooks/*.md  (each ~100 lines: one procedure)
+.agents/brain/adrs/0001-*.md  (each ADR ~100 lines: one decision in depth)
+.agents/brain/postmortems/2026-04-*.md  (each ~150 lines: one incident)
+.agents/brain/runbooks/*.md  (each ~100 lines: one procedure)
 ```
 
 The agent loads AGENTS.md every session (~150 lines, ~2K tokens). It loads ARCHITECTURE.md _only when needed_ (~7K tokens). It loads a specific ADR _only when about to make a related decision_ (~1K tokens).
@@ -78,10 +78,10 @@ A target shape:
 | CLAUDE.md | 15 (thin pointer or symlink) | 0-200 | Every session (Claude Code) |
 | README.md | 200-300 | 3-5K | Sometimes (human-facing) |
 | ARCHITECTURE.md | 500 | 6-8K | When agent needs system overview |
-| .brain/PLAN.md | 200 | 2-3K | When agent needs current priorities |
-| `.brain/adrs/<one>.md` | 100-200 | 1-3K each | When agent makes architectural decisions |
-| `.brain/postmortems/<one>.md` | 100-200 | 1-3K each | When agent debugs production issues |
-| `.brain/runbooks/<one>.md` | 100-200 | 1-3K each | When agent runs operational procedures |
+| .agents/brain/PLAN.md | 200 | 2-3K | When agent needs current priorities |
+| `.agents/brain/adrs/<one>.md` | 100-200 | 1-3K each | When agent makes architectural decisions |
+| `.agents/brain/postmortems/<one>.md` | 100-200 | 1-3K each | When agent debugs production issues |
+| `.agents/brain/runbooks/<one>.md` | 100-200 | 1-3K each | When agent runs operational procedures |
 | `CHANGELOG.md` | (any) | varies | When agent needs version history |
 
 The rule of thumb: **anything an agent needs _every session_ must be tiny; everything else can be large but must be reachable on demand**.
@@ -92,7 +92,7 @@ The token-waste-detection audit (Promise 2) flags these specifically:
 
 1. **AGENTS.md or CLAUDE.md > 200 lines** — hard cap.
 2. **AGENTS.md or CLAUDE.md > 150 lines** — warning (approaching cap).
-3. **A `.brain/` file > 500 lines that isn't in `.brain/adrs/`, `.brain/postmortems/`, or `.brain/architecture/`** — likely a place where one big doc should be a folder of smaller ones.
+3. **A `.agents/brain/` file > 500 lines that isn't in `.agents/brain/adrs/`, `.agents/brain/postmortems/`, or `.agents/brain/architecture/`** — likely a place where one big doc should be a folder of smaller ones.
 4. **Repeated content** — the same command listed in AGENTS.md, README.md, AND CONTRIBUTING.md. Pick one canonical, link from the others.
 5. **Verbose prose where bullets would work** — 8 paragraphs explaining what could be a 3-bullet checklist.
 6. **Generated content checked in** — TypeDoc / JSDoc / API reference generated docs that should be regenerated, not committed.
@@ -102,7 +102,7 @@ The token-waste-detection audit (Promise 2) flags these specifically:
 - **Long ADRs** — an ADR should be as long as the decision warrants. Some are 30 lines; some are 300. Don't compress for compression's sake.
 - **Long post-mortems** — same: an incident with a complex root cause needs depth.
 - **CHANGELOG.md** — append-only history, expected to grow without bound. Agents rarely load all of it.
-- **Long ARCHITECTURE.md** — within reason; if it gets >1500 lines, split into `.brain/architecture/`.
+- **Long ARCHITECTURE.md** — within reason; if it gets >1500 lines, split into `.agents/brain/architecture/`.
 
 ## How to reduce a bloated AGENTS.md (the recipe)
 
@@ -110,10 +110,10 @@ Bloated AGENTS.md is the most common failure. Recipe to compress:
 
 1. **Strip "we use TypeScript" lines.** If `tsconfig.json` is present, the agent already knows.
 2. **Strip personal preferences.** Move to `CLAUDE.local.md` (gitignored) or `~/.claude/CLAUDE.md` (user-global).
-3. **Strip TODOs / WIP notes.** Move to `.brain/PLAN.md` and link.
+3. **Strip TODOs / WIP notes.** Move to `.agents/brain/PLAN.md` and link.
 4. **Strip long history / motivation.** Move to `README.md` or `ARCHITECTURE.md`.
 5. **Compress prose to bullets.** "Run tests with Vitest, our preferred test runner" → "Tests: Vitest".
-6. **Replace inline detail with a link.** "Our deployment uses Cloud Run with the following 14 steps..." → "Deployment: see `.brain/runbooks/deploy.md`".
+6. **Replace inline detail with a link.** "Our deployment uses Cloud Run with the following 14 steps..." → "Deployment: see `.agents/brain/runbooks/deploy.md`".
 7. **Audit for self-contradictions.** A file that contradicts itself is worse than incomplete.
 8. **Re-read the file as if you were the agent.** Anything that doesn't change behavior gets cut.
 
@@ -123,7 +123,7 @@ A 600-line AGENTS.md typically reduces to 120-150 lines without losing instructi
 
 When AGENTS.md grows past 200 lines, two patterns work:
 
-**Pattern A — extract to a linked file.** A "Conventions" section growing past 30 lines becomes `.brain/CONVENTIONS.md` linked from AGENTS.md. The link is permanent; the file can grow.
+**Pattern A — extract to a linked file.** A "Conventions" section growing past 30 lines becomes `.agents/brain/CONVENTIONS.md` linked from AGENTS.md. The link is permanent; the file can grow.
 
 **Pattern B — ask Claude to compress.** "AGENTS.md is 280 lines. Compress to 180 while preserving all instructional content. Move detail to linked subfolders if needed." This is the inverse of the iterate-pattern: instead of _adding_ corrections, _delete_ what no longer earns its tokens.
 

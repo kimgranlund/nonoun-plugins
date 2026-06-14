@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """lattice-mcp.py — a minimal MCP (Model Context Protocol) stdio server for read-only lattice retrieval.
 
-The live-data complement to harness-forge's engine: it surfaces the project's durable `.harness/` state —
+The live-data complement to harness-forge's engine: it surfaces the project's durable `.agents/harness/` state —
 the lattice cells and their maturities, the frontier gap-set, the append-only ledger, and the signal
 artifacts — as task-level, read-only tools, so an agent can orient ("what's open at the frontier?",
 "what did we decide about cell X?") without shelling out. Same MCP-as-curated-perimeter pattern as the
-catalog's brand-corpus / product-corpus / repo-memory MCPs; the slot is the project's `.harness/` dir,
+catalog's brand-corpus / product-corpus / repo-memory MCPs; the slot is the project's `.agents/harness/` dir,
 wired via the plugin's `harness_dir` userConfig. Unset, the tools return a clear "configure harness_dir"
 message rather than failing. The canonical engine (scan/rank/advance/staleness) stays in `lattice.py`;
 this server only reads.
@@ -47,7 +47,7 @@ TOOLS = [
 
 
 def _no_harness():
-    return "lattice-query is not configured. Set the plugin's `harness_dir` userConfig to the project's `.harness/` directory (run `/harness-seed` first to create it)."
+    return "lattice-query is not configured. Set the plugin's `harness_dir` userConfig to the project's `.agents/harness/` directory (run `/harness-seed` first to create it)."
 
 
 def _safe(path):
@@ -186,7 +186,7 @@ def main():
 
 def selftest():
     """Exercise the path guard against traversal/absolute/symlink/prefix-sibling escape, plus a tools smoke
-    over a synthetic `.harness/` (lattice + ledger + signals). No external state needed."""
+    over a synthetic `.agents/harness/` (lattice + ledger + signals). No external state needed."""
     import tempfile
     import shutil
     global HARNESS
@@ -196,9 +196,9 @@ def selftest():
             fails.append(label)
     tmp = tempfile.mkdtemp(prefix="lattice-mcp-selftest-")
     try:
-        h = os.path.join(tmp, ".harness")
+        h = os.path.join(tmp, ".agents/harness")
         outside = os.path.join(tmp, "outside")
-        evil = os.path.join(tmp, ".harness-evil")           # prefix-sibling: must NOT pass
+        evil = os.path.join(tmp, ".agents/harness-evil")           # prefix-sibling: must NOT pass
         os.makedirs(os.path.join(h, "signals", "spec.task.x"))
         os.makedirs(os.path.join(h, "ledger"))
         os.makedirs(outside)
@@ -222,7 +222,7 @@ def selftest():
         check(_safe("lattice.json") is not None, "valid path rejected")
         check(_safe("../outside/secret.json") is None, "parent traversal accepted")
         check(_safe("/etc/passwd") is None, "absolute path accepted")
-        check(_safe("../.harness-evil/secret.json") is None, "prefix-sibling accepted")
+        check(_safe("../.agents/harness-evil/secret.json") is None, "prefix-sibling accepted")
         if symlinks_ok:
             check(_safe("escape/secret.json") is None, "symlink escape accepted")
 

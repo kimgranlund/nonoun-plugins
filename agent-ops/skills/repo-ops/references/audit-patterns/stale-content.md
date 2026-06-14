@@ -43,8 +43,8 @@ A doc unmodified for >6 months _and_ without a `_Last reviewed: YYYY-MM-DD_` lin
 set -euo pipefail
 threshold_days=180
 now=$(date +%s)
-find .brain docs -type f -name '*.md' \
-    -not -path '.brain/archive/*' -not -path '.brain/adrs/*' -not -path '.brain/postmortems/*' \
+find .agents/brain docs -type f -name '*.md' \
+    -not -path '.agents/brain/archive/*' -not -path '.agents/brain/adrs/*' -not -path '.agents/brain/postmortems/*' \
     -not -path 'docs/archive/*' -not -path 'docs/adrs/*' -not -path 'docs/postmortems/*' \
     | while read -r f; do
         last=$(git log -1 --format=%ct -- "$f" 2>/dev/null || echo 0)
@@ -74,8 +74,8 @@ A doc _names_ something (class, function, file path) that the code no longer con
 # scripts/find-stale-symbols.sh
 set -euo pipefail
 all_paths=$(git ls-files | sort -u)
-find .brain docs -type f -name '*.md' \
-    -not -path '.brain/archive/*' -not -path '.brain/adrs/*' -not -path '.brain/postmortems/*' \
+find .agents/brain docs -type f -name '*.md' \
+    -not -path '.agents/brain/archive/*' -not -path '.agents/brain/adrs/*' -not -path '.agents/brain/postmortems/*' \
     -not -path 'docs/archive/*' -not -path 'docs/adrs/*' -not -path 'docs/postmortems/*' \
     | while read -r f; do
         # Backticked file paths.
@@ -86,7 +86,7 @@ find .brain docs -type f -name '*.md' \
         # Backticked PascalCase identifiers (cheap class-name proxy).
         grep -oE '`[A-Z][a-zA-Z0-9_]{3,}`' "$f" \
             | tr -d '`' | sort -u | while read -r sym; do
-                git grep -q -wF "$sym" -- ':!*.md' ':!.brain/**' ':!docs/**' 2>/dev/null \
+                git grep -q -wF "$sym" -- ':!*.md' ':!.agents/brain/**' ':!docs/**' 2>/dev/null \
                     || echo "STALE-SYMBOL: $f -> $sym"
             done
     done
@@ -153,7 +153,7 @@ The exception: heuristic 3 is precise enough to gate. If `pnpm-lock.yaml` exists
 | --- | --- | --- |
 | Heuristic 3 — command mismatch (AGENTS.md says `npm` + `pnpm-lock.yaml`) | High | Agent will run wrong PM and pollute repo |
 | Heuristic 2 — symbol referenced in AGENTS.md no longer exists | High | Canonical doc misleads agent on every session |
-| Heuristic 2 — symbol referenced in `.brain/**` or `docs/**` no longer exists | Medium | Lower visibility but still wrong |
+| Heuristic 2 — symbol referenced in `.agents/brain/**` or `docs/**` no longer exists | Medium | Lower visibility but still wrong |
 | Heuristic 1 — doc >6mo old, no review line | Medium | Likely-but-not-certainly stale; advisory |
 | Heuristic 1 — doc >12mo old, no review line | High | Almost certainly stale |
 
@@ -167,7 +167,7 @@ The exception: heuristic 3 is precise enough to gate. If `pnpm-lock.yaml` exists
 
 ## Companion: when these heuristics aren't enough
 
-For semantic rot the heuristics miss ("the doc says we use Postgres but actually we migrated to PlanetScale six months ago" — no symbol-name overlap, no command-block giveaway), the answer is **LLM-on-diff** per `staleness-tooling.md`. On every PR, an LLM compares the code diff against `AGENTS.md` and `.brain/**` + `docs/**` and flags doc sections that should have changed. It's the most expensive layer (API calls per PR) and it's gated on `vars.LLM_DOC_DRIFT_ENABLED` per `../recipes/self-healing-hooks.md`.
+For semantic rot the heuristics miss ("the doc says we use Postgres but actually we migrated to PlanetScale six months ago" — no symbol-name overlap, no command-block giveaway), the answer is **LLM-on-diff** per `staleness-tooling.md`. On every PR, an LLM compares the code diff against `AGENTS.md` and `.agents/brain/**` + `docs/**` and flags doc sections that should have changed. It's the most expensive layer (API calls per PR) and it's gated on `vars.LLM_DOC_DRIFT_ENABLED` per `../recipes/self-healing-hooks.md`.
 
 The three heuristics in this file are the cheap baseline; LLM-on-diff is the deeper-but-pricier complement.
 

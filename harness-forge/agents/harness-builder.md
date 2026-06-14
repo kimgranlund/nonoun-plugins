@@ -27,26 +27,26 @@ Caps (from `/harness-run`'s arguments; conservative defaults if unspecified — 
 ## The loop
 
 ```
-0a. mark       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py mark --label "harness-run …" --dir .harness
+0a. mark       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py mark --label "harness-run …" --dir .agents/harness
                → sets the LOOP-ACTIVE marker FIRST. From this instant the wired gate-budget denies EVERY write
                  until you arm a budget (step 0b) — so if you skip 0b, the loop fails CLOSED, not unbounded (I-9).
 0b. start      python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py start \
-                 --max-iterations N --max-cells M --wall-clock-s S --dir .harness
-               → persists the run's GLOBAL budget to .harness/run/budget.json (and keeps the marker). From here
+                 --max-iterations N --max-cells M --wall-clock-s S --dir .agents/harness
+               → persists the run's GLOBAL budget to .agents/harness/run/budget.json (and keeps the marker). From here
                  gate-budget denies every worker write once the budget is spent — the hard ceiling you cannot
                  exceed (you do not count it yourself; the kernel computes it from the deadline + the ledger).
 loop while the run budget is not exhausted:
-  1. rank        python3 ${CLAUDE_PLUGIN_ROOT}/bin/lattice.py rank --dir .harness
+  1. rank        python3 ${CLAUDE_PLUGIN_ROOT}/bin/lattice.py rank --dir .agents/harness
                  → no ready cell? STOP (frontier empty or all-blocked).
   2. dispatch    the top-ranked cell to ONE harness-advancer (a Task call, one cell, fresh context).
                  Gate it first: lattice.py validity <cell> must say CAN ADVANCE.
   3. record      the advancer ledgers its result (validate.py mints the signal; ledger.py append the why+cost).
-  4. detect      python3 ${CLAUDE_PLUGIN_ROOT}/bin/ledger.py no-progress --dir .harness
+  4. detect      python3 ${CLAUDE_PLUGIN_ROOT}/bin/ledger.py no-progress --dir .agents/harness
                  → for each stuck cell (last N validates all failed): lattice.py block <cell> --reason "no-progress"
                  (it falls out of rank, and the wired gate-budget denies any further write to it).
-  5. check       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py status --dir .harness
+  5. check       python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py status --dir .agents/harness
                  → exit 1 = the global budget is spent; stop gracefully (the gate is already denying writes).
-6. stop        python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py stop --dir .harness   (end the run; clears the budget AND the marker)
+6. stop        python3 ${CLAUDE_PLUGIN_ROOT}/bin/run-budget.py stop --dir .agents/harness   (end the run; clears the budget AND the marker)
 STOP → report.
 ```
 

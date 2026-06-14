@@ -27,18 +27,18 @@ import sys
 # Anchored at path-segment boundaries (a glob matches root-relative or after any `/`), NEVER on bare
 # basenames — `docs/examples/lattice.json` and `src/hooks/useAuth.ts` are worker-writable; only the
 # harness's own verifier assets are not. `.claude/settings.json` is protected so a worker cannot UNWIRE
-# the gate (the wiring is itself a verifier asset); `.harness/ledger/*` so the append-only audit trail
+# the gate (the wiring is itself a verifier asset); `.agents/harness/ledger/*` so the append-only audit trail
 # cannot be rewritten by a Write/Edit (the validation path and the hooks append via subprocess).
 DEFAULT_PROTECTED = [
-    ".harness/signals/*",
-    ".harness/rubric/*",
-    ".harness/hooks/*",
-    ".harness/ledger/*",
-    ".harness/run/*",          # the run budget IS the global bound's verifier asset — a worker that could rewrite
+    ".agents/harness/signals/*",
+    ".agents/harness/rubric/*",
+    ".agents/harness/hooks/*",
+    ".agents/harness/ledger/*",
+    ".agents/harness/run/*",          # the run budget IS the global bound's verifier asset — a worker that could rewrite
                                # budget.json (far-future deadline, null caps) would immortalize the run and lift the
                                # ceiling gate-budget enforces. Deny-on-write, like signals and the wiring. (council v0.4.1)
-    ".harness/lattice.json",
-    ".harness/*.schema.json",
+    ".agents/harness/lattice.json",
+    ".agents/harness/*.schema.json",
     ".claude/settings.json",
     # NOTE: a bare `evals/*` was here — dropped (council/Simon). Wired into an arbitrary user project it would
     # deny writes to the user's OWN test directory, which is not a harness verifier asset. A project that keeps
@@ -70,19 +70,19 @@ def selftest():
     def expect(cond, label):
         if not cond:
             fails.append(label)
-    for p in (".harness/signals/spec.task.x/2026-06-12T09-00--pytest.json",
-              ".harness/rubric/first-slice.md", ".harness/naming.schema.json",
-              ".harness/hooks/gate-signal", ".harness/lattice.json",
-              ".harness/ledger/events.jsonl",                       # the audit trail is tamper-evident
-              ".harness/run/budget.json",                           # the global bound — a worker cannot lift its own ceiling
+    for p in (".agents/harness/signals/spec.task.x/2026-06-12T09-00--pytest.json",
+              ".agents/harness/rubric/first-slice.md", ".agents/harness/naming.schema.json",
+              ".agents/harness/hooks/gate-signal", ".agents/harness/lattice.json",
+              ".agents/harness/ledger/events.jsonl",                       # the audit trail is tamper-evident
+              ".agents/harness/run/budget.json",                           # the global bound — a worker cannot lift its own ceiling
               ".claude/settings.json",                              # the wiring itself — a worker cannot unwire the gate
-              "/abs/project/.harness/signals/x/y.json",             # absolute paths anchor at the segment boundary
+              "/abs/project/.agents/harness/signals/x/y.json",             # absolute paths anchor at the segment boundary
               "sub/project/.claude/settings.json"):
         expect(is_protected(p), f"failed to protect a verifier asset: {p}")
-    for p in (".harness/spec/first-slice.md", "src/main.py", "README.md",
+    for p in (".agents/harness/spec/first-slice.md", "src/main.py", "README.md",
               "docs/examples/lattice.json",                         # over-breadth regression: basename matching is gone
               "src/hooks/useAuth.ts",                               # a React hooks dir is not a verifier asset
-              "schemas/foo.schema.json",                            # schemas outside .harness/ are the project's business
+              "schemas/foo.schema.json",                            # schemas outside .agents/harness/ are the project's business
               "evals/suite.py", "tests/evals/run.py"):              # the user's OWN eval/test dir is not a harness asset (Simon)
         expect(not is_protected(p), f"wrongly protected a worker-writable path: {p}")
     # env override narrows/redefines the set (a project that DOES keep evals as verifier assets opts in)
@@ -93,7 +93,7 @@ def selftest():
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
-    print("gate-signal selftest: OK (denies worker writes to .harness verifier assets + the ledger + the wiring itself; "
+    print("gate-signal selftest: OK (denies worker writes to .agents/harness verifier assets + the ledger + the wiring itself; "
           "segment-anchored — docs/examples/lattice.json and src/hooks/* stay writable; honors HARNESS_PROTECTED)")
     return 0
 

@@ -47,7 +47,7 @@ status: research-verified
 ## Folder layout (prose adaptation)
 
 ```text
-.brain/
+.agents/brain/
 ├── config.toml
 ├── edrs/                  # editorial decision records (was adrs/)
 │   ├── 0001-pov-third-limited.md
@@ -67,7 +67,7 @@ status: research-verified
 └── audit-history/         # manuscript-health JSON ledgers
 ```
 
-The dotfile prefix is _more_ useful for prose than for code: drafts live at the repo root or in `chapters/` / `posts/`, and `.brain/` is structurally clearly the "out of band" memory layer that humans curate but don't read every day.
+The dotfile prefix is _more_ useful for prose than for code: drafts live at the repo root or in `chapters/` / `posts/`, and `.agents/brain/` is structurally clearly the "out of band" memory layer that humans curate but don't read every day.
 
 ## Promise-by-promise applicability
 
@@ -83,7 +83,7 @@ The dotfile prefix is _more_ useful for prose than for code: drafts live at the 
 ## What translates as-is
 
 - `../standards/agents-md-spec.md` — replace `AGENTS.md` → `STYLE.md`; the 8-section skeleton works (Project overview = book/series overview, Build/test/run = build commands for the manuscript build, Conventions = style rules, etc.)
-- `../audit-patterns/orphan-detection.md` — orphan files in `.brain/` not reachable from STYLE.md
+- `../audit-patterns/orphan-detection.md` — orphan files in `.agents/brain/` not reachable from STYLE.md
 - `../audit-patterns/redundancy-detection.md` — same style rule repeated in two files
 - `../audit-patterns/format-hygiene.md` — every EDR has a date and status
 - `../audit-patterns/staleness-tooling.md` — Vale, lychee work for prose too (Vale is _primarily_ a prose tool)
@@ -126,7 +126,7 @@ Drop these files at the repo root of a manuscript or docs repo:
 
 ```text
 STYLE.md                                       # canonical style/voice guide (≤200 lines)
-.brain/
+.agents/brain/
 ├── config.toml
 ├── edrs/0001-record-editorial-decisions.md   # bootstrap EDR
 ├── retrospectives/.gitkeep

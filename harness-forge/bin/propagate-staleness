@@ -11,8 +11,8 @@ kernel's own `propagate_staleness`), the flip is recorded to the ledger, and the
 always exit 0, including on malformed input. No cell match → silent.
 
 Computation routes to code: the staleness graph walk is `lattice.py`'s, imported — never re-inferred.
-Wired by `bin/wire.py`, which copies this hook into the project's `.harness/hooks/` alongside a private
-`_lattice.py` byte-copy of the kernel. Resolves the harness at `$HARNESS_DIR`, else `./.harness`.
+Wired by `bin/wire.py`, which copies this hook into the project's `.agents/harness/hooks/` alongside a private
+`_lattice.py` byte-copy of the kernel. Resolves the harness at `$HARNESS_DIR`, else `./.agents/harness`.
 
 Usage:
   propagate-staleness --hook       # reads PostToolUse JSON on stdin; cascades staleness; ALWAYS exits 0
@@ -28,12 +28,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     import lattice as _lat                  # plugin layout: bin/lattice.py is a sibling
-except ImportError:                          # wired layout: .harness/hooks/_lattice.py (private byte-copy)
+except ImportError:                          # wired layout: .agents/harness/hooks/_lattice.py (private byte-copy)
     import _lattice as _lat
 
 
 def _harness_dir():
-    return os.environ.get("HARNESS_DIR") or ".harness"
+    return os.environ.get("HARNESS_DIR") or ".agents/harness"
 
 
 def _hash(path):
@@ -62,7 +62,8 @@ def cascade(path, d=None):
     flipped = []
     for cell in owners:
         cell_id = _lat.cid(cell)
-        new_hash = _hash(path) or _hash(os.path.join(os.path.dirname(d.rstrip("/")) or ".", cell["asset_ref"]))
+        # asset_refs are project-root-relative; the harness dir is <root>/.agents/harness → root is its grandparent.
+        new_hash = _hash(path) or _hash(os.path.join(os.path.dirname(os.path.dirname(d.rstrip("/"))) or ".", cell["asset_ref"]))
         if cell["maturity"] in _lat.SETTLED:                       # its evidence predates the content now
             cell["maturity"] = "stale"
             flipped.append(cell_id)
@@ -106,7 +107,7 @@ def selftest():
         if not cond:
             fails.append(label)
     with tempfile.TemporaryDirectory() as root:
-        d = os.path.join(root, ".harness")
+        d = os.path.join(root, ".agents/harness")
         _lat.scaffold(d)
         lat = _lat.seed_lattice("t")
         spec_path = os.path.join(root, "spec-asset.md")

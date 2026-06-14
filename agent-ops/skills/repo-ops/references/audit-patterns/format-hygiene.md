@@ -55,9 +55,9 @@ Break the first link (no date), break the chain. `git log -1 --format=%cs` is a 
 | 1 | Doc has `date:` YAML frontmatter OR `_Last reviewed:_` line | All canonical docs | High |
 | 2 | Doc has YAML frontmatter at all | Canonical reference docs (skills-style) | Medium |
 | 3 | AGENTS.md has `_Last reviewed:_` or version line | AGENTS.md, CLAUDE.md (if fat) | High |
-| 4 | ADR has `Status:` field | `.brain/adrs/*.md` | High |
-| 5 | Postmortem has `severity:` and `duration:` | `.brain/postmortems/*.md` | High |
-| 6 | Release-scoped working note has `created:` + `last_edited:` | `.brain/notes/{version}-*.md` | High |
+| 4 | ADR has `Status:` field | `.agents/brain/adrs/*.md` | High |
+| 5 | Postmortem has `severity:` and `duration:` | `.agents/brain/postmortems/*.md` | High |
+| 6 | Release-scoped working note has `created:` + `last_edited:` | `.agents/brain/notes/{version}-*.md` | High |
 
 Ownership (`_Owner:_` or `owner:`) is a sixth concern — emit as Medium where missing; small repos can accept "team that owns the parent directory."
 
@@ -83,7 +83,7 @@ check_dated() {
 }
 
 for f in AGENTS.md CLAUDE.md README.md CHANGELOG.md \
-         $(find .brain docs -name '*.md' -not -path '.brain/archive/*' -not -path 'docs/archive/*' 2>/dev/null); do
+         $(find .agents/brain docs -name '*.md' -not -path '.agents/brain/archive/*' -not -path 'docs/archive/*' 2>/dev/null); do
   [ -f "$f" ] && [ ! -L "$f" ] || continue
   if ! check_dated "$f"; then
     echo "UNDATED: $f"
@@ -95,13 +95,13 @@ CHANGELOG.md is special — it's append-only and dates live per-entry. The check
 
 ## Check 2 — canonical reference docs have YAML frontmatter
 
-For reference material in `.brain/` (not narrative READMEs in `docs/`), missing frontmatter is a smell. The repo-ops convention mirrors this skills library: `date`, `coverage`, `peers`, `primary_sources`, `status`.
+For reference material in `.agents/brain/` (not narrative READMEs in `docs/`), missing frontmatter is a smell. The repo-ops convention mirrors this skills library: `date`, `coverage`, `peers`, `primary_sources`, `status`.
 
 ### Detection
 
 ```bash
 # A doc has frontmatter if line 1 is exactly `---`.
-for f in $(find .brain docs -name '*.md' -not -path '.brain/archive/*' -not -path 'docs/archive/*' 2>/dev/null); do
+for f in $(find .agents/brain docs -name '*.md' -not -path '.agents/brain/archive/*' -not -path 'docs/archive/*' 2>/dev/null); do
   [ -f "$f" ] || continue
   if [ "$(head -1 "$f")" != "---" ]; then
     echo "NO-FRONTMATTER: $f"
@@ -139,7 +139,7 @@ Per [adr.github.io](https://adr.github.io/), an ADR without `Status:` is uninter
 
 ```bash
 # Status field can be in frontmatter (status:) OR in body (## Status: accepted).
-for f in $(find .brain/adrs docs/adrs docs/adr docs/decisions -name '*.md' 2>/dev/null); do
+for f in $(find .agents/brain/adrs docs/adrs docs/adr docs/decisions -name '*.md' 2>/dev/null); do
   [ -f "$f" ] || continue
   # README/index files are not ADRs
   case "$(basename "$f")" in README.md|index.md|INDEX.md) continue ;; esac
@@ -158,7 +158,7 @@ Per Google's [SRE Book postmortem culture](https://sre.google/sre-book/postmorte
 ### Detection
 
 ```bash
-for f in $(find .brain/postmortems docs/postmortems docs/incidents -name '*.md' 2>/dev/null); do
+for f in $(find .agents/brain/postmortems docs/postmortems docs/incidents -name '*.md' 2>/dev/null); do
   [ -f "$f" ] || continue
   case "$(basename "$f")" in README.md|index.md|INDEX.md|TEMPLATE.md) continue ;; esac
   has_sev=false; has_dur=false
@@ -173,11 +173,11 @@ done
 
 ## Check 6 — release-scoped working notes carry `created:` + `last_edited:`
 
-`.brain/notes/` accumulates the narrative artifacts a release/build cycle produces — release notes, plans, punchlists, peer hand-offs — the markdown complement to the structured `audit-history/*.json`. Without dated frontmatter these rot silently (the Check-1 premise applied to the busiest churn surface in the brain).
+`.agents/brain/notes/` accumulates the narrative artifacts a release/build cycle produces — release notes, plans, punchlists, peer hand-offs — the markdown complement to the structured `audit-history/*.json`. Without dated frontmatter these rot silently (the Check-1 premise applied to the busiest churn surface in the brain).
 
 **The convention** (transferable; first instantiated in chat-ui, adia-ui-release v1.10.0):
 
-- **Naming** — release-scoped notes are `{release-version}-{topic}.md` (e.g. `0.6.49-release-notes.md`). Version-first sorts the directory by cut and makes `ls .brain/notes/ | grep <version>` the natural query. Non-release working notes keep `{topic}-YYYY-MM-DD.md`; pre-convention files are grandfathered.
+- **Naming** — release-scoped notes are `{release-version}-{topic}.md` (e.g. `0.6.49-release-notes.md`). Version-first sorts the directory by cut and makes `ls .agents/brain/notes/ | grep <version>` the natural query. Non-release working notes keep `{topic}-YYYY-MM-DD.md`; pre-convention files are grandfathered.
 - **Frontmatter** — `created:` (set once) + `last_edited:` (bump every edit), both ISO-8601, plus `title` / `version` / `topic` / `status` (`draft|active|final|resolved|superseded`) / `author`. Divergent `created`/`last_edited` with a non-final `status` flags a stale note.
 - **Lifecycle** — resolved punchlists/hand-offs are integrated (resolution recorded in the cycle ledger) then **deleted**; release notes settle at `status: final` as the durable per-version record that the Slack/GH-release body derives from.
 
@@ -186,7 +186,7 @@ done
 Enforce frontmatter on version-named notes; grandfather the rest. Reference implementation: chat-ui's `scripts/audit/check-brain-notes-frontmatter.mjs` (wired into `npm run check`). Shell equivalent:
 
 ```bash
-for f in $(find .brain/notes -maxdepth 1 -name '*.md' 2>/dev/null); do
+for f in $(find .agents/brain/notes -maxdepth 1 -name '*.md' 2>/dev/null); do
   base="$(basename "$f")"
   case "$base" in README.md) continue ;; esac
   # Release-scoped = leading X.Y.Z- (or X.Y.Z-X.Y.Z- rollup)
@@ -207,10 +207,10 @@ The naming convention itself (version-prefix) is a Medium form check; the missin
   - **Promise 3 impact:** the most-loaded file in the repo is invisible to the audit.
   - **Recommendation:** add `_Last reviewed: 2026-04-27 by @kimba_` near the top.
 
-- **ADR-NO-STATUS — `.brain/adrs/0007-pick-postgres.md`** (severity: high)
+- **ADR-NO-STATUS — `.agents/brain/adrs/0007-pick-postgres.md`** (severity: high)
   - **Recommendation:** add `Status: accepted` (or `superseded by 0014`). See `../doc-types/adr-pattern.md`.
 
-- **POSTMORTEM-NO-SEVERITY — `.brain/postmortems/2026-03-15-checkout-outage.md`** (severity: high)
+- **POSTMORTEM-NO-SEVERITY — `.agents/brain/postmortems/2026-03-15-checkout-outage.md`** (severity: high)
   - **Recommendation:** add `severity: SEV-2` and `duration: 47 minutes`.
 ```
 
@@ -223,7 +223,7 @@ The naming convention itself (version-prefix) is a Medium form check; the missin
 | Postmortem without `severity:` | High | Cannot aggregate; loses analytical value |
 | Postmortem without `duration:` | High | Same as above |
 | Canonical reference doc without `date:` or `_Last reviewed:_` | High | Invisible to staleness tooling |
-| Reference doc in `.brain/` without YAML frontmatter | Medium | Convention drift; advisory for narrative docs |
+| Reference doc in `.agents/brain/` without YAML frontmatter | Medium | Convention drift; advisory for narrative docs |
 | Doc without `_Owner:_` or implicit team owner | Medium | Ownership gap; advisory |
 
 ## What this pattern is NOT for

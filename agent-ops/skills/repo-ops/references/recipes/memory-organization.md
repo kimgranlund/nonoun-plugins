@@ -19,48 +19,48 @@ status: research-verified
 
 # Recipe: organize ADRs, postmortems, runbooks, and decision logs (delivers Promise 5)
 
-> **The premise.** Memory primitives only compound if they have _one_ obvious home each. The most common organizational failure is not absence — it's split-brain: `.brain/adrs/` AND `docs/decisions/`, both half-populated, both authoritative-looking. The agent loads both, gets contradictions, and learns nothing. This recipe makes the layout decisive.
+> **The premise.** Memory primitives only compound if they have _one_ obvious home each. The most common organizational failure is not absence — it's split-brain: `.agents/brain/adrs/` AND `docs/decisions/`, both half-populated, both authoritative-looking. The agent loads both, gets contradictions, and learns nothing. This recipe makes the layout decisive.
 
 ## The four memory primitives
 
 | Primitive | What it captures | Storage | Lifecycle |
 | --- | --- | --- | --- |
-| **ADR** | A specific architectural commitment | `.brain/adrs/NNNN-*.md` | Proposed → Accepted → (Superseded) |
-| **Postmortem** | An incident retrospective | `.brain/postmortems/YYYY-MM-DD-*.md` | Drafted → Resolved (mostly immutable) |
-| **Runbook** | A repeatable operational procedure | `.brain/runbooks/<verb-noun>.md` | Living; revised in place |
+| **ADR** | A specific architectural commitment | `.agents/brain/adrs/NNNN-*.md` | Proposed → Accepted → (Superseded) |
+| **Postmortem** | An incident retrospective | `.agents/brain/postmortems/YYYY-MM-DD-*.md` | Drafted → Resolved (mostly immutable) |
+| **Runbook** | A repeatable operational procedure | `.agents/brain/runbooks/<verb-noun>.md` | Living; revised in place |
 | **Decision log entry** (looser) | A non-architectural commitment too small for an ADR | `docs/decisions/YYYY-MM-DD-*.md` (optional) | Living, dated, lighter-weight |
 
 Plus two adjacent (not memory but co-located):
 
 | Document | Storage | Why it's not memory |
 | --- | --- | --- |
-| **Architecture overview** | `docs/ARCHITECTURE.md` (or `.brain/architecture/`) | Describes current state, not decision history |
+| **Architecture overview** | `docs/ARCHITECTURE.md` (or `.agents/brain/architecture/`) | Describes current state, not decision history |
 | **Spec / RFC / pre-decision draft** | `docs/drafts/` or `docs/rfcs/` | Pre-decision; converts to ADR when accepted |
 
 ## The decision tree (which folder does this go in?)
 
 | If you can say... | It belongs in... |
 | --- | --- |
-| "We decided to use X instead of Y" (architectural) | `.brain/adrs/` |
+| "We decided to use X instead of Y" (architectural) | `.agents/brain/adrs/` |
 | "We picked library X over Y" (small, reversible) | `docs/decisions/` (optional) |
-| "On April 12, the checkout broke because..." | `.brain/postmortems/` |
-| "To roll out a new region, run these 8 steps" | `.brain/runbooks/` |
+| "On April 12, the checkout broke because..." | `.agents/brain/postmortems/` |
+| "To roll out a new region, run these 8 steps" | `.agents/brain/runbooks/` |
 | "The system has these services and they talk like..." | `docs/ARCHITECTURE.md` |
 | "Here's what we're considering for next quarter" | `docs/drafts/` or `docs/rfcs/` |
 
 If the team can describe each new doc in one sentence, the right folder usually pops out.
 
-## Should I have `.brain/adrs/` AND `docs/decisions/`?
+## Should I have `.agents/brain/adrs/` AND `docs/decisions/`?
 
 **Most teams: no.** Pick one. ADRs cover both architectural and non-architectural decisions just fine — especially since MADR 4.0.0 (Sept 2024) explicitly broadens scope to non-architectural by renaming the _A_ to _Any_.
 
-**Some teams: yes.** When ADRs feel too heavy for routine choices ("we picked Vitest over Jest"), a lighter `docs/decisions/` folder reduces activation energy. Trade-off: now you have two places to look. Document the split in `.brain/adrs/README.md`:
+**Some teams: yes.** When ADRs feel too heavy for routine choices ("we picked Vitest over Jest"), a lighter `docs/decisions/` folder reduces activation energy. Trade-off: now you have two places to look. Document the split in `.agents/brain/adrs/README.md`:
 
 ```markdown
 # Decision logs
 
 This repo splits decisions into two folders by weight:
-- `.brain/adrs/` — architectural commitments (MADR format, full context).
+- `.agents/brain/adrs/` — architectural commitments (MADR format, full context).
 - `docs/decisions/` — lighter-weight (one-paragraph, dated).
 
 When in doubt, prefer ADR.
@@ -75,7 +75,7 @@ A "design doc" is usually one of:
 | Doc actually is... | Goes in... |
 | --- | --- |
 | A pre-decision proposal under discussion | `docs/drafts/` (delete after decided) or `docs/rfcs/` (keep with `Status:`) |
-| The decision itself, after it's made | `.brain/adrs/NNNN-*.md` |
+| The decision itself, after it's made | `.agents/brain/adrs/NNNN-*.md` |
 | The current architecture | `docs/ARCHITECTURE.md` |
 | A spec for a feature being built | `docs/specs/` |
 
@@ -93,13 +93,13 @@ Tells: imperative voice + numbered steps → runbook. Declarative voice + contin
 
 | Folder | Convention | Why |
 | --- | --- | --- |
-| `.brain/adrs/` | `NNNN-kebab-case-title.md` (4-digit, sequential) | Numbered for sequence; immutable after Accepted |
-| `.brain/postmortems/` | `YYYY-MM-DD-incident-name.md` | Sorts chronologically; date is the unique identifier |
+| `.agents/brain/adrs/` | `NNNN-kebab-case-title.md` (4-digit, sequential) | Numbered for sequence; immutable after Accepted |
+| `.agents/brain/postmortems/` | `YYYY-MM-DD-incident-name.md` | Sorts chronologically; date is the unique identifier |
 | `docs/decisions/` | `YYYY-MM-DD-decision-name.md` | Sorts chronologically; small enough that numbering is overkill |
-| `.brain/runbooks/` | `<verb>-<noun>.md` | No date — runbooks are living |
-| `.brain/architecture/` | `<topic>.md` (kebab-case) | Topical, not temporal |
+| `.agents/brain/runbooks/` | `<verb>-<noun>.md` | No date — runbooks are living |
+| `.agents/brain/architecture/` | `<topic>.md` (kebab-case) | Topical, not temporal |
 | `docs/drafts/` | freeform | Not yet committed |
-| `.brain/archive/` | `original-name-YYYY-MM-DD.md` | Provenance preserved for moved-orphans |
+| `.agents/brain/archive/` | `original-name-YYYY-MM-DD.md` | Provenance preserved for moved-orphans |
 
 ## Index files (`README.md` in each folder)
 
@@ -141,10 +141,10 @@ The `Where to find things` section enumerates the homes:
 ```markdown
 ## Where to find things
 - **Architecture:** `docs/ARCHITECTURE.md`
-- **Architecture Decision Records:** `.brain/adrs/` (index: `.brain/adrs/README.md`)
+- **Architecture Decision Records:** `.agents/brain/adrs/` (index: `.agents/brain/adrs/README.md`)
 - **Decision log (lighter-weight):** `docs/decisions/` (only if your team uses both)
-- **Post-mortems:** `.brain/postmortems/` (index: `.brain/postmortems/README.md`)
-- **Runbooks:** `.brain/runbooks/` (index: `.brain/runbooks/README.md`)
+- **Post-mortems:** `.agents/brain/postmortems/` (index: `.agents/brain/postmortems/README.md`)
+- **Runbooks:** `.agents/brain/runbooks/` (index: `.agents/brain/runbooks/README.md`)
 - **Drafts / RFCs:** `docs/drafts/` (pre-decision; do not treat as committed)
 ```
 
@@ -152,9 +152,9 @@ The `Memory primitives` section instructs _when_ to read each:
 
 ```markdown
 ## Memory primitives
-- **Before architectural decisions**, read `.brain/adrs/` newest-first.
-- **When debugging production issues**, search `.brain/postmortems/`.
-- **When running operational procedures**, look in `.brain/runbooks/`
+- **Before architectural decisions**, read `.agents/brain/adrs/` newest-first.
+- **When debugging production issues**, search `.agents/brain/postmortems/`.
+- **When running operational procedures**, look in `.agents/brain/runbooks/`
   before improvising. If missing, write the runbook *while* doing it.
 - **Drafts in `docs/drafts/` are not commitments** — do not implement
   them as if they were ADRs.
@@ -164,8 +164,8 @@ This closes the continuous-learning loop — see `continuous-learning-loop.md`.
 
 ## Common organizational anti-patterns
 
-- **`.brain/adrs/` and `docs/decisions/` both half-populated, no documented split.** Pick one or document the split.
-- **Postmortems in `docs/traces/`.** "Traces" reads as observability traces (OpenTelemetry / Jaeger). Use `.brain/postmortems/` or `docs/incidents/`.
+- **`.agents/brain/adrs/` and `docs/decisions/` both half-populated, no documented split.** Pick one or document the split.
+- **Postmortems in `docs/traces/`.** "Traces" reads as observability traces (OpenTelemetry / Jaeger). Use `.agents/brain/postmortems/` or `docs/incidents/`.
 - **Runbooks under date-prefix names.** Runbooks are living; date-prefixes lie.
 - **Design docs that became ADRs without archiving the originals.** Two sources of truth on the same decision.
 - **No index files.** Folder is technically populated but undiscoverable without `ls`.

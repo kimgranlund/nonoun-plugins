@@ -101,7 +101,7 @@ For each finding, emit a row like:
 
 - **NAKED ENTRY — AGENTS.md** (severity: medium)
   - `AGENTS.md` exists but has no "Where to find things" section.
-  - Doc subfolders exist (`.brain/adrs/`, `PLAN.md`) but are unreachable from the entry file.
+  - Doc subfolders exist (`.agents/brain/adrs/`, `PLAN.md`) but are unreachable from the entry file.
   - **Recommendation:** add a "Where to find things" section listing the subfolders. See `standards/agents-md-spec.md`.
 ```
 

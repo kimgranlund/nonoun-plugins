@@ -5,7 +5,7 @@ The live-data complement to agent-ops's `repo-ops` skill (which turns a repo int
 coding agents). It is the agent-ops mirror of brand-forge's `brand-corpus` and product-forge's
 `product-corpus` MCPs — same MCP-as-curated-perimeter pattern — but the "corpus" is a *repository's
 agent-facing memory*: AGENTS.md · CLAUDE.md · README · CHANGELOG · ROADMAP · ADRs, plus the
-`.brain/audit-history/` ledger that `audit-history.py` maintains. Point it at a repo (or a docs dir)
+`.agents/brain/audit-history/` ledger that `audit-history.py` maintains. Point it at a repo (or a docs dir)
 via the plugin's `corpus_dir` userConfig; unset, the tools return a clear "configure corpus_dir"
 message rather than failing.
 
@@ -25,7 +25,7 @@ NAME, VERSION = "repo-memory", "0.1.0"
 CORPUS = (os.environ.get("REPO_MEMORY_DIR") or "").strip()
 
 # Dirs that are never agent memory — skip them when enumerating a repo (keeps the surface task-level,
-# not a filesystem dump, and avoids walking giant build/vendor trees). `.brain` is KEPT (it is memory).
+# not a filesystem dump, and avoids walking giant build/vendor trees). `.agents/brain` is KEPT (it is memory).
 _SKIP_DIRS = {".git", "node_modules", "site", "dist", "build", "__pycache__", ".venv", "venv",
               ".next", "target", ".pytest_cache", ".mypy_cache", "coverage", ".tox"}
 _MAX_FILES = 300
@@ -44,7 +44,7 @@ TOOLS = [
      "description": "Return the markdown heading outline of one memory document. `path` is relative to the configured root.",
      "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}},
     {"name": "read_audit_ledger",
-     "description": "Read the repo's `.brain/audit-history/` ledger if present — the newest-first trend-table README plus the list of audit records. The agent-ops self-healing signal.",
+     "description": "Read the repo's `.agents/brain/audit-history/` ledger if present — the newest-first trend-table README plus the list of audit records. The agent-ops self-healing signal.",
      "inputSchema": {"type": "object", "properties": {}}},
 ]
 
@@ -123,16 +123,16 @@ def call(name, args):
         heads = [ln.rstrip() for ln in text.splitlines() if ln.lstrip().startswith("#")]
         return ("Outline:\n" + ("\n".join(heads) if heads else "  (no headings)"), False)
     if name == "read_audit_ledger":
-        ldir = _safe(os.path.join(".brain", "audit-history"))
+        ldir = _safe(os.path.join(".agents/brain", "audit-history"))
         if not ldir or not os.path.isdir(ldir):
-            return ("read_audit_ledger: no `.brain/audit-history/` ledger found in this repo.", False)
+            return ("read_audit_ledger: no `.agents/brain/audit-history/` ledger found in this repo.", False)
         parts = []
         readme = os.path.join(ldir, "README.md")
         if os.path.isfile(readme):
             raw = open(readme, encoding="utf-8", errors="replace").read()
             parts.append(raw[:12000] + ("\n…[truncated]" if len(raw) > 12000 else ""))
         records = sorted(f for f in os.listdir(ldir) if f.endswith(".json"))
-        parts.append(f"\nLedger records ({len(records)}):\n" + ("\n".join(f"  .brain/audit-history/{r}" for r in records[:60]) or "  (none)"))
+        parts.append(f"\nLedger records ({len(records)}):\n" + ("\n".join(f"  .agents/brain/audit-history/{r}" for r in records[:60]) or "  (none)"))
         return ("\n".join(parts), False)
     return (f"unknown tool: {name}", True)
 
@@ -182,7 +182,7 @@ def main():
 def selftest():
     """Exercise the path guard (`_safe`/`_md_files`) against traversal, absolute-path, symlink, and
     prefix-sibling escape, the noise-dir exclusion, and a tools smoke over a synthetic repo with a
-    `.brain/audit-history/` ledger. No external repo needed. Exit 0 = pass, 1 = fail."""
+    `.agents/brain/audit-history/` ledger. No external repo needed. Exit 0 = pass, 1 = fail."""
     import tempfile
     import shutil
     global CORPUS
@@ -196,15 +196,15 @@ def selftest():
         outside = os.path.join(tmp, "outside")
         evil = os.path.join(tmp, "repo-evil")  # prefix-sibling: shares the "repo" prefix, must NOT pass
         os.makedirs(os.path.join(repo, "docs", "adr"))
-        os.makedirs(os.path.join(repo, ".brain", "audit-history"))
+        os.makedirs(os.path.join(repo, ".agents/brain", "audit-history"))
         os.makedirs(os.path.join(repo, "node_modules", "pkg"))  # noise dir — must be excluded
         os.makedirs(outside)
         os.makedirs(evil)
         open(os.path.join(repo, "AGENTS.md"), "w", encoding="utf-8").write("# AGENTS\nconventions for agents\n")
         open(os.path.join(repo, "ROADMAP.md"), "w", encoding="utf-8").write("# Roadmap\nthe plan\n")
         open(os.path.join(repo, "docs", "adr", "0001-use-x.md"), "w", encoding="utf-8").write("# ADR 1\ndecision\n")
-        open(os.path.join(repo, ".brain", "audit-history", "README.md"), "w", encoding="utf-8").write("# Audit history\ntrend table\n")
-        open(os.path.join(repo, ".brain", "audit-history", "2026-06-11.json"), "w", encoding="utf-8").write('{"ok":true}\n')
+        open(os.path.join(repo, ".agents/brain", "audit-history", "README.md"), "w", encoding="utf-8").write("# Audit history\ntrend table\n")
+        open(os.path.join(repo, ".agents/brain", "audit-history", "2026-06-11.json"), "w", encoding="utf-8").write('{"ok":true}\n')
         open(os.path.join(repo, "node_modules", "pkg", "README.md"), "w", encoding="utf-8").write("# vendor noise\n")
         open(os.path.join(outside, "secret.md"), "w", encoding="utf-8").write("# SECRET\n")
         open(os.path.join(evil, "secret.md"), "w", encoding="utf-8").write("# SECRET\n")

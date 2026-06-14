@@ -1,6 +1,6 @@
 ---
 description: Audit the harness — lattice completeness, partial-order integrity, verifier maturity, gate coverage, anti-reward-hacking, and earned-autonomy tier — and score it against the harness rubric.
-argument-hint: "[optional: --dir .harness]"
+argument-hint: "[optional: --dir .agents/harness]"
 ---
 
 Audit the harness. **$ARGUMENTS**

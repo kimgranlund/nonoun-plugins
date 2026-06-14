@@ -28,12 +28,12 @@ status: research-verified
 
 | # | Signal | What it looks like | Severity |
 | --- | --- | --- | --- |
-| 1 | **No `.brain/adrs/` folder despite architectural-shape commits** | `git log --grep='migrate\|switch from\|adopt'` returns 20 hits; `.brain/adrs/` doesn't exist | High |
-| 2 | **No `.brain/postmortems/` despite incident-shape commits** | `git log --grep='hotfix\|revert\|incident\|outage'` returns matches; `.brain/postmortems/` empty | High |
-| 3 | **Decision/RFC/ADR text scattered outside the canonical folders** | `grep -ri 'decision\|ADR\|RFC' docs/` finds matches in random `docs/notes-*.md` files, not `.brain/adrs/` | Medium |
+| 1 | **No `.agents/brain/adrs/` folder despite architectural-shape commits** | `git log --grep='migrate\|switch from\|adopt'` returns 20 hits; `.agents/brain/adrs/` doesn't exist | High |
+| 2 | **No `.agents/brain/postmortems/` despite incident-shape commits** | `git log --grep='hotfix\|revert\|incident\|outage'` returns matches; `.agents/brain/postmortems/` empty | High |
+| 3 | **Decision/RFC/ADR text scattered outside the canonical folders** | `grep -ri 'decision\|ADR\|RFC' docs/` finds matches in random `docs/notes-*.md` files, not `.agents/brain/adrs/` | Medium |
 | 4 | **AGENTS.md missing a "Memory primitives" section** | Agent doesn't know to consult ADRs / post-mortems / runbooks | **Critical** (closes-the-loop check) |
 
-Signal 4 is the most damaging. A repo can have an exemplary `.brain/adrs/` folder with 40 decisions, and if AGENTS.md doesn't tell the agent to _read it_, the artifacts are dead weight on disk.
+Signal 4 is the most damaging. A repo can have an exemplary `.agents/brain/adrs/` folder with 40 decisions, and if AGENTS.md doesn't tell the agent to _read it_, the artifacts are dead weight on disk.
 
 ## The bash check
 
@@ -47,10 +47,10 @@ fail=0
 arch=$(git log --since='2 years ago' \
        --grep='migrate\|switch\|adopt\|introduce\|deprecate\|replace.*with' \
        --oneline 2>/dev/null | wc -l | tr -d ' ')
-if [ ! -d .brain/adrs ] && [ ! -d docs/adrs ] && [ ! -d docs/architecture/decisions ] && [ ! -d adrs ]; then
-    [ "$arch" -gt 5 ] && { echo "FRAGMENT-NO-ADR-FOLDER: $arch arch-shape commits in 2y; no .brain/adrs/."; fail=1; }
+if [ ! -d .agents/brain/adrs ] && [ ! -d docs/adrs ] && [ ! -d docs/architecture/decisions ] && [ ! -d adrs ]; then
+    [ "$arch" -gt 5 ] && { echo "FRAGMENT-NO-ADR-FOLDER: $arch arch-shape commits in 2y; no .agents/brain/adrs/."; fail=1; }
 else
-    n=$(find .brain/adrs docs/adrs docs/architecture/decisions adrs -name '*.md' \
+    n=$(find .agents/brain/adrs docs/adrs docs/architecture/decisions adrs -name '*.md' \
         -not -name 'README.md' -not -name 'INDEX.md' 2>/dev/null | wc -l | tr -d ' ')
     yrs=$(( ($(date +%s) - $(git log --reverse --format=%ct | head -1)) / 31536000 ))
     [ "$yrs" -lt 1 ] && yrs=1
@@ -60,13 +60,13 @@ fi
 # Signal 2: postmortems vs incident-shape commits.
 inc=$(git log --grep='hotfix\|revert\|incident\|outage\|rollback\|emergency' \
       --oneline 2>/dev/null | wc -l | tr -d ' ')
-if [ ! -d .brain/postmortems ] && [ ! -d docs/postmortems ] && [ ! -d docs/incidents ] && [ ! -d docs/post-mortems ]; then
+if [ ! -d .agents/brain/postmortems ] && [ ! -d docs/postmortems ] && [ ! -d docs/incidents ] && [ ! -d docs/post-mortems ]; then
     [ "$inc" -gt 3 ] && { echo "FRAGMENT-NO-POSTMORTEM-FOLDER: $inc incident-shape commits; none filed."; fail=1; }
 fi
 
 # Signal 3: decision/RFC/postmortem text outside canonical folders.
-canonical_re='\.brain/(adrs|postmortems|architecture)/|docs/(adrs|architecture/decisions|postmortems|incidents|post-mortems)/'
-find .brain docs -type f -name '*.md' -not -path '.brain/archive/*' -not -path 'docs/archive/*' | while read -r f; do
+canonical_re='\.agents/brain/(adrs|postmortems|architecture)/|docs/(adrs|architecture/decisions|postmortems|incidents|post-mortems)/'
+find .agents/brain docs -type f -name '*.md' -not -path '.agents/brain/archive/*' -not -path 'docs/archive/*' | while read -r f; do
     echo "$f" | grep -qE "$canonical_re" && continue
     case "$(basename "$f")" in README.md|INDEX.md) continue ;; esac
     if grep -qE '^## (Status|Decision|Consequences)' "$f" 2>/dev/null \
@@ -88,13 +88,13 @@ Heuristics are conservative — most findings are advisory. Only signal 4 is gat
 
 ## What each signal recommends
 
-### Signal 1 — no `.brain/adrs/` despite architectural commits
+### Signal 1 — no `.agents/brain/adrs/` despite architectural commits
 
 **Recommendation.** Bootstrap the folder with `recipes/adr-introduction.md` (planned per the INDEX). The first ADR (`0001-record-architecture-decisions.md`) is the meta-decision: "we will record architectural decisions". Then back-fill 3-5 of the most-impactful past architectural changes as historical ADRs.
 
 ### Signal 2 — incidents without post-mortems
 
-**Recommendation.** Create `.brain/postmortems/` (or `docs/incidents/`). For commits matching the incident heuristic (`hotfix`, `revert`, `outage`), do _not_ try to retroactively reconstruct post-mortems for events the team didn't review. Instead: install the convention going forward, and as the next SEV-1 / SEV-2 happens, run the post-mortem flow per `../doc-types/postmortem-pattern.md`.
+**Recommendation.** Create `.agents/brain/postmortems/` (or `docs/incidents/`). For commits matching the incident heuristic (`hotfix`, `revert`, `outage`), do _not_ try to retroactively reconstruct post-mortems for events the team didn't review. Instead: install the convention going forward, and as the next SEV-1 / SEV-2 happens, run the post-mortem flow per `../doc-types/postmortem-pattern.md`.
 
 ### Signal 3 — misplaced decision/RFC/postmortem text
 
@@ -102,7 +102,7 @@ Heuristics are conservative — most findings are advisory. Only signal 4 is gat
 
 ```bash
 # For each FRAGMENT-MISPLACED file, the recommendation is:
-git mv docs/notes-on-postgres-decision.md .brain/adrs/0014-use-postgres-not-mysql.md
+git mv docs/notes-on-postgres-decision.md .agents/brain/adrs/0014-use-postgres-not-mysql.md
 # Then re-number to fit the existing sequence; update any inbound links.
 ```
 
@@ -115,11 +115,11 @@ Re-numbering is mandatory if the canonical folder uses sequential numbering. The
 ```markdown
 ## Memory primitives
 
-- **Before architectural changes**, read `.brain/adrs/` newest-first. If your
+- **Before architectural changes**, read `.agents/brain/adrs/` newest-first. If your
   proposed change conflicts with an `Accepted` ADR, write a new ADR
   superseding it; don't silently override.
 
-- **When debugging a production issue**, search `.brain/postmortems/` for
+- **When debugging a production issue**, search `.agents/brain/postmortems/` for
   prior occurrences. Many "new" bugs are repeats.
 
 - **When you make a mistake the user has to correct**, ask: "Should I add
@@ -127,7 +127,7 @@ Re-numbering is mandatory if the canonical folder uses sequential numbering. The
   yes. Add a one-line correction with a dated parenthetical.
 
 - **When a runbook is needed for a recurring operation**, file it in
-  `.brain/runbooks/` rather than embedding it in AGENTS.md.
+  `.agents/brain/runbooks/` rather than embedding it in AGENTS.md.
 ```
 
 This is the single highest-leverage edit in any audit — without it, Promise 5 isn't being delivered no matter how many ADRs the repo has.
@@ -150,15 +150,15 @@ gh pr list --state merged --limit 200 --search "RFC OR decision OR \"design doc\
     --json number,title --jq '. | length' 2>/dev/null
 ```
 
-The fix is cultural, not mechanical: the team agrees that "decision in a PR description" → "ADR in `.brain/adrs/`" before merge. The PR template change is in `../recipes/continuous-learning-loop.md` (Flow 2).
+The fix is cultural, not mechanical: the team agrees that "decision in a PR description" → "ADR in `.agents/brain/adrs/`" before merge. The PR template change is in `../recipes/continuous-learning-loop.md` (Flow 2).
 
 ## Severity rubric
 
 | Finding | Severity | Why |
 | --- | --- | --- |
 | AGENTS.md missing Memory primitives section | **Critical** | Closes-loop check; artifacts on disk are dead weight without it |
-| `.brain/adrs/` missing AND repo has architectural-shape commits | High | Decisions are evaporating into PR descriptions |
-| `.brain/postmortems/` missing AND repo has incident-shape commits | High | Lessons aren't compounding |
+| `.agents/brain/adrs/` missing AND repo has architectural-shape commits | High | Decisions are evaporating into PR descriptions |
+| `.agents/brain/postmortems/` missing AND repo has incident-shape commits | High | Lessons aren't compounding |
 | Decision-shaped content outside canonical folders | Medium | Discoverability breaks; agent won't find it |
 | Sparse ADRs (<1 per year of repo age) for repos >2 years old | Medium | Likely under-capture; advisory |
 | Out-of-repo memory (Slack/Notion) | Advisory | Cultural fix; audit emits a recommendation, not a hard finding |
@@ -166,9 +166,9 @@ The fix is cultural, not mechanical: the team agrees that "decision in a PR desc
 ## What this pattern is NOT for
 
 - **Detecting whether individual ADRs are well-written** — that's a content-quality check, not a fragmentation check. See `../doc-types/adr-pattern.md` for the format rubric.
-- **Detecting stale ADRs** — ADRs are immutable; "stale" doesn't apply. An ADR replaced by a newer one is `Superseded`, not `stale`. The audit explicitly excludes `.brain/adrs/` from `stale-content.md`'s heuristic 1.
+- **Detecting stale ADRs** — ADRs are immutable; "stale" doesn't apply. An ADR replaced by a newer one is `Superseded`, not `stale`. The audit explicitly excludes `.agents/brain/adrs/` from `stale-content.md`'s heuristic 1.
 - **Detecting that a post-mortem is blameless** — the convention is in `../doc-types/postmortem-pattern.md`; the audit doesn't enforce it because language analysis is unreliable.
-- **Runbooks** — `.brain/runbooks/` is mentioned in the Memory primitives template but isn't its own audit category yet (could be added in v0.3.0).
+- **Runbooks** — `.agents/brain/runbooks/` is mentioned in the Memory primitives template but isn't its own audit category yet (could be added in v0.3.0).
 
 ## Cross-references
 

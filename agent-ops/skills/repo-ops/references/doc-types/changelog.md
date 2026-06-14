@@ -82,7 +82,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [1.3.1] - 2026-03-22
 
 ### Fixed
-- Crash on empty `.brain/postmortems/` folder (#388).
+- Crash on empty `.agents/brain/postmortems/` folder (#388).
 
 ### Security
 - Bumped `@some/dep` to 4.2.1 to patch CVE-2026-12345.
@@ -154,7 +154,7 @@ In the `Memory primitives` section:
 
 ## Audit checks
 
-1. **`CHANGELOG.md` exists at repo root.** Not in `.brain/`. Convention is root.
+1. **`CHANGELOG.md` exists at repo root.** Not in `.agents/brain/`. Convention is root.
 2. **Header credits Keep a Changelog and SemVer.** A common 2-line preamble; signals the format.
 3. **An `[Unreleased]` section exists at the top.** Without it, the changelog is always lagging.
 4. **Every release entry has an ISO date** (`YYYY-MM-DD`).
@@ -166,7 +166,7 @@ In the `Memory primitives` section:
 
 - **No CHANGELOG** — releases are silent; GitHub Releases is the only narrative.
 - **Auto-generated commit dump** — discussed above. Low-signal noise.
-- **CHANGELOG inside `.brain/`** — convention is repo root; tools look there.
+- **CHANGELOG inside `.agents/brain/`** — convention is repo root; tools look there.
 - **Mixed date formats** (`19-04-2026`, `Apr 19 2026`). ISO only.
 - **Invented categories** ("New stuff", "Tweaks") — stick to the canonical six.
 - **No `[Unreleased]` section** — entries get lost between releases.

@@ -5,7 +5,7 @@ argument-hint: "[cell-id, e.g. spec.task.parse-invoice]"
 
 Advance a cell. **$ARGUMENTS**
 
-First gate the move: `python3 "${CLAUDE_PLUGIN_ROOT}/bin/lattice.py" validity <cell-id> --dir .harness` must say **CAN ADVANCE** — dependencies validated, the verifier rubric validated (a cell advances only against a validated rubric), the cell not `blocked`. If it is BLOCKED, fix the named precondition or pick another cell; do not force it.
+First gate the move: `python3 "${CLAUDE_PLUGIN_ROOT}/bin/lattice.py" validity <cell-id> --dir .agents/harness` must say **CAN ADVANCE** — dependencies validated, the verifier rubric validated (a cell advances only against a validated rubric), the cell not `blocked`. If it is BLOCKED, fix the named precondition or pick another cell; do not force it.
 
 Then dispatch the **`harness-advancer`** agent on exactly this one cell (one unit of work per dispatch → a clean context per loop, by construction). It runs `define → create → validate`:
 

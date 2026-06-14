@@ -23,18 +23,18 @@ status: research-verified
 
 - **Not** a backfill-everything-ever campaign. Reconstructing 10 years of decisions almost never finishes.
 - **Not** a bureaucratic gate. Most PRs aren't architectural; most don't need ADRs.
-- **Not** a tooling adoption. `adr-tools` (Pryce) is optional and lightly maintained as of April 2026. `mkdir .brain/adrs/` is enough to start.
+- **Not** a tooling adoption. `adr-tools` (Pryce) is optional and lightly maintained as of April 2026. `mkdir .agents/brain/adrs/` is enough to start.
 
 ## What this recipe _is_
 
-A 60-minute setup that (1) creates `.brain/adrs/` with an index and the bootstrap ADR; (2) backfills 3-5 _load-bearing_ historical decisions; (3) wires the AGENTS.md `Memory primitives` section; (4) adds the architectural-impact checkbox to the PR template; (5) briefs the team in one paragraph.
+A 60-minute setup that (1) creates `.agents/brain/adrs/` with an index and the bootstrap ADR; (2) backfills 3-5 _load-bearing_ historical decisions; (3) wires the AGENTS.md `Memory primitives` section; (4) adds the architectural-impact checkbox to the PR template; (5) briefs the team in one paragraph.
 
 ## Step 1 — Create the ADR home + index
 
 ```bash
 mkdir -p docs/adrs
 
-cat > .brain/adrs/README.md <<'EOF'
+cat > .agents/brain/adrs/README.md <<'EOF'
 # Architecture Decision Records
 
 This folder captures architectural decisions. Each ADR is dated, numbered,
@@ -58,7 +58,7 @@ EOF
 
 Use the Nygard format ([cognitect.com 2011](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions)) for the bootstrap; canonical templates in `../doc-types/adr-pattern.md`. The bootstrap ADR records the decision to _use ADRs_ — without it, future contributors don't know whether the practice is required.
 
-Save as `.brain/adrs/0001-record-architecture-decisions.md` (full content in `greenfield-setup.md`). Update the README index.
+Save as `.agents/brain/adrs/0001-record-architecture-decisions.md` (full content in `greenfield-setup.md`). Update the README index.
 
 ## Step 3 — Backfill 3-5 load-bearing historical ADRs
 
@@ -122,7 +122,7 @@ Postgres 15. Hosted on RDS in us-east-1.
 - Locked into Postgres dialect (we use JSONB ops + LATERAL joins).
 - Migrating later requires schema rewrite + data backfill.
 - Connection pool management is a known op concern (see
-  `.brain/postmortems/2026-04-12-checkout-outage.md`).
+  `.agents/brain/postmortems/2026-04-12-checkout-outage.md`).
 ```
 
 The "(decision made: ... ; backfilled retroactively)" tag is critical — tells the next reader the ADR isn't reconstructing perfect history, just the load-bearing summary.
@@ -136,10 +136,10 @@ If AGENTS.md doesn't have a `Memory primitives` section, add one. If it does, ad
 ```markdown
 ## Where to find things
 (...)
-- **Architecture Decision Records:** `.brain/adrs/` (index: `.brain/adrs/README.md`)
+- **Architecture Decision Records:** `.agents/brain/adrs/` (index: `.agents/brain/adrs/README.md`)
 
 ## Memory primitives
-- **Before architectural decisions**, read `.brain/adrs/` newest-first.
+- **Before architectural decisions**, read `.agents/brain/adrs/` newest-first.
   If your proposed change conflicts with an `Accepted` ADR, write a new
   ADR superseding it; don't silently override.
 ```
@@ -153,7 +153,7 @@ Add the architectural-impact checkbox to `.github/pull_request_template.md`:
 ```markdown
 ## Architectural impact
 - [ ] No architectural change (no ADR needed)
-- [ ] Architectural change — ADR added at: `.brain/adrs/NNNN-*.md`
+- [ ] Architectural change — ADR added at: `.agents/brain/adrs/NNNN-*.md`
 - [ ] Architectural change — ADR exemption granted by: [name]
       Reason: [why no ADR]
 ```
@@ -164,16 +164,16 @@ Optionally add the auto-detection CI workflow from `continuous-learning-loop.md`
 
 One paragraph. Post in #engineering:
 
-> We've added `.brain/adrs/` for architectural decisions. New decisions that change framework / DB / deployment / auth / module boundaries get an ADR alongside the PR. The PR template has a checkbox to remind. We've backfilled 5 historical ones (Postgres, Cloud Run, Next.js, Auth0, monorepo). Format is MADR 4.0.0 — see `.brain/adrs/README.md`. AGENTS.md now points to this folder so LLM agents read it before architectural changes.
+> We've added `.agents/brain/adrs/` for architectural decisions. New decisions that change framework / DB / deployment / auth / module boundaries get an ADR alongside the PR. The PR template has a checkbox to remind. We've backfilled 5 historical ones (Postgres, Cloud Run, Next.js, Auth0, monorepo). Format is MADR 4.0.0 — see `.agents/brain/adrs/README.md`. AGENTS.md now points to this folder so LLM agents read it before architectural changes.
 
 Don't send a 500-word memo — short, factual, links.
 
 ## Verification checklist
 
-- [ ] `.brain/adrs/` exists with `README.md` index
+- [ ] `.agents/brain/adrs/` exists with `README.md` index
 - [ ] `0001-record-architecture-decisions.md` is `Accepted`
 - [ ] 3-5 backfill ADRs landed, each marked retroactive in the date line
-- [ ] AGENTS.md `Where to find things` references `.brain/adrs/`
+- [ ] AGENTS.md `Where to find things` references `.agents/brain/adrs/`
 - [ ] AGENTS.md `Memory primitives` instructs newest-first reading
 - [ ] `.github/pull_request_template.md` has architectural-impact checkbox
 - [ ] Team brief sent

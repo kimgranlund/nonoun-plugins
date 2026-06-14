@@ -4,7 +4,7 @@ date: 2026-05-06
 
 # repo-ops — Reference Index
 
-_Authoritative manifest of reference files. v1.7.0 — released 2026-05-02 (skill-stewardship as co-equal artifact class; harvest+import flow operations; +4 audit-patterns; v1.6 added findings-index readout + postmortem trigger rules; v1.5 introduced `.brain/` layout + prose-and-writing genre axis)._
+_Authoritative manifest of reference files. v1.7.0 — released 2026-05-02 (skill-stewardship as co-equal artifact class; harvest+import flow operations; +4 audit-patterns; v1.6 added findings-index readout + postmortem trigger rules; v1.5 introduced `.agents/brain/` layout + prose-and-writing genre axis)._
 
 ## The five promises
 
@@ -17,7 +17,7 @@ The artifacts compound, not the agents. Agents stay deterministic; humans curate
 | 3 | Less-prone-to-staleness | `audit-patterns/staleness-tooling.md`, `audit-patterns/stale-content.md`, `audit-patterns/format-hygiene.md`, `audit-patterns/spec-dating-sweep.md`, `audit-patterns/archive-link-sweep.md`, `audit-patterns/browser-bundle-node-imports.md` |
 | 4 | Self-healing | `recipes/self-healing-hooks.md`, `recipes/recommend-then-validate.md`, `audit-patterns/lockstep-versioning.md`, `audit-patterns/browser-bundle-node-imports.md` |
 | 5 | Continuously-learning indefinitely (declarative + procedural memory) | `recipes/continuous-learning-loop.md`, `recipes/findings-index-readout.md`, `recipes/skill-stewardship-loop.md`, `audit-patterns/memory-fragmentation.md`, `audit-patterns/audit-history-ledger.md`, `doc-types/adr-pattern.md`, `doc-types/postmortem-pattern.md` |
-| — | **Reliability dial** (cross-cutting) | `guidance/reliability-dial.md` (configures every trip-wire's threshold via `.brain/config.toml`) |
+| — | **Reliability dial** (cross-cutting) | `guidance/reliability-dial.md` (configures every trip-wire's threshold via `.agents/brain/config.toml`) |
 | — | **Flow operations** (cross-cutting) | `recipes/harvest-repo-brain.md`, `recipes/import-repo-brain-harvest.md` (bridge brain matter into agent memory + portable bundles) |
 
 ## Status legend
@@ -62,16 +62,16 @@ The artifacts compound, not the agents. Agents stay deterministic; humans curate
 
 | Status | Path | Purpose | Promise |
 | --- | --- | --- | --- |
-| ✅ | `audit-patterns/archive-link-sweep.md` | Depth-aware path rewrites after cross-tree doc moves (e.g. docs/X.md → .brain/archive/Y.md); per-file `(old, new)` tuples in Python | 1, 3 |
-| ✅ | `audit-patterns/audit-history-ledger.md` | Persistent JSON record per audit run (`.brain/audit-history/`); SOC2-friendly | 5 |
+| ✅ | `audit-patterns/archive-link-sweep.md` | Depth-aware path rewrites after cross-tree doc moves (e.g. docs/X.md → .agents/brain/archive/Y.md); per-file `(old, new)` tuples in Python | 1, 3 |
+| ✅ | `audit-patterns/audit-history-ledger.md` | Persistent JSON record per audit run (`.agents/brain/audit-history/`); SOC2-friendly | 5 |
 | ✅ | `audit-patterns/browser-bundle-node-imports.md` | Top-level static `import 'node:*'` in modules reachable from browser bundles; Vite's externalization stub throws on property access at module init. Discriminating grep + dual-mode fix pattern from chat-ui §72 follow-up | 3, 4 |
 | ✅ | `audit-patterns/changelog-unreleased-bloat.md` | After release cuts, `[Unreleased]` blocks accumulate stale promoted-content; periodic clear | 1, 3 |
 | ✅ | `audit-patterns/coverage-gaps.md` | Missing canonical files (3-tier rubric: required / conditional / advisory) | 1, 5 |
-| ✅ | `audit-patterns/entry-file-coverage.md` | Entry files exist, well-formed, point at `.brain/` | 1 |
+| ✅ | `audit-patterns/entry-file-coverage.md` | Entry files exist, well-formed, point at `.agents/brain/` | 1 |
 | ✅ | `audit-patterns/format-hygiene.md` | Form checks: dates, frontmatter, status, severity (precondition for staleness) | 3 |
 | ✅ | `audit-patterns/lockstep-versioning.md` | Multi-package monorepo pre-1.0 caret-lock trap; coordinated bumps + CI gate | 4, 5 |
 | ✅ | `audit-patterns/memory-fragmentation.md` | Scattered ADRs, missing memory-primitives section in AGENTS.md | 5 |
-| ✅ | `audit-patterns/orphan-detection.md` | Files in `.brain/` or `docs/` not reachable from any entry (transitive closure) | 1 |
+| ✅ | `audit-patterns/orphan-detection.md` | Files in `.agents/brain/` or `docs/` not reachable from any entry (transitive closure) | 1 |
 | ✅ | `audit-patterns/pointer-validation.md` | Cross-references resolve to real files | 1, 3 |
 | ✅ | `audit-patterns/redundancy-detection.md` | Drift between CLAUDE.md/AGENTS.md; repeated commands; repeated facts | 1 |
 | ✅ | `audit-patterns/spec-dating-sweep.md` | Specs without `date:` frontmatter or `_Last reviewed:_` are invisible to staleness detection; backfill from git log | 3 |
@@ -85,23 +85,23 @@ The artifacts compound, not the agents. Agents stay deterministic; humans curate
 | --- | --- | --- | --- |
 | ✅ | `guidance/context-budget.md` | Token math, 200-line ceiling, layered docs, compression recipe | 2 |
 | ✅ | `guidance/llm-doc-writing.md` | Anthropic <200-line guidance + GitHub Blog 2,500-repo empirical findings | 2 |
-| ✅ | `guidance/reliability-dial.md` | `.brain/config.toml` strictness (lax / normal / strict) + git-sync (shared / local-only); per-trip-wire threshold routing | cross-cutting |
+| ✅ | `guidance/reliability-dial.md` | `.agents/brain/config.toml` strictness (lax / normal / strict) + git-sync (shared / local-only); per-trip-wire threshold routing | cross-cutting |
 
 ### recipes/ (15)
 
 | Status | Path | Purpose | Promise |
 | --- | --- | --- | --- |
 | ✅ | `recipes/adr-introduction.md` | Retrofit ADRs into an established repo (anti-burnout) | 5 |
-| ✅ | `recipes/audit-existing-repo.md` | Full audit pass with 7-step procedure + `.brain/` migration recipe | All |
+| ✅ | `recipes/audit-existing-repo.md` | Full audit pass with 7-step procedure + `.agents/brain/` migration recipe | All |
 | ✅ | `recipes/audit-recall-eval.md` | **Audit-recall eval**: planted-defect fixture (10 categories) + recall-per-category measurement — does the audit catch what it claims? Ships as spec+procedure (run in target repo) | 4, 5 |
 | ✅ | `recipes/cold-start-harvest.md` | Importing existing learnings (inventory → triage → archive-not-delete → human-reviewed supersession) | All |
 | ✅ | `recipes/concurrent-learnings-merge.md` | Multi-contributor sync-and-reason: timestamp ADRs, AGENTS.md changesets, post-merge redundancy scan, supersession protocol | 5 |
 | ✅ | `recipes/continuous-learning-loop.md` | Anthropic iterate pattern + ADR-on-change + postmortem-on-incident | 5 |
 | ✅ | `recipes/external-reference-verification.md` | WebFetch-powered probe for cited URLs (`autoresearch` DNA); catches live-link-stale-content | 3 |
-| ✅ | `recipes/findings-index-readout.md` | Close the read side of the audit ledger — `.brain/findings/INDEX.md` aggregates all `findings[]` across `audit-history/*.json`; status taxonomy with auto-promotion to CLOSED-LATER; hand-curated `## Graduations` section | 5 |
-| ✅ | `recipes/greenfield-setup.md` | Day-one setup with `.brain/` layout that ships all 5 promises from first commit | All |
-| ✅ | `recipes/harvest-repo-brain.md` | **Flow operation**: lift findings from `.brain/` + `docs/conventions/` into agent memory at `~/.claude/projects/<repo>/memory/` and (optionally) emit a portable bundle for cross-repo ingestion | Cross-cutting |
-| ✅ | `recipes/import-repo-brain-harvest.md` | **Flow operation**: inverse of harvest. Consumes a portable bundle into this repo's `.brain/` then runs the harvest pipeline so merged content propagates to memory + harness | Cross-cutting |
+| ✅ | `recipes/findings-index-readout.md` | Close the read side of the audit ledger — `.agents/brain/findings/INDEX.md` aggregates all `findings[]` across `audit-history/*.json`; status taxonomy with auto-promotion to CLOSED-LATER; hand-curated `## Graduations` section | 5 |
+| ✅ | `recipes/greenfield-setup.md` | Day-one setup with `.agents/brain/` layout that ships all 5 promises from first commit | All |
+| ✅ | `recipes/harvest-repo-brain.md` | **Flow operation**: lift findings from `.agents/brain/` + `docs/conventions/` into agent memory at `~/.claude/projects/<repo>/memory/` and (optionally) emit a portable bundle for cross-repo ingestion | Cross-cutting |
+| ✅ | `recipes/import-repo-brain-harvest.md` | **Flow operation**: inverse of harvest. Consumes a portable bundle into this repo's `.agents/brain/` then runs the harvest pipeline so merged content propagates to memory + harness | Cross-cutting |
 | ✅ | `recipes/memory-organization.md` | ADR vs runbook vs postmortem vs decisions decision-tree | 5 |
 | ✅ | `recipes/recommend-then-validate.md` | Two-agent fix pattern (Yegge); required for `strict` strictness | 4 |
 | ✅ | `recipes/self-healing-hooks.md` | Pre-commit + GitHub Actions + auto-archive workflow | 4 |
@@ -115,7 +115,7 @@ The artifacts compound, not the agents. Agents stay deterministic; humans curate
 
 ## Layout (v1.5)
 
-The canonical artifact home is `.brain/`:
+The canonical artifact home is `.agents/brain/`:
 
 ```text
 repo-root/
@@ -128,7 +128,7 @@ repo-root/
 ├── CHANGELOG.md
 ├── PLAN.md (optional)
 ├── ROADMAP.md (optional)
-├── .brain/
+├── .agents/brain/
 │   ├── config.toml       # was .repo-ops.toml
 │   ├── adrs/             # numbered ADRs
 │   ├── postmortems/      # blameless incident write-ups

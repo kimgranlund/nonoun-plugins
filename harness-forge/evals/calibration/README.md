@@ -1,9 +1,9 @@
 # Calibration — planted-defect fixtures for the gates and the judge
 
-Each fixture under `fixtures/` is a minimal, otherwise-clean `.harness/` tree planting **one headline defect** (plus, where noted, secondary tells for judgment calibration). Two consumers:
+Each fixture under `fixtures/` is a minimal, otherwise-clean `.agents/harness/` tree planting **one headline defect** (plus, where noted, secondary tells for judgment calibration). Two consumers:
 
 1. **The mechanical gates** — `check_fixtures.py` (run by CI) asserts the right `bin/` gate **fails** each fixture and, as the directionality control, that a freshly seeded + wired project **passes**. A gate that cannot catch its planted defect — or that fails everything — is broken.
-2. **The judge** — `harness-evaluate` / `harness-auditor` runs against each fixture cold (point them at the fixture's `.harness/` only; this README is the answer key and must NOT be in their context). Baselines live in `runs/`.
+2. **The judge** — `harness-evaluate` / `harness-auditor` runs against each fixture cold (point them at the fixture's `.agents/harness/` only; this README is the answer key and must NOT be in their context). Baselines live in `runs/`.
 
 ## The answer key
 
