@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.9 — 2026-06-14
+
+- **Declare `stateNamespace: .agents/harness`** in `plugin.json` — the durable-state namespace this plugin writes (the lattice under `.agents/harness/`), now a *checked* property: plugins-factory's integration-contract J check (0.2.49) asserts the declaration sits under `.agents/` and matches what `bin/` actually writes (D-15 mechanized, no longer prose-only). No behavior change; KERNEL_VERSION unchanged. plugin.json 0.5.8 → 0.5.9.
+
 ## 0.5.8 — 2026-06-14
 
 - **survey.py recognizes the planning/tracking docs it was missing (`GOALS` · `ISSUES` · `BACKLOG`), with infix matching.** The assess inventory caught `CHANGELOG`→ledger and `ROADMAP`/`PLAN`/`TODO`→spec, but silently missed `GOALS.md`, `ISSUES.md`, and `BACKLOG.md` — first-class planning docs many repos (incl. this catalog, in both `docs/ISSUES.md` and `docs/PLAN.md`) lean on. Now the `roadmap` signal also matches `goals`/`objectives`/`backlog` (→ spec, candidate work), and a new `issues` signal (→ **spec + ledger**) maps an issue/decision tracker to both the open work *and* the decision/resolved-incident trail it carries (an `ISSUES.md` of `I-n`/`D-n`/`R-n` is genuinely both). Matching is upgraded from exact-stem to **word-delimited infix** (`_word`): `library-roadmap.md`, `release-plan.md`, `open-issues.md` are now caught, not just the bare stem — and it is **doc-extension-guarded** (`.md`/`.markdown`/`.txt`/`.rst`/none) so a code file like `plan.py` is never misread as a planning doc (the old exact-stem `_stem("plan")` *would* have mis-flagged it). The `Key docs` line now surfaces `PLAN/ROADMAP` + `ISSUES`; `references/project-survey.md`'s doc→layer table + the `/harness-assess` read-list are updated to match. selftest extended (GOALS/ISSUES/BACKLOG + an infix `*-roadmap` → spec(+ledger); `plan.py` stays source). No kernel change (KERNEL_VERSION stays 0.5.2). plugin.json 0.5.7 → 0.5.8.

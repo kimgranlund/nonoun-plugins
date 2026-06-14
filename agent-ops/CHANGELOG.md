@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.15] — 2026-06-14
+
+### Changed
+
+- **Declare `stateNamespace: .agents/brain`** in `plugin.json` — the durable-state namespace this plugin writes (the repo brain under `.agents/brain/`). plugins-factory's integration-contract J check (0.2.49) validates the declaration is under `.agents/` and matches what `bin/` actually writes (D-15 mechanized). No behavior change.
+
 ## [0.1.14] — 2026-06-13
 
 ### Changed

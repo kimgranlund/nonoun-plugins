@@ -1,6 +1,7 @@
 {
   "name": "agent-ops",
-  "version": "0.1.14",
+  "version": "0.1.15",
+  "stateNamespace": ".agents/brain",
   "description": "Author, operate, and review full-spectrum agentic systems and the repos they live in \u2014 agent loops & teams, the control plane, harness & context engineering, agentic-workflow UX, and repo memory/docs (AGENTS.md \u00b7 README \u00b7 CHANGELOG \u00b7 ROADMAP \u00b7 ADRs) + architecture review \u2014 with a named-practitioner council, verifiable gates (loop blueprints, audit ledgers), and a repo-memory MCP for per-instance retrieval over a repo's agent docs + audit ledger.",
   "author": {
     "name": "Kim",

@@ -233,6 +233,40 @@ def check_host_resolution(plugin_dir):
     return out
 
 
+def _bin_blob(plugin_dir):
+    bd = os.path.join(plugin_dir, "bin")
+    parts = []
+    if os.path.isdir(bd):
+        for r, _, files in os.walk(bd):
+            for f in files:
+                try:
+                    parts.append(open(os.path.join(r, f), encoding="utf-8", errors="ignore").read())
+                except OSError:
+                    pass
+    return "\n".join(parts)
+
+
+def check_namespace(plugin_dir):
+    """J — D-15: a plugin MAY declare its durable-state namespace (plugin.json `stateNamespace`); if it does it
+    must sit under `.agents/` (the state umbrella, distinct from the `.claude/` config namespace) AND match what
+    its bin/ actually writes — the declaration can't drift from reality. Absence = stateless (the common case)."""
+    out = []
+    pj = os.path.join(plugin_dir, ".claude-plugin", "plugin.json")
+    try:
+        ns = json.load(open(pj, encoding="utf-8")).get("stateNamespace")
+    except (OSError, json.JSONDecodeError):
+        return out
+    if ns is None:
+        return out
+    if not (isinstance(ns, str) and ns.startswith(".agents/")):
+        out.append(("FAIL", "stateNamespace {!r} must be a string under .agents/ (the D-15 state umbrella, "
+                            "distinct from the .claude/ config namespace)".format(ns)))
+    elif ns not in _bin_blob(plugin_dir):
+        out.append(("FAIL", "stateNamespace {!r} is declared but no bin/ script writes there — the declaration "
+                            "drifted from what the plugin actually does".format(ns)))
+    return out
+
+
 def check_plugin(plugin_dir, name=None, behavioral=False):
     """Return (findings, name). findings: list of (severity, message)."""
     name = name or os.path.basename(os.path.abspath(plugin_dir))
@@ -245,6 +279,7 @@ def check_plugin(plugin_dir, name=None, behavioral=False):
                 findings += check_command(os.path.join(cmd_dir, f), skills, agents)
     findings += check_hooks_static(plugin_dir)
     findings += check_host_resolution(plugin_dir)
+    findings += check_namespace(plugin_dir)
     if behavioral:
         findings += check_hook_behavioral(plugin_dir, name)
     return findings, name
@@ -347,6 +382,26 @@ def cmd_selftest():
         findings, _ = check_plugin(tmp)
         expect(sum(1 for s, m in findings if s == "FAIL") == 2, "whole-plugin FAIL count wrong: {}".format(findings))
 
+        # J — namespace: a declared stateNamespace must be under .agents/ AND match what bin/ actually writes.
+        os.makedirs(os.path.join(tmp, ".claude-plugin"), exist_ok=True)
+        os.makedirs(os.path.join(tmp, "bin"), exist_ok=True)
+        open(os.path.join(tmp, "bin", "state.py"), "w").write('STATE = ".agents/myplug/state.json"\n')
+
+        def set_ns(ns):
+            d = {"name": "x", "version": "0.0.1"}
+            if ns is not None:
+                d["stateNamespace"] = ns
+            open(os.path.join(tmp, ".claude-plugin", "plugin.json"), "w").write(json.dumps(d))
+
+        set_ns(".agents/myplug")
+        expect(not check_namespace(tmp), "a valid .agents/ stateNamespace matching bin/ was failed")
+        set_ns(".claude/myplug")
+        expect(any(s == "FAIL" and "under .agents/" in m for s, m in check_namespace(tmp)), "a .claude/ stateNamespace (wrong umbrella) was not failed")
+        set_ns(".agents/elsewhere")
+        expect(any(s == "FAIL" and "drifted" in m for s, m in check_namespace(tmp)), "a stateNamespace not matching bin/ writes (drift) was not failed")
+        set_ns(None)
+        expect(not check_namespace(tmp), "a stateless plugin (no stateNamespace) was failed")
+
     # I (behavioral) — a hook that exits 0 + advises PASSES; one that exits 0 but emits a block decision, or
     # exits non-zero, FAILS. Self-authored fixtures (the selftest runs its OWN code → no --trusted-source needed).
     with tempfile.TemporaryDirectory() as tmp:
@@ -377,7 +432,8 @@ def cmd_selftest():
           "inert command + a >4000-char fat command FAIL; advisory-hook static — a PostToolUse hook passes, a bundled "
           "PreToolUse FAILS; host-awareness — a bare bin/ hook command FAILS, a ${CLAUDE_PLUGIN_ROOT}-rooted one passes; "
           "advisory-hook behavioral — an exit-0 advising hook passes, an exit-0-but-emits-block hook + a non-zero-exit "
-          "hook FAIL, gated by the I-12 trust interlock; whole-plugin aggregates)")
+          "hook FAIL, gated by the I-12 trust interlock; namespace — a declared stateNamespace must be under .agents/ "
+          "AND match what bin/ writes, a stateless plugin declares nothing; whole-plugin aggregates)")
     return 0
 
 
