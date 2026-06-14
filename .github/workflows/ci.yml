@@ -126,6 +126,7 @@ jobs:
         run: |
           python3 "$PF/bin/check-integration-contract.py" selftest
           python3 "$PF/bin/check-integration-contract.py" marketplace .
+          python3 "$PF/bin/check-integration-contract.py" marketplace . --trusted-source   # behavioral: executes each --hook on worst-case input, asserts exit 0 + no block-decision (I-12 interlock — trusted/CI only)
 
       - name: context-cost audit (P6 always-on context tax — selftest + per-plugin record + live MCP tool-defs)
         run: |

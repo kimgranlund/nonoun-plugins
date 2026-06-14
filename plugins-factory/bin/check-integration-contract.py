@@ -46,6 +46,26 @@ _FRONTMATTER_RE = re.compile(r"^---\n.*?\n---\n", re.DOTALL)
 # I — advisory hook (structural): only PreToolUse can DENY a tool call, so a bundled PreToolUse is blocking.
 DENYING_EVENTS = {"PreToolUse"}
 
+# I — advisory hook (BEHAVIORAL): execute each --hook on finding-triggering input; it must exit 0 AND emit no
+# block/deny decision. Executes plugin code, so it rides the I-12 exec interlock (the check-mcp-liveness pattern).
+TRUST_FLAG = "--trusted-source"
+TRUST_ENV = "PLUGINS_FACTORY_TRUST_EXEC"
+_BLOCK_RE = re.compile(r'"(?:decision|permissionDecision)"\s*:\s*"(?:block|deny)"|"continue"\s*:\s*false')
+# per-plugin worst-case fixture: (filename, content, file_path_override). Each hook reads differently — content,
+# disk, or just the path string — so one payload can't trigger a finding in all; an unknown plugin gets the generic.
+_GENERIC_FIX = ("contract-probe.md", "We embody the hero archetype; our mission statement is to grow revenue 30%.", None)
+_HOOK_FIXTURES = {
+    "brand-forge":     ("brand.md", "We embody the hero archetype. Our mission statement: win the category.", None),
+    "product-forge":   ("prd.md", "Our product strategy is to grow revenue 30%. Make it hard to cancel.", None),
+    "plugins-factory": ("plugin.json", '{"name":"x","version":"not-semver"}', None),
+    "agent-ops":       ("CLAUDE.md", "# proj\n" + "\n".join("- detail line {}".format(i) for i in range(40)), None),
+    "harness-forge":   (None, None, ".agents/harness/specs/first-slice.md"),   # path-shape only (plural layer dir advisory)
+}
+
+
+def _trust_ok(argv):
+    return TRUST_FLAG in argv or os.environ.get(TRUST_ENV, "") not in ("", "0", "false", "False")
+
 
 def _strip_frontmatter(text):
     return _FRONTMATTER_RE.sub("", text, count=1)
@@ -126,7 +146,61 @@ def check_hooks_static(plugin_dir):
     return out
 
 
-def check_plugin(plugin_dir, name=None):
+def _commands_from_hooks(plugin_dir):
+    hp = os.path.join(plugin_dir, "hooks", "hooks.json")
+    cmds = []
+    if os.path.isfile(hp):
+        try:
+            h = json.load(open(hp, encoding="utf-8"))
+            for groups in ((h.get("hooks", h) or {}).values() if isinstance(h, dict) else []):
+                for g in (groups if isinstance(groups, list) else [groups]):
+                    for hk in (g.get("hooks", []) if isinstance(g, dict) else []):
+                        if isinstance(hk, dict) and hk.get("command"):
+                            cmds.append(hk["command"])
+        except (OSError, json.JSONDecodeError):
+            pass
+    return cmds
+
+
+def check_hook_behavioral(plugin_dir, name):
+    """I (behavioral) — run each bundled --hook on worst-case (finding-triggering) input; it must exit 0 AND
+    emit NO block/deny decision. Catches the exit-0-but-emits-a-block-decision escape the static pass can't.
+    EXECUTES plugin code — callers gate this on the I-12 --trusted-source interlock."""
+    import subprocess
+    import tempfile
+    out = []
+    cmds = _commands_from_hooks(plugin_dir)
+    if not cmds:
+        return out
+    root = os.path.abspath(plugin_dir)
+    fname, content, fp_override = _HOOK_FIXTURES.get(name, _GENERIC_FIX)
+    env = dict(os.environ, CLAUDE_PLUGIN_ROOT=root)
+    with tempfile.TemporaryDirectory() as td:
+        fp = os.path.join(td, fname) if fname else fp_override
+        if fname:
+            open(fp, "w", encoding="utf-8").write(content or "")
+        payload = json.dumps({"session_id": "contract-gate", "hook_event_name": "PostToolUse", "tool_name": "Write",
+                              "tool_input": {"file_path": fp, "content": content or ""}, "tool_response": {"success": True}})
+        for cmd in cmds:
+            real = cmd.replace("${CLAUDE_PLUGIN_ROOT}", root)
+            try:
+                r = subprocess.run(real, shell=True, input=payload, capture_output=True, text=True, timeout=25, env=env)
+            except (subprocess.SubprocessError, OSError) as e:
+                out.append(("FAIL", "bundled hook did not run ({}): {}".format(cmd[:50], e)))
+                continue
+            if r.returncode != 0:
+                out.append(("FAIL", "bundled hook exited {} on finding-triggering input — a non-zero PostToolUse is "
+                                    "blocking feedback; a bundled hook must be advisory ({})".format(r.returncode, cmd[:50])))
+            if _BLOCK_RE.search(r.stdout or ""):
+                out.append(("FAIL", "bundled hook emitted a BLOCK/DENY decision — advisory hooks warn, never block "
+                                    "(the exit-0-but-blocks escape) ({})".format(cmd[:50])))
+            if not ((r.stdout or "") + (r.stderr or "")).strip():
+                out.append(("WARN", "hook produced no output on its worst-case fixture — exit-0 verified, but not "
+                                    "under a finding (the fixture may have drifted from the hook's smells) ({})".format(cmd[:50])))
+    return out
+
+
+def check_plugin(plugin_dir, name=None, behavioral=False):
     """Return (findings, name). findings: list of (severity, message)."""
     name = name or os.path.basename(os.path.abspath(plugin_dir))
     findings = []
@@ -137,6 +211,8 @@ def check_plugin(plugin_dir, name=None):
             if f.endswith(".md"):
                 findings += check_command(os.path.join(cmd_dir, f), skills, agents)
     findings += check_hooks_static(plugin_dir)
+    if behavioral:
+        findings += check_hook_behavioral(plugin_dir, name)
     return findings, name
 
 
@@ -151,13 +227,13 @@ def _report(name, findings):
     return len(fails)
 
 
-def cmd_plugin(plugin_dir):
-    findings, name = check_plugin(plugin_dir)
+def cmd_plugin(plugin_dir, behavioral=False):
+    findings, name = check_plugin(plugin_dir, behavioral=behavioral)
     rc = _report(name, findings)
     return 1 if rc else 0
 
 
-def cmd_marketplace(root):
+def cmd_marketplace(root, behavioral=False):
     mp = os.path.join(root, ".claude-plugin", "marketplace.json")
     try:
         plugins = json.load(open(mp, encoding="utf-8")).get("plugins", [])
@@ -171,10 +247,11 @@ def cmd_marketplace(root):
         if not os.path.isdir(d):
             continue
         n += 1
-        findings, name = check_plugin(d, p.get("name"))
+        findings, name = check_plugin(d, p.get("name"), behavioral=behavioral)
         total_fail += _report(name, findings)
-    print("RESULT: {} (integration-contract over {} plugin(s){})".format(
-        "PASS" if total_fail == 0 else "FAIL", n, "" if total_fail == 0 else " — {} violation(s)".format(total_fail)))
+    note = " + behavioral hook exec" if behavioral else " (static; pass --trusted-source for the behavioral hook check)"
+    print("RESULT: {} (integration-contract over {} plugin(s){}{})".format(
+        "PASS" if total_fail == 0 else "FAIL", n, note, "" if total_fail == 0 else " — {} violation(s)".format(total_fail)))
     return 1 if total_fail else 0
 
 
@@ -227,25 +304,49 @@ def cmd_selftest():
         findings, _ = check_plugin(tmp)
         expect(sum(1 for s, m in findings if s == "FAIL") == 2, "whole-plugin FAIL count wrong: {}".format(findings))
 
+    # I (behavioral) — a hook that exits 0 + advises PASSES; one that exits 0 but emits a block decision, or
+    # exits non-zero, FAILS. Self-authored fixtures (the selftest runs its OWN code → no --trusted-source needed).
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, "bin"))
+        os.makedirs(os.path.join(tmp, "hooks"))
+
+        def hook_plugin(body):
+            open(os.path.join(tmp, "bin", "hook.py"), "w").write("import sys, json\n" + body)
+            open(os.path.join(tmp, "hooks", "hooks.json"), "w").write(json.dumps(
+                {"hooks": {"PostToolUse": [{"matcher": "Write|Edit", "hooks": [{"type": "command",
+                 "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/bin/hook.py" --hook'}]}]}}))
+
+        hook_plugin("sys.stdin.read(); print('advice: consider X'); sys.exit(0)")               # advisory → PASS
+        expect(not any(s == "FAIL" for s, m in check_hook_behavioral(tmp, "x")), "an advisory hook (exit 0, advises) was failed")
+        hook_plugin("sys.stdin.read(); print(json.dumps({'decision': 'block'})); sys.exit(0)")  # exit 0 BUT blocks → FAIL
+        expect(any(s == "FAIL" and "BLOCK/DENY" in m for s, m in check_hook_behavioral(tmp, "x")), "an exit-0-but-blocks hook was not failed")
+        hook_plugin("sys.stdin.read(); sys.exit(2)")                                            # non-zero → FAIL
+        expect(any(s == "FAIL" and "exited 2" in m for s, m in check_hook_behavioral(tmp, "x")), "a non-zero-exit hook was not failed")
+    expect(_trust_ok([TRUST_FLAG]), "interlock: --trusted-source did not authorize the behavioral check")
+    expect(not _trust_ok([]), "interlock: the behavioral check ran without trust")
+
     if fails:
         sys.stderr.write("check-integration-contract selftest: FAIL\n")
         for f in fails:
             sys.stderr.write("  - {}\n".format(f))
         return 1
-    print("check-integration-contract selftest: OK (router-thinness — a thin skill/bin-routing command passes, "
-          "an inert command + a >4000-char fat command FAIL; advisory-hook — a PostToolUse hook passes, a bundled "
-          "PreToolUse blocking hook FAILS; whole-plugin aggregates)")
+    print("check-integration-contract selftest: OK (router-thinness — a thin skill/bin-routing command passes, an "
+          "inert command + a >4000-char fat command FAIL; advisory-hook static — a PostToolUse hook passes, a bundled "
+          "PreToolUse FAILS; advisory-hook behavioral — an exit-0 advising hook passes, an exit-0-but-emits-block hook "
+          "+ a non-zero-exit hook FAIL, gated by the I-12 trust interlock; whole-plugin aggregates)")
     return 0
 
 
 def main(argv):
-    if len(argv) == 1 and argv[0] == "selftest":
+    behavioral = _trust_ok(argv)                          # I-12: the exec (behavioral) hook check is opt-in; static stays open
+    args = [a for a in argv if a != TRUST_FLAG]
+    if len(args) == 1 and args[0] == "selftest":
         return cmd_selftest()
-    if len(argv) == 2 and argv[0] == "plugin":
-        return cmd_plugin(argv[1])
-    if len(argv) == 2 and argv[0] == "marketplace":
-        return cmd_marketplace(argv[1])
-    print("usage: check-integration-contract.py {plugin <dir> | marketplace <dir> | selftest}", file=sys.stderr)
+    if len(args) == 2 and args[0] == "plugin":
+        return cmd_plugin(args[1], behavioral)
+    if len(args) == 2 and args[0] == "marketplace":
+        return cmd_marketplace(args[1], behavioral)
+    print("usage: check-integration-contract.py {plugin <dir> | marketplace <dir> | selftest} [--trusted-source]", file=sys.stderr)
     return 2
 
 
