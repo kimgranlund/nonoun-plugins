@@ -167,30 +167,32 @@ def survey(root):
     for layer in LAYER_ORDER:
         if layer == "capability":
             ev = (manifests[:3] + [f"{n} {l} files" for l, n in sorted(lang_counts.items(), key=lambda kv: -kv[1])[:2]])
-            layers[layer] = ("PRESENT" if has_source else "ABSENT", ev)
+            layers[layer] = {"strength": "strong" if has_source else "none", "evidence": ev}
             continue
         feeds = LAYER_FEEDS[layer]
         present_keys = [k for k in feeds if k in found]
         ev = sorted({p for k in present_keys for p in found[k]})[:4]
-        # PRESENT if a *strong/explicit* signal is there; PARTIAL if only an incidental one (architecture/docs/git);
+        # strength = how LOUD the filename signal is: strong if an explicit signal matched, incidental if only a weak
+        # one (architecture/docs/git/adr), none if nothing matched. The PRESENT/ABSENT VERDICT is the model's (I-14).
         weak = {"architecture", "docs_dir", "git", "adr"}
         strong = [k for k in present_keys if k not in weak]
         if strong:
-            status = "PRESENT"
+            strength = "strong"
         elif present_keys:
-            status = "PARTIAL"
+            strength = "incidental"
         else:
-            status = "ABSENT"
-        layers[layer] = (status, ev)
+            strength = "none"
+        layers[layer] = {"strength": strength, "evidence": ev}
     return {
         "root": root,
         "stack": {"languages": dict(sorted(lang_counts.items(), key=lambda kv: -kv[1])), "manifests": sorted(set(manifests))[:6]},
         "docs": found,
         "layers": layers,
         "truncated": truncated, "unreadable": unreadable[0],
-        "_caveat": "HEURISTIC from filenames, not contents — PRESENT/PARTIAL/ABSENT is a starting map, not a verdict. "
-                   "A status can be wrong (a spec/ that's really RSpec tests; a stale docs/; policy that lives in code). "
-                   "Confirm by reading the cited evidence before treating a layer as present or a frontier as absent.",
+        "_caveat": "HEURISTIC from filenames, not contents. Per-layer `strength` (strong|incidental|none) is how loud the "
+                   "filename signal is — NOT a coverage verdict. The present-or-absent call is the model's, drawn after "
+                   "reading the cited `evidence` (a strong-strength spec/ may be RSpec tests; a none-strength policy may "
+                   "live in code). Confirm by reading before treating a layer as covered or a frontier as a true gap.",
     }
 
 
@@ -212,25 +214,26 @@ def render(s):
         line += f"{'✓' if key in s['docs'] else '✗'} {lab}   "
     out.append(line.rstrip())
     out.append("")
-    out.append("Lattice-layer signal (HEURISTIC from filenames — a starting map, NOT a verdict; ● strong / ◐ incidental / ○ none).")
-    out.append("PRESENT suggests the project may already carry this layer — confirm by READING the cited evidence before")
-    out.append("treating a cell as mature or a frontier as absent (a spec/ may be RSpec tests; policy may live in code):")
+    out.append("Lattice-layer SIGNAL STRENGTH (filename match only — ● strong / ◐ incidental / ○ none). Evidence, NOT a verdict:")
+    out.append("whether a layer is truly COVERED is yours to draw after READING the cited evidence (a strong ● spec/ may be")
+    out.append("RSpec tests; an ○ policy may live in code). Strength = how loud the filename signal is, not coverage:")
     for layer in LAYER_ORDER:
-        status, ev = s["layers"][layer]
-        mark = {"PRESENT": "●", "PARTIAL": "◐", "ABSENT": "○"}[status]
+        lv = s["layers"][layer]
+        strength, ev = lv["strength"], lv["evidence"]
+        mark = {"strong": "●", "incidental": "◐", "none": "○"}[strength]
         ev_s = f"  ← {', '.join(ev)}" if ev else ""
-        out.append(f"  {mark} {layer:<11} {status:<8}{ev_s}")
+        out.append(f"  {mark} {layer:<11} {strength:<11}{ev_s}")
     out.append("")
     if s.get("truncated") or s.get("unreadable"):
         notes = []
         if s.get("truncated"):
-            notes.append(f"the walk hit its {MAX_ENTRIES:,}-entry / depth-{MAX_DEPTH} budget and stopped — this map is PARTIAL")
+            notes.append(f"the walk hit its {MAX_ENTRIES:,}-entry / depth-{MAX_DEPTH} budget and stopped — this map is INCOMPLETE")
         if s.get("unreadable"):
             notes.append(f"{s['unreadable']} dir(s) were unreadable and skipped (a layer may be under-reported)")
         out.append("  ⚠ coverage: " + "; ".join(notes) + ".")
         out.append("")
-    absent = [l for l in LAYER_ORDER if s["layers"][l][0] == "ABSENT"]
-    out.append(f"Frontier (ABSENT layers): {', '.join(absent) or 'none — a mature project; the frontier is the new agentic capability'}.")
+    weakest = [l for l in LAYER_ORDER if s["layers"][l]["strength"] == "none"]
+    out.append(f"Weakest signal — likely frontier, CONFIRM by reading: {', '.join(weakest) or 'none — every layer has a filename signal; the frontier is likely the new agentic capability, not a missing doc'}.")
     out.append("→ Now /harness-assess: READ the ✓ docs (don't trust the map), map them to the ontology + first spec slice, and")
     out.append("  recommend the seed (which absent layer is highest-risk, the smallest scope that yields signal, whether to wire).")
     return "\n".join(out)
@@ -262,15 +265,21 @@ def cmd_selftest():
         expect(s["stack"]["languages"].get("TypeScript") == 3, f"language count wrong: {s['stack']['languages']}")
         expect("package.json" in s["stack"]["manifests"], "manifest not detected")
         expect(not any("node_modules" in p for ps in s["docs"].values() for p in ps), "node_modules was not pruned")
-        expect(L["ontology"][0] == "PRESENT", f"ontology should be PRESENT (README+ARCH): {L['ontology']}")
-        expect(L["rubric"][0] == "PRESENT", f"rubric should be PRESENT (tests+CI): {L['rubric']}")
-        expect(L["capability"][0] == "PRESENT", f"capability should be PRESENT (src+manifest): {L['capability']}")
-        expect(L["ledger"][0] in ("PRESENT", "PARTIAL"), f"ledger should be present-ish (CHANGELOG): {L['ledger']}")
-        expect(L["methodology"][0] == "ABSENT", f"methodology should be ABSENT (no AGENTS.md): {L['methodology']}")
-        expect(L["spec"][0] in ("PARTIAL", "ABSENT"), f"spec should be partial/absent (only ARCH, no specs/): {L['spec']}")
-        expect(L["policy"][0] == "ABSENT", f"policy should be ABSENT (no SECURITY/CONTRIBUTING): {L['policy']}")
+        expect(L["ontology"]["strength"] == "strong", f"ontology should be strong (README+ARCH): {L['ontology']}")
+        expect(L["rubric"]["strength"] == "strong", f"rubric should be strong (tests+CI): {L['rubric']}")
+        expect(L["capability"]["strength"] == "strong", f"capability should be strong (src+manifest): {L['capability']}")
+        expect(L["ledger"]["strength"] in ("strong", "incidental"), f"ledger should have signal (CHANGELOG): {L['ledger']}")
+        expect(L["methodology"]["strength"] == "none", f"methodology should be none (no AGENTS.md): {L['methodology']}")
+        expect(L["spec"]["strength"] in ("incidental", "none"), f"spec should be incidental/none (only ARCH, no specs/): {L['spec']}")
+        expect(L["policy"]["strength"] == "none", f"policy should be none (no SECURITY/CONTRIBUTING): {L['policy']}")
         report = render(s)
-        expect("PROJECT SURVEY" in report and "Lattice-layer signal" in report and "Frontier" in report, "report missing sections")
+        expect("PROJECT SURVEY" in report and "SIGNAL STRENGTH" in report and "Weakest signal" in report, "report missing sections")
+        # I-14 guards: the per-layer VERDICT word is gone (strength-only — the model draws PRESENT/ABSENT after reading),
+        # and the machine shape is the {strength, evidence} object, never a bare verdict-tuple confusable with maturity.
+        expect("PRESENT" not in report and "ABSENT" not in report and "PARTIAL" not in report,
+               "render() still emits a verdict word (PRESENT/PARTIAL/ABSENT) — I-14 requires strength-only")
+        expect(all(set(s["layers"][l].keys()) == {"strength", "evidence"} for l in LAYER_ORDER),
+               "a layer value is not the {strength, evidence} object shape (I-14 JSON contract)")
 
     # a library project: the spec is a probe/-spec doc, the protocol is .d.ts/types/, the pattern is a case-study —
     # the forms the service-oriented heuristics missed until the reactive-components dogfood (0.5.2).
@@ -282,15 +291,15 @@ def cmd_selftest():
                           ("types/api.d.ts", "x"), ("docs/case-study-x.md", "x")]:
             open(os.path.join(tmp, rel), "w").write(body)
         L = survey(tmp)["layers"]
-        expect(L["spec"][0] == "PRESENT", f"a -spec.md / probes doc should make spec PRESENT: {L['spec']}")
-        expect(L["protocol"][0] == "PRESENT", f"a .d.ts / types/ should make protocol PRESENT (library API contract): {L['protocol']}")
-        expect(L["pattern"][0] == "PRESENT", f"a case-study should make pattern PRESENT: {L['pattern']}")
+        expect(L["spec"]["strength"] == "strong", f"a -spec.md / probes doc should make spec strong: {L['spec']}")
+        expect(L["protocol"]["strength"] == "strong", f"a .d.ts / types/ should make protocol strong (library API contract): {L['protocol']}")
+        expect(L["pattern"]["strength"] == "strong", f"a case-study should make pattern strong: {L['pattern']}")
 
     # a greenfield project (empty dir) → mostly ABSENT, never crashes
     with tempfile.TemporaryDirectory() as tmp:
         s = survey(tmp)
-        expect(s["layers"]["capability"][0] == "ABSENT", "empty project should have ABSENT capability")
-        expect(all(s["layers"][l][0] == "ABSENT" for l in ("rubric", "methodology", "pattern")), "empty project layers should be ABSENT")
+        expect(s["layers"]["capability"]["strength"] == "none", "empty project should have none-strength capability")
+        expect(all(s["layers"][l]["strength"] == "none" for l in ("rubric", "methodology", "pattern")), "empty project layers should be none-strength")
         render(s)  # must not raise
 
     # the walk is BOUNDED over an untrusted/huge tree (self-red-team): depth-capped, evidence-capped, no hang
@@ -312,8 +321,9 @@ def cmd_selftest():
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("survey selftest: OK (finds README/ARCH/tests/CI/CHANGELOG/manifest, prunes node_modules, counts languages, "
-          "maps present/partial/absent across all nine layers, flags the ABSENT frontier; detects library forms — a "
-          "probe/-spec doc → spec, .d.ts/types/ → protocol, a case-study → pattern; greenfield + brownfield + library all render)")
+          "reports signal-strength (strong/incidental/none) across all nine layers + the {strength,evidence} JSON shape, "
+          "flags the weakest-signal frontier, never emits a PRESENT/ABSENT verdict; detects library forms — a probe/-spec "
+          "doc → spec, .d.ts/types/ → protocol, a case-study → pattern; greenfield + brownfield + library all render)")
     return 0
 
 

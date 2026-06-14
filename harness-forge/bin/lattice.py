@@ -508,7 +508,10 @@ def scaffold(d):
             f.write("# Ephemeral per-run state (run budget + loop marker) — regenerated each /harness-run.\n"
                     "# Never commit it: a stale run/ would wedge a fresh clone's budget gate. The durable\n"
                     "# lattice (lattice.json, layer assets, signals/, ledger/) IS committed.\n"
-                    "run/\n")
+                    "run/\n"
+                    "\n"
+                    "# OS / editor cruft — never belongs in committed lattice state (a `git add .agents/` magnet).\n"
+                    ".DS_Store\n")
         made.append(".gitignore")
     return made
 
@@ -798,8 +801,9 @@ def selftest():
             expect(os.path.isdir(os.path.join(td, layer)), f"scaffold did not create layer dir {layer}/")
         expect(os.path.isdir(os.path.join(td, "signals")) and os.path.isdir(os.path.join(td, "ledger")), "scaffold missed signals/ or ledger/")
         expect("naming.schema.json" in made and os.path.isfile(os.path.join(td, "naming.schema.json")), "scaffold did not copy the naming schema")
-        gi = os.path.join(td, ".gitignore")                # commit-vs-ignore hygiene: run/ is ignored, the rest committed
-        expect(os.path.isfile(gi) and "run/" in open(gi, encoding="utf-8").read(), "scaffold did not write a run/-ignoring .gitignore")
+        gi = os.path.join(td, ".gitignore")                # commit-vs-ignore hygiene: run/ + OS cruft ignored, the rest committed
+        _gic = open(gi, encoding="utf-8").read() if os.path.isfile(gi) else ""
+        expect("run/" in _gic and ".DS_Store" in _gic, "scaffold did not write a run/ + .DS_Store ignoring .gitignore")
 
     if fails:
         sys.stderr.write("lattice selftest: FAIL\n")

@@ -83,6 +83,7 @@ def selftest():
               "docs/examples/lattice.json",                         # over-breadth regression: basename matching is gone
               "src/hooks/useAuth.ts",                               # a React hooks dir is not a verifier asset
               "schemas/foo.schema.json",                            # schemas outside .agents/harness/ are the project's business
+              ".agents/harness/assess/my-project.json",            # an /harness-assess PROPOSAL is the model's judgment, not earned signal (I-15)
               "evals/suite.py", "tests/evals/run.py"):              # the user's OWN eval/test dir is not a harness asset (Simon)
         expect(not is_protected(p), f"wrongly protected a worker-writable path: {p}")
     # env override narrows/redefines the set (a project that DOES keep evals as verifier assets opts in)
