@@ -119,6 +119,11 @@ jobs:
           python3 "$PF/bin/check-trust-boundary.py" selftest
           python3 "$PF/bin/check-trust-boundary.py" marketplace .
 
+      - name: integration-contract gate (entry/router thinness + advisory bundled hook — the integration as a checked property)
+        run: |
+          python3 "$PF/bin/check-integration-contract.py" selftest
+          python3 "$PF/bin/check-integration-contract.py" marketplace .
+
       - name: context-cost audit (P6 always-on context tax — selftest + per-plugin record + live MCP tool-defs)
         run: |
           python3 "$PF/bin/context-cost.py" selftest

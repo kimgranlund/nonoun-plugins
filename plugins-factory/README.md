@@ -45,7 +45,7 @@ plugins-factory/
 ├── commands/   6 thin entry points       → build (author·carve·edit) · judge (score·critique·promote)
 ├── skills/     2 posture skills          → plugin-build (the maker) · plugin-evaluate (the judge)
 ├── agents/    9 critics + orchestrator + carve-analyst → the parallel, isolated council
-├── hooks/ + bin/  11 stdlib gates + an advisory hook   → mechanized structure + liveness + recall + bake-safety + trust-boundary + context-cost + score-record + assemble-marketplace
+├── hooks/ + bin/  12 stdlib gates + an advisory hook   → mechanized structure + liveness + recall + bake-safety + trust-boundary + context-cost + score-record + assemble-marketplace + integration-contract
 └── references/   the 9-dimension rubric spine + foundations + authoring methodology
 ```
 
