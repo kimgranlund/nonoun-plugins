@@ -47,11 +47,19 @@ def render(project, hd=".harness", n=8):
         out.append("  blocked:  " + ", ".join(f"{_lat.cid(c)} ({c.get('blocked_reason','?')})" for c in blocked))
 
     # the run budget (the global bound) — show X/Y, not just the numerator, so an operator sees the cliff BEFORE it
-    ex, why, det = _lat.run_budget_exhausted(d, datetime.datetime.now().astimezone().isoformat(timespec="seconds"))
-    unb, _ = _lat.loop_unbudgeted(d)
+    now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+    ex, why, det = _lat.run_budget_exhausted(d, now)
+    unb, _ = _lat.loop_unbudgeted(d, now)
     marked = _lat.loop_marker_active(d)
-    if unb:
-        # the I-9 state, now DETECTABLE (not a generic warning): a loop is marked active but un-budgeted, so the
+    stale_marker = marked and _lat.loop_marker_stale(d, now) and _lat.run_budget_load(d) is None
+    if stale_marker:
+        # a crashed run left a corpse marker (older than the TTL) — surfaced so the operator can clear it (Charity).
+        age_min = int((_lat.loop_marker_age_s(d, now) or 0) // 60)
+        out.append(f"  run:      ⚠ STALE loop marker — marked active {age_min} min ago, no budget, past the "
+                   f"{_lat.LOOP_TTL_S // 60}-min TTL: a crashed run, not a live loop. The gate no longer wedges writes; "
+                   f"clear the corpse with `run-budget.py stop`.")
+    elif unb:
+        # the I-9 state, now DETECTABLE (not a generic warning): a LIVE loop is marked active but un-budgeted, so the
         # wired gate-budget is denying every write. The arming gap fails closed; the operator sees exactly why.
         out.append("  run:      ⚠ ARMING GAP — a loop is MARKED ACTIVE but no budget is armed; gate-budget is denying "
                    "every write. Arm a ceiling (`run-budget.py start --max-cells N --max-iterations M`) or end it (`run-budget.py stop`).")
@@ -98,10 +106,16 @@ def selftest():
         # a fresh project (no budget, NO marker) is idle, not alarming — manual edits / /harness-advance are free
         expect("no active run budget" in s and "idle" in s and "NOT WIRED" in s,
                "a fresh unmarked project must read as idle (not a false UNBOUNDED alarm), + show NOT WIRED")
-        # I-9: MARK a loop with no budget → the dashboard shows the ARMING GAP (the gate is denying every write)
-        _lat.loop_marker_set(d, "2026-06-13T12:00:00-07:00", label="harness-run")
+        # I-9: MARK a FRESH loop with no budget → the dashboard shows the ARMING GAP (the gate is denying every write)
+        import datetime as _dt
+        fresh = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
+        _lat.loop_marker_set(d, fresh, label="harness-run")
         expect("ARMING GAP" in render(proj) and "denying every write" in render(proj),
-               "a marked-but-unbudgeted loop must surface the arming gap")
+               "a live marked-but-unbudgeted loop must surface the arming gap")
+        # a STALE marker (older than the TTL) shows STALE, not ARMING GAP — the crash-wedge fix (Charity C1)
+        old = (_dt.datetime.now().astimezone() - _dt.timedelta(seconds=_lat.LOOP_TTL_S + 120)).isoformat(timespec="seconds")
+        _lat.loop_marker_set(d, old, label="crashed")
+        expect("STALE loop marker" in render(proj), "an old marker must surface as STALE (the gate no longer wedges)")
         _lat.loop_marker_clear(d)
         # an active budget renders X/Y (the caps, not just the numerator) so the operator sees the cliff before it
         _lat.run_budget_start(d, "2026-06-13T12:00:00-07:00", max_iterations=8, max_cells=4)

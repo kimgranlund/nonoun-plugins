@@ -45,6 +45,6 @@ The survey is "a starting map, not a verdict," and reading recovered what the he
 
 After the fix, the frontier narrowed correctly from `policy, protocol, pattern` to just `policy` — the genuinely thin layer.
 
-## Verdict
+## Verdict (honest scope — Andrej K., the 0.5.2 council)
 
-`/harness-assess` works on a real, unfamiliar project: the survey was accurate, and the recommendation was specific and actionable (not boilerplate) — it identified the exact verifier commands, the right intent shape, and a concrete first slice. The dogfood also *improved the instrument* (library-aware detection). This is `empirical_applications: 1` for the assess feature.
+What is **earned**: the survey *instrument* ran end-to-end on a real, unfamiliar external project, was accurate (correct stack, docs, layer map after the fix), and *surfaced three real recall gaps in itself* (the library-form mis-mappings, now fixed) — that is a genuine, verifiable result. What is **not yet evidence**: the *recommendation* (intent shape, first slice, wire-or-not) is a single **self-run, model-judged proposal with no independent oracle** — the same model that produced it also wrote this verdict, on the author's own sibling project. "Specific and actionable" grades the *prose*, not the *correctness*; a confidently-worded wrong seed reads identical to a right one. So this is **N=1, self-validated** — the instrument demonstrably *runs and improves*, but whether it produces *correct* seeds is unmeasured until an independent run with a held-out oracle. Counted honestly: assess's `empirical_applications` is **1 (self-run, recommendation unvalidated)**, not 1 (proven). The closed-loop caveat the catalog applies to its own councils applies here too.

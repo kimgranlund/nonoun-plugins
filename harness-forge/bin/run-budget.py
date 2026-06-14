@@ -146,7 +146,13 @@ def main(argv):
         return 0
     if argv and argv[0] == "status":
         now = _now().isoformat(timespec="seconds")
-        unb, detail = _lat.loop_unbudgeted(d)
+        unb, detail = _lat.loop_unbudgeted(d, now)
+        if _lat.loop_marker_active(d) and _lat.loop_marker_stale(d, now) and _lat.run_budget_load(d) is None:
+            age_min = int((_lat.loop_marker_age_s(d, now) or 0) // 60)
+            print(f"run-budget: STALE loop marker — marked active {age_min} min ago with no budget, past the "
+                  f"{_lat.LOOP_TTL_S // 60}-min TTL. This is a crashed run's corpse, not a live loop; the gate no "
+                  f"longer wedges writes. Clear it: `run-budget.py stop`.")
+            return 3
         if unb:
             print(f"run-budget: ARMING GAP — {detail}. The wired gate-budget denies every write; arm a ceiling "
                   f"(`run-budget.py start …`) or end the loop (`run-budget.py stop`).")

@@ -105,23 +105,48 @@ LAYER_FEEDS = {
 LAYER_ORDER = ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"]
 
 
+# The walk is over an UNTRUSTED tree — it must be bounded so a hostile or merely huge project can't hang or
+# OOM the user's machine (self-red-team, Simon W. / David F.). Depth + entry caps + the non-follow default
+# below; a tree past the budget yields a (truncated) survey rather than an unbounded walk.
+MAX_DEPTH = 12
+MAX_ENTRIES = 40000
+_EVIDENCE_CAP = 4
+
+
+def _add(found, key, rel):
+    """Record evidence for a signal, capped at insertion so the set can't grow to tree-size first."""
+    s = found.setdefault(key, set())
+    if len(s) < _EVIDENCE_CAP:
+        s.add(rel)
+
+
 def survey(root):
     root = os.path.abspath(root)
-    found = {}          # signal key → sorted list of relpaths (evidence)
+    found = {}          # signal key → set of relpaths (evidence), capped at insertion
     lang_counts = {}
     manifests = []
-    walked = 0
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in NOISE_DIRS and not (d.startswith(".") and d not in {".github", ".circleci", ".git"})]
+    walked = 0          # source files counted toward the stack profile
+    entries = 0         # total dir+file entries visited — the hard walk budget
+    truncated = False
+    unreadable = [0]
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False, onerror=lambda e: unreadable.__setitem__(0, unreadable[0] + 1)):
         depth = os.path.relpath(dirpath, root).count(os.sep)
+        # prune noise dirs, hidden dirs (except the few signal-bearing ones), and anything past the depth cap
+        dirnames[:] = ([] if depth >= MAX_DEPTH else
+                       [d for d in dirnames if d not in NOISE_DIRS and not (d.startswith(".") and d not in {".github", ".circleci", ".git"})])
+        if entries > MAX_ENTRIES:
+            truncated = True
+            break
         # match directory signals at this level
         for d in list(dirnames) + ([".git"] if os.path.isdir(os.path.join(root, ".git")) and dirpath == root else []):
+            entries += 1
             rel = os.path.relpath(os.path.join(dirpath, d), root)
             bl = d.lower()
             for key, matcher, _layers, _note in SIGNALS:
                 if matcher(bl, rel.lower(), True):
-                    found.setdefault(key, set()).add(rel.replace(os.sep, "/"))
+                    _add(found, key, rel.replace(os.sep, "/"))
         for fn in filenames:
+            entries += 1
             rel = os.path.relpath(os.path.join(dirpath, fn), root).replace(os.sep, "/")
             bl = fn.lower()
             ext = os.path.splitext(bl)[1]
@@ -129,11 +154,12 @@ def survey(root):
                 lang_counts[EXT_LANG[ext]] = lang_counts.get(EXT_LANG[ext], 0) + 1
                 walked += 1
             if bl in MANIFESTS or any(bl.endswith(m[1:]) for m in MANIFESTS if m.startswith("*")):
-                manifests.append(rel)
+                if len(manifests) < 16:
+                    manifests.append(rel)
             for key, matcher, _layers, _note in SIGNALS:
                 if matcher(bl, rel.lower(), False):
-                    found.setdefault(key, set()).add(rel)
-    found = {k: sorted(v)[:4] for k, v in found.items()}   # cap evidence per signal
+                    _add(found, key, rel)
+    found = {k: sorted(v) for k, v in found.items()}
 
     # capability presence: any source files OR a manifest
     has_source = bool(lang_counts) or bool(manifests)
@@ -161,6 +187,10 @@ def survey(root):
         "stack": {"languages": dict(sorted(lang_counts.items(), key=lambda kv: -kv[1])), "manifests": sorted(set(manifests))[:6]},
         "docs": found,
         "layers": layers,
+        "truncated": truncated, "unreadable": unreadable[0],
+        "_caveat": "HEURISTIC from filenames, not contents — PRESENT/PARTIAL/ABSENT is a starting map, not a verdict. "
+                   "A status can be wrong (a spec/ that's really RSpec tests; a stale docs/; policy that lives in code). "
+                   "Confirm by reading the cited evidence before treating a layer as present or a frontier as absent.",
     }
 
 
@@ -182,18 +212,27 @@ def render(s):
         line += f"{'✓' if key in s['docs'] else '✗'} {lab}   "
     out.append(line.rstrip())
     out.append("")
-    out.append("Lattice-layer signal — where the project ALREADY carries knowledge (seed those cells mature)")
-    out.append("vs ABSENT (the frontier the harness should work). Evidence in parens:")
+    out.append("Lattice-layer signal (HEURISTIC from filenames — a starting map, NOT a verdict; ● strong / ◐ incidental / ○ none).")
+    out.append("PRESENT suggests the project may already carry this layer — confirm by READING the cited evidence before")
+    out.append("treating a cell as mature or a frontier as absent (a spec/ may be RSpec tests; policy may live in code):")
     for layer in LAYER_ORDER:
         status, ev = s["layers"][layer]
         mark = {"PRESENT": "●", "PARTIAL": "◐", "ABSENT": "○"}[status]
         ev_s = f"  ← {', '.join(ev)}" if ev else ""
         out.append(f"  {mark} {layer:<11} {status:<8}{ev_s}")
     out.append("")
+    if s.get("truncated") or s.get("unreadable"):
+        notes = []
+        if s.get("truncated"):
+            notes.append(f"the walk hit its {MAX_ENTRIES:,}-entry / depth-{MAX_DEPTH} budget and stopped — this map is PARTIAL")
+        if s.get("unreadable"):
+            notes.append(f"{s['unreadable']} dir(s) were unreadable and skipped (a layer may be under-reported)")
+        out.append("  ⚠ coverage: " + "; ".join(notes) + ".")
+        out.append("")
     absent = [l for l in LAYER_ORDER if s["layers"][l][0] == "ABSENT"]
     out.append(f"Frontier (ABSENT layers): {', '.join(absent) or 'none — a mature project; the frontier is the new agentic capability'}.")
-    out.append("→ Now /harness-assess: read the ✓ docs, map them to the ontology + first spec slice, and recommend the seed")
-    out.append("  (which absent layer is highest-risk, the smallest scope that yields signal, and whether to wire the gates).")
+    out.append("→ Now /harness-assess: READ the ✓ docs (don't trust the map), map them to the ontology + first spec slice, and")
+    out.append("  recommend the seed (which absent layer is highest-risk, the smallest scope that yields signal, whether to wire).")
     return "\n".join(out)
 
 
@@ -253,6 +292,19 @@ def cmd_selftest():
         expect(s["layers"]["capability"][0] == "ABSENT", "empty project should have ABSENT capability")
         expect(all(s["layers"][l][0] == "ABSENT" for l in ("rubric", "methodology", "pattern")), "empty project layers should be ABSENT")
         render(s)  # must not raise
+
+    # the walk is BOUNDED over an untrusted/huge tree (self-red-team): depth-capped, evidence-capped, no hang
+    with tempfile.TemporaryDirectory() as tmp:
+        deep = tmp
+        for i in range(MAX_DEPTH + 8):
+            deep = os.path.join(deep, f"d{i}"); os.makedirs(deep)
+        open(os.path.join(deep, "buried-readme.md"), "w").write("x")     # below the depth cap → must NOT be found
+        wide = os.path.join(tmp, "tests"); os.makedirs(wide)
+        for i in range(200):
+            open(os.path.join(wide, f"unit_{i}.test.js"), "w").write("x")
+        s = survey(tmp)
+        expect(len(s["docs"].get("tests", [])) <= _EVIDENCE_CAP, f"evidence not capped at insertion: {len(s['docs'].get('tests', []))}")
+        expect(not any("buried-readme" in p for ps in s["docs"].values() for p in ps), "a file below the depth cap was still found (walk not depth-bounded)")
 
     if fails:
         sys.stderr.write("survey selftest: FAIL\n")

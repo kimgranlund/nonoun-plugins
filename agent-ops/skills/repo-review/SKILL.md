@@ -89,6 +89,7 @@ Run this pre-flight **before** Wave 1, and re-assert it in every dispatched sub-
 - **Setting up agent docs for the first time** — use `repo-ops`. That skill establishes AGENTS.md, ADRs, runbooks; this skill audits an existing one.
 - **Just need a state snapshot** — use a point-in-time status report. That produces a health-status report; this skill produces an actionable refactor plan.
 - **The codebase already has a working architecture and you're adding a feature** — don't redesign what works.
+- **You want to *seed a looping, latticed agentic workflow* on this repo (not grade it)** — use the **harness-forge** plugin's `/harness-assess`: it surveys the same docs but maps them onto a knowledge lattice and recommends a seed, where repo-review produces a refactor backlog. Different output, different job — review/audit is this skill; *running the lattice machine* is harness-forge.
 
 If any of these apply, name the better skill and stop.
 

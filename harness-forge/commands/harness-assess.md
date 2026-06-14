@@ -1,5 +1,5 @@
 ---
-description: Survey an existing project to build the context for applying harness-forge — inventory its files, find its key docs (README · ARCHITECTURE · AGENTS.md · specs · tests · CI · CHANGELOG), map them onto the nine lattice layers (present/absent), and recommend the seed (the ontology, the first slice, the scope, and whether to wire the gates). Read-only; proposes, never scaffolds.
+description: Survey an existing project (its docs, stack, tests, CI) and map it onto the lattice before seeding, then recommend the first slice. The cold start that lets harness-forge apply to almost any project. Read-only — proposes a seed, never scaffolds.
 argument-hint: "[path to the project (default .), optionally + what you want the harness to do]"
 ---
 

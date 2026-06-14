@@ -70,7 +70,7 @@ harness-forge/
 ├── agents/     4 operators + the council    → harness-builder (the bounded /harness-run loop) · harness-advancer · harness-auditor · harness-distiller · harness-council + 7 critic-* structural critics (one per rubric dimension, parallel isolated)
 ├── hooks/ + bin/  advisory hook             → harness-hook flags naming/staleness on save (never blocks)
 ├── .mcp.json + bin/  read-only MCP          → lattice-query over the project's .harness/ state
-├── schemas/    the typed data               → Cell · Lattice · Naming (self-hosting) · Signal
+├── schemas/    the typed data (6)           → Cell · Lattice · Naming (self-hosting) · Signal · RunBudget · LoopActive
 ├── evals/      the behavioral evidence      → calibration fixtures (4 planted defects) · the first-slice walkthrough · the stop-gate (per-cell breaker) · the global-bound (the run's caps enforced in code, no agent) — all CI-replayed
 └── references/ the standard                 → the 14-file agentic-systems foundations + the harness rubric + the operating procedure
 ```

@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.13] — 2026-06-13
+
+### Changed
+
+- **`repo-review`'s "When NOT to Use" now points to harness-forge** for the adjacent job it doesn't own: *seeding a looping, latticed agentic workflow* on a repo. Surfaced by the harness-forge 0.5.2 council (Steve Y.) — harness-forge's new `/harness-assess` surveys the same docs (README · ARCHITECTURE · AGENTS.md · tests · CI) that repo-review's Discover wave reads, so the boundary was a one-way mirror (harness-forge cedes "review" to agent-ops, but agent-ops didn't point back). Now bidirectional: review/audit a repo's architecture → this skill; map it onto a knowledge lattice and seed the running machine → harness-forge. The two are self-contained (no cross-plugin dependency — just a routing pointer).
+
 ## [0.1.12] — 2026-06-13
 
 ### Changed

@@ -4,6 +4,16 @@ The repo-level defect tracker and decision log — what's open (severity-ordered
 
 ## Open
 
+> **I-14…I-15 surfaced by the harness-forge v0.5.2 council** (`harness-forge/reviews/2026-06-13-plugin-council-v0.5.2.md`, the 5th plugins-factory red-team, focused on the I-9 marker + `/harness-assess`). Most findings folded in harness-forge 0.5.3; the two below are deferred (a refactor + a feature).
+
+### I-14 · P2 — survey.py ships a layer *verdict* where it should ship *signal-strength* (Chip H. + Andrej K. + Elon M.)
+
+`bin/survey.py` reports each lattice layer as `PRESENT/PARTIAL/ABSENT` — a three-valued *verdict* — computed from a filename heuristic, shipped in `--json` as a bare enum indistinguishable in shape from `lattice.py`'s genuinely-computed maturity states. The judgment ("is this layer covered?") is the model's job per the plugin's own one law; survey.py's table routes it to code. **Mitigated (0.5.3):** the `HEURISTIC — confirm by reading` caveat is now in `render()` + the JSON `_caveat`, and "seed mature" is hedged, so the over-trust is disclosed at the point it's generated. **The fuller fix (deferred):** rename the field to report *what matched* + a `strength: strong|incidental|none`, keep the `●/◐/○` glyphs for humans only, and let the model (the judgment tier) draw the PRESENT/ABSENT conclusion after reading — relocating the determinism boundary to where `project-survey.md` already says it belongs.
+
+### I-15 · P8 — the `/harness-assess` recommendation persists nowhere (Charity M.)
+
+Assess *proposes* a seed (name · first slice · scope · footholds · frontier order · wire-or-not) but writes nothing — the recommendation lands in chat and evaporates, the same `scores`-evaporation gap the plugins-factory self-review flagged (I-13). You can't diff "what assess recommended" against "what `/harness-seed` actually seeded," and a re-assess re-derives the whole judgment. **Fix (deferred, a feature):** write the recommendation to a non-executable proposal record the user owns (clearly not wired state — `proposes, never scaffolds` must not become `proposes, then forgets`). Overlaps the I-13 `scores/*.json` pattern.
+
 > **I-10…I-13 surfaced by the plugins-factory self-red-team** (`plugins-factory/reviews/2026-06-13-who-reviews-the-reviewer.md`, "who reviews the reviewer?", docs/PLAN.md "Next" #1). The 9-critic council ran on plugins-factory itself; the gate anchor + a verification pass bracketed it (and refuted the panel's most-piled-on Critical — a "licensed fonts" claim that turned out gitignored/untracked). One convergent honesty-fix folded at 0.2.35 (`check-recall.py`'s boundary disclaimer, Andrej K. + Chip H.); the four below are architectural — they ripple catalog-wide and warrant an owner's call, not a reflexive fold.
 
 ### I-10 · P7/P3 — cross-plugin critic-agent name collision · ~~RESOLVED 0.2.38 (2026-06-13), see D-13~~

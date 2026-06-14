@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.5.0"
+KERNEL_VERSION = "0.5.1"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -299,15 +299,22 @@ def _marker_path(d):
     return os.path.join(d, "run", "loop-active.json")
 
 
+# A marked-but-unbudgeted marker older than this is treated as STALE — a crashed run that left a corpse marker,
+# NOT a live forgotten-start. The legitimate arming-gap window (step 0a `mark` → step 0b `start`) is sub-second;
+# this backstop means a crash can't wedge the project deny-closed forever (Charity M., 0.5.3). `stop`/`seed` clear
+# it; `/harness-status` surfaces it. The arming gap is still enforced for a *live* forgotten-start (caught at once).
+LOOP_TTL_S = 900
+
+
 def loop_marker_set(d, now_iso, label=None):
     """Mark that an AUTONOMOUS loop (`/harness-run`) is active — the I-9 arming-gap fix. This is the mechanical
     signal, written by the loop driver as its FIRST step (step 0a, before the orchestrator arms the budget at
     step 0b), that makes the budget gap fail-CLOSED: `gate-budget` denies every write while the marker is set but
     no budget is armed. Attended single-cell work (`/harness-advance`) and manual editing never set the marker, so
     the gate leaves them free — the marker is precisely what distinguishes 'the autonomous loop is running' from
-    'a human is editing'. `now_iso` is passed in (pure paths take no clock)."""
+    'a human is editing'. `now_iso` is passed in (pure paths take no clock). Stamps `pid` for diagnostics."""
     os.makedirs(os.path.join(d, "run"), exist_ok=True)
-    marker = {"active": True, "started_ts": now_iso, "label": label or "harness-run"}
+    marker = {"active": True, "started_ts": now_iso, "label": label or "harness-run", "pid": os.getpid()}
     tmp = _marker_path(d) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(marker, f, indent=2)
@@ -338,10 +345,50 @@ def loop_marker_clear(d):
         return False
 
 
-def loop_unbudgeted(d):
-    """(True, detail) iff an autonomous loop is marked active but NO run budget is armed — the arming gap, now a
-    denial condition rather than a silent unbounded run. The gate-budget enforcement reads exactly this."""
+def loop_marker_age_s(d, now_iso):
+    """Seconds since the marker was set, or None if no/unparseable marker or now."""
+    m = loop_marker_load(d)
+    if not m:
+        return None
+    started, now = _parse_ts(m.get("started_ts")), _parse_ts(now_iso)
+    if started is None or now is None:
+        return None
+    return (now - started).total_seconds()
+
+
+def loop_marker_stale(d, now_iso):
+    """A marked loop whose marker is older than LOOP_TTL_S — a crashed run that left a corpse marker, not a live gap."""
+    age = loop_marker_age_s(d, now_iso)
+    return age is not None and age > LOOP_TTL_S
+
+
+def loop_marker_check(d):
+    """Validate `.harness/run/loop-active.json`'s shape when present (mirrors run_budget_check — Scott W., 0.5.3).
+    Returns a list of findings; an absent marker is fine (no loop)."""
+    m = loop_marker_load(d)
+    if m is None:
+        return []
+    if not isinstance(m, dict):
+        return ["run/loop-active.json: not a JSON object"]
+    findings = []
+    if m.get("active") is not True:
+        findings.append("run/loop-active.json: `active` must be `true` — the marker's presence means a loop is active")
+    if not isinstance(m.get("started_ts"), str) or _parse_ts(m.get("started_ts")) is None:
+        findings.append("run/loop-active.json: `started_ts` must be an ISO-8601 timestamp")
+    for k in m:
+        if k not in ("active", "started_ts", "label", "pid"):
+            findings.append(f"run/loop-active.json: unknown field `{k}`")
+    return findings
+
+
+def loop_unbudgeted(d, now_iso=None):
+    """(True, detail) iff a LIVE autonomous loop is marked active but NO run budget is armed — the arming gap, a
+    denial condition rather than a silent unbounded run. A marker older than LOOP_TTL_S (given `now_iso`) is STALE
+    — a crashed run's corpse, not a live loop — so it returns False and the gate stops wedging the project. The
+    gate-budget enforcement reads exactly this (and passes `now_iso` so staleness applies)."""
     if loop_marker_active(d) and run_budget_load(d) is None:
+        if now_iso is not None and loop_marker_stale(d, now_iso):
+            return False, None
         m = loop_marker_load(d) or {}
         return True, f"loop marked active at {m.get('started_ts', '?')} ({m.get('label', 'harness-run')}) with no run budget armed"
     return False, None
@@ -526,8 +573,9 @@ def check(lat, d=None):
                     if now and now != recorded:
                         findings.append(f"{cell_id}: trusts `{dep}` at {recorded} but its asset now hashes {now} — "
                                         f"stale-but-trusted (the evidence predates the content; re-validate)")
-    if d:                                                    # the run budget is durable .harness/ state — type-check it too
+    if d:                                                    # the run/ files are durable .harness/ state — type-check them too
         findings += run_budget_check(d)
+        findings += loop_marker_check(d)
     return findings
 
 

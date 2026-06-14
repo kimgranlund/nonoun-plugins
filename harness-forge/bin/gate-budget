@@ -99,19 +99,33 @@ def _hook():
                          f"not automatically.\n")
         return 2
     # ARMING GAP (I-9): an autonomous loop MARKED active but with NO budget armed is denied every write — fail-CLOSED
-    # rather than silently unbounded. The marker is set by `/harness-run` (step 0a) before the budget (step 0b); a write
-    # while marked-but-un-budgeted means the orchestrator skipped arming. Attended work (/harness-advance) and manual
-    # editing never set the marker, so this leaves them free.
+    # rather than silently unbounded. Two hardening fixes (0.5.3):
+    #   (a) STALE WIRED KERNEL (David F.): if the wired `_lattice.py` predates I-9 (no `loop_unbudgeted`), this gate
+    #       cannot provide the protection — DENY (fail closed) and tell the operator to re-wire, instead of silently
+    #       re-opening the gap via the catch-all below.
+    #   (b) STALE MARKER (Charity M.): a marker older than LOOP_TTL_S is a crashed-run corpse, not a live loop, so it
+    #       must NOT wedge the project — `loop_unbudgeted(d, now)` returns False for it (the gate allows; status/stop
+    #       surface it). The arming gap is still enforced for a *live* forgotten-start (caught within the TTL).
+    import datetime
+    now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+    if not hasattr(_lat, "loop_unbudgeted"):
+        _ledger_deny(path, "stale wired kernel: _lattice.py predates the I-9 arming-gap protection")
+        sys.stderr.write("gate-budget: DENY — the wired kernel copy (`_lattice.py`) is STALE: it lacks the I-9 "
+                         "arming-gap protection this gate relies on, so it can't be trusted to bound the loop. "
+                         "Re-wire to refresh it: `wire.py apply` then `wire.py check`. Refusing writes rather than "
+                         "silently running un-protected.\n")
+        return 2
     try:
-        unb, detail = _lat.loop_unbudgeted(_harness_dir())
-    except Exception:                                     # noqa: BLE001 — a marker read error must fail open
+        unb, detail = _lat.loop_unbudgeted(_harness_dir(), now)
+    except Exception:                                     # noqa: BLE001 — a marker READ error (a hiccup, not a skew) fails open
         unb, detail = False, None
     if unb:
         _ledger_deny(path, f"arming gap: {detail}")
-        sys.stderr.write(f"gate-budget: DENY — an autonomous loop is MARKED ACTIVE but no run budget is armed "
-                         f"({detail}). This is the arming gap: arm a ceiling with `run-budget.py start --max-cells N "
-                         f"--max-iterations M` (step 0), or end the loop with `run-budget.py stop`. A marked loop "
-                         f"cannot write without a budget.\n")
+        ttl_min = getattr(_lat, "LOOP_TTL_S", 900) // 60
+        sys.stderr.write(f"gate-budget: DENY — a loop is MARKED ACTIVE but no run budget is armed ({detail}). "
+                         f"If a /harness-run loop is starting, arm a ceiling: `run-budget.py start --max-cells N "
+                         f"--max-iterations M`. If NO loop is running (a crashed run left the marker), clear it: "
+                         f"`run-budget.py stop` (a stale marker self-expires after ~{ttl_min} min).\n")
         return 2
     # PER-CELL bound: a blocked cell's asset is deny-on-write (the no-progress circuit breaker).
     cell_id, reason = blocked_cell_for(path)
@@ -183,25 +197,37 @@ def selftest():
         _lat.run_budget_clear(d)
         expect(not _lat.run_budget_exhausted(d, now)[0], "clearing the run did not lift the global deny")
 
-        # ARMING GAP (I-9): a MARKED loop with no budget is denied; arming a budget or clearing the marker lifts it;
-        # an UNMARKED project (manual editing / /harness-advance) is never denied by this rule.
-        expect(not _lat.loop_unbudgeted(d)[0], "an unmarked project was treated as an unbudgeted loop (would deny manual edits)")
+        # ARMING GAP (I-9): a LIVE marked loop with no budget is denied; arming/clearing lifts it; unmarked never denied.
+        expect(not _lat.loop_unbudgeted(d, now)[0], "an unmarked project was treated as an unbudgeted loop (would deny manual edits)")
         _lat.loop_marker_set(d, now, label="harness-run --max-cells 8")
-        unb, detail = _lat.loop_unbudgeted(d)
-        expect(unb and "no run budget" in (detail or ""), f"a marked loop with no budget was not flagged unbudgeted: {detail}")
+        unb, detail = _lat.loop_unbudgeted(d, now)
+        expect(unb and "no run budget" in (detail or ""), f"a live marked loop with no budget was not flagged unbudgeted: {detail}")
+        # STALE MARKER (Charity C1 — the crash-wedge fix): a marker older than LOOP_TTL_S is a crashed-run corpse,
+        # NOT a live loop, so it must NOT wedge the project — while a FRESH marker is still enforced.
+        stale_now = (datetime.datetime.now().astimezone() + datetime.timedelta(seconds=_lat.LOOP_TTL_S + 60)).isoformat(timespec="seconds")
+        expect(_lat.loop_marker_stale(d, stale_now), "a marker older than the TTL was not detected stale")
+        expect(not _lat.loop_unbudgeted(d, stale_now)[0], "a STALE marked loop still wedged the project (no TTL backstop) — Charity C1")
+        expect(_lat.loop_unbudgeted(d, now)[0], "a FRESH marked loop was wrongly treated as stale (TTL too tight)")
         _lat.run_budget_start(d, now, max_cells=8)                 # arm the ceiling → no longer the arming gap
-        expect(not _lat.loop_unbudgeted(d)[0], "arming a budget did not lift the arming-gap deny")
+        expect(not _lat.loop_unbudgeted(d, now)[0], "arming a budget did not lift the arming-gap deny")
         _lat.run_budget_clear(d)
-        expect(_lat.loop_unbudgeted(d)[0], "clearing the budget while still marked did not re-trip the arming gap")
+        expect(_lat.loop_unbudgeted(d, now)[0], "clearing the budget while still (freshly) marked did not re-trip the arming gap")
         _lat.loop_marker_clear(d)                                  # end the loop → free again
-        expect(not _lat.loop_unbudgeted(d)[0], "clearing the marker (stop) did not lift the arming-gap deny")
+        expect(not _lat.loop_unbudgeted(d, now)[0], "clearing the marker (stop) did not lift the arming-gap deny")
+        # MARKER SCHEMA (Scott M1): a hand-corrupted marker is caught by loop_marker_check (typed like budget.json)
+        os.makedirs(os.path.join(d, "run"), exist_ok=True)
+        json.dump({"active": True, "started_ts": "not-a-date", "bogus": 1}, open(os.path.join(d, "run", "loop-active.json"), "w"))
+        mc = _lat.loop_marker_check(d)
+        expect(any("started_ts" in f for f in mc) and any("bogus" in f for f in mc), f"loop_marker_check missed a corrupt marker: {mc}")
+        _lat.loop_marker_clear(d)
     if fails:
         sys.stderr.write("gate-budget selftest: FAIL\n")
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("gate-budget selftest: OK (GLOBAL: an exhausted run budget denies every write, computed from code; "
-          "ARMING GAP (I-9): a marked loop with no budget is denied, manual editing is not; PER-CELL: a blocked "
+          "ARMING GAP (I-9): a LIVE marked loop with no budget is denied, manual editing is not, and a STALE marker "
+          "past the TTL does NOT wedge the project (the crash-fix); the marker is schema-checked; PER-CELL: a blocked "
           "cell's asset is denied, unrelated paths + unblocked cells allowed; fails open on no-harness — the wired "
           "circuit breaker that bounds even a runaway worker, on three axes)")
     return 0
