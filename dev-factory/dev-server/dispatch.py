@@ -169,26 +169,35 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         self.model = model
         self.allowed_tools = allowed_tools
 
-    def _prompt(self, d, unit):
+    def _prompt(self, d, unit, project_root):
         tt = unit.get("transition") or {}
-        asset = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
-        cur = ("\n\nCurrent asset:\n" + open(asset, encoding="utf-8").read()[:4000]) if os.path.exists(asset) else ""
+        asset_abs = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
+        rel = os.path.relpath(asset_abs, project_root)             # the asset's path FROM the worker's cwd (project root)
+        cur = ("\n\nCurrent asset:\n" + open(asset_abs, encoding="utf-8").read()[:4000]) if os.path.exists(asset_abs) else ""
+        fmt = ""
+        if unit["layer"] == "spec":
+            fmt = (f' Author it as a fenced ```json block declaring: "title", "cell" ("{unit["layer"]}.{unit["scope"]}.{unit["slug"]}"), '
+                   '"acceptance_criteria" (a list of {"id", and EITHER "check": an executable assertion OR "rubric_cell"}), '
+                   '"non_goals" (a non-empty list), and "binds_rubric" (the bound rubric cell id). Zero prose-only criteria.')
         return (f"You are a dev-factory worker advancing exactly one lattice cell: "
                 f"{unit['layer']}.{unit['scope']}.{unit['slug']} (transition {tt.get('from')} -> {tt.get('to')}). "
-                f"Author or refine its asset at {unit['layer']}/{unit['slug']}.md to satisfy its bound rubric. "
-                f"Do NOT touch signals/, the ledger, rubric/, or lattice.json — those are protected and your "
-                f"write will be denied. Produce only the asset.{cur}")
+                f"Write its asset to the file `{rel}` (relative to your working directory).{fmt} "
+                f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, or lattice.json — those are "
+                f"protected and your write will be denied. Produce ONLY the asset.{cur}")
 
     def dispatch(self, d, unit):
         if shutil.which("claude") is None:
             return {"ok": False, "error": "the `claude` CLI is not on PATH", "metrics": {}}
+        # the worker runs from the PROJECT ROOT so the asset lands in the instance the critic validates,
+        # and the gates' project-relative protected globs (.agents/dev-factory/…) match the worker's writes.
+        project_root = os.path.dirname(os.path.dirname(d.rstrip("/")))
         settings = wire_gates(unit["worktree"], _api._store._KERNEL_BIN)
         budget = unit.get("budget") or {}
         effort = (unit.get("plan") or {}).get("effort") or {}          # the assembled execution plan's effort ladder
         max_turns = effort.get("max_iterations") or budget.get("iterations", 10)
         model = self.model or {"small": "haiku", "mid": "sonnet", "large": "opus"}.get(effort.get("model_tier"))
-        cmd = ["claude", "-p", self._prompt(d, unit),
-               "--add-dir", d,                                   # the substrate the worker reads/writes
+        cmd = ["claude", "-p", self._prompt(d, unit, project_root),
+               "--add-dir", project_root,                        # the project (incl. the instance) the worker reads/writes
                "--allowedTools", self.allowed_tools,
                "--permission-mode", "acceptEdits",
                "--max-turns", str(max_turns),
@@ -199,7 +208,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         if model:
             cmd += ["--model", model]
         try:
-            proc = subprocess.run(cmd, cwd=unit["worktree"], capture_output=True, text=True,
+            proc = subprocess.run(cmd, cwd=project_root, capture_output=True, text=True,
                                   timeout=budget.get("wallclock_seconds", 600))
         except (OSError, subprocess.SubprocessError) as e:
             return {"ok": False, "error": str(e), "metrics": {}}

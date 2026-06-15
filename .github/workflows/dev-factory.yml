@@ -1,0 +1,74 @@
+name: dev-factory
+
+# dev-factory is a SEPARATE marketplace from nonoun-plugins, so the catalog ci.yml does not gate it.
+# This workflow enforces dev-factory's own proofs (council CRITICAL-2): every kernel/server selftest, the
+# 8 falsifiable replays, kit conformance, the vendored-kernel drift gate, and the catalog gates on all 3
+# plugins. If dev-factory is ever extracted to its own repo, this workflow travels with it.
+on:
+  push:
+    paths:
+      - 'dev-factory/**'
+      - 'tools/sync-dev-kernel.py'
+      - 'harness-forge/bin/lattice.py'
+      - 'harness-forge/bin/validate.py'
+      - 'harness-forge/schemas/cell.schema.json'
+      - '.github/workflows/dev-factory.yml'
+  pull_request:
+    paths:
+      - 'dev-factory/**'
+      - 'tools/sync-dev-kernel.py'
+
+jobs:
+  dev-factory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: vendored-kernel drift gate (D-A)
+        run: python3 tools/sync-dev-kernel.py --check
+
+      - name: dev-kernel bin selftests
+        run: |
+          for b in dev-factory/dev-kernel/bin/*.py; do echo "» $b"; python3 "$b" selftest; done
+          for g in gate-signal gate-verifier gate-ledger gate-naming; do echo "» $g"; python3 "dev-factory/dev-kernel/bin/$g" selftest; done
+
+      - name: dev-server selftests
+        run: |
+          for s in store api app dispatch heartbeat reports; do echo "» $s"; python3 "dev-factory/dev-server/$s.py" selftest; done
+
+      - name: kit verifier selftests
+        run: |
+          for v in dev-kit-corpus/bin/doc-check dev-kit-corpus/bin/rubric-check dev-kit-corpus/bin/spec-quality-check \
+                   dev-kit-corpus/bin/pattern-check dev-kit-corpus/bin/_entailment_check dev-kit-app/bin/test-suite-check; do
+            echo "» $v"; python3 "dev-factory/$v.py" selftest
+          done
+
+      - name: kit conformance (the kernel/kit boundary)
+        run: |
+          python3 dev-factory/dev-kernel/bin/check-kit-conform.py kit dev-factory/dev-kit-corpus
+          python3 dev-factory/dev-kernel/bin/check-kit-conform.py kit dev-factory/dev-kit-app
+
+      - name: the 8 falsifiable replays
+        run: |
+          python3 dev-factory/dev-kernel/evals/tracer-bullet/replay.py
+          for e in crawl-milestone walk-milestone demotion run-milestone fly-milestone integration-milestone; do
+            echo "» $e"; python3 "dev-factory/dev-server/evals/$e/replay.py"
+          done
+          pip install --quiet fastapi uvicorn httpx
+          python3 dev-factory/dev-server/evals/server-smoke/replay.py
+
+      - name: catalog gates on all 3 plugins
+        run: |
+          PF=plugins-factory/bin
+          for p in dev-kernel dev-kit-corpus dev-kit-app; do
+            echo "── $p"
+            python3 $PF/validate_plugin.py plugin dev-factory/$p
+            python3 $PF/reference-lint.py dev-factory/$p
+            python3 $PF/check-trust-boundary.py plugin dev-factory/$p
+            python3 $PF/check-integration-contract.py plugin dev-factory/$p
+          done
+          # the read-only MCP actually serves (executes the server — trusted CI context, the I-12 interlock)
+          python3 $PF/check-mcp-liveness.py plugin dev-factory/dev-kernel --trusted-source
