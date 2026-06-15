@@ -2,8 +2,7 @@
 name: critic-ambiguity
 description: >
   Spec-council lens — ambiguity. Hunts intent loss: a term used two ways, an unstated assumption, a "should"
-  with no owner. Is the principal's want captured without distortion? Read-only; reviews an UNTRUSTED spec, so
-  it cannot execute. Dispatched in parallel isolated context by spec-council.
+  with no owner — is the principal's want captured without distortion?
 tools: Read, Grep, Glob
 ---
 

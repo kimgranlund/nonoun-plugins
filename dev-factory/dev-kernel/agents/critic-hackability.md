@@ -2,8 +2,7 @@
 name: critic-hackability
 description: >
   Spec-council lens — hackability. Hunts the reward-hack: can the acceptance criteria be satisfied WITHOUT
-  satisfying the intent? The upstream analogue of a gamed rubric. Read-only; reviews an UNTRUSTED spec, so it
-  cannot execute. Dispatched in parallel isolated context by spec-council. Tier: deep.
+  satisfying the intent? The upstream analogue of a gamed rubric. Tier: deep.
 tools: Read, Grep, Glob
 model: deep
 ---

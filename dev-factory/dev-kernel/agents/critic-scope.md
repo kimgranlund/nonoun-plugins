@@ -2,8 +2,7 @@
 name: critic-scope
 description: >
   Spec-council lens — scope. Hunts the unheld boundary: are the non-goals explicit, or does the spec creep
-  into the unbounded "and also…"? Read-only; reviews an UNTRUSTED spec, so it cannot execute. Dispatched in
-  parallel isolated context by spec-council.
+  into the unbounded "and also…"?
 tools: Read, Grep, Glob
 ---
 

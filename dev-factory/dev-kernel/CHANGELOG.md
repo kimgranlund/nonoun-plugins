@@ -19,6 +19,13 @@ The `spec-author` skill — the factory's intake boundary, finally implemented, 
 - **The NOT-boundary clauses in `verification` / `regeneration`** now correctly name the **`spec-author` skill** (the 0.1.1 NEW-3 fix had re-pointed them at the bare agent, masking the missing skill).
 - **Counts**: 7 → 8 skills, 12 → 19 agents — manifests, README skill-layering, sample prompts, and the naming-schema doc list updated.
 
+### Fixed (the 0.2.0 plugin council — CONDITIONAL → these closed)
+
+- **Gate over-claim (council CRITICAL-A, Chip H.)** — three docs claimed the spec gate verifies the bound rubric is itself `validated`; the standalone verifier checks only the *binding*. Clarified across `spec-format.md`, `SKILL.md`, `spec-review.md`, and `spec-quality.rubric.json`: the binding is the gate's; the rubric-**maturity** precondition is enforced by the **lattice** (`lattice.py` validity + `gate-ticket-ready`), which really does refuse a cell advancing against a non-validated verifier. The claim is true — at the layer that enforces it.
+- **The spec gate now asserts `layer == spec`** (council, Andrej K.) — `_gate_schema_valid` rejected only malformed/maturity-encoding cells, never a wrong layer; a non-spec cell asset is now rejected. The `skill-shape` doc claim corrected to what's checked (slug + layer, not scope).
+- **The `spec-format.md` decomposition template crashed the entailment check** (council MAJOR, Chip H.) — the example showed cells-as-strings + a ticket *count*, the shape `_entailment_check.py` raises `TypeError` on. Replaced with the correct, tested shape (cells-as-objects, tickets-as-list with `target_cell`/`acceptance`/`covers`; entails 3/3) + a note that `decomposition` is optional.
+- **Context regression closed** (council, Boris C.) — the SKILL description trimmed under the 1024-char budget; the 6 critic descriptions de-boilerplated (the read-only/dispatch stamp lives in `tools:`/the orchestrator, not 6× in the descriptions). Always-on tax 15.4K → 14.6K chars.
+
 ## [0.1.1] — 2026-06-14
 
 The 0.1.0 dogfood council's three Majors, closed — then the re-review council (BLOCKED → **CONDITIONAL**, no new Critical) its two blocking prose-vs-code gaps + the mechanical residuals, then the non-blocking Majors it raised (`factory-ops` moved out of the kernel to the dev-server runbook; gates that failed open on a malformed payload now fail closed). One non-blocking item remains by design: the `kernel_version`/`produced_by` vendoring run-time migration contract, which needs an upstream harness-forge change (the vendored `lattice.py` owns both) rather than a local edit — tracked, not silently dropped.

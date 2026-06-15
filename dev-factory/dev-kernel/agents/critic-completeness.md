@@ -2,8 +2,7 @@
 name: critic-completeness
 description: >
   Spec-council lens — completeness. Hunts the happy-path spec: necessary acceptance criteria, edge cases, and
-  failure modes missing or implied. Read-only; reviews an UNTRUSTED spec, so it cannot execute. Dispatched in
-  parallel isolated context by spec-council.
+  failure modes missing or merely implied.
 tools: Read, Grep, Glob
 ---
 

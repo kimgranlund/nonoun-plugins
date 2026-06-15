@@ -13,7 +13,7 @@ The gate is `dev-kit-corpus`'s `spec-quality-check.py`, run through `validate.py
 | `schema-valid` | the contract is well-typed: `cell` is `{layer}.{scope}.{slug}`, layer == `spec`, maturity excluded from identity |
 | `criteria-checkable` | every acceptance criterion has an `id` AND **either** an executable `check` **or** a `validated` `rubric_cell` — **zero prose-only** |
 | `non-goals-present` | `non_goals` is declared (≥1) — the boundary is explicit, not implied |
-| `rubric-binds` | `binds_rubric` names a rubric cell that is **itself `validated`** (the verifier of specs is verified) |
+| `rubric-binds` | `binds_rubric` names a `rubric.*` cell — the gate checks the *binding*. That the bound rubric is **itself `validated`** (the verifier of specs is verified) is enforced by the **lattice** (`lattice.py` validity + `gate-ticket-ready`), not by this standalone gate |
 | `decomposition-entailment` | when carved, `_entailment_check.py` proves satisfying the children entails satisfying the parent |
 | `skill-shape` | frontmatter `name` == the contract's `cell` slug; the skill surface and the machine contract cannot disagree |
 

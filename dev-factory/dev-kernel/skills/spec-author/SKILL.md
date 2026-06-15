@@ -1,17 +1,15 @@
 ---
 name: spec-author
 description: >
-  Author, review, refine, and update specification cells as SKILL-format artifacts — the factory's INTAKE
-  BOUNDARY, where a human intent / PRD / pile of notes becomes a typed, rubric-gated spec the lattice
-  operates on. The advanced form: a spec IS a mini-skill (a `SKILL.md` brief + `references/` depth +
-  optional `agents/`), authored against the spec-authoring rubric and gated by the spec-quality rubric.
-  Four modes — AUTHOR (intent → a new spec), REVIEW (the spec critic council + the gate rubric), REFINE
-  (fix from findings), UPDATE (regenerate a validated spec from new evidence). Because the spec layer is
-  upstream of every other, intent loss here multiplies downstream — so the capability is rubric-gated, not
-  vibes. Triggers on "author a spec", "turn this PRD/notes into a spec", "review this spec", "is this spec
-  well-formed", "improve this spec", "the spec was wrong — update it", "decompose this spec into cells and
-  tickets". NOT for authoring a rubric (verification); NOT for advancing a non-spec cell (cell-engine); NOT
-  for the lattice grid itself (lattice-management).
+  Author, review, refine, and update specification cells as SKILL-format artifacts — the factory's intake
+  boundary, where a human intent / PRD / pile of notes becomes a typed, rubric-gated spec. A spec IS a
+  mini-skill (front-matter + brief + an embedded contract + references/), authored against the spec-authoring
+  rubric and gated by spec-quality. Four modes — AUTHOR (intent → spec), REVIEW (the spec council + the gate),
+  REFINE (fix from findings), UPDATE (regenerate a validated spec). The spec layer is upstream of every other,
+  so intent loss here multiplies — rubric-gated, not vibes. Triggers on "author a spec", "turn this PRD into a
+  spec", "review this spec", "is this spec well-formed", "improve this spec", "the spec was wrong — update it",
+  "decompose this spec". NOT for authoring a rubric (verification); NOT for advancing a non-spec cell
+  (cell-engine); NOT for the lattice grid (lattice-management).
 ---
 
 # spec-author — the intake boundary (specs as skills)
@@ -37,8 +35,11 @@ shape that makes a skill navigable, lazy-loaded, and reviewable makes a spec the
 | **UPDATE** | a validated spec contradicted by operating evidence | a deliberate, ledgered `validated → regenerating` transition; re-author; re-validate | a re-validated spec + a propagated staleness cascade |
 
 All four terminate the same way: a spec that **clears the spec-quality rubric** (the gate, owned by
-`dev-kit-corpus`), which must itself be `validated` before any spec binds to it — *the verifier of specs is
-verified*. The author never writes the signal that validates its own spec (the generator/critic split).
+`dev-kit-corpus`). That gate rubric must itself be `validated` before it gates a spec — *the verifier of specs
+is verified* — but that maturity precondition is enforced by the **lattice** (`lattice.py` validity refuses a
+cell advancing against a non-validated verifier rubric; `gate-ticket-ready` denies an unvalidated-rubric
+ticket), **not** by the standalone spec gate, which checks only the binding. The author never writes the
+signal that validates its own spec (the generator/critic split).
 
 ## The two rubrics — build-against vs the gate
 

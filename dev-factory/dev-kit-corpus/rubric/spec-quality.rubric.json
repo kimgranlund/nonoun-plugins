@@ -50,8 +50,8 @@
       "label": "[gate]",
       "weight": 3.0,
       "threshold": "pass",
-      "check": "A rubric cell binds to this spec WITHOUT reinterpretation, and that rubric cell is itself `validated`.",
-      "mechanized_by": "bin/spec-quality-check.py (rubric-binds: a binds_rubric pointing at a rubric.* cell)",
+      "check": "A rubric cell binds to this spec WITHOUT reinterpretation. The GATE checks the binding (binds_rubric points at a rubric.* cell); that the bound rubric is itself `validated` is the rubric-maturity precondition enforced by the lattice partial order (lattice.py validity refuses a cell advancing against a non-validated verifier rubric; gate-ticket-ready denies an unvalidated-rubric ticket), NOT by this standalone gate.",
+      "mechanized_by": "bin/spec-quality-check.py (rubric-binds: a binds_rubric pointing at a rubric.* cell) — the binding; the maturity precondition is lattice.py + gate-ticket-ready",
       "fail_meaning": "A spec a rubric cannot bind to scores against vibes downstream."
     },
     {

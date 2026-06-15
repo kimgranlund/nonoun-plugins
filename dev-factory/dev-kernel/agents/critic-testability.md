@@ -2,8 +2,7 @@
 name: critic-testability
 description: >
   Spec-council lens — testability. Hunts the prose-only criterion: is every acceptance criterion a checkable
-  predicate (an executable `check` or a `rubric_cell` binding), not a hope? Read-only; reviews an UNTRUSTED
-  spec, so it cannot execute. Dispatched in parallel isolated context by spec-council.
+  predicate (an executable `check` or a `rubric_cell` binding), not a hope?
 tools: Read, Grep, Glob
 ---
 

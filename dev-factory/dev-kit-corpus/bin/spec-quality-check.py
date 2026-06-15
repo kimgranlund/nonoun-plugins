@@ -89,6 +89,8 @@ def _gate_schema_valid(spec):
     if cell is not None:
         if not _CELL_ID_RE.match(str(cell)):
             return False, f"cell id {cell!r} is malformed (must be {{layer}}.{{scope}}.{{slug}})"
+        if str(cell).split(".", 1)[0] != "spec":
+            return False, f"cell id {cell!r} is not a spec.* cell (the spec-quality gate validates spec-layer cells only)"
         if str(cell).rsplit(".", 1)[-1] in _MATURITY:
             return False, f"cell id {cell!r} encodes maturity (identity must exclude state)"
     if not isinstance(spec.get("acceptance_criteria"), list):

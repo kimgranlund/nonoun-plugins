@@ -69,6 +69,11 @@ jobs:
             python3 $PF/reference-lint.py dev-factory/$p
             python3 $PF/check-trust-boundary.py plugin dev-factory/$p
             python3 $PF/check-integration-contract.py plugin dev-factory/$p
+            python3 $PF/check-manifest-sync.py dev-factory/$p          # version↔CHANGELOG + declared-count drift
+            python3 $PF/context-cost.py plugin dev-factory/$p          # always-on context tax (the 0.2.0 council's ask)
           done
+          # the cross-plugin agent-collision gate over the dev-factory marketplace (D-13/I-10) — the 6 generic
+          # critic names ship under this; marketplace mode is what catches a future collision (plugin mode does not)
+          python3 $PF/validate_plugin.py marketplace dev-factory
           # the read-only MCP actually serves (executes the server — trusted CI context, the I-12 interlock)
           python3 $PF/check-mcp-liveness.py plugin dev-factory/dev-kernel --trusted-source

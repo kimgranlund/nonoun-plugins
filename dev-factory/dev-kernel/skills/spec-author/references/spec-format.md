@@ -58,11 +58,21 @@ the depth is `references/acceptance.md`.>
   ],
   "non_goals": [ "per-component theme overrides", "server-rendered theme negotiation" ],
   "decomposition": {
-    "cells": [ "capability.system.theme-store", "methodology.task.apply-theme-pre-paint" ],
-    "tickets": 2
+    "parent": { "criteria": [ "cm-01", "cm-02", "cm-03" ] },
+    "cells": [ { "id": "capability.system.theme-store" }, { "id": "methodology.task.apply-theme" } ],
+    "tickets": [
+      { "target_cell": "capability.system.theme-store", "acceptance": { "rubric_cell": "rubric.system.theme-store" }, "covers": [ "cm-02", "cm-03" ] },
+      { "target_cell": "methodology.task.apply-theme", "acceptance": { "rubric_cell": "rubric.task.apply-theme" }, "covers": [ "cm-01" ] }
+    ]
   }
 }
 ​```
+
+> `decomposition` is **optional** — omit it until the spec is actually decomposed (the entailment gate is
+> "not applicable" when absent). When present it is the exact shape `_entailment_check.py` consumes: `cells`
+> are objects with an `id`, `tickets` is a **list** each declaring a `target_cell` + an `acceptance.rubric_cell`
+> + the `covers` criteria it satisfies, and every parent criterion must be covered (the example above entails
+> 3/3). Cells-as-bare-strings or a ticket *count* will fail the gate.
 
 ## References
 - `references/acceptance.md` — every criterion as an executable check or a rubric binding
@@ -79,12 +89,13 @@ embedded in the skill, not a parallel artifact). It carries exactly the fields t
 |---|---|---|
 | `cell` | yes | `schema-valid` — `{layer}.{scope}.{slug}`, layer == `spec`, excludes maturity |
 | `acceptance_criteria` | yes, ≥1 | `criteria-checkable` — every item has an `id` AND **either** `check` (an executable predicate) **or** `rubric_cell` (a validated rubric binding). **Zero prose-only criteria.** |
-| `binds_rubric` | yes | `rubric-binds` — names the validated rubric the validation path runs |
+| `binds_rubric` | yes | `rubric-binds` — names a `rubric.*` cell. **The spec gate checks only the *binding*** (that it points at a `rubric.*` cell). That the bound rubric is itself **`validated`** is enforced *not by this gate* (it runs standalone, with no lattice) but by the **lattice partial order** — `lattice.py` validity refuses a cell that advances against a non-validated verifier rubric (`lattice.py:157`), and `gate-ticket-ready` denies an unvalidated-rubric ticket (`lifecycle.py:108`). Binding here, maturity there. |
 | `non_goals` | yes, ≥1 | `non-goals-present` — the boundary is declared, not implied |
-| `decomposition` | when the spec is decomposed | `decomposition-entailment` — `_entailment_check.py` proves satisfying the children entails satisfying the parent |
+| `decomposition` | when the spec is decomposed | `decomposition-entailment` — `_entailment_check.py` proves the carving **covers** every parent criterion under the partial order (each parent criterion bound to ≥1 child that itself binds a rubric); a deeper "does the child *entail* (not merely cover) the parent" judgment is the `critic-entailment` lens, not the script |
 
-`cell` in the contract **must equal** `spec.{scope}.{name}` from the frontmatter — the skill surface and the
-machine contract cannot disagree (a `skill-shape` check).
+The contract `cell`'s **slug** must equal the frontmatter `name`, and its **layer must be `spec`** — the skill
+surface and the machine contract cannot disagree (the `skill-shape` + `schema-valid` checks). (`scope` lives
+only in the contract `cell`; the gate does not cross-check it against the frontmatter.)
 
 ## The skill-shape rule
 
