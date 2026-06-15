@@ -59,7 +59,10 @@ def is_protected(path, globs):
 
 
 def read_payload():
-    """Parse a PreToolUse hook payload from stdin. Returns (tool_name, path, command)."""
+    """Parse a PreToolUse hook payload from stdin. Returns (tool_name, path, command). On an UNPARSEABLE
+    payload returns (None, None, None) — `tool is None` is the parse-failure sentinel callers MUST treat as
+    fail-CLOSED (deny): a malformed payload is the one case where the gate is blind to the write target, so
+    it must never allow. (A successfully parsed payload always yields a string tool, possibly "".)"""
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
@@ -82,22 +85,39 @@ def deny(reason):
     return 2
 
 
+# Bash verbs that MUTATE a file. The redirect heuristic is BEST-EFFORT defense-in-depth — robust shell
+# analysis is undecidable, so the real floor is that worker agents carry no Bash tool at all (frontmatter
+# tool-scope). This list catches the common evasions a forge attempt reaches for (cp/mv/sed -i/python -c/…),
+# closing the gap the old `>`/`tee`/`rm`-only check left open.
+_BASH_WRITE_VERBS = (">", "tee ", "rm ", "cp ", "mv ", "dd ", "sed -i", "install ", "truncate", "ln ", "-c ", "-e ")
+
+
+def path_gate_verdict(tool, path, command, globs, what):
+    """Pure verdict for a protected-path gate: returns (allow: bool, reason: str|None). Separated from
+    stdin/emission so the selftest can prove the fail-closed + Bash-evasion behavior without a subprocess.
+    Fails CLOSED on an unparseable payload (`tool is None`) — the gate must never allow a write it cannot
+    inspect."""
+    if tool is None:
+        return False, "unparseable PreToolUse payload; failing closed (the gate cannot verify the write target, so it must not allow)"
+    if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit") and is_protected(path, globs):
+        return False, (f"{path} is a protected {what} (immutable boundary). "
+                       f"Only the validation path / single-writer server may write it")
+    if tool == "Bash" and command:
+        for g in globs:
+            base = g.replace("/*", "").replace("*", "")
+            if base and base in command and any(v in command for v in _BASH_WRITE_VERBS):
+                return False, f"shell command touches protected {what} ({base})"
+    return True, None
+
+
 def run_path_gate(name, globs, argv, what):
     """The standard --hook / check / selftest dispatch for a protected-path gate."""
     if argv and argv[0] == "selftest":
         return _selftest_path_gate(name, globs, what)
     if argv and argv[0] == "--hook":
         tool, path, command = read_payload()
-        if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit") and is_protected(path, globs):
-            return deny(f"{name}: DENIED — {path} is a protected {what} (immutable boundary). "
-                        f"Only the validation path / single-writer server may write it.")
-        # a Bash write-redirect into a protected path is also a forge attempt
-        if tool == "Bash" and command:
-            for g in globs:
-                base = g.replace("/*", "").replace("*", "")
-                if base and base in command and (">" in command or "tee" in command or "rm " in command):
-                    return deny(f"{name}: DENIED — shell command touches protected {what} ({base}).")
-        return 0
+        allow, reason = path_gate_verdict(tool, path, command, globs, what)
+        return 0 if allow else deny(f"{name}: DENIED — {reason}.")
     if argv and argv[0] == "check":
         path = argv[1] if len(argv) > 1 else ""
         return 1 if is_protected(path, globs) else 0
@@ -116,6 +136,16 @@ def _selftest_path_gate(name, globs, what):
     if is_protected("docs/examples/lattice.json", globs) and "lattice.json" not in name:
         # docs/examples/lattice.json must NOT be protected (only the real .agents/.../lattice.json is)
         fails.append("false-positive on a user doc that merely shares a basename")
+    # fail-CLOSED on a malformed payload (the gate is blind to the target → must deny, never allow)
+    if path_gate_verdict(None, None, None, globs, what)[0]:
+        fails.append("FAIL-OPEN on an unparseable payload (must fail closed)")
+    # a well-formed non-write tool (Read) on a protected path is still allowed (no false-deny)
+    if not path_gate_verdict("Read", protected_example, "", globs, what)[0]:
+        fails.append("false-deny on a Read of a protected path")
+    # a Bash evasion (cp/mv/sed -i/python -c) that mutates a protected path is caught (not just >/tee/rm)
+    base0 = globs[0].replace("/*", "").replace("*", "")
+    if base0 and path_gate_verdict("Bash", None, f"cp /tmp/forged {base0}x", globs, what)[0]:
+        fails.append("Bash cp-evasion into a protected path was allowed")
     if fails:
         sys.stderr.write(f"{name} selftest: FAIL\n")
         for f in fails:

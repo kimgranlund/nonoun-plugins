@@ -9,7 +9,7 @@ description: >
   kit", "build the corpus kit", "add a new family to dev-factory", "write a validation/dispatch adapter", "the
   rubric manifest for this family", "the dispatch policy", "make this kit conform", "does this kit need a
   kernel change", "extend dev-kit-corpus". NOT for editing the kernel or its schemas (kits never touch the
-  kernel), NOT for instance state (kits hold none), NOT for running the server (factory-ops), NOT for the
+  kernel), NOT for instance state (kits hold none), NOT for running the server (the dev-server runbook), NOT for the
   lattice grid (lattice-management).
 ---
 

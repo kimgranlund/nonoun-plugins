@@ -115,7 +115,7 @@
     },
     "compound_skill": {
       "template": "{slug}",
-      "doc": "lattice-management, ticket-orchestration, cell-engine, verification, regeneration, autonomy-governance, factory-ops, kit-authoring — a self-contained capability bundle (a folder carrying its own agents/rubric/policy/methodologies/scripts/references); named by the capability it manages, kebab-case"
+      "doc": "lattice-management, ticket-orchestration, cell-engine, verification, regeneration, autonomy-governance, kit-authoring — a self-contained capability bundle (a folder carrying its own agents/rubric/policy/methodologies/scripts/references); named by the capability it manages, kebab-case"
     },
     "hook_script": {
       "template": "{gateverb}-{slug}",

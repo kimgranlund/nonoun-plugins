@@ -21,6 +21,8 @@ The two planes (harness-and-storage.md): **artifact bodies → files** (git-nati
 them); **tensed status + queryable history → the database** (a derived view, rebuildable from the ledger).
 The DB is never ahead of the ledger; losing it is a rebuild, not a loss.
 
+> **Operating the runtime** — booting the server, arming the bounded heartbeat, worktree lifecycle, the metrics to watch, and the crash/recovery runbook — lives in **[`RUNBOOK.md`](RUNBOOK.md)**, alongside the code it drives (the same line drawn for the system proofs in `evals/`).
+
 ## Single-writer discipline
 
 Only the server writes operational state. A UI drag is a transition **request** — the gate runs server-side

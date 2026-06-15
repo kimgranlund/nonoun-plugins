@@ -16,7 +16,7 @@ The Kanban board cannot disagree with the lattice grid, by construction. A worke
 
 | Tier | Is | Holds |
 |---|---|---|
-| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 4 protective gates + 2 lifecycle predicates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and the 12-agent roster across 8 compound skills |
+| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 4 protective gates + 2 lifecycle predicates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and the 12-agent roster across 7 compound skills |
 | **dev-kit-corpus · dev-kit-app** | plugins (family bindings) | ontology · rubric manifest · **real validation harness verifiers** (spec-quality / pattern / test-suite — not a file-exists check) · dispatch policy · seed patterns. `check-kit-conform` enforces **zero kernel edits** |
 | **Instance** | a user project's `.agents/dev-factory/` | the only stateful tier: `lattice.json · coordination/ · the layer dirs · signals/ · ledger/ · index.db` |
 | **dev-server** | a Python app (NOT a plugin) | the bounded 30s heartbeat, the dispatcher + DispatchAdapter (mock + headless), the SQLite read-index, the **reporting layer** (DuckDB/stdlib), the REST API, the SSE stream, the **web UI** (Kanban two-lens · lattice grid · ledger · agent monitor · roadmap) |
@@ -32,7 +32,7 @@ The one law (inherited): **computation routes to code, never to inference.** Sel
 | **Run** | `dev-server/evals/run-milestone/` | the ledger's failure signature distills (with provenance) into an upstream proposal; a spec is revised through a deliberate `validated → regenerating → validated` transition — the substrate **sharpens** |
 | **Fly** | `dev-server/evals/fly-milestone/` | two families bind one **unchanged** kernel (the boundary's falsification test); Tier 3 lights-out is reachable only when earned, and revocable by a single incident |
 
-Plus three cross-cutting proofs: `dev-server/evals/demotion/` (mechanical demotion has *teeth* — a caught false-pass revokes autonomy with no human in the path), `dev-server/evals/integration-milestone/` (the kit actually *drives* the loop — the dispatch policy is consumed, the roster staffs it, the family's real rubric gates it), and `dev-server/evals/server-smoke/` (the live FastAPI app serves the UI + every endpoint over a real client). The kernel's `dev-kernel/evals/tracer-bullet/` proves the morphism in isolation. **Eight falsifiable replays in all** — and `dev-server/demo.py` runs the whole integrated system live for a human to watch.
+Plus three cross-cutting proofs: `dev-server/evals/demotion/` (mechanical demotion has *teeth* — a caught false-pass revokes autonomy with no human in the path), `dev-server/evals/integration-milestone/` (the kit actually *drives* the loop — the dispatch policy is consumed, the roster staffs it, the family's real rubric gates it), and `dev-server/evals/server-smoke/` (the live FastAPI app serves the UI + every endpoint over a real client). The kernel's `dev-kernel/evals/` proves the morphism in isolation, **both directions** — `tracer-bullet/` (forward: ticket `done` ⟹ the cell advanced) and `reverse-morphism/` (reverse: no out-of-band cell advance). **Nine falsifiable replays in all** — and `dev-server/demo.py` runs the whole integrated system live for a human to watch.
 
 ## Getting started — step by step
 
@@ -81,7 +81,9 @@ dev-factory's skills are **model-invoked** (there are no slash commands) — so 
 | *"author and calibrate a rubric for the spec layer"* | **verification** → rubric-architect |
 | *"distill patterns from the ledger"* · *"propose a spec revision from what we've learned"* | **regeneration** → pattern-distiller / spec-regenerator |
 | *"what tier is this family at — has autonomy been earned?"* · *"demote this family"* | **autonomy-governance** |
-| *"how do I run the server / arm the heartbeat?"* · *"show the crash-recovery runbook"* · *"author a kit for a new family"* | **factory-ops** · **kit-authoring** |
+| *"author a kit for a new family"* · *"write a validation adapter"* | **kit-authoring** |
+
+Operating the running factory — *"how do I run the server / arm the heartbeat?"*, *"a worker is stuck"*, *"the index is corrupted"* — is the runtime's job, in [`dev-server/RUNBOOK.md`](dev-server/RUNBOOK.md) (it ships with the code it drives, not as a kernel skill).
 
 The factory's *own* roster agents (cell-advancer, spec-architect, …) are dispatched by dev-server's loop, not invoked directly.
 

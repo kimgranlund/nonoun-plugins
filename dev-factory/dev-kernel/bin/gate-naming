@@ -95,6 +95,8 @@ def main(argv):
         return selftest()
     if argv and argv[0] == "--hook":
         tool, path, _cmd = _gates.read_payload()
+        if tool is None:                       # unparseable payload — fail CLOSED, never open
+            return _gates.deny("gate-naming: DENIED — unparseable PreToolUse payload; failing closed.")
         if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
             why = name_violation(path)
             if why:

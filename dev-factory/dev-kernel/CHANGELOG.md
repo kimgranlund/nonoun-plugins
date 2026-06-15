@@ -4,7 +4,7 @@ All notable changes to **dev-kernel** are documented here. Format follows [Keep 
 
 ## [0.1.1] — 2026-06-14
 
-The 0.1.0 dogfood council's three Majors, closed — then the re-review council (BLOCKED → **CONDITIONAL**, no new Critical) two blocking prose-vs-code gaps + its mechanical residuals, also closed.
+The 0.1.0 dogfood council's three Majors, closed — then the re-review council (BLOCKED → **CONDITIONAL**, no new Critical) its two blocking prose-vs-code gaps + the mechanical residuals, then the non-blocking Majors it raised (`factory-ops` moved out of the kernel to the dev-server runbook; gates that failed open on a malformed payload now fail closed). One non-blocking item remains by design: the `kernel_version`/`produced_by` vendoring run-time migration contract, which needs an upstream harness-forge change (the vendored `lattice.py` owns both) rather than a local edit — tracked, not silently dropped.
 
 ### Fixed
 
@@ -14,6 +14,7 @@ The 0.1.0 dogfood council's three Majors, closed — then the re-review council 
 - **"Six gates" drift** (re-review, David F.) — the marketplace entry, `dev-factory/README.md`, and `bin/VENDOR.md` still said "six gates"; corrected to "four protective gates + two lifecycle predicates" (matching the manifest).
 - **VENDOR.md under-reported the vendored set** (re-review, Andrej K.) — the sync tool pins **three** files but the table listed two; `schemas/cell.schema.json` (the cell contract the reverse-morphism R4 proof stands on) is now documented.
 - **Manifest description trimmed** (re-review, Boris C.) — `plugin.json` description 1,756 → 1,010 chars, keeping the substrate/consent-wired honesty + the reconciliation thesis, dropping the README-in-a-slot bloat.
+- **Gates failed OPEN on a malformed payload** (re-review non-blocking, Simon W.) — `_gates.py` returned the write as ALLOWED when the PreToolUse payload was unparseable, and the Bash write-redirect heuristic (only `>`/`tee`/`rm`) missed `cp`/`mv`/`sed -i`/`python -c`. Now: an unparseable payload **fails closed** (deny — the gate must never allow a write it cannot inspect), the verb set is broadened to the common evasions, and the decision logic is a pure `path_gate_verdict()` the selftest exercises for both the fail-closed case and a `cp`-evasion (a non-write `Read` is still allowed — no false-deny). `gate-naming` carries the same fail-closed guard.
 
 ### Added
 
@@ -21,7 +22,7 @@ The 0.1.0 dogfood council's three Majors, closed — then the re-review council 
 
 ### Changed
 
-- **Skill layering made explicit** (council M2) — the 8 skills are now documented as two concentric rings: **6 core lattice** skills (the invariant machine) + **2 meta** skills (`factory-ops` drives the dev-server runtime, `kit-authoring` builds family kits — both outside the kernel contract, neither requiring a kernel edit). README gains a *Skill layering* section; the 2 meta skills join the sample prompts.
+- **`factory-ops` moved out of the kernel** (council M2, re-review non-blocking — 4 critics converged that a README reframe wasn't the move they asked for) — the runtime-operations skill is **gone from `dev-kernel/skills/`**; its operational substance (boot, arming the bounded heartbeat, worktree lifecycle, monitoring, the crash-recovery runbook) is consolidated into **`../dev-server/RUNBOOK.md`**, shipping with the `heartbeat.py`/`dispatch.py`/`store.py` code it documents — the same line already drawn for the system-evals in `../dev-server/evals/`. dev-kernel is now **7 skills**: 6 core lattice skills + **1 meta** skill (`kit-authoring`, which authors against the kernel's own `check-kit-conform` gate, so it stays). README *Skill layering* section, sample prompts, and all "8 skills" count claims updated.
 - **Context tax trimmed** (council M3) — all 7 over-budget skill descriptions trimmed under the 1024-char threshold (doctrine the bodies disclose on demand was cut; every `Triggers on` routing phrase + `NOT for` boundary kept). Always-on cost: 16,660 → 15,539 chars (~4,165 → ~3,884 tok); `context-cost` now WARN-free.
 
 ## [0.1.0] — 2026-06-14
