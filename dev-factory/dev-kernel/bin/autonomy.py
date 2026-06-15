@@ -68,9 +68,9 @@ def _has_validated_verifier(d, family=None):
 
 
 def refuter_checks(d, family=None):
-    """Independent re-validations recorded (the denominator of the false-pass rate)."""
-    return [e for e in _led.read(d, event="signal")
-            if (e.get("metrics") or {}).get("refuter") and _family_match(e, family)]
+    """Independent re-validations recorded (the denominator of the false-pass rate). Delegates to the
+    canonical ledger computation — one source of truth."""
+    return _led.refuter_checks(d, family)
 
 
 def incidents(d, family=None, since=None):
@@ -81,13 +81,11 @@ def incidents(d, family=None, since=None):
 
 
 def false_pass(d, family=None):
-    """incidents / independent-refuter-checks. `unmeasured` until at least one refuter has re-checked — a
-    rate you never measured is not a rate you can trust."""
-    checks = refuter_checks(d, family)
-    if not checks:
-        return "unmeasured"
-    bad = sum(1 for c in checks if (c.get("metrics") or {}).get("agreed") is False)
-    return bad / len(checks)
+    """incidents / independent-refuter-checks; `unmeasured` until at least one refuter has re-checked — a
+    rate you never measured is not a rate you can trust. Delegates to the SINGLE canonical implementation in
+    `ledger.false_pass_rate` (the function the autonomy policy docs cite), so the documented formula and the
+    consumed formula can never fork again."""
+    return _led.false_pass_rate(d, family)
 
 
 def open_incidents(d, family=None, now=None):

@@ -1,18 +1,16 @@
 ---
 name: regeneration
 description: >
-  Close the outer loop — turn the ledger into a sharper substrate. Distills ledger windows into pattern
-  cells (reusable solution shapes AND anti-patterns, each carrying the ledger entries it was distilled from),
-  then turns ledger deltas + patterns into upstream revision PROPOSALS: PRs against spec and rubric cells,
-  never silent edits, merge always policy-gated. This is the organ that makes the factory self-improving
-  rather than merely productive — the definitions the next loop runs against get better. Provenance is
-  required: a pattern or proposal without a rationale and its ledger evidence is useless and is not written.
-  Use when run history should become reusable patterns, when operating evidence implies a spec/rubric is
-  wrong, or when "what have we learned" must become a tracked upstream revision. Triggers on "distill the
-  ledger", "what patterns emerged", "turn this run history into reusable shape", "the spec was wrong, propose
-  a fix", "regenerate the rubric from evidence", "close the loop". NOT for authoring a spec from intent
-  (spec-author); NOT for authoring a rubric (verification); NOT for operating the engine on a cell
-  (cell-engine).
+  Close the outer loop — turn the ledger into a sharper substrate. Distills ledger windows into pattern cells
+  (reusable solution shapes AND anti-patterns, each carrying the ledger entries it came from), then turns
+  ledger deltas + patterns into upstream revision PROPOSALS: PRs against spec and rubric cells, never silent
+  edits, merge always policy-gated. Provenance is required — a pattern or proposal without rationale + ledger
+  evidence is not written. Use when run history should become reusable patterns, when operating evidence
+  implies a spec/rubric is wrong, or when "what have we learned" must become a tracked upstream revision.
+  Triggers on "distill the ledger", "what patterns emerged", "turn this run history into reusable shape", "the
+  spec was wrong, propose a fix", "regenerate the rubric from evidence", "close the loop". NOT for authoring a
+  spec from intent (spec-author); NOT for authoring a rubric (verification); NOT for operating the engine on a
+  cell (cell-engine).
 ---
 
 # regeneration — the outer loop that improves the definitions

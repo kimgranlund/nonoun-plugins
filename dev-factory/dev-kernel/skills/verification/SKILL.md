@@ -1,17 +1,16 @@
 ---
 name: verification
 description: >
-  Author and calibrate the factory's verifiers — the rubric cells that are the only thing standing between
-  a worker's output and a `validated` signal. Covers rubric authoring (gate/review dimensions, pristine
-  references, higher-order checks), calibration against few-shot exemplar sets, the generator/critic split
-  (the critic's model is an INDEPENDENT choice, never the generator's), eval-harness management, and the
-  §14.3 reward-hacking defense stack including exploit scans of PASSING runs. Use when a rubric cell must be
-  created, calibrated, or hardened; when a verifier is suspected reward-hackable; when a critic is being
-  selected or its agreement re-measured; when a clean scoreboard needs an adversarial second look. Triggers
-  on "author a rubric", "calibrate this verifier", "is this rubric reward-hackable", "build an exemplar
-  set", "the critic and worker share a model", "exploit-scan the passing runs", "score the scorer". NOT for
-  authoring specs (that is spec-author); NOT for operating the engine on a cell (that is cell-engine); NOT
-  for the autonomy ladder that READS the false-pass rate (that is autonomy-governance).
+  Author and calibrate the factory's verifiers — the rubric cells that are the only thing between a worker's
+  output and a `validated` signal. Covers rubric authoring (gate/review dimensions, pristine references,
+  higher-order checks), calibration against few-shot exemplars, the generator/critic split (the critic's model
+  is an INDEPENDENT choice, never the generator's), eval-harness management, and the §14.3 reward-hacking
+  defense stack including exploit scans of PASSING runs. Use when a rubric cell must be created, calibrated,
+  or hardened; when a verifier is suspected reward-hackable; when a critic is selected or re-measured.
+  Triggers on "author a rubric", "calibrate this verifier", "is this rubric reward-hackable", "build an
+  exemplar set", "the critic and worker share a model", "exploit-scan the passing runs", "score the scorer".
+  NOT for authoring specs (spec-author); NOT for operating the engine on a cell (cell-engine); NOT for the
+  autonomy ladder that READS the false-pass rate (autonomy-governance).
 ---
 
 # verification — building the verifiers the loop trusts

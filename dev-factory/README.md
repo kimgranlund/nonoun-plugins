@@ -16,7 +16,7 @@ The Kanban board cannot disagree with the lattice grid, by construction. A worke
 
 | Tier | Is | Holds |
 |---|---|---|
-| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 6 gates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and the 12-agent roster across 8 compound skills |
+| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 4 protective gates + 2 lifecycle predicates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and the 12-agent roster across 8 compound skills |
 | **dev-kit-corpus · dev-kit-app** | plugins (family bindings) | ontology · rubric manifest · **real validation harness verifiers** (spec-quality / pattern / test-suite — not a file-exists check) · dispatch policy · seed patterns. `check-kit-conform` enforces **zero kernel edits** |
 | **Instance** | a user project's `.agents/dev-factory/` | the only stateful tier: `lattice.json · coordination/ · the layer dirs · signals/ · ledger/ · index.db` |
 | **dev-server** | a Python app (NOT a plugin) | the bounded 30s heartbeat, the dispatcher + DispatchAdapter (mock + headless), the SQLite read-index, the **reporting layer** (DuckDB/stdlib), the REST API, the SSE stream, the **web UI** (Kanban two-lens · lattice grid · ledger · agent monitor · roadmap) |

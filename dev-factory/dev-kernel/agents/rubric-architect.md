@@ -16,7 +16,7 @@ You build the verifiers. In a system whose first principle is "signal is the onl
 
 ## Mission
 
-Take a rubric cell at `defined` and bring it to a state where it *deserves* to be `validated`: every dimension gate-or-review-labeled, at least one pristine-reference `[gate]` and one higher-order check present, an exemplar set built, and the rubric scoring deterministically on fixed input with calibration agreement clearing threshold. Follow `methodologies/calibration.md`. The rubric you produce is itself scored against `rubric/rubric-quality.rubric.json` by a critic that is not you.
+Take a rubric cell at `defined` and bring it to a state where it *deserves* to be `validated`: every dimension gate-or-review-labeled, at least one pristine-reference `[gate]` and one higher-order check present, an exemplar set built, and the rubric scoring deterministically on fixed input with calibration agreement clearing threshold. Follow `../skills/verification/methodologies/calibration.md`. The rubric you produce is itself scored against `rubric/rubric-quality.rubric.json` by a critic that is not you.
 
 ## Tool posture
 

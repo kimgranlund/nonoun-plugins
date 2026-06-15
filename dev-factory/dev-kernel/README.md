@@ -10,7 +10,7 @@ The invariant kernel of **dev-factory** — the typed contracts and deterministi
 | **The kernel** (`bin/`) | the **vendored** harness-forge lattice/validation kernel (drift-gated) + native lifecycle · compass · execplan · autonomy · distill · the tamper-evident hash-chained ledger |
 | **Gates** | 4 protective scripts (`gate-signal` · `gate-verifier` · `gate-ledger` · `gate-naming`) + 2 lifecycle transition predicates (`gate-ticket-ready` · `gate-dispatch`) + `check-kit-conform` |
 | **MCP** | read-only `factory-query` — 8 tools over the lattice / index / ledger |
-| **Roster + skills** | a 12-agent dispatcher roster (`agents/`) across 8 compound skills (`skills/`) |
+| **Roster + skills** | a 12-agent dispatcher roster (`agents/`) across 8 skills — **6 core lattice** skills + **2 meta** skills (see *Skill layering*) |
 
 ## The thesis
 
@@ -19,6 +19,10 @@ Ticket `done` ⟺ the target cell advances through the **same** `gate-signal` �
 ## Scope — substrate, not the running system
 
 **dev-kernel installed alone provides the contracts, the selftested kernel scripts, and the read perimeter — it does not run the factory.** The protective gates BLOCK only once consent-wired into a worker loop; the autonomous loop, the live operational state (the SQLite index the MCP reads), and the trust-tier enforcement are the separate **dev-server** app's. The dark factory runs when dev-server drives this kernel against an instance under `.agents/dev-factory/`.
+
+## Skill layering — core vs meta
+
+The 8 skills are two concentric rings, and the boundary is deliberate. The **6 core lattice skills** operate the invariant machine over the on-disk grid: `lattice-management` · `ticket-orchestration` · `cell-engine` · `verification` · `regeneration` · `autonomy-governance`. The **2 meta skills** are the outer ring — they explicitly drive surfaces *outside* the kernel and say so: `factory-ops` drives the **dev-server runtime** (heartbeat/dispatch/store — code that lives in `../dev-server`, not here), and `kit-authoring` builds **family kits** (the stateless plugins in `../dev-kit-*`, never the kernel). Both ship here because dev-kernel is the plugin a human installs to operate and extend the factory, but neither is part of the invariant contract — a kernel edit is never required to author a kit or operate the runtime, and `check-kit-conform.py` mechanically enforces that the kit half of that boundary holds.
 
 ## Getting started — step by step
 
@@ -43,6 +47,8 @@ With `dev-kernel` installed, the skills trigger on natural language (no slash co
 - *"author and calibrate a rubric for the spec layer"* — **verification**
 - *"distill patterns from the ledger"* · *"propose a spec revision from what we've learned"* — **regeneration**
 - *"has this family earned autonomy — what tier?"* — **autonomy-governance**
+- *"run the dev-factory server"* · *"the loop won't dispatch"* · *"a worker is stuck"* — **factory-ops** (meta)
+- *"author a kit"* · *"add a new family to dev-factory"* · *"write a validation adapter"* — **kit-authoring** (meta)
 
 ## Verify
 

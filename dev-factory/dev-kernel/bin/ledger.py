@@ -172,18 +172,28 @@ def no_progress(d, cell, n=3):
     return False, "progressing"
 
 
+def _family_match(e, family):
+    return family is None or (e.get("metrics") or {}).get("family") == family
+
+
+def refuter_checks(d, family=None):
+    """Independent re-validations recorded (the denominator of the false-pass rate)."""
+    return [e for e in read(d, event="signal")
+            if (e.get("metrics") or {}).get("refuter") and _family_match(e, family)]
+
+
 def false_pass_rate(d, family=None):
-    """The trust-trajectory input. Returns 'unmeasured' until an independent refuter has disagreed with a
-    critic at least once — a 0.0% with no refuter is a LIE that would auto-promote a never-checked family.
-    Honest scope: only an `incident` event (a refuter caught a false pass) makes this measurable."""
-    incidents = [e for e in read(d, event="incident")]
-    signals = [e for e in read(d, event="signal")]
-    if not incidents:
+    """THE canonical false-pass computation — `autonomy.false_pass` delegates here, so the formula the
+    autonomy policy docs cite and the formula `tier_for` consumes can never fork again (one source of
+    truth). Refuter-disagreements / independent-refuter-checks. Returns 'unmeasured' until at least one
+    refuter has re-checked — a 0.0% with no refuter is a LIE that would auto-promote a never-checked family.
+    The denominator is independent refuter checks, NOT raw passes: a rate never measured against an
+    independent refuter is not a rate the trust ladder may consume."""
+    checks = refuter_checks(d, family)
+    if not checks:
         return "unmeasured"
-    passes = [e for e in signals if e.get("to") == "pass" or e.get("metrics", {}).get("result") == "pass"]
-    if not passes:
-        return "unmeasured"
-    return len(incidents) / max(1, len(passes))
+    bad = sum(1 for c in checks if (c.get("metrics") or {}).get("agreed") is False)
+    return bad / len(checks)
 
 
 def selftest():

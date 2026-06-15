@@ -1,7 +1,16 @@
 ---
 name: lattice-management
 description: >
-  Seed, scan, rank, query, and visualize the dev-factory knowledge lattice — the layers×scopes grid of typed cells whose maturity the whole factory advances. The operator posture over the GRID, not over one cell: stand up a new instance's lattice, sweep the modality axis for gaps (scan), order the gap set by (risk × unlock) ÷ probe-cost subject to dependency readiness (rank), answer "what is known and how well" (query), and propagate staleness as a graph computation when an upstream cell's content hash changes. Selection, ranking, readiness, and staleness are deterministic graph operations run by the vendored `lattice.py` kernel — this skill drives that code and supplies only the judgment that lives in designing the grid. Triggers on "design the lattice for this instance", "seed the lattice", "scan for lattice gaps", "what cell should we advance next", "rank the frontier", "query the lattice state", "show the grid", "why is this cell stale", "decompose this domain into layers and scopes". NOT for advancing one cell (that is cell-engine), NOT for the coordination corpus / tickets (that is ticket-orchestration), NOT for scoring an artifact (that is verification).
+  Seed, scan, rank, query, and visualize the dev-factory knowledge lattice — the layers×scopes grid of typed
+  cells whose maturity the whole factory advances. The operator posture over the GRID, not one cell: stand up
+  a new instance's lattice, sweep for gaps (scan), order them by (risk × unlock) ÷ probe-cost subject to
+  dependency readiness (rank), answer "what is known and how well" (query), and propagate staleness as a graph
+  computation. Selection/ranking/readiness/staleness are deterministic ops in the vendored lattice.py kernel —
+  this skill drives that code, supplying only the judgment in designing the grid. Triggers on "design the
+  lattice for this instance", "seed the lattice", "scan for lattice gaps", "what cell should we advance next",
+  "rank the frontier", "query the lattice state", "show the grid", "why is this cell stale", "decompose this
+  domain into layers and scopes". NOT for advancing one cell (cell-engine), NOT for tickets
+  (ticket-orchestration), NOT for scoring an artifact (verification).
 ---
 
 # lattice-management — the grid, operating

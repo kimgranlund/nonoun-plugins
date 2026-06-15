@@ -17,12 +17,14 @@ workflow that runs `--check` must travel with it (else the drift gate is asserte
 |---|---|---|
 | `lattice.py` | `harness-forge/bin/lattice.py` | THE lattice kernel — the 8-state maturity machine (`TRANSITIONS`), `scan`/`rank`/`validity`/`advance`, staleness-as-graph, `scaffold`, the run-budget + loop-marker bound machinery. |
 | `validate.py` | `harness-forge/bin/validate.py` | the validation path — runs a verifier, mints the Signal from its **exit status**, advances `instantiated → validated` only on pass. Imports `lattice` as a sibling (hence both live in `bin/`, not a subdir). |
+| `schemas/cell.schema.json` | `harness-forge/schemas/cell.schema.json` | the **cell contract** the vendored `lattice.py check()` validates cell keys/enums against — dev-factory **adopts** harness-forge's cell schema rather than forking it, so the kernel and the reverse-morphism R4 proof stand on the same contract. (Lives under `schemas/`, not `bin/`; the third file the sync tool pins.) |
 
 **Never edit these here.** Fix upstream in harness-forge, then run `python3 tools/sync-dev-kernel.py`.
 A drifted copy fails `sync-dev-kernel.py --check` in CI.
 
-Everything dev-factory-specific — the ticket lifecycle machine, the six gates, the coordination
-ledger vocab, dispatch, the server, the autonomy tiers — is **native** dev-kernel code that *calls*
+Everything dev-factory-specific — the ticket lifecycle machine, the four protective gates + two
+lifecycle predicates, the coordination ledger vocab, dispatch, the server, the autonomy tiers — is
+**native** dev-kernel code that *calls*
 this vendored kernel, never a fork of it. If dev-factory ever needs a kernel behavior the vendored
 files don't expose, the fix is an upstream change to harness-forge (a justified cross-over
 improvement), re-vendored — not a local edit.

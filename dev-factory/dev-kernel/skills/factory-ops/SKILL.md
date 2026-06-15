@@ -1,7 +1,16 @@
 ---
 name: factory-ops
 description: >
-  Operate and keep healthy the dev-factory runtime (dev-server) and the on-disk substrate it drives — the operational seat, not the knowledge seat. Run the server, arm and tend the bounded 30s heartbeat, manage worktree lifecycle, watch the health metrics, and execute the crash/recovery runbook when a worker hangs, the server dies mid-tick, or a budget window exhausts. The center of gravity is deterministic: the heartbeat, lease reconciliation, worktree GC, and the rebuild-by-replay are dev-server code (heartbeat.py · dispatch.py · store.py) — this skill drives and explains that code, it never re-implements it. Triggers on "run the dev-factory server", "start the heartbeat", "arm the loop", "the loop won't dispatch", "a worker is stuck / hung", "the server crashed", "the index is corrupted", "rebuild the index", "the budget is exhausted", "what metrics should I watch", "is the factory healthy", "tear down a worktree". NOT for advancing a cell (cell-engine), NOT for the lattice grid itself (lattice-management), NOT for the tickets (ticket-orchestration), NOT for authoring a kit (kit-authoring).
+  Operate and keep healthy the dev-factory runtime (dev-server) — the operational seat, not the knowledge
+  seat. Run the server, arm and tend the bounded 30s heartbeat, manage worktree lifecycle, watch health, and
+  execute the crash/recovery runbook when a worker hangs, the server dies mid-tick, or a budget window
+  exhausts. The center of gravity is deterministic: heartbeat, lease reconciliation, worktree GC, and
+  rebuild-by-replay are dev-server code (heartbeat/dispatch/store.py) — this skill drives that code, never
+  re-implements it. Triggers on "run the dev-factory server", "start the heartbeat", "arm the loop", "the loop
+  won't dispatch", "a worker is stuck / hung", "the server crashed", "the index is corrupted", "rebuild the
+  index", "the budget is exhausted", "what metrics should I watch", "is the factory healthy", "tear down a
+  worktree". NOT for advancing a cell (cell-engine), NOT for the lattice grid (lattice-management), NOT for
+  tickets (ticket-orchestration), NOT for authoring a kit (kit-authoring).
 ---
 
 # factory-ops — the runtime, operating

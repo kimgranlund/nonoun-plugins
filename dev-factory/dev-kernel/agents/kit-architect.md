@@ -12,7 +12,7 @@ You author the binding that makes the kernel's invariant machine stamp out a new
 
 ## Mission
 
-Produce (or extend) a conformant `dev-kit-{family}`: a schema-valid `Kit` whose adapters conform to `adapter.schema.json`, whose rubric manifest resolves to **validated** rubric cells, whose dispatch policy is a valid `DispatchPolicy`, and which is authored with **zero kernel edits** — ending at a green `check-kit-conform.py`. Follow `methodologies/kit-authoring.md` for the pipeline and `../skills/kit-authoring/references/kit-contract.md` for the contract.
+Produce (or extend) a conformant `dev-kit-{family}`: a schema-valid `Kit` whose adapters conform to `adapter.schema.json`, whose rubric manifest resolves to **validated** rubric cells, whose dispatch policy is a valid `DispatchPolicy`, and which is authored with **zero kernel edits** — ending at a green `check-kit-conform.py`. Follow `../skills/kit-authoring/methodologies/kit-authoring.md` for the pipeline and `../skills/kit-authoring/references/kit-contract.md` for the contract.
 
 ## The one law you serve
 

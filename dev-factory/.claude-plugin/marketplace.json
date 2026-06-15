@@ -11,7 +11,7 @@
     {
       "name": "dev-kernel",
       "source": "./dev-kernel",
-      "description": "The invariant kernel: the typed contracts (cell · ticket · ledger · activity · dispatch-policy · kit · adapter · naming schemas), the two state machines (the vendored 8-state cell maturity machine + the ticket lifecycle), the six gates that mechanize the immutable/rewritable boundary, the compass (deterministic selection), the validation path (signal minted from a verifier's exit status), the autonomy trust-trajectory with mechanical demotion, distillation, the kit-conform boundary gate, and the 12-agent roster across 8 compound skills. The central reconciliation: ticket `done` ⟺ the target cell advances through the same gate-signal — the board cannot disagree with the lattice.",
+      "description": "The invariant kernel: the typed contracts (cell · ticket · ledger · activity · dispatch-policy · kit · adapter · naming schemas), the two state machines (the vendored 8-state cell maturity machine + the ticket lifecycle), the four protective gates + two lifecycle predicates that mechanize the immutable/rewritable boundary, the compass (deterministic selection), the validation path (signal minted from a verifier's exit status), the autonomy trust-trajectory with mechanical demotion, distillation, the kit-conform boundary gate, and the 12-agent roster across 8 compound skills. The central reconciliation: ticket `done` ⟺ the target cell advances through the same gate-signal — the board cannot disagree with the lattice.",
       "category": "agentic",
       "tags": [
         "agentic",

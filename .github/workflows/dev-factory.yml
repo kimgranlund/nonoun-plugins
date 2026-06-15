@@ -51,9 +51,9 @@ jobs:
           python3 dev-factory/dev-kernel/bin/check-kit-conform.py kit dev-factory/dev-kit-corpus
           python3 dev-factory/dev-kernel/bin/check-kit-conform.py kit dev-factory/dev-kit-app
 
-      - name: the 8 falsifiable replays
+      - name: the falsifiable replays
         run: |
-          python3 dev-factory/dev-kernel/evals/tracer-bullet/replay.py
+          for e in dev-factory/dev-kernel/evals/*/replay.py; do echo "» $e"; python3 "$e"; done
           for e in crawl-milestone walk-milestone demotion run-milestone fly-milestone integration-milestone; do
             echo "» $e"; python3 "dev-factory/dev-server/evals/$e/replay.py"
           done

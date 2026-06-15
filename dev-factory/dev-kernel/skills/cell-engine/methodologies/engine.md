@@ -46,7 +46,7 @@ The plan is assembled **deterministically by the compass** from the family's dis
 
 ## Budgets are policy, not afterthoughts
 
-Every pass carries an iteration cap, a wall-clock limit, a no-progress detector, and a *separate* done-judge. Loop length, not model choice, dominates cost — so the bounds are **code**, not the worker's counting: `ledger.py no-progress` is the detector; the orchestrator blocks a stuck cell; `gate-budget` denies further writes to it. The graceful stop (notice the budget is spent, report, hand back) is the agent's courtesy; the floor is the gate.
+Every pass carries an iteration cap, a wall-clock limit, a no-progress detector, and a *separate* done-judge. Loop length, not model choice, dominates cost — so the bounds are **code**, not the worker's counting: `ledger.py no-progress` is the detector and `lattice.py block` is the flag — **both ship in this kernel**. Converting that flag into a *denied write* is `gate-budget`, which lives with the runtime (**dev-server**) and is **consent-wired into the worker loop** — it is not bundled in dev-kernel (the same honest scope as `gate-signal`: a kernel installed alone enforces nothing; the bounds become mechanical once dev-server wires them). The graceful stop (notice the budget is spent, report, hand back) is the agent's courtesy; once wired, the floor is the gate.
 
 ## Failure modes the engine guards against
 

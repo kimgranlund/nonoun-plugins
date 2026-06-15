@@ -1,7 +1,16 @@
 ---
 name: kit-authoring
 description: >
-  Author and extend dev-factory family kits — the stateless plugins that bind the kernel's contracts to one family (corpus, app, …) so the same invariant machine stamps out a new family with ZERO kernel edits. Produce a kit's ontology, rubric manifest (which validated rubric cell gates which layer), the two adapter species (validation adapters that bind a layer to a verifier command; dispatch adapters that bind the runtime), the dispatch policy, and seed patterns — each conforming to kit.schema.json + adapter.schema.json. The boundary's falsification test is mechanical: a kit that needs the kernel changed has leaked, and the `check-kit-conform.py` gate rejects it. Triggers on "author a kit", "build the corpus kit", "add a new family to dev-factory", "write a validation adapter", "write a dispatch adapter", "the rubric manifest for this family", "the dispatch policy for this family", "make this kit conform", "does this kit need a kernel change", "extend dev-kit-corpus". NOT for editing the kernel or its schemas (kits never touch the kernel), NOT for instance state (kits hold none), NOT for running the server (factory-ops), NOT for the lattice grid (lattice-management).
+  Author and extend dev-factory family kits — the stateless plugins that bind the kernel's contracts to one
+  family (corpus, app, …) so the same invariant machine stamps out a new family with ZERO kernel edits.
+  Produce a kit's ontology, rubric manifest, the two adapter species (validation + dispatch), dispatch policy,
+  and seed patterns — each conforming to kit.schema.json + adapter.schema.json. The boundary is falsifiable: a
+  kit that needs the kernel changed has leaked, and check-kit-conform.py rejects it. Triggers on "author a
+  kit", "build the corpus kit", "add a new family to dev-factory", "write a validation/dispatch adapter", "the
+  rubric manifest for this family", "the dispatch policy", "make this kit conform", "does this kit need a
+  kernel change", "extend dev-kit-corpus". NOT for editing the kernel or its schemas (kits never touch the
+  kernel), NOT for instance state (kits hold none), NOT for running the server (factory-ops), NOT for the
+  lattice grid (lattice-management).
 ---
 
 # kit-authoring — the kernel/kit boundary, stamped

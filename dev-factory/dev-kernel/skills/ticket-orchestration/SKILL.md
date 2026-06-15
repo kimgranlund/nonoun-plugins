@@ -1,7 +1,16 @@
 ---
 name: ticket-orchestration
 description: >
-  Manage the coordination corpus — the typed ticket substrate the factory selects and dispatches over. Create, triage, and transition tickets; plan the roadmap and backlog; run the ticket lifecycle machine that drives each ticket through draft→active→claimed→in-progress→in-review→done. The central reconciliation: every ticket declares a target cell + a target maturity transition, so the coordination board cannot disagree with the lattice — ticket `done` implies the cell advanced through the SAME gate-signal. The lifecycle transitions, readiness gates, and dependency partial-order are the deterministic `lifecycle.py` machine; this skill drives that code and supplies the triage/decomposition judgment inside a ticket. Triggers on "create a ticket", "triage this issue", "make this a well-formed ticket", "decompose this epic into tickets", "plan the roadmap", "what's blocking this ticket", "resolve the dependency cycle", "transition this ticket", "is this ticket ready to dispatch". NOT for advancing the cell a ticket targets (that is cell-engine), NOT for the lattice grid itself (that is lattice-management).
+  Manage the coordination corpus — the typed ticket substrate the factory selects and dispatches over. Create,
+  triage, and transition tickets; plan the roadmap; run the lifecycle machine that drives each ticket
+  draft→active→claimed→in-progress→in-review→done. The central reconciliation: every ticket declares a target
+  cell + a target maturity transition, so the board cannot disagree with the lattice — ticket `done` implies
+  the cell advanced through the SAME gate-signal. Lifecycle transitions, readiness gates, and the dependency
+  partial-order are the deterministic lifecycle.py machine; this skill drives it, supplying
+  triage/decomposition judgment. Triggers on "create a ticket", "triage this issue", "make this a well-formed
+  ticket", "decompose this epic into tickets", "plan the roadmap", "what's blocking this ticket", "resolve the
+  dependency cycle", "transition this ticket", "is this ticket ready to dispatch". NOT for advancing the cell
+  a ticket targets (cell-engine), NOT for the lattice grid (lattice-management).
 ---
 
 # ticket-orchestration — the coordination corpus, operating

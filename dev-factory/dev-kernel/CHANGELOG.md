@@ -2,6 +2,28 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.1] — 2026-06-14
+
+The 0.1.0 dogfood council's three Majors, closed — then the re-review council (BLOCKED → **CONDITIONAL**, no new Critical) two blocking prose-vs-code gaps + its mechanical residuals, also closed.
+
+### Fixed
+
+- **`gate-budget` phantom prose** (re-review, Charity M. + Chip H.) — `skills/cell-engine/methodologies/engine.md` and `agents/cell-advancer.md` described `gate-budget` as if it denied writes *from this kernel*, but the gate ships with the runtime (dev-server) and is consent-wired — dev-kernel ships only the detector (`ledger.py no-progress`) + the flag (`lattice.py block`). Both surfaces now carry the same honest scope as `gate-signal` ("the bounds become mechanical once dev-server wires them").
+- **Forked false-pass function** (re-review, Chip H.) — `autonomy.false_pass` (consumed by `tier_for`) and `ledger.false_pass_rate` (cited by 7 governance docs) were two functions with different formulas. Reconciled to ONE: `ledger.false_pass_rate` is now the single canonical refuter-gated implementation (refuter-disagreements ÷ independent-refuter-checks, `unmeasured` until a refuter re-checks), and `autonomy.false_pass`/`refuter_checks` delegate to it — the documented formula and the consumed formula can no longer diverge.
+- **Two post-move broken refs** (re-review, Scott W. — the C1 residual) — `agents/kit-architect.md` + `agents/rubric-architect.md` carried bare `methodologies/…` refs the agent-relocation missed; both now resolve to `../skills/<skill>/methodologies/…`.
+- **"Six gates" drift** (re-review, David F.) — the marketplace entry, `dev-factory/README.md`, and `bin/VENDOR.md` still said "six gates"; corrected to "four protective gates + two lifecycle predicates" (matching the manifest).
+- **VENDOR.md under-reported the vendored set** (re-review, Andrej K.) — the sync tool pins **three** files but the table listed two; `schemas/cell.schema.json` (the cell contract the reverse-morphism R4 proof stands on) is now documented.
+- **Manifest description trimmed** (re-review, Boris C.) — `plugin.json` description 1,756 → 1,010 chars, keeping the substrate/consent-wired honesty + the reconciliation thesis, dropping the README-in-a-slot bloat.
+
+### Added
+
+- **Reverse-morphism eval** (`evals/reverse-morphism/`) — the council found the central biconditional was half-proven (`tracer-bullet` only proved the forward direction, `done ⟹ cell-advanced`). This proves the **reverse**: a cell cannot reach `validated` out-of-band — `lattice.json` + `signals/` are deny-on-write to workers (R1/R2), the only path LEDGERS the advance (R3), and a `validated`-without-signal cell is structurally rejected (R4). With the forward direction, `board ⟺ lattice` holds in both directions. Wired into the dev-factory CI.
+
+### Changed
+
+- **Skill layering made explicit** (council M2) — the 8 skills are now documented as two concentric rings: **6 core lattice** skills (the invariant machine) + **2 meta** skills (`factory-ops` drives the dev-server runtime, `kit-authoring` builds family kits — both outside the kernel contract, neither requiring a kernel edit). README gains a *Skill layering* section; the 2 meta skills join the sample prompts.
+- **Context tax trimmed** (council M3) — all 7 over-budget skill descriptions trimmed under the 1024-char threshold (doctrine the bodies disclose on demand was cut; every `Triggers on` routing phrase + `NOT for` boundary kept). Always-on cost: 16,660 → 15,539 chars (~4,165 → ~3,884 tok); `context-cost` now WARN-free.
+
 ## [0.1.0] — 2026-06-14
 
 Initial cut — the invariant kernel of dev-factory.

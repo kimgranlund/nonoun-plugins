@@ -1,18 +1,16 @@
 ---
 name: autonomy-governance
 description: >
-  Govern the trust trajectory — how much the factory may do unattended, earned mechanically and revoked
-  mechanically. Covers the §14.2 autonomy ladder (Tier 0 Attended → 1 Gated → 2 Unattended-in-budget → 3
-  Scheduled, each with a ledger-MEASURED precondition), budget primitives, gate definitions, and tier
-  promotion/demotion. Autonomy is earned by a measured false-pass rate READ FROM THE LEDGER, never granted by
-  an artifact's claim — and demotion is enforced IN CODE (bin/autonomy.py: tier_allows, the ledger-measured
-  demotion, false_pass gating), with no human in the demotion path. The incident-responder does RCA on an
-  alarm and proposes a corrective, but the demotion already happened mechanically. Use when deciding what a
-  family may run unattended, why the loop refused to dispatch, what tripped a demotion, or how a budget/gate
-  is defined. Triggers on "what tier is this family", "can this run lights-out", "why was dispatch refused",
-  "the false-pass rate spiked", "a reward-hack incident fired", "investigate the demotion", "what's the
-  budget for this loop". NOT for authoring the verifier whose false-pass rate is measured (verification);
-  NOT for the coordination corpus or dispatch mechanics (ticket-orchestration / the server).
+  Govern the trust trajectory — how much the factory may run unattended, earned and revoked MECHANICALLY.
+  Covers the §14.2 autonomy ladder (Tier 0 Attended → 1 Gated → 2 Unattended-in-budget → 3 Scheduled, each
+  with a ledger-MEASURED precondition), budget/gate primitives, and tier promotion/demotion. Autonomy is
+  earned by a measured false-pass rate read from the ledger, never an artifact's claim; demotion is enforced
+  in code (bin/autonomy.py), no human in the demotion path. Use when deciding what a family may run
+  unattended, why the loop refused to dispatch, or what tripped a demotion. Triggers on "what tier is this
+  family", "can this run lights-out", "why was dispatch refused", "the false-pass rate spiked", "a reward-hack
+  incident fired", "investigate the demotion", "what's the budget for this loop". NOT for authoring the
+  verifier whose false-pass rate is measured (verification); NOT for dispatch mechanics (ticket-orchestration
+  / the server).
 ---
 
 # autonomy-governance — earned, measured, revocable trust
