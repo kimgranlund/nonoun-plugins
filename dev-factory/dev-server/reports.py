@@ -335,6 +335,7 @@ def maturity_distribution(d):
 REPORTS = {
     "flow": flow_metrics,
     "flow_metrics": flow_metrics,
+    "throughput": flow_metrics,            # UI-3: a former name that 404'd; flow_metrics carries throughput
     "false_pass": false_pass_report,
     "probe_cost": probe_cost_report,
     "spend": spend_report,

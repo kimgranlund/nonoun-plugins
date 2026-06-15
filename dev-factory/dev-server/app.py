@@ -161,7 +161,9 @@ def build_app():
 
     @app.get("/api/status")
     def status_view():
-        return api.status(DIR)
+        # + the factory-state headline (UI-3): is it working, and what is it doing — the thing the SSE 'live'
+        # dot does not answer. HEARTBEAT_ENABLED is the transport's posture; the rest is derived from state.
+        return {**api.status(DIR), "factory": api.factory_state(DIR, HEARTBEAT_ENABLED)}
 
     @app.get("/api/reports/{name}")
     def reports(name: str, family: str = None, window: int = None):

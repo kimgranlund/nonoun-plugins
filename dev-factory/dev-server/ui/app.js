@@ -133,6 +133,7 @@ const store = {
   activities: signal([]),       // future /api/activities; degrades to [] / ledger-derived
   agents: signal([]),           // future /api/agents/running; degrades to []
   heartbeat: signal(null),      // last tick summary from SSE
+  factory: signal(null),        // UI-3: the factory-state headline from /api/status.factory (idle/running/armed/paused)
   panel: signal(null),          // { kind:"cell"|"ticket", id }
   modal: signal(null),          // { kind:"create-ticket", state }
   toast: signal(null),
@@ -176,6 +177,13 @@ async function loadAll() {
     try { store[key].value = await jget(path); }
     catch { /* leave prior/empty value; views render an empty state */ }
   }));
+  refreshStatus();
+}
+
+// UI-3: the factory-state headline (is it working, what is it doing) — distinct from the SSE socket dot.
+async function refreshStatus() {
+  try { store.factory.value = (await jget("/api/status")).factory || null; }
+  catch { /* leave prior value */ }
 }
 
 // ═══════════════════ SSE live wiring (no polling) ═══════════════════
@@ -216,7 +224,7 @@ function applyStreamEvent(evt) {
     if (payload && payload.summary) store.heartbeat.value = payload.summary;
   }
   // any committed write means the ledger advanced — pull the tail cheaply.
-  if (kind === "ticket" || kind === "tick") refreshLedger();
+  if (kind === "ticket" || kind === "tick") { refreshLedger(); refreshStatus(); }
 }
 
 // The /api/stream ticket payload is the *file-of-record* shape (nested), while
@@ -304,6 +312,7 @@ class DfApp extends UIElement {
           ${raw(tab("roadmap", "Roadmap", "⌖"))}
         </nav>
         <div class="conn" role="status" aria-live="polite">
+          <span class="factory-state" title="the factory's work state"></span>
           <span class="pulse" aria-hidden="true"></span><span class="conn-label"></span>
         </div>
       </header>
@@ -327,10 +336,27 @@ class DfApp extends UIElement {
       b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
     });
     this.querySelectorAll(".badge[data-count]").forEach((el) => (el.textContent = counts[el.dataset.count] ?? 0));
-    // connection indicator
+    // connection indicator (the SOCKET — "live" means SSE is connected, NOT that work is happening)
     const conn = store.conn.value;
     const cn = this.querySelector(".conn");
     if (cn) { cn.dataset.state = conn; cn.querySelector(".conn-label").textContent = conn === "live" ? "live" : conn === "connecting" ? "connecting…" : "reconnecting…"; }
+    // factory-state headline (UI-3) — the WORK state, the thing the socket dot does not tell you
+    const fs = store.factory.value;
+    const fel = this.querySelector(".factory-state");
+    if (fel) {
+      if (fs && fs.state) {
+        const a = fs.active_tickets ?? 0;
+        const detail = fs.state === "running" ? `${fs.running_agents} worker${fs.running_agents === 1 ? "" : "s"}`
+          : fs.state === "paused" ? "heartbeat paused"
+          : fs.state === "armed" ? `${fs.ready_to_dispatch} ready`
+          : fs.state === "blocked" ? `${a} queued · deps unmet`
+          : fs.state === "drained" ? "queue empty"
+          : /* idle */ (a ? `${a} queued · heartbeat off` : "no work queued");
+        fel.dataset.state = fs.state;
+        fel.textContent = `${fs.state.toUpperCase()} · ${detail}`;
+        fel.title = `factory work state (the dot is just the live socket) — ${fs.running_agents} running, ${fs.ready_to_dispatch} ready, heartbeat ${fs.heartbeat_enabled ? "on" : "off"}`;
+      } else { fel.textContent = ""; fel.removeAttribute("data-state"); }
+    }
     // view swap — only when the route actually changes (preserves the child otherwise)
     const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap" }[view] || "df-kanban";
     if (root.firstElementChild?.localName !== tag) { root.innerHTML = ""; root.appendChild(document.createElement(tag)); }

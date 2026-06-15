@@ -264,6 +264,45 @@ def status(d, family=None):
             "running_agents": len(agents_running(d))}
 
 
+def ready_tickets(d):
+    """Active tickets that are actually DISPATCHABLE right now — unclaimed, with every dependency cell
+    validated. The board hides this: an 'Active' card may be ready to dispatch, or blocked on an unmet dep."""
+    grid = {c["id"]: c["maturity"] for c in lattice_grid(d)}
+    out = []
+    for t in list_tickets(d, state="active"):
+        if t.get("claim"):
+            continue
+        deps = (t.get("dependencies") or {}).get("cells") or []
+        if all(grid.get(c) == "validated" for c in deps):
+            out.append(t)
+    return out
+
+
+def factory_state(d, heartbeat_enabled=False, paused=False, family=None):
+    """A single 'is the factory working, and what is it doing' headline — what the SSE 'live' dot does NOT
+    answer (that only means the socket is connected). Derived from real state (running workers, the heartbeat
+    posture, the ready queue) so the UI can say IDLE / RUNNING / ARMED / PAUSED instead of leaving an operator
+    to infer it from a green dot. Pure: the transport passes the live HEARTBEAT_ENABLED / PAUSED flags in."""
+    running = agents_running(d)
+    ready = ready_tickets(d)
+    active = list_tickets(d, state="active")
+    if paused:
+        state = "paused"
+    elif running:
+        state = "running"        # workers actively on cells
+    elif not heartbeat_enabled:
+        state = "idle"           # Crawl — dispatch is human-driven; nothing auto-runs
+    elif ready:
+        state = "armed"          # heartbeat on, dispatchable work waiting — one tick from running
+    elif active:
+        state = "blocked"        # heartbeat on, active tickets exist but NONE dep-ready — waiting on deps
+    else:
+        state = "drained"        # heartbeat on, no active tickets at all — the queue is empty / build done
+    return {"state": state, "running_agents": len(running), "ready_to_dispatch": len(ready),
+            "active_tickets": len(active), "ready_cells": [t.get("target_cell") for t in ready][:8],
+            "heartbeat_enabled": bool(heartbeat_enabled), "paused": bool(paused)}
+
+
 def report(d, name, **kw):
     import reports as _reports
     return _reports.report(d, name, **kw)
@@ -310,6 +349,15 @@ def selftest():
         expect(g["spec.task.x"]["maturity"] == "validated", "cell not validated in the grid")
         expect(g["spec.task.x"]["signal_count"] >= 1, "no signal counted on the cell")
         expect(any(e["event"] == "transition" and e.get("to") == "done" for e in ledger_query(d)), "done not in ledger")
+        # factory_state (UI-3): the work-state headline distinct from the SSE socket. After the done ticket
+        # above there are 0 active tickets, so the states are deterministic.
+        expect(factory_state(d, heartbeat_enabled=False)["state"] == "idle",
+               "factory_state with heartbeat off must be 'idle' (Crawl, human-driven)")
+        expect(factory_state(d, heartbeat_enabled=True)["state"] == "drained",
+               "factory_state with heartbeat on + no active tickets must be 'drained' (queue empty)")
+        expect(factory_state(d, paused=True, heartbeat_enabled=True)["state"] == "paused", "paused not reported")
+        expect("active_tickets" in factory_state(d, False) and "ready_to_dispatch" in factory_state(d, False),
+               "factory_state must surface the active + ready counts the UI renders")
     if fails:
         sys.stderr.write("api selftest: FAIL\n")
         for f in fails:

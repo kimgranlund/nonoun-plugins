@@ -107,6 +107,29 @@ no styles.css or call-site changes.
 
 ## dev-server / dev-kernel runtime (non-UI, same session)
 
+### DF-7 · P2 — an author ticket (`defined→instantiated`) can't close `done` once `validate.py` takes its cell to `validated` · worked around
+
+**Symptom.** Building `capability.system.color-engine`: the advancer authored the asset, then `validate.py`
+ran the harness and advanced the cell **`defined → validated`** in one pass (validate.py auto-steps
+`defined→instantiated→validated`). The author ticket targets only `{from:defined, to:instantiated}`, so closing
+it `done` was **denied**: *"authoring done denied: illegal maturity advance validated → instantiated"* — the
+done-morphism tries to advance the cell to the ticket's target (`instantiated`), but it's already past it.
+
+**Root cause.** Two models collide: (a) the **ticket** model is single-step (gate-ticket-ready rejects
+`defined→validated`, so a build is meant to be *two* tickets — author `defined→instantiated`, then validate
+`instantiated→validated`); (b) **`validate.py`** collapses straight to `validated`. Validate-first overshoots
+the author ticket's target, which the done-gate then can't satisfy (it only advances *toward* the target,
+never accepts "cell already at/beyond target").
+
+**Suggested fix.** Either (1) the done-gate treats "cell maturity ≥ ticket target" as satisfied; or (2)
+`validate.py` stops at the next legal step when an open author ticket exists; or (3) allow a single
+`defined→validated` build ticket whose acceptance binds a validated rubric (one ticket spans author+validate).
+As-is, the clean order is **close the author ticket `done` FIRST** (advances `defined→instantiated`), **then**
+run `validate.py` (`instantiated→validated`) — validate-last, not validate-first.
+
+**Workaround we used.** color-engine (validated-first): cancelled the subsumed author ticket as superseded.
+Later cells: reorder to author → close-done (→instantiated) → validate (→validated).
+
 ### DF-6 · P2 — `validate.py` prints "→ validated" even when the cell did NOT advance · FIXED upstream + re-vendored (2026-06-15)
 
 **Fixed in source.** harness-forge `validate.py` `run_validation` now reports the ACTUAL resulting maturity (`before → after`) and names the `regenerating` route when a passing verifier can't advance the cell to `validated` directly (e.g. a `stale` cell) — no more misleading `→ validated`. Re-vendored into dev-kernel; harness-forge 0.5.12.
