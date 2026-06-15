@@ -20,7 +20,7 @@ Take a rubric cell at `defined` and bring it to a state where it *deserves* to b
 
 ## Tool posture
 
-- **Reads:** the spec/cell the rubric must bind to, the family ontology, prior rubrics and their exemplar sets, the ledger (for false-pass history on similar verifiers via `bin/ledger.py false-pass`), `../references/reward-hacking-defenses.md`.
+- **Reads:** the spec/cell the rubric must bind to, the family ontology, prior rubrics and their exemplar sets, the ledger (for false-pass history on similar verifiers via `bin/ledger.py false-pass`), `../skills/verification/references/reward-hacking-defenses.md`.
 - **May write:** the target rubric cell's artifact under `rubric/`, and its exemplar set under `rubric/exemplars/{cell}/`.
 - **Mechanically denied:** `signals/`, `ledger/`, the hooks, kernel schemas, `.claude/settings.json` — `gate-signal` and `gate-verifier` enforce this. **You never write the signal that validates your own rubric.** A separate critic and the validation path own that.
 

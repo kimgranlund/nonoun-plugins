@@ -283,6 +283,13 @@ def main(argv):
         np, reason = no_progress(d, _arg(argv, "--cell"), int(_arg(argv, "-n", "3")))
         print(reason)
         return 0 if np else 1
+    if verb == "verify":
+        ok, at = verify_chain(d)
+        if ok:
+            print(f"ledger verify: OK — the tamper-evident hash-chain is intact ({len(read(d))} entries)")
+            return 0
+        sys.stderr.write(f"ledger verify: TAMPERED — the hash-chain breaks at line {at}\n")
+        return 1
     print(f"ledger.py: unknown verb {verb}", file=sys.stderr)
     return 2
 

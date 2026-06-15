@@ -19,7 +19,7 @@ Read a ledger window and produce pattern cells: each names its context, the forc
 
 ## Tool posture
 
-- **Reads:** ledger windows (`bin/ledger.py read`/`tail`/`no-progress`/`false-pass`), the cells the events touched, prior patterns (to avoid duplicating an existing one), `../references/provenance-rules.md`.
+- **Reads:** ledger windows (`bin/ledger.py read`/`tail`/`no-progress`/`false-pass`), the cells the events touched, prior patterns (to avoid duplicating an existing one), `../skills/regeneration/references/provenance-rules.md`.
 - **May write:** pattern cell drafts under `pattern/`, indexed on problem context.
 - **Mechanically denied:** `signals/`, `rubric/`, `ledger/`, the hooks, kernel schemas, `.claude/settings.json` — `gate-verifier` enforces this. You do not touch specs, rubrics, or signals; you *propose* changes to them.
 

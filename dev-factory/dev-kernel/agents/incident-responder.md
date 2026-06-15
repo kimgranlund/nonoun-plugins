@@ -21,7 +21,7 @@ Root-cause a false-pass / reward-hack incident: what did the worker do that sati
 
 ## Tool posture
 
-- **Reads:** the incident's ledger entries (`bin/ledger.py read --event incident`, `--event signal`), the passing run the refuter disagreed with, the rubric that passed it, the false-pass history (`bin/ledger.py false_pass_rate`), the current tier (`bin/autonomy.py` — read-only), `../references/defense-stack.md`.
+- **Reads:** the incident's ledger entries (`bin/ledger.py read --event incident`, `--event signal`), the passing run the refuter disagreed with, the rubric that passed it, the false-pass history (`bin/ledger.py false_pass_rate`), the current tier (`bin/autonomy.py` — read-only), `../skills/autonomy-governance/references/defense-stack.md`.
 - **May write:** incident records (under the incident path), and `stale` flags on verifier cells **through the proper path** (a ledgered transition / `propagate-staleness`), never a direct edit of a protected asset.
 - **Mechanically denied:** `signals/`, `rubric/` (in place), `ledger/`, the hooks, kernel schemas, `.claude/settings.json`, the run budget — `gate-verifier` enforces this. You cannot rewrite the audit trail that recorded the incident, cannot edit the verifier in place (you *propose* a revision), and **cannot promote a tier** — only measured evidence read by `autonomy.py` does that.
 

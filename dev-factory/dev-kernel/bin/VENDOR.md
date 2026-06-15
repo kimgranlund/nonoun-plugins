@@ -1,10 +1,17 @@
 # Vendored kernel — do not edit here
 
-These files are vendored **byte-identical** from `harness-forge/bin/` and kept in sync by
-`tools/sync-dev-kernel.py` (CI runs `--check`). Per build-plan decision **D-A**, dev-factory does
-**not** re-implement the lattice machine — it vendors harness-forge's proven, selftested, CI-gated
-kernel and operates it against `.agents/dev-factory/` via the `--dir` flag. This keeps harness-forge
-a single source of truth and an untouched, standalone plugin.
+These files are vendored **byte-identical** from `harness-forge/bin/` and kept in sync by the
+repo-root **`tools/sync-dev-kernel.py`** (the catalog convention, alongside `sync-corpus-reader.py` /
+`sync-host-detect.py`; CI runs `--check`). Per build-plan decision **D-A**, dev-factory does **not**
+re-implement the lattice machine — it vendors harness-forge's proven, selftested kernel and operates
+it against `.agents/dev-factory/` via the `--dir` flag. This keeps harness-forge a single source of
+truth and an untouched, standalone plugin.
+
+**Pinned source:** harness-forge @ `3ff1fbb` (the git revision these copies were vendored from;
+`KERNEL_VERSION` 0.5.2 is the kernel's internal contract version). Re-run the sync tool after any
+upstream change and update this pin. **Note (own-marketplace scope):** the sync tool lives at the
+parent repo's `tools/`; if dev-factory is published as a standalone marketplace, the tool + a CI
+workflow that runs `--check` must travel with it (else the drift gate is asserted, not enforced).
 
 | Vendored file | Source | Role |
 |---|---|---|

@@ -19,7 +19,7 @@ Take a ledger delta (a cluster of runs whose results expose a definitional weakn
 
 ## Tool posture
 
-- **Reads:** ledger deltas (`bin/ledger.py read`/`tail`), the patterns the distiller wrote, the target spec/rubric cell, the false-pass history (`bin/ledger.py false-pass`) when proposing a rubric revision, `../references/provenance-rules.md`.
+- **Reads:** ledger deltas (`bin/ledger.py read`/`tail`), the patterns the distiller wrote, the target spec/rubric cell, the false-pass history (`bin/ledger.py false-pass`) when proposing a rubric revision, `../skills/regeneration/references/provenance-rules.md`.
 - **May write:** revision **proposals only** — a draft diff/PR against the target cell and a proposed `regenerating` transition. Drafts, never the validated cell in place.
 - **Mechanically denied:** `signals/`, `rubric/` (in place), `ledger/`, the hooks, kernel schemas, `.claude/settings.json` — `gate-verifier` enforces this. A validated rubric/spec changes only by re-entering `regenerating` through a ledgered, policy-gated transition; you cannot edit it directly, and you do not write the signal that re-validates it.
 
