@@ -2,6 +2,15 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.1] — 2026-06-15
+
+Operator-dogfooding fixes (full log in `docs/tickets/dev-server-ui-fixes.md`) — the dev-kernel half. The dev-server-side fixes (DF-1/2/4/5) live in `../dev-server` (not a plugin), uncounted here.
+
+### Fixed
+
+- **DF-3 — agent model tiers were unresolvable.** The 11 agents that carried `model: deep` / `model: fast` (a dev-factory tier vocabulary Claude Code can't resolve) failed to launch via the Task tool — *"the selected model (deep) may not exist"* — so the `spec-council`, `rubric-architect`, and the critic path were dead on arrival wherever `deep` wasn't provisioned. Remapped to concrete, resolvable models preserving the cost-tiering: `deep → opus`, `fast → sonnet`. (The dev-server adapter's own `small/mid/large`→model map was already concrete; this was the orchestrator/Task path.)
+- **DF-6 — `validate.py` reported a misleading `→ validated`.** Re-vendored from harness-forge `0.5.12`: a passing verifier on a cell that can't reach `validated` directly (e.g. a `stale` cell — the FSM routes `stale → regenerating → validated`) printed `→ validated` and exited 0 while the cell stayed `stale`. It now reports the ACTUAL `before → after` maturity and names the `regenerating` route. Drift gate green; `KERNEL_VERSION` unchanged (message-only).
+
 ## [0.2.0] — 2026-06-15
 
 The `spec-author` skill — the factory's intake boundary, finally implemented, and a new way to manage specs.
