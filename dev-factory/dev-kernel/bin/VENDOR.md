@@ -7,7 +7,7 @@ re-implement the lattice machine — it vendors harness-forge's proven, selftest
 it against `.agents/dev-factory/` via the `--dir` flag. This keeps harness-forge a single source of
 truth and an untouched, standalone plugin.
 
-**Pinned source:** harness-forge `0.5.11` (re-vendored 2026-06-14 for the **`kernel_version` stamping**
+**Pinned source:** harness-forge `0.5.12` (re-vendored 2026-06-15: `validate.py` honest-maturity reporting [DF-6]; 0.5.11 added the **`kernel_version` stamping**
 cross-over improvement — `lattice.save()` now stamps the writing version into `lattice.json`, `produced_by`
 reads `LATTICE_PRODUCED_BY` so dev-factory labels its own instances, and `lattice.kernel_compat()` gives the
 server a boot-time version handshake). `KERNEL_VERSION` stays **0.5.2** — the additions are backward-compatible

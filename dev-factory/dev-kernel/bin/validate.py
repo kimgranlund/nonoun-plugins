@@ -71,6 +71,7 @@ def run_validation(d, cell_id, harness, command):
     rel = os.path.join("signals", cell_id, f"{ts}--{harness}.json")
 
     if passed:
+        before = cell["maturity"]
         if cell["maturity"] == "defined":                 # the asset now exists → instantiated → validated
             cell["maturity"] = "instantiated"
         if _lat.transition_ok(cell["maturity"], "validated"):
@@ -80,7 +81,16 @@ def run_validation(d, cell_id, harness, command):
         _lat.save(d, lat)
         if asset:
             against[cell_id] = _hash(os.path.join(os.path.dirname(os.path.dirname(d.rstrip("/"))) or ".", asset))
-        return True, signal, f"PASS — {cell_id} → validated (signal: {rel})"
+        after = cell["maturity"]
+        # Report the ACTUAL resulting maturity (DF-6): a passing verifier does NOT always reach `validated`.
+        # From `stale`, `transition_ok(stale, "validated")` is False (the FSM routes stale → regenerating →
+        # validated), so the cell stays `stale` even though the signal is minted. The old hardcoded
+        # "→ validated" message hid that no-op — a caller trusting stdout believed a stale cell was cleared.
+        if after == "validated":
+            return True, signal, f"PASS — {cell_id} signal minted; {before} → validated (signal: {rel})"
+        return True, signal, (f"PASS — {cell_id} signal minted; maturity {before} → {after} (NOT advanced to "
+                              f"`validated`: a passing verifier does not move `{after}` there directly — route "
+                              f"a stale/regenerating cell via `regenerating`). signal: {rel}")
     return False, signal, f"FAIL — {cell_id} not advanced ({harness} exited nonzero; signal: {rel})"
 
 

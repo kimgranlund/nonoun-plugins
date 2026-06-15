@@ -107,7 +107,9 @@ no styles.css or call-site changes.
 
 ## dev-server / dev-kernel runtime (non-UI, same session)
 
-### DF-6 · P2 — `validate.py` prints "→ validated" even when the cell did NOT advance · worked around
+### DF-6 · P2 — `validate.py` prints "→ validated" even when the cell did NOT advance · FIXED upstream + re-vendored (2026-06-15)
+
+**Fixed in source.** harness-forge `validate.py` `run_validation` now reports the ACTUAL resulting maturity (`before → after`) and names the `regenerating` route when a passing verifier can't advance the cell to `validated` directly (e.g. a `stale` cell) — no more misleading `→ validated`. Re-vendored into dev-kernel; harness-forge 0.5.12.
 
 **Symptom.** Re-validating a `stale` rubric cell, `validate.py … rubric.system.tonal-generation` printed
 `PASS — rubric.system.tonal-generation → validated` and exited 0 — but the cell stayed **`stale`**. The
