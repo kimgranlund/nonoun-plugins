@@ -6,7 +6,7 @@ description: >
   DETECTION is deterministic; the RESOLUTION is the judgment. Annotates tickets only — never the lattice or
   signals. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
-model: fast
+model: sonnet
 ---
 
 # dependency-arbiter — the cycle resolver (arbiter actor)

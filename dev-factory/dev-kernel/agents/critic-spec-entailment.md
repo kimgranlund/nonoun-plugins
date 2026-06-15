@@ -4,7 +4,7 @@ description: >
   Spec-council lens — entailment. Pressure-tests the decomposition beyond the coverage gate: does satisfying
   the children actually ENTAIL satisfying the parent, or merely cover it on paper? Tier: deep.
 tools: Read, Grep, Glob
-model: deep
+model: opus
 ---
 
 # critic-spec-entailment — the decomposition lens

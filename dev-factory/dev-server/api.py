@@ -62,7 +62,12 @@ def init_instance(d):
 def create_ticket(d, type, title, body="", target_cell=None, target_transition=None,
                   acceptance=None, budget=None, dependencies=None, priority=None, created_by="human"):
     """Create a draft ticket (file-of-record + materialize). The first ledger event is the draft->active
-    transition; creation itself is the initial state, not a transition."""
+    transition; creation itself is the initial state, not a transition.
+
+    Shape contract (DF-5): `target_transition` is a `{"from","to"}` dict naming ONE legal maturity step
+    (`defined→instantiated`, then `instantiated→validated` — multi-step like `defined→validated` is rejected
+    by the lifecycle machine), validated here at the source. `acceptance` is `{"rubric_cell": …}`. Transitions
+    elsewhere take an `actor` of shape `{"kind","id"}` (a bare string raises in `ledger.append`)."""
     tid = _led.ulid("epic-" if type == "epic" else "iss-" if type == "issue" else "tkt-")
     ticket = {
         "id": tid, "type": type, "title": title, "body": body, "state": "draft",
@@ -73,7 +78,13 @@ def create_ticket(d, type, title, body="", target_cell=None, target_transition=N
     }
     if target_cell:
         ticket["target_cell"] = target_cell
-    if target_transition:
+    if target_transition is not None:
+        # Validate at the source (DF-1/DF-5): a `target_transition` must be a `{"from","to"}` dict naming one
+        # legal maturity step. Rejecting a bare string here means a malformed ticket never reaches disk — far
+        # better than the string surviving to crash every later store.rebuild (incl. server boot).
+        if not (isinstance(target_transition, dict) and target_transition.get("from") and target_transition.get("to")):
+            raise ValueError(f"target_transition must be a {{'from','to'}} dict (one legal maturity step, "
+                             f"e.g. {{'from':'defined','to':'instantiated'}}), got {target_transition!r}")
         ticket["target_transition"] = target_transition
     if acceptance:
         ticket["acceptance"] = acceptance

@@ -4,7 +4,7 @@ description: >
   Spec-council lens — hackability. Hunts the reward-hack: can the acceptance criteria be satisfied WITHOUT
   satisfying the intent? The upstream analogue of a gamed rubric. Tier: deep.
 tools: Read, Grep, Glob
-model: deep
+model: opus
 ---
 
 # critic-spec-hackability — the reward-hacking lens

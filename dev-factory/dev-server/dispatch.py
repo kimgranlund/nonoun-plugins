@@ -196,8 +196,16 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         effort = (unit.get("plan") or {}).get("effort") or {}          # the assembled execution plan's effort ladder
         max_turns = effort.get("max_iterations") or budget.get("iterations", 10)
         model = self.model or {"small": "haiku", "mid": "sonnet", "large": "opus"}.get(effort.get("model_tier"))
+        # DF-4: the kit's bin/ holds the real meta-verifiers (rubric-check / spec-quality-check / doc-check) the
+        # worker must RUN, not eyeball — but it lives in the plugin source, outside project_root. Grant read
+        # access so an agent can locate + execute its gate instead of self-attesting (the generator/critic split
+        # the kernel exists to enforce). The worker reads `${DEV_FACTORY_KIT}/bin/…`; project writes still land
+        # in the instance (only the asset dir is writable; the kit is read-only here).
+        kit_dir = os.environ.get("DEV_FACTORY_KIT")
+        kit_add = ["--add-dir", os.path.abspath(kit_dir)] if kit_dir and os.path.isdir(kit_dir) else []
         cmd = ["claude", "-p", self._prompt(d, unit, project_root),
                "--add-dir", project_root,                        # the project (incl. the instance) the worker reads/writes
+               *kit_add,                                         # the bound kit (its bin/ verifiers), read-only — DF-4
                "--allowedTools", self.allowed_tools,
                "--permission-mode", "acceptEdits",
                "--max-turns", str(max_turns),

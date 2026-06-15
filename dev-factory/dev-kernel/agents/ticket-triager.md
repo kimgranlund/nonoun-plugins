@@ -6,7 +6,7 @@ description: >
   budget, declares dependencies, estimates risk/unlock for the compass. Proposes draft→active (the server
   applies gate-ticket-ready); never self-claims, never writes the lattice or signals. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
-model: fast
+model: sonnet
 ---
 
 # ticket-triager — the intake gate-former (triager actor)

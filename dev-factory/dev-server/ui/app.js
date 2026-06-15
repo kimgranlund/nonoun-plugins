@@ -72,7 +72,12 @@ function interp(v) {
 export function html(strings, ...values) {
   let out = strings[0];
   for (let i = 0; i < values.length; i++) out += interp(values[i]) + strings[i + 1];
-  return out;
+  // Mark the result as trusted HTML so a nested html`…` is not re-escaped by an outer
+  // template's interp(). Boxed String: interp() reads its RAW; everywhere else (innerHTML=,
+  // Array.join, `${}`) it coerces back to a plain string.
+  const safe = new String(out);
+  safe[RAW] = out;
+  return safe;
 }
 
 export class UIElement extends HTMLElement {
@@ -83,7 +88,7 @@ export class UIElement extends HTMLElement {
     this.#fx.push(effect(() => {
       this.#notify.value;
       const t = this.constructor.template ? this.constructor.template(this) : null;
-      if (typeof t === "string") this.innerHTML = t;
+      if (typeof t === "string" || t instanceof String) this.innerHTML = String(t);
       this.render();
     }));
   }

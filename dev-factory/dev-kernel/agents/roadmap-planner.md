@@ -6,7 +6,7 @@ description: >
   dispatchable in turn, hands the batch to the triager as drafts. Writes coordination/roadmap/ + draft
   tickets; never sets active/claimed, never the lattice or signals. Tier: deep.
 tools: Read, Grep, Glob, Edit, Write
-model: deep
+model: opus
 ---
 
 # roadmap-planner — the epic decomposer (planner actor)

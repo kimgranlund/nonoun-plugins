@@ -20,6 +20,7 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 import api  # noqa: E402  (the tested operations layer — stdlib)
+import store as _store  # noqa: E402  (for the boot re-projection, DF-2)
 
 DIR = os.environ.get("DEV_FACTORY_DIR", ".agents/dev-factory")
 HEARTBEAT_ENABLED = os.environ.get("DEV_FACTORY_HEARTBEAT") == "1"   # OFF in Crawl; Walk sets it
@@ -59,6 +60,11 @@ def build_app():
         return None
     app = FastAPI(title="dev-factory", version="0.1.0")
     api.init_instance(DIR)
+    # DF-2: re-project lattice.json + the ledger into the grid on boot. init_instance scaffolds but does not
+    # re-derive cell maturity from a lattice.json that may have been advanced out-of-band (e.g. `validate.py`
+    # drove a cell to `validated` while the server was down). Without this the cell stays stale on the board
+    # until a manual `store.py rebuild` — this makes the RUNBOOK's "reboot re-materializes the index" literal.
+    _store.rebuild(DIR)
 
     @app.get("/api/tickets")
     def list_tickets(state: str = None):

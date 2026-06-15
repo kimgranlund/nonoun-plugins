@@ -6,7 +6,7 @@ description: >
   (`validate.py`, minted from the verifier's exit status). Never authors what it grades, never shares the
   advancer's context. Tier: fast (deterministic harness) / deep (review rubric).
 tools: Read, Grep, Glob, Bash
-model: fast
+model: sonnet
 ---
 
 # cell-validator — the critic (validator actor)

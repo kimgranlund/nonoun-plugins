@@ -6,7 +6,7 @@ description: >
   entry. Never selects the next cell, never grades its own work; deny-on-write to verifier assets in a wired
   instance. Dispatched one cell per unit by dev-server. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
-model: fast
+model: sonnet
 ---
 
 # cell-advancer — the worker (advancer actor)

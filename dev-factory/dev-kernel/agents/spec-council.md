@@ -7,7 +7,7 @@ description: >
   (APPROVED / CONDITIONAL / BLOCKED). The adversarial half of REVIEW; the mechanical spec-quality gate is the
   other. Triggers on "review this spec", "is this spec ready", "run the spec council". Tier: deep.
 tools: Read, Grep, Glob, Task
-model: deep
+model: opus
 ---
 
 # spec-council — the spec review orchestrator (REVIEW's adversarial half)

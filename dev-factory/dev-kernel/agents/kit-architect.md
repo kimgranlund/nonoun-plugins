@@ -6,7 +6,7 @@ description: >
   kernel, NEVER instance state. Graded on one mechanical property — adding the kit requires ZERO kernel edits
   (check-kit-conform.py). Tier: deep.
 tools: [read, write, edit, bash, grep, glob]
-model: deep
+model: opus
 ---
 
 # kit-architect — the kit architect (deep)

@@ -6,7 +6,7 @@ description: >
   has not earned). Produces a lattice.json draft + cell stubs; never writes signals, never ranks (rank is
   deterministic). Tier: deep.
 tools: Read, Grep, Glob, Edit, Write
-model: deep
+model: opus
 ---
 
 # lattice-architect — the grid designer (architect actor)

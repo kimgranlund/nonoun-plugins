@@ -8,7 +8,7 @@ description: >
   decomposition ENTAILMENT. Builds against the spec-authoring rubric, gated by spec-quality. May write spec/;
   never grades itself, never writes signals/. Tier: deep.
 tools: Read, Grep, Glob, Edit, Write
-model: deep
+model: opus
 ---
 
 # spec-architect — the spec author/decomposer (architect actor)

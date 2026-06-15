@@ -71,10 +71,14 @@ def connect(d):
 
 
 def upsert_ticket(con, t):
-    tt = t.get("target_transition", {})
-    pr = t.get("priority", {})
-    cl = t.get("claim") or {}
-    ts = t.get("timestamps", {})
+    # Defensive (DF-1): a malformed ticket file — e.g. `target_transition` written as a bare string — must
+    # NOT crash the whole rebuild/replay. Without this guard one bad ticket bricks `store.rebuild` AND server
+    # boot until the file is hand-repaired, undermining "a corrupted index is a rebuild, not a loss." Coerce
+    # any non-dict field to {} so a bad row degrades gracefully (null columns) instead of aborting the replay.
+    def _d(v):
+        return v if isinstance(v, dict) else {}
+    tt, pr, cl, ts, acc = (_d(t.get(k)) for k in
+                           ("target_transition", "priority", "claim", "timestamps", "acceptance"))
     con.execute(
         """INSERT INTO tickets(id,type,title,state,target_cell,from_maturity,to_maturity,rubric_cell,
                                risk,unlock,probe_cost,claim_worker,lease_expiry,signal_count,created,updated)
@@ -85,7 +89,7 @@ def upsert_ticket(con, t):
              claim_worker=excluded.claim_worker,lease_expiry=excluded.lease_expiry,
              signal_count=excluded.signal_count,updated=excluded.updated""",
         (t["id"], t.get("type"), t.get("title"), t.get("state"), t.get("target_cell"),
-         tt.get("from"), tt.get("to"), t.get("acceptance", {}).get("rubric_cell"),
+         tt.get("from"), tt.get("to"), acc.get("rubric_cell"),
          pr.get("risk"), pr.get("unlock"), pr.get("probe_cost"),
          cl.get("worker_id"), cl.get("lease_expiry"), len(t.get("signal_refs", [])),
          ts.get("created"), ts.get("updated")))
