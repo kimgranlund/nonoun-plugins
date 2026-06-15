@@ -54,6 +54,12 @@ split skills-studio draws between authoring guidance and the ship-gate.
 A dimension in the guidance rubric maps to a gate dimension *and* a council lens — you author against it, the
 gate checks the mechanical part, a critic pressure-tests the judgment part.
 
+> **Requires a bound kit.** The spec-quality GATE is provided by the **family kit** (`dev-kit-corpus`), not the
+> kernel. dev-kernel installed *without* a kit has spec-author's AUTHOR/REFINE/UPDATE and the council, but
+> REVIEW's mechanical half has nothing to run — there is no `spec-quality` verifier in the kernel. Bind a kit
+> (set `DEV_FACTORY_KIT`, e.g. `dev-kit-corpus`) for the full REVIEW. This is a *capability* dependency, not a
+> hard plugin one: any kit that ships a validated `spec-quality` rubric + verifier satisfies it.
+
 ## The critic council — REVIEW's adversarial half
 
 REVIEW is **mechanical gate + adversarial council**. `agents/spec-council.md` fans out the lens-critics in
