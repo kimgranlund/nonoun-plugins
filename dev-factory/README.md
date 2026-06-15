@@ -16,7 +16,7 @@ The Kanban board cannot disagree with the lattice grid, by construction. A worke
 
 | Tier | Is | Holds |
 |---|---|---|
-| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 4 protective gates + 2 lifecycle predicates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and the 12-agent roster across 7 compound skills |
+| **dev-kernel** | a plugin (invariant machinery) | the 11 schemas, the two state machines, the 4 protective gates + 2 lifecycle predicates, the compass, the **execution-plan assembly** (`dispatch-policy → plan`), the validation path, **autonomy** (trust tiers + mechanical demotion) + **distillation**, the **tamper-evident hash-chained ledger**, a read-only **MCP query perimeter** (`factory-query`), and a 19-agent roster (12 lattice operators + a 7-agent spec review council) across 8 compound skills |
 | **dev-kit-corpus · dev-kit-app** | plugins (family bindings) | ontology · rubric manifest · **real validation harness verifiers** (spec-quality / pattern / test-suite — not a file-exists check) · dispatch policy · seed patterns. `check-kit-conform` enforces **zero kernel edits** |
 | **Instance** | a user project's `.agents/dev-factory/` | the only stateful tier: `lattice.json · coordination/ · the layer dirs · signals/ · ledger/ · index.db` |
 | **dev-server** | a Python app (NOT a plugin) | the bounded 30s heartbeat, the dispatcher + DispatchAdapter (mock + headless), the SQLite read-index, the **reporting layer** (DuckDB/stdlib), the REST API, the SSE stream, the **web UI** (Kanban two-lens · lattice grid · ledger · agent monitor · roadmap) |
@@ -77,6 +77,7 @@ dev-factory ships **one** typed command — **`/factory-init`** (the single dete
 | *"seed a dev-factory lattice for this project"* · *"decompose this domain into layers and scopes"* | **lattice-management** → lattice-architect |
 | *"scan for lattice gaps"* · *"what cell should we advance next?"* · *"rank the frontier"* · *"why is this cell stale?"* | the compass |
 | *"create a ticket to validate the auth spec"* · *"triage this issue into a ticket"* · *"decompose this epic into tickets"* · *"plan the roadmap"* | **ticket-orchestration** → ticket-triager / roadmap-planner |
+| *"author a spec from this PRD/notes"* · *"review this spec — is it ready?"* · *"the spec was wrong — update it"* | **spec-author** (the intake boundary; specs as SKILL-format artifacts) → spec-architect + spec-council |
 | *"advance the spec.system.auth cell"* · *"validate this artifact against its rubric"* · *"why didn't this cell advance?"* | **cell-engine** → cell-advancer + cell-validator |
 | *"author and calibrate a rubric for the spec layer"* | **verification** → rubric-architect |
 | *"distill patterns from the ledger"* · *"propose a spec revision from what we've learned"* | **regeneration** → pattern-distiller / spec-regenerator |

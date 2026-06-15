@@ -3,7 +3,7 @@
   "$id": "SpecQualityRubric",
   "title": "spec-quality",
   "cell": "rubric.system.spec-quality",
-  "description": "The verifier for spec cells in the corpus family. A spec advances to validated only by clearing this rubric. This rubric must itself be `validated` (demonstrated determinism + calibration) before any spec binds to it — the rubric-maturity precondition. Gate dimensions are mechanical and run by bin/spec-quality-check.py; review dimensions need a calibrated critic that is not the authoring agent.",
+  "description": "The verifier for spec cells in the corpus family. A spec advances to validated only by clearing this rubric. A spec asset is a SKILL-format artifact (front-matter intent surface + brief + an embedded ```json contract block + optional references/), or a legacy json-only contract — the gate reads the embedded contract either way. This rubric must itself be `validated` (demonstrated determinism + calibration) before any spec binds to it — the rubric-maturity precondition. Gate dimensions are mechanical and run by bin/spec-quality-check.py; review dimensions need a calibrated critic that is not the authoring agent.",
   "binds_to_layer": "spec",
   "maturity_precondition": "This rubric cell must be validated (deterministic across repeated runs on fixed input; calibrated against the few-shot exemplar set) before it gates any spec.",
   "calibration": {
@@ -63,6 +63,16 @@
       "check": "Explicit non-goals are declared.",
       "mechanized_by": "bin/spec-quality-check.py (non-goals-present)",
       "fail_meaning": "Unbounded scope; the spec admits work it was never meant to authorize."
+    },
+    {
+      "id": "skill-shape",
+      "kind": "gate",
+      "label": "[gate]",
+      "weight": 1.0,
+      "threshold": "pass",
+      "check": "When the spec is authored in SKILL form (front-matter present), the skill surface and the machine contract AGREE: `name` present, `description` (the intent surface) present, and the contract `cell`'s slug == `name`. A legacy json-only spec passes vacuously — valid but minimal.",
+      "mechanized_by": "bin/spec-quality-check.py (skill-shape)",
+      "fail_meaning": "A spec whose human-facing intent surface and machine contract disagree is two specs wearing one name — the reader and the loop see different things."
     },
     {
       "id": "decomposition-entailment",

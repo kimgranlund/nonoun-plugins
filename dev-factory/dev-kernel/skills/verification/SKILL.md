@@ -9,7 +9,7 @@ description: >
   or hardened; when a verifier is suspected reward-hackable; when a critic is selected or re-measured.
   Triggers on "author a rubric", "calibrate this verifier", "is this rubric reward-hackable", "build an
   exemplar set", "the critic and worker share a model", "exploit-scan the passing runs", "score the scorer".
-  NOT for authoring specs (spec-architect); NOT for operating the engine on a cell (cell-engine); NOT for the
+  NOT for authoring specs (spec-author); NOT for operating the engine on a cell (cell-engine); NOT for the
   autonomy ladder that READS the false-pass rate (autonomy-governance).
 ---
 

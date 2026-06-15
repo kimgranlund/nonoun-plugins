@@ -36,15 +36,46 @@ _CELL_ID_RE = re.compile(
 _MATURITY = {"absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"}
 
 
+def _resolve_asset(path):
+    """A spec asset is a SKILL-format file (.md/.json), OR a folder whose `SKILL.md` is the spec (the rich
+    SKILL-format shape — `spec/<slug>/SKILL.md` + references/)."""
+    if path and os.path.isdir(path):
+        return os.path.join(path, "SKILL.md")
+    return path
+
+
+def _frontmatter(raw):
+    """Minimal YAML front-matter parse — the subset a SKILL-format spec uses (`key: value` + folded `>`
+    blocks). Returns {} when there is no front-matter (a legacy json-only spec). Stdlib only, no yaml dep."""
+    if not raw.lstrip().startswith("---"):
+        return {}
+    m = re.match(r"^\s*---\s*\n(.*?)\n---\s*\n", raw, re.DOTALL)
+    if not m:
+        return {}
+    fm, key = {}, None
+    for line in m.group(1).splitlines():
+        if re.match(r"^[A-Za-z_][\w-]*\s*:", line):
+            k, _, v = line.partition(":")
+            key = k.strip()
+            v = v.strip()
+            fm[key] = "" if v in (">", "|") else v
+        elif key and line.strip() and line[:1].isspace():
+            fm[key] = (fm[key] + " " + line.strip()).strip()
+    return fm
+
+
 def _load_spec(path):
-    """A spec asset is JSON, or a .md whose first fenced ```json block is the structured spec."""
-    raw = open(path, encoding="utf-8", errors="replace").read()
+    """Returns (contract, front-matter). The machine-readable contract is JSON, or the first fenced ```json
+    block in a .md / SKILL.md — so a SKILL-format spec EMBEDS its contract in the skill body (one source of
+    truth, no parallel artifact). A folder asset resolves to its SKILL.md."""
+    raw = open(_resolve_asset(path), encoding="utf-8", errors="replace").read()
+    fm = _frontmatter(raw)
     stripped = raw.lstrip()
     if stripped.startswith("{"):
-        return json.loads(raw)
+        return json.loads(raw), fm
     m = re.search(r"```json\s*(\{.*?\})\s*```", raw, re.DOTALL)
     if m:
-        return json.loads(m.group(1))
+        return json.loads(m.group(1)), fm
     raise ValueError("spec asset carries no structured spec (expected JSON or a ```json block) — "
                      "a prose-only spec cannot be mechanically gated")
 
@@ -114,6 +145,25 @@ def _gate_decomposition_entailment(spec):
                   f"{proof['tickets']} tickets)")
 
 
+def _gate_skill_shape(spec, fm):
+    """When a spec is authored in SKILL form (front-matter present), the skill surface and the machine
+    contract must AGREE: `name` present, `description` present (the intent surface), and the contract `cell`'s
+    slug == `name`. A legacy json-only spec (no front-matter) passes vacuously — valid but minimal; the
+    spec-authoring guidance rubric is what pushes new specs to the full skill shape."""
+    if not fm:
+        return True, "json-only spec (no skill wrapper) — valid but minimal"
+    if not fm.get("name"):
+        return False, "SKILL-format spec front-matter has no `name`"
+    if not fm.get("description"):
+        return False, "SKILL-format spec front-matter has no `description` (the intent surface)"
+    cell = spec.get("cell") or spec.get("id")
+    if cell:
+        slug = str(cell).rsplit(".", 1)[-1]
+        if slug != fm["name"]:
+            return False, f"skill `name` ({fm['name']!r}) disagrees with the contract cell slug ({slug!r})"
+    return True, f"skill-shape: name={fm['name']!r}, intent surface present"
+
+
 GATES = [
     ("schema-valid", _gate_schema_valid),
     ("criteria-checkable", _gate_criteria_checkable),
@@ -125,10 +175,11 @@ GATES = [
 
 def check(path):
     """Run every [gate] dimension mechanically. Returns (ok, message)."""
-    if not path or not os.path.isfile(path):
+    asset = _resolve_asset(path)
+    if not asset or not os.path.isfile(asset):
         return False, f"no asset at {path!r}"
     try:
-        spec = _load_spec(path)
+        spec, fm = _load_spec(path)
     except (json.JSONDecodeError, ValueError) as e:
         return False, f"schema-valid FAILED: {e}"
     failures = []
@@ -136,6 +187,8 @@ def check(path):
     for name, fn in GATES:
         ok, msg = fn(spec)
         (passes if ok else failures).append(f"{name}: {msg}")
+    ok, msg = _gate_skill_shape(spec, fm)            # the skill surface ↔ contract agreement
+    (passes if ok else failures).append(f"skill-shape: {msg}")
     if failures:
         return False, "GATE FAILURES — " + " | ".join(failures)
     return True, "all spec-quality gates pass — " + " | ".join(passes)
@@ -215,6 +268,37 @@ def selftest():
 
         # missing asset -> fail
         expect(not check(os.path.join(d, "missing.json"))[0], "accepted a missing asset")
+
+        # a SKILL-format spec (front-matter + brief + the embedded contract block) -> passes (incl. skill-shape)
+        contract = json.dumps({k: good[k] for k in good if k != "decomposition"}, indent=2)
+        skill_md = ("---\n"
+                    "name: user-auth\n"
+                    "description: >\n"
+                    "  Username/password auth: a valid login succeeds, a bad one is rejected. Scope: the\n"
+                    "  credential check; NOT password reset or SSO.\n"
+                    "---\n\n"
+                    "# user-auth — a credential check\n\n"
+                    "**Intent.** A user with valid credentials can authenticate; invalid ones are rejected.\n\n"
+                    "**Non-goals.** Password reset, SSO.\n\n"
+                    "```json\n" + contract + "\n```\n")
+        smpath = os.path.join(d, "user-auth.md")
+        open(smpath, "w").write(skill_md)
+        ok, msg = check(smpath)
+        expect(ok and "skill-shape" in msg, f"rejected a sound SKILL-format spec: {msg}")
+
+        # the FOLDER shape: spec/<slug>/SKILL.md
+        folder = os.path.join(d, "user-auth")
+        os.makedirs(folder, exist_ok=True)
+        open(os.path.join(folder, "SKILL.md"), "w").write(skill_md)
+        ok, msg = check(folder)
+        expect(ok, f"rejected a sound folder-shape SKILL spec: {msg}")
+
+        # skill `name` disagreeing with the contract cell slug -> skill-shape fails
+        bad_shape = skill_md.replace("name: user-auth", "name: auth-user")
+        bpath = os.path.join(d, "bad-shape.md")
+        open(bpath, "w").write(bad_shape)
+        ok, msg = check(bpath)
+        expect(not ok and "skill-shape" in msg, f"accepted a name/cell-slug disagreement: {msg}")
 
     if fails:
         sys.stderr.write("spec-quality-check selftest: FAIL\n")

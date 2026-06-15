@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "SpecAuthoringRubric",
+  "title": "spec-authoring",
+  "role": "guidance",
+  "description": "The STANDARD a spec is authored and maintained against — not a gate cell, but the build-against-the-standard map spec-author works toward (the spec-quality rubric in dev-kit-corpus is the gate that ships it; this is what you aim for). Each dimension bridges to the gate dimension that mechanically checks its floor AND the spec-council lens that adversarially pressure-tests its judgment — author against the dimension, the gate checks the mechanical part, a critic hunts the rest. The author never mints the signal that validates its own spec.",
+  "the_split": "GUIDANCE (this file, in the skill) is what good authoring is; the GATE (rubric.system.spec-quality, in dev-kit-corpus) is what ships. A dimension here maps to a gate dimension + a council lens; the three are one standard seen from the author's, the machine's, and the adversary's seat.",
+  "dimensions": [
+    {
+      "id": "skill-shape",
+      "what_good_is": "The spec IS a mini-skill: front-matter with `name` (== the cell slug) and a `description` that states the actual intent + scope (not 'a spec for X'); a brief body that reads top-to-bottom; the embedded ```json contract block; and references/ for depth a 30-second reader does not need. The human surface and the machine contract agree.",
+      "gate_dimension": "skill-shape",
+      "council_lens": null,
+      "smell": "A bare json contract with no intent surface; a description that restates the title; a name that disagrees with the contract cell."
+    },
+    {
+      "id": "intent-fidelity",
+      "what_good_is": "The description + brief capture the principal's ACTUAL want — what changes for them and why — grounded in the intent source, nothing invented. Because the spec layer is upstream of every other, drift here multiplies; this is the highest-leverage dimension.",
+      "gate_dimension": null,
+      "review_dimension": "intent-fidelity",
+      "council_lens": "ambiguity",
+      "smell": "A 'should' with no owner; a term used two ways; an assumption stated nowhere; a want the source never expressed."
+    },
+    {
+      "id": "criteria-checkable",
+      "what_good_is": "Every acceptance criterion is a checkable predicate — an executable `check` or a binding to a validated `rubric_cell`. Zero prose-only criteria. A criterion is what `done` means; a hope is not a criterion.",
+      "gate_dimension": "criteria-checkable",
+      "council_lens": "testability",
+      "smell": "'It should feel fast'; 'works well'; a criterion no run could ever pass-or-fail."
+    },
+    {
+      "id": "completeness",
+      "what_good_is": "The necessary criteria, the edge cases, and the failure modes are present — not just the happy path. Every boundary answers: what crosses it, in what form, under whose authority, and what happens when it fails.",
+      "gate_dimension": null,
+      "review_dimension": "boundary-completeness",
+      "council_lens": "completeness",
+      "smell": "Only the success path specified; an error path, a limit, or an empty-state left to the builder's guess."
+    },
+    {
+      "id": "bounded-scope",
+      "what_good_is": "Non-goals are explicit and the boundary is held. The spec authorizes exactly its intent — no unbounded 'and also…', no scope the principal never asked for.",
+      "gate_dimension": "non-goals-present",
+      "council_lens": "scope",
+      "smell": "No non-goals; a non-goal that contradicts a criterion; scope creep smuggled into the brief."
+    },
+    {
+      "id": "sound-decomposition",
+      "what_good_is": "When decomposed, satisfying the children ENTAILS satisfying the parent (a property under the partial order, not a surface coverage count) AND the carving is the RIGHT one — the structure that tunnels the build well, not merely a covering. The decomposition is a typed delta (cells + dependency-ordered tickets), never prose.",
+      "gate_dimension": "decomposition-entailment",
+      "review_dimension": "decomposition-soundness-judgment",
+      "council_lens": "entailment",
+      "smell": "An orphan parent criterion no child covers; a covering decomposition that carves along the wrong seam; a child binding no rubric."
+    },
+    {
+      "id": "hack-resistance",
+      "what_good_is": "The acceptance criteria cannot be satisfied WITHOUT satisfying the intent — the upstream analogue of a reward-hack-resistant rubric. A criterion verifies a property under transformation, not an extensional surface a builder can game.",
+      "gate_dimension": null,
+      "council_lens": "hackability",
+      "smell": "A criterion a trivial or adversarial implementation passes while missing the point; 'tests green' as the whole bar."
+    },
+    {
+      "id": "maintained",
+      "what_good_is": "The spec carries its provenance and is kept true across its life — corrected only by a deliberate, LEDGERED `validated → regenerating` transition motivated by operating evidence, never a silent edit. A spec is managed, not authored once and abandoned.",
+      "gate_dimension": null,
+      "council_lens": null,
+      "mode": "UPDATE",
+      "smell": "A validated spec quietly edited; a correction with no ledger evidence; a stale spec whose dependents were never re-flagged."
+    }
+  ],
+  "how_to_use": "AUTHOR / UPDATE: hill-climb the spec against these dimensions (evaluator-optimizer; generate, a separate critic scores against this standard, revise the weakest), then submit to the gate. REVIEW: the gate checks the gate_dimension floors mechanically; the spec-council runs the council_lens for each. A dimension green on the gate but weak on its lens is a real finding — the floor passed, the judgment didn't."
+}
