@@ -86,13 +86,16 @@ def _gate_schema_valid(spec):
     if not (spec.get("title") or spec.get("name") or spec.get("intent")):
         return False, "spec has no title/name/intent (not instantiable)"
     cell = spec.get("cell") or spec.get("id")
-    if cell is not None:
-        if not _CELL_ID_RE.match(str(cell)):
-            return False, f"cell id {cell!r} is malformed (must be {{layer}}.{{scope}}.{{slug}})"
-        if str(cell).split(".", 1)[0] != "spec":
-            return False, f"cell id {cell!r} is not a spec.* cell (the spec-quality gate validates spec-layer cells only)"
-        if str(cell).rsplit(".", 1)[-1] in _MATURITY:
-            return False, f"cell id {cell!r} encodes maturity (identity must exclude state)"
+    if not cell:
+        return False, ("spec declares no cell id — a spec asset must name the spec.* cell it specifies "
+                       "(without it the gate cannot enforce the spec-layer invariant; the advertised "
+                       "'validates spec-layer cells only' would pass vacuously)")
+    if not _CELL_ID_RE.match(str(cell)):
+        return False, f"cell id {cell!r} is malformed (must be {{layer}}.{{scope}}.{{slug}})"
+    if str(cell).split(".", 1)[0] != "spec":
+        return False, f"cell id {cell!r} is not a spec.* cell (the spec-quality gate validates spec-layer cells only)"
+    if str(cell).rsplit(".", 1)[-1] in _MATURITY:
+        return False, f"cell id {cell!r} encodes maturity (identity must exclude state)"
     if not isinstance(spec.get("acceptance_criteria"), list):
         return False, "spec has no acceptance_criteria list"
     return True, "schema-valid"
@@ -270,6 +273,18 @@ def selftest():
 
         # missing asset -> fail
         expect(not check(os.path.join(d, "missing.json"))[0], "accepted a missing asset")
+
+        # a NON-spec cell (wrong layer) -> schema-valid fails (the spec gate validates spec-layer cells only)
+        wrong_layer = json.loads(json.dumps(good)); wrong_layer["cell"] = "rubric.system.user-auth"
+        wlpath = os.path.join(d, "wrong-layer.json"); json.dump(wrong_layer, open(wlpath, "w"))
+        ok, msg = check(wlpath)
+        expect(not ok and "not a spec.* cell" in msg, f"accepted a non-spec-layer cell asset: {msg}")
+
+        # a spec asset that OMITS its cell -> schema-valid fails (no vacuous pass of the spec-layer invariant)
+        no_cell = json.loads(json.dumps(good)); no_cell.pop("cell", None); no_cell.pop("id", None)
+        ncpath = os.path.join(d, "no-cell.json"); json.dump(no_cell, open(ncpath, "w"))
+        ok, msg = check(ncpath)
+        expect(not ok and "no cell id" in msg, f"accepted a spec asset with no cell id (vacuous layer gate): {msg}")
 
         # a SKILL-format spec (front-matter + brief + the embedded contract block) -> passes (incl. skill-shape)
         contract = json.dumps({k: good[k] for k in good if k != "decomposition"}, indent=2)

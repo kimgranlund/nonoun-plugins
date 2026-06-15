@@ -11,7 +11,7 @@ The gate is `dev-kit-corpus`'s `spec-quality-check.py`, run through `validate.py
 | Gate dimension | What it proves |
 |---|---|
 | `schema-valid` | the contract is well-typed: `cell` is `{layer}.{scope}.{slug}`, layer == `spec`, maturity excluded from identity |
-| `criteria-checkable` | every acceptance criterion has an `id` AND **either** an executable `check` **or** a `validated` `rubric_cell` — **zero prose-only** |
+| `criteria-checkable` | every acceptance criterion has an `id` AND **either** an executable `check` **or** a `rubric_cell` binding — **zero prose-only** (that the bound rubric is itself validated is the lattice's precondition, not this gate's) |
 | `non-goals-present` | `non_goals` is declared (≥1) — the boundary is explicit, not implied |
 | `rubric-binds` | `binds_rubric` names a `rubric.*` cell — the gate checks the *binding*. That the bound rubric is **itself `validated`** (the verifier of specs is verified) is enforced by the **lattice** (`lattice.py` validity + `gate-ticket-ready`), not by this standalone gate |
 | `decomposition-entailment` | when carved, `_entailment_check.py` proves satisfying the children entails satisfying the parent |
@@ -61,7 +61,7 @@ The verdict is a *gate*, not an average — a single surviving Critical is not o
 
 - **The gate's pass/fail** — minted from `spec-quality-check.py`'s exit status via `validate.py`, never the reviewer's opinion.
 - **`decomposition-entailment`** — `_entailment_check.py`, a mechanical entailment proof, upstream of the entailment critic's judgment pass.
-- **The validated-ness of the bound rubric** — read from `lattice.json` by the gate, not asserted by the reviewer.
+- **The validated-ness of the bound rubric** — enforced by the **lattice** (`lattice.py` validity refuses a cell advancing against a non-validated verifier rubric; `gate-ticket-ready` denies an unvalidated-rubric ticket), not by the standalone spec gate (which checks only the binding) and not asserted by the reviewer.
 
 The judgment — *is the right thing specified, can the criteria be hacked, does the carving entail the parent* — is the council's. The well-formedness verdict is the gate's. The synthesis is the orchestrator's. None of these is the author's.
 

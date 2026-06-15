@@ -10,7 +10,7 @@ The `spec-author` skill — the factory's intake boundary, finally implemented, 
 
 - **`spec-author` — the spec lifecycle skill (specs as skills).** The design spec defined a `spec-author` skill (the intake boundary — where intent becomes a typed spec) but the build shipped only the orphaned `spec-architect` agent; this implements it as dev-kernel's **8th skill** (7 core lattice + 1 meta). A spec is now managed across its **whole life** — **AUTHOR** (intent / PRD / notes → a spec), **REVIEW** (the mechanical gate + an adversarial council), **REFINE** (fix from findings), **UPDATE** (a ledgered regeneration of a validated spec) — not authored once and abandoned.
 - **Specs as SKILL-format artifacts.** The advanced form the lifecycle produces: a spec **is a mini-skill** — front-matter (the routable intent surface) + a brief body + the embedded ```json contract the gate reads + optional `references/` depth (and the folder form `spec/<slug>/SKILL.md`). `references/spec-format.md` is the definition. Backward-compatible: a legacy json-only spec still passes the gates (valid-but-minimal); the SKILL shape is what AUTHOR/UPDATE produce.
-- **The `spec-council`** — REVIEW's adversarial half: a `spec-council` orchestrator that fans out **6 read-only lens-critics** in parallel isolated contexts (`critic-completeness · critic-testability · critic-entailment · critic-ambiguity · critic-scope · critic-hackability`), each carrying the trust-boundary guard, synthesizing an APPROVED/CONDITIONAL/BLOCKED verdict. The roster grows 12 → 19 agents.
+- **The `spec-council`** — REVIEW's adversarial half: a `spec-council` orchestrator that fans out **6 read-only lens-critics** in parallel isolated contexts (`critic-spec-completeness · critic-spec-testability · critic-spec-entailment · critic-spec-ambiguity · critic-spec-scope · critic-spec-hackability`), each carrying the trust-boundary guard, synthesizing an APPROVED/CONDITIONAL/BLOCKED verdict. The roster grows 12 → 19 agents.
 - **Two rubrics — build-against vs the gate.** `rubric/spec-authoring.rubric.json` (in the skill) is the GUIDANCE standard a spec is authored + maintained against, bridging each dimension to its gate dimension + council lens; `dev-kit-corpus`'s `spec-quality` rubric stays the GATE that ships it. The same split skills-studio draws.
 
 ### Changed
@@ -19,7 +19,15 @@ The `spec-author` skill — the factory's intake boundary, finally implemented, 
 - **The NOT-boundary clauses in `verification` / `regeneration`** now correctly name the **`spec-author` skill** (the 0.1.1 NEW-3 fix had re-pointed them at the bare agent, masking the missing skill).
 - **Counts**: 7 → 8 skills, 12 → 19 agents — manifests, README skill-layering, sample prompts, and the naming-schema doc list updated.
 
-### Fixed (the 0.2.0 plugin council — CONDITIONAL → these closed)
+### Fixed (two 0.2.0 plugin-council passes — CONDITIONAL → these closed)
+
+Second confirmation pass (it verified the first round held, then caught a surviving instance + a hole):
+
+- **A surviving over-claim** (council, Charity M. + Andrej K.) — `spec-review.md` was the file the fix-1 round touched least and it self-contradicted: line 64 said the bound rubric's validated-ness is "read from `lattice.json` **by the gate**" (false — the gate never reads the lattice), and line 14 carried the smaller "validated `rubric_cell`" instance. Both now attribute the maturity precondition to the lattice, matching the corrected surfaces.
+- **The vacuous-cell hole** (council, Scott W. + Andrej K.) — the `layer == spec` / maturity / skill-shape checks sat behind `if cell is not None`, so a spec asset *omitting* its cell passed the spec-layer invariant vacuously. `_gate_schema_valid` now **requires** a cell id; two negative selftest fixtures (a non-spec-layer cell, a cell-less asset) lock it so fix-2 cannot silently revert.
+- **The 6 critic names namespaced** `critic-* → critic-spec-*` (council Critical, Steve Y.) — they were the only undifferentiated critic names in the estate; collision-resistant at the *registration* layer now (not just plugin-scoped at dispatch). dev-factory CI also gained the `validate_plugin marketplace` collision gate.
+
+First pass:
 
 - **Gate over-claim (council CRITICAL-A, Chip H.)** — three docs claimed the spec gate verifies the bound rubric is itself `validated`; the standalone verifier checks only the *binding*. Clarified across `spec-format.md`, `SKILL.md`, `spec-review.md`, and `spec-quality.rubric.json`: the binding is the gate's; the rubric-**maturity** precondition is enforced by the **lattice** (`lattice.py` validity + `gate-ticket-ready`), which really does refuse a cell advancing against a non-validated verifier. The claim is true — at the layer that enforces it.
 - **The spec gate now asserts `layer == spec`** (council, Andrej K.) — `_gate_schema_valid` rejected only malformed/maturity-encoding cells, never a wrong layer; a non-spec cell asset is now rejected. The `skill-shape` doc claim corrected to what's checked (slug + layer, not scope).

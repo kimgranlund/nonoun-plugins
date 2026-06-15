@@ -104,4 +104,4 @@ not a convenience. Never represent a spec as validated without the gate's passin
 |---|---|
 | `spec-architect` | the author/decomposer actor — drives AUTHOR / UPDATE, hands a validated spec to decomposition |
 | `spec-council` | the REVIEW orchestrator — fans out the lens-critics in parallel, synthesizes the verdict |
-| `critic-*` (completeness · testability · entailment · ambiguity · scope · hackability) | the council's lenses, each read-only (`Read/Grep/Glob`), each isolated |
+| `critic-spec-*` (completeness · testability · entailment · ambiguity · scope · hackability) | the council's lenses, each read-only (`Read/Grep/Glob`), each isolated |
