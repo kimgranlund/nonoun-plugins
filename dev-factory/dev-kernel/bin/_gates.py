@@ -86,10 +86,13 @@ def deny(reason):
 
 
 # Bash verbs that MUTATE a file. The redirect heuristic is BEST-EFFORT defense-in-depth — robust shell
-# analysis is undecidable, so the real floor is that worker agents carry no Bash tool at all (frontmatter
-# tool-scope). This list catches the common evasions a forge attempt reaches for (cp/mv/sed -i/python -c/…),
-# closing the gap the old `>`/`tee`/`rm`-only check left open.
-_BASH_WRITE_VERBS = (">", "tee ", "rm ", "cp ", "mv ", "dd ", "sed -i", "install ", "truncate", "ln ", "-c ", "-e ")
+# analysis is undecidable, so the real floor is that the looping worker (cell-advancer) carries no Bash tool
+# at all (frontmatter tool-scope). This list is deliberately the genuine file-MUTATING verbs only: it does
+# NOT include interpreter flags like `-c`/`-e`, which over-match legitimate READS a Bash-carrying agent
+# (cell-validator shelling a verifier) runs over protected paths — e.g. `python3 -c 'open("…/lattice.json").read()'`
+# or `grep -e validated …/signals/…`. A false-deny on the validator's reads is worse than the residual
+# inline-interpreter-write evasion, which the no-Bash tool-scope on the *forging* worker already closes.
+_BASH_WRITE_VERBS = (">", "tee ", "rm ", "cp ", "mv ", "dd ", "sed -i", "install ", "truncate", "ln ")
 
 
 def path_gate_verdict(tool, path, command, globs, what):
@@ -142,10 +145,15 @@ def _selftest_path_gate(name, globs, what):
     # a well-formed non-write tool (Read) on a protected path is still allowed (no false-deny)
     if not path_gate_verdict("Read", protected_example, "", globs, what)[0]:
         fails.append("false-deny on a Read of a protected path")
-    # a Bash evasion (cp/mv/sed -i/python -c) that mutates a protected path is caught (not just >/tee/rm)
+    # a Bash evasion (cp/mv/sed -i) that mutates a protected path is caught (not just >/tee/rm)
     base0 = globs[0].replace("/*", "").replace("*", "")
     if base0 and path_gate_verdict("Bash", None, f"cp /tmp/forged {base0}x", globs, what)[0]:
         fails.append("Bash cp-evasion into a protected path was allowed")
+    # but a legitimate READ of a protected path via an interpreter flag is NOT a write — must be allowed
+    if base0 and not path_gate_verdict("Bash", None, f"python3 -c 'open(\"{base0}x\").read()'", globs, what)[0]:
+        fails.append(f"false-deny on a Bash READ of a protected path ({base0}x)")
+    if base0 and not path_gate_verdict("Bash", None, f"grep -e validated {base0}x", globs, what)[0]:
+        fails.append("false-deny on a `grep -e` read of a protected path")
     if fails:
         sys.stderr.write(f"{name} selftest: FAIL\n")
         for f in fails:

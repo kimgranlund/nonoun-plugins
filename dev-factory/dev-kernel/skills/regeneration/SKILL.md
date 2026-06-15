@@ -9,7 +9,7 @@ description: >
   implies a spec/rubric is wrong, or when "what have we learned" must become a tracked upstream revision.
   Triggers on "distill the ledger", "what patterns emerged", "turn this run history into reusable shape", "the
   spec was wrong, propose a fix", "regenerate the rubric from evidence", "close the loop". NOT for authoring a
-  spec from intent (spec-author); NOT for authoring a rubric (verification); NOT for operating the engine on a
+  spec from intent (spec-architect); NOT for authoring a rubric (verification); NOT for operating the engine on a
   cell (cell-engine).
 ---
 
