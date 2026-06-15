@@ -1,7 +1,0 @@
-# Ephemeral per-run state (run budget + loop marker) — regenerated each /harness-run.
-# Never commit it: a stale run/ would wedge a fresh clone's budget gate. The durable
-# lattice (lattice.json, layer assets, signals/, ledger/) IS committed.
-run/
-
-# OS / editor cruft — never belongs in committed lattice state (a `git add .agents/` magnet).
-.DS_Store
