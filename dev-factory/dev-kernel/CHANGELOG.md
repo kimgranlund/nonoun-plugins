@@ -2,6 +2,14 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.3] — 2026-06-15
+
+Free-form intake — the contract half of the dev-server's two-mode ticket creator (prompt | instruction).
+
+### Added
+
+- **`prompt` + `instruction` ticket kinds** (`schemas/ticket.schema.json`). Two free-form intake kinds that carry a `body` and **no `target_cell`** until handled — the schema already allowed a cell-less ticket (issues), so this widens the `type` enum and documents the routing: a **prompt** is a free-form brief triaged into structured tickets (the cold-start/intake path); an **instruction** is literal steps folded into the dev-server's guidance buffer. `lifecycle.gate_ticket_ready` generalises the untriaged-issue guard to all three (`issue`/`prompt`/`instruction`), so a free-form intake ticket is a legal parked draft but is **denied `draft → active`** until triaged — it cannot dispatch a worker against no cell. The dev-server's `api.create_ticket` mints them with the `iss-` (intake) id prefix. Proven in `api.py`/`lifecycle.py` selftests and the `debug-coldstart` replay (a PROMPT ticket is seeded, triaged into a hydrated lattice, and the build runs). plugin.json 0.2.2 → 0.2.3.
+
 ## [0.2.2] — 2026-06-15
 
 Operator-dogfooding fix (full log in `docs/tickets/dev-server-ui-fixes.md`) — the morphism half.

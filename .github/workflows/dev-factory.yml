@@ -8,6 +8,7 @@ on:
   push:
     paths:
       - 'dev-factory/**'
+      - 'debug/**'
       - 'tools/sync-dev-kernel.py'
       - 'harness-forge/bin/lattice.py'
       - 'harness-forge/bin/validate.py'
@@ -16,6 +17,7 @@ on:
   pull_request:
     paths:
       - 'dev-factory/**'
+      - 'debug/**'
       - 'tools/sync-dev-kernel.py'
 
 jobs:
@@ -60,6 +62,10 @@ jobs:
           for e in crawl-milestone walk-milestone demotion run-milestone fly-milestone integration-milestone; do
             echo "» $e"; python3 "dev-factory/dev-server/evals/$e/replay.py"
           done
+          # the /debug/ ralph-loop harness, proven CI-safe end to end with the MockAdapter (no model/server/tokens):
+          # brief -> PROMPT ticket -> cold-start hydrates the lattice + build tickets -> bounded build -> verdict,
+          # plus the gate-deny proof that a worker cannot forge operator guidance (run/input.jsonl)
+          echo "» debug-coldstart"; python3 dev-factory/dev-server/evals/debug-coldstart/replay.py
           pip install --quiet fastapi uvicorn httpx
           python3 dev-factory/dev-server/evals/server-smoke/replay.py
 

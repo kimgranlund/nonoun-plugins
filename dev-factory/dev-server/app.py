@@ -79,6 +79,13 @@ def build_app():
                               dependencies=b.get("dependencies"), priority=b.get("priority"),
                               created_by=b.get("created_by", "human"))
         STREAM.publish("ticket", t)
+        # INSTRUCTION intake (Feature B): a literal directive is ALSO folded into the loop's guidance buffer so
+        # the next dispatched worker sees it. A PROMPT intake parks for the cold-start planner (no auto-fold).
+        if t.get("type") == "instruction" and (t.get("body") or t.get("title")):
+            api.enqueue_input(DIR, f"[instruction {t['id']}] {t.get('body') or t.get('title')}",
+                              kind="instruction", source=t["id"])
+            api.drain_input(DIR)
+            STREAM.publish("guidance", api.read_guidance(DIR))
         return t
 
     @app.get("/api/tickets/{tid}")
@@ -159,6 +166,21 @@ def build_app():
         STREAM.publish("ticket", t)
         return t
 
+    @app.post("/api/input")
+    async def enqueue_input(req: Request):
+        # the 5s operator-steering channel: enqueue a message; it folds into the guidance buffer the loop reads
+        b = await req.json()
+        rec = api.enqueue_input(DIR, b.get("text", ""), kind=b.get("kind", "steer"), source=b.get("source", "operator"))
+        if rec is None:
+            raise HTTPException(400, "empty input text")
+        api.drain_input(DIR)                       # fold now so a fast GET sees it; the 5s poll also streams it
+        STREAM.publish("guidance", api.read_guidance(DIR))
+        return rec
+
+    @app.get("/api/guidance")
+    def guidance():
+        return api.read_guidance(DIR)
+
     @app.get("/api/status")
     def status_view():
         # + the factory-state headline (UI-3): is it working, and what is it doing — the thing the SSE 'live'
@@ -206,6 +228,8 @@ def build_app():
     # Walk: the 30s heartbeat is wired here, calling the SAME api as a human drag. OFF in Crawl.
     if HEARTBEAT_ENABLED:
         _wire_heartbeat(app)
+    # the 5s operator-input poll runs ALWAYS — steering must work in Crawl too, independent of the dispatch loop
+    _wire_input_poll(app)
     # the buildless web UI (the five views over SSE) — mounted LAST so /api/* stays ahead of the catch-all
     ui_dir = os.path.join(_HERE, "ui")
     if os.path.isdir(ui_dir):
@@ -238,6 +262,24 @@ def _wire_heartbeat(app):
         asyncio.create_task(loop())
 
 
+def _wire_input_poll(app):
+    """The 5-second operator-input poll: drains run/input.jsonl into the active guidance buffer and streams it
+    to every UI. Independent of HEARTBEAT_ENABLED (steering must work in Crawl) and of the 30s dispatch tick.
+    Deterministic, no model — it only folds intake the operator already wrote, which the next worker reads."""
+    import asyncio
+
+    @app.on_event("startup")
+    async def _start_input_poll():
+        period = int(os.environ.get("DEV_FACTORY_INPUT_PERIOD", "5"))
+
+        async def loop():
+            while True:
+                if api.drain_input(DIR):
+                    STREAM.publish("guidance", api.read_guidance(DIR))
+                await asyncio.sleep(period)
+        asyncio.create_task(loop())
+
+
 app = build_app()
 
 
@@ -250,7 +292,8 @@ def main(argv):
             return 0
         routes = sorted({r.path for r in app.routes if r.path.startswith("/api")})
         expected = {"/api/tickets", "/api/tickets/{tid}", "/api/tickets/{tid}/transition",
-                    "/api/lattice", "/api/ledger", "/api/roadmap", "/api/stream"}
+                    "/api/lattice", "/api/ledger", "/api/roadmap", "/api/stream",
+                    "/api/input", "/api/guidance"}
         missing = expected - set(routes)
         if missing:
             print(f"app selftest: FAIL — missing routes: {missing}", file=sys.stderr)

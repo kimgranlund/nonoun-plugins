@@ -13,8 +13,8 @@
       "description": "Coordination identity: {tkt|epic|iss}-{ULID}. Identity excludes lifecycle state."
     },
     "type": {
-      "enum": ["feature", "task", "bug", "chore", "spike", "epic", "issue"],
-      "description": "Routes triage and gating. issue = untriaged observation; epic = roadmap container."
+      "enum": ["feature", "task", "bug", "chore", "spike", "epic", "issue", "prompt", "instruction"],
+      "description": "Routes triage and gating. issue = untriaged observation; epic = roadmap container. prompt/instruction = free-form intake with no target_cell until handled — a prompt is triaged into structured tickets; an instruction is folded into the loop's guidance buffer. All three are denied draft->active until triaged (gate-ticket-ready)."
     },
     "title": { "type": "string", "minLength": 1 },
     "body": { "type": "string", "description": "Human-readable intent and context." },

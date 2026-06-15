@@ -134,8 +134,9 @@ const store = {
   agents: signal([]),           // future /api/agents/running; degrades to []
   heartbeat: signal(null),      // last tick summary from SSE
   factory: signal(null),        // UI-3: the factory-state headline from /api/status.factory (idle/running/armed/paused)
+  guidance: signal({ items: [] }),  // the 5s operator-input buffer (run/guidance.json), streamed on the "guidance" event
   panel: signal(null),          // { kind:"cell"|"ticket", id }
-  modal: signal(null),          // { kind:"create-ticket", state }
+  modal: signal(null),          // { kind:"create-ticket", state, mode:"structured"|"prompt"|"instruction" }
   toast: signal(null),
 };
 
@@ -172,6 +173,7 @@ async function loadAll() {
     ["roadmap", "/api/roadmap"],
     ["activities", "/api/activities"],   // future — 404 is fine
     ["agents", "/api/agents/running"],   // future — 404 is fine
+    ["guidance", "/api/guidance"],       // the 5s operator-input buffer
   ];
   await Promise.all(tries.map(async ([key, path]) => {
     try { store[key].value = await jget(path); }
@@ -183,6 +185,12 @@ async function loadAll() {
 // UI-3: the factory-state headline (is it working, what is it doing) — distinct from the SSE socket dot.
 async function refreshStatus() {
   try { store.factory.value = (await jget("/api/status")).factory || null; }
+  catch { /* leave prior value */ }
+}
+
+// the 5s operator-input buffer (also streamed on the "guidance" SSE event; this is the fetch fallback)
+async function refreshGuidance() {
+  try { store.guidance.value = await jget("/api/guidance"); }
   catch { /* leave prior value */ }
 }
 
@@ -222,6 +230,9 @@ function applyStreamEvent(evt) {
     // heartbeat tick: { summary, lattice }
     if (payload && Array.isArray(payload.lattice)) store.lattice.value = payload.lattice;
     if (payload && payload.summary) store.heartbeat.value = payload.summary;
+  } else if (kind === "guidance") {
+    // the 5s operator-input poll streamed an updated guidance buffer
+    if (payload && Array.isArray(payload.items)) store.guidance.value = payload;
   }
   // any committed write means the ledger advanced — pull the tail cheaply.
   if (kind === "ticket" || kind === "tick") { refreshLedger(); refreshStatus(); }
@@ -366,6 +377,8 @@ class DfApp extends UIElement {
   #renderOverlays() {
     const o = this.querySelector("#overlay-root");
     if (!o) return;
+    // df-steer is a PERSISTENT dock (always mounted) — the 5s operator-input channel + streaming guidance feed
+    if (!o.querySelector("df-steer")) o.appendChild(document.createElement("df-steer"));
     // Mount/unmount each overlay only on presence change so an open modal/panel
     // is not recreated (and its form input lost) on every unrelated data tick.
     const want = {
@@ -913,29 +926,44 @@ class DfModal extends UIElement {
   static template = () => {
     const m = store.modal.value;
     if (!m) return "";
+    const mode = m.mode || "structured";
+    const tab = (id, label) => `<button type="button" data-mode="${id}" aria-pressed="${mode === id}">${label}</button>`;
+    const structured = html`
+      <div class="field"><div class="row">
+        <div class="field"><label for="ct-type">Type</label>
+          <select id="ct-type" name="type">${raw(["feature", "task", "bug", "chore", "spike", "epic", "issue"].map((x) => `<option>${x}</option>`).join(""))}</select></div>
+        <div class="field"><label for="ct-cell">Target cell</label><input id="ct-cell" name="target_cell" class="mono" placeholder="layer.scope.slug" autocomplete="off" /></div>
+      </div></div>
+      <div class="field"><div class="row">
+        <div class="field"><label for="ct-from">From maturity</label>
+          <select id="ct-from" name="from"><option value=""></option>${raw(MATURITIES.map((x) => `<option>${x}</option>`).join(""))}</select></div>
+        <div class="field"><label for="ct-to">To maturity</label>
+          <select id="ct-to" name="to"><option value=""></option>${raw(MATURITIES.map((x) => `<option>${x}</option>`).join(""))}</select></div>
+      </div></div>
+      <div class="field"><label for="ct-rubric">Acceptance rubric cell</label><input id="ct-rubric" name="rubric" class="mono" placeholder="rubric.scope.slug" autocomplete="off" /></div>
+      <div class="field"><label for="ct-body">Body</label><textarea id="ct-body" name="body" rows="3"></textarea></div>`;
+    const prompt = html`
+      <p class="modal-hint">A free-form brief. The cold-start planner triages it into a spec, hydrated lattice cells, and structured build tickets.</p>
+      <div class="field"><label for="ct-body">Brief</label><textarea id="ct-body" name="body" rows="6" required
+        placeholder="e.g. A playable solitaire card game with drag-and-drop, score keeping, and a leaderboard."></textarea></div>`;
+    const instruction = html`
+      <p class="modal-hint">Literal steps — dispatched closer to verbatim and folded into the loop's guidance for the next worker.</p>
+      <div class="field"><label for="ct-body">Instruction</label><textarea id="ct-body" name="body" rows="6" required
+        placeholder="e.g. Use a standard 52-card deck; cap the leaderboard at the top 10."></textarea></div>`;
+    const titleLabel = mode === "structured" ? "Title" : mode === "prompt" ? "Prompt title" : "Instruction title";
+    const heading = mode === "structured" ? "ticket" : mode;
     return html`
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Create ticket">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Create intake">
         <div class="sheet">
-          <header><h3>New ticket${m.state && m.state !== "draft" ? html` <span style="color:var(--faint);font-weight:400">(will request → ${m.state})</span>` : ""}</h3></header>
+          <header><h3>New ${heading}${m.state && m.state !== "draft" && mode === "structured" ? html` <span style="color:var(--faint);font-weight:400">(will request → ${m.state})</span>` : ""}</h3></header>
+          <div class="seg modal-tabs" role="group" aria-label="Intake mode">${raw(tab("structured", "Structured") + tab("prompt", "Prompt") + tab("instruction", "Instruction"))}</div>
           <form id="ct-form">
-            <div class="field"><label for="ct-title">Title</label><input id="ct-title" name="title" required autocomplete="off" /></div>
-            <div class="field"><div class="row">
-              <div class="field"><label for="ct-type">Type</label>
-                <select id="ct-type" name="type">${raw(["feature", "task", "bug", "chore", "spike", "epic", "issue"].map((x) => `<option>${x}</option>`).join(""))}</select></div>
-              <div class="field"><label for="ct-cell">Target cell</label><input id="ct-cell" name="target_cell" class="mono" placeholder="layer.scope.slug" autocomplete="off" /></div>
-            </div></div>
-            <div class="field"><div class="row">
-              <div class="field"><label for="ct-from">From maturity</label>
-                <select id="ct-from" name="from"><option value=""></option>${raw(MATURITIES.map((x) => `<option>${x}</option>`).join(""))}</select></div>
-              <div class="field"><label for="ct-to">To maturity</label>
-                <select id="ct-to" name="to"><option value=""></option>${raw(MATURITIES.map((x) => `<option>${x}</option>`).join(""))}</select></div>
-            </div></div>
-            <div class="field"><label for="ct-rubric">Acceptance rubric cell</label><input id="ct-rubric" name="rubric" class="mono" placeholder="rubric.scope.slug" autocomplete="off" /></div>
-            <div class="field"><label for="ct-body">Body</label><textarea id="ct-body" name="body" rows="3"></textarea></div>
+            <div class="field"><label for="ct-title">${titleLabel}</label><input id="ct-title" name="title" required autocomplete="off" /></div>
+            ${mode === "prompt" ? prompt : mode === "instruction" ? instruction : structured}
           </form>
           <div class="actions">
             <button class="btn ghost" data-cancel>Cancel</button>
-            <button class="btn primary" data-submit>Create ticket</button>
+            <button class="btn primary" data-submit>${mode === "structured" ? "Create ticket" : mode === "prompt" ? "Create prompt" : "Create instruction"}</button>
           </div>
         </div>
       </div>`;
@@ -943,6 +971,9 @@ class DfModal extends UIElement {
   render() {
     this.querySelector("[data-cancel]")?.addEventListener("click", () => this.#close());
     this.querySelector("[data-submit]")?.addEventListener("click", () => this.#submit());
+    // tab switch: change the mode on the modal signal (re-renders the form for that intake mode)
+    this.querySelectorAll(".modal-tabs [data-mode]").forEach((b) =>
+      b.addEventListener("click", () => { store.modal.value = { ...store.modal.value, mode: b.dataset.mode }; }));
     this.querySelector("#ct-title")?.focus();
     const form = this.querySelector("#ct-form");
     form?.addEventListener("submit", (e) => { e.preventDefault(); this.#submit(); });
@@ -951,19 +982,28 @@ class DfModal extends UIElement {
     const f = this.querySelector("#ct-form");
     if (!f.reportValidity()) return;
     const g = (n) => f.elements[n]?.value?.trim() || "";
-    const body = { type: g("type") || "task", title: g("title"), body: g("body"), created_by: "human" };
-    if (g("target_cell")) body.target_cell = g("target_cell");
-    if (g("from") || g("to")) body.target_transition = { from: g("from"), to: g("to") };
-    if (g("rubric")) body.acceptance = { rubric_cell: g("rubric") };
+    const mode = store.modal.value?.mode || "structured";
+    let body;
+    if (mode === "prompt" || mode === "instruction") {
+      // free-form intake: no cell — a prompt parks for the planner, an instruction folds into guidance (server-side)
+      body = { type: mode, title: g("title"), body: g("body"), created_by: "human" };
+    } else {
+      body = { type: g("type") || "task", title: g("title"), body: g("body"), created_by: "human" };
+      if (g("target_cell")) body.target_cell = g("target_cell");
+      if (g("from") || g("to")) body.target_transition = { from: g("from"), to: g("to") };
+      if (g("rubric")) body.acceptance = { rubric_cell: g("rubric") };
+    }
     const res = await jsend("POST", "/api/tickets", body);
     if (!res.ok) { toast("Create failed", res.data?.detail || `HTTP ${res.status}`, "err"); return; }
     const created = res.data;
     if (created) upsertTicket(created);
     const target = store.modal.value?.state;
     this.#close();
-    toast("Ticket created", `${created?.id || ""} · draft`, "ok");
-    // if the "+" was on a non-draft column, request the transition toward it (gate decides)
-    if (created && target && target !== "draft") requestTransition(created.id, "active");
+    const label = mode === "structured" ? "Ticket" : mode === "prompt" ? "Prompt" : "Instruction";
+    toast(`${label} created`, `${created?.id || ""}${mode === "structured" ? " · draft" : " · intake"}`, "ok");
+    // a structured "+" on a non-draft column requests the transition toward it (the gate decides)
+    if (created && target && target !== "draft" && mode === "structured") requestTransition(created.id, "active");
+    if (mode === "instruction") refreshGuidance();   // the server folded it into guidance; reflect it now
     refreshLedger();
   }
 }
@@ -979,3 +1019,71 @@ class DfToast extends UIElement {
   };
 }
 customElements.define("df-toast", DfToast);
+
+// ═══════════════════ DOCK · steer (the 5s operator-input channel) ═══════════════════
+// A persistent corner dock: type guidance → POST /api/input; the server's 5s poll folds it into the
+// guidance buffer the next dispatched worker reads, and streams it back here. The template is STATIC and
+// the feed is patched by a SEPARATE effect (and the open/closed toggle is direct-DOM) so a guidance update
+// every 5s never rebuilds the dock and never wipes what the operator is typing.
+class DfSteer extends UIElement {
+  connected() {
+    this._open = false;
+    this._fxFeed = effect(() => { const g = store.guidance.value; this.#patchFeed(g); });
+  }
+  disconnected() { this._fxFeed?.(); }
+  static template = () => html`
+    <div class="steer" data-open="false">
+      <button type="button" class="steer-tab" data-toggle aria-expanded="false">
+        <span class="dot" aria-hidden="true"></span> Steer <span class="n" hidden></span>
+      </button>
+      <div class="steer-body" hidden>
+        <header>Operator guidance <small>read every 5s · folded into the next worker</small></header>
+        <ul class="steer-feed"></ul>
+        <form class="steer-form" id="steer-form">
+          <input id="steer-input" name="text" autocomplete="off" placeholder="Steer the loop… e.g. prioritise the leaderboard" />
+          <button type="submit" class="btn primary" data-send>Send</button>
+        </form>
+      </div>
+    </div>`;
+  render() {
+    const wrap = this.querySelector(".steer");
+    const tab = this.querySelector("[data-toggle]");
+    const body = this.querySelector(".steer-body");
+    if (tab && !tab._wired) {
+      tab._wired = true;
+      tab.addEventListener("click", () => {        // direct-DOM toggle — no requestUpdate, so the input survives
+        this._open = !this._open;
+        wrap.dataset.open = String(this._open);
+        body.hidden = !this._open;
+        tab.setAttribute("aria-expanded", String(this._open));
+        if (this._open) this.querySelector("#steer-input")?.focus();
+      });
+    }
+    const form = this.querySelector("#steer-form");
+    if (form && !form._wired) {
+      form._wired = true;
+      form.addEventListener("submit", (e) => { e.preventDefault(); this.#send(); });
+    }
+    this.#patchFeed(store.guidance.peek());        // initial paint (untracked — the feed effect owns updates)
+  }
+  #patchFeed(g) {
+    const feed = this.querySelector(".steer-feed");
+    if (!feed) return;
+    const items = ((g && g.items) || []).slice(-8);
+    feed.innerHTML = items.length
+      ? items.map((it) => `<li><span class="gt">${it.kind === "instruction" ? "▸" : "•"}</span> ${escapeHtml(it.text || "")}</li>`).join("")
+      : '<li class="empty">No guidance yet — type to steer the loop; it folds into the next dispatched worker.</li>';
+    const n = this.querySelector(".steer-tab .n");
+    if (n) { n.textContent = items.length || ""; n.hidden = !items.length; }
+  }
+  async #send() {
+    const input = this.querySelector("#steer-input");
+    const text = (input?.value || "").trim();
+    if (!text) return;
+    const res = await jsend("POST", "/api/input", { text });
+    if (!res.ok) { toast("Steer failed", res.data?.detail || `HTTP ${res.status}`, "err"); return; }
+    input.value = "";
+    refreshGuidance();                              // the server drains + streams "guidance"; refetch in case SSE is down
+  }
+}
+customElements.define("df-steer", DfSteer);

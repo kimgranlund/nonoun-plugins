@@ -127,6 +127,28 @@ no styles.css or call-site changes.
 
 ## dev-server / dev-kernel runtime (non-UI, same session)
 
+### DF-9 · P2 — the autonomous dispatch adapters author a single `{layer}/{slug}.md`, not real multi-file source · noted
+
+**Symptom.** With `DEV_FACTORY_HEARTBEAT=1` (Walk), the heartbeat dispatches ready tickets to an adapter —
+but **both** shipped adapters author exactly **one Markdown asset at `{layer}/{slug}.md`**. `MockAdapter`
+writes a placeholder (`# {layer}.{scope}.{slug}\n\nAuthored by the mock worker…`); `HeadlessClaudeAdapter`'s
+`claude -p` prompt literally says *"Write its asset to the file `{slug}.md` … Produce ONLY the asset."*
+Neither can author a real **multi-file capability** — a CAM16 engine module, or an HTML/CSS/JS app.
+
+**Impact.** Walk mode can advance *document-like* cells (spec / rubric / prose), but **cannot build working
+software**. "Set `HEARTBEAT=1` and let it build the UI" would stub `capability/ui-app.md` and fail any real
+harness. The seven working capabilities here (the 6 tool modules + the UI app) were all built by a
+**human-driven advancer agent with a tailored multi-file prompt + a per-cell `verify.mjs` harness**, *outside*
+the server's dispatch loop. So Walk mode today is a loop-**mechanics** demonstrator over `.md`/`.json` cells,
+not a code generator.
+
+**Suggested fix.** A code-authoring adapter (or extend `HeadlessClaudeAdapter`) that: (a) takes a per-cell
+*multi-file authoring* prompt + the cell's asset **layout** (a directory of source files), not a fixed
+`{slug}.md`; (b) wires the cell's real verifier (its `verify.mjs`) so the worker is graded by code, not by a
+generic doc-check; (c) lets a `capability` cell's `asset_ref` be a dir. The generator/critic split and the
+per-dispatch gate-wiring already exist — what's missing is *"author N source files to a cell-defined layout,
+then run its harness,"* vs *"author one `.md`."* Until then, real builds need the human-driven advancer path.
+
 ### DF-8 · P3 — no persistent launch config; the operator env was reconstructed inline on every run · FIXED in source (2026-06-15)
 
 **Symptom.** Starting the server meant retyping the whole env on the `uvicorn` line every time

@@ -179,11 +179,17 @@ class HeadlessClaudeAdapter(DispatchAdapter):
             fmt = (f' Author it as a fenced ```json block declaring: "title", "cell" ("{unit["layer"]}.{unit["scope"]}.{unit["slug"]}"), '
                    '"acceptance_criteria" (a list of {"id", and EITHER "check": an executable assertion OR "rubric_cell"}), '
                    '"non_goals" (a non-empty list), and "binds_rubric" (the bound rubric cell id). Zero prose-only criteria.')
+        # Fold the operator's recent steering guidance (the 5s channel) into THIS dispatch. A running one-shot
+        # `claude -p` worker cannot receive mid-flight input, so guidance reaches the NEXT worker dispatched —
+        # which is this one. Latest-last; advisory context, never a substitute for the cell's acceptance.
+        guide = _api.recent_guidance(d, n=5)
+        gtxt = ("\n\nRecent operator guidance (advisory context, fold in where relevant; latest last):\n"
+                + "\n".join(f"- {g}" for g in guide)) if guide else ""
         return (f"You are a dev-factory worker advancing exactly one lattice cell: "
                 f"{unit['layer']}.{unit['scope']}.{unit['slug']} (transition {tt.get('from')} -> {tt.get('to')}). "
                 f"Write its asset to the file `{rel}` (relative to your working directory).{fmt} "
                 f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, or lattice.json — those are "
-                f"protected and your write will be denied. Produce ONLY the asset.{cur}")
+                f"protected and your write will be denied. Produce ONLY the asset.{cur}{gtxt}")
 
     def dispatch(self, d, unit):
         if shutil.which("claude") is None:
@@ -425,6 +431,16 @@ def selftest():
         reclaimed = reconcile_leases(d)
         expect(t2["id"] in reclaimed, "expired-lease ticket not reclaimed")
         expect(_api.get_ticket(d, t2["id"])["state"] == "active", "reclaimed ticket not returned to active")
+
+        # Feature A: the HeadlessClaudeAdapter folds the operator's recent guidance into a NEWLY dispatched
+        # worker's prompt (a running one-shot worker can't be steered mid-flight; the NEXT dispatch is).
+        unit = {"layer": "spec", "scope": "task", "slug": "slice", "transition": {"from": "instantiated", "to": "validated"}}
+        hca = HeadlessClaudeAdapter()
+        expect("Recent operator guidance" not in hca._prompt(d, unit, root), "guidance clause must be absent on an empty buffer")
+        _api.enqueue_input(d, "make the leaderboard top-10 only", source="operator")
+        _api.drain_input(d)
+        expect("make the leaderboard top-10 only" in hca._prompt(d, unit, root),
+               "a newly dispatched worker's prompt must fold the latest operator guidance")
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
         for f in fails:
@@ -432,7 +448,8 @@ def selftest():
         return 1
     print("dispatch selftest: OK (provision worktree -> claimed(single-writer)+lease -> worker authors -> "
           "critic validates -> done, UNATTENDED, with the worktree torn down and the claim cleared; an expired "
-          "lease returns a stuck ticket to active — crash recovery without reconciling competing claims)")
+          "lease returns a stuck ticket to active — crash recovery without reconciling competing claims; a newly "
+          "dispatched worker's prompt folds the operator's recent 5s guidance)")
     return 0
 
 

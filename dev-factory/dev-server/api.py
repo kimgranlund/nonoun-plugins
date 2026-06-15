@@ -68,7 +68,7 @@ def create_ticket(d, type, title, body="", target_cell=None, target_transition=N
     (`defined→instantiated`, then `instantiated→validated` — multi-step like `defined→validated` is rejected
     by the lifecycle machine), validated here at the source. `acceptance` is `{"rubric_cell": …}`. Transitions
     elsewhere take an `actor` of shape `{"kind","id"}` (a bare string raises in `ledger.append`)."""
-    tid = _led.ulid("epic-" if type == "epic" else "iss-" if type == "issue" else "tkt-")
+    tid = _led.ulid("epic-" if type == "epic" else "iss-" if type in ("issue", "prompt", "instruction") else "tkt-")
     ticket = {
         "id": tid, "type": type, "title": title, "body": body, "state": "draft",
         "budget": budget or {"iterations": 5, "tokens": 200000},
@@ -183,6 +183,92 @@ def roadmap(d):
         except json.JSONDecodeError:
             continue
     return out
+
+
+# ─────────────────────────── operator input / guidance (the 5s steering channel) ───────────────────────────
+# An operator streams steering messages in; a 5-second poll folds new ones into an active guidance buffer the
+# loop reads. SECURITY: the intake + buffer live under run/, which _gates.VERIFIER protects (`.agents/dev-factory/
+# run/*`) — so a gate-wired WORKER cannot forge guidance; only the un-gated single-writer server writes here.
+
+GUIDANCE_CAP = 20   # the active buffer keeps the last N items; the intake jsonl keeps the full audit trail
+
+
+def _run_dir(d):
+    p = os.path.join(d, "run")
+    os.makedirs(p, exist_ok=True)
+    return p
+
+
+def _input_path(d):
+    return os.path.join(_run_dir(d), "input.jsonl")
+
+
+def _guidance_path(d):
+    return os.path.join(_run_dir(d), "guidance.json")
+
+
+def enqueue_input(d, text, kind="steer", source="operator"):
+    """Append an operator steering message to the append-only intake (run/input.jsonl). Returns the record,
+    or None for empty text. Worker-write-denied by the run/ gate; the server/operator path writes it."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    rec = {"ts": _now(), "text": text, "kind": kind, "source": source}
+    with open(_input_path(d), "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec) + "\n")
+    return rec
+
+
+def _read_input_lines(d):
+    p = _input_path(d)
+    if not os.path.exists(p):
+        return []
+    out = []
+    for line in open(p, encoding="utf-8"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def read_guidance(d):
+    """The active guidance buffer — the derived view the loop + UI read: {updated, cursor, items[]}."""
+    p = _guidance_path(d)
+    if os.path.exists(p):
+        try:
+            return json.load(open(p, encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    return {"updated": None, "cursor": 0, "items": []}
+
+
+def drain_input(d):
+    """Fold any NEW intake lines (past the cursor) into the active buffer, capped to the last GUIDANCE_CAP.
+    Idempotent + incremental — returns the newly-folded records (possibly empty). This is the code the 5s
+    poll runs: deterministic, no model. Atomic write so a crashed drain never corrupts the buffer."""
+    lines = _read_input_lines(d)
+    buf = read_guidance(d)
+    cursor = buf.get("cursor", 0)
+    new = lines[cursor:]
+    if not new:
+        return []
+    items = (buf.get("items") or []) + new
+    buf = {"updated": _now(), "cursor": len(lines), "items": items[-GUIDANCE_CAP:]}
+    tmp = _guidance_path(d) + ".tmp"
+    json.dump(buf, open(tmp, "w", encoding="utf-8"), indent=2)
+    os.replace(tmp, _guidance_path(d))
+    return new
+
+
+def recent_guidance(d, n=5):
+    """The last n guidance texts, latest last — what a NEWLY dispatched worker's prompt folds in. (A running
+    one-shot `claude -p` worker cannot receive mid-flight input; guidance steers the next dispatch + the loop.)"""
+    items = read_guidance(d).get("items") or []
+    return [it.get("text", "") for it in items[-n:] if it.get("text")]
 
 
 # ─────────────────────────── activities + the agent monitor (the lens) ───────────────────────────
@@ -358,6 +444,23 @@ def selftest():
         expect(factory_state(d, paused=True, heartbeat_enabled=True)["state"] == "paused", "paused not reported")
         expect("active_tickets" in factory_state(d, False) and "ready_to_dispatch" in factory_state(d, False),
                "factory_state must surface the active + ready counts the UI renders")
+
+        # the 5s operator-input / guidance channel: enqueue -> drain -> buffer -> recent (latest-last)
+        expect(recent_guidance(d) == [], "guidance must start empty")
+        enqueue_input(d, "focus the drag-drop first", source="operator")
+        enqueue_input(d, "use a standard 52-card deck")
+        drained = drain_input(d)
+        expect(len(drained) == 2, f"drain must fold the 2 new inputs, got {len(drained)}")
+        expect(drain_input(d) == [], "drain must be idempotent — no new inputs folds nothing")
+        expect(recent_guidance(d, n=5)[-1] == "use a standard 52-card deck", "recent_guidance must be latest-last")
+        expect(os.path.exists(os.path.join(d, "run", "input.jsonl")),
+               "input intake must live under run/ (the gate-protected perimeter — workers cannot forge guidance)")
+
+        # Feature B: a PROMPT ticket is untriaged intake — created with no cell (iss- id) and PARKED (denied active)
+        p = create_ticket(d, "prompt", "build a solitaire game", body="drag-drop, scoring, leaderboards")
+        expect(p["id"].startswith("iss-") and p.get("target_cell") is None, "a prompt ticket must be untriaged intake")
+        ok, _pt, pmsg = transition_ticket(d, p["id"], "active", srv)
+        expect(not ok and "untriaged" in pmsg, f"an untriaged prompt ticket must be denied active: {pmsg}")
     if fails:
         sys.stderr.write("api selftest: FAIL\n")
         for f in fails:
@@ -365,14 +468,28 @@ def selftest():
         return 1
     print("api selftest: OK (create draft -> materialize; an illegal transition is refused with a reason; "
           "the legal path drives a cell to validated through the validation-path morphism; the index reflects "
-          "ticket=done, cell=validated, and the full ledger — all server-mediated, single-writer)")
+          "ticket=done, cell=validated, and the full ledger — all server-mediated, single-writer; the 5s "
+          "operator-input channel folds intake -> guidance (idempotent, run/-protected); a prompt intake ticket "
+          "parks untriaged)")
     return 0
 
 
 def main(argv):
     if not argv or argv[0] == "selftest":
         return selftest()
-    sys.stderr.write("api.py is the operations library (use selftest, or import it / run app.py)\n")
+    verb = argv[0]
+    d = argv[argv.index("--dir") + 1] if "--dir" in argv else os.environ.get("DEV_FACTORY_DIR", ".agents/dev-factory")
+    if verb == "enqueue-input":
+        text = argv[1] if len(argv) > 1 and not argv[1].startswith("--") else ""
+        rec = enqueue_input(d, text, source="cli")
+        drain_input(d)
+        print(json.dumps(rec)) if rec else sys.stderr.write("enqueue-input: empty text\n")
+        return 0 if rec else 1
+    if verb == "guidance":
+        print(json.dumps(read_guidance(d), indent=2))
+        return 0
+    sys.stderr.write("api.py is the operations library. verbs: selftest | "
+                     "enqueue-input <text> [--dir D] | guidance [--dir D]\n")
     return 2
 
 

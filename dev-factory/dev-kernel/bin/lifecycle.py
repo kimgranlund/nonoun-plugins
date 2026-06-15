@@ -84,8 +84,9 @@ def save_ticket(d, ticket):
 
 def gate_ticket_ready(d, ticket, lat):
     """draft|blocked -> active. The ticket must be well-formed AND bound to a real, legal, validated target."""
-    if ticket.get("type") == "issue" and not ticket.get("target_cell"):
-        return False, "issue is untriaged: no target_cell (triage it into a feature/task first)"
+    if ticket.get("type") in ("issue", "prompt", "instruction") and not ticket.get("target_cell"):
+        return False, (f"{ticket.get('type')} is untriaged intake: no target_cell "
+                       "(a prompt is triaged into structured tickets; an instruction is folded as guidance)")
     tc = ticket.get("target_cell")
     if not tc:
         return False, "no target_cell"
