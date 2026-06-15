@@ -127,7 +127,9 @@ no styles.css or call-site changes.
 
 ## dev-server / dev-kernel runtime (non-UI, same session)
 
-### DF-9 · P2 — the autonomous dispatch adapters author a single `{layer}/{slug}.md`, not real multi-file source · noted
+### DF-9 · P2 — the autonomous dispatch adapters author a single `{layer}/{slug}.md`, not real multi-file source · FIXED in source (2026-06-15)
+
+**Fixed in source.** A kit now DECLARES multi-file code authoring per layer (`dev-kit-app` top-level `authoring`: `capability` → a source **directory**, `{layer}/{slug}/`). `dispatch.py` `_authoring_for` routes such a cell to a multi-file authoring prompt — the worker authors `index.mjs` + friends into the dir to industrial standards, graded by `node {asset}/verify.mjs`, the cell's **per-cell critic harness** authored by the planner and now **gate-denied to the worker** (`_gates.VERIFIER` adds `{NS}/*/*/verify.mjs`, so a worker can't grade its own homework). `validate.py` already mints the signal from the verifier's real exit status — no kernel/schema change. The `/debug/` harness builds an app through three rubric-gated milestones (SPEC · CAPABILITY · SHIP) to a `capability.system.app` integrator (SHIPPED), with bi-directional spec revision on a stall; the `debug-coldstart` replay proves the whole arc CI-safe (MockAdapter + real `node` verifiers). dev-kernel `0.2.3 → 0.2.4`, dev-kit-app `0.1.0 → 0.2.0`.
 
 **Symptom.** With `DEV_FACTORY_HEARTBEAT=1` (Walk), the heartbeat dispatches ready tickets to an adapter —
 but **both** shipped adapters author exactly **one Markdown asset at `{layer}/{slug}.md`**. `MockAdapter`

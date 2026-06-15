@@ -29,12 +29,64 @@ import verdict as _verdict     # noqa: E402
 
 POLL_S = 5            # the monitor cadence (the server also reads operator input every 5s, independently)
 SRV = {"kind": "server", "id": "dev-server"}
+REGEN = {"kind": "agent", "id": "spec-regenerator"}
+SPEC_ID = "spec.system.app"
+
+
+def _regenerate_spec(name, api, reason):
+    """BI-DIRECTIONAL spec work — a downstream build learning flows UPSTREAM. Drive the spec through a DELIBERATE
+    validated→regenerating→validated revision (the kernel's regeneration loop, ledgered — not a silent patch),
+    revise its asset, then propagate staleness so every dependent capability must RE-validate against the revised
+    spec. Returns the list of cells that were re-staled. (Spec work is first-class — as valuable as the build.)"""
+    inst = C.instance_dir(name)
+    cell = api._lat.find(api._lat.load(inst), SPEC_ID)
+    if not cell or cell["maturity"] not in ("validated", "operating"):
+        return []
+    kw = dict(asset_ref=cell.get("asset_ref"), depends_on=cell.get("depends_on"))
+    api.seed_cell(inst, "spec", "system", "app", maturity="regenerating", signal_refs=cell.get("signal_refs"), **kw)
+    api._led.append(inst, "regenerate", REGEN, {"cell": SPEC_ID}, f"spec revision (upstream from a build learning): {reason}")
+    asset = os.path.join(inst, cell.get("asset_ref") or "spec/app.md")
+    if os.path.isfile(asset):
+        with open(asset, "a", encoding="utf-8") as f:
+            f.write(f"\n\n## Revision — learned downstream\n{reason}\n")
+    api.seed_cell(inst, "spec", "system", "app", maturity="validated",
+                  signal_refs=(cell.get("signal_refs") or []) + [f"signals/{SPEC_ID}/regen.json"], **kw)
+    # propagate: every cell depending on the spec re-staled — the partial order now gates it until re-validated
+    lat = api._lat.load(inst); restale = []
+    for c in lat["cells"]:
+        if SPEC_ID in (c.get("depends_on") or []) and c["maturity"] in ("validated", "operating"):
+            c["maturity"] = "stale"; restale.append(api._lat.cid(c))
+    api._lat.save(inst, lat); api._store.rebuild(inst)
+    api._led.append(inst, "stale-propagated", REGEN, {"cell": SPEC_ID}, f"staleness propagated to {len(restale)} dependents")
+    return restale
+
+
+def _revalidate_stale(name, api):
+    """The DOWNSTREAM half of the bi-directional loop: re-validate every staled cell against the revised spec
+    via its real verifier (stale → regenerating → validated). Returns the re-validated cell ids."""
+    import validate as _val
+    from dispatch import _kit_verifier
+    inst = C.instance_dir(name)
+    out = []
+    for snap in [c for c in api.lattice_grid(inst) if c["maturity"] == "stale"]:
+        full = api._lat.find(api._lat.load(inst), snap["id"])
+        kw = dict(asset_ref=full.get("asset_ref"), depends_on=full.get("depends_on"), signal_refs=full.get("signal_refs"))
+        api.seed_cell(inst, full["layer"], full["scope"], full["slug"], maturity="regenerating", **kw)
+        cell = api._lat.find(api._lat.load(inst), snap["id"])
+        verifier = _kit_verifier(inst, cell, {"worktree": "", "ticket": "regen", "target_cell": snap["id"]})
+        if verifier:
+            ok, _sig, _msg = _val.run_validation(inst, snap["id"], "harness", verifier)
+            if ok:
+                out.append(snap["id"])
+    api._store.rebuild(inst)
+    return out
 
 
 def _ensure_seeded(name, brief, mock, api):
     inst = C.instance_dir(name)
     if not os.path.isdir(inst):
         _scaffold.scaffold(name, brief)
+    C.bind_env(name)   # apply DEV_FACTORY_KIT (the app kit) so the in-process planner + build see it
     # cold-start if there are no build cells yet (spec/capability)
     grid = api.lattice_grid(inst)
     if not any(c["layer"] in ("spec", "capability") for c in grid):
@@ -122,6 +174,15 @@ def ralph(name, brief="solitaire", mock=None, max_iters=40, deadline_s=3600, fre
     C.banner(f"RALPH — brief '{brief}' -> project '{name}'  [{'LIVE' if live else 'mock'}]")
     _ensure_seeded(name, brief, mock=not live, api=api)
     iters = _live_build(name, api, max_iters, deadline_s) if live else _mock_build(name, api, max_iters)
+
+    # BI-DIRECTIONAL spec work: a stalled milestone is a signal the spec was under-specified — the learning flows
+    # UPSTREAM (revise the spec, ledgered) then DOWNSTREAM (re-validate the dependents). Spec iteration is
+    # first-class, as valuable as the build. (Mock path; a live run drives the kernel's regeneration loop.)
+    if not live and not _verdict.verdict(name, quiet=True)["lattice_built"]:
+        C.banner("a milestone stalled — bi-directional spec iteration (learning → spec revision → rebuild)")
+        if _regenerate_spec(name, api, "a milestone stalled: the spec under-specified a capability"):
+            _revalidate_stale(name, api)
+            iters += _mock_build(name, api, max_iters)
 
     v = _verdict.verdict(name)
     C.banner(f"RALPH done after {iters} iteration(s) — verdict: {'PASS ✓' if v['ok'] else 'FAIL ✗'}")

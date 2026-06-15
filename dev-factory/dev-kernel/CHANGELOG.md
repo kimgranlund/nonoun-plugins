@@ -2,6 +2,14 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.4] — 2026-06-15
+
+The generator/critic split extended to per-cell code harnesses (the DF-9 enabler).
+
+### Changed
+
+- **`_gates.VERIFIER` protects `{NS}/*/*/verify.mjs`** — a cell's per-cell **critic harness** (`{layer}/{slug}/verify.mjs`). When a kit authors multi-file code (dev-kit-app: a capability is a source directory graded by `node {asset}/verify.mjs`), the harness is the gate the worker's code must PASS — so a gate-wired worker must never be able to write it (else it grades its own homework). The worker can write the cell's source (`index.mjs`, …); a write to `verify.mjs` is denied in-process. Same immutable-boundary mechanism as `signals/`/`rubric/`/`lattice.json`; selftest + the `debug-coldstart` replay prove a worker write to `verify.mjs` is denied while ordinary source is allowed. plugin.json 0.2.3 → 0.2.4.
+
 ## [0.2.3] — 2026-06-15
 
 Free-form intake — the contract half of the dev-server's two-mode ticket creator (prompt | instruction).

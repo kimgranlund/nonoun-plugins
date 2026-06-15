@@ -1,6 +1,6 @@
 {
   "name": "dev-kit-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The application family kit for dev-factory — binds the dev-kernel contracts to building and validating application code (capability/protocol cells validated by a passing test suite, not a doc check). Exists primarily to PROVE the kernel/kit boundary (TDD §5): adding a second family required ZERO edits to dev-kernel — a different ontology, rubric manifest, validation harness, and dispatch policy, all bound through the same kernel contracts. Stateless; `check-kit-conform` enforces no kernel forking.",
   "author": {
     "name": "Kim",

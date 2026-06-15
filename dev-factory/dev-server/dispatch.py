@@ -111,6 +111,31 @@ class DispatchAdapter:
         raise NotImplementedError
 
 
+def _authoring_for(cell, kit_dir=None):
+    """The bound kit's AUTHORING declaration for this cell's layer, or None (→ single-`.md` authoring). A kit
+    declares multi-file CODE authoring per layer via a top-level `authoring` list, so dev-kit-corpus (doc cells)
+    stays single-file while dev-kit-app (capability code) opts into a multi-file directory. The kernel/dispatch
+    stay generic — the kit names the shape; check-kit-conform ignores the (kit-local) `authoring` field."""
+    kit_dir = kit_dir or os.environ.get("DEV_FACTORY_KIT")
+    if not kit_dir:
+        return None
+    try:
+        kit = json.load(open(os.path.join(kit_dir, "kit.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for a in kit.get("authoring", []):
+        if a.get("layer") == cell["layer"]:
+            return a
+    return None
+
+
+def _asset_rel(layer, slug, authoring):
+    """A cell's asset path relative to the instance: a DIRECTORY for multi-file authoring, else {layer}/{slug}.md."""
+    if authoring and authoring.get("mode") == "multi-file":
+        return os.path.join(layer, slug)
+    return os.path.join(layer, f"{slug}.md")
+
+
 class MockAdapter(DispatchAdapter):
     """Deterministic runtime for CI/Crawl→Walk: a real subprocess that plays the worker role — it authors
     (or refines) the target cell's asset, writes nothing to a protected path, and reports metrics. No live
@@ -119,6 +144,20 @@ class MockAdapter(DispatchAdapter):
 
     def dispatch(self, d, unit):
         layer, slug = unit["layer"], unit["slug"]
+        authoring = _authoring_for({"layer": layer, "slug": slug})
+        if authoring and authoring.get("mode") == "multi-file":
+            # multi-file CODE authoring (the worker's GENERATOR side): author source files into the cell's dir.
+            # The per-cell verify.mjs is the CRITIC's gate — authored by the planner, write-protected from the
+            # worker — so the mock never writes it (a real cold-start seeds the real harness; a trivial stub here).
+            asset_rel = os.path.join(layer, slug)
+            asset_abs = os.path.join(d, asset_rel)
+            os.makedirs(asset_abs, exist_ok=True)
+            src = os.path.join(asset_abs, "index.mjs")
+            if not os.path.exists(src):
+                open(src, "w", encoding="utf-8").write(
+                    f"// {layer}.{unit['scope']}.{slug} — authored by the {self.name} worker for {unit['ticket']}\n"
+                    "export const ready = true;\n")
+            return {"ok": True, "asset_ref": asset_rel, "metrics": {"tokens": 9000, "iterations": 1}}
         asset_dir = os.path.join(d, layer)
         os.makedirs(asset_dir, exist_ok=True)
         asset_rel = os.path.join(layer, f"{slug}.md")
@@ -171,6 +210,27 @@ class HeadlessClaudeAdapter(DispatchAdapter):
 
     def _prompt(self, d, unit, project_root):
         tt = unit.get("transition") or {}
+        # Fold the operator's recent steering guidance (the 5s channel) into THIS dispatch. A running one-shot
+        # `claude -p` worker cannot receive mid-flight input, so guidance reaches the NEXT worker dispatched —
+        # which is this one. Latest-last; advisory context, never a substitute for the cell's acceptance.
+        guide = _api.recent_guidance(d, n=5)
+        gtxt = ("\n\nRecent operator guidance (advisory context, fold in where relevant; latest last):\n"
+                + "\n".join(f"- {g}" for g in guide)) if guide else ""
+
+        # multi-file CODE authoring (a kit's capability/code layer): author N source files to a directory, graded
+        # by the cell's per-cell critic harness verify.mjs — the worker may READ its contract but CANNOT write it.
+        authoring = _authoring_for({"layer": unit["layer"], "slug": unit["slug"]})
+        if authoring and authoring.get("mode") == "multi-file":
+            dir_rel = os.path.relpath(os.path.join(d, unit["layer"], unit["slug"]), project_root)
+            return (f"You are a dev-factory worker building ONE capability of a shippable app: "
+                    f"{unit['layer']}.{unit['scope']}.{unit['slug']}. Author its source as multiple files under "
+                    f"`{dir_rel}/` to INDUSTRIAL standards: clear module boundaries, named exports, descriptive "
+                    f"naming, proper levels of abstraction, no dead code. Put the testable LOGIC in pure ES modules "
+                    f"the harness can import headlessly; keep rendering/DOM/canvas in a thin shell. It MUST pass its "
+                    f"critic harness `{dir_rel}/verify.mjs` — READ it for the exact contract, but you CANNOT write it "
+                    f"(it is the critic's gate; your write is denied). Do NOT touch .agents/dev-factory/signals/, the "
+                    f"ledger, rubric/, lattice.json, or any verify.mjs. Produce ONLY the source files.{gtxt}")
+
         asset_abs = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
         rel = os.path.relpath(asset_abs, project_root)             # the asset's path FROM the worker's cwd (project root)
         cur = ("\n\nCurrent asset:\n" + open(asset_abs, encoding="utf-8").read()[:4000]) if os.path.exists(asset_abs) else ""
@@ -179,12 +239,6 @@ class HeadlessClaudeAdapter(DispatchAdapter):
             fmt = (f' Author it as a fenced ```json block declaring: "title", "cell" ("{unit["layer"]}.{unit["scope"]}.{unit["slug"]}"), '
                    '"acceptance_criteria" (a list of {"id", and EITHER "check": an executable assertion OR "rubric_cell"}), '
                    '"non_goals" (a non-empty list), and "binds_rubric" (the bound rubric cell id). Zero prose-only criteria.')
-        # Fold the operator's recent steering guidance (the 5s channel) into THIS dispatch. A running one-shot
-        # `claude -p` worker cannot receive mid-flight input, so guidance reaches the NEXT worker dispatched —
-        # which is this one. Latest-last; advisory context, never a substitute for the cell's acceptance.
-        guide = _api.recent_guidance(d, n=5)
-        gtxt = ("\n\nRecent operator guidance (advisory context, fold in where relevant; latest last):\n"
-                + "\n".join(f"- {g}" for g in guide)) if guide else ""
         return (f"You are a dev-factory worker advancing exactly one lattice cell: "
                 f"{unit['layer']}.{unit['scope']}.{unit['slug']} (transition {tt.get('from')} -> {tt.get('to')}). "
                 f"Write its asset to the file `{rel}` (relative to your working directory).{fmt} "
@@ -441,6 +495,27 @@ def selftest():
         _api.drain_input(d)
         expect("make the leaderboard top-10 only" in hca._prompt(d, unit, root),
                "a newly dispatched worker's prompt must fold the latest operator guidance")
+
+        # DF-9 (Phase 1): a kit that DECLARES multi-file authoring makes a code cell author a DIRECTORY of
+        # source (not one {slug}.md), and the worker prompt demands industrial multi-file code graded by the
+        # cell's per-cell verify.mjs critic harness. Hermetic: a temp kit, no env, no node.
+        kitdir = os.path.join(root, "kitx"); os.makedirs(kitdir, exist_ok=True)
+        json.dump({"name": "dev-kit-x", "family": "x", "authoring": [{"layer": "capability", "mode": "multi-file"}]},
+                  open(os.path.join(kitdir, "kit.json"), "w"))
+        capcell = {"layer": "capability", "slug": "deck"}
+        auth = _authoring_for(capcell, kit_dir=kitdir)
+        expect(auth and auth.get("mode") == "multi-file", "kit-declared multi-file authoring not detected")
+        expect(_asset_rel("capability", "deck", auth) == os.path.join("capability", "deck"),
+               "a multi-file capability's asset must be a DIRECTORY, not {slug}.md")
+        expect(_asset_rel("spec", "s", None) == os.path.join("spec", "s.md"), "doc cells must stay single-file")
+        capunit = {"layer": "capability", "scope": "system", "slug": "deck", "transition": {"from": "instantiated", "to": "validated"}}
+        os.environ["DEV_FACTORY_KIT"] = kitdir
+        try:
+            p = hca._prompt(d, capunit, root)
+        finally:
+            del os.environ["DEV_FACTORY_KIT"]
+        expect("multiple files under" in p and "verify.mjs" in p and "CANNOT write it" in p,
+               "the multi-file worker prompt must demand source files + name the worker-protected verify.mjs gate")
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
         for f in fails:
@@ -449,7 +524,8 @@ def selftest():
     print("dispatch selftest: OK (provision worktree -> claimed(single-writer)+lease -> worker authors -> "
           "critic validates -> done, UNATTENDED, with the worktree torn down and the claim cleared; an expired "
           "lease returns a stuck ticket to active — crash recovery without reconciling competing claims; a newly "
-          "dispatched worker's prompt folds the operator's recent 5s guidance)")
+          "dispatched worker's prompt folds the operator's recent 5s guidance; a kit that declares multi-file "
+          "authoring routes a code cell to a source DIRECTORY graded by its worker-protected verify.mjs [DF-9])")
     return 0
 
 

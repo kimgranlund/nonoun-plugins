@@ -90,10 +90,38 @@ def banner(msg):
     print(f"\n\033[1m▶ {msg}\033[0m" if sys.stdout.isatty() else f"\n▶ {msg}")
 
 
+def bind_env(name):
+    """Apply the scaffolded dev-factory.env (DEV_FACTORY_KIT, DEV_KERNEL_BIN, …) to os.environ for IN-PROCESS
+    runs — the mock build + the planner read DEV_FACTORY_KIT from the environment exactly as run.sh does for a
+    live server. setdefault, so a value already in the shell wins."""
+    envf = os.path.join(project_dir(name), "dev-factory.env")
+    if not os.path.isfile(envf):
+        return
+    for line in open(envf, encoding="utf-8"):
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip())
+
+
+def brief_bank():
+    """The idea-bank: every brief under debug/briefs/ (the thought-starters to pick between)."""
+    return sorted(f for f in os.listdir(BRIEFS) if f.endswith(".md")) if os.path.isdir(BRIEFS) else []
+
+
 def load_brief(brief_arg):
-    """Resolve a brief path: an absolute/relative file, or a bare name under debug/briefs/."""
+    """Resolve a brief: a file path, a bare name under debug/briefs/, or 'random' — pick one from the idea-bank
+    (for the 'did the improvement hold?' runs, where a random project keeps us from overfitting to solitaire)."""
+    if brief_arg == "random":
+        import random
+        bank = brief_bank()
+        if not bank:
+            raise SystemExit(f"no briefs in {BRIEFS}")
+        brief_arg = random.choice(bank)
+        print(f"» random brief from the idea-bank ({len(bank)} ideas): {brief_arg}")
     for cand in (brief_arg, os.path.join(BRIEFS, brief_arg),
                  os.path.join(BRIEFS, brief_arg + ".md")):
         if cand and os.path.isfile(cand):
             return cand, open(cand, encoding="utf-8").read()
-    raise SystemExit(f"brief not found: {brief_arg} (looked in {BRIEFS})")
+    raise SystemExit(f"brief not found: {brief_arg} (looked in {BRIEFS}; the bank: {', '.join(brief_bank())})")

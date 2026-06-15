@@ -3,6 +3,16 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-15 — the code-authoring adapter (shippable software, DF-9)
+
+- **`dispatch.py` authors real multi-file source.** `_authoring_for(cell)` reads the bound kit's `authoring`
+  declaration; for a multi-file layer (dev-kit-app `capability`) the `MockAdapter` + `HeadlessClaudeAdapter._prompt`
+  author source files into the cell's **directory** (industrial module boundaries, pure-logic ES modules + a thin
+  shell) graded by the cell's per-cell `verify.mjs` — the worker is gate-denied from writing that harness
+  (dev-kernel 0.2.4). Doc cells (dev-kit-corpus) stay single-`.md` (back-compat). This is the DF-9 fix that turns
+  a "markdown lattice" into shippable software; the `/debug/` harness drives it through milestone rubrics to a
+  shipped integrator. dispatch selftest covers the multi-file routing + the worker-protected harness.
+
 ## 2026-06-15 — two operator surfaces (the ralph-loop debugging system)
 
 Two shipped features that make the autonomous loop watchable and steerable in real time, exercised by the new

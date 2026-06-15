@@ -23,16 +23,16 @@ import _common as C   # noqa: E402
 
 BUILD_LAYERS = ("spec", "capability")
 SETTLED = ("validated", "operating")
+SHIP_CELL = "capability.system.app"   # the integrator: its verify.mjs is the SHIP gate (compose + build + acceptance + smoke)
 
 
-def _artifact(proj):
-    """Heuristic: does the project carry a real app artifact a human could run?"""
-    for f in ("index.html", "package.json"):
-        if os.path.isfile(os.path.join(proj, f)):
-            return f
-    for sub in ("src", "app", "public"):
-        if os.path.isdir(os.path.join(proj, sub)) and os.listdir(os.path.join(proj, sub)):
-            return sub + "/"
+def _artifact(inst):
+    """The produced app artifact — the integrator's source dir under the instance (where the app is authored)."""
+    appdir = os.path.join(inst, "capability", "app")
+    if os.path.isdir(appdir):
+        files = sorted(f for f in os.listdir(appdir) if f != "verify.mjs")
+        if files:
+            return f"capability/app/ ({len(files)} file(s): {', '.join(files[:4])}{'…' if len(files) > 4 else ''})"
     return None
 
 
@@ -60,30 +60,27 @@ def verdict(name, quiet=False, smoke=False):
     build = [c for c in grid if c["layer"] in BUILD_LAYERS]
     unbuilt = [c["id"] for c in build if c["maturity"] not in SETTLED]
     lattice_built = bool(build) and not unbuilt
-    artifact = _artifact(proj)
-    sm_ran, sm_ok, sm_detail = _smoke(proj) if (smoke and lattice_built) else (False, None, "smoke not requested")
+    ship = next((c for c in grid if c["id"] == SHIP_CELL), None)
+    # SHIPPED = the integrator cell validated. Its verify.mjs IS the ship gate (composes every capability +,
+    # live, runs the build + the spec's acceptance criteria + the browser smoke). So a validated ship cell means
+    # those gates already passed — the verdict reads the gate's verdict, it doesn't re-grade.
+    shipped = bool(ship) and ship.get("maturity") in SETTLED
+    artifact = _artifact(inst)
+    sm_ran, sm_ok, sm_detail = _smoke(proj) if (smoke and shipped) else (False, None, "smoke not requested (the ship cell's verify.mjs is the gate)")
 
-    # lattice_built = the loop converged (the stop condition). app_built = a REAL runnable artifact exists.
-    # They diverge by design today (DF-9): the shipped adapters author one {layer}/{slug}.md per cell, so a
-    # live run builds a *markdown lattice*, not runnable software — app_built needs the DF-9 code-authoring
-    # adapter. ok is gated on lattice_built (the factory's own done); app_built is reported loudly + honestly.
-    app_built = lattice_built and bool(artifact) and (sm_ok is not False)
-    ok = lattice_built and (sm_ok is not False)
-    result = {"ok": ok, "lattice_built": lattice_built, "app_built": app_built, "build_cells": len(build),
-              "unbuilt": unbuilt, "artifact": artifact, "smoke": {"ran": sm_ran, "ok": sm_ok, "detail": sm_detail}}
+    ok = lattice_built
+    result = {"ok": ok, "lattice_built": lattice_built, "shipped": shipped, "ship_cell": SHIP_CELL,
+              "build_cells": len(build), "unbuilt": unbuilt, "artifact": artifact,
+              "smoke": {"ran": sm_ran, "ok": sm_ok, "detail": sm_detail}}
     if not quiet:
         C.banner(f"verdict for '{name}'")
         print(f"  lattice built : {'YES' if lattice_built else 'NO'} ({len(build) - len(unbuilt)}/{len(build)} build cells settled)")
         if unbuilt:
             print(f"     unbuilt    : {', '.join(unbuilt)}")
-        print(f"  app artifact  : {artifact or 'NONE in the project root'}")
-        print(f"  smoke         : {sm_detail}")
-        print(f"  app built     : {'YES' if app_built else 'NO'}")
-        if lattice_built and not app_built:
-            print("     note       : the lattice is built but there is no runnable artifact — the shipped dispatch")
-            print("                  adapters author one .md per cell, not multi-file source (DF-9). A real app")
-            print("                  needs the DF-9 code-authoring adapter; today's live run is a loop-mechanics build.")
-        print(f"  VERDICT       : {'PASS ✓ (lattice built)' if ok else 'FAIL ✗'}")
+        print(f"  ship cell     : {SHIP_CELL} → {(ship or {}).get('maturity', 'absent')}")
+        print(f"  app artifact  : {artifact or 'none authored yet'}")
+        print(f"  SHIPPED       : {'YES ✓ — the integrator validated (its verify.mjs gate passed)' if shipped else 'NO ✗'}")
+        print(f"  VERDICT       : {'PASS ✓' if ok else 'FAIL ✗'}")
     return result
 
 
