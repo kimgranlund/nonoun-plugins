@@ -70,7 +70,7 @@ No server needed to try it: **`python3 dev-server/demo.py`** drives the whole lo
 
 ## Sample prompts
 
-dev-factory's skills are **model-invoked** (there are no slash commands) — so with `dev-kernel` installed, you drive it in natural language. What to say:
+dev-factory ships **one** typed command — **`/factory-init`** (the single deterministic action: scaffold an instance under `.agents/dev-factory/`) — and everything else is **model-invoked**: with `dev-kernel` installed, you drive it in natural language. What to say:
 
 | Say… | Triggers |
 |---|---|

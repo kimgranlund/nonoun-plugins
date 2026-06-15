@@ -7,8 +7,11 @@ re-implement the lattice machine — it vendors harness-forge's proven, selftest
 it against `.agents/dev-factory/` via the `--dir` flag. This keeps harness-forge a single source of
 truth and an untouched, standalone plugin.
 
-**Pinned source:** harness-forge @ `3ff1fbb` (the git revision these copies were vendored from;
-`KERNEL_VERSION` 0.5.2 is the kernel's internal contract version). Re-run the sync tool after any
+**Pinned source:** harness-forge `0.5.11` (re-vendored 2026-06-14 for the **`kernel_version` stamping**
+cross-over improvement — `lattice.save()` now stamps the writing version into `lattice.json`, `produced_by`
+reads `LATTICE_PRODUCED_BY` so dev-factory labels its own instances, and `lattice.kernel_compat()` gives the
+server a boot-time version handshake). `KERNEL_VERSION` stays **0.5.2** — the additions are backward-compatible
+(a new optional field + a helper + a defaulted env read), not a contract break. Re-run the sync tool after any
 upstream change and update this pin. **Note (own-marketplace scope):** the sync tool lives at the
 parent repo's `tools/`; if dev-factory is published as a standalone marketplace, the tool + a CI
 workflow that runs `--check` must travel with it (else the drift gate is asserted, not enforced).

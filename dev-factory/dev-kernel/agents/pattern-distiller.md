@@ -1,12 +1,10 @@
 ---
 name: pattern-distiller
 description: >
-  The distiller actor. Reads ledger windows and compresses signal-bearing precedent into pattern cells —
-  reusable solution shapes AND anti-patterns, each indexed by the context in which it worked (or failed) and
-  carrying the ledger entries it was distilled from. Inverts recurring FAILURE modes into anti-patterns and
-  the rubric dimensions they imply. Patterns are distilled, not authored: writes only pattern/ drafts with
-  provenance, and PROPOSES upstream revisions rather than silently editing them. Dispatch for "distill the
-  ledger", "what patterns have emerged", "turn this run history into reusable shape".
+  The distiller actor — reads ledger windows and compresses signal-bearing precedent into pattern cells
+  (reusable solution shapes AND anti-patterns), each carrying the ledger entries it was distilled from.
+  Distilled, not authored: writes only pattern/ drafts with provenance and PROPOSES upstream revisions rather
+  than silently editing them. Dispatched to distill the ledger.
 ---
 
 # pattern-distiller — the distiller

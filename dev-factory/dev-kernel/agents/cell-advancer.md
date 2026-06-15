@@ -1,7 +1,10 @@
 ---
 name: cell-advancer
 description: >
-  The worker — the advancer actor. Runs the engine (define→create→validate) on EXACTLY ONE cell at the smallest signal-yielding scope, in an isolated fresh context, then exits with a ledger entry. Dispatched one cell per unit. Authors the cell's asset into its target layer dir and triggers its verification via the validation path; never selects the next cell, never grades its own work, and — in a wired instance (`gate-signal`/`gate-verifier` active) — is mechanically deny-on-write to verifier assets (signals, rubrics, schemas, hooks, lattice.json, the wiring). Model tier: fast.
+  The advancer/worker actor: runs the engine (define→create→validate) on EXACTLY ONE cell in a fresh isolated
+  context — authors its asset into the target layer dir, triggers the validation path, exits with a ledger
+  entry. Never selects the next cell, never grades its own work; deny-on-write to verifier assets in a wired
+  instance. Dispatched one cell per unit by dev-server. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
 model: fast
 ---

@@ -100,10 +100,24 @@ def load(d):
     return json.load(open(os.path.join(d, "lattice.json"), encoding="utf-8"))
 
 
+def kernel_compat(lat):
+    """The run-time half of the vendoring contract: `save()` stamps the writing `KERNEL_VERSION` into the
+    instance; this reads it back and compares to the running kernel. Returns (ok, message). An UNSTAMPED
+    instance (written before the stamp existed, or hand-authored) is treated as compatible — only a
+    present-and-different stamp is a skew worth surfacing. Never raises; the caller decides warn vs refuse.
+    A vendoring host (e.g. dev-factory) calls this on boot so a future breaking bump becomes a detected
+    migration, not a silent corruption."""
+    ver = (lat or {}).get("kernel_version")
+    if ver and ver != KERNEL_VERSION:
+        return False, f"instance was written by kernel {ver} but the running kernel is {KERNEL_VERSION} — migrate or re-validate before operating"
+    return True, None
+
+
 def save(d, lat):
     # Atomic write (CV1/Simon): the staleness cascade rewrites lattice.json on every PostToolUse edit; a
     # plain truncating dump that is interrupted mid-write corrupts the canonical state. Write a temp file in
     # the same dir, then os.replace — the same discipline wire.py already uses for the user's settings.json.
+    lat["kernel_version"] = KERNEL_VERSION   # stamp the writing kernel — the migration anchor kernel_compat() reads back
     path = os.path.join(d, "lattice.json")
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -835,7 +849,7 @@ def main(argv):
         made = scaffold(d)                                  # the nine layer dirs + signals/ + ledger/ + the naming schema
         lat = seed_lattice(pos[1] if len(pos) > 1 else os.path.basename(os.getcwd()))
         lat["created"] = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
-        lat["produced_by"] = "harness-forge"               # the producing plugin (state-survival / migration anchor)
+        lat["produced_by"] = os.environ.get("LATTICE_PRODUCED_BY", "harness-forge")  # producing plugin (migration anchor); a vendoring host sets LATTICE_PRODUCED_BY (e.g. dev-factory)
         save(d, lat)
         print(f"seeded {os.path.join(d, 'lattice.json')} — {len(lat['cells'])} cells + scaffold ({', '.join(made)})")
         return 0

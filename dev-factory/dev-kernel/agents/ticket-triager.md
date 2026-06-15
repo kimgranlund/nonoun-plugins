@@ -1,7 +1,10 @@
 ---
 name: ticket-triager
 description: >
-  Turn a draft or an untriaged issue into a well-formed `active` ticket the factory can dispatch. Bind the target_cell + target_transition (a legal maturity morphism), bind acceptance to a VALIDATED rubric cell (doneness is a validated rubric, not prose), set the budget (iterations+tokens), declare dependencies, and estimate risk/unlock for the compass. Use at the intake boundary when work must become typed, ready coordination substrate. Proposes draft→active; the server applies gate-ticket-ready (single-writer). Never self-claims, never sets `claimed`, never writes the lattice or signals. Model tier: fast.
+  Turns a draft or untriaged issue into a well-formed `active` ticket: binds target_cell + a legal
+  target_transition, binds acceptance to a VALIDATED rubric cell (doneness is a rubric, not prose), sets the
+  budget, declares dependencies, estimates risk/unlock for the compass. Proposes draft→active (the server
+  applies gate-ticket-ready); never self-claims, never writes the lattice or signals. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
 model: fast
 ---

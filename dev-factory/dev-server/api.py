@@ -32,16 +32,26 @@ def _now():
 
 def _ensure_lattice(d):
     """The vendored scaffold lays the layer dirs but not lattice.json; the server initializes an empty
-    canonical lattice on first write so load/rebuild never hit a missing file."""
+    canonical lattice on first write so load/rebuild never hit a missing file. dev-factory stamps its OWN
+    producer — the migration anchor must read `dev-factory`, not the vendored kernel's `harness-forge`
+    default (the I-? provenance fix); `save()` also stamps the writing `kernel_version`. Both persist across
+    every later load-modify-save."""
     if not os.path.exists(os.path.join(d, "lattice.json")):
-        _lat.save(d, {"cells": []})
+        _lat.save(d, {"cells": [], "produced_by": "dev-factory"})
 
 
 def init_instance(d):
     """Initialize a dev-factory instance: scaffold the substrate tree + the empty lattice + the
-    coordination dirs. Idempotent. The server calls this on boot against the configured instance dir."""
+    coordination dirs. Idempotent. The server calls this on boot against the configured instance dir. On an
+    EXISTING instance it runs the kernel-version handshake (`kernel_compat`) and warns on a skew — the
+    run-time half of the vendoring contract (a re-vendored kernel meeting an older instance's state)."""
     _lat.scaffold(d)
+    existed = os.path.exists(os.path.join(d, "lattice.json"))
     _ensure_lattice(d)
+    if existed:
+        ok, msg = _lat.kernel_compat(_lat.load(d))
+        if not ok:
+            sys.stderr.write(f"[dev-factory] kernel-version skew on boot: {msg}\n")
     for sub in ("tickets", "roadmap", "issues"):
         os.makedirs(os.path.join(d, "coordination", sub), exist_ok=True)
     return d

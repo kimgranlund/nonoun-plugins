@@ -1,7 +1,10 @@
 ---
 name: dependency-arbiter
 description: >
-  Resolve contested dependencies and detect cycles the partial-order filter surfaces. When two tickets each declare the other (a cycle the readiness filter cannot satisfy), or when a dependency is ambiguous/contested, decide the true edge — which cell must validate first — and annotate the tickets so the compass can rank them. Use when the dependency graph is stuck: a cycle, a contested edge, a ticket that never becomes ready. Annotates tickets; never sets active/claimed, never writes the lattice or signals. The cycle DETECTION is deterministic (the partial-order filter); the RESOLUTION is the judgment. Model tier: fast.
+  Resolves contested dependencies and the cycles the partial-order readiness filter surfaces — decides the
+  true edge (which cell must validate first) and annotates tickets so the compass can rank them. Cycle
+  DETECTION is deterministic; the RESOLUTION is the judgment. Annotates tickets only — never the lattice or
+  signals. Tier: fast.
 tools: Read, Grep, Glob, Edit, Write
 model: fast
 ---

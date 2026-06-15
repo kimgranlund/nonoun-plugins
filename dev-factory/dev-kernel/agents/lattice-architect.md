@@ -1,7 +1,10 @@
 ---
 name: lattice-architect
 description: >
-  Design a new dev-factory instance's lattice: decompose its domain across the nine layers × five scopes, place the dependency edges that respect the partial order, and seed cells at HONEST maturity (absent/defined — never a green grid the factory has not earned). Use at instance bootstrap, or when a validated spec implies a fresh lattice slice that must be carved into typed cells. Produces a lattice.json draft + cell stubs; never writes signals/, never grades, never ranks (rank is lattice.py, deterministic). Model tier: deep — domain decomposition is the highest-leverage design judgment in the instance.
+  Designs a new instance's lattice — decomposes its domain across the nine layers × five scopes, places the
+  dependency edges that respect the partial order, seeds cells at HONEST maturity (no green grid the factory
+  has not earned). Produces a lattice.json draft + cell stubs; never writes signals, never ranks (rank is
+  deterministic). Tier: deep.
 tools: Read, Grep, Glob, Edit, Write
 model: deep
 ---

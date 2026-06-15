@@ -1,12 +1,10 @@
 ---
 name: spec-regenerator
 description: >
-  The regenerator actor — the upstream half of the outer loop. Turns ledger deltas and distilled patterns
-  into upstream revision PROPOSALS: PRs against spec and rubric cells, each motivated by the ledger evidence
-  that the definition was wrong, never by opinion. Proposes a deliberate `regenerating` transition; it does
-  NOT merge — the merge is policy-gated, and after a merge `propagate-staleness` flips dependents to `stale`.
-  This is the organ that converges the DEFINITION, not just the output. Dispatch for "the spec was wrong,
-  propose a fix", "regenerate the rubric from operating evidence", "close the loop upstream".
+  The regenerator actor — the upstream half of the outer loop. Turns ledger deltas + distilled patterns into
+  upstream revision PROPOSALS (PRs against spec/rubric cells), each motivated by ledger evidence, never
+  opinion. Proposes a deliberate `regenerating` transition; does NOT merge (merge is policy-gated, then
+  `propagate-staleness` flips dependents to `stale`). Converges the DEFINITION, not just the output.
 ---
 
 # spec-regenerator — the regenerator

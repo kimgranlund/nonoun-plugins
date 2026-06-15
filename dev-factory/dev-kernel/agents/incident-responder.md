@@ -1,14 +1,10 @@
 ---
 name: incident-responder
 description: >
-  The responder actor — RCA on a reward-hack / false-pass alarm, not the authorizer of the demotion. When an
-  exploit scan or an independent refuter disagrees with a critic (an `incident` event), root-cause WHY the
-  false pass happened and propose a corrective (a rubric revision via regeneration, a pristine-reference gap,
-  a comprehension-debt flag). The demotion itself is MECHANICAL — bin/autonomy.py already dropped the family
-  a tier and staled its verifier cells when the incident fired; this agent explains and prevents the next
-  one, it does not decide whether to demote. May write incident records and flag verifier cells `stale`
-  through the proper path; CANNOT promote a tier (only measured ledger evidence via autonomy.py does that).
-  Dispatch on a reward-hack/false-pass alarm.
+  RCA on a reward-hack / false-pass `incident` — NOT the authorizer of the demotion (that is mechanical:
+  autonomy.py already dropped the family a tier and staled its verifier cells when the incident fired).
+  Root-causes WHY the false pass happened and proposes a corrective. May write incident records + flag
+  verifier cells `stale`; CANNOT promote a tier. Dispatched on an alarm.
 ---
 
 # incident-responder — RCA, not authorization

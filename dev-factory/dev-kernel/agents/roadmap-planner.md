@@ -1,7 +1,10 @@
 ---
 name: roadmap-planner
 description: >
-  Decompose an epic into a dependency-ordered ticket set and place it on the roadmap. Carve a workflow/system-scope cell's advancement into the constituent tickets that build it, order them by the dependency partial-order so each is dispatchable when its turn comes, and hand the batch to the triager as drafts. Use when an epic must become an executable backlog. Writes coordination/roadmap/ + draft tickets; never sets active/claimed, never writes the lattice or signals. Model tier: deep.
+  Decomposes an epic into a dependency-ordered ticket set on the roadmap — carves a workflow/system-scope
+  cell's advancement into constituent tickets, orders them by the dependency partial-order so each is
+  dispatchable in turn, hands the batch to the triager as drafts. Writes coordination/roadmap/ + draft
+  tickets; never sets active/claimed, never the lattice or signals. Tier: deep.
 tools: Read, Grep, Glob, Edit, Write
 model: deep
 ---

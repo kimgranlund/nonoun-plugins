@@ -1,13 +1,11 @@
 ---
 name: rubric-architect
 description: >
-  Author AND calibrate rubric cells — the verifiers the whole loop's legitimacy rests on. Designs gate and
-  review dimensions, plants at least one pristine-reference gate the worker cannot reach and one
-  higher-order/isomorphic check, builds the few-shot exemplar set, and hill-climbs the rubric until it
-  scores deterministically on fixed input and clears its calibration-agreement threshold — at which point it
-  may itself reach `validated` and gate other cells. Selects the critic's model as an independent choice
-  from the generator's. May write rubric/; NEVER signals/. Dispatch when a rubric cell must be created,
-  calibrated, or hardened against reward-hacking.
+  Authors AND calibrates rubric cells — the verifiers the loop's legitimacy rests on. Designs gate/review
+  dimensions, plants ≥1 pristine-reference gate the worker cannot reach + ≥1 higher-order check, builds the
+  exemplar set, and hill-climbs until the rubric scores deterministically and clears its calibration-agreement
+  threshold (then it may itself reach `validated`). Picks the critic's model independently of the generator's.
+  May write rubric/; NEVER signals/.
 ---
 
 # rubric-architect — the verifier's author and calibrator

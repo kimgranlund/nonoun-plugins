@@ -10,6 +10,7 @@ The invariant kernel of **dev-factory** — the typed contracts and deterministi
 | **The kernel** (`bin/`) | the **vendored** harness-forge lattice/validation kernel (drift-gated) + native lifecycle · compass · execplan · autonomy · distill · the tamper-evident hash-chained ledger |
 | **Gates** | 4 protective scripts (`gate-signal` · `gate-verifier` · `gate-ledger` · `gate-naming`) + 2 lifecycle transition predicates (`gate-ticket-ready` · `gate-dispatch`) + `check-kit-conform` |
 | **MCP** | read-only `factory-query` — 8 tools over the lattice / index / ledger |
+| **Command** | one typed entry point — `/factory-init` (the single deterministic action: scaffold an instance) |
 | **Roster + skills** | a 12-agent dispatcher roster (`agents/`) across 7 skills — **6 core lattice** skills + **1 meta** skill (see *Skill layering*) |
 
 ## The thesis
@@ -30,8 +31,10 @@ The **6 core lattice skills** operate the invariant machine over the on-disk gri
 
 ```bash
 # 1. Enable dev-kernel + a kit for your project (project-local), via .claude/settings.json or /plugin.
-# 2. Initialize the instance (scaffold the lattice + the layer/coordination dirs):
-python3 bin/lattice.py init --dir .agents/dev-factory
+# 2. Initialize the instance — just run the command:  /factory-init <project>
+#    (or by hand — scaffold the lattice + the layer/coordination dirs:)
+LATTICE_PRODUCED_BY=dev-factory python3 bin/lattice.py init --dir .agents/dev-factory
+mkdir -p .agents/dev-factory/coordination/{tickets,roadmap,issues}
 # 3. The 7 compound skills are now model-invoked — drive the factory in natural language (below).
 # 4. To run the autonomous loop + UI, start the separate dev-server (see ../dev-server/README.md):
 #      DEV_FACTORY_DIR=$PWD/.agents/dev-factory DEV_FACTORY_KIT=../dev-kit-corpus \
@@ -40,7 +43,7 @@ python3 bin/lattice.py init --dir .agents/dev-factory
 
 ## Sample prompts
 
-With `dev-kernel` installed, the skills trigger on natural language (no slash commands):
+There is one typed command — **`/factory-init`** (the single deterministic action: scaffold an instance under `.agents/dev-factory/`). Everything else is **model-invoked** — the skills trigger on natural language:
 
 - *"seed a dev-factory lattice for this project"* · *"decompose this domain into layers and scopes"* — **lattice-management**
 - *"what cell should we advance next?"* · *"rank the frontier"* · *"why is this cell stale?"* — the compass
