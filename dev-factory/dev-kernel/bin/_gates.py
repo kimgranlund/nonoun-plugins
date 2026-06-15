@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""_gates.py — shared machinery for dev-factory's protective PreToolUse gates (private lib).
+
+The immutable/rewritable boundary (TDD §14.1) is realized by hooks that DENY a worker's write to
+verifier assets — not by a sentence in a doc. Published reward-hacking rates run to double-digit
+percentages of rollouts; the first and strongest defense is mechanical: signals, rubrics, the ledger,
+the hooks, and the kernel schemas are deny-on-write to worker agents, so a worker cannot grade its own
+homework or rewrite the audit trail. This module carries the protected-path matching, the PreToolUse
+payload parsing, and the deny mechanism the four gate scripts (gate-signal / gate-verifier / gate-ledger
+/ gate-naming) share.
+
+These gates are NEVER bundled as a plugin PreToolUse hook (that would block a shared session — the
+integration-contract law). They are CONSENT-WIRED into the user's autonomous worker loop / each worker
+worktree by the server's wiring, where a non-zero exit denies the write.
+
+Stdlib only; Python 3.8+.
+"""
+import fnmatch
+import json
+import os
+import sys
+
+NS = ".agents/dev-factory"
+
+# The immutable side of the boundary (§14.1), path-segment-anchored. `signals/` is THE reward-hack
+# defense; the ledger is append-only audit; the wiring (.claude/settings.json) is protected so a wired
+# worker cannot unwire its own gate.
+SIGNALS = [f"{NS}/signals/*"]
+VERIFIER = [
+    f"{NS}/signals/*",
+    f"{NS}/rubric/*",
+    f"{NS}/hooks/*",
+    f"{NS}/run/*",
+    f"{NS}/lattice.json",
+    f"{NS}/*.schema.json",
+    ".claude/settings.json",
+]
+LEDGER = [f"{NS}/ledger/*", f"{NS}/coordination/index.jsonl"]
+
+
+def is_protected(path, globs):
+    """True if `path` matches a protected glob at a path-segment boundary (root-relative or after any
+    `/`) — never on a bare basename, so a user's own docs/lattice.json stays writable."""
+    if not path:
+        return False
+    p = path.replace("\\", "/")
+    if p.startswith("./"):
+        p = p[2:]
+    # normalize an absolute path that contains the namespace to its repo-relative tail
+    for glob in globs:
+        anchor = glob.split("/")[0]
+        idx = p.find(anchor + "/") if anchor.endswith("*") is False else -1
+        cand = p
+        if (anchor + "/") in p:
+            cand = p[p.index(anchor + "/"):]
+        if fnmatch.fnmatch(cand, glob) or fnmatch.fnmatch(p, glob) or fnmatch.fnmatch(p, "*/" + glob):
+            return True
+    return False
+
+
+def read_payload():
+    """Parse a PreToolUse hook payload from stdin. Returns (tool_name, path, command)."""
+    try:
+        data = json.load(sys.stdin)
+    except (json.JSONDecodeError, ValueError):
+        return None, None, None
+    tool = data.get("tool_name") or data.get("tool") or ""
+    ti = data.get("tool_input") or data.get("toolInput") or {}
+    path = ti.get("file_path") or ti.get("path") or ti.get("notebook_path") or ""
+    command = ti.get("command") or ""
+    return tool, path, command
+
+
+def deny(reason):
+    """Emit the PreToolUse deny, maximally compatible across hook regimes: the structured JSON decision
+    on stdout (the form current headless Claude reads — verified against the June-2026 docs) AND exit 2
+    with the reason on stderr (the exit-code convention the catalog gates + selftests use). A worker's
+    protected write is blocked under either runtime."""
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                              "permissionDecision": "deny", "permissionDecisionReason": reason}}))
+    sys.stderr.write(reason + "\n")
+    return 2
+
+
+def run_path_gate(name, globs, argv, what):
+    """The standard --hook / check / selftest dispatch for a protected-path gate."""
+    if argv and argv[0] == "selftest":
+        return _selftest_path_gate(name, globs, what)
+    if argv and argv[0] == "--hook":
+        tool, path, command = read_payload()
+        if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit") and is_protected(path, globs):
+            return deny(f"{name}: DENIED — {path} is a protected {what} (immutable boundary). "
+                        f"Only the validation path / single-writer server may write it.")
+        # a Bash write-redirect into a protected path is also a forge attempt
+        if tool == "Bash" and command:
+            for g in globs:
+                base = g.replace("/*", "").replace("*", "")
+                if base and base in command and (">" in command or "tee" in command or "rm " in command):
+                    return deny(f"{name}: DENIED — shell command touches protected {what} ({base}).")
+        return 0
+    if argv and argv[0] == "check":
+        path = argv[1] if len(argv) > 1 else ""
+        return 1 if is_protected(path, globs) else 0
+    sys.stderr.write(f"usage: {name} --hook | check <path> | selftest\n")
+    return 2
+
+
+def _selftest_path_gate(name, globs, what):
+    fails = []
+    # a protected path is caught; a sibling user path is not
+    protected_example = globs[0].replace("/*", "/x.json").replace("*.schema.json", "cell.schema.json")
+    if not is_protected(protected_example, globs):
+        fails.append(f"missed a protected {what}: {protected_example}")
+    if is_protected("src/app/main.ts", globs):
+        fails.append("false-positive on a user source path")
+    if is_protected("docs/examples/lattice.json", globs) and "lattice.json" not in name:
+        # docs/examples/lattice.json must NOT be protected (only the real .agents/.../lattice.json is)
+        fails.append("false-positive on a user doc that merely shares a basename")
+    if fails:
+        sys.stderr.write(f"{name} selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print(f"{name} selftest: OK (denies a worker write to a protected {what}; leaves user paths writable)")
+    return 0

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Cell",
+  "title": "Cell",
+  "description": "One layer at one scope with a maturity state; the unit of the lattice. Identity excludes maturity by rule (naming-conventions.md).",
+  "type": "object",
+  "required": ["id", "layer", "scope", "maturity", "blocked", "budget", "attempts"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(ontology|spec|rubric|policy|capability|methodology|protocol|ledger|pattern)\\.(call|task|workflow|system|fleet)\\.[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Cell identity: {layer}.{scope}.{slug}. Carries no maturity — identity excludes state."
+    },
+    "layer": {
+      "enum": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"],
+      "description": "Modality axis: the kind of declarative knowledge this cell holds."
+    },
+    "scope": {
+      "enum": ["call", "task", "workflow", "system", "fleet"],
+      "description": "Grain axis: the size of the unit of work this cell concerns."
+    },
+    "maturity": {
+      "enum": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"],
+      "description": "The knowledge-state Property. Advanced only through a ledgered transition; never silently edited."
+    },
+    "blocked": {
+      "type": "boolean",
+      "description": "Condition flag (budget cap or no-progress signature), distinct from maturity. Surfaces the cell to the compass."
+    },
+    "asset_ref": {
+      "type": "string",
+      "description": "Path to the artifact this cell points at (e.g., spec/intake.md)."
+    },
+    "signal_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Evidence artifacts produced by the validation path. gate-signal checks presence before advancing to validated."
+    },
+    "validated_against": {
+      "type": "array",
+      "description": "Upstream cells and the content hashes this cell was validated against. Drives mechanical staleness propagation.",
+      "items": {
+        "type": "object",
+        "required": ["cell_id", "hash"],
+        "additionalProperties": false,
+        "properties": {
+          "cell_id": { "type": "string" },
+          "hash": { "type": "string" }
+        }
+      }
+    },
+    "budget": { "$ref": "Budget" },
+    "attempts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of advancement attempts; input to no-progress detection."
+    }
+  },
+  "$defs": {
+    "Budget": {
+      "$id": "Budget",
+      "type": "object",
+      "required": ["iterations", "tokens"],
+      "additionalProperties": false,
+      "properties": {
+        "iterations": { "type": "integer", "minimum": 1, "description": "Iteration cap for the advancing loop." },
+        "tokens": { "type": "integer", "minimum": 1, "description": "Token ceiling; loop length dominates cost." },
+        "dollars": { "type": "number", "minimum": 0, "description": "Optional dollar ceiling." },
+        "wallclock_seconds": { "type": "integer", "minimum": 1, "description": "Wall-clock limit." }
+      }
+    }
+  }
+}

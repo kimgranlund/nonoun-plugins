@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""gate-signal — the reward-hack defense: a worker is mechanically unable to write a signal.
+
+THE keystone gate (TDD §3, §14.3.1). "Signal is the only currency": a cell advances only on a signal
+artifact written by the validation path, and `signals/` is DENY-ON-WRITE to worker agents — so a worker
+cannot forge a clean scoreboard by writing its own signal. The critic/validator (the validation path,
+validate.py) is the only writer of `signals/`, structurally. A ticket reaching `done` therefore proves a
+critic — not the worker — validated the work.
+
+Consent-wired as a PreToolUse(Write|Edit) hook inside the user's worker loop / each worker worktree
+(never a shared session). Non-zero exit = DENY.
+
+Usage:  gate-signal --hook | check <path> | selftest
+Stdlib only; Python 3.8+.
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _gates  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(_gates.run_path_gate("gate-signal", _gates.SIGNALS, sys.argv[1:], "signal artifact"))

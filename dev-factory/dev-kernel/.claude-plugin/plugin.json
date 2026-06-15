@@ -1,0 +1,24 @@
+{
+  "name": "dev-kernel",
+  "version": "0.1.0",
+  "stateNamespace": ".agents/dev-factory",
+  "description": "The invariant kernel of dev-factory — a self-hosting, lights-out agentic system that advances a typed knowledge lattice by running an autonomous outer loop over a coordination corpus of work tickets. dev-kernel ships the load-bearing contracts (cell · ticket · ledger-entry · activity · dispatch-policy/execution-plan · budget · lattice · roadmap · kit · adapter · naming schemas), the two state machines (the eight-state cell maturity machine, vendored from harness-forge's proven lattice kernel, and the ticket lifecycle machine), the six gates that mechanize the immutable/rewritable boundary (gate-ticket-ready · gate-dispatch · gate-signal · gate-verifier · gate-ledger · gate-naming), and the base agent roster. The central reconciliation: every ticket declares a target cell + a target maturity transition, and ticket `done` implies the cell advances — through the SAME gate-signal, so the coordination board cannot disagree with the lattice. Computation routes to code (selection, ranking, readiness, staleness are the vendored lattice kernel, never inference); the model supplies the judgment inside a cell. The runtime that polls, dispatches, and serves the live UI is the separate dev-server; the family capabilities are kits. Self-contained — vendors harness-forge's lattice/validation kernel via a drift-gated sync, never a cross-plugin import.",
+  "author": {
+    "name": "Kim",
+    "email": "kim.granlund@gmail.com"
+  },
+  "homepage": "https://github.com/kimgranlund/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agentic",
+    "dark-factory",
+    "lattice",
+    "coordination",
+    "tickets",
+    "autonomy",
+    "ledger",
+    "kernel",
+    "substrate-engineering",
+    "meta"
+  ]
+}

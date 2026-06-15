@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Roadmap",
+  "title": "Roadmap (an epic — a dependency-ordered container of tickets)",
+  "description": "An epic decomposes a workflow/system-scope goal into a dependency-ordered ticket set placed on the roadmap (roadmap-planner authors it). Stored one file per epic under coordination/roadmap/{epic-id}.json. Like everything else it is git-native substrate; the UI roadmap view is a derived projection.",
+  "type": "object",
+  "required": ["id", "title", "body", "tickets", "status", "provenance", "timestamps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^epic-[0-9A-HJKMNP-TV-Z]{26}$", "description": "Epic identity: epic-{ULID}." },
+    "title": { "type": "string", "minLength": 1 },
+    "body": { "type": "string", "description": "The goal this epic delivers and its rationale." },
+    "target_cell": { "type": "string", "description": "The workflow/system-scope cell this epic advances (the unifying knowledge target)." },
+    "tickets": {
+      "type": "array",
+      "description": "Member tickets in dependency order. The order is advisory; the compass re-derives readiness from the actual dependency graph (computation routes to code).",
+      "items": { "type": "string", "pattern": "^tkt-[0-9A-HJKMNP-TV-Z]{26}$" }
+    },
+    "status": {
+      "enum": ["draft", "active", "blocked", "done", "cancelled"],
+      "description": "Epic-level rollup; materialized from its tickets' states (a fold, not a hand-set value)."
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Cross-epic ordering, if any.",
+      "properties": {
+        "epics": { "type": "array", "items": { "type": "string", "pattern": "^epic-[0-9A-HJKMNP-TV-Z]{26}$" } }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["created_by", "ledger_refs"],
+      "additionalProperties": false,
+      "properties": {
+        "created_by": { "type": "string" },
+        "ledger_refs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "required": ["created", "updated"],
+      "additionalProperties": true,
+      "properties": {
+        "created": { "type": "string", "format": "date-time" },
+        "updated": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

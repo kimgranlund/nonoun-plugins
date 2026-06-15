@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Lattice",
+  "title": "Lattice (the canonical lattice.json container)",
+  "description": "The canonical state the vendored lattice kernel reads and writes at `.agents/dev-factory/lattice.json`. Code reads this; every grid view (the UI, the SQLite index) is DERIVED from it and rebuildable. A `cells` array of Cell records (the vendored harness-forge cell shape: separate layer/scope/slug, the computed cid is identity). Permissive at the top level because the kernel stamps its own bookkeeping (kernel_version, etc.).",
+  "type": "object",
+  "required": ["cells"],
+  "additionalProperties": true,
+  "properties": {
+    "kernel_version": { "type": "string", "description": "The vendored lattice kernel version that wrote this file (atomic save stamp)." },
+    "cells": {
+      "type": "array",
+      "description": "Every cell in the lattice. Each validates against cell.schema.json ($id: Cell).",
+      "items": { "$ref": "Cell" }
+    }
+  }
+}

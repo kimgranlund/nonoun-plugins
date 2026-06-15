@@ -1,0 +1,53 @@
+{
+  "name": "dev-factory",
+  "owner": {
+    "name": "Kim",
+    "email": "kim.granlund@gmail.com"
+  },
+  "metadata": {
+    "description": "dev-factory — a self-hosting 'dark factory' for software engineering. A kernel that advances a typed knowledge lattice by running a bounded, autonomous outer loop over a coordination corpus of work tickets, with earned-and-mechanically-revocable autonomy. The kernel + kits are plugins; the runtime (dev-server) ships separately via pip/uvx. Built on harness-forge's lattice kernel (vendored, drift-gated), with a 9-dimension-faithful design proven end to end across Crawl → Walk → Run → Fly."
+  },
+  "plugins": [
+    {
+      "name": "dev-kernel",
+      "source": "./dev-kernel",
+      "description": "The invariant kernel: the typed contracts (cell · ticket · ledger · activity · dispatch-policy · kit · adapter · naming schemas), the two state machines (the vendored 8-state cell maturity machine + the ticket lifecycle), the six gates that mechanize the immutable/rewritable boundary, the compass (deterministic selection), the validation path (signal minted from a verifier's exit status), the autonomy trust-trajectory with mechanical demotion, distillation, the kit-conform boundary gate, and the 12-agent roster across 8 compound skills. The central reconciliation: ticket `done` ⟺ the target cell advances through the same gate-signal — the board cannot disagree with the lattice.",
+      "category": "agentic",
+      "tags": [
+        "agentic",
+        "dark-factory",
+        "lattice",
+        "coordination",
+        "autonomy",
+        "ledger",
+        "kernel",
+        "substrate-engineering"
+      ]
+    },
+    {
+      "name": "dev-kit-corpus",
+      "source": "./dev-kit-corpus",
+      "description": "The corpus family kit — binds the dev-kernel contracts to building and validating a knowledge corpus (spec · rubric · pattern · methodology cells), with its own ontology, rubric manifest, validation harness (doc-check · rubric-check), dispatch policy, and seed patterns. Stateless: it binds the kernel, it never forks it (check-kit-conform enforces zero kernel edits).",
+      "category": "agentic",
+      "tags": [
+        "dev-factory",
+        "kit",
+        "corpus",
+        "validation",
+        "dispatch-policy"
+      ]
+    },
+    {
+      "name": "dev-kit-app",
+      "source": "./dev-kit-app",
+      "description": "The application family kit — binds the dev-kernel contracts to building and validating application code (capability · protocol cells validated by a passing test suite). Exists primarily to prove the kernel/kit boundary's falsification test: adding a second family required ZERO kernel edits.",
+      "category": "agentic",
+      "tags": [
+        "dev-factory",
+        "kit",
+        "app",
+        "boundary-proof"
+      ]
+    }
+  ]
+}

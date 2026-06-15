@@ -1,0 +1,311 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   dev-factory UI — OKLCH design tokens + light component styles.
+
+   House style borrowed from tools/corpus-reader: a perceptual OKLCH palette
+   driven by a small set of hue + chroma axes, themed via `color-scheme` and
+   light-dark() so one declaration covers both modes. No framework, no build.
+   Components are light-DOM custom elements, so these are plain (un-scoped)
+   selectors — the cascade is the styling system.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Hue axis — OKLCH H (0–360) --- */
+  --hue-neutral: 248; /* surfaces, text, borders — a cool "dark factory" slate */
+  --hue-accent: 264; /* the brand accent (violet) */
+  --hue-positive: 152; /* green — active / pass / validated / done */
+  --hue-caution: 85; /* amber — draft / instantiated / in-progress */
+  --hue-alert: 50; /* orange — blocked / stale / needed */
+  --hue-danger: 25; /* red — failed / refused / demote */
+  --hue-info: 234; /* blue — claimed / dispatch / running / operating */
+
+  /* --- Chroma axis — OKLCH C, by intensity --- */
+  --chroma-flat: 0;
+  --chroma-trace: 0.006; /* surfaces + borders */
+  --chroma-dim: 0.014; /* neutral text */
+  --chroma-soft: 0.04; /* soft washes */
+  --chroma-muted: 0.06; /* status fills */
+  --chroma-edge: 0.1; /* status borders */
+  --chroma-vivid: 0.15; /* status text + accent */
+
+  /* --- Neutral surfaces / text --- */
+  --bg: light-dark(oklch(0.985 var(--chroma-trace) var(--hue-neutral)), oklch(0.19 var(--chroma-trace) var(--hue-neutral)));
+  --surface: light-dark(oklch(1 var(--chroma-flat) var(--hue-neutral)), oklch(0.225 var(--chroma-trace) var(--hue-neutral)));
+  --surface-sunken: light-dark(oklch(0.965 var(--chroma-trace) var(--hue-neutral)), oklch(0.255 var(--chroma-trace) var(--hue-neutral)));
+  --surface-raised: light-dark(oklch(1 var(--chroma-flat) var(--hue-neutral)), oklch(0.27 var(--chroma-trace) var(--hue-neutral)));
+  --fg: light-dark(oklch(0.27 var(--chroma-dim) var(--hue-neutral)), oklch(0.93 var(--chroma-dim) var(--hue-neutral)));
+  --muted: light-dark(oklch(0.5 var(--chroma-dim) var(--hue-neutral)), oklch(0.72 var(--chroma-dim) var(--hue-neutral)));
+  --faint: light-dark(oklch(0.62 var(--chroma-dim) var(--hue-neutral)), oklch(0.56 var(--chroma-dim) var(--hue-neutral)));
+  --border: light-dark(oklch(0.89 var(--chroma-trace) var(--hue-neutral)), oklch(0.33 var(--chroma-trace) var(--hue-neutral)));
+  --border-soft: light-dark(oklch(0.93 var(--chroma-trace) var(--hue-neutral)), oklch(0.29 var(--chroma-trace) var(--hue-neutral)));
+
+  --accent: light-dark(oklch(0.55 var(--chroma-vivid) var(--hue-accent)), oklch(0.74 var(--chroma-vivid) var(--hue-accent)));
+  --accent-fg: light-dark(oklch(0.99 0 0), oklch(0.16 var(--chroma-trace) var(--hue-neutral)));
+  --accent-soft: light-dark(oklch(0.95 var(--chroma-soft) var(--hue-accent)), oklch(0.3 var(--chroma-soft) var(--hue-accent)));
+
+  --nav-bg: light-dark(oklch(0.99 var(--chroma-trace) var(--hue-neutral) / 0.85), oklch(0.205 var(--chroma-trace) var(--hue-neutral) / 0.9));
+  --shadow-color: light-dark(oklch(0.45 var(--chroma-soft) var(--hue-neutral) / 0.12), oklch(0 0 0 / 0.45));
+  --shadow: 0 1px 2px var(--shadow-color), 0 6px 22px var(--shadow-color);
+  --scroll-thumb: light-dark(oklch(0.55 var(--chroma-dim) var(--hue-neutral) / 0.4), oklch(0.75 var(--chroma-dim) var(--hue-neutral) / 0.36));
+
+  /* --- Semantic status families: a {fg,bg,border} triad per hue.
+     These map directly onto maturity states and ticket states (see app.js
+     STATUS_HUE / MATURITY_HUE), so a status color is one token lookup. --- */
+  --st-neutral-fg: var(--muted);
+  --st-neutral-bg: var(--surface-sunken);
+  --st-neutral-border: var(--border);
+
+  /* Generated from each hue below via the same lightness/chroma recipe. */
+  --radius: 10px;
+  --radius-sm: 7px;
+  --radius-lg: 14px;
+  --space: 1rem;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* A small mixin-by-convention: every status family resolves through these.
+   Each `--hue-*` produces fg (vivid text), bg (muted wash), border (edge). */
+.st {
+  --_h: var(--hue-info);
+  color: light-dark(oklch(0.5 var(--chroma-vivid) var(--_h)), oklch(0.82 var(--chroma-vivid) var(--_h)));
+  background: light-dark(oklch(0.95 var(--chroma-muted) var(--_h)), oklch(0.31 var(--chroma-muted) var(--_h)));
+  border-color: light-dark(oklch(0.85 var(--chroma-edge) var(--_h)), oklch(0.46 var(--chroma-edge) var(--_h)));
+}
+.h-neutral { --_h: var(--hue-neutral); }
+.h-accent { --_h: var(--hue-accent); }
+.h-positive { --_h: var(--hue-positive); }
+.h-caution { --_h: var(--hue-caution); }
+.h-alert { --_h: var(--hue-alert); }
+.h-danger { --_h: var(--hue-danger); }
+.h-info { --_h: var(--hue-info); }
+
+/* ─────────────────────────────── base ─────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+a { color: var(--accent); }
+button { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ─────────────────────────────── app shell ─────────────────────────────── */
+df-app { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.6rem 1.1rem;
+  background: var(--nav-bg);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .brand { display: flex; align-items: baseline; gap: 0.5rem; font-weight: 650; letter-spacing: -0.01em; }
+.topbar .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.topbar .brand small { color: var(--faint); font-weight: 400; font-size: 11px; }
+
+.nav { display: flex; gap: 0.25rem; margin-left: 0.5rem; flex-wrap: wrap; }
+.nav button {
+  appearance: none; border: 1px solid transparent; background: transparent;
+  color: var(--muted); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm);
+  cursor: pointer; font-weight: 550; display: flex; align-items: center; gap: 0.4rem;
+}
+.nav button:hover { background: var(--surface-sunken); color: var(--fg); }
+.nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.nav button .badge { font-size: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0 0.4rem; color: var(--faint); }
+
+.conn { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; font-size: 12px; color: var(--muted); }
+.conn .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.conn[data-state="live"] .pulse { background: light-dark(oklch(0.6 var(--chroma-vivid) var(--hue-positive)), oklch(0.78 var(--chroma-vivid) var(--hue-positive))); animation: pulse 2s ease-in-out infinite; }
+.conn[data-state="connecting"] .pulse { background: light-dark(oklch(0.7 var(--chroma-vivid) var(--hue-caution)), oklch(0.82 var(--chroma-vivid) var(--hue-caution))); }
+.conn[data-state="down"] .pulse { background: light-dark(oklch(0.6 var(--chroma-vivid) var(--hue-danger)), oklch(0.72 var(--chroma-vivid) var(--hue-danger))); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.main { flex: 1; padding: 1.1rem; max-width: 1680px; width: 100%; margin: 0 auto; }
+
+.view-head { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.9rem; flex-wrap: wrap; }
+.view-head h2 { margin: 0; font-size: 1.05rem; letter-spacing: -0.01em; }
+.view-head .sub { color: var(--faint); font-size: 12px; }
+.view-head .spacer { flex: 1; }
+
+/* segmented control (lens toggle, filters) */
+.seg { display: inline-flex; background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius); padding: 2px; }
+.seg button { appearance: none; border: 0; background: transparent; color: var(--muted); padding: 0.3rem 0.7rem; border-radius: calc(var(--radius) - 3px); cursor: pointer; font-weight: 550; }
+.seg button[aria-pressed="true"] { background: var(--surface-raised); color: var(--fg); box-shadow: var(--shadow); }
+
+.btn { appearance: none; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--fg); padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-weight: 550; }
+.btn:hover { background: var(--surface-sunken); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--surface-sunken); color: var(--fg); }
+.btn.danger { color: light-dark(oklch(0.5 var(--chroma-vivid) var(--hue-danger)), oklch(0.78 var(--chroma-vivid) var(--hue-danger))); }
+.btn.sm { padding: 0.2rem 0.5rem; font-size: 12px; }
+
+.empty { color: var(--faint); border: 1px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; }
+.empty strong { color: var(--muted); display: block; margin-bottom: 0.3rem; }
+.toast { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 50; max-width: 32rem;
+  background: var(--surface-raised); border: 1px solid var(--border); border-left: 3px solid; border-radius: var(--radius); box-shadow: var(--shadow); padding: 0.7rem 1rem; }
+.toast.err { border-left-color: light-dark(oklch(0.55 var(--chroma-vivid) var(--hue-danger)), oklch(0.7 var(--chroma-vivid) var(--hue-danger))); }
+.toast.ok { border-left-color: light-dark(oklch(0.6 var(--chroma-vivid) var(--hue-positive)), oklch(0.7 var(--chroma-vivid) var(--hue-positive))); }
+.toast .ttl { font-weight: 600; }
+.toast .msg { color: var(--muted); font-size: 13px; margin-top: 0.15rem; }
+
+/* status chip */
+.chip { display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--st-neutral-border); border-radius: 999px;
+  padding: 0.05rem 0.5rem; font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.chip.mono { font-family: var(--mono); font-weight: 500; letter-spacing: -0.02em; }
+
+/* ═══════════════════════════ Kanban ═══════════════════════════ */
+.board { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.6rem; align-items: flex-start; }
+.col { flex: 0 0 16rem; background: var(--surface-sunken); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); display: flex; flex-direction: column; max-height: calc(100vh - 11rem); }
+.col > header { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.7rem; position: sticky; top: 0; }
+.col > header .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.col > header .name { font-weight: 600; font-size: 12px; text-transform: capitalize; }
+.col > header .count { margin-left: auto; color: var(--faint); font-size: 12px; }
+.col > header .add { appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 0.2rem; border-radius: 5px; }
+.col > header .add:hover { background: var(--surface); color: var(--accent); }
+.col .stack { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 0.55rem 0.7rem; overflow-y: auto; }
+.col.drop-target { outline: 2px dashed var(--accent); outline-offset: -3px; background: var(--accent-soft); }
+
+.card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.7rem; box-shadow: var(--shadow); cursor: grab; }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card[aria-grabbed="true"] { outline: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.card .title { font-weight: 600; font-size: 13px; line-height: 1.35; margin-bottom: 0.35rem; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+.card .cell { font-family: var(--mono); font-size: 11px; color: var(--faint); letter-spacing: -0.02em; }
+.card .id { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.card .move-hint { font-size: 11px; color: var(--faint); margin-top: 0.35rem; display: none; }
+.card[aria-grabbed="true"] .move-hint { display: block; }
+
+/* burning-budget bar */
+.budget { height: 5px; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; margin-top: 0.4rem; }
+.budget > span { display: block; height: 100%; background: light-dark(oklch(0.65 var(--chroma-vivid) var(--hue-positive)), oklch(0.7 var(--chroma-vivid) var(--hue-positive))); }
+.budget.warn > span { background: light-dark(oklch(0.72 var(--chroma-vivid) var(--hue-caution)), oklch(0.78 var(--chroma-vivid) var(--hue-caution))); }
+.budget.hot > span { background: light-dark(oklch(0.58 var(--chroma-vivid) var(--hue-danger)), oklch(0.7 var(--chroma-vivid) var(--hue-danger))); }
+
+/* agent/activity lens — swimlanes */
+.lanes { display: flex; flex-direction: column; gap: 0.75rem; }
+.lane { background: var(--surface-sunken); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); }
+.lane > header { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border-soft); }
+.lane > header .agent { font-weight: 650; }
+.lane .activity-cols { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.6rem; }
+.act-col { flex: 0 0 13rem; }
+.act-col h4 { margin: 0 0 0.4rem; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); display: flex; gap: 0.35rem; align-items: center; }
+.act-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem 0.6rem; margin-bottom: 0.5rem; }
+.act-card .k { font-weight: 600; font-size: 12px; }
+.act-card .badges { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.3rem 0; }
+.act-card.child { margin-left: 1rem; border-left: 2px solid var(--accent-soft); }
+.act-card .toggle { cursor: pointer; user-select: none; color: var(--muted); }
+
+/* ═══════════════════════════ Lattice grid ═══════════════════════════ */
+.lattice-wrap { overflow-x: auto; }
+table.lattice { border-collapse: separate; border-spacing: 4px; }
+table.lattice th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); font-weight: 600; padding: 0.3rem 0.5rem; text-align: center; }
+table.lattice th.row-h { text-align: right; font-family: var(--mono); text-transform: none; letter-spacing: -0.02em; color: var(--muted); }
+.cell {
+  width: 9rem; height: 3.6rem; border-radius: var(--radius); border: 1px solid var(--st-neutral-border);
+  padding: 0.35rem 0.45rem; cursor: pointer; text-align: left; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between; appearance: none; color: inherit;
+}
+.cell.empty-cell { background: var(--surface-sunken); border-style: dashed; cursor: default; opacity: 0.5; }
+.cell .slug { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell .mat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+.cell .flags { position: absolute; top: 0.3rem; right: 0.35rem; display: flex; gap: 0.2rem; font-size: 10px; }
+.cell .flags .f { width: 14px; height: 14px; border-radius: 4px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* maturity fills — one hue per state, applied via .mat-<state> */
+.mat-absent { --_h: var(--hue-neutral); }
+.mat-defined { --_h: var(--hue-info); }
+.mat-instantiated { --_h: var(--hue-caution); }
+.mat-validated { --_h: var(--hue-positive); }
+.mat-operating { --_h: var(--hue-positive); }
+.mat-regenerating { --_h: var(--hue-accent); }
+.mat-stale { --_h: var(--hue-alert); }
+.mat-deprecated { --_h: var(--hue-danger); }
+
+/* ═══════════════════════════ side panel ═══════════════════════════ */
+.scrim { position: fixed; inset: 0; background: oklch(0 0 0 / 0.4); z-index: 30; }
+.panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(30rem, 92vw); background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow); z-index: 31; display: flex; flex-direction: column; }
+.panel > header { display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); }
+.panel > header h3 { margin: 0; font-size: 14px; font-family: var(--mono); letter-spacing: -0.02em; }
+.panel > header .x { margin-left: auto; }
+.panel .body { padding: 1rem; overflow-y: auto; }
+.panel dl { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 0.9rem; margin: 0 0 1rem; }
+.panel dt { color: var(--faint); font-size: 12px; }
+.panel dd { margin: 0; font-size: 13px; word-break: break-word; }
+.panel dd.mono, .panel code { font-family: var(--mono); font-size: 12px; }
+.panel h4 { margin: 1rem 0 0.5rem; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); }
+.panel ul { margin: 0; padding-left: 1.1rem; font-size: 13px; }
+
+/* ═══════════════════════════ modal (create ticket) ═══════════════════════════ */
+.modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: oklch(0 0 0 / 0.4); padding: 1rem; }
+.modal .sheet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); width: min(34rem, 100%); max-height: 90vh; overflow-y: auto; }
+.modal .sheet header { padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+.modal .sheet header h3 { margin: 0; font-size: 15px; }
+.modal form { padding: 1.1rem; display: grid; gap: 0.8rem; }
+.field { display: grid; gap: 0.3rem; }
+.field label { font-size: 12px; color: var(--muted); font-weight: 550; }
+.field input, .field textarea, .field select { font: inherit; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--fg); }
+.field input.mono, .field textarea.mono { font-family: var(--mono); font-size: 13px; }
+.field .row { display: flex; gap: 0.6rem; }
+.field .row > * { flex: 1; }
+.modal .actions { display: flex; gap: 0.5rem; justify-content: flex-end; padding: 0 1.1rem 1.1rem; }
+
+/* ═══════════════════════════ Ledger feed ═══════════════════════════ */
+.feed { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 12.5px; }
+.feed .ev { display: grid; grid-template-columns: 5.5rem 8.5rem 1fr; gap: 0.6rem; align-items: baseline; padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid transparent; }
+.feed .ev:hover { background: var(--surface-sunken); border-color: var(--border-soft); }
+.feed .ev.fresh { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+.feed .ts { color: var(--faint); }
+.feed .ev-name { font-weight: 600; }
+.feed .detail { color: var(--muted); }
+.feed .detail .subj { color: var(--fg); }
+.feed .detail .rat { color: var(--faint); }
+
+/* ═══════════════════════════ Agent monitor ═══════════════════════════ */
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 0.8rem; }
+.worker { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem; box-shadow: var(--shadow); }
+.worker header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.worker header .agent { font-weight: 650; }
+.worker .gauges { display: grid; gap: 0.55rem; margin: 0.6rem 0; }
+.gauge { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 0.5rem; align-items: center; font-size: 12px; }
+.gauge .lbl { color: var(--faint); }
+.gauge .val { font-family: var(--mono); color: var(--muted); }
+.worker .controls { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.worker .kv { display: flex; gap: 0.4rem; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.worker .kv code { font-family: var(--mono); color: var(--faint); }
+
+/* ═══════════════════════════ Roadmap ═══════════════════════════ */
+.roadmap { display: grid; gap: 0.9rem; }
+.epic { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.epic > header { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 0.95rem; background: var(--surface-sunken); }
+.epic > header .ttl { font-weight: 650; }
+.epic .body { padding: 0.85rem 0.95rem; }
+.epic .body p { margin: 0 0 0.7rem; color: var(--muted); }
+.epic .tickets { display: grid; gap: 0.4rem; }
+.epic .tk { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.55rem; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--surface-raised); }
+.epic .tk .tt { flex: 1; font-size: 13px; }
+.epic .tk .dep { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.backlog { margin-top: 1.4rem; }
+.backlog h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); margin: 0 0 0.6rem; }
+.prog { height: 6px; flex: 0 0 7rem; border-radius: 3px; background: var(--surface-sunken); overflow: hidden; }
+.prog > span { display: block; height: 100%; background: light-dark(oklch(0.62 var(--chroma-vivid) var(--hue-positive)), oklch(0.72 var(--chroma-vivid) var(--hue-positive))); }
+
+@media (max-width: 640px) {
+  .feed .ev { grid-template-columns: 1fr; gap: 0.1rem; }
+  .nav button .label { display: none; }
+}

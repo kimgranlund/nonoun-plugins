@@ -1,0 +1,430 @@
+#!/usr/bin/env python3
+"""dispatch.py — the dispatcher: provision, launch, supervise, validate (the engine's outer mechanics).
+
+The heartbeat selects (compass) and this dispatches: it provisions a hermetic git worktree, sets
+`claimed` (single-writer, so the classic claim race is designed out, not mitigated — §7.2), launches a
+worker through a `DispatchAdapter`, supervises its lease, then runs the critic (the validation path) and
+drives the ticket to `done`. A dead worker is recovered by lease expiry, not by reconciling competing
+claims (§15).
+
+The `DispatchAdapter` is the integration seam (§9.2, OD-003): the kernel defines the contract; the
+concrete binding to a headless agent runtime is pinned against current product docs. This module ships
+the deterministic **MockAdapter** (a real subprocess, no live model) so the whole loop is CI-verifiable;
+the live `headless-claude` binding lands as a sibling adapter once its invocation is confirmed.
+
+Stdlib only; Python 3.8+. (Part of dev-server; not a plugin.)
+"""
+import datetime
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+import api as _api          # noqa: E402  (single-writer ops)
+sys.path.insert(0, _api._store._KERNEL_BIN)
+import lattice as _lat      # noqa: E402
+import lifecycle as _lc     # noqa: E402
+import ledger as _led       # noqa: E402
+import execplan as _ep      # noqa: E402  (the deterministic execution-plan assembly)
+
+LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presumed dead (reconcile_leases)
+
+# Roster mapping: which worker role advances a cell of a given layer (the critic is always cell-validator —
+# the separate skeptic). The execution plan decides HOW the unit runs; this decides WHO. A regenerating cell
+# is advanced by the spec-regenerator. Defaults to the generic cell-advancer.
+ROSTER = {
+    "ontology": "lattice-architect", "spec": "spec-architect", "rubric": "rubric-architect",
+    "pattern": "pattern-distiller", "policy": "cell-advancer", "capability": "cell-advancer",
+    "methodology": "cell-advancer", "protocol": "cell-advancer", "ledger": "cell-advancer",
+}
+# A single-pass plan for instances with no kit policy bound (the irreducible default).
+DEFAULT_PLAN = {"orchestration_shape": "single-pass", "loop_strategy": "single",
+                "context_plan": {"retrieval": "minimal"}, "effort": {"model_tier": "small", "reasoning_effort": "low", "max_iterations": 2},
+                "delegation": {"mode": "none", "max_depth": 0}}
+
+
+def agent_for(cell, to_mat):
+    if to_mat == "regenerating":
+        return "spec-regenerator"
+    return ROSTER.get((cell or {}).get("layer"), "cell-advancer")
+
+
+def resolve_policy(d, kit_dir=None):
+    """The kit's DispatchPolicy (the family bound to this instance). Resolved from DEV_FACTORY_KIT or a passed
+    kit dir; a permissive single-pass default if none is bound."""
+    kit_dir = kit_dir or os.environ.get("DEV_FACTORY_KIT")
+    if kit_dir:
+        try:
+            kit = json.load(open(os.path.join(kit_dir, "kit.json"), encoding="utf-8"))
+            return _ep.load_policy(os.path.join(kit_dir, kit.get("dispatch_policy", "dispatch-policy.json")))
+        except (OSError, ValueError, KeyError):
+            pass
+    return {"family": "default", "rules": [], "default": DEFAULT_PLAN}
+
+
+def _now():
+    return datetime.datetime.now().astimezone()
+
+
+def _iso(dt):
+    return dt.isoformat(timespec="seconds")
+
+
+# ─────────────────────────────────── hermetic worktrees ───────────────────────────────────
+
+def provision_worktree(d, cell_id, worker_id, repo_root=None):
+    """A hermetic workspace for one unit. A real git worktree when the instance lives in a repo (so
+    parallel workers on different cells never collide); a plain isolated dir otherwise. Returns the path."""
+    wt = os.path.join(d, "run", "worktrees", f"{cell_id}--{worker_id}")
+    os.makedirs(os.path.dirname(wt), exist_ok=True)
+    repo = repo_root or os.path.dirname(os.path.dirname(d.rstrip("/")))  # the .agents/<plugin> grandparent
+    if os.path.isdir(os.path.join(repo, ".git")):
+        try:
+            subprocess.run(["git", "-C", repo, "worktree", "add", "--detach", wt, "HEAD"],
+                           capture_output=True, check=True)
+            return wt, True
+        except (subprocess.CalledProcessError, OSError):
+            pass
+    os.makedirs(wt, exist_ok=True)   # fallback: a plain isolated dir
+    return wt, False
+
+
+def teardown_worktree(d, wt, repo_root=None):
+    repo = repo_root or os.path.dirname(os.path.dirname(d.rstrip("/")))
+    if os.path.isdir(os.path.join(repo, ".git")):
+        subprocess.run(["git", "-C", repo, "worktree", "remove", "--force", wt], capture_output=True)
+    shutil.rmtree(wt, ignore_errors=True)
+
+
+# ─────────────────────────────────── the DispatchAdapter contract ───────────────────────────────────
+
+class DispatchAdapter:
+    """dispatch(unit) -> result. Runtime guarantees (§9.2): runs in the hermetic worktree, gates active,
+    emits events the dispatcher tees into the ledger, terminates on a stop condition. Subclasses bind a
+    concrete runtime."""
+    name = "abstract"
+
+    def dispatch(self, d, unit):
+        raise NotImplementedError
+
+
+class MockAdapter(DispatchAdapter):
+    """Deterministic runtime for CI/Crawl→Walk: a real subprocess that plays the worker role — it authors
+    (or refines) the target cell's asset, writes nothing to a protected path, and reports metrics. No live
+    model, so the whole dispatch loop is reproducible and gate-bounded."""
+    name = "mock"
+
+    def dispatch(self, d, unit):
+        layer, slug = unit["layer"], unit["slug"]
+        asset_dir = os.path.join(d, layer)
+        os.makedirs(asset_dir, exist_ok=True)
+        asset_rel = os.path.join(layer, f"{slug}.md")
+        asset_abs = os.path.join(d, asset_rel)
+        existing = open(asset_abs, encoding="utf-8", errors="replace").read() if os.path.exists(asset_abs) else ""
+        # a STRUCTURED asset (JSON / a ```json block) is already authored — confirm it, don't clobber it
+        # (so a kit's structured-asset verifier still validates after the worker runs).
+        if existing.lstrip()[:1] == "{" or "```json" in existing:
+            return {"ok": True, "asset_ref": asset_rel, "metrics": {"tokens": 3000, "iterations": 1}}
+        # else the worker authors prose (rewritable side — gate-verifier permits spec/ etc.)
+        body = f"# {layer}.{unit['scope']}.{slug}\n\nAuthored by the {self.name} worker for {unit['ticket']}.\n"
+        with open(asset_abs, "a" if existing else "w", encoding="utf-8") as f:
+            f.write(body)
+        return {"ok": True, "asset_ref": asset_rel, "metrics": {"tokens": 8000, "iterations": 1}}
+
+
+def wire_gates(worktree, kernel_bin):
+    """Make the immutable boundary ACTIVE inside the worker's worktree: write a .claude/settings.json that
+    runs the dev-kernel gates as PreToolUse(Write|Edit) hooks. A worker that tries to forge a signal or
+    rewrite the lattice/ledger is denied in-process (gate-verifier emits permissionDecision: deny). This is
+    the §9.2 'gates active inside the worktree' guarantee — wired per dispatch, never bundled."""
+    cfg_dir = os.path.join(worktree, ".claude")
+    os.makedirs(cfg_dir, exist_ok=True)
+    settings = {"hooks": {"PreToolUse": [
+        {"matcher": "Write|Edit|MultiEdit", "hooks": [
+            {"type": "command", "command": f"{os.path.join(kernel_bin, 'gate-verifier')} --hook"},
+            {"type": "command", "command": f"{os.path.join(kernel_bin, 'gate-ledger')} --hook"},
+            {"type": "command", "command": f"{os.path.join(kernel_bin, 'gate-naming')} --hook"},
+        ]},
+    ]}}
+    json.dump(settings, open(os.path.join(cfg_dir, "settings.json"), "w"), indent=2)
+    return os.path.join(cfg_dir, "settings.json")
+
+
+class HeadlessClaudeAdapter(DispatchAdapter):
+    """The live OD-003 binding: launches headless Claude Code (`claude -p`) as a subprocess in the hermetic
+    worktree, gates wired active, streaming tool events into the ledger, bounded by the unit's budget.
+
+    Pinned against the June-2026 Claude Code docs (cli-reference / headless): `-p` headless; `--add-dir`
+    the worktree; `--allowedTools`; `--permission-mode acceptEdits`; `--max-turns` (iterations) and
+    `--max-budget-usd` (dollars) as hard stops; `--output-format stream-json` for the teeable event log;
+    `--settings` to load the gate hooks. Not exercised in CI (it spends real tokens); the MockAdapter is
+    the deterministic stand-in. Requires the `claude` CLI on PATH.
+    """
+    name = "headless-claude"
+
+    def __init__(self, model=None, allowed_tools="Read,Edit,Write,Bash,Glob,Grep"):
+        self.model = model
+        self.allowed_tools = allowed_tools
+
+    def _prompt(self, d, unit):
+        tt = unit.get("transition") or {}
+        asset = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
+        cur = ("\n\nCurrent asset:\n" + open(asset, encoding="utf-8").read()[:4000]) if os.path.exists(asset) else ""
+        return (f"You are a dev-factory worker advancing exactly one lattice cell: "
+                f"{unit['layer']}.{unit['scope']}.{unit['slug']} (transition {tt.get('from')} -> {tt.get('to')}). "
+                f"Author or refine its asset at {unit['layer']}/{unit['slug']}.md to satisfy its bound rubric. "
+                f"Do NOT touch signals/, the ledger, rubric/, or lattice.json — those are protected and your "
+                f"write will be denied. Produce only the asset.{cur}")
+
+    def dispatch(self, d, unit):
+        if shutil.which("claude") is None:
+            return {"ok": False, "error": "the `claude` CLI is not on PATH", "metrics": {}}
+        settings = wire_gates(unit["worktree"], _api._store._KERNEL_BIN)
+        budget = unit.get("budget") or {}
+        effort = (unit.get("plan") or {}).get("effort") or {}          # the assembled execution plan's effort ladder
+        max_turns = effort.get("max_iterations") or budget.get("iterations", 10)
+        model = self.model or {"small": "haiku", "mid": "sonnet", "large": "opus"}.get(effort.get("model_tier"))
+        cmd = ["claude", "-p", self._prompt(d, unit),
+               "--add-dir", d,                                   # the substrate the worker reads/writes
+               "--allowedTools", self.allowed_tools,
+               "--permission-mode", "acceptEdits",
+               "--max-turns", str(max_turns),
+               "--output-format", "stream-json", "--verbose",
+               "--settings", settings]
+        if budget.get("dollars"):
+            cmd += ["--max-budget-usd", str(budget["dollars"])]
+        if model:
+            cmd += ["--model", model]
+        try:
+            proc = subprocess.run(cmd, cwd=unit["worktree"], capture_output=True, text=True,
+                                  timeout=budget.get("wallclock_seconds", 600))
+        except (OSError, subprocess.SubprocessError) as e:
+            return {"ok": False, "error": str(e), "metrics": {}}
+        cost, tokens = None, None
+        for line in (proc.stdout or "").splitlines():       # tee the stream-json events into the ledger
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            et = ev.get("type")
+            if et in ("tool_use", "tool_result", "assistant"):
+                _led.append(d, "activity-start" if et == "tool_use" else "handoff",
+                            {"kind": "agent", "id": "headless-claude"}, {"ticket": unit["ticket"], "cell": unit["target_cell"]},
+                            f"{et}: {ev.get('tool_name', '')}".strip()[:200] or et)
+            if et == "result":
+                cost = ev.get("cost_usd")
+        asset_rel = os.path.join(unit["layer"], f"{unit['slug']}.md")
+        return {"ok": proc.returncode == 0, "asset_ref": asset_rel,
+                "metrics": {"cost_usd": cost, "tokens": tokens, "exit": proc.returncode}}
+
+
+def _verifier_for(unit):
+    """The asset-exists default verifier (exit 0 iff the worker produced the artifact) — used when no kit is
+    bound. A kit's validation adapter supplies the real verifier; see _kit_verifier."""
+    if unit.get("verifier"):
+        return unit["verifier"]
+    asset_abs = os.path.join(unit["dir"], unit["layer"], f"{unit['slug']}.md")
+    return ["python3", "-c", f"import os,sys; sys.exit(0 if os.path.exists({asset_abs!r}) else 1)"]
+
+
+def _kit_verifier(d, cell, unit, kit_dir=None):
+    """Resolve the bound kit's validation-adapter verifier for this cell's layer, with {asset}/{worktree}/
+    {cell}/${CLAUDE_PLUGIN_ROOT} substituted. None when no kit is bound (DEV_FACTORY_KIT unset) or no
+    adapter matches the layer — the dispatcher then falls back to the asset-exists default. This is what
+    makes 'validated' MEAN the family's real rubric (e.g. spec-quality-check), not just 'a file exists'."""
+    kit_dir = kit_dir or os.environ.get("DEV_FACTORY_KIT")
+    if not kit_dir:
+        return None
+    try:
+        kit = json.load(open(os.path.join(kit_dir, "kit.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    asset = os.path.join(d, cell.get("asset_ref") or os.path.join(cell["layer"], f"{cell['slug']}.md"))
+    for a in kit.get("adapters", []):
+        if a.get("kind") == "validation" and (a.get("target") or {}).get("layer") == cell["layer"]:
+            return [tok.replace("${CLAUDE_PLUGIN_ROOT}", kit_dir).replace("{asset}", asset)
+                    .replace("{worktree}", unit.get("worktree", "")).replace("{cell}", _lat.cid(cell))
+                    for tok in a.get("verifier", [])]
+    return None
+
+
+# ─────────────────────────────────── the dispatch loop ───────────────────────────────────
+
+def _activity_kind(to_mat):
+    return {"defined": "define", "instantiated": "create", "validated": "validate",
+            "regenerating": "regenerate", "operating": "author"}.get(to_mat, "author")
+
+
+def dispatch_unit(d, ticket, adapter, actor, tier=1, repo_root=None, auto_validate=True, policy=None):
+    """Drive one ticket active→done. ASSEMBLE the execution plan from the kit's dispatch policy (execplan),
+    pick the worker by roster, provision a worktree, claim (single-writer), run the worker, emit the activity
+    span (the agent/activity lens), then let the critic validate. Returns (ok, ticket, msg). At Tier 1 a human
+    reviews at in-review; Tier 2+ runs to done unattended."""
+    tid = ticket["id"]
+    cell = _lat.find(_lat.load(d), ticket["target_cell"])
+    if cell is None:
+        return False, ticket, f"target_cell {ticket['target_cell']} missing"
+    to_mat = ticket.get("target_transition", {}).get("to")
+    policy = policy if policy is not None else resolve_policy(d)
+    plan, plan_src = _ep.plan_for(policy, ticket, cell, tier)     # HOW the unit runs — deterministic policy
+    agent = agent_for(cell, to_mat)                              # WHO advances it — roster
+    worker_id = _led.ulid("wrk-")
+    act_id = _led.ulid("act-")
+    wt, hermetic = provision_worktree(d, ticket["target_cell"], worker_id, repo_root)
+    unit = {"ticket": tid, "target_cell": ticket["target_cell"], "layer": cell["layer"],
+            "scope": cell["scope"], "slug": cell["slug"], "worktree": wt, "dir": d,
+            "transition": ticket.get("target_transition"), "budget": ticket.get("budget"),
+            "plan": plan, "agent": agent, "activity": act_id}
+
+    # claimed (single-writer) + the lease
+    ok, ticket, msg = _api.transition_ticket(d, tid, "claimed", actor)
+    if not ok:
+        teardown_worktree(d, wt, repo_root)
+        return False, ticket, f"dispatch: {msg}"
+    ticket["claim"] = {"worker_id": worker_id, "worktree": wt, "lease_expiry": _iso(_now() + datetime.timedelta(seconds=LEASE_TTL_S))}
+    _lc.save_ticket(d, ticket)
+    _led.append(d, "dispatch", {"kind": "server", "id": "dispatcher"}, {"ticket": tid, "cell": ticket["target_cell"]},
+                f"dispatched {agent} as {plan['orchestration_shape']}/{plan['loop_strategy']} "
+                f"({plan_src}) in {'hermetic worktree' if hermetic else 'isolated dir'}",
+                metrics={"hermetic": hermetic, "plan_source": plan_src})
+    # the activity span begins — the agent/activity lens + the monitor materialize from these ledger events
+    _led.append(d, "activity-start", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
+                f"{agent} {_activity_kind(to_mat)} {ticket['target_cell']}",
+                metrics={"activity": act_id, "agent": agent, "kind": _activity_kind(to_mat),
+                         "orchestration_shape": plan["orchestration_shape"], "loop_strategy": plan["loop_strategy"],
+                         "delegation_mode": plan.get("delegation", {}).get("mode", "none"), "depth": 0, "worktree": wt})
+
+    # worker starts → authors the asset
+    _api.transition_ticket(d, tid, "in-progress", actor)
+    result = adapter.dispatch(d, unit)
+    if not result.get("ok"):
+        _led.append(d, "activity-fail", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
+                    f"{agent} failed: {result.get('error', 'no artifact')}", metrics={"activity": act_id})
+        _api.transition_ticket(d, tid, "blocked", actor, reason="worker failed")
+        teardown_worktree(d, wt, repo_root)
+        _api._store.rebuild(d)
+        return False, _api.get_ticket(d, tid), "worker did not complete"
+    # the server records the authored asset on the cell (workers cannot write lattice.json)
+    _api.seed_cell(d, cell["layer"], cell["scope"], cell["slug"], maturity=cell["maturity"],
+                   asset_ref=result.get("asset_ref"), depends_on=cell.get("depends_on", []),
+                   signal_refs=cell.get("signal_refs", []))
+    _api.transition_ticket(d, tid, "in-review", actor)
+    _led.append(d, "activity-complete", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
+                f"{agent} produced the artifact",
+                metrics={"activity": act_id, "budget_fraction": 1.0, **(result.get("metrics") or {})})
+
+    if not auto_validate:
+        teardown_worktree(d, wt, repo_root)
+        _api._store.rebuild(d)
+        return True, _api.get_ticket(d, tid), f"in-review (Tier {tier}: awaiting human review)"
+
+    # critic validates (or authoring advance) → done. The kit's validation adapter supplies the verifier;
+    # the asset-exists default applies when no kit is bound.
+    verifier = (_kit_verifier(d, cell, unit) or _verifier_for(unit)) if to_mat in _lc.SIGNAL_BEARING else None
+    ok, ticket, msg = _api.transition_ticket(d, tid, "done", actor, verifier=verifier)
+    teardown_worktree(d, wt, repo_root)
+    if ok:
+        t = _api.get_ticket(d, tid)
+        t["claim"] = None
+        _lc.save_ticket(d, t)
+        _led.append(d, "signal", {"kind": "server", "id": "dispatcher"}, {"ticket": tid, "cell": ticket["target_cell"]},
+                    "probe cost recorded", metrics=result.get("metrics", {}))
+    _api._store.rebuild(d)
+    return ok, ticket, msg
+
+
+# ─────────────────────────────────── crash recovery (lease reconciliation) ───────────────────────────────────
+
+def reconcile_leases(d, now=None):
+    """Expire dead workers: a claimed/in-progress ticket whose lease has passed returns to `active`
+    (retry, attempts++) or `blocked` if attempts are exhausted. Idempotent — runs each tick (§8.1, §15)."""
+    now = now or _now()
+    reclaimed = []
+    for t in _api.list_tickets(d):
+        if t.get("state") not in ("claimed", "in-progress"):
+            continue
+        full = _api.get_ticket(d, t["id"])
+        claim = full.get("claim") or {}
+        exp = claim.get("lease_expiry")
+        if not exp:
+            continue
+        try:
+            dead = datetime.datetime.fromisoformat(exp) < now
+        except ValueError:
+            dead = False
+        if dead:
+            full["claim"] = None
+            _lc.save_ticket(d, full)
+            _api.transition_ticket(d, t["id"], "active", {"kind": "server", "id": "lease-reconciler"},
+                                   reason=f"lease expired ({exp}); worker presumed dead — returned to active")
+            reclaimed.append(t["id"])
+    return reclaimed
+
+
+def selftest():
+    import tempfile
+    fails = []
+    def expect(c, m):
+        if not c:
+            fails.append(m)
+    with tempfile.TemporaryDirectory() as root:
+        d = os.path.join(root, ".agents/dev-factory")
+        _api.init_instance(d)
+        srv = {"kind": "server", "id": "dev-server"}
+        _api.seed_cell(d, "rubric", "task", "r", maturity="validated", signal_refs=["signals/rubric.task.r/seed.json"])
+        _api.seed_cell(d, "spec", "task", "slice", maturity="instantiated", asset_ref="spec/slice.md")
+        os.makedirs(os.path.join(d, "spec"), exist_ok=True)
+        open(os.path.join(d, "spec", "slice.md"), "w").write("# slice\n")
+
+        t = _api.create_ticket(d, "feature", "the vertical slice", target_cell="spec.task.slice",
+                               target_transition={"from": "instantiated", "to": "validated"},
+                               acceptance={"rubric_cell": "rubric.task.r"}, budget={"iterations": 2, "tokens": 50000})
+        _api.transition_ticket(d, t["id"], "active", srv)
+
+        # the dispatcher drives the slice to done UNATTENDED via the mock adapter
+        ok, ticket, msg = dispatch_unit(d, _api.get_ticket(d, t["id"]), MockAdapter(), srv, tier=1, repo_root=root)
+        expect(ok and ticket["state"] == "done", f"unattended dispatch did not reach done: {msg}")
+        cell = _lat.find(_lat.load(d), "spec.task.slice")
+        expect(cell["maturity"] == "validated", "dispatched slice cell not validated")
+        expect(cell.get("signal_refs"), "no signal minted by the dispatched critic")
+        expect(_api.get_ticket(d, t["id"]).get("claim") is None, "claim not cleared after done")
+        # the worktree was torn down
+        expect(not os.path.isdir(os.path.join(d, "run", "worktrees")) or
+               not os.listdir(os.path.join(d, "run", "worktrees")), "worktree not torn down")
+
+        # lease reconciliation: a claimed ticket with an EXPIRED lease returns to active
+        t2 = _api.create_ticket(d, "task", "stuck", target_cell="spec.task.slice",
+                                target_transition={"from": "validated", "to": "operating"},
+                                acceptance={"rubric_cell": "rubric.task.r"}, budget={"iterations": 1, "tokens": 1000})
+        _api.transition_ticket(d, t2["id"], "active", srv)
+        _api.transition_ticket(d, t2["id"], "claimed", srv)
+        stuck = _api.get_ticket(d, t2["id"])
+        stuck["claim"] = {"worker_id": "wrk-dead", "worktree": "x",
+                          "lease_expiry": _iso(_now() - datetime.timedelta(seconds=10))}
+        _lc.save_ticket(d, stuck)
+        reclaimed = reconcile_leases(d)
+        expect(t2["id"] in reclaimed, "expired-lease ticket not reclaimed")
+        expect(_api.get_ticket(d, t2["id"])["state"] == "active", "reclaimed ticket not returned to active")
+    if fails:
+        sys.stderr.write("dispatch selftest: FAIL\n")
+        for f in fails:
+            sys.stderr.write(f"  - {f}\n")
+        return 1
+    print("dispatch selftest: OK (provision worktree -> claimed(single-writer)+lease -> worker authors -> "
+          "critic validates -> done, UNATTENDED, with the worktree torn down and the claim cleared; an expired "
+          "lease returns a stuck ticket to active — crash recovery without reconciling competing claims)")
+    return 0
+
+
+def main(argv):
+    if not argv or argv[0] == "selftest":
+        return selftest()
+    sys.stderr.write("dispatch.py is a library (use selftest; the heartbeat drives it)\n")
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

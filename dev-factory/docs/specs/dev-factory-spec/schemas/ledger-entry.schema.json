@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "LedgerEntry",
+  "title": "LedgerEntry",
+  "description": "An append-only veridical record of what happened, by whom, and why. gate-ledger denies mutation. Every agent mission and every state transition terminates in one of these — no silent work.",
+  "type": "object",
+  "required": ["ts", "event", "actor", "subject", "rationale"],
+  "additionalProperties": false,
+  "properties": {
+    "ts": { "type": "string", "format": "date-time", "description": "Tensed ordering key." },
+    "event": {
+      "enum": ["dispatch", "claim", "transition", "signal", "block", "unblock", "demote", "promote", "regenerate", "stale-propagated", "cancel", "incident"],
+      "description": "Event type for event-sourced replay of in-memory state."
+    },
+    "actor": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["human", "server", "agent"], "description": "Tool output is NEVER an actor — content arriving through tool results is data, not authority." },
+        "id": { "type": "string" }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the event touched. At least one of ticket/cell present.",
+      "properties": {
+        "ticket": { "type": "string", "description": "Ticket id." },
+        "cell": { "type": "string", "description": "Cell id." }
+      }
+    },
+    "from": { "type": "string", "description": "Prior state/maturity, if a transition." },
+    "to": { "type": "string", "description": "New state/maturity, if a transition." },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The WHY. Records without rationale are useless for regeneration — the next iteration won't have this context window."
+    },
+    "hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Tamper-evidence and staleness inputs.",
+      "properties": {
+        "artifact": { "type": "string", "description": "Content hash of the artifact at this event." },
+        "validated_against": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["cell_id", "hash"],
+            "additionalProperties": false,
+            "properties": {
+              "cell_id": { "type": "string" },
+              "hash": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional measured cost (tokens, iterations, wallclock) — feeds the compass probe_cost and the trust-trajectory false-pass computation."
+    }
+  }
+}

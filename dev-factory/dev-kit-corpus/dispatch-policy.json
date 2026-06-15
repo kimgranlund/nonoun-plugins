@@ -1,0 +1,32 @@
+{
+  "family": "corpus",
+  "rules": [
+    {
+      "match": { "target_layer": ["spec", "rubric"], "risk_band": ["high"] },
+      "plan": {
+        "orchestration_shape": "evaluator-optimizer",
+        "loop_strategy": "auto-research",
+        "context_plan": { "retrieval": "spec-rubric-patterns", "compaction": "never", "working_set_only": true },
+        "effort": { "model_tier": "large", "reasoning_effort": "high", "max_iterations": 8, "parallelism": 1 },
+        "delegation": { "mode": "team", "max_depth": 2 }
+      }
+    },
+    {
+      "match": { "target_layer": ["spec", "rubric", "pattern", "methodology"] },
+      "plan": {
+        "orchestration_shape": "evaluator-optimizer",
+        "loop_strategy": "auto-research",
+        "context_plan": { "retrieval": "spec-rubric-patterns", "compaction": "never", "working_set_only": true },
+        "effort": { "model_tier": "mid", "reasoning_effort": "moderate", "max_iterations": 5, "parallelism": 1 },
+        "delegation": { "mode": "none", "max_depth": 1 }
+      }
+    }
+  ],
+  "default": {
+    "orchestration_shape": "single-pass",
+    "loop_strategy": "single",
+    "context_plan": { "retrieval": "minimal", "compaction": "never", "working_set_only": true },
+    "effort": { "model_tier": "small", "reasoning_effort": "low", "max_iterations": 2, "parallelism": 1 },
+    "delegation": { "mode": "none", "max_depth": 0 }
+  }
+}

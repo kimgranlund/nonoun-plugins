@@ -1,0 +1,37 @@
+{
+  "name": "dev-kit-app",
+  "family": "app",
+  "kernel_compat": ">=0.1.0,<0.2.0",
+  "ontology": ["ontology.system.app-vocab"],
+  "rubric_manifest": [
+    { "layer": "capability", "scope": "system", "rubric_cell": "rubric.system.test-suite" },
+    { "layer": "protocol", "scope": "workflow", "rubric_cell": "rubric.workflow.contract-tests" }
+  ],
+  "adapters": [
+    {
+      "kind": "validation",
+      "name": "test-suite",
+      "target": { "layer": "capability" },
+      "verifier": ["python3", "${CLAUDE_PLUGIN_ROOT}/bin/test-suite-check.py", "{asset}"]
+    },
+    {
+      "kind": "validation",
+      "name": "contract-tests",
+      "target": { "layer": "protocol" },
+      "verifier": ["python3", "${CLAUDE_PLUGIN_ROOT}/bin/test-suite-check.py", "contract", "{asset}"]
+    },
+    {
+      "kind": "dispatch",
+      "name": "headless",
+      "runtime": "headless-claude-code",
+      "invocation": ["claude", "-p", "{prompt}", "--add-dir", "{worktree}", "--output-format", "stream-json"],
+      "guarantees": {
+        "hermetic_worktree": true,
+        "gates_active": true,
+        "event_stream": true,
+        "stop_on": ["signal", "budget", "no-progress"]
+      }
+    }
+  ],
+  "dispatch_policy": "dispatch-policy.json"
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>dev-factory — the board IS the repo, projected</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      // file:// blocks ES modules + fetch() — guide the user to serve over the dev-server instead
+      // of failing to a blank page. (Inline classic script: it runs even on file://.) The UI is
+      // meant to be served BY app.py (same origin as the API), so this is the nudge.
+      if (location.protocol === "file:") {
+        addEventListener("DOMContentLoaded", function () {
+          document.body.innerHTML =
+            "<div style='max-width:42rem;margin:12vh auto;padding:0 1.5rem;font:16px/1.6 system-ui,sans-serif'>" +
+            "<h1>Serve this from the dev-factory server</h1>" +
+            "<p>This UI uses ES modules, <code>fetch()</code>, and an SSE stream against the same origin — all blocked on <code>file://</code>. Run the server and let it serve <code>ui/</code>:</p>" +
+            "<pre style='background:rgba(127,127,127,.15);padding:1rem;border-radius:8px;overflow:auto'>pip install fastapi uvicorn\nDEV_FACTORY_DIR=/path/.agents/dev-factory uvicorn app:app --port 8731</pre>" +
+            "<p>then open <a href='http://localhost:8731/'>http://localhost:8731/</a> (see <code>ui/README.md</code> for the one-line static mount).</p></div>";
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <!-- The whole UI is a web-component tree; the shell boots itself, owns the store + the SSE
+         subscription, and switches the five views. -->
+    <df-app></df-app>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

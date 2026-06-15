@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "RubricQualityRubric",
+  "title": "rubric-quality",
+  "cell": "rubric.system.rubric-quality",
+  "description": "The verifier OF verifiers. A rubric cell advances to `validated` only by clearing this rubric — scored as an artifact. This rubric must itself be `validated` (deterministic across repeated runs; calibrated against its exemplar set) before it gates any rubric. The recursion bottoms out in code: the ultimate judge of a calibrated rubric in production is ledger.py false_pass_rate, not self-assessment. Gate dimensions are mechanical; review dimensions need a calibrated critic that is NOT the rubric's authoring agent.",
+  "binds_to_layer": "rubric",
+  "maturity_precondition": "This rubric cell must be validated (deterministic on fixed input; calibrated) before it gates any rubric. The meta-verifier is verified.",
+  "calibration": {
+    "exemplars_ref": "rubric/exemplars/rubric-quality/",
+    "note": "Few-shot scored rubrics spanning the scale: a strong rubric (gates + pristine ref + higher-order + calibration record), a taste-only rubric (no gate — reward-hackable), an uncalibrated rubric, and a rubric whose pristine reference is in fact worker-reachable (the subtle near-miss). Periodic agreement checks against reference scores; an uncalibrated meta-judge drifts generous toward model-authored rubrics."
+  },
+  "pristine_reference": {
+    "field": "exemplar_reference_scores",
+    "note": "The reference scores on the exemplar set are supplied read-only and the authoring agent cannot reach them — the agreement measurement is computed against a reference the worker cannot edit."
+  },
+  "dimensions": [
+    {
+      "id": "schema-valid",
+      "kind": "gate",
+      "weight": 1.0,
+      "threshold": "pass",
+      "check": "The rubric is a well-formed rubric cell: cell id excludes maturity, binds_to_layer set, every dimension labeled gate|review, every review dimension carries a numeric threshold and scale, the signal contract is stated.",
+      "fail_meaning": "Not instantiable as a typed verifier."
+    },
+    {
+      "id": "has-gate-dimension",
+      "kind": "gate",
+      "weight": 3.0,
+      "threshold": "pass",
+      "check": "At least one [gate] dimension exists with a mechanical pass/fail check. A rubric of review-only dimensions grades taste and can cap nothing.",
+      "fail_meaning": "Reward-hackable by construction: with no mechanical gate, a worker games the graded surface and nothing caps the score."
+    },
+    {
+      "id": "pristine-reference-present",
+      "kind": "gate",
+      "weight": 4.0,
+      "threshold": "pass",
+      "check": "At least one [gate] check is computed from reference material the worker cannot reach (supplied read-only, outside the worktree, deny-on-write). The reference path is named and confirmed NOT writable by a worker under gate-verifier.",
+      "fail_meaning": "Extensional pass/fail a worker can see is pass/fail it can game; without a pristine reference the verifier scores only what the worker controls (TDD §14.3.2)."
+    },
+    {
+      "id": "higher-order-check-present",
+      "kind": "gate",
+      "weight": 3.0,
+      "threshold": "pass",
+      "check": "At least one dimension verifies a PROPERTY (an invariant, a round-trip, a metamorphic relation) rather than only the surface extensional pass/fail.",
+      "fail_meaning": "Extensional-only checks are gameable; a property under transformation is harder to fake than to satisfy (TDD §14.3.3)."
+    },
+    {
+      "id": "signal-contract-correct",
+      "kind": "gate",
+      "weight": 2.0,
+      "threshold": "pass",
+      "check": "The rubric states that on pass the CRITIC (not the authoring agent) writes signals/{cell}/..., and that signals/ is deny-on-write to the worker. Matches gate-signal's enforcement.",
+      "fail_meaning": "A rubric that lets the author write its own signal launders the reward-hack into the contract itself."
+    },
+    {
+      "id": "calibration-evidence",
+      "kind": "review",
+      "weight": 4.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "An exemplar set spanning the scale (including adversarial near-misses) exists; an agreement measurement against reference scores is recorded; the critic MODEL it was calibrated with is named; re-calibration triggers are stated.",
+      "fail_meaning": "An uncalibrated verifier drifts generous toward model-authored work and cannot honestly be called validated."
+    },
+    {
+      "id": "determinism",
+      "kind": "review",
+      "weight": 3.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Gate dimensions score identically across repeated runs on fixed input; review dimensions score within a tight band. Demonstrated by repeated runs, not asserted.",
+      "fail_meaning": "A non-deterministic verifier turns a signal into a coin flip; the loop cannot converge against it."
+    },
+    {
+      "id": "critic-independence",
+      "kind": "review",
+      "weight": 3.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "The critic model is selected independently of the generator (often a different tier) and the rubric records this. A worker and its grader do not share weights.",
+      "fail_meaning": "A model grading its own output shares its blind spots — the exact failure the generator/critic split exists to prevent."
+    },
+    {
+      "id": "exploit-resistance",
+      "kind": "review",
+      "weight": 4.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Adversarial review: enumerate how a worker could PASS this rubric without doing the work (edit a reachable reference, satisfy the extensional check while violating intent, exploit a non-pristine input). Each path is closed by a gate or flagged for an exploit scan.",
+      "fail_meaning": "An un-stress-tested rubric ships its gameable paths; the clean board it produces is what a reward-hack looks like (TDD §14.3.4)."
+    }
+  ],
+  "scoring": {
+    "gates": "ALL [gate] dimensions must pass; any gate failure returns the rubric to regenerating regardless of review score. has-gate-dimension, pristine-reference-present, and signal-contract-correct are the reward-hack floor — a rubric that fails any of them is not a verifier, it is a vibe.",
+    "review": "Weighted review score must clear each dimension threshold AND an aggregate of 80/100.",
+    "signal": "On pass, the CRITIC (not the rubric-architect that authored it) writes signals/{rubric-cell}/{ts}--rubric-quality.json via the validation path. The authoring agent cannot write this path (gate-signal). Production trustworthiness is then the MEASURED false-pass rate from ledger.py false_pass_rate — 'unmeasured' until an independent refuter has disagreed at least once."
+  }
+}

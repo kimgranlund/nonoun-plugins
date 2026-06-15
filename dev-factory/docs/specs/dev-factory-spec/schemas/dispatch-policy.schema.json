@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "DispatchPolicy",
+  "title": "DispatchPolicy",
+  "description": "Deterministic mapping from unit characteristics to an execution plan. Read by the compass to assemble each dispatch — selection is policy, not a model decision. Kernel defines the strategy vocabulary; a kit supplies the rules for its family. First matching rule wins; `default` applies when none match.",
+  "type": "object",
+  "required": ["family", "rules", "default"],
+  "additionalProperties": false,
+  "properties": {
+    "family": { "type": "string", "description": "Kit/family this policy binds (e.g., corpus, app)." },
+    "rules": {
+      "type": "array",
+      "description": "Ordered match rules. First whose `match` is satisfied supplies the plan.",
+      "items": {
+        "type": "object",
+        "required": ["match", "plan"],
+        "additionalProperties": false,
+        "properties": {
+          "match": {
+            "type": "object",
+            "description": "Unit characteristics to match. Omitted keys are wildcards.",
+            "additionalProperties": false,
+            "properties": {
+              "ticket_type": { "type": "array", "items": { "enum": ["feature", "task", "bug", "chore", "spike", "epic"] } },
+              "target_layer": { "type": "array", "items": { "enum": ["ontology", "spec", "rubric", "policy", "capability", "methodology", "protocol", "ledger", "pattern"] } },
+              "target_scope": { "type": "array", "items": { "enum": ["call", "task", "workflow", "system", "fleet"] } },
+              "risk_band": { "type": "array", "items": { "enum": ["low", "moderate", "high"] } },
+              "autonomy_tier": { "type": "array", "items": { "enum": [0, 1, 2, 3] } }
+            }
+          },
+          "plan": { "$ref": "ExecutionPlan" }
+        }
+      }
+    },
+    "default": { "$ref": "ExecutionPlan" }
+  },
+  "posture": {
+    "rule": "collapse-to-justify",
+    "note": "Default is maximal decomposition along real seams: prefer orchestrator-workers/team/parallelization and sub-agent delegation wherever the work admits them. A rule (or the default) collapses to a simpler shape only when justified by ABSENCE of real structure — an irreducible unit, no independent seams, or depth past the fidelity limit — never by timidity. Width is maximized; depth is bounded by delegation.max_depth; budget always binds."
+  },
+  "$defs": {
+    "ExecutionPlan": {
+      "$id": "ExecutionPlan",
+      "type": "object",
+      "description": "The typed plan a DispatchAdapter executes. Extends the dispatch contract beyond budget + skill surface.",
+      "required": ["orchestration_shape", "loop_strategy", "context_plan", "effort", "delegation"],
+      "additionalProperties": false,
+      "properties": {
+        "orchestration_shape": {
+          "enum": ["single-pass", "prompt-chain", "routing", "parallelization", "orchestrator-workers", "evaluator-optimizer"],
+          "description": "Topology of model calls inside the unit. Start simplest; escalate only on measured failure."
+        },
+        "loop_strategy": {
+          "enum": ["single", "ralph-fresh-context", "auto-research", "tracer-bullet", "ablation", "sweep", "bisect"],
+          "description": "Iteration discipline. ralph-fresh-context may wrap any of the others for long-horizon units."
+        },
+        "context_plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "retrieval": { "enum": ["minimal", "spec-and-rubric", "spec-rubric-patterns", "broad"], "default": "spec-rubric-patterns", "description": "Just-in-time substrate to load. 'broad' is discouraged (context hoarding)." },
+            "compaction": { "enum": ["never", "preserve-decisions", "summarize"], "default": "never", "description": "Compaction is a last resort; prefer fresh-context handoff." },
+            "working_set_only": { "type": "boolean", "default": true, "description": "Durable state stays on disk; only the active working set occupies context." }
+          }
+        },
+        "effort": {
+          "type": "object",
+          "required": ["model_tier", "reasoning_effort"],
+          "additionalProperties": false,
+          "properties": {
+            "model_tier": { "enum": ["small", "mid", "large"], "description": "Generator model tier. Critic tier is set separately by the verification policy." },
+            "reasoning_effort": { "enum": ["low", "moderate", "high"], "description": "Thinking/effort level." },
+            "max_iterations": { "type": "integer", "minimum": 1, "description": "Hard iteration cap; escalate quality-per-iteration before raising this." },
+            "parallelism": { "type": "integer", "minimum": 1, "default": 1, "description": "Concurrent sub-units (only meaningful for parallelization/orchestrator-workers)." }
+          }
+        },
+        "delegation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": { "enum": ["none", "sub-agents", "team"], "default": "none", "description": "sub-agents = dispatched children (one cell each); team = role-specialized peers with typed handoffs." },
+            "max_depth": { "type": "integer", "minimum": 0, "default": 1, "description": "Hard cap on delegation depth — handoff fidelity is multiplicative; deep nesting loses more than it gains." }
+          }
+        }
+      }
+    }
+  }
+}

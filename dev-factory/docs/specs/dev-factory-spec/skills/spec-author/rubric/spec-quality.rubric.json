@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "SpecQualityRubric",
+  "title": "spec-quality",
+  "cell": "rubric.system.spec-quality",
+  "description": "The verifier for spec cells. A spec advances to validated only by clearing this rubric. This rubric must itself be `validated` (demonstrated determinism + calibration) before any spec binds to it — the rubric-maturity precondition. Gate dimensions are mechanical; review dimensions need a calibrated critic that is not the authoring agent.",
+  "binds_to_layer": "spec",
+  "maturity_precondition": "This rubric cell must be validated (deterministic across repeated runs on fixed input; calibrated against the few-shot exemplar set) before it gates any spec.",
+  "calibration": {
+    "exemplars_ref": "rubric/exemplars/spec-quality/",
+    "note": "Few-shot scored specs spanning the scale; periodic agreement checks against reference scores. An uncalibrated judge drifts generous toward model-authored specs."
+  },
+  "pristine_reference": {
+    "field": "parent_criteria",
+    "note": "For decomposition scoring, the parent spec's acceptance-criteria list is the reference the decomposition is scored against. It is supplied read-only and the authoring agent cannot edit it — a pristine reference the worker cannot reach."
+  },
+  "dimensions": [
+    {
+      "id": "schema-valid",
+      "kind": "gate",
+      "weight": 1.0,
+      "threshold": "pass",
+      "check": "Conforms to the spec/intent schema; cell id excludes maturity; all cross-references resolve.",
+      "fail_meaning": "Not instantiable as a typed cell."
+    },
+    {
+      "id": "criteria-checkable",
+      "kind": "gate",
+      "weight": 3.0,
+      "threshold": "pass",
+      "check": "Every acceptance criterion is either executable or bound to a calibrated review rubric. Zero prose-only criteria.",
+      "fail_meaning": "Uncheckable criteria are hopes, not criteria; the loop cannot converge on them."
+    },
+    {
+      "id": "rubric-binds",
+      "kind": "gate",
+      "weight": 3.0,
+      "threshold": "pass",
+      "check": "A rubric cell binds to this spec WITHOUT reinterpretation, and that rubric cell is itself `validated`.",
+      "fail_meaning": "A spec a rubric cannot bind to scores against vibes downstream."
+    },
+    {
+      "id": "non-goals-present",
+      "kind": "gate",
+      "weight": 1.0,
+      "threshold": "pass",
+      "check": "Explicit non-goals are declared.",
+      "fail_meaning": "Unbounded scope; the spec admits work it was never meant to authorize."
+    },
+    {
+      "id": "decomposition-entailment",
+      "kind": "gate",
+      "weight": 4.0,
+      "threshold": "pass",
+      "check": "_entailment_check.py passes: every parent acceptance criterion is covered by >=1 child cell; every child acceptance binds to a rubric cell; no orphan criteria; dependency edges respect the layer partial order.",
+      "fail_meaning": "Satisfying the children would not entail satisfying the parent — an unsound decomposition that ships gaps."
+    },
+    {
+      "id": "intent-fidelity",
+      "kind": "review",
+      "weight": 4.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Does the spec capture the principal's actual want? Is every claim grounded in the intent source, not invented?",
+      "fail_meaning": "Fuzzy or drifted intent at the root; multiplied downstream."
+    },
+    {
+      "id": "boundary-completeness",
+      "kind": "review",
+      "weight": 3.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Every boundary in the spec answers: what crosses it, in what form, under whose authority, and what happens when it fails.",
+      "fail_meaning": "An underspecified boundary is a future production incident."
+    },
+    {
+      "id": "vocabulary-precision",
+      "kind": "review",
+      "weight": 2.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Terms used as defined in the ontology; new terms flagged; no undefined vocabulary.",
+      "fail_meaning": "Imprecise vocabulary lets the how dictate the what and corrupts decomposition."
+    },
+    {
+      "id": "commitment-clarity",
+      "kind": "review",
+      "weight": 2.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Target state, invariants, preconditions, and postconditions are unambiguous (Design-by-Contract complete).",
+      "fail_meaning": "Ambiguous commitment yields thrashing or unverifiable doneness."
+    },
+    {
+      "id": "decomposition-soundness-judgment",
+      "kind": "review",
+      "weight": 3.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Beyond mere coverage: is this the RIGHT carving of the problem across scope and layer, or a covering that will mislead?",
+      "fail_meaning": "A technically-covering but wrong decomposition tunnels the build toward a bad structure."
+    }
+  ],
+  "scoring": {
+    "gates": "ALL gate dimensions must pass; any gate failure returns the spec to regenerating regardless of review score.",
+    "review": "Weighted review score must clear each dimension threshold AND an aggregate of 80/100.",
+    "signal": "On pass, the critic (not the authoring agent) writes signals/{spec-cell}/{ts}--spec-quality.json. The authoring agent cannot write this path."
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "TestSuiteRubric",
+  "title": "test-suite",
+  "cell": "rubric.system.test-suite",
+  "description": "The verifier for capability cells in the app family. A capability advances to `validated` only when its test suite exists, passes, and clears the coverage floor. This rubric must itself be `validated` (deterministic + calibrated) before it gates any capability. The gates are mechanical and run by bin/test-suite-check.py against the capability's test artifact + the suite's machine-readable result; mutation-resistance and oracle-quality are the critic's judgment. The pristine reference is the runner's own exit status — minted from an external process, never the worker's assertion.",
+  "binds_to_layer": "capability",
+  "maturity_precondition": "This rubric cell must be validated (deterministic on fixed input; calibrated against the exemplar set) before it gates any capability.",
+  "calibration": {
+    "exemplars_ref": "rubric/exemplars/test-suite/",
+    "critic_model": "an independent critic tier, NOT the code-authoring agent",
+    "agreement_record": "rubric/exemplars/test-suite/agreement.json",
+    "recalibration_triggers": [
+      "a false-pass observed in the ledger (green suite, shipped defect)",
+      "the coverage floor is raised",
+      "the test runner changes"
+    ],
+    "note": "Few-shot scored suites spanning the scale: a strong suite (real assertions, above-floor coverage, failure-mode tests), a no-test capability (asserting done with zero tests), a vacuous suite (tests that assert nothing / always pass), and a below-floor near-miss. An uncalibrated judge drifts generous toward model-authored tests that exercise nothing."
+  },
+  "pristine_reference": {
+    "field": "runner_exit_status",
+    "writable_by_worker": false,
+    "enforced_by": "validate.py mints the signal from the EXTERNAL runner's exit status (gate-verifier); the worker never hand-asserts pass",
+    "note": "The test runner is an external process the worker does not control: validate.py runs it and reads its exit status. A worker can write tests but it cannot make a failing run report success — the verdict comes from the runner, not the worker's opinion. The coverage report is read from the runner's machine-readable output, not self-reported."
+  },
+  "dimensions": [
+    {
+      "id": "tests-exist",
+      "kind": "gate",
+      "label": "[gate]",
+      "weight": 2.0,
+      "threshold": "pass",
+      "check": "The capability ships a test artifact with at least one real test case (a discoverable, non-empty suite that asserts something). A capability claimed 'validated' with zero tests fails here.",
+      "mechanized_by": "bin/test-suite-check.py (tests-exist)",
+      "fail_meaning": "No tests means 'validated' is the worker's opinion, not a measured signal."
+    },
+    {
+      "id": "tests-pass",
+      "kind": "gate",
+      "label": "[gate]",
+      "weight": 4.0,
+      "threshold": "pass",
+      "check": "The suite RUNS GREEN: the runner's recorded result reports zero failures and zero errors. The verdict is the external runner's exit status (minted by validate.py), never the worker's self-report.",
+      "mechanized_by": "bin/test-suite-check.py (tests-pass, read from the runner's machine-readable result)",
+      "fail_meaning": "A red or un-run suite is not a passing capability; advancing on it ships a known-broken cell."
+    },
+    {
+      "id": "coverage-floor",
+      "kind": "gate",
+      "label": "[gate]",
+      "weight": 3.0,
+      "threshold": "pass",
+      "check": "Measured line/branch coverage clears the declared floor (default 70%, overridable per cell). The number is read from the runner's coverage report, not self-reported. This is a higher-order check: a property of the suite's reach over the code, not just that it ran.",
+      "mechanized_by": "bin/test-suite-check.py (coverage-floor)",
+      "higher_order": true,
+      "fail_meaning": "A green suite that exercises 10% of the code is green theatre; the untested 90% is unverified."
+    },
+    {
+      "id": "oracle-quality",
+      "kind": "review",
+      "label": "[review]",
+      "weight": 4.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Do the tests assert MEANINGFUL behaviour (real oracles tied to the spec's acceptance criteria), or do they assert trivia / tautologies that pass regardless of correctness? Would a plausible injected defect actually turn the suite red?",
+      "fail_meaning": "Coverage without oracles is exercised-but-unchecked code; the suite is green for the wrong reason."
+    },
+    {
+      "id": "mutation-resistance",
+      "kind": "review",
+      "label": "[review]",
+      "weight": 3.0,
+      "threshold": 7,
+      "scale": "0-10",
+      "check": "Beyond line coverage: would the suite CATCH a realistic mutation (a flipped comparison, a dropped branch, an off-by-one)? Are edge cases and the spec's failure modes tested, not just the happy path?",
+      "fail_meaning": "A suite that survives mutation tests the absence of crashes, not the presence of correctness."
+    }
+  ],
+  "scoring": {
+    "gates": "ALL gate dimensions must pass; any gate failure returns the capability to regenerating regardless of review score. bin/test-suite-check.py runs the gate dimensions mechanically and exits 0 iff all pass.",
+    "review": "Weighted review score must clear each dimension threshold AND an aggregate of 80/100.",
+    "signal": "On pass, the CRITIC (not the code-authoring agent) writes signals/{capability-cell}/{ts}--test-suite.json via the validation path. signals/ is deny-on-write to the worker (gate-signal). The gate verdict rests on the external runner's exit status, not the worker's claim."
+  }
+}
