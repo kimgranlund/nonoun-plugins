@@ -134,6 +134,7 @@ const store = {
   agents: signal([]),           // future /api/agents/running; degrades to []
   heartbeat: signal(null),      // last tick summary from SSE
   factory: signal(null),        // UI-3: the factory-state headline from /api/status.factory (idle/running/armed/paused)
+  milestones: signal(null),     // build-progress rollup from /api/status.milestones (SPEC · CAPABILITY · SHIP + spec revisions)
   guidance: signal({ items: [] }),  // the 5s operator-input buffer (run/guidance.json), streamed on the "guidance" event
   panel: signal(null),          // { kind:"cell"|"ticket", id }
   modal: signal(null),          // { kind:"create-ticket", state, mode:"structured"|"prompt"|"instruction" }
@@ -183,9 +184,13 @@ async function loadAll() {
 }
 
 // UI-3: the factory-state headline (is it working, what is it doing) — distinct from the SSE socket dot.
+// Also the milestone/build-progress rollup (where is the build, and has it shipped?).
 async function refreshStatus() {
-  try { store.factory.value = (await jget("/api/status")).factory || null; }
-  catch { /* leave prior value */ }
+  try {
+    const st = await jget("/api/status");
+    store.factory.value = st.factory || null;
+    store.milestones.value = st.milestones || null;
+  } catch { /* leave prior value */ }
 }
 
 // the 5s operator-input buffer (also streamed on the "guidance" SSE event; this is the fetch fallback)
@@ -323,6 +328,7 @@ class DfApp extends UIElement {
           ${raw(tab("roadmap", "Roadmap", "⌖"))}
         </nav>
         <div class="conn" role="status" aria-live="polite">
+          <span class="milestones" title="build milestones — where the build is, and whether it shipped"></span>
           <span class="factory-state" title="the factory's work state"></span>
           <span class="pulse" aria-hidden="true"></span><span class="conn-label"></span>
         </div>
@@ -367,6 +373,22 @@ class DfApp extends UIElement {
         fel.textContent = `${fs.state.toUpperCase()} · ${detail}`;
         fel.title = `factory work state (the dot is just the live socket) — ${fs.running_agents} running, ${fs.ready_to_dispatch} ready, heartbeat ${fs.heartbeat_enabled ? "on" : "off"}`;
       } else { fel.textContent = ""; fel.removeAttribute("data-state"); }
+    }
+    // milestone/build-progress strip — SPEC › CAPABILITY › SHIP (+ the bi-directional spec-revision count)
+    const ms = store.milestones.value;
+    const mel = this.querySelector(".milestones");
+    if (mel) {
+      if (ms && ms.stages && ms.stages.length) {
+        const stage = (s) => {
+          const cls = s.done >= s.total ? "done" : s.done > 0 ? "wip" : "todo";
+          const label = s.key === "ship" ? (s.done ? "SHIPPED" : "SHIP") : `${s.label} ${s.done}/${s.total}`;
+          return `<span class="ms ${cls}">${escapeHtml(label)}</span>`;
+        };
+        const rev = ms.spec_revisions
+          ? `<span class="ms-rev" title="spec revisions from build learnings (bi-directional)">⟲ ${ms.spec_revisions}</span>` : "";
+        mel.innerHTML = ms.stages.map(stage).join('<span class="ms-sep">›</span>') + rev;
+        mel.dataset.shipped = ms.shipped ? "1" : "0";
+      } else { mel.innerHTML = ""; mel.removeAttribute("data-shipped"); }
     }
     // view swap — only when the route actually changes (preserves the child otherwise)
     const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap" }[view] || "df-kanban";

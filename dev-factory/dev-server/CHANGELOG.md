@@ -3,6 +3,16 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-15 — dashboard richness: a milestone/ship progress strip
+
+- **`api.milestones(d)` + `/api/status.milestones`** — a build-progress rollup the dashboard renders: the
+  SPEC · CAPABILITY · SHIP stages (each `done/total`), whether the `capability.system.app` integrator has
+  validated (`shipped`), and `spec_revisions` — the count of ledgered spec regenerations (the visible trace of
+  the bi-directional loop). Generic over any lattice (a per-layer rollup), surfacing the app-building milestones
+  when present. The UI header gains a colour-coded strip beside the work-state chip — `SPEC 1/1 › CAPABILITY
+  2/3 › SHIP` with a `⟲ n` spec-revision badge — so the cockpit answers "where is the build, and has it shipped?"
+  at a glance. `app.js?v=5`. api/app selftests + server-smoke cover the new field.
+
 ## 2026-06-15 — the code-authoring adapter (shippable software, DF-9)
 
 - **`dispatch.py` authors real multi-file source.** `_authoring_for(cell)` reads the bound kit's `authoring`

@@ -389,6 +389,44 @@ def factory_state(d, heartbeat_enabled=False, paused=False, family=None):
             "heartbeat_enabled": bool(heartbeat_enabled), "paused": bool(paused)}
 
 
+SETTLED_MATURITIES = ("validated", "operating")
+
+
+def milestones(d):
+    """A milestone / build-progress rollup for the dashboard — 'where is the build, and has it shipped?'.
+
+    Generic over any lattice (a per-layer settled/total rollup), but surfaces the /debug/ app-building shape when
+    present: the SPEC milestone (spec cells), the CAPABILITY milestone (capability cells excluding the integrator),
+    and the SHIP milestone (the `capability.system.app` integrator — its verify.mjs is the ship gate). Plus
+    `spec_revisions` — the count of ledgered spec regenerations, the visible trace of the bi-directional loop."""
+    grid = lattice_grid(d)
+    from collections import defaultdict
+    roll = defaultdict(lambda: {"settled": 0, "total": 0})
+    for c in grid:
+        roll[c["layer"]]["total"] += 1
+        if c["maturity"] in SETTLED_MATURITIES:
+            roll[c["layer"]]["settled"] += 1
+    ship = next((c for c in grid if c["id"] == "capability.system.app"), None)
+    caps = [c for c in grid if c["layer"] == "capability" and c["id"] != "capability.system.app"]
+    specs = [c for c in grid if c["layer"] == "spec"]
+    def _done(cells):
+        return sum(1 for c in cells if c["maturity"] in SETTLED_MATURITIES), len(cells)
+    spec_done, spec_total = _done(specs)
+    cap_done, cap_total = _done(caps)
+    regen = sum(1 for e in ledger_query(d, n=500) if e.get("event") == "regenerate")
+    stages = []
+    if specs:
+        stages.append({"key": "spec", "label": "SPEC", "done": spec_done, "total": spec_total})
+    if caps:
+        stages.append({"key": "capability", "label": "CAPABILITY", "done": cap_done, "total": cap_total})
+    if ship is not None:
+        stages.append({"key": "ship", "label": "SHIP", "done": 1 if ship["maturity"] in SETTLED_MATURITIES else 0, "total": 1})
+    return {"stages": stages, "layers": dict(roll),
+            "ship_cell": "capability.system.app" if ship is not None else None,
+            "shipped": bool(ship) and ship["maturity"] in SETTLED_MATURITIES,
+            "spec_revisions": regen}
+
+
 def report(d, name, **kw):
     import reports as _reports
     return _reports.report(d, name, **kw)
@@ -444,6 +482,14 @@ def selftest():
         expect(factory_state(d, paused=True, heartbeat_enabled=True)["state"] == "paused", "paused not reported")
         expect("active_tickets" in factory_state(d, False) and "ready_to_dispatch" in factory_state(d, False),
                "factory_state must surface the active + ready counts the UI renders")
+
+        # milestones: the build-progress rollup the dashboard renders. After the done ticket above, spec.task.x
+        # is validated, so the SPEC stage reads 1/1; no capability cells + no integrator → no SHIP stage yet.
+        ms = milestones(d)
+        spec_stage = next((s for s in ms["stages"] if s["key"] == "spec"), None)
+        expect(spec_stage and spec_stage["done"] == spec_stage["total"] == 1, "milestones must report the SPEC stage as 1/1 after the spec validated")
+        expect(ms["ship_cell"] is None and ms["shipped"] is False, "no integrator cell → not shipped")
+        expect("spec_revisions" in ms, "milestones must surface the bi-directional spec_revisions count")
 
         # the 5s operator-input / guidance channel: enqueue -> drain -> buffer -> recent (latest-last)
         expect(recent_guidance(d) == [], "guidance must start empty")

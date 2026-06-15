@@ -138,6 +138,15 @@ df-app { display: flex; flex-direction: column; min-height: 100vh; }
 .factory-state[data-state="paused"], .factory-state[data-state="drained"] { --_h: var(--hue-caution);
   color: light-dark(oklch(0.5 var(--chroma-vivid) var(--_h)), oklch(0.84 var(--chroma-vivid) var(--_h)));
   border-color: light-dark(oklch(0.82 var(--chroma-soft) var(--_h)), oklch(0.5 var(--chroma-soft) var(--_h))); }
+/* milestone/build-progress strip — SPEC › CAPABILITY › SHIP (+ ⟲ spec-revision count, the bi-directional trace) */
+.milestones { display: inline-flex; align-items: center; gap: 0.3rem; font: 600 10.5px/1 var(--mono, ui-monospace); letter-spacing: 0.03em; white-space: nowrap; }
+.milestones:empty { display: none; }
+.milestones .ms { padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid var(--border); color: var(--faint); background: var(--surface-sunken); }
+.milestones .ms.wip { --_h: var(--hue-caution); color: light-dark(oklch(0.5 var(--chroma-vivid) var(--_h)), oklch(0.84 var(--chroma-vivid) var(--_h))); border-color: transparent; background: light-dark(oklch(0.96 var(--chroma-soft) var(--_h)), oklch(0.32 var(--chroma-soft) var(--_h))); }
+.milestones .ms.done { --_h: var(--hue-positive); color: light-dark(oklch(0.45 var(--chroma-vivid) var(--_h)), oklch(0.85 var(--chroma-vivid) var(--_h))); border-color: transparent; background: light-dark(oklch(0.95 var(--chroma-soft) var(--_h)), oklch(0.32 var(--chroma-soft) var(--_h))); }
+.milestones[data-shipped="1"] .ms.done:last-of-type { box-shadow: 0 0 0 2px var(--accent-soft); }
+.milestones .ms-sep { color: var(--faint); }
+.milestones .ms-rev { margin-left: 0.15rem; padding: 0.18rem 0.4rem; border-radius: 999px; color: var(--accent); background: var(--accent-soft); }
 .conn .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
 .conn[data-state="live"] .pulse { background: light-dark(oklch(0.6 var(--chroma-vivid) var(--hue-positive)), oklch(0.78 var(--chroma-vivid) var(--hue-positive))); animation: pulse 2s ease-in-out infinite; }
 .conn[data-state="connecting"] .pulse { background: light-dark(oklch(0.7 var(--chroma-vivid) var(--hue-caution)), oklch(0.82 var(--chroma-vivid) var(--hue-caution))); }
