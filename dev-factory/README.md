@@ -34,7 +34,58 @@ The one law (inherited): **computation routes to code, never to inference.** Sel
 
 Plus three cross-cutting proofs: `dev-server/evals/demotion/` (mechanical demotion has *teeth* — a caught false-pass revokes autonomy with no human in the path), `dev-server/evals/integration-milestone/` (the kit actually *drives* the loop — the dispatch policy is consumed, the roster staffs it, the family's real rubric gates it), and `dev-server/evals/server-smoke/` (the live FastAPI app serves the UI + every endpoint over a real client). The kernel's `dev-kernel/evals/tracer-bullet/` proves the morphism in isolation. **Eight falsifiable replays in all** — and `dev-server/demo.py` runs the whole integrated system live for a human to watch.
 
-## Run it
+## Getting started — step by step
+
+Install into your project (**project-local**, the catalog default), then init an instance and start the loop.
+
+```bash
+# 1. Enable the plugins for THIS project (in <project>/.claude/settings.json), or interactively
+#    with /plugin marketplace add … then choosing PROJECT scope:
+#      "extraKnownMarketplaces": { "dev-factory": { "source": { "source": "github", "repo": "<owner>/dev-factory" } } },
+#      "enabledPlugins": { "dev-kernel@dev-factory": true, "dev-kit-corpus@dev-factory": true }
+#    (until published, point the marketplace source at this repo / a local path.)
+
+# 2. Initialize the instance — scaffold the lattice + coordination dirs under .agents/dev-factory/:
+cd your-project
+python3 <plugin-root>/dev-kernel/bin/lattice.py init --dir .agents/dev-factory
+#    …or just ask Claude:  "seed a dev-factory lattice for this project"
+
+# 3. Seed the lattice with your project's cells (or let the architect decompose it):
+#    "design the lattice for this instance — decompose this domain into layers and scopes"
+
+# 4. Create your first unit of work — by prompt, the API, or the UI:
+#    "create a ticket to validate the auth spec"
+
+# 5. Run the factory (the bounded autonomous loop + the live UI), with a kit bound:
+pip install fastapi uvicorn
+DEV_FACTORY_DIR=$PWD/.agents/dev-factory DEV_FACTORY_KIT=<plugin-root>/dev-kit-corpus \
+  DEV_FACTORY_HEARTBEAT=1 uvicorn dev-server.app:app --port 8731
+#    open http://127.0.0.1:8731/  →  Kanban (2 lenses) · lattice grid · ledger · agent monitor · roadmap
+
+# 6. Steer: drag a ticket on the board (each drag is a gate-checked request, refused with a reason if
+#    illegal), or ask  "what's the frontier — what should we advance next?"
+```
+
+No server needed to try it: **`python3 dev-server/demo.py`** drives the whole loop end-to-end against a throwaway instance and prints what happened.
+
+## Sample prompts
+
+dev-factory's skills are **model-invoked** (there are no slash commands) — so with `dev-kernel` installed, you drive it in natural language. What to say:
+
+| Say… | Triggers |
+|---|---|
+| *"seed a dev-factory lattice for this project"* · *"decompose this domain into layers and scopes"* | **lattice-management** → lattice-architect |
+| *"scan for lattice gaps"* · *"what cell should we advance next?"* · *"rank the frontier"* · *"why is this cell stale?"* | the compass |
+| *"create a ticket to validate the auth spec"* · *"triage this issue into a ticket"* · *"decompose this epic into tickets"* · *"plan the roadmap"* | **ticket-orchestration** → ticket-triager / roadmap-planner |
+| *"advance the spec.system.auth cell"* · *"validate this artifact against its rubric"* · *"why didn't this cell advance?"* | **cell-engine** → cell-advancer + cell-validator |
+| *"author and calibrate a rubric for the spec layer"* | **verification** → rubric-architect |
+| *"distill patterns from the ledger"* · *"propose a spec revision from what we've learned"* | **regeneration** → pattern-distiller / spec-regenerator |
+| *"what tier is this family at — has autonomy been earned?"* · *"demote this family"* | **autonomy-governance** |
+| *"how do I run the server / arm the heartbeat?"* · *"show the crash-recovery runbook"* · *"author a kit for a new family"* | **factory-ops** · **kit-authoring** |
+
+The factory's *own* roster agents (cell-advancer, spec-architect, …) are dispatched by dev-server's loop, not invoked directly.
+
+## Run it (verify / develop)
 
 ```bash
 # the whole system, headless (stdlib + sqlite3 only — no FastAPI, no live model):

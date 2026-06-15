@@ -9,3 +9,17 @@ python3 ../dev-kernel/bin/check-kit-conform.py kit .   # exit 0 = binds the kern
 ```
 
 That a `corpus` kit and an `app` kit coexist over one unchanged kernel is the architecture's central claim, made checkable.
+
+## Bind it — step by step
+
+To run dev-factory with the **app** family (capability/protocol cells validated by a passing test suite):
+
+```bash
+# 1. install dev-kernel + dev-kit-app (project-local); 2. init the instance:
+python3 ../dev-kernel/bin/lattice.py init --dir .agents/dev-factory
+# 3. bind THIS kit when you start the server:
+DEV_FACTORY_KIT=$PWD DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory \
+  DEV_FACTORY_HEARTBEAT=1 uvicorn dev-server.app:app --port 8731
+```
+
+Now capability/protocol cells validate against `test-suite-check` (the runner's real exit status), and bug tickets dispatch as a `bisect` loop per `dispatch-policy.json`. Sample prompt: *"create a ticket to advance the auth-service capability cell"*.

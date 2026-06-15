@@ -16,6 +16,20 @@ Binds the `dev-kernel` contracts to one family of work: **building and validatin
 
 `dev-server`'s dispatcher reads the dispatch policy to assemble each unit's execution plan, provisions a worktree, and runs the worker through a `DispatchAdapter` (the kit's `headless` adapter binds the live runtime; CI uses the kernel's `mock`). The critic validates the cell's asset by running the kit's validation harness via `validate.py`, which mints the signal from its exit status.
 
+## Bind it — step by step
+
+A dev-factory instance binds **one** family. To run with the corpus family:
+
+```bash
+# 1. install dev-kernel + dev-kit-corpus (project-local); 2. init the instance:
+python3 ../dev-kernel/bin/lattice.py init --dir .agents/dev-factory
+# 3. bind THIS kit when you start the server (the dispatcher reads its policy + verifiers from here):
+DEV_FACTORY_KIT=$PWD DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory \
+  DEV_FACTORY_HEARTBEAT=1 uvicorn dev-server.app:app --port 8731
+```
+
+Now spec/rubric/pattern cells validate against this family's **real** verifiers (spec-quality · rubric-quality · pattern-quality), and each dispatch assembles its execution plan from `dispatch-policy.json`. Sample prompt to extend the family: *"author a kit extension for the corpus family — add a rubric for the methodology layer"* (the `kit-authoring` skill).
+
 ## Conform
 
 ```bash

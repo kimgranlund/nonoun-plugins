@@ -28,19 +28,43 @@ and an illegal one is refused with a reason, never silently applied. Workers/age
 tool; they never write the DB or the lattice. The heartbeat (Walk) calls the **same** `api.transition_ticket`
 a human drag does — the loop is the scheduler calling the API, not a separate code path.
 
-## Run
+## Run — step by step
 
 ```bash
-# headless verification (no deps): the whole coordination path
+# 0. headless verification (no deps): the whole coordination path
 python3 store.py selftest && python3 api.py selftest
 
-# the live server (Crawl: heartbeat OFF)
-pip install fastapi uvicorn
-DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory uvicorn app:app --port 8731
+# 1. init an instance (or the server scaffolds it on boot):
+python3 ../dev-kernel/bin/lattice.py init --dir /path/to/project/.agents/dev-factory
 
-# point the server at a different kernel checkout
-DEV_KERNEL_BIN=/path/to/dev-kernel/bin uvicorn app:app
+# 2. start the live server — family kit bound, heartbeat ON:
+pip install fastapi uvicorn
+DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory \
+  DEV_FACTORY_KIT=/path/to/dev-kit-corpus \
+  DEV_FACTORY_HEARTBEAT=1 uvicorn app:app --port 8731
+#   open http://127.0.0.1:8731/  for the web UI (Kanban · lattice grid · ledger · agent monitor · roadmap)
+
+# 3. drive it over the API (every mutation is gate-checked + ledgered):
+curl -s localhost:8731/api/status                              # autonomy tier · maturity · running agents
+curl -s -X POST localhost:8731/api/tickets -d '{"type":"feature","title":"validate auth spec",
+  "target_cell":"spec.system.auth","target_transition":{"from":"instantiated","to":"validated"},
+  "acceptance":{"rubric_cell":"rubric.system.spec-quality"},"budget":{"iterations":3,"tokens":80000}}'
+curl -s -X POST localhost:8731/api/tickets/<id>/transition -d '{"to":"active"}'  # the heartbeat takes it from here
+curl -s localhost:8731/api/reports/flow_metrics               # throughput · cycle time
+
+# …or watch the whole loop run end-to-end against a throwaway instance (no live model):
+python3 demo.py
 ```
+
+### Config (env vars)
+
+| Var | Default | What |
+|---|---|---|
+| `DEV_FACTORY_DIR` | `.agents/dev-factory` | the instance state dir |
+| `DEV_KERNEL_BIN` | `../dev-kernel/bin` | the kernel checkout to drive |
+| `DEV_FACTORY_KIT` | (none) | the bound family kit dir — its dispatch policy + real verifiers |
+| `DEV_FACTORY_HEARTBEAT` | off | `1` enables the bounded 30s autonomous loop |
+| `DEV_FACTORY_TIER` · `DEV_FACTORY_CONCURRENCY` · `DEV_FACTORY_PERIOD` | earned · 2 · 30 | loop overrides |
 
 ## Bootstrapping status
 
