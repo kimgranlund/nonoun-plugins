@@ -127,6 +127,28 @@ no styles.css or call-site changes.
 
 ## dev-server / dev-kernel runtime (non-UI, same session)
 
+### DF-8 · P3 — no persistent launch config; the operator env was reconstructed inline on every run · FIXED in source (2026-06-15)
+
+**Symptom.** Starting the server meant retyping the whole env on the `uvicorn` line every time
+(`DEV_FACTORY_DIR=… DEV_FACTORY_HEARTBEAT=… DEV_FACTORY_MAX_DISPATCHES=… uvicorn app:app …`). Nothing
+persisted the operator's instance path or run posture, the RUNBOOK only showed the inline form, and the
+question *"where do I even set `DEV_FACTORY_HEARTBEAT=1`?"* had no documented home — so the heartbeat knob
+(and the bound it requires) was easy to forget, i.e. easy to launch Walk **without** a dispatch cap.
+
+**Root cause.** The server reads ~10 env vars (`app.py` via `os.environ`, no dotenv), but the plugin shipped
+no launcher and no env template — every var was inline-only, undiscoverable, and unbounded-by-omission.
+
+**Fix in source.** `dev-server/run.sh` (the operator launcher) + `dev-server/dev-factory.env.example` (the
+committed template). `run.sh` sources an operator env (`$DEV_FACTORY_ENV` → `./dev-factory.env` →
+`<instance>/run.env`), applies the plugin's defaults (`DEV_KERNEL_BIN` relative to the plugin · `PORT=8731` ·
+Crawl unless `DEV_FACTORY_HEARTBEAT=1` · **a `MAX_DISPATCHES=6` cap auto-applied if the heartbeat is on**, so
+Walk is never unbounded by forgetting), reports the resolved instance/kit/heartbeat posture (token-cost
+warning when the heartbeat is ON), requires `DEV_FACTORY_DIR` (exits 2 with guidance), and execs uvicorn. The
+filled-in `dev-factory.env` is **operator config** (instance path + run policy) and is gitignored — only the
+`.example` ships; RUNBOOK "Boot" documents the pattern. *Operability lesson generalized into plugins-factory
+(David F. reproducible-packaging dimension): a plugin that ships/wraps a runnable runtime must ship a
+persistent, documented launch path, not inline-env-only.*
+
 ### DF-7 · P2 — an author ticket (`defined→instantiated`) can't close `done` once `validate.py` takes its cell to `validated` · worked around
 
 **Symptom.** Building `capability.system.color-engine`: the advancer authored the asset, then `validate.py`

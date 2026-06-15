@@ -1,7 +1,7 @@
 ---
-date: 2026-06-02
+date: 2026-06-15
 status: draft
-version: "0.1.0"
+version: "0.2.0"
 ---
 
 # Manifest & Packaging Correctness — Does It Install and Update Cleanly?
@@ -24,6 +24,7 @@ Theory: `../foundations/plugin-architecture-foundations.md` (+ field reference `
 2. **`${CLAUDE_PLUGIN_ROOT}` is ephemeral; `${CLAUDE_PLUGIN_DATA}` is persistent.** Read-only bundled assets via ROOT; anything written goes to DATA.
 3. **The version is the cache key.** Set it in exactly one place; choose semver or SHA mode deliberately.
 4. **A malformed `hooks/hooks.json` blocks the whole plugin.** The blast radius of a JSON typo is the entire bundle.
+5. **A bundled runtime needs a launch surface.** If the plugin ships a process an _operator_ starts (a server, daemon, or loop — not a host-launched `.mcp.json` MCP), its env + safe defaults are part of packaging. Ship a persistent launcher + an env template, not an inline command the operator reconstructs from source each run.
 
 ---
 
@@ -141,6 +142,22 @@ If distributed via a marketplace, is the `marketplace.json` entry well-formed an
 
 ---
 
+### D8 — Runtime Launch Reproducibility `[review]`
+
+**Conditional — only when the plugin ships or wraps an _operator-launched_ runtime** (a server, daemon, or long-running loop the operator starts themselves — e.g. a bundled FastAPI app, a control-loop CLI). A host-launched `.mcp.json` MCP does **not** count (Claude Code starts it from the declared command); plugins that ship no such runtime score this **N/A**. If it does ship one: can an operator launch and re-launch it from a persistent, documented config — not by reconstructing an inline env from source each run?
+
+| Score | Evidence |
+| --- | --- |
+| **5** | Ships a launcher (or one documented entry point) that sources a persistent operator env, applies the plugin's safe defaults — **including any bound a looping/autonomous runtime needs** — reports the resolved posture, and fails closed on the one required variable. An env **template ships** (`*.example`); the filled-in operator copy is separated from plugin config and **gitignored** (it holds the operator's paths + run policy, not plugin config). A runbook documents the launch and every knob. Re-launching is one command, identical each time. |
+| **4** | Launcher + template + runbook present; one knob undocumented or a non-safety default not applied — still launches reproducibly. |
+| **3** | A launcher **or** a template exists but not both, or the env is documented only as an inline command line — reproducible by copy-paste, but nothing persists the config. |
+| **2** | The runtime's env is inline-only and undocumented (or scattered across the source) — the operator reconstructs the launch command each run, and a safety bound (a dispatch/token cap on a loop) is one forgotten variable away. |
+| **1** | No documented way to launch the bundled runtime at all; the operator reverse-engineers it from the code. |
+
+**Go deeper**: cross-check P7 (operability) and D4 (the launcher itself must reference bundled assets via `${CLAUDE_PLUGIN_ROOT}`, never an absolute path). **Test**: does the plugin ship an operator-launched runtime? If yes — is there a launcher **and** an env template **and** a runbook entry, with the operator's filled-in config gitignored and the safe defaults (especially any loop cap) applied? Inline-env-only = D8 ≤ 2. (No bundled runtime = N/A, score out.)
+
+---
+
 ## §Anti-patterns
 
 ### AP-MP1 — The silently-missing component
@@ -159,6 +176,10 @@ If distributed via a marketplace, is the `marketplace.json` entry well-formed an
 
 **Symptom**: A malformed `hooks/hooks.json` blocks the **entire** plugin from loading (D2 ✗), not just the hook. **Root cause**: Underestimating the blast radius of a hooks JSON typo. **Correction**: Validate `hooks/hooks.json` in CI; the whole-plugin blast radius makes it non-optional.
 
+### AP-MP5 — The runtime with no launch config
+
+**Symptom**: A bundled server/loop whose entire env is passed inline on the run command (D8 ✗) — undocumented, scattered across the source, and unbounded-by-omission. Every launch retypes it; "where do I set the heartbeat / the dispatch cap?" has no documented home, so a safety bound is one forgotten variable away. **Root cause**: Treating the runtime as "just run it" and shipping no operator-facing launch surface. **Correction**: Ship a launcher that sources a persistent env and applies the safe defaults (especially any loop cap), an `*.example` template (the operator's filled-in copy gitignored, never committed into the plugin), and a runbook entry documenting the launch + every knob.
+
 ---
 
 ## §Hard Tests
@@ -168,3 +189,4 @@ If distributed via a marketplace, is the `marketplace.json` entry well-formed an
 3. **The root-write test** (D5): does any write target the ephemeral root instead of `${CLAUDE_PLUGIN_DATA}`?
 4. **The double-version test** (D6): is `version` set in two places?
 5. **The hooks-blast-radius test** (D2): is `hooks/hooks.json` well-formed (a typo blocks the whole plugin)?
+6. **The launch-config test** (D8): if the plugin ships an operator-launched runtime, can you launch it from a persistent documented config (launcher + env template + runbook), or must you reconstruct an inline env from source each run? Inline-only = D8 ≤ 2. (No bundled runtime = N/A.)

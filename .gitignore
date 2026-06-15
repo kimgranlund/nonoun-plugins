@@ -15,3 +15,8 @@ node_modules/
 /harness-forge/.agents/
 /dev-factory/.agents/
 /dev-factory/dev-server/.agents/
+
+# Operator launch config for dev-server/run.sh — the filled-in env holds the operator's instance path +
+# run policy (NOT plugin config); only the committed *.example template ships. run.sh also reads <instance>/run.env.
+/dev-factory/dev-server/dev-factory.env
+/dev-factory/dev-server/run.env

@@ -28,15 +28,20 @@ The coordination core (`store.py`, `api.py`) is stdlib + `sqlite3` — zero runt
 # 1. headless verification of the whole coordination path — no deps, run this first
 python3 store.py selftest && python3 api.py selftest
 
-# 2. the live server (Crawl: heartbeat OFF; Walk: scheduler enabled)
+# 2. the live server, the recommended way — run.sh sources a persistent env, applies the plugin's
+#    defaults, reports the posture it's launching, and execs uvicorn (no inline env to reconstruct each run):
 pip install fastapi uvicorn
-DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory uvicorn app:app --port 8731
+cp dev-factory.env.example dev-factory.env   # then edit DEV_FACTORY_DIR (+ any knobs); this is YOUR config — keep it
+./run.sh                                      #   in your project, NEVER commit it into the plugin (it holds your instance path)
 
-# point the server at a different kernel checkout
-DEV_KERNEL_BIN=/path/to/dev-kernel/bin uvicorn app:app
+# …or pass everything inline (equivalent, nothing persisted):
+DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory uvicorn app:app --port 8731
+DEV_KERNEL_BIN=/path/to/dev-kernel/bin uvicorn app:app   # point at a different kernel checkout
 ```
 
-On boot the server calls `api.init_instance(d)` — it scaffolds the substrate tree (the nine layer dirs + `signals/` + `ledger/` via the vendored `lattice.scaffold`), writes an empty canonical `lattice.json` if absent, and lays the `coordination/{tickets,roadmap,issues}/` dirs. It is **idempotent**: re-booting against an existing instance re-scaffolds nothing and re-materializes the index from the ledger + files. The env contract is one variable — the instance dir (`DEV_FACTORY_DIR`) — and one optional override (`DEV_KERNEL_BIN`, the vendored kernel `bin/`).
+**`run.sh` is the operator launcher** — the persistent alternative to retyping the env on every run. It sources an operator env (resolution order: `$DEV_FACTORY_ENV` → `./dev-factory.env` → `<instance>/run.env`), applies the plugin's defaults (`DEV_KERNEL_BIN` relative to the plugin · `PORT=8731` · Crawl unless `DEV_FACTORY_HEARTBEAT=1` · a `MAX_DISPATCHES=6` cap if the heartbeat is on, so an armed loop is never unbounded), prints the resolved instance/kit/heartbeat posture (with a token-cost warning when the heartbeat is ON), requires `DEV_FACTORY_DIR` (exits 2 with guidance if unset/missing), and execs uvicorn. The env file is **operator config, not plugin config**: `dev-factory.env.example` is the committed template; your filled-in `dev-factory.env` holds your instance path + run policy and stays in your project — never commit it into the plugin. The plugin gitignores `dev-factory.env` and `<instance>/run.env` for exactly this reason. Every knob the server reads (`DEV_FACTORY_HEARTBEAT`, `DEV_FACTORY_MAX_DISPATCHES`, `DEV_FACTORY_DEADLINE_S`, `DEV_FACTORY_TOKEN_CEILING`, `DEV_FACTORY_KIT`, …) is documented inline in the template.
+
+On boot the server calls `api.init_instance(d)` — it scaffolds the substrate tree (the nine layer dirs + `signals/` + `ledger/` via the vendored `lattice.scaffold`), writes an empty canonical `lattice.json` if absent, and lays the `coordination/{tickets,roadmap,issues}/` dirs. It is **idempotent**: re-booting against an existing instance re-scaffolds nothing and re-materializes the index from the ledger + files. The one required variable is the instance dir (`DEV_FACTORY_DIR`); everything else has a plugin default (`run.sh` applies them) — see `dev-factory.env.example` for the full knob set.
 
 ## The bounded heartbeat — arm before you run (it fails closed)
 
