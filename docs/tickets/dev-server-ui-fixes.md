@@ -14,6 +14,26 @@ Append new entries at the top of each section. Snapshot: **2026-06-15**.
 
 ## Server UI (`dev-server/ui/`)
 
+### UI-3 · P2 — the UI can't tell you whether the factory is WORKING (or what it's doing) · FIXED in source (2026-06-15)
+
+**Symptom.** Operating the board, it was impossible to tell at a glance if anything was active. The header's
+green **"live"** dot means only that the SSE socket is connected — *not* that work is happening; the
+heartbeat/activity state was buried in the Agents tab; and the Kanban "Active" column conflated *queued* with
+*being built*. With 4 "Active" tickets + a green "live" dot, the obvious (wrong) read was "it's running."
+
+**Root cause.** `/api/status` exposed `running_agents` but no single derived "is it working, and what is it
+doing" headline, and the UI surfaced only the socket state. Compounded by a **stale projection** (DF-2): the
+running server's `index.db` showed 4 active tickets while the canonical `lattice.json` had already validated
+the cells — the board was showing work that was actually *done*.
+
+**Fix in source.** `api.factory_state(d, heartbeat_enabled, paused)` — a derived headline from real state
+(running workers · heartbeat posture · a dep-readiness check `ready_tickets`): **idle / running / armed
+(ready work, heartbeat on) / blocked (active but deps unmet) / drained (queue empty) / paused**. `/api/status`
+now carries `factory`; the UI renders a colour-coded work-state chip in the header beside the socket dot
+("IDLE · no work queued", "RUNNING · 2 workers", …). `throughput` report alias restored (404'd). `app.js?v`
+bumped. selftest locks idle/drained/paused. *(Restart the running server to pick it up — it also runs the
+DF-2 boot rebuild, reconciling the stale projection.)*
+
 ### UI-2 · P2 — static UI assets have no cache-busting, so a fix to `app.js` never reaches a running browser · FIXED (working tree, 2026-06-15)
 
 **Symptom.** After UI-1's `app.js` fix was in place (the *server* confirmed serving the patched file —
