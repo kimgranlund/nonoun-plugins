@@ -1,13 +1,14 @@
 {
+  "enabledPlugins": {
+    "plugins-factory@nonoun-plugins": true
+  },
   "extraKnownMarketplaces": {
     "nonoun-plugins": {
       "source": {
         "source": "github",
         "repo": "kimgranlund/claude-plugins"
-      }
+      },
+      "autoUpdate": true
     }
-  },
-  "enabledPlugins": {
-    "plugins-factory@nonoun-plugins": true
   }
 }
