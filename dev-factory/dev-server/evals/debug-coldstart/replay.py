@@ -89,6 +89,16 @@ def run():
         v = verdict.verdict(name, quiet=True)
         check(v["shipped"] and v["ok"], "verdict: SHIPPED (the capability.system.app integrator validated — its verify.mjs gate passed)")
 
+        print("· ORCHESTRATION + OBSERVABILITY — the planned team is recorded, spend attributed, the roadmap hydrated")
+        epics = [e for e in api.roadmap(inst) if str(e.get("title", "")).startswith("Milestone")]
+        check(len(epics) == 3, "the roadmap is hydrated — one epic per milestone (SPEC · CAPABILITY · SHIP)")
+        team = [e for e in api.ledger_query(inst, n=500) if e["event"] == "activity-start" and (e.get("metrics") or {}).get("delegation_mode") == "team"]
+        check(bool(team) and all((e["metrics"].get("depth") == 2 and e["metrics"].get("model_tier")) for e in team),
+              "capability dispatches record the PLANNED orchestrator-workers team (delegation=team, depth 2, model tier)")
+        snap = api.token_snapshot(inst)
+        check(snap["total_tokens"] > 0 and snap["by_model"] and snap["by_effort"],
+              "token spend is snapshotted + attributed per model tier + reasoning effort (the burn-graph feed)")
+
         print("· SECURITY — generator/critic split + the guidance channel are worker-protected")
         check(_gate(".agents/dev-factory/capability/core/verify.mjs") == 2, "a worker write to a per-cell verify.mjs is DENIED (it can't grade its own homework)")
         check(_gate(".agents/dev-factory/capability/core/index.mjs") == 0, "a worker write to ordinary source is ALLOWED (no false block on the build)")

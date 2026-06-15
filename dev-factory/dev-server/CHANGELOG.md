@@ -3,6 +3,25 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-15 — orchestration + observability: real teams, token-burn graph, roadmap, elapsed/effort
+
+- **The planned sub-agent team now EXECUTES, not just records.** `HeadlessClaudeAdapter`: a `team` delegation
+  plan makes the worker an ORCHESTRATOR — the prompt instructs decompose + delegate to sub-agents via the Task
+  tool to the planned `max_depth` at `parallelism`, and `_allowed_tools` adds `Task` so it can spawn them. The
+  activity ledger records the REAL `depth` (the plan's, not `0`) + `parallelism` + `model_tier` + `reasoning_effort`
+  (dev-kit-app plans `orchestrator-workers` / depth 2 / parallelism 2 for capabilities). Cross-cell parallelism was
+  already real (the heartbeat's concurrency); now the within-cell team is wired.
+- **Token-burn graph.** Dispatch stamps `model_tier` + `reasoning_effort` onto the spend metrics; a **15s poll**
+  (`_wire_token_poll`) snapshots cumulative tokens (+ USD) to `run/token-snapshots.jsonl`, attributed **per model
+  tier + per reasoning effort**, and streams a `tokens` SSE. `GET /api/tokens` serves the series; a new **Tokens**
+  view draws a realtime SVG area chart (cumulative total + per-model lines) with per-model / per-effort breakdown bars.
+- **The roadmap is hydrated.** The cold-start planner now creates one **epic per milestone** (SPEC · CAPABILITY ·
+  SHIP) with its tickets nested, so the Roadmap view fills in.
+- **Elapsed time + estimated effort.** The claim stamps `claimed_at` (materialized); the Agents view shows a **live
+  per-worker elapsed timer** (a 1s clock, no round-trip) + a **probe-cost token ETA** on each worker. `app.js?v=7`.
+- api/app/store/dispatch selftests + the `debug-coldstart` replay assert the team ledger, the token attribution,
+  the roadmap epics, and `claimed_at`; server-smoke covers `/api/tokens`.
+
 ## 2026-06-15 — dashboard richness: a milestone/ship progress strip
 
 - **`api.milestones(d)` + `/api/status.milestones`** — a build-progress rollup the dashboard renders: the

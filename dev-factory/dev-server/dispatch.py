@@ -208,6 +208,13 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         self.model = model
         self.allowed_tools = allowed_tools
 
+    def _allowed_tools(self, unit):
+        """The worker's tool scope. A `team` delegation plan adds Task so the orchestrator can SPAWN the planned
+        sub-agent team (orchestrator-workers, to max_depth); a non-delegating plan keeps the single-worker scope."""
+        if ((unit.get("plan") or {}).get("delegation") or {}).get("mode") == "team":
+            return self.allowed_tools + ",Task"
+        return self.allowed_tools
+
     def _prompt(self, d, unit, project_root):
         tt = unit.get("transition") or {}
         # Fold the operator's recent steering guidance (the 5s channel) into THIS dispatch. A running one-shot
@@ -222,13 +229,23 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         authoring = _authoring_for({"layer": unit["layer"], "slug": unit["slug"]})
         if authoring and authoring.get("mode") == "multi-file":
             dir_rel = os.path.relpath(os.path.join(d, unit["layer"], unit["slug"]), project_root)
+            plan = unit.get("plan") or {}
+            dele = plan.get("delegation") or {}
+            team = ""
+            if dele.get("mode") == "team":   # the planned orchestrator-workers team (execplan) — execute it, don't just record it
+                par = (plan.get("effort") or {}).get("parallelism", 1)
+                team = (f" You are the ORCHESTRATOR ({plan.get('orchestration_shape', 'orchestrator-workers')} / "
+                        f"{plan.get('loop_strategy', 'tracer-bullet')}): decompose this capability into independent sub-tasks "
+                        f"and DELEGATE each to a sub-agent via the Task tool — to a maximum delegation depth of "
+                        f"{dele.get('max_depth', 1)}, up to {par} in parallel. Each sub-agent authors part of the source; you "
+                        f"integrate them and ensure the harness passes. Use the team only where it earns its keep.")
             return (f"You are a dev-factory worker building ONE capability of a shippable app: "
                     f"{unit['layer']}.{unit['scope']}.{unit['slug']}. Author its source as multiple files under "
                     f"`{dir_rel}/` to INDUSTRIAL standards: clear module boundaries, named exports, descriptive "
                     f"naming, proper levels of abstraction, no dead code. Put the testable LOGIC in pure ES modules "
                     f"the harness can import headlessly; keep rendering/DOM/canvas in a thin shell. It MUST pass its "
                     f"critic harness `{dir_rel}/verify.mjs` — READ it for the exact contract, but you CANNOT write it "
-                    f"(it is the critic's gate; your write is denied). Do NOT touch .agents/dev-factory/signals/, the "
+                    f"(it is the critic's gate; your write is denied).{team} Do NOT touch .agents/dev-factory/signals/, the "
                     f"ledger, rubric/, lattice.json, or any verify.mjs. Produce ONLY the source files.{gtxt}")
 
         asset_abs = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
@@ -266,7 +283,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         cmd = ["claude", "-p", self._prompt(d, unit, project_root),
                "--add-dir", project_root,                        # the project (incl. the instance) the worker reads/writes
                *kit_add,                                         # the bound kit (its bin/ verifiers), read-only — DF-4
-               "--allowedTools", self.allowed_tools,
+               "--allowedTools", self._allowed_tools(unit),
                "--permission-mode", "acceptEdits",
                "--max-turns", str(max_turns),
                "--output-format", "stream-json", "--verbose",
@@ -361,18 +378,25 @@ def dispatch_unit(d, ticket, adapter, actor, tier=1, repo_root=None, auto_valida
     if not ok:
         teardown_worktree(d, wt, repo_root)
         return False, ticket, f"dispatch: {msg}"
-    ticket["claim"] = {"worker_id": worker_id, "worktree": wt, "lease_expiry": _iso(_now() + datetime.timedelta(seconds=LEASE_TTL_S))}
+    ticket["claim"] = {"worker_id": worker_id, "worktree": wt, "claimed_at": _iso(_now()),
+                       "lease_expiry": _iso(_now() + datetime.timedelta(seconds=LEASE_TTL_S))}
     _lc.save_ticket(d, ticket)
+    _eff = plan.get("effort") or {}
+    _dele = plan.get("delegation") or {}
     _led.append(d, "dispatch", {"kind": "server", "id": "dispatcher"}, {"ticket": tid, "cell": ticket["target_cell"]},
                 f"dispatched {agent} as {plan['orchestration_shape']}/{plan['loop_strategy']} "
                 f"({plan_src}) in {'hermetic worktree' if hermetic else 'isolated dir'}",
                 metrics={"hermetic": hermetic, "plan_source": plan_src})
-    # the activity span begins — the agent/activity lens + the monitor materialize from these ledger events
+    # the activity span begins — the agent/activity lens + the monitor materialize from these ledger events. The
+    # delegation DEPTH is the plan's (the planned orchestrator-workers team), and the model tier + effort travel
+    # with the span so token spend can be attributed per model + effort downstream.
     _led.append(d, "activity-start", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
                 f"{agent} {_activity_kind(to_mat)} {ticket['target_cell']}",
                 metrics={"activity": act_id, "agent": agent, "kind": _activity_kind(to_mat),
                          "orchestration_shape": plan["orchestration_shape"], "loop_strategy": plan["loop_strategy"],
-                         "delegation_mode": plan.get("delegation", {}).get("mode", "none"), "depth": 0, "worktree": wt})
+                         "delegation_mode": _dele.get("mode", "none"), "depth": _dele.get("max_depth", 0),
+                         "parallelism": _eff.get("parallelism", 1), "model_tier": _eff.get("model_tier"),
+                         "reasoning_effort": _eff.get("reasoning_effort"), "worktree": wt})
 
     # worker starts → authors the asset
     _api.transition_ticket(d, tid, "in-progress", actor)
@@ -389,9 +413,11 @@ def dispatch_unit(d, ticket, adapter, actor, tier=1, repo_root=None, auto_valida
                    asset_ref=result.get("asset_ref"), depends_on=cell.get("depends_on", []),
                    signal_refs=cell.get("signal_refs", []))
     _api.transition_ticket(d, tid, "in-review", actor)
+    # carry the model tier + effort with the spend metrics so token burn can be charted per model + effort
+    _spend = {"model_tier": _eff.get("model_tier"), "reasoning_effort": _eff.get("reasoning_effort"),
+              **(result.get("metrics") or {})}
     _led.append(d, "activity-complete", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
-                f"{agent} produced the artifact",
-                metrics={"activity": act_id, "budget_fraction": 1.0, **(result.get("metrics") or {})})
+                f"{agent} produced the artifact", metrics={"activity": act_id, "budget_fraction": 1.0, **_spend})
 
     if not auto_validate:
         teardown_worktree(d, wt, repo_root)
@@ -516,6 +542,21 @@ def selftest():
             del os.environ["DEV_FACTORY_KIT"]
         expect("multiple files under" in p and "verify.mjs" in p and "CANNOT write it" in p,
                "the multi-file worker prompt must demand source files + name the worker-protected verify.mjs gate")
+
+        # team EXECUTION: a delegation=team plan makes the worker an ORCHESTRATOR that spawns the planned sub-agent
+        # team (the Task tool is added; the prompt names the depth) — so 'team, depth 2' is executed, not just ledgered.
+        team_unit = dict(capunit, plan={"orchestration_shape": "orchestrator-workers", "loop_strategy": "tracer-bullet",
+                                        "effort": {"parallelism": 2, "model_tier": "mid"},
+                                        "delegation": {"mode": "team", "max_depth": 2}})
+        os.environ["DEV_FACTORY_KIT"] = kitdir
+        try:
+            tp = hca._prompt(d, team_unit, root)
+        finally:
+            del os.environ["DEV_FACTORY_KIT"]
+        expect("ORCHESTRATOR" in tp and "Task tool" in tp and "depth of 2" in tp,
+               "a team-delegation plan must produce an orchestrator prompt that delegates to the planned depth")
+        expect("Task" in hca._allowed_tools(team_unit), "delegation=team must add the Task tool to the worker scope")
+        expect("Task" not in hca._allowed_tools(capunit), "a non-delegating plan must NOT add the Task tool")
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
         for f in fails:

@@ -90,7 +90,7 @@ def _canned_plan(brief_text):
                   "signal_refs": [f"signals/ontology.system.{SLUG}/seed.json"]})
     cells.append({"layer": "spec", "scope": "system", "slug": SLUG, "maturity": "instantiated", "asset_ref": f"spec/{SLUG}.md"})
     tickets = [{"target_cell": spec_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SPEC,
-                "deps": [], "title": f"MILESTONE 1 · spec: {title}"}]
+                "deps": [], "milestone": "SPEC", "title": f"MILESTONE 1 · spec: {title}"}]
 
     # MILESTONE 2 — per-capability code cells, each with its planner-authored verify.mjs critic harness
     for f in features:
@@ -98,14 +98,14 @@ def _canned_plan(brief_text):
         cells.append({"layer": "capability", "scope": "system", "slug": f, "maturity": "instantiated",
                       "asset_ref": f"capability/{f}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f}", "from": "instantiated", "to": "validated",
-                        "rubric_cell": R_CAP, "deps": [spec_id], "title": f"MILESTONE 2 · build: {f}"})
+                        "rubric_cell": R_CAP, "deps": [spec_id], "milestone": "CAPABILITY", "title": f"MILESTONE 2 · build: {f}"})
 
     # MILESTONE 3 — the app integrator (SHIP): composes every capability, gated by its own ship verify.mjs
     assets.append({"path": f"capability/{SLUG}/verify.mjs", "content": _mock_ship_verify(features)})
     cells.append({"layer": "capability", "scope": "system", "slug": SLUG, "maturity": "instantiated",
                   "asset_ref": f"capability/{SLUG}", "depends_on": [spec_id] + cap_ids})
     tickets.append({"target_cell": app_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SHIP,
-                    "deps": [spec_id] + cap_ids, "title": f"MILESTONE 3 · ship: {title}"})
+                    "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 3 · ship: {title}"})
     return {"assets": assets, "cells": cells, "tickets": tickets}
 
 
@@ -161,7 +161,7 @@ def apply_plan(inst, plan, api):
     for c in plan.get("cells", []):
         api.seed_cell(inst, c["layer"], c["scope"], c["slug"], maturity=c.get("maturity", "absent"),
                       asset_ref=c.get("asset_ref"), depends_on=c.get("depends_on"), signal_refs=c.get("signal_refs"))
-    activated = []
+    activated, by_ms = [], {}
     for t in plan.get("tickets", []):
         deps = {"cells_ready": t.get("deps", [])}
         tk = api.create_ticket(inst, "feature", t.get("title", t["target_cell"]), target_cell=t["target_cell"],
@@ -173,6 +173,12 @@ def apply_plan(inst, plan, api):
             print(f"  ! build ticket {tk['id']} could not go active: {msg}", file=sys.stderr)
         else:
             activated.append(tk["id"])
+            by_ms.setdefault(t.get("milestone", "BUILD"), []).append(tk["id"])
+    # hydrate the ROADMAP: one epic per milestone, with its tickets nested (so the Roadmap view fills in)
+    ms_order = {"SPEC": 1, "CAPABILITY": 2, "SHIP": 3, "BUILD": 4}
+    for ms in sorted(by_ms, key=lambda m: ms_order.get(m, 9)):
+        api.create_epic(inst, f"Milestone · {ms}", body=f"The {ms} milestone — {len(by_ms[ms])} ticket(s).",
+                        tickets=by_ms[ms], created_by="cold-start-planner")
     return activated
 
 

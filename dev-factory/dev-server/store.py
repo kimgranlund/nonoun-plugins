@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   id TEXT PRIMARY KEY, type TEXT, title TEXT, state TEXT,
   target_cell TEXT, from_maturity TEXT, to_maturity TEXT, rubric_cell TEXT,
   risk REAL, unlock INTEGER, probe_cost REAL,
-  claim_worker TEXT, lease_expiry TEXT, signal_count INTEGER DEFAULT 0,
+  claim_worker TEXT, lease_expiry TEXT, claimed_at TEXT, signal_count INTEGER DEFAULT 0,
   created TEXT, updated TEXT
 );
 CREATE TABLE IF NOT EXISTS cells (
@@ -81,17 +81,17 @@ def upsert_ticket(con, t):
                            ("target_transition", "priority", "claim", "timestamps", "acceptance"))
     con.execute(
         """INSERT INTO tickets(id,type,title,state,target_cell,from_maturity,to_maturity,rubric_cell,
-                               risk,unlock,probe_cost,claim_worker,lease_expiry,signal_count,created,updated)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                               risk,unlock,probe_cost,claim_worker,lease_expiry,claimed_at,signal_count,created,updated)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
            ON CONFLICT(id) DO UPDATE SET type=excluded.type,title=excluded.title,state=excluded.state,
              target_cell=excluded.target_cell,from_maturity=excluded.from_maturity,to_maturity=excluded.to_maturity,
              rubric_cell=excluded.rubric_cell,risk=excluded.risk,unlock=excluded.unlock,probe_cost=excluded.probe_cost,
-             claim_worker=excluded.claim_worker,lease_expiry=excluded.lease_expiry,
+             claim_worker=excluded.claim_worker,lease_expiry=excluded.lease_expiry,claimed_at=excluded.claimed_at,
              signal_count=excluded.signal_count,updated=excluded.updated""",
         (t["id"], t.get("type"), t.get("title"), t.get("state"), t.get("target_cell"),
          tt.get("from"), tt.get("to"), acc.get("rubric_cell"),
          pr.get("risk"), pr.get("unlock"), pr.get("probe_cost"),
-         cl.get("worker_id"), cl.get("lease_expiry"), len(t.get("signal_refs", [])),
+         cl.get("worker_id"), cl.get("lease_expiry"), cl.get("claimed_at"), len(t.get("signal_refs", [])),
          ts.get("created"), ts.get("updated")))
 
 

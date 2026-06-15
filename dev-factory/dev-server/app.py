@@ -181,6 +181,11 @@ def build_app():
     def guidance():
         return api.read_guidance(DIR)
 
+    @app.get("/api/tokens")
+    def tokens():
+        # the token-burn timeseries (cumulative spend by model + effort) for the realtime graph
+        return api.token_series(DIR)
+
     @app.get("/api/status")
     def status_view():
         # + the factory-state headline (UI-3): is it working, and what is it doing — the thing the SSE 'live'
@@ -231,6 +236,8 @@ def build_app():
         _wire_heartbeat(app)
     # the 5s operator-input poll runs ALWAYS — steering must work in Crawl too, independent of the dispatch loop
     _wire_input_poll(app)
+    # the 15s token-spend snapshot poll — drives the realtime token-burn graph (per model + effort)
+    _wire_token_poll(app)
     # the buildless web UI (the five views over SSE) — mounted LAST so /api/* stays ahead of the catch-all
     ui_dir = os.path.join(_HERE, "ui")
     if os.path.isdir(ui_dir):
@@ -281,6 +288,23 @@ def _wire_input_poll(app):
         asyncio.create_task(loop())
 
 
+def _wire_token_poll(app):
+    """The 15-second token-spend snapshot: append a cumulative snapshot (tokens by model + effort) and stream it,
+    so the dashboard can draw a realtime token-burn graph. Deterministic — it only sums the ledger's recorded
+    spend. Independent of the dispatch loop (runs in Crawl too, where it just records zero)."""
+    import asyncio
+
+    @app.on_event("startup")
+    async def _start_token_poll():
+        period = int(os.environ.get("DEV_FACTORY_TOKEN_PERIOD", "15"))
+
+        async def loop():
+            while True:
+                STREAM.publish("tokens", api.token_snapshot(DIR))
+                await asyncio.sleep(period)
+        asyncio.create_task(loop())
+
+
 app = build_app()
 
 
@@ -294,7 +318,7 @@ def main(argv):
         routes = sorted({r.path for r in app.routes if r.path.startswith("/api")})
         expected = {"/api/tickets", "/api/tickets/{tid}", "/api/tickets/{tid}/transition",
                     "/api/lattice", "/api/ledger", "/api/roadmap", "/api/stream",
-                    "/api/input", "/api/guidance"}
+                    "/api/input", "/api/guidance", "/api/tokens"}
         missing = expected - set(routes)
         if missing:
             print(f"app selftest: FAIL — missing routes: {missing}", file=sys.stderr)

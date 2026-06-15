@@ -271,6 +271,72 @@ def recent_guidance(d, n=5):
     return [it.get("text", "") for it in items[-n:] if it.get("text")]
 
 
+# ─────────────────────────── token-spend snapshots (the realtime burn graph) ───────────────────────────
+# A 15s poll snapshots cumulative token spend, attributed by model tier + reasoning effort (the dispatch stamps
+# both onto the activity-complete metrics), so the dashboard can draw a realtime token-burn graph.
+
+TOKEN_SERIES_CAP = 240   # ~1 hour at 15s/snapshot — bounds run/token-snapshots.jsonl
+
+
+def _token_path(d):
+    return os.path.join(_run_dir(d), "token-snapshots.jsonl")
+
+
+def token_totals(d):
+    """Cumulative token spend (+ USD cost) from the ledger, grouped by model_tier + reasoning_effort. Counts the
+    `activity-complete` events only (one per worker; the `signal` event re-logs the same probe metrics — counting
+    both would double-count). Returns {total_tokens, total_cost_usd, by_model, by_effort, workers}."""
+    from collections import defaultdict
+    by_model, by_effort = defaultdict(int), defaultdict(int)
+    total, cost, workers = 0, 0.0, 0
+    for e in _led.read(d, event="activity-complete"):
+        m = e.get("metrics") or {}
+        tok = m.get("tokens")
+        if not isinstance(tok, (int, float)):
+            continue
+        workers += 1
+        total += tok
+        by_model[m.get("model_tier") or "unknown"] += tok
+        by_effort[m.get("reasoning_effort") or "unknown"] += tok
+        c = m.get("cost_usd")
+        if isinstance(c, (int, float)):
+            cost += c
+    return {"total_tokens": int(total), "total_cost_usd": round(cost, 4),
+            "by_model": dict(by_model), "by_effort": dict(by_effort), "workers": workers}
+
+
+def token_snapshot(d):
+    """Append a token-spend snapshot (cumulative totals by model + effort) to run/token-snapshots.jsonl, capped to
+    the last TOKEN_SERIES_CAP. Returns the snapshot. Run by the 15s poll for the realtime burn graph."""
+    snap = {"ts": _now(), **token_totals(d)}
+    series = token_series(d) + [snap]
+    p = _token_path(d)
+    tmp = p + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        for s in series[-TOKEN_SERIES_CAP:]:
+            f.write(json.dumps(s) + "\n")
+    os.replace(tmp, p)
+    return snap
+
+
+def token_series(d):
+    """The token-burn timeseries (the last TOKEN_SERIES_CAP snapshots) — cumulative totals over time, per model +
+    effort, for the dashboard graph."""
+    p = _token_path(d)
+    if not os.path.exists(p):
+        return []
+    out = []
+    for line in open(p, encoding="utf-8"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out[-TOKEN_SERIES_CAP:]
+
+
 # ─────────────────────────── activities + the agent monitor (the lens) ───────────────────────────
 
 def list_activities(d, status=None):
@@ -507,6 +573,16 @@ def selftest():
         expect(p["id"].startswith("iss-") and p.get("target_cell") is None, "a prompt ticket must be untriaged intake")
         ok, _pt, pmsg = transition_ticket(d, p["id"], "active", srv)
         expect(not ok and "untriaged" in pmsg, f"an untriaged prompt ticket must be denied active: {pmsg}")
+
+        # token-spend snapshots (the realtime burn graph): totals attributed by model + effort, snapshot to a series
+        expect(token_series(d) == [], "the token series starts empty")
+        _led.append(d, "activity-complete", {"kind": "agent", "id": "w"}, {"ticket": "t", "cell": "c"}, "done",
+                    metrics={"model_tier": "mid", "reasoning_effort": "moderate", "tokens": 12000, "cost_usd": 0.03})
+        tot = token_totals(d)
+        expect(tot["total_tokens"] == 12000 and tot["by_model"].get("mid") == 12000 and tot["by_effort"].get("moderate") == 12000,
+               "token_totals must attribute token spend by model_tier + reasoning_effort")
+        snap = token_snapshot(d)
+        expect(snap["total_tokens"] == 12000 and len(token_series(d)) == 1, "a token snapshot appends to the capped series")
     if fails:
         sys.stderr.write("api selftest: FAIL\n")
         for f in fails:

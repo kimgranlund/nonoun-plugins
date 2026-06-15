@@ -136,6 +136,8 @@ const store = {
   factory: signal(null),        // UI-3: the factory-state headline from /api/status.factory (idle/running/armed/paused)
   milestones: signal(null),     // build-progress rollup from /api/status.milestones (SPEC · CAPABILITY · SHIP + spec revisions)
   guidance: signal({ items: [] }),  // the 5s operator-input buffer (run/guidance.json), streamed on the "guidance" event
+  tokens: signal([]),           // the token-burn timeseries (15s snapshots), streamed on the "tokens" event
+  clock: signal(Date.now()),    // a 1s tick driving live elapsed timers (no server round-trip)
   panel: signal(null),          // { kind:"cell"|"ticket", id }
   modal: signal(null),          // { kind:"create-ticket", state, mode:"structured"|"prompt"|"instruction" }
   toast: signal(null),
@@ -175,6 +177,7 @@ async function loadAll() {
     ["activities", "/api/activities"],   // future — 404 is fine
     ["agents", "/api/agents/running"],   // future — 404 is fine
     ["guidance", "/api/guidance"],       // the 5s operator-input buffer
+    ["tokens", "/api/tokens"],           // the token-burn timeseries
   ];
   await Promise.all(tries.map(async ([key, path]) => {
     try { store[key].value = await jget(path); }
@@ -238,6 +241,9 @@ function applyStreamEvent(evt) {
   } else if (kind === "guidance") {
     // the 5s operator-input poll streamed an updated guidance buffer
     if (payload && Array.isArray(payload.items)) store.guidance.value = payload;
+  } else if (kind === "tokens") {
+    // the 15s token-spend poll streamed a new snapshot — append (capped) for the realtime burn graph
+    if (payload && payload.ts) store.tokens.value = [...store.tokens.value, payload].slice(-240);
   }
   // any committed write means the ledger advanced — pull the tail cheaply.
   if (kind === "ticket" || kind === "tick") { refreshLedger(); refreshStatus(); }
@@ -254,7 +260,7 @@ function flattenTicket(t) {
     id: t.id, type: t.type, title: t.title, state: t.state, target_cell: t.target_cell,
     from_maturity: tt.from, to_maturity: tt.to, rubric_cell: (t.acceptance || {}).rubric_cell,
     risk: (t.priority || {}).risk, unlock: (t.priority || {}).unlock, probe_cost: (t.priority || {}).probe_cost,
-    claim_worker: cl.worker_id, lease_expiry: cl.lease_expiry, signal_count: (t.signal_refs || []).length,
+    claim_worker: cl.worker_id, lease_expiry: cl.lease_expiry, claimed_at: cl.claimed_at, signal_count: (t.signal_refs || []).length,
     created: (t.timestamps || {}).created, updated: (t.timestamps || {}).updated,
     budget: t.budget,
   };
@@ -304,6 +310,7 @@ class DfApp extends UIElement {
     addEventListener("hashchange", () => (store.view.value = location.hash.slice(1) || "kanban"));
     loadAll();
     connectStream();
+    setInterval(() => (store.clock.value = Date.now()), 1000);   // drive live elapsed timers
   }
   // The shell template is STATIC — it reads no data signals, so a data update
   // never rebuilds the shell and never destroys the active view child mid-interaction.
@@ -326,6 +333,7 @@ class DfApp extends UIElement {
           ${raw(tab("ledger", "Ledger", "≣"))}
           ${raw(tab("monitor", "Agents", "◉"))}
           ${raw(tab("roadmap", "Roadmap", "⌖"))}
+          ${raw(tab("tokens", "Tokens", "▟"))}
         </nav>
         <div class="conn" role="status" aria-live="polite">
           <span class="milestones" title="build milestones — where the build is, and whether it shipped"></span>
@@ -346,6 +354,7 @@ class DfApp extends UIElement {
       ledger: store.ledger.value.length,
       monitor: store.agents.value.length || liveWorkersFromTickets().length,
       roadmap: store.roadmap.value.length,
+      tokens: store.tokens.value.length,
     };
     const view = store.view.value;
     this.querySelectorAll(".nav button").forEach((b) => {
@@ -391,7 +400,7 @@ class DfApp extends UIElement {
       } else { mel.innerHTML = ""; mel.removeAttribute("data-shipped"); }
     }
     // view swap — only when the route actually changes (preserves the child otherwise)
-    const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap" }[view] || "df-kanban";
+    const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap", tokens: "df-tokens" }[view] || "df-kanban";
     if (root.firstElementChild?.localName !== tag) { root.innerHTML = ""; root.appendChild(document.createElement(tag)); }
     // overlays (panel + modal + toast) live outside the view so a view swap keeps them
     this.#renderOverlays();
@@ -420,6 +429,15 @@ customElements.define("df-app", DfApp);
 // derive a "live workers" list from claimed/in-progress tickets when /api/agents/running is absent
 function liveWorkersFromTickets() {
   return store.tickets.value.filter((t) => ["claimed", "in-progress", "in-review"].includes(t.state) && t.claim_worker);
+}
+
+// live elapsed since an ISO timestamp (e.g. claimed_at) — drives the per-worker timer (reads store.clock)
+function fmtElapsed(iso, now) {
+  if (!iso) return null;
+  const ms = (now || Date.now()) - new Date(iso).getTime();
+  if (!(ms >= 0)) return null;
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return h ? `${h}h${String(m).padStart(2, "0")}m` : m ? `${m}m${String(sec).padStart(2, "0")}s` : `${sec}s`;
 }
 
 // ═══════════════════ VIEW 1 · Kanban (two lenses) ═══════════════════
@@ -771,16 +789,19 @@ class DfMonitor extends UIElement {
     const iFrac = b.iterations ? (used.iterations_used || 0) / b.iterations : 0;
     const tFrac = b.tokens ? (used.tokens_used || 0) / b.tokens : 0;
     const wFrac = (b.wallclock_seconds || b.wallclock) ? (used.wallclock_seconds || 0) / (b.wallclock_seconds || b.wallclock) : 0;
+    const elapsed = fmtElapsed(w.claimed_at || (w.claim && w.claim.claimed_at), store.clock.value);
+    const eta = w.probe_cost ? `~${_fmtTok(w.probe_cost)} tok est.` : null;
     return html`
       <div class="worker">
         <header>
           <span class="agent">${agent}</span>
           ${cell ? raw(chip(cell, "h-info", true)) : ""}
-          <span style="margin-left:auto;color:var(--faint);font-size:12px">depth ${depth}</span>
+          <span style="margin-left:auto;color:var(--faint);font-size:12px">${elapsed ? html`<span class="elapsed">⏱ ${elapsed}</span> · ` : ""}depth ${depth}</span>
         </header>
         <div class="kv">
           <span>ticket <code>${shortId(w.ticket || id)}</code></span>
           <span>worktree <code>${String(wt).split("/").slice(-1)[0] || wt}</code></span>
+          ${eta ? html`<span>effort <code>${eta}</code></span>` : ""}
           ${w.lease_expiry || (w.claim && w.claim.lease_expiry) ? html`<span>lease <code>${fmtTime(w.lease_expiry || w.claim.lease_expiry)}</code></span>` : ""}
         </div>
         <div class="gauges">
@@ -868,6 +889,51 @@ class DfRoadmap extends UIElement {
   }
 }
 customElements.define("df-roadmap", DfRoadmap);
+
+// ═══════════════════ VIEW 6 · Tokens (the realtime token-burn graph) ═══════════════════
+const _fmtTok = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(Math.round(n || 0)));
+class DfTokens extends UIElement {
+  static template = () => {
+    const series = store.tokens.value || [];
+    const latest = series[series.length - 1] || { total_tokens: 0, total_cost_usd: 0, by_model: {}, by_effort: {}, workers: 0 };
+    const W = 600, H = 200;
+    const maxT = Math.max(1, ...series.map((s) => s.total_tokens || 0));
+    const xs = (i) => (series.length > 1 ? (i / (series.length - 1)) * W : 0);
+    const pathFor = (get) => series.map((s, i) => `${xs(i).toFixed(1)},${(H - ((get(s) || 0) / maxT) * H).toFixed(1)}`);
+    const totalPts = pathFor((s) => s.total_tokens);
+    const area = totalPts.length ? `M0,${H} L ${totalPts.join(" L ")} L ${(series.length > 1 ? W : 0)},${H} Z` : "";
+    const totalLine = totalPts.length ? `M ${totalPts.join(" L ")}` : "";
+    const modelKeys = Object.keys(latest.by_model || {});
+    const modelLines = modelKeys.map((k) => {
+      const pts = pathFor((s) => (s.by_model || {})[k]);
+      return `<path class="tk-model" data-m="${escapeHtml(k)}" fill="none" d="${pts.length ? "M " + pts.join(" L ") : ""}"/>`;
+    }).join("");
+    const rows = (obj) => {
+      const ents = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+      const mx = Math.max(1, ...ents.map((e) => e[1]));
+      return ents.map(([k, v]) =>
+        `<div class="tk-bar"><span class="tk-k" data-k="${escapeHtml(k)}">${escapeHtml(k)}</span>` +
+        `<div class="tk-track"><div class="tk-fill" data-k="${escapeHtml(k)}" style="width:${(v / mx * 100).toFixed(1)}%"></div></div>` +
+        `<span class="tk-v">${_fmtTok(v)}</span></div>`).join("");
+    };
+    return html`
+      <div class="view-head"><h2>Token burn</h2><span class="sub">cumulative spend · snapshot every 15s · attributed per model + effort</span></div>
+      <div class="tk-summary">
+        <span class="tk-total">${_fmtTok(latest.total_tokens)} <small>tokens</small></span>
+        <span class="tk-cost">$${(latest.total_cost_usd || 0).toFixed(2)}</span>
+        <span class="tk-workers">${latest.workers || 0} worker${latest.workers === 1 ? "" : "s"}</span>
+      </div>
+      ${series.length
+        ? raw(`<svg class="tk-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="token burn over time">
+            <path class="tk-area" d="${area}"/><path class="tk-line" d="${totalLine}" fill="none"/>${modelLines}</svg>`)
+        : html`<p style="color:var(--faint)">No token snapshots yet — they record every 15s once the loop dispatches workers.</p>`}
+      <div class="tk-breakdowns">
+        <div class="tk-group"><h4>by model tier</h4>${raw(rows(latest.by_model))}</div>
+        <div class="tk-group"><h4>by reasoning effort</h4>${raw(rows(latest.by_effort))}</div>
+      </div>`;
+  };
+}
+customElements.define("df-tokens", DfTokens);
 
 // ═══════════════════ OVERLAY · side panel (cell + ticket detail) ═══════════════════
 class DfPanel extends UIElement {

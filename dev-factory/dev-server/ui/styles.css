@@ -348,3 +348,28 @@ table.lattice th.row-h { text-align: right; font-family: var(--mono); text-trans
   .feed .ev { grid-template-columns: 1fr; gap: 0.1rem; }
   .nav button .label { display: none; }
 }
+
+/* ═══════════════════════════ Tokens — the realtime token-burn graph ═══════════════════════════ */
+.tk-summary { display: flex; align-items: baseline; gap: 1.2rem; margin: 0 0 0.8rem; }
+.tk-summary .tk-total { font: 700 22px/1 var(--mono, ui-monospace); }
+.tk-summary .tk-total small { font: 500 12px/1 inherit; color: var(--faint); }
+.tk-summary .tk-cost { color: var(--accent); font-weight: 600; }
+.tk-summary .tk-workers { color: var(--muted); font-size: 13px; }
+.tk-chart { width: 100%; height: 220px; display: block; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-sunken); }
+.tk-area { fill: var(--accent-soft); opacity: 0.55; }
+.tk-line { stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.tk-model { stroke-width: 1.5; opacity: 0.85; vector-effect: non-scaling-stroke; stroke-dasharray: 3 2; }
+.tk-model[data-m="small"] { stroke: light-dark(oklch(0.62 0.04 var(--hue-neutral)), oklch(0.68 0.04 var(--hue-neutral))); }
+.tk-model[data-m="mid"] { stroke: light-dark(oklch(0.55 0.15 var(--hue-accent)), oklch(0.74 0.15 var(--hue-accent))); }
+.tk-model[data-m="large"] { stroke: light-dark(oklch(0.55 0.18 var(--hue-alert)), oklch(0.78 0.18 var(--hue-alert))); }
+.tk-model[data-m="unknown"] { stroke: var(--faint); }
+.tk-breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.1rem; }
+.tk-group h4 { margin: 0 0 0.5rem; font-size: 12px; color: var(--muted); font-weight: 600; }
+.tk-bar { display: grid; grid-template-columns: 6rem 1fr 3.5rem; gap: 0.6rem; align-items: center; margin-bottom: 0.35rem; font-size: 12.5px; }
+.tk-bar .tk-k { font-family: var(--mono); color: var(--fg); }
+.tk-bar .tk-track { height: 14px; background: var(--surface-sunken); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.tk-bar .tk-fill { height: 100%; background: var(--accent); border-radius: 4px; min-width: 2px; }
+.tk-bar .tk-fill[data-k="small"], .tk-bar .tk-fill[data-k="low"] { background: light-dark(oklch(0.62 0.05 var(--hue-neutral)), oklch(0.6 0.05 var(--hue-neutral))); }
+.tk-bar .tk-fill[data-k="large"], .tk-bar .tk-fill[data-k="high"] { background: light-dark(oklch(0.55 0.18 var(--hue-alert)), oklch(0.7 0.18 var(--hue-alert))); }
+.tk-bar .tk-v { text-align: right; font-family: var(--mono); color: var(--muted); }
+.worker header .elapsed { color: var(--accent); font-variant-numeric: tabular-nums; }
