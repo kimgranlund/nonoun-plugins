@@ -162,15 +162,22 @@ def _author_advance(d, lat, ticket, actor):
     if cell is None:
         return False, f"target_cell {tc} missing"
     to_mat = ticket["target_transition"]["to"]
-    if not _lat.transition_ok(cell["maturity"], to_mat):
-        return False, f"illegal maturity advance {cell['maturity']} -> {to_mat}"
+    cur = cell["maturity"]
+    # The authoring claim is "an asset exists at this cell" — independent of how far maturity has since moved.
     if to_mat in ("defined", "instantiated") and not cell.get("asset_ref"):
         return False, f"no asset_ref on {tc} — the worker authored nothing to advance"
-    frm = cell["maturity"]
+    # DF-7: a verifier (validate.py) auto-steps defined→instantiated→validated in one pass, overshooting an
+    # author ticket whose target is only `instantiated`. The cell already reached (and passed) the target on
+    # the progress axis, so closing the ticket is a SATISFIED NO-OP, not the "illegal advance validated→
+    # instantiated" the bare transition check reported. Recognize already-reached before testing legality.
+    if _lat.reached(cur, to_mat):
+        return True, f"{tc} already at {cur} (≥ ticket target {to_mat}); authoring satisfied, no advance applied"
+    if not _lat.transition_ok(cur, to_mat):
+        return False, f"illegal maturity advance {cur} -> {to_mat}"
     cell["maturity"] = to_mat
     _lat.save(d, lat)
     _led.append(d, "transition", actor, {"ticket": ticket["id"], "cell": tc},
-                f"authoring advance {tc}: {frm} -> {to_mat}", frm=frm, to=to_mat)
+                f"authoring advance {tc}: {cur} -> {to_mat}", frm=cur, to=to_mat)
     return True, f"authored {tc} -> {to_mat}"
 
 
@@ -320,6 +327,32 @@ def selftest():
         # the signal on the cell is the SAME one the ticket carries (one gate, both transitions)
         expect(ticket.get("signal_refs") == cell.get("signal_refs"), "ticket and cell signals diverged (board != lattice)")
 
+        # 6. DF-7: an AUTHOR ticket (defined->instantiated) whose cell a verifier already overshot straight to
+        # `validated` (validate.py auto-steps defined->instantiated->validated) must CLOSE as a satisfied no-op —
+        # not the "illegal maturity advance validated -> instantiated" the bare transition check produced.
+        ov = _lat.load(d)
+        ov["cells"].append({"layer": "spec", "scope": "task", "slug": "overshot", "maturity": "validated",
+                            "asset_ref": "spec/overshot.md", "depends_on": [], "signal_refs": ["signals/spec.task.overshot/x.json"]})
+        _lat.save(d, ov)
+        open(os.path.join(d, "spec", "overshot.md"), "w").write("# overshot\n")
+        author = {
+            "id": _led.ulid("tkt-"), "type": "feature", "title": "author the overshot spec", "body": "write the asset",
+            "state": "draft", "target_cell": "spec.task.overshot",
+            "target_transition": {"from": "defined", "to": "instantiated"},
+            "acceptance": {"rubric_cell": "rubric.task.first-slice"},
+            "budget": {"iterations": 3, "tokens": 100000}, "dependencies": {},
+            "provenance": {"created_by": "human", "ledger_refs": []},
+            "timestamps": {"created": "2026-06-14T00:00:00+00:00", "updated": "2026-06-14T00:00:00+00:00"},
+        }
+        for to in ["active", "claimed", "in-progress", "in-review"]:
+            ok, author, msg = transition(d, author, to, srv)
+            expect(ok, f"DF-7 author {to} denied: {msg}")
+        ok, author, msg = transition(d, author, "done", srv)   # no verifier — authoring advance
+        expect(ok, f"DF-7: author ticket on an already-validated cell was denied done: {msg}")
+        oc = _lat.find(_lat.load(d), "spec.task.overshot")
+        expect(oc["maturity"] == "validated", f"DF-7: the no-op advance mutated maturity to {oc['maturity']}")
+        expect(author["state"] == "done", "DF-7: author ticket did not close after the satisfied no-op advance")
+
     if fails:
         sys.stderr.write("lifecycle selftest: FAIL\n")
         for f in fails:
@@ -328,7 +361,8 @@ def selftest():
     print("lifecycle selftest: OK (draft->active gated on a VALIDATED rubric; the claim race is server-set; "
           "in-review->done runs the validation path — a failing verifier neither closes the ticket nor advances "
           "the cell, a passing one mints the critic's signal and advances both through the SAME gate-signal; "
-          "the ticket's signal IS the cell's — the board cannot disagree with the lattice)")
+          "the ticket's signal IS the cell's — the board cannot disagree with the lattice; an author ticket whose "
+          "cell a verifier already overshot to validated closes as a satisfied no-op, not an illegal advance [DF-7])")
     return 0
 
 

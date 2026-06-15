@@ -54,6 +54,7 @@ SCOPES = ["call", "task", "workflow", "system", "fleet"]
 MATURITIES = ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
 ADVANCEABLE = {"absent", "defined", "instantiated", "regenerating", "stale"}   # maturities an engine pass may act on
 SETTLED = {"validated", "operating"}                                          # maturities that count as a foothold
+PROGRESS = ["absent", "defined", "instantiated", "validated", "operating"]    # the linear maturation chain (off-axis states excluded)
 
 
 def _cell_schema():
@@ -499,6 +500,18 @@ def transition_ok(frm, to):
     return frm == to or to in TRANSITIONS.get(frm, set())
 
 
+def reached(cur, target):
+    """True if maturity `cur` is at or beyond `target` on the linear PROGRESS axis (absent → … →
+    operating). False if either side is OFF the axis (regenerating/stale/deprecated) — those are not
+    'beyond' anything, so a caller routes them through `transition_ok` as a normal transition. This lets
+    a step recognize a target the cell has already passed (e.g. a verifier advanced defined→validated, so
+    an authoring step's defined→instantiated target is already met) as a satisfied no-op, distinct from an
+    illegal advance. Pure ordering over the chain; it never mutates."""
+    if cur not in PROGRESS or target not in PROGRESS:
+        return False
+    return PROGRESS.index(cur) >= PROGRESS.index(target)
+
+
 def scaffold(d):
     """Lay the full durable tree: the nine layer dirs + signals/ + ledger/, and copy the naming schema in so the
     naming gate is self-hosting in the project. Idempotent (exist_ok). Returns the list of created/ensured paths."""
@@ -804,6 +817,10 @@ def selftest():
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")
     expect(not transition_ok("absent", "operating") and not transition_ok("deprecated", "validated"), "accepted an illegal transition")
+    # reached(): at-or-beyond on the linear PROGRESS axis (the DF-7 already-passed-the-target recognizer).
+    expect(reached("validated", "instantiated") and reached("operating", "defined"), "reached() missed a cell already past the target")
+    expect(reached("instantiated", "instantiated") and not reached("defined", "validated"), "reached() mis-ordered the progress axis")
+    expect(not reached("stale", "instantiated") and not reached("regenerating", "defined"), "reached() treated an off-axis state as 'beyond'")
     # the maturity partition is total: every schema state is advanceable, settled, or explicitly terminal.
     expect(set(MATURITIES) == ADVANCEABLE | SETTLED | {"deprecated"}, "maturity enum not partitioned by the engine sets")
 

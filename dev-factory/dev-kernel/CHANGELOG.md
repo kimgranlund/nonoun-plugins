@@ -2,6 +2,14 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.2] — 2026-06-15
+
+Operator-dogfooding fix (full log in `docs/tickets/dev-server-ui-fixes.md`) — the morphism half.
+
+### Fixed
+
+- **DF-7 — an author ticket couldn't close `done` once `validate.py` overshot its cell to `validated`.** The build is two tickets — author (`defined→instantiated`) then validate (`instantiated→validated`) — but `validate.py` auto-steps `defined→instantiated→validated` in one pass, so a validate-first run drove the cell **past** the author ticket's `instantiated` target. Closing the author ticket then hit `_author_advance`'s bare `transition_ok(validated, instantiated)` (False — `validated` never steps back) and was denied *"illegal maturity advance validated → instantiated"*, wedging a ticket whose authoring work was demonstrably done. **Fix:** `_author_advance` now recognizes a target the cell has **already reached** on the linear maturation axis (`lattice.reached`, vendored from harness-forge `0.5.13`) as a **satisfied no-op** — distinct from an illegal advance, and checked *before* the asset still exists. The no-op closes the ticket without mutating maturity. Crucially **tight, not permissive**: `reached()` is False for off-axis states, so an author advance on a `deprecated`/`stale` cell is **still denied**. New falsifiable replay `evals/done-overshoot/` proves both (O1 the overshoot closes, **O2 a genuinely illegal advance still fails** — the load-bearing guard against a blanket bypass); pinned in `lifecycle.py selftest` case 6. Re-vendored `lattice.py`; drift gate green; `KERNEL_VERSION` unchanged (additive helper).
+
 ## [0.2.1] — 2026-06-15
 
 Operator-dogfooding fixes (full log in `docs/tickets/dev-server-ui-fixes.md`) — the dev-kernel half. The dev-server-side fixes (DF-1/2/4/5) live in `../dev-server` (not a plugin), uncounted here.

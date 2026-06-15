@@ -149,7 +149,9 @@ filled-in `dev-factory.env` is **operator config** (instance path + run policy) 
 (David F. reproducible-packaging dimension): a plugin that ships/wraps a runnable runtime must ship a
 persistent, documented launch path, not inline-env-only.*
 
-### DF-7 · P2 — an author ticket (`defined→instantiated`) can't close `done` once `validate.py` takes its cell to `validated` · worked around
+### DF-7 · P2 — an author ticket (`defined→instantiated`) can't close `done` once `validate.py` takes its cell to `validated` · FIXED in source (2026-06-15)
+
+**Fixed in source.** Chose suggested fix (1): the done-gate treats "cell maturity ≥ ticket target" as satisfied. `lattice.py` (harness-forge `0.5.13`, re-vendored) gains `reached(cur, target)` — at-or-beyond on the linear PROGRESS axis, **False off-axis** so it can't wave through an illegal advance; `lifecycle._author_advance` recognizes an already-reached target as a **satisfied no-op** (closes the ticket, maturity untouched) before testing `transition_ok`. Proven by `evals/done-overshoot/` (O1 the overshoot closes; **O2 a deprecated→instantiated advance is STILL denied** — the guard against a blanket bypass) + `lifecycle.py selftest` case 6. dev-kernel `0.2.1 → 0.2.2`.
 
 **Symptom.** Building `capability.system.color-engine`: the advancer authored the asset, then `validate.py`
 ran the harness and advanced the cell **`defined → validated`** in one pass (validate.py auto-steps
