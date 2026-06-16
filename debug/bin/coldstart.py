@@ -75,14 +75,36 @@ def _gen_cap_verify(exports):
 
 
 def _gen_ship_verify(features):
-    """The SHIP gate (live): the integrator must import + compose every capability's declared API."""
-    lines = ["// SHIP gate (live) — the integrator composes every capability's API surface."]
-    for i, f in enumerate(features):
-        ex = ", ".join(json.dumps(e) for e in f["exports"])
-        lines.append(f"import * as c{i} from '../{f['slug']}/index.mjs';")
-        lines.append(f"if (![{ex}].every((e) => e in c{i})) {{ console.error('FAIL: {f['slug']} incomplete'); process.exit(1); }}")
-    lines.append("console.log('pass: all capabilities composed'); process.exit(0);")
-    return "\n".join(lines) + "\n"
+    """The SHIP gate (live): the app must be a RUNNABLE web app — an `index.html` that loads a `main.mjs` UI
+    exporting `mount(root)`, composing every capability — NOT just an API barrel. A capability barrel passes its own
+    test-suite; SHIP additionally requires the app actually boots in a browser. Node-only structural + composition
+    checks (robust, no DOM execution); genuine play is confirmed by serving the app (the operator/browser smoke)."""
+    composed = [e for f in features for e in f["exports"]]
+    arr = ", ".join(json.dumps(e) for e in composed)
+    return (
+        "// SHIP gate (live) — the app must be a RUNNABLE, interactive web app, not just an API barrel.\n"
+        "import { existsSync, readFileSync } from 'node:fs';\n"
+        "import { fileURLToPath } from 'node:url';\n"
+        "import { dirname, join } from 'node:path';\n"
+        "import * as app from './index.mjs';\n"
+        "const here = dirname(fileURLToPath(import.meta.url));\n"
+        "const fail = (m) => { console.error('FAIL: ' + m); process.exit(1); };\n"
+        "const read = (f) => existsSync(join(here, f)) ? readFileSync(join(here, f), 'utf8') : '';\n"
+        f"const composed = [{arr}];\n"
+        "const missing = composed.filter((e) => !(e in app));\n"
+        "if (missing.length) fail('index.mjs must compose every capability export; missing: ' + missing.join(', '));\n"
+        "const html = read('index.html');\n"
+        "if (!html) fail('no index.html — the app is not browser-runnable');\n"
+        "if (!html.includes('main.mjs')) fail('index.html must load ./main.mjs');\n"
+        "if (!html.includes('module')) fail('index.html must load main.mjs as a <script type=\"module\">');\n"
+        "if (!html.includes('id=\"app\"') && !html.includes(\"id='app'\")) fail('index.html needs a <div id=\"app\"> mount point');\n"
+        "const main = read('main.mjs');\n"
+        "if (!main) fail('no main.mjs UI entry');\n"
+        "if (!(main.includes('export') && main.includes('mount'))) fail('main.mjs must export mount(root) — the UI entry point');\n"
+        "if (!main.includes('./index.mjs') && !main.includes('../')) fail('main.mjs must import the capabilities (./index.mjs or ../<cap>)');\n"
+        "console.log('pass: runnable app — index.html loads main.mjs (exports mount), composing every capability');\n"
+        "process.exit(0);\n"
+    )
 
 
 # ─────────────────────────── the plan shape ───────────────────────────

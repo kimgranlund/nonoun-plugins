@@ -248,6 +248,20 @@ class HeadlessClaudeAdapter(DispatchAdapter):
             dir_rel = os.path.relpath(os.path.join(d, unit["layer"], unit["slug"]), project_root)
             plan = unit.get("plan") or {}
             dele = plan.get("delegation") or {}
+            # the INTEGRATOR (the SHIP cell) depends on sibling capability cells — it must compose them into a
+            # RUNNABLE app (a real UI), not just an API barrel. Detect it and steer the worker accordingly.
+            _cell = _lat.find(_lat.load(d), f"{unit['layer']}.{unit['scope']}.{unit['slug']}") or {}
+            is_integrator = unit["layer"] == "capability" and any(
+                str(dep).startswith("capability.") for dep in (_cell.get("depends_on") or []))
+            integ = ""
+            if is_integrator:
+                integ = (" You are the INTEGRATOR — compose the sibling capabilities into a RUNNABLE web app that "
+                         "actually PLAYS in a browser, not just an API barrel. Author (a) `index.mjs` re-exporting "
+                         "every capability's API; (b) `main.mjs` that imports the capabilities and EXPORTS "
+                         "`mount(root)` — building an INTERACTIVE UI into `root` (render the state to the DOM, wire "
+                         "up user input/clicks, update on change); (c) `index.html` with a `<div id=\"app\">` and a "
+                         "`<script type=\"module\" src=\"./main.mjs\">` that calls `mount(document.getElementById('app'))`. "
+                         "Include the CSS (inline or a styles.css linked from index.html) so it looks like a real app.")
             team = ""
             if dele.get("mode") == "team":   # the planned orchestrator-workers team (execplan) — execute it, don't just record it
                 par = (plan.get("effort") or {}).get("parallelism", 1)
@@ -265,7 +279,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                     f"public API (a barrel, e.g. `export * from './foo.mjs';`) — the critic harness imports the API "
                     f"from `./index.mjs`, so that file MUST exist and surface every declared export no matter how you "
                     f"split the internals. It MUST pass its critic harness `{dir_rel}/verify.mjs` — READ it for the "
-                    f"exact contract, but you CANNOT write it (it is the critic's gate; your write is denied).{team} "
+                    f"exact contract, but you CANNOT write it (it is the critic's gate; your write is denied).{integ}{team} "
                     f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, lattice.json, or any verify.mjs. "
                     f"Produce the source files INCLUDING index.mjs.{gtxt}")
 
