@@ -59,7 +59,7 @@ jobs:
           # spec-review calibration: gate/ defects rejected on the right dimension; council/ judgment defects
           # pass the gate (so the spec-council is the only line of defense — the falsifiable proof it earns its seat)
           python3 dev-factory/dev-kit-corpus/evals/spec-review-calibration/check.py
-          for e in crawl-milestone walk-milestone demotion run-milestone fly-milestone integration-milestone; do
+          for e in crawl-milestone walk-milestone demotion self-heal run-milestone fly-milestone integration-milestone; do
             echo "» $e"; python3 "dev-factory/dev-server/evals/$e/replay.py"
           done
           # the /debug/ ralph-loop harness, proven CI-safe end to end with the MockAdapter (no model/server/tokens):

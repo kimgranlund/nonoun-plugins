@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.6] — 2026-06-16
+
+### Changed
+
+- **The self-heal substrate is gate-protected.** A caught false pass now SELF-HEALS (the dev-server folds the refuter's failing checks into the cell's `verify.mjs`, re-arms a fresh independent refuter, stales + un-ships, and re-authors against the strengthened gate — decision #123, "full self-heal + new oracle"). The fold derives from a per-cell **verify-spec** (`coordination/verify-spec/*` = exports + acceptance + refute); since that spec drives the gate, `_gates.VERIFIER` now protects it deny-on-write to workers (alongside the refuters), so a worker cannot pre-empt the fold by editing the spec it will be re-gated against. Kernel-side change is the one protected glob; the orchestration lives in the dev-server (`verify_gen.py` + `dispatch.self_heal_cell`). plugin.json 0.2.5 → 0.2.6.
+
 ## [0.2.5] — 2026-06-15
 
 ### Changed

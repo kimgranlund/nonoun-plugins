@@ -3,6 +3,13 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-16 — a caught false pass SELF-HEALS (decision #123: "full self-heal + new oracle")
+
+- **`verify_gen.py` (new)** — ONE home for the per-cell critic-harness generator (`gen_cap_verify`, moved out of the cold-start planner so the runtime can regenerate the exact gate) plus the pure self-heal transform `fold(spec)`: merge the refuter's checks INTO the gate (acceptance ∪ refute) and re-arm a FRESH independent refuter (the "new oracle"); on oracle exhaustion it returns no harness, so the caller escalates rather than churns. Selftested.
+- **`dispatch.self_heal_cell` + the `run_refuter` hook** — when the refuter catches a false pass, after the existing incident+demote the cell is now REPAIRED in code: the gate is folded (server-side write — the worker is gate-denied from `verify.mjs`), a fresh refuter is re-armed, the cell drops `validated → regenerating`, and staleness propagates to **un-ship** every dependent validated against it (the app integrator). The bounded `no-progress → block` breaker still backstops a cell that can't converge.
+- **`refute_frontier` re-admits a re-validated cell** — it now keys off the LAST relevant ledger event per cell (robust to second-precision ts ties), so a cell self-healed → re-authored → re-validated re-enters the frontier and the fresh oracle re-measures the new validation epoch (the loop closes; it is not a one-shot).
+- The cold-start planner persists the per-cell **verify-spec** (`coordination/verify-spec/*` = exports + acceptance + refute) as the fold substrate; `_gates.VERIFIER` protects it (dev-kernel 0.2.6). Proven end to end by `evals/self-heal/` (catch → fold → re-arm → stale + un-ship → re-author → re-measure, no model, no human).
+
 ## 2026-06-15 — the PRD milestone (outside-in) on the dashboard
 
 - **`api.milestones` splits the spec layer into PRD + SPEC.** A spec cell whose slug ends `-prd` is the **PRD**

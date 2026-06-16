@@ -31,6 +31,7 @@ import ledger as _led       # noqa: E402
 import execplan as _ep      # noqa: E402  (the deterministic execution-plan assembly)
 import autonomy as _auto    # noqa: E402  (the trust trajectory — record_incident demotes on a caught false pass)
 import distill as _distill  # noqa: E402  (the regeneration loop's deterministic scan — ledger → pattern candidates)
+import verify_gen as _vg    # noqa: E402  (the critic-harness generator + the self-heal fold/re-arm transforms)
 
 LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presumed dead (reconcile_leases)
 MAX_WORKER_ATTEMPTS = 3     # consecutive worker failures on one cell before it blocks (a transient hiccup retries)
@@ -612,17 +613,92 @@ def reconcile_leases(d, now=None):
 # ─────────────────────── the independent refuter (false-pass measurement → earned autonomy) ───────────────────────
 
 def refute_frontier(d):
-    """Validated cells with a refuter harness that have NOT yet been independently re-checked — the refuter's
-    work-list. A cell is re-checked once; the result is the false-pass DENOMINATOR."""
-    refuted = {(e.get("subject") or {}).get("cell") for e in _led.read(d, event="signal")
-               if (e.get("metrics") or {}).get("refuter")}
+    """Validated cells with a refuter harness that have not been independently re-checked SINCE their last
+    validation — the refuter's work-list. Each VALIDATION epoch gets one independent re-check: a cell self-healed
+    after a caught false pass (folded gate + re-armed fresh oracle) is re-authored → re-validated → re-enters here,
+    so the FRESH oracle re-measures it. (Before the self-heal loop this was 'checked once, ever'.)"""
+    # Walk the append-only ledger in ORDER (robust to second-precision ts ties): per cell, the LAST relevant event
+    # decides — a validation makes it 'needs a re-check', a refuter check marks it 'checked for this epoch'. A cell
+    # self-healed then re-validated has a validation as its last relevant event → it re-enters with the fresh oracle.
+    state = {}
+    for e in _led.read(d):
+        cell = (e.get("subject") or {}).get("cell")
+        if not cell:
+            continue
+        if e.get("event") == "transition" and e.get("to") == "validated":
+            state[cell] = "needs-refute"
+        elif e.get("event") == "signal" and (e.get("metrics") or {}).get("refuter"):
+            state[cell] = "refuted"
     out = []
     for c in _lat.load(d).get("cells", []):
         cid = _lat.cid(c)
-        if c.get("maturity") in ("validated", "operating") and cid not in refuted \
+        if c.get("maturity") in ("validated", "operating") \
+                and state.get(cid) != "refuted" \
                 and os.path.isfile(os.path.join(d, "coordination", "refuters", f"{cid}.json")):
-            out.append(cid)
+            out.append(cid)   # never refuted, OR re-validated since its last re-check
     return out
+
+
+def self_heal_cell(d, cell_id):
+    """The 'full self-heal + new oracle' remediation for a caught false pass (decision #123). A cell that passed its
+    own gate but FAILED the independent refuter is repaired in code, no human in the path:
+      1. FOLD   — the refuter's failing checks are merged INTO the cell's gate (`verify.mjs`), so the strengthened
+                  gate now enforces exactly what the worker was gaming (server-side write — the worker is gate-denied
+                  from verify.mjs, so it cannot pre-empt this).
+      2. RE-ARM — a FRESH, independent refuter is generated (the 'new oracle') so the cell stays measurable; if the
+                  oracle is EXHAUSTED, the sidecar is retired and the exhaustion is ledgered (escalate, don't churn).
+      3. STALE  — the cell drops validated→regenerating, so the bounded loop re-authors it against the tougher gate.
+      4. UN-SHIP— staleness propagates to every dependent validated against this cell (the app integrator), so a
+                  hollow capability can't keep a 'shipped' app standing.
+    Bounded by the existing no-progress→block breaker: a cell that can't pass the strengthened gate stops, it never
+    loops forever. Best-effort: an instance with no verify-spec (pre-self-heal) records the incident + leaves the
+    cell flagged (the old behavior). Returns a summary dict."""
+    spec_path = os.path.join(d, "coordination", "verify-spec", f"{cell_id}.json")
+    if not os.path.isfile(spec_path):
+        return {"healed": False, "reason": "no verify-spec — incident recorded, cell left flagged"}
+    try:
+        spec = json.load(open(spec_path, encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"healed": False, "reason": "verify-spec unreadable"}
+    verify_js, refuter_harness, new_spec, n_folded = _vg.fold(spec)
+    if verify_js is None:
+        return {"healed": False, "reason": "no refute set to fold"}
+    cell = _lat.find(_lat.load(d), cell_id)
+    if not cell:
+        return {"healed": False, "reason": "cell not found"}
+    cell_dir = os.path.join(d, cell["layer"], cell["slug"])
+    gen = new_spec["generation"]
+    # 1. FOLD — strengthen the gate + persist the new spec
+    os.makedirs(cell_dir, exist_ok=True)
+    open(os.path.join(cell_dir, "verify.mjs"), "w", encoding="utf-8").write(verify_js)
+    json.dump(new_spec, open(spec_path, "w", encoding="utf-8"), indent=2)
+    # 2. RE-ARM the fresh oracle, or retire it on exhaustion
+    sidecar = os.path.join(d, "coordination", "refuters", f"{cell_id}.json")
+    if refuter_harness:
+        json.dump({"harness": refuter_harness}, open(sidecar, "w", encoding="utf-8"), indent=2)
+    elif os.path.isfile(sidecar):
+        os.remove(sidecar)
+    # 3. STALE the cell → regenerating (the loop re-authors against the strengthened gate)
+    lat = _lat.load(d)
+    c = _lat.find(lat, cell_id)
+    frm = c["maturity"]
+    c["maturity"] = "regenerating"
+    _lat.save(d, lat)
+    _led.append(d, "regenerate", {"kind": "server", "id": "self-heal"}, {"cell": cell_id},
+                f"self-heal: folded {n_folded} refuter check(s) into the gate; "
+                + (f"re-armed a fresh independent refuter (gen {gen})" if refuter_harness else "oracle EXHAUSTED — retired the refuter, escalate"),
+                frm=frm, to="regenerating",
+                metrics={"folded": n_folded, "generation": gen, "rearmed": bool(refuter_harness)})
+    # 4. UN-SHIP — propagate staleness to every dependent validated against this cell
+    lat = _lat.load(d)
+    flipped = _lat.propagate_staleness(lat, cell_id, f"self-heal-{gen}")
+    if flipped:
+        _lat.save(d, lat)
+        _led.append(d, "stale-propagated", {"kind": "server", "id": "self-heal"}, {"cell": cell_id},
+                    f"self-heal un-shipped dependent(s) validated against the hollow cell: {flipped}",
+                    metrics={"flipped": flipped})
+    return {"healed": True, "folded": n_folded, "rearmed": bool(refuter_harness),
+            "generation": gen, "stale_dependents": flipped}
 
 
 def run_refuter(d, cell_id):
@@ -663,6 +739,10 @@ def run_refuter(d, cell_id):
     if not agreed:
         _auto.record_incident(d, cell_id, f"refuter caught a false pass: {cell_id} validated against its gate but "
                               "fails an independent re-check (overfit / gamed)")
+        # #123 — full self-heal: fold the refuter into the gate, re-arm a fresh oracle, stale the cell + un-ship
+        # dependents, so the loop re-authors against the strengthened gate (not just flag-and-demote).
+        self_heal_cell(d, cell_id)
+        _api._store.rebuild(d)   # sync the store mirror with the lattice.json the incident + self-heal mutated
     return agreed
 
 

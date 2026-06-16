@@ -33,6 +33,7 @@ VERIFIER = [
     f"{NS}/run/*",
     f"{NS}/*/*/verify.mjs",     # a cell's per-cell critic harness ({layer}/{slug}/verify.mjs) — the gate a worker
     f"{NS}/coordination/refuters/*",  # the HIDDEN independent refuter (false-pass oracle) — a worker must not be
+    f"{NS}/coordination/verify-spec/*",  # the verify-spec (exports/acceptance/refute) the gate + self-heal fold derive from
     f"{NS}/lattice.json",       # able to forge/disable it; authors code to PASS but must never write (else it grades
                                 # its own homework)
     f"{NS}/*.schema.json",

@@ -24,6 +24,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _common as C   # noqa: E402
 
+sys.path.insert(0, os.path.join(C.REPO, "dev-factory", "dev-server"))
+import verify_gen as _vg   # noqa: E402  (ONE source for the critic-harness gate — the server regenerates it on self-heal)
+
 SLUG = "app"          # the system-scope slug the plan builds under (spec.system.app, capability.system.app)
 ACTOR = {"kind": "agent", "id": "cold-start-planner"}
 
@@ -58,36 +61,8 @@ def _slugify(s):
     return re.sub(r"[^a-z0-9-]", "-", str(s).lower()).strip("-") or "feature"
 
 
-def _gen_cap_verify(exports, acceptance=None):
-    """A REAL critic harness from the planner's contract: the worker's code must (1) export the declared API,
-    (2) load without throwing, and (3) pass the planner's BEHAVIORAL acceptance — executable boolean expressions
-    over the exports that EXERCISE the logic ("createDeck().length === 52"), not just check its shape. The worker
-    reads this gate but cannot write it, and cannot forge the pass (validate.py mints the signal from the exit
-    status). Representative, not exhaustive: passing them should imply general correctness; a stub can't."""
-    req = ", ".join(json.dumps(e) for e in exports)
-    accept = [a for a in (acceptance or []) if isinstance(a, str) and a.strip()]
-    acc_arr = ", ".join(json.dumps(a) for a in accept)
-    return (
-        "// per-cell critic harness (live) — API surface + BEHAVIORAL acceptance. The planner declares the\n"
-        "// contract; the worker authors code that satisfies it and is gate-denied from writing this file.\n"
-        "import * as m from './index.mjs';\n"
-        f"const required = [{req}];\n"
-        "const missing = required.filter((e) => !(e in m));\n"
-        "if (missing.length) { console.error('FAIL: index.mjs missing exports: ' + missing.join(', ')); process.exit(1); }\n"
-        "const notDefined = required.filter((e) => typeof m[e] === 'undefined');\n"
-        "if (notDefined.length) { console.error('FAIL: undefined exports: ' + notDefined.join(', ')); process.exit(1); }\n"
-        f"const ACCEPT = [{acc_arr}];\n"
-        "const names = Object.keys(m);\n"
-        "const failed = [];\n"
-        "for (const a of ACCEPT) {\n"
-        "  try {\n"
-        "    const fn = new Function(...names, 'return (' + a + ');');\n"
-        "    if (!fn(...names.map((n) => m[n]))) failed.push(a);\n"
-        "  } catch (e) { failed.push(a + '  (threw: ' + (e && e.message) + ')'); }\n"
-        "}\n"
-        "if (failed.length) { console.error('FAIL: behavioral acceptance not met:\\n  ' + failed.join('\\n  ')); process.exit(1); }\n"
-        "console.log('pass: API surface (' + required.length + ') + ' + ACCEPT.length + ' behavioral assertion(s)'); process.exit(0);\n"
-    )
+_gen_cap_verify = _vg.gen_cap_verify   # ONE source (dev-server/verify_gen.py) — the server regenerates this exact
+#                                        gate when it folds a caught refuter into it; a fork would break the fold.
 
 
 def _gen_ship_verify(features):
@@ -255,6 +230,9 @@ def _canned_plan(brief_text):
         # the HIDDEN independent refuter harness (mock: a trivial loadability check) — the false-pass producer
         assets.append({"path": f"coordination/refuters/capability.system.{f}.json",
                        "content": json.dumps({"harness": _gen_cap_verify([], [])})})
+        # the verify-spec — the substrate the server folds on a caught false pass (mock: empty, so no self-heal)
+        assets.append({"path": f"coordination/verify-spec/capability.system.{f}.json",
+                       "content": json.dumps(_vg.new_spec([], [], []))})
         cells.append({"layer": "capability", "scope": "system", "slug": f, "maturity": "instantiated",
                       "asset_ref": f"capability/{f}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f}", "from": "instantiated", "to": "validated",
@@ -357,6 +335,10 @@ def _build_live_plan(decomp):
         # producer: a disagreement (passed its gate, fails this) is a caught false pass → autonomy demotion.
         assets.append({"path": f"coordination/refuters/capability.system.{f['slug']}.json",
                        "content": json.dumps({"harness": _gen_cap_verify(f["exports"], f.get("refute"))})})
+        # the verify-spec — exports+acceptance+refute, the substrate the server FOLDS on a caught false pass
+        # (strengthen the gate with the refute checks + re-arm a fresh oracle); without it the harnesses are opaque.
+        assets.append({"path": f"coordination/verify-spec/capability.system.{f['slug']}.json",
+                       "content": json.dumps(_vg.new_spec(f["exports"], f.get("acceptance"), f.get("refute")))})
         cells.append({"layer": "capability", "scope": "system", "slug": f["slug"], "maturity": "instantiated",
                       "asset_ref": f"capability/{f['slug']}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f['slug']}", "from": "instantiated", "to": "validated",
