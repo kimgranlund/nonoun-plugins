@@ -1,5 +1,5 @@
 {
-  // Markdown standard for plugins-forge authored docs (markdownlint defaults + three scoped exceptions).
+  // Markdown standard for nonoun-plugins authored docs (markdownlint defaults + three scoped exceptions).
   "default": true,
   // MD013 line-length OFF — methodology references are dense prose with tables and inline code; we don't hard-wrap.
   "MD013": false,

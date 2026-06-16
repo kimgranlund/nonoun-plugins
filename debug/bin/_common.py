@@ -5,7 +5,7 @@ The harness stands up a fresh project from a one-paragraph brief, runs the cold-
 hydrated lattice -> build tickets), then runs the bounded autonomous build loop and a verdict check — the
 end-to-end exercise of the Software Dark Factory. This module is the common spine the four bin/ scripts share.
 
-Layout (REPO = the claude-plugins working tree):
+Layout (REPO = the nonoun-plugins working tree):
   REPO/debug/runs/<name>/                     a fresh scaffolded project (gitignored)
   REPO/debug/runs/<name>/.agents/dev-factory/ the instance (DEV_FACTORY_DIR)
 The instance lives TWO levels under the project so dispatch.project_root = grandparent(DEV_FACTORY_DIR)

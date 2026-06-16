@@ -108,7 +108,7 @@
     "plugin": {
       "template": "{ns}-{tier}",
       "ns": "[a-z0-9]+(?:-[a-z0-9]+)*",
-      "doc": "frontier-kernel, frontier-kit-corpus, harness-forge (the `forge`/`factory`/`ops` tiers are the claude-plugins marketplace family axis, added as a deliberate ontology revision so a catalog plugin's own name parses its own grammar)",
+      "doc": "frontier-kernel, frontier-kit-corpus, harness-forge (the `forge`/`factory`/`ops` tiers are the nonoun-plugins marketplace family axis, added as a deliberate ontology revision so a catalog plugin's own name parses its own grammar)",
       "optional_suffix": "-{slug}"
     },
     "critic_file": {
