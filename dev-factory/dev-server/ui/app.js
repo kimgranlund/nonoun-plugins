@@ -123,7 +123,7 @@ const hueFor = (state) => STATE_HUE[state] || "h-neutral";
 const API = ""; // same-origin; the dev-server serves both /api and this UI
 
 const store = {
-  view: signal(location.hash.slice(1) || "kanban"),
+  view: signal(location.hash.slice(1) || "lattice"),   // the CANVAS mode — lattice|board|roadmap|agents|ledger
   lens: signal("ticket"),       // kanban lens: "ticket" | "agent"
   conn: signal("connecting"),   // "connecting" | "live" | "down"
   tickets: signal([]),
@@ -139,7 +139,11 @@ const store = {
   guidance: signal({ items: [] }),  // the 5s operator-input buffer (run/guidance.json), streamed on the "guidance" event
   tokens: signal([]),           // the token-burn timeseries (15s snapshots), streamed on the "tokens" event
   clock: signal(Date.now()),    // a 1s tick driving live elapsed timers (no server round-trip)
-  panel: signal(null),          // { kind:"cell"|"ticket", id }
+  panel: signal(null),          // the INSPECTOR selection — { kind:"cell"|"ticket", id } (right-pane, persistent)
+  inspectorTab: signal("cell"), // right-pane segmented tab — "cell" | "asset" | "signals" | "steer"
+  runBudget: signal(null),      // the bounded-loop gauge from /api/status.run_budget (dispatches/cap + deadline)
+  theme: signal(localStorage.getItem("df-theme") || "dark"),  // ◐ light/dark, persisted
+  zoom: signal(1),              // canvas zoom (the canvas-header −/Fit/+ scales .canvas-scene)
   modal: signal(null),          // { kind:"create-ticket", state, mode:"structured"|"prompt"|"instruction" }
   toast: signal(null),
 };
@@ -195,6 +199,7 @@ async function refreshStatus() {
     store.factory.value = st.factory || null;
     store.milestones.value = st.milestones || null;
     store.adapter.value = st.adapter || "mock";
+    store.runBudget.value = st.run_budget || null;
   } catch { /* leave prior value */ }
 }
 
@@ -307,71 +312,119 @@ const budgetFrac = (t) => {
 
 // continued in part 2 (views + components) …
 
-// ═══════════════════ <df-app> shell ═══════════════════
+// ═══════════════════ <df-app> — the app-shell cockpit ═══════════════════
+// A three-pane creative-tool shell (ported from the ui-app HCT pattern): a switchable CANVAS framed by a
+// persistent ANALYSIS rail (left) + INSPECTOR (right), with app-header/footer + canvas-header/footer chrome.
+// The 5 old full-screen views become CANVAS MODES; the panes persist and adapt to the selected cell/ticket.
+const CANVAS_MODES = [
+  { id: "lattice", label: "Lattice", icon: "▦", tag: "df-lattice", graph: true },
+  { id: "board",   label: "Board",   icon: "▤", tag: "df-kanban",  graph: false },
+  { id: "roadmap", label: "Roadmap", icon: "⌖", tag: "df-roadmap", graph: true },
+  { id: "agents",  label: "Agents",  icon: "◉", tag: "df-monitor", graph: false },
+  { id: "ledger",  label: "Ledger",  icon: "≣", tag: "df-ledger",  graph: false },
+];
+const MODE_BY_ID = Object.fromEntries(CANVAS_MODES.map((m) => [m.id, m]));
+
+const SHELL_HTML = (() => {
+  const swtab = (m) => `<button data-view="${m.id}" title="${m.label} canvas">` +
+    `<span aria-hidden="true">${m.icon}</span><span class="label">${m.label}</span></button>`;
+  return `
+    <div class="shell">
+      <header class="app-header">
+        <div class="brand"><span class="dia" aria-hidden="true">◆</span> dev-factory</div>
+        <span class="docname" title="the build this factory is driving to SHIPPED">—</span>
+        <div class="milestones" title="build milestones — where the build is, and whether it shipped"></div>
+        <span class="spacer"></span>
+        <span class="factory-state" title="the factory's work state"></span>
+        <span class="adapter" title="dispatch adapter — mock is free, headless spends real tokens"></span>
+        <button class="icon-btn theme-toggle" data-theme-toggle title="toggle light / dark" aria-label="Toggle theme">◐</button>
+      </header>
+      <aside class="left-pane"><df-analysis></df-analysis></aside>
+      <section class="center">
+        <div class="canvas-header">
+          <nav class="canvas-switch" aria-label="Canvas view">${CANVAS_MODES.map(swtab).join("")}</nav>
+          <span class="spacer"></span>
+          <div class="canvas-tools" hidden>
+            <button class="icon-btn" data-zoom="out" aria-label="Zoom out">−</button>
+            <button class="zoom-readout" data-zoom="fit" title="Reset to 100%">100%</button>
+            <button class="icon-btn" data-zoom="in" aria-label="Zoom in">+</button>
+          </div>
+          <button class="add-ticket" data-add-ticket title="Create a ticket / brief / instruction">+ Ticket</button>
+        </div>
+        <div class="canvas-area"><div class="canvas-scene" id="canvas-root"></div></div>
+        <div class="canvas-footer"><span class="pulse-line"></span><span class="spacer"></span><span class="hints"></span></div>
+      </section>
+      <aside class="right-pane"><df-inspector></df-inspector></aside>
+      <footer class="app-footer">
+        <span class="counts"></span><span class="spacer"></span>
+        <span class="conn" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"></span><span class="conn-label"></span></span>
+        <span class="warnings"></span>
+      </footer>
+    </div>
+    <div id="overlay-root"></div>`;
+})();
+
+// DfApp owns NO static template — it builds the shell ONCE in connected() and patches each region via a SEPARATE
+// effect. (The UIElement default effect would re-set innerHTML on every tracked read, recreating the persistent
+// panes + the embedded steer input every data tick — so the live regions are patched in place instead, the same
+// discipline DfSteer uses. The panes — df-analysis / df-inspector — are mounted once and own their own reactivity.)
 class DfApp extends UIElement {
   connected() {
-    // route from hash
-    addEventListener("hashchange", () => (store.view.value = location.hash.slice(1) || "kanban"));
+    this.innerHTML = SHELL_HTML;
+    addEventListener("hashchange", () => (store.view.value = location.hash.slice(1) || "lattice"));
+    this.#wireStatic();
     loadAll();
     connectStream();
     setInterval(() => (store.clock.value = Date.now()), 1000);   // drive live elapsed timers
+    // one effect per live region — each reads only its own signals, patches its own DOM, never resets the shell
+    this._fx = [
+      effect(() => this.#applyTheme()),
+      effect(() => this.#renderHeader()),
+      effect(() => this.#renderCanvasSwap()),
+      effect(() => this.#renderCanvasChrome()),
+      effect(() => this.#renderFooters()),
+      effect(() => this.#renderOverlays()),
+    ];
   }
-  // The shell template is STATIC — it reads no data signals, so a data update
-  // never rebuilds the shell and never destroys the active view child mid-interaction.
-  // All live bits (nav counts, conn, view swap, overlays) are patched imperatively
-  // in render(), which DOES subscribe to the signals it reads there.
-  static template = () => {
-    const tab = (id, label, icon) => html`
-      <button data-view="${id}">
-        <span aria-hidden="true">${icon}</span><span class="label">${label}</span>
-        <span class="badge" data-count="${id}">0</span>
-      </button>`;
-    return html`
-      <header class="topbar">
-        <div class="brand"><span class="dot" aria-hidden="true"></span> dev-factory
-          <small>the board IS the repo, projected</small>
-        </div>
-        <nav class="nav" aria-label="Views">
-          ${raw(tab("kanban", "Kanban", "▦"))}
-          ${raw(tab("lattice", "Lattice", "▤"))}
-          ${raw(tab("ledger", "Ledger", "≣"))}
-          ${raw(tab("monitor", "Agents", "◉"))}
-          ${raw(tab("roadmap", "Roadmap", "⌖"))}
-          ${raw(tab("tokens", "Tokens", "▟"))}
-        </nav>
-        <div class="conn" role="status" aria-live="polite">
-          <span class="adapter" title="dispatch adapter — mock is free, headless spends real tokens"></span>
-          <span class="milestones" title="build milestones — where the build is, and whether it shipped"></span>
-          <span class="factory-state" title="the factory's work state"></span>
-          <span class="pulse" aria-hidden="true"></span><span class="conn-label"></span>
-        </div>
-      </header>
-      <main class="main" id="view-root"></main>
-      <div id="overlay-root"></div>`;
-  };
-  render() {
-    const root = this.querySelector("#view-root");
-    if (!root) return;
-    // nav wiring + live counts
-    const counts = {
-      kanban: store.tickets.value.length,
-      lattice: store.lattice.value.length,
-      ledger: store.ledger.value.length,
-      monitor: store.agents.value.length || liveWorkersFromTickets().length,
-      roadmap: store.roadmap.value.length,
-      tokens: store.tokens.value.length,
-    };
-    const view = store.view.value;
-    this.querySelectorAll(".nav button").forEach((b) => {
-      b.onclick = () => { location.hash = b.dataset.view; };
-      b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
-    });
-    this.querySelectorAll(".badge[data-count]").forEach((el) => (el.textContent = counts[el.dataset.count] ?? 0));
-    // connection indicator (the SOCKET — "live" means SSE is connected, NOT that work is happening)
-    const conn = store.conn.value;
-    const cn = this.querySelector(".conn");
-    if (cn) { cn.dataset.state = conn; cn.querySelector(".conn-label").textContent = conn === "live" ? "live" : conn === "connecting" ? "connecting…" : "reconnecting…"; }
-    // factory-state headline (UI-3) — the WORK state, the thing the socket dot does not tell you
+  disconnected() { (this._fx || []).forEach((d) => d()); }
+  #wireStatic() {
+    // these controls don't change with data — wire their handlers once
+    this.querySelectorAll(".canvas-switch button").forEach((b) => (b.onclick = () => { location.hash = b.dataset.view; }));
+    const tt = this.querySelector("[data-theme-toggle]");
+    if (tt) tt.onclick = () => { const next = store.theme.peek() === "dark" ? "light" : "dark"; store.theme.value = next; localStorage.setItem("df-theme", next); };
+    const add = this.querySelector("[data-add-ticket]");
+    if (add) add.onclick = () => (store.modal.value = { kind: "create-ticket", state: "draft", mode: "structured" });
+    this.querySelectorAll("[data-zoom]").forEach((b) => (b.onclick = () => {
+      const z = store.zoom.peek();
+      store.zoom.value = b.dataset.zoom === "in" ? Math.min(2, z + 0.1) : b.dataset.zoom === "out" ? Math.max(0.4, z - 0.1) : 1;
+    }));
+  }
+  #applyTheme() {
+    const t = store.theme.value;
+    this.dataset.theme = t;
+    document.documentElement.style.colorScheme = t;
+  }
+  #renderCanvasChrome() {
+    const view = store.view.value, zoom = store.zoom.value;
+    this.querySelectorAll(".canvas-switch button").forEach((b) =>
+      b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false"));
+    const isGraph = !!(MODE_BY_ID[view] && MODE_BY_ID[view].graph);
+    const tools = this.querySelector(".canvas-tools");
+    if (tools) tools.hidden = !isGraph;
+    const ro = this.querySelector(".zoom-readout");
+    if (ro) ro.textContent = `${Math.round(zoom * 100)}%`;
+    const scene = this.querySelector("#canvas-root");
+    if (scene) scene.style.transform = isGraph && zoom !== 1 ? `scale(${zoom})` : "";
+  }
+  #renderHeader() {
+    // docname — the app being built (derive from the spec/ship cell), so the header names the artifact
+    const dn = this.querySelector(".docname");
+    if (dn) {
+      const cells = store.lattice.value;
+      const spec = cells.find((c) => c.layer === "spec" && !String(c.slug).endsWith("-prd")) || cells.find((c) => c.layer === "spec");
+      dn.textContent = spec ? spec.slug : (cells.length ? "build" : "—");
+    }
+    // factory-state headline (UI-3) — the WORK state the socket dot does not tell you
     const fs = store.factory.value;
     const fel = this.querySelector(".factory-state");
     if (fel) {
@@ -382,13 +435,12 @@ class DfApp extends UIElement {
           : fs.state === "armed" ? `${fs.ready_to_dispatch} ready`
           : fs.state === "blocked" ? `${a} queued · deps unmet`
           : fs.state === "drained" ? "queue empty"
-          : /* idle */ (a ? `${a} queued · heartbeat off` : "no work queued");
+          : (a ? `${a} queued · heartbeat off` : "no work queued");
         fel.dataset.state = fs.state;
         fel.textContent = `${fs.state.toUpperCase()} · ${detail}`;
-        fel.title = `factory work state (the dot is just the live socket) — ${fs.running_agents} running, ${fs.ready_to_dispatch} ready, heartbeat ${fs.heartbeat_enabled ? "on" : "off"}`;
       } else { fel.textContent = ""; fel.removeAttribute("data-state"); }
     }
-    // milestone/build-progress strip — SPEC › CAPABILITY › SHIP (+ the bi-directional spec-revision count)
+    // milestone strip — PRD › SPEC › CAPABILITY › SHIP (+ the bi-directional spec-revision count)
     const ms = store.milestones.value;
     const mel = this.querySelector(".milestones");
     if (mel) {
@@ -404,7 +456,7 @@ class DfApp extends UIElement {
         mel.dataset.shipped = ms.shipped ? "1" : "0";
       } else { mel.innerHTML = ""; mel.removeAttribute("data-shipped"); }
     }
-    // adapter badge — mock (free) vs LIVE (headless, spends real tokens)
+    // adapter badge — mock (free) vs ● LIVE (headless, spends real tokens)
     const adapter = store.adapter.value || "mock";
     const ael = this.querySelector(".adapter");
     if (ael) {
@@ -414,24 +466,58 @@ class DfApp extends UIElement {
         ? "headless adapter — the heartbeat dispatches real claude workers (spends tokens)"
         : "mock adapter — the free deterministic loop (no tokens)";
     }
-    // view swap — only when the route actually changes (preserves the child otherwise)
-    const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap", tokens: "df-tokens" }[view] || "df-kanban";
+  }
+  #renderCanvasSwap() {
+    const root = this.querySelector("#canvas-root");
+    if (!root) return;
+    const view = store.view.value;
+    const tag = (MODE_BY_ID[view] || MODE_BY_ID.lattice).tag;
     if (root.firstElementChild?.localName !== tag) { root.innerHTML = ""; root.appendChild(document.createElement(tag)); }
-    // overlays (panel + modal + toast) live outside the view so a view swap keeps them
-    this.#renderOverlays();
+  }
+  #renderFooters() {
+    // canvas-footer — the factory pulse + canvas hints
+    const fs = store.factory.value, rb = store.runBudget.value, view = store.view.value;
+    const pl = this.querySelector(".pulse-line");
+    if (pl) {
+      const bits = [];
+      if (fs && fs.state) bits.push(fs.state);
+      if (fs && fs.running_agents) bits.push(`${fs.running_agents} agent${fs.running_agents === 1 ? "" : "s"}`);
+      if (rb && rb.max_dispatches) bits.push(`${rb.dispatches}/${rb.max_dispatches} dispatches`);
+      else if (rb && rb.dispatches) bits.push(`${rb.dispatches} dispatches`);
+      if (rb && rb.ticks) bits.push(`tick ${rb.ticks}`);
+      pl.textContent = bits.length ? bits.join(" · ") : "Crawl — dispatch is human-driven (heartbeat off)";
+      pl.dataset.state = (fs && fs.state) || "idle";
+    }
+    const hints = this.querySelector(".hints");
+    if (hints) hints.textContent = MODE_BY_ID[view] && MODE_BY_ID[view].graph
+      ? "click a cell to inspect · −/+ to zoom" : "click a card to inspect";
+    // app-footer — counts + warnings
+    const cells = store.lattice.value;
+    const validated = cells.filter((c) => ["validated", "operating"].includes(c.maturity)).length;
+    const blocked = cells.filter((c) => c.blocked).length;
+    const stale = cells.filter((c) => c.stale).length;
+    const counts = this.querySelector(".app-footer .counts");
+    if (counts) counts.textContent = `${cells.length} cells · ${validated} validated · ${store.adapter.value || "mock"}`;
+    const warn = this.querySelector(".app-footer .warnings");
+    if (warn) {
+      const w = [];
+      if (blocked) w.push(`⚠ ${blocked} blocked`);
+      if (stale) w.push(`⚠ ${stale} stale`);
+      if (rb && rb.max_dispatches && rb.dispatches >= rb.max_dispatches) w.push("⚠ budget exhausted");
+      warn.innerHTML = w.length ? w.join(" · ") : `<span class="ok">✓ no alarms</span>`;
+      warn.classList.toggle("has-warn", w.length > 0);
+    }
+    // socket dot (the SSE transport, not the work state)
+    const conn = store.conn.value;
+    const cn = this.querySelector(".app-footer .conn");
+    if (cn) { cn.dataset.state = conn; const l = cn.querySelector(".conn-label"); if (l) l.textContent = conn === "live" ? "live" : conn === "connecting" ? "connecting…" : "reconnecting…"; }
   }
   #renderOverlays() {
     const o = this.querySelector("#overlay-root");
     if (!o) return;
-    // df-steer is a PERSISTENT dock (always mounted) — the 5s operator-input channel + streaming guidance feed
-    if (!o.querySelector("df-steer")) o.appendChild(document.createElement("df-steer"));
-    // Mount/unmount each overlay only on presence change so an open modal/panel
-    // is not recreated (and its form input lost) on every unrelated data tick.
-    const want = {
-      "df-panel": !!store.panel.value,
-      "df-modal": !!store.modal.value,
-      "df-toast": !!store.toast.value,
-    };
+    // panel (inspector selection) is now the persistent right-pane; steer is an inspector tab. Only the modal +
+    // toast remain true overlays — mount/unmount on presence change so an open modal's input survives data ticks.
+    const want = { "df-modal": !!store.modal.value, "df-toast": !!store.toast.value };
     for (const [tag, on] of Object.entries(want)) {
       const existing = o.querySelector(tag);
       if (on && !existing) o.appendChild(document.createElement(tag));
@@ -453,6 +539,176 @@ function fmtElapsed(iso, now) {
   if (!(ms >= 0)) return null;
   const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   return h ? `${h}h${String(m).padStart(2, "0")}m` : m ? `${m}m${String(sec).padStart(2, "0")}s` : `${sec}s`;
+}
+
+// ═══════════════════ LEFT PANE · analysis rail ═══════════════════
+// Stacked telemetry cards (the HCT analysis-rail idea, for a factory): global build telemetry — run budget,
+// token burn, maturity — then analysis of the SELECTED cell (its dependency cone + recent signals). All derived;
+// no inputs/async children, so the framework's render-on-tick is safe here (unlike the inspector).
+const _fmtTok = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(Math.round(n || 0)));
+const _tokSpark = (series, W, H) => {
+  const n = series.length;
+  if (n < 2) return "";
+  const maxT = Math.max(1, ...series.map((s) => s.total_tokens || 0));
+  const pts = series.map((s, i) => `${((i / (n - 1)) * W).toFixed(1)},${(H - ((s.total_tokens || 0) / maxT) * H).toFixed(1)}`);
+  return `<svg class="an-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="token burn">` +
+    `<path class="tk-area" d="M0,${H} L ${pts.join(" L ")} L ${W},${H} Z"/><path class="tk-line" fill="none" d="M ${pts.join(" L ")}"/></svg>`;
+};
+
+class DfAnalysis extends UIElement {
+  static template = () => html`<div class="pane-label">ANALYSIS <span class="an-sel" id="an-sel"></span></div><div id="an-body"></div>`;
+  render() {
+    const body = this.querySelector("#an-body"), selEl = this.querySelector("#an-sel");
+    if (!body) return;
+    const cells = store.lattice.value, rb = store.runBudget.value, tokens = store.tokens.value || [];
+    const latest = tokens[tokens.length - 1] || { total_tokens: 0, total_cost_usd: 0 };
+    const p = store.panel.value;
+    if (selEl) selEl.textContent = p ? p.id : "build overview";
+
+    // run budget — the bounded-loop gauge (dispatches / cap + deadline countdown)
+    let budgetCard;
+    if (rb) {
+      const frac = rb.max_dispatches ? Math.min(1, rb.dispatches / rb.max_dispatches) : 0;
+      const remain = rb.deadline_ts ? Math.max(0, new Date(rb.deadline_ts).getTime() - store.clock.value) : null;
+      const mins = remain != null ? Math.floor(remain / 60000) : null;
+      const cls = frac > 0.85 ? "hot" : frac > 0.6 ? "warn" : "";
+      budgetCard = html`<div class="an-card"><div class="an-label">Run budget</div>
+        <div class="an-gauge"><div class="budget ${cls}"><span style="width:${Math.round(frac * 100)}%"></span></div>
+          <span class="an-gv">${rb.dispatches}${rb.max_dispatches ? "/" + rb.max_dispatches : ""}</span></div>
+        <div class="an-sub">${[rb.ticks ? `tick ${rb.ticks}` : "", mins != null ? `${mins}m left` : ""].filter(Boolean).join(" · ")}</div></div>`;
+    } else {
+      budgetCard = html`<div class="an-card"><div class="an-label">Run budget</div><div class="an-empty">Crawl — human-driven (no armed window)</div></div>`;
+    }
+
+    // token burn — cumulative spend + a sparkline
+    const tokCard = html`<div class="an-card"><div class="an-label">Token burn</div>
+      <div class="an-tok"><span class="an-gv">${_fmtTok(latest.total_tokens)}</span><small>tok · $${(latest.total_cost_usd || 0).toFixed(2)}</small></div>
+      ${tokens.length > 1 ? raw(_tokSpark(tokens, 240, 46)) : html`<div class="an-empty">no snapshots yet (15s)</div>`}</div>`;
+
+    // maturity distribution — the lattice at a glance
+    const counts = {};
+    for (const c of cells) counts[c.maturity || "absent"] = (counts[c.maturity || "absent"] || 0) + 1;
+    const present = MATURITIES.filter((m) => counts[m]);
+    const segs = present.map((m) => `<span class="mat-seg mat-${m}" style="flex:${counts[m]}" title="${m}: ${counts[m]}"></span>`).join("");
+    const matCard = html`<div class="an-card"><div class="an-label">Maturity · ${cells.length} cells</div>
+      ${cells.length ? raw(`<div class="mat-bar">${segs}</div>`) : html`<div class="an-empty">empty lattice</div>`}
+      <div class="an-legend">${raw(present.map((m) => `<span class="an-leg"><span class="an-leg-mark mat-${m}"></span>${m} ${counts[m]}</span>`).join(""))}</div></div>`;
+
+    // selected-cell analysis — the dependency cone + recent signals
+    let selCard = "";
+    if (p && p.kind === "cell") {
+      const c = cells.find((x) => (x.id || `${x.layer}.${x.scope}.${x.slug}`) === p.id);
+      if (c) {
+        const deps = c.depends_on || [];
+        const dependents = cells.filter((x) => (x.depends_on || []).includes(p.id)).map((x) => x.id || `${x.layer}.${x.scope}.${x.slug}`);
+        const sigs = store.ledger.value.filter((e) => (e.subject || {}).cell === p.id && e.event === "signal").slice(-5).reverse();
+        const cone = (lbl, arr) => `<div class="cone-row"><b>${lbl}</b> ${arr.length ? arr.map((d) => `<code>${escapeHtml(d)}</code>`).join(" ") : '<span class="an-empty">—</span>'}</div>`;
+        selCard = html`<div class="an-card sel"><div class="an-label">Dependency cone</div>
+          <div class="cone">${raw(cone("needs", deps))}${raw(cone("unlocks", dependents))}</div>
+          <div class="an-label" style="margin-top:.55rem">Recent signals</div>
+          ${sigs.length ? raw(`<ul class="an-sigs">${sigs.map((e) => `<li>${escapeHtml(e.rationale || "signal")}</li>`).join("")}</ul>`) : html`<div class="an-empty">none yet</div>`}</div>`;
+      }
+    }
+    body.innerHTML = html`${budgetCard}${tokCard}${matCard}${selCard}`;
+  }
+}
+customElements.define("df-analysis", DfAnalysis);
+
+// ═══════════════════ RIGHT PANE · inspector (Cell · Asset · Signals · Steer) ═══════════════════
+// The persistent inspector replaces the old floating panel. It is effect-based (skeleton once, regions patched)
+// so the embedded Steer input + the async Asset content survive data ticks. Selection is store.panel; tab is
+// store.inspectorTab. The Steer tab is ALWAYS available; Cell/Asset/Signals require a selection.
+const INSPECTOR_TABS = [["cell", "Cell"], ["asset", "Asset"], ["signals", "Signals"], ["steer", "Steer"]];
+class DfInspector extends UIElement {
+  connected() {
+    this.innerHTML = `
+      <div class="pane-label">INSPECTOR <span class="an-sel" id="insp-sel"></span></div>
+      <div class="seg insp-tabs" role="group" aria-label="Inspector tab">
+        ${INSPECTOR_TABS.map(([id, lbl]) => `<button data-tab="${id}">${lbl}</button>`).join("")}
+      </div>
+      <div class="insp-body" id="insp-body"></div>`;
+    this.querySelectorAll(".insp-tabs [data-tab]").forEach((b) => (b.onclick = () => (store.inspectorTab.value = b.dataset.tab)));
+    this._fx = [
+      effect(() => this.#tabs()),       // tab pressed/disabled + label — reads inspectorTab + panel
+      effect(() => this.#bodyEffect()),  // the active tab's content — reads inspectorTab + panel + ledger
+    ];
+  }
+  disconnected() { (this._fx || []).forEach((d) => d()); }
+  #tabs() {
+    const tab = store.inspectorTab.value, p = store.panel.value;
+    const sel = this.querySelector("#insp-sel"); if (sel) sel.textContent = p ? p.id : "";
+    this.querySelectorAll(".insp-tabs [data-tab]").forEach((b) => {
+      b.setAttribute("aria-pressed", b.dataset.tab === tab ? "true" : "false");
+      b.disabled = b.dataset.tab !== "steer" && !p;     // Steer is always open; the rest need a selection
+    });
+  }
+  #bodyEffect() {
+    const tab = store.inspectorTab.value, p = store.panel.value;
+    const body = this.querySelector("#insp-body"); if (!body) return;
+    const key = `${tab}:${p ? p.kind + ":" + p.id : ""}`;
+    // STEER — mount the embedded dock once; keep it across ticks so the input survives
+    if (tab === "steer") { this.#mountSteer(body); this._key = key; return; }
+    this.#unmountSteer(body);
+    // ASSET is async — only refetch when the (tab, selection) changes, not on every ledger tick
+    if (tab === "asset") {
+      if (this._key !== key) { this._key = key; this.#asset(p, body); }
+      return;
+    }
+    this._key = key;
+    if (!p) { body.innerHTML = `<div class="an-empty insp-empty">Select a cell on the canvas or a card on the board to inspect it. The <b>Steer</b> tab is always open.</div>`; return; }
+    if (tab === "cell") body.innerHTML = String(p.kind === "cell" ? DfPanel.cellBody(p.id) : DfPanel.ticketBody(p.id));
+    else if (tab === "signals") body.innerHTML = String(this.#signals(p));
+    body.querySelectorAll("[data-ticket]").forEach((el) => (el.onclick = () => selectInspector("ticket", el.dataset.ticket)));
+    body.querySelectorAll("[data-cell]").forEach((el) => (el.onclick = () => selectInspector("cell", el.dataset.cell)));
+    this.#wireCellActions(body, p);
+  }
+  #signals(p) {
+    const key = p.kind === "cell" ? "cell" : "ticket";
+    const evs = store.ledger.value.filter((e) => (e.subject || {})[key] === p.id).slice(-40).reverse();
+    if (!evs.length) return html`<div class="an-empty insp-empty">No ledger events for <code>${p.id}</code> yet.</div>`;
+    return html`<ul class="insp-led">${raw(evs.map((e) =>
+      `<li><span class="il-ev st ${EVENT_HUE[e.event] || "h-neutral"}">${escapeHtml(e.event)}</span>` +
+      `<span class="il-d">${e.from || e.to ? escapeHtml((e.from || "∅") + "→" + (e.to || "∅")) + " · " : ""}${escapeHtml(e.rationale || "")}</span>` +
+      `<span class="il-ts">${fmtTime(e.ts)}</span></li>`).join(""))}</ul>`;
+  }
+  async #asset(p, body) {
+    if (!p) { body.innerHTML = `<div class="an-empty insp-empty">Select a cell to view its authored asset.</div>`; return; }
+    if (p.kind !== "cell") {
+      const tc = (store.tickets.value.find((t) => t.id === p.id) || {}).target_cell;
+      body.innerHTML = `<div class="an-empty insp-empty">This ticket targets ${tc ? `<a data-cell="${escapeHtml(tc)}" href="javascript:void 0">${escapeHtml(tc)}</a>` : "no cell"} — open that cell to view its asset.</div>`;
+      body.querySelectorAll("[data-cell]").forEach((el) => (el.onclick = () => selectInspector("cell", el.dataset.cell)));
+      return;
+    }
+    body.innerHTML = `<div class="an-empty insp-empty">Loading <code>${escapeHtml(p.id)}</code>…</div>`;
+    try {
+      const a = await jget(`/api/cells/${encodeURIComponent(p.id)}/asset`);
+      if (store.panel.peek()?.id !== p.id || store.inspectorTab.peek() !== "asset") return;  // selection moved while fetching
+      if (a.kind === "file") body.innerHTML = `<div class="asset-head"><code>${escapeHtml(a.asset_ref)}</code></div><pre class="asset-pre">${escapeHtml(a.content || "")}</pre>`;
+      else if (a.kind === "dir") body.innerHTML = `<div class="asset-head"><code>${escapeHtml(a.asset_ref)}/</code> · ${a.files.length} files</div><ul class="asset-files">${(a.files || []).map((f) => `<li><code>${escapeHtml(f)}</code></li>`).join("")}</ul>`;
+      else body.innerHTML = `<div class="an-empty insp-empty">No asset authored yet (${escapeHtml(a.kind)}).</div>`;
+    } catch { body.innerHTML = `<div class="an-empty insp-empty">Could not load the asset.</div>`; }
+  }
+  #wireCellActions(body, p) {
+    body.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
+      const act = b.dataset.act, tid = b.dataset.ticket;
+      if (act === "transition" && tid) requestTransition(tid, b.dataset.to);
+    }));
+  }
+  #mountSteer(body) {
+    if (body.querySelector("df-steer")) return;
+    body.innerHTML = "";
+    const s = document.createElement("df-steer");
+    s.setAttribute("embedded", "");
+    body.appendChild(s);
+  }
+  #unmountSteer(body) { const s = body.querySelector("df-steer"); if (s) s.remove(); }
+}
+customElements.define("df-inspector", DfInspector);
+
+// select a cell/ticket into the inspector + jump to its detail tab (the canvas + panes use this everywhere)
+function selectInspector(kind, id) {
+  store.panel.value = { kind, id };
+  if (store.inspectorTab.peek() === "steer") store.inspectorTab.value = "cell";
 }
 
 // ═══════════════════ VIEW 1 · Kanban (two lenses) ═══════════════════
@@ -490,7 +746,7 @@ class DfKanban extends UIElement {
     body.querySelectorAll("[data-add]").forEach((b) =>
       (b.onclick = () => (store.modal.value = { kind: "create-ticket", state: b.dataset.add })));
     body.querySelectorAll(".card").forEach((c) =>
-      (c.onclick = (e) => { if (!c.dataset.grabbing) store.panel.value = { kind: "ticket", id: c.dataset.id }; }));
+      (c.onclick = (e) => { if (!c.dataset.grabbing) selectInspector("ticket", c.dataset.id); }));
   }
 
   #column(state, items) {
@@ -691,7 +947,7 @@ class DfLattice extends UIElement {
       <table class="lattice"><thead><tr><th></th>${raw(head)}</tr></thead>
         <tbody>${raw(rows)}</tbody></table>`;
     body.querySelectorAll(".cell[data-id]").forEach((el) =>
-      (el.onclick = () => (store.panel.value = { kind: "cell", id: el.dataset.id })));
+      (el.onclick = () => selectInspector("cell", el.dataset.id)));
   }
   #cell(c) {
     const id = c.id || `${c.layer}.${c.scope}.${c.slug}`;
@@ -871,7 +1127,7 @@ class DfRoadmap extends UIElement {
       ${issues.length ? raw(`<div class="tickets" style="display:grid;gap:.4rem">${issues.map((t) => this.#backlogRow(t)).join("")}</div>`)
         : raw('<div class="empty">No untriaged issues.</div>')}</div>`;
     body.innerHTML = out;
-    body.querySelectorAll("[data-ticket]").forEach((el) => (el.onclick = () => (store.panel.value = { kind: "ticket", id: el.dataset.ticket })));
+    body.querySelectorAll("[data-ticket]").forEach((el) => (el.onclick = () => selectInspector("ticket", el.dataset.ticket)));
   }
   // the bi-directional spec-iteration timeline — build learnings flowing UPSTREAM (regenerate) + the staleness
   // cascade DOWNSTREAM (stale-propagated), derived from the ledger. The first-class view of "we work both ways".
@@ -924,8 +1180,8 @@ class DfRoadmap extends UIElement {
 }
 customElements.define("df-roadmap", DfRoadmap);
 
-// ═══════════════════ VIEW 6 · Tokens (the realtime token-burn graph) ═══════════════════
-const _fmtTok = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(Math.round(n || 0)));
+// ═══════════════════ Tokens (full burn graph) — retained; the rail carries the live sparkline, this is the
+// detailed breakdown view (reachable by hash #tokens; _fmtTok is defined once, up in the analysis rail) ═══════
 class DfTokens extends UIElement {
   static template = () => {
     const series = store.tokens.value || [];
@@ -1153,20 +1409,33 @@ class DfSteer extends UIElement {
     this._fxFeed = effect(() => { const g = store.guidance.value; this.#patchFeed(g); });
   }
   disconnected() { this._fxFeed?.(); }
-  static template = () => html`
-    <div class="steer" data-open="false">
-      <button type="button" class="steer-tab" data-toggle aria-expanded="false">
-        <span class="dot" aria-hidden="true"></span> Steer <span class="n" hidden></span>
-      </button>
-      <div class="steer-body" hidden>
-        <header>Operator guidance <small>read every 5s · folded into the next worker</small></header>
-        <ul class="steer-feed"></ul>
-        <form class="steer-form" id="steer-form">
-          <input id="steer-input" name="text" autocomplete="off" placeholder="Steer the loop… e.g. prioritise the leaderboard" />
-          <button type="submit" class="btn primary" data-send>Send</button>
-        </form>
-      </div>
-    </div>`;
+  // `embedded` (inside the inspector's Steer tab) drops the dock chrome + toggle — the feed + form, always open.
+  static template = (el) => el.hasAttribute("embedded")
+    ? html`
+      <div class="steer embedded" data-open="true">
+        <div class="steer-body">
+          <header>Operator guidance <small>read every 5s · folded into the next worker</small></header>
+          <ul class="steer-feed"></ul>
+          <form class="steer-form" id="steer-form">
+            <input id="steer-input" name="text" autocomplete="off" placeholder="Steer the loop… e.g. prioritise the leaderboard" />
+            <button type="submit" class="btn primary" data-send>Send</button>
+          </form>
+        </div>
+      </div>`
+    : html`
+      <div class="steer" data-open="false">
+        <button type="button" class="steer-tab" data-toggle aria-expanded="false">
+          <span class="dot" aria-hidden="true"></span> Steer <span class="n" hidden></span>
+        </button>
+        <div class="steer-body" hidden>
+          <header>Operator guidance <small>read every 5s · folded into the next worker</small></header>
+          <ul class="steer-feed"></ul>
+          <form class="steer-form" id="steer-form">
+            <input id="steer-input" name="text" autocomplete="off" placeholder="Steer the loop… e.g. prioritise the leaderboard" />
+            <button type="submit" class="btn primary" data-send>Send</button>
+          </form>
+        </div>
+      </div>`;
   render() {
     const wrap = this.querySelector(".steer");
     const tab = this.querySelector("[data-toggle]");

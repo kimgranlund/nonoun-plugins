@@ -27,6 +27,20 @@ DIR = os.environ.get("DEV_FACTORY_DIR", ".agents/dev-factory")
 HEARTBEAT_ENABLED = os.environ.get("DEV_FACTORY_HEARTBEAT") == "1"   # OFF in Crawl; Walk sets it
 SERVER_ACTOR = {"kind": "server", "id": "dev-server"}
 
+
+def _run_budget():
+    """The bounded-loop gauge for the cockpit's analysis rail: dispatches-so-far / cap + the wall-clock deadline,
+    read from the armed window (run/heartbeat.json) and the ledger's dispatch count. None when no window is armed
+    (Crawl). Honest + cheap — the same numbers the wired gate-budget enforces, surfaced read-only."""
+    import heartbeat as _hb
+    b = _hb.load_budget(DIR)
+    if not b:
+        return None
+    start = b.get("start_ts")
+    return {"dispatches": _hb._dispatches_since(DIR, start) if start else 0,
+            "max_dispatches": b.get("max_dispatches"), "deadline_ts": b.get("deadline_ts"),
+            "ticks": b.get("ticks", 0), "start_ts": start, "token_ceiling": b.get("token_ceiling")}
+
 try:
     from fastapi import FastAPI, HTTPException, Request
     from fastapi.responses import StreamingResponse, JSONResponse
@@ -191,8 +205,34 @@ def build_app():
     def status_view():
         # + the factory-state headline (UI-3): is it working, and what is it doing — the thing the SSE 'live'
         # dot does not answer. HEARTBEAT_ENABLED is the transport's posture; the rest is derived from state.
+        # + run_budget: the bounded-loop gauge (dispatches-so-far / cap / deadline) the cockpit's analysis rail
+        # draws, read from the armed window (run/heartbeat.json) + the ledger's dispatch count — never inferred.
         return {**api.status(DIR), "factory": api.factory_state(DIR, HEARTBEAT_ENABLED),
-                "milestones": api.milestones(DIR), "adapter": _dispatch.adapter_name()}
+                "milestones": api.milestones(DIR), "adapter": _dispatch.adapter_name(),
+                "run_budget": _run_budget()}
+
+    @app.get("/api/cells/{cell_id}/asset")
+    def cell_asset(cell_id: str):
+        # The inspector's ASSET tab: read a cell's authored artifact (the PRD / SPEC / source the worker wrote),
+        # read-only + path-guarded to the instance. A multi-file capability returns its dir listing; a doc/spec the
+        # text (capped). This is how the cockpit shows the *shippable software*, not just the lattice metadata.
+        c = next((x for x in api.lattice_grid(DIR) if x["id"] == cell_id), None)
+        if not c:
+            raise HTTPException(404, f"no such cell: {cell_id}")
+        ref = c.get("asset_ref")
+        if not ref:
+            return {"cell": cell_id, "asset_ref": None, "kind": "none"}
+        base = os.path.realpath(DIR)
+        absp = os.path.realpath(os.path.join(DIR, ref))
+        if absp != base and not absp.startswith(base + os.sep):
+            raise HTTPException(400, "asset path escapes the instance")
+        if os.path.isdir(absp):
+            files = sorted(f for f in os.listdir(absp) if not f.startswith("."))
+            return {"cell": cell_id, "asset_ref": ref, "kind": "dir", "files": files}
+        if os.path.isfile(absp):
+            return {"cell": cell_id, "asset_ref": ref, "kind": "file",
+                    "content": open(absp, encoding="utf-8", errors="replace").read(20000)}
+        return {"cell": cell_id, "asset_ref": ref, "kind": "missing"}
 
     @app.get("/api/reports/{name}")
     def reports(name: str, family: str = None, window: int = None):
@@ -327,7 +367,7 @@ def main(argv):
         routes = sorted({r.path for r in app.routes if r.path.startswith("/api")})
         expected = {"/api/tickets", "/api/tickets/{tid}", "/api/tickets/{tid}/transition",
                     "/api/lattice", "/api/ledger", "/api/roadmap", "/api/stream",
-                    "/api/input", "/api/guidance", "/api/tokens"}
+                    "/api/input", "/api/guidance", "/api/tokens", "/api/cells/{cell_id}/asset"}
         missing = expected - set(routes)
         if missing:
             print(f"app selftest: FAIL — missing routes: {missing}", file=sys.stderr)
