@@ -160,6 +160,45 @@ def _gen_ship_verify(features):
 #   "tickets": [{"target_cell","from","to","rubric_cell","deps":[cell ids],"title"}],
 # }
 
+def _foundation_docs(title, feature_slugs):
+    """The seeded KNOWLEDGE foundation a build stands on — beyond ontology + the rubrics, the policy / methodology /
+    protocol / ledger cells that make a build's lattice reflect the real ENGINEERING context, not just spec +
+    capabilities. Real content derived from the build's actual config; seeded `validated` exactly like ontology +
+    the rubrics (foundations are given, capabilities are built). Takes a build's lattice from 4 layers to 8. The
+    `pattern` layer is deliberately NOT seeded — it is EMERGENT, distilled from operating. Returns (cells, assets)."""
+    caps = ", ".join(feature_slugs) or "the capabilities"
+    docs = [
+        ("policy", "dispatch", f"# Dispatch & effort policy — {title}\n\n"
+         "Capabilities build via an **orchestrator-workers** team (tracer-bullet · parallelism 2 · delegation depth 2); "
+         "bug tickets via **bisect**. The run is **bounded** (max-dispatches · wall-clock deadline · token ceiling), "
+         "enforced in code by the wired budget stop-gate. A worker failure **retries** up to 3 consecutive attempts "
+         "(authoring OR critic-refusal), then **blocks**; the streak resets on any success.\n"),
+        ("methodology", "build", f"# Build methodology — {title}\n\n"
+         "**Outside-in → inside-out, milestone-gated.** PRD (jobs · UX · user-facing acceptance) → SPEC (modules · "
+         "contracts, *realizes* the PRD) → per-capability code, each gated by a **behavioral** `verify.mjs` that "
+         "EXERCISES the logic (not just its API surface) → integrator, gated by the **runnable-app** ship smoke "
+         "(`index.html` → `main.mjs` `mount(root)` boots + renders). Each milestone earns `validated` against a "
+         "rubric — doneness is a verifier's exit status, never vibes.\n"),
+        ("protocol", "integration", f"# Integration protocol — {title}\n\n"
+         f"Each capability ({caps}) exposes its public API through an `index.mjs` **barrel** (re-exports the full "
+         "surface no matter how the internals are split). The **integrator** composes them into its own `index.mjs` "
+         "plus a `main.mjs` UI that `export`s `mount(root)`, loaded by `index.html`. Cross-capability imports resolve "
+         "via `../<capability>/index.mjs`.\n"),
+        ("ledger", "provenance", f"# Provenance schema — {title}\n\n"
+         "Every **dispatch · transition · signal · activity** is appended to the **append-only** ledger. A `signal` "
+         "carries the verifier's exit status + the `validated_against` hashes; `activity-*` carry the model tier + "
+         "reasoning effort (the token-burn feed). The ledger is the single source of truth the board + the lattice "
+         "both project — a ticket reaching `done` ⟺ its cell advancing through the same gate-signal.\n"),
+    ]
+    cells, assets = [], []
+    for layer, slug, content in docs:
+        path = f"{layer}/{slug}.md"
+        assets.append({"path": path, "content": content})
+        cells.append({"layer": layer, "scope": "system", "slug": slug, "maturity": "validated",
+                      "asset_ref": path, "signal_refs": [f"signals/{layer}.system.{slug}/seed.json"]})
+    return cells, assets
+
+
 def _canned_plan(brief_text):
     """A deterministic MILESTONE plan — the CI plumbing proof (no model). Hydrates the full outside-in → inside-out arc:
 
@@ -224,6 +263,9 @@ def _canned_plan(brief_text):
                   "asset_ref": f"capability/{SLUG}", "depends_on": [spec_id] + cap_ids})
     tickets.append({"target_cell": app_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SHIP,
                     "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 4 · ship: {title}"})
+    fcells, fassets = _foundation_docs(title, features)   # seeded knowledge foundation: policy/methodology/protocol/ledger
+    cells += fcells
+    assets += fassets
     return {"assets": assets, "cells": cells, "tickets": tickets}
 
 
@@ -311,6 +353,9 @@ def _build_live_plan(decomp):
                   "asset_ref": f"capability/{SLUG}", "depends_on": [spec_id] + cap_ids})
     tickets.append({"target_cell": app_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SHIP,
                     "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 4 · ship: {title}"})
+    fcells, fassets = _foundation_docs(title, [f["slug"] for f in features])   # seeded knowledge foundation
+    cells += fcells
+    assets += fassets
     return {"assets": assets, "cells": cells, "tickets": tickets}
 
 

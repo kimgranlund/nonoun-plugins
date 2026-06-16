@@ -82,6 +82,12 @@ def run():
         full = api._lat.find(api._lat.load(inst), "capability.system.app")
         check(all(c in (full.get("depends_on") or []) for c in caps), "the integrator depends on every capability")
         check(os.path.isfile(os.path.join(inst, "capability", "core", "verify.mjs")), "each capability has a planner-authored verify.mjs critic harness")
+        layers = {c["layer"] for c in api.lattice_grid(inst)}
+        check({"policy", "methodology", "protocol", "ledger"} <= layers,
+              f"the build's lattice seeds the full KNOWLEDGE foundation — policy/methodology/protocol/ledger, not just spec+caps ({len(layers)}/9 layers)")
+        check("pattern" not in layers, "the `pattern` layer is correctly ABSENT at cold-start (it is emergent — distilled from operating)")
+        for kf in ("policy.system.dispatch", "methodology.system.build", "protocol.system.integration", "ledger.system.provenance"):
+            check(grid.get(kf) == "validated", f"foundation seeded validated: {kf}")
 
         print("· build — the bounded loop ships in milestone order (spec → capabilities → integrator)")
         ralph._mock_build(name, api, max_iters=40)
