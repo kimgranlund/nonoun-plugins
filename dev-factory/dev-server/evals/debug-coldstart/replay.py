@@ -132,6 +132,30 @@ def run():
         g3 = {c["id"]: c["maturity"] for c in api.lattice_grid(inst)}
         check(g3.get("capability.system.app") == "validated", "the app re-validated against the revised PRD+SPEC — re-SHIPPED")
 
+        print("· BEHAVIORAL — the LIVE gate generators verify the logic WORKS, not just that exports exist")
+        import coldstart as _cs
+
+        def _runnode(files, gate):
+            wd = tempfile.mkdtemp()
+            for fn, content in files.items():
+                open(os.path.join(wd, fn), "w", encoding="utf-8").write(content)
+            open(os.path.join(wd, "verify.mjs"), "w", encoding="utf-8").write(gate)
+            rc = subprocess.run(["node", "verify.mjs"], cwd=wd, capture_output=True, text=True).returncode
+            shutil.rmtree(wd)
+            return rc
+
+        good = "export const createDeck = () => Array.from({length: 52}, (_, i) => i);"
+        wrong = "export const createDeck = () => Array.from({length: 51}, (_, i) => i);"  # exports exist, logic wrong
+        capgate = _cs._gen_cap_verify(["createDeck"], ["createDeck().length === 52"])
+        check(_runnode({"index.mjs": good}, capgate) == 0, "cap gate PASSES correct logic")
+        check(_runnode({"index.mjs": wrong}, capgate) == 1, "cap gate CATCHES wrong logic an API-surface check would pass")
+        shipgate = _cs._gen_ship_verify([{"slug": "c", "exports": ["createDeck"]}])
+        boots = {"index.mjs": good, "index.html": '<div id="app"></div><script type="module" src="./main.mjs"></script>',
+                 "main.mjs": "import {createDeck} from './index.mjs'; export function mount(r){ r.appendChild(document.createElement('div')); }"}
+        throws = {**boots, "main.mjs": "import {createDeck} from './index.mjs'; export function mount(r){ throw new Error('boom'); }"}
+        check(_runnode(boots, shipgate) == 0, "ship gate PASSES an app that boots + renders (boot smoke)")
+        check(_runnode(throws, shipgate) == 1, "ship gate CATCHES an app that throws on mount()")
+
     print()
     if fails:
         print(f"debug-coldstart: FAIL — {len(fails)} check(s) failed:")

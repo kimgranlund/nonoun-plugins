@@ -58,27 +58,44 @@ def _slugify(s):
     return re.sub(r"[^a-z0-9-]", "-", str(s).lower()).strip("-") or "feature"
 
 
-def _gen_cap_verify(exports):
-    """A REAL (API-surface) critic harness generated from the planner's declared exports — the worker's code MUST
-    export this exact API + pass `node --check` (loadable). Shallow but real: it can't be gamed by a `ready=true`
-    stub (the worker must provide the declared functions). A deeper behavioral harness is a future planner step."""
+def _gen_cap_verify(exports, acceptance=None):
+    """A REAL critic harness from the planner's contract: the worker's code must (1) export the declared API,
+    (2) load without throwing, and (3) pass the planner's BEHAVIORAL acceptance — executable boolean expressions
+    over the exports that EXERCISE the logic ("createDeck().length === 52"), not just check its shape. The worker
+    reads this gate but cannot write it, and cannot forge the pass (validate.py mints the signal from the exit
+    status). Representative, not exhaustive: passing them should imply general correctness; a stub can't."""
     req = ", ".join(json.dumps(e) for e in exports)
-    return ("// per-cell critic harness (live) — generated from the planner's API contract. The planner declares\n"
-            "// the gate; the worker authors code that satisfies it and is gate-denied from writing this file.\n"
-            "import * as m from './index.mjs';\n"
-            f"const required = [{req}];\n"
-            "const missing = required.filter((e) => !(e in m));\n"
-            "if (missing.length) { console.error('FAIL: index.mjs missing exports: ' + missing.join(', ')); process.exit(1); }\n"
-            "const notFns = required.filter((e) => typeof m[e] === 'undefined');\n"
-            "if (notFns.length) { console.error('FAIL: undefined exports: ' + notFns.join(', ')); process.exit(1); }\n"
-            "console.log('pass: declared API surface present'); process.exit(0);\n")
+    accept = [a for a in (acceptance or []) if isinstance(a, str) and a.strip()]
+    acc_arr = ", ".join(json.dumps(a) for a in accept)
+    return (
+        "// per-cell critic harness (live) — API surface + BEHAVIORAL acceptance. The planner declares the\n"
+        "// contract; the worker authors code that satisfies it and is gate-denied from writing this file.\n"
+        "import * as m from './index.mjs';\n"
+        f"const required = [{req}];\n"
+        "const missing = required.filter((e) => !(e in m));\n"
+        "if (missing.length) { console.error('FAIL: index.mjs missing exports: ' + missing.join(', ')); process.exit(1); }\n"
+        "const notDefined = required.filter((e) => typeof m[e] === 'undefined');\n"
+        "if (notDefined.length) { console.error('FAIL: undefined exports: ' + notDefined.join(', ')); process.exit(1); }\n"
+        f"const ACCEPT = [{acc_arr}];\n"
+        "const names = Object.keys(m);\n"
+        "const failed = [];\n"
+        "for (const a of ACCEPT) {\n"
+        "  try {\n"
+        "    const fn = new Function(...names, 'return (' + a + ');');\n"
+        "    if (!fn(...names.map((n) => m[n]))) failed.push(a);\n"
+        "  } catch (e) { failed.push(a + '  (threw: ' + (e && e.message) + ')'); }\n"
+        "}\n"
+        "if (failed.length) { console.error('FAIL: behavioral acceptance not met:\\n  ' + failed.join('\\n  ')); process.exit(1); }\n"
+        "console.log('pass: API surface (' + required.length + ') + ' + ACCEPT.length + ' behavioral assertion(s)'); process.exit(0);\n"
+    )
 
 
 def _gen_ship_verify(features):
     """The SHIP gate (live): the app must be a RUNNABLE web app — an `index.html` that loads a `main.mjs` UI
-    exporting `mount(root)`, composing every capability — NOT just an API barrel. A capability barrel passes its own
-    test-suite; SHIP additionally requires the app actually boots in a browser. Node-only structural + composition
-    checks (robust, no DOM execution); genuine play is confirmed by serving the app (the operator/browser smoke)."""
+    exporting `mount(root)`, composing every capability — NOT just an API barrel. Structural + composition checks
+    AND a node-only BOOT SMOKE: `mount(root)` is actually invoked under a robust DOM stub and must render without
+    throwing (catches a UI that crashes or renders nothing). A live `DEV_FACTORY_BROWSER_SMOKE=1` Playwright pass is
+    the deeper, real-render check (operator/CI-live only)."""
     composed = [e for f in features for e in f["exports"]]
     arr = ", ".join(json.dumps(e) for e in composed)
     return (
@@ -102,7 +119,36 @@ def _gen_ship_verify(features):
         "if (!main) fail('no main.mjs UI entry');\n"
         "if (!(main.includes('export') && main.includes('mount'))) fail('main.mjs must export mount(root) — the UI entry point');\n"
         "if (!main.includes('./index.mjs') && !main.includes('../')) fail('main.mjs must import the capabilities (./index.mjs or ../<cap>)');\n"
-        "console.log('pass: runnable app — index.html loads main.mjs (exports mount), composing every capability');\n"
+        "// BOOT SMOKE — actually mount the app under a robust DOM stub; it must render without throwing.\n"
+        "const noop = () => {};\n"
+        "const mk = () => new Proxy({ children: [], _v: {}, nodeType: 1 }, { get(t, p) {\n"
+        "  if (p === 'appendChild' || p === 'append' || p === 'prepend') return (...c) => { t.children.push(...c.filter(Boolean)); return c[0]; };\n"
+        "  if (p === 'children') return t.children;\n"
+        "  if (p === 'style') return new Proxy({}, { get: () => '', set: () => true });\n"
+        "  if (p === 'classList') return { add: noop, remove: noop, toggle: noop, contains: () => false };\n"
+        "  if (p === 'dataset') return t._v.dataset || (t._v.dataset = {});\n"
+        "  if (p === 'querySelector' || p === 'closest') return () => mk();\n"
+        "  if (p === 'querySelectorAll') return () => [];\n"
+        "  if (p === 'getBoundingClientRect') return () => ({ top:0,left:0,right:0,bottom:0,width:300,height:300 });\n"
+        "  if (p === 'getContext') return () => new Proxy({}, { get: () => noop });\n"
+        "  if (p === 'cloneNode') return () => mk();\n"
+        "  if (['innerHTML','textContent','className','value','id','width','height','tagName'].includes(p)) return t._v[p] ?? '';\n"
+        "  if (p === 'parentNode' || p === 'firstChild' || p === 'nextSibling') return null;\n"
+        "  if (p in t) return t[p];\n"
+        "  return noop;\n"
+        "}, set(t, p, v) { t._v[p] = v; t[p] = v; return true; } });\n"
+        "for (const N of ['Node','Element','HTMLElement','HTMLCanvasElement','Event','CustomEvent']) globalThis[N] = function(){};\n"
+        "globalThis.Node.ELEMENT_NODE = 1; globalThis.Node.TEXT_NODE = 3;\n"
+        "const _store = {};\n"
+        "globalThis.document = { createElement: mk, createElementNS: mk, createDocumentFragment: mk, createTextNode: (t) => ({ textContent: t, nodeType: 3 }), getElementById: mk, querySelector: mk, querySelectorAll: () => [], body: mk(), head: mk(), documentElement: mk(), addEventListener: noop, removeEventListener: noop };\n"
+        "globalThis.window = { addEventListener: noop, removeEventListener: noop, requestAnimationFrame: () => 0, cancelAnimationFrame: noop, setInterval: () => 0, clearInterval: noop, setTimeout: () => 0, clearTimeout: noop, matchMedia: () => ({ matches: false, addEventListener: noop }), devicePixelRatio: 1, innerWidth: 1024, innerHeight: 768, localStorage: { getItem: (k) => (k in _store ? _store[k] : null), setItem: (k, v) => { _store[k] = String(v); }, removeItem: (k) => { delete _store[k]; }, clear: () => { for (const k in _store) delete _store[k]; } } };\n"
+        "for (const k of ['requestAnimationFrame','cancelAnimationFrame','setInterval','clearInterval','setTimeout','clearTimeout','localStorage']) globalThis[k] = window[k];\n"
+        "const mainMod = await import('./main.mjs');\n"
+        "if (typeof mainMod.mount !== 'function') fail('main.mjs must export mount(root)');\n"
+        "const root = mk();\n"
+        "try { mainMod.mount(root); } catch (e) { fail('the app threw on mount(): ' + (e && e.message)); }\n"
+        "if (!root.children.length && !root._v.innerHTML) fail('mount() rendered nothing into root — the UI does not boot');\n"
+        "console.log('pass: runnable app — composes the capabilities, index.html\\u2192main.mjs, mount() boots + renders');\n"
         "process.exit(0);\n"
     )
 
@@ -187,7 +233,11 @@ _PLANNER_SCHEMA = (
     'user-facing acceptance as a usage narrative>",'
     '"spec":"<ONE concise paragraph, plain prose — INSIDE-OUT: the architecture + modules that realize the PRD>",'
     '"features":[{"slug":"<kebab-case>","description":"<one line>",'
-    '"exports":["<named exports the pure ES module MUST provide — the testable logic>"]}]}')
+    '"exports":["<named exports the pure ES module MUST provide — the testable logic>"],'
+    '"acceptance":["<2-5 BEHAVIORAL checks per feature: each a single JS boolean expression over the bare export '
+    'names that MUST hold, exercising the LOGIC not just its shape — e.g. createDeck().length === 52, '
+    'new Set(createDeck().map(c => c.rank + c.suit)).size === 52, isLegalMove(...)===false for an illegal move. '
+    'Representative, hard to pass without real correctness, side-effect-free, no DOM>"]}]}')
 
 
 def _extract_json(text):
@@ -225,9 +275,10 @@ def _build_live_plan(decomp):
         if slug == SLUG:
             slug = f"{slug}-core"   # never collide with the integrator slug
         exports = [e for e in (f.get("exports") or []) if isinstance(e, str)] or ["init"]
-        features.append({"slug": slug, "exports": exports})
+        acceptance = [a for a in (f.get("acceptance") or []) if isinstance(a, str)]
+        features.append({"slug": slug, "exports": exports, "acceptance": acceptance})
     if not features:
-        features = [{"slug": "core", "exports": ["init"]}]
+        features = [{"slug": "core", "exports": ["init"], "acceptance": []}]
     prd_id, spec_id, app_id = f"spec.system.{SLUG}-prd", f"spec.system.{SLUG}", f"capability.system.{SLUG}"
     cap_ids = [f"capability.system.{f['slug']}" for f in features]
 
@@ -250,7 +301,7 @@ def _build_live_plan(decomp):
         {"target_cell": spec_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SPEC, "deps": [prd_id], "milestone": "SPEC", "title": f"MILESTONE 2 · SPEC (inside-out): {title}"},
     ]
     for f in features:
-        assets.append({"path": f"capability/{f['slug']}/verify.mjs", "content": _gen_cap_verify(f["exports"])})
+        assets.append({"path": f"capability/{f['slug']}/verify.mjs", "content": _gen_cap_verify(f["exports"], f.get("acceptance"))})
         cells.append({"layer": "capability", "scope": "system", "slug": f["slug"], "maturity": "instantiated",
                       "asset_ref": f"capability/{f['slug']}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f['slug']}", "from": "instantiated", "to": "validated",
