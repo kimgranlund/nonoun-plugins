@@ -227,6 +227,21 @@ def wire_gates(worktree, kernel_bin):
     return os.path.join(cfg_dir, "settings.json")
 
 
+def _result_spend(ev):
+    """Extract (cost_usd, total_tokens) from a `claude` stream-json `result` event. Cost is `total_cost_usd`
+    (older CLIs emitted `cost_usd`). Tokens = the sum of the top-level `*_tokens` scalars in `usage`
+    (input + output + cache read + cache creation) — the nested `cache_creation`/`server_tool_use` objects are
+    dicts, so they're skipped. Pure + total-shape-faithful so the dispatch selftest proves it against the REAL
+    event shape without spending a token. Returns (None, None) when the fields are absent."""
+    cost = ev.get("total_cost_usd")
+    if cost is None:
+        cost = ev.get("cost_usd")
+    usage = ev.get("usage") or {}
+    tokens = sum(v for k, v in usage.items()
+                 if k.endswith("_tokens") and isinstance(v, (int, float))) or None
+    return cost, tokens
+
+
 class HeadlessClaudeAdapter(DispatchAdapter):
     """The live OD-003 binding: launches headless Claude Code (`claude -p`) as a subprocess in the hermetic
     worktree, gates wired active, streaming tool events into the ledger, bounded by the unit's budget.
@@ -368,7 +383,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                             {"kind": "agent", "id": "headless-claude"}, {"ticket": unit["ticket"], "cell": unit["target_cell"]},
                             f"{et}: {ev.get('tool_name', '')}".strip()[:200] or et)
             if et == "result":
-                cost = ev.get("cost_usd")
+                cost, tokens = _result_spend(ev)
         # Success is "the worker PRODUCED an artifact", NOT "claude exited 0". A real authoring run very often
         # exits non-zero (it hits --max-turns, or errors late AFTER writing a valid asset) — gating on the exit
         # code wrongly marks that a failure and blocks the cell, even though the artifact is on disk and the REAL
@@ -817,6 +832,19 @@ def selftest():
                    "DEV_FACTORY_ADAPTER=headless selects the live adapter (real workers, opt-in)")
         finally:
             del os.environ["DEV_FACTORY_ADAPTER"]
+
+    # token/cost attribution: the REAL `claude` stream-json result shape (captured live) — cost is `total_cost_usd`,
+    # tokens are the summed top-level `*_tokens` scalars in `usage`. Guards the false-frugal $0.00 blind spot.
+    real_result = {"type": "result", "total_cost_usd": 0.277625, "usage": {
+        "input_tokens": 16244, "cache_creation_input_tokens": 18792, "cache_read_input_tokens": 15626,
+        "output_tokens": 4, "server_tool_use": {"web_search_requests": 0}, "service_tier": "standard",
+        "cache_creation": {"ephemeral_1h_input_tokens": 18792, "ephemeral_5m_input_tokens": 0}}}
+    rc, rt = _result_spend(real_result)
+    expect(rc == 0.277625, "result spend reads cost from `total_cost_usd` (not the dropped `cost_usd`)")
+    expect(rt == 16244 + 18792 + 15626 + 4, "result spend sums the top-level *_tokens (skips nested cache_creation/server_tool_use dicts)")
+    expect(_result_spend({"type": "result", "cost_usd": 0.5})[0] == 0.5, "result spend falls back to legacy `cost_usd`")
+    expect(_result_spend({"type": "result"}) == (None, None), "result spend is (None, None) when usage/cost absent")
+
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
         for f in fails:
