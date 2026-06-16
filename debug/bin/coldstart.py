@@ -54,6 +54,37 @@ def _mock_ship_verify(features):
             "console.log('pass: all capabilities composed'); process.exit(0);\n")
 
 
+def _slugify(s):
+    return re.sub(r"[^a-z0-9-]", "-", str(s).lower()).strip("-") or "feature"
+
+
+def _gen_cap_verify(exports):
+    """A REAL (API-surface) critic harness generated from the planner's declared exports — the worker's code MUST
+    export this exact API + pass `node --check` (loadable). Shallow but real: it can't be gamed by a `ready=true`
+    stub (the worker must provide the declared functions). A deeper behavioral harness is a future planner step."""
+    req = ", ".join(json.dumps(e) for e in exports)
+    return ("// per-cell critic harness (live) — generated from the planner's API contract. The planner declares\n"
+            "// the gate; the worker authors code that satisfies it and is gate-denied from writing this file.\n"
+            "import * as m from './index.mjs';\n"
+            f"const required = [{req}];\n"
+            "const missing = required.filter((e) => !(e in m));\n"
+            "if (missing.length) { console.error('FAIL: index.mjs missing exports: ' + missing.join(', ')); process.exit(1); }\n"
+            "const notFns = required.filter((e) => typeof m[e] === 'undefined');\n"
+            "if (notFns.length) { console.error('FAIL: undefined exports: ' + notFns.join(', ')); process.exit(1); }\n"
+            "console.log('pass: declared API surface present'); process.exit(0);\n")
+
+
+def _gen_ship_verify(features):
+    """The SHIP gate (live): the integrator must import + compose every capability's declared API."""
+    lines = ["// SHIP gate (live) — the integrator composes every capability's API surface."]
+    for i, f in enumerate(features):
+        ex = ", ".join(json.dumps(e) for e in f["exports"])
+        lines.append(f"import * as c{i} from '../{f['slug']}/index.mjs';")
+        lines.append(f"if (![{ex}].every((e) => e in c{i})) {{ console.error('FAIL: {f['slug']} incomplete'); process.exit(1); }}")
+    lines.append("console.log('pass: all capabilities composed'); process.exit(0);")
+    return "\n".join(lines) + "\n"
+
+
 # ─────────────────────────── the plan shape ───────────────────────────
 # plan = {
 #   "assets":  [{"path": "spec/app.md", "content": "..."}],          # files to write into the instance
@@ -128,43 +159,116 @@ def _canned_plan(brief_text):
     return {"assets": assets, "cells": cells, "tickets": tickets}
 
 
+_PLANNER_SCHEMA = (
+    '{"title":"<short title>",'
+    '"prd":"<ONE concise paragraph, plain prose — OUTSIDE-IN: who it is for, the jobs-to-be-done, the UX, and '
+    'user-facing acceptance as a usage narrative>",'
+    '"spec":"<ONE concise paragraph, plain prose — INSIDE-OUT: the architecture + modules that realize the PRD>",'
+    '"features":[{"slug":"<kebab-case>","description":"<one line>",'
+    '"exports":["<named exports the pure ES module MUST provide — the testable logic>"]}]}')
+
+
+def _extract_json(text):
+    """Extract the first BALANCED {...} object from a model's text (robust to surrounding prose/fences/newlines)."""
+    start = (text or "").find("{")
+    if start < 0:
+        return None
+    depth, in_str, esc = 0, False, False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            esc = (ch == "\\" and not esc)
+            if ch == '"' and not esc:
+                in_str = False
+        elif ch == '"':
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
+
+
+def _build_live_plan(decomp):
+    """Construct the milestone plan (the shape apply_plan applies) from the planner's outside-in/inside-out
+    decomposition. Deterministic: the planner supplies JUDGMENT (the PRD/SPEC + the API decomposition); we build
+    the cells, tickets, and the REAL per-capability verify.mjs harnesses (generated from each module's declared
+    exports — the critic gate the worker must satisfy)."""
+    title = decomp.get("title") or "the app"
+    features = []
+    for f in (decomp.get("features") or [])[:5]:
+        slug = _slugify(f.get("slug"))
+        if slug == SLUG:
+            slug = f"{slug}-core"   # never collide with the integrator slug
+        exports = [e for e in (f.get("exports") or []) if isinstance(e, str)] or ["init"]
+        features.append({"slug": slug, "exports": exports})
+    if not features:
+        features = [{"slug": "core", "exports": ["init"]}]
+    prd_id, spec_id, app_id = f"spec.system.{SLUG}-prd", f"spec.system.{SLUG}", f"capability.system.{SLUG}"
+    cap_ids = [f"capability.system.{f['slug']}" for f in features]
+
+    prd_c = {"title": f"{title} — PRD", "cell": prd_id, "facing": "outside-in", "binds_rubric": R_PRD,
+             "acceptance_criteria": [{"id": "ux-1", "rubric_cell": R_PRD}], "non_goals": ["no backend in the first cut"]}
+    prd_md = f"# PRD — {title} (outside-in)\n\n{decomp.get('prd', '').strip()}\n\n```json\n{json.dumps(prd_c, indent=2)}\n```\n"
+    spec_c = {"title": f"{title} — SPEC", "cell": spec_id, "facing": "inside-out", "realizes": prd_id,
+              "binds_rubric": R_SHIP, "acceptance_criteria": [{"id": "ac-ship", "rubric_cell": R_SHIP}],
+              "non_goals": ["no premature abstraction beyond the PRD's jobs"]}
+    spec_md = f"# SPEC — {title} (inside-out, realizes {prd_id})\n\n{decomp.get('spec', '').strip()}\n\n```json\n{json.dumps(spec_c, indent=2)}\n```\n"
+    assets = [{"path": f"spec/{SLUG}-prd.md", "content": prd_md}, {"path": f"spec/{SLUG}.md", "content": spec_md}]
+    cells = [{"layer": "rubric", "scope": "system", "slug": r.split(".")[-1], "maturity": "validated",
+              "signal_refs": [f"signals/{r}/seed.json"]} for r in (R_PRD, R_SPEC, R_CAP, R_SHIP)]
+    cells.append({"layer": "ontology", "scope": "system", "slug": SLUG, "maturity": "validated",
+                  "signal_refs": [f"signals/ontology.system.{SLUG}/seed.json"]})
+    cells.append({"layer": "spec", "scope": "system", "slug": f"{SLUG}-prd", "maturity": "instantiated", "asset_ref": f"spec/{SLUG}-prd.md"})
+    cells.append({"layer": "spec", "scope": "system", "slug": SLUG, "maturity": "instantiated", "asset_ref": f"spec/{SLUG}.md", "depends_on": [prd_id]})
+    tickets = [
+        {"target_cell": prd_id, "from": "instantiated", "to": "validated", "rubric_cell": R_PRD, "deps": [], "milestone": "PRD", "title": f"MILESTONE 1 · PRD (outside-in): {title}"},
+        {"target_cell": spec_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SPEC, "deps": [prd_id], "milestone": "SPEC", "title": f"MILESTONE 2 · SPEC (inside-out): {title}"},
+    ]
+    for f in features:
+        assets.append({"path": f"capability/{f['slug']}/verify.mjs", "content": _gen_cap_verify(f["exports"])})
+        cells.append({"layer": "capability", "scope": "system", "slug": f["slug"], "maturity": "instantiated",
+                      "asset_ref": f"capability/{f['slug']}", "depends_on": [spec_id]})
+        tickets.append({"target_cell": f"capability.system.{f['slug']}", "from": "instantiated", "to": "validated",
+                        "rubric_cell": R_CAP, "deps": [spec_id], "milestone": "CAPABILITY", "title": f"MILESTONE 3 · build: {f['slug']}"})
+    assets.append({"path": f"capability/{SLUG}/verify.mjs", "content": _gen_ship_verify(features)})
+    cells.append({"layer": "capability", "scope": "system", "slug": SLUG, "maturity": "instantiated",
+                  "asset_ref": f"capability/{SLUG}", "depends_on": [spec_id] + cap_ids})
+    tickets.append({"target_cell": app_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SHIP,
+                    "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 4 · ship: {title}"})
+    return {"assets": assets, "cells": cells, "tickets": tickets}
+
+
 def _live_plan(name, brief_text, model):
-    """Run a `claude -p` planner: emit the plan as JSON. The planner reads the kernel + kit (spec-author,
-    lattice-management) via --add-dir as LOCAL source. Falls back to the canned plan if `claude` is absent or
-    the output won't parse (so a live run degrades to the proven slice rather than failing the whole loop)."""
+    """Run a `claude -p` planner: emit the OUTSIDE-IN/INSIDE-OUT decomposition as JSON, then BUILD the milestone
+    plan from it (the cells + tickets + the real per-capability verify.mjs harnesses). Falls back to the canned
+    plan if `claude` is absent or the output won't parse — a live run degrades to the proven slice, never stalls."""
     if shutil.which("claude") is None:
         print("  [live] `claude` not on PATH — falling back to the canned plan", file=sys.stderr)
         return _canned_plan(brief_text)
-    schema = ('{"assets":[{"path":"spec/app.md","content":"<the spec, SKILL-format with an embedded ```json '
-              'contract>"}],"cells":[{"layer":"capability","scope":"system","slug":"<feature>","maturity":'
-              '"defined","depends_on":["spec.system.app"]}],"tickets":[{"target_cell":"capability.system.'
-              '<feature>","from":"defined","to":"instantiated","rubric_cell":"rubric.system.app","deps":'
-              '["spec.system.app"],"title":"build <feature>"}]}')
     prompt = (
-        "You are the dev-factory cold-start PLANNER. Turn this product brief into a build plan for a typed "
-        "knowledge lattice. Author the spec for spec.system.app (SKILL-format: intent + brief + an embedded "
-        "```json acceptance contract), seed a validated bootstrap rubric.system.app, and decompose the app into "
-        "capability.system.<feature> cells with build tickets (one legal maturity step each) that depend on the "
-        "validated spec. Output ONLY a single JSON object of this shape (no prose):\n" + schema +
-        "\n\nThe brief:\n" + brief_text)
-    add = []
-    for p in (C.KERNEL_BIN, C.KIT_CORPUS):
-        add += ["--add-dir", p]
-    cmd = ["claude", "-p", prompt, *add, "--allowedTools", "Read,Glob,Grep", "--output-format", "text"]
+        "You are the dev-factory cold-start PLANNER. Define this product TWICE, in order: first the PRD "
+        "(OUTSIDE-IN — the product as the user experiences it: jobs, UX, user-facing acceptance as a usage "
+        "narrative), then the SPEC (INSIDE-OUT — the architecture + modules that realize the PRD). Decompose the "
+        "build into 2-4 capabilities, each a PURE ES module with named exports (the testable logic; rendering "
+        "stays in a thin shell the integrator owns). The exports you declare BECOME each module's critic gate, so "
+        "declare the real API. Output ONLY a single minified JSON object of EXACTLY this shape — no prose, no "
+        "markdown fence, and keep `prd` and `spec` to ONE plain-prose paragraph each with NO embedded quotes, "
+        "newlines, or code so the JSON parses:\n" + _PLANNER_SCHEMA + "\n\nThe brief:\n" + brief_text)
+    cmd = ["claude", "-p", prompt, "--add-dir", C.KIT_CORPUS, "--allowedTools", "Read,Glob,Grep", "--output-format", "text"]
     if model:
         cmd += ["--model", model]
     try:
         r = C.sh(cmd, capture=True, check=False)
-        m = re.search(r"\{.*\}", r.stdout or "", re.DOTALL)
-        plan = json.loads(m.group(0)) if m else None
-        if not plan or "cells" not in plan or "tickets" not in plan:
-            raise ValueError("planner output missing cells/tickets")
-        # always include the validated bootstrap rubric the build tickets bind to
-        rid = f"rubric.system.{SLUG}"
-        if not any(c.get("layer") == "rubric" for c in plan["cells"]):
-            plan["cells"].insert(0, {"layer": "rubric", "scope": "system", "slug": SLUG, "maturity": "validated",
-                                     "signal_refs": [f"signals/{rid}/seed.json"]})
-        return plan
+        blob = _extract_json(r.stdout or "")
+        decomp = json.loads(blob) if blob else None
+        if not decomp or "features" not in decomp:
+            raise ValueError("planner output missing the PRD/SPEC/features decomposition")
+        print(f"  [live] planner decomposed into {len(decomp.get('features', []))} capabilities: "
+              f"{[_slugify(f.get('slug')) for f in decomp.get('features', [])]}")
+        return _build_live_plan(decomp)
     except Exception as e:
         print(f"  [live] planner failed ({e}); falling back to the canned plan", file=sys.stderr)
         return _canned_plan(brief_text)
