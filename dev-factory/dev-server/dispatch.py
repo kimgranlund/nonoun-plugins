@@ -677,6 +677,11 @@ def distill_to_patterns(d, min_occurrences=2):
     for c in _distill.distill_patterns(d, min_occurrences=min_occurrences):
         if c.get("kind") != "success":
             continue
+        # the pattern layer is EMERGENT from operating the substantive layers — it must never distill from ITSELF
+        # (two patterns validating is not evidence of a reusable `pattern.system.pattern-system` meta-pattern; that's
+        # a regress that fills the lattice with noise). Surfaced by the live breakout run.
+        if str(c["cell_type"]).startswith("pattern."):
+            continue
         slug = str(c["cell_type"]).replace(".", "-")
         pid = f"pattern.system.{slug}"
         if _lat.find(_lat.load(d), pid):
@@ -844,6 +849,22 @@ def selftest():
     expect(rt == 16244 + 18792 + 15626 + 4, "result spend sums the top-level *_tokens (skips nested cache_creation/server_tool_use dicts)")
     expect(_result_spend({"type": "result", "cost_usd": 0.5})[0] == 0.5, "result spend falls back to legacy `cost_usd`")
     expect(_result_spend({"type": "result"}) == (None, None), "result spend is (None, None) when usage/cost absent")
+
+    # distill→patterns: the emergent pattern layer must NOT distill from itself (no pattern.system.pattern-system regress)
+    with tempfile.TemporaryDirectory() as td:
+        di = os.path.join(td, ".agents", "dev-factory"); _api.init_instance(di)
+        _api.seed_cell(di, "ledger", "system", "provenance", maturity="validated", signal_refs=["s/x"])
+        for sl in ("a", "b"):
+            _led.append(di, "transition", {"kind": "server", "id": "s"}, {"cell": f"spec.system.{sl}"}, "adv", frm="instantiated", to="validated")
+        for sl in ("p", "q", "r"):
+            _led.append(di, "transition", {"kind": "server", "id": "s"}, {"cell": f"capability.system.{sl}"}, "adv", frm="instantiated", to="validated")
+        pats = set()
+        for _ in range(4):                                   # run to fixpoint — a regress would mint pattern-from-pattern
+            pats |= set(distill_to_patterns(di))
+        expect("pattern.system.spec-system" in pats and "pattern.system.capability-system" in pats,
+               "distill→patterns mints a pattern per recurring substantive cell-type (spec, capability)")
+        expect("pattern.system.pattern-system" not in pats,
+               "distill→patterns NEVER distills the pattern layer from itself (no meta-pattern regress)")
 
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
