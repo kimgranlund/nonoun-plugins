@@ -69,13 +69,20 @@ An optional `<corpus>/reader.config.json` adds polish without touching the reade
 
 Rendering uses marked + **DOMPurify** + highlight.js + mermaid, pinned via CDN in `index.html` with **Subresource-Integrity** (SRI) hashes. Corpus markdown is treated as **untrusted**: marked doesn't sanitize, so DOMPurify scrubs the rendered HTML, and mermaid runs `securityLevel: "strict"`. marked + DOMPurify are required — if either fails its integrity check, prose degrades to escaped text; highlight + mermaid are progressive enhancement. (Swap the CDN tags for vendored copies in `lib/` for a fully offline reader.) The XSS wiring is CI-guarded — see _Maintenance_.
 
+## Diagrams (Mermaid)
+
+A ` ```mermaid ` fenced block is rendered client-side via the pinned `mermaid@11.15.0` (under `securityLevel: "strict"`). Beyond the everyday `flowchart`/`sequenceDiagram`/`classDiagram`/`stateDiagram-v2`, the engine supports advanced types — `journey`, `gantt`, `erDiagram`, `sankey-beta`, `kanban`, `architecture-beta`, `treeView-beta`, `venn-beta`, `ishikawa-beta`, `wardley-beta`, `eventmodeling`. The `-beta` suffix is part of the keyword for several of them, and `strict` mode means no `click`/interactivity and no HTML in labels. Authoring them well is non-obvious, so the catalog repo (`nonoun-plugins`) carries a dedicated reference + rubric under `docs/mermaid/`:
+
+- `docs/mermaid/advanced-mermaid-reference.md` — per-type syntax, the exact keywords/versions, and the reader-compatibility contract.
+- `docs/mermaid/mermaid-rubric.md` — score a diagram for fit · validity · renderability · legibility · accessibility · portability.
+
 ## Maintenance
 
-This reader is the single source of truth at `plugins-factory/bin/corpus-reader/`; brand-forge and product-forge ship **vendored copies** (cross-plugin symlinks don't survive plugin install). `plugins-factory/bin/sync-corpus-reader.py` keeps the copies byte-identical and, as a CI gate (`--check`), also asserts the DOMPurify/SRI wiring is intact **and that the [CHANGELOG](CHANGELOG.md) hasn't gone stale** (a source fingerprint must match the latest `CHANGELOG.md` entry). After any code change, log it:
+This reader is the single source of truth at `tools/corpus-reader/`; brand-forge and product-forge ship **vendored copies** (cross-plugin symlinks don't survive plugin install). `tools/sync-corpus-reader.py` keeps the copies byte-identical and, as a CI gate (`--check`), also asserts the DOMPurify/SRI wiring is intact **and that the [CHANGELOG](CHANGELOG.md) hasn't gone stale** (a source fingerprint must match the latest `CHANGELOG.md` entry). After any code change, log it:
 
 ```sh
-python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<what changed>"   # dated entry + refresh
-python3 plugins-factory/bin/sync-corpus-reader.py                                # re-sync the copies
+python3 tools/sync-corpus-reader.py --changelog "<what changed>"   # dated entry + refresh
+python3 tools/sync-corpus-reader.py                                # re-sync the copies
 ```
 
 ## Note

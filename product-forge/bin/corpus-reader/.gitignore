@@ -4,3 +4,7 @@ brand-corpus/
 
 # Generated per-corpus by build-sitemap.py — regenerate, don't commit.
 lib/sitemap.json
+
+# Self-contained bake output (build-sitemap.py --bake) — a generated artifact; baking the
+# bundled demo-corpus in place would otherwise pollute the reader fingerprint + get vendored.
+reader.html
