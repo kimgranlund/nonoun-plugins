@@ -310,8 +310,25 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                             f"{et}: {ev.get('tool_name', '')}".strip()[:200] or et)
             if et == "result":
                 cost = ev.get("cost_usd")
-        asset_rel = os.path.join(unit["layer"], f"{unit['slug']}.md")
-        return {"ok": proc.returncode == 0, "asset_ref": asset_rel,
+        # Success is "the worker PRODUCED an artifact", NOT "claude exited 0". A real authoring run very often
+        # exits non-zero (it hits --max-turns, or errors late AFTER writing a valid asset) — gating on the exit
+        # code wrongly marks that a failure and blocks the cell, even though the artifact is on disk and the REAL
+        # gate (validate.py running the cell's verifier) would pass it. The verdict belongs to the external critic,
+        # not the worker's process code — so `ok` means "an asset exists to validate"; the exit code is advisory
+        # metrics. (A crash that writes nothing → no asset → correctly failed.) Authoring-aware: a multi-file
+        # capability produces a DIRECTORY of source (anything but its critic harness), a doc/spec a single `.md`.
+        authoring = _authoring_for({"layer": unit["layer"], "slug": unit["slug"]})
+        if authoring and authoring.get("mode") == "multi-file":
+            asset_rel = os.path.join(unit["layer"], unit["slug"])                       # a source DIRECTORY
+            asset_abs = os.path.join(d, asset_rel)
+            produced = os.path.isdir(asset_abs) and any(
+                f != "verify.mjs" and not f.startswith(".") for f in os.listdir(asset_abs))
+        else:
+            asset_rel = os.path.join(unit["layer"], f"{unit['slug']}.md")
+            asset_abs = os.path.join(d, asset_rel)
+            produced = os.path.exists(asset_abs) and os.path.getsize(asset_abs) > 0
+        err = None if produced else f"no artifact (claude exited {proc.returncode}, asset {asset_rel} absent/empty)"
+        return {"ok": produced, "asset_ref": asset_rel, "error": err,
                 "metrics": {"cost_usd": cost, "tokens": tokens, "exit": proc.returncode}}
 
 
