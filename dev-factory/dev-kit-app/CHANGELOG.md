@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kit-app** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.0] — 2026-06-15
+
+### Added
+
+- **`skills/ui-layout-decomposer/`** — the kit now ships a UI-layout decomposition skill, because building shippable apps includes laying out their UIs. It carries the **two-axis method** developed while building the dev-server cockpit: **OUTSIDE-IN** (macro→micro layout: frame → regions → groups → atoms) × **INSIDE-OUT** (feature-actions → feature-surfaces: verbs → bindings → feedback → coherence), as a **gated rubric** (`A1·A2·B1·B2` gates, the rest reviews) plus an **ASCII-wireframe reference library** of four shell archetypes — `productivity-shell` · `saas-dashboard` · `marketing-site` · `mobile-app` — each with a named-pattern vocabulary. Modes: DECOMPOSE (read a UI → region map + grade) · DESIGN (intent → wireframe) · GRADE. A general technique (not app-specific); kept in the app kit since UI layout is app-building knowledge. `check-kit-conform` is unaffected (a skill is not a kernel fork).
+
 ## [0.2.0] — 2026-06-15
 
 The app family builds **real, shippable, multi-file software** (the DF-9 fix), graded by per-cell harnesses.

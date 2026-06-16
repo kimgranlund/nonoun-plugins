@@ -1,0 +1,18 @@
+{
+  "name": "ui-layout-decomposer",
+  "version": "0.1.0",
+  "status": "draft",
+  "target": "both",
+  "description": "Decompose, evaluate, and design any UI layout with the two-axis technique — OUTSIDE-IN (macro-layout → micro-layout) and INSIDE-OUT (feature-actions → feature-surfaces) — backed by a gated rubric and an ASCII-wireframe library of four archetypes (productivity-shell, saas-dashboard, marketing-site, mobile-app).",
+  "keywords": ["ui", "layout", "decomposition", "wireframe", "app-shell", "design-rubric", "information-architecture", "outside-in", "inside-out"],
+  "files": [
+    "SKILL.md",
+    "references/decomposition-method.md",
+    "references/archetype-productivity-shell.md",
+    "references/archetype-saas-dashboard.md",
+    "references/archetype-marketing-site.md",
+    "references/archetype-mobile-app.md",
+    "CHANGELOG.md",
+    "ROADMAP.md"
+  ]
+}

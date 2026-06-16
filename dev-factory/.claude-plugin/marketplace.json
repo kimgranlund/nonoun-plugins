@@ -40,13 +40,15 @@
     {
       "name": "dev-kit-app",
       "source": "./dev-kit-app",
-      "description": "The application family kit — binds the dev-kernel contracts to building and validating application code (capability · protocol cells validated by a passing test suite). Exists primarily to prove the kernel/kit boundary's falsification test: adding a second family required ZERO kernel edits.",
+      "description": "The application family kit — binds the dev-kernel contracts to building and validating application code (capability · protocol cells validated by a passing test suite). Exists primarily to prove the kernel/kit boundary's falsification test: adding a second family required ZERO kernel edits. Also ships the ui-layout-decomposer skill — the two-axis UI decomposition method (outside-in macro→micro × inside-out actions→surfaces) with a gated rubric and an ASCII-wireframe library of four shell archetypes — since building shippable apps includes laying out their UIs.",
       "category": "agentic",
       "tags": [
         "dev-factory",
         "kit",
         "app",
-        "boundary-proof"
+        "boundary-proof",
+        "ui-layout",
+        "skill"
       ]
     }
   ]

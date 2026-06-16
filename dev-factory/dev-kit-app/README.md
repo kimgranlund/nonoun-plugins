@@ -23,3 +23,7 @@ DEV_FACTORY_KIT=$PWD DEV_FACTORY_DIR=/path/to/project/.agents/dev-factory \
 ```
 
 Now capability/protocol cells validate against `test-suite-check` (the runner's real exit status), and bug tickets dispatch as a `bisect` loop per `dispatch-policy.json`. Sample prompt: *"create a ticket to advance the auth-service capability cell"*.
+
+## Also ships: the `ui-layout-decomposer` skill
+
+Building shippable apps includes laying out their UIs, so the app kit ships a UI-layout decomposition skill (`skills/ui-layout-decomposer/`). It carries the **two-axis method** developed while building the dev-server cockpit — **OUTSIDE-IN** (macro→micro layout: frame → regions → groups → atoms) × **INSIDE-OUT** (feature-actions → feature-surfaces: verbs → bindings → feedback → coherence) — as a **gated rubric** (`A1·A2·B1·B2` are gates; the rest reviews) plus an **ASCII-wireframe library** of four shell archetypes: `productivity-shell` · `saas-dashboard` · `marketing-site` · `mobile-app`. Three modes: **DECOMPOSE** (read a UI → named region map + a two-axis grade) · **DESIGN** (intent → wireframe) · **GRADE**. It's a general technique — kept here because UI layout is app-building knowledge, not a kernel concern (`check-kit-conform` is unaffected: a skill is not a kernel fork).
