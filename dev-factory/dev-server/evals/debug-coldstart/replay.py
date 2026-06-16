@@ -70,9 +70,12 @@ def run():
         print("· cold-start — the MILESTONE lattice (dynamic rubric generation + per-cell verify.mjs gates)")
         coldstart.coldstart(name, mock=True)
         grid = {c["id"]: c["maturity"] for c in api.lattice_grid(inst)}
-        check(all(grid.get(r) == "validated" for r in ("rubric.system.spec-quality", "rubric.system.test-suite", "rubric.system.ship")),
-              "the planner seeded THREE validated milestone rubrics (spec-quality · test-suite · ship)")
-        check(grid.get("spec.system.app") == "instantiated", "the spec cell is seeded with an acceptance contract")
+        check(all(grid.get(r) == "validated" for r in ("rubric.system.prd-quality", "rubric.system.spec-quality", "rubric.system.test-suite", "rubric.system.ship")),
+              "the planner seeded FOUR validated milestone rubrics (prd-quality · spec-quality · test-suite · ship)")
+        check(grid.get("spec.system.app-prd") == "instantiated", "MILESTONE 1: a PRD cell (outside-in) is seeded")
+        check(grid.get("spec.system.app") == "instantiated", "MILESTONE 2: the SPEC cell (inside-out) is seeded")
+        spec_full = api._lat.find(api._lat.load(inst), "spec.system.app")
+        check("spec.system.app-prd" in (spec_full.get("depends_on") or []), "the SPEC (inside-out) REALIZES the PRD — it depends on it")
         caps = [k for k in grid if k.startswith("capability.system.") and k != "capability.system.app"]
         check(len(caps) >= 3, f"the planner decomposed the brief into capability code cells ({len(caps)})")
         check("capability.system.app" in grid, "the planner seeded the capability.system.app INTEGRATOR (the ship cell)")
@@ -91,7 +94,7 @@ def run():
 
         print("· ORCHESTRATION + OBSERVABILITY — the planned team is recorded, spend attributed, the roadmap hydrated")
         epics = [e for e in api.roadmap(inst) if str(e.get("title", "")).startswith("Milestone")]
-        check(len(epics) == 3, "the roadmap is hydrated — one epic per milestone (SPEC · CAPABILITY · SHIP)")
+        check(len(epics) == 4, "the roadmap is hydrated — one epic per milestone (PRD · SPEC · CAPABILITY · SHIP)")
         team = [e for e in api.ledger_query(inst, n=500) if e["event"] == "activity-start" and (e.get("metrics") or {}).get("delegation_mode") == "team"]
         check(bool(team) and all((e["metrics"].get("depth") == 2 and e["metrics"].get("model_tier")) for e in team),
               "capability dispatches record the PLANNED orchestrator-workers team (delegation=team, depth 2, model tier)")
@@ -107,19 +110,27 @@ def run():
         check(_gate(".agents/dev-factory/capability/core/index.mjs") == 0, "a worker write to ordinary source is ALLOWED (no false block on the build)")
         check(_gate(".agents/dev-factory/run/input.jsonl") == 2, "a worker write to run/input.jsonl is DENIED (operator guidance can't be forged)")
 
-        print("· BI-DIRECTIONAL — a build learning flows upstream to the spec, propagates, and re-ships")
+        print("· BI-DIRECTIONAL — a learning routes UPSTREAM to the SPEC (inside-out) or the PRD (outside-in)")
+        # a TECHNICAL learning → the SPEC (inside-out, the default route)
         spec_asset = os.path.join(inst, "spec", "app.md")
         before = open(spec_asset, encoding="utf-8").read()
-        restaled = ralph._regenerate_spec(name, api, "the leaderboard capability revealed the spec under-specified tie-breaking")
-        after = open(spec_asset, encoding="utf-8").read()
-        check(before != after, "UPSTREAM: the spec asset was revised from a build learning")
-        check(restaled and "capability.system.app" in restaled, "DOWNSTREAM: staleness propagated to the dependent capabilities (incl. the integrator)")
-        led = api.ledger_query(inst)
+        restaled = ralph._regenerate_spec(name, api, "the leaderboard capability revealed the SPEC under-specified tie-breaking")
+        check(before != open(spec_asset, encoding="utf-8").read(), "SPEC route: a technical learning revised the inside-out SPEC asset")
+        check(restaled and "capability.system.app" in restaled, "SPEC route: staleness propagated to the dependent capabilities + the integrator")
+        ralph._revalidate_stale(name, api)
+        # a PRODUCT/UX learning → the PRD (outside-in), and it cascades TRANSITIVELY through the SPEC to the capabilities
+        prd_asset = os.path.join(inst, "spec", "app-prd.md")
+        before_prd = open(prd_asset, encoding="utf-8").read()
+        prd_restaled = ralph._regenerate_spec(name, api, "users need an undo — a product gap", target=ralph.PRD_ID)
+        check(before_prd != open(prd_asset, encoding="utf-8").read(), "PRD route: a product/UX learning revised the outside-in PRD asset")
+        check("spec.system.app" in prd_restaled and "capability.system.app" in prd_restaled,
+              "PRD route: revising the PRD re-stales the SPEC AND the capabilities TRANSITIVELY (the full downstream cone)")
+        led = api.ledger_query(inst, n=500)
         check(any(e["event"] == "regenerate" for e in led) and any(e["event"] == "stale-propagated" for e in led),
-              "the regeneration + propagation are ledgered (a deliberate, audited revision — not a silent patch)")
+              "every revision + propagation is ledgered (a deliberate, audited revision — not a silent patch)")
         ralph._revalidate_stale(name, api)
         g3 = {c["id"]: c["maturity"] for c in api.lattice_grid(inst)}
-        check(g3.get("capability.system.app") == "validated", "the app re-validated against the revised spec — re-SHIPPED")
+        check(g3.get("capability.system.app") == "validated", "the app re-validated against the revised PRD+SPEC — re-SHIPPED")
 
     print()
     if fails:

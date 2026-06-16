@@ -3,6 +3,13 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-15 — the PRD milestone (outside-in) on the dashboard
+
+- **`api.milestones` splits the spec layer into PRD + SPEC.** A spec cell whose slug ends `-prd` is the **PRD**
+  (outside-in) stage; the rest is the **SPEC** (inside-out) stage. The header strip now reads
+  `PRD 1/1 › SPEC 1/1 › CAPABILITY 2/3 › SHIP`, and the spec-iteration timeline shows revisions routed to either
+  the PRD or the SPEC. No UI change needed — the strip + timeline render the stages the API reports.
+
 ## 2026-06-15 — env-selectable headless adapter + dashboard depth
 
 - **The `HeadlessClaudeAdapter` is now wired into the server, env-selectable.** `dispatch.resolve_adapter()` reads

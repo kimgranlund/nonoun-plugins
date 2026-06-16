@@ -25,6 +25,22 @@ routable frontmatter surface + a brief body + `references/` depth + optional bun
 shape that makes a skill navigable, lazy-loaded, and reviewable makes a spec the same. The exact format is
 `references/spec-format.md` — read it before authoring or grading one.
 
+**Two facings on one axis: PRD (outside-in) → SPEC (inside-out).** A product is defined twice, in two
+artifacts, and the order matters:
+
+- A **PRD** defines the product **from the outside-in** — who it's for, the jobs-to-be-done, the UX, and
+  **user-facing acceptance** (doneness as a *usage narrative*: "a user can deal, drag a legal card, see the score
+  change, win, and see it recorded"). Gated by **`prd-quality`**.
+- A **SPEC** defines the product **from the inside-out** — the modules, the contracts, the decomposition, and
+  **buildable acceptance** — and its job is to **realize the PRD**. Gated by **`spec-quality`**. The SPEC cell
+  `depends_on` the PRD; its technical acceptance must *entail* the PRD's outside-in acceptance.
+
+Author the **PRD first** (outside-in), then the **SPEC** that realizes it (inside-out) — don't collapse a raw
+PRD straight into a tech spec and lose the user. Both are spec-layer SKILL-format cells (the PRD's slug ends
+`-prd`); the partial order then gates every capability on **both** a validated PRD *and* a validated SPEC. The
+loop is **bi-directional**: a build/technical learning revises the **SPEC**; a product/UX gap — or a SPEC that
+*cannot* realize the PRD — revises the **PRD**, whose staleness then cascades back down through the SPEC.
+
 ## The lifecycle — four modes
 
 | Mode | Trigger | What it does | Terminates at |

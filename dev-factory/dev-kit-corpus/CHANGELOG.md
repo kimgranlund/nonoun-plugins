@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kit-corpus** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.3.0] — 2026-06-15
+
+### Added
+
+- **`rubric/prd-quality.rubric.json`** — the verifier for a **PRD** cell (the product from the **outside-in**), the upstream sibling of `spec-quality` (inside-out). Gate dimensions (a PRD is still a contract-bearing spec artifact: `schema-valid` · `user-acceptance-checkable` — every acceptance criterion is USER-FACING + checkable · `non-goals-present`) + review dimensions that are the outside-in judgment: `target-users-and-jobs` (who + jobs-to-be-done), `ux-requirements` (the experience the user needs), `outside-in-acceptance` (doneness as a usage narrative the SPEC must entail), `product-coherence` (one product, not a feature pile). `facing: outside-in`, `binds_to_layer: spec`. The `/debug/` cold-start seeds it as the MILESTONE-1 gate (PRD → SPEC → CAPABILITY → SHIP). plugin.json 0.2.0 → 0.3.0.
+
 ## [0.2.0] — 2026-06-15
 
 ### Changed

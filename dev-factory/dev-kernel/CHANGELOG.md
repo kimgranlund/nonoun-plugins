@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.5] — 2026-06-15
+
+### Changed
+
+- **`spec-author` gains the PRD (outside-in) → SPEC (inside-out) axis.** A product is defined twice: a **PRD** defines it from the **outside-in** (jobs · UX · user-facing acceptance as a usage narrative), gated by `prd-quality`; a **SPEC** defines it from the **inside-out** (modules · contracts · decomposition · buildable acceptance) and **realizes the PRD** (the SPEC cell `depends_on` the PRD; its technical acceptance must entail the PRD's outside-in acceptance), gated by `spec-quality`. Both are spec-layer SKILL-format cells (the PRD's slug ends `-prd`) — no kernel-layer change. The skill now says: author the PRD first, then the SPEC that realizes it, rather than collapsing a raw PRD straight into a tech spec. The loop is **bi-directional**: a technical learning revises the SPEC; a product/UX gap (or a SPEC that can't realize the PRD) revises the PRD, whose staleness cascades back down. plugin.json 0.2.4 → 0.2.5.
+
 ## [0.2.4] — 2026-06-15
 
 The generator/critic split extended to per-cell code harnesses (the DF-9 enabler).

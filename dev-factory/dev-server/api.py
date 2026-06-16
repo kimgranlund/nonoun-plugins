@@ -497,13 +497,18 @@ def milestones(d):
             roll[c["layer"]]["settled"] += 1
     ship = next((c for c in grid if c["id"] == "capability.system.app"), None)
     caps = [c for c in grid if c["layer"] == "capability" and c["id"] != "capability.system.app"]
-    specs = [c for c in grid if c["layer"] == "spec"]
+    # the spec layer hosts two facings: a PRD (outside-in, slug ends -prd) and the SPEC (inside-out)
+    prds = [c for c in grid if c["layer"] == "spec" and c["slug"].endswith("-prd")]
+    specs = [c for c in grid if c["layer"] == "spec" and not c["slug"].endswith("-prd")]
     def _done(cells):
         return sum(1 for c in cells if c["maturity"] in SETTLED_MATURITIES), len(cells)
+    prd_done, prd_total = _done(prds)
     spec_done, spec_total = _done(specs)
     cap_done, cap_total = _done(caps)
     regen = sum(1 for e in ledger_query(d, n=500) if e.get("event") == "regenerate")
     stages = []
+    if prds:
+        stages.append({"key": "prd", "label": "PRD", "done": prd_done, "total": prd_total})
     if specs:
         stages.append({"key": "spec", "label": "SPEC", "done": spec_done, "total": spec_total})
     if caps:

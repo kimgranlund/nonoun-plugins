@@ -30,35 +30,45 @@ import verdict as _verdict     # noqa: E402
 POLL_S = 5            # the monitor cadence (the server also reads operator input every 5s, independently)
 SRV = {"kind": "server", "id": "dev-server"}
 REGEN = {"kind": "agent", "id": "spec-regenerator"}
-SPEC_ID = "spec.system.app"
+PRD_ID = "spec.system.app-prd"     # the product OUTSIDE-IN
+SPEC_ID = "spec.system.app"        # the architecture INSIDE-OUT (realizes the PRD)
 
 
-def _regenerate_spec(name, api, reason):
-    """BI-DIRECTIONAL spec work — a downstream build learning flows UPSTREAM. Drive the spec through a DELIBERATE
-    validated→regenerating→validated revision (the kernel's regeneration loop, ledgered — not a silent patch),
-    revise its asset, then propagate staleness so every dependent capability must RE-validate against the revised
-    spec. Returns the list of cells that were re-staled. (Spec work is first-class — as valuable as the build.)"""
+def _regenerate_spec(name, api, reason, target=None):
+    """BI-DIRECTIONAL spec work — a learning flows UPSTREAM. ROUTE it: a technical/build learning → the SPEC
+    (inside-out, the default); a product/UX gap, or a SPEC that can't realize the PRD → the PRD (outside-in,
+    `target=PRD_ID`). Drive the target through a DELIBERATE validated→regenerating→validated revision (ledgered),
+    revise its asset, then propagate staleness TRANSITIVELY down the full cone (revising the PRD re-stales the SPEC
+    AND everything it feeds). Returns the re-staled cells. Spec work is first-class — as valuable as the build."""
     inst = C.instance_dir(name)
-    cell = api._lat.find(api._lat.load(inst), SPEC_ID)
+    target = target or SPEC_ID
+    cell = api._lat.find(api._lat.load(inst), target)
     if not cell or cell["maturity"] not in ("validated", "operating"):
         return []
+    facing = "PRD (outside-in)" if target.endswith("-prd") else "SPEC (inside-out)"
     kw = dict(asset_ref=cell.get("asset_ref"), depends_on=cell.get("depends_on"))
-    api.seed_cell(inst, "spec", "system", "app", maturity="regenerating", signal_refs=cell.get("signal_refs"), **kw)
-    api._led.append(inst, "regenerate", REGEN, {"cell": SPEC_ID}, f"spec revision (upstream from a build learning): {reason}")
-    asset = os.path.join(inst, cell.get("asset_ref") or "spec/app.md")
-    if os.path.isfile(asset):
+    api.seed_cell(inst, cell["layer"], cell["scope"], cell["slug"], maturity="regenerating", signal_refs=cell.get("signal_refs"), **kw)
+    api._led.append(inst, "regenerate", REGEN, {"cell": target}, f"{facing} revision (upstream learning): {reason}")
+    asset = os.path.join(inst, cell.get("asset_ref") or "")
+    if asset and os.path.isfile(asset):
         with open(asset, "a", encoding="utf-8") as f:
             f.write(f"\n\n## Revision — learned downstream\n{reason}\n")
-    api.seed_cell(inst, "spec", "system", "app", maturity="validated",
-                  signal_refs=(cell.get("signal_refs") or []) + [f"signals/{SPEC_ID}/regen.json"], **kw)
-    # propagate: every cell depending on the spec re-staled — the partial order now gates it until re-validated
-    lat = api._lat.load(inst); restale = []
-    for c in lat["cells"]:
-        if SPEC_ID in (c.get("depends_on") or []) and c["maturity"] in ("validated", "operating"):
-            c["maturity"] = "stale"; restale.append(api._lat.cid(c))
+    api.seed_cell(inst, cell["layer"], cell["scope"], cell["slug"], maturity="validated",
+                  signal_refs=(cell.get("signal_refs") or []) + [f"signals/{target}/regen.json"], **kw)
+    # propagate TRANSITIVELY: the full downstream cone re-stales (PRD → SPEC → capabilities → integrator)
+    lat = api._lat.load(inst)
+    staled, changed = set(), True
+    while changed:
+        changed = False
+        for c in lat["cells"]:
+            cid = api._lat.cid(c)
+            if cid in staled or c["maturity"] not in ("validated", "operating"):
+                continue
+            if set(c.get("depends_on") or []) & ({target} | staled):
+                c["maturity"] = "stale"; staled.add(cid); changed = True
     api._lat.save(inst, lat); api._store.rebuild(inst)
-    api._led.append(inst, "stale-propagated", REGEN, {"cell": SPEC_ID}, f"staleness propagated to {len(restale)} dependents")
-    return restale
+    api._led.append(inst, "stale-propagated", REGEN, {"cell": target}, f"staleness propagated to {len(staled)} dependents (transitive)")
+    return sorted(staled)
 
 
 def _revalidate_stale(name, api):

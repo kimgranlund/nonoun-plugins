@@ -1,6 +1,6 @@
 {
   "name": "dev-kit-corpus",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The corpus family kit for dev-factory — binds the dev-kernel contracts to the work of building and validating a knowledge corpus (spec, rubric, pattern, methodology cells). Ships the family ontology, the rubric manifest (which validated rubric gates which layer), the validation harness adapters (a doc-check for spec cells, a calibration-check for rubric cells), the dispatch policy (the deterministic unit→execution-plan map for corpus work — evaluator-optimizer + auto-research hill-climb for graded cells), and seed patterns. Stateless: it binds the kernel, it does not fork it (no kernel bin or schema ships here — `check-kit-conform` enforces zero kernel edits). Consumed by dev-server's dispatcher.",
   "author": {
     "name": "Kim",

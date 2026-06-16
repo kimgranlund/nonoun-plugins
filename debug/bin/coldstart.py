@@ -27,8 +27,11 @@ import _common as C   # noqa: E402
 SLUG = "app"          # the system-scope slug the plan builds under (spec.system.app, capability.system.app)
 ACTOR = {"kind": "agent", "id": "cold-start-planner"}
 
-# The three MILESTONE rubrics the planner authors/seeds (dynamic rubric generation — "make as many as we need").
-R_SPEC, R_CAP, R_SHIP = "rubric.system.spec-quality", "rubric.system.test-suite", "rubric.system.ship"
+# The MILESTONE rubrics the planner authors/seeds (dynamic rubric generation — "make as many as we need").
+# PRD = the product from the OUTSIDE-IN (jobs · UX · user-facing acceptance); SPEC = the architecture from the
+# INSIDE-OUT (modules · contracts · decomposition) that realizes it.
+R_PRD, R_SPEC, R_CAP, R_SHIP = ("rubric.system.prd-quality", "rubric.system.spec-quality",
+                                "rubric.system.test-suite", "rubric.system.ship")
 
 
 def _mock_cap_verify():
@@ -59,53 +62,69 @@ def _mock_ship_verify(features):
 # }
 
 def _canned_plan(brief_text):
-    """A deterministic MILESTONE plan — the CI plumbing proof (no model). Hydrates the full arc:
+    """A deterministic MILESTONE plan — the CI plumbing proof (no model). Hydrates the full outside-in → inside-out arc:
 
-      MILESTONE 1 (SPEC)       spec.system.app, gated by rubric.system.spec-quality (a real acceptance contract)
-      MILESTONE 2 (CAPABILITY) capability.system.<feature> per feature — multi-file code, each with a
-                               planner-authored per-cell verify.mjs critic harness, gated by rubric.system.test-suite
-      MILESTONE 3 (SHIP)       capability.system.app — the integrator that composes every capability, gated by
-                               rubric.system.ship (its verify.mjs is the ship gate)
+      MILESTONE 1 (PRD)        spec.system.app-prd — the product OUTSIDE-IN (jobs · UX · user-facing acceptance),
+                               gated by rubric.system.prd-quality
+      MILESTONE 2 (SPEC)       spec.system.app — the architecture INSIDE-OUT realizing the PRD (depends on the PRD),
+                               gated by rubric.system.spec-quality
+      MILESTONE 3 (CAPABILITY) capability.system.<feature> per feature — multi-file code, each with a planner-authored
+                               per-cell verify.mjs critic harness, gated by rubric.system.test-suite (depends on the SPEC)
+      MILESTONE 4 (SHIP)       capability.system.app — the integrator composing every capability, gated by rubric.system.ship
 
-    The planner SEEDS the three milestone rubrics (dynamic rubric generation) + an ontology foothold, AUTHORS the
-    per-cell critic harnesses (the gates a worker can't write), and creates the milestone build tickets. A live
-    planner authors real specs + real verify.mjs predicates; the apply logic is identical."""
+    The planner SEEDS the four milestone rubrics (dynamic rubric generation), AUTHORS the per-cell critic harnesses,
+    and creates the milestone build tickets. A live planner authors a real PRD + SPEC + verify.mjs; the apply logic is
+    identical."""
     title = brief_text.strip().splitlines()[0].lstrip("# ").strip() or "the app"
     features = ["core", "ui", "persistence"]   # generic slice; a live planner derives real feature slugs from the brief
-    spec_id = f"spec.system.{SLUG}"
+    prd_id, spec_id = f"spec.system.{SLUG}-prd", f"spec.system.{SLUG}"
     app_id = f"capability.system.{SLUG}"
     cap_ids = [f"capability.system.{f}" for f in features]
 
-    # MILESTONE 1 — the spec, with an acceptance contract the spec-contract verifier checks for
-    contract = {"title": title, "cell": spec_id, "binds_rubric": R_SHIP,
-                "acceptance_criteria": [{"id": "ac-ship", "rubric_cell": R_SHIP}],
-                "non_goals": ["no backend / accounts in the first cut"]}
-    spec_md = f"# Spec — {title}\n\n{brief_text.strip()}\n\n```json\n{json.dumps(contract, indent=2)}\n```\n"
-    assets = [{"path": f"spec/{SLUG}.md", "content": spec_md}]
+    # MILESTONE 1 — the PRD: the product OUTSIDE-IN. Acceptance criteria are USER-FACING.
+    prd = {"title": f"{title} — PRD", "cell": prd_id, "facing": "outside-in", "binds_rubric": R_PRD,
+           "acceptance_criteria": [{"id": "ux-play", "rubric_cell": R_PRD}],
+           "non_goals": ["no backend / accounts / network in the first cut"]}
+    prd_md = (f"# PRD — {title} (outside-in)\n\n{brief_text.strip()}\n\n"
+              "## Outside-in: who it's for, what they do\nThe user can pick it up and use it; doneness is a usage "
+              "narrative, not a module checklist.\n\n```json\n" + json.dumps(prd, indent=2) + "\n```\n")
+    # MILESTONE 2 — the SPEC: the architecture INSIDE-OUT that REALIZES the PRD.
+    spec = {"title": f"{title} — SPEC", "cell": spec_id, "facing": "inside-out", "realizes": prd_id, "binds_rubric": R_SHIP,
+            "acceptance_criteria": [{"id": "ac-ship", "rubric_cell": R_SHIP}],
+            "non_goals": ["no premature abstraction beyond the PRD's jobs"]}
+    spec_md = (f"# SPEC — {title} (inside-out, realizes {prd_id})\n\nModules, contracts, and the decomposition that "
+               "delivers the PRD's outside-in acceptance.\n\n```json\n" + json.dumps(spec, indent=2) + "\n```\n")
+    assets = [{"path": f"spec/{SLUG}-prd.md", "content": prd_md}, {"path": f"spec/{SLUG}.md", "content": spec_md}]
 
-    # dynamic rubric generation — seed the three validated milestone rubrics + the ontology foothold
+    # dynamic rubric generation — seed the four validated milestone rubrics + the ontology foothold
     cells = [{"layer": "rubric", "scope": "system", "slug": r.split(".")[-1], "maturity": "validated",
-              "signal_refs": [f"signals/{r}/seed.json"]} for r in (R_SPEC, R_CAP, R_SHIP)]
+              "signal_refs": [f"signals/{r}/seed.json"]} for r in (R_PRD, R_SPEC, R_CAP, R_SHIP)]
     cells.append({"layer": "ontology", "scope": "system", "slug": SLUG, "maturity": "validated",
                   "signal_refs": [f"signals/ontology.system.{SLUG}/seed.json"]})
-    cells.append({"layer": "spec", "scope": "system", "slug": SLUG, "maturity": "instantiated", "asset_ref": f"spec/{SLUG}.md"})
-    tickets = [{"target_cell": spec_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SPEC,
-                "deps": [], "milestone": "SPEC", "title": f"MILESTONE 1 · spec: {title}"}]
+    cells.append({"layer": "spec", "scope": "system", "slug": f"{SLUG}-prd", "maturity": "instantiated", "asset_ref": f"spec/{SLUG}-prd.md"})
+    cells.append({"layer": "spec", "scope": "system", "slug": SLUG, "maturity": "instantiated",
+                  "asset_ref": f"spec/{SLUG}.md", "depends_on": [prd_id]})
+    tickets = [
+        {"target_cell": prd_id, "from": "instantiated", "to": "validated", "rubric_cell": R_PRD,
+         "deps": [], "milestone": "PRD", "title": f"MILESTONE 1 · PRD (outside-in): {title}"},
+        {"target_cell": spec_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SPEC,
+         "deps": [prd_id], "milestone": "SPEC", "title": f"MILESTONE 2 · SPEC (inside-out): {title}"},
+    ]
 
-    # MILESTONE 2 — per-capability code cells, each with its planner-authored verify.mjs critic harness
+    # MILESTONE 3 — per-capability code cells (depend on the SPEC), each with its planner-authored verify.mjs harness
     for f in features:
         assets.append({"path": f"capability/{f}/verify.mjs", "content": _mock_cap_verify()})
         cells.append({"layer": "capability", "scope": "system", "slug": f, "maturity": "instantiated",
                       "asset_ref": f"capability/{f}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f}", "from": "instantiated", "to": "validated",
-                        "rubric_cell": R_CAP, "deps": [spec_id], "milestone": "CAPABILITY", "title": f"MILESTONE 2 · build: {f}"})
+                        "rubric_cell": R_CAP, "deps": [spec_id], "milestone": "CAPABILITY", "title": f"MILESTONE 3 · build: {f}"})
 
-    # MILESTONE 3 — the app integrator (SHIP): composes every capability, gated by its own ship verify.mjs
+    # MILESTONE 4 — the app integrator (SHIP): composes every capability, gated by its own ship verify.mjs
     assets.append({"path": f"capability/{SLUG}/verify.mjs", "content": _mock_ship_verify(features)})
     cells.append({"layer": "capability", "scope": "system", "slug": SLUG, "maturity": "instantiated",
                   "asset_ref": f"capability/{SLUG}", "depends_on": [spec_id] + cap_ids})
     tickets.append({"target_cell": app_id, "from": "instantiated", "to": "validated", "rubric_cell": R_SHIP,
-                    "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 3 · ship: {title}"})
+                    "deps": [spec_id] + cap_ids, "milestone": "SHIP", "title": f"MILESTONE 4 · ship: {title}"})
     return {"assets": assets, "cells": cells, "tickets": tickets}
 
 
