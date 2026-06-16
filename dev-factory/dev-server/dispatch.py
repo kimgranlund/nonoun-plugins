@@ -31,6 +31,23 @@ import ledger as _led       # noqa: E402
 import execplan as _ep      # noqa: E402  (the deterministic execution-plan assembly)
 
 LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presumed dead (reconcile_leases)
+MAX_WORKER_ATTEMPTS = 3     # consecutive worker failures on one cell before it blocks (a transient hiccup retries)
+
+
+def _consecutive_fails(d, tid):
+    """The current failure STREAK for a ticket — count `activity-fail` events since its last `activity-complete`
+    (any success resets the streak). The retry budget: a transient failure retries; a persistently-stuck cell
+    blocks. Read from the append-only ledger, so it survives a crash + needs no schema change to the ticket."""
+    n = 0
+    for e in _led.read(d):
+        if (e.get("subject") or {}).get("ticket") != tid:
+            continue
+        ev = e.get("event")
+        if ev == "activity-fail":
+            n += 1
+        elif ev == "activity-complete":
+            n = 0
+    return n
 
 # Roster mapping: which worker role advances a cell of a given layer (the critic is always cell-validator —
 # the separate skeptic). The execution plan decides HOW the unit runs; this decides WHO. A regenerating cell
@@ -437,10 +454,23 @@ def dispatch_unit(d, ticket, adapter, actor, tier=1, repo_root=None, auto_valida
     if not result.get("ok"):
         _led.append(d, "activity-fail", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
                     f"{agent} failed: {result.get('error', 'no artifact')}", metrics={"activity": act_id})
-        _api.transition_ticket(d, tid, "blocked", actor, reason="worker failed")
+        # RETRY, don't dead-end: most worker failures are transient (a flaky tool call, a `claude` that errored
+        # late, an operator interruption). Returning the ticket to `active` lets the next tick re-dispatch it; only
+        # after MAX_WORKER_ATTEMPTS consecutive failures (a genuinely stuck cell) does it `block` and drop out of
+        # rank. Without this a single hiccup wedged the whole build behind one cell, needing a manual reopen — the
+        # opposite of an autonomous loop. The streak resets on any success; the global run budget still bounds total
+        # dispatches, so retries can't run away.
         teardown_worktree(d, wt, repo_root)
+        fails = _consecutive_fails(d, tid)
+        if fails < MAX_WORKER_ATTEMPTS:
+            _api.transition_ticket(d, tid, "active", actor,
+                                   reason=f"worker failed (attempt {fails}/{MAX_WORKER_ATTEMPTS}) — retrying next tick")
+            _api._store.rebuild(d)
+            return False, _api.get_ticket(d, tid), f"worker failed; retrying ({fails}/{MAX_WORKER_ATTEMPTS})"
+        _api.transition_ticket(d, tid, "blocked", actor,
+                               reason=f"worker failed {fails}× consecutively — blocked (retries exhausted)")
         _api._store.rebuild(d)
-        return False, _api.get_ticket(d, tid), "worker did not complete"
+        return False, _api.get_ticket(d, tid), "worker did not complete — blocked after retries"
     # the server records the authored asset on the cell (workers cannot write lattice.json)
     _api.seed_cell(d, cell["layer"], cell["scope"], cell["slug"], maturity=cell["maturity"],
                    asset_ref=result.get("asset_ref"), depends_on=cell.get("depends_on", []),
@@ -544,6 +574,27 @@ def selftest():
         reclaimed = reconcile_leases(d)
         expect(t2["id"] in reclaimed, "expired-lease ticket not reclaimed")
         expect(_api.get_ticket(d, t2["id"])["state"] == "active", "reclaimed ticket not returned to active")
+
+        # retry-then-block: a worker failure RETRIES up to MAX_WORKER_ATTEMPTS (a transient hiccup self-recovers
+        # instead of wedging the build); only a persistently-stuck cell blocks and drops from dispatch.
+        class _AlwaysFail(DispatchAdapter):
+            name = "always-fail"
+            def dispatch(self, d, unit):
+                return {"ok": False, "error": "boom (test)", "metrics": {}}
+        _api.seed_cell(d, "spec", "task", "flaky", maturity="instantiated", asset_ref="spec/flaky.md")
+        open(os.path.join(d, "spec", "flaky.md"), "w").write("# flaky\n")
+        tf = _api.create_ticket(d, "task", "flaky", target_cell="spec.task.flaky",
+                                target_transition={"from": "instantiated", "to": "validated"},
+                                acceptance={"rubric_cell": "rubric.task.r"}, budget={"iterations": 1, "tokens": 1000})
+        _api.transition_ticket(d, tf["id"], "active", srv)
+        seen = []
+        for _ in range(MAX_WORKER_ATTEMPTS):
+            dispatch_unit(d, _api.get_ticket(d, tf["id"]), _AlwaysFail(), srv, tier=1, repo_root=root)
+            seen.append(_api.get_ticket(d, tf["id"])["state"])
+        expect(seen[:-1] == ["active"] * (MAX_WORKER_ATTEMPTS - 1),
+               f"a transient worker failure must RETRY (return to active), got {seen[:-1]}")
+        expect(seen[-1] == "blocked",
+               f"a cell stuck for {MAX_WORKER_ATTEMPTS} consecutive failures must block, got {seen[-1]}")
 
         # Feature A: the HeadlessClaudeAdapter folds the operator's recent guidance into a NEWLY dispatched
         # worker's prompt (a running one-shot worker can't be steered mid-flight; the NEXT dispatch is).
