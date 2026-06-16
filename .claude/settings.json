@@ -6,7 +6,7 @@
     "nonoun-plugins": {
       "source": {
         "source": "github",
-        "repo": "kimgranlund/claude-plugins"
+        "repo": "kimgranlund/nonoun-plugins"
       },
       "autoUpdate": true
     }

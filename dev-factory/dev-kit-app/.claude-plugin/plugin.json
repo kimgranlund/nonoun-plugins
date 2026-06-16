@@ -6,7 +6,7 @@
     "name": "Kim",
     "email": "kim.granlund@gmail.com"
   },
-  "homepage": "https://github.com/kimgranlund/claude-plugins",
+  "homepage": "https://github.com/kimgranlund/nonoun-plugins",
   "license": "MIT",
   "keywords": ["dev-factory", "kit", "app", "code", "tests", "boundary-proof", "ui-layout", "skill"]
 }

@@ -1,13 +1,13 @@
 # product-forge
 
-**Build and evaluate product strategy, management, and UX — grounded in research and named-practitioner authority.** The product counterpart to [`brand-forge`](https://github.com/kimgranlund/claude-plugins/tree/main/brand-forge): where brand-forge builds brands grounded in cultural authority, product-forge builds products grounded in discovery, jobs-to-be-done, positioning, user research, and a comprehensive library of UX patterns and app-genre conventions — judged by an adversarial council of named product, UX, and AI-era practitioners.
+**Build and evaluate product strategy, management, and UX — grounded in research and named-practitioner authority.** The product counterpart to [`brand-forge`](https://github.com/kimgranlund/nonoun-plugins/tree/main/brand-forge): where brand-forge builds brands grounded in cultural authority, product-forge builds products grounded in discovery, jobs-to-be-done, positioning, user research, and a comprehensive library of UX patterns and app-genre conventions — judged by an adversarial council of named product, UX, and AI-era practitioners.
 
 > **Status: 0.3.21 — the methodology layer + corpus export + the product-corpus MCP.** Eight skills, a 23-critic council, 11 rubrics, **11 runnable methodology playbooks** on a machine-readable method-card schema, the advisory lint hook, the `/product-*` commands (including `/product-corpus-export`, which lays the engagement's deliverables out as a navigable site via the bundled corpus-reader), the **`product-corpus` MCP** (per-instance read-only retrieval over an exported corpus), and a ~135-file reference library, all passing the harness gates (`validate_plugin.py --strict`, `reference-lint.py`, `product-lint selftest`, `check-sourcing.py`, **`check-methods.py`**, the MCP liveness + guard selftests, markdownlint). v0.3 adds the runnable _how_ — a **process-spine** frame (Double Diamond → seven phases) beside the v0.2 Product Experience Strategy taxonomy frame. Red-teamed with the `plugins-factory` council (records under `reviews/`). See [ROADMAP.md](ROADMAP.md).
 
 ## Quick start
 
 ```text
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install product-forge@nonoun-plugins
 ```
 
@@ -50,4 +50,4 @@
 
 ## Provenance
 
-Authored and red-teamed with [`plugins-factory`](https://github.com/kimgranlund/claude-plugins/tree/main/plugins-factory) against its 9-dimension architecture standard; the reference library follows `meta-expert-author`'s verification discipline (dated, coverage-tiered, source-cited; observable-public-only). The living-practitioner critics' verbatim quotes were verified against their public sources; `bin/check-sourcing.py` gates that every reference is sourced and every critic carries a sourcing block.
+Authored and red-teamed with [`plugins-factory`](https://github.com/kimgranlund/nonoun-plugins/tree/main/plugins-factory) against its 9-dimension architecture standard; the reference library follows `meta-expert-author`'s verification discipline (dated, coverage-tiered, source-cited; observable-public-only). The living-practitioner critics' verbatim quotes were verified against their public sources; `bin/check-sourcing.py` gates that every reference is sourced and every critic carries a sourcing block.

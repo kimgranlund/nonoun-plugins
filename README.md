@@ -1,13 +1,13 @@
-# claude-plugins — the `nonoun-plugins` marketplace
+# nonoun-plugins — the `nonoun-plugins` marketplace
 
-[![ci](https://github.com/kimgranlund/claude-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/kimgranlund/claude-plugins/actions/workflows/ci.yml)
+[![ci](https://github.com/kimgranlund/nonoun-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/kimgranlund/nonoun-plugins/actions/workflows/ci.yml)
 
-A public **Claude Code plugin marketplace**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with the catalog's own lifecycle tool. The marketplace *name* is `nonoun-plugins` (install ids end in `@nonoun-plugins`) while the repo is `claude-plugins` — see [docs/ISSUES.md](docs/ISSUES.md) D-12 (renamed from `plugins-forge` on 2026-06-13).
+A public **Claude Code plugin marketplace**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with the catalog's own lifecycle tool. The marketplace *name*, the repo, and the local folder are all `nonoun-plugins` (install ids end in `@nonoun-plugins`) — see [docs/ISSUES.md](docs/ISSUES.md) D-17 (the repo + folder renamed `claude-plugins` → `nonoun-plugins` on 2026-06-16, resolving the D-12 repo≠name split; the old GitHub URL auto-redirects).
 
 ## Install
 
 ```text
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install brand-forge@nonoun-plugins
 /plugin install plugins-factory@nonoun-plugins
 /plugin install product-forge@nonoun-plugins

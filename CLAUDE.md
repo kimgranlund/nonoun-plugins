@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`nonoun-plugins` (the marketplace `name` in `.claude-plugin/marketplace.json`; the repo is `claude-plugins`) is a **Claude Code plugin marketplace** — distributable, reference-quality plugins, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Catalog plugins:
+`nonoun-plugins` (the marketplace `name` in `.claude-plugin/marketplace.json`, the GitHub repo, and the local folder — all aligned as of 2026-06-16, D-17; the old `claude-plugins` GitHub URL auto-redirects) is a **Claude Code plugin marketplace** — distributable, reference-quality plugins, each in its own top-level directory with its own `.claude-plugin/plugin.json`. Catalog plugins:
 
 - **`brand-forge/`** — build and evaluate brands grounded in cultural authority (the catalog's product example).
 - **`plugins-factory/`** — the plugin-lifecycle tool used to author and red-team plugins (including the others). It's a normal catalog plugin anyone can install — **and** this repo auto-enables it for itself via `.claude/settings.json`, so it's loaded whenever you work here. The build tool ships with the workshop.
@@ -142,11 +142,11 @@ Install / iterate inside Claude Code. **Default to project-local** (D-16) — en
 
 ```text
 # project-local (THE DEFAULT) — in <project>/.claude/settings.json:
-{ "extraKnownMarketplaces": { "nonoun-plugins": { "source": { "source": "github", "repo": "kimgranlund/claude-plugins" } } },
+{ "extraKnownMarketplaces": { "nonoun-plugins": { "source": { "source": "github", "repo": "kimgranlund/nonoun-plugins" } } },
   "enabledPlugins": { "harness-forge@nonoun-plugins": true } }
 
 # …or interactively, choosing the PROJECT scope when prompted (NOT the user/global default):
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install plugins-factory@nonoun-plugins    # the lifecycle tool (this repo auto-enables it project-local via .claude/settings.json)
 ```
 

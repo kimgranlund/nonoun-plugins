@@ -9,7 +9,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 ## Quick start
 
 ```text
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install brand-forge@nonoun-plugins
 ```
 

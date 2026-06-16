@@ -9,7 +9,7 @@ Where `agent-ops` *advises on and reviews* agentic systems (methodology + a name
 ## Quick start
 
 ```text
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install harness-forge@nonoun-plugins
 ```
 

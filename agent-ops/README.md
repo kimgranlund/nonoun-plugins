@@ -7,7 +7,7 @@
 ## Quick start
 
 ```text
-/plugin marketplace add kimgranlund/claude-plugins
+/plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install agent-ops@nonoun-plugins
 ```
 
@@ -53,4 +53,4 @@ Each critic is a lens distilled from a real, widely recognized software / AI-age
 
 ## Provenance
 
-Carved and **de-repo'd** from four mature global skills — `ops-repo`, `arch-repo-review`, `core-agent-loops`, `core-agentic-ux-best-practices` — then made self-contained (cross-references rewired to the plugin's own siblings; ~200 external references neutralized; scripts moved to `bin/`). Authored and red-teamed with [`plugins-factory`](https://github.com/kimgranlund/claude-plugins/tree/main/plugins-factory). **Honesty preserved:** the agentic-UX scores ship **directional** (calibration-sample-light), not authoritative — `[gate]` dimensions are the only mechanically verifiable layer. Likewise `repo-review`'s tiering is **expert judgment by construction** (architecture quality isn't mechanically checkable): it ships discipline — HITL gates, the adversarial wave, file:line citations — not a gate script.
+Carved and **de-repo'd** from four mature global skills — `ops-repo`, `arch-repo-review`, `core-agent-loops`, `core-agentic-ux-best-practices` — then made self-contained (cross-references rewired to the plugin's own siblings; ~200 external references neutralized; scripts moved to `bin/`). Authored and red-teamed with [`plugins-factory`](https://github.com/kimgranlund/nonoun-plugins/tree/main/plugins-factory). **Honesty preserved:** the agentic-UX scores ship **directional** (calibration-sample-light), not authoritative — `[gate]` dimensions are the only mechanically verifiable layer. Likewise `repo-review`'s tiering is **expert judgment by construction** (architecture quality isn't mechanically checkable): it ships discipline — HITL gates, the adversarial wave, file:line citations — not a gate script.
