@@ -3,10 +3,12 @@
 The reader's own evolution. It is **gated against staleness**: `sync-corpus-reader.py --check`
 (a CI gate) hashes the reader's code and fails if it differs from the `source-fingerprint`
 marker below — so any code change trips CI until it is logged. Add entries with
-`python3 plugins-factory/bin/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
+`python3 tools/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: c9cca8aa8ada00be95e13df10763b0d78eccb8dea02c88872bd54ffb33730a17 -->
+<!-- source-fingerprint: 23a09dd2e0026054ffd4b5a4bec3db70e347a8fb9623011c1abe14a023abcfc6 -->
+
+## 2026-06-16 — Bump mermaid 10.9.1 → 11.15.0 (current major). v11's dist/mermaid.min.js is the fully self-contained esbuild bundle (0 lazy chunks) that still sets globalThis.mermaid as a classic script, so it stays SRI-pinnable + window-global; recomputed the sha384. Render path (cr-ui-diagram-viewer: window.mermaid.initialize + render()->{svg}, securityLevel:strict) is API-compatible, unchanged.
 
 ## 2026-06-10 — Full-text search in baked builds: the sidebar filter also matches the inlined page markdown (lazy lowercased cache; served layouts keep the metadata filter); search placeholder reflects the mode
 
