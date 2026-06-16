@@ -143,12 +143,15 @@ def on_tick(d, adapter=None, tier=None, max_concurrency=2, now=None):
     frontier = _disp.refute_frontier(d)
     if frontier:
         refuted = {"cell": frontier[0], "agreed": _disp.run_refuter(d, frontier[0])}
+    # REGENERATION: distill the ledger's recurring success signatures into `pattern.system.*` cells — the pattern
+    # layer (the one a build never seeds) populates from real operating evidence (operate → ledger → distill → patterns).
+    distilled = _disp.distill_to_patterns(d)
     b = load_budget(d)
     if b is not None:
         b["ticks"] = b.get("ticks", 0) + 1
         json.dump(b, open(_budget_path(d), "w"), indent=2)
     return {"halted": False, "reason": None, "tier": tier, "dispatched": dispatched,
-            "reconciled": reconciled, "refuted": refuted}
+            "reconciled": reconciled, "refuted": refuted, "distilled": distilled}
 
 
 def run(d, adapter=None, tier=1, max_concurrency=2, period_s=30):

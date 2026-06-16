@@ -98,6 +98,19 @@ def run():
         v = verdict.verdict(name, quiet=True)
         check(v["shipped"] and v["ok"], "verdict: SHIPPED (the capability.system.app integrator validated — its verify.mjs gate passed)")
 
+        # REGENERATION (operate → distill → PATTERNS): after the build operates (the caps validated, the ledger
+        # accrued a success signature), distill it into the pattern layer — the ONE layer a build never seeds.
+        import dispatch as _disp3
+        before_pat = [c for c in api.lattice_grid(inst) if c["layer"] == "pattern"]
+        created_pat = _disp3.distill_to_patterns(inst)
+        after_pat = [c for c in api.lattice_grid(inst) if c["layer"] == "pattern"]
+        check(not before_pat and created_pat and after_pat,
+              "the `pattern` layer EMERGES from operating evidence (distill→patterns) — empty at cold-start, populated after the build")
+        check(all(c["maturity"] == "validated" for c in after_pat) and
+              os.path.isfile(os.path.join(inst, after_pat[0]["asset_ref"])) and
+              "ledger:" in open(os.path.join(inst, after_pat[0]["asset_ref"])).read(),
+              "distilled patterns are seeded validated WITH provenance (the ledger refs distilled from)")
+
         print("· ORCHESTRATION + OBSERVABILITY — the planned team is recorded, spend attributed, the roadmap hydrated")
         epics = [e for e in api.roadmap(inst) if str(e.get("title", "")).startswith("Milestone")]
         check(len(epics) == 4, "the roadmap is hydrated — one epic per milestone (PRD · SPEC · CAPABILITY · SHIP)")

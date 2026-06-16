@@ -30,6 +30,7 @@ import lifecycle as _lc     # noqa: E402
 import ledger as _led       # noqa: E402
 import execplan as _ep      # noqa: E402  (the deterministic execution-plan assembly)
 import autonomy as _auto    # noqa: E402  (the trust trajectory — record_incident demotes on a caught false pass)
+import distill as _distill  # noqa: E402  (the regeneration loop's deterministic scan — ledger → pattern candidates)
 
 LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presumed dead (reconcile_leases)
 MAX_WORKER_ATTEMPTS = 3     # consecutive worker failures on one cell before it blocks (a transient hiccup retries)
@@ -648,6 +649,44 @@ def run_refuter(d, cell_id):
         _auto.record_incident(d, cell_id, f"refuter caught a false pass: {cell_id} validated against its gate but "
                               "fails an independent re-check (overfit / gamed)")
     return agreed
+
+
+def distill_to_patterns(d, min_occurrences=2):
+    """Close the regeneration loop's distill→PATTERNS step in code: turn the ledger's recurring SUCCESS signatures
+    (a cell TYPE that validated reliably, min_occurrences+) into seeded `pattern.system.<type>` cells WITH provenance
+    (the ledger refs distilled from — a pattern without provenance is a guess). The 'is this a real, reusable
+    pattern?' judgment is the harness-distiller agent's; this is the mechanical scan + materialization, so the
+    `pattern` layer — the ONE layer a build never seeds (it is EMERGENT, distilled from operating, not given) —
+    populates from real OPERATING evidence. Idempotent (skips already-distilled). Returns the pattern cell ids."""
+    created = []
+    for c in _distill.distill_patterns(d, min_occurrences=min_occurrences):
+        if c.get("kind") != "success":
+            continue
+        slug = str(c["cell_type"]).replace(".", "-")
+        pid = f"pattern.system.{slug}"
+        if _lat.find(_lat.load(d), pid):
+            continue
+        path = os.path.join(d, "pattern", f"{slug}.md")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, "w", encoding="utf-8").write(
+            f"# Pattern — {c['signature']}\n\nDistilled from {c['occurrences']} occurrences of `{c['cell_type']}` "
+            f"reaching validated/operating.\n\n## Provenance (ledger)\n"
+            + "\n".join(f"- {r}" for r in c.get("evidence", [])) + "\n")
+        # mint a REAL signal on disk — the distillation IS the cell's evidence (its operating-evidence provenance),
+        # so `lattice check` sees an earned signal, not a phantom signal_ref ("asserted, not earned").
+        sig_rel = f"signals/{pid}/distilled.json"
+        os.makedirs(os.path.join(d, "signals", pid), exist_ok=True)
+        json.dump({"cell_id": pid, "kind": "distill", "result": "pass",
+                   "evidence": f"{c['occurrences']}x {c['cell_type']} reached validated/operating: {c['signature']}",
+                   "validated_against": {}, "ledger_refs": c.get("evidence", [])},
+                  open(os.path.join(d, sig_rel), "w", encoding="utf-8"), indent=2)
+        _api.seed_cell(d, "pattern", "system", slug, maturity="validated",
+                       asset_ref=f"pattern/{slug}.md", signal_refs=[sig_rel])
+        _led.append(d, "transition", {"kind": "server", "id": "distiller"}, {"cell": pid},
+                    f"distilled pattern: {c['signature']} ({c['occurrences']}x)", frm="absent", to="validated",
+                    metrics={"distilled": True, "evidence": c.get("evidence")})
+        created.append(pid)
+    return created
 
 
 def selftest():
