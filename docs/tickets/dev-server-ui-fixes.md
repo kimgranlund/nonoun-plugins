@@ -282,6 +282,15 @@ out internally can't be overridden from the caller, so they're unusable as-is in
 fan-out. Otherwise the council path — the adversarial half of REVIEW — is dead on arrival wherever
 `deep` isn't provisioned.
 
+**⚠ Recurrence confirmed (2026-06-15, later session).** Despite the "FIXED in source" header, dispatching
+`dev-kernel:spec-council` still died immediately on *"issue with the selected model (deep)"* — so the
+11-agent remap did **not** reach this instance's vendored `dev-kernel` agents (stale copy), and the
+orchestrator path remains unusable. Workaround held: ran a full 6-lens spec REVIEW by launching the
+`critic-spec-*` agents **directly** via the Task tool with `model: opus` (the per-call override works on
+leaf critics). Net: the council is reachable manually, but `spec-council`/`plugin-council` as orchestrators
+are still DOA here. Re-vendor the agent defs into shipped instances, or have `factory-init` stamp the
+resolved model map.
+
 ### DF-4 · P3 — kit verifiers (`rubric-check.py`, `spec-quality-check.py`, `doc-check.py`) aren't discoverable from inside an instance · FIXED in source (2026-06-15)
 
 **Fixed in source.** `dispatch.py` now `--add-dir`s the bound kit (`DEV_FACTORY_KIT`, read-only) so a worker can locate + RUN the kit's `bin/` meta-verifiers instead of self-attesting.
