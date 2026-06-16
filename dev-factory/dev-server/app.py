@@ -263,9 +263,17 @@ def _wire_heartbeat(app):
         conc = int(os.environ.get("DEV_FACTORY_CONCURRENCY", "2"))
         period = int(os.environ.get("DEV_FACTORY_PERIOD", "30"))
 
+        import functools
+
         async def loop():
+            evloop = asyncio.get_event_loop()
             while HEARTBEAT_ENABLED:
-                summ = heartbeat.on_tick(DIR, tier=tier, max_concurrency=conc)
+                # A headless tick blocks for MINUTES (each `claude -p` worker is a synchronous subprocess). Running
+                # it inline would freeze the event loop — the API + SSE stream would stall and the dashboard would
+                # go dark for the whole dispatch. Offload the tick to a worker thread so the server stays live and
+                # watchable while real workers run. (run_in_executor, not asyncio.to_thread — 3.8 target.)
+                summ = await evloop.run_in_executor(
+                    None, functools.partial(heartbeat.on_tick, DIR, tier=tier, max_concurrency=conc))
                 STREAM.publish("tick", {"summary": summ, "lattice": api.lattice_grid(DIR)})
                 await asyncio.sleep(period)
         asyncio.create_task(loop())

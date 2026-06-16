@@ -247,8 +247,10 @@ function applyStreamEvent(evt) {
     // the 15s token-spend poll streamed a new snapshot — append (capped) for the realtime burn graph
     if (payload && payload.ts) store.tokens.value = [...store.tokens.value, payload].slice(-240);
   }
-  // any committed write means the ledger advanced — pull the tail cheaply.
-  if (kind === "ticket" || kind === "tick") { refreshLedger(); refreshStatus(); }
+  // any committed write means the ledger advanced — pull the tail cheaply. The 15s `tokens` poll fires even
+  // while a long headless tick is mid-flight in its worker thread, so refresh on it too — that's what keeps the
+  // milestone strip, the worker cards, and the lattice grid live DURING a multi-minute dispatch (not just at tick-end).
+  if (kind === "ticket" || kind === "tick" || kind === "tokens") { refreshLedger(); refreshStatus(); }
 }
 
 // The /api/stream ticket payload is the *file-of-record* shape (nested), while
