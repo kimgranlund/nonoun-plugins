@@ -260,10 +260,14 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                     f"{unit['layer']}.{unit['scope']}.{unit['slug']}. Author its source as multiple files under "
                     f"`{dir_rel}/` to INDUSTRIAL standards: clear module boundaries, named exports, descriptive "
                     f"naming, proper levels of abstraction, no dead code. Put the testable LOGIC in pure ES modules "
-                    f"the harness can import headlessly; keep rendering/DOM/canvas in a thin shell. It MUST pass its "
-                    f"critic harness `{dir_rel}/verify.mjs` — READ it for the exact contract, but you CANNOT write it "
-                    f"(it is the critic's gate; your write is denied).{team} Do NOT touch .agents/dev-factory/signals/, the "
-                    f"ledger, rubric/, lattice.json, or any verify.mjs. Produce ONLY the source files.{gtxt}")
+                    f"the harness can import headlessly; keep rendering/DOM/canvas in a thin shell. "
+                    f"REQUIRED: author an `{dir_rel}/index.mjs` ENTRY POINT that re-exports the capability's full "
+                    f"public API (a barrel, e.g. `export * from './foo.mjs';`) — the critic harness imports the API "
+                    f"from `./index.mjs`, so that file MUST exist and surface every declared export no matter how you "
+                    f"split the internals. It MUST pass its critic harness `{dir_rel}/verify.mjs` — READ it for the "
+                    f"exact contract, but you CANNOT write it (it is the critic's gate; your write is denied).{team} "
+                    f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, lattice.json, or any verify.mjs. "
+                    f"Produce the source files INCLUDING index.mjs.{gtxt}")
 
         asset_abs = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
         rel = os.path.relpath(asset_abs, project_root)             # the asset's path FROM the worker's cwd (project root)
