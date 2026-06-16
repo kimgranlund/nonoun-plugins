@@ -121,7 +121,7 @@ def on_tick(d, adapter=None, tier=None, max_concurrency=2, now=None):
         return {"halted": True, "reason": "paused (human kill-switch)", "dispatched": []}
     if tier is None:
         tier = _auto.tier_for(d, now=now)          # the EARNED tier — mechanically demoted on incident
-    adapter = adapter or _disp.MockAdapter()
+    adapter = adapter or _disp.resolve_adapter()   # DEV_FACTORY_ADAPTER=headless → live workers; default mock (free)
     reconciled = _disp.reconcile_leases(d, now=now)
     exhausted, reason = budget_exhausted(d, now=now)
     if exhausted:

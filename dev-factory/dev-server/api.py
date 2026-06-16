@@ -344,8 +344,31 @@ def list_activities(d, status=None):
 
 
 def agents_running(d):
-    """The agent monitor: the live running slice of the activity lens (queued/running/handed-off)."""
-    return _store.activities(d, running_only=True)
+    """The live worker slice for the Agents view: each claimed/in-progress/in-review ticket as a worker, ENRICHED
+    with its latest dispatch's orchestration (shape · delegation · depth · parallelism · model tier) read from the
+    ledger, plus the claim (worktree, claimed_at) for the live elapsed timer + the probe-cost ETA. Derived from the
+    ledger + the file-of-record — no second source of truth. This is what makes the planned team visible live."""
+    starts = {}
+    for e in _led.read(d, event="activity-start"):
+        tk = (e.get("subject") or {}).get("ticket")
+        if tk:
+            starts[tk] = e.get("metrics") or {}      # latest dispatch wins
+    out = []
+    for t in list_tickets(d):
+        if t.get("state") not in ("claimed", "in-progress", "in-review"):
+            continue
+        full = get_ticket(d, t["id"]) or {}
+        cl = full.get("claim") or {}
+        m = starts.get(t["id"], {})
+        out.append({
+            "id": cl.get("worker_id") or t["id"], "ticket": t["id"], "agent": m.get("agent") or "worker",
+            "cell": t.get("target_cell"), "state": t.get("state"), "worktree": cl.get("worktree"),
+            "claimed_at": cl.get("claimed_at"), "lease_expiry": cl.get("lease_expiry"), "probe_cost": t.get("probe_cost"),
+            "orchestration_shape": m.get("orchestration_shape"), "delegation_mode": m.get("delegation_mode"),
+            "depth": m.get("depth", 0), "parallelism": m.get("parallelism", 1),
+            "model_tier": m.get("model_tier"), "reasoning_effort": m.get("reasoning_effort"),
+        })
+    return out
 
 
 # ─────────────────────────── roadmap + issues (the coordination corpus) ───────────────────────────

@@ -3,6 +3,23 @@
 The dev-factory runtime (FastAPI/uvicorn over the stdlib ops layer). Not a plugin — it ships in the dev-factory
 marketplace and is versioned with the kernel it serves. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## 2026-06-15 — env-selectable headless adapter + dashboard depth
+
+- **The `HeadlessClaudeAdapter` is now wired into the server, env-selectable.** `dispatch.resolve_adapter()` reads
+  `DEV_FACTORY_ADAPTER` (`mock` | `headless`); the heartbeat uses it, defaulting to **mock (free, no tokens)** so a
+  Walk loop never spends tokens unless the operator opts in with `DEV_FACTORY_ADAPTER=headless`. `/api/status`
+  carries the adapter name; the header shows a **mock / ● LIVE** badge (LIVE pulses in alert colour) so it's
+  obvious whether a run spends real tokens. `run.sh`'s heartbeat warning is now adapter-accurate (it only flags
+  token spend for `headless`). This is the last gap between "proven pipeline" and a real token-spending build.
+- **Live team visibility.** `api.agents_running` is implemented from the ledger: each running worker carries its
+  dispatch's **orchestration shape · delegation (team) · depth · parallelism · model tier**, plus the claim for
+  the elapsed timer + a probe-cost ETA. The Agents view renders the orchestration line with a team dot.
+- **Spec-iteration timeline.** The Roadmap view gains a first-class bi-directional timeline — `regenerate`
+  (upstream spec revisions) + `stale-propagated` (the downstream cascade), derived from the ledger.
+- **Per-cell verify status.** The Lattice grid marks a validated cell with a passing harness signal with a
+  ✓ (and keeps the ⚠ stale flag). `app.js?v=8`.
+- dispatch/api/app/store selftests + the `debug-coldstart` replay cover the adapter default + `agents_running`.
+
 ## 2026-06-15 — orchestration + observability: real teams, token-burn graph, roadmap, elapsed/effort
 
 - **The planned sub-agent team now EXECUTES, not just records.** `HeadlessClaudeAdapter`: a `team` delegation

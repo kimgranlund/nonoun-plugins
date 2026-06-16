@@ -135,6 +135,7 @@ const store = {
   heartbeat: signal(null),      // last tick summary from SSE
   factory: signal(null),        // UI-3: the factory-state headline from /api/status.factory (idle/running/armed/paused)
   milestones: signal(null),     // build-progress rollup from /api/status.milestones (SPEC · CAPABILITY · SHIP + spec revisions)
+  adapter: signal("mock"),      // the dispatch adapter — "mock" (free) or "headless" (LIVE, spends tokens)
   guidance: signal({ items: [] }),  // the 5s operator-input buffer (run/guidance.json), streamed on the "guidance" event
   tokens: signal([]),           // the token-burn timeseries (15s snapshots), streamed on the "tokens" event
   clock: signal(Date.now()),    // a 1s tick driving live elapsed timers (no server round-trip)
@@ -193,6 +194,7 @@ async function refreshStatus() {
     const st = await jget("/api/status");
     store.factory.value = st.factory || null;
     store.milestones.value = st.milestones || null;
+    store.adapter.value = st.adapter || "mock";
   } catch { /* leave prior value */ }
 }
 
@@ -336,6 +338,7 @@ class DfApp extends UIElement {
           ${raw(tab("tokens", "Tokens", "▟"))}
         </nav>
         <div class="conn" role="status" aria-live="polite">
+          <span class="adapter" title="dispatch adapter — mock is free, headless spends real tokens"></span>
           <span class="milestones" title="build milestones — where the build is, and whether it shipped"></span>
           <span class="factory-state" title="the factory's work state"></span>
           <span class="pulse" aria-hidden="true"></span><span class="conn-label"></span>
@@ -398,6 +401,16 @@ class DfApp extends UIElement {
         mel.innerHTML = ms.stages.map(stage).join('<span class="ms-sep">›</span>') + rev;
         mel.dataset.shipped = ms.shipped ? "1" : "0";
       } else { mel.innerHTML = ""; mel.removeAttribute("data-shipped"); }
+    }
+    // adapter badge — mock (free) vs LIVE (headless, spends real tokens)
+    const adapter = store.adapter.value || "mock";
+    const ael = this.querySelector(".adapter");
+    if (ael) {
+      ael.textContent = adapter === "headless" ? "● LIVE" : "mock";
+      ael.dataset.adapter = adapter;
+      ael.title = adapter === "headless"
+        ? "headless adapter — the heartbeat dispatches real claude workers (spends tokens)"
+        : "mock adapter — the free deterministic loop (no tokens)";
     }
     // view swap — only when the route actually changes (preserves the child otherwise)
     const tag = { kanban: "df-kanban", lattice: "df-lattice", ledger: "df-ledger", monitor: "df-monitor", roadmap: "df-roadmap", tokens: "df-tokens" }[view] || "df-kanban";
@@ -685,8 +698,9 @@ class DfLattice extends UIElement {
       <button class="cell st mat-${mat}" data-id="${id}"
         aria-label="${id}, ${mat}${c.stale ? ", stale" : ""}${c.blocked ? ", blocked" : ""}, ${c.signal_count || 0} signals">
         <div class="flags" aria-hidden="true">
-          ${c.signal_count ? html`<span class="f" title="${c.signal_count} signals">${c.signal_count}</span>` : ""}
-          ${c.stale ? html`<span class="f" title="stale">⚠</span>` : ""}
+          ${(["validated", "operating"].includes(mat) && c.signal_count && !c.stale) ? html`<span class="f ok" title="verified — its harness/critic signal passed">✓</span>` : ""}
+          ${c.signal_count ? html`<span class="f" title="${c.signal_count} signal(s)">${c.signal_count}</span>` : ""}
+          ${c.stale ? html`<span class="f" title="stale — must re-verify against the revised upstream">⚠</span>` : ""}
           ${c.blocked ? html`<span class="f" title="blocked">⛔</span>` : ""}
         </div>
         <div class="slug">${c.slug}</div>
@@ -791,13 +805,16 @@ class DfMonitor extends UIElement {
     const wFrac = (b.wallclock_seconds || b.wallclock) ? (used.wallclock_seconds || 0) / (b.wallclock_seconds || b.wallclock) : 0;
     const elapsed = fmtElapsed(w.claimed_at || (w.claim && w.claim.claimed_at), store.clock.value);
     const eta = w.probe_cost ? `~${_fmtTok(w.probe_cost)} tok est.` : null;
+    const team = w.delegation_mode === "team" ? `team×${depth}` : (depth ? `depth ${depth}` : null);
+    const orch = [w.orchestration_shape, team, w.model_tier].filter(Boolean).join(" · ");
     return html`
       <div class="worker">
         <header>
           <span class="agent">${agent}</span>
           ${cell ? raw(chip(cell, "h-info", true)) : ""}
-          <span style="margin-left:auto;color:var(--faint);font-size:12px">${elapsed ? html`<span class="elapsed">⏱ ${elapsed}</span> · ` : ""}depth ${depth}</span>
+          <span style="margin-left:auto;color:var(--faint);font-size:12px">${elapsed ? html`<span class="elapsed">⏱ ${elapsed}</span>` : ""}</span>
         </header>
+        ${orch ? html`<div class="orch">${w.delegation_mode === "team" ? raw('<span class="team-dot" title="orchestrator-workers sub-agent team"></span>') : ""}${orch}${w.reasoning_effort ? html` · ${w.reasoning_effort}` : ""}</div>` : ""}
         <div class="kv">
           <span>ticket <code>${shortId(w.ticket || id)}</code></span>
           <span>worktree <code>${String(wt).split("/").slice(-1)[0] || wt}</code></span>
@@ -847,11 +864,26 @@ class DfRoadmap extends UIElement {
     } else {
       out += html`<div class="empty"><strong>No epics on the roadmap.</strong> The roadmap-planner decomposes a goal into a dependency-ordered ticket set; epics appear here as <code>coordination/roadmap/*.json</code>.</div>`;
     }
+    out += this.#specIteration();
     out += html`<div class="backlog"><h3>Backlog · issues awaiting triage (${issues.length})</h3>
       ${issues.length ? raw(`<div class="tickets" style="display:grid;gap:.4rem">${issues.map((t) => this.#backlogRow(t)).join("")}</div>`)
         : raw('<div class="empty">No untriaged issues.</div>')}</div>`;
     body.innerHTML = out;
     body.querySelectorAll("[data-ticket]").forEach((el) => (el.onclick = () => (store.panel.value = { kind: "ticket", id: el.dataset.ticket })));
+  }
+  // the bi-directional spec-iteration timeline — build learnings flowing UPSTREAM (regenerate) + the staleness
+  // cascade DOWNSTREAM (stale-propagated), derived from the ledger. The first-class view of "we work both ways".
+  #specIteration() {
+    const revs = store.ledger.value.filter((e) => e.event === "regenerate" || e.event === "stale-propagated");
+    if (!revs.length) return "";
+    const n = revs.filter((e) => e.event === "regenerate").length;
+    const rows = revs.slice(-12).reverse().map((e) => {
+      const regen = e.event === "regenerate";
+      return `<li><span class="si-ev ${regen ? "regen" : "prop"}">${regen ? "⟲ spec revised" : "→ propagated"}</span>` +
+        ` <span class="si-rat">${escapeHtml(e.rationale || "")}</span><span class="si-ts">${fmtTime(e.ts)}</span></li>`;
+    }).join("");
+    return html`<div class="spec-iter"><h3>Spec iteration (bi-directional) · ${n} revision${n === 1 ? "" : "s"}</h3>
+      <ul class="si-list">${raw(rows)}</ul></div>`;
   }
   #epic(ep, byId) {
     const members = (ep.tickets || []).map((id) => byId[id]).filter(Boolean);

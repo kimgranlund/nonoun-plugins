@@ -21,6 +21,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 import api  # noqa: E402  (the tested operations layer — stdlib)
 import store as _store  # noqa: E402  (for the boot re-projection, DF-2)
+import dispatch as _dispatch  # noqa: E402  (adapter selection — mock vs headless)
 
 DIR = os.environ.get("DEV_FACTORY_DIR", ".agents/dev-factory")
 HEARTBEAT_ENABLED = os.environ.get("DEV_FACTORY_HEARTBEAT") == "1"   # OFF in Crawl; Walk sets it
@@ -191,7 +192,7 @@ def build_app():
         # + the factory-state headline (UI-3): is it working, and what is it doing — the thing the SSE 'live'
         # dot does not answer. HEARTBEAT_ENABLED is the transport's posture; the rest is derived from state.
         return {**api.status(DIR), "factory": api.factory_state(DIR, HEARTBEAT_ENABLED),
-                "milestones": api.milestones(DIR)}
+                "milestones": api.milestones(DIR), "adapter": _dispatch.adapter_name()}
 
     @app.get("/api/reports/{name}")
     def reports(name: str, family: str = None, window: int = None):

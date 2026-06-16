@@ -98,6 +98,9 @@ def run():
         snap = api.token_snapshot(inst)
         check(snap["total_tokens"] > 0 and snap["by_model"] and snap["by_effort"],
               "token spend is snapshotted + attributed per model tier + reasoning effort (the burn-graph feed)")
+        import dispatch as _disp
+        check(_disp.adapter_name() == "mock", "the server defaults to the FREE mock adapter (headless real workers are opt-in via DEV_FACTORY_ADAPTER)")
+        check(isinstance(api.agents_running(inst), list), "agents_running serves the live-worker slice (enriched with the team's orchestration shape/depth/model)")
 
         print("· SECURITY — generator/critic split + the guidance channel are worker-protected")
         check(_gate(".agents/dev-factory/capability/core/verify.mjs") == 2, "a worker write to a per-cell verify.mjs is DENIED (it can't grade its own homework)")

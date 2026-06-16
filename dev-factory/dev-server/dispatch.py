@@ -315,6 +315,22 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                 "metrics": {"cost_usd": cost, "tokens": tokens, "exit": proc.returncode}}
 
 
+def resolve_adapter(name=None, model=None):
+    """Select the dispatch adapter the server's heartbeat runs. `DEV_FACTORY_ADAPTER=headless` picks the LIVE
+    `claude -p` worker (real tokens, gated on the armed run budget + the per-cell gates); the default `mock` is
+    deterministic + free. Default mock so a Walk loop NEVER spends tokens unless the operator explicitly opts in."""
+    name = (name or os.environ.get("DEV_FACTORY_ADAPTER") or "mock").lower()
+    if name == "headless":
+        return HeadlessClaudeAdapter(model=model)
+    return MockAdapter()
+
+
+def adapter_name():
+    """The adapter the server would dispatch with — surfaced to the dashboard so the operator knows whether a run
+    spends real tokens (`headless`) or is the free mock loop (`mock`)."""
+    return "headless" if (os.environ.get("DEV_FACTORY_ADAPTER") or "mock").lower() == "headless" else "mock"
+
+
 def _verifier_for(unit):
     """The asset-exists default verifier (exit 0 iff the worker produced the artifact) — used when no kit is
     bound. A kit's validation adapter supplies the real verifier; see _kit_verifier."""
@@ -557,6 +573,17 @@ def selftest():
                "a team-delegation plan must produce an orchestrator prompt that delegates to the planned depth")
         expect("Task" in hca._allowed_tools(team_unit), "delegation=team must add the Task tool to the worker scope")
         expect("Task" not in hca._allowed_tools(capunit), "a non-delegating plan must NOT add the Task tool")
+
+        # adapter selection: DEV_FACTORY_ADAPTER=headless picks the LIVE worker; default is the free mock loop
+        expect(isinstance(resolve_adapter("mock"), MockAdapter) and isinstance(resolve_adapter("headless"), HeadlessClaudeAdapter),
+               "resolve_adapter must select mock|headless by name")
+        expect(adapter_name() == "mock", "adapter_name defaults to mock (free) when DEV_FACTORY_ADAPTER is unset")
+        os.environ["DEV_FACTORY_ADAPTER"] = "headless"
+        try:
+            expect(adapter_name() == "headless" and isinstance(resolve_adapter(), HeadlessClaudeAdapter),
+                   "DEV_FACTORY_ADAPTER=headless selects the live adapter (real workers, opt-in)")
+        finally:
+            del os.environ["DEV_FACTORY_ADAPTER"]
     if fails:
         sys.stderr.write("dispatch selftest: FAIL\n")
         for f in fails:

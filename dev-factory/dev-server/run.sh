@@ -39,13 +39,20 @@ if [ ! -d "$DEV_FACTORY_DIR" ]; then
 fi
 
 # 4. report the resolved config (the operator should see exactly what posture they're launching), then launch
+adapter="${DEV_FACTORY_ADAPTER:-mock}"
 hb="OFF (Crawl, human-driven)"
-[ "$DEV_FACTORY_HEARTBEAT" = "1" ] && hb="ON (Walk, auto-dispatch, cap ${DEV_FACTORY_MAX_DISPATCHES:-uncapped} dispatches)"
+[ "$DEV_FACTORY_HEARTBEAT" = "1" ] && hb="ON (Walk · adapter=$adapter · cap ${DEV_FACTORY_MAX_DISPATCHES:-uncapped} dispatches)"
 kit="${DEV_FACTORY_KIT:-}"; [ -z "$kit" ] && kit="none bound — REVIEW spec-quality gate needs a kit"
 echo "» dev-factory @ http://$HOST:$PORT"
 echo "    instance : $DEV_FACTORY_DIR"
 echo "    kit      : $kit"
 echo "    heartbeat: $hb"
-[ "$DEV_FACTORY_HEARTBEAT" = "1" ] && echo "    ⚠ heartbeat ON dispatches live headless 'claude' workers — they cost tokens + write the worktree."
+if [ "$DEV_FACTORY_HEARTBEAT" = "1" ]; then
+  if [ "$adapter" = "headless" ]; then
+    echo "    ⚠ adapter=headless — the heartbeat dispatches LIVE 'claude' workers (real tokens, writes the worktree)."
+  else
+    echo "    · adapter=mock — the free deterministic loop (no tokens). Set DEV_FACTORY_ADAPTER=headless for real workers."
+  fi
+fi
 cd "$HERE"
 exec python3 -m uvicorn app:app --host "$HOST" --port "$PORT"

@@ -373,3 +373,23 @@ table.lattice th.row-h { text-align: right; font-family: var(--mono); text-trans
 .tk-bar .tk-fill[data-k="large"], .tk-bar .tk-fill[data-k="high"] { background: light-dark(oklch(0.55 0.18 var(--hue-alert)), oklch(0.7 0.18 var(--hue-alert))); }
 .tk-bar .tk-v { text-align: right; font-family: var(--mono); color: var(--muted); }
 .worker header .elapsed { color: var(--accent); font-variant-numeric: tabular-nums; }
+/* adapter badge — mock is quiet; headless (LIVE, spends tokens) is loud */
+.adapter { font: 600 10px/1 var(--mono, ui-monospace); letter-spacing: 0.05em; padding: 0.2rem 0.45rem; border-radius: 999px; white-space: nowrap; color: var(--faint); border: 1px solid var(--border); }
+.adapter:empty { display: none; }
+.adapter[data-adapter="headless"] { --_h: var(--hue-alert); color: light-dark(oklch(0.5 var(--chroma-vivid) var(--_h)), oklch(0.82 var(--chroma-vivid) var(--_h))); border-color: transparent; background: light-dark(oklch(0.95 var(--chroma-soft) var(--_h)), oklch(0.32 var(--chroma-soft) var(--_h))); animation: pulse 2s ease-in-out infinite; }
+/* worker orchestration line (the live team) */
+.worker .orch { font: 600 11px/1 var(--mono, ui-monospace); color: var(--muted); margin: 0.3rem 0 0; display: flex; align-items: center; gap: 0.35rem; }
+.worker .orch .team-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); flex: none; }
+/* spec-iteration timeline (bi-directional) */
+.spec-iter { margin: 1rem 0; }
+.spec-iter h3 { font-size: 13px; margin: 0 0 0.5rem; }
+.si-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.si-list li { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.3rem 0.5rem; border-radius: var(--radius-sm); }
+.si-list li:hover { background: var(--surface-sunken); }
+.si-ev { font-weight: 600; white-space: nowrap; }
+.si-ev.regen { color: var(--accent); }
+.si-ev.prop { color: var(--muted); }
+.si-rat { color: var(--fg); flex: 1; }
+.si-ts { color: var(--faint); font-family: var(--mono); font-size: 11px; margin-left: auto; }
+/* per-cell verify status — the validated-and-signal checkmark */
+.cell .flags .f.ok { color: light-dark(oklch(0.5 var(--chroma-vivid) var(--hue-positive)), oklch(0.82 var(--chroma-vivid) var(--hue-positive))); font-weight: 700; }
