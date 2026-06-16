@@ -33,7 +33,7 @@ The repo's thesis is "structure is mechanized"; this track keeps the mechanizati
 ## Track 4 — marketplace & distribution
 
 - **Done 2026-06-10** — root `README.md` with install lines + the CI badge (`d68d1f6`).
-- **Done 2026-06-11** — **GitHub Pages catalog** (`.github/workflows/pages.yml`): the generated `index.html` is published to [kimgranlund.github.io/claude-plugins](https://kimgranlund.github.io/claude-plugins/) on every push to main, re-asserting marketplace validity + catalog freshness before deploy. The page is a single self-contained file (no relative deps).
+- **Done 2026-06-11** — **GitHub Pages catalog** (`.github/workflows/pages.yml`): the generated `index.html` is published to [kimgranlund.github.io/nonoun-plugins](https://kimgranlund.github.io/nonoun-plugins/) on every push to main, re-asserting marketplace validity + catalog freshness before deploy. The page is a single self-contained file (no relative deps).
 - **Later** — the marketplace `publish` workflow for carved libraries (plugins-factory roadmap); sibling marketplaces (`adia-plugins`, `maison-plugins`) stay local-only until something needs them published.
 - **Done 2026-06-13** — marketplace *name* renamed `plugins-forge` → **`nonoun-plugins`** (the forced migration D-1 reserved; recorded as D-12). Install ids are now `<plugin>@nonoun-plugins`; `gen-index.py` reads the `name` field dynamically so the next rename needs no code change. Out-of-repo follow-up (sibling repos `maison-plugins`/`bzzr`, local `~/.claude.json`) is the owner's, tracked in D-12.
 - **Done 2026-06-14** — install **project-local by default** (D-16); the catalog CLAUDE.md install section leads with the project's `.claude/settings.json` method, global/user scope only when asked.
