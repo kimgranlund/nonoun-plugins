@@ -71,14 +71,26 @@ def connect(d):
 
 
 def upsert_ticket(con, t):
-    # Defensive (DF-1): a malformed ticket file — e.g. `target_transition` written as a bare string — must
-    # NOT crash the whole rebuild/replay. Without this guard one bad ticket bricks `store.rebuild` AND server
-    # boot until the file is hand-repaired, undermining "a corrupted index is a rebuild, not a loss." Coerce
-    # any non-dict field to {} so a bad row degrades gracefully (null columns) instead of aborting the replay.
+    # Defensive (DF-1): a malformed ticket file must NOT crash the rebuild/replay (else one bad ticket bricks
+    # `store.rebuild` AND server boot until hand-repaired, undermining "a corrupted index is a rebuild, not a
+    # loss"). Sanitize at the SOURCE: a non-dict field → {}, and EVERY bound value coerced to a scalar so no bad
+    # shape (a dict where a string is expected) can reach sqlite as an unbindable parameter. A file with no usable
+    # id is unrecoverable → raise (rebuild skips it).
+    if not isinstance(t, dict):
+        raise TypeError("ticket file is not a JSON object")
+    tid = t.get("id")
+    if not isinstance(tid, (str, int)):
+        raise ValueError("ticket has no usable id")
+
     def _d(v):
         return v if isinstance(v, dict) else {}
+
+    def _s(v):
+        return v if v is None or isinstance(v, (str, int, float, bool)) else None
+
     tt, pr, cl, ts, acc = (_d(t.get(k)) for k in
                            ("target_transition", "priority", "claim", "timestamps", "acceptance"))
+    sigs = t.get("signal_refs")
     con.execute(
         """INSERT INTO tickets(id,type,title,state,target_cell,from_maturity,to_maturity,rubric_cell,
                                risk,unlock,probe_cost,claim_worker,lease_expiry,claimed_at,signal_count,created,updated)
@@ -88,11 +100,12 @@ def upsert_ticket(con, t):
              rubric_cell=excluded.rubric_cell,risk=excluded.risk,unlock=excluded.unlock,probe_cost=excluded.probe_cost,
              claim_worker=excluded.claim_worker,lease_expiry=excluded.lease_expiry,claimed_at=excluded.claimed_at,
              signal_count=excluded.signal_count,updated=excluded.updated""",
-        (t["id"], t.get("type"), t.get("title"), t.get("state"), t.get("target_cell"),
-         tt.get("from"), tt.get("to"), acc.get("rubric_cell"),
-         pr.get("risk"), pr.get("unlock"), pr.get("probe_cost"),
-         cl.get("worker_id"), cl.get("lease_expiry"), cl.get("claimed_at"), len(t.get("signal_refs", [])),
-         ts.get("created"), ts.get("updated")))
+        (str(tid), _s(t.get("type")), _s(t.get("title")), _s(t.get("state")), _s(t.get("target_cell")),
+         _s(tt.get("from")), _s(tt.get("to")), _s(acc.get("rubric_cell")),
+         _s(pr.get("risk")), _s(pr.get("unlock")), _s(pr.get("probe_cost")),
+         _s(cl.get("worker_id")), _s(cl.get("lease_expiry")), _s(cl.get("claimed_at")),
+         len(sigs) if isinstance(sigs, list) else 0,
+         _s(ts.get("created")), _s(ts.get("updated"))))
 
 
 def upsert_cell(con, c):
@@ -127,7 +140,10 @@ def rebuild(d):
         try:
             upsert_ticket(con, json.load(open(f, encoding="utf-8")))
             nt += 1
-        except (json.JSONDecodeError, KeyError):
+        except (json.JSONDecodeError, KeyError, TypeError, AttributeError, ValueError):
+            # ANY shape of bad ticket file degrades to a SKIP, never aborts the replay: bad JSON, a missing id,
+            # a non-dict top-level (AttributeError on .get / TypeError on subscript), or a dict where a scalar is
+            # expected. "A corrupted index is a rebuild, not a loss" must hold for one bad file, not just a clean set.
             continue
     # cells (the lattice is canonical)
     lat = _lat.load(d)
@@ -252,6 +268,19 @@ def selftest():
         os.remove(index_path(d))
         rebuild(d)
         expect(len(query_tickets(d, state="active")) == 1, "index not reconstructible from ledger+files")
+
+        # ROBUSTNESS: a corrupt ticket file of ANY shape degrades to a SKIP — one bad file cannot brick the index.
+        tdir = os.path.join(d, "coordination", "tickets")
+        for nm, content in (("g1.json", '["not","a","dict"]'), ("g2.json", '"a bare string"'),
+                            ("g3.json", '{"id":"tkt-bad","type":{"a":"dict"},"target_transition":"oops"}'),
+                            ("g4.json", '{not valid json')):
+            open(os.path.join(tdir, nm), "w").write(content)
+        try:
+            rebuild(d)
+            robust = len(query_tickets(d, state="active")) == 1   # the GOOD ticket survives the garbage
+        except Exception:
+            robust = False
+        expect(robust, "a garbage ticket file (any shape) is SKIPPED — one bad file cannot brick the rebuild")
 
     if fails:
         sys.stderr.write("store selftest: FAIL\n")
