@@ -516,19 +516,38 @@ def dispatch_unit(d, ticket, adapter, actor, tier=1, repo_root=None, auto_valida
         _lc.save_ticket(d, t)
         _led.append(d, "signal", {"kind": "server", "id": "dispatcher"}, {"ticket": tid, "cell": ticket["target_cell"]},
                     "probe cost recorded", metrics=result.get("metrics", {}))
+        _api._store.rebuild(d)
+        return ok, ticket, msg
+    # the critic GATE REFUSED the artifact (the worker produced something, but it doesn't pass verify — e.g. a
+    # missing export, a broken contract). Without recovery the ticket sticks in `in-review` forever (the verifier
+    # dead-end that stalled a build). Retry like an authoring failure: clear the claim, count it, return to active
+    # so the next dispatch re-authors against the gate's feedback; block after MAX_WORKER_ATTEMPTS. (in-review has
+    # no direct edge to active, so step through in-progress — both transitions are ungated.)
+    _led.append(d, "activity-fail", {"kind": "agent", "id": agent}, {"ticket": tid, "cell": ticket["target_cell"]},
+                f"critic refused: {msg}"[:200], metrics={"activity": act_id})
+    t = _api.get_ticket(d, tid); t["claim"] = None; _lc.save_ticket(d, t)
+    fails = _consecutive_fails(d, tid)
+    if fails < MAX_WORKER_ATTEMPTS:
+        _api.transition_ticket(d, tid, "in-progress", actor)
+        _api.transition_ticket(d, tid, "active", actor,
+                               reason=f"critic refused (attempt {fails}/{MAX_WORKER_ATTEMPTS}) — re-authoring against the gate")
+    else:
+        _api.transition_ticket(d, tid, "blocked", actor,
+                               reason=f"critic refused {fails}× consecutively — blocked (retries exhausted)")
     _api._store.rebuild(d)
-    return ok, ticket, msg
+    return False, _api.get_ticket(d, tid), msg
 
 
 # ─────────────────────────────────── crash recovery (lease reconciliation) ───────────────────────────────────
 
 def reconcile_leases(d, now=None):
-    """Expire dead workers: a claimed/in-progress ticket whose lease has passed returns to `active`
-    (retry, attempts++) or `blocked` if attempts are exhausted. Idempotent — runs each tick (§8.1, §15)."""
+    """Expire dead workers: a claimed/in-progress/in-review ticket whose lease has passed returns to `active`
+    for re-dispatch (a worker that died mid-author OR mid-validation must not wedge the build). Idempotent — runs
+    each tick (§8.1, §15). in-review has no direct edge to active, so it steps through in-progress."""
     now = now or _now()
     reclaimed = []
     for t in _api.list_tickets(d):
-        if t.get("state") not in ("claimed", "in-progress"):
+        if t.get("state") not in ("claimed", "in-progress", "in-review"):
             continue
         full = _api.get_ticket(d, t["id"])
         claim = full.get("claim") or {}
@@ -542,7 +561,10 @@ def reconcile_leases(d, now=None):
         if dead:
             full["claim"] = None
             _lc.save_ticket(d, full)
-            _api.transition_ticket(d, t["id"], "active", {"kind": "server", "id": "lease-reconciler"},
+            rec = {"kind": "server", "id": "lease-reconciler"}
+            if t.get("state") == "in-review":
+                _api.transition_ticket(d, t["id"], "in-progress", rec)
+            _api.transition_ticket(d, t["id"], "active", rec,
                                    reason=f"lease expired ({exp}); worker presumed dead — returned to active")
             reclaimed.append(t["id"])
     return reclaimed
