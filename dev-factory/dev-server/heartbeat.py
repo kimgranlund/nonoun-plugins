@@ -136,11 +136,19 @@ def on_tick(d, adapter=None, tier=None, max_concurrency=2, now=None):
         ok, _t, _msg = _disp.dispatch_unit(d, _api.get_ticket(d, t["id"]), adapter,
                                            {"kind": "server", "id": "heartbeat"}, tier=tier, auto_validate=auto)
         dispatched.append({"ticket": t["id"], "ok": ok, "to": "done" if auto else "in-review"})
+    # INDEPENDENT REFUTER (false-pass measurement → earned autonomy): re-check one validated-but-unrefuted cell
+    # against its HIDDEN refuter harness. The check is the false-pass denominator; a DISAGREEMENT records an
+    # incident (autonomy demotes — the NEXT tick reads the lower tier_for). One per tick keeps ticks cheap.
+    refuted = None
+    frontier = _disp.refute_frontier(d)
+    if frontier:
+        refuted = {"cell": frontier[0], "agreed": _disp.run_refuter(d, frontier[0])}
     b = load_budget(d)
     if b is not None:
         b["ticks"] = b.get("ticks", 0) + 1
         json.dump(b, open(_budget_path(d), "w"), indent=2)
-    return {"halted": False, "reason": None, "tier": tier, "dispatched": dispatched, "reconciled": reconciled}
+    return {"halted": False, "reason": None, "tier": tier, "dispatched": dispatched,
+            "reconciled": reconciled, "refuted": refuted}
 
 
 def run(d, adapter=None, tier=1, max_concurrency=2, period_s=30):

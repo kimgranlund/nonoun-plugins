@@ -29,6 +29,7 @@ import lattice as _lat      # noqa: E402
 import lifecycle as _lc     # noqa: E402
 import ledger as _led       # noqa: E402
 import execplan as _ep      # noqa: E402  (the deterministic execution-plan assembly)
+import autonomy as _auto    # noqa: E402  (the trust trajectory — record_incident demotes on a caught false pass)
 
 LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presumed dead (reconcile_leases)
 MAX_WORKER_ATTEMPTS = 3     # consecutive worker failures on one cell before it blocks (a transient hiccup retries)
@@ -590,6 +591,63 @@ def reconcile_leases(d, now=None):
                                    reason=f"lease expired ({exp}); worker presumed dead — returned to active")
             reclaimed.append(t["id"])
     return reclaimed
+
+
+# ─────────────────────── the independent refuter (false-pass measurement → earned autonomy) ───────────────────────
+
+def refute_frontier(d):
+    """Validated cells with a refuter harness that have NOT yet been independently re-checked — the refuter's
+    work-list. A cell is re-checked once; the result is the false-pass DENOMINATOR."""
+    refuted = {(e.get("subject") or {}).get("cell") for e in _led.read(d, event="signal")
+               if (e.get("metrics") or {}).get("refuter")}
+    out = []
+    for c in _lat.load(d).get("cells", []):
+        cid = _lat.cid(c)
+        if c.get("maturity") in ("validated", "operating") and cid not in refuted \
+                and os.path.isfile(os.path.join(d, "coordination", "refuters", f"{cid}.json")):
+            out.append(cid)
+    return out
+
+
+def run_refuter(d, cell_id):
+    """INDEPENDENT post-validation re-check. A validated cell is re-tested against a HIDDEN refuter harness — the
+    planner's `refute` assertions, DIFFERENT from the `verify.mjs` gate the worker saw and coded to, materialized
+    only now (the worker never saw it). The check is recorded as the false-pass denominator (`signal` ·
+    metrics.refuter); a DISAGREEMENT (the cell passed its own gate but FAILS the independent re-check) is a caught
+    FALSE PASS → `record_incident` → mechanical demotion (the rubric verifiers go `stale`, the tier re-derives
+    lower, no human in the path). This is the PRODUCER the autonomy trajectory was built to consume — it read
+    `unmeasured` because nothing recorded a refuter check. Returns True (agreed), False (false-pass caught), or
+    None (no refuter / not applicable)."""
+    sidecar = os.path.join(d, "coordination", "refuters", f"{cell_id}.json")
+    if not os.path.isfile(sidecar):
+        return None
+    cell = _lat.find(_lat.load(d), cell_id)
+    if not cell or cell.get("maturity") not in ("validated", "operating"):
+        return None
+    try:
+        harness = (json.load(open(sidecar, encoding="utf-8")) or {}).get("harness")
+    except (json.JSONDecodeError, OSError):
+        return None
+    if not harness or shutil.which("node") is None:
+        return None
+    cell_dir = os.path.join(d, cell["layer"], cell["slug"])
+    rp = os.path.join(cell_dir, ".refute.mjs")
+    try:
+        open(rp, "w", encoding="utf-8").write(harness)
+        rc = subprocess.run(["node", rp], cwd=cell_dir, capture_output=True, text=True, timeout=60).returncode
+    except (OSError, subprocess.SubprocessError):
+        return None
+    finally:
+        if os.path.isfile(rp):
+            os.remove(rp)
+    agreed = (rc == 0)
+    _led.append(d, "signal", {"kind": "server", "id": "refuter"}, {"cell": cell_id},
+                f"independent refuter {'AGREED' if agreed else 'DISAGREED — FALSE PASS caught'} on {cell_id}",
+                metrics={"refuter": True, "agreed": agreed})
+    if not agreed:
+        _auto.record_incident(d, cell_id, f"refuter caught a false pass: {cell_id} validated against its gate but "
+                              "fails an independent re-check (overfit / gamed)")
+    return agreed
 
 
 def selftest():

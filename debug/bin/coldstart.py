@@ -252,6 +252,9 @@ def _canned_plan(brief_text):
     # MILESTONE 3 — per-capability code cells (depend on the SPEC), each with its planner-authored verify.mjs harness
     for f in features:
         assets.append({"path": f"capability/{f}/verify.mjs", "content": _mock_cap_verify()})
+        # the HIDDEN independent refuter harness (mock: a trivial loadability check) — the false-pass producer
+        assets.append({"path": f"coordination/refuters/capability.system.{f}.json",
+                       "content": json.dumps({"harness": _gen_cap_verify([], [])})})
         cells.append({"layer": "capability", "scope": "system", "slug": f, "maturity": "instantiated",
                       "asset_ref": f"capability/{f}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f}", "from": "instantiated", "to": "validated",
@@ -279,7 +282,11 @@ _PLANNER_SCHEMA = (
     '"acceptance":["<2-5 BEHAVIORAL checks per feature: each a single JS boolean expression over the bare export '
     'names that MUST hold, exercising the LOGIC not just its shape — e.g. createDeck().length === 52, '
     'new Set(createDeck().map(c => c.rank + c.suit)).size === 52, isLegalMove(...)===false for an illegal move. '
-    'Representative, hard to pass without real correctness, side-effect-free, no DOM>"]}]}')
+    'Representative, hard to pass without real correctness, side-effect-free, no DOM>"],'
+    '"refute":["<2-4 INDEPENDENT behavioral checks per feature for a HIDDEN refuter — same form as acceptance but '
+    'DIFFERENT cases (edge cases, invariants, properties the acceptance examples do NOT cover): e.g. dealKlondike '
+    'leaves exactly 24 cards in the stock, undoMove(applyMove(s,m)) deep-equals s, checkWin(emptyFoundations) is '
+    'false. The worker NEVER sees these — they catch code that overfits the visible gate. The false-pass oracle>"]}]}')
 
 
 def _extract_json(text):
@@ -318,9 +325,10 @@ def _build_live_plan(decomp):
             slug = f"{slug}-core"   # never collide with the integrator slug
         exports = [e for e in (f.get("exports") or []) if isinstance(e, str)] or ["init"]
         acceptance = [a for a in (f.get("acceptance") or []) if isinstance(a, str)]
-        features.append({"slug": slug, "exports": exports, "acceptance": acceptance})
+        refute = [a for a in (f.get("refute") or []) if isinstance(a, str)]
+        features.append({"slug": slug, "exports": exports, "acceptance": acceptance, "refute": refute})
     if not features:
-        features = [{"slug": "core", "exports": ["init"], "acceptance": []}]
+        features = [{"slug": "core", "exports": ["init"], "acceptance": [], "refute": []}]
     prd_id, spec_id, app_id = f"spec.system.{SLUG}-prd", f"spec.system.{SLUG}", f"capability.system.{SLUG}"
     cap_ids = [f"capability.system.{f['slug']}" for f in features]
 
@@ -344,6 +352,11 @@ def _build_live_plan(decomp):
     ]
     for f in features:
         assets.append({"path": f"capability/{f['slug']}/verify.mjs", "content": _gen_cap_verify(f["exports"], f.get("acceptance"))})
+        # the HIDDEN independent refuter — the planner's `refute` checks (DIFFERENT from the gate's acceptance the
+        # worker codes to), materialized only post-validation so the worker never overfits to it. The false-pass
+        # producer: a disagreement (passed its gate, fails this) is a caught false pass → autonomy demotion.
+        assets.append({"path": f"coordination/refuters/capability.system.{f['slug']}.json",
+                       "content": json.dumps({"harness": _gen_cap_verify(f["exports"], f.get("refute"))})})
         cells.append({"layer": "capability", "scope": "system", "slug": f["slug"], "maturity": "instantiated",
                       "asset_ref": f"capability/{f['slug']}", "depends_on": [spec_id]})
         tickets.append({"target_cell": f"capability.system.{f['slug']}", "from": "instantiated", "to": "validated",

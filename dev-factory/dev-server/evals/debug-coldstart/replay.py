@@ -162,6 +162,32 @@ def run():
         check(_runnode(boots, shipgate) == 0, "ship gate PASSES an app that boots + renders (boot smoke)")
         check(_runnode(throws, shipgate) == 1, "ship gate CATCHES an app that throws on mount()")
 
+        print("· FALSE-PASS — the independent refuter measures the rate + demotes on a caught false pass")
+        import dispatch as _disp2
+        import autonomy as _auto2
+        import ledger as _led2
+        import json as _json2
+
+        def _refute_case(impl):
+            rd = tempfile.mkdtemp() + "/.agents/dev-factory"; api.init_instance(rd)
+            os.makedirs(os.path.join(rd, "capability", "c"))
+            open(os.path.join(rd, "capability", "c", "index.mjs"), "w").write(impl)
+            api.seed_cell(rd, "rubric", "system", "test-suite", maturity="validated", signal_refs=["s/x"])
+            api.seed_cell(rd, "capability", "system", "c", maturity="validated", asset_ref="capability/c")
+            os.makedirs(os.path.join(rd, "coordination", "refuters"), exist_ok=True)
+            _json2.dump({"harness": _cs._gen_cap_verify(["createDeck"], ["createDeck().length === 52"])},
+                        open(os.path.join(rd, "coordination", "refuters", "capability.system.c.json"), "w"))
+            verdict = _disp2.run_refuter(rd, "capability.system.c")
+            rate = _led2.false_pass_rate(rd)
+            staled = api._lat.find(api._lat.load(rd), "rubric.system.test-suite")["maturity"] == "stale"
+            return verdict, rate, len(_auto2.incidents(rd)), staled
+
+        v, r, inc, st = _refute_case("export const createDeck = () => Array.from({length:52},(_,i)=>i);")
+        check(v is True and r == 0.0 and inc == 0, "refuter AGREES on correct code → false-pass rate MEASURED (0.0, not 'unmeasured'), no incident")
+        v, r, inc, st = _refute_case("export const createDeck = () => Array.from({length:51},(_,i)=>i);")
+        check(v is False and r == 1.0 and inc == 1, "refuter DISAGREES on code that overfit its gate → a false pass is caught + recorded")
+        check(st, "a caught false pass STALES the verifier (mechanical demotion — trust resumes only after re-validation)")
+
     print()
     if fails:
         print(f"debug-coldstart: FAIL — {len(fails)} check(s) failed:")
