@@ -34,6 +34,22 @@ LEASE_TTL_S = 900           # a worker lease; exceeded → the worker is presume
 MAX_WORKER_ATTEMPTS = 3     # consecutive worker failures on one cell before it blocks (a transient hiccup retries)
 
 
+def _last_failure(d, tid):
+    """The most recent failure rationale for a ticket SINCE its last success — fed back into the retry prompt so a
+    re-authored attempt fixes the SPECIFIC failure (a missing export, a behavioral assertion) instead of re-reading
+    the contract blind. Read from the append-only ledger; resets on any activity-complete."""
+    last = None
+    for e in _led.read(d):
+        if (e.get("subject") or {}).get("ticket") != tid:
+            continue
+        ev = e.get("event")
+        if ev == "activity-complete":
+            last = None
+        elif ev == "activity-fail":
+            last = e.get("rationale")
+    return last
+
+
 def _consecutive_fails(d, tid):
     """The current failure STREAK for a ticket — count `activity-fail` events since its last `activity-complete`
     (any success resets the streak). The retry budget: a transient failure retries; a persistently-stuck cell
@@ -240,6 +256,12 @@ class HeadlessClaudeAdapter(DispatchAdapter):
         guide = _api.recent_guidance(d, n=5)
         gtxt = ("\n\nRecent operator guidance (advisory context, fold in where relevant; latest last):\n"
                 + "\n".join(f"- {g}" for g in guide)) if guide else ""
+        # Smart retry: fold the SPECIFIC failure from a prior attempt on this cell into the prompt, so a re-authored
+        # attempt fixes exactly what the critic refused instead of re-reading the contract blind (fewer attempts to
+        # converge). Read from the ledger (no schema change); resets on any success.
+        last_fail = _last_failure(d, unit.get("ticket"))
+        ftxt = (f"\n\nYour PREVIOUS attempt on this cell FAILED its gate:\n  {last_fail}\nRe-read `verify.mjs` and make "
+                "THAT specific check pass — do not repeat the same mistake.") if last_fail else ""
 
         # multi-file CODE authoring (a kit's capability/code layer): author N source files to a directory, graded
         # by the cell's per-cell critic harness verify.mjs — the worker may READ its contract but CANNOT write it.
@@ -281,7 +303,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                     f"split the internals. It MUST pass its critic harness `{dir_rel}/verify.mjs` — READ it for the "
                     f"exact contract, but you CANNOT write it (it is the critic's gate; your write is denied).{integ}{team} "
                     f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, lattice.json, or any verify.mjs. "
-                    f"Produce the source files INCLUDING index.mjs.{gtxt}")
+                    f"Produce the source files INCLUDING index.mjs.{gtxt}{ftxt}")
 
         asset_abs = os.path.join(d, unit["layer"], f"{unit['slug']}.md")
         rel = os.path.relpath(asset_abs, project_root)             # the asset's path FROM the worker's cwd (project root)
@@ -295,7 +317,7 @@ class HeadlessClaudeAdapter(DispatchAdapter):
                 f"{unit['layer']}.{unit['scope']}.{unit['slug']} (transition {tt.get('from')} -> {tt.get('to')}). "
                 f"Write its asset to the file `{rel}` (relative to your working directory).{fmt} "
                 f"Do NOT touch .agents/dev-factory/signals/, the ledger, rubric/, or lattice.json — those are "
-                f"protected and your write will be denied. Produce ONLY the asset.{cur}{gtxt}")
+                f"protected and your write will be denied. Produce ONLY the asset.{cur}{gtxt}{ftxt}")
 
     def dispatch(self, d, unit):
         if shutil.which("claude") is None:
@@ -635,6 +657,12 @@ def selftest():
                f"a transient worker failure must RETRY (return to active), got {seen[:-1]}")
         expect(seen[-1] == "blocked",
                f"a cell stuck for {MAX_WORKER_ATTEMPTS} consecutive failures must block, got {seen[-1]}")
+        # smart retry: after a failure, the next dispatch's prompt folds the SPECIFIC gate failure (so the worker
+        # fixes that, not re-reads the contract blind) — and it resets on a success.
+        expect(_last_failure(d, tf["id"]) is not None, "_last_failure surfaces the prior gate failure for the retry prompt")
+        fp = HeadlessClaudeAdapter()._prompt(d, {"layer": "spec", "scope": "task", "slug": "flaky", "ticket": tf["id"],
+                                                 "transition": {"from": "instantiated", "to": "validated"}}, root)
+        expect("PREVIOUS attempt" in fp and "boom (test)" in fp, "the retry prompt folds the specific prior failure")
 
         # Feature A: the HeadlessClaudeAdapter folds the operator's recent guidance into a NEWLY dispatched
         # worker's prompt (a running one-shot worker can't be steered mid-flight; the NEXT dispatch is).
