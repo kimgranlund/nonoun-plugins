@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>dev-factory — the board IS the repo, projected</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=11" />
     <script>
       // file:// blocks ES modules + fetch() — guide the user to serve over the dev-server instead
       // of failing to a blank page. (Inline classic script: it runs even on file://.) The UI is
@@ -25,6 +25,6 @@
     <!-- The whole UI is a web-component tree; the shell boots itself, owns the store + the SSE
          subscription, and switches the five views. -->
     <df-app></df-app>
-    <script type="module" src="app.js?v=10"></script>
+    <script type="module" src="app.js?v=11"></script>
   </body>
 </html>

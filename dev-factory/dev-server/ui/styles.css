@@ -487,11 +487,14 @@ df-app[data-theme="dark"]  { color-scheme: dark; }
 .insp-body ul { margin: 0.2rem 0 0.6rem; padding-left: 1.1rem; }
 .insp-body li { margin-bottom: 0.2rem; }
 .insp-body a { cursor: pointer; }
-.insp-led { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
-.insp-led li { display: flex; gap: 0.4rem; align-items: baseline; font-size: 11px; }
-.il-ev { font: 600 9.5px/1 var(--mono); padding: 0.2rem 0.35rem; border: 1px solid var(--st-neutral-border); border-radius: 4px; flex: none; }
-.il-d { flex: 1; color: var(--muted); }
-.il-ts { color: var(--faint); font-family: var(--mono); font-size: 10px; flex: none; }
+.insp-led { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+/* two-row event card: [time ··· tag] on top, the description in code font below */
+.insp-led li { display: flex; flex-direction: column; gap: 0.3rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-soft); }
+.insp-led li:last-child { border-bottom: 0; }
+.il-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.il-ts { color: var(--faint); font: 500 10.5px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.il-ev { font: 600 9.5px/1 var(--mono); padding: 0.25rem 0.4rem; border: 1px solid var(--st-neutral-border); border-radius: 4px; flex: none; }
+.il-d { color: var(--muted); font: 400 11px/1.5 var(--mono); word-break: break-word; }
 .asset-head { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
 .asset-pre { font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; color: var(--fg); background: var(--surface-sunken); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.6rem; }
 .asset-files { list-style: none; margin: 0; padding: 0; }

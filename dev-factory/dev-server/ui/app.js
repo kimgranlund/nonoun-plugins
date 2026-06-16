@@ -666,10 +666,15 @@ class DfInspector extends UIElement {
     const key = p.kind === "cell" ? "cell" : "ticket";
     const evs = store.ledger.value.filter((e) => (e.subject || {})[key] === p.id).slice(-40).reverse();
     if (!evs.length) return html`<div class="an-empty insp-empty">No ledger events for <code>${p.id}</code> yet.</div>`;
-    return html`<ul class="insp-led">${raw(evs.map((e) =>
-      `<li><span class="il-ev st ${EVENT_HUE[e.event] || "h-neutral"}">${escapeHtml(e.event)}</span>` +
-      `<span class="il-d">${e.from || e.to ? escapeHtml((e.from || "∅") + "→" + (e.to || "∅")) + " · " : ""}${escapeHtml(e.rationale || "")}</span>` +
-      `<span class="il-ts">${fmtTime(e.ts)}</span></li>`).join(""))}</ul>`;
+    // two-row event card: [time ··· tag] on top, then the description in code font below
+    return html`<ul class="insp-led">${raw(evs.map((e) => {
+      const change = e.from || e.to ? (e.from || "∅") + "→" + (e.to || "∅") + (e.rationale ? " · " : "") : "";
+      return `<li>` +
+        `<div class="il-top"><span class="il-ts">${fmtTime(e.ts)}</span>` +
+        `<span class="il-ev st ${EVENT_HUE[e.event] || "h-neutral"}">${escapeHtml(e.event)}</span></div>` +
+        `<div class="il-d">${escapeHtml(change)}${escapeHtml(e.rationale || "")}</div>` +
+        `</li>`;
+    }).join(""))}</ul>`;
   }
   async #asset(p, body) {
     if (!p) { body.innerHTML = `<div class="an-empty insp-empty">Select a cell to view its authored asset.</div>`; return; }
