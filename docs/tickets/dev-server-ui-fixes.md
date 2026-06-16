@@ -291,6 +291,14 @@ leaf critics). Net: the council is reachable manually, but `spec-council`/`plugi
 are still DOA here. Re-vendor the agent defs into shipped instances, or have `factory-init` stamp the
 resolved model map.
 
+**✓ RESOLVED in source (2026-06-16).** The root was a frontmatter inconsistency, not vendoring: **4 of the 6
+spec critics carried NO `model:` field** (`critic-spec-{ambiguity,completeness,scope,testability}`) while the
+orchestrator + `critic-spec-{entailment,hackability}` had `model: opus`. The model-less critics didn't resolve to
+opus, so dispatching the council died on the model selection — exactly what the "launch the critics directly with
+`model: opus`" workaround sidestepped. Added `model: opus` to all four; all 7 council agents (orchestrator + 6
+lenses) now resolve to opus deterministically. `validate_plugin` + `reference-lint` green. (The catalog
+`plugin-council` is a separate plugin; spot-check its critics for the same gap if it recurs.)
+
 ### DF-4 · P3 — kit verifiers (`rubric-check.py`, `spec-quality-check.py`, `doc-check.py`) aren't discoverable from inside an instance · FIXED in source (2026-06-15)
 
 **Fixed in source.** `dispatch.py` now `--add-dir`s the bound kit (`DEV_FACTORY_KIT`, read-only) so a worker can locate + RUN the kit's `bin/` meta-verifiers instead of self-attesting.

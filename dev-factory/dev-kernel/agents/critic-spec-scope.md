@@ -4,6 +4,7 @@ description: >
   Spec-council lens — scope. Hunts the unheld boundary: are the non-goals explicit, or does the spec creep
   into the unbounded "and also…"?
 tools: Read, Grep, Glob
+model: opus
 ---
 
 # critic-spec-scope — the boundary lens

@@ -4,6 +4,7 @@ description: >
   Spec-council lens — ambiguity. Hunts intent loss: a term used two ways, an unstated assumption, a "should"
   with no owner — is the principal's want captured without distortion?
 tools: Read, Grep, Glob
+model: opus
 ---
 
 # critic-spec-ambiguity — the intent-fidelity lens

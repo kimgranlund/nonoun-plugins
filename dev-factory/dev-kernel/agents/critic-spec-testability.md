@@ -4,6 +4,7 @@ description: >
   Spec-council lens — testability. Hunts the prose-only criterion: is every acceptance criterion a checkable
   predicate (an executable `check` or a `rubric_cell` binding), not a hope?
 tools: Read, Grep, Glob
+model: opus
 ---
 
 # critic-spec-testability — the checkable-predicate lens

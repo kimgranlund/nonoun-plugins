@@ -4,6 +4,7 @@ description: >
   Spec-council lens — completeness. Hunts the happy-path spec: necessary acceptance criteria, edge cases, and
   failure modes missing or merely implied.
 tools: Read, Grep, Glob
+model: opus
 ---
 
 # critic-spec-completeness — the happy-path lens
