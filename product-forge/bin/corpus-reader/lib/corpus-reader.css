@@ -391,6 +391,17 @@ cr-ui-diagram-viewer {
   color: var(--accent);
   font-weight: 600;
 }
+/* search-phrase highlight in nav titles — amber wash (--hue-caution), theme-aware,
+   inherits the link's text colour so an active/hovered link stays legible. */
+.cr-side-nav mark.cr-mark {
+  background: light-dark(
+    oklch(0.92 var(--chroma-muted) var(--hue-caution)),
+    oklch(0.45 var(--chroma-muted) var(--hue-caution))
+  );
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 0.1em;
+}
 
 /* ---- Main column ---- */
 .cr-main {

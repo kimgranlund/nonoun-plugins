@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 tools/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: 6d281fd41b71fa6ef2afbefad610621c732245b70347e39f27b70db1dc045f02 -->
+<!-- source-fingerprint: e156e9bdd551f37bf9ac5750d32806dfe63ac7c1f8ac75a4b4aff0ef38ba717e -->
+
+## 2026-06-17 — Enriched search + match highlighting. build-sitemap.py now emits the full parsed frontmatter as page.meta; cr-ui-nav folds every meta value into each link's search index (so a query matches tags/type/version/status/owner, not just title/path/summary) and wraps matched phrases in the visible nav title with <mark class='cr-mark'> (amber, theme-aware). Substring match, esc-safe; baked-content search unchanged.
 
 ## 2026-06-17 — cr-ui-diagram-viewer: gate Mermaid render on document.fonts.ready + pin fontFamily to the body font + sequence{wrap} / flowchart{useMaxWidth,padding} — fixes clipped diagram labels when the web font swaps in after Mermaid measures against fallback metrics (ported from a downstream onlysportsfans/corpus fix; securityLevel stays strict, no htmlLabels).
 
