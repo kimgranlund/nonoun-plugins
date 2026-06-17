@@ -19,6 +19,12 @@ function ensureMermaid() {
       startOnLoad: false,
       securityLevel: "strict",
       theme: dark ? "dark" : "default",
+      // Pin Mermaid's measuring font to the body font so labels are sized against the font
+      // that actually renders — otherwise a late web-font swap widens text past the
+      // pre-measured node box and clips labels. securityLevel stays "strict" (no htmlLabels).
+      fontFamily: getComputedStyle(document.body).fontFamily,
+      flowchart: { useMaxWidth: true, padding: 16 },
+      sequence: { useMaxWidth: true, wrap: true },
     });
   } catch (e) {
     /* mermaid optional */
@@ -50,18 +56,27 @@ export class UIDiagramViewer extends UIElement {
 
     if (!window.mermaid) return; // fallback: the source text stays visible
     ensureMermaid();
-    try {
-      window.mermaid
-        .render("cr-mmd-" + ++seq, code)
-        .then(({ svg }) => {
-          host.innerHTML = svg;
-        })
-        .catch(() => {
-          host.textContent = code;
-        });
-    } catch (e) {
-      host.textContent = code;
-    }
+    // Render only once web fonts have loaded: Mermaid measures label widths synchronously, so
+    // rendering before the body font is ready sizes nodes against fallback metrics and clips
+    // labels when the real font swaps in. document.fonts.ready resolves immediately once fonts
+    // are loaded (the common case after first paint), so this is a no-op then. The #rendered
+    // guard drops a stale async result if the component re-rendered while fonts were loading.
+    const draw = () => {
+      try {
+        window.mermaid
+          .render("cr-mmd-" + ++seq, code)
+          .then(({ svg }) => {
+            if (this.#rendered === code) host.innerHTML = svg;
+          })
+          .catch(() => {
+            if (this.#rendered === code) host.textContent = code;
+          });
+      } catch (e) {
+        host.textContent = code;
+      }
+    };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+    else draw();
   }
 }
 
