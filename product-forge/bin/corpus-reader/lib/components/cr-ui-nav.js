@@ -35,7 +35,7 @@ export class UINav extends UIElement {
     this.#markActive();
   }
 
-  #link(p, extra) {
+  #link(p, extra, depth) {
     // Search index: title + path + summary + every frontmatter value (p.meta), so a query
     // matches on tags / type / version / owner / status, not just the title and path.
     const metaVals = p.meta ? Object.values(p.meta).join(" ") : "";
@@ -44,12 +44,33 @@ export class UINav extends UIElement {
     // "Meta: …" hint line. JSON in a single-quoted attr, esc-safe; parsed back in #fm().
     const fm = p.meta ? esc(JSON.stringify(p.meta)) : "";
     return (
-      "<a class='cr-nav-link" + (extra || "") + "' href='#/" + enc(p.path) +
+      "<a class='cr-nav-link" + (extra || "") + "' style='--lvl:" + (depth || 0) + "'" +
+      " href='#/" + enc(p.path) +
       "' data-path='" + esc(p.path) +
       "' data-search='" + esc(search) +
       "' data-fm='" + fm + "'>" +
       "<span class='cr-nav-title'>" + esc(p.title) + "</span></a>"
     );
+  }
+
+  /** Recursively render one tree node. A `doc` resolves to its full page (for the search index);
+   * a `group` renders a folder header — a promoted-00-README is itself a (searchable) link, a plain
+   * folder a non-link label — then its children one level deeper. */
+  #renderNode(node, depth) {
+    if (node.type === "doc") {
+      const p = this.#byPath[node.path] || { path: node.path, title: node.title || node.path };
+      return this.#link(p, "", depth);
+    }
+    let html = "<div class='cr-nav-subgroup'>";
+    if (node.doc) {
+      const p = this.#byPath[node.doc] || { path: node.doc, title: node.title };
+      html += this.#link(p, " cr-nav-folder", depth);
+    } else {
+      html += "<div class='cr-nav-folder cr-nav-folder-plain' style='--lvl:" + depth + "'>" +
+        esc(node.title) + "</div>";
+    }
+    (node.children || []).forEach((c) => { html += this.#renderNode(c, depth + 1); });
+    return html + "</div>";
   }
 
   /** Parse a query into plain terms + field-scoped tokens. `field:value` (e.g. `type:guide`,
@@ -176,11 +197,16 @@ export class UINav extends UIElement {
     line.innerHTML = html;
   }
 
+  #byPath = {}; // path -> full page (tree nodes carry only path/title; resolve summary+meta here)
+
   #renderLinks() {
     const sm = this.sitemap || {};
+    this.#byPath = {};
+    (sm.sections || []).forEach((s) => (s.pages || []).forEach((p) => { this.#byPath[p.path] = p; }));
+    (sm.rootPages || []).forEach((p) => { this.#byPath[p.path] = p; });
     let html = "";
     (sm.rootPages || []).forEach((p) => {
-      html += this.#link(p, " cr-nav-root");
+      html += this.#link(p, " cr-nav-root", 0);
     });
     (sm.sections || []).forEach((s) => {
       const num = (String(s.id).match(/^\d+/) || [""])[0];
@@ -188,9 +214,9 @@ export class UINav extends UIElement {
         "<div class='cr-nav-group'><div class='cr-nav-group-title'>" +
         (num ? "<span class='cr-nav-ln'>" + esc(String(parseInt(num, 10))) + "</span>" : "") +
         "<span>" + esc(s.title) + "</span></div>";
-      (s.pages || []).forEach((p) => {
-        html += this.#link(p);
-      });
+      // Nested tree (additive); fall back to a flat list of docs for an older treeless sitemap.
+      const tree = s.tree || (s.pages || []).map((p) => ({ type: "doc", path: p.path }));
+      tree.forEach((node) => { html += this.#renderNode(node, 0); });
       html += "</div>";
     });
     this.#nav.innerHTML = html;
@@ -198,10 +224,11 @@ export class UINav extends UIElement {
 
   #contentLC = new Map(); // lazy lowercased page text, by path (baked builds only)
 
-  /** Live-filter links by a query against each link's `data-search` — and, in a baked
-   * single-file build, against the page's full inlined markdown (window.CORPUS_FILES),
-   * so search covers content, not just title/path/summary. Served layouts keep the
-   * metadata-only filter (content isn't local there). Hide empty groups. */
+  /** Live-filter links by a query against each link's `data-search` — and, in a baked single-file
+   * build, against the page's full inlined markdown (window.CORPUS_FILES), so search covers content,
+   * not just title/path/summary. `field:value` tokens scope to a frontmatter field. Nested folder
+   * groups hide when no descendant link survives; a kept folder's own label is force-shown so its
+   * matching children aren't orphaned under a hidden header. */
   filter(q) {
     if (!this.#nav) return;
     const { terms, fields, empty } = this.#parseQuery(q);
@@ -231,11 +258,17 @@ export class UINav extends UIElement {
       this.#highlight(a, hit ? terms : []);
       this.#metaLine(a, hit && !empty ? { terms, fieldMatches } : null);
     });
-    this.#nav.querySelectorAll(".cr-nav-group").forEach((g) => {
-      const any = [...g.querySelectorAll(".cr-nav-link")].some(
-        (a) => !a.classList.contains("cr-hide"),
-      );
-      g.classList.toggle("cr-hide", !any);
+    // A group (section or nested folder) is kept iff some descendant link is visible — a descendant
+    // query, so it needs no inner-to-outer ordering. When kept, force-show the folder's own label
+    // (un-hide it if its own text didn't match) so a deep matching child isn't orphaned under a
+    // hidden header. Re-toggled from scratch each keystroke, so it self-corrects.
+    this.#nav.querySelectorAll(".cr-nav-group, .cr-nav-subgroup").forEach((g) => {
+      const keep = !!g.querySelector(".cr-nav-link:not(.cr-hide)");
+      g.classList.toggle("cr-hide", !keep);
+      if (keep) {
+        const label = g.querySelector(":scope > .cr-nav-folder");
+        if (label) label.classList.remove("cr-hide");
+      }
     });
   }
 

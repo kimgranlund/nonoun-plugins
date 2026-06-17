@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 tools/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: c6ccb39833b6161ae184a54aba41dfb58a586b64a1b2cb07184a2bf8e567de8e -->
+<!-- source-fingerprint: b1f40e59da89cd67cb1a609abb082d29307fb15928f4ff897900cb0d16852ad3 -->
+
+## 2026-06-17 — Nested folder nav. build-sitemap.py emits a per-section tree (additive — the flat pages list is kept for routing/home/search); cr-ui-nav renders it recursively — indented folder groups, a subfolder's 00-README promoted to a searchable group label, plain folders a muted header — resolving leaves to full pages via a path→page map. The filter hides a folder group when no descendant link survives, and force-shows a kept folder's own label so a deep match isn't orphaned under a hidden header (the recursive hide the flat reader lacked). field:value scoping + the preview line work within nesting; flat corpora render identically. Render + filter verified headlessly against the real module (6 filter cases: deep-match breadcrumb, nested empty-group hide, field-scoped, folder-label match, no-match, empty).
 
 ## 2026-06-17 — Field-scoped search + a frontmatter preview line under nav results. The search box now supports field:value tokens (type:guide, status:active; a leading / is stripped, so /tag:active works) that scope a match to a frontmatter field — key matched by prefix (tag→tags), value by substring — AND-combined with bare terms. A small mono preview line surfaces the matching frontmatter context: a symmetric window (~48 chars each side) centered on the highlighted match, clamped to two lines, shown only when the hit is in the frontmatter and not the title. Frontmatter rides along as structured per-link data-fm JSON; esc-safe, substring match (no regex).
 
