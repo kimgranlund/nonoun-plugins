@@ -53,7 +53,7 @@ LAYERS = ["ontology", "spec", "rubric", "policy", "capability", "methodology", "
 SCOPES = ["call", "task", "workflow", "system", "fleet"]
 MATURITIES = ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
 ADVANCEABLE = {"absent", "defined", "instantiated", "regenerating", "stale"}   # maturities an engine pass may act on
-SETTLED = {"validated", "operating"}                                          # maturities that count as a foothold
+SETTLED = {"validated", "operating"}    # maturities that count as a foothold; cell.schema.json `x-settledMaturities` is the single source (this is the portable fallback for the wired copy, where the schema file is absent)
 PROGRESS = ["absent", "defined", "instantiated", "validated", "operating"]    # the linear maturation chain (off-axis states excluded)
 
 
@@ -561,6 +561,7 @@ def check(lat, d=None):
     layers = props.get("layer", {}).get("enum", LAYERS)
     scopes = props.get("scope", {}).get("enum", SCOPES)
     maturities = props.get("maturity", {}).get("enum", MATURITIES)
+    settled = set((schema or {}).get("x-settledMaturities", {}).get("enum", SETTLED))  # single source: cell.schema.json
     required = (schema or {}).get("required", ["layer", "scope", "slug", "maturity"])
     known_keys = set(props) if (schema and schema.get("additionalProperties") is False) else None
     for i, c in enumerate(lat.get("cells", [])):
@@ -589,7 +590,7 @@ def check(lat, d=None):
         if cell_id in seen:
             findings.append(f"{where}: duplicate cell id `{cell_id}`")
         seen.add(cell_id)
-        if c.get("maturity") in SETTLED:
+        if c.get("maturity") in settled:
             # the validated-with-no-signal contradiction the signal-currency design forbids
             if not c.get("signal_refs"):
                 findings.append(f"{cell_id}: maturity `{c['maturity']}` but no signal_refs — validated against nothing")
@@ -805,6 +806,7 @@ def selftest():
         expect(sp["layer"]["enum"] == LAYERS, "LAYERS drifted from cell.schema.json (single-source violation)")
         expect(sp["scope"]["enum"] == SCOPES, "SCOPES drifted from cell.schema.json")
         expect(sp["maturity"]["enum"] == MATURITIES, "MATURITIES drifted from cell.schema.json")
+        expect(set(sch.get("x-settledMaturities", {}).get("enum", [])) == SETTLED, "SETTLED drifted from cell.schema.json x-settledMaturities (single-source violation)")
     # the additionalProperties:false catch — a typo'd key is a finding, not silent data loss.
     typo = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "validated",
                        "signal_refs": ["x"], "depends_on": [], "signl_refs": ["typo"]}]}
