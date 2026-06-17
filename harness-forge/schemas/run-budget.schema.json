@@ -26,6 +26,11 @@
       "description": "Cap on distinct cells validated=pass since start_ts, or null.",
       "type": ["integer", "null"],
       "minimum": 1
+    },
+    "max_cost": {
+      "description": "Cap on summed token cost (the ledger events' `cost.tokens`) since start_ts, or null. The orchestrator reports per-iteration cost into the ledger — the kernel can't measure tokens itself — so absent cost simply never trips this cap (the iteration/cell/wall-clock axes still bound).",
+      "type": ["integer", "null"],
+      "minimum": 1
     }
   }
 }

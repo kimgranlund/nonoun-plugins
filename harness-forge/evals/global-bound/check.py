@@ -79,6 +79,15 @@ def main():
                                     "result": "fail", "ts": _now()}) + "\n")
         expect(_wired_gate(proj, write_path) == 2, "max-iterations: 2 ledgered validates hit the cap → the wired gate denies (exit 2)")
 
+        # EXHAUST via max-cost (the token/$ axis, v0.5): cap 1000 tokens, summed from the LEDGER's reported cost.tokens.
+        _lat.run_budget_clear(d)
+        _lat.run_budget_start(d, _now(), max_cost=1000)
+        expect(_wired_gate(proj, write_path) == 0, "control: under the token cap, writes are allowed")
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"operation": "operate", "actor": "builder", "result": "ok",
+                                "cost": {"tokens": 1200}, "ts": _now()}) + "\n")
+        expect(_wired_gate(proj, write_path) == 2, "max-cost: 1200 ledgered tokens hit the 1000 cap → the wired gate denies (exit 2)")
+
         # CLEAR: ending the run lifts the global deny (a fresh run must be started deliberately).
         _lat.run_budget_clear(d)
         expect(_wired_gate(proj, write_path) == 0, "clear: ending the run lifts the global deny")

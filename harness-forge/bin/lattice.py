@@ -278,22 +278,22 @@ def _ts_ge(a, b):
     return (a or "") >= (b or "")
 
 
-def run_budget_start(d, now_iso, max_iterations=None, max_cells=None, deadline_iso=None):
+def run_budget_start(d, now_iso, max_iterations=None, max_cells=None, deadline_iso=None, max_cost=None):
     """Persist the run's budget. Rejects a VACUOUS budget (no cap is no budget) and ill-typed caps — the bound that
     bounds nothing is the illegal state the council flagged. `now_iso`/`deadline_iso` are passed in (pure paths take
     no clock). If an unexhausted budget is already active, ledgers a `budget-reset` event so a self-extending loop is
     tamper-evident in the append-only trail (Simon M1). Raises ValueError on a bad/vacuous budget."""
-    for name, v in (("max_iterations", max_iterations), ("max_cells", max_cells)):
+    for name, v in (("max_iterations", max_iterations), ("max_cells", max_cells), ("max_cost", max_cost)):
         if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
             raise ValueError(f"{name} must be a positive integer or None, got {v!r}")
-    if max_iterations is None and max_cells is None and not deadline_iso:
-        raise ValueError("a vacuous run budget (no max-iterations, no max-cells, no wall-clock) bounds nothing — refused")
+    if max_iterations is None and max_cells is None and not deadline_iso and max_cost is None:
+        raise ValueError("a vacuous run budget (no max-iterations, no max-cells, no wall-clock, no max-cost) bounds nothing — refused")
     prior = run_budget_load(d)
     if prior is not None and not run_budget_exhausted(d, now_iso)[0]:   # overwriting a live run → tamper-evident
         _append_ledger_event(d, {"operation": "record", "actor": "orchestrator", "result": "budget-reset", "ts": now_iso,
                                  "rationale": f"a new run budget replaced an active one (was start {prior.get('start_ts')})"})
     budget = {"start_ts": now_iso, "deadline_ts": deadline_iso,
-              "max_iterations": max_iterations, "max_cells": max_cells}
+              "max_iterations": max_iterations, "max_cells": max_cells, "max_cost": max_cost}
     os.makedirs(os.path.join(d, "run"), exist_ok=True)
     tmp = _run_path(d) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -415,8 +415,8 @@ def run_budget_exhausted(d, now_iso):
     b = run_budget_load(d)
     if b is None:
         return False, None, {"active": False}
-    detail = {"active": True, "start_ts": b.get("start_ts"),
-              "max_iterations": b.get("max_iterations"), "max_cells": b.get("max_cells")}
+    detail = {"active": True, "start_ts": b.get("start_ts"), "max_iterations": b.get("max_iterations"),
+              "max_cells": b.get("max_cells"), "max_cost": b.get("max_cost")}
     if b.get("deadline_ts"):
         detail["deadline_ts"] = b["deadline_ts"]
         if _ts_ge(now_iso, b["deadline_ts"]):                 # an absolute deadline needs no counter (offset-robust)
@@ -430,6 +430,12 @@ def run_budget_exhausted(d, now_iso):
     detail["cells"] = cells
     if b.get("max_cells") is not None and cells >= b["max_cells"]:
         return True, f"max-cells reached ({cells}/{b['max_cells']})", detail
+    # token/$ axis: sum the ledger events' reported cost.tokens since start_ts (the orchestrator reports it;
+    # the kernel can't measure tokens, so absent cost sums to 0 and never trips — the other axes still bind).
+    tokens = sum(((e.get("cost") or {}).get("tokens") or 0) for e in evs)
+    detail["cost"] = tokens
+    if b.get("max_cost") is not None and tokens >= b["max_cost"]:
+        return True, f"token budget reached ({tokens}/{b['max_cost']})", detail
     return False, None, detail
 
 
@@ -447,14 +453,15 @@ def run_budget_check(d):
         for k in b:
             if k not in props:
                 findings.append(f"run/budget.json: unknown field `{k}`")
-    for k in ("max_iterations", "max_cells"):
+    for k in ("max_iterations", "max_cells", "max_cost"):
         v = b.get(k)
         if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
             findings.append(f"run/budget.json: `{k}` must be a positive integer or null, got {v!r}")
     if b.get("deadline_ts") and b.get("start_ts") and _parse_ts(b["deadline_ts"]) and _parse_ts(b["start_ts"]):
         if _parse_ts(b["deadline_ts"]) < _parse_ts(b["start_ts"]):
             findings.append("run/budget.json: `deadline_ts` is before `start_ts` (the run is born exhausted)")
-    if b.get("max_iterations") is None and b.get("max_cells") is None and not b.get("deadline_ts"):
+    if (b.get("max_iterations") is None and b.get("max_cells") is None
+            and not b.get("deadline_ts") and b.get("max_cost") is None):
         findings.append("run/budget.json: vacuous budget — no cap of any kind (bounds nothing)")
     return findings
 

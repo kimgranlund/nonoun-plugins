@@ -16,7 +16,7 @@ fails CLOSED instead of running free. `start` also sets the marker (armed ⟹ ma
 
 Usage:
   run-budget.py mark   [--label L] [--dir DIR]     # step 0a — mark the autonomous loop active (gate the arming gap)
-  run-budget.py start  [--max-iterations N] [--max-cells N] [--wall-clock-s S] [--label L] [--dir DIR]   # step 0b — arm the ceiling (also marks)
+  run-budget.py start  [--max-iterations N] [--max-cells N] [--max-cost N] [--wall-clock-s S] [--label L] [--dir DIR]   # step 0b — arm the ceiling (also marks)
   run-budget.py status [--dir DIR]      # exit 0 = budget remains · 1 = exhausted · 2 = no run (3 = marked but un-budgeted: the arming gap)
   run-budget.py stop   [--dir DIR]      # end the loop — clears BOTH the budget and the marker
   run-budget.py clear  [--dir DIR]      # clear the budget only (leaves the marker; prefer `stop`)
@@ -74,6 +74,21 @@ def selftest():
         ex, _, det = _lat.run_budget_exhausted(d, now)
         expect(not ex and det == {"active": False}, "clear did not end the run")
 
+        # token/$ axis: a max_cost-only budget is valid (not vacuous); summed ledger cost.tokens trips it.
+        _lat.run_budget_start(d, now, max_cost=100)
+        ex, _, det = _lat.run_budget_exhausted(d, now)
+        expect(not ex and det.get("cost") == 0, f"max_cost fresh run not at 0 tokens: {det}")
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            f.write('{"operation":"operate","actor":"builder","result":"ok","cost":{"tokens":120},"ts":"%s"}\n' % now)
+        ex, why, det = _lat.run_budget_exhausted(d, now)
+        expect(ex and "token budget" in why, f"max_cost not enforced from the ledger: {why} {det}")
+        _lat.run_budget_clear(d)
+        try:
+            _lat.run_budget_start(d, now)   # all caps null incl. max_cost → vacuous → refused
+            expect(False, "vacuous budget (all caps null) was not refused")
+        except ValueError:
+            pass
+
         # the arming-gap marker (I-9): mark → unbudgeted (gate denies); start → marked+budgeted; stop → both cleared.
         # (suppress the commands' stdout so selftest output stays clean)
         _stdout = sys.stdout
@@ -129,12 +144,14 @@ def main(argv):
             wc = _intflag(argv, "--wall-clock-s")
             deadline = (_now() + datetime.timedelta(seconds=wc)).isoformat(timespec="seconds") if wc else None
             now = _now().isoformat(timespec="seconds")
-            b = _lat.run_budget_start(d, now, _intflag(argv, "--max-iterations"), _intflag(argv, "--max-cells"), deadline)
+            b = _lat.run_budget_start(d, now, _intflag(argv, "--max-iterations"), _intflag(argv, "--max-cells"), deadline,
+                                      max_cost=_intflag(argv, "--max-cost"))
             _lat.loop_marker_set(d, now, _strflag(argv, "--label", "harness-run"))   # armed ⟹ marked
         except ValueError as e:
             print(f"run-budget start: {e}", file=sys.stderr)   # vacuous / non-positive / non-int caps → clean error, not a traceback
             return 2
-        print(f"run-budget started: max-iterations={b['max_iterations']} max-cells={b['max_cells']} deadline={b['deadline_ts']} (loop marked active)")
+        print(f"run-budget started: max-iterations={b['max_iterations']} max-cells={b['max_cells']} "
+              f"max-cost={b['max_cost']} deadline={b['deadline_ts']} (loop marked active)")
         return 0
     if argv and argv[0] == "stop":
         cleared = _lat.run_budget_clear(d)
@@ -164,7 +181,8 @@ def main(argv):
         if ex:
             print(f"run-budget: EXHAUSTED — {why}. The wired gate-budget denies further worker writes; stop the loop.")
             return 1
-        print(f"run-budget: active — {det.get('iterations', 0)} iteration(s), {det.get('cells', 0)} cell(s) so far"
+        print(f"run-budget: active — {det.get('iterations', 0)} iteration(s), {det.get('cells', 0)} cell(s)"
+              + (f", {det['cost']} token(s)" if det.get('cost') else "") + " so far"
               + (f", deadline {det['deadline_ts']}" if det.get('deadline_ts') else "")
               + (", loop marked" if _lat.loop_marker_active(d) else "") + ".")
         return 0

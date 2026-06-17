@@ -70,10 +70,11 @@ def render(project, hd=".agents/harness", n=8):
     elif ex:
         out.append(f"  run:      ⚠ EXHAUSTED — {why}; gate-budget is denying every write. Stop the loop / clear the run.")
     else:
-        mi, mc = det.get("max_iterations"), det.get("max_cells")
+        mi, mc, mk = det.get("max_iterations"), det.get("max_cells"), det.get("max_cost")
         i_s = f"{det.get('iterations',0)}/{mi} iters" if mi else f"{det.get('iterations',0)} iters"
         c_s = f"{det.get('cells',0)}/{mc} cells" if mc else f"{det.get('cells',0)} cells"
-        out.append(f"  run:      active — {i_s} · {c_s}" + (f" · deadline {det['deadline_ts']}" if det.get('deadline_ts') else ""))
+        parts = [i_s, c_s] + ([f"{det.get('cost',0)}/{mk} tok"] if mk else [])
+        out.append("  run:      active — " + " · ".join(parts) + (f" · deadline {det['deadline_ts']}" if det.get('deadline_ts') else ""))
 
     # wiring + drift — three honest states: a drifted-but-installed wiring is STALE, not "NOT WIRED" (the gates
     # ARE in the loop and running; saying "not wired" would tell the operator they have no protection when they do).
