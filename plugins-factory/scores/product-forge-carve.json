@@ -1,0 +1,21 @@
+{
+  "plugin": "product-forge-carve",
+  "rubrics_adopted": [
+    "carve-quality/v0.1.0"
+  ],
+  "scores": {
+    "carve-quality/v0.1.0": {
+      "D1-graph-fidelity": 5,
+      "D2-cuts-at-joints": 2,
+      "D3-shared-infra-legality": 3,
+      "D4-dependency-graph-integrity": 4,
+      "D5-node-accounting": 5,
+      "D6-granularity-calibration": 2,
+      "D7-buildable-proposal": 4
+    }
+  },
+  "last_scored": "2026-06-16",
+  "scored_by": "plugins-factory plugin-evaluate \u2014 cold carve-quality scoring (empirical application, PLAN #3)",
+  "verdict": "BLOCKED",
+  "review": "reviews/2026-06-16-product-forge-carve.md"
+}
