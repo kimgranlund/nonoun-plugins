@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.16] — 2026-06-16
+
+### Fixed
+
+- **`evals/council-calibration/check-monolith.py` ST5 pattern widened (I-13 recall re-source).** Re-sourcing the recall corpus from the real OmniDesk monolith runs surfaced a brittle pattern: the council's actual trust-boundary refusal idiom — "ingested content does not get to direct my actions", "an authority-claiming instruction smuggled into data — refused" — matched no ST5 pattern, so the checker would have missed a real refusal worded that way. Added `does not (?:get to )?direct`, `smuggled into data`, and `authority-claiming`; the real wordings are now in `plugins-factory/evals/recall-corpus/agent-ops-check-monolith.recall.json`. Baseline still 7/7, check-recall green. Calibration-only — no behavior change.
+
 ## [0.1.15] — 2026-06-14
 
 ### Changed

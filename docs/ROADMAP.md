@@ -8,9 +8,8 @@ The buildless web-component reader vendored into brand-forge + product-forge; si
 
 - **Now** — nothing open.
 - **Later**
-  - **Full-text search in the baked reader** — every page's markdown is inlined now; the sidebar filter can search content (the bake's natural follow-on).
   - **Vendored render libs (offline mode).** Swap the pinned CDN marked/DOMPurify/highlight/mermaid for copies in `lib/` — kills the runtime CDN availability dependency for exported sites (SRI already covers integrity); needs a license/update story before default-on (D-7). A fully-offline *bake* would inline them instead.
-- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`); the per-corpus **theme hook** + worked demo theme (`d605590`); **I-1 browser sign-off confirmed** (maintainer: "demo renders well"); the **baked single-file `file://` reader** (`--bake`, plugins-factory 0.2.23).
+- **Shipped 2026-06-10** — demo corpus + CI smoke (I-2, `9cbee6f`); wordmark strip, export-command config, search-over-summaries, honest provenance counts, `--init` root redirect (`bc917fd`); the per-corpus **theme hook** + worked demo theme (`d605590`); **I-1 browser sign-off confirmed** (maintainer: "demo renders well"); the **baked single-file `file://` reader** (`--bake`, plugins-factory 0.2.23); **full-text search in the baked reader** (`ef7a8a3`, plugins-factory 0.2.24 — the sidebar filter falls through to the inlined page markdown, served layouts unchanged).
 
 ## Track 2 — verification & gates
 

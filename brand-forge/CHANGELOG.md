@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.20] — 2026-06-16
+
+### Fixed
+
+- **`evals/council-calibration/check.py` D2 pattern widened (I-13 recall re-source).** Re-sourcing the recall corpus from the real Northwind runs surfaced a brittle pattern: the strategy council's actual D2 wording — "every premium coffee brand could publish this verbatim", "could run under a … letterhead" — matched no D2 pattern (which keyed on "any …" / "category restatement" / "could sign"), so the checker would have missed a real category-restatement finding worded that way. Added `(?:any|every) … brand could`, `letterhead`, and `publish … verbatim`; the bare council wordings are now in `plugins-factory/evals/recall-corpus/brand-forge-check.recall.json`. Baseline still 6/6, check-recall green. Calibration-only — no change to the methodology or council.
+
 ## [0.4.19] — 2026-06-13
 
 ### Fixed
