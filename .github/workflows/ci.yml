@@ -114,6 +114,16 @@ jobs:
       - name: brand-forge MCP guard selftest
         run: python3 brand-forge/bin/brand-corpus-mcp.py selftest
 
+      - name: brand-forge — concept-consistency gate (no retired seat-vocabulary)
+        run: |
+          python3 brand-forge/bin/check-concepts.py selftest
+          python3 brand-forge/bin/check-concepts.py
+
+      - name: brand-forge — stamped plugin passes the validator (S9/S10)
+        run: |
+          python3 brand-forge/bin/brand-stamp plugin brand-forge/evals/stamp-smoke/corpus --name smoke -o /tmp/stamp-smoke
+          python3 "$PF/bin/validate_plugin.py" plugin /tmp/stamp-smoke/plugin/smoke-brand --strict
+
       - name: MCP liveness gate (selftest + every bundled server actually serves)
         run: |
           python3 "$PF/bin/check-mcp-liveness.py" selftest

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.21] — 2026-06-17
+
+### Added
+
+- **`bin/check-concepts.py` — a concept-consistency gate** (the v0.5 ROADMAP item). The v0.4 reframe (provocateur → aspirational attractor) once leaked the retired seat-verb into three docs because nothing gated a concept-rename the way `reference-lint` gates broken links. This mechanizes that discipline ("structure is mechanized; taste is not"): a retired seat-term — `provocateur` (the old seat name) or "widen the options" (the old seat job) — in a seat-defining surface (`agents/` · `skills/` · `commands/`) is a CI failure. **Precise by design** — it does *not* flag the still-valid "provocation"/"provokes" (a provocation is one shape the Muse's gravitational pull can take; critics legitimately ask whether work "provokes"), and it skips `CHANGELOG`/`reviews`/`.name-map.md` (which record the rename or hold gitignored bios). `selftest`-proven (catches the retired terms, leaves the living vocabulary alone) and CI-wired; the current tree is clean.
+- **Stamp-output validation in CI (S9/S10).** `bin/brand-stamp plugin` emits a child plugin "built to pass `validate_plugin.py`," but nothing asserted the output actually did — the generator-untested gap the v0.2 red-team flagged (David F.). New fixture `evals/stamp-smoke/corpus/` (a tiny two-layer brand corpus) is stamped in CI and the result run through `plugins-factory/bin/validate_plugin.py --strict` (passes 0/0). The check lives in CI — the only legal place to orchestrate brand-stamp (brand-forge) → validate_plugin (plugins-factory) without a cross-plugin dependency.
+
 ## [0.4.20] — 2026-06-16
 
 ### Fixed
