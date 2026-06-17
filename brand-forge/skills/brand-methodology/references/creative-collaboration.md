@@ -32,6 +32,8 @@ The Team is not one maker — it is a set of on-demand roles. Bernbach's 1949 in
 
 The **Brand Steward** is the seat most teams forget, and its absence is why brands decay: stewardship is not a creative act but a _decision architecture_, and it is owned, not improvised. (The Muse sits in its own row above — it supplies the pull the Team converges toward, it is not one of the Team's makers.)
 
+These seats are roles adopted on demand — but a seat that does **long, single-context work** can be promoted to its own isolated agent, where sustained focus earns the context cost (never for mere symmetry with the council). The **Copywriter** is the first so promoted: the `brand-copywriter` agent handles extended voice work — a full voice platform, a naming set, a long copy run — while brief tactical copy stays here in-methodology. `/brand-build` delegates the long work to it; its output goes to the voice sub-council for a cold read, like any maker's.
+
 ## The loop: aspire → make → review → remake
 
 ```text
