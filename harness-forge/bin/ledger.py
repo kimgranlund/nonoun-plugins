@@ -8,6 +8,7 @@ not a layer; this script routes it back into the three downstream consumers that
 
   - cost       — probe cost per layer/scope (tokens & iterations per prior signal) → the compass's value function
   - false-pass — false-pass rate (validate said pass, an independent check later failed) → the policy trust trajectory
+  - trust      — the EARNED autonomy tier computed from that rate (advisory ceiling; auto-demotes) → trust-trajectory
   - distill    — recent event windows → pattern candidates for the regeneration loop
 
 Append-only is enforced mechanically by the protected-path gate (workers are deny-on-write to ledger/);
@@ -20,6 +21,7 @@ Usage:
   ledger.py query [--cell ID] [--op OP] [--dir DIR]
   ledger.py cost [--dir DIR]                      # probe cost per layer/scope
   ledger.py false-pass [--dir DIR]               # false-pass rate (gates autonomy: target < ~5%)
+  ledger.py trust [--dir DIR]                    # the EARNED autonomy tier (advisory ceiling from the rate; auto-demotes)
   ledger.py no-progress [--n N] [--dir DIR]      # cells stuck repeating a failure ≥ N times → halt (the detector, in code)
   ledger.py distill [--n N] [--dir DIR]          # the last N events as a distillation window
   ledger.py selftest
@@ -101,6 +103,35 @@ def false_pass_rate(events):
     return round(fp / len(passes), 4), fp, len(passes), len(refutes)
 
 
+TRUST_TIERS = {0: "Attended", 1: "Gated", 2: "Unattended-within-budget", 3: "Scheduled"}  # the ladder (layer-policy.md)
+TRUST_THRESHOLD = 0.05        # practitioner convention: < ~5% false-pass gates unattended (Tier 2)
+TRUST_MIN_SAMPLE = 5          # a rate over too few refuter-checked passes is not yet a track record
+
+
+def trust_tier(events):
+    """The EARNED autonomy tier — a computed CEILING from the measured false-pass rate, never self-declared (the
+    routing law: a trust decision is a computation, not the orchestrator's opinion). This is the trust-trajectory
+    automation: the ceiling is a LIVE function of the ledger, so it **auto-demotes** — a false-pass spike drops it on
+    the next read, exactly as `foundations/layer-policy.md` requires — while **promotion stays advisory**: the ceiling
+    is the most a human should grant, never a tier the harness moves *itself* into. Tier 3 additionally needs a
+    hermetic sandbox + tamper-evident audit, which code can't attest, so the rate alone caps the ceiling at Tier 2.
+    (A reward-hacking incident is a separate HARD demotion — the H3 gate — orthogonal to this rate.) Returns
+    (tier:int, label:str, rate_or_None, reason:str)."""
+    rate, fp, passes, _refn = false_pass_rate(events)
+    if rate is None:
+        return 0, TRUST_TIERS[0], None, ("no independent refuter has run — the false-pass rate is UNMEASURED, so "
+                                         "autonomy is unearned by construction; register a refuter and re-measure")
+    if rate >= TRUST_THRESHOLD:
+        return 1, TRUST_TIERS[1], rate, (f"measured false-pass {rate:.1%} ({fp}/{passes}) is ≥ {TRUST_THRESHOLD:.0%} — "
+                                         f"gated at most (human reviews at cell boundaries) until it trends below 5%")
+    if passes < TRUST_MIN_SAMPLE:
+        return 1, TRUST_TIERS[1], rate, (f"false-pass {rate:.1%} is < 5% but over only {passes} refuter-checked "
+                                         f"pass(es) (< {TRUST_MIN_SAMPLE}) — too short a track record; stay gated")
+    return 2, TRUST_TIERS[2], rate, (f"earned: false-pass {rate:.1%} < 5% over {passes} refuter-checked passes "
+                                     f"(Tier 3 scheduled/long-running additionally needs a hermetic sandbox + "
+                                     f"tamper-evident audit, which only a human can attest)")
+
+
 def no_progress(events, n=3):
     """The no-progress detector, as CODE — not a worker self-assessing (CV4/Chip: a detector is a computation,
     and the routing law puts computations in code). For each cell, count its TRAILING run of consecutive
@@ -160,6 +191,20 @@ def selftest():
         urate, _, utot, urefn = false_pass_rate(no_refute)
         expect(urate is None and utot == 2 and urefn == 0, f"false-pass should be unmeasured with no refuter, got {urate}")
 
+        # trust_tier — the earned autonomy CEILING (advisory promote, auto demote): unmeasured → Tier 0; ≥5% → Tier 1;
+        # <5% but too few measured → Tier 1; <5% over a real track record → Tier 2 (Tier 3 needs a human-attested sandbox).
+        expect(trust_tier(no_refute)[0] == 0, "unmeasured (no refuter) must earn Tier 0 — autonomy can't be trusted unmeasured")
+        spike = ([{"operation": "validate", "result": "pass", "cell_id": f"c{i}", "actor": "a"} for i in range(10)]
+                 + [{"operation": "refute", "cell_id": f"c{i}"} for i in range(2)])   # 2 of 10 refuted = 20% ≥ 5%
+        expect(trust_tier(spike)[0] == 1, f"a ≥5% false-pass rate must auto-demote to Tier 1 (gated), got {trust_tier(spike)}")
+        clean = ([{"operation": "validate", "result": "pass", "cell_id": f"c{i}", "actor": "a"} for i in range(20)]
+                 + [{"operation": "refute", "cell_id": "cZ"}])   # a refuter ran, 0 of 20 refuted = 0% over a real sample
+        t, label, rate, _ = trust_tier(clean)
+        expect(t == 2 and rate == 0.0, f"a measured <5% over a real track record must earn Tier 2, got tier={t} rate={rate}")
+        few = ([{"operation": "validate", "result": "pass", "cell_id": "c0", "actor": "a"}]
+               + [{"operation": "refute", "cell_id": "cZ"}])     # <5% but only 1 measured pass → not yet a track record
+        expect(trust_tier(few)[0] == 1, "a clean rate over too few passes must stay Tier 1 (no track record yet)")
+
         # the no-progress detector (CV4): 3 consecutive same-signature fails on one cell → halt; a pass resets the run.
         with tempfile.TemporaryDirectory() as d2:
             for r in ("fail", "fail", "fail"):
@@ -194,7 +239,7 @@ def selftest():
             sys.stderr.write(f"  - {f}\n")
         return 1
     print("ledger selftest: OK (append-only round-trip; query; probe-cost median; false-pass rate; "
-          "no-progress detector halts a repeated-failure loop and a pass resets it; rejects entry with no actor)")
+          "no-progress detector halts a repeated-failure loop and a pass resets it; the earned trust tier is the rate's computed ceiling — unmeasured/≥5%/short-track → Tier ≤1, a measured <5% over a real sample → Tier 2 (advisory promote, auto demote); rejects entry with no actor)")
     return 0
 
 
@@ -233,6 +278,13 @@ def main(argv):
                   f"the absence of bad news, not evidence; register an independent refuter before trusting autonomy.")
         else:
             print(f"false-pass rate: {rate:.1%} ({fp}/{tot}, {refn} refute source(s))  — autonomy gate: < ~5% with zero reward-hacking incidents")
+        return 0
+    if argv and argv[0] == "trust":
+        tier, label, rate, reason = trust_tier(evs)
+        rate_s = "unmeasured" if rate is None else f"{rate:.1%}"
+        print(f"earned autonomy tier: {tier} ({label}) — false-pass {rate_s}\n  {reason}\n"
+              f"  This is the CEILING the measurement supports — promotion is ADVISORY (a human grants the operating "
+              f"tier, never above this), demotion is AUTOMATIC (the ceiling drops as the rate rises or measurement lapses).")
         return 0
     if argv and argv[0] == "no-progress":
         n = int(_flag(argv, "--n", "3"))
