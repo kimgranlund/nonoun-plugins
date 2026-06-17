@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.23] — 2026-06-17
+
+### Added
+
+- **`brand-copywriter` — the first maker seat promoted to an isolated agent** (the v0.5 "making roles as maker agents" item). The Team's Copywriter seat (voice, naming, the words that carry the strategy) now has a dedicated isolated-context agent for **extended** voice work — a full voice platform, a naming set, a long run of copy — where sustained focus + a single held voice earn the context cost; brief tactical copy (a headline, a tone check) stays in-methodology. `/brand-build` delegates extended voice work to it. It MAKES (converges words from the strategy + the named pull); it does not set the aspiration (the Muse) and does not judge its own output — the **voice sub-council reviews it cold** (its existing calibration is the quality gate, so the agent ships without a separate generation-calibration, exactly as the Muse agent shipped in v0.4 before its 2026-06-12 calibration). Carries the trust-boundary guard. **No new command** (a delegated maker, not a top-level mode — the command surface stays at 8); **only this one seat** is promoted — the others (Strategic Planner, Creative/Art/Design Director, Product-UX, Steward) stay in-methodology as brief lenses or integrative work, so promoting them would be the symmetry-for-symmetry the ROADMAP forbids.
+
 ## [0.4.22] — 2026-06-17
 
 ### Added

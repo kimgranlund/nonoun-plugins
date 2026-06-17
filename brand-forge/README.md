@@ -45,7 +45,7 @@ Cold-start in plain language (each routes to the matching command):
 ```text
 brand-forge/
 ├── commands/        8 typed entry points   → set mode + posture, then route
-├── agents/         14 critics + orchestrator + Muse → the review council + the aspirational pull
+├── agents/         14 critics + orchestrator + Muse + Copywriter → the review council, the pull, the voice maker
 ├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)
 └── .mcp.json        per-instance retrieval → the corpus contract (a slot)
