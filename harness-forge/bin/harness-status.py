@@ -12,6 +12,7 @@ is the missing cheap signal — a single read over `.agents/harness/` + the wiri
 
 Usage:
   harness-status.py [--project DIR] [--harness-dir D] [-n N]
+  harness-status.py --stream [--project DIR] [-n N] [--follow]   # the ledger as a live human-readable progress feed
   harness-status.py selftest
 Exit 0 (a read; never a gate). Stdlib only; Python 3.8+.
 """
@@ -102,6 +103,69 @@ def render(project, hd=".agents/harness", n=8):
     return "\n".join(out)
 
 
+# ── streaming view (the v0.5 observability item): the ledger is already an append-only, real-time stream (fed by
+# the wired PostToolUse emit-ledger hook + the worker's own `ledger.py append`); this renders it human-readably so a
+# long unattended `/harness-run` can be watched live (`--follow`) instead of only pulled via the dashboard. It is a
+# pure READER over existing state — no re-wire, no new hook.
+def _human_tokens(t):
+    try:
+        t = int(t)
+    except (TypeError, ValueError):
+        return str(t)
+    return f"{t / 1000:.1f}k" if t >= 1000 else str(t)
+
+
+def _stream_line(e):
+    """One event → one human-readable progress line: `HH:MM:SS  <glyph> <op> <target>  <result> <cost>  — <why>`."""
+    op = e.get("operation", "?")
+    result = e.get("result", "") or ""
+    glyph = {"validate": "✓" if result == "pass" else ("✗" if result == "fail" else "•"),
+             "advance": "→", "create": "+", "define": "·", "operate": "⚙",
+             "distill": "✦", "scan": "◌", "record": "·"}.get(op, "·")
+    if result == "deny" or op in ("block",) or "block" in str(e.get("rationale", "")).lower()[:6]:
+        glyph = "⛔"
+    ts = (e.get("ts") or "")[11:19] or "--:--:--"
+    target = e.get("cell_id") or e.get("path") or ""
+    bits = [b for b in (result, (f"{_human_tokens((e.get('cost') or {}).get('tokens'))} tok"
+                                 if (e.get("cost") or {}).get("tokens") else "")) if b]
+    note = (e.get("rationale") or "")[:60]
+    line = f"{ts}  {glyph} {op:8} {target:26}"
+    if bits:
+        line += " " + " ".join(bits)
+    if note:
+        line += f"  — {note}"
+    return line.rstrip()
+
+
+def stream_render(evs, n=25):
+    if not evs:
+        return "(no ledger yet — nothing has happened in this harness)"
+    return "\n".join(_stream_line(e) for e in evs[-n:])
+
+
+def stream(project, hd=".agents/harness", n=25, follow=False):
+    """Print the last n ledger events as a progress feed; with follow, poll and print new events live (a tail -f)."""
+    d = os.path.join(project, hd)
+    evs = _lat._read_ledger_events(d)
+    print(stream_render(evs, n))
+    if not follow:
+        return 0
+    import time
+    seen = len(evs)
+    sys.stdout.write("… following (Ctrl-C to stop)\n")
+    sys.stdout.flush()
+    try:
+        while True:
+            time.sleep(1.5)
+            evs = _lat._read_ledger_events(d)
+            if len(evs) > seen:
+                print("\n".join(_stream_line(e) for e in evs[seen:]), flush=True)
+                seen = len(evs)
+    except KeyboardInterrupt:
+        sys.stdout.write("\n(stream ended)\n")
+    return 0
+
+
 def selftest():
     import tempfile
     fails = []
@@ -141,6 +205,10 @@ def selftest():
         s2 = render(proj)
         expect("WIRED" in s2 and "[blocked]" in s2 and "1 stop-gate denial" in s2,
                "status did not reflect wired + blocked + a gate-fire")
+        # the streaming view renders the ledger as a human-readable feed (the gate-budget deny → a ⛔ progress line)
+        sr = stream_render(_lat._read_ledger_events(d))
+        expect("⛔" in sr, "stream view did not render the gate-budget deny as a progress line")
+        expect(stream_render([]).startswith("(no ledger"), "empty stream did not render the no-ledger note")
     if fails:
         sys.stderr.write("harness-status selftest: FAIL\n")
         for f in fails:
@@ -156,6 +224,9 @@ def main(argv):
         return selftest()
     project = argv[argv.index("--project") + 1] if "--project" in argv else "."
     hd = argv[argv.index("--harness-dir") + 1] if "--harness-dir" in argv else ".agents/harness"
+    if "--stream" in argv:
+        n = int(argv[argv.index("-n") + 1]) if "-n" in argv else 25
+        return stream(project, hd, n, follow="--follow" in argv)
     n = int(argv[argv.index("-n") + 1]) if "-n" in argv else 8
     print(render(project, hd, n))
     return 0
