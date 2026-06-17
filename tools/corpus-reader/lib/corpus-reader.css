@@ -391,6 +391,31 @@ cr-ui-diagram-viewer {
   color: var(--accent);
   font-weight: 600;
 }
+/* nested folder groups (additive — a flat corpus renders identically at --lvl:0). Indent by depth;
+   a promoted-00-README label is a bolder link, a plain folder a muted non-link header. No disclosure
+   markers — always expanded, visually consistent with the flat top-level entries. */
+.cr-nav-subgroup {
+  display: block;
+}
+.cr-nav-subgroup.cr-hide {
+  display: none;
+}
+.cr-nav-link,
+.cr-nav-folder-plain {
+  padding-left: calc(var(--space-snug) + var(--lvl, 0) * 0.85rem);
+}
+.cr-nav-link.cr-nav-folder {
+  font-weight: 600;
+}
+.cr-nav-folder-plain {
+  display: block;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  color: var(--muted);
+  font-size: var(--font-size-ui);
+  font-weight: 600;
+  line-height: 1.35;
+}
 /* search-phrase highlight in nav titles — amber wash (--hue-caution), theme-aware,
    inherits the link's text colour so an active/hovered link stays legible. */
 .cr-side-nav mark.cr-mark {

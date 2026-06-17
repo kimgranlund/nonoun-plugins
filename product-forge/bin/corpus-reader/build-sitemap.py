@@ -140,6 +140,58 @@ def norm_status(s):
     return ""
 
 
+def is_readme(name):
+    n = name.lower()
+    return n.startswith("00-readme") or n in ("readme.md", "readme")
+
+
+def build_tree(entries):
+    """Nest a section's pages into a folder tree for the sidebar nav (additive — the flat `pages`
+    list is kept for routing/home/search). `entries` is a list of (subparts, page), where subparts
+    are the corpus-relative path parts BELOW the section folder, including the filename. Returns a
+    list of nodes:
+        group: {"type":"group", "title":…, "children":[…], optional "doc": <path>}
+        doc:   {"type":"doc", "path":…, "title":…}
+    A subfolder's 00-README/README is promoted to that group's label (its `doc` + `title`), so
+    clicking the folder opens its readme; a folder without one falls back to a prettified name. A
+    flat corpus yields only top-level `doc` nodes — the nav renders it exactly as before."""
+    root = {"type": "group", "children": [], "_key": ""}
+    for subparts, page in entries:
+        node = root
+        for i, folder in enumerate(subparts[:-1]):
+            key = "/".join(subparts[: i + 1])
+            child = next((c for c in node["children"]
+                          if c.get("type") == "group" and c.get("_key") == key), None)
+            if child is None:
+                child = {"type": "group", "children": [], "_key": key, "_folder": folder}
+                node["children"].append(child)
+            node = child
+        leaf = subparts[-1]
+        if is_readme(leaf) and node is not root:        # promote a subfolder readme to its label
+            node["doc"] = page["path"]
+            node["title"] = page["title"]
+        else:
+            node["children"].append({"type": "doc", "path": page["path"], "title": page["title"]})
+
+    def name_key(c):
+        return (c.get("_folder") if c.get("type") == "group"
+                else (c.get("path") or "").split("/")[-1]).lower()
+
+    def finalize(n):
+        if n.get("type") != "group":
+            return
+        if not n.get("title"):
+            n["title"] = prettify(n.get("_folder", ""))
+        n["children"].sort(key=name_key)
+        for c in n["children"]:
+            finalize(c)
+        n.pop("_key", None)
+        n.pop("_folder", None)
+
+    finalize(root)
+    return root["children"]
+
+
 def collect_sitemap(corpus_label, corpus_abs, path_base, title_override=None):
     """Scan the corpus and assemble the sitemap dict. Page paths are written relative to
     `path_base` — the directory the reader loads from (ROOT for the served layouts; the
@@ -200,9 +252,11 @@ def collect_sitemap(corpus_label, corpus_abs, path_base, title_override=None):
         else:
             section = sections.setdefault(
                 folder,
-                {"id": folder, "title": prettify(folder), "order": section_order(folder), "pages": []},
+                {"id": folder, "title": prettify(folder), "order": section_order(folder),
+                 "pages": [], "_entries": []},
             )
             section["pages"].append(page)
+            section["_entries"].append((parts[1:], page))   # parts[1:] = path below the section folder
 
         # Maturity (frontmatter status) + provenance ([KNOWN]/[INFERRED]/[OPEN]/[SEEDED])
         # counts feed the home stats bar. Graceful: omitted entirely when a corpus has none.
@@ -222,6 +276,7 @@ def collect_sitemap(corpus_label, corpus_abs, path_base, title_override=None):
     section_list = sorted(sections.values(), key=lambda s: (s["order"], s["title"].lower()))
     for section in section_list:
         del section["order"]  # ordering is now positional
+        section["tree"] = build_tree(section.pop("_entries"))  # nested nav structure (additive)
         desc = cfg_sections.get(section["id"])
         if desc:
             section["desc"] = desc
