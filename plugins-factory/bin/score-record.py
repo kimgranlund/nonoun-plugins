@@ -37,13 +37,35 @@ import os
 import re
 import sys
 
-# The 9 holistic dimensions — shorthand (P1) → the canonical key the adoption_contract uses.
-DIMS = {
-    "P1": "P1-plugin-fitness", "P2": "P2-component-fit", "P3": "P3-boundary-cohesion",
-    "P4": "P4-dependency-legality", "P5": "P5-manifest-packaging", "P6": "P6-context-economy",
-    "P7": "P7-routing-discoverability", "P8": "P8-evolution-maintenance", "P9": "P9-security-trust",
+# Per-rubric dimension vocabularies — shorthand (P1 / D1) → the canonical key the adoption_contract uses.
+# Keyed by rubric FAMILY (the part before /vX.Y.Z) so a record's dimensions are validated against the rubric
+# it actually adopts: a holistic record carries P1..P9, a carve-quality record carries D1..D7. A record that
+# scores a holistic plugin with a carve dimension (or vice versa) is then rejected by construction.
+DIM_SETS = {
+    "plugins-holistic": {
+        "P1": "P1-plugin-fitness", "P2": "P2-component-fit", "P3": "P3-boundary-cohesion",
+        "P4": "P4-dependency-legality", "P5": "P5-manifest-packaging", "P6": "P6-context-economy",
+        "P7": "P7-routing-discoverability", "P8": "P8-evolution-maintenance", "P9": "P9-security-trust",
+    },
+    "carve-quality": {
+        "D1": "D1-graph-fidelity", "D2": "D2-cuts-at-joints", "D3": "D3-shared-infra-legality",
+        "D4": "D4-dependency-graph-integrity", "D5": "D5-node-accounting",
+        "D6": "D6-granularity-calibration", "D7": "D7-buildable-proposal",
+    },
 }
-CANON = set(DIMS.values())
+DIMS = DIM_SETS["plugins-holistic"]   # back-compat: the default rubric's shorthand map
+CANON = set(DIMS.values())            # back-compat alias (the holistic canon)
+
+
+def _family(rid):
+    """The rubric family — the part before '/vX.Y.Z' — used to pick the dimension vocabulary."""
+    return rid.split("/", 1)[0]
+
+
+def _canon_for(rid):
+    """The set of canonical dimension keys legal for rubric `rid`, or None if its family is unknown."""
+    dims = DIM_SETS.get(_family(rid))
+    return set(dims.values()) if dims else None
 VERDICTS = {"APPROVED", "CONDITIONAL", "BLOCKED", "ship", "fix-then-ship", "rebuild"}
 _RUBRIC_RE = re.compile(r"^[a-z0-9-]+/v\d+\.\d+\.\d+$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -72,12 +94,15 @@ def validate(rec):
     for rid, dims in scores.items():
         if rid not in adopted:
             errs.append(f"scores reference rubric {rid!r} not in rubrics_adopted")
+        canon = _canon_for(rid)
+        if canon is None:
+            errs.append(f"scores reference rubric {rid!r} of an unknown family (known: {sorted(DIM_SETS)})")
         if not isinstance(dims, dict) or not dims:
             errs.append(f"scores[{rid!r}] must be a non-empty object of dimension→1..5")
             continue
         for dkey, val in dims.items():
-            if dkey not in CANON:
-                errs.append(f"scores[{rid!r}] has unknown dimension key {dkey!r} (expected one of {sorted(CANON)})")
+            if canon is not None and dkey not in canon:
+                errs.append(f"scores[{rid!r}] has unknown dimension key {dkey!r} (expected one of {sorted(canon)})")
             if not isinstance(val, int) or isinstance(val, bool) or not (1 <= val <= 5):
                 errs.append(f"scores[{rid!r}][{dkey!r}] = {val!r} must be an int 1..5")
     if "verdict" in rec and rec["verdict"] not in VERDICTS:
@@ -102,7 +127,7 @@ def _parse_scores(spec, rubric):
             raise ValueError(f"score token {tok!r} must be K=V (e.g. P1=3 or P6-context-economy=3)")
         k, v = tok.split("=", 1)
         k = k.strip()
-        key = DIMS.get(k.upper(), k)  # accept P1 shorthand or a full canonical key
+        key = DIM_SETS.get(_family(rubric), DIMS).get(k.upper(), k)  # P1/D1 shorthand or a full canonical key
         try:
             out[key] = int(v.strip())
         except ValueError:
@@ -211,6 +236,22 @@ def cmd_selftest():
     # shorthand parse
     parsed = _parse_scores("P1=3,P9=2", "plugins-holistic/v0.1.0")
     expect(parsed["plugins-holistic/v0.1.0"] == {"P1-plugin-fitness": 3, "P9-security-trust": 2}, f"shorthand parse wrong: {parsed}")
+    # carve-quality (a second rubric family): a valid D1..D7 record validates, dimensions are rubric-aware
+    carve = {
+        "plugin": "demo-carve", "rubrics_adopted": ["carve-quality/v0.1.0"],
+        "scores": {"carve-quality/v0.1.0": {v: 3 for v in DIM_SETS["carve-quality"].values()}},
+        "verdict": "BLOCKED", "review": "reviews/x-carve.md",
+        "last_scored": "2026-06-16", "scored_by": "plugins-factory",
+    }
+    expect(validate(carve) == [], f"valid carve record rejected: {validate(carve)}")
+    # cross-rubric mismatch is caught BOTH ways (a holistic dim under carve-quality, a carve dim under holistic)
+    expect(validate({**carve, "scores": {"carve-quality/v0.1.0": {"P1-plugin-fitness": 3}}}) != [], "holistic dim under carve-quality not caught")
+    expect(validate({**good, "scores": {"plugins-holistic/v0.1.0": {"D1-graph-fidelity": 3}}}) != [], "carve dim under holistic not caught")
+    # an unknown rubric family is caught
+    expect(validate({**carve, "rubrics_adopted": ["mystery/v0.1.0"], "scores": {"mystery/v0.1.0": {"D1-graph-fidelity": 3}}}) != [], "unknown rubric family not caught")
+    # carve shorthand parse (D1 → canonical)
+    parsed_c = _parse_scores("D1=5,D6=2", "carve-quality/v0.1.0")
+    expect(parsed_c["carve-quality/v0.1.0"] == {"D1-graph-fidelity": 5, "D6-granularity-calibration": 2}, f"carve shorthand parse wrong: {parsed_c}")
     # round-trip through write → validate (suppress their stdout reports — selftest output stays clean)
     with tempfile.TemporaryDirectory() as tmp:
         _stdout = sys.stdout
