@@ -134,7 +134,7 @@ def call(name, args):
                 cells = [c for c in cells if c.get(k) == v]
         if not cells:
             return ("list_cells: no cells match.", False)
-        lines = [f"  {c.get('maturity','?'):13} {_lat.cid(c)}" + ("  [blocked]" if c.get("blocked") else "") for c in cells]
+        lines = [f"  {c.get('maturity','?'):13} {_lat.cid(c)}" + ("  [blocked]" if _lat.is_blocked(c) else "") for c in cells]
         return (f"Lattice cells ({len(cells)}):\n" + "\n".join(lines), False)
 
     if name == "get_cell":
@@ -153,8 +153,8 @@ def call(name, args):
         lines = []
         for c in gaps:
             cid = _lat.cid(c)
-            if c.get("blocked"):
-                lines.append(f"  {c.get('maturity','?'):13} {cid}  [BLOCKED: {c.get('blocked_reason','') or 'budget/no-progress'}]")
+            if _lat.is_blocked(c):
+                lines.append(f"  {c.get('maturity','?'):13} {cid}  [BLOCKED: {_lat.block_reason(c) or 'budget/no-progress'}]")
             elif cid in ready_ids:
                 lines.append(f"  {c.get('maturity','?'):13} {cid}  READY (priority {ready_ids[cid]})")
             else:
@@ -162,7 +162,7 @@ def call(name, args):
                 why = reasons[0] if reasons else "not ready"
                 lines.append(f"  {c.get('maturity','?'):13} {cid}  not ready — {why}")
         body = "\n".join(lines) or "  (no open cells)"
-        nready, nblk = len(ready_ids), sum(1 for c in gaps if c.get("blocked"))
+        nready, nblk = len(ready_ids), sum(1 for c in gaps if _lat.is_blocked(c))
         return (f"Frontier scope `{fs}` — {len(gaps)} open gap(s), {nready} READY, {nblk} blocked "
                 f"(ranked highest-priority first):\n{body}", False)
 
@@ -231,7 +231,7 @@ def call(name, args):
             hist[m] = hist.get(m, 0) + 1
         ranked = _lat.rank(lat)
         gaps = _lat.scan(lat)
-        nblk = sum(1 for c in gaps if c.get("blocked"))
+        nblk = sum(1 for c in gaps if _lat.is_blocked(c))
         # ticket state counts (best-effort: a missing index isn't fatal to a status read)
         trows, terr = _db_rows("SELECT state, COUNT(*) AS n FROM tickets GROUP BY state ORDER BY state")
         tickets = "  (index unavailable: " + terr + ")" if terr else (

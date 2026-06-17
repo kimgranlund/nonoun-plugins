@@ -42,7 +42,7 @@ _ROOT = os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.dirname(os.path.dirname(
 # (a new check, a transition-relation edit, a lattice.json field). `wire.py` stamps it beside the copied
 # `_lattice.py` so `wire.py check` can fail a project whose wired kernel has drifted from the installed one
 # (CV1 — the vendored-copy-drift the council caught: the staleness plugin must not ship a stale kernel).
-KERNEL_VERSION = "0.5.2"
+KERNEL_VERSION = "0.5.3"
 
 # The controlled vocabularies. cell.schema.json is the SINGLE SOURCE (CV5 — the schemas were inert and
 # hand-reimplemented here, a second copy that can drift); these module constants are the portable fallback
@@ -97,8 +97,39 @@ def cid(c):
     return f"{c['layer']}.{c['scope']}.{c['slug']}"
 
 
+def _migrate_blocked(c):
+    """Normalize a cell's stop flag to the canonical `block` discriminated union (Scott W., 0.5.3): the old
+    independent `{blocked, blocked_reason}` pair → `{block: {reason}}`, so a reason-without-stop is unrepresentable
+    rather than merely caught. Idempotent. A legacy `blocked_reason` with no `blocked` (the representable illegal
+    state the union removes) is DROPPED — it described a stop that wasn't in effect. Run at read-time in `load()` and
+    defensively at the top of `check()` so an old lattice.json migrates forward on the next save."""
+    if not isinstance(c, dict):
+        return
+    if "block" not in c and c.get("blocked"):
+        c["block"] = {"reason": c.get("blocked_reason") or ""}
+    c.pop("blocked", None)
+    c.pop("blocked_reason", None)
+
+
+def is_blocked(c):
+    """True iff the cell carries an active stop. Reads the canonical `block` object; falls back to the legacy
+    `blocked` flag so a cell that skipped `load()`/`_migrate_blocked` is still caught (belt-and-suspenders)."""
+    return bool(c.get("block") or c.get("blocked"))
+
+
+def block_reason(c):
+    """The stop reason, or '' — canonical `block.reason`, legacy `blocked_reason` as a fallback."""
+    b = c.get("block")
+    if isinstance(b, dict):
+        return b.get("reason") or ""
+    return c.get("blocked_reason") or ""
+
+
 def load(d):
-    return json.load(open(os.path.join(d, "lattice.json"), encoding="utf-8"))
+    lat = json.load(open(os.path.join(d, "lattice.json"), encoding="utf-8"))
+    for c in lat.get("cells", []):
+        _migrate_blocked(c)                                 # legacy {blocked,blocked_reason} → {block:{reason}} on read
+    return lat
 
 
 def kernel_compat(lat):
@@ -184,7 +215,7 @@ def rank(lat):
             depended[dep] = depended.get(dep, 0) + 1
     out = []
     for c in gaps:
-        if c.get("blocked"):
+        if is_blocked(c):
             continue                              # a blocked cell (budget cap / no-progress) is out of the ready set
         ok, reasons = ready(lat, c)
         if not ok:
@@ -198,20 +229,19 @@ def rank(lat):
 
 
 def set_blocked(lat, cell_id, blocked=True, reason=""):
-    """Flip a cell's `blocked` condition flag (the budget/no-progress stop). The flag is a Property, not a
-    maturity; a blocked cell falls out of `rank` and `advance_validity` until unblocked. This is a PROTECTED
-    write (lattice.json) — the orchestrator/harness sets it, never the worker (the worker is deny-on-write to
-    the lattice). Returns the cell, or None if absent."""
+    """Set or clear a cell's `block` (the budget/no-progress stop), the discriminated union (Scott W., 0.5.3): a
+    `{reason}` object present iff stopped, absent iff not — so a reason-without-stop is unconstructable, not merely
+    flagged. The stop is a Property, not a maturity; a blocked cell falls out of `rank` and `advance_validity` until
+    unblocked. PROTECTED write (lattice.json) — the orchestrator/harness sets it, never the worker. Returns the cell,
+    or None if absent."""
     c = find(lat, cell_id)
     if c is None:
         return None
     if blocked:
-        c["blocked"] = True
-        if reason:
-            c["blocked_reason"] = reason
+        c["block"] = {"reason": reason or ""}               # the union: a stop IS its reason (no separate flag to desync)
+        c.pop("blocked", None); c.pop("blocked_reason", None)   # never leave a legacy mirror
     else:
-        c.pop("blocked", None)
-        c.pop("blocked_reason", None)
+        c.pop("block", None); c.pop("blocked", None); c.pop("blocked_reason", None)
     return c
 
 
@@ -514,7 +544,7 @@ def advance_validity(lat, cell_id):
     if c is None:
         return False, [f"no such cell: {cell_id}"]
     reasons = []
-    if c.get("blocked"):
+    if is_blocked(c):
         reasons.append("cell is blocked (budget cap or no-progress signature) — surface to the compass, do not burn tokens")
     if c["maturity"] not in ADVANCEABLE:
         reasons.append(f"maturity {c['maturity']} is not advanceable (advanceable: {sorted(ADVANCEABLE)})")
@@ -605,6 +635,7 @@ def check(lat, d=None):
     known_keys = set(props) if (schema and schema.get("additionalProperties") is False) else None
     for i, c in enumerate(lat.get("cells", [])):
         where = f"cell[{i}]"
+        _migrate_blocked(c)                                 # legacy {blocked,blocked_reason} → {block} before the key/shape checks
         for k in required:
             if k not in c:
                 findings.append(f"{where}: missing required field `{k}`")
@@ -612,10 +643,10 @@ def check(lat, d=None):
             for k in c:
                 if k not in known_keys:
                     findings.append(f"{where}: unknown field `{k}` (not in the cell schema — typo, or data that will be ignored)")
-        # blocked_reason without blocked is a representable illegal state (Scott/CV4 band-aid; the discriminated-union
-        # refactor that makes it unconstructable is ROADMAP). The reason describes a stop that isn't in effect.
-        if c.get("blocked_reason") and not c.get("blocked"):
-            findings.append(f"{where}: `blocked_reason` set but `blocked` is false — a stop reason on a cell that isn't stopped")
+        # `block` is the discriminated-union stop (Scott W., 0.5.3): present ⟺ stopped, the reason INSIDE it — so the
+        # old "reason without stop" illegal state is now unconstructable (normalized away above), not merely flagged.
+        if "block" in c and not (isinstance(c["block"], dict) and "reason" in c["block"]):
+            findings.append(f"{where}: `block` must be an object with a `reason` (the stop's discriminated union)")
         if c.get("layer") not in layers:
             findings.append(f"{where}: layer `{c.get('layer')}` not in the closed enum")
         if c.get("scope") not in scopes:
@@ -727,10 +758,12 @@ def selftest():
     set_blocked(lat, "rubric.task.x", True, reason="no-progress: 3 consecutive fails")
     expect("rubric.task.x" not in [cid(c) for _, c, _ in rank(lat)], "a blocked cell was still ranked")
     expect(not advance_validity(lat, "rubric.task.x")[0], "advance_validity allowed a blocked cell")
-    expect(find(lat, "rubric.task.x").get("blocked_reason"), "block did not record a reason")
+    _bx = find(lat, "rubric.task.x")
+    expect(is_blocked(_bx) and block_reason(_bx) == "no-progress: 3 consecutive fails", "block did not record the reason in the union")
+    expect("blocked" not in _bx and "blocked_reason" not in _bx, "block left a legacy mirror field (not a clean union)")
     set_blocked(lat, "rubric.task.x", False)
     expect("rubric.task.x" in [cid(c) for _, c, _ in rank(lat)], "unblock did not restore the cell to the ready set")
-    expect("blocked_reason" not in find(lat, "rubric.task.x"), "unblock did not clear the reason")
+    expect("block" not in find(lat, "rubric.task.x"), "unblock did not clear the `block` union")
     expect(set_blocked(lat, "no.such.cell", True) is None, "set_blocked did not return None for a missing cell")
 
     # the GLOBAL run bound (the council's convergent fix): exhaustion is computed from code, no agent counter.
@@ -850,10 +883,22 @@ def selftest():
     typo = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "validated",
                        "signal_refs": ["x"], "depends_on": [], "signl_refs": ["typo"]}]}
     expect(any("unknown field `signl_refs`" in f for f in check(typo)), "check() missed an off-schema (typo'd) key")
-    # blocked_reason without blocked is the illegal state Scott flagged.
+    # the discriminated-union `block` (Scott W., 0.5.3): the old "reason without stop" illegal state is now
+    # UNREPRESENTABLE — `_migrate_blocked` drops a dangling `blocked_reason`, and a legacy blocked cell migrates
+    # to `{block:{reason}}`. A malformed `block` (not an object-with-reason) is the only thing left to flag.
     orphan = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "defined",
                          "depends_on": [], "blocked_reason": "no-progress"}]}
-    expect(any("`blocked` is false" in f for f in check(orphan)), "check() missed blocked_reason-without-blocked")
+    check(orphan)                                          # normalizes in place
+    expect("blocked_reason" not in orphan["cells"][0] and "block" not in orphan["cells"][0],
+           "a dangling blocked_reason was not dropped (the illegal state must normalize to no-stop)")
+    legacy = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "defined",
+                         "depends_on": [], "blocked": True, "blocked_reason": "no-progress"}]}
+    check(legacy)
+    expect(legacy["cells"][0].get("block") == {"reason": "no-progress"} and "blocked" not in legacy["cells"][0],
+           "a legacy blocked cell did not migrate to the {block:{reason}} union")
+    malformed = {"cells": [{"layer": "spec", "scope": "task", "slug": "s", "maturity": "defined",
+                            "depends_on": [], "block": "no-progress"}]}
+    expect(any("must be an object with a `reason`" in f for f in check(malformed)), "check() missed a malformed `block`")
 
     # the state machine: legal vs. illegal transitions.
     expect(transition_ok("validated", "regenerating") and transition_ok("defined", "instantiated"), "rejected a legal transition")

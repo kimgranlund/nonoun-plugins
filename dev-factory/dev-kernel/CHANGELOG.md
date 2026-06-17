@@ -2,6 +2,15 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.10] — 2026-06-17
+
+### Changed
+
+- **Re-vendored `lattice.py` + `cell.schema.json` from harness-forge `0.5.19`** — the cell stop flag is now a **discriminated union `block: {reason}`** (replacing the independent `blocked`/`blocked_reason` pair, so a reason-without-stop is unconstructable). The vendored `load()`/`check()` migrate a legacy cell → the union on read; a dual-read `is_blocked`/`block_reason` accessor keeps readers correct on old + new instances. **`KERNEL_VERSION` 0.5.2 → 0.5.3** (the cell data model changed) — dev-factory instances stamped 0.5.2 read as a skew via `kernel_compat` until re-validated, while the on-read migration keeps them correct meanwhile.
+- **dev-factory consumers updated to the union:** `factory-query-mcp.py` + `dev-server/store.py` now dual-read via `_lat.is_blocked`/`_lat.block_reason` (so the blocked count + the `[BLOCKED]` markers stay correct after the field change); `reports.py` reads the store's computed column downstream, unchanged. dev-kernel + dev-server selftests green.
+
+plugin.json 0.2.9 → 0.2.10.
+
 ## [0.2.9] — 2026-06-17
 
 ### Changed
