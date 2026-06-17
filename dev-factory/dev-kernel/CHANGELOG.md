@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.8] — 2026-06-17
+
+### Changed
+
+- **Re-vendored `lattice.py` from harness-forge `0.5.15`** — the run budget gained a **token/$ axis** (`max_cost`): `run_budget_exhausted` sums the ledger's reported `cost.tokens` since `start_ts` against a ceiling, and a `max_cost`-only budget is a valid non-vacuous budget. Behavior-neutral for dev-kernel's existing axes (iterations/cells/wall-clock unchanged; absent cost never trips the new cap). Drift gate green; `KERNEL_VERSION` stays **0.5.2** (additive — `run_budget_start` gained an optional kwarg, the return shape is unchanged). plugin.json 0.2.7 → 0.2.8.
+
 ## [0.2.7] — 2026-06-16
 
 ### Changed
