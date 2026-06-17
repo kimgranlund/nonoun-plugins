@@ -1,9 +1,0 @@
-{
-  "cell_id": "spec.task.parse-invoice",
-  "ts": "2026-06-10T09-05",
-  "harness": "predicate-check",
-  "kind": "gate",
-  "result": "pass",
-  "evidence": "5 acceptance predicates checkable (v1 spec)",
-  "validated_against": {}
-}

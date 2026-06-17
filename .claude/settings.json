@@ -1,12 +1,19 @@
 {
   "enabledPlugins": {
-    "plugins-factory@nonoun-plugins": true
+    "plugins-factory@nonoun-factory": true
   },
   "extraKnownMarketplaces": {
     "nonoun-plugins": {
       "source": {
         "source": "github",
         "repo": "kimgranlund/nonoun-plugins"
+      },
+      "autoUpdate": true
+    },
+    "nonoun-factory": {
+      "source": {
+        "source": "github",
+        "repo": "kimgranlund/nonoun-factory"
       },
       "autoUpdate": true
     }

@@ -1,3 +1,0 @@
-# Scaffolded debug projects + their dev-factory instances — ephemeral per-run state, never committed.
-# The harness (bin/, briefs/, README) is tracked; what it produces under runs/ is not.
-/runs/
