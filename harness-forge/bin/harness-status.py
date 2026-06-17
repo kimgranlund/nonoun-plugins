@@ -23,6 +23,7 @@ import sys
 _BIN = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _BIN)
 import lattice as _lat     # noqa: E402
+import ledger as _ledger   # noqa: E402  (trust_tier — the earned autonomy ceiling)
 import wire as _wire       # noqa: E402
 
 
@@ -96,6 +97,9 @@ def render(project, hd=".agents/harness", n=8):
     evs = _lat._read_ledger_events(d)
     denies = sum(1 for e in evs if e.get("actor") == "hook:gate-budget" and e.get("result") == "deny")
     out.append(f"  gate-fires: {denies} stop-gate denial(s) recorded" + (" (the loop hit its bound)" if denies else ""))
+    _tier, _tlabel, _trate, _ = _ledger.trust_tier(evs)
+    _rate_s = "unmeasured" if _trate is None else f"{_trate:.1%}"
+    out.append(f"  trust:    earned tier {_tier} ({_tlabel}) — false-pass {_rate_s}; promotion advisory, demotion auto")
     out.append(f"  ledger:   {len(evs)} event(s); last {min(n, len(evs))}:")
     for e in evs[-n:]:
         out.append(f"     {e.get('operation','?'):9} {e.get('cell_id') or e.get('path') or '-':28} "
@@ -177,7 +181,7 @@ def selftest():
         _lat.scaffold(d)
         _lat.save(d, _lat.seed_lattice("status-demo"))
         s = render(proj)
-        for token in ("maturity:", "frontier:", "run:", "wiring:", "gate-fires:", "ledger:"):
+        for token in ("maturity:", "frontier:", "run:", "wiring:", "gate-fires:", "trust:", "ledger:"):
             expect(token in s, f"status missing the {token} line")
         # a fresh project (no budget, NO marker) is idle, not alarming — manual edits / /harness-advance are free
         expect("no active run budget" in s and "idle" in s and "NOT WIRED" in s,
@@ -214,7 +218,7 @@ def selftest():
         for f in fails:
             sys.stderr.write(f"  - {f}\n")
         return 1
-    print("harness-status selftest: OK (one read renders maturity/frontier/run-budget/wiring/gate-fires/ledger; "
+    print("harness-status selftest: OK (one read renders maturity/frontier/run-budget/wiring/gate-fires/trust/ledger; "
           "reflects blocked cells + denials + wiring state — the cheap operator signal, no agent dispatch)")
     return 0
 

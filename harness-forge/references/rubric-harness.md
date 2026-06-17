@@ -88,7 +88,7 @@ Does the operating/claimed autonomy tier match the measured precondition from th
 
 | Score | Evidence |
 | --- | --- |
-| **5** | The tier is earned: `bin/ledger.py false-pass` shows < ~5% with zero reward-hacking incidents for any unattended family; a hermetic sandbox and tamper-evident audit trail for scheduled runs. Demotion is automatic on an incident. Autonomy is granted by measurement, not declaration. |
+| **5** | The tier is earned: `bin/ledger.py trust` computes the earned ceiling from the measured rate (`ledger.py false-pass` < ~5% with zero reward-hacking incidents for any unattended family) and the operating tier is ≤ it; a hermetic sandbox and tamper-evident audit trail for scheduled runs. Demotion is automatic — the ceiling is a live function of the rate, so a spike drops it on the next read; promotion is advisory (a human grants up to the ceiling). Autonomy is granted by measurement, not declaration. |
 | **3** | The tier is plausible but the false-pass evidence is thin (small N) or the demotion mechanism is manual. |
 | **1** | Unattended autonomy claimed with no measured false-pass rate, or a known reward-hacking incident un-demoted. The claim is enthusiasm, not evidence. |
 
