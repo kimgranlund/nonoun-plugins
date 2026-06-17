@@ -119,6 +119,44 @@ A corpus is **wholly flat or wholly nested**. Mixing breaks retrieval (the MCP a
 
 ---
 
-## Extension point
+## Extension point — the four enrichments, built
 
-A production deployment expands this reference with: a per-layer file manifest (the exact set of documents each layer expects at maturity), corpus templates for each output convention, a migration script between flat and folder shapes, and an audit checklist that maps to the `08-evaluation` rubric scores. All of it descends from the eight layers and two conventions defined here.
+This reference used to *name* four enrichments a production deployment would add. They are built here; all four descend from the eight layers and two conventions above.
+
+### 1 · Per-layer file manifest — what each layer expects at maturity
+
+The minimum coverage a layer holds before it is **mature** (fewer → still `forming`, and the gaps are the frontier). The names are illustrative; the **coverage**, not the exact filenames, is the manifest.
+
+| Layer | Mature manifest (the contents this layer expects) |
+| --- | --- |
+| **01 Foundation** | cultural root · position · point of view · enemy/tension · customer transformation · editorial principles — the 3-page MVF (one file or six, but all six contents present) |
+| **02 Positioning** | the chosen territory (+ the candidates weighed) · the category-design narrative · competitive archaeology |
+| **03 Identity** | logo system + lockups · the single visual idea, traced to 01's POV |
+| **04 Expression** | type scale + pairings · color strategy · layout/grid · imagery direction · motion |
+| **05 Voice** | tone · naming conventions · copy principles (we-write / we-don't) · worked examples across ≥3 contexts |
+| **06 Product** | the brand-in-use audit — surface by surface, where the experience keeps or breaks 01's promise |
+| **07 Guidelines** | usage rules + do/don't · decision rights · the "a stranger could extend this correctly" coherence test |
+| **08 Evaluation** | the latest audit · rubric scores (`brand-evaluate`) · council reviews · the decision log (append-only) |
+
+Load order binds the manifest: 03–06 assets are provisional until 01's six contents are all present and decided.
+
+### 2 · Migration between the conventions — `bin/corpus-migrate`
+
+The flat ⟷ folder migration is mechanical, so it's a tool, not a chore. `corpus-migrate <corpus> --to {flat|folder} [--apply]` detects the shape, **refuses a mixed corpus** (the defect §The two conventions warns against), and renames every layer asset — dry-run by default, `--apply` to perform. Run it with no `--to` to report the current shape. See `bin/corpus-migrate` (selftested).
+
+### 3 · Corpus templates per convention
+
+A new corpus is the manifest above instantiated in the chosen shape — flat: one `NN-layer--name.md` per row; folder: `NN-layer/name.md`. Pick by today's destination, not forever: `corpus-migrate` converts between them at any time.
+
+### 4 · Audit checklist → `08-evaluation`
+
+The completeness audit that feeds `08-evaluation` — score each item, and the failures are the remediation list:
+
+1. **Load order holds** — 01's six contents are present and decided; nothing in 03–06 contradicts 01.
+2. **One convention** — flat or folder, never both (`corpus-migrate` reports a mixed corpus as a defect).
+3. **Each layer meets its manifest** — mark each `mature / forming / absent` against the table; the non-mature layers are the frontier.
+4. **Voice is shown, not just stated** — 05 carries worked examples in ≥3 contexts, not only principles.
+5. **Product keeps the promise** — 06 names, surface by surface, where the experience holds or breaks 01.
+6. **The decision log is live** — 08 records what changed and why; supersede, never delete.
+
+Score each layer against its matching `brand-evaluate` rubric; the weakest layer plus any load-order violation is the corpus's next work.

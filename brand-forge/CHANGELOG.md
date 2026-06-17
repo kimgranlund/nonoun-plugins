@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.24] — 2026-06-17
+
+### Added
+
+- **`brand-corpus`'s "Extension point" is now built, not just named** (the skill's own deferred next-step). `references/corpus-architecture.md` § Extension point used to *describe* four enrichments; all four ship: (1) a **per-layer maturity manifest** — the contents each of the eight layers expects before it's `mature`, with load-order binding 03–06 to a complete 01; (2) **`bin/corpus-migrate`** — the flat ⟷ folder convention migration as a tool (the architecture already called it mechanical): detects the shape, **refuses a mixed corpus** as a defect, renames every layer asset, dry-run by default with `--apply`, selftested (lossless round-trip, preserves non-layer files, tidies empty layer dirs); (3) **corpus templates per convention** (the manifest instantiated in either shape); (4) an **audit checklist → `08-evaluation`** (load-order, single-convention, per-layer manifest coverage, voice-shown, product-keeps-promise, live decision log). `brand-corpus/SKILL.md` points at the tool + the manifest. plugin.json 0.4.23 → 0.4.24.
+
 ## [0.4.23] — 2026-06-17
 
 ### Added
