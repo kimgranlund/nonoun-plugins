@@ -1,9 +1,0 @@
-{
-  "cell_id": "ontology.task.domain",
-  "ts": "2026-06-10T08-50",
-  "harness": "review",
-  "kind": "gate",
-  "result": "pass",
-  "evidence": "entities/operations/states sections present",
-  "validated_against": {}
-}

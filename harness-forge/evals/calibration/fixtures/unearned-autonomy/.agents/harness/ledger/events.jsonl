@@ -1,6 +1,0 @@
-{"operation":"validate","actor":"validate.py","cell_id":"spec.task.parse-invoice","result":"pass","ts":"2026-06-10T22:01:00-07:00","rationale":"predicate-check exit 0","cost":{"tokens":3100,"iterations":1}}
-{"operation":"validate","actor":"validate.py","cell_id":"capability.task.pdf-extract","result":"pass","ts":"2026-06-10T22:14:00-07:00","rationale":"pytest exit 0","cost":{"tokens":18200,"iterations":2}}
-{"operation":"validate","actor":"validate.py","cell_id":"capability.task.field-mapper","result":"pass","ts":"2026-06-11T01:40:00-07:00","rationale":"pytest exit 0","cost":{"tokens":22950,"iterations":3}}
-{"operation":"validate","actor":"validate.py","cell_id":"methodology.task.extract-loop","result":"pass","ts":"2026-06-11T02:05:00-07:00","rationale":"pytest exit 0","cost":{"tokens":9400,"iterations":1}}
-{"operation":"validate","actor":"validate.py","cell_id":"capability.task.pdf-extract","result":"pass","ts":"2026-06-12T01:12:00-07:00","rationale":"pytest exit 0 (nightly)","cost":{"tokens":15800,"iterations":2}}
-{"operation":"record","actor":"advancer","cell_id":"capability.task.field-mapper","result":"done","ts":"2026-06-12T01:30:00-07:00","rationale":"worker reports completion — diff applies cleanly"}

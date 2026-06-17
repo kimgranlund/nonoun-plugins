@@ -2,17 +2,18 @@
 
 [![ci](https://github.com/kimgranlund/nonoun-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/kimgranlund/nonoun-plugins/actions/workflows/ci.yml)
 
-A public **Claude Code plugin marketplace**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with the catalog's own lifecycle tool. The marketplace *name*, the repo, and the local folder are all `nonoun-plugins` (install ids end in `@nonoun-plugins`) — see [docs/ISSUES.md](docs/ISSUES.md) D-17 (the repo + folder renamed `claude-plugins` → `nonoun-plugins` on 2026-06-16, resolving the D-12 repo≠name split; the old GitHub URL auto-redirects).
+A public **Claude Code plugin marketplace** for **brand & product work**: self-contained, reference-quality plugins, each authored and adversarially red-teamed with `plugins-factory`. Its sibling, **[nonoun-factory](https://github.com/kimgranlund/nonoun-factory)**, holds the builder/operator toolchain (plugins-factory, harness-forge, agent-ops) — split out on 2026-06-17 (D-18) so the products and the tooling each have their own marketplace + audience. Install ids end in `@nonoun-plugins` (products) or `@nonoun-factory` (toolchain).
 
 ## Install
 
 ```text
 /plugin marketplace add kimgranlund/nonoun-plugins
 /plugin install brand-forge@nonoun-plugins
-/plugin install plugins-factory@nonoun-plugins
 /plugin install product-forge@nonoun-plugins
-/plugin install agent-ops@nonoun-plugins
-/plugin install harness-forge@nonoun-plugins
+
+# the builder/operator toolchain is the sibling marketplace (D-18):
+/plugin marketplace add kimgranlund/nonoun-factory
+/plugin install plugins-factory@nonoun-factory   # + harness-forge@nonoun-factory, agent-ops@nonoun-factory
 ```
 
 ## Catalog
@@ -20,9 +21,9 @@ A public **Claude Code plugin marketplace**: self-contained, reference-quality p
 | Plugin | What it is |
 | --- | --- |
 | [`brand-forge/`](brand-forge/) | build and evaluate brands grounded in cultural authority — the catalog's worked example of the five plugin primitives |
-| [`plugins-factory/`](plugins-factory/) | the plugin-lifecycle tool: author, carve, score, and red-team plugins against one 9-dimension standard (this repo dogfoods it on itself) |
 | [`product-forge/`](product-forge/) | product strategy, management, and UX across the 12-domain Product Experience Strategy frame |
-| [`agent-ops/`](agent-ops/) | author, operate, and review agentic systems and the repos they live in |
+
+> **Sibling marketplace — [nonoun-factory](https://github.com/kimgranlund/nonoun-factory):** `plugins-factory` (the lifecycle tool, whose gate suite is vendored here as `tools/gates/` to validate these products), `harness-forge` (the latticed-agentic-workflow kernel), `agent-ops` (operate/review agentic systems), and the nested `dev-factory`.
 
 Each plugin's own `README.md` is its authoritative description; a generated catalog page (`gen-index.py`, gated fresh in CI) is browsable online at **[kimgranlund.github.io/nonoun-plugins](https://kimgranlund.github.io/nonoun-plugins/)** and lives in-repo at [`index.html`](index.html). The shared **corpus-reader** — a buildless static site for any folder-of-Markdown corpus — is repo-root build tooling at [`tools/corpus-reader/`](tools/corpus-reader/) (alongside `gen-index.py`) and is vendored into the maker plugins that use it.
 
