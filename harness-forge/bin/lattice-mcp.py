@@ -73,6 +73,19 @@ def _cid(c):
     return f"{c['layer']}.{c['scope']}.{c['slug']}"
 
 
+def _blocked(c):
+    """The cell carries an active stop. Dual-reads the canonical `block` object + the legacy `blocked` flag, since
+    the MCP reads lattice.json raw (an old, un-migrated instance may still carry the legacy field)."""
+    return bool(c.get("block") or c.get("blocked"))
+
+
+def _breason(c):
+    b = c.get("block")
+    if isinstance(b, dict):
+        return b.get("reason") or ""
+    return c.get("blocked_reason") or ""
+
+
 def call(name, args):
     """Return (text, is_error)."""
     if not HARNESS or not os.path.isdir(HARNESS):
@@ -89,7 +102,7 @@ def call(name, args):
                 cells = [c for c in cells if c.get(k) == v]
         if not cells:
             return ("list_cells: no cells match.", False)
-        lines = [f"  {c['maturity']:13} {_cid(c)}" + ("  [blocked]" if c.get("blocked") else "") for c in cells]
+        lines = [f"  {c['maturity']:13} {_cid(c)}" + ("  [blocked]" if _blocked(c) else "") for c in cells]
         return (f"Lattice cells ({len(cells)}):\n" + "\n".join(lines), False)
 
     if name == "get_cell":
@@ -105,9 +118,9 @@ def call(name, args):
         # mark blocked cells (Charity/CV2): a blocked gap is NOT available work — it's out of `rank` until
         # unblocked, and advertising it as open would send an agent to grind a cell the stop-gate denies.
         body = "\n".join(
-            f"  {c['maturity']:13} {_cid(c)}" + (f"  [BLOCKED: {c.get('blocked_reason','') or 'budget/no-progress'}]" if c.get("blocked") else "")
+            f"  {c['maturity']:13} {_cid(c)}" + (f"  [BLOCKED: {_breason(c) or 'budget/no-progress'}]" if _blocked(c) else "")
             for c in gaps) or "  (no open cells)"
-        nblk = sum(1 for c in gaps if c.get("blocked"))
+        nblk = sum(1 for c in gaps if _blocked(c))
         note = f" — {nblk} blocked (not ready; run `lattice.py rank` for the actual selectable set)" if nblk else ""
         return (f"Gap set at frontier scope `{fs}` ({len(gaps)}{note}):\n{body}", False)
 

@@ -25,17 +25,20 @@
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
     "maturity": {
-      "description": "Exactly one state from the maturity machine. `blocked` is a condition flag, not a maturity state.",
+      "description": "Exactly one state from the maturity machine. `block` is a condition object, not a maturity state.",
       "enum": ["absent", "defined", "instantiated", "validated", "operating", "regenerating", "stale", "deprecated"]
     },
-    "blocked": {
-      "description": "Condition flag — the advancement loop hit a budget cap or a no-progress signature. A blocked cell falls out of rank/advance-validity until unblocked. Surfaces the cell to the compass instead of burning tokens.",
-      "type": "boolean",
-      "default": false
-    },
-    "blocked_reason": {
-      "description": "Why the cell was blocked (budget cap or no-progress signature), set alongside `blocked` by the orchestrator/stop-gate; cleared on unblock.",
-      "type": ["string", "null"]
+    "block": {
+      "description": "The budget/no-progress STOP, as a discriminated union (Scott W., 0.5.3): PRESENT (an object carrying its reason) iff the cell is stopped, ABSENT iff not — replacing the old independent `blocked`/`blocked_reason` pair so a reason-without-stop is unconstructable, not merely flagged. A blocked cell falls out of rank/advance-validity until unblocked; surfaces it to the compass instead of burning tokens. The kernel migrates a legacy `{blocked, blocked_reason}` cell to this shape on read.",
+      "type": "object",
+      "properties": {
+        "reason": {
+          "description": "Why the cell was stopped (budget cap or no-progress signature). May be empty, never absent.",
+          "type": "string"
+        }
+      },
+      "required": ["reason"],
+      "additionalProperties": false
     },
     "asset_ref": {
       "description": "Repo-relative path to the artifact that instantiates this cell (the layer-dir file).",
@@ -64,7 +67,7 @@
       "type": ["string", "null"]
     },
     "budget": {
-      "description": "Loop budget primitives (policy instances). Exhaustion flips `blocked`.",
+      "description": "Loop budget primitives (policy instances). Exhaustion sets `block`.",
       "type": "object",
       "additionalProperties": false,
       "properties": {

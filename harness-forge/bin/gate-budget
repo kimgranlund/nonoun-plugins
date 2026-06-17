@@ -66,8 +66,8 @@ def blocked_cell_for(path, d=None):
     p = _norm(path)
     for c in lat.get("cells", []):
         ref = c.get("asset_ref")
-        if c.get("blocked") and ref and (p == _norm(ref) or p.endswith("/" + _norm(ref))):
-            return _lat.cid(c), (c.get("blocked_reason") or "budget/no-progress stop")
+        if _lat.is_blocked(c) and ref and (p == _norm(ref) or p.endswith("/" + _norm(ref))):
+            return _lat.cid(c), (_lat.block_reason(c) or "budget/no-progress stop")
     return None, None
 
 

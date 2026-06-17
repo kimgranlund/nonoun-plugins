@@ -116,7 +116,7 @@ def upsert_cell(con, c):
            ON CONFLICT(id) DO UPDATE SET maturity=excluded.maturity,blocked=excluded.blocked,
              asset_ref=excluded.asset_ref,signal_count=excluded.signal_count,stale=excluded.stale""",
         (cid, c.get("layer"), c.get("scope"), c.get("slug"), c.get("maturity"),
-         1 if c.get("blocked") else 0, c.get("asset_ref"), len(c.get("signal_refs", [])),
+         1 if _lat.is_blocked(c) else 0, c.get("asset_ref"), len(c.get("signal_refs", [])),
          1 if c.get("maturity") == "stale" else 0))
 
 

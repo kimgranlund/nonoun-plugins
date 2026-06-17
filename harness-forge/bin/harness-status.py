@@ -37,15 +37,15 @@ def render(project, hd=".agents/harness", n=8):
     cells = lat.get("cells", [])
     hist = {}
     for c in cells:
-        key = c.get("maturity", "?") + (" [blocked]" if c.get("blocked") else "")
+        key = c.get("maturity", "?") + (" [blocked]" if _lat.is_blocked(c) else "")
         hist[key] = hist.get(key, 0) + 1
     out.append("  maturity: " + (", ".join(f"{k}×{v}" for k, v in sorted(hist.items())) or "(no cells)"))
     gaps = _lat.scan(lat)
     out.append(f"  frontier: {len(gaps)} open/stale gap(s) at scope {lat.get('frontier_scope','task')}"
                + (": " + ", ".join(_lat.cid(c) for c in gaps[:6]) if gaps else ""))
-    blocked = [c for c in cells if c.get("blocked")]
+    blocked = [c for c in cells if _lat.is_blocked(c)]
     if blocked:
-        out.append("  blocked:  " + ", ".join(f"{_lat.cid(c)} ({c.get('blocked_reason','?')})" for c in blocked))
+        out.append("  blocked:  " + ", ".join(f"{_lat.cid(c)} ({_lat.block_reason(c) or '?'})" for c in blocked))
 
     # the run budget (the global bound) — show X/Y, not just the numerator, so an operator sees the cliff BEFORE it
     now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
