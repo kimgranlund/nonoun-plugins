@@ -18,9 +18,12 @@ PLANTED = {
         r"lifted", r"provenance", r"desk research", r"receipts", r"not .{0,10}earned",
     ],
     "D2 category-restatement position (not exclusive)": [
-        r"category restatement", r"restates the category", r"any (?:rival|competitor|brand)", r"could sign",
+        r"category restatement", r"restates the category", r"(?:any|every) (?:rival|competitor|brand)", r"could sign",
         r"not exclusive", r"undifferentiated", r"premium choice", r"sign their name", r"no (?:real |ownable )?position",
         r"(?:put|place)s? (?:their|its) name",
+        # I-13: real council wordings the prior patterns missed — "every premium coffee brand could publish
+        # this verbatim" / "could run under a … letterhead" (interchangeable, not ownable).
+        r"(?:any|every) .{0,24}brand could", r"letterhead", r"publish .{0,12}verbatim",
     ],
     "D4 no enemy / no tension": [
         r"no enemy", r"nothing to (?:oppose|stand against)", r"frictionless", r"for everyone", r"no tension",

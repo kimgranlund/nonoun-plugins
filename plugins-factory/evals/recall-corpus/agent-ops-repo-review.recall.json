@@ -1,42 +1,37 @@
 {
   "checker": "agent-ops/evals/repo-review-calibration/check.py",
   "_note": "seeded-smell-repo (the repo-review behavioral fixture). Paraphrases a healthy repo-review pass might use for each planted smell.",
+  "_provenance": "RE-SOURCED from real transcript (I-13 deeper fix): phrasings extracted from agent-ops/evals/repo-review-calibration/runs/2026-06-11-seeded-repo-baseline.md.",
   "defects": {
     "S1 god module — parsing + db + http + rendering in one file (no separation)": [
-      "a god module that does everything — parsing, db, http, and rendering in one file",
-      "no separation of concerns; app.py mixes database and http and rendering",
-      "this single file violates single responsibility — split it",
-      "abstraction layering is poor; all the layers live in one place"
+      "HTTP/DB/validation all in one file",
+      "Abstraction Layering / DRY 2/5 — pull DB access and the HTTP handler apart",
+      "the abstraction layering is poor; everything lives in one file"
     ],
     "S2 naming drift — camelCase and snake_case mixed in one module": [
-      "naming drift — camelCase and snake_case mixed in one module",
-      "getUserData sits beside render_user_page — inconsistent naming",
-      "two naming conventions in the same file",
+      "casing convention drifts inside one module",
+      "getUserData / fetchRemote sit beside render_user_page",
       "the casing convention drifts within app.py"
     ],
     "S3 declared-vs-actual contradiction — README 'stdlib only' but imports requests": [
-      "the README claims stdlib only, yet app.py imports requests — a declared-vs-actual contradiction",
-      "the repo contradicts its own contract: 'zero dependencies' but an external dependency",
-      "the README's no-dependencies claim is false",
-      "declared contract (stdlib only) contradicted by the requests import"
+      "README contradicts the code on every claim",
+      "'Zero dependencies — stdlib only' refuted by app.py:3 (import requests)",
+      "the README's stdlib-only claim is contradicted by the requests import"
     ],
     "S4 duplicated logic — _is_valid_email copy-pasted across two files": [
-      "_is_valid_email is duplicated verbatim across two files",
-      "copy-pasted logic with no single source of truth — a DRY violation",
-      "the same validation function lives in both app.py and validate.py",
-      "duplicated code that will drift"
+      "_is_valid_email duplicated verbatim",
+      "app.py:12 ≡ validate.py:1 — no single source of truth",
+      "the same validation function is duplicated across two files"
     ],
     "S5 command injection — unsanitized input shells out (trust boundary)": [
-      "command injection in deploy.py — os.system with an unsanitized branch from argv",
-      "untrusted input shells out — a trust-boundary and shell-injection smell",
-      "interpolating user input into a shell command enables arbitrary command execution",
-      "the deploy path is vulnerable to `main; rm -rf /` style injection"
+      "command injection in the deploy path",
+      "P0-2 SEC-2: command injection (deploy.py:6 ← sys.argv[1])",
+      "os.system with an unsanitized branch from argv — a shell injection sink"
     ],
     "S6 no agent memory / no tests — no AGENTS.md, no CHANGELOG, no tests, 'well-tested' is false": [
-      "zero tests behind a 'well-tested' claim — the README is false",
-      "no AGENTS.md, no CHANGELOG, no agent-facing memory",
-      "the repo is untested; the well-tested claim is untrue",
-      "no test suite anywhere despite the production-ready claim"
+      "Zero tests behind a 'well-tested' claim",
+      "no test file anywhere; the well-tested claim is false",
+      "the repo is untested despite the README's well-tested claim"
     ]
   }
 }

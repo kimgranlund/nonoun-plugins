@@ -1,18 +1,23 @@
 {
   "checker": "plugins-factory/evals/council-calibration/check-hollow.py",
   "_note": "docs-studio (failure by vacancy: hollow components + dead-but-wired MCP).",
+  "_provenance": "RE-SOURCED from real council transcripts (I-13 deeper fix): each phrasing below is a wording the council ACTUALLY produced in runs/2026-06-10-docs-studio-run1.md / run2.md / run3.md — lightly trimmed of bylines/scaffolding, not author-invented. So a green check-recall now means 'the checker's patterns still catch wordings the council really used' (a measurement) rather than 'the patterns match the author's paraphrase of its own patterns' (the closed loop). Critic identities stay obscured as in the source runs.",
   "defects": {
     "H hollow components — bodies thinner than their descriptions (AP-P6/PF5)": [
-      "the body is thinner than the description promises",
-      "a one-sentence skill under a rich routing blurb — a hollow stub",
-      "it adds routing surface and zero capability the base model lacked",
-      "the descriptions out-promise what is on disk; deepen or delete"
+      "the description is the entire knowledge, the body is empty; every session pays for two verbose descriptions that route to nothing",
+      "the post-install surface over-promises and a user can't tell from plugin details that the bodies are empty stubs",
+      "the skills' depth claims are unfalsifiable against the bundle — no references/, no rule list, no fixtures",
+      "the skills are empty shells whose descriptions promise depth that isn't on disk",
+      "doc-rules/style-canon one-sentence bodies under comprehensive-catalog descriptions, no references/",
+      "manifest confidence, empty implementation"
     ],
     "L dead-but-wired MCP — defines tools but never serves them (AP-P7/CF5)": [
-      "the MCP defines a TOOLS list and exits — there is no server loop",
-      "dead-but-wired: it never answers tools/list",
-      "the server is non-functional and can't respond to a single call",
-      "a liveness smoke test would catch it — no JSON-RPC dispatch, no __main__"
+      "a contract with no implementation — the inverse of the API-wrapper anti-pattern, and worse; no stdio read loop, no initialize/tools/list/tools/call dispatch",
+      "a liveness check that the declared MCP server actually completes a JSON-RPC handshake",
+      "the MCP tool contract is a fiction: shapes without a server is a contract with no counterparty; no tools/call handler, no tools/list responder, no stdio loop",
+      "the bundled MCP is dead — docs-mcp.py self-documents 'no server loop to serve them' while .mcp.json launches it on enable",
+      "declared tools, no dispatch; tools/call apply_style cannot respond",
+      "no smoke test would catch the dead server"
     ]
   }
 }

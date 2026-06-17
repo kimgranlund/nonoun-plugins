@@ -1,42 +1,44 @@
 {
   "checker": "brand-forge/evals/council-calibration/check.py",
   "_note": "Northwind (weak brand strategy) — the strategy sub-council's D1–D6 + bullshit filter.",
+  "_provenance": "RE-SOURCED from real council transcripts (I-13 deeper fix): phrasings extracted from runs/2026-06-04-northwind-baseline.md, runs/2026-06-10-northwind-run2.md, runs/2026-06-10-northwind-run3.md — lightly trimmed (bylines/scaffolding removed), the core council wording kept verbatim. A green check-recall now means 'the checker's patterns still catch wordings the council really produced' (a measurement), not 'the patterns match the author's paraphrase of its own patterns'. NOTE: for D2 the council's pure verbatim quotes ('every premium coffee brand could publish this verbatim', 'could run under a … letterhead') originally did NOT match the checker patterns; check.py:D2 was WIDENED centrally (I-13) to catch them ('letterhead', 'publish … verbatim', '(any|every) … brand could'), so those bare council wordings now resolve directly and are included above — the brittle-pattern signal is closed, not worked around.",
   "defects": {
     "D1 borrowed cultural root (no real provenance)": [
-      "the root is a moodboard of admired competitor brands",
-      "borrowed cultural provenance — a landscape, not a root",
-      "show me the receipts; there is no primary-source archaeology",
-      "the cool is lifted from other brands, not earned"
+      "the root is a competitor survey, not a world — the textbook landscape",
+      "a landscape survey wearing the heading 'Cultural roots' — borrowed cool, fully laundered; the receipts I asked for do not exist",
+      "every reference here is itself a brand — a moodboard of other people's conclusions; matching what's out there is the definition of having no roots",
+      "borrowed cultural root: an Apple/Aesop/Patagonia moodboard, not primary-source archaeology"
     ],
     "D2 category-restatement position (not exclusive)": [
-      "a category restatement any competitor could sign",
-      "the premium choice for discerning customers — undifferentiated and not exclusive",
-      "no ownable position; every rival could put their name on it",
-      "it restates the category instead of staking a claim"
+      "D2 category restatement — a position any premium coffee brand could sign",
+      "a category restatement any premium coffee brand could sign",
+      "no zag — every premium coffee brand could publish this verbatim, so it restates the category instead of staking a claim",
+      "it doesn't merely lack a difference — it declares parity; a category restatement, not an ownable position",
+      "every premium coffee brand could publish this verbatim",
+      "it could run under a Blue Bottle or Nespresso letterhead and nothing would feel off"
     ],
     "D4 no enemy / no tension": [
-      "there is no enemy and no tension",
-      "a brand for everyone excludes no one",
-      "frictionless — it refuses nothing and stands against nothing",
-      "it stands for nothing"
+      "a brand that excludes no one is chosen by no one — no enemy, no tension",
+      "premium for everyone is a perceptual impossibility",
+      "we don't believe in excluding anyone quietly dismantles the whole premise — it stands for nothing"
     ],
     "D5 persona instead of transformation": [
-      "a demographic persona, not a transformation",
-      "Sarah is described, never changed — no before-and-after",
-      "it captures who the customer is, not who they become",
-      "a frozen persona in place of a becoming"
+      "still Sarah, now holding a latte — a person, frozen, not a transformation",
+      "who does she get to become? before-self equals after-self; the brand changes nothing",
+      "a demographic persona, not a becoming — a snapshot, not a transformation",
+      "it captures who the customer is, not who they become"
     ],
     "D6 values without trade-offs": [
-      "values without trade-offs",
-      "these values cost nothing and sacrifice nothing",
-      "ask what the brand would give up — nothing",
-      "tautological values you cannot disagree with"
+      "tautologies you cannot disagree with — values without trade-offs",
+      "not one falsifiable sentence in the document — tautology in bullet form",
+      "a strategy you can't disagree with isn't a strategy — values that sacrifice nothing",
+      "ask what the brand would give up — nothing; these values cost nothing"
     ],
     "bullshit filter: archetype / VMV doing strategy's job": [
-      "the Explorer archetype doing the strategy's job",
-      "a horoscope, not a strategy",
-      "vision/mission/values boilerplate standing in for a foundation",
-      "the VMV triplet doing the work a position should"
+      "the Explorer archetype is a horoscope doing a strategy's job",
+      "'The Explorer' cannot tell anyone what to make or what to refuse — a frozen label presented as a system",
+      "the archetype is a horoscope, not an engine",
+      "brand-type dishonesty across the vision and mission lines — boilerplate doing strategy's job"
     ]
   }
 }
