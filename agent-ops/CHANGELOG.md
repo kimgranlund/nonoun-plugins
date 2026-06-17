@@ -2,6 +2,12 @@
 
 All notable changes to **agent-ops** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.1.17] — 2026-06-17
+
+### Changed
+
+- **`repo-ops` skill-stewardship loop: the four "Future evolution" stubs are now specified, grounded upgrades** (the skill's own deferred next-steps, researched + built). `references/recipes/skill-stewardship-loop.md` replaces the someday-bullets with implementation-ready specs: (1) **skill lifecycle states** — a 6-state `status:` machine (`candidate→draft→active→stale→{superseded|archived}` + a reversible `stale→active` recovery edge), `active` reached by an explicit **certification gate** (not auto-on-authoring), a `permanent:` exemption for evergreen skills — grounded in API-deprecation lifecycles (RFC 8594 `Deprecation`/`Sunset`), the ROT content triage, and data-catalog certify/deprecate tags; (2) **telemetry-based utility detection** as a **two-signal gate** (cadence-windowed zero-invocation + matched-demand) that splits a *discoverability* defect from *no-demand*, never count-alone, seasonality-aware; (3) **description-vs-body drift** as a precise **referential set-difference** (promised-but-absent / present-but-unadvertised tokens), edit-paired — replacing the line-count heuristic (the Darglint missing/extraneous move); (4) **cross-skill `pairs-with` audit** as **symmetric-relation validation** (dangling + asymmetric + orphan, auto-fix the reciprocal) or compute-the-inverse (OWL/SHACL fork). Each keeps the loop's "no auto-archive — surface, don't enact" discipline. Specs only — the user's `audit-skills.mjs` implements them. plugin.json 0.1.16 → 0.1.17.
+
 ## [0.1.16] — 2026-06-16
 
 ### Fixed
