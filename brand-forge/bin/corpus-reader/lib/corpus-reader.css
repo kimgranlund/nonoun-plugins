@@ -402,6 +402,20 @@ cr-ui-diagram-viewer {
   border-radius: 3px;
   padding: 0 0.1em;
 }
+/* "Meta: …fragment…" hint under a nav link whose search hit was in frontmatter, not the title.
+   Small mono, muted, single-line (ellipsed if the windowed fragment still overflows the rail). */
+.cr-nav-meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-caption);
+  color: var(--faint);
+  line-height: 1.3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
 
 /* ---- Main column ---- */
 .cr-main {

@@ -6,7 +6,9 @@ marker below — so any code change trips CI until it is logged. Add entries wit
 `python3 tools/sync-corpus-reader.py --changelog "<summary>"` (it prepends a
 dated entry and refreshes the marker); don't hand-edit the marker. Dates are `YYYY-MM-DD`.
 
-<!-- source-fingerprint: e156e9bdd551f37bf9ac5750d32806dfe63ac7c1f8ac75a4b4aff0ef38ba717e -->
+<!-- source-fingerprint: c6ccb39833b6161ae184a54aba41dfb58a586b64a1b2cb07184a2bf8e567de8e -->
+
+## 2026-06-17 — Field-scoped search + a frontmatter preview line under nav results. The search box now supports field:value tokens (type:guide, status:active; a leading / is stripped, so /tag:active works) that scope a match to a frontmatter field — key matched by prefix (tag→tags), value by substring — AND-combined with bare terms. A small mono preview line surfaces the matching frontmatter context: a symmetric window (~48 chars each side) centered on the highlighted match, clamped to two lines, shown only when the hit is in the frontmatter and not the title. Frontmatter rides along as structured per-link data-fm JSON; esc-safe, substring match (no regex).
 
 ## 2026-06-17 — Enriched search + match highlighting. build-sitemap.py now emits the full parsed frontmatter as page.meta; cr-ui-nav folds every meta value into each link's search index (so a query matches tags/type/version/status/owner, not just title/path/summary) and wraps matched phrases in the visible nav title with <mark class='cr-mark'> (amber, theme-aware). Substring match, esc-safe; baked-content search unchanged.
 
