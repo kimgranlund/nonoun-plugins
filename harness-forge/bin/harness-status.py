@@ -67,8 +67,14 @@ def render(project, hd=".agents/harness", n=8):
         out.append("  run:      no active run budget — the loop is idle (manual edits + /harness-advance are free; "
                    "/harness-run will `mark` then `start` to bound itself)." if not marked else
                    "  run:      ⚠ loop marked active — arm a budget or `run-budget.py stop`.")
+    elif ex and hasattr(_lat, "run_dead") and _lat.run_dead(d, now):
+        # exhausted, but no genuine loop activity within the TTL — a crashed/finished run's corpse (the v0.5 #6
+        # self-heal). The wired gate-budget no longer wedges writes; the leftover budget is just noise until cleared.
+        out.append(f"  run:      ⚠ EXHAUSTED but DEAD — {why}, and no loop activity in {_lat.LOOP_TTL_S // 60} min: "
+                   f"a crashed/finished run's corpse. gate-budget self-heals (writes are free); clear it with `run-budget.py stop`.")
     elif ex:
-        out.append(f"  run:      ⚠ EXHAUSTED — {why}; gate-budget is denying every write. Stop the loop / clear the run.")
+        out.append(f"  run:      ⚠ EXHAUSTED — {why}; gate-budget is denying every write (a live loop over budget). "
+                   f"Stop the loop / clear the run.")
     else:
         mi, mc, mk = det.get("max_iterations"), det.get("max_cells"), det.get("max_cost")
         i_s = f"{det.get('iterations',0)}/{mi} iters" if mi else f"{det.get('iterations',0)} iters"

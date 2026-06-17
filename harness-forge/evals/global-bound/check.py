@@ -117,6 +117,29 @@ def main():
         r = subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "start", "--dir", d], capture_output=True, text=True)
         expect(r.returncode == 2 and "bounds nothing" in r.stderr, "the CLI accepted a vacuous (capless) budget")
 
+        # LIVENESS SELF-HEAL (the v0.5 #6 residual) — a crashed run's exhausted budget must not wedge the project
+        # forever, but a LIVE loop over budget must still be capped. The liveness signal is the loop's own engine
+        # activity in the ledger (validate/operate/advance — a human never produces it), within LOOP_TTL.
+        subprocess.run([sys.executable, os.path.join(BIN, "run-budget.py"), "stop", "--dir", d], capture_output=True)
+        os.makedirs(os.path.join(d, "ledger"), exist_ok=True)
+        past = (datetime.datetime.now().astimezone() - datetime.timedelta(seconds=10)).isoformat(timespec="seconds")
+        # (a) LIVE over budget → still DENIED: a recent genuine validate event keeps the cap binding (the safety property).
+        with open(os.path.join(d, "ledger", "events.jsonl"), "w", encoding="utf-8") as f:
+            f.write(json.dumps({"operation": "validate", "actor": "advancer", "cell_id": "spec.task.c", "result": "fail", "ts": _now()}) + "\n")
+        _lat.run_budget_start(d, _now(), deadline_iso=past)
+        expect(_wired_gate(proj, write_path) == 2, "live-over-budget: a recently-active loop past its deadline is STILL DENIED (the cap binds)")
+        # (b) CRASHED corpse → SELF-HEALS: an old run whose last activity predates the TTL no longer wedges writes.
+        old = (datetime.datetime.now().astimezone() - datetime.timedelta(seconds=_lat.LOOP_TTL_S + 120)).isoformat(timespec="seconds")
+        with open(os.path.join(d, "ledger", "events.jsonl"), "w", encoding="utf-8") as f:
+            f.write(json.dumps({"operation": "validate", "actor": "advancer", "cell_id": "spec.task.c", "result": "fail", "ts": old}) + "\n")
+        _lat.run_budget_start(d, old, deadline_iso=past)
+        expect(_wired_gate(proj, write_path) == 0, "crashed corpse: an exhausted budget with no loop activity in the TTL SELF-HEALS (the wired gate ALLOWS)")
+        # (c) NO RE-ARM: a human's relevant write logs a passive hook:emit-ledger record — even recent, it must NOT revive the corpse.
+        with open(os.path.join(d, "ledger", "events.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"operation": "record", "actor": "hook:emit-ledger", "path": ".agents/harness/spec/x.md", "ts": _now()}) + "\n")
+        expect(_wired_gate(proj, write_path) == 0, "no re-arm: a passive hook:emit-ledger record (a human's write) does NOT revive the corpse")
+        _lat.run_budget_clear(d)
+
     if fails:
         print(f"\nRESULT: FAIL — {len(fails)} assertion(s) broken")
         return 1
@@ -124,7 +147,10 @@ def main():
           "wired gate-budget in CODE, no model agent. The v0.4.1 arming gap is now CLOSED (I-9, v0.5.0): a loop MARKED "
           "active (`run-budget.py mark`, step 0a) but un-budgeted fails CLOSED — every write denied — while manual "
           "editing and attended single-cell work, which never set the marker, stay free. The residual shrank from "
-          "'forget step 0' to 'skip the entire run preamble', which `/harness-status` surfaces.")
+          "'forget step 0' to 'skip the entire run preamble', which `/harness-status` surfaces. And the GLOBAL axis "
+          "now SELF-HEALS (v0.5, the #6 residual): an exhausted budget with no genuine loop activity in LOOP_TTL is a "
+          "crashed/finished corpse and stops wedging writes, while a LIVE loop over budget is still denied — the "
+          "liveness signal is the loop's own ledger activity, which a human never produces and a runaway can't skip.")
     return 0
 
 

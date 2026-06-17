@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.9] — 2026-06-17
+
+### Changed
+
+- **Re-vendored `lattice.py` from harness-forge `0.5.16`** — the global run-budget axis now **self-heals on a crashed run**: `gate-budget` consults new `lattice.run_dead(d, now)` when the budget is exhausted, so a crashed/finished run's leftover budget (no genuine loop activity within `LOOP_TTL_S`) stops wedging writes, while a LIVE loop over budget is still denied (liveness = the loop's own ledger activity, `hook:*` records excluded — unforgeable, can't fail open). Behavior-neutral for dev-kernel's existing axes. Drift gate green; `KERNEL_VERSION` stays **0.5.2** (additive — `run_dead` is a new function). plugin.json 0.2.8 → 0.2.9.
+
 ## [0.2.8] — 2026-06-17
 
 ### Changed
