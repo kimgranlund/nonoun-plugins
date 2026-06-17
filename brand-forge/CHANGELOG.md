@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.25] — 2026-06-17
+
+### Added
+
+- **The `brand-methodology` foundation-canon "Extension point" is now built — five component method references** (the skill's own deferred next-step; researched + authored in the methodology's own senior voice). The canon named five components a mature corpus expands into their own references; each now ships as a *method* reference (the method · what good looks like · the hard test · the anti-pattern), descending from the 3-page foundation: **`positioning-territories.md`** (stake ownable ground — the competitor-substitution test), **`category-design.md`** (design the container, not compete in it — "does anyone but you use the words?"), **`competitive-archaeology.md`** (read residual/dominant/emergent codes; honor/subvert/abandon; the double-recognition test), **`transformation-story.md`** (customer-as-hero, brand-as-guide; the before→after identity pair), and **`editorial-style-guide.md`** (voice vs tone; "what won't you say?"). `foundation-canon.md` + `brand-methodology/SKILL.md` point at all five. plugin.json 0.4.24 → 0.4.25.
+
 ## [0.4.24] — 2026-06-17
 
 ### Added

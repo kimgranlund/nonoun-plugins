@@ -52,7 +52,7 @@ The foundation is the small set of **load-bearing** documents a brand actually s
 - **The bullshit filter** — the Canon actively **rejects** the artifacts that masquerade as strategy: brand **archetypes**, **vision/mission/values** triplets, **personas**, and **"brand DNA" word-clouds**. They feel like work and commit to nothing. The filter and what to build instead live in the reference.
 - **The 3-page minimum-viable foundation** — a real foundation can be three pages. If it cannot be stated in three pages, the thinking is not done yet; more pages usually hide that the position has not been decided.
 
-→ Full detail: [`references/foundation-canon.md`](references/foundation-canon.md) _(Extension point: a mature corpus adds positioning-territory, category-design, and competitive-archaeology references alongside this one.)_
+→ Full detail: [`references/foundation-canon.md`](references/foundation-canon.md). Each component has its own method reference: [`positioning-territories.md`](references/positioning-territories.md) · [`category-design.md`](references/category-design.md) · [`competitive-archaeology.md`](references/competitive-archaeology.md) · [`transformation-story.md`](references/transformation-story.md) · [`editorial-style-guide.md`](references/editorial-style-guide.md).
 
 → The one-page condensation of a whole brand — the **Brand Stack** (six load-bearing tiers, each ↦ a corpus layer), rendered by `/brand-stack`: [`references/brand-stack.md`](references/brand-stack.md).
 
