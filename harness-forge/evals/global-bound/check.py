@@ -53,7 +53,7 @@ def main():
     with tempfile.TemporaryDirectory() as proj:
         d = os.path.join(proj, ".agents/harness")
         subprocess.run([sys.executable, os.path.join(BIN, "lattice.py"), "init", "gb-demo", "--dir", d], capture_output=True)
-        subprocess.run([sys.executable, os.path.join(BIN, "wire.py"), "apply", "--project", proj], capture_output=True)
+        subprocess.run([sys.executable, os.path.join(BIN, "wire.py"), "apply", "--confirm", "--project", proj], capture_output=True)
         write_path = ".agents/harness/spec/anything.md"
 
         # CONTROL: a fresh run budget with room → the wired gate-budget ALLOWS the write.

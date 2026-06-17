@@ -96,7 +96,7 @@ def walkthrough(proj):
     print("== seed ==")
     sh([os.path.join(BIN, "lattice.py"), "init", "invoice-parser", "--dir", hd], proj, "seed")
     print("== wire (the consent step, pre-granted here) ==")
-    sh([os.path.join(BIN, "wire.py"), "apply", "--project", proj], proj, "wire apply")
+    sh([os.path.join(BIN, "wire.py"), "apply", "--confirm", "--project", proj], proj, "wire apply")
     sh([os.path.join(BIN, "wire.py"), "check", "--project", proj], proj, "wire check")
 
     print("== the loop: rank → write asset → validate.py (real predicate) → ledger ==")

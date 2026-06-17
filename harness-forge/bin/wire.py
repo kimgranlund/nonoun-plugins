@@ -19,7 +19,7 @@ What `apply` does (and `plan` previews, byte-for-byte):
 
 Usage:
   wire.py plan    [--project DIR] [--harness-dir D]   # show exactly what apply would copy + merge; exit 0
-  wire.py apply   [--project DIR] [--harness-dir D]   # do it (requires an existing harness dir — seed first)
+  wire.py apply --confirm [--project DIR] [--harness-dir D]   # do it (requires --confirm — it edits the project's settings; seed first)
   wire.py check   [--project DIR] [--harness-dir D]   # exit 0 = wired (entries + files present + no drift); 1 = not wired OR a copy has drifted from the plugin
   wire.py unwire  [--project DIR] [--harness-dir D]   # remove exactly our entries + copies; everything else preserved
   wire.py selftest
@@ -326,6 +326,12 @@ def selftest():
         expect(apply(project, hd) == 0, "apply failed on a seeded project")
         expect(check(project, hd, quiet=True) == 0, "a wired project failed check")
         expect(wire_status(project, hd) == "wired", "a cleanly wired project is not reported 'wired'")
+        # consent is a CLI MECHANISM (Simon W.): `main` apply REFUSES (exit 3) without --confirm and does NOT mutate;
+        # --confirm proceeds. (The `apply()` function stays callable in-process; the gate lives in the CLI dispatcher.)
+        _before = open(_settings_path(project)).read()
+        expect(main(["apply", "--project", project]) == 3, "CLI apply did not refuse (exit 3) without --confirm")
+        expect(open(_settings_path(project)).read() == _before, "CLI apply MUTATED settings without --confirm")
+        expect(main(["apply", "--project", project, "--confirm"]) == 0, "CLI apply --confirm did not proceed")
         s = json.load(open(_settings_path(project)))
         expect(s.get("model") == "opus", "unrelated top-level setting clobbered")
         flat = json.dumps(s)
@@ -439,6 +445,15 @@ def main(argv):
     if op == "plan":
         return plan(project, hd)
     if op == "apply":
+        if "--confirm" not in argv:
+            # Consent as a MECHANISM, not just `harness-seed.md`'s prose (Simon W.): apply mutates the project's own
+            # `.claude/settings.json` to install the blocking gates, so it REFUSES to do so without an explicit
+            # `--confirm`. Preview the exact change with `wire.py plan` first. Exit 3 = consent required (not an error).
+            print("wire.py apply needs explicit consent: it edits the project's own .claude/settings.json at\n"
+                  "  {}\nto install the blocking gate-signal + gate-budget hooks into your worker loop. Preview the "
+                  "exact change with `wire.py plan`, then re-run with --confirm to proceed.".format(os.path.abspath(project)),
+                  file=sys.stderr)
+            return 3
         return apply(project, hd)
     if op == "check":
         return check(project, hd, quiet=quiet)
