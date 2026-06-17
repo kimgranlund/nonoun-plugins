@@ -76,9 +76,44 @@ finding cluster
 - `ops-postmortem` — postmortems often surface graduation candidates that map to skills.
 - `ops-memory` — when memory entries are superseded by skills, the entry's description should flag the supersession.
 
-## Future evolution
+## Four upgrades, specified
 
-- **Telemetry-based utility detection.** When the harness logs `Skill({skill: X})` invocations, low-utility skills (zero invocations across N sessions despite matching prompts) become detectable. Today only the heuristic divergence-hint exists.
-- **Description-vs-body diff.** Today's body-churn-since-description-edit is approximate. A real diff would track which lines of the description haven't been touched since the body changes.
-- **Cross-skill pairs-with graph audit.** When skill A says "pairs with B" but B doesn't say "pairs with A", the graph is asymmetric. An audit signal could flag.
-- **Skill lifecycle states in frontmatter.** Adding `status: candidate | draft | active | stale | superseded | archived` would let the audit transition skills explicitly through the graph.
+These four were once "someday" bullets; each now has a grounded spec, ready for `audit-skills.mjs` to implement. They refine the detection signals above — upgrade 1 adds a lifecycle **axis**, 2 fills the telemetry gap, 3 makes signal 5 precise, 4 adds a graph signal. By design they are **signals + edges, not auto-actions**: the recipe's "no auto-archive" discipline holds — a verdict is surfaced for the operator, never enacted.
+
+### 1 · Skill lifecycle states in frontmatter
+
+Add a `status:` field — a 6-state machine the audit transitions **explicitly**, on evidence:
+
+`candidate → draft → active → stale → {superseded | archived}`, plus a reversible `stale → active`.
+
+| Edge | The evidence that moves it (never a vibe) |
+| --- | --- |
+| `candidate → draft` | authoring begins — a SKILL.md body exists with valid frontmatter |
+| `draft → active` | **a certification act** — passes `check:skills` + the routing bar. Active is _earned_, not automatic on authoring (the data-catalog `certified` model; the RFC "Proposed Standard" tier) |
+| `active → stale` | a staleness signal fires (telemetry · drift · age) — _flagged for review_, verdict pending (the ROT "yellow" light) |
+| `stale → active` | re-certified after an `iterate skill --update` fixes the cause — the **recovery edge**. Stale is reversible; this is _why_ the recipe forbids auto-archive |
+| `stale → superseded` | a **named replacement** covers the same trigger surface — the entry records the successor; the skill stays _loadable but deprioritized_ (RFC 8594 "deprecated, not yet sunset") |
+| `stale → archived` | no successor, no demand — obsolete or trivial (ROT) |
+| `superseded → archived` | the successor has been stable for a grace window (RFC 8594 "sunset elapsed") |
+
+A `permanent: true` tag exempts an evergreen skill from the staleness sweep (the feature-flag "permanent gate" model — some skills are kill-switch infrastructure, not candidates for decay). _Grounding: API deprecation lifecycles incl. RFC 8594's `Deprecation`/`Sunset` signals; the ROT content triage (redundant/obsolete/trivial); feature-flag lifecycle practice; data-catalog certify/deprecate tags. The biggest correction the research forced: `active` is reached by an explicit **certification gate**, not by default on authoring — and the `stale → active` recovery edge must exist._
+
+### 2 · Telemetry-based utility detection
+
+When the harness logs `Skill({skill: X})`, low-utility skills become detectable — but **invocation count alone is a trap**: it cannot tell _useless_ from _undiscovered_. Use a **two-signal gate**:
+
+- **Signal A — invocations.** Zero (or below a floor) over **N consecutive periods _windowed to the skill's own cadence_** — a quarterly/episodic skill reads "dead" on a monthly window (seasonality is a real false-positive source). Emit `active → stale`, never straight to archive, and only after a confirmation window (the dead-code "log → wait → confirm-zero → act" discipline).
+- **Signal B — matched demand.** Of sessions whose intent fell in the skill's trigger domain, what fraction routed _elsewhere or nowhere_? **High match + zero invoke = a discoverability defect** → fix the `description`/`trigger` (the routing-eval signal), do **not** retire. **Zero match + zero invoke = no demand** → a legitimate archive candidate.
+
+The reason-tag (no-demand vs. matched-but-lost) _determines_ the verdict edge (archive vs. fix-routing) rather than leaving it to a guess. _Grounding: dead-feature/dead-code detection (confirm-zero-over-a-window before action), feature-usage "keep/improve/retire" sunsetting, dynamic thresholds keyed to seasonality._
+
+### 3 · Description-vs-body diff (precise, not a line count)
+
+Today's "body churned ≥ N lines since the description was edited" is a _volume_ heuristic — a typo trips it; a semantic rename doesn't. Replace it with a **referential set-difference** (the Darglint missing/extraneous check, adapted to Markdown — stdlib-cheap, no AST needed): extract the concrete tokens the `description`/`trigger` _promise_ — trigger phrases, named modes/commands, capability nouns — and assert each still appears in the SKILL.md body + `references/`; then the inverse — body capabilities the description never mentions. The signal is a **directional, citable list** (_promised-but-absent_ / _present-but-unadvertised_), not a drift score. Run it **edit-paired** (on the body change) so drift is caught in the same commit, not a later sweep; keep the line-count delta only as a cheap pre-filter. _Grounding: docstring-vs-signature drift tooling (Darglint's missing/extraneous parameters); just-in-time comment-code inconsistency detection (the (doc, change) pair is the right unit)._
+
+### 4 · Cross-skill `pairs-with` graph audit
+
+`pairs with` is a **symmetric relation**, which gives two clean stances (the OWL-symmetric vs. SHACL-validate fork):
+
+- **Audit + auto-fix (recommended where links are stored both ways):** build the directed edge set from every skill's `pairs with`; (a) flag a target that doesn't resolve (the **dangling/broken-link** half — run it first); (b) flag any `A → B` where `B → A` is missing (**asymmetric**); (c) **auto-fix** by materializing the reciprocal `B → A` — safe and deterministic, since the relation is symmetric by definition; (d) surface **orphans** (a skill with no inbound or outbound edges). Gate it in CI exactly as a broken-link check runs in CI.
+- **Or compute the inverse:** treat a single declaration as the source of truth and _derive_ the reverse at read time — asymmetry becomes unrepresentable and no audit is needed. _Grounding: bidirectional-link tracking (Obsidian computes the inverse rather than storing it); OWL `owl:SymmetricProperty`/`owl:inverseOf` (infer the inverse) vs. SHACL (validate the reciprocal); broken-link checkers (lychee) for the existence half._
