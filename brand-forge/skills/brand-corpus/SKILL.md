@@ -44,7 +44,7 @@ A corpus is emitted in exactly **one** of two shapes, chosen by destination. **N
 | **Naming** | **Double-hyphen** encodes the layer: `01-foundation--the-position.md` | Path encodes the layer: `01-foundation/the-position.md` |
 | **Why** | Projects have no folders; the `NN-layer--` prefix preserves order and grouping in a flat namespace | Folders are native; the path _is_ the layer |
 
-**The rule:** decide the destination first, pick the convention, and hold it for the whole corpus. If you find both conventions present, that is a corpus defect — reconcile to one before adding anything. (Migration between the two is mechanical: `01-foundation--x.md` ⟷ `01-foundation/x.md`.)
+**The rule:** decide the destination first, pick the convention, and hold it for the whole corpus. If you find both conventions present, that is a corpus defect — reconcile to one before adding anything. Migration between the two is mechanical (`01-foundation--x.md` ⟷ `01-foundation/x.md`) and tooled: **`bin/corpus-migrate <corpus> --to {flat|folder}`** detects the shape, refuses a mixed corpus, and renames every layer asset (dry-run by default). The per-layer maturity manifest + the completeness audit checklist are in [`references/corpus-architecture.md`](references/corpus-architecture.md) § Extension point.
 
 ## Corpus maturity (stages 0–6)
 
