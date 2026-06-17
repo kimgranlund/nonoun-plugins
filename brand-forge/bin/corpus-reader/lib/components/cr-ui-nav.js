@@ -36,12 +36,35 @@ export class UINav extends UIElement {
   }
 
   #link(p, extra) {
+    // Search index: title + path + summary + every frontmatter value (p.meta), so a query
+    // matches on tags / type / version / owner / status, not just the title and path.
+    const meta = p.meta ? Object.values(p.meta).join(" ") : "";
+    const search = (p.title + " " + p.path + " " + (p.summary || "") + " " + meta).toLowerCase();
     return (
       "<a class='cr-nav-link" + (extra || "") + "' href='#/" + enc(p.path) +
       "' data-path='" + esc(p.path) +
-      "' data-search='" + esc((p.title + " " + p.path + " " + (p.summary || "")).toLowerCase()) + "'>" +
+      "' data-search='" + esc(search) + "'>" +
       esc(p.title) + "</a>"
     );
+  }
+
+  /** Wrap each occurrence of `query` in a link's (plain-text) title with <mark>, so the matched
+   * phrase is visible in the nav. textContent is always the title (marks don't change it), so it
+   * is the stable source on every keystroke. Empty query — or a hit that matched only path /
+   * summary / meta, not the title — renders the plain (escaped) title. Substring match, no regex. */
+  #highlight(a, query) {
+    const title = a.textContent;
+    if (!query || title.toLowerCase().indexOf(query) < 0) {
+      a.innerHTML = esc(title);
+      return;
+    }
+    let out = "", rest = title, i;
+    while ((i = rest.toLowerCase().indexOf(query)) >= 0) {
+      out += esc(rest.slice(0, i)) +
+        "<mark class='cr-mark'>" + esc(rest.slice(i, i + query.length)) + "</mark>";
+      rest = rest.slice(i + query.length);
+    }
+    a.innerHTML = out + esc(rest);
   }
 
   #renderLinks() {
@@ -87,6 +110,7 @@ export class UINav extends UIElement {
         hit = lc !== null && lc.indexOf(query) >= 0;
       }
       a.classList.toggle("cr-hide", !hit);
+      this.#highlight(a, hit ? query : "");
     });
     this.#nav.querySelectorAll(".cr-nav-group").forEach((g) => {
       const any = [...g.querySelectorAll(".cr-nav-link")].some(

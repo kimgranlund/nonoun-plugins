@@ -188,6 +188,10 @@ def collect_sitemap(corpus_label, corpus_abs, path_base, title_override=None):
             page["summary"] = summary
         if meta.get("status"):
             page["status"] = meta["status"]
+        # The full parsed frontmatter, so the reader can enrich search beyond title/path/summary
+        # (tags, type, version, owner, …). Flat key:value only (split_frontmatter), kept verbatim.
+        if meta:
+            page["meta"] = meta
 
         parts = rel_corpus.split("/")
         folder = parts[0] if len(parts) > 1 else None
