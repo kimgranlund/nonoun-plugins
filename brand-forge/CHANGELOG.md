@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.26] — 2026-06-17
+
+### Added
+
+- **`brand-evaluate` now ships a worked exemplar for every rubric family** (the skill's "extension point" made concrete — researched + authored to the rubric template). The three shipped rubrics were all strategy-adjacent (brief-quality, brand-strategy, creative-collaboration); two new exemplars give the **Visual** and **Voice** families their shape: **`rubric-visual-identity.md`** (identity coherence · type · color · expression-system fitness · editorial restraint · cross-surface consistency, scored against the **de-label test** — cover the logo, is it still this brand?) and **`rubric-brand-voice.md`** (tone consistency · nomenclature · copy principles · editorial voice, scored against the **refusal test** — what won't you say?). Both carry the trust-boundary anti-pattern. The library index now lists **four families with ≥1 shipped exemplar each (five total)**; the remaining ~17 dimensions stay the extension point a full corpus fills. plugin.json 0.4.25 → 0.4.26.
+
 ## [0.4.25] — 2026-06-17
 
 ### Added

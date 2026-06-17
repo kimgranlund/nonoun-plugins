@@ -25,7 +25,7 @@ Output shape per finding: **`[SEVERITY] dimension — what fails (quoted evidenc
 
 ## The rubric library (index)
 
-Rubrics are organized in three families. **Most are loaded on demand** — this skill ships three representative rubrics in full and indexes the rest as the extension point.
+Rubrics are organized in four families. **Most are loaded on demand** — this skill ships five representative rubrics in full (≥1 per family) and indexes the rest as the extension point.
 
 ### Strategic family
 
@@ -35,13 +35,18 @@ Rubrics are organized in three families. **Most are loaded on demand** — this 
 
 ### Visual family
 
-- Identity coherence · Type system · Color strategy · Expression-system fitness · Editorial restraint · Art-direction discipline · Motion · Cross-surface consistency _(extension point)_
+- **Visual identity** → [`references/rubric-visual-identity.md`](references/rubric-visual-identity.md) _(shipped)_ — identity coherence · type system · color strategy · expression-system fitness · editorial restraint · cross-surface consistency, scored against the **de-label test**.
+- Art-direction discipline · Motion _(extension point)_
 
 ### Process family
 
 - **Creative collaboration (ways of working)** → [`references/rubric-creative-collaboration.md`](references/rubric-creative-collaboration.md) _(shipped)_ — scores the three-seat discipline (Muse · Team · Council), not the artifact. Use it when the work is weak and you suspect the _process_ is why.
 
-> **The full library is ~22 rubrics.** Three are shipped here as exemplars of the _shape_ every rubric takes (dimensions with 1–5 anchors + a hard test + anti-patterns). The remaining rubrics are the extension point: a deployment with a full brand corpus drops them into `references/rubric-*.md` and they are picked up by name.
+### Voice family
+
+- **Brand voice** → [`references/rubric-brand-voice.md`](references/rubric-brand-voice.md) _(shipped)_ — tone consistency · nomenclature · copy principles · editorial voice, scored against the **refusal test** ("what won't you say?").
+
+> **The full library is ~22 rubrics.** Five are shipped here as exemplars of the _shape_ every rubric takes (dimensions with 1–5 anchors + a hard test + anti-patterns) — at least one per family, so each family's shape is worked, not just named. The remaining rubrics are the extension point: a deployment with a full brand corpus drops them into `references/rubric-*.md` and they are picked up by name.
 
 ## The format-fitness caveat
 
