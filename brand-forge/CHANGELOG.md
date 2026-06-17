@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.22] — 2026-06-17
+
+### Added
+
+- **`/brand-stack` — the Brand Stack one-pager deliverable** (the v0.5 ROADMAP item, built properly this time). A condensed one-page reading of a brand: six load-bearing tiers (Root · Position · Point of View · Expression · Product · Stewardship), each a **condensation of a corpus layer** (`01-foundation` … `08-evaluation`), so the Stack can't drift from the canon — if a tier can't be filled from the corpus, the corpus isn't done. Distinct from `/brand-stamp` (full-corpus export): this is the executive at-a-glance, one printable sheet. The six-tier model is **defined in `brand-methodology`** (`references/brand-stack.md` — the tier↦layer map + a per-tier bullshit filter); a thin `/brand-stack` command routes to it + the new `templates/brand-stack-one-pager.md`. Maturity is shown, never faked (a tier whose layer the corpus hasn't reached renders "— not yet defined (layer NN missing)"). **No dangling bin** (the v0.2 removal was of an orphaned renderer the methodology never adopted; content-condensation is the model's job, not a script's) and no command coupling. Eighth typed command — plugin.json + README enumerations updated in sync.
+
 ## [0.4.21] — 2026-06-17
 
 ### Added

@@ -54,6 +54,8 @@ The foundation is the small set of **load-bearing** documents a brand actually s
 
 → Full detail: [`references/foundation-canon.md`](references/foundation-canon.md) _(Extension point: a mature corpus adds positioning-territory, category-design, and competitive-archaeology references alongside this one.)_
 
+→ The one-page condensation of a whole brand — the **Brand Stack** (six load-bearing tiers, each ↦ a corpus layer), rendered by `/brand-stack`: [`references/brand-stack.md`](references/brand-stack.md).
+
 ## The three seats — aspire, make, review
 
 Brand work moves through three distinct seats: the **Muse** supplies the _pull_ (the aspiration the work moves toward — an ideal, a provocation, or a guiding concept), the **Team** _makes_ (converges the work, the middle), and the **Council** _reviews_ (judges it against the aspiration, after). Keep them distinct — **no seat judges its own work**, because a maker who reviews their own work grades on a curve.

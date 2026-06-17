@@ -13,7 +13,7 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 /plugin install brand-forge@nonoun-plugins
 ```
 
-Then drive it through seven typed commands:
+Then drive it through eight typed commands:
 
 | Command | Posture | What it does |
 | --- | --- | --- |
@@ -23,6 +23,7 @@ Then drive it through seven typed commands:
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
 | `/brand-stamp` | package | Emit a finished corpus as a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP — each to its own folder. |
+| `/brand-stack` | summary | Condense a corpus into a one-page reading — six load-bearing tiers (Root · Position · POV · Expression · Product · Stewardship). The executive at-a-glance, distinct from `/brand-stamp`'s full export. |
 | `/brand-corpus-export` | export | Lay out the brand's deliverables as a Markdown corpus and read it as a navigable site (the bundled corpus-reader). |
 
 ---
@@ -43,7 +44,7 @@ Cold-start in plain language (each routes to the matching command):
 
 ```text
 brand-forge/
-├── commands/        7 typed entry points   → set mode + posture, then route
+├── commands/        8 typed entry points   → set mode + posture, then route
 ├── agents/         14 critics + orchestrator + Muse → the review council + the aspirational pull
 ├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)
