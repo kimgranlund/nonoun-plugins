@@ -466,6 +466,38 @@ def run_budget_check(d):
     return findings
 
 
+def run_dead(d, now_iso):
+    """True iff the active run budget is a CORPSE — the loop shows no GENUINE activity within LOOP_TTL_S, so a
+    crashed/finished run's leftover budget must not keep wedging subsequent (manual) writes. `gate-budget` consults
+    this ONLY when the budget is already exhausted (the liveness self-heal of the global axis, the v0.5 #6 residual):
+
+      · exhausted + LIVE  → the global cap BINDS (deny). A live loop emits its own engine steps — `validate` /
+        `operate` / `advance` — which a human never produces and the worker cannot skip and still make progress, so
+        the activity signal is its natural heartbeat: a runaway that writes is validating, so it stays fresh and capped.
+      · exhausted + DEAD  → self-heal (allow + surface). The run crashed or finished; its leftover budget shouldn't
+        brick the project until a manual `stop`.
+
+    The passive `hook:*` audit records are EXCLUDED — a human's relevant write produces a `hook:emit-ledger` record,
+    never loop activity, and `gate-budget` runs PreToolUse so a denied write never reaches the PostToolUse recorder —
+    so manual work after a crash never re-arms the corpse. Fails SAFE: if liveness can't be reasoned about
+    (unparseable timestamps), returns False so the cap keeps binding. `now_iso` is passed in (pure paths take no clock)."""
+    b = run_budget_load(d)
+    if b is None:
+        return False
+    last_dt = None
+    for e in _read_ledger_events(d):
+        if str(e.get("actor", "")).startswith("hook:"):
+            continue                                       # passive audit record (incl. a human's relevant write) — not loop activity
+        dt = _parse_ts(e.get("ts"))
+        if dt is not None and (last_dt is None or dt > last_dt):
+            last_dt = dt
+    now = _parse_ts(now_iso)
+    anchor = last_dt if last_dt is not None else _parse_ts(b.get("start_ts"))   # no activity yet → anchor on run start
+    if now is None or anchor is None:
+        return False                                       # can't reason about liveness → keep denying (fail safe)
+    return (now - anchor).total_seconds() > LOOP_TTL_S
+
+
 def _run_budget_schema():
     for p in (os.path.join(_ROOT, "schemas", "run-budget.schema.json"),
               os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas", "run-budget.schema.json")):

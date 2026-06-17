@@ -93,6 +93,22 @@ def _hook():
     # orchestrator cannot exceed (the council's convergent Critical: the global caps must be code, not prose).
     ex, why = run_exhausted()
     if ex:
+        import datetime
+        d = _harness_dir()
+        now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+        # LIVENESS self-heal (the v0.5 #6 residual): an exhausted budget whose loop shows NO genuine activity within
+        # LOOP_TTL_S is a crashed/finished run's CORPSE — don't wedge subsequent (manual) writes; surface it loudly so
+        # the operator clears it. A LIVE loop (recent validate/operate/advance — its own engine steps, which a human
+        # never produces and a runaway can't skip and still progress) keeps the cap BINDING. `run_dead` excludes the
+        # passive hook:* records, and a denied write never reaches the PostToolUse recorder, so manual work can't re-arm
+        # the corpse. The `hasattr` guard: a stale wired kernel without `run_dead` falls through to the unconditional
+        # DENY — fail CLOSED (the old wedge behaviour, safe), never fail open.
+        if hasattr(_lat, "run_dead") and _lat.run_dead(d, now):
+            sys.stderr.write(f"gate-budget: the run budget is EXHAUSTED ({why}) but the run looks DEAD — no loop "
+                             f"activity in {_lat.LOOP_TTL_S // 60} min, so this is a crashed/finished run's corpse, "
+                             f"not a live loop. NOT denying this write (the global cap self-heals for a dead run). "
+                             f"Clear the corpse deliberately: `run-budget.py stop`.\n")
+            return 0
         _ledger_deny(path, f"run-budget exhausted: {why}")
         sys.stderr.write(f"gate-budget: DENY — the run budget is EXHAUSTED ({why}). The bounded loop has reached its "
                          f"global cap; stop and hand back. Start a fresh run (`run-budget.py start …`) deliberately, "

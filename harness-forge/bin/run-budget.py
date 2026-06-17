@@ -89,6 +89,22 @@ def selftest():
         except ValueError:
             pass
 
+        # run_dead — the liveness self-heal signal (the v0.5 #6 residual): genuine loop activity (a non-hook event)
+        # within LOOP_TTL keeps a run LIVE; a stale/absent one is a corpse; a passive hook:* record never counts.
+        old = (_now() - datetime.timedelta(seconds=_lat.LOOP_TTL_S + 60)).isoformat(timespec="seconds")
+        evp = os.path.join(d, "ledger", "events.jsonl")
+        _lat.run_budget_start(d, now, max_cells=1)
+        with open(evp, "w", encoding="utf-8") as f:
+            f.write('{"operation":"validate","actor":"advancer","cell_id":"spec.task.c","result":"pass","ts":"%s"}\n' % now)
+        expect(not _lat.run_dead(d, now), "a run with recent loop activity was treated as dead")
+        with open(evp, "w", encoding="utf-8") as f:
+            f.write('{"operation":"validate","actor":"advancer","cell_id":"spec.task.c","result":"pass","ts":"%s"}\n' % old)
+        expect(_lat.run_dead(d, now), "a run whose last loop activity is older than the TTL was not treated as dead")
+        with open(evp, "a", encoding="utf-8") as f:
+            f.write('{"operation":"record","actor":"hook:emit-ledger","path":".agents/harness/spec/x.md","ts":"%s"}\n' % now)
+        expect(_lat.run_dead(d, now), "a passive hook:emit-ledger record (a human's write) wrongly kept a dead run alive")
+        _lat.run_budget_clear(d)
+
         # the arming-gap marker (I-9): mark → unbudgeted (gate denies); start → marked+budgeted; stop → both cleared.
         # (suppress the commands' stdout so selftest output stays clean)
         _stdout = sys.stdout
