@@ -1,6 +1,6 @@
 {
   "name": "dev-kernel",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "stateNamespace": ".agents/dev-factory",
   "description": "The invariant kernel of dev-factory \u2014 the typed contracts and deterministic computation a 'dark factory' agentic system runs on: 11 schemas, the vendored 8-state cell maturity machine + the ticket lifecycle, the compass (deterministic selection), the validation path, the trust-trajectory with mechanical demotion, a tamper-evident hash-chained ledger, FOUR protective gate scripts + TWO lifecycle transition predicates, the kit-conform boundary gate, a read-only factory-query MCP, and a 19-agent roster (12 lattice operators + a 7-agent spec review council) across 8 skills. Its reconciliation: ticket `done` \u27fa the target cell advances through the SAME gate-signal \u2014 the board cannot disagree with the lattice; computation routes to code. SUBSTRATE, not the running system \u2014 the gates BLOCK only once consent-wired into a worker loop, and the autonomous loop, the live state (the SQLite index), and the trust-tier enforcement are the separate dev-server app's. Vendors harness-forge's lattice/validation kernel via a drift-gated sync, never a cross-plugin import.",
   "author": {

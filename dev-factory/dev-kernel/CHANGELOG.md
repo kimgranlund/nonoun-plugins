@@ -2,6 +2,12 @@
 
 All notable changes to **dev-kernel** are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is [SemVer](https://semver.org/).
 
+## [0.2.7] — 2026-06-16
+
+### Changed
+
+- **Re-vendored `lattice.py` + `cell.schema.json` from harness-forge `0.5.14`** — the kernel's SETTLED foothold-maturity set (the maturities that require non-empty `signal_refs`: `validated`/`operating`) is now single-sourced from `cell.schema.json`'s new `x-settledMaturities` annotation, with the module constant as the portable fallback (drift-guarded in `lattice.py selftest`). Behavior-neutral for dev-kernel — the vendored `check()` enforces the same contract, now sourced from the cell schema dev-factory already adopts. Drift gate green; `KERNEL_VERSION` stays **0.5.2** (additive). Also catches the vendored pin up through harness-forge `0.5.13` (`lattice.reached()`, DF-7). plugin.json 0.2.6 → 0.2.7.
+
 ## [0.2.6] — 2026-06-16
 
 ### Changed

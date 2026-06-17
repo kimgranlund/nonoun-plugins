@@ -6,6 +6,10 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["layer", "scope", "slug", "maturity"],
+  "x-settledMaturities": {
+    "description": "The maturities that count as a validated foothold: they require non-empty `signal_refs` (the signal-currency contract) and receive the phantom-signal + retroactive-partial-order checks. The single source for lattice.py check()'s SETTLED set (a custom annotation keyword, ignored by JSON-Schema validators; the module constant is the portable fallback for the wired copy).",
+    "enum": ["validated", "operating"]
+  },
   "properties": {
     "layer": {
       "description": "The modality axis — the kind of declarative knowledge this cell carries.",
