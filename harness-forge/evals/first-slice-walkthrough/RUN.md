@@ -6,7 +6,7 @@ Selftests prove the units; **this run proves the loop.** `replay.py` drives a re
 
 ```
 seed     lattice.py init invoice-parser        → 4 cells (ontology · spec · rubric · ledger) + the scaffold
-wire     wire.py apply && wire.py check        → WIRED (gate-signal PreToolUse deny + emit-ledger + propagate-staleness)
+wire     wire.py apply --confirm && wire.py check  → WIRED (gate-signal PreToolUse deny + emit-ledger + propagate-staleness)
 loop ×4  lattice.py rank picks the next cell   → the COMPASS chose: ontology → spec → rubric → ledger (the partial order, computed not narrated)
          the "worker" writes the cell's asset
          validate.py <cell> -- python3 -c <predicate>   → the signal minted from the predicate's EXIT STATUS

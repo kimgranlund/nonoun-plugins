@@ -44,7 +44,7 @@ def main():
     with tempfile.TemporaryDirectory() as proj:
         d = os.path.join(proj, ".agents/harness")
         _py("lattice.py", "init", "stop-gate-demo", "--dir", d)
-        _py("wire.py", "apply", "--project", proj)
+        _py("wire.py", "apply", "--confirm", "--project", proj)
 
         # a capability cell stuck on pytest, with an asset + a no_progress budget of 3. Its upstream layers
         # (spec + ontology at task scope, per the partial order) must be validated for it to be rankable —

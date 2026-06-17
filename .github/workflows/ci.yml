@@ -236,7 +236,7 @@ jobs:
           python3 harness-forge/bin/lattice.py init ci-demo --dir "$D/.agents/harness"
           python3 harness-forge/bin/lattice.py scan --dir "$D/.agents/harness"
           python3 harness-forge/bin/lattice.py check --dir "$D/.agents/harness"   # the seeded lattice passes its own structural validator
-          python3 harness-forge/bin/wire.py apply --project "$D"           # the installer wires the seeded project...
+          python3 harness-forge/bin/wire.py apply --confirm --project "$D"   # the installer wires the seeded project (--confirm = explicit consent)...
           python3 harness-forge/bin/wire.py check --project "$D"           # ...and the wiring check proves it (exit 0 = wired)
 
       - name: harness-forge — calibration fixtures (every planted defect caught; clean control passes)

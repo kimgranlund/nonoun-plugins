@@ -69,7 +69,7 @@ def main():
         expect(r.returncode == 0, "control: seed succeeds")
         r = run([os.path.join(BIN, "lattice.py"), "check", "--dir", hd])
         expect(r.returncode == 0, "control: a fresh seed passes lattice.py check")
-        r = run([os.path.join(BIN, "wire.py"), "apply", "--project", proj])
+        r = run([os.path.join(BIN, "wire.py"), "apply", "--confirm", "--project", proj])
         expect(r.returncode == 0, "control: wire.py apply succeeds")
         r = run([os.path.join(BIN, "wire.py"), "check", "--project", proj])
         expect(r.returncode == 0, "control: a wired project passes wire.py check")
