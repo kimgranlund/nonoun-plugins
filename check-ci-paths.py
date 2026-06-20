@@ -62,10 +62,24 @@ def referenced_paths(text):
     return out
 
 
+def _created_dirs(text):
+    """Dirs the workflow creates itself (`mkdir [-p] <dir>`) — paths written under these are build outputs
+    (e.g. `_site/index.html` after `mkdir -p _site`), not repo inputs, so they must not be required to exist."""
+    dirs = set()
+    for m in re.finditer(r"mkdir\s+(?:-p\s+)?([^\s;|&]+)", text):
+        d = m.group(1).strip().strip("\"'").rstrip("/")
+        if d and not d.startswith(("/", "-", "$")):
+            dirs.add(d)
+    return dirs
+
+
 def check(wf_path):
     text = open(wf_path, encoding="utf-8").read()
+    created = _created_dirs(text)
     missing = []
     for raw, candidates in referenced_paths(text):
+        if any(raw == d or raw.startswith(d + "/") for d in created):
+            continue                                         # a path under a dir the workflow mkdir's — a build output
         if not any(os.path.exists(os.path.join(ROOT, c)) for c in candidates):
             missing.append((raw, candidates[0]))
     return missing
@@ -107,16 +121,26 @@ def _selftest():
 def main(argv):
     if argv and argv[0] == "selftest":
         return _selftest()
-    wf = argv[0] if argv else DEFAULT_WF
-    wf_abs = os.path.join(ROOT, wf)
-    if not os.path.isfile(wf_abs):
-        print(f"usage: check-ci-paths.py [workflow.yml] — not found: {wf}", file=sys.stderr)
-        return 2
-    missing = check(wf_abs)
-    for raw, resolved in missing:
-        print(f"  {raw} → {resolved} — referenced by {wf} but absent from the tree")
-    print(f"RESULT: {'PASS' if not missing else 'FAIL'} ({len(missing)} missing path(s))")
-    return 1 if missing else 0
+    if argv:
+        wfs = [argv[0]]
+    else:
+        wfdir = os.path.join(ROOT, ".github", "workflows")
+        wfs = sorted(os.path.join(".github", "workflows", f) for f in os.listdir(wfdir)
+                     if f.endswith((".yml", ".yaml"))) if os.path.isdir(wfdir) else []
+        if not wfs:
+            print("check-ci-paths: no workflow files under .github/workflows/", file=sys.stderr)
+            return 2
+    total = 0
+    for wf in wfs:
+        wf_abs = os.path.join(ROOT, wf)
+        if not os.path.isfile(wf_abs):
+            print(f"usage: check-ci-paths.py [workflow.yml] — not found: {wf}", file=sys.stderr)
+            return 2
+        for raw, resolved in check(wf_abs):
+            print(f"  {raw} → {resolved} — referenced by {wf} but absent from the tree")
+            total += 1
+    print(f"RESULT: {'PASS' if not total else 'FAIL'} ({total} missing path(s) across {len(wfs)} workflow(s))")
+    return 1 if total else 0
 
 
 if __name__ == "__main__":
