@@ -198,10 +198,135 @@ identical, only the transport differs.
     return root, len(docs)
 
 
+# --- verification (the S9/S10 gate: a stamped artifact is structurally valid, per form) -----------------
+
+def _frontmatter_keys(path):
+    """Top-level keys in a doc's YAML frontmatter (no yaml dep)."""
+    try:
+        head = open(path, encoding="utf-8", errors="replace").read(4000)
+    except OSError:
+        return set()
+    if not head.startswith("---"):
+        return set()
+    end = head.find("\n---", 3)
+    fm = head[3:end] if end != -1 else ""
+    return set(re.findall(r'^\s*([A-Za-z_]+):', fm, re.M))
+
+
+def verify(root, form):
+    """Assert a stamped artifact has the structure its form requires; return a list of problems ([] = ok).
+    Mechanizes 'the stamp produced a valid artifact' for ALL THREE forms — the plugin form is additionally
+    deep-validated by plugins-factory's validate_plugin in CI; here we cover the skill + mcp forms it can't,
+    and assert the bundled MCP copy has not drifted from the canonical server."""
+    import filecmp
+    p = []
+    if not os.path.isdir(root):
+        return [f"not a directory: {root}"]
+
+    def has(rel):
+        return os.path.exists(os.path.join(root, rel))
+
+    def need(rel, why):
+        if not has(rel):
+            p.append(f"missing {rel} ({why})")
+
+    def good_json(rel):
+        try:
+            return json.load(open(os.path.join(root, rel), encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            p.append(f"{rel} is not valid JSON: {e}")
+            return None
+
+    if form == "plugin":
+        need(".claude-plugin/plugin.json", "plugin manifest")
+        if has(".claude-plugin/plugin.json"):
+            pj = good_json(".claude-plugin/plugin.json")
+            for k in ("name", "version", "description"):
+                if pj is not None and not pj.get(k):
+                    p.append(f"plugin.json missing '{k}'")
+        need(".mcp.json", "MCP wiring")
+        if has(".mcp.json"):
+            good_json(".mcp.json")
+        need("bin/brand-corpus-mcp.py", "bundled MCP server")
+        sk = os.path.join(root, "skills")
+        found = [os.path.join("skills", d, "SKILL.md") for d in (sorted(os.listdir(sk)) if os.path.isdir(sk) else [])
+                 if os.path.isfile(os.path.join(sk, d, "SKILL.md"))]
+        if not found:
+            p.append("missing skills/<name>/SKILL.md")
+        elif "name" not in _frontmatter_keys(os.path.join(root, found[0])):
+            p.append(f"{found[0]} has no `name` frontmatter")
+    elif form == "skill":
+        need("SKILL.md", "cloud skill entry")
+        if has("SKILL.md"):
+            keys = _frontmatter_keys(os.path.join(root, "SKILL.md"))
+            for k in ("name", "description"):
+                if k not in keys:
+                    p.append(f"SKILL.md has no `{k}` frontmatter")
+        need("references", "bundled corpus")
+        if os.path.isdir(os.path.join(root, "references")) and not os.listdir(os.path.join(root, "references")):
+            p.append("references/ is empty (no corpus bundled)")
+        for leak in (".mcp.json", "bin"):  # the cloud form must ship NO MCP/scripts
+            if has(leak):
+                p.append(f"cloud skill form must ship no MCP/scripts, found {leak}")
+    elif form == "mcp":
+        need("brand-corpus-mcp.py", "standalone server")
+        need("README.md", "wiring recipe")
+        if has("README.md") and "claude mcp add" not in open(os.path.join(root, "README.md"), encoding="utf-8", errors="replace").read():
+            p.append("README.md has no `claude mcp add` wiring recipe")
+    else:
+        return [f"unknown form: {form}"]
+
+    if form in ("plugin", "mcp"):  # the bundled server must match the canonical one (no silent drift)
+        shipped = "bin/brand-corpus-mcp.py" if form == "plugin" else "brand-corpus-mcp.py"
+        if has(shipped) and not filecmp.cmp(os.path.join(root, shipped), _ref_mcp(), shallow=False):
+            p.append("the bundled brand-corpus-mcp.py has drifted from the canonical server")
+    return p
+
+
+def selftest():
+    """Stamp the stamp-smoke corpus in all three forms, verify each is clean, and confirm verify catches a
+    representative defect per form (an MCP leak in the cloud form, a broken plugin.json, a drifted MCP copy)."""
+    import shutil
+    import tempfile
+    fails = []
+
+    def expect(c, m):
+        if not c:
+            fails.append(m)
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    corpus = os.path.normpath(os.path.join(here, "..", "evals", "stamp-smoke", "corpus"))
+    d = tempfile.mkdtemp(prefix="brand-stamp-selftest-")
+    try:
+        pr, _ = emit_plugin(corpus, d, "smoke", False, "0.1.0")
+        expect(verify(pr, "plugin") == [], f"a freshly stamped plugin failed verify: {verify(pr, 'plugin')}")
+        sr, _ = emit_skill(corpus, d, "smoke")
+        expect(verify(sr, "skill") == [], f"a freshly stamped skill failed verify: {verify(sr, 'skill')}")
+        mr, _ = emit_mcp(corpus, d, "smoke", False)
+        expect(verify(mr, "mcp") == [], f"a freshly stamped mcp failed verify: {verify(mr, 'mcp')}")
+        os.makedirs(os.path.join(sr, "bin"))  # the cloud form must stay pure
+        expect(any("ship no MCP" in x for x in verify(sr, "skill")), "verify missed an MCP/script leak in the cloud skill form")
+        open(os.path.join(pr, ".claude-plugin", "plugin.json"), "w").write("{ not json")
+        expect(any("not valid JSON" in x for x in verify(pr, "plugin")), "verify missed a broken plugin.json")
+        open(os.path.join(mr, "brand-corpus-mcp.py"), "a").write("\n# tampered\n")
+        expect(any("drifted" in x for x in verify(mr, "mcp")), "verify missed a drifted bundled MCP server")
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    if fails:
+        sys.stderr.write("brand-stamp selftest: FAIL\n")
+        for m in fails:
+            sys.stderr.write(f"  - {m}\n")
+        return 1
+    print("brand-stamp selftest: OK (all three forms stamp + verify clean; an MCP leak in the cloud form, a "
+          "broken plugin.json, and a drifted bundled MCP are each caught)")
+    return 0
+
+
 def main(argv):
     ap = argparse.ArgumentParser(prog="brand-stamp", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="form", required=True)
+    sub = ap.add_subparsers(dest="cmd", required=True)
     for form in ("plugin", "skill", "mcp"):
         p = sub.add_parser(form)
         p.add_argument("corpus")
@@ -213,14 +338,29 @@ def main(argv):
         if form == "plugin":
             p.add_argument("--version", default="0.1.0",
                            help="plugin.json version — bump on each re-stamp (baking a corpus is a release)")
+    sub.add_parser("selftest")
+    pv = sub.add_parser("verify")
+    pv.add_argument("root", help="a stamped artifact's root dir (e.g. <out>/plugin/<brand>-brand)")
+    pv.add_argument("--form", required=True, choices=("plugin", "skill", "mcp"))
     args = ap.parse_args(argv)
 
-    if args.form == "plugin":
+    if args.cmd == "selftest":
+        return selftest()
+    if args.cmd == "verify":
+        probs = verify(args.root, args.form)
+        if probs:
+            sys.stderr.write(f"brand-stamp verify ({args.form}): FAIL — {args.root}\n")
+            for x in probs:
+                sys.stderr.write(f"  - {x}\n")
+            return 1
+        print(f"brand-stamp verify ({args.form}): OK — {args.root}")
+        return 0
+    if args.cmd == "plugin":
         root, n = emit_plugin(args.corpus, args.out, args.name, args.linked, args.version)
         print(f"brand-stamp: plugin → {root} (v{args.version}, {n} doc(s), "
               f"{'linked' if args.linked else 'bundled'} corpus)")
         print(f"  → validate:  python3 <plugins-factory>/bin/validate_plugin.py plugin {root}")
-    elif args.form == "skill":
+    elif args.cmd == "skill":
         root, n = emit_skill(args.corpus, args.out, args.name)
         print(f"brand-stamp: skill → {root} ({n} doc(s) bundled in references/, + INDEX.md)")
         print("  → upload the skill folder to Claude chat (it carries its own corpus; no MCP/scripts).")

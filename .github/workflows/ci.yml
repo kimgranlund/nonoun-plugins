@@ -93,10 +93,17 @@ jobs:
           python3 brand-forge/bin/check-concepts.py selftest
           python3 brand-forge/bin/check-concepts.py
 
-      - name: brand-forge — stamped plugin passes the validator (S9/S10)
+      - name: brand-forge — stamp-output validation, all three forms (S9/S10)
         run: |
-          python3 brand-forge/bin/brand-stamp plugin brand-forge/evals/stamp-smoke/corpus --name smoke -o /tmp/stamp-smoke
-          python3 "$G/validate_plugin.py" plugin /tmp/stamp-smoke/plugin/smoke-brand --strict
+          python3 brand-forge/bin/brand-stamp selftest                                       # the verify gate proves itself
+          for form in plugin skill mcp; do
+            python3 brand-forge/bin/brand-stamp "$form" brand-forge/evals/stamp-smoke/corpus --name smoke -o /tmp/stamp-smoke
+          done
+          python3 brand-forge/bin/brand-stamp verify /tmp/stamp-smoke/plugin/smoke-brand --form plugin
+          python3 brand-forge/bin/brand-stamp verify /tmp/stamp-smoke/skill/smoke-brand --form skill
+          python3 brand-forge/bin/brand-stamp verify /tmp/stamp-smoke/mcp/smoke-brand-mcp --form mcp
+          python3 "$G/validate_plugin.py" plugin /tmp/stamp-smoke/plugin/smoke-brand --strict   # plugin form: deep validate
+          python3 /tmp/stamp-smoke/mcp/smoke-brand-mcp/brand-corpus-mcp.py selftest             # mcp form: the shipped server runs
 
       - name: MCP liveness gate (selftest + every bundled server actually serves)
         run: |

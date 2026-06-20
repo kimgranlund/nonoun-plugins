@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.29] — 2026-06-20
+
+### Added
+
+- **Stamp-output validation across all three forms — `brand-stamp verify` + `selftest` (closes the S9/S10 backlog item).** CI validated only the **plugin** stamp form; the **cloud-skill** and **standalone-MCP** forms could regress silently. `brand-stamp` gains a `verify <root> --form {plugin|skill|mcp}` mode that asserts each form's required structure — plugin: a valid `plugin.json`/`.mcp.json` + the bundled server + a `skills/<name>/SKILL.md`; skill: `SKILL.md` frontmatter (`name`/`description`) + a non-empty `references/` corpus **and no MCP/scripts** (the cloud form must stay pure); mcp: the server + a `README.md` with the `claude mcp add` recipe — plus, for the forms that ship the server, a **drift check** that the bundled `brand-corpus-mcp.py` is byte-identical to the canonical one. A `brand-stamp selftest` proves the gate (all three forms stamp + verify clean; an MCP leak in the cloud form, a broken `plugin.json`, and a drifted bundled server are each caught). **CI now stamps all three forms, `verify`s each, deep-validates the plugin form with `validate_plugin --strict`, and runs the stamped MCP's own selftest** — the catalog's named-gate-over-inline-assertion discipline (the check-bake-safety precedent). plugin.json 0.4.28 → 0.4.29.
+
 ## [0.4.28] — 2026-06-20
 
 ### Added

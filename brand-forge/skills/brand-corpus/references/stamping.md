@@ -60,8 +60,10 @@ Claude chat can run **skills** (with bundled files/sub-folders) and use **remote
 
 ## After stamping
 
-- **plugin**: `validate_plugin.py plugin <out>/plugin/<brand>-brand` (it's authored to pass); then add it to a marketplace or install it. `/plugin-promote` for a hostile read first.
+**Verify first, every form.** `bin/brand-stamp verify <root> --form {plugin|skill|mcp}` asserts the stamped artifact has the structure its form requires before you ship it — plugin: a valid `plugin.json`/`.mcp.json` + the bundled server + the skill; skill: `SKILL.md` frontmatter + a non-empty `references/` corpus **and no leaked MCP/scripts** (the cloud form must stay pure); mcp: the server + the `claude mcp add` recipe — plus a drift check that the bundled `brand-corpus-mcp.py` matches the canonical one. (CI runs `verify` on all three forms; `brand-stamp selftest` proves the gate.) Then:
+
+- **plugin**: `validate_plugin.py plugin <out>/plugin/<brand>-brand --strict` (it's authored to pass — the deep validation `verify` complements); then add it to a marketplace or install it. `/plugin-promote` for a hostile read first.
 - **skill**: upload `<out>/skill/<brand>-brand/` to Claude chat as a skill — it carries its own corpus.
-- **mcp**: follow `<out>/mcp/<brand>-brand-mcp/README.md` to wire it (`claude mcp add`), or host it as a connector.
+- **mcp**: run the bundled server's `… brand-corpus-mcp.py selftest`, then follow `<out>/mcp/<brand>-brand-mcp/README.md` to wire it (`claude mcp add`), or host it as a connector.
 
 The factory feeding the factory: brand-forge stamps all three; **plugins-factory** is the standard the plugin form is validated against, and `brand-corpus` is its worked MCP exemplar.
