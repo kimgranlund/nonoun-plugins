@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.30] — 2026-06-20
+
+### Added
+
+- **`/brand-elicit` — build a guidelines section by guided 2×2 choice (the elicitation maker, increment 1).** A new command (routing to the new `brand-guidelines` skill) that walks the six brand domains (`mark · voice · color · type · expression · governance`); for each it crosses two of the seven exploration axes into a **2×2**, generates four concrete **design-move cards** grounded in `01-foundation` + a cited exemplar, the designer picks **A/B/C/D + comments/corrections**, and the choice is appended to a typed **choice-ledger** that accumulates into a coherent, evidence-traced guidelines corpus. Defaults: one-quadrant-plus-comments pick model (a "blend" is captured as an amended single choice); a deterministic default axis-pair per domain (the model may swap with a stated reason; the designer may override).
+- **`bin/guidelines-ledger`** — validates the choice-ledger **well-formed by construction** (the score-record/assess-record discipline): domain ∈ the six, chosen ∈ the presented quadrants, exactly two distinct axes from the seven, the design-move's required fields + confidence band, non-empty contributors, `supersedes` referencing only an earlier entry, no duplicate ids, and graph edges using brand-decomposer's relationship vocabulary. Modes: `validate · template · schema · selftest` (the gate proves itself across every malformation); CI-wired alongside the other corpus tools.
+- **Squared with `design-skills:brand-decomposer` (parallel, NOT a dependency).** brand-decomposer GRADES/decomposes/critiques a brand spec; `brand-guidelines` MAKES one. The skill mirrors brand-decomposer's six domains + seven axes + evidence discipline as **vocabulary** (restated, not imported — it's a different marketplace and brand-forge is self-contained) and will hand it gradeable output via an optional card-projection seam (a later increment). The rubric/schema/operability-checker are NOT duplicated.
+- **Scope:** this is the net-new maker loop + the validated ledger. The deterministic **assembler** (ledger → corpus docs with `sources:`/`contributors:`, gated by `corpus-provenance`, scored by `brand-evaluate`), the coverage check, and the brand-decomposer card-projection seam are the next increments. Design: `docs/designs/brand-guidelines-system.md`. plugin.json 0.4.29 → 0.4.30 (9 commands, 4 skills).
+
 ## [0.4.29] — 2026-06-20
 
 ### Added

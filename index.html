@@ -37,12 +37,13 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <p class='sub'><b>2</b> catalog plugins · <a href='https://github.com/kimgranlund/nonoun-plugins'>github.com/kimgranlund/nonoun-plugins</a></p></header>
 <nav><a href='#brand-forge'>brand-forge</a><a href='#product-forge'>product-forge</a></nav>
 <section class='card' id='brand-forge'>
-<h2><code>brand-forge</code> <span class='ver'>v0.4.29</span> <span class='cat'>design</span></h2>
+<h2><code>brand-forge</code> <span class='ver'>v0.4.30</span> <span class='cat'>design</span></h2>
 <p class='desc'>Build and evaluate brands grounded in cultural authority — strategy, identity, voice, stewardship — across three seats: an aspirational Muse (the pull toward an ideal — sometimes a provocation), the maker Team, and an adversarial 14-critic Council (parallel isolated agents).</p>
 <div class='chips'><span class='chip'>brand</span><span class='chip'>brand-strategy</span><span class='chip'>design</span><span class='chip'>identity</span><span class='chip'>voice</span><span class='chip'>council</span></div>
-<div class='sec'><h3>Skills <span class='n'>3</span></h3>
+<div class='sec'><h3>Skills <span class='n'>4</span></h3>
 <div class='skill'><b><code>brand-corpus</code></b> <span class='d'>— Canonical structure and stewardship for a brand&#x27;s documentation — a retained 00-sources archive plus the layered 01-foundation … 08-evaluation corpus, the two output conventions (flat double-hyphen filenames for a Claude Project; nested fol…</span></div>
 <div class='skill'><b><code>brand-evaluate</code></b> <span class='d'>— Adversarial evaluation of brand work — strategy, briefs, identity, voice, expression systems. Names failures (it does not flatter), scores each dimension with evidence and the test that revealed the finding, and runs the critic council.</span></div>
+<div class='skill'><b><code>brand-guidelines</code></b> <span class='d'>— Build a high-quality brand-guidelines section in the corpus by GUIDED CHOICE — the system presents a 2×2 of options for each brand domain (mark · voice · color · type · expression · governance), you pick a quadrant (A/B/C/D) + comments/corr…</span></div>
 <div class='skill'><b><code>brand-methodology</code></b> <span class='d'>— Senior-practitioner methodology for building a brand from cultural authority — not aesthetics.</span></div>
 </div>
 <div class='sec'><h3>Agents <span class='n'>17</span></h3>
@@ -50,17 +51,18 @@ footer{color:var(--mut);font-size:13px;border-top:1px solid var(--bd);margin-top
 <div class='muted' style='font-size:12.5px;margin-bottom:5px'>14 critics</div>
 <div class='list'><span class='it'>critic-brian-c</span><span class='it'>critic-david-a</span><span class='it'>critic-george-l</span><span class='it'>critic-jessica-w</span><span class='it'>critic-john-h</span><span class='it'>critic-luke-s</span><span class='it'>critic-mark-p</span><span class='it'>critic-mary-n</span><span class='it'>critic-massimo-v</span><span class='it'>critic-matt-w</span><span class='it'>critic-nick-l</span><span class='it'>critic-paula-s</span><span class='it'>critic-rory-s</span><span class='it'>critic-tim-d</span></div>
 </div>
-<div class='sec'><h3>Commands <span class='n'>8</span></h3>
+<div class='sec'><h3>Commands <span class='n'>9</span></h3>
 <div class='cmd'><code>/brand-build</code> <span class='d'>— Start a collaborative Build-mode brand engagement (strategy, research, identity, voice).</span></div>
 <div class='cmd'><code>/brand-corpus-export</code> <span class='d'>— Export this brand&#x27;s deliverables as a navigable corpus site (clean markdown + a site/ viewer).</span></div>
 <div class='cmd'><code>/brand-council</code> <span class='d'>— Convene the brand council — adversarial critique from named practitioners.</span></div>
+<div class='cmd'><code>/brand-elicit</code> <span class='d'>— Brand Guidelines — build a guidelines section by guided 2×2 choice, accumulating into the corpus.</span></div>
 <div class='cmd'><code>/brand-muse</code> <span class='d'>— Convene the Muse — name the aspiration the work should be pulled toward (an ideal, a provocation, or a guiding concept).</span></div>
 <div class='cmd'><code>/brand-orient</code> <span class='d'>— Orient — inventory the brand corpus and propose next steps.</span></div>
 <div class='cmd'><code>/brand-score</code> <span class='d'>— Adversarially evaluate existing brand work against the rubrics.</span></div>
 <div class='cmd'><code>/brand-stack</code> <span class='d'>— Brand Stack — condense a brand corpus into a one-page reading (six load-bearing tiers).</span></div>
 <div class='cmd'><code>/brand-stamp</code> <span class='d'>— Stamp a finished brand corpus into a distributable — a plugin (Code/Cowork), a cloud skill (Claude chat), or a standalone MCP.</span></div>
 </div>
-<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stamp</code> · <code>check-concepts.py</code> · <code>corpus-migrate</code> · <code>corpus-provenance</code> · <code>corpus-reader</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 17</div></div>
+<div class='sec'><h3>Resources</h3><div style='margin-bottom:4px'><b>Hook:</b> <code>PostToolUse (Write|Edit) → ${CLAUDE_PLUGIN_ROOT}</code></div><div style='margin-bottom:4px'><b>Gates / bin:</b> <code>brand-corpus-mcp.py</code> · <code>brand-lint</code> · <code>brand-stamp</code> · <code>check-concepts.py</code> · <code>corpus-migrate</code> · <code>corpus-provenance</code> · <code>corpus-reader</code> · <code>guidelines-ledger</code></div><div style='margin-bottom:4px'><b>MCP:</b> <code>brand-corpus</code></div><div style='margin-bottom:4px'><b>Reference files:</b> 18</div></div>
 </section>
 <section class='card' id='product-forge'>
 <h2><code>product-forge</code> <span class='ver'>v0.3.21</span> <span class='cat'>product</span></h2>

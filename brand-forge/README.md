@@ -13,12 +13,13 @@ This plugin is published as a **best-in-class reference**: it exercises all five
 /plugin install brand-forge@nonoun-plugins
 ```
 
-Then drive it through eight typed commands:
+Then drive it through nine typed commands:
 
 | Command | Posture | What it does |
 | --- | --- | --- |
 | `/brand-build` | collaborative | Make brand work — research, strategy, identity, voice — guarding pipeline order. |
 | `/brand-muse` | generative | Convene the Muse — the aspirational pull (an ideal, a provocation, or a guiding concept) the work should move toward. |
+| `/brand-elicit` | maker | Build a guidelines section by guided **2×2 choice** — pick A/B/C/D + comments per brand domain; choices accumulate into the corpus (validated by `bin/guidelines-ledger`). Routes to the `brand-guidelines` skill. |
 | `/brand-score` | adversarial | Score an existing artifact against the matching rubric, with evidence. |
 | `/brand-council` | adversarial | Convene named practitioners (parallel, isolated) for a hostile critique. |
 | `/brand-orient` | survey | Inventory the brand corpus, read its state, propose next steps. Best cold start. |
@@ -44,9 +45,9 @@ Cold-start in plain language (each routes to the matching command):
 
 ```text
 brand-forge/
-├── commands/        8 typed entry points   → set mode + posture, then route
+├── commands/        9 typed entry points   → set mode + posture, then route
 ├── agents/         14 critics + orchestrator + Muse + Copywriter → the review council, the pull, the voice maker
-├── skills/          3 knowledge surfaces   → methodology · evaluate · corpus
+├── skills/          4 knowledge surfaces   → methodology · evaluate · corpus · guidelines
 ├── hooks/ + bin/    structural brand-lint  → advisory lint on prose writes (never blocks)
 └── .mcp.json        per-instance retrieval → the corpus contract (a slot)
 ```
