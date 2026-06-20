@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""guidelines-ledger — validate the brand-guidelines elicitation choice-ledger (well-formed by construction).
+
+The `/brand-elicit` loop walks the six brand domains; for each it crosses two of the seven exploration
+axes into a 2×2, the designer picks a quadrant (A/B/C/D) + comments, and the chosen "design move" is
+appended to a **choice-ledger** — the cumulative state the assembler later compiles into corpus docs. This
+gate keeps that ledger well-formed by construction (the score-record / assess-record discipline): a malformed
+choice is rejected at write time, not discovered at assembly. *(Increment 1 — validate + template + selftest;
+coverage + the assembler + the brand-decomposer card-projection seam are later increments.)*
+
+The six domains + seven axes MIRROR `design-skills:brand-decomposer` (a parallel skill, NOT a dependency —
+brand-forge MAKES, brand-decomposer GRADES); they are restated here as stable vocabulary, not imported.
+
+Usage:
+  guidelines-ledger validate <ledger.json>   # exit 1 on any malformed entry
+  guidelines-ledger template                 # print a starter ledger with one worked entry
+  guidelines-ledger schema                    # print the entry shape + the enums
+  guidelines-ledger selftest
+Stdlib only; Python 3.8+.
+"""
+import json
+import sys
+
+DOMAINS = ("mark", "voice", "color", "type", "expression", "governance")
+AXES = ("functional-expressive", "product-led-human-led", "quiet-loud", "literal-metaphorical",
+        "restraint-loudness", "institutional-conversational", "systematic-organic")
+QUADRANTS = ("A", "B", "C", "D")
+# the brand-decomposer relationship vocabulary, for the optional coherence graph
+RELATIONSHIPS = ("supports", "expresses", "constrains", "contradicts", "exemplifies", "prohibits",
+                 "specializes", "inherits_from", "applies_to_surface", "derived_from")
+MOVE_REQUIRED = ("move", "rationale", "expected_effect")
+
+
+def _validate_entry(e, i, ids):
+    p = []
+
+    def bad(msg):
+        p.append(f"entries[{i}]: {msg}")
+
+    if not isinstance(e, dict):
+        return [f"entries[{i}]: not an object"]
+    if not e.get("id"):
+        bad("missing `id`")
+    if e.get("domain") not in DOMAINS:
+        bad(f"`domain` must be one of {DOMAINS}, got {e.get('domain')!r}")
+    if not isinstance(e.get("round"), int) or e.get("round", 0) < 1:
+        bad("`round` must be an integer ≥ 1")
+    axes = e.get("axes")
+    if not (isinstance(axes, list) and len(axes) == 2 and len(set(axes)) == 2 and all(a in AXES for a in axes)):
+        bad(f"`axes` must be two distinct values from {AXES}, got {axes!r}")
+    presented = e.get("presented", list(QUADRANTS))
+    if not (isinstance(presented, list) and presented and all(q in QUADRANTS for q in presented)):
+        bad(f"`presented` must be a non-empty subset of {QUADRANTS}, got {presented!r}")
+        presented = list(QUADRANTS)
+    if e.get("chosen") not in presented:
+        bad(f"`chosen` ({e.get('chosen')!r}) must be one of the presented quadrants {presented}")
+    move = e.get("move")
+    if not isinstance(move, dict):
+        bad("`move` (the chosen design-move) is required and must be an object")
+    else:
+        for k in MOVE_REQUIRED:
+            if not str(move.get(k, "")).strip():
+                bad(f"`move.{k}` is required and non-empty")
+        conf = move.get("confidence")
+        if conf is not None and not (isinstance(conf, (int, float)) and 0.0 <= conf <= 1.0):
+            bad(f"`move.confidence` must be in [0,1], got {conf!r}")
+        ev = move.get("exemplar_evidence", [])
+        if ev and not (isinstance(ev, list) and all(isinstance(x, dict) and x.get("brand") for x in ev)):
+            bad("`move.exemplar_evidence[]` entries each need at least a `brand`")
+    contribs = e.get("contributors")
+    if not (isinstance(contribs, list) and contribs):
+        bad("`contributors` is required and non-empty (who shaped this choice)")
+    else:
+        for j, c in enumerate(contribs):
+            if not (isinstance(c, dict) and c.get("who") and c.get("role") and c.get("date")):
+                bad(f"contributors[{j}] needs `who`, `role`, `date`")
+    sup = e.get("supersedes")
+    if sup is not None and sup not in ids:
+        bad(f"`supersedes` ({sup!r}) does not reference an earlier entry id")
+    return p
+
+
+def validate(ledger):
+    """Return a list of problems ([] = valid). Validates the whole choice-ledger."""
+    p = []
+    if not isinstance(ledger, dict):
+        return ["ledger is not a JSON object"]
+    for k in ("brand", "created"):
+        if not str(ledger.get(k, "")).strip():
+            p.append(f"ledger missing `{k}`")
+    entries = ledger.get("entries")
+    if not isinstance(entries, list):
+        return p + ["`entries` must be a list"]
+    seen = set()
+    for i, e in enumerate(entries):
+        prior_ids = set(seen)  # supersedes may only point at an EARLIER entry
+        p += _validate_entry(e, i, prior_ids)
+        eid = e.get("id") if isinstance(e, dict) else None
+        if eid in seen:
+            p.append(f"entries[{i}]: duplicate id {eid!r}")
+        if eid:
+            seen.add(eid)
+    for i, edge in enumerate(ledger.get("graph", []) or []):
+        if not (isinstance(edge, dict) and edge.get("from") and edge.get("to")
+                and edge.get("relationship") in RELATIONSHIPS):
+            p.append(f"graph[{i}]: needs `from`, `to`, and a `relationship` in {RELATIONSHIPS}")
+    return p
+
+
+def _template():
+    return {
+        "brand": "<brand>", "created": "<YYYY-MM-DD>",
+        "entries": [{
+            "id": "color-r1", "domain": "color", "round": 1,
+            "axes": ["functional-expressive", "restraint-loudness"],
+            "presented": ["A", "B", "C", "D"], "chosen": "B",
+            "comment": "yes, but warmer — terracotta not blue",
+            "move": {
+                "move": "A signature accent on a near-neutral base — one hot color used sparingly as the brand's 'tell'",
+                "rationale": "Lets the foundation's 'quiet confidence' read while still owning one ownable color",
+                "expected_effect": "Recognition at a glance without shouting; contrast headroom for accessibility",
+                "exemplar_evidence": [{"brand": "Stripe", "what": "accent on white", "why_cited": "restrained-expressive at scale"}],
+                "confidence": 0.8},
+            "contributors": [{"who": "designer", "role": "chooser", "date": "<YYYY-MM-DD>"},
+                             {"who": "brand-guidelines", "role": "proposer", "date": "<YYYY-MM-DD>"}],
+            "supersedes": None}],
+        "graph": [{"from": "color-r1", "to": "expression", "relationship": "constrains"}],
+    }
+
+
+def selftest():
+    fails = []
+
+    def expect(c, m):
+        if not c:
+            fails.append(m)
+
+    good = _template()
+    good["brand"], good["created"] = "Acme", "2026-06-20"
+    good["entries"][0]["contributors"][0]["date"] = "2026-06-20"
+    good["entries"][0]["contributors"][1]["date"] = "2026-06-20"
+    expect(validate(good) == [], f"a well-formed ledger failed: {validate(good)}")
+
+    def broken(mut):
+        import copy
+        g = copy.deepcopy(good)
+        mut(g)
+        return validate(g)
+
+    expect(broken(lambda g: g["entries"][0].update(domain="branding")), "bad domain not caught")
+    expect(broken(lambda g: g["entries"][0].update(chosen="E")), "chosen outside presented not caught")
+    expect(broken(lambda g: g["entries"][0].update(axes=["quiet-loud"])), "single-axis 2×2 not caught")
+    expect(broken(lambda g: g["entries"][0].update(axes=["nope", "quiet-loud"])), "unknown axis not caught")
+    expect(broken(lambda g: g["entries"][0]["move"].pop("rationale")), "missing move.rationale not caught")
+    expect(broken(lambda g: g["entries"][0]["move"].update(confidence=1.5)), "out-of-band confidence not caught")
+    expect(broken(lambda g: g["entries"][0].update(contributors=[])), "empty contributors not caught")
+    expect(broken(lambda g: g["entries"][0].update(supersedes="ghost")), "dangling supersedes not caught")
+    expect(broken(lambda g: g["entries"].append(g["entries"][0])), "duplicate id not caught")
+    expect(broken(lambda g: g["graph"][0].update(relationship="vibes")), "bad graph relationship not caught")
+    # a legitimate supersession (a later entry revises an earlier one) passes
+    rev = _template()["entries"][0]
+    rev["id"], rev["supersedes"], rev["round"] = "color-r2", "color-r1", 2
+    rev["contributors"][0]["date"] = rev["contributors"][1]["date"] = "2026-06-20"
+    g2 = json.loads(json.dumps(good))
+    g2["entries"].append(rev)
+    expect(validate(g2) == [], f"a legitimate supersession failed: {validate(g2)}")
+
+    if fails:
+        sys.stderr.write("guidelines-ledger selftest: FAIL\n")
+        for m in fails:
+            sys.stderr.write(f"  - {m}\n")
+        return 1
+    print("guidelines-ledger selftest: OK (a well-formed ledger + a legitimate supersession pass; bad domain/"
+          "quadrant/axes/move/confidence/contributors/supersedes/duplicate-id/graph-edge are each caught)")
+    return 0
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        sys.stderr.write(__doc__ or "")
+        return 0
+    cmd = argv[0]
+    if cmd == "selftest":
+        return selftest()
+    if cmd == "template":
+        print(json.dumps(_template(), indent=2))
+        return 0
+    if cmd == "schema":
+        print(json.dumps({"domains": DOMAINS, "axes": AXES, "quadrants": QUADRANTS,
+                          "relationships": RELATIONSHIPS, "move_required": MOVE_REQUIRED}, indent=2))
+        return 0
+    if cmd == "validate":
+        if len(argv) < 2:
+            sys.stderr.write("guidelines-ledger validate <ledger.json>\n")
+            return 2
+        try:
+            ledger = json.load(open(argv[1], encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            return 2
+        probs = validate(ledger)
+        for x in probs:
+            sys.stderr.write(f"  - {x}\n")
+        print(f"RESULT: {'PASS' if not probs else 'FAIL'} ({len(probs)} problem(s), "
+              f"{len(ledger.get('entries', []))} entr(y/ies))")
+        return 1 if probs else 0
+    sys.stderr.write(f"guidelines-ledger: unknown command {cmd!r}\n")
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
