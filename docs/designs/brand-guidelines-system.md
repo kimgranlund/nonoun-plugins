@@ -20,7 +20,28 @@ The prior prototype is a mature **ingestion spec** — a pipeline for turning th
 | **Typed records** — `brand_rule` (rule_type × must/should/may × context), `brand_relationship` (10 edge types), the **design-move** object | What a quadrant *emits* and a pick *captures*; the relationship graph carries cross-component coherence. |
 | **Evidence/provenance discipline** (`evidence_ref` + confidence + Observed/Inferred/Proposed) + the 17-brand annotated exemplar catalog | Maps onto `00-sources` + provenance; the exemplars seed option-generation. |
 
-What we explicitly **drop**: the deck-scraping pipeline (wrong center of gravity — we *generate* via guided choice, not *ingest* decks; ingestion is optional later plumbing for seeding exemplars). We also reconcile the prior work's schema drift (`BrandToken`/`BrandRelationship` were in the TS but missing from the JSON Schema) into one source of truth.
+What we explicitly **drop**: the deck-scraping pipeline (wrong center of gravity — we *generate* via guided choice, not *ingest* decks; ingestion is optional later plumbing for seeding exemplars).
+
+> **Update (2026-06-20):** most of this "salvage" is **already realized** in `design-skills:brand-decomposer` — so §1's table is *what to align to, not a build list*. See §1a.
+
+---
+
+## 1a. Relationship to brand-decomposer — parallel, not a dependency
+
+`design-skills:brand-decomposer` (the **`nonoun-skills`** marketplace) already built the same prior-work lineage into a complete skill: the **100-pt rubric** (`the-rubric.md`), a **six-domain** ontology (mark·voice·color·type·expression·governance — a rollup of the 16-value enum), the typed **`brand-spec` schema** + card, a deterministic **operability checker** (`brand-spec-check.py`: WCAG contrast · `UNTRACED` · `COLLAPSED_TRUTH` · `BARE_TOKEN` · `INCOMPLETE` …), the **evidence/three-truths/confidence** doctrine, the **7 exploration axes** (verbatim), and **DECOMPOSE/DESIGN/GRADE/CRITIQUE** modes.
+
+**Verdict: parallel, complementary, NOT a dependency.** (1) brand-forge is self-contained (zero cross-plugin deps) and brand-decomposer is in a *different marketplace* — a hard code/path dependency is disallowed and would not survive install. (2) brand-decomposer already splits the work **by verb**: it GRADES/DECOMPOSES/CRITIQUES and explicitly defers MAKING to brand-forge (`brand-muse`/`brand-copywriter`/`brand-council`/`brand-evaluate`).
+
+| | **brand-decomposer** (nonoun-skills) | **brand-forge guidelines system** (this design) |
+|---|---|---|
+| Verb | **grade · decompose · critique** a brand spec | **make** a brand-guidelines section via guided choice |
+| Interaction | mostly autonomous; single-pass DESIGN | **2×2 multiple-choice, human-in-the-loop, cumulative** |
+| Output | a standalone `*.brand.json` card | brand-forge **corpus** docs (00–08, provenance-traced) |
+| Owns | the rubric · schema · operability checker · six domains · axes | the elicitation loop · choice-ledger · assembler · corpus integration |
+
+**Don't duplicate; align + seam.** brand-forge does **not** re-implement the rubric, schema, operability checker, or ontology (cloning them across marketplaces would drift). It **aligns** to brand-decomposer's six domains + 7 axes + evidence discipline, and adds an **optional seam**: the elicitation can **emit a `*.brand.json` card** that brand-decomposer GRADES + operability-checks. In-plugin grading stays with brand-forge's existing `brand-evaluate` (self-contained); brand-decomposer is the deeper, optional check when the user has both installed. *(Reciprocal follow-up in nonoun-skills: a one-line seam in brand-decomposer's `policy.md` noting brand-forge's elicitation emits the card it grades.)*
+
+**Consequences for the rest of this doc:** the increment plan (§6) **drops** the rubric/ontology/schema lift and starts at the net-new maker loop; the ontology (§2.1) uses brand-decomposer's **six domains**, not a separate 16; the assembler can additionally project a brand-spec card for the seam.
 
 ---
 
@@ -28,11 +49,11 @@ What we explicitly **drop**: the deck-scraping pipeline (wrong center of gravity
 
 ### 2.1 The component ontology (what the loop walks)
 
-The 16 `brand_domain` components, in a load-ordered walk (strategy first; governance closes):
+The loop walks **brand-decomposer's six domains** (its rubric-aligned rollup of the 16-value enum — we adopt these, not a separate 16, so the two stay aligned, §1a):
 
-`strategy · voice · logo · color · typography · layout · photography · illustration · iconography · motion · product-ui · dataviz · social · marketing · packaging/environmental · co-branding · governance`
+`mark · voice · color · type · expression · governance` — where **expression** is the wide rollup (layout · photography · illustration · iconography · motion · product-UI · dataviz · social · marketing · packaging · environmental · co-branding) and the **brand idea/strategy** sits above all six as the foundation the 2×2 options must trace to.
 
-Each component carries a **capture spec** — the sub-decisions a *complete* treatment of it must resolve (e.g. color: roles · meaning · ratios · light/dark · contrast/accessibility · product vs. marketing usage · misuse). The capture spec is both the **drill-down map** (what finer 2×2s a component spawns) and the **coverage checklist** (when is this component "done"). These map onto the corpus layers: identity→`03`, expression→`04`, voice→`05`, product→`06`, governance→`07`.
+Each domain carries a **capture spec** — the sub-decisions a *complete* treatment must resolve (e.g. color: roles · meaning · ratios · light/dark · contrast/accessibility · product vs. marketing usage · misuse), drawn from brand-decomposer's `the-six-domains.md` so coverage means the same thing on both sides. The capture spec is both the **drill-down map** (what finer 2×2s a domain spawns) and the **coverage checklist** (when is this domain "done"). These map onto the corpus layers: idea/strategy→`01`, mark→`03`, color/type/expression→`04`, voice→`05`, product surfaces→`06`, governance→`07`.
 
 ### 2.2 The 7 exploration axes + the 2×2 recipe
 
@@ -135,13 +156,15 @@ A coverage check reports, per component, `resolved / partial / absent` against i
 
 ## 6. Build increments (after this design is approved)
 
-1. **Knowledge layer** — `rubric-brand-guidelines.md` (lift the 100-pt rubric into brand-evaluate) + the `brand-guidelines` skill with `component-ontology.md`, `exploration-axes.md`, `exemplars.md` (the 17-brand catalog, link-only). *Useful immediately (scores guidelines); foundational for the loop.*
-2. **The loop + ledger** — `/brand-guidelines` command + the loop methodology + `schemas/choice-ledger.schema.json` + validator; one component end-to-end (2 axes → 4 cards → pick+comment → ledger entry → drill-down).
-3. **The assembler + coverage** — ledger → corpus docs (with `sources:`/`contributors:`); the coverage check; close into `corpus-provenance` + `brand-evaluate`.
-4. **Coherence graph** — cross-component constraint + contradiction-flagging.
-5. **Exemplar enrichment** — per-component "what good looks like," rights-respecting.
+*Revised after the brand-decomposer reconciliation (§1a): the rubric/ontology/schema/operability-checker are **not** rebuilt — brand-forge aligns to brand-decomposer's and builds only the net-new maker loop + corpus integration.*
 
-Each increment ships with its selftest/gate and a CHANGELOG/version bump, per the catalog discipline.
+1. **The loop + ledger (the net-new core)** — `/brand-guidelines` command + the `brand-guidelines` skill (loop methodology, walking brand-decomposer's six domains + 7 axes) + `schemas/choice-ledger.schema.json` + validator; one domain end-to-end (2 axes → 4 cards → pick + comment → ledger entry → drill-down).
+2. **The assembler + coverage** — ledger → corpus docs (each rule typed `must/should/may`, with `sources:`/`contributors:`); the coverage check (against the six-domain capture specs); close into `corpus-provenance` + brand-forge's existing `brand-evaluate`.
+3. **The brand-decomposer seam** — the assembler additionally projects a `*.brand.json` card (brand-decomposer's schema shape) so the elicited guidelines can be GRADED + operability-checked by brand-decomposer when installed; brand-forge stays self-contained (the seam is optional, documented, not a dependency).
+4. **Coherence graph** — cross-domain constraint + contradiction-flagging during elicitation.
+5. **Exemplar enrichment** — per-domain "what good looks like," rights-respecting (link-only); may reuse brand-decomposer's exemplar lineage by *citation*, not by copying its files.
+
+Each increment ships with its selftest/gate and a CHANGELOG/version bump, per the catalog discipline. *Note: no `rubric-brand-guidelines.md` lift, no `component-ontology.md`/`exploration-axes.md` duplication — those live in brand-decomposer; brand-forge references the same vocabulary.*
 
 ---
 
