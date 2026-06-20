@@ -35,9 +35,10 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Guard + assemble the catalog (publish index.html only)
         run: |
-          # Catalog-relevant gates only: the marketplace must be valid and the committed
-          # catalog page must match the tracked marketplace (clean-checkout-true, per D-6).
-          python3 plugins-factory/bin/validate_plugin.py marketplace .
+          # Catalog-relevant gates only: the marketplace must be valid and the committed catalog page
+          # must match the tracked marketplace (clean-checkout-true, per D-6). The validator is the
+          # plugins-factory gate vendored into tools/gates/ (D-18; plugins-factory moved to nonoun-factory).
+          python3 tools/gates/validate_plugin.py marketplace .
           python3 gen-index.py --check
           mkdir -p _site
           cp index.html _site/index.html
