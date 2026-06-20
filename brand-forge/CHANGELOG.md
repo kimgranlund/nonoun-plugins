@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.28] — 2026-06-20
+
+### Added
+
+- **`bin/corpus-provenance` — the provenance/sources audit, mechanized.** The two provenance audit-checklist items the 0.4.27 work added were advisory prose; this makes them a **check**. `corpus-provenance <corpus>` parses each document's frontmatter and **fails (exit 1) on a broken `sources:` trace** — a reference that resolves to no file in the corpus, the exact defect retention exists to prevent — and **warns (exit 0)** on a 01–02 artifact missing `contributors` or a `sources:` ref resolving outside `00-sources`. Gated where it's a real defect, advisory where it's a judgment call. Detects both corpus conventions and resolves a `sources:` ref across them (a flat-style ref still resolves in a folder corpus, and back); a traversal ref is treated as a broken trace, never followed outside the corpus. Selftested (clean / dangling / missing-attribution / out-of-layer / cross-convention / traversal cases) and CI-wired alongside `corpus-migrate`. Referenced from `corpus-architecture.md` (audit checklist) + `brand-corpus/SKILL.md`. plugin.json 0.4.27 → 0.4.28.
+
 ## [0.4.27] — 2026-06-19
 
 ### Added

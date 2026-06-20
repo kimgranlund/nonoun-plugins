@@ -83,6 +83,11 @@ jobs:
       - name: brand-forge MCP guard selftest
         run: python3 brand-forge/bin/brand-corpus-mcp.py selftest
 
+      - name: brand-forge — corpus tools (migrate flat⟷folder + provenance/sources audit)
+        run: |
+          python3 brand-forge/bin/corpus-migrate selftest
+          python3 brand-forge/bin/corpus-provenance selftest
+
       - name: brand-forge — concept-consistency gate (no retired seat-vocabulary)
         run: |
           python3 brand-forge/bin/check-concepts.py selftest
