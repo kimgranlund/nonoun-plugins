@@ -24,7 +24,7 @@ CORPUS = (os.environ.get("BRAND_CORPUS_DIR") or os.environ.get("BRAND_CORPUS_ROO
 
 TOOLS = [
     {"name": "list_brand_documents",
-     "description": "List the brand corpus documents (markdown files), by layer. Use to see what exists before fetching.",
+     "description": "List the brand corpus documents (markdown files), each with its provenance from frontmatter — the contributors who shaped it (— by …) and the 00-sources files it was synthesized from (← …). Use to see what exists, who added it, and what it was built from before fetching.",
      "inputSchema": {"type": "object", "properties": {}}},
     {"name": "search_brand",
      "description": "Search the brand corpus for a term and return matching file:line snippets. Use to locate where a concept is defined.",
@@ -70,6 +70,33 @@ def _md_files():
     return sorted(out)
 
 
+def _provenance(full):
+    """Pull `contributors` (the `who` of each) + `sources` from a doc's YAML frontmatter, without a yaml
+    dependency. Returns (contributors:list[str], sources:list[str]); ([], []) when there is no frontmatter.
+    Tolerant by design — provenance is advisory metadata, never a parse the server should fail on."""
+    try:
+        head = open(full, encoding="utf-8", errors="replace").read(8000)
+    except OSError:
+        return ([], [])
+    if not head.startswith("---"):
+        return ([], [])
+    end = head.find("\n---", 3)
+    if end == -1:
+        return ([], [])
+    fm = head[3:end]
+    who = [w.strip() for w in re.findall(r'who:\s*["\']?([^"\',}\n]+)', fm) if w.strip()]
+    src = []
+    inline = re.search(r'sources:\s*\[([^\]]*)\]', fm)
+    if inline:
+        src = [s.strip().strip('"\'') for s in inline.group(1).split(",") if s.strip()]
+    else:
+        block = re.search(r'sources:\s*\n((?:[ \t]*-[ \t]*.+\n?)+)', fm)
+        if block:
+            src = [re.sub(r'^[ \t]*-[ \t]*', '', ln).strip().strip('"\'')
+                   for ln in block.group(1).splitlines() if ln.strip()]
+    return (who, [s for s in src if s])
+
+
 def call(name, args):
     """Return (text, is_error). is_error=True marks a tool-level failure (bad input / not found / not
     configured), distinct from valid content the model should read."""
@@ -77,7 +104,15 @@ def call(name, args):
         return (_no_corpus(), True)
     if name == "list_brand_documents":
         files = _md_files()
-        return ("Brand corpus documents:\n" + ("\n".join(f"  {p}" for p in files) if files else "  (none found)"), False)
+        if not files:
+            return ("Brand corpus documents:\n  (none found)", False)
+        lines = []
+        for p in files:
+            full = _safe(p)
+            who, src = _provenance(full) if full else ([], [])
+            extra = (f"  — by {', '.join(who)}" if who else "") + (f"  ← {', '.join(src)}" if src else "")
+            lines.append(f"  {p}{extra}")
+        return ("Brand corpus documents (— by contributors · ← sources):\n" + "\n".join(lines), False)
     if name == "search_brand":
         q = (args.get("query") or "").strip()
         if not q:
@@ -166,7 +201,7 @@ def main():
 
 def selftest():
     """Exercise the path guard (`_safe`/`_md_files`) against traversal, absolute-path, symlink, and
-    prefix-sibling escape, plus a tools smoke. This server is copied verbatim into every stamped
+    prefix-sibling escape, plus a tools smoke and a provenance-frontmatter parse. This server is copied verbatim into every stamped
     artifact (brand-stamp `_copy_mcp`), so this test travels with the hand-rolled guard and catches
     divergence across copies. No external corpus needed. Exit 0 = pass, 1 = fail."""
     import tempfile
@@ -219,6 +254,24 @@ def selftest():
         check(not err and "color" in txt, "get_brand_tokens failed")
         txt, err = call("search_brand", {"query": "hello"})
         check(not err and "strategy.md" in txt, "search_brand failed")
+        # provenance: frontmatter contributors + sources surface (Q1 source trace + Q2 attribution)
+        os.makedirs(os.path.join(corpus, "00-sources"))
+        open(os.path.join(corpus, "00-sources", "interview.md"), "w", encoding="utf-8").write("# Interview\n")
+        open(os.path.join(corpus, "01-foundation", "position.md"), "w", encoding="utf-8").write(
+            '---\ncontributors:\n  - {who: "Muse", role: aspiration, date: 2026-06-19}\n'
+            'sources: [00-sources/interview.md]\n---\n# Position\n')
+        who, src = _provenance(os.path.join(corpus, "01-foundation", "position.md"))
+        check(who == ["Muse"], "provenance did not parse inline contributors")
+        check(src == ["00-sources/interview.md"], "provenance did not parse inline sources")
+        check(_provenance(os.path.join(corpus, "01-foundation", "strategy.md")) == ([], []),
+              "provenance invented metadata on a plain (no-frontmatter) doc")
+        open(os.path.join(corpus, "01-foundation", "block.md"), "w", encoding="utf-8").write(
+            '---\nsources:\n  - 00-sources/a.md\n  - 00-sources/b.md\n---\n# B\n')
+        check(_provenance(os.path.join(corpus, "01-foundation", "block.md"))[1] == ["00-sources/a.md", "00-sources/b.md"],
+              "provenance did not parse block-form sources")
+        txt, err = call("list_brand_documents", {})
+        check(not err and "— by Muse" in txt and "← 00-sources/interview.md" in txt,
+              "list_brand_documents did not surface provenance")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
