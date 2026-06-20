@@ -25,7 +25,7 @@ import re
 import sys
 
 # The eight canonical layers (skills/brand-corpus/SKILL.md). Load-order numbering is part of the prefix.
-LAYERS = ("01-foundation", "02-positioning", "03-identity", "04-expression",
+LAYERS = ("00-sources", "01-foundation", "02-positioning", "03-identity", "04-expression",
           "05-voice", "06-product", "07-guidelines", "08-evaluation")
 _LAYER_RE = "|".join(re.escape(l) for l in LAYERS)
 FLAT_RE = re.compile(rf"^({_LAYER_RE})--(.+)\.md$")        # 01-foundation--the-position.md
@@ -125,10 +125,11 @@ def selftest():
 
     with tempfile.TemporaryDirectory() as d:
         # build a flat corpus, migrate → folder, assert; migrate back → flat, assert
-        for fn in ("01-foundation--the-position.md", "05-voice--tone.md", "08-evaluation--audit-q1.md", "README.md"):
+        for fn in ("00-sources--interview.md", "01-foundation--the-position.md", "05-voice--tone.md", "08-evaluation--audit-q1.md", "README.md"):
             open(os.path.join(d, fn), "w").write("x")
         expect(detect(d)[0] == "flat", "a flat corpus was not detected as flat")
         migrate(d, "folder", apply=True, out=lambda *_: None)
+        expect(os.path.isfile(os.path.join(d, "00-sources", "interview.md")), "flat→folder did not move 00-sources (retained inputs)")
         expect(os.path.isfile(os.path.join(d, "01-foundation", "the-position.md")), "flat→folder did not move foundation")
         expect(os.path.isfile(os.path.join(d, "05-voice", "tone.md")), "flat→folder did not move voice")
         expect(os.path.isfile(os.path.join(d, "README.md")), "migration disturbed a non-layer file")

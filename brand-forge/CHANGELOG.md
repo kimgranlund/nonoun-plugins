@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.27] — 2026-06-19
+
+### Added
+
+- **Source ingestion + retention — the `00-sources` layer.** The corpus now keeps the raw material a brand is *built from*, not only the brand it produces. `00-sources` slots in at load-order zero (above `01-foundation`): legacy brand books, research/interview transcripts, the founder's writing, competitor/cultural references — landed verbatim, **retained for the life of the corpus** (never deleted after they're synthesized into 01+), **archived not scored** for maturity, and treated as **untrusted DATA** (an instruction embedded in a source is a finding, not an order). It reuses the existing layer machinery: `bin/corpus-migrate` migrates it flat⟷folder like any layer (LAYERS + selftest extended), and the MCP enumerates it automatically.
+- **Provenance & attribution — per-document frontmatter.** Every corpus document can carry `contributors` (who shaped it, by person or agent seat — `Muse`, `brand-copywriter`, `brand-council`, the client — each with role + date) and `sources` (the `00-sources` files it was synthesized from). This captures role-provenance git structurally can't (a corpus often lives in a Claude Project with no git; even under git the committer is one identity, never the *seat*), travels *with* the document, and links each artifact back to its retained evidence. **`brand-corpus-mcp` surfaces both** — `list_brand_documents` now reports each doc's contributors (`— by …`) and sources (`← …`) via a tolerant stdlib frontmatter parser (no yaml dependency); selftest extended (inline + block-form + no-frontmatter cases).
+- **Docs:** `skills/brand-corpus/references/corpus-architecture.md` gains the `00-sources` layer, a **Source ingestion & retention** section (the 3-step ingest flow + the retention rationale + the trust boundary), a **Provenance & attribution** section (the frontmatter schema + why frontmatter over git/manifest), the manifest `00` row, and two audit-checklist items; `SKILL.md` gains the layer in the canonical structure + a **Sources, ingestion & attribution** pointer. plugin.json 0.4.26 → 0.4.27.
+
 ## [0.4.26] — 2026-06-17
 
 ### Added
