@@ -206,4 +206,6 @@ The completeness audit that feeds `08-evaluation` — score each item, and the f
 7. **Sources retained + traced** — `00-sources` holds the raw inputs the brand was built from (none deleted after processing), and the 01–02 artifacts `sources:`-link the real files they synthesized from.
 8. **Provenance present** — each document's frontmatter names its `contributors` (who shaped it, by role/seat), so attribution survives even where the corpus has no git.
 
+> Items 7–8 are mechanized by **`bin/corpus-provenance <corpus>`** (selftested): it **fails** on a broken `sources:` trace (a ref that resolves to no file in the corpus) and **warns** on a 01–02 artifact missing `contributors`, or a `sources:` ref that resolves outside `00-sources`. The trace is a *check*, not just a discipline.
+
 Score each layer against its matching `brand-evaluate` rubric; the weakest layer plus any load-order violation is the corpus's next work.
