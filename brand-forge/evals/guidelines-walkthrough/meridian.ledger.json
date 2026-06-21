@@ -1,0 +1,160 @@
+{
+  "brand": "Meridian",
+  "created": "2026-06-20",
+  "entries": [
+    {
+      "id": "mark-r1",
+      "domain": "mark",
+      "round": 1,
+      "axes": ["literal-metaphorical", "systematic-organic"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "A",
+      "comment": "the stitch reference is the whole idea — keep it literal",
+      "move": {
+        "move": "A geometric 'M' monogram constructed from a Coptic bookbinding stitch pattern",
+        "rationale": "literal + systematic: the mark IS the craft, drawn on a grid so it holds at a favicon",
+        "expected_effect": "ownable, trademark-clean, legible at every size",
+        "severity": "must",
+        "exemplar_evidence": [{"brand": "Penguin", "what": "the orange-band system", "why_cited": "a publishing mark that is a constructed system, not a picture"}],
+        "confidence": 0.9
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    },
+    {
+      "id": "voice-r1",
+      "domain": "voice",
+      "round": 1,
+      "axes": ["institutional-conversational", "functional-expressive"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "A",
+      "comment": "no hype; the objects speak",
+      "move": {
+        "move": "Spare and considered — name the craft and the material, never the hype; lead with the made thing",
+        "rationale": "institutional + functional restraint: gravitas through under-statement, the opposite of disposable-age noise",
+        "expected_effect": "copy a stranger can extend without drifting into marketing-speak",
+        "severity": "should",
+        "exemplar_evidence": [{"brand": "Aesop", "what": "ingredient-first product copy", "why_cited": "restraint that reads as authority"}],
+        "confidence": 0.85
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    },
+    {
+      "id": "color-r1",
+      "domain": "color",
+      "round": 1,
+      "axes": ["functional-expressive", "restraint-loudness"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "D",
+      "comment": "first pass — felt too loud against the spare voice",
+      "move": {
+        "move": "A saturated jewel-tone palette, color-forward across every surface",
+        "rationale": "expressive + loud: maximum shelf presence",
+        "expected_effect": "high energy, hard to miss",
+        "severity": "should",
+        "confidence": 0.6
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    },
+    {
+      "id": "color-r2",
+      "domain": "color",
+      "round": 2,
+      "axes": ["functional-expressive", "restraint-loudness"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "B",
+      "comment": "this — restrained, with the one gold tell",
+      "move": {
+        "move": "Ink-black and cream as the system; a single foredge-gold accent used sparingly as the brand's 'tell'",
+        "rationale": "expressive + restrained: one ownable color that coheres with the spare voice instead of fighting it",
+        "expected_effect": "recognition through the gold detail; high contrast headroom for accessibility",
+        "severity": "should",
+        "exemplar_evidence": [{"brand": "Rizzoli", "what": "ink-on-cream with metallic detail", "why_cited": "restrained-expressive in the book world"}],
+        "confidence": 0.88
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": "color-r1"
+    },
+    {
+      "id": "type-r1",
+      "domain": "type",
+      "round": 1,
+      "axes": ["systematic-organic", "functional-expressive"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "C",
+      "move": {
+        "move": "A book-faced serif for display (the voice), a neutral grotesque workhorse for UI and specs",
+        "rationale": "organic + expressive display carries the craft; a systematic workhorse keeps it operable",
+        "expected_effect": "the page feels bound, not branded; specs stay legible",
+        "severity": "should",
+        "exemplar_evidence": [{"brand": "The Paris Review", "what": "editorial serif + quiet sans", "why_cited": "type that reads as a publication, not a product"}],
+        "confidence": 0.82
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    },
+    {
+      "id": "expression-r1",
+      "domain": "expression",
+      "round": 1,
+      "axes": ["quiet-loud", "restraint-loudness"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "A",
+      "comment": "let the objects breathe",
+      "move": {
+        "move": "Generous margins, a slow grid, product-true photography of the bound objects on cream — no stock, no campaign loudness",
+        "rationale": "quiet + premium: the expression grammar is the restraint the color and voice already chose",
+        "expected_effect": "the room reads as considered; new work is generated from the grid, not copied",
+        "severity": "should",
+        "exemplar_evidence": [{"brand": "Kinfolk", "what": "slow editorial layout", "why_cited": "quiet-premium expression as a generative grammar"}],
+        "confidence": 0.8
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    },
+    {
+      "id": "governance-r1",
+      "domain": "governance",
+      "round": 1,
+      "axes": ["systematic-organic", "product-led-human-led"],
+      "presented": ["A", "B", "C", "D"],
+      "chosen": "B",
+      "move": {
+        "move": "A named brand steward + a one-page principles sheet; partner lockups require the steward's sign-off",
+        "rationale": "organic + human-led: a small studio steward beats a heavy token system the team won't maintain",
+        "expected_effect": "the brand survives contact with real work without a bureaucracy",
+        "severity": "must",
+        "confidence": 0.78
+      },
+      "contributors": [
+        {"who": "S. (strategist)", "role": "chooser", "date": "2026-06-20"},
+        {"who": "brand-guidelines", "role": "proposer", "date": "2026-06-20"}
+      ],
+      "supersedes": null
+    }
+  ],
+  "graph": [
+    {"from": "color-r2", "to": "expression", "relationship": "constrains"},
+    {"from": "voice-r1", "to": "expression", "relationship": "supports"}
+  ]
+}
