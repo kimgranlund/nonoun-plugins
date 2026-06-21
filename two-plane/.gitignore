@@ -1,0 +1,5 @@
+# runtime state — append-only ledger + per-project doc instances
+ledger.jsonl
+*.charter.json
+*.blueprint.json
+__pycache__/

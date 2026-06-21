@@ -1,0 +1,12 @@
+{
+  "_note": "Template MCP config for the two-plane read-only query surface. two-plane is a harness-convention dir (not a plugin), so set absolute paths: point args[0] at this dir's bin/two-plane-mcp.py and TWO_PLANE_DIR at your project's two-plane folder (charter.json / blueprint.json / lattice.json / ledger.jsonl). Drop the relevant block into your project or user .mcp.json.",
+  "mcpServers": {
+    "two-plane": {
+      "command": "python3",
+      "args": ["/ABSOLUTE/PATH/TO/nonoun-plugins/two-plane/bin/two-plane-mcp.py"],
+      "env": {
+        "TWO_PLANE_DIR": "/ABSOLUTE/PATH/TO/your-project/two-plane"
+      }
+    }
+  }
+}

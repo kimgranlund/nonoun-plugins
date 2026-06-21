@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "project": "two-plane",
+  "frontier_scope": "workflow",
+  "produced_by": "two-plane",
+  "kernel_version": "0.5.2",
+  "cells": [
+    { "layer": "spec", "scope": "workflow", "slug": "charter", "maturity": "defined", "depends_on": [] },
+    { "layer": "capability", "scope": "workflow", "slug": "blueprint", "maturity": "defined", "depends_on": ["spec.workflow.charter"] },
+    { "layer": "rubric", "scope": "workflow", "slug": "cross-check", "maturity": "defined", "depends_on": ["capability.workflow.blueprint"] },
+    { "layer": "ledger", "scope": "workflow", "slug": "events", "maturity": "defined", "depends_on": ["spec.workflow.charter"] }
+  ]
+}
