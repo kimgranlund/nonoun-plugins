@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.31] — 2026-06-20
+
+### Added
+
+- **The guidelines assembler + coverage (increment 2) — the build loop closes into the corpus.** `bin/guidelines-ledger` gains two modes: **`coverage <ledger>`** (per-domain resolved/absent + the frontier still to elicit) and **`assemble <ledger> --out <corpus> [--flat] [--apply]`** — a **deterministic** compile (no inference) of the *live* ledger (supersessions applied) into per-domain corpus docs: each domain's choices → its mapped layer (`mark`→`03-identity`, `color`/`type`/`expression`→`04-expression`, `voice`→`05-voice`, `governance`→`07-guidelines`), every choice rendered as a **typed rule** (`must/should/may`, default `should`) with rationale · effect · exemplar · ledger-trace, each doc stamped with **`sources:`** (the ledger it traces to) + **`contributors:`** (designer + system) frontmatter. It **matches the corpus's flat/folder convention and refuses a mixed corpus** (the never-mix rule), and is **dry-run until `--apply`**. The move schema gains an optional `severity` (`must/should/may`, validated).
+- **The loop closes — proven end-to-end.** An assembled corpus **passes `corpus-provenance` clean** (the `sources:` resolve to the ledger; `contributors:` present) and is then scorable by `/brand-score` (`brand-evaluate`): build → assemble → provenance-gated → scored. A new CI step runs the full chain (template → validate → assemble → corpus-provenance) so the closure is gated, not just claimed; the bin's selftest covers coverage, supersession-honoring, assemble dry-run/apply, and mixed-corpus refusal.
+- Docs (`brand-guidelines` SKILL + `the-loop.md` + `/brand-elicit`) updated — assembly/coverage are now live; the brand-decomposer card-projection seam is the next increment. plugin.json 0.4.30 → 0.4.31.
+
 ## [0.4.30] — 2026-06-20
 
 ### Added
