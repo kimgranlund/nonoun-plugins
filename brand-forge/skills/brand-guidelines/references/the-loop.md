@@ -68,7 +68,7 @@ A domain isn't done at one 2×2. Its **capture spec** (the sub-decisions a compl
 
 ## Coherence — earlier choices constrain later domains
 
-Choices aren't independent: a loud-expressive color should inform the type + expression options offered next. Each accepted choice can write **coherence edges** into the ledger's `graph` (brand-decomposer's relationship vocabulary — `constrains · supports · contradicts · …`); when framing a later domain's 2×2, read the graph so options stay coherent with prior commitments, and **flag** (don't silently forbid) a candidate that `contradicts` an earlier choice. Coherence *informs*; it doesn't railroad.
+Choices aren't independent: a loud-expressive color should inform the type + expression options offered next. Each accepted choice can write **coherence edges** into the ledger's `graph` (brand-decomposer's relationship vocabulary — `constrains · supports · contradicts · …`; edge ends are validated to be a real domain or entry id). Before framing a domain's 2×2, run **`guidelines-ledger coherence --domain <d>`** — it reports (mechanized) the **prior commitments** the new domain should cohere with, the **edges** touching it, and any **`contradicts`** edges to resolve. Frame the cards to honor the commitments, and **flag** (don't silently forbid) a contradiction. Coherence *informs*; it doesn't railroad — the computation is code, the resolution is judgment. (`--strict` exits non-zero on any unresolved contradiction, if you want it gated.)
 
 ## Assembly + scoring (the loop closes)
 

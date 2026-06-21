@@ -16,6 +16,7 @@ brand-forge MAKES, brand-decomposer GRADES); they are restated here as stable vo
 Usage:
   guidelines-ledger validate <ledger.json>                                       # exit 1 on any malformed entry
   guidelines-ledger coverage <ledger.json>                                       # per-domain resolved/absent + frontier
+  guidelines-ledger coherence <ledger.json> [--domain <d>] [--strict]            # prior commitments + edges + contradictions
   guidelines-ledger assemble <ledger.json> --out <corpus> [--flat] [--apply]     # ledger → corpus docs (dry-run default)
   guidelines-ledger card <ledger.json> [--idea "..."] [-o <out.json>]            # project a brand-spec card (brand-decomposer seam)
   guidelines-ledger template | schema | selftest
@@ -112,10 +113,15 @@ def validate(ledger):
             p.append(f"entries[{i}]: duplicate id {eid!r}")
         if eid:
             seen.add(eid)
+    refs_ok = set(DOMAINS) | seen
     for i, edge in enumerate(ledger.get("graph", []) or []):
         if not (isinstance(edge, dict) and edge.get("from") and edge.get("to")
                 and edge.get("relationship") in RELATIONSHIPS):
             p.append(f"graph[{i}]: needs `from`, `to`, and a `relationship` in {RELATIONSHIPS}")
+            continue
+        for end in ("from", "to"):
+            if edge[end] not in refs_ok:
+                p.append(f"graph[{i}].{end} ({edge[end]!r}) must be a domain or an existing entry id")
     return p
 
 
@@ -153,6 +159,29 @@ def coverage(ledger):
     live = live_entries(ledger)
     return {d: {"choices": sum(1 for e in live if e.get("domain") == d),
                 "state": "resolved" if any(e.get("domain") == d for e in live) else "absent"} for d in DOMAINS}
+
+
+def coherence(ledger, domain=None):
+    """The mechanized half of cross-domain coherence: compute the prior commitments + graph edges that should
+    inform framing a domain's 2×2 (or the whole picture), and surface `contradicts` edges to resolve. The
+    loop READS this before framing options; resolution stays the model's/designer's judgment (it informs,
+    it doesn't railroad). Returns {commitments, edges, contradictions}."""
+    live = live_entries(ledger)
+    by_id = {e.get("id"): e for e in live}
+    edges = ledger.get("graph", []) or []
+
+    def touches(ref):
+        if not domain or ref == domain:
+            return not domain or ref == domain
+        e = by_id.get(ref)
+        return bool(e and e.get("domain") == domain)
+
+    commitments = [{"domain": e.get("domain"), "id": e.get("id"), "move": e.get("move", {}).get("move", ""),
+                    "axes": e.get("axes", []), "chosen": e.get("chosen")}
+                   for e in live if not (domain and e.get("domain") == domain)]
+    rel_edges = [g for g in edges if (not domain) or touches(g.get("from")) or touches(g.get("to"))]
+    contradictions = [g for g in edges if g.get("relationship") == "contradicts"]
+    return {"commitments": commitments, "edges": rel_edges, "contradictions": contradictions}
 
 
 def _convention(out):
@@ -330,6 +359,17 @@ def selftest():
            "card rules malformed (domain/severity/evidence/truth)")
     expect(card["rules"][0]["id"] == "color-r1" and "signature accent" in card["rules"][0]["statement"],
            "card rule did not project from the ledger entry")
+    # coherence: prior commitments + edges relevant to a domain; contradictions surfaced; dangling refs caught
+    coh = coherence(good, "expression")
+    expect(any(c["domain"] == "color" for c in coh["commitments"]), "coherence missed the color commitment for expression")
+    expect(any(g["from"] == "color-r1" and g["to"] == "expression" for g in coh["edges"]), "coherence missed the constrains edge")
+    gc = json.loads(json.dumps(good))
+    gc["graph"].append({"from": "color-r1", "to": "voice", "relationship": "contradicts"})
+    expect(validate(gc) == [], f"a valid contradicts edge was rejected: {validate(gc)}")
+    expect(len(coherence(gc)["contradictions"]) == 1, "coherence did not surface the contradicts edge")
+    gd = json.loads(json.dumps(good))
+    gd["graph"].append({"from": "ghost-id", "to": "color", "relationship": "supports"})
+    expect(any("a domain or an existing entry id" in x for x in validate(gd)), "a dangling graph ref was not caught")
 
     if fails:
         sys.stderr.write("guidelines-ledger selftest: FAIL\n")
@@ -339,7 +379,8 @@ def selftest():
     print("guidelines-ledger selftest: OK (validate: a well-formed ledger + a legitimate supersession pass, "
           "bad domain/quadrant/axes/move/confidence/severity/contributors/supersedes/duplicate-id/graph-edge "
           "each caught; coverage + supersession honored; assemble dry-run + --apply write a provenance-carrying "
-          "domain doc and refuse a mixed corpus; card projects a brand-spec card for the brand-decomposer seam)")
+          "domain doc and refuse a mixed corpus; card projects a brand-spec card for the brand-decomposer seam; "
+          "coherence surfaces commitments + edges + contradictions, dangling graph refs caught)")
     return 0
 
 
@@ -425,6 +466,42 @@ def main(argv):
         else:
             print(text)
         return 0
+    if cmd == "coherence":
+        if len(argv) < 2:
+            sys.stderr.write("guidelines-ledger coherence <ledger.json> [--domain <d>] [--strict]\n")
+            return 2
+        try:
+            ledger = json.load(open(argv[1], encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            return 2
+        probs = validate(ledger)
+        if probs:
+            sys.stderr.write(f"guidelines-ledger coherence: ledger is invalid — run `validate` first ({len(probs)} problem(s))\n")
+            return 1
+        dom = (argv[argv.index("--domain") + 1] if "--domain" in argv and argv.index("--domain") + 1 < len(argv) else None)
+        if dom and dom not in DOMAINS:
+            sys.stderr.write(f"guidelines-ledger coherence: --domain must be one of {DOMAINS}\n")
+            return 2
+        coh = coherence(ledger, dom)
+        print(f"Coherence for `{dom}` — frame the 2×2 to cohere with:" if dom else "Coherence (the whole picture):")
+        print("  prior commitments:")
+        for c in coh["commitments"]:
+            print(f"    [{c['domain']}] {c['move']}  ({' × '.join(c['axes'])} · {c['chosen']})")
+        if not coh["commitments"]:
+            print("    (none yet)")
+        print("  edges:")
+        for g in coh["edges"]:
+            print(f"    {g['from']} --{g['relationship']}--> {g['to']}")
+        if not coh["edges"]:
+            print("    (none)")
+        if coh["contradictions"]:
+            print("  ⚠ contradictions (resolve, don't bake):")
+            for g in coh["contradictions"]:
+                print(f"    {g['from']} --contradicts--> {g['to']}")
+        n = len(coh["contradictions"])
+        print(f"RESULT: {len(coh['commitments'])} commitment(s), {len(coh['edges'])} edge(s), {n} contradiction(s)")
+        return 1 if ("--strict" in argv and n) else 0
     sys.stderr.write(f"guidelines-ledger: unknown command {cmd!r}\n")
     return 2
 
