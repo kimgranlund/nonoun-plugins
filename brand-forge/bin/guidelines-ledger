@@ -39,6 +39,8 @@ SEVERITIES = ("must", "should", "may")
 # domain → corpus layer the assembler writes it into (the design's domain↦layer map)
 LAYER_OF = {"mark": "03-identity", "voice": "05-voice", "color": "04-expression",
             "type": "04-expression", "expression": "04-expression", "governance": "07-guidelines"}
+DEFAULT_CORPUS = "brand-corpus"  # the catalog default corpus root (matches /brand-corpus-export, /brand-stack)
+DEFAULT_LEDGER = os.path.join(DEFAULT_CORPUS, "00-sources", "guidelines-elicitation.json")
 
 
 def _validate_entry(e, i, ids):
@@ -229,9 +231,19 @@ def _render_domain_doc(domain, entries, sources_ref):
     return "\n".join(out) + "\n"
 
 
-def assemble(ledger, out, ledger_path, flat=False, apply=False, log=print):
+def _is_elicited(path):
+    """True if `path` is a doc THIS assembler produced (safe to overwrite idempotently), not hand-authored."""
+    try:
+        return "Assembled by `/brand-elicit`" in open(path, encoding="utf-8", errors="replace").read(2000)
+    except OSError:
+        return False
+
+
+def assemble(ledger, out, ledger_path, flat=False, apply=False, force=False, log=print):
     """Compile the live choice-ledger into per-domain corpus docs (provenance-traced). Dry-run unless apply.
-    Returns the list of (path, rule_count), or None if the corpus is mixed."""
+    NON-DESTRUCTIVE: overwrites only a doc this assembler previously wrote (idempotent re-assembly) or under
+    `force`; a hand-authored doc at the canonical name is never clobbered — the elicited version is written to
+    a flagged `<name>.elicited.md` sibling instead. Returns [(path, rule_count)], or None if the corpus is mixed."""
     conv = _convention(out)
     if conv == "mixed":
         log(f"assemble: '{out}' is a MIXED corpus (both flat and folder layers) — reconcile with corpus-migrate first")
@@ -244,12 +256,18 @@ def assemble(ledger, out, ledger_path, flat=False, apply=False, log=print):
         es = [e for e in live_entries(ledger) if e.get("domain") == d]
         if not es:
             continue
-        path = _doc_path(out, d, flat_mode)
+        canon = _doc_path(out, d, flat_mode)
+        if force or not os.path.exists(canon) or _is_elicited(canon):
+            target, redirected = canon, False
+        else:  # a hand-authored doc holds the canonical name — don't clobber it
+            target, redirected = canon[:-3] + ".elicited.md", True
         if apply:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            open(path, "w", encoding="utf-8").write(_render_domain_doc(d, es, sources_ref))
-        log(f"  {'wrote' if apply else 'would write'} {os.path.relpath(path, out)} ({len(es)} rule(s))")
-        written.append((path, len(es)))
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            open(target, "w", encoding="utf-8").write(_render_domain_doc(d, es, sources_ref))
+        note = (f"  (canonical {os.path.relpath(canon, out)} is hand-authored — not overwriting; --force to replace)"
+                if redirected else "")
+        log(f"  {'wrote' if apply else 'would write'} {os.path.relpath(target, out)} ({len(es)} rule(s)){note}")
+        written.append((target, len(es)))
     log(f"assemble: {len(written)} domain doc(s) {'written to' if apply else 'planned for'} {out} "
         f"({'flat' if flat_mode else 'folder'} convention){'' if apply else ' — dry run; pass --apply to write'}")
     return written
@@ -345,6 +363,19 @@ def selftest():
         expect("contributors:" in txt and "sources: [00-sources/guidelines-elicitation.json]" in txt,
                "assembled doc missing provenance frontmatter")
         expect("(should)" in txt and "signature accent" in txt, "assembled doc missing the typed rule")
+        # non-destructive: re-assembling overwrites OUR own elicited doc (idempotent), no sibling spawned
+        assemble(good, d, lp, apply=True, log=lambda *_: None)
+        expect(not os.path.isfile(os.path.join(d, "04-expression", "color.elicited.md")),
+               "re-assembling our own elicited doc wrongly spawned an .elicited sibling")
+        # a HAND-AUTHORED canonical doc is never clobbered — the elicited version goes to a flagged sibling
+        open(doc, "w", encoding="utf-8").write("# Color\nhand-authored, do not clobber\n")
+        assemble(good, d, lp, apply=True, log=lambda *_: None)
+        expect("hand-authored" in open(doc).read(), "assemble clobbered a hand-authored doc")
+        expect(os.path.isfile(os.path.join(d, "04-expression", "color.elicited.md")),
+               "assemble did not write the .elicited sibling beside a hand-authored doc")
+        # --force overwrites the hand-authored canonical
+        assemble(good, d, lp, apply=True, force=True, log=lambda *_: None)
+        expect("Assembled by" in open(doc).read(), "assemble --force did not overwrite the canonical doc")
         open(os.path.join(d, "01-foundation--x.md"), "w").write("x")  # now flat + folder both present
         expect(assemble(good, d, lp, apply=False, log=lambda *_: None) is None, "a mixed corpus was not refused")
     finally:
@@ -389,6 +420,11 @@ def main(argv):
         sys.stderr.write(__doc__ or "")
         return 0
     cmd = argv[0]
+
+    def _ledger():
+        """The ledger path: the first positional, or the default `./brand-corpus/00-sources/…` ('no folder given')."""
+        return argv[1] if len(argv) > 1 and not argv[1].startswith("-") else DEFAULT_LEDGER
+
     if cmd == "selftest":
         return selftest()
     if cmd == "template":
@@ -399,13 +435,11 @@ def main(argv):
                           "relationships": RELATIONSHIPS, "move_required": MOVE_REQUIRED}, indent=2))
         return 0
     if cmd == "validate":
-        if len(argv) < 2:
-            sys.stderr.write("guidelines-ledger validate <ledger.json>\n")
-            return 2
+        path = _ledger()
         try:
-            ledger = json.load(open(argv[1], encoding="utf-8"))
+            ledger = json.load(open(path, encoding="utf-8"))
         except (OSError, ValueError) as e:
-            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            sys.stderr.write(f"guidelines-ledger: cannot read {path}: {e}\n")
             return 2
         probs = validate(ledger)
         for x in probs:
@@ -414,10 +448,7 @@ def main(argv):
               f"{len(ledger.get('entries', []))} entr(y/ies))")
         return 1 if probs else 0
     if cmd in ("coverage", "assemble"):
-        if len(argv) < 2:
-            sys.stderr.write(f"guidelines-ledger {cmd} <ledger.json> [--out <corpus-dir>] [--flat] [--apply]\n")
-            return 2
-        path = argv[1]
+        path = _ledger()
         try:
             ledger = json.load(open(path, encoding="utf-8"))
         except (OSError, ValueError) as e:
@@ -436,20 +467,15 @@ def main(argv):
             print(f"RESULT: {len(resolved)}/{len(DOMAINS)} domains resolved; "
                   f"frontier: {', '.join(frontier) or '(none — all covered)'}")
             return 0
-        out = (argv[argv.index("--out") + 1] if "--out" in argv and argv.index("--out") + 1 < len(argv) else None)
-        if not out:
-            sys.stderr.write("guidelines-ledger assemble <ledger.json> --out <corpus-dir> [--flat] [--apply]\n")
-            return 2
-        res = assemble(ledger, out, path, flat="--flat" in argv, apply="--apply" in argv)
+        out = (argv[argv.index("--out") + 1] if "--out" in argv and argv.index("--out") + 1 < len(argv) else DEFAULT_CORPUS)
+        res = assemble(ledger, out, path, flat="--flat" in argv, apply="--apply" in argv, force="--force" in argv)
         return 1 if res is None else 0
     if cmd == "card":
-        if len(argv) < 2:
-            sys.stderr.write("guidelines-ledger card <ledger.json> [--idea \"...\"] [-o <out.json>]\n")
-            return 2
+        path = _ledger()
         try:
-            ledger = json.load(open(argv[1], encoding="utf-8"))
+            ledger = json.load(open(path, encoding="utf-8"))
         except (OSError, ValueError) as e:
-            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            sys.stderr.write(f"guidelines-ledger: cannot read {path}: {e}\n")
             return 2
         probs = validate(ledger)
         if probs:
@@ -467,13 +493,11 @@ def main(argv):
             print(text)
         return 0
     if cmd == "coherence":
-        if len(argv) < 2:
-            sys.stderr.write("guidelines-ledger coherence <ledger.json> [--domain <d>] [--strict]\n")
-            return 2
+        path = _ledger()
         try:
-            ledger = json.load(open(argv[1], encoding="utf-8"))
+            ledger = json.load(open(path, encoding="utf-8"))
         except (OSError, ValueError) as e:
-            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            sys.stderr.write(f"guidelines-ledger: cannot read {path}: {e}\n")
             return 2
         probs = validate(ledger)
         if probs:

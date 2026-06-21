@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.36] — 2026-06-20
+
+### Changed
+
+- **Default corpus root `./brand-corpus` + a non-destructive assembler.** Two fixes so the guidelines loop behaves sanely when no folder is given, and never destroys hand-authored work:
+  - **Default `./brand-corpus`** — `guidelines-ledger` now defaults the ledger to `./brand-corpus/00-sources/guidelines-elicitation.json` and `assemble --out` to `./brand-corpus` (the same default `/brand-corpus-export` + `/brand-stack` use). `validate`/`coverage`/`coherence`/`assemble`/`card` all run with no path argument; "no folder given" lands in the one corpus everything else reads, and `/brand-corpus-export`'s `build-sitemap.py` surfaces the assembled layer docs automatically (the ledger is linked via each doc's `sources:` provenance, not as a sitemap page).
+  - **Non-destructive `assemble`** — it overwrites only a doc this assembler previously wrote (idempotent re-assembly) or under `--force`; a **hand-authored** layer doc at the canonical name is **never clobbered** — the elicited version is written to a flagged `<name>.elicited.md` sibling to reconcile by hand. (The guided output authors the existing layers 03–07; we deliberately did **not** add `09-brand-design`/`10-brand-guidelines` layers — that would duplicate 03–07 and break load-order, since design/guidelines are upstream of `08-evaluation`. Non-destructive assembly is what protects co-existing hand-authored + elicited work.)
+- Selftest covers the defaults + the three non-destructive paths (idempotent re-assembly, hand-authored sibling, `--force` overwrite); docs (`/brand-elicit`, `the-loop.md`, the `brand-guidelines` SKILL) updated. plugin.json 0.4.35 → 0.4.36.
+
 ## [0.4.35] — 2026-06-20
 
 ### Added
