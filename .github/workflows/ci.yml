@@ -98,6 +98,9 @@ jobs:
           python3 brand-forge/bin/guidelines-ledger assemble "$L" --out "$D" --apply
           python3 brand-forge/bin/corpus-provenance "$D"
 
+      - name: brand-forge — guidelines walkthrough (end-to-end on a realistic brand)
+        run: python3 brand-forge/evals/guidelines-walkthrough/replay.py
+
       - name: brand-forge — concept-consistency gate (no retired seat-vocabulary)
         run: |
           python3 brand-forge/bin/check-concepts.py selftest

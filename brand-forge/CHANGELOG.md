@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.35] — 2026-06-20
+
+### Added
+
+- **The guidelines walkthrough — a worked example + an end-to-end behavioral proof** (`evals/guidelines-walkthrough/`). A recorded, realistic brand ("Meridian", an independent bookbinder — *"the pleasure of permanence in a disposable age"*) whose `meridian.ledger.json` is what a real `/brand-elicit` session produces: one chosen design-move per domain across all six, **a supersession** (a first loud-jewel-tone color pass replaced by the restrained ink-on-cream + one gold "tell"), and a `constrains` coherence edge. `replay.py` drives the deterministic machinery with **no model agent** — validate → **6/6 coverage** (proving supersession is honored) → coherence → assemble (the superseded loud color **dropped**, the restrained choice **kept**) → **`corpus-provenance` clean** → a projected brand-spec card — and asserts each step. It is both the worked example a reader learns from and the CI-replayable proof the loop closes (the catalog's behavioral-evidence discipline, cf. harness-forge's first-slice-walkthrough); wired into CI.
+- This is the system's capstone: the full `/brand-elicit` → ledger → assemble → provenance → evaluate → grade arc is now demonstrated end-to-end on a realistic brand, gated on every push. plugin.json 0.4.34 → 0.4.35.
+
 ## [0.4.34] — 2026-06-20
 
 ### Added
