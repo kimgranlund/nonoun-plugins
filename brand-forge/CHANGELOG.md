@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.32] — 2026-06-20
+
+### Added
+
+- **The brand-decomposer card-projection seam (increment 3) — the make→grade handoff.** `bin/guidelines-ledger card <ledger> [--idea "..."] [-o card.json]` projects the live choice-ledger into a `*.brand.json` card matching `design-skills:brand-decomposer`'s documented shape: each chosen design-move becomes a typed `rule` (`truth: proposed` — the designer chose it; `evidence` points back at the ledger entry, so it's traced), the brand idea from `--idea` (the foundation), with `domains` rolled to the six. brand-forge MAKES; brand-decomposer GRADES — **parallel, not a dependency** (different marketplace, self-contained): the projection is best-effort to brand-decomposer's documented shape, not a hard contract.
+- **Verified end-to-end (locally — CI can't reach a sibling marketplace):** a projected card **clears brand-decomposer's operability gate** via its real `brand-spec-check.py lint` (well-formed · traced · accessible · complete), with one honest `surfaces[]` incompleteness warn (the elicitation captures directional rules, not surface enumeration — accurate, not a defect). The bin's selftest covers the projection shape (brand/idea, the six domains, each rule's domain/severity/evidence/`proposed`-truth, projection from the ledger entry).
+- Docs (`brand-guidelines` SKILL + `the-loop.md` + `/brand-elicit`) updated — the seam is built. This completes the core make→assemble→provenance→evaluate→grade arc; the remaining increments (the cross-domain coherence graph, exemplar enrichment) are refinements. plugin.json 0.4.31 → 0.4.32.
+
 ## [0.4.31] — 2026-06-20
 
 ### Added

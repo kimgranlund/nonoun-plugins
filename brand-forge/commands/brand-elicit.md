@@ -14,4 +14,6 @@ Domain to work (or resume the frontier if empty): **$ARGUMENTS**
 
 5. **Coverage + assembly.** Check progress with **`bin/guidelines-ledger coverage <ledger>`** (per-domain frontier). When domains are covered, **`bin/guidelines-ledger assemble <ledger> --out <corpus> [--apply]`** compiles the live ledger into corpus docs (dry-run first; matches the corpus's flat/folder convention; refuses a mixed corpus) — each rule typed `must/should/may`, `sources:`/`contributors:`-stamped, so `corpus-provenance` gates the trace and `/brand-score` (`brand-evaluate`) scores it.
 
-The brand-decomposer card-projection seam is the next increment. A card you can only write by *asserting* rather than tracing it to `01-foundation` has surfaced an undone foundation: say so, and fix the foundation (`/brand-build`) first.
+6. **Grade it (optional seam).** `bin/guidelines-ledger card <ledger> --idea "<from 01-foundation>" -o card.json` projects a `*.brand.json` card that `design-skills:brand-decomposer` GRADES + operability-checks (`brand-spec-check.py lint card.json`) when installed — the make→grade handoff.
+
+A card you can only write by *asserting* rather than tracing it to `01-foundation` has surfaced an undone foundation: say so, and fix the foundation (`/brand-build`) first.
