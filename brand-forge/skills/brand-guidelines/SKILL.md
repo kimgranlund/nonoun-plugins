@@ -43,7 +43,7 @@ Each pick appends a typed entry to a **choice-ledger** (the cumulative knowledge
 
 ## Assembly + scoring (the loop closes)
 
-When the domains are covered, the **assembler** (a later increment) compiles the ledger into corpus docs — each rule typed `must/should/may`, written as a causal mechanism, carrying **`sources:`** (the choices + exemplars) and **`contributors:`** (you + the system) frontmatter — so `corpus-provenance` gates the trace and **`brand-evaluate` scores** the result against the brand-guidelines bar. The build loop closes into the evaluate loop.
+Check progress with **`bin/guidelines-ledger coverage <ledger>`** (per-domain resolved/absent + the frontier). When the domains are covered, **`bin/guidelines-ledger assemble <ledger> --out <corpus> [--apply]`** compiles the live ledger into corpus docs (dry-run by default; it matches the corpus's flat/folder convention and refuses a mixed corpus) — each choice rendered as a typed rule (`must/should/may`), carrying **`sources:`** (the ledger it traces to) and **`contributors:`** (you + the system) frontmatter — so **`corpus-provenance` gates the trace** and **`brand-evaluate` scores** the result. The build loop closes into the provenance + evaluate loops. *(The brand-decomposer card-projection seam is the next increment.)*
 
 ## Relationship to brand-decomposer (parallel, not a dependency)
 

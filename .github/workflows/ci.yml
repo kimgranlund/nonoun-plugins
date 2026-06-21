@@ -89,6 +89,15 @@ jobs:
           python3 brand-forge/bin/corpus-provenance selftest
           python3 brand-forge/bin/guidelines-ledger selftest
 
+      - name: brand-forge — guidelines loop closes (template → assemble → corpus-provenance clean)
+        run: |
+          D="$(mktemp -d)"; mkdir -p "$D/00-sources"; L="$D/00-sources/guidelines-elicitation.json"
+          python3 brand-forge/bin/guidelines-ledger template > "$L"
+          python3 -c "import json,sys;p=sys.argv[1];d=json.load(open(p));d.update(brand='CI',created='2026-06-20');[c.update(date='2026-06-20') for c in d['entries'][0]['contributors']];json.dump(d,open(p,'w'))" "$L"
+          python3 brand-forge/bin/guidelines-ledger validate "$L"
+          python3 brand-forge/bin/guidelines-ledger assemble "$L" --out "$D" --apply
+          python3 brand-forge/bin/corpus-provenance "$D"
+
       - name: brand-forge — concept-consistency gate (no retired seat-vocabulary)
         run: |
           python3 brand-forge/bin/check-concepts.py selftest

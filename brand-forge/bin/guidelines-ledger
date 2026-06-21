@@ -19,6 +19,8 @@ Usage:
 Stdlib only; Python 3.8+.
 """
 import json
+import os
+import re
 import sys
 
 DOMAINS = ("mark", "voice", "color", "type", "expression", "governance")
@@ -29,6 +31,10 @@ QUADRANTS = ("A", "B", "C", "D")
 RELATIONSHIPS = ("supports", "expresses", "constrains", "contradicts", "exemplifies", "prohibits",
                  "specializes", "inherits_from", "applies_to_surface", "derived_from")
 MOVE_REQUIRED = ("move", "rationale", "expected_effect")
+SEVERITIES = ("must", "should", "may")
+# domain → corpus layer the assembler writes it into (the design's domain↦layer map)
+LAYER_OF = {"mark": "03-identity", "voice": "05-voice", "color": "04-expression",
+            "type": "04-expression", "expression": "04-expression", "governance": "07-guidelines"}
 
 
 def _validate_entry(e, i, ids):
@@ -64,6 +70,9 @@ def _validate_entry(e, i, ids):
         conf = move.get("confidence")
         if conf is not None and not (isinstance(conf, (int, float)) and 0.0 <= conf <= 1.0):
             bad(f"`move.confidence` must be in [0,1], got {conf!r}")
+        sev = move.get("severity")
+        if sev is not None and sev not in SEVERITIES:
+            bad(f"`move.severity` must be one of {SEVERITIES} if present, got {sev!r}")
         ev = move.get("exemplar_evidence", [])
         if ev and not (isinstance(ev, list) and all(isinstance(x, dict) and x.get("brand") for x in ev)):
             bad("`move.exemplar_evidence[]` entries each need at least a `brand`")
@@ -119,6 +128,7 @@ def _template():
                 "move": "A signature accent on a near-neutral base — one hot color used sparingly as the brand's 'tell'",
                 "rationale": "Lets the foundation's 'quiet confidence' read while still owning one ownable color",
                 "expected_effect": "Recognition at a glance without shouting; contrast headroom for accessibility",
+                "severity": "should",
                 "exemplar_evidence": [{"brand": "Stripe", "what": "accent on white", "why_cited": "restrained-expressive at scale"}],
                 "confidence": 0.8},
             "contributors": [{"who": "designer", "role": "chooser", "date": "<YYYY-MM-DD>"},
@@ -126,6 +136,91 @@ def _template():
             "supersedes": None}],
         "graph": [{"from": "color-r1", "to": "expression", "relationship": "constrains"}],
     }
+
+
+def live_entries(ledger):
+    """Entries not superseded — a revision replaces the entry its `supersedes` names; only live choices assemble."""
+    entries = [e for e in ledger.get("entries", []) if isinstance(e, dict)]
+    superseded = {e.get("supersedes") for e in entries if e.get("supersedes")}
+    return [e for e in entries if e.get("id") not in superseded]
+
+
+def coverage(ledger):
+    """Per-domain coverage over the six domains: live-choice count + state (resolved ≥1 / absent)."""
+    live = live_entries(ledger)
+    return {d: {"choices": sum(1 for e in live if e.get("domain") == d),
+                "state": "resolved" if any(e.get("domain") == d for e in live) else "absent"} for d in DOMAINS}
+
+
+def _convention(out):
+    """Detect the corpus convention at `out` so assembly never creates a mixed corpus (the never-mix rule)."""
+    flat = folder = False
+    if os.path.isdir(out):
+        for name in os.listdir(out):
+            if re.match(r"^\d\d-[a-z][a-z0-9-]*--.+\.md$", name):
+                flat = True
+            elif re.match(r"^\d\d-[a-z][a-z0-9-]*$", name) and os.path.isdir(os.path.join(out, name)):
+                folder = True
+    return "mixed" if (flat and folder) else "flat" if flat else "folder" if folder else "empty"
+
+
+def _doc_path(out, domain, flat):
+    layer = LAYER_OF[domain]
+    return os.path.join(out, f"{layer}--{domain}.md") if flat else os.path.join(out, layer, f"{domain}.md")
+
+
+def _render_domain_doc(domain, entries, sources_ref):
+    """Deterministic ledger → corpus doc: provenance frontmatter + each live choice as a typed rule."""
+    seen, contribs = set(), []
+    for e in entries:
+        for c in e.get("contributors", []):
+            k = (c.get("who"), c.get("role"))
+            if k not in seen:
+                seen.add(k)
+                contribs.append(c)
+    out = ["---", "contributors:"]
+    for c in contribs:
+        out.append(f'  - {{who: "{c.get("who")}", role: {c.get("role")}, date: {c.get("date")}}}')
+    out += [f"sources: [{sources_ref}]", "---", "",
+            f"# {domain.capitalize()}", "",
+            f"> Assembled by `/brand-elicit` from {len(entries)} choice(s); each rule traces to a ledger entry.", ""]
+    for e in entries:
+        m = e.get("move", {})
+        out.append(f"## {m.get('move', '(move)')}  ({m.get('severity', 'should')})")
+        out.append(f"**Why:** {m.get('rationale', '')}  **Effect:** {m.get('expected_effect', '')}")
+        for ev in m.get("exemplar_evidence", []) or []:
+            out.append(f"Like: {ev.get('brand', '')} — {ev.get('what', '')} ({ev.get('why_cited', '')}).")
+        if e.get("comment"):
+            out.append(f"_Designer note:_ {e['comment']}")
+        out.append(f"_[{' × '.join(e.get('axes', []))} · chose {e.get('chosen')} · round {e.get('round')} · ledger:{e.get('id')}]_")
+        out.append("")
+    return "\n".join(out) + "\n"
+
+
+def assemble(ledger, out, ledger_path, flat=False, apply=False, log=print):
+    """Compile the live choice-ledger into per-domain corpus docs (provenance-traced). Dry-run unless apply.
+    Returns the list of (path, rule_count), or None if the corpus is mixed."""
+    conv = _convention(out)
+    if conv == "mixed":
+        log(f"assemble: '{out}' is a MIXED corpus (both flat and folder layers) — reconcile with corpus-migrate first")
+        return None
+    flat_mode = flat or conv == "flat"
+    rel = os.path.relpath(ledger_path, out)  # so corpus-provenance can resolve `sources:` back to the ledger
+    sources_ref = rel if not rel.startswith("..") else f"00-sources/{os.path.basename(ledger_path)}"
+    written = []
+    for d in DOMAINS:
+        es = [e for e in live_entries(ledger) if e.get("domain") == d]
+        if not es:
+            continue
+        path = _doc_path(out, d, flat_mode)
+        if apply:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            open(path, "w", encoding="utf-8").write(_render_domain_doc(d, es, sources_ref))
+        log(f"  {'wrote' if apply else 'would write'} {os.path.relpath(path, out)} ({len(es)} rule(s))")
+        written.append((path, len(es)))
+    log(f"assemble: {len(written)} domain doc(s) {'written to' if apply else 'planned for'} {out} "
+        f"({'flat' if flat_mode else 'folder'} convention){'' if apply else ' — dry run; pass --apply to write'}")
+    return written
 
 
 def selftest():
@@ -164,14 +259,40 @@ def selftest():
     g2 = json.loads(json.dumps(good))
     g2["entries"].append(rev)
     expect(validate(g2) == [], f"a legitimate supersession failed: {validate(g2)}")
+    expect(coverage(good)["color"]["state"] == "resolved" and coverage(good)["voice"]["state"] == "absent",
+           "coverage mis-reported the live domains")
+    # supersession is honored by live_entries: the revision wins, count stays 1 for color
+    expect(len(live_entries(g2)) == 1 and live_entries(g2)[0]["id"] == "color-r2", "supersession not honored in live_entries")
+    # assemble: dry-run plans one domain doc; --apply writes a provenance-carrying corpus doc; mixed is refused
+    import shutil
+    import tempfile
+    d = tempfile.mkdtemp(prefix="guidelines-assemble-selftest-")
+    try:
+        lp = os.path.join(d, "00-sources", "guidelines-elicitation.json")
+        os.makedirs(os.path.dirname(lp))
+        json.dump(good, open(lp, "w"))
+        plan = assemble(good, d, lp, apply=False, log=lambda *_: None)
+        expect(plan is not None and len(plan) == 1 and plan[0][1] == 1, "assemble dry-run did not plan exactly the color doc")
+        assemble(good, d, lp, apply=True, log=lambda *_: None)
+        doc = os.path.join(d, "04-expression", "color.md")
+        txt = open(doc).read() if os.path.isfile(doc) else ""
+        expect("contributors:" in txt and "sources: [00-sources/guidelines-elicitation.json]" in txt,
+               "assembled doc missing provenance frontmatter")
+        expect("(should)" in txt and "signature accent" in txt, "assembled doc missing the typed rule")
+        open(os.path.join(d, "01-foundation--x.md"), "w").write("x")  # now flat + folder both present
+        expect(assemble(good, d, lp, apply=False, log=lambda *_: None) is None, "a mixed corpus was not refused")
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
 
     if fails:
         sys.stderr.write("guidelines-ledger selftest: FAIL\n")
         for m in fails:
             sys.stderr.write(f"  - {m}\n")
         return 1
-    print("guidelines-ledger selftest: OK (a well-formed ledger + a legitimate supersession pass; bad domain/"
-          "quadrant/axes/move/confidence/contributors/supersedes/duplicate-id/graph-edge are each caught)")
+    print("guidelines-ledger selftest: OK (validate: a well-formed ledger + a legitimate supersession pass, "
+          "bad domain/quadrant/axes/move/confidence/severity/contributors/supersedes/duplicate-id/graph-edge "
+          "each caught; coverage + supersession honored; assemble dry-run + --apply write a provenance-carrying "
+          "domain doc and refuse a mixed corpus)")
     return 0
 
 
@@ -204,6 +325,35 @@ def main(argv):
         print(f"RESULT: {'PASS' if not probs else 'FAIL'} ({len(probs)} problem(s), "
               f"{len(ledger.get('entries', []))} entr(y/ies))")
         return 1 if probs else 0
+    if cmd in ("coverage", "assemble"):
+        if len(argv) < 2:
+            sys.stderr.write(f"guidelines-ledger {cmd} <ledger.json> [--out <corpus-dir>] [--flat] [--apply]\n")
+            return 2
+        path = argv[1]
+        try:
+            ledger = json.load(open(path, encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            sys.stderr.write(f"guidelines-ledger: cannot read {path}: {e}\n")
+            return 2
+        probs = validate(ledger)
+        if probs:
+            sys.stderr.write(f"guidelines-ledger {cmd}: ledger is invalid — run `validate` first ({len(probs)} problem(s))\n")
+            return 1
+        if cmd == "coverage":
+            cov = coverage(ledger)
+            for dom in DOMAINS:
+                print(f"  {dom:12} {cov[dom]['state']:9} ({cov[dom]['choices']} choice(s))")
+            resolved = [dom for dom in DOMAINS if cov[dom]["state"] == "resolved"]
+            frontier = [dom for dom in DOMAINS if cov[dom]["state"] == "absent"]
+            print(f"RESULT: {len(resolved)}/{len(DOMAINS)} domains resolved; "
+                  f"frontier: {', '.join(frontier) or '(none — all covered)'}")
+            return 0
+        out = (argv[argv.index("--out") + 1] if "--out" in argv and argv.index("--out") + 1 < len(argv) else None)
+        if not out:
+            sys.stderr.write("guidelines-ledger assemble <ledger.json> --out <corpus-dir> [--flat] [--apply]\n")
+            return 2
+        res = assemble(ledger, out, path, flat="--flat" in argv, apply="--apply" in argv)
+        return 1 if res is None else 0
     sys.stderr.write(f"guidelines-ledger: unknown command {cmd!r}\n")
     return 2
 
