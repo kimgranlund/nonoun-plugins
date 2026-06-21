@@ -24,7 +24,7 @@ This file is the table of contents; the full mechanism is in [`references/the-lo
 The loop walks **six domains** — `mark · voice · color · type · expression · governance` — with the **brand idea** (from `01-foundation`) sitting above them as what every option must trace to. For each domain:
 
 1. **Frame** — read `01-foundation` + the accumulated choice-ledger (run **`bin/guidelines-ledger coherence --domain <d>`** to surface prior commitments + any contradictions); pick the domain's **two axes** (a default pair, below; the model may swap with a stated reason; you may override) → a 2×2.
-2. **Generate** — four **design-move cards** (A/B/C/D), one per quadrant, each a concrete move grounded in the foundation + a cited exemplar + the quality bar. Never generic, never "on-brand" — each names a causal mechanism.
+2. **Generate** — four **design-move cards** (A/B/C/D), one per quadrant, each a concrete move grounded in the foundation + a cited exemplar (per-domain/axis seeds in [`references/exemplars.md`](references/exemplars.md) — cite the mechanism, never the asset) + the quality bar. Never generic, never "on-brand" — each names a causal mechanism.
 3. **Present** — the 2×2 as a Markdown grid + the four lettered cards; ask for **A/B/C/D + free-text comments/corrections**.
 4. **Capture** — append a typed **choice** to the ledger (the chosen move, amended by your comment, with contributors + exemplar evidence). A comment like *"B but warmer"* records the amended move **and** re-renders a refined card for confirmation.
 5. **Drill or advance** — if the domain's capture spec has unresolved sub-decisions, spawn a **finer 2×2** within the chosen quadrant; else advance. Earlier choices **constrain** later domains (coherence).

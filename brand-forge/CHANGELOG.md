@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.34] — 2026-06-20
+
+### Added
+
+- **Exemplar enrichment (increment 5) — option-generation seeds, by domain and axis.** `skills/brand-guidelines/references/exemplars.md`: per-domain exemplars keyed to where they sit on the 2×2 axes, so a generated card reads *"like X — which does Y"* rather than a generic option. **Mechanism-level + citation-only by design** — cite what a brand does and why it works, never reproduce its assets; link-only for anything deeper; an exemplar proves a move is *possible*, it's not a license to copy (the move must still trace to `01-foundation`). Explicitly **non-duplicative of brand-decomposer** (points at its curated catalog for the deep reference set; this is the maker-side seed list, not a grading bar). Linked from the `brand-guidelines` SKILL + `the-loop.md`.
+- **This completes the brand-guidelines system** (the 5-increment plan in `docs/designs/brand-guidelines-system.md`): the 2×2 elicitation loop (`/brand-elicit`) → the validated choice-ledger → coverage + the deterministic assembler (→ corpus docs, `corpus-provenance`-gated, `brand-evaluate`-scored) → the brand-decomposer card-projection seam → cross-domain coherence → exemplar seeds. plugin.json 0.4.33 → 0.4.34.
+
 ## [0.4.33] — 2026-06-20
 
 ### Added
