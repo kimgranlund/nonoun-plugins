@@ -5,17 +5,20 @@ The `/brand-elicit` loop walks the six brand domains; for each it crosses two of
 axes into a 2×2, the designer picks a quadrant (A/B/C/D) + comments, and the chosen "design move" is
 appended to a **choice-ledger** — the cumulative state the assembler later compiles into corpus docs. This
 gate keeps that ledger well-formed by construction (the score-record / assess-record discipline): a malformed
-choice is rejected at write time, not discovered at assembly. *(Increment 1 — validate + template + selftest;
-coverage + the assembler + the brand-decomposer card-projection seam are later increments.)*
+choice is rejected at write time, not discovered at assembly. It also computes coverage, **assembles** the
+ledger into corpus docs, and **projects a brand-spec card** for the optional brand-decomposer grading seam.
 
 The six domains + seven axes MIRROR `design-skills:brand-decomposer` (a parallel skill, NOT a dependency —
-brand-forge MAKES, brand-decomposer GRADES); they are restated here as stable vocabulary, not imported.
+brand-forge MAKES, brand-decomposer GRADES); they are restated here as stable vocabulary, not imported. The
+`card` projection targets brand-decomposer's documented `*.brand.json` shape so it can be GRADED there
+(`brand-spec-check.py lint <card>`) when installed — best-effort to that shape, not a hard contract.
 
 Usage:
-  guidelines-ledger validate <ledger.json>   # exit 1 on any malformed entry
-  guidelines-ledger template                 # print a starter ledger with one worked entry
-  guidelines-ledger schema                    # print the entry shape + the enums
-  guidelines-ledger selftest
+  guidelines-ledger validate <ledger.json>                                       # exit 1 on any malformed entry
+  guidelines-ledger coverage <ledger.json>                                       # per-domain resolved/absent + frontier
+  guidelines-ledger assemble <ledger.json> --out <corpus> [--flat] [--apply]     # ledger → corpus docs (dry-run default)
+  guidelines-ledger card <ledger.json> [--idea "..."] [-o <out.json>]            # project a brand-spec card (brand-decomposer seam)
+  guidelines-ledger template | schema | selftest
 Stdlib only; Python 3.8+.
 """
 import json
@@ -223,6 +226,40 @@ def assemble(ledger, out, ledger_path, flat=False, apply=False, log=print):
     return written
 
 
+def project_card(ledger, idea=None):
+    """Project the live ledger into a brand-spec card matching `design-skills:brand-decomposer`'s documented
+    `*.brand.json` shape — for the optional grading seam. Each chosen design-move becomes a typed `rule`
+    (truth `proposed`: the designer chose it; evidence points back at the ledger entry, so it's traced). The
+    brand idea comes from `--idea` (the foundation); concrete tokens/contrast are left empty — the elicitation
+    captures directional rules, not hex values, and brand-decomposer will honestly flag that incompleteness."""
+    rules = []
+    for e in live_entries(ledger):
+        m = e.get("move", {})
+        conf = m.get("confidence", 0.8)
+        rules.append({
+            "id": e.get("id"),
+            "domain": e.get("domain"),
+            "statement": m.get("move", ""),
+            "severity": m.get("severity", "should"),
+            "evidence": [{"deck_id": "guidelines-elicitation", "slide_id": e.get("id"), "confidence": conf}],
+            "confidence": conf,
+            "truth": "proposed",
+        })
+    return {
+        "brand": ledger.get("brand", "<brand>"),
+        "strategy": {
+            "brand_idea": idea or "<from 01-foundation — pass --idea to embed the brand idea for axis-A grading>",
+            "meaning_chain": ["idea", "voice", "mark", "color", "type", "expression", "apps"],
+        },
+        "domains": {d: {} for d in DOMAINS},
+        "tokens": [],
+        "rules": rules,
+        "examples": [],
+        "surfaces": [],
+        "color_pairs": [],
+    }
+
+
 def selftest():
     fails = []
 
@@ -283,6 +320,16 @@ def selftest():
         expect(assemble(good, d, lp, apply=False, log=lambda *_: None) is None, "a mixed corpus was not refused")
     finally:
         shutil.rmtree(d, ignore_errors=True)
+    # card projection: a brand-spec card for the optional brand-decomposer grading seam
+    card = project_card(good, idea="Quiet confidence, made ownable.")
+    expect(card["brand"] == "Acme" and card["strategy"]["brand_idea"] == "Quiet confidence, made ownable.",
+           "card projection lost brand/idea")
+    expect(set(card["domains"]) == set(DOMAINS), "card domains != the six")
+    expect(bool(card["rules"]) and all(r["domain"] in DOMAINS and r["severity"] in SEVERITIES and r["evidence"]
+                                       and r["truth"] == "proposed" for r in card["rules"]),
+           "card rules malformed (domain/severity/evidence/truth)")
+    expect(card["rules"][0]["id"] == "color-r1" and "signature accent" in card["rules"][0]["statement"],
+           "card rule did not project from the ledger entry")
 
     if fails:
         sys.stderr.write("guidelines-ledger selftest: FAIL\n")
@@ -292,7 +339,7 @@ def selftest():
     print("guidelines-ledger selftest: OK (validate: a well-formed ledger + a legitimate supersession pass, "
           "bad domain/quadrant/axes/move/confidence/severity/contributors/supersedes/duplicate-id/graph-edge "
           "each caught; coverage + supersession honored; assemble dry-run + --apply write a provenance-carrying "
-          "domain doc and refuse a mixed corpus)")
+          "domain doc and refuse a mixed corpus; card projects a brand-spec card for the brand-decomposer seam)")
     return 0
 
 
@@ -354,6 +401,30 @@ def main(argv):
             return 2
         res = assemble(ledger, out, path, flat="--flat" in argv, apply="--apply" in argv)
         return 1 if res is None else 0
+    if cmd == "card":
+        if len(argv) < 2:
+            sys.stderr.write("guidelines-ledger card <ledger.json> [--idea \"...\"] [-o <out.json>]\n")
+            return 2
+        try:
+            ledger = json.load(open(argv[1], encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            sys.stderr.write(f"guidelines-ledger: cannot read {argv[1]}: {e}\n")
+            return 2
+        probs = validate(ledger)
+        if probs:
+            sys.stderr.write(f"guidelines-ledger card: ledger is invalid — run `validate` first ({len(probs)} problem(s))\n")
+            return 1
+        idea = (argv[argv.index("--idea") + 1] if "--idea" in argv and argv.index("--idea") + 1 < len(argv) else None)
+        card = project_card(ledger, idea)
+        text = json.dumps(card, indent=2)
+        out = (argv[argv.index("-o") + 1] if "-o" in argv and argv.index("-o") + 1 < len(argv) else None)
+        if out:
+            open(out, "w", encoding="utf-8").write(text + "\n")
+            sys.stderr.write(f"guidelines-ledger card → {out} ({len(card['rules'])} rule(s)). Grade it in "
+                             f"design-skills:brand-decomposer:  python3 bin/brand-spec-check.py lint {out}\n")
+        else:
+            print(text)
+        return 0
     sys.stderr.write(f"guidelines-ledger: unknown command {cmd!r}\n")
     return 2
 
