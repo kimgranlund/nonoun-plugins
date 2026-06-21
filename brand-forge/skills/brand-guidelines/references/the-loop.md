@@ -27,7 +27,7 @@ For a domain, cross **two of the seven axes** into a 2×2:
 | expression | quiet↔loud × premium-restraint↔campaign-loudness | the energy + restraint of the whole expression grammar |
 | governance | systematic↔organic × product-led↔human-led | how much process; centralized vs. delegated authorship |
 
-Each quadrant becomes one **design-move card**, generated grounded in (a) the brand idea + prior choices, (b) a **cited exemplar** (name the brand + the mechanism, never copy its assets), and (c) the quality bar for that domain. **No generic options** — every card names a causal mechanism; never "modern/bold/clean," never "on-brand."
+Each quadrant becomes one **design-move card**, generated grounded in (a) the brand idea + prior choices, (b) a **cited exemplar** (name the brand + the mechanism, never copy its assets — per-domain/axis seeds + the citation discipline in [`exemplars.md`](exemplars.md)), and (c) the quality bar for that domain. **No generic options** — every card names a causal mechanism; never "modern/bold/clean," never "on-brand."
 
 ### The design-move card (what a quadrant renders as)
 
