@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.33] — 2026-06-20
+
+### Added
+
+- **Cross-domain coherence (increment 4) — the loop now reads the graph.** `bin/guidelines-ledger` gains **`coherence <ledger> [--domain <d>] [--strict]`**: the mechanized half of cross-domain coherence — given a domain being framed, it computes the **prior commitments** the new domain's 2×2 should cohere with (the live choices in already-decided domains), the **graph edges** touching it, and any **`contradicts`** edges to resolve. `/brand-elicit` calls it before framing each domain so options honor earlier choices and a contradiction is surfaced (the computation is code; the resolution stays judgment — coherence informs, it doesn't railroad). `--strict` exits non-zero on any unresolved contradiction (gateable).
+- **Stronger ledger validation:** a graph edge's `from`/`to` must now be a real domain or an existing entry id (a dangling coherence ref is caught at `validate`, not discovered later). The `move` `severity` enum (added 0.4.31) and the graph edges round out the typed schema.
+- Selftest extended (coherence surfaces commitments/edges/contradictions; a dangling graph ref is rejected); docs (`brand-guidelines` SKILL + `the-loop.md` + `/brand-elicit`) updated to call `coherence` in the framing step. No new command/skill (bin mode). plugin.json 0.4.32 → 0.4.33.
+
 ## [0.4.32] — 2026-06-20
 
 ### Added
