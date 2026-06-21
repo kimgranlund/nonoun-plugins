@@ -1,6 +1,6 @@
 # Design: the brand-guidelines elicitation system (brand-forge)
 
-**Status:** DRAFT for review — no implementation yet. **Owner:** Kim. **Date:** 2026-06-20.
+**Status:** ✅ IMPLEMENTED — brand-forge 0.4.30–0.4.35 (the 5-increment plan + a capstone walkthrough), built, gated, and demonstrated end-to-end. **Owner:** Kim. **Date:** 2026-06-20.
 
 A guided, choice-driven way to **build a high-quality brand-guidelines section in the corpus**, component by component: the system presents a **2×2 matrix of options** for each component of a brand design system, the designer picks (**A/B/C/D + comments/corrections**), and the choices **accumulate** into a coherent, provenance-traced, attributed guidelines corpus that `brand-evaluate` then scores against an explicit "high-quality" bar.
 
@@ -154,29 +154,30 @@ A coverage check reports, per component, `resolved / partial / absent` against i
 
 ---
 
-## 6. Build increments (after this design is approved)
+## 6. Build increments — ✅ ALL SHIPPED (brand-forge 0.4.30–0.4.35)
 
-*Revised after the brand-decomposer reconciliation (§1a): the rubric/ontology/schema/operability-checker are **not** rebuilt — brand-forge aligns to brand-decomposer's and builds only the net-new maker loop + corpus integration.*
+*Revised after the brand-decomposer reconciliation (§1a): the rubric/ontology/schema/operability-checker were **not** rebuilt — brand-forge aligns to brand-decomposer's and built only the net-new maker loop + corpus integration.*
 
-1. **The loop + ledger (the net-new core)** — `/brand-guidelines` command + the `brand-guidelines` skill (loop methodology, walking brand-decomposer's six domains + 7 axes) + `schemas/choice-ledger.schema.json` + validator; one domain end-to-end (2 axes → 4 cards → pick + comment → ledger entry → drill-down).
-2. **The assembler + coverage** — ledger → corpus docs (each rule typed `must/should/may`, with `sources:`/`contributors:`); the coverage check (against the six-domain capture specs); close into `corpus-provenance` + brand-forge's existing `brand-evaluate`.
-3. **The brand-decomposer seam** — the assembler additionally projects a `*.brand.json` card (brand-decomposer's schema shape) so the elicited guidelines can be GRADED + operability-checked by brand-decomposer when installed; brand-forge stays self-contained (the seam is optional, documented, not a dependency).
-4. **Coherence graph** — cross-domain constraint + contradiction-flagging during elicitation.
-5. **Exemplar enrichment** — per-domain "what good looks like," rights-respecting (link-only); may reuse brand-decomposer's exemplar lineage by *citation*, not by copying its files.
+1. ✅ **The loop + ledger** (0.4.30) — `/brand-elicit` command + the `brand-guidelines` skill (six domains + 7 axes) + `bin/guidelines-ledger` validator (the schema lives in the bin, well-formed by construction). *(Command is `/brand-elicit`, not `/brand-guidelines` — a command and skill can't share a slug; skills are domains, commands are verbs.)*
+2. ✅ **The assembler + coverage** (0.4.31) — `guidelines-ledger coverage` + `assemble` (ledger → corpus docs, typed `must/should/may` rules, `sources:`/`contributors:`); closes into `corpus-provenance` + `brand-evaluate`.
+3. ✅ **The brand-decomposer seam** (0.4.32) — `guidelines-ledger card` projects a `*.brand.json` card; verified to clear brand-decomposer's real operability gate.
+4. ✅ **Coherence graph** (0.4.33) — `guidelines-ledger coherence` reads the graph (prior commitments + edges + contradictions) before framing each domain; edge refs validated.
+5. ✅ **Exemplar enrichment** (0.4.34) — `references/exemplars.md`, mechanism-level + citation-only, non-duplicative of brand-decomposer.
+- ✅ **Capstone** (0.4.35) — `evals/guidelines-walkthrough/` — a worked example (the "Meridian" brand) + a CI-replayable end-to-end proof the loop closes.
 
-Each increment ships with its selftest/gate and a CHANGELOG/version bump, per the catalog discipline. *Note: no `rubric-brand-guidelines.md` lift, no `component-ontology.md`/`exploration-axes.md` duplication — those live in brand-decomposer; brand-forge references the same vocabulary.*
+Each increment shipped with its selftest/gate + a CHANGELOG/version bump. No rubric/ontology/schema duplication — those live in brand-decomposer; brand-forge references the same vocabulary.
 
 ---
 
-## 7. Open decisions (resolve before / during build)
+## 7. Open decisions — RESOLVED through the build
 
-1. **Axis selection** — deterministic default pair per component (recommended), full model choice, or designer-driven? (Trade-off: predictability/resumability vs. flexibility.)
-2. **2×2 in a text medium** — the matrix + cards render as a Markdown table + lettered cards; the pick is `A/B/C/D + comment`. Confirm this is the intended surface (vs. a future richer UI). Is multi-select / "blend B and C" allowed, or strictly one quadrant + comments?
-3. **Choice-ledger location** — `00-sources/` (it is evidence), a dedicated `_elicitation/` working dir, or `.agents/`-style state? Must be `sources:`-citable by the assembled docs.
-4. **Drill-down depth** — bounded by the capture spec, or open-ended until the designer says "enough"? A cap keeps rounds finite.
-5. **Comments that reshape a move** — when the designer picks B "but warmer," does the system (a) record the amended move verbatim, (b) re-generate a refined card for confirmation, or (c) both? Affects how faithfully the ledger reflects intent.
-6. **Exemplar rights** — the 17-brand catalog is link-only/reference-only; how much exemplar *description* can ship in `exemplars.md` vs. live as pointers? (Likely: our own prose describing the *mechanism*, citing the brand, not reproducing their assets.)
-7. **Relationship to existing seats** — does option-generation reuse the **Muse** (aspiration) / **methodology** seats, or is there a new `brand-elicitor` agent? (Lean: methodology drives the loop; the Muse can seed the "expressive/loud" end of an axis.)
+1. **Axis selection** → **deterministic default pair per domain** (`the-loop.md`); the model may swap with a stated reason, the designer may override.
+2. **2×2 surface / blending** → **one quadrant + free-text comments**, rendered as a Markdown 2×2 + lettered cards; a "blend" is captured as an amended single choice (re-rendered for confirmation). A first-class multi-quadrant blend pick is left open (not needed so far).
+3. **Choice-ledger location** → **`00-sources/guidelines-elicitation.json`** (it is evidence; assembled docs `sources:`-cite it and `corpus-provenance` resolves the trace).
+4. **Drill-down depth** → **bounded by the domain's capture spec** (finite rounds).
+5. **Comments that reshape a move** → **(c) both** — record the amended move and re-render a refined card for confirmation.
+6. **Exemplar rights** → **mechanism-level + citation-only** (our prose describing what a brand does + why; never reproduce assets; link-only deeper; the deep catalog stays in brand-decomposer).
+7. **Generation seat** → **methodology drives the loop; the Muse seeds the expressive/loud end**; no new agent (the command routes to the `brand-guidelines` skill).
 
 ---
 
@@ -189,4 +190,4 @@ Each increment ships with its selftest/gate and a CHANGELOG/version bump, per th
 
 ---
 
-*Review notes / decisions go inline or in `08`-style append below. Once the shape is approved, increment 1 begins.*
+*Built, gated, and demonstrated end-to-end (0.4.30–0.4.35). The remaining work is not code: **exercise `/brand-elicit` on a real brand** (interactive — the taste judgment the system deliberately leaves to the designer), and an optional cross-repo follow-up — a reciprocal one-line seam note in brand-decomposer's `policy.md` (nonoun-skills) that brand-forge's elicitation emits the card it grades.*
