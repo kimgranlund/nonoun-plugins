@@ -312,6 +312,8 @@ def follow_up_title(plain):
     if len(plain) <= 70:
         return plain
     m = re.search(r'[.!?] ', plain)
+    if m and m.start() == 0:
+        return follow_up_title(plain[m.end():])
     if m and m.start() <= 70:
         return plain[:m.start()]
     cut = plain.rfind(' ', 0, 68)
@@ -357,7 +359,8 @@ def cmd_close(root, slug, force=False):
     # plan everything first, so a refusal in the middle writes nothing
     planned, after = [], list(ts)
     for item in items:
-        plain = ' '.join(re.sub(r'[`*_\[\]()]', '', item).split())
+        no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', item)
+        plain = ' '.join(re.sub(r'[`*\[\]()]', '', no_emphasis).split())
         title = follow_up_title(plain)
         base = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
         s, n = base, 2
@@ -538,9 +541,11 @@ def selftest():
                      'tested on its own')
         short_first_sentence_item = ('Optional id and status columns in board.py. T-0001 listed this as '
                                       'optional, and the plan left it out of scope.')
+        underscore_item = '`follow_up_title` in tickets.py returns a mangled title with underscores stripped'
         good = filer('filer-L1.md', 'None', f'- Quote the `--root` flag in the docs\n'
                      f'- {long_item[:60]}\n  {long_item[60:]}\n'
-                     f'- {short_first_sentence_item}')
+                     f'- {short_first_sentence_item}\n'
+                     f'- {underscore_item}')
 
         def with_body_status(root):
             with (root / 'alpha' / 'handoff.md').open('a', encoding='utf-8') as f:
@@ -552,8 +557,8 @@ def selftest():
         rc, out, err = run(root, 'close', ('alpha',))
         made = fresh(root, {'alpha', 'beta'})
         expect(f'(a) close: rc={rc} out={out!r} err={err!r}',
-               rc == 0 and out.startswith('T-0001 done; 3 follow-up ticket(s): '))
-        expect(f'(a) three idea/proposed tickets from T-0001, got {made}', len(made) == 3 and all(
+               rc == 0 and out.startswith('T-0001 done; 4 follow-up ticket(s): '))
+        expect(f'(a) four idea/proposed tickets from T-0001, got {made}', len(made) == 4 and all(
             m.get('type') == 'idea' and m.get('status') == 'proposed' and m.get('from') == 'T-0001'
             for m in made.values()))
         titles = sorted(m.get('title', '') for m in made.values())
@@ -561,6 +566,11 @@ def selftest():
                all(len(t) <= 70 and '`' not in t for t in titles) and 'Quote the --root flag in the docs' in titles)
         expect(f'(a) short-first-sentence bullet title is the sentence without its final period: {titles}',
                'Optional id and status columns in board.py' in titles)
+        expect(f'(a) underscore inside a word survives cleanup (not mangled to followuptitle): {titles}',
+               any('follow_up_title' in t for t in titles) and not any('followuptitle' in t for t in titles))
+        empty_first_sentence_title = follow_up_title('. ' + 'x' * 80)
+        expect(f'(a) empty first sentence falls through to whole-word cut: {empty_first_sentence_title!r}',
+               bool(empty_first_sentence_title) and not empty_first_sentence_title.startswith('.'))
         long_title = next((t for t in titles if t.endswith('...')), None)
         expect(f'(a) long_item title ends with ...: {titles}', long_title is not None)
         prefix = long_title[:-3]
@@ -577,7 +587,7 @@ def selftest():
                == before_h.replace(b'status: proposed', b'status: done', 1)
                and b'status: this body line is not front matter' in before_h)
         rc, out, err = run(root, 'check')
-        expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 5 tickets' in out)
+        expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 6 tickets' in out)
 
         # (b) Warnings open, no --force: refuses and writes nothing
         warned = filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch')
