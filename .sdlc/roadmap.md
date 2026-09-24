@@ -28,3 +28,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0021 | [decide-whether-board-should-default](decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | ⏳ proposed |
 | T-0022 | [tickets-py-roadmap-skips-the](tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | ⏳ proposed |
 | T-0023 | [in-numbered-mode-tickets-py](in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | ⏳ proposed |
+| T-0024 | [numbered-mode-not-persisted](numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | ⏳ proposed |
