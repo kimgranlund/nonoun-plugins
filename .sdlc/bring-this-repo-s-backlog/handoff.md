@@ -1,6 +1,6 @@
 ---
 id: T-0011
-title: "Bring this repo's backlog under /ticket. It lives in flat files .sd..."
+title: "Bring this repo's backlog under /ticket"
 type: idea            # feature | bug | chore | spike | idea
 status: dropped      # resolved in the T-0001..T-0006 merge review
 size: M              # S | M | L | XL

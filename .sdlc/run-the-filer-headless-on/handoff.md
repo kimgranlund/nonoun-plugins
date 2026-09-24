@@ -1,6 +1,6 @@
 ---
 id: T-0007
-title: "Run the filer headless on a real task to confirm it emits bullet-on..."
+title: "Run the filer headless on a real task to confirm it emits..."
 type: idea            # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL

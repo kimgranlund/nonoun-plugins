@@ -1,6 +1,6 @@
 ---
 id: T-0009
-title: "Optional id and status columns in scripts/board.py. T-0001 listed t..."
+title: "Optional id and status columns in scripts/board.py"
 type: idea            # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
