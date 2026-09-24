@@ -45,7 +45,7 @@ A set of SDLC agents: declared Claude Code subagents, each launched by a `/comma
 
 Systems: shared runner, handoff format, level rubrics, `/handoff`, `/chain` (escalation), `/bench` + `scripts/bench-summary.sh`: built. Escalation is enforced by `/chain` instructions, not by code.
 
-Open: rerun the baseline with the fixed task specs; watch Planner L3 (Fable xhigh) cost, which dominated the two large tasks.
+Backlog: `.sdlc/tickets/T-*.md` (ticket front matter per T-0001). Open: rerun the baseline with the fixed task specs; watch Planner L3 (Fable xhigh) cost, which dominated the two large tasks.
 
 Later (decide from benchmark data, not before): a Bash write guard for read-only roles; a Stop hook that checks result format; a shared rules skill; a `## Checks` section in handoffs listing project lint/typecheck/test commands.
 
