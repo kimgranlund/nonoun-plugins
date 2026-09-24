@@ -22,4 +22,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | ⏳ proposed |
 | T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | ⏳ proposed |
 | T-0017 | [board-order-by-id](board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | ⏳ proposed |
-| T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | ⏳ proposed |
+| T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | 🟢 done |
+| T-0019 | [move-the-board-cache-sdlc](move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | ⏳ proposed |
