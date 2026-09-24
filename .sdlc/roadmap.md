@@ -18,4 +18,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0011 | [bring-this-repo-s-backlog](bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | M | P2 | none | ⚪ dropped |
 | T-0012 | [add-close-to-tickets-py](add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | M | P2 | none | ⚪ dropped |
 | T-0013 | [follow-up-titles-truncated](follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | 🟢 done |
-| T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | followuptitle in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | ⏳ proposed |
+| T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | ⏳ proposed |
+| T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | ⏳ proposed |

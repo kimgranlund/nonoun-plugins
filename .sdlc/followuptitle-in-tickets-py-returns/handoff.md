@@ -1,6 +1,6 @@
 ---
 id: T-0014
-title: "followuptitle in tickets.py returns an empty title when the bullet..."
+title: "follow_up_title in tickets.py returns an empty title when the bullet..."
 type: idea            # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
@@ -20,3 +20,5 @@ Follow-up from T-0013 (follow-up-titles-truncated/filer-L1.md):
 
 ## Constraints
 What must not change. "None" if none.
+
+Note (review 2026-09-24): the follow-up title cleanup also strips underscores from code names; this ticket's own title came out as "followuptitle" and was fixed by hand.
