@@ -2,10 +2,13 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] | roadmap | check | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] | close <slug> [--force] | roadmap | check | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap
+  close     after /file: read the task's newest filer-L*.md, refuse while its Warnings are open
+            (unless --force), file each Follow-ups bullet as a proposed idea ticket with
+            from: <id>, set the ticket done, then regenerate the roadmap
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem)
   check     validate every ticket; fail if roadmap.md is missing or stale
   selftest  build fixtures in a temp dir and prove every check failure fires
@@ -16,6 +19,7 @@ Build progress is not tracked here: /board derives it from each task's step arti
 import argparse
 import datetime
 import heapq
+import os
 import pathlib
 import re
 import shutil
@@ -221,17 +225,15 @@ def template(root, kind):
     raise Fail(f'no template for type {kind!r}; available types: {", ".join(template_types(root))}')
 
 
-def cmd_new(root, kind, slug, title=''):
+def stamp(root, ts, kind, slug, title='', origin=None, context=None):
+    """Text and meta of a new ticket, validated against ts (which must already be clean). Writes nothing.
+    origin adds `from: <id>` right after the created: line; context replaces the body of ## Context."""
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
     tpl = template(root, kind)
     d = root / slug
-    if d.exists():
+    if d.exists() or any(s == slug for s, _ in ts):
         raise Fail(f'{slug}: {d} already exists; nothing written')
-    ts = load(root)
-    errs = problems(ts)
-    if errs:
-        raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
     nums = [int(m['id'][2:]) for _, m in ts]
     text = tpl.read_text(encoding='utf-8')
     text = text.replace('id: T-0000', f'id: T-{max(nums, default=0) + 1:04d}', 1)
@@ -239,18 +241,129 @@ def cmd_new(root, kind, slug, title=''):
     if title:
         clean = ' '.join(title.replace('"', "'").split())
         text = text.replace('title: ""', f'title: "{clean}"', 1)
+    if origin:
+        text, n = re.subn(r'^(created:.*)$', lambda m: f'{m.group(1)}\nfrom: {origin}', text, count=1, flags=re.M)
+        if not n:
+            raise Fail(f'{tpl}: template has no created: line to put from: after; nothing written')
+    if context is not None:
+        m = re.search(r'^## Context[ \t]*\n(.*?)(?=^## |\Z)', text, re.S | re.M)
+        if not m:
+            raise Fail(f'{tpl}: template has no ## Context section; nothing written')
+        gap = '\n\n' if m.end(1) < len(text) else '\n'
+        text = text[:m.start(1)] + context.strip('\n') + gap + text[m.end(1):]
     meta = parse(text)
     if meta is None:
         raise Fail(f'{tpl}: template has no front matter; nothing written')
-    after = ts + [(slug, meta)]
-    errs = problems(after)
+    errs = problems(ts + [(slug, meta)])
     if errs:
         raise Fail('\n'.join(errs + [f'{tpl}: template gives a bad ticket; nothing written']))
+    return text, meta
+
+
+def cmd_new(root, kind, slug, title='', origin=None, context=None):
+    if not SLUG_RE.fullmatch(slug):
+        raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
+    template(root, kind)
+    if (root / slug).exists():
+        raise Fail(f'{slug}: {root / slug} already exists; nothing written')
+    ts = load(root)
+    errs = problems(ts)
+    if errs:
+        raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
+    text, _ = stamp(root, ts, kind, slug, title, origin, context)
+    d = root / slug
     d.mkdir(parents=True)
     path = d / 'handoff.md'
     path.write_text(text, encoding='utf-8')
     write_roadmap(root, load(root))
     return str(path)
+
+
+def section(text, heading):
+    """Body of `## <heading>` up to the next `## ` heading or EOF, stripped; None if the heading is absent."""
+    text = text.replace('\r\n', '\n')
+    m = re.search(rf'^## {re.escape(heading)}[ \t]*(?:\n|\Z)(.*?)(?=^## |\Z)', text, re.S | re.M)
+    return m.group(1).strip() if m else None
+
+
+BULLET_RE = re.compile(r'(?:[-*]|\d+[.)])[ \t]+(.*)')
+
+
+def bullets(body):
+    """Top-level list items (marker at column 0). Every later non-blank line joins the current item,
+    so no text after the first bullet is dropped. Text before the first bullet is a lead-in."""
+    items = []
+    for line in body.splitlines():
+        m = BULLET_RE.fullmatch(line.rstrip())
+        if m:
+            items.append([m.group(1).strip()])
+        elif items and line.strip():
+            items[-1].append(line.strip())
+    return [' '.join(x for x in parts if x) for parts in items if any(parts)]
+
+
+def is_none(text):
+    return text.strip().rstrip('.').strip().lower() == 'none'
+
+
+def cmd_close(root, slug, force=False):
+    """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
+    with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing."""
+    if not SLUG_RE.fullmatch(slug):
+        raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
+    d = root / slug
+    h = d / 'handoff.md'
+    raw = h.read_bytes().decode('utf-8') if h.is_file() else None
+    meta = parse(raw) if raw is not None else None
+    if meta is None:
+        raise Fail(f'{h}: missing or has no front matter, so it is not a ticket; nothing written')
+    ts = load(root)
+    errs = problems(ts)
+    if errs:
+        raise Fail('\n'.join(errs + ['refusing to close: fix the problems above first']))
+    pid = meta['id']
+    if meta['status'] == 'done':
+        raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
+                   f'follow-ups; nothing written')
+    filers = sorted(d.glob('filer-L*.md'), key=lambda p: (p.stat().st_mtime, p.name))
+    if not filers:
+        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
+    filer = filers[-1]
+    text = filer.read_text(encoding='utf-8')
+    warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
+    if warnings is None or follow is None:
+        raise Fail(f'{filer}: missing a ## Warnings or ## Follow-ups section; nothing written')
+    if not is_none(warnings) and not force:
+        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --force to override):\n{warnings}')
+    items = [] if is_none(follow) else bullets(follow)
+    if not is_none(follow) and not items:
+        raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
+                   f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+
+    # plan everything first, so a refusal in the middle writes nothing
+    planned, after = [], list(ts)
+    for item in items:
+        plain = ' '.join(re.sub(r'[`*_\[\]()]', '', item).split())
+        title = plain if len(plain) <= 70 else plain[:67].rstrip() + '...'
+        base = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
+        s, n = base, 2
+        while (root / s).exists() or any(x == s for x, _ in after):
+            s, n = f'{base}-{n}', n + 1
+        ctx = f'Follow-up from {pid} ({slug}/{filer.name}):\n\n{item}'
+        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx)
+        planned.append((s, t))
+        after.append((s, m))
+    fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
+    head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
+    if not n:
+        raise Fail(f'{h}: no status: line in front matter; nothing written')
+
+    for s, t in planned:
+        (root / s).mkdir()
+        (root / s / 'handoff.md').write_text(t, encoding='utf-8')
+    h.write_bytes((head + raw[fm.end():]).encode('utf-8'))
+    write_roadmap(root, load(root))
+    return f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
 
 
 def cmd_roadmap(root):
@@ -277,6 +390,8 @@ def run(root, cmd, args=()):
     try:
         if cmd == 'new':
             return 0, cmd_new(root, *args), ''
+        if cmd == 'close':
+            return 0, cmd_close(root, *args), ''
         if cmd == 'roadmap':
             return 0, cmd_roadmap(root), ''
         if cmd == 'check':
@@ -381,6 +496,114 @@ def selftest():
         rc, _, err = run(case(mutations[0][1]), 'new', ('idea', 'delta'))
         expect('new refuses on a bad ticket', rc == 1 and "type='epic'" in err)
 
+        # ---- close: each case in its own copy of base; alpha (T-0001) is the ticket being closed ----
+        def filer(name, warnings, follow, mtime=None):
+            def put(root):
+                p = root / 'alpha' / name
+                p.write_text(f'## Warnings\n{warnings}\n\n## PR title\nx\n\n## Follow-ups\n{follow}\n', encoding='utf-8')
+                if mtime is not None:
+                    os.utime(p, (mtime, mtime))
+            return put
+
+        def both(*fs):
+            def put(root):
+                for f in fs:
+                    f(root)
+            return put
+
+        def snap(root):
+            return {p.relative_to(root): p.read_bytes() for p in sorted(root.rglob('*')) if p.is_file()}
+
+        def fresh(root, before):
+            return {s: m for s, m in load(root) if s not in before}
+
+        def status(root, slug='alpha'):
+            return dict(load(root)).get(slug, {}).get('status')
+
+        long_item = ('Split the runner into a preflight module and an exec module so the Fable swap can be '
+                     'tested on its own')
+        good = filer('filer-L1.md', 'None', f'- Quote the `--root` flag in the docs\n'
+                     f'- {long_item[:60]}\n  {long_item[60:]}')
+
+        def with_body_status(root):
+            with (root / 'alpha' / 'handoff.md').open('a', encoding='utf-8') as f:
+                f.write('\nstatus: this body line is not front matter\n')
+
+        # (a) Warnings None, two bullets (a backtick, and one over 70 chars wrapped onto a continuation line)
+        root = case(both(good, with_body_status))
+        before_h = (root / 'alpha' / 'handoff.md').read_bytes()
+        rc, out, err = run(root, 'close', ('alpha',))
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(a) close: rc={rc} out={out!r} err={err!r}',
+               rc == 0 and out.startswith('T-0001 done; 2 follow-up ticket(s): '))
+        expect(f'(a) two idea/proposed tickets from T-0001, got {made}', len(made) == 2 and all(
+            m.get('type') == 'idea' and m.get('status') == 'proposed' and m.get('from') == 'T-0001'
+            for m in made.values()))
+        titles = sorted(m.get('title', '') for m in made.values())
+        expect(f'(a) titles clean and <= 70 chars: {titles}',
+               all(len(t) <= 70 and '`' not in t for t in titles) and 'Quote the --root flag in the docs' in titles)
+        ctx = ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in made)
+        expect('(a) context names the source and keeps the joined continuation line',
+               'Follow-up from T-0001 (alpha/filer-L1.md):' in ctx and long_item in ctx)
+        expect('(a) parent done, rest byte-identical, body status line untouched',
+               (root / 'alpha' / 'handoff.md').read_bytes()
+               == before_h.replace(b'status: proposed', b'status: done', 1)
+               and b'status: this body line is not front matter' in before_h)
+        rc, out, err = run(root, 'check')
+        expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 4 tickets' in out)
+
+        # (b) Warnings open, no --force: refuses and writes nothing
+        warned = filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch')
+        root = case(warned)
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(b) open warnings refuse, name --force and the warning: rc={rc} {err!r}',
+               rc == 1 and '--force' in err and 'step-2 verifier fail' in err)
+        expect('(b) refusal wrote nothing (handoff, ticket count, roadmap)', snap(root) == before
+               and len(load(root)) == 2 and status(root) == 'proposed')
+
+        # (c) the same with --force closes
+        root = case(warned)
+        rc, out, err = run(root, 'close', ('alpha', True))
+        expect(f'(c) --force closes: rc={rc} {err!r}', rc == 0 and status(root) == 'done'
+               and len(fresh(root, {'alpha', 'beta'})) == 1)
+
+        # (d) Follow-ups None: no tickets, parent done
+        root = case(filer('filer-L1.md', 'None.', 'None'))
+        rc, out, err = run(root, 'close', ('alpha',))
+        expect(f'(d) follow-ups None: rc={rc} {out!r} {err!r}', rc == 0 and '0 follow-up' in out
+               and not fresh(root, {'alpha', 'beta'}) and status(root) == 'done' and run(root, 'check')[0] == 0)
+
+        # (e) no filer file: refuses, names /file
+        root = case(lambda r: None)
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(e) no filer file refuses: rc={rc} {err!r}', rc == 1 and '/file' in err and snap(root) == before)
+
+        # (f) prose follow-ups with no bullet: refuses, writes nothing
+        root = case(filer('filer-L1.md', 'None', 'We should add retry to fetch and document the flag.'))
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(f) prose follow-ups refuse: rc={rc} {err!r}', rc == 1 and snap(root) == before)
+
+        # (g) a second close on a done ticket: refuses, no duplicate tickets
+        root = case(good)
+        run(root, 'close', ('alpha',))
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha', True))
+        expect(f'(g) second close refuses: rc={rc} {err!r}', rc == 1 and 'already closed' in err and snap(root) == before)
+
+        # (h) the newest filer file wins by mtime, even when the older one sorts later by name
+        root = case(both(filer('filer-L2.md', 'step-1 verifier fail', 'None', mtime=1_000_000),
+                         filer('filer-L1.md', 'None', 'None', mtime=2_000_000)))
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(h) newest filer file (by mtime) is used: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+        # and on an mtime tie the later name wins
+        root = case(both(filer('filer-L1.md', 'step-1 verifier fail', 'None', mtime=1_000_000),
+                         filer('filer-L2.md', 'None', 'None', mtime=1_000_000)))
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(h) mtime tie breaks by name: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
@@ -402,6 +625,9 @@ def main(argv):
     p.add_argument('type')
     p.add_argument('slug')
     p.add_argument('title', nargs='?', default='')
+    p = sub.add_parser('close', help='after /file: file follow-ups as tickets, set the ticket done')
+    p.add_argument('slug')
+    p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     sub.add_parser('roadmap', help='regenerate roadmap.md')
     sub.add_parser('check', help='validate tickets and roadmap freshness')
     sub.add_parser('selftest', help='prove every check failure fires')
@@ -409,7 +635,7 @@ def main(argv):
     cmd = a.cmd or 'check'
     if cmd == 'selftest':
         return selftest()
-    args = (a.type, a.slug, a.title) if cmd == 'new' else ()
+    args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
     rc, out, err = run(pathlib.Path(a.root), cmd, args)
     if out:
         print(out)

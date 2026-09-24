@@ -42,7 +42,7 @@ from: T-NNNN   # optional, origin ticket id
 ---
 ```
 
-Front matter is purely additive: a handoff with no front matter keeps working unchanged, and neither `run.sh` nor `board.py` requires or parses it. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` is the only parser of front matter.
+Front matter is purely additive: a handoff with no front matter keeps working unchanged, and neither `run.sh` nor `board.py` requires or parses it. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` is the only parser of front matter. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates.
 
 `status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 
