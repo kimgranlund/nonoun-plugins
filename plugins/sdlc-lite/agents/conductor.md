@@ -19,6 +19,7 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 - Every role runs through `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`, in the foreground, with the Bash timeout at 600000 or more. Never end your turn while a role is running.
 - Levels follow the level-rubric skill. Escalation follows /chain: builder blocked → replan (never verify a blocked build); verifier fail → rebuild once with its notes, a second fail → up one level; L5 fail → stop and ask the user.
 - Publishing (commit, push, PR, issue) happens only after the user approves it through AskUserQuestion.
+- `hooks/block-publish.sh` exits 0 unless `SDLC_ROLE` is set, and only `scripts/run.sh` sets it. This is by design: the hook guards role runs only. Publishing from this session is gated only by the AskUserQuestion approval above.
 
 ## How you talk
 - Lead with what just happened or what the user must do, in one or two lines.
