@@ -2,7 +2,7 @@
 id: T-0005
 title: "Verifier L1 uses the same model family as builder L1"
 type: spike
-status: blocked      # waiting on the user's model decision
+status: done
 size: S
 priority: P3
 depends: []
@@ -24,3 +24,6 @@ Decide whether a Sonnet build should get a non-Sonnet verifier, or state in the 
 
 ## Constraints
 Model and effort choices are the user's.
+
+## Decision
+2026-09-24, user: swap. A verifier never runs on the build's model family; after a Sonnet build a Sonnet verifier becomes Opus medium (Fable builds already got Opus). Implemented in scripts/run.sh; stated in skills/level-rubric and CLAUDE.md.

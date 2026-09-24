@@ -45,12 +45,18 @@ dir="$(dirname "$handoff")"
 result="$dir/$role-$level.md"
 log="$dir/$role-$level.log"
 
-# Fable never verifies a Fable build: fall back to Opus at the same effort.
+# A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
+# Fable build -> Opus at the same effort; Sonnet build -> Opus medium.
 if [[ "$role" == verifier ]]; then
   built=$(ls -t "$dir"/builder-L*.md 2>/dev/null | head -1 || true)
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
-    [[ "$model" == fable && "$bmodel" == fable ]] && model=opus
+    if [[ "$model" == "$bmodel" ]]; then
+      case "$model" in
+        fable)  model=opus ;;
+        sonnet) model=opus; effort=medium ;;
+      esac
+    fi
   fi
 fi
 

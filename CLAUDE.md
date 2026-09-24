@@ -73,7 +73,7 @@ Later (decide from benchmark data, not before): a Bash write guard for read-only
   | Planner | Sonnet medium | Opus medium | Fable xhigh |
   | Verifier | Sonnet medium | Fable medium | Fable xhigh |
 
-  Verifier level follows build level: builder L1 or L2 → verifier L1, L3 → L2, L4 or L5 → L3. A replan forces Planner L3. `run.sh` swaps a Fable verifier to Opus (same effort) when the newest build ran on Fable, so Fable never verifies Fable.
+  Verifier level follows build level: builder L1 or L2 → verifier L1, L3 → L2, L4 or L5 → L3. A replan forces Planner L3. `run.sh` never lets a verifier run on the build's model family (user decision, T-0005): after a Fable build a Fable verifier becomes Opus at the same effort, and after a Sonnet build a Sonnet verifier becomes Opus medium.
 - **Fable** is Builder L5, Verifier L2 and L3, Planner L3, and Architect. All models and efforts were confirmed by the user on 2026-09-24. There is no L6: when L5 fails, escalate to the user.
 - **When `/build` gets no level**, the skill takes `level:` from the handoff if present. Otherwise it assesses the step against the rubric in `skills/level-rubric/SKILL.md` and picks the lowest fitting level. The same applies to every leveled role.
 - **Headless runs use `--dangerously-skip-permissions`.** Every `claude -p` call includes it, so builders can edit files and run tests without prompts. (`auto` denied writes headless; `acceptEdits` needs allow rules for shell commands.) Run builders only in a repo or worktree you are willing to let them change.

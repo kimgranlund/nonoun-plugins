@@ -26,7 +26,7 @@ Bump one level for each earlier `builder-*.md` in the step dir with Status block
 
 ## verifier (L1 to L3)
 
-Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `run.sh` swaps a Fable verifier to Opus (same effort) when the newest build ran on Fable, so Fable never verifies Fable.
+Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `run.sh` never lets a verifier run on the build's model family (user decision, T-0005): after a Fable build a Fable verifier becomes Opus at the same effort, and after a Sonnet build a Sonnet verifier becomes Opus medium.
 
 | Level | Model / effort | Fits when |
 |---|---|---|
