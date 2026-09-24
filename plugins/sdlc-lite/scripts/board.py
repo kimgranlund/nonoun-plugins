@@ -23,7 +23,7 @@ handoff.md) gets empty cells there. With no front matter anywhere the table stay
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
 A changed row ends with "· changed" (compared with <root>/.board-state.json).
 """
-import argparse, json, pathlib, re, subprocess, sys, tempfile
+import argparse, json, os, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 
@@ -200,6 +200,20 @@ def belongs_on_board(task: pathlib.Path) -> bool:
     return True
 
 
+def sort_tasks(tasks, mode='recent'):
+    """Order task dirs: 'recent' by mtime (the default), 'name' by folder name, 'id' by the
+    numeric part of the ticket id, with tasks lacking an id after, by folder name."""
+    if mode == 'name':
+        return sorted(tasks, key=lambda t: t.name)
+    if mode == 'id':
+        def key(t):
+            front = ticket_of(t)
+            m = re.search(r'T-(\d+)', front[0]) if front else None
+            return (0, int(m.group(1)), t.name) if m else (1, 0, t.name)
+        return sorted(tasks, key=key)
+    return sorted(tasks, key=lambda d: d.stat().st_mtime)
+
+
 def render(root: pathlib.Path, tasks, waiting=None) -> str:
     state_file = root / '.board-state.json'
     try:
@@ -355,6 +369,43 @@ def selftest() -> int:
         expect('main() output shows done-with-step', 'done-with-step' in out)
         expect('main() output shows proposed-no-steps', 'proposed-no-steps' in out)
 
+        # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
+        # name is alphabetical, and no flag equals --sort recent (mtime order).
+        def ticket_front(tid):
+            return front.replace('T-0042', tid)
+
+        def run_main(root, *extra):
+            proc = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()),
+                                   '--root', str(root), *extra], capture_output=True, text=True)
+            expect(f'main() {extra} exited 0, got {proc.returncode} stderr={proc.stderr!r}',
+                   proc.returncode == 0)
+            return proc.stdout
+
+        def order(out, names):
+            return sorted((n for n in names if f'| {n} |' in out), key=lambda n: out.index(f'| {n} |'))
+
+        srt = tmp / 'sort'
+        made = [task_dir(srt, 'zulu-three', ticket_front('T-0003')),
+                task_dir(srt, 'yankee-two', ticket_front('T-0002')),
+                task_dir(srt, 'bravo', '## Goal\nno front matter\n'),
+                task_dir(srt, 'alpha', '## Goal\nno front matter\n')]
+        for i, d in enumerate(made):
+            os.utime(d, (1_000_000 + i * 100, 1_000_000 + i * 100))
+        names = [d.name for d in made]
+        got = order(run_main(srt, '--sort', 'id'), names)
+        expect(f'--sort id puts T-0002 before T-0003, then unticketed by name, got {got}',
+               got == ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
+        got = order(run_main(srt, '--sort', 'name'), names)
+        expect(f'--sort name is alphabetical, got {got}', got == sorted(names))
+        default = run_main(srt)
+        got = order(default, names)
+        expect(f'no --sort is mtime order, got {got}', got == names)
+        # The state file adds ' · changed' markers between runs; compare with it removed.
+        (srt / '.board-state.json').unlink(missing_ok=True)
+        default = run_main(srt)
+        (srt / '.board-state.json').unlink(missing_ok=True)
+        expect('no --sort output equals --sort recent', default == run_main(srt, '--sort', 'recent'))
+
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -371,6 +422,7 @@ def main():
     ap.add_argument('--task')
     ap.add_argument('--waiting')
     ap.add_argument('--summary', action='store_true')
+    ap.add_argument('--sort', choices=['recent', 'id', 'name'], default='recent')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(selftest())
@@ -381,8 +433,8 @@ def main():
     if not root.is_dir():
         print(f'no task dirs: {root} does not exist', file=sys.stderr)
         sys.exit(1)
-    tasks = sorted((d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()),
-                   key=lambda d: d.stat().st_mtime)
+    candidates = [d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()]
+    tasks = sort_tasks(candidates, a.sort)
     tasks = [t for t in tasks if belongs_on_board(t)]
     if a.task:
         tasks = [t for t in tasks if t.name == a.task]
