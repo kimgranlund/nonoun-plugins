@@ -2,7 +2,7 @@
 id: T-0015
 title: "board lists dropped and unplanned done tickets"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P3
 depends: []          # ticket ids, e.g. [T-0002]

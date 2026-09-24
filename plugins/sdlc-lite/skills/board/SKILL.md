@@ -16,4 +16,5 @@ Rules:
 - Glyphs are states: 🟢 verifier pass, 🟡 running or awaiting verify, 🔴 blocked or failed, ⏳ queued.
 - % comes only from the script's ladder (0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass).
 - ID and Ticket columns appear only when at least one rendered task's `handoff.md` has ticket front matter; a task without front matter gets empty cells in those columns, and a task dir with no front matter anywhere still renders the plain 4-column table.
+- The board lists the live set only: a ticketed task is left off entirely when it is `dropped`, or `done` with no recorded step work (no planner file, step dir, or running marker); proposed, ready, and blocked tickets stay visible even without steps.
 - Decisions never go in the board; they go through AskUserQuestion.

@@ -23,7 +23,7 @@ handoff.md) gets empty cells there. With no front matter anywhere the table stay
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
 A changed row ends with "· changed" (compared with <root>/.board-state.json).
 """
-import argparse, json, pathlib, re, sys, tempfile
+import argparse, json, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 
@@ -178,6 +178,28 @@ def ticket_of(task: pathlib.Path):
     return tuple(v if isinstance(v, str) else '' for v in (meta.get('id'), meta.get('status')))
 
 
+def has_step_work(task: pathlib.Path) -> bool:
+    """True when the task has any recorded step work: a planner-L*.md, a step-*/handoff.md,
+    or a *.running file."""
+    return bool(list(task.glob('planner-L*.md')) or list(task.glob('step-*/handoff.md'))
+                or list(task.glob('*.running')))
+
+
+def belongs_on_board(task: pathlib.Path) -> bool:
+    """False only when the task has ticket front matter and is dropped, or done with no
+    recorded step work. Everything else (no front matter, other statuses, or done with
+    step work) stays visible."""
+    front = ticket_of(task)
+    if front is None:
+        return True
+    _, status = front
+    if status == 'dropped':
+        return False
+    if status == 'done' and not has_step_work(task):
+        return False
+    return True
+
+
 def render(root: pathlib.Path, tasks, waiting=None) -> str:
     state_file = root / '.board-state.json'
     try:
@@ -292,6 +314,47 @@ def selftest() -> int:
         got = summary(solo)
         expect(f'summary unchanged by front matter, got {got!r}', got == 'ticketed not planned')
 
+        # 5. Dropped/done filter: dropped is hidden regardless of steps; done is hidden only
+        # without step work; other statuses (e.g. proposed) stay visible without over-filtering.
+        gate = tmp / 'gate'
+
+        def front_with(status):
+            return ('---\nid: T-0099\ntitle: "Fixture"\ntype: chore\nstatus: %s\nsize: S\n'
+                    'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n') % status
+
+        dropped_no_steps = task_dir(gate, 'dropped-no-steps', front_with('dropped'))
+        dropped_with_plan = task_dir(gate, 'dropped-with-plan', front_with('dropped'))
+        (dropped_with_plan / 'planner-L1.md').write_text('## Plan\n')
+        done_no_steps = task_dir(gate, 'done-no-steps', front_with('done'))
+        done_with_plan = task_dir(gate, 'done-with-plan', front_with('done'))
+        (done_with_plan / 'planner-L1.md').write_text('## Plan\n')
+        done_with_step = task_dir(gate, 'done-with-step', front_with('done'))
+        (done_with_step / 'step-1').mkdir()
+        (done_with_step / 'step-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
+        proposed_no_steps = task_dir(gate, 'proposed-no-steps', front_with('proposed'))
+
+        expect('dropped ticket with no steps is hidden', not belongs_on_board(dropped_no_steps))
+        expect('dropped ticket with a planner file is still hidden',
+               not belongs_on_board(dropped_with_plan))
+        expect('done ticket with no steps is hidden', not belongs_on_board(done_no_steps))
+        expect('done ticket with a planner file is shown', belongs_on_board(done_with_plan))
+        expect('done ticket with a step handoff is shown', belongs_on_board(done_with_step))
+        expect('proposed ticket with no steps is still shown', belongs_on_board(proposed_no_steps))
+
+        # 5b. Same gate fixture through main()'s actual task selection (subprocess), not just
+        # belongs_on_board() in isolation: proves the filter is wired into main(), not just defined.
+        proc = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), '--root', str(gate)],
+                               capture_output=True, text=True)
+        out = proc.stdout
+        expect(f'main() subprocess exited 0, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        expect('main() output hides dropped-no-steps', 'dropped-no-steps' not in out)
+        expect('main() output hides dropped-with-plan', 'dropped-with-plan' not in out)
+        expect('main() output hides done-no-steps', 'done-no-steps' not in out)
+        expect('main() output shows done-with-plan', 'done-with-plan' in out)
+        expect('main() output shows done-with-step', 'done-with-step' in out)
+        expect('main() output shows proposed-no-steps', 'proposed-no-steps' in out)
+
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -320,6 +383,7 @@ def main():
         sys.exit(1)
     tasks = sorted((d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()),
                    key=lambda d: d.stat().st_mtime)
+    tasks = [t for t in tasks if belongs_on_board(t)]
     if a.task:
         tasks = [t for t in tasks if t.name == a.task]
         if not tasks:
