@@ -5,3 +5,4 @@
 .board-state.json
 *.running
 plugins/sdlc-lite/bench/logs/
+.sdlc/dogfood/

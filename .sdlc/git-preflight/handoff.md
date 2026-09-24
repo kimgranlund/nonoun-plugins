@@ -2,7 +2,7 @@
 id: T-0004
 title: "Git preflight before role runs"
 type: bug
-status: proposed
+status: done
 size: S
 priority: P1
 depends: []

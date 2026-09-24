@@ -303,7 +303,8 @@ def bullets(body):
 
 
 def is_none(text):
-    return text.strip().rstrip('.').strip().lower() == 'none'
+    # "None" or "None." optionally followed by an explanation ("None. All steps passed."), never "None of ..."
+    return re.match(r'none(\.(\s|$)|$)', text.strip(), re.I) is not None
 
 
 def cmd_close(root, slug, force=False):

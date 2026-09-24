@@ -2,7 +2,7 @@
 id: T-0005
 title: "Verifier L1 uses the same model family as builder L1"
 type: spike
-status: proposed
+status: blocked      # waiting on the user's model decision
 size: S
 priority: P3
 depends: []
