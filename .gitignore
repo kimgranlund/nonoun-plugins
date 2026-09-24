@@ -1,0 +1,7 @@
+.DS_Store
+.claude/settings.local.json
+# raw role transcripts (JSON); the <role>-<level>.md results and runs.jsonl are kept
+*.log
+.board-state.json
+*.running
+plugins/sdlc-lite/bench/logs/

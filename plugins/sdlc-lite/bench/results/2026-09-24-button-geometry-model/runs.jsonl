@@ -1,0 +1,3 @@
+{"ts":"2026-09-24T18:35:57Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","cost_usd":6.16473825,"duration_ms":494170,"turns":16}
+{"ts":"2026-09-24T18:55:00Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","cost_usd":4.086418,"duration_ms":482819,"turns":27}
+{"ts":"2026-09-24T19:08:33Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","cost_usd":3.7525037500000002,"duration_ms":356284,"turns":32}

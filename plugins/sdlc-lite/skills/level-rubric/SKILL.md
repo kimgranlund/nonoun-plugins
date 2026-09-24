@@ -1,0 +1,60 @@
+---
+name: level-rubric
+description: Level tables and routing rubrics for every sdlc-lite role (model and effort per level, and how to pick a level). Reference for the launcher skills; not a command.
+user-invocable: false
+---
+The model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`. This file says how to pick a level. Keep the two in sync.
+
+## How to resolve a level
+
+Use the first source that gives one:
+1. A level in the user's arguments.
+2. A `level: Lx` line in the handoff (set by the planner, per step).
+3. The role's rule below. Pick the **lowest** level whose row fits every signal, then state the level and a one-line reason before running.
+
+## builder (L1 to L5)
+
+| Level | Model / effort | Fits when |
+|---|---|---|
+| L1 | Sonnet low | Mechanical: rename, boilerplate, config, one file, spec fully given |
+| L2 | Opus low | Small change in a known pattern, 1 to 3 files, tests exist |
+| L3 | Opus high | New feature inside the existing architecture |
+| L4 | Opus xhigh | Crosses modules, unclear edges, concurrency or state |
+| L5 | Fable xhigh | Earlier attempt failed, root cause unknown, or high blast radius |
+
+Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. L5 failed means stop and ask the user. There is no L6.
+
+## verifier (L1 to L3)
+
+Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `run.sh` swaps a Fable verifier to Opus (same effort) when the newest build ran on Fable, so Fable never verifies Fable.
+
+| Level | Model / effort | Fits when |
+|---|---|---|
+| L1 | Sonnet medium | Criteria are commands to run |
+| L2 | Fable medium | Judgment on behavior and edge cases |
+| L3 | Fable xhigh | Subtle correctness: concurrency, security, data |
+
+## planner (L1 to L3)
+
+| Level | Model / effort | Fits when |
+|---|---|---|
+| L1 | Sonnet medium | 1 to 3 obvious steps |
+| L2 | Opus medium | A normal feature |
+| L3 | Fable xhigh | Cross-cutting or risky, or any replan (a builder reported blocked) |
+
+## researcher (L1 to L3)
+
+| Level | Model / effort | Fits when |
+|---|---|---|
+| L1 | Sonnet medium | One known source, a single fact |
+| L2 | Opus medium | Several sources, some conflicting |
+| L3 | Opus high | New territory, and the synthesis drives a decision |
+
+## Single-level roles
+
+| Role | Level | Model / effort |
+|---|---|---|
+| architect | L1 | Fable high |
+| scout | L1 | Haiku low |
+| archaeologist | L1 | Sonnet medium |
+| filer | L1 | Opus low |

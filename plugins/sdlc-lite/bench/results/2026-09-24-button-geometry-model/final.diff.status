@@ -1,0 +1,14 @@
+ M AGENTS.md
+ M apps/host/src/genui/render-entry.tsx
+ M apps/host/src/routes/index.tsx
+ M packages/gen-ui/generated/button.config.ts
+ M packages/gen-ui/generated/meta.json
+ M packages/gen-ui/generated/registry.hash
+ M packages/gen-ui/generated/registry.json
+MM packages/gen-ui/package.json
+ M packages/gen-ui/src/components/button/button.manifest.ts
+ M packages/gen-ui/src/components/button/button.tsx
+A  packages/gen-ui/src/components/geometry-scope/geometry-scope.tsx
+ M packages/gen-ui/src/panda/recipes.ts
+ M packages/gen-ui/src/recipes/button.recipe.ts
+?? packages/gen-ui/src/recipes/icon.recipe.ts
