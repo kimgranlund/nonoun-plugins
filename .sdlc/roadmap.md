@@ -11,10 +11,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0004 | [git-preflight](git-preflight/handoff.md) | Git preflight before role runs | bug | S | P1 | none | 🟢 done |
 | T-0005 | [verifier-l1-independence](verifier-l1-independence/handoff.md) | Verifier L1 uses the same model family as builder L1 | spike | S | P3 | none | 🟢 done |
 | T-0006 | [publish-gate-docs](publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | S | P3 | none | 🟢 done |
-| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits bullet-on... | idea | M | P2 | none | ⏳ proposed |
+| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | ⏳ proposed |
 | T-0008 | [check-this-repo-s-live](check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | M | P2 | none | ⚪ dropped |
-| T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py. T-0001 listed t... | idea | M | P2 | none | ⏳ proposed |
-| T-0010 | [t-0001-still-shows-status](t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed. The user may want to set it to... | idea | M | P2 | none | ⚪ dropped |
-| T-0011 | [bring-this-repo-s-backlog](bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket. It lives in flat files .sd... | idea | M | P2 | none | ⚪ dropped |
+| T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | 🟢 done |
+| T-0010 | [t-0001-still-shows-status](t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | M | P2 | none | ⚪ dropped |
+| T-0011 | [bring-this-repo-s-backlog](bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | M | P2 | none | ⚪ dropped |
 | T-0012 | [add-close-to-tickets-py](add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | M | P2 | none | ⚪ dropped |
-| T-0013 | [follow-up-titles-truncated](follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | ⏳ proposed |
+| T-0013 | [follow-up-titles-truncated](follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | 🟢 done |
+| T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | ⏳ proposed |
+| T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | ⏳ proposed |

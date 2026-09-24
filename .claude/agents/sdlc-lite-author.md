@@ -15,7 +15,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - Publishing is the user's call: the hook blocks it inside role runs, and outward actions (push, PR, issues) need approval unless the user already asked for them.
 
 ## After every change
-1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, shellcheck, plugin validate).
+1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, shellcheck, plugin validate).
 2. A new check or gate gets a negative control that is seen to fail (checks-that-bite).
 3. Behavior changes to a role get one live run, on a throwaway repo or worktree, before being called done.
 4. Commit with the attribution line, and push when the user has asked for pushes.

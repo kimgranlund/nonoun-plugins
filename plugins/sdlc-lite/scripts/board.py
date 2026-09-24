@@ -1,22 +1,31 @@
 #!/usr/bin/env python3
 """Render the sdlc status board from task dirs. Never compose the board by hand.
 
-Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE]
+Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [selftest]
   --root     dir holding task dirs (default: .sdlc in the cwd; bench/results works too)
   --task     only this task
   --waiting  one line saying what the session waits on, printed above the table
   --summary  one compact line for the status line (newest task only; writes no state):
              "<task> <pct>% (<passed>/<steps>)", plus "🔴<n>" for blocked/failed steps and
              "⚠ L5" when a step is on the last builder level. Prints nothing if no tasks.
+  selftest   render temp fixtures with and without ticket front matter; prove the column gate bites
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format).
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
 the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost).
 
+Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
+tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
+where ID is the ticket id and Ticket its status; a task without front matter (or with an unreadable
+handoff.md) gets empty cells there. With no front matter anywhere the table stays
+| Task | Step | Status | % |. --summary never shows ticket fields.
+
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
 A changed row ends with "· changed" (compared with <root>/.board-state.json).
 """
-import argparse, json, pathlib, re, sys
+import argparse, json, pathlib, re, sys, tempfile
+
+import tickets  # same scripts/ dir: the only front matter parser
 
 LADDER = {'queued': 0, 'building': 10, 'built': 50, 'verifying': 70, 'verified': 100}
 
@@ -157,13 +166,151 @@ def summary(root: pathlib.Path) -> str:
     return ' · '.join(parts)
 
 
+def ticket_of(task: pathlib.Path):
+    """(id, status) from the task's ticket front matter, or None when it has none.
+    Any read or parse error counts as no front matter: a bad file must not break the board."""
+    try:
+        meta = tickets.parse((task / 'handoff.md').read_text(encoding='utf-8'))
+    except Exception:
+        return None
+    if not isinstance(meta, dict):
+        return None
+    return tuple(v if isinstance(v, str) else '' for v in (meta.get('id'), meta.get('status')))
+
+
+def render(root: pathlib.Path, tasks, waiting=None) -> str:
+    state_file = root / '.board-state.json'
+    try:
+        old = json.loads(state_file.read_text())
+    except (OSError, json.JSONDecodeError):
+        old = {}
+    fronts = {t: ticket_of(t) for t in tasks}
+    with_ticket = any(f is not None for f in fronts.values())
+    new, out = {}, []
+    if waiting:
+        out.append(waiting)
+        out.append('')
+    if with_ticket:
+        out.append('| ID | Task | Ticket | Step | Status | % |')
+        out.append('|---|---|---|---|---|---|')
+    else:
+        out.append('| Task | Step | Status | % |')
+        out.append('|---|---|---|---|')
+    total_cost, pcts = 0.0, []
+    for t in tasks:
+        rows, steps = task_rows(t)
+        total_cost += cost(t)
+        tid, tstatus = fronts[t] or ('', '')
+        for task, step, glyph, status, pct in rows:
+            key = f'{task}/{step}'
+            cell = f'{glyph} {status}'
+            new[key] = cell
+            changed = ' · changed' if old and old.get(key) != cell else ''
+            if with_ticket:
+                out.append(f'| {tid} | {task} | {tstatus} | {step} | {cell}{changed} | {pct} |')
+            else:
+                out.append(f'| {task} | {step} | {cell}{changed} | {pct} |')
+            if step not in ('task', 'hidden check'):
+                pcts.append(pct)
+    if pcts:
+        out.append('')
+        out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
+    try:
+        state_file.write_text(json.dumps(new, indent=1))
+    except OSError:
+        pass
+    return '\n'.join(out)
+
+
+def selftest() -> int:
+    misses = []
+
+    def expect(label, cond):
+        if not cond:
+            misses.append(label)
+
+    front = ('---\nid: T-0042\ntitle: "Fixture"\ntype: chore\nstatus: ready\nsize: S\n'
+             'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n')
+
+    def task_dir(root, name, content):
+        d = root / name
+        d.mkdir(parents=True)
+        h = d / 'handoff.md'
+        h.write_bytes(content) if isinstance(content, bytes) else h.write_text(content, encoding='utf-8')
+        return d
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+
+        # 1. No task has front matter: today's 4-column table, byte for byte.
+        plain = tmp / 'plain'
+        t = task_dir(plain, 'plain-task', '## Goal\nno front matter\n')
+        got = render(plain, [t])
+        want = '| Task | Step | Status | % |\n|---|---|---|---|\n| plain-task | task | ⏳ not planned | 0 |'
+        expect(f'no front matter renders the 4-column table byte for byte, got {got!r}', got == want)
+
+        # 2. Front matter mixed with no front matter and an undecodable handoff.md.
+        mixed = tmp / 'mixed'
+        ts = [task_dir(mixed, 'ticketed', front),
+              task_dir(mixed, 'bare', '## Goal\nno front matter\n'),
+              task_dir(mixed, 'broken', b'---\nid: \xff\xfe\n---\n')]
+        try:
+            got = render(mixed, ts)
+        except Exception as e:
+            got = ''
+            expect(f'mixed render crashed: {e!r}', False)
+        lines = got.splitlines()
+        expect(f'mixed render has the 6-column header, got {lines[:1]}',
+               lines[:2] == ['| ID | Task | Ticket | Step | Status | % |', '|---|---|---|---|---|---|'])
+        expect('ticketed row shows its id and status',
+               '| T-0042 | ticketed | ready | task | ⏳ not planned | 0 |' in lines)
+        expect('bare row has empty ID and Ticket cells', '|  | bare |  | task | ⏳ not planned | 0 |' in lines)
+        expect('undecodable handoff.md row has empty ID and Ticket cells',
+               '|  | broken |  | task | ⏳ not planned | 0 |' in lines)
+
+        # 3. tickets.parse raising counts as no front matter and does not crash.
+        raising = tmp / 'raising'
+        t = task_dir(raising, 'raises', front)
+        real = tickets.parse
+
+        def boom(text):
+            raise ValueError('fixture parse failure')
+        tickets.parse = boom
+        try:
+            got = render(raising, [t])
+        except Exception as e:
+            got = ''
+            expect(f'render crashed when tickets.parse raised: {e!r}', False)
+        finally:
+            tickets.parse = real
+        expect(f'tickets.parse raising falls back to the 4-column table, got {got!r}',
+               got == '| Task | Step | Status | % |\n|---|---|---|---|\n| raises | task | ⏳ not planned | 0 |')
+
+        # 4. --summary ignores front matter.
+        solo = tmp / 'solo'
+        task_dir(solo, 'ticketed', front)
+        got = summary(solo)
+        expect(f'summary unchanged by front matter, got {got!r}', got == 'ticketed not planned')
+
+    if misses:
+        print('board selftest: FAIL, these did not hold:', file=sys.stderr)
+        for m in misses:
+            print(f'  - {m}', file=sys.stderr)
+        return 1
+    print('board selftest: PASS')
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument('cmd', nargs='?', choices=['selftest'])
     ap.add_argument('--root', default='.sdlc')
     ap.add_argument('--task')
     ap.add_argument('--waiting')
     ap.add_argument('--summary', action='store_true')
     a = ap.parse_args()
+    if a.cmd == 'selftest':
+        sys.exit(selftest())
     root = pathlib.Path(a.root)
     if a.summary:
         print(summary(root))
@@ -178,38 +325,7 @@ def main():
         if not tasks:
             print(f'no task named {a.task} in {root}', file=sys.stderr)
             sys.exit(1)
-
-    state_file = root / '.board-state.json'
-    try:
-        old = json.loads(state_file.read_text())
-    except (OSError, json.JSONDecodeError):
-        old = {}
-    new, out = {}, []
-    if a.waiting:
-        out.append(a.waiting)
-        out.append('')
-    out.append('| Task | Step | Status | % |')
-    out.append('|---|---|---|---|')
-    total_cost, pcts = 0.0, []
-    for t in tasks:
-        rows, steps = task_rows(t)
-        total_cost += cost(t)
-        for task, step, glyph, status, pct in rows:
-            key = f'{task}/{step}'
-            cell = f'{glyph} {status}'
-            new[key] = cell
-            changed = ' · changed' if old and old.get(key) != cell else ''
-            out.append(f'| {task} | {step} | {cell}{changed} | {pct} |')
-            if step not in ('task', 'hidden check'):
-                pcts.append(pct)
-    if pcts:
-        out.append('')
-        out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
-    try:
-        state_file.write_text(json.dumps(new, indent=1))
-    except OSError:
-        pass
-    print('\n'.join(out))
+    print(render(root, tasks, a.waiting))
 
 
 if __name__ == '__main__':

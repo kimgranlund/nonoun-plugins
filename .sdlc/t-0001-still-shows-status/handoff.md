@@ -1,6 +1,6 @@
 ---
 id: T-0010
-title: "T-0001 still shows status: proposed. The user may want to set it to..."
+title: "T-0001 still shows status: proposed"
 type: idea            # feature | bug | chore | spike | idea
 status: dropped      # resolved in the T-0001..T-0006 merge review
 size: M              # S | M | L | XL
