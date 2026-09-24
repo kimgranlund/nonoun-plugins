@@ -11,15 +11,21 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0004 | [git-preflight](git-preflight/handoff.md) | Git preflight before role runs | bug | S | P1 | none | 🟢 done |
 | T-0005 | [verifier-l1-independence](verifier-l1-independence/handoff.md) | Verifier L1 uses the same model family as builder L1 | spike | S | P3 | none | 🟢 done |
 | T-0006 | [publish-gate-docs](publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | S | P3 | none | 🟢 done |
-| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | ⏳ proposed |
+| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | 🟢 done |
 | T-0008 | [check-this-repo-s-live](check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | M | P2 | none | ⚪ dropped |
 | T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | 🟢 done |
 | T-0010 | [t-0001-still-shows-status](t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | M | P2 | none | ⚪ dropped |
 | T-0011 | [bring-this-repo-s-backlog](bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | M | P2 | none | ⚪ dropped |
 | T-0012 | [add-close-to-tickets-py](add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | M | P2 | none | ⚪ dropped |
 | T-0013 | [follow-up-titles-truncated](follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | 🟢 done |
-| T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | ⏳ proposed |
-| T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | ⏳ proposed |
-| T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | ⏳ proposed |
-| T-0017 | [board-order-by-id](board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | ⏳ proposed |
-| T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | ⏳ proposed |
+| T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | 🟢 done |
+| T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | 🟢 done |
+| T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | 🟢 done |
+| T-0017 | [board-order-by-id](board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | 🟢 done |
+| T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | 🟢 done |
+| T-0019 | [move-the-board-cache-sdlc](move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | ⏳ proposed |
+| T-0020 | [board-py-hides-tickets-by](board-py-hides-tickets-by/handoff.md) | board.py hides tickets by the hardcoded statuses dropped and done... | idea | M | P2 | none | ⏳ proposed |
+| T-0021 | [decide-whether-board-should-default](decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | ⏳ proposed |
+| T-0022 | [tickets-py-roadmap-skips-the](tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | ⏳ proposed |
+| T-0023 | [in-numbered-mode-tickets-py](in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | ⏳ proposed |
+| T-0024 | [numbered-mode-not-persisted](numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | ⏳ proposed |

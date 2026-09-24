@@ -24,6 +24,20 @@ user-invocable: false
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. Rerunning the same role and level overwrites them; runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
+If the project commits the `.sdlc/` trail, ignore these instead so `/board` and role runs don't dirty the tree:
+
+```
+.sdlc/.board-state.json
+.sdlc/**/*.running
+.sdlc/**/*.log
+```
+
+- `.sdlc/.board-state.json`: board cache, rewritten on every `/board` render
+- `.sdlc/**/*.running`: marker for a role run in progress
+- `.sdlc/**/*.log`: raw role transcript
+
+Keep the results `.md` files and `runs.jsonl` committed.
+
 ## Ticket front matter (optional)
 
 `.sdlc/<task>/handoff.md` may open with a YAML front matter block that makes the handoff double as a ticket:
@@ -42,7 +56,7 @@ from: T-NNNN   # optional, origin ticket id
 ---
 ```
 
-Front matter is purely additive: a handoff with no front matter keeps working unchanged, and `run.sh` never requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates.
+Front matter is purely additive: a handoff with no front matter keeps working unchanged, and `run.sh` never requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
 
 `status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 
