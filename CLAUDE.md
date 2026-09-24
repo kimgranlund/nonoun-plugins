@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-A plugin marketplace (`sdlc-agents`, `.claude-plugin/marketplace.json`) holding one plugin, `sdlc-lite`, in `plugins/sdlc-lite/`. Paths below are relative to that plugin folder unless they start with the repo root. All roles, skills, and systems on the roadmap are built. Five benchmark tasks are in `bench/tasks/`; the first baseline ran 2026-09-24 (3 of 5 hidden checks passed, $37.13; both failures were task-spec gaps, since fixed).
+A plugin marketplace (`sdlc-agents`, `.claude-plugin/marketplace.json`) holding one plugin, `sdlc-lite`, in `plugins/sdlc-lite/`. Paths below are relative to that plugin folder unless they start with the repo root. Git remote: `kimgranlund/sdlc-lite` (private). Raw role transcripts (`*.log`) and `bench/logs/` are gitignored; results `.md` and `runs.jsonl` are committed. All roles, skills, and systems on the roadmap are built. Five benchmark tasks are in `bench/tasks/`; the first baseline ran 2026-09-24 (3 of 5 hidden checks passed, $37.13; both failures were task-spec gaps, since fixed).
 
 ## Commands
 
