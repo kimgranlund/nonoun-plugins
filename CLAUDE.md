@@ -10,6 +10,7 @@ A plugin marketplace (`sdlc-lite`, `.claude-plugin/marketplace.json`) holding on
 
 - Check everything: `scripts/check.sh` (level tables in run.sh, level-rubric, and this file agree; every agent has a run.sh case; shellcheck; `claude plugin validate`). Run it after any change to a level, model, effort, or role. The validate warning about this CLAUDE.md is expected: it guides work on this repo and is not shipped as context.
 - Load it in a session: `claude --plugin-dir /Users/kimba/Projects/nonoun/sdlc-agents/plugins/sdlc-lite`, then `/sdlc-lite:<skill>`. Or install from this repo as a marketplace (`/plugin marketplace add /Users/kimba/Projects/nonoun/sdlc-agents`).
+- This repo's own sessions run as `sdlc-lite-author` (`.claude/agents/sdlc-lite-author.md`, set in `.claude/settings.json`): the maintainer's invariants, after-change checks, and learned hazards. Keep it in sync with this file.
 - Default agent: in a target repo's `.claude/settings.json`, `"agent": "sdlc-lite:conductor"` makes every session there the conductor (routes asks to skills, dispatches roles, reports with /board, makes only trivial edits itself). Declare it per repo, never in user settings.
 - Run one role directly: `scripts/run.sh <role> <level> <handoff.md>` (writes `<role>-<level>.md`, `.log`, and a `runs.jsonl` line next to the handoff)
 - Check a level mapping without a model call: `SDLC_DRY_RUN=1 scripts/run.sh builder L3 <handoff.md>`
