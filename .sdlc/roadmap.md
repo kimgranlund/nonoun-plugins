@@ -13,7 +13,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0006 | [publish-gate-docs](publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | S | P3 | none | 🟢 done |
 | T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | ⏳ proposed |
 | T-0008 | [check-this-repo-s-live](check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | M | P2 | none | ⚪ dropped |
-| T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | ⏳ proposed |
+| T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | 🟢 done |
 | T-0010 | [t-0001-still-shows-status](t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | M | P2 | none | ⚪ dropped |
 | T-0011 | [bring-this-repo-s-backlog](bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | M | P2 | none | ⚪ dropped |
 | T-0012 | [add-close-to-tickets-py](add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | M | P2 | none | ⚪ dropped |
