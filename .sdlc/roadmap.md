@@ -11,7 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0004 | [git-preflight](git-preflight/handoff.md) | Git preflight before role runs | bug | S | P1 | none | 🟢 done |
 | T-0005 | [verifier-l1-independence](verifier-l1-independence/handoff.md) | Verifier L1 uses the same model family as builder L1 | spike | S | P3 | none | 🟢 done |
 | T-0006 | [publish-gate-docs](publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | S | P3 | none | 🟢 done |
-| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | ⏳ proposed |
+| T-0007 | [run-the-filer-headless-on](run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | 🟢 done |
 | T-0008 | [check-this-repo-s-live](check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | M | P2 | none | ⚪ dropped |
 | T-0009 | [optional-id-and-status-columns](optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | 🟢 done |
 | T-0010 | [t-0001-still-shows-status](t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | M | P2 | none | ⚪ dropped |
