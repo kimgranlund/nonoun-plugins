@@ -2,7 +2,7 @@
 id: T-0006
 title: "Document that block-publish.sh only guards role runs"
 type: chore
-status: proposed
+status: done
 size: S
 priority: P3
 depends: []

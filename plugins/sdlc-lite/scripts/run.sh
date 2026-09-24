@@ -5,7 +5,8 @@
 # (raw JSON), keeps <role>-<level>.running while the run is live (for /board and the
 # status line), and appends one line to <handoff dir>/runs.jsonl for /bench.
 # Runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
-# Env: SDLC_DRY_RUN=1 prints the command only.
+# Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
+# Env: SDLC_DRY_RUN=1 prints the command only (after the preflight).
 set -euo pipefail
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
@@ -34,6 +35,9 @@ case "$role:$level" in
   *) usage ;;
 esac
 [[ -f "$handoff" ]] || { echo "handoff not found: $handoff" >&2; exit 2; }
+# Git preflight: roles need a repo with a commit (diffs, worktrees). Never init git here.
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "not a git repo: run git init and commit first" >&2; exit 2; }
+git rev-parse --verify -q HEAD >/dev/null || { echo "git repo has no commit: commit first" >&2; exit 2; }
 
 plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 handoff="$(cd "$(dirname "$handoff")" && pwd)/$(basename "$handoff")"

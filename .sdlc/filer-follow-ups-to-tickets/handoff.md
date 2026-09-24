@@ -2,7 +2,7 @@
 id: T-0003
 title: "Filer follow-ups become tickets; /file closes the task"
 type: feature
-status: proposed
+status: done
 size: M
 priority: P2
 depends: [T-0001, T-0002]

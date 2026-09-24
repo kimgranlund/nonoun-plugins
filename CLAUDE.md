@@ -8,7 +8,7 @@ A plugin marketplace (`sdlc-lite`, `.claude-plugin/marketplace.json`) holding on
 
 ## Commands
 
-- Check everything: `scripts/check.sh` (level tables in run.sh, level-rubric, and this file agree; every agent has a run.sh case; shellcheck; `claude plugin validate`). Run it after any change to a level, model, effort, or role. The validate warning about this CLAUDE.md is expected: it guides work on this repo and is not shipped as context.
+- Check everything: `scripts/check.sh` (level tables in run.sh, level-rubric, and this file agree; every agent has a run.sh case; the tickets selftest; shellcheck; `claude plugin validate`). Run it after any change to a level, model, effort, or role. The validate warning about this CLAUDE.md is expected: it guides work on this repo and is not shipped as context.
 - Load it in a session: `claude --plugin-dir /Users/kimba/Projects/nonoun/sdlc-agents/plugins/sdlc-lite`, then `/sdlc-lite:<skill>`. Or install from this repo as a marketplace (`/plugin marketplace add /Users/kimba/Projects/nonoun/sdlc-agents`).
 - This repo's own sessions run as `sdlc-lite-author` (`.claude/agents/sdlc-lite-author.md`, set in `.claude/settings.json`): the maintainer's invariants, after-change checks, and learned hazards. Keep it in sync with this file.
 - Default agent: in a target repo's `.claude/settings.json`, `"agent": "sdlc-lite:conductor"` makes every session there the conductor (routes asks to skills, dispatches roles, reports with /board, makes only trivial edits itself). Declare it per repo, never in user settings.
@@ -18,13 +18,14 @@ A plugin marketplace (`sdlc-lite`, `.claude-plugin/marketplace.json`) holding on
 
 ## Layout
 
-- `scripts/run.sh`: the one runner. Holds the role:level → model/effort table, the Fable-never-verifies-Fable swap, and read-only enforcement (Edit/Write disallowed for every role except builder). Read-only does not block Bash, so the verifier's no-git-state-changes rule lives in its prompt.
+- `scripts/run.sh`: the one runner. Holds the role:level → model/effort table, a git preflight (exits 2 outside a git work tree or before the first commit), the Fable-never-verifies-Fable swap, and read-only enforcement (Edit/Write disallowed for every role except builder). Read-only does not block Bash, so the verifier's no-git-state-changes rule lives in its prompt.
 - `hooks/block-publish.sh`: PreToolUse(Bash) hook. Inside a role run (`SDLC_ROLE`, set by run.sh) it blocks `git push`, `gh pr/issue` writes, `gh release`, mutating `gh api`, and package publishing. Your own session is not affected, so `/file` can publish after approval.
 - Feed: `scripts/board.py` renders the status board from `.sdlc/` (skill `/board`; `/chain` reports with it). `scripts/statusline.sh` shows line 1: model, dir, git (branch, dirty, ahead/behind, worktree), context % (🟡 at 70, 🔴 at 85), session cost and duration; line 2 only when `.sdlc/` has tasks: the live role run plus `board.py --summary` (task %, 🔴 count, ⚠ L5); it is wired in `~/.claude/settings.json` by absolute path to `plugins/sdlc-lite/scripts/statusline.sh` (backup: `settings.json.bak-statusline`). `output-styles/sdlc-feed.md` is an optional session style (`/output-style`). `run.sh` keeps `<role>-<level>.running` during a run so both can see live work.
 - Agent skills: an agent's frontmatter `skills:` list is loaded by `run.sh` (appended with `--append-system-prompt-file`, plugin paths filled in), because `claude --agent` does not preload them (token probe with a positive control, 2026-09-24). planner ← `level-rubric`, architect ← `decompose`, verifier ← `checks-that-bite` (brought in from the user-level skill). `check.py` fails on a declared skill that does not exist.
+- `scripts/tickets.py`: backs `/ticket`. `new <type> <slug> ["title"]` stamps a ticket with the next id, `close <slug> [--force]` (run by `/file`) sets the ticket `done`, files its filer follow-ups as `proposed` idea tickets, and refuses while Warnings are open unless forced, `roadmap` regenerates `.sdlc/roadmap.md` in dependency order, `check` fails on a bad ticket or a stale roadmap, `selftest` proves each check failure fires. `--root DIR` sets the ticket root (default `.sdlc`). Templates: `<root>/_templates/<type>.md` first, else `skills/ticket/templates/<type>.md`.
 - `agents/<role>.md`: one per role; each defines its output format as its final message, which the runner saves.
 - `skills/level-rubric`, `skills/handoff-format`: reference skills (not commands) that the launcher skills and `/chain` read. The rubric must match the table in `run.sh`.
-- Launcher skills: `/build`, `/plan`, `/verify`, `/research`, `/architect`, `/scout`, `/dig`, `/file`. Workflow skills: `/handoff`, `/chain`, `/bench`, `/board`. Understand skills (run in your session, not headless): `/clarify` (sharpen an ask into the handoff's Intent), `/grill` (greenfield decisions in question rounds, writes `design.md`), `/decompose` (two-plane breakdown, `coverage_check.py` gate, writes `decompose/`; the planner turns its leaves into steps). Modernized from harness find-intent, teamwork grill-the-ask, and harness break-down-problem.
+- Launcher skills: `/build`, `/plan`, `/verify`, `/research`, `/architect`, `/scout`, `/dig`, `/file`. Workflow skills: `/handoff`, `/chain`, `/bench`, `/board`, `/ticket`. Understand skills (run in your session, not headless): `/clarify` (sharpen an ask into the handoff's Intent), `/grill` (greenfield decisions in question rounds, writes `design.md`), `/decompose` (two-plane breakdown, `coverage_check.py` gate, writes `decompose/`; the planner turns its leaves into steps). Modernized from harness find-intent, teamwork grill-the-ask, and harness break-down-problem.
 
 ## Purpose
 
@@ -45,7 +46,7 @@ A set of SDLC agents: declared Claude Code subagents, each launched by a `/comma
 
 Systems: shared runner, handoff format, level rubrics, `/handoff`, `/chain` (escalation), `/bench` + `scripts/bench-summary.sh`: built. Escalation is enforced by `/chain` instructions, not by code.
 
-Backlog: `.sdlc/tickets/T-*.md` (ticket front matter per T-0001). Open: rerun the baseline with the fixed task specs; watch Planner L3 (Fable xhigh) cost, which dominated the two large tasks.
+Backlog: one folder per ticket, `.sdlc/<slug>/handoff.md` with ticket front matter; `.sdlc/roadmap.md` is generated (`/ticket`, `tickets.py roadmap`), never hand-edited. Open: rerun the baseline with the fixed task specs; watch Planner L3 (Fable xhigh) cost, which dominated the two large tasks.
 
 Later (decide from benchmark data, not before): a Bash write guard for read-only roles; a Stop hook that checks result format; a shared rules skill; a `## Checks` section in handoffs listing project lint/typecheck/test commands.
 

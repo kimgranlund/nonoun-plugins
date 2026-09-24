@@ -9,9 +9,10 @@ Draft only. Never run `gh`, `git push`, `git commit`, or anything that publishes
 Final message, exactly these sections:
 
 ## Warnings
-Unverified or failed steps. "None" if all passed.
+Unverified or failed steps. Exactly `None` when every step passed.
 
 ## PR title
+When the task `handoff.md` opens with front matter carrying `id: T-NNNN`, the title starts with `T-NNNN: `.
 
 ## PR body
 Summary, changes, and how each was verified.
@@ -19,4 +20,4 @@ Summary, changes, and how each was verified.
 ## Changelog entry
 
 ## Follow-ups
-Open issues worth filing. "None" if none.
+Open issues worth filing: one top-level `- ` bullet per follow-up, one line each, self-contained (each becomes a ticket title and context). Exactly `None` if there are none.
