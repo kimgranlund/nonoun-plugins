@@ -22,6 +22,30 @@ user-invocable: false
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. Rerunning the same role and level overwrites them; runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
+## Ticket front matter (optional)
+
+`.sdlc/<task>/handoff.md` may open with a YAML front matter block that makes the handoff double as a ticket:
+
+```
+---
+id: T-NNNN
+title: "..."
+type: feature|bug|chore|spike|idea
+status: proposed|ready|blocked|done|dropped
+size: S|M|L|XL
+priority: P1|P2|P3
+depends: [T-NNNN, ...]
+created: YYYY-MM-DD
+from: T-NNNN   # optional, origin ticket id
+---
+```
+
+Front matter is purely additive: a handoff with no front matter keeps working unchanged, and neither `run.sh` nor `board.py` requires or parses it.
+
+`status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
+
+Origin: this convention comes from `/Users/kimba/Projects/nonoun/gen-ui-system-svelte-lite/.sdlc/_templates/*.md` and that repo's `CONTEXT.md`. In this repo, `.sdlc/tickets/T-*.md` are in-repo examples of the format.
+
 ## Task handoff (`.sdlc/<task>/handoff.md`)
 
 ```
