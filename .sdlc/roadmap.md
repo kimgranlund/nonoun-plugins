@@ -20,9 +20,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0013 | [follow-up-titles-truncated](follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | 🟢 done |
 | T-0014 | [followuptitle-in-tickets-py-returns](followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | 🟢 done |
 | T-0015 | [board-hides-closed-tickets](board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | 🟢 done |
-| T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | ⏳ proposed |
+| T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | 🟢 done |
 | T-0017 | [board-order-by-id](board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | 🟢 done |
 | T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | 🟢 done |
 | T-0019 | [move-the-board-cache-sdlc](move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | ⏳ proposed |
 | T-0020 | [board-py-hides-tickets-by](board-py-hides-tickets-by/handoff.md) | board.py hides tickets by the hardcoded statuses dropped and done... | idea | M | P2 | none | ⏳ proposed |
 | T-0021 | [decide-whether-board-should-default](decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | ⏳ proposed |
+| T-0022 | [tickets-py-roadmap-skips-the](tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | ⏳ proposed |
+| T-0023 | [in-numbered-mode-tickets-py](in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | ⏳ proposed |
