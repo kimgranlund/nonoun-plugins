@@ -185,6 +185,13 @@ def has_step_work(task: pathlib.Path) -> bool:
                 or list(task.glob('*.running')))
 
 
+# Board visibility per ticket status. A new status in tickets.ENUMS['status'] must be
+# classified in exactly one of these sets; selftest() fails until it is.
+ALWAYS_HIDDEN = frozenset({'dropped'})
+HIDDEN_WITHOUT_STEP_WORK = frozenset({'done'})
+ALWAYS_SHOWN = frozenset({'proposed', 'ready', 'blocked'})
+
+
 def belongs_on_board(task: pathlib.Path) -> bool:
     """False only when the task has ticket front matter and is dropped, or done with no
     recorded step work. Everything else (no front matter, other statuses, or done with
@@ -193,11 +200,32 @@ def belongs_on_board(task: pathlib.Path) -> bool:
     if front is None:
         return True
     _, status = front
-    if status == 'dropped':
+    if status in ALWAYS_HIDDEN:
         return False
-    if status == 'done' and not has_step_work(task):
+    if status in HIDDEN_WITHOUT_STEP_WORK and not has_step_work(task):
         return False
-    return True
+    return True  # ALWAYS_SHOWN, and any unknown status, stays visible
+
+
+def unclassified_statuses(known, sets=None):
+    """Problems with the board visibility sets against `known` statuses: a known status in
+    no set, a status in two sets, or a classified status not in `known`. Empty means OK."""
+    if sets is None:
+        sets = {'ALWAYS_HIDDEN': ALWAYS_HIDDEN,
+                'HIDDEN_WITHOUT_STEP_WORK': HIDDEN_WITHOUT_STEP_WORK,
+                'ALWAYS_SHOWN': ALWAYS_SHOWN}
+    problems = []
+    classified = frozenset().union(*sets.values())
+    for s in sorted(set(known) - classified):
+        problems.append(f'status {s!r} is not classified in any board visibility set')
+    names = list(sets)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            for s in sorted(sets[a] & sets[b]):
+                problems.append(f'status {s!r} is in both {a} and {b}')
+    for s in sorted(classified - set(known)):
+        problems.append(f'status {s!r} is classified but not a known status')
+    return problems
 
 
 def sort_tasks(tasks, mode='recent'):
@@ -427,6 +455,20 @@ def selftest() -> int:
         (plain / '.board-state.json').unlink(missing_ok=True)
         expect('no --sort without tickets equals --sort recent',
                default == run_main(plain, '--sort', 'recent'))
+
+    # 6. Every ticket status is classified for board visibility, and the guard bites.
+    known = set(tickets.ENUMS['status'])
+    probs = unclassified_statuses(known)
+    expect(f'every ticket status has a board visibility class, got {probs}', probs == [])
+    probs = unclassified_statuses(known | {'zz-new-status'})
+    expect('an unclassified status is reported',
+           any('zz-new-status' in p for p in probs))
+    probs = unclassified_statuses(known, {'ALWAYS_HIDDEN': ALWAYS_HIDDEN,
+                                          'HIDDEN_WITHOUT_STEP_WORK': HIDDEN_WITHOUT_STEP_WORK,
+                                          'ALWAYS_SHOWN': ALWAYS_SHOWN,
+                                          'EXTRA': frozenset({'dropped'})})
+    expect('a status in two visibility sets is reported',
+           any("'dropped'" in p and 'both' in p for p in probs))
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
