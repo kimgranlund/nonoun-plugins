@@ -23,7 +23,8 @@ A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
-the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost). A rerun at the same
+the builder's "## Status", the verifier's "## Verdict" (a verifier with no pass/fail verdict renders
+as 🟡 no verdict), and runs.jsonl (cost). A rerun at the same
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
 runs.jsonl record order (order.py), never file time.
 
@@ -110,7 +111,9 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
         verdict = section(verifies[-1], 'Verdict')
         if verdict.startswith('pass'):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
-        return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        if verdict.startswith('fail'):
+            return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        return '🟡', f'no verdict · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, rerun verify{tries}', LADDER['built']
     return '🟡', f'built · builder {level_of(last_build)}, awaiting verify{tries}', LADDER['built']
 
 
@@ -161,7 +164,11 @@ def task_rows(task: pathlib.Path):
         role_lvl = running[-1].stem
         rows.append((task.name, 'task', '🟡', f'running · {role_lvl}', 0))
     elif not steps:
-        rows.append((task.name, 'task', '⏳', 'not planned', 0))
+        front = ticket_of(task)
+        if front is not None and front[1] == 'done':
+            rows.append((task.name, 'task', '🟢', 'closed', 100))
+        else:
+            rows.append((task.name, 'task', '⏳', 'not planned', 0))
     for n, title, lvl in steps:
         glyph, status, pct = step_row(task / f'step-{n}', title, lvl)
         rows.append((task.name, f'{n}. {title}', glyph, status, pct))
@@ -184,7 +191,10 @@ def summary(root: pathlib.Path) -> str:
     rows, steps = task_rows(t)
     step_rows = [r for r in rows if r[1] not in ('task', 'hidden check')]
     if not step_rows:
-        return f'{t.name} planning' if any(t.glob('*.running')) else f'{t.name} not planned'
+        if any(t.glob('*.running')):
+            return f'{t.name} planning'
+        front = ticket_of(t)
+        return f'{t.name} closed' if front is not None and front[1] == 'done' else f'{t.name} not planned'
     pct = sum(r[4] for r in step_rows) // len(step_rows)
     passed = sum(1 for r in step_rows if r[2] == '🟢')
     parts = [f'{t.name} {pct}% ({passed}/{len(step_rows)})']
@@ -504,6 +514,26 @@ def selftest() -> int:
         expect('main() output shows done-with-step', 'done-with-step' in out)
         expect('main() output shows proposed-no-steps', 'proposed-no-steps' in out)
 
+        # 5c. A done ticket with step work but no plan renders as closed, not 'not planned';
+        # the same fixture at status ready is the control that still reads 'not planned'.
+        for status, word in (('done', 'closed'), ('ready', 'not planned')):
+            croot = tmp / f'closed-{status}'
+            ct = task_dir(croot, 'shipped', front.replace('status: ready', f'status: {status}'))
+            (ct / 'step-1').mkdir()
+            (ct / 'step-1' / 'builder-L1.md').write_text('## Status\ndone\n')
+            crows, _ = task_rows(ct)
+            task_status = [r[3] for r in crows if r[1] == 'task']
+            expect(f'{status} ticket with no plan renders {word!r}, got {task_status!r}',
+                   task_status == [word])
+            if status == 'done':
+                expect('done ticket with no plan has no not planned row',
+                       not any(r[3] == 'not planned' for r in crows))
+                expect('closed row is green at 100',
+                       ('shipped', 'task', '🟢', 'closed', 100) in crows)
+            got = summary(croot)
+            expect(f'{status} ticket summary reads shipped {word}, got {got!r}',
+                   got == f'shipped {word}')
+
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
         # name is alphabetical. With no flag, a root with tickets sorts by id with
         # unticketed tasks after by mtime; a root without tickets equals --sort recent.
@@ -720,6 +750,11 @@ def selftest() -> int:
         got = step_row(step_fixture('inverse', runs, inverse), 'x', 'L1')[:2]
         expect(f'inverse mtimes: record order still gives the pass row, got {got}',
                got == ('🟢', 'pass · builder L2 · verifier L2 · attempt 2'))
+        novd = [('builder', 'L1', 'builder-L1.md', built),
+                ('verifier', 'L1', 'verifier-L1.md', 'Nothing to do until the test gate reports.\n')]
+        got = step_row(step_fixture('noverdict', novd), 'x', 'L1')[:2]
+        expect(f'a verifier with no verdict renders as 🟡 no verdict, got {got}',
+               got[0] == '🟡' and got[1].startswith('no verdict'))
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:

@@ -9,7 +9,12 @@
 # its "file" field names the result, and scripts/order.py orders results by those lines.
 # Runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
 # Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
-# Env: SDLC_DRY_RUN=1 prints the command only (after the preflight).
+# Node: a .nvmrc at the git toplevel is resolved against ${NVM_DIR:-$HOME/.nvm}/versions/node
+# (nvm is never sourced or run). An exact version (v20.11.0) matches that dir only; a partial one
+# (20, v20.11) matches whole components and takes the highest installed. A match prepends its bin
+# dir to PATH, so the role run inherits it; no match or an alias (lts/*, node) leaves PATH alone.
+# Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
+# Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
 set -euo pipefail
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
@@ -41,6 +46,48 @@ esac
 # Git preflight: roles need a repo with a commit (diffs, worktrees). Never init git here.
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "not a git repo: run git init and commit first" >&2; exit 2; }
 git rev-parse --verify -q HEAD >/dev/null || { echo "git repo has no commit: commit first" >&2; exit 2; }
+
+# Node version: honor the repo's .nvmrc without sourcing or running nvm. Resolve it against
+# installed dirs under ${NVM_DIR:-$HOME/.nvm}/versions/node and prepend that bin dir to PATH.
+# One stderr line per outcome; never changes the exit code. No .nvmrc: nothing.
+nvmrc="$(git rev-parse --show-toplevel)/.nvmrc"
+if [[ -f "$nvmrc" ]]; then
+  nvmrc_raw=$(tr -d '[:space:]' <"$nvmrc" || true)
+  nvm_node="${NVM_DIR:-$HOME/.nvm}/versions/node"
+  nvm_pick=""
+  if [[ -z "$nvmrc_raw" ]]; then
+    :
+  elif [[ "$nvmrc_raw" =~ ^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?$ ]]; then
+    nvm_want="${nvmrc_raw#v}"
+    if [[ "$nvm_want" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      # Exact version: that dir only.
+      [[ -d "$nvm_node/v$nvm_want" ]] && nvm_pick="v$nvm_want"
+    else
+      # Partial version: whole-component prefix match, highest by numeric compare.
+      IFS=. read -r nw1 nw2 _ <<<"$nvm_want"
+      best1=-1; best2=-1; best3=-1
+      for d in "$nvm_node"/v*; do
+        [[ -d "$d" ]] || continue
+        [[ "${d##*/}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || continue
+        c1=$((10#${BASH_REMATCH[1]})); c2=$((10#${BASH_REMATCH[2]})); c3=$((10#${BASH_REMATCH[3]}))
+        [[ "$c1" == "$((10#$nw1))" ]] || continue
+        [[ -z "${nw2:-}" || "$c2" == "$((10#$nw2))" ]] || continue
+        if (( c1 > best1 || (c1 == best1 && (c2 > best2 || (c2 == best2 && c3 > best3))) )); then
+          best1=$c1; best2=$c2; best3=$c3; nvm_pick="${d##*/}"
+        fi
+      done
+    fi
+    if [[ -n "$nvm_pick" ]]; then
+      nvm_bin="$nvm_node/$nvm_pick/bin"
+      echo "run.sh: .nvmrc $nvmrc_raw: prepended $nvm_bin to PATH" >&2
+      export PATH="$nvm_bin:$PATH"
+    else
+      echo "run.sh: .nvmrc $nvmrc_raw: not found under $nvm_node, PATH unchanged" >&2
+    fi
+  else
+    echo "run.sh: .nvmrc $nvmrc_raw: alias not resolved, PATH unchanged" >&2
+  fi
+fi
 
 plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 handoff="$(cd "$(dirname "$handoff")" && pwd)/$(basename "$handoff")"

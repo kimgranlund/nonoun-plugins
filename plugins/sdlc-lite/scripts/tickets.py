@@ -24,11 +24,12 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
-            NNNN- prefix) equals an existing ticket's, any status, is a duplicate: close skips it and
+            NNNN- prefix) equals any other ticket's, any status, is a duplicate: close skips it and
             names it in the output. Follow-ups in the same filer are not checked against each other.
             close --dry-run applies the same refusals, then lists each Follow-ups bullet as
             `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
-            and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
+            then one `open T-NNNN <title> [<slug>]` line per other proposed, ready or blocked
+            ticket in id order, and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
             indices from that listing; an index out of range refuses and writes nothing. Skipped
             follow-ups get no id. The dry run's last line is `expect <digest>`, a digest of the full
             ordered Follow-ups bullets; --skip needs --expect <digest> from that line and refuses
@@ -527,7 +528,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
     On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
     reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
-    A follow-up matching an existing ticket (ts) by normalized title or slug base is skipped as a duplicate.
+    A follow-up matching any other ticket (ts, never the one being closed) by normalized title or slug base is skipped as a duplicate.
     skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
     The dry run ends with `expect <digest>` (follow_digest). expect: that digest; required with skip (unless
     dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
@@ -636,9 +637,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             raise Fail(f'{slug}: --skip {i} is out of range: Follow-ups has {len(items)} item(s)'
                        + (f', so indices run 1 to {len(items)}' if items else '') + '; nothing written')
 
-    # existing tickets to check each follow-up against: (normalized title, folder without NNNN-, id, folder)
+    # the other tickets to check each follow-up against (never the one being closed):
+    # (normalized title, folder without NNNN-, id, folder)
     known = [(norm_title(m['title']) if isinstance(m.get('title'), str) else '', strip_prefix(x), m['id'], x)
-             for x, m in ts]
+             for x, m in ts if m.get('id') != pid and x != slug]
     # ids stay above every other worktree's max; follow-ups after the first count up from `after`
     floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
@@ -674,7 +676,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
-        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
+        opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
+                 for x, m in sorted(ts, key=lambda e: e[1]['id'])
+                 if m.get('status') in ('proposed', 'ready', 'blocked') and m['id'] != pid]
+        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines + opens
                          + ([f'rename {slug} -> {dot.name}'] if archive else [])
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
                          + [f'expect {digest}'])
@@ -1246,10 +1251,22 @@ def selftest():
                f'out={out!r} err={err!r} tree={tree(root)}',
                rc == 0 and snap(root) == before and status(root) == 'proposed'
                and lines[:1] == ['T-0001 dry run: 3 proposed follow-up(s); nothing written']
-               and [ln.split('.', 1)[0] for ln in lines[1:-1]] == ['1', '2', '3']
+               and [ln.split('.', 1)[0] for ln in lines[1:-1] if not ln.startswith('open ')] == ['1', '2', '3']
                and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch', 'Fix #12', 'Quote the docs'])
                and lines[2].startswith('2. Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
                and 'duplicate' not in lines[1] + lines[3])
+        # (p2) open tickets listed: an open ticket with its full title; not done/dropped, not the closed one
+        def open_mix(r):
+            filer('filer-L1.md', 'None', '- Add retry to fetch')(r)
+            cmd_new(r, 'bug', 'gone', 'Gone bug')
+            edit(r, 'gone', r'^status:.*$', 'status: dropped')
+        root = case(open_mix)
+        rc, out, err = run(root, 'close', ('alpha',), dry_run=True)
+        opens = [ln for ln in out.splitlines() if ln.startswith('open ')]
+        beta = next(m for x, m in load(root) if x == 'beta')
+        expect(f'(p2) open tickets listed: beta with full title, not dropped gone, not alpha: rc={rc} {out!r} {err!r}',
+               rc == 0 and opens == [f'open T-0002 {beta["title"]} [beta]']
+               and out.splitlines()[-1].startswith('expect '))
         root = case(filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch'))
         before = snap(root)
         rc, _, err = run(root, 'close', ('alpha',), dry_run=True)
@@ -1291,6 +1308,19 @@ def selftest():
         expect(f'(s) duplicates of beta skipped on close: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
                rc == 0 and sorted(made) == ['add-retry-to-fetch'] and 'skipped duplicate(s)' in out
                and out.count('T-0002 (beta)') == 2 and run(root, 'check')[0] == 0)
+
+        # (s2) the ticket being closed is not a duplicate target: follow-ups that start with its own
+        # title ("Alpha | one" -> "alpha one") are filed, and colliding slugs take a -2 suffix
+        root = case(filer('filer-L1.md', 'None', '- Alpha one\n- Alpha one.'))
+        rc, out, err = run(root, 'close', ('alpha',), dry_run=True)
+        expect(f'(s2) dry run marks no bullet a duplicate of the closing ticket: rc={rc} out={out!r} err={err!r}',
+               rc == 0 and 'duplicate' not in out and '1. Alpha one ' in out and '2. Alpha one. ' in out)
+        rc, out, err = run(root, 'close', ('alpha',))
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(s2) close files both follow-ups, the second as -2: rc={rc} out={out!r} err={err!r} '
+               f'made={sorted(made)}',
+               rc == 0 and sorted(made) == ['alpha-one', 'alpha-one-2'] and 'duplicate' not in out
+               and run(root, 'check')[0] == 0)
 
         # (t) --reason does not combine with --dry-run or --skip
         for kw in ({'dry_run': True}, {'skip': [1]}, {'expect': 'x'}):
@@ -1652,7 +1682,8 @@ def main(argv):
                         'with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
-                        'duplicate or --skip mark, then a last line `expect <digest>`; write nothing')
+                        'duplicate or --skip mark, then one `open T-NNNN <title> [<slug>]` line per other proposed, '
+                        'ready or blocked ticket, then a last line `expect <digest>`; write nothing')
     p.add_argument('--skip', metavar='N[,N...]',
                    help='file every follow-up except these 1-based indices from the --dry-run listing; '
                         'an index out of range refuses and writes nothing; needs --expect')

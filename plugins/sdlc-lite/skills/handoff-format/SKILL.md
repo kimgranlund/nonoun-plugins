@@ -123,7 +123,7 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 - `test "$(git rev-list --parents -n1 HEAD | wc -w)" -eq 3`
 - `git merge-base --is-ancestor <branch> HEAD`
 - (guard) `! git rev-parse -q --verify MERGE_HEAD`
-- (guard) `git diff -z --name-only --diff-filter=d HEAD^1 HEAD | xargs -0 sh -c 'test $# -eq 0 || ! git grep -nE "^(<<<<<<<|>>>>>>>)( |$)" -- "$@"' sh`
+- (guard) `out=$(git diff-tree --cc HEAD) && ! printf "%s\n" "$out" | grep -qE "^\+\+(<<<<<<<|>>>>>>>)( |$)"`
 - (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add <tmp> HEAD^1` copy and compare.
 ```
 

@@ -65,25 +65,33 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0059 | [merge-step-template](merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | M | P2 | none | 🟢 done |
 | T-0058 | [fanout-command](fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | M | P2 | T-0055, T-0056, T-0059 | 🟢 done |
 | T-0060 | [unpassable-plan-criteria](unpassable-plan-criteria/handoff.md) | Plan acceptance criteria that cannot pass reach the builder | bug | S | P2 | none | 🟢 done |
-| T-0061 | [add-a-steps-py-next](add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | M | P2 | none | 🔵 ready |
-| T-0062 | [criteria-that-contradict-each-other](criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🔵 ready |
-| T-0063 | [run-a-live-merge-step](run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🔵 ready |
+| T-0061 | [add-a-steps-py-next](add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | M | P2 | none | 🟢 done |
+| T-0062 | [criteria-that-contradict-each-other](criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🟢 done |
+| T-0063 | [run-a-live-merge-step](run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🟢 done |
 | T-0064 | [merge-step-conflict-marker-guard](merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🟢 done |
-| T-0065 | [fanout-py-s-default-lane](fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | 🔵 ready |
-| T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🔵 ready |
-| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🔵 ready |
-| T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🔵 ready |
-| T-0069 | [conflict-guard-lane-false-positive](conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🔵 ready |
+| T-0065 | [fanout-py-s-default-lane](fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | 🟢 done |
+| T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🟢 done |
+| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🟢 done |
+| T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🟢 done |
+| T-0069 | [conflict-guard-lane-false-positive](conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🟢 done |
 | T-0070 | [conflict-guard-gnu-xargs-probe](conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | M | P2 | none | ⏳ proposed |
-| T-0071 | [followup-dup-matches-own-ticket](followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🔵 ready |
+| T-0071 | [followup-dup-matches-own-ticket](followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🟢 done |
 | T-0072 | [headless-background-abandon](headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | S | P1 | none | 🟢 done |
-| T-0073 | [verifier-no-verdict](verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🔵 ready |
-| T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🔵 ready |
+| T-0073 | [verifier-no-verdict](verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🟢 done |
+| T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🟢 done |
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | ⏳ proposed |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | ⏳ proposed |
+| T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | ⏳ proposed |
+| T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | ⏳ proposed |
+| T-0079 | [close-dry-run-lists-open](close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | ⏳ proposed |
+| T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | ⏳ proposed |
+| T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | ⏳ proposed |
 | T-0082 | [criteria-or-fallback](criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | S | P2 | none | ⏳ proposed |
+| T-0083 | [guards-in-steps-py-split](guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | M | P2 | none | ⏳ proposed |
 | T-0084 | [port-checking-rules](port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | 🔵 ready |
 | T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🔵 ready |
 | T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🔵 ready |
 | T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🔵 ready |
+| T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | ⏳ proposed |
+| T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | ⏳ proposed |
 | T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🔵 ready |
