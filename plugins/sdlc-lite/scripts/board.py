@@ -584,6 +584,34 @@ def selftest() -> int:
         (only_old / 'step-1.superseded-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
         expect('has_step_work counts a handoff in a superseded dir', has_step_work(only_old))
 
+        # 5f. Dot-prefixed closed ticket folders (.NNNN-slug) are ordinary tasks to the board.
+        dot = tmp / 'dot'
+        closed = task_dir(dot, '.0003-closed-work', front_with('done').replace('T-0099', 'T-0003'))
+        (closed / 'planner-L1.md').write_text('## Plan\n')
+        task_dir(dot, '.0004-closed-bare', front_with('done').replace('T-0099', 'T-0004'))
+        task_dir(dot, '.0005-gone', front_with('dropped').replace('T-0099', 'T-0005'))
+        task_dir(dot, '0002-open', front_with('ready').replace('T-0099', 'T-0002'))
+        task_dir(dot, '0006-later', front_with('ready').replace('T-0099', 'T-0006'))
+        (dot / '_templates').mkdir()
+        (dot / '_templates' / 'feature.md').write_text(front)
+        (dot / '.board-state.json').write_text('{}')
+        out = run_main(dot)
+        expect(f'dot folder with step work renders with ID T-0003, got {out!r}',
+               '| T-0003 | .0003-closed-work |' in out)
+        expect('done dot folder with no step work is hidden', '.0004-closed-bare' not in out)
+        expect('dropped dot folder is hidden', '.0005-gone' not in out)
+        expect('_templates produces no row', '_templates' not in out and 'feature' not in out)
+        rows = [ln for ln in out.splitlines() if ln.startswith('| T-')]
+        expect(f'.board-state.json produces no row, got {rows}',
+               not any('board-state' in ln for ln in rows))
+        got = order(out, ['0002-open', '.0003-closed-work', '0006-later'])
+        expect(f'default sort puts the dot folder by its id, got {got}',
+               got == ['0002-open', '.0003-closed-work', '0006-later'])
+        one = run_main(dot, '--task', '.0003-closed-work')
+        expect(f'--task .0003-closed-work renders that task alone, got {one!r}',
+               '| T-0003 | .0003-closed-work |' in one and '0002-open' not in one
+               and '0006-later' not in one)
+
     if saved_state_dir is None:
         os.environ.pop('SDLC_BOARD_STATE_DIR', None)
     else:

@@ -323,6 +323,16 @@ def selftest():
         check('re-split overwrites a plain step-1/handoff.md with no role output',
               rc == 0 and (d / 'step-1' / 'handoff.md').read_text(encoding='utf-8') == want1)
 
+        # (i) a dot-prefixed closed ticket folder (.NNNN-slug) splits like any task dir
+        d = tmp / '.0003-x'
+        d.mkdir()
+        (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (d / 'planner-L2.md').write_text(PLAN, encoding='utf-8')
+        rc, _, _ = run_main(['split', str(d)])
+        h1 = d / 'step-1' / 'handoff.md'
+        check('(i) split on .0003-x writes .0003-x/step-1/handoff.md',
+              rc == 0 and h1.is_file() and h1.read_text(encoding='utf-8') == want1)
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
