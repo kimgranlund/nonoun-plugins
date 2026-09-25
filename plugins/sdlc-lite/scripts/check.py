@@ -9,7 +9,8 @@
    "no new findings" rule appear in every doc and script that carries the route.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
-   and agents/builder.md names `git merge --no-ff`.
+   runs its conflict-marker guard against a throwaway repo, and agents/builder.md
+   names `git merge --no-ff`.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -116,6 +117,45 @@ if pb and pb.strip():
         if r.returncode != 0: errors.append(f'merge-step block fails steps.py lint: {r.stderr.strip()}')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+# Behavior probe: the conflict-marker guard passes an empty merge (no whole-tree scan),
+# fails on a marker in a touched file (name with a space), and passes a clean merge.
+if pb and pb.strip():
+    guard = next((l for l in pb.splitlines() if l.startswith('- (guard) ') and '<<<<<<<' in l), None)
+    if guard is None or guard.count('`') < 2:
+        errors.append('merge-step conflict-marker guard: criterion line missing')
+    else:
+        span = guard[guard.index('`') + 1:guard.rindex('`')]
+        tmp = tempfile.mkdtemp()
+        try:
+            def g(*a):
+                return subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', *a], cwd=tmp,
+                                      capture_output=True, text=True, check=True).stdout.strip()
+            def span_rc():
+                return subprocess.run(['bash', '-c', span], cwd=tmp, capture_output=True, text=True).returncode
+            g('init', '-q', '-b', 'main')
+            pathlib.Path(tmp, 'untouched.txt').write_text('<<<<<<< legit fixture\n')
+            pathlib.Path(tmp, 'sp ace.txt').write_text('a\n')
+            g('add', '-A'); g('commit', '-qm', 'base')
+            g('checkout', '-qb', 'empty'); g('commit', '-q', '--allow-empty', '-m', 'empty')
+            g('checkout', '-q', 'main'); g('merge', '-q', '--no-ff', '-m', 'merge empty', 'empty')
+            if span_rc() != 0: errors.append('merge-step conflict-marker guard: empty merge flagged')
+            pre = g('rev-parse', 'HEAD^1')
+            g('checkout', '-qb', 'marker', pre)
+            with open(pathlib.Path(tmp, 'sp ace.txt'), 'a') as fh: fh.write('>>>>>>> lane\n')
+            g('commit', '-qam', 'marker')
+            g('checkout', '-q', 'main'); g('reset', '-q', '--hard', pre)
+            g('merge', '-q', '--no-ff', '-m', 'merge marker', 'marker')
+            if span_rc() == 0: errors.append('merge-step conflict-marker guard: marker in touched file not flagged')
+            g('reset', '-q', '--hard', pre)
+            g('checkout', '-qb', 'clean')
+            pathlib.Path(tmp, 'ok file.txt').write_text('ok\n')
+            g('add', '-A'); g('commit', '-qm', 'clean')
+            g('checkout', '-q', 'main'); g('merge', '-q', '--no-ff', '-m', 'merge clean', 'clean')
+            if span_rc() != 0: errors.append('merge-step conflict-marker guard: clean merge flagged')
+        except subprocess.CalledProcessError as e:
+            errors.append(f'merge-step conflict-marker guard: probe setup failed: {e.stderr.strip()}')
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 b = root/'agents/builder.md'
 if not b.is_file() or 'git merge --no-ff' not in b.read_text(): errors.append('agents/builder.md: missing "git merge --no-ff"')
 for e in errors: print('FAIL', e)
