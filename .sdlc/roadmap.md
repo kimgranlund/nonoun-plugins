@@ -82,3 +82,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | ⏳ proposed |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | ⏳ proposed |
 | T-0082 | [criteria-or-fallback](criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | S | P2 | none | ⏳ proposed |
+| T-0084 | [port-checking-rules](port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | ⏳ proposed |
+| T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | ⏳ proposed |
+| T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | ⏳ proposed |
+| T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | ⏳ proposed |
