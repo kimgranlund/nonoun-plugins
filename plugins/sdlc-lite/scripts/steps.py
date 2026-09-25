@@ -14,6 +14,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
+            It also refuses a criterion span that joins two checks with an unquoted || (see lint).
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
             bash -c, from the git toplevel of the task dir (else the task dir), under
@@ -25,7 +26,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
-            each <placeholder> replaced first. Never executes a span, writes nothing, and needs no
+            each <placeholder> replaced first, and that none holds an unquoted || operator (a
+            fallback passes on either side, so the criterion cannot fail); a || inside quotes, or
+            one whose left operand is exactly `test $# -eq 0`, is allowed. Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
             builder-*.md and verifier-*.md by order.py (ordered, newest, counts_after; never file
@@ -55,6 +58,7 @@ import io
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -272,9 +276,30 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
         raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
 
 
+OR_ALLOWED_LEFT = ['test', '$#', '-eq', '0']
+
+
+def or_fallback(text):
+    """True when a span holds an unquoted || whose left operand is not exactly `test $# -eq 0`.
+    Raises ValueError on text shlex cannot tokenize (an unparsable span, already reported)."""
+    lex = shlex.shlex(text, posix=True, punctuation_chars=True)
+    lex.commenters = ''
+    lex.whitespace_split = True
+    left = []
+    for tok in lex:
+        if tok and all(c in lex.punctuation_chars for c in tok):
+            if tok == '||' and left != OR_ALLOWED_LEFT:
+                return True
+            if ';' in tok or '|' in tok or '&&' in tok:
+                left = []
+                continue
+        left.append(tok)
+    return False
+
+
 def lint_steps(plan, steps):
-    """Return one finding per command-like criterion span that bash -n cannot parse; [] when clean.
-    bash -n parses and never executes."""
+    """Return one finding per command-like criterion span that bash -n cannot parse, and one per
+    span that joins two checks with an unquoted ||; [] when clean. bash -n parses and never executes."""
     findings = []
     for n, block in steps.items():
         for text in command_spans(block):
@@ -288,6 +313,15 @@ def lint_steps(plan, steps):
                 lines = [f'steps: {plan} step {n}: acceptance criterion command does not parse: {text}']
                 lines += [f'  {e}' for e in err.splitlines() if e.strip()]
                 findings.append('\n'.join(lines))
+                continue
+            try:
+                joined = or_fallback(text)
+            except ValueError:
+                continue
+            if joined:
+                findings.append(f'steps: {plan} step {n}: acceptance criterion joins two checks with ||: {text}\n'
+                                '  the fallback can pass on either side, so the criterion cannot fail: '
+                                'split it into separate criteria')
     return findings
 
 
@@ -729,6 +763,22 @@ def selftest():
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file()
               and rc2 == 0 and out2.strip() == 'steps lint: ok'
               and kept == [k_spans[0], k_spans[2], k_spans[3], k_spans[4]])
+
+        # (k2) a || fallback between checks: lint and split refuse; quoted ||, the
+        # `test $# -eq 0 ||` short circuit, and && pass
+        d = task(plan=PLAN.replace('- one works', '- `grep -q a x || grep -q b x`'))
+        refused('(k2) split refuses a || fallback criterion as a plan defect, writes nothing',
+                ['split', str(d)], d, needles=('plan defect', 'step 1', 'joins two checks with ||'))
+        refused('(k2) lint refuses a || fallback criterion with plan defect',
+                ['lint', str(d / 'planner-L2.md')], d, needle='plan defect')
+        ok_spans = ['grep -qE "a||b" x', "grep -q 'a||b' x",
+                    'set -- $(ls); test $# -eq 0 || grep -q x "$@"', 'grep -q a x && grep -q b x']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc, _, _ = run_main(['split', str(d)])
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2) quoted ||, the test $# -eq 0 || short circuit, and && pass: split and lint ok',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
+              and out2.strip() == 'steps lint: ok')
 
         # (l) a broken command under ### Do is not a criterion
         d = task(plan=PLAN.replace('Do one.', BROKEN_CRITERION))
