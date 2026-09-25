@@ -4,7 +4,7 @@
 # Runs /bench headless, one task per session, then prints the summary.
 # Each task's log ends with an `exit=<code> duration=<N>s` trailer.
 # Raises the Bash tool timeouts so long role runs can stay in the foreground, and sets
-# SDLC_HEADLESS=1 so hooks/block-background.sh denies run_in_background.
+# SDLC_HEADLESS=1 so hooks/block-background.sh denies Bash and Agent run_in_background.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dirargs=()

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Selftest for the PreToolUse(Bash) hooks: block-background.sh denies run_in_background in a
-# headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh
+# Selftest for the PreToolUse hooks (Bash and Agent): block-background.sh denies Bash
+# run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh
 # still blocks a push inside a role run. Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
 # Prints "hook selftest: PASS" or "hook selftest: FAIL: <case>" and exits non-zero on failure.
 set -uo pipefail
@@ -47,5 +47,34 @@ run "$pub" "$push_json" SDLC_ROLE=builder >/dev/null; rc=$?
 
 run "$pub" '{"tool_input":{"command":"ls"}}' SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-publish ls with role: exit $rc, want 0"
+
+a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
+a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
+a_off='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":false}}'
+
+out=$(run "$bg" "$a_absent" SDLC_ROLE=conductor); rc=$?
+[[ $rc -eq 2 ]] || fail "agent role + absent: exit $rc, want 2"
+grep -q 'run_in_background: false' <<<"$out" || fail "agent role + absent: stderr lacks run_in_background: false"
+
+run "$bg" "$a_absent" SDLC_HEADLESS=1 >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "agent SDLC_HEADLESS=1 + absent: exit $rc, want 2"
+
+run "$bg" "$a_on" SDLC_ROLE=conductor >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "agent role + true: exit $rc, want 2"
+
+run "$bg" "$a_off" SDLC_ROLE=conductor >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "agent role + false: exit $rc, want 0"
+
+run "$bg" "$a_absent" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "agent neither set + absent: exit $rc, want 0"
+
+run "$bg" "$a_on" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "agent neither set + true: exit $rc, want 0"
+
+run "$bg" "$a_absent" SDLC_HEADLESS=0 >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "agent SDLC_HEADLESS=0 + absent: exit $rc, want 0"
+
+run "$bg" '{"tool_name":"Bash","tool_input":{"command":"sleep 1"}}' SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "bash tool_name role + absent: exit $rc, want 0"
 
 echo "hook selftest: PASS"
