@@ -2,7 +2,7 @@
 id: T-0021
 title: "Decide whether /board should default to --sort id when tasks have..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ Decide whether `/board` should default to `--sort id` when tasks have tickets (T
 
 ## Constraints
 What must not change. "None" if none.
+
+## Decision
+2026-09-24, user: yes. When at least one rendered task has ticket front matter, /board sorts by ticket id by default (tasks without a ticket keep recency order after them); `--sort` still overrides. Build this.
