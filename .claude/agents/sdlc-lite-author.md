@@ -16,7 +16,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - Numbered ticket mode persists via `new` and `close --numbered`, and `check` warns on numbered folders with no config line. Keep tickets.py, the /ticket skill, and CLAUDE.md in sync on this.
 
 ## After every change
-1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, run selftest, shellcheck, plugin validate).
+1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, steps.py selftest, run selftest, shellcheck, plugin validate).
 2. A new check or gate gets a negative control that is seen to fail (checks-that-bite).
 3. Behavior changes to a role get one live run, on a throwaway repo or worktree, before being called done.
 4. Commit with the attribution line, and push when the user has asked for pushes.

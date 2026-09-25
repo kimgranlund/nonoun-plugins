@@ -86,6 +86,8 @@ Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
 
+`scripts/steps.py split` writes these files from the newest planner file; no one writes them by hand.
+
 Copied from the plan's step block, plus the task goal for orientation:
 
 ```
