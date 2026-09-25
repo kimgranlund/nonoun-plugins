@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -27,7 +27,12 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
             and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
             indices from that listing; an index out of range refuses and writes nothing. Skipped
-            follow-ups get no id. --dry-run and --skip refuse together with --reason
+            follow-ups get no id. The dry run's last line is `expect <digest>`, a digest of the full
+            ordered Follow-ups bullets; --skip needs --expect <digest> from that line and refuses
+            without it. close --expect DIGEST refuses, writing nothing, when the current Follow-ups
+            no longer match (the list changed since the dry run, so the indices may point at other
+            items). Plain close without --skip needs no token. --dry-run, --skip and --expect
+            refuse together with --reason
   archive   numbered mode only: rename every existing done or dropped NNNN-<slug> folder to
             .NNNN-<slug>, then regenerate the roadmap. Refuses, writing nothing, outside numbered
             mode, on a bad ticket, or when any target .NNNN-<slug> exists. --dry-run prints one
@@ -49,6 +54,7 @@ Build progress is not tracked here: /board derives it from each task's step arti
 """
 import argparse
 import datetime
+import hashlib
 import heapq
 import os
 import pathlib
@@ -428,6 +434,13 @@ def strip_prefix(name):
     return name
 
 
+def follow_digest(items):
+    """The token that ties --skip indices to the exact Follow-ups list a dry run showed: a short sha256 of
+    the full ordered bullet texts (items is bullets(follow), or [] for None), so reordering, adding,
+    removing, or rewording any item changes it."""
+    return hashlib.sha256('\n'.join(items).encode('utf-8')).hexdigest()[:12]
+
+
 def parse_skip(text):
     """--skip N[,N...] as a list of ints; a token that is not an integer is a refusal, not a traceback."""
     out = []
@@ -440,7 +453,7 @@ def parse_skip(text):
     return out
 
 
-def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None):
+def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
@@ -448,9 +461,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
     A follow-up matching an existing ticket (ts) by normalized title or slug base is skipped as a duplicate.
     skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
+    The dry run ends with `expect <digest>` (follow_digest). expect: that digest; required with skip (unless
+    dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
     Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap."""
-    if reason is not None and (dry_run or skip is not None):
-        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run or --skip; '
+    if reason is not None and (dry_run or skip is not None or expect is not None):
+        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip '
+                   f'or --expect; '
                    f'nothing written')
     flag = numbered
     numbered = numbered or config_numbered(root)
@@ -511,6 +527,14 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if not is_none(follow) and not items:
         raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
                    f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+    digest = follow_digest(items)
+    if skip is not None and not dry_run and expect is None:
+        raise Fail(f'{slug}: --skip needs --expect <digest> from the dry run that listed the indices '
+                   f'(run close --dry-run first); nothing written')
+    if expect is not None and expect.strip() != digest:
+        raise Fail(f'{slug}: --expect {expect} does not match the current Follow-ups in {filer.name} '
+                   f'(digest {digest}); the list changed since the dry run, so the --skip indices may point '
+                   f'at other items; rerun close --dry-run; nothing written')
     skipped = sorted(set(skip or ()))
     for i in skipped:
         if not 1 <= i <= len(items):
@@ -554,7 +578,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
         return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
-                         + ([f'rename {slug} -> {dot.name}'] if archive else []))
+                         + ([f'rename {slug} -> {dot.name}'] if archive else []) + [f'expect {digest}'])
 
     for s, t in planned:
         (root / s).mkdir()
@@ -1111,7 +1135,8 @@ def selftest():
                f'out={out!r} err={err!r} tree={tree(root)}',
                rc == 0 and snap(root) == before and status(root) == 'proposed'
                and lines[:1] == ['T-0001 dry run: 3 proposed follow-up(s); nothing written']
-               and [ln.split('.', 1)[0] for ln in lines[1:]] == ['1', '2', '3']
+               and [ln.split('.', 1)[0] for ln in lines[1:-1]] == ['1', '2', '3']
+               and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch', 'Fix #12', 'Quote the docs'])
                and lines[2].startswith('2. Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
                and 'duplicate' not in lines[1] + lines[3])
         root = case(filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch'))
@@ -1122,7 +1147,7 @@ def selftest():
 
         # (q) --skip files every other follow-up, and the rest take consecutive ids
         root = case(filer('filer-L1.md', 'None', three))
-        rc, out, err = run(root, 'close', ('alpha',), skip=[2])
+        rc, out, err = run(root, 'close', ('alpha',), skip=[2], expect=follow_digest(bullets(three)))
         made = fresh(root, {'alpha', 'beta'})
         expect(f'(q) --skip 2 files bullets 1 and 3 only: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
                rc == 0 and status(root) == 'done' and len(made) == 2
@@ -1135,7 +1160,8 @@ def selftest():
             root = case(filer('filer-L1.md', 'None', follow))
             before = snap(root)
             for dry in (True, False):
-                rc, _, err = run(root, 'close', ('alpha',), skip=[bad], dry_run=dry)
+                token = None if dry else follow_digest([] if follow == 'None' else bullets(follow))
+                rc, _, err = run(root, 'close', ('alpha',), skip=[bad], dry_run=dry, expect=token)
                 count = 0 if follow == 'None' else 3
                 expect(f'(r) --skip {bad} (dry_run={dry}) with {count} bullet(s) refuses: rc={rc} {err!r}',
                        rc == 1 and f'--skip {bad} ' in err and f'has {count} item' in err and snap(root) == before)
@@ -1156,12 +1182,48 @@ def selftest():
                and out.count('T-0002 (beta)') == 2 and run(root, 'check')[0] == 0)
 
         # (t) --reason does not combine with --dry-run or --skip
-        for kw in ({'dry_run': True}, {'skip': [1]}):
+        for kw in ({'dry_run': True}, {'skip': [1]}, {'expect': 'x'}):
             root = case(filer('filer-L1.md', 'None', three))
             before = snap(root)
             rc, _, err = run(root, 'close', ('alpha',), reason='superseded', **kw)
             expect(f'(t) --reason with {kw} refuses and writes nothing: rc={rc} {err!r}',
                    rc == 1 and '--reason' in err and snap(root) == before)
+
+        # (v) --skip is tied to the dry run's list: a changed Follow-ups list refuses, unchanged closes.
+        # (v4) a plain close with no --skip and no --expect needs no token; case (s) covers it too.
+        root = case(filer('filer-L1.md', 'None', three))
+        rc, out, _ = run(root, 'close', ('alpha',), dry_run=True)
+        old = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        filer('filer-L1.md', 'None', '- Quote the docs\n- Add retry to fetch\n- Split the runner')(root)
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), skip=[2], expect=old)
+        expect(f'(v1) a reordered Follow-ups list refuses stale --skip indices: rc={rc} {err!r}',
+               rc == 1 and 'does not match' in err and 'filer-L1.md' in err and err.endswith('nothing written')
+               and snap(root) == before and status(root) == 'proposed')
+        root = case(filer('filer-L1.md', 'None', three))
+        rc, out, _ = run(root, 'close', ('alpha',), dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        rc, out, err = run(root, 'close', ('alpha',), skip=[2], expect=token)
+        expect(f'(v2) an unchanged list closes with --skip --expect: rc={rc} {out!r} {err!r}',
+               rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 2)
+        root = case(filer('filer-L1.md', 'None', three))
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), skip=[2])
+        expect(f'(v3) --skip without --expect refuses: rc={rc} {err!r}',
+               rc == 1 and '--expect' in err and 'nothing written' in err and snap(root) == before)
+        root = case(filer('filer-L1.md', 'None', three))
+        rc, out, err = run(root, 'close', ('alpha',))
+        expect(f'(v4) plain close needs no token: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+        tail = ' and a retry budget that callers can tune per request without touching the runner at all'
+        long3 = f'- Add retry to fetch{tail}\n- Quote the docs\n- Split the runner'
+        root = case(filer('filer-L1.md', 'None', long3))
+        rc, out, _ = run(root, 'close', ('alpha',), dry_run=True)
+        old = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        filer('filer-L1.md', 'None', long3.replace('at all', 'ever'))(root)
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), skip=[2], expect=old)
+        expect(f'(v5) rewording past the title cut refuses: rc={rc} {err!r}',
+               rc == 1 and 'does not match' in err and snap(root) == before)
 
         # (u) numbered close archives a NNNN-<slug> folder as .NNNN-<slug>; every command still sees it
         def numbered_x(root):
@@ -1332,13 +1394,16 @@ def main(argv):
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--reason', metavar='TEXT',
                    help='close without a filer file (work done elsewhere): set done, append a ## Closed '
-                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run or --skip)')
+                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip or --expect)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
-                        'duplicate or --skip mark; write nothing')
+                        'duplicate or --skip mark, then a last line `expect <digest>`; write nothing')
     p.add_argument('--skip', metavar='N[,N...]',
                    help='file every follow-up except these 1-based indices from the --dry-run listing; '
-                        'an index out of range refuses and writes nothing')
+                        'an index out of range refuses and writes nothing; needs --expect')
+    p.add_argument('--expect', metavar='DIGEST',
+                   help='the digest from the --dry-run last line (expect <digest>); required with --skip; '
+                        'close refuses, writing nothing, when the Follow-ups list changed since that dry run')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -1365,6 +1430,7 @@ def main(argv):
     if cmd == 'close':
         kw['reason'] = a.reason
         kw['dry_run'] = a.dry_run
+        kw['expect'] = a.expect
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)
         except Fail as e:
