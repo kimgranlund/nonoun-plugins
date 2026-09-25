@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -43,6 +43,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
             (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
             ## Closed section with today's date and TEXT, and files no follow-ups
+            close --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
+            longer apply: follow-ups, duplicates, --dry-run, --skip/--expect and the numbered rename work
+            as for a plain close, and the handoff gains a ## Closed section with today's date,
+            `warnings acknowledged: TEXT`, and the Warnings text quoted line by line (`> `). It refuses,
+            writing nothing, with --force, with --reason, with empty TEXT, or when Warnings is None
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
@@ -515,7 +520,8 @@ def parse_skip(text):
     return out
 
 
-def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None):
+def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
+              ack_warnings=None):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
@@ -527,7 +533,19 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
     Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
     With no filer here, the refusal names every other worktree's same-relative <slug>/ holding a filer-L*.md
-    (glob only, never read), so work filed in a lane worktree can be committed or copied in."""
+    (glob only, never read), so work filed in a lane worktree can be committed or copied in.
+    ack_warnings (not None): pass the open-warnings gate with a recorded reason instead of force; the write
+    appends a ## Closed section with the date, `warnings acknowledged: <why>` and the Warnings quoted with `> `.
+    It refuses with force, with reason, when empty, and when the filer's Warnings is None."""
+    if ack_warnings is not None and force:
+        raise Fail(f'{slug}: --ack-warnings records why open warnings no longer apply, so it does not combine '
+                   f'with --force; use one; nothing written')
+    if ack_warnings is not None and reason is not None:
+        raise Fail(f'{slug}: --ack-warnings closes through the filer and --reason skips it, so they do not '
+                   f'combine; use one; nothing written')
+    if ack_warnings is not None and not ack_warnings.strip():
+        raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
+                   f'nothing written')
     if reason is not None and (dry_run or skip is not None or expect is not None):
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip '
                    f'or --expect; '
@@ -594,8 +612,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
     if warnings is None or follow is None:
         raise Fail(f'{filer}: missing a ## Warnings or ## Follow-ups section; nothing written')
-    if not is_none(warnings) and not force:
-        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --force to override):\n{warnings}')
+    if ack_warnings is not None and is_none(warnings):
+        raise Fail(f'{slug}: no open warnings to acknowledge in {filer.name}; rerun without --ack-warnings; '
+                   f'nothing written')
+    if not is_none(warnings) and not force and ack_warnings is None:
+        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
+                   f'why they no longer apply, or --force to override):\n{warnings}')
     items = [] if is_none(follow) else bullets(follow)
     if not is_none(follow) and not items:
         raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
@@ -653,12 +675,21 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
         return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
-                         + ([f'rename {slug} -> {dot.name}'] if archive else []) + [f'expect {digest}'])
+                         + ([f'rename {slug} -> {dot.name}'] if archive else [])
+                         + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
+                         + [f'expect {digest}'])
 
     for s, t in planned:
         (root / s).mkdir()
         (root / s / 'handoff.md').write_text(t, encoding='utf-8')
-    h.write_bytes((head + raw[fm.end():]).encode('utf-8'))
+    body = raw[fm.end():]
+    if ack_warnings is not None:
+        if body and not body.endswith('\n'):
+            body += '\n'
+        quoted = '\n'.join(f'> {ln}' if ln.strip() else '>' for ln in warnings.splitlines())
+        body += (f'\n## Closed\n\n{datetime.date.today().isoformat()}: warnings acknowledged: '
+                 f'{ack_warnings.strip()}\n\n{quoted}\n')
+    h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
     write_roadmap(root, load(root))
@@ -671,6 +702,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += '; skipped by --skip: ' + ', '.join(map(str, skipped))
     if archive:
         out += f'; moved to {dot.name}'
+    if ack_warnings is not None:
+        out += f'; warnings acknowledged: {ack_warnings.strip()}'
     return out
 
 
@@ -1072,6 +1105,8 @@ def selftest():
                rc == 1 and '--force' in err and 'step-2 verifier fail' in err)
         expect('(b) refusal wrote nothing (handoff, ticket count, roadmap)', snap(root) == before
                and len(load(root)) == 2 and status(root) == 'proposed')
+        expect(f'(b) refusal names --ack-warnings before --force: {err!r}',
+               '--ack-warnings "<why>"' in err and err.find('--ack-warnings') < err.find('--force'))
 
         # (c) the same with --force closes
         root = case(warned)
@@ -1404,6 +1439,73 @@ def selftest():
                        rc == 0 and status(root) == 'done' and not (root / '.alpha').exists()
                        and (root / 'alpha' / 'handoff.md').is_file() and 'moved' not in out)
 
+        # (w) --ack-warnings closes past open warnings with a recorded reason; warned: 'step-2 verifier fail'
+        today = datetime.date.today().isoformat()
+        # (w1) ack close: done, the follow-up filed, a ## Closed section quoting the warning, check passes
+        root = case(warned)
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='committed later')
+        text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'(w1) --ack-warnings closes with open warnings: rc={rc} out={out!r} err={err!r} text={text!r}',
+               rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 1
+               and out.endswith('; warnings acknowledged: committed later')
+               and text.rstrip().endswith(f'## Closed\n\n{today}: warnings acknowledged: committed later\n\n'
+                                          f'> step-2 verifier fail')
+               and run(root, 'check')[0] == 0)
+        # (w2) a multi-line Warnings section is quoted line by line, verbatim after `> `
+        root = case(filer('filer-L1.md', '- step-2 verifier fail\n- nothing committed yet', '- Add retry to fetch'))
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='fixed on main')
+        text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'(w2) multi-line warnings quoted line by line: rc={rc} {err!r} text={text!r}',
+               rc == 0 and text.rstrip().endswith(f'{today}: warnings acknowledged: fixed on main\n\n'
+                                                  f'> - step-2 verifier fail\n> - nothing committed yet'))
+        # (w3) --ack-warnings with --force, (w4) with --reason, (w5) empty or whitespace: refuse, write nothing
+        for label, args, kw, want in (('w3', ('alpha', True), {'ack_warnings': 'x'}, '--force'),
+                                      ('w4', ('alpha',), {'ack_warnings': 'x', 'reason': 'y'}, '--reason'),
+                                      ('w5', ('alpha',), {'ack_warnings': ''}, 'empty --ack-warnings'),
+                                      ('w5', ('alpha',), {'ack_warnings': '   '}, 'empty --ack-warnings')):
+            root = case(warned)
+            before = snap(root)
+            rc, _, err = run(root, 'close', args, **kw)
+            expect(f'({label}) --ack-warnings {args} {kw} refuses and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and '--ack-warnings' in err and want in err and err.endswith('nothing written')
+                   and snap(root) == before and status(root) == 'proposed')
+        # (w6) with Warnings None there is nothing to acknowledge: refuses, plain and dry run
+        for kw in ({}, {'dry_run': True}):
+            root = case(filer('filer-L1.md', 'None', '- Add retry to fetch'))
+            before = snap(root)
+            rc, _, err = run(root, 'close', ('alpha',), ack_warnings='x', **kw)
+            expect(f'(w6) --ack-warnings with no open warnings refuses {kw}: rc={rc} {err!r}',
+                   rc == 1 and 'rerun without --ack-warnings' in err and snap(root) == before)
+        # (w7) dry run with --ack-warnings on open warnings lists the plan, ends with expect, writes nothing
+        root = case(warned)
+        before = snap(root)
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='committed later', dry_run=True)
+        lines = out.splitlines()
+        expect(f'(w7) --ack-warnings dry run: rc={rc} out={out!r} err={err!r}',
+               rc == 0 and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch'])
+               and 'ack warnings: committed later' in lines and snap(root) == before)
+        # (w8) --ack-warnings with --skip/--expect files only the unskipped follow-ups
+        root = case(filer('filer-L1.md', 'step-2 verifier fail', three))
+        rc, out, _ = run(root, 'close', ('alpha',), ack_warnings='ok', dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='ok', skip=[2], expect=token)
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(w8) --ack-warnings --skip 2 files 1 and 3: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
+               rc == 0 and status(root) == 'done'
+               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch', 'Split the runner']
+               and 'skipped by --skip: 2' in out and 'warnings acknowledged: ok' in out)
+        # (w9) numbered: an ack close renames 0003-x to .0003-x and the moved handoff holds ## Closed
+        root = case(both(numbered_x, filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch',
+                                           slug='0003-x')))
+        rc, out, err = run(root, 'close', ('0003-x',), numbered=True, ack_warnings='committed later')
+        text = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8') if (root / '.0003-x').is_dir() else ''
+        expect(f'(w9) numbered ack close renames and keeps ## Closed: rc={rc} out={out!r} err={err!r} '
+               f'tree={tree(root)}',
+               rc == 0 and '; moved to .0003-x' in out and not (root / '0003-x').exists()
+               and status(root, '.0003-x') == 'done' and '## Closed' in text
+               and 'warnings acknowledged: committed later' in text and '> step-2 verifier fail' in text
+               and run(root, 'check')[0] == 0)
+
         # archive: done and dropped NNNN- folders move to .NNNN-, a ready one stays
         def arch_base(root):
             for slug, st in (('alpha', 'done'), ('beta', 'dropped')):
@@ -1537,12 +1639,17 @@ def main(argv):
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
     p = sub.add_parser('close', help='after /file: file follow-ups as tickets (skipping duplicates of existing '
                                      'tickets), set the ticket done; --dry-run lists them first; '
-                                     'or --reason TEXT: set it done without a filer file')
+                                     'or --reason TEXT: set it done without a filer file; '
+                                     '--ack-warnings TEXT: close while filer warnings are open, with a reason')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--reason', metavar='TEXT',
                    help='close without a filer file (work done elsewhere): set done, append a ## Closed '
                         'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip or --expect)')
+    p.add_argument('--ack-warnings', metavar='TEXT',
+                   help='close while the filer warnings are open: record TEXT and the quoted warnings in a '
+                        '## Closed section, file follow-ups as normal (refuses with --force, with --reason, '
+                        'with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
                         'duplicate or --skip mark, then a last line `expect <digest>`; write nothing')
@@ -1577,6 +1684,7 @@ def main(argv):
         kw['dry_run'] = a.dry_run
     if cmd == 'close':
         kw['reason'] = a.reason
+        kw['ack_warnings'] = a.ack_warnings
         kw['dry_run'] = a.dry_run
         kw['expect'] = a.expect
         try:
