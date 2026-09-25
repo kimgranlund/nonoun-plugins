@@ -1,7 +1,7 @@
 ---
 name: ticket
 description: Stamp a typed ticket with the next id, or generate .sdlc/roadmap.md from ticket front matter in dependency order. NOT for free-text briefs, which stay with /handoff.
-argument-hint: new <type> <slug> "title" [--numbered] | close <slug> [--force] [--numbered] | roadmap | check [--numbered]
+argument-hint: new <type> <slug> "title" [--numbered] | close <slug> [--force] [--numbered] | roadmap [--numbered] | check [--numbered]
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*)
 ---
 Arguments: `$ARGUMENTS`
@@ -12,6 +12,6 @@ Arguments: `$ARGUMENTS`
 4. `close <slug> [--force]` is normally run by `/file` after the filer, not by hand.
 
 Rules:
-- Numbered folders are opt-in, by `--numbered` on `new`, `close`, or `check` for one call, or a `ticket_folders: numbered` line in `.sdlc/config` for the repo; in numbered mode `new` names the folder `NNNN-<slug>` after the id it assigns (give the bare slug), `close` does the same for each follow-up with its own id, and `check` fails on a `NNNN-` folder whose id is not `T-NNNN`; without either, plain slugs, as before.
+- Numbered folders are opt-in, by `--numbered` on `new`, `close`, `roadmap`, or `check` for one call, or a `ticket_folders: numbered` line in `.sdlc/config` for the repo (a successful `new --numbered` appends that line when it is missing, so later plain calls stay numbered); in numbered mode `new` names the folder `NNNN-<slug>` after the id it assigns (give the bare slug), `close` does the same for each follow-up with its own id, and `check` fails and `roadmap` refuses (writing nothing) on a `NNNN-` folder whose id is not `T-NNNN`; without either, plain slugs, as before.
 - Never hand-edit `.sdlc/roadmap.md`. Change front matter and then rerun `roadmap`.
 - Front matter `status` is a person's decision; build progress stays with `/board`.

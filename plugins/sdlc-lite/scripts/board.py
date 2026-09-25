@@ -21,9 +21,11 @@ handoff.md) gets empty cells there. With no front matter anywhere the table stay
 | Task | Step | Status | % |. --summary never shows ticket fields.
 
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
-A changed row ends with "· changed" (compared with <root>/.board-state.json).
+A changed row ends with "· changed" (compared with a per-root state file in
+$SDLC_BOARD_STATE_DIR, else ${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state;
+never inside the repo).
 """
-import argparse, json, os, pathlib, re, subprocess, sys, tempfile
+import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 
@@ -185,6 +187,13 @@ def has_step_work(task: pathlib.Path) -> bool:
                 or list(task.glob('*.running')))
 
 
+# Board visibility per ticket status. A new status in tickets.ENUMS['status'] must be
+# classified in exactly one of these sets; selftest() fails until it is.
+ALWAYS_HIDDEN = frozenset({'dropped'})
+HIDDEN_WITHOUT_STEP_WORK = frozenset({'done'})
+ALWAYS_SHOWN = frozenset({'proposed', 'ready', 'blocked'})
+
+
 def belongs_on_board(task: pathlib.Path) -> bool:
     """False only when the task has ticket front matter and is dropped, or done with no
     recorded step work. Everything else (no front matter, other statuses, or done with
@@ -193,29 +202,66 @@ def belongs_on_board(task: pathlib.Path) -> bool:
     if front is None:
         return True
     _, status = front
-    if status == 'dropped':
+    if status in ALWAYS_HIDDEN:
         return False
-    if status == 'done' and not has_step_work(task):
+    if status in HIDDEN_WITHOUT_STEP_WORK and not has_step_work(task):
         return False
-    return True
+    return True  # ALWAYS_SHOWN, and any unknown status, stays visible
+
+
+def unclassified_statuses(known, sets=None):
+    """Problems with the board visibility sets against `known` statuses: a known status in
+    no set, a status in two sets, or a classified status not in `known`. Empty means OK."""
+    if sets is None:
+        sets = {'ALWAYS_HIDDEN': ALWAYS_HIDDEN,
+                'HIDDEN_WITHOUT_STEP_WORK': HIDDEN_WITHOUT_STEP_WORK,
+                'ALWAYS_SHOWN': ALWAYS_SHOWN}
+    problems = []
+    classified = frozenset().union(*sets.values())
+    for s in sorted(set(known) - classified):
+        problems.append(f'status {s!r} is not classified in any board visibility set')
+    names = list(sets)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            for s in sorted(sets[a] & sets[b]):
+                problems.append(f'status {s!r} is in both {a} and {b}')
+    for s in sorted(classified - set(known)):
+        problems.append(f'status {s!r} is classified but not a known status')
+    return problems
 
 
 def sort_tasks(tasks, mode='recent'):
-    """Order task dirs: 'recent' by mtime (the default), 'name' by folder name, 'id' by the
-    numeric part of the ticket id, with tasks lacking an id after, by folder name."""
+    """Order task dirs: 'recent' by mtime, 'name' by folder name, 'id' by the numeric part
+    of the ticket id with tasks lacking an id after, by folder name. 'auto' (what main()
+    uses with no --sort when any rendered task has a ticket) is 'id' except that tasks
+    lacking an id follow by mtime."""
     if mode == 'name':
         return sorted(tasks, key=lambda t: t.name)
-    if mode == 'id':
+    if mode in ('id', 'auto'):
         def key(t):
             front = ticket_of(t)
             m = re.search(r'T-(\d+)', front[0]) if front else None
-            return (0, int(m.group(1)), t.name) if m else (1, 0, t.name)
+            if m:
+                return (0, int(m.group(1)), 0, t.name)
+            return (1, 0, t.stat().st_mtime if mode == 'auto' else 0, t.name)
         return sorted(tasks, key=key)
     return sorted(tasks, key=lambda d: d.stat().st_mtime)
 
 
+def state_path(root: pathlib.Path) -> pathlib.Path:
+    """Where render() keeps the last statuses for root: outside the working tree."""
+    d = os.environ.get('SDLC_BOARD_STATE_DIR')
+    if d:
+        base = pathlib.Path(d)
+    else:
+        cache = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser('~/.cache')
+        base = pathlib.Path(cache) / 'sdlc-lite' / 'board-state'
+    key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
+    return base / f'{key}.json'
+
+
 def render(root: pathlib.Path, tasks, waiting=None) -> str:
-    state_file = root / '.board-state.json'
+    state_file = state_path(root)
     try:
         old = json.loads(state_file.read_text())
     except (OSError, json.JSONDecodeError):
@@ -252,6 +298,7 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
         out.append('')
         out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
     try:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
         state_file.write_text(json.dumps(new, indent=1))
     except OSError:
         pass
@@ -275,8 +322,16 @@ def selftest() -> int:
         h.write_bytes(content) if isinstance(content, bytes) else h.write_text(content, encoding='utf-8')
         return d
 
-    with tempfile.TemporaryDirectory() as tmp:
+    saved_state_dir = os.environ.get('SDLC_BOARD_STATE_DIR')
+    with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as state_tmp:
         tmp = pathlib.Path(tmp)
+        state_dir = pathlib.Path(state_tmp)
+        # Outside every fixture root; subprocess runs inherit it.
+        os.environ['SDLC_BOARD_STATE_DIR'] = str(state_dir)
+
+        def clear_state():
+            for f in state_dir.glob('*.json'):
+                f.unlink(missing_ok=True)
 
         # 1. No task has front matter: today's 4-column table, byte for byte.
         plain = tmp / 'plain'
@@ -370,7 +425,8 @@ def selftest() -> int:
         expect('main() output shows proposed-no-steps', 'proposed-no-steps' in out)
 
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
-        # name is alphabetical, and no flag equals --sort recent (mtime order).
+        # name is alphabetical. With no flag, a root with tickets sorts by id with
+        # unticketed tasks after by mtime; a root without tickets equals --sort recent.
         def ticket_front(tid):
             return front.replace('T-0042', tid)
 
@@ -397,14 +453,68 @@ def selftest() -> int:
                got == ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
         got = order(run_main(srt, '--sort', 'name'), names)
         expect(f'--sort name is alphabetical, got {got}', got == sorted(names))
-        default = run_main(srt)
-        got = order(default, names)
-        expect(f'no --sort is mtime order, got {got}', got == names)
+        got = order(run_main(srt, '--sort', 'recent'), names)
+        expect(f'--sort recent is mtime order, got {got}', got == names)
+        # Unticketed tasks follow by mtime: derive the expected order from the utime values.
+        unticketed = sorted((d for d in made if d.name in ('alpha', 'bravo')),
+                            key=lambda d: d.stat().st_mtime)
+        want = ['yankee-two', 'zulu-three'] + [d.name for d in unticketed]
+        got = order(run_main(srt), names)
+        expect(f'no --sort with tickets is id then unticketed by mtime, want {want}, got {got}',
+               got == want and want != ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
+
+        plain = tmp / 'sort-plain'
+        pmade = [task_dir(plain, 'charlie', '## Goal\nno front matter\n'),
+                 task_dir(plain, 'alpha', '## Goal\nno front matter\n'),
+                 task_dir(plain, 'bravo', '## Goal\nno front matter\n')]
+        for i, d in enumerate(pmade):
+            os.utime(d, (1_000_000 + i * 100, 1_000_000 + i * 100))
+        pnames = [d.name for d in pmade]
+        got = order(run_main(plain), pnames)
+        expect(f'no --sort without tickets is mtime order, got {got}', got == pnames)
         # The state file adds ' · changed' markers between runs; compare with it removed.
-        (srt / '.board-state.json').unlink(missing_ok=True)
-        default = run_main(srt)
-        (srt / '.board-state.json').unlink(missing_ok=True)
-        expect('no --sort output equals --sort recent', default == run_main(srt, '--sort', 'recent'))
+        clear_state()
+        default = run_main(plain)
+        clear_state()
+        expect('no --sort without tickets equals --sort recent',
+               default == run_main(plain, '--sort', 'recent'))
+
+        # 5b. Renders write nothing under the root, and "· changed" still works.
+        clean = tmp / 'clean'
+        ct = task_dir(clean, 'clean-task', '## Goal\nx\n')
+        before = sorted(p for p in clean.rglob('*'))
+        first = render(clean, [ct])
+        (ct / 'planner-L1.running').touch()
+        second = render(clean, [ct])
+        after = sorted(p for p in clean.rglob('*') if p.name != 'planner-L1.running')
+        expect('render writes no .board-state.json under the root',
+               not list(clean.rglob('.board-state.json')))
+        expect(f'render creates no file under the root, got {set(after) - set(before)}',
+               after == before)
+        expect(f'first render has no changed marker, got {first!r}', '· changed' not in first)
+        expect(f'a status change between renders shows "· changed", got {second!r}',
+               '· changed' in second)
+        expect('two roots get different state paths',
+               state_path(clean) != state_path(plain) and state_path(clean).parent == state_dir)
+
+    if saved_state_dir is None:
+        os.environ.pop('SDLC_BOARD_STATE_DIR', None)
+    else:
+        os.environ['SDLC_BOARD_STATE_DIR'] = saved_state_dir
+
+    # 6. Every ticket status is classified for board visibility, and the guard bites.
+    known = set(tickets.ENUMS['status'])
+    probs = unclassified_statuses(known)
+    expect(f'every ticket status has a board visibility class, got {probs}', probs == [])
+    probs = unclassified_statuses(known | {'zz-new-status'})
+    expect('an unclassified status is reported',
+           any('zz-new-status' in p for p in probs))
+    probs = unclassified_statuses(known, {'ALWAYS_HIDDEN': ALWAYS_HIDDEN,
+                                          'HIDDEN_WITHOUT_STEP_WORK': HIDDEN_WITHOUT_STEP_WORK,
+                                          'ALWAYS_SHOWN': ALWAYS_SHOWN,
+                                          'EXTRA': frozenset({'dropped'})})
+    expect('a status in two visibility sets is reported',
+           any("'dropped'" in p and 'both' in p for p in probs))
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
@@ -422,7 +532,7 @@ def main():
     ap.add_argument('--task')
     ap.add_argument('--waiting')
     ap.add_argument('--summary', action='store_true')
-    ap.add_argument('--sort', choices=['recent', 'id', 'name'], default='recent')
+    ap.add_argument('--sort', choices=['recent', 'id', 'name'], default=None)
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(selftest())
@@ -434,8 +544,9 @@ def main():
         print(f'no task dirs: {root} does not exist', file=sys.stderr)
         sys.exit(1)
     candidates = [d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()]
-    tasks = sort_tasks(candidates, a.sort)
-    tasks = [t for t in tasks if belongs_on_board(t)]
+    tasks = [t for t in candidates if belongs_on_board(t)]
+    mode = a.sort or ('auto' if any(ticket_of(t) for t in tasks) else 'recent')
+    tasks = sort_tasks(tasks, mode)
     if a.task:
         tasks = [t for t in tasks if t.name == a.task]
         if not tasks:
