@@ -28,6 +28,8 @@ When a task merges one lane into another, emit this step block and fill it in. R
 
 Criterion 1 above still applies: before the merge, the two-parent and ancestor criteria must be red. If `<branch>` is already an ancestor of HEAD, no merge step is needed.
 
+The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
+
 ```merge-step
 ## Step <n>: Merge <branch>
 level: L<n>
