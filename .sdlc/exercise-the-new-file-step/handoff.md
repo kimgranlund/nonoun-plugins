@@ -2,7 +2,7 @@
 id: T-0047
 title: "Exercise the new /file step 3 flow dry run, AskUserQuestion, then..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -23,3 +23,7 @@ What must not change. "None" if none.
 
 ## Triage
 2026-09-24, user-approved: keep; exercise the /file dry-run, confirm, --skip flow live.
+
+## Closed
+
+2026-09-25: Live run 2026-09-25 on a throwaway repo: filer, dry run, multiSelect question, and real close worked (T-0001 closed, 2 follow-ups filed); --skip with --expect exercised headless (1 of 3 skipped). Gaps filed as proposed tickets.

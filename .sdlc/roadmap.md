@@ -51,7 +51,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0044 | [reconcile-the-chain-4-2](reconcile-the-chain-4-2/handoff.md) | Reconcile the /chain 4.2 wording from T-0040 rename, then steps.py... | idea | M | P2 | none | ⚪ dropped |
 | T-0045 | [verify-with-one-live-interactive](verify-with-one-live-interactive/handoff.md) | Verify with one live interactive /chain run on a throwaway repo... | idea | M | P2 | none | 🟢 done |
 | T-0046 | [tickets-py-selftest-case-m](tickets-py-selftest-case-m/handoff.md) | tickets.py selftest case m, empty --reason, passes without the new... | idea | M | P2 | none | ⚪ dropped |
-| T-0047 | [exercise-the-new-file-step](exercise-the-new-file-step/handoff.md) | Exercise the new /file step 3 flow dry run, AskUserQuestion, then... | idea | M | P2 | none | 🔵 ready |
+| T-0047 | [exercise-the-new-file-step](exercise-the-new-file-step/handoff.md) | Exercise the new /file step 3 flow dry run, AskUserQuestion, then... | idea | M | P2 | none | 🟢 done |
 | T-0048 | [guard-close-skip-against-index](guard-close-skip-against-index/handoff.md) | Guard close --skip against index drift: if the filer file changes... | idea | M | P3 | none | 🟢 done |
 | T-0049 | [newest-by-mtime](newest-by-mtime/handoff.md) | Newest result is picked by mtime, which checkout resets | bug | S | P1 | none | 🟢 done |
 | T-0050 | [dot-prefix-closed](dot-prefix-closed/handoff.md) | Dot-prefix closed ticket folders | feature | M | P2 | T-0049 | 🟢 done |
@@ -69,3 +69,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0062 | [criteria-that-contradict-each-other](criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🔵 ready |
 | T-0063 | [run-a-live-merge-step](run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🔵 ready |
 | T-0064 | [merge-step-conflict-marker-guard](merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🔵 ready |
+| T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | ⏳ proposed |
+| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | ⏳ proposed |
+| T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | ⏳ proposed |
