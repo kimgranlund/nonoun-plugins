@@ -2,7 +2,7 @@
 id: T-0045
 title: "Verify with one live interactive /chain run on a throwaway repo..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ Verify with one live interactive /chain run on a throwaway repo that a `run_in_b
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: keep; one live interactive /chain run on a throwaway repo.

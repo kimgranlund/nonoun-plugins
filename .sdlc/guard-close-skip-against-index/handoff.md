@@ -2,9 +2,9 @@
 id: T-0048
 title: "Guard close --skip against index drift: if the filer file changes..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
-priority: P2         # P1 | P2 | P3
+priority: P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24
 from: T-0041
@@ -20,3 +20,6 @@ Guard `close --skip` against index drift: if the filer file changes between `--d
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: keep, P3; guard --skip against filer-file drift between dry run and close.

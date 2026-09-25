@@ -2,7 +2,7 @@
 id: T-0043
 title: "board.py summary counts L5 runs with the glob step-/builder-L5..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ Follow-up from T-0038 (replan-overwrites-plan/filer-L1.md):
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: covered by T-0049 (newest result from run order, not mtime).
