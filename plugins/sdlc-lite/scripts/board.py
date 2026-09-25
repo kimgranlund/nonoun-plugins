@@ -21,9 +21,11 @@ handoff.md) gets empty cells there. With no front matter anywhere the table stay
 | Task | Step | Status | % |. --summary never shows ticket fields.
 
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
-A changed row ends with "· changed" (compared with <root>/.board-state.json).
+A changed row ends with "· changed" (compared with a per-root state file in
+$SDLC_BOARD_STATE_DIR, else ${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state;
+never inside the repo).
 """
-import argparse, json, os, pathlib, re, subprocess, sys, tempfile
+import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 
@@ -246,8 +248,20 @@ def sort_tasks(tasks, mode='recent'):
     return sorted(tasks, key=lambda d: d.stat().st_mtime)
 
 
+def state_path(root: pathlib.Path) -> pathlib.Path:
+    """Where render() keeps the last statuses for root: outside the working tree."""
+    d = os.environ.get('SDLC_BOARD_STATE_DIR')
+    if d:
+        base = pathlib.Path(d)
+    else:
+        cache = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser('~/.cache')
+        base = pathlib.Path(cache) / 'sdlc-lite' / 'board-state'
+    key = hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:16]
+    return base / f'{key}.json'
+
+
 def render(root: pathlib.Path, tasks, waiting=None) -> str:
-    state_file = root / '.board-state.json'
+    state_file = state_path(root)
     try:
         old = json.loads(state_file.read_text())
     except (OSError, json.JSONDecodeError):
@@ -284,6 +298,7 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
         out.append('')
         out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
     try:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
         state_file.write_text(json.dumps(new, indent=1))
     except OSError:
         pass
@@ -307,8 +322,16 @@ def selftest() -> int:
         h.write_bytes(content) if isinstance(content, bytes) else h.write_text(content, encoding='utf-8')
         return d
 
-    with tempfile.TemporaryDirectory() as tmp:
+    saved_state_dir = os.environ.get('SDLC_BOARD_STATE_DIR')
+    with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as state_tmp:
         tmp = pathlib.Path(tmp)
+        state_dir = pathlib.Path(state_tmp)
+        # Outside every fixture root; subprocess runs inherit it.
+        os.environ['SDLC_BOARD_STATE_DIR'] = str(state_dir)
+
+        def clear_state():
+            for f in state_dir.glob('*.json'):
+                f.unlink(missing_ok=True)
 
         # 1. No task has front matter: today's 4-column table, byte for byte.
         plain = tmp / 'plain'
@@ -450,11 +473,34 @@ def selftest() -> int:
         got = order(run_main(plain), pnames)
         expect(f'no --sort without tickets is mtime order, got {got}', got == pnames)
         # The state file adds ' · changed' markers between runs; compare with it removed.
-        (plain / '.board-state.json').unlink(missing_ok=True)
+        clear_state()
         default = run_main(plain)
-        (plain / '.board-state.json').unlink(missing_ok=True)
+        clear_state()
         expect('no --sort without tickets equals --sort recent',
                default == run_main(plain, '--sort', 'recent'))
+
+        # 5b. Renders write nothing under the root, and "· changed" still works.
+        clean = tmp / 'clean'
+        ct = task_dir(clean, 'clean-task', '## Goal\nx\n')
+        before = sorted(p for p in clean.rglob('*'))
+        first = render(clean, [ct])
+        (ct / 'planner-L1.running').touch()
+        second = render(clean, [ct])
+        after = sorted(p for p in clean.rglob('*') if p.name != 'planner-L1.running')
+        expect('render writes no .board-state.json under the root',
+               not list(clean.rglob('.board-state.json')))
+        expect(f'render creates no file under the root, got {set(after) - set(before)}',
+               after == before)
+        expect(f'first render has no changed marker, got {first!r}', '· changed' not in first)
+        expect(f'a status change between renders shows "· changed", got {second!r}',
+               '· changed' in second)
+        expect('two roots get different state paths',
+               state_path(clean) != state_path(plain) and state_path(clean).parent == state_dir)
+
+    if saved_state_dir is None:
+        os.environ.pop('SDLC_BOARD_STATE_DIR', None)
+    else:
+        os.environ['SDLC_BOARD_STATE_DIR'] = saved_state_dir
 
     # 6. Every ticket status is classified for board visibility, and the guard bites.
     known = set(tickets.ENUMS['status'])

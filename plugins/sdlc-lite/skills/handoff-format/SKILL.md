@@ -27,12 +27,11 @@ user-invocable: false
 If the project commits the `.sdlc/` trail, ignore these instead so `/board` and role runs don't dirty the tree:
 
 ```
-.sdlc/.board-state.json
 .sdlc/**/*.running
 .sdlc/**/*.log
 ```
 
-- `.sdlc/.board-state.json`: board cache, rewritten on every `/board` render
+- Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
 - `.sdlc/**/*.running`: marker for a role run in progress
 - `.sdlc/**/*.log`: raw role transcript
 

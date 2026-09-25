@@ -23,7 +23,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0016 | [ticket-numbered-folders](ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | 🟢 done |
 | T-0017 | [board-order-by-id](board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | 🟢 done |
 | T-0018 | [gitignore-board-state](gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | 🟢 done |
-| T-0019 | [move-the-board-cache-sdlc](move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | ⏳ proposed |
+| T-0019 | [move-the-board-cache-sdlc](move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | 🟢 done |
 | T-0020 | [board-py-hides-tickets-by](board-py-hides-tickets-by/handoff.md) | board.py hides tickets by the hardcoded statuses dropped and done... | idea | M | P2 | none | 🟢 done |
 | T-0021 | [decide-whether-board-should-default](decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | 🟢 done |
 | T-0022 | [tickets-py-roadmap-skips-the](tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | 🟢 done |
@@ -34,3 +34,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0027 | [tickets-py-close-numbered-does](tickets-py-close-numbered-does/handoff.md) | tickets.py: close --numbered does not persist ticket_folders... | idea | M | P2 | none | ⏳ proposed |
 | T-0028 | [tickets-py-selftest-crashes-with](tickets-py-selftest-crashes-with/handoff.md) | tickets.py selftest crashes with FileNotFoundError when run from a... | idea | M | P2 | none | ⏳ proposed |
 | T-0029 | [tickets-py-selftest-pass-output](tickets-py-selftest-pass-output/handoff.md) | tickets.py selftest pass output does not list individual... | idea | M | P2 | none | ⏳ proposed |
+| T-0030 | [board-changed-markers-silently-stop](board-changed-markers-silently-stop/handoff.md) | Board '· changed' markers silently stop working when the per-user... | idea | M | P2 | none | ⏳ proposed |
+| T-0031 | [legacy-sdlc-board-state-json](legacy-sdlc-board-state-json/handoff.md) | Legacy .sdlc/.board-state.json files stay in existing projects... | idea | M | P2 | none | ⏳ proposed |
