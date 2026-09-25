@@ -2,6 +2,7 @@
 # Usage: bench.sh [--bench-dir DIR] [task ...]   (default: every task in <bench>/tasks/)
 # The bench dir comes from bench-dir.sh: --bench-dir, $SDLC_BENCH_DIR, <project>/bench, else the plugin's bench/.
 # Runs /bench headless, one task per session, then prints the summary.
+# Each task's log ends with an `exit=<code> duration=<N>s` trailer.
 # Raises the Bash tool timeouts so long role runs can stay in the foreground.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,9 +20,14 @@ if [[ $# -eq 0 ]]; then
 fi
 for t in "$@"; do
   echo "== $t $(date +%H:%M)"
+  log="$bench/logs/$(date +%Y-%m-%d)-$t.txt"
+  start=$SECONDS
   SDLC_BENCH_DIR="$bench" BASH_DEFAULT_TIMEOUT_MS=3600000 BASH_MAX_TIMEOUT_MS=3600000 \
     claude -p --plugin-dir "$root" --model opus --effort medium --dangerously-skip-permissions \
-    "/sdlc-lite:bench $t" </dev/null >"$bench/logs/$(date +%Y-%m-%d)-$t.txt" 2>&1
-  echo "exit=$?"
+    "/sdlc-lite:bench $t" </dev/null >"$log" 2>&1
+  rc=$?
+  line="exit=$rc duration=$((SECONDS - start))s"
+  echo "$line" >>"$log"
+  echo "$line"
 done
 "$root/scripts/bench-summary.sh" --bench-dir "$bench"
