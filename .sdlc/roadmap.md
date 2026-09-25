@@ -58,4 +58,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0051 | [order-py-crashes-with-indexerror](order-py-crashes-with-indexerror/handoff.md) | order.py crashes with IndexError when run with no arguments while... | idea | M | P2 | none | ⚪ dropped |
 | T-0052 | [order-counts-after-returns-true](order-counts-after-returns-true/handoff.md) | order.counts_after returns true when either file has no runs.jsonl... | idea | M | P2 | none | ⚪ dropped |
 | T-0053 | [the-hooks-pretooluse-command-leaves](the-hooks-pretooluse-command-leaves/handoff.md) | The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted... | idea | M | P2 | none | 🟢 done |
-| T-0054 | [tickets-py-load-reads-nnnn](tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | M | P2 | none | 🔵 ready |
+| T-0054 | [tickets-py-load-reads-nnnn](tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | M | P2 | none | 🟢 done |

@@ -2,7 +2,7 @@
 id: T-0054
 title: "tickets.py load reads .NNNN-<slug> folders as tickets in plain mode..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ tickets.py `load()` reads `.NNNN-<slug>` folders as tickets in plain mode too, s
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-24: Decision: read .NNNN-slug folders as closed tickets in both modes; documented in skills/ticket and CLAUDE.md.
