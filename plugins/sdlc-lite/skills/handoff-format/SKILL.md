@@ -12,8 +12,8 @@ user-invocable: false
   decompose/            /decompose manifest-v<n>.json + report.md (optional)
   scout-L1.md           outputs of task-level roles: <role>-<level>.md
   planner-L2.md
-  planner-L3-2.md       a replan; the newest file is current
-  runs.jsonl            one line per run: role, level, model, effort, cost, duration
+  planner-L3-2.md       a replan; the latest runs.jsonl record is current
+  runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
@@ -24,7 +24,7 @@ user-invocable: false
 .sdlc/_templates/<type>.md  optional; overrides the plugin's skills/ticket/templates/<type>.md
 ```
 
-`scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest file by mtime is the current one. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
+`scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
 A live step dir is exactly `step-<digits>`; a replan renames replaced dirs to `step-<n>.superseded-<k>/` (k is the first free number); the board and scripts do not count these as steps.
 

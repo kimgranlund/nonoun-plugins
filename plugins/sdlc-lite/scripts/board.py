@@ -15,7 +15,8 @@ A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignor
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
 the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost). A rerun at the same
-level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest file by mtime wins.
+level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
+runs.jsonl record order (order.py), never file time.
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
@@ -32,6 +33,7 @@ never inside the repo). A legacy <root>/.board-state.json left by older versions
 import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
+import order  # same scripts/ dir: recorded run order for result files
 
 LADDER = {'queued': 0, 'building': 10, 'built': 50, 'verifying': 70, 'verified': 100}
 
@@ -48,7 +50,12 @@ def section(md: pathlib.Path, heading: str) -> str:
 
 
 def by_level(d: pathlib.Path, role: str, ext: str):
-    return sorted(d.glob(f'{role}-L*.{ext}'), key=lambda p: p.stat().st_mtime)
+    if ext == 'md':
+        return [pathlib.Path(p) for p in order.ordered(d, role)]
+    def key(p):
+        m = re.match(r'[a-z]+-L(\d+)', p.name)
+        return (int(m.group(1)) if m else 0, p.name)
+    return sorted(d.glob(f'{role}-L*.{ext}'), key=key)
 
 
 def live_step_dirs(task: pathlib.Path):
@@ -90,7 +97,7 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
     last_build = builds[-1]
     if section(last_build, 'Status').startswith('blocked'):
         return '🔴', f'blocked · builder {level_of(last_build)}{tries}', LADDER['building']
-    if verifies and verifies[-1].stat().st_mtime >= last_build.stat().st_mtime:
+    if verifies and order.counts_after(verifies[-1], last_build):
         verdict = section(verifies[-1], 'Verdict')
         if verdict.startswith('pass'):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
@@ -595,6 +602,40 @@ def selftest() -> int:
                                           'EXTRA': frozenset({'dropped'})})
     expect('a status in two visibility sets is reported',
            any("'dropped'" in p and 'both' in p for p in probs))
+
+    # 7. Verdicts follow runs.jsonl record order, never file times.
+    with tempfile.TemporaryDirectory() as otmp:
+        otmp = pathlib.Path(otmp)
+
+        def step_fixture(name, runs, times=None):
+            """runs: (role, level, file, body) in record order; times: {file: epoch}, else equal."""
+            d = otmp / name / 'step-1'
+            d.mkdir(parents=True)
+            for role, level, f, body in runs:
+                (d / f).write_text(body)
+            (d / 'runs.jsonl').write_text(''.join(
+                json.dumps({'role': r, 'level': lv, 'file': f}) + '\n' for r, lv, f, _ in runs))
+            for p in d.iterdir():
+                t = (times or {}).get(p.name, 1_700_000_000)
+                os.utime(p, (t, t))
+            return d
+
+        built = '## Status\ndone\n'
+        runs = [('builder', 'L1', 'builder-L1.md', built),
+                ('verifier', 'L1', 'verifier-L1.md', '## Verdict\nfail\n'),
+                ('builder', 'L2', 'builder-L2.md', built),
+                ('verifier', 'L2', 'verifier-L2.md', '## Verdict\npass\n')]
+        got = step_row(step_fixture('equal', runs), 'x', 'L1')[:2]
+        expect(f'equal mtimes: record order gives the pass row, got {got}',
+               got == ('🟢', 'pass · builder L2 · verifier L2 · attempt 2'))
+        after = runs + [('builder', 'L2', 'builder-L2-2.md', built)]
+        got = step_row(step_fixture('rebuild', after), 'x', 'L1')[:2]
+        expect(f'equal mtimes: a build after the pass awaits verify, got {got}',
+               got == ('🟡', 'built · builder L2, awaiting verify · attempt 3'))
+        inverse = {f: 1_700_000_900 - 100 * i for i, (_, _, f, _) in enumerate(runs)}
+        got = step_row(step_fixture('inverse', runs, inverse), 'x', 'L1')[:2]
+        expect(f'inverse mtimes: record order still gives the pass row, got {got}',
+               got == ('🟢', 'pass · builder L2 · verifier L2 · attempt 2'))
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
