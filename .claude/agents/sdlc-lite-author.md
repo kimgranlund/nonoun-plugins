@@ -23,7 +23,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 
 ## Hazards learned
 - Never edit or move scripts while a bench or role run is live. Replace a script atomically (write a new file, then `mv`), and never restructure mid-bench.
-- In a headless session, ending the turn ends the session: role runs stay in the foreground. `scripts/bench.sh` raises the Bash timeouts for that.
+- In a headless session, ending the turn ends the session: role runs stay in the foreground. `scripts/bench.sh` raises the Bash timeouts for that. In an interactive session a role or a bench task's /chain can take 15 to 30 minutes, past the Bash tool's 10-minute cap, so /chain, /bench and the conductor must say: run `run.sh` with `run_in_background: true`, wait for the completion notification, never poll with `sleep`, read `<role>-<level>.md` once notified (ending the turn is safe there), and the foreground `timeout` rule is for headless sessions only. `check.py` enforces this in those three docs (words `interactive`, `run_in_background`, `notification`, `sleep`; no unqualified `never run_in_background`).
 - Benchmark tasks: the goal must name every name, field, path, and message format the hidden tests pin, and constraints must let builders update tests the change legitimately breaks. Red/green-verify a task in a throwaway worktree before adding it.
 - A verifier pass with a hidden-check fail means find out which one is wrong before tuning anything.
 - Never touch the user's working trees, branches, or stash in other repos. Use throwaway worktrees and remove them.

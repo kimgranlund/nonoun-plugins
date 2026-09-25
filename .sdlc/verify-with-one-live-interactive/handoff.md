@@ -1,0 +1,22 @@
+---
+id: T-0045
+title: "Verify with one live interactive /chain run on a throwaway repo..."
+type: idea            # feature | bug | chore | spike | idea
+status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+size: M              # S | M | L | XL
+priority: P2         # P1 | P2 | P3
+depends: []          # ticket ids, e.g. [T-0002]
+created: 2026-09-24
+from: T-0042
+---
+
+## Goal
+One or two sentences: the outcome, not the method.
+
+## Context
+Follow-up from T-0042 (long-runs-interactive/filer-L1.md):
+
+Verify with one live interactive /chain run on a throwaway repo that a `run_in_background` role run re-invokes the session on exit, as the T-0042 docs assume (the planner flagged this as unverified).
+
+## Constraints
+What must not change. "None" if none.

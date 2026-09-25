@@ -46,6 +46,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0039 | [superseded-step-dirs](superseded-step-dirs/handoff.md) | A defined name for superseded step dirs | feature | S | P2 | none | 🟢 done |
 | T-0040 | [split-plan-into-steps](split-plan-into-steps/handoff.md) | A script writes step handoffs from a plan | feature | M | P2 | none | 🟢 done |
 | T-0041 | [confirm-follow-ups](confirm-follow-ups/handoff.md) | close confirms follow-ups before filing them | feature | M | P2 | none | ⏳ proposed |
-| T-0042 | [long-runs-interactive](long-runs-interactive/handoff.md) | Document long role runs in interactive sessions | bug | S | P1 | none | ⏳ proposed |
+| T-0042 | [long-runs-interactive](long-runs-interactive/handoff.md) | Document long role runs in interactive sessions | bug | S | P1 | none | 🟢 done |
 | T-0043 | [board-py-summary-counts-l5](board-py-summary-counts-l5/handoff.md) | board.py summary counts L5 runs with the glob step-/builder-L5... | idea | M | P2 | none | ⏳ proposed |
 | T-0044 | [reconcile-the-chain-4-2](reconcile-the-chain-4-2/handoff.md) | Reconcile the /chain 4.2 wording from T-0040 rename, then steps.py... | idea | M | P2 | none | ⏳ proposed |
+| T-0045 | [verify-with-one-live-interactive](verify-with-one-live-interactive/handoff.md) | Verify with one live interactive /chain run on a throwaway repo... | idea | M | P2 | none | ⏳ proposed |
