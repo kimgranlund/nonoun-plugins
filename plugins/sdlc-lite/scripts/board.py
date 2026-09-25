@@ -201,15 +201,19 @@ def belongs_on_board(task: pathlib.Path) -> bool:
 
 
 def sort_tasks(tasks, mode='recent'):
-    """Order task dirs: 'recent' by mtime (the default), 'name' by folder name, 'id' by the
-    numeric part of the ticket id, with tasks lacking an id after, by folder name."""
+    """Order task dirs: 'recent' by mtime, 'name' by folder name, 'id' by the numeric part
+    of the ticket id with tasks lacking an id after, by folder name. 'auto' (what main()
+    uses with no --sort when any rendered task has a ticket) is 'id' except that tasks
+    lacking an id follow by mtime."""
     if mode == 'name':
         return sorted(tasks, key=lambda t: t.name)
-    if mode == 'id':
+    if mode in ('id', 'auto'):
         def key(t):
             front = ticket_of(t)
             m = re.search(r'T-(\d+)', front[0]) if front else None
-            return (0, int(m.group(1)), t.name) if m else (1, 0, t.name)
+            if m:
+                return (0, int(m.group(1)), 0, t.name)
+            return (1, 0, t.stat().st_mtime if mode == 'auto' else 0, t.name)
         return sorted(tasks, key=key)
     return sorted(tasks, key=lambda d: d.stat().st_mtime)
 
@@ -370,7 +374,8 @@ def selftest() -> int:
         expect('main() output shows proposed-no-steps', 'proposed-no-steps' in out)
 
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
-        # name is alphabetical, and no flag equals --sort recent (mtime order).
+        # name is alphabetical. With no flag, a root with tickets sorts by id with
+        # unticketed tasks after by mtime; a root without tickets equals --sort recent.
         def ticket_front(tid):
             return front.replace('T-0042', tid)
 
@@ -397,14 +402,31 @@ def selftest() -> int:
                got == ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
         got = order(run_main(srt, '--sort', 'name'), names)
         expect(f'--sort name is alphabetical, got {got}', got == sorted(names))
-        default = run_main(srt)
-        got = order(default, names)
-        expect(f'no --sort is mtime order, got {got}', got == names)
+        got = order(run_main(srt, '--sort', 'recent'), names)
+        expect(f'--sort recent is mtime order, got {got}', got == names)
+        # Unticketed tasks follow by mtime: derive the expected order from the utime values.
+        unticketed = sorted((d for d in made if d.name in ('alpha', 'bravo')),
+                            key=lambda d: d.stat().st_mtime)
+        want = ['yankee-two', 'zulu-three'] + [d.name for d in unticketed]
+        got = order(run_main(srt), names)
+        expect(f'no --sort with tickets is id then unticketed by mtime, want {want}, got {got}',
+               got == want and want != ['yankee-two', 'zulu-three', 'alpha', 'bravo'])
+
+        plain = tmp / 'sort-plain'
+        pmade = [task_dir(plain, 'charlie', '## Goal\nno front matter\n'),
+                 task_dir(plain, 'alpha', '## Goal\nno front matter\n'),
+                 task_dir(plain, 'bravo', '## Goal\nno front matter\n')]
+        for i, d in enumerate(pmade):
+            os.utime(d, (1_000_000 + i * 100, 1_000_000 + i * 100))
+        pnames = [d.name for d in pmade]
+        got = order(run_main(plain), pnames)
+        expect(f'no --sort without tickets is mtime order, got {got}', got == pnames)
         # The state file adds ' · changed' markers between runs; compare with it removed.
-        (srt / '.board-state.json').unlink(missing_ok=True)
-        default = run_main(srt)
-        (srt / '.board-state.json').unlink(missing_ok=True)
-        expect('no --sort output equals --sort recent', default == run_main(srt, '--sort', 'recent'))
+        (plain / '.board-state.json').unlink(missing_ok=True)
+        default = run_main(plain)
+        (plain / '.board-state.json').unlink(missing_ok=True)
+        expect('no --sort without tickets equals --sort recent',
+               default == run_main(plain, '--sort', 'recent'))
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
@@ -422,7 +444,7 @@ def main():
     ap.add_argument('--task')
     ap.add_argument('--waiting')
     ap.add_argument('--summary', action='store_true')
-    ap.add_argument('--sort', choices=['recent', 'id', 'name'], default='recent')
+    ap.add_argument('--sort', choices=['recent', 'id', 'name'], default=None)
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(selftest())
@@ -434,8 +456,9 @@ def main():
         print(f'no task dirs: {root} does not exist', file=sys.stderr)
         sys.exit(1)
     candidates = [d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()]
-    tasks = sort_tasks(candidates, a.sort)
-    tasks = [t for t in tasks if belongs_on_board(t)]
+    tasks = [t for t in candidates if belongs_on_board(t)]
+    mode = a.sort or ('auto' if any(ticket_of(t) for t in tasks) else 'recent')
+    tasks = sort_tasks(tasks, mode)
     if a.task:
         tasks = [t for t in tasks if t.name == a.task]
         if not tasks:
