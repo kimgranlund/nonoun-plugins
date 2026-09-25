@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--numbered] | roadmap | check [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -13,7 +13,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             (unless --force), file each Follow-ups bullet as a proposed idea ticket with
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
             names each follow-up folder NNNN-<slug> after that follow-up's own new id
-  roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem)
+  roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
+            in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
             also fails a NNNN-<slug> folder whose id is not T-NNNN
   selftest  build fixtures in a temp dir and prove every check failure fires
@@ -447,9 +448,10 @@ def cmd_close(root, slug, force=False, numbered=False):
     return f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
 
 
-def cmd_roadmap(root):
+def cmd_roadmap(root, numbered=False):
+    numbered = numbered or config_numbered(root)
     ts = load(root)
-    errs = problems(ts)
+    errs = problems(ts, numbered)
     if errs:
         raise Fail('\n'.join(errs + ['roadmap not written: fix the problems above first']))
     root.mkdir(parents=True, exist_ok=True)
@@ -469,14 +471,14 @@ def cmd_check(root, numbered=False):
 
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
-    kw goes to new, close and check (numbered=)."""
+    kw goes to new, close, roadmap and check (numbered=)."""
     try:
         if cmd == 'new':
             return 0, cmd_new(root, *args, **kw), ''
         if cmd == 'close':
             return 0, cmd_close(root, *args, **kw), ''
         if cmd == 'roadmap':
-            return 0, cmd_roadmap(root), ''
+            return 0, cmd_roadmap(root, **kw), ''
         if cmd == 'check':
             return 0, cmd_check(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
@@ -693,6 +695,18 @@ def selftest():
         expect(f'matching 0001-alpha passes check --numbered: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(case(lambda r: None), 'check', numbered=True)
         expect(f'plain slugs get no prefix error in numbered mode: rc={rc} {err!r}', rc == 0)
+        # roadmap follows the same rule: numbered mode refuses on a mismatch and writes nothing
+        for label, mutate, kw in (('flag', renamed('0005-alpha'), {'numbered': True}),
+                                  ('config', both(renamed('0005-alpha'), config('ticket_folders: numbered\n')), {})):
+            root = case(mutate)
+            before = snap(root)
+            rc, _, err = run(root, 'roadmap', **kw)
+            expect(f'roadmap refuses on a prefix mismatch ({label}) and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and mismatch in err and 'roadmap not written' in err and snap(root) == before)
+        rc, out, err = run(case(renamed('0005-alpha')), 'roadmap')
+        expect(f'plain roadmap ignores a prefix mismatch: rc={rc} {out!r} {err!r}', rc == 0 and 'prefix' not in err)
+        rc, _, err = run(case(renamed('0001-alpha')), 'roadmap', numbered=True)
+        expect(f'matching 0001-alpha passes roadmap --numbered: rc={rc} {err!r}', rc == 0)
         root = case(both(renamed('0005-alpha'), config('ticket_folders: numbered\n')))
         before = snap(root)
         for cmd, args in (('new', ('feature', 'gamma')), ('close', ('beta',))):
@@ -879,7 +893,9 @@ def main(argv):
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id (also on via <root>/config)')
-    sub.add_parser('roadmap', help='regenerate roadmap.md')
+    p = sub.add_parser('roadmap', help='regenerate roadmap.md')
+    p.add_argument('--numbered', action='store_true',
+                   help='also refuse on a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
     p = sub.add_parser('check', help='validate tickets and roadmap freshness')
     p.add_argument('--numbered', action='store_true',
                    help='also fail a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
@@ -889,7 +905,7 @@ def main(argv):
     if cmd == 'selftest':
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
-    kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'check') else {}
+    kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check') else {}
     rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)
     if out:
         print(out)
