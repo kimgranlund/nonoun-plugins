@@ -2,10 +2,10 @@
 id: T-0058
 title: "/fanout command for parallel lanes, with per-lane board view"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
-depends: []          # ticket ids, e.g. [T-0002]
+depends: [T-0055, T-0056, T-0059]          # ticket ids, e.g. [T-0002]
 created: 2026-09-24
 ---
 
