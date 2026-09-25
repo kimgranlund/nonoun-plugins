@@ -1,6 +1,6 @@
 {
   "name": "sdlc-lite",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "SDLC agent team. Builders run headless with a fixed model and effort per level.",
   "author": {
     "name": "Kim Granlund"
