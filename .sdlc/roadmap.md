@@ -78,7 +78,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0071 | [followup-dup-matches-own-ticket](followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🟢 done |
 | T-0072 | [headless-background-abandon](headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | S | P1 | none | 🟢 done |
 | T-0073 | [verifier-no-verdict](verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🟢 done |
-| T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🔵 ready |
+| T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🟢 done |
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | ⏳ proposed |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | ⏳ proposed |
 | T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | ⏳ proposed |
