@@ -18,6 +18,25 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 4. Never put a deliberately broken command in a criterion code span, because `steps.py split` parses every command span and refuses the plan as a `plan defect`: name a fixture, or describe the command in prose.
 5. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
 
+## Merge steps
+
+When a task merges one lane into another, emit this step block and fill it in. Replace `<branch>` with the lane branch. Replace `<gate command>` with the project's own check or test commands, one criterion per gate, the way you name them for any step. Pick the level with the rubric as usual.
+
+Criterion 1 above still applies: before the merge, the two-parent and ancestor criteria must be red. If `<branch>` is already an ancestor of HEAD, no merge step is needed.
+
+```merge-step
+## Step <n>: Merge <branch>
+level: L<n>
+### Do
+Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. Resolve every conflict so both lanes' intent survives, run the gates below, and create the merge commit. Never push.
+### Acceptance criteria
+- `test "$(git rev-list --parents -n1 HEAD | wc -w)" -eq 3`
+- `git merge-base --is-ancestor <branch> HEAD`
+- (guard) `! git rev-parse -q --verify MERGE_HEAD`
+- (guard) `! git grep -nE '^(<<<<<<<|>>>>>>>)( |$)' -- $(git diff --name-only HEAD^1 HEAD)`
+- (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add <tmp> HEAD^1` copy and compare.
+```
+
 Final message, exactly this format, one block per step:
 
 ## Goal

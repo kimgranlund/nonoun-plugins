@@ -1,0 +1,2 @@
+{"ts":"2026-09-25T15:29:49Z","role":"planner","level":"L2","model":"opus","effort":"medium","file":"planner-L2.md","cost_usd":0.8002862000000001,"duration_ms":251555,"turns":13}
+{"ts":"2026-09-25T15:38:04Z","role":"filer","level":"L1","model":"opus","effort":"low","file":"filer-L1.md","cost_usd":0.2589256,"duration_ms":19421,"turns":2}
