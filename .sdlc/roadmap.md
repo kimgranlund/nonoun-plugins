@@ -88,10 +88,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | ⏳ proposed |
 | T-0082 | [criteria-or-fallback](criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | S | P2 | none | ⏳ proposed |
 | T-0083 | [guards-in-steps-py-split](guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | M | P2 | none | ⏳ proposed |
-| T-0084 | [port-checking-rules](port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | 🔵 ready |
-| T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🔵 ready |
-| T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🔵 ready |
-| T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🔵 ready |
+| T-0084 | [port-checking-rules](port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | 🟢 done |
+| T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🟢 done |
+| T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🟢 done |
+| T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🟢 done |
 | T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | ⏳ proposed |
 | T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | ⏳ proposed |
 | T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🔵 ready |
+| T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | ⏳ proposed |
