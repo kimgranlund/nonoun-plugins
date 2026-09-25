@@ -218,6 +218,12 @@ for w in ('likely duplicate', 'open T-NNNN'):
     if w not in ft: errors.append(f'skills/file/SKILL.md: missing "{w}"')
 # AskUserQuestion allows at most 4 options per question; the publish question must fit.
 if 'at most 4 options' not in ft: errors.append('skills/file/SKILL.md: publish question missing "at most 4 options"')
+# Step 3.3 follow-ups must batch within AskUserQuestion's 4-option limit.
+def step33_bad(text):
+    l33 = next((l for l in text.splitlines() if l.startswith('   3. When a person is present')), '')
+    return 'at most 4 options per question' not in l33
+if step33_bad(ft): errors.append('skills/file/SKILL.md: step 3.3 missing "at most 4 options per question"')
+if not step33_bad(ft.replace('at most 4 options per question', '')): errors.append('check.py: step 3.3 guard negative control not flagged')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')
