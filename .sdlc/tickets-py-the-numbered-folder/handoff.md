@@ -2,7 +2,7 @@
 id: T-0033
 title: "tickets.py: the numbered-folder warning in check gives a false..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ tickets.py: the numbered-folder warning in `check` gives a false positive when e
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: warning only, rare (every slug date-prefixed).

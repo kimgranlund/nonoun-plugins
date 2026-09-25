@@ -2,9 +2,9 @@
 id: T-0034
 title: "tickets.py: the argparse --numbered help text for close does not..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
-priority: P2         # P1 | P2 | P3
+priority: P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24
 from: T-0026
@@ -20,3 +20,6 @@ tickets.py: the argparse `--numbered` help text for `close` does not mention tha
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: keep, P3; one-line help text fix.

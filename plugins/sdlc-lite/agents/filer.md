@@ -20,4 +20,4 @@ Summary, changes, and how each was verified.
 ## Changelog entry
 
 ## Follow-ups
-Open issues worth filing: one top-level `- ` bullet per follow-up, one line each, self-contained (each becomes a ticket title and context). Exactly `None` if there are none.
+Open issues worth filing: one top-level `- ` bullet per follow-up, one line each, self-contained (each becomes a ticket title and context). Exactly `None` if there are none. Each follow-up becomes a ticket someone must triage, so list only work that changes behavior or closes a real risk: a defect, a missing guard, or an unverified connection between parts. Leave out cosmetic wording, help-text polish, notes about how a past step was checked, and ideas the artifacts show no need for. When unsure, leave it out; two strong follow-ups beat five weak ones.

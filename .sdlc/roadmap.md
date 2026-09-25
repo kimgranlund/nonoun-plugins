@@ -37,7 +37,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0030 | [board-changed-markers-silently-stop](board-changed-markers-silently-stop/handoff.md) | Board '· changed' markers silently stop working when the per-user... | idea | M | P2 | none | ⚪ dropped |
 | T-0031 | [legacy-sdlc-board-state-json](legacy-sdlc-board-state-json/handoff.md) | Legacy .sdlc/.board-state.json files stay in existing projects... | idea | M | P2 | none | 🟢 done |
 | T-0032 | [confirm-with-one-real-scripts](confirm-with-one-real-scripts/handoff.md) | Confirm with one real scripts/bench.sh --bench-dir DIR run that the... | idea | M | P2 | none | 🟢 done |
-| T-0033 | [tickets-py-the-numbered-folder](tickets-py-the-numbered-folder/handoff.md) | tickets.py: the numbered-folder warning in check gives a false... | idea | M | P2 | none | ⏳ proposed |
-| T-0034 | [tickets-py-the-argparse-numbered](tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | M | P2 | none | ⏳ proposed |
-| T-0035 | [t-0026-step-2-acceptance](t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | M | P2 | none | ⏳ proposed |
-| T-0036 | [have-bench-sh-write-its](have-bench-sh-write-its/handoff.md) | Have bench.sh write its exit code and wall-clock duration to the... | idea | M | P2 | none | ⏳ proposed |
+| T-0033 | [tickets-py-the-numbered-folder](tickets-py-the-numbered-folder/handoff.md) | tickets.py: the numbered-folder warning in check gives a false... | idea | M | P2 | none | ⚪ dropped |
+| T-0034 | [tickets-py-the-argparse-numbered](tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | M | P3 | none | 🔵 ready |
+| T-0035 | [t-0026-step-2-acceptance](t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | M | P2 | none | ⚪ dropped |
+| T-0036 | [have-bench-sh-write-its](have-bench-sh-write-its/handoff.md) | Have bench.sh write its exit code and wall-clock duration to the... | idea | M | P3 | none | 🔵 ready |
