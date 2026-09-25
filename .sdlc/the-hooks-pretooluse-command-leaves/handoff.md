@@ -2,7 +2,7 @@
 id: T-0053
 title: "The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -23,3 +23,7 @@ The hook script and its matcher stay as they are; only the command string in `pl
 
 ## Triage
 2026-09-24, user-approved: keep; quote ${CLAUDE_PLUGIN_ROOT} in the hook command so a path with spaces works.
+
+## Closed
+
+2026-09-24: Shipped in 0.6.0; verified live: builder push blocked with the plugin at a path containing a space.
