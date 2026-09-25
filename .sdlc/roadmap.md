@@ -30,10 +30,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0023 | [in-numbered-mode-tickets-py](in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | 🟢 done |
 | T-0024 | [numbered-mode-not-persisted](numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | 🟢 done |
 | T-0025 | [bench-project-dirs](bench-project-dirs/handoff.md) | Bench tasks and results live in the project | feature | M | P2 | none | 🟢 done |
-| T-0026 | [tickets-py-check-should-warn](tickets-py-check-should-warn/handoff.md) | tickets.py: check should warn when every ticket folder has an NNNN... | idea | M | P2 | none | 🔵 ready |
+| T-0026 | [tickets-py-check-should-warn](tickets-py-check-should-warn/handoff.md) | tickets.py: check should warn when every ticket folder has an NNNN... | idea | M | P2 | none | 🟢 done |
 | T-0027 | [tickets-py-close-numbered-does](tickets-py-close-numbered-does/handoff.md) | tickets.py: close --numbered does not persist ticket_folders... | idea | M | P2 | none | ⚪ dropped |
 | T-0028 | [tickets-py-selftest-crashes-with](tickets-py-selftest-crashes-with/handoff.md) | tickets.py selftest crashes with FileNotFoundError when run from a... | idea | M | P2 | none | ⚪ dropped |
 | T-0029 | [tickets-py-selftest-pass-output](tickets-py-selftest-pass-output/handoff.md) | tickets.py selftest pass output does not list individual... | idea | M | P2 | none | ⚪ dropped |
 | T-0030 | [board-changed-markers-silently-stop](board-changed-markers-silently-stop/handoff.md) | Board '· changed' markers silently stop working when the per-user... | idea | M | P2 | none | ⚪ dropped |
 | T-0031 | [legacy-sdlc-board-state-json](legacy-sdlc-board-state-json/handoff.md) | Legacy .sdlc/.board-state.json files stay in existing projects... | idea | M | P2 | none | 🔵 ready |
 | T-0032 | [confirm-with-one-real-scripts](confirm-with-one-real-scripts/handoff.md) | Confirm with one real scripts/bench.sh --bench-dir DIR run that the... | idea | M | P2 | none | 🔵 ready |
+| T-0033 | [tickets-py-the-numbered-folder](tickets-py-the-numbered-folder/handoff.md) | tickets.py: the numbered-folder warning in check gives a false... | idea | M | P2 | none | ⏳ proposed |
+| T-0034 | [tickets-py-the-argparse-numbered](tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | M | P2 | none | ⏳ proposed |
+| T-0035 | [t-0026-step-2-acceptance](t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | M | P2 | none | ⏳ proposed |

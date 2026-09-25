@@ -12,11 +12,13 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
   close     after /file: read the task's newest filer-L*.md, refuse while its Warnings are open
             (unless --force), file each Follow-ups bullet as a proposed idea ticket with
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
-            names each follow-up folder NNNN-<slug> after that follow-up's own new id
+            names each follow-up folder NNNN-<slug> after that follow-up's own new id. On success,
+            close --numbered persists the mode in <root>/config, as new --numbered does
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
-            also fails a NNNN-<slug> folder whose id is not T-NNNN
+            also fails a NNNN-<slug> folder whose id is not T-NNNN. Outside numbered mode, when every
+            ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
   selftest  build fixtures in a temp dir and prove every check failure fires
 
 A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped.
@@ -382,7 +384,9 @@ def follow_up_title(plain):
 def cmd_close(root, slug, force=False, numbered=False):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
-    numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id."""
+    numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
+    On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does."""
+    flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
@@ -445,6 +449,8 @@ def cmd_close(root, slug, force=False, numbered=False):
         (root / s / 'handoff.md').write_text(t, encoding='utf-8')
     h.write_bytes((head + raw[fm.end():]).encode('utf-8'))
     write_roadmap(root, load(root))
+    if flag:
+        ensure_numbered_config(root)
     return f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
 
 
@@ -466,7 +472,11 @@ def cmd_check(root, numbered=False):
         raise Fail('\n'.join(errs))
     if stale(root, ts):
         raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
-    return f'ok: {len(ts)} tickets, roadmap current'
+    ok = f'ok: {len(ts)} tickets, roadmap current'
+    if not numbered and ts and all(PREFIX_RE.match(slug) for slug, _ in ts):
+        return (ok + f"\nwarning: every ticket folder has an NNNN- prefix but {root}/config lacks "
+                f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
+    return ok
 
 
 def run(root, cmd, args=(), **kw):
@@ -695,6 +705,23 @@ def selftest():
         expect(f'matching 0001-alpha passes check --numbered: rc={rc} {err!r}', rc == 0)
         rc, _, err = run(case(lambda r: None), 'check', numbered=True)
         expect(f'plain slugs get no prefix error in numbered mode: rc={rc} {err!r}', rc == 0)
+
+        # check warns (exit 0) when every folder is NNNN- but <root>/config lacks the numbered line
+        def renamed_beta(root):
+            (root / 'beta').rename(root / '0002-beta')
+            run(root, 'roadmap')
+        all_numbered = both(renamed('0001-alpha'), renamed_beta)
+        rc, out, err = run(case(all_numbered), 'check')
+        expect(f'all-numbered folders, no config: check warns and exits 0: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.startswith('ok: 2 tickets') and 'warning' in out and "ticket_folders: numbered" in out)
+        for label, mutate in (('with config', both(all_numbered, config('ticket_folders: numbered\n'))),
+                              ('plain slugs', lambda r: None),
+                              ('mixed', renamed('0001-alpha'))):
+            rc, out, err = run(case(mutate), 'check')
+            expect(f'no numbered-config warning ({label}): rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'warning' not in out + err)
+        rc, out, err = run(pathlib.Path(tmp) / 'empty-warn' / '.sdlc', 'check')
+        expect(f'no numbered-config warning (empty root): rc={rc} {out!r}', rc == 0 and 'warning' not in out + err)
         # roadmap follows the same rule: numbered mode refuses on a mismatch and writes nothing
         for label, mutate, kw in (('flag', renamed('0005-alpha'), {'numbered': True}),
                                   ('config', both(renamed('0005-alpha'), config('ticket_folders: numbered\n')), {})):
@@ -863,6 +890,17 @@ def selftest():
         made = fresh(root, {'alpha', 'beta'})
         expect(f'(i) plain close keeps bare slugs: rc={rc} {sorted(made)}',
                rc == 0 and sorted(made) == ['0042-fix-the-parser', 'add-retry-to-fetch', 'add-retry-to-fetch-2'])
+        expect(f'(i) plain close writes no config: tree={tree(root)}', not (root / 'config').exists())
+        # (j) close --numbered persists `ticket_folders: numbered`, like new --numbered; a refusal writes none
+        root = case(numbered_follow)
+        rc, out, err = run(root, 'close', ('alpha',), numbered=True)
+        expect(f'(j) close --numbered writes config with the numbered line: rc={rc} {err!r} tree={tree(root)}',
+               rc == 0 and (root / 'config').is_file() and config_numbered(root))
+        root = case(filer('filer-L1.md', 'step-1 verifier fail', '- Add retry to fetch'))
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), numbered=True)
+        expect(f'(j) refused close --numbered writes no config: rc={rc} {err!r}',
+               rc == 1 and not (root / 'config').exists() and snap(root) == before)
 
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
