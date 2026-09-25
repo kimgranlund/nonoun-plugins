@@ -27,9 +27,9 @@ Run planner on the task handoff. For each `## Step n` block, write `step-<n>/han
 ## 4. Build and verify, one step at a time, in order
 For each step:
 1. builder at the step's `level:`.
-2. builder Status blocked → skip the verifier (never verify a blocked build) and run planner L3 on the task handoff (replan), rewrite the remaining step handoffs, continue from the blocked step.
+2. builder Status blocked → skip the verifier (never verify a blocked build) and run planner L3 on the task handoff (replan; it writes a new `planner-L3[-k].md`), rewrite the remaining step handoffs from the newest planner file (earlier plans stay in place), continue from the blocked step.
 3. verifier at the level the rubric derives from the build level.
-4. Verdict fail → rebuild the same level once, with the verifier's "For the next attempt" appended to the step handoff under `## Previous attempt`. A second fail → bump the builder one level and repeat. A fail at L5 → stop and ask the user.
+4. Verdict fail → rebuild the same level once (it writes `builder-L<n>-<k>.md`, so earlier attempts stay for the rubric's "earlier builder-*.md with Status blocked" count), with the verifier's "For the next attempt" appended to the step handoff under `## Previous attempt`. A second fail → bump the builder one level and repeat. A fail at L5 → stop and ask the user.
 
 ## 5. File
 Run the /file flow on the task dir. Publishing still needs the user's approval.

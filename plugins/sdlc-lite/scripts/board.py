@@ -12,7 +12,8 @@ Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [selftes
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format).
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
-the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost).
+the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost). A rerun at the same
+level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest file by mtime wins.
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
@@ -61,7 +62,9 @@ def cost(d: pathlib.Path) -> float:
 
 
 def level_of(p: pathlib.Path) -> str:
-    return p.stem.split('-')[-1]
+    """The L<n> token of a result file: builder-L3.md and builder-L3-2.md (a rerun) give L3."""
+    m = re.search(r'-(L\d)(?:-\d+)?$', p.stem)
+    return m.group(1) if m else p.stem.split('-')[-1]
 
 
 def step_row(step: pathlib.Path, title: str, planned_level: str):
@@ -516,6 +519,31 @@ def selftest() -> int:
         expect('render leaves the legacy file bytes unchanged', legacy.read_bytes() == b'{"old": 1}')
         expect('summary is unchanged by the legacy file', summary(clean) == sum_without)
         legacy.unlink()
+
+        # 5d. Numbered reruns (run.sh writes <role>-<level>-<k>.md): level_of keeps the L<n>
+        # token, and the newest file wins for plans and builds.
+        expect(f"level_of(builder-L3-2.md) is L3, got {level_of(pathlib.Path('builder-L3-2.md'))!r}",
+               level_of(pathlib.Path('builder-L3-2.md')) == 'L3')
+        expect(f"level_of(planner-L3.md) is L3, got {level_of(pathlib.Path('planner-L3.md'))!r}",
+               level_of(pathlib.Path('planner-L3.md')) == 'L3')
+        rerun = tmp / 'rerun'
+        rp = task_dir(rerun, 'replanned', '## Goal\nx\n')
+        (rp / 'planner-L3.md').write_text('## Step 1: a\nlevel: L1\n## Step 2: b\nlevel: L2\n')
+        (rp / 'planner-L3-2.md').write_text('## Step 1: only\nlevel: L2\n')
+        os.utime(rp / 'planner-L3.md', (1_000_000, 1_000_000))
+        os.utime(rp / 'planner-L3-2.md', (1_000_100, 1_000_100))
+        got = plan_steps(rp)
+        expect(f'plan_steps takes the newer planner-L3-2.md, got {got}', got == [(1, 'only', 'L2')])
+        rb = task_dir(rerun, 'rebuilt', '## Goal\nx\n')
+        st = rb / 'step-1'
+        st.mkdir()
+        (st / 'builder-L3.md').write_text('## Status\nblocked\n')
+        (st / 'builder-L3-2.md').write_text('## Status\ndone\n')
+        os.utime(st / 'builder-L3.md', (1_000_000, 1_000_000))
+        os.utime(st / 'builder-L3-2.md', (1_000_100, 1_000_100))
+        glyph, status, _ = step_row(st, 'x', 'L3')
+        expect(f'newer builder-L3-2.md (done) renders built · builder L3, got {status!r}',
+               status.startswith('built · builder L3') and 'blocked' not in status)
 
     if saved_state_dir is None:
         os.environ.pop('SDLC_BOARD_STATE_DIR', None)

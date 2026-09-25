@@ -12,6 +12,7 @@ user-invocable: false
   decompose/            /decompose manifest-v<n>.json + report.md (optional)
   scout-L1.md           outputs of task-level roles: <role>-<level>.md
   planner-L2.md
+  planner-L3-2.md       a replan; the newest file is current
   runs.jsonl            one line per run: role, level, model, effort, cost, duration
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
@@ -22,7 +23,7 @@ user-invocable: false
 .sdlc/_templates/<type>.md  optional; overrides the plugin's skills/ticket/templates/<type>.md
 ```
 
-`scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. Rerunning the same role and level overwrites them; runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
+`scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest file by mtime is the current one. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
 If the project commits the `.sdlc/` trail, ignore these instead so `/board` and role runs don't dirty the tree:
 

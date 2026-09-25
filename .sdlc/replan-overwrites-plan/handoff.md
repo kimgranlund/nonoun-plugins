@@ -2,7 +2,7 @@
 id: T-0038
 title: "A replan overwrites the original plan"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M
 priority: P1
 depends: []          # ticket ids, e.g. [T-0002]
@@ -25,3 +25,6 @@ Reported by the setup-sdlc-lite-generative-ui session from gen-ui-system-svelte-
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Paths (added by the conductor)
+All code to change is in this worktree: plugins/sdlc-lite/ (scripts/run.sh around line 44, scripts/board.py which globs planner-L*.md, skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and any other skill or doc that names planner-L<n>.md). Check with plugins/sdlc-lite/scripts/check.sh and board.py's selftest. Repro/Expected/Actual above were left as template text by the reporter; the Context section is the repro: run the planner twice on one task handoff and the second run replaces planner-L3.md. Note: roles for this task are launched by a different checkout's run.sh (/Users/kimba/Projects/nonoun/sdlc-agents), so do not rely on the fix affecting this run.
