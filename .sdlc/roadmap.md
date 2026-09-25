@@ -65,7 +65,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0059 | [merge-step-template](merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | M | P2 | none | 🟢 done |
 | T-0058 | [fanout-command](fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | M | P2 | T-0055, T-0056, T-0059 | 🟢 done |
 | T-0060 | [unpassable-plan-criteria](unpassable-plan-criteria/handoff.md) | Plan acceptance criteria that cannot pass reach the builder | bug | S | P2 | none | 🟢 done |
-| T-0061 | [add-a-steps-py-next](add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | M | P2 | none | 🔵 ready |
+| T-0061 | [add-a-steps-py-next](add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | M | P2 | none | 🟢 done |
 | T-0062 | [criteria-that-contradict-each-other](criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🔵 ready |
 | T-0063 | [run-a-live-merge-step](run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🟢 done |
 | T-0064 | [merge-step-conflict-marker-guard](merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🟢 done |
@@ -85,3 +85,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | ⏳ proposed |
 | T-0079 | [close-dry-run-lists-open](close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | ⏳ proposed |
 | T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | ⏳ proposed |
+| T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | ⏳ proposed |
