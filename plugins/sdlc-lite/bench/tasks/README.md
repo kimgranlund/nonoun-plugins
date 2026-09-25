@@ -19,3 +19,5 @@ check: <one shell command; exit 0 = pass>
 The Goal must state every name, field, path, and message format the hidden tests pin, and nothing the tests check may be missing from it. Otherwise a correct build fails on naming (the figma-stale-skip-report baseline, 2026-09-24). Grep the hidden tests for what they import and assert on before writing the Goal. Constraints must let builders update existing tests that the change legitimately breaks (the real solution usually did); a blanket "do not edit test files" makes typecheck or tests unreachable (the button-geometry-model baseline blocked twice on it).
 
 Everything from `## Goal` down becomes the task handoff. Nothing above it is shown to the agents.
+
+A project keeps its own tasks in `<project>/bench/tasks/`, which `/bench` prefers over the plugin's.

@@ -14,7 +14,7 @@ A plugin marketplace (`sdlc-lite`, `.claude-plugin/marketplace.json`) holding on
 - Default agent: in a target repo's `.claude/settings.json`, `"agent": "sdlc-lite:conductor"` makes every session there the conductor (routes asks to skills, dispatches roles, reports with /board, makes only trivial edits itself). Declare it per repo, never in user settings.
 - Run one role directly: `scripts/run.sh <role> <level> <handoff.md>` (writes `<role>-<level>.md`, `.log`, and a `runs.jsonl` line next to the handoff)
 - Check a level mapping without a model call: `SDLC_DRY_RUN=1 scripts/run.sh builder L3 <handoff.md>`
-- Benchmark: `scripts/bench.sh [task ...]` runs tasks headless (raises Bash timeouts so role runs stay in the foreground), then `scripts/bench-summary.sh`
+- Benchmark: `scripts/bench.sh [task ...]` runs tasks headless (raises Bash timeouts so role runs stay in the foreground), then `scripts/bench-summary.sh`. The bench dir (tasks, results, logs) resolves in this order: `--bench-dir DIR`, then `SDLC_BENCH_DIR`, then `<project>/bench/` (git toplevel), then the plugin's `bench/`, via `scripts/bench-dir.sh`. This repo's root has no `bench/`, so the dev bench stays at `plugins/sdlc-lite/bench/`.
 
 ## Layout
 
