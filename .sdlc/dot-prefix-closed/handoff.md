@@ -2,7 +2,7 @@
 id: T-0050
 title: "Dot-prefix closed ticket folders"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0049]          # ticket ids, e.g. [T-0002]
@@ -22,3 +22,6 @@ Requested by the setup-sdlc-lite-generative-ui session for gen-ui-system-svelte-
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: build now; T-0049 has landed.
