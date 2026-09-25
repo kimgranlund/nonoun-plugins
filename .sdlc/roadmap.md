@@ -73,7 +73,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🟢 done |
 | T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🟢 done |
 | T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🟢 done |
-| T-0069 | [conflict-guard-lane-false-positive](conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🔵 ready |
+| T-0069 | [conflict-guard-lane-false-positive](conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🟢 done |
 | T-0070 | [conflict-guard-gnu-xargs-probe](conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | M | P2 | none | ⏳ proposed |
 | T-0071 | [followup-dup-matches-own-ticket](followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🟢 done |
 | T-0072 | [headless-background-abandon](headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | S | P1 | none | 🟢 done |
@@ -88,3 +88,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | ⏳ proposed |
 | T-0083 | [guards-in-steps-py-split](guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | M | P2 | none | ⏳ proposed |
 | T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | ⏳ proposed |
+| T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | ⏳ proposed |

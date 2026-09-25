@@ -9,7 +9,7 @@
    "no new findings" rule appear in every doc and script that carries the route.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
-   runs its conflict-marker guard against a throwaway repo, and agents/builder.md
+   runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo, and agents/builder.md
    names `git merge --no-ff`.
 7. /file likely duplicates: skills/file/SKILL.md names the dry run's `open T-NNNN` lines and
    the `likely duplicate` marking of follow-ups that restate an open ticket.
@@ -120,8 +120,10 @@ if pb and pb.strip():
         if r.returncode != 0: errors.append(f'merge-step block fails steps.py lint: {r.stderr.strip()}')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-# Behavior probe: the conflict-marker guard passes an empty merge (no whole-tree scan),
-# fails on a marker in a touched file (name with a space), and passes a clean merge.
+# Behavior probe: the conflict-marker guard fails only on markers the merge commit introduced.
+# It passes an empty merge, fails on a marker the merge commit added (file name with a space),
+# passes a lane line starting with >>>>>>> that merged cleanly, fails on kept git conflict
+# markers, and passes a clean merge.
 if pb and pb.strip():
     guard = next((l for l in pb.splitlines() if l.startswith('- (guard) ') and '<<<<<<<' in l), None)
     if guard is None or guard.count('`') < 2:
@@ -143,12 +145,32 @@ if pb and pb.strip():
             g('checkout', '-q', 'main'); g('merge', '-q', '--no-ff', '-m', 'merge empty', 'empty')
             if span_rc() != 0: errors.append('merge-step conflict-marker guard: empty merge flagged')
             pre = g('rev-parse', 'HEAD^1')
+            def gr(*a):
+                return subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@t', *a], cwd=tmp,
+                                      capture_output=True, text=True)
+            def app(s):
+                with open(pathlib.Path(tmp, 'sp ace.txt'), 'a') as fh: fh.write(s)
             g('checkout', '-qb', 'marker', pre)
-            with open(pathlib.Path(tmp, 'sp ace.txt'), 'a') as fh: fh.write('>>>>>>> lane\n')
-            g('commit', '-qam', 'marker')
+            pathlib.Path(tmp, 'm.txt').write_text('m\n')
+            g('add', '-A'); g('commit', '-qm', 'marker lane')
             g('checkout', '-q', 'main'); g('reset', '-q', '--hard', pre)
-            g('merge', '-q', '--no-ff', '-m', 'merge marker', 'marker')
+            g('merge', '-q', '--no-ff', '--no-commit', 'marker')
+            app('>>>>>>> evil\n'); g('add', '-A'); g('commit', '-qm', 'merge marker')
             if span_rc() == 0: errors.append('merge-step conflict-marker guard: marker in touched file not flagged')
+            g('reset', '-q', '--hard', pre)
+            g('checkout', '-qb', 'legit', pre)
+            app('>>>>>>> lane\n'); g('commit', '-qam', 'legit')
+            g('checkout', '-q', 'main'); g('reset', '-q', '--hard', pre)
+            g('merge', '-q', '--no-ff', '-m', 'merge legit', 'legit')
+            if span_rc() != 0: errors.append('merge-step conflict-marker guard: legit lane line flagged')
+            g('reset', '-q', '--hard', pre)
+            g('checkout', '-qb', 'conflict', pre)
+            pathlib.Path(tmp, 'sp ace.txt').write_text('lane\n'); g('commit', '-qam', 'lane side')
+            g('checkout', '-q', 'main'); g('reset', '-q', '--hard', pre)
+            pathlib.Path(tmp, 'sp ace.txt').write_text('main\n'); g('commit', '-qam', 'main side')
+            gr('merge', '-q', '--no-ff', 'conflict')
+            g('add', '-A'); g('commit', '-qm', 'merge conflict kept')
+            if span_rc() == 0: errors.append('merge-step conflict-marker guard: kept conflict markers not flagged')
             g('reset', '-q', '--hard', pre)
             g('checkout', '-qb', 'clean')
             pathlib.Path(tmp, 'ok file.txt').write_text('ok\n')
