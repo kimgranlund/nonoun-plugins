@@ -4,8 +4,14 @@
 1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric vs CLAUDE.md.
 2. Every agents/<role>.md has run.sh cases, and every run.sh role has an agent file.
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
+4. Long role runs: chain, bench, and conductor state the interactive vs headless rule.
+5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
+   "no new findings" rule appear in every doc and script that carries the route.
+6. Merge-step template: the fenced merge-step block in agents/planner.md and
+   skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
+   and agents/builder.md names `git merge --no-ff`.
 """
-import re, sys, pathlib
+import re, sys, pathlib, subprocess, tempfile, shutil
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent.parent)
 errors = []
@@ -73,6 +79,45 @@ for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'agents/conductor.
     if missing: errors.append(f'{rel}: long-run rule missing words: {", ".join(missing)}')
     if 'never `run_in_background`' in text or 'never run_in_background' in text:
         errors.append(f'{rel}: still says "never run_in_background" unqualified')
+# Plan-defect route: a `plan defect` tag from the split lint, the builder, or the verifier goes to a replan.
+PLAN_DEFECT_DOCS = {
+    'plan defect': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'agents/conductor.md',
+                    'skills/chain/SKILL.md', 'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md',
+                    'scripts/steps.py'),
+    'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
+    'no new findings': ('agents/planner.md',),
+}
+for word, rels in PLAN_DEFECT_DOCS.items():
+    for rel in rels:
+        f = root/rel
+        if not f.is_file(): errors.append(f'{rel}: missing (plan-defect route check)'); continue
+        if word not in f.read_text(): errors.append(f'{rel}: plan-defect route missing "{word}"')
+# Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
+def merge_block(rel):
+    f = root/rel
+    if not f.is_file(): return None
+    out, inside = [], False
+    for line in f.read_text().splitlines():
+        if not inside and line == '```merge-step': inside = True; continue
+        if inside and line == '```': return '\n'.join(out)
+        if inside: out.append(line)
+    return None
+blocks = {rel: merge_block(rel) for rel in ('agents/planner.md', 'skills/handoff-format/SKILL.md')}
+for rel, b in blocks.items():
+    if not b or not b.strip(): errors.append(f'{rel}: merge-step block missing or empty')
+pb, hb = blocks['agents/planner.md'], blocks['skills/handoff-format/SKILL.md']
+if pb and hb and pb != hb: errors.append('merge-step block differs between agents/planner.md and skills/handoff-format/SKILL.md')
+if pb and pb.strip():
+    tmp = tempfile.mkdtemp()
+    try:
+        plan = pathlib.Path(tmp)/'planner-L2.md'
+        plan.write_text(pb.replace('<n>', '1') + '\n')
+        r = subprocess.run(['python3', str(root/'scripts/steps.py'), 'lint', str(plan)], capture_output=True, text=True)
+        if r.returncode != 0: errors.append(f'merge-step block fails steps.py lint: {r.stderr.strip()}')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+b = root/'agents/builder.md'
+if not b.is_file() or 'git merge --no-ff' not in b.read_text(): errors.append('agents/builder.md: missing "git merge --no-ff"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

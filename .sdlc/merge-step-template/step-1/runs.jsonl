@@ -1,0 +1,2 @@
+{"ts":"2026-09-25T15:31:38Z","role":"builder","level":"L3","model":"opus","effort":"high","file":"builder-L3.md","cost_usd":0.46608160000000004,"duration_ms":83999,"turns":11}
+{"ts":"2026-09-25T15:33:14Z","role":"verifier","level":"L2","model":"fable","effort":"medium","file":"verifier-L2.md","cost_usd":0.9221315000000001,"duration_ms":82988,"turns":9}

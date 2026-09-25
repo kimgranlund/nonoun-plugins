@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -20,6 +20,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             A plain slug folder never moves. close refuses, writing nothing, when .<slug> already
             exists, and names the dot folder (`already closed`) when only .<slug> holds the ticket.
             close --dry-run adds a `rename <slug> -> .<slug>` line.
+            With no filer-L*.md here, close refuses and, when another git worktree's same-relative
+            <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
+            this tree, then rerun close.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
             NNNN- prefix) equals an existing ticket's, any status, is a duplicate: close skips it and
             names it in the output. Follow-ups in the same filer are not checked against each other.
@@ -40,12 +43,23 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
             (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
             ## Closed section with today's date and TEXT, and files no follow-ups
+            close --ack-warnings TEXT closes while the filer's Warnings are open, for warnings that no
+            longer apply: follow-ups, duplicates, --dry-run, --skip/--expect and the numbered rename work
+            as for a plain close, and the handoff gains a ## Closed section with today's date,
+            `warnings acknowledged: TEXT`, and the Warnings text quoted line by line (`> `). It refuses,
+            writing nothing, with --force, with --reason, with empty TEXT, or when Warnings is None
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
             also fails a NNNN-<slug> folder whose id is not T-NNNN. Outside numbered mode, when every
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
   selftest  build fixtures in a temp dir and prove every check failure fires
+
+Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
+(<worktree>/<root relative to its toplevel>) in every `git worktree list` tree, so parallel worktrees never
+reuse an id. Outside git, or when git fails, the local root decides alone. A worktree with no such dir yet
+is skipped, and malformed tickets in another tree are ignored there. Branches not checked out in any
+worktree are not seen; check catches a clash after merge (duplicate id, naming both folders).
 
 A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped,
 except a closed-ticket folder .NNNN-<slug>: it is a ticket in every mode and command (ids, depends, from,
@@ -60,6 +74,7 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -160,6 +175,57 @@ def ensure_numbered_config(root):
     if old and not old.endswith('\n'):
         old += '\n'
     path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
+
+
+GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
+
+
+def worktree_roots(root):
+    """The same-relative ticket root in every other git worktree of root's repo: <worktree>/<rel>, where rel is
+    root relative to its worktree's toplevel. Only existing dirs; the current root is left out. [] when git is
+    missing, a git call fails, or root is outside the toplevel (not in git: the local root decides alone).
+    GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer git context cannot redirect the lookup."""
+    try:
+        here = root.resolve()
+        anchor = here
+        while not anchor.is_dir() and anchor != anchor.parent:
+            anchor = anchor.parent
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def git(*args):
+            p = subprocess.run(['git', '-C', str(anchor), *args], env=env, capture_output=True, text=True)
+            if p.returncode:
+                raise ValueError(p.stderr.strip())
+            return p.stdout
+
+        top = pathlib.Path(git('rev-parse', '--show-toplevel').strip())
+        rel = here.relative_to(top.resolve())
+        out = []
+        for line in git('worktree', 'list', '--porcelain').splitlines():
+            if not line.startswith('worktree '):
+                continue
+            other = (pathlib.Path(line[len('worktree '):]) / rel).resolve()
+            if other != here and other.is_dir():
+                out.append(other)
+        return out
+    except (OSError, ValueError):
+        return []
+
+
+def id_floor(root):
+    """The highest ticket number in every other worktree's same-relative root (worktree_roots), else 0.
+    Malformed tickets and unreadable files there are ignored: another tree's problems never fail this one."""
+    floor = 0
+    for r in worktree_roots(root):
+        try:
+            ts = load(r)
+        except (OSError, UnicodeDecodeError):
+            continue
+        for _, m in ts:
+            i = m.get('id')
+            if isinstance(i, str) and ID_RE.fullmatch(i):
+                floor = max(floor, int(i[2:]))
+    return floor
 
 
 def folder_name(slug, tid, numbered):
@@ -310,15 +376,16 @@ def template(root, kind):
     raise Fail(f'no template for type {kind!r}; available types: {", ".join(template_types(root))}')
 
 
-def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=False):
+def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=False, floor=0):
     """Text and meta of a new ticket, validated against ts (which must already be clean). Writes nothing.
+    The new id is one above the max of ts's ids and floor (id_floor: the max in every other git worktree).
     origin adds `from: <id>` right after the created: line; context replaces the body of ## Context.
     numbered checks for and validates under the folder name folder_name(slug, <new id>, True)."""
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
     tpl = template(root, kind)
     nums = [int(m['id'][2:]) for _, m in ts]
-    tid = f'T-{max(nums, default=0) + 1:04d}'
+    tid = f'T-{max(nums + [floor]) + 1:04d}'
     name = folder_name(slug, tid, numbered)
     d = root / name
     if d.exists() or any(s == name for s, _ in ts):
@@ -366,7 +433,7 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     errs = problems(ts, numbered)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
-    text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered)
+    text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
     d = root / folder_name(slug, meta['id'], numbered)
     d.mkdir(parents=True)
     path = d / 'handoff.md'
@@ -453,7 +520,8 @@ def parse_skip(text):
     return out
 
 
-def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None):
+def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
+              ack_warnings=None):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
@@ -463,7 +531,21 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
     The dry run ends with `expect <digest>` (follow_digest). expect: that digest; required with skip (unless
     dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
-    Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap."""
+    Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
+    With no filer here, the refusal names every other worktree's same-relative <slug>/ holding a filer-L*.md
+    (glob only, never read), so work filed in a lane worktree can be committed or copied in.
+    ack_warnings (not None): pass the open-warnings gate with a recorded reason instead of force; the write
+    appends a ## Closed section with the date, `warnings acknowledged: <why>` and the Warnings quoted with `> `.
+    It refuses with force, with reason, when empty, and when the filer's Warnings is None."""
+    if ack_warnings is not None and force:
+        raise Fail(f'{slug}: --ack-warnings records why open warnings no longer apply, so it does not combine '
+                   f'with --force; use one; nothing written')
+    if ack_warnings is not None and reason is not None:
+        raise Fail(f'{slug}: --ack-warnings closes through the filer and --reason skips it, so they do not '
+                   f'combine; use one; nothing written')
+    if ack_warnings is not None and not ack_warnings.strip():
+        raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
+                   f'nothing written')
     if reason is not None and (dry_run or skip is not None or expect is not None):
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip '
                    f'or --expect; '
@@ -515,14 +597,27 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}'
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
-        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
+        held = []
+        for r in worktree_roots(root):
+            try:
+                if any((r / d.name).glob('filer-L*.md')):
+                    held.append(str(r / d.name))
+            except OSError:
+                pass
+        hint = (f'; a filer record exists in {", ".join(held)}; commit or copy it into this tree, then rerun close'
+                if held else '')
+        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
     filer = filers[-1]
     text = filer.read_text(encoding='utf-8')
     warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
     if warnings is None or follow is None:
         raise Fail(f'{filer}: missing a ## Warnings or ## Follow-ups section; nothing written')
-    if not is_none(warnings) and not force:
-        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --force to override):\n{warnings}')
+    if ack_warnings is not None and is_none(warnings):
+        raise Fail(f'{slug}: no open warnings to acknowledge in {filer.name}; rerun without --ack-warnings; '
+                   f'nothing written')
+    if not is_none(warnings) and not force and ack_warnings is None:
+        raise Fail(f'{slug}: filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record '
+                   f'why they no longer apply, or --force to override):\n{warnings}')
     items = [] if is_none(follow) else bullets(follow)
     if not is_none(follow) and not items:
         raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
@@ -544,6 +639,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     # existing tickets to check each follow-up against: (normalized title, folder without NNNN-, id, folder)
     known = [(norm_title(m['title']) if isinstance(m.get('title'), str) else '', strip_prefix(x), m['id'], x)
              for x, m in ts]
+    # ids stay above every other worktree's max; follow-ups after the first count up from `after`
+    floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
     planned, after, lines, dups = [], list(ts), [], []
     for i, item in enumerate(items, 1):
@@ -564,13 +661,13 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             lines.append(f'{i}. {title} [{base}] {mark}')
             continue
         if numbered:
-            tid = f'T-{max((int(x["id"][2:]) for _, x in after), default=0) + 1:04d}'
+            tid = f'T-{max(max((int(x["id"][2:]) for _, x in after), default=0), floor) + 1:04d}'
         s, k = base, 2
         while ((root / (name := folder_name(s, tid, True) if numbered else s)).exists()
                or any(x == name for x, _ in after)):
             s, k = f'{base}-{k}', k + 1
         ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{item}'
-        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered)
+        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
         planned.append((name, t))
         after.append((name, m))
         lines.append(f'{i}. {title} [{name}]')
@@ -578,12 +675,21 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
         return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
-                         + ([f'rename {slug} -> {dot.name}'] if archive else []) + [f'expect {digest}'])
+                         + ([f'rename {slug} -> {dot.name}'] if archive else [])
+                         + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
+                         + [f'expect {digest}'])
 
     for s, t in planned:
         (root / s).mkdir()
         (root / s / 'handoff.md').write_text(t, encoding='utf-8')
-    h.write_bytes((head + raw[fm.end():]).encode('utf-8'))
+    body = raw[fm.end():]
+    if ack_warnings is not None:
+        if body and not body.endswith('\n'):
+            body += '\n'
+        quoted = '\n'.join(f'> {ln}' if ln.strip() else '>' for ln in warnings.splitlines())
+        body += (f'\n## Closed\n\n{datetime.date.today().isoformat()}: warnings acknowledged: '
+                 f'{ack_warnings.strip()}\n\n{quoted}\n')
+    h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
     write_roadmap(root, load(root))
@@ -596,6 +702,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += '; skipped by --skip: ' + ', '.join(map(str, skipped))
     if archive:
         out += f'; moved to {dot.name}'
+    if ack_warnings is not None:
+        out += f'; warnings acknowledged: {ack_warnings.strip()}'
     return out
 
 
@@ -748,7 +856,8 @@ def selftest():
             ('bad id', lambda r: edit(r, 'alpha', r'^id:.*$', 'id: T-12'), "alpha: id 'T-12' is not T-NNNN"),
             ('bad created', lambda r: edit(r, 'alpha', r'^created:.*$', 'created: 2026-9-1'),
              "alpha: created '2026-9-1' is not YYYY-MM-DD"),
-            ('duplicate id', lambda r: edit(r, 'beta', r'^id:.*$', 'id: T-0001'), 'duplicate id T-0001'),
+            ('duplicate id', lambda r: edit(r, 'beta', r'^id:.*$', 'id: T-0001'),
+             'beta: duplicate id T-0001, also used by alpha'),
             ('dangling depends', lambda r: edit(r, 'alpha', r'^depends:.*$', 'depends: [T-0099]'),
              'alpha: depends on T-0099'),
             ('dangling from', lambda r: edit(r, 'alpha', r'^created:(.*)$', r'created:\1\nfrom: T-0099'),
@@ -996,6 +1105,8 @@ def selftest():
                rc == 1 and '--force' in err and 'step-2 verifier fail' in err)
         expect('(b) refusal wrote nothing (handoff, ticket count, roadmap)', snap(root) == before
                and len(load(root)) == 2 and status(root) == 'proposed')
+        expect(f'(b) refusal names --ack-warnings before --force: {err!r}',
+               '--ack-warnings "<why>"' in err and err.find('--ack-warnings') < err.find('--force'))
 
         # (c) the same with --force closes
         root = case(warned)
@@ -1328,6 +1439,73 @@ def selftest():
                        rc == 0 and status(root) == 'done' and not (root / '.alpha').exists()
                        and (root / 'alpha' / 'handoff.md').is_file() and 'moved' not in out)
 
+        # (w) --ack-warnings closes past open warnings with a recorded reason; warned: 'step-2 verifier fail'
+        today = datetime.date.today().isoformat()
+        # (w1) ack close: done, the follow-up filed, a ## Closed section quoting the warning, check passes
+        root = case(warned)
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='committed later')
+        text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'(w1) --ack-warnings closes with open warnings: rc={rc} out={out!r} err={err!r} text={text!r}',
+               rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 1
+               and out.endswith('; warnings acknowledged: committed later')
+               and text.rstrip().endswith(f'## Closed\n\n{today}: warnings acknowledged: committed later\n\n'
+                                          f'> step-2 verifier fail')
+               and run(root, 'check')[0] == 0)
+        # (w2) a multi-line Warnings section is quoted line by line, verbatim after `> `
+        root = case(filer('filer-L1.md', '- step-2 verifier fail\n- nothing committed yet', '- Add retry to fetch'))
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='fixed on main')
+        text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'(w2) multi-line warnings quoted line by line: rc={rc} {err!r} text={text!r}',
+               rc == 0 and text.rstrip().endswith(f'{today}: warnings acknowledged: fixed on main\n\n'
+                                                  f'> - step-2 verifier fail\n> - nothing committed yet'))
+        # (w3) --ack-warnings with --force, (w4) with --reason, (w5) empty or whitespace: refuse, write nothing
+        for label, args, kw, want in (('w3', ('alpha', True), {'ack_warnings': 'x'}, '--force'),
+                                      ('w4', ('alpha',), {'ack_warnings': 'x', 'reason': 'y'}, '--reason'),
+                                      ('w5', ('alpha',), {'ack_warnings': ''}, 'empty --ack-warnings'),
+                                      ('w5', ('alpha',), {'ack_warnings': '   '}, 'empty --ack-warnings')):
+            root = case(warned)
+            before = snap(root)
+            rc, _, err = run(root, 'close', args, **kw)
+            expect(f'({label}) --ack-warnings {args} {kw} refuses and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and '--ack-warnings' in err and want in err and err.endswith('nothing written')
+                   and snap(root) == before and status(root) == 'proposed')
+        # (w6) with Warnings None there is nothing to acknowledge: refuses, plain and dry run
+        for kw in ({}, {'dry_run': True}):
+            root = case(filer('filer-L1.md', 'None', '- Add retry to fetch'))
+            before = snap(root)
+            rc, _, err = run(root, 'close', ('alpha',), ack_warnings='x', **kw)
+            expect(f'(w6) --ack-warnings with no open warnings refuses {kw}: rc={rc} {err!r}',
+                   rc == 1 and 'rerun without --ack-warnings' in err and snap(root) == before)
+        # (w7) dry run with --ack-warnings on open warnings lists the plan, ends with expect, writes nothing
+        root = case(warned)
+        before = snap(root)
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='committed later', dry_run=True)
+        lines = out.splitlines()
+        expect(f'(w7) --ack-warnings dry run: rc={rc} out={out!r} err={err!r}',
+               rc == 0 and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch'])
+               and 'ack warnings: committed later' in lines and snap(root) == before)
+        # (w8) --ack-warnings with --skip/--expect files only the unskipped follow-ups
+        root = case(filer('filer-L1.md', 'step-2 verifier fail', three))
+        rc, out, _ = run(root, 'close', ('alpha',), ack_warnings='ok', dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='ok', skip=[2], expect=token)
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(w8) --ack-warnings --skip 2 files 1 and 3: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
+               rc == 0 and status(root) == 'done'
+               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch', 'Split the runner']
+               and 'skipped by --skip: 2' in out and 'warnings acknowledged: ok' in out)
+        # (w9) numbered: an ack close renames 0003-x to .0003-x and the moved handoff holds ## Closed
+        root = case(both(numbered_x, filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch',
+                                           slug='0003-x')))
+        rc, out, err = run(root, 'close', ('0003-x',), numbered=True, ack_warnings='committed later')
+        text = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8') if (root / '.0003-x').is_dir() else ''
+        expect(f'(w9) numbered ack close renames and keeps ## Closed: rc={rc} out={out!r} err={err!r} '
+               f'tree={tree(root)}',
+               rc == 0 and '; moved to .0003-x' in out and not (root / '0003-x').exists()
+               and status(root, '.0003-x') == 'done' and '## Closed' in text
+               and 'warnings acknowledged: committed later' in text and '> step-2 verifier fail' in text
+               and run(root, 'check')[0] == 0)
+
         # archive: done and dropped NNNN- folders move to .NNNN-, a ready one stays
         def arch_base(root):
             for slug, st in (('alpha', 'done'), ('beta', 'dropped')):
@@ -1363,6 +1541,78 @@ def selftest():
         expect(f'archive in plain mode refuses and writes nothing: rc={rc} {err!r}',
                rc == 1 and 'numbered mode' in err and snap(root) == before and (root / 'alpha').is_dir())
 
+        # ---- worktrees: new and close stamp ids above the max across every git worktree's same-relative root ----
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the worktree id cases')
+        else:
+            genv = {k: v for k, v in os.environ.items() if k not in ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')}
+
+            def git(cwd, *args):
+                p = subprocess.run(['git', '-C', str(cwd), *args], env=genv, capture_output=True, text=True)
+                if p.returncode:
+                    raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+
+            def tid(root, slug):
+                return dict(load(root)).get(slug, {}).get('id')
+
+            wtmp = pathlib.Path(tmp) / 'worktrees'
+            wtmp.mkdir()
+            main_dir, nosdlc_dir = wtmp / 'main', wtmp / 'nosdlc'
+            m_root, w_root, n_root = main_dir / '.sdlc', wtmp / 'wt' / '.sdlc', nosdlc_dir / '.sdlc'
+            git(wtmp, 'init', '-q', 'main')
+            rc, _, err = run(m_root, 'new', ('feature', 'alpha'))
+            expect(f'worktree: first id in a fresh repo is T-0001: rc={rc} {err!r}', rc == 0 and tid(m_root, 'alpha')
+                   == 'T-0001')
+            git(main_dir, 'add', '-A')
+            git(main_dir, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                'commit', '--no-verify', '-qam', 'alpha')
+            git(main_dir, 'worktree', 'add', '-q', '../wt', '-b', 'wt')
+            git(main_dir, 'worktree', 'add', '-q', '../nosdlc', '-b', 'nosdlc')
+            shutil.rmtree(n_root)  # a worktree with no .sdlc dir yet: skipped, never an error
+            rc_b, _, err_b = run(m_root, 'new', ('feature', 'beta'))
+            rc_g, _, err_g = run(w_root, 'new', ('feature', 'gamma'))
+            expect(f'worktree: beta in main is T-0002, then gamma in wt is T-0003 (not T-0002): rc={rc_b},{rc_g} '
+                   f'{err_b!r} {err_g!r} beta={tid(m_root, "beta")!r} gamma={tid(w_root, "gamma")!r}',
+                   rc_b == 0 and rc_g == 0 and err_b == err_g == '' and tid(m_root, 'beta') == 'T-0002'
+                   and tid(w_root, 'gamma') == 'T-0003')
+            # plain close in wt: main's delta (T-0004) sits above wt's max (T-0003), so the follow-up is T-0005
+            rc, _, err = run(m_root, 'new', ('feature', 'delta'))
+            expect(f'worktree: delta in main counts wt gamma, so it is T-0004: rc={rc} {err!r} '
+                   f'got={tid(m_root, "delta")!r}', rc == 0 and tid(m_root, 'delta') == 'T-0004')
+            filer('filer-L1.md', 'None', '- Add retry to fetch', slug='gamma')(w_root)
+            rc, out, err = run(w_root, 'close', ('gamma',))
+            made = fresh(w_root, {'alpha', 'gamma'})
+            expect(f'worktree: plain close in wt stamps its follow-up above main T-0004, as T-0005: rc={rc} {out!r} '
+                   f'{err!r} made={made}',
+                   rc == 0 and [m.get('id') for m in made.values()] == ['T-0005'] and run(w_root, 'check')[0] == 0)
+            # numbered close in wt: main's epsilon (T-0006) sits above wt's max (T-0005); folder 0007- matches T-0007
+            rc, _, err = run(m_root, 'new', ('feature', 'epsilon'))
+            expect(f'worktree: epsilon in main is T-0006: rc={rc} {err!r} got={tid(m_root, "epsilon")!r}',
+                   rc == 0 and tid(m_root, 'epsilon') == 'T-0006')
+            filer('filer-L1.md', 'None', '- Quote the docs', slug='alpha')(w_root)
+            rc, out, err = run(w_root, 'close', ('alpha',), numbered=True)
+            made = fresh(w_root, {'alpha', 'gamma', 'add-retry-to-fetch'})
+            expect(f'worktree: numbered close in wt names the follow-up 0007-quote-the-docs with id T-0007: rc={rc} '
+                   f'{out!r} {err!r} made={made}',
+                   rc == 0 and {s: m.get('id') for s, m in made.items()} == {'0007-quote-the-docs': 'T-0007'}
+                   and run(w_root, 'check')[0] == 0)
+            # the worktree with no .sdlc yet: new there creates the root and still counts every other tree
+            rc, _, err = run(n_root, 'new', ('feature', 'zeta'))
+            expect(f'worktree: first ticket in a worktree with no .sdlc yet is T-0008: rc={rc} {err!r} '
+                   f'got={tid(n_root, "zeta")!r}', rc == 0 and err == '' and tid(n_root, 'zeta') == 'T-0008')
+            # close in main with the filer record only in wt (alpha, filed there above): refuse, name wt's folder
+            before = snap(m_root)
+            rc, _, err = run(m_root, 'close', ('alpha',))
+            expect(f'worktree: close in main names the wt folder holding the filer record, writes nothing: rc={rc} '
+                   f'{err!r}', rc == 1 and snap(m_root) == before and str((w_root / 'alpha').resolve()) in err
+                   and '/file' in err and 'nothing written' in err)
+
+        # outside git (no worktrees to consult) the local root decides: the first id is T-0001
+        solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
+        rc, _, err = run(solo, 'new', ('feature', 'solo'))
+        expect(f'outside git the first id is T-0001, no stderr: rc={rc} {err!r} got={dict(load(solo)).get("solo")}',
+               rc == 0 and err == '' and dict(load(solo)).get('solo', {}).get('id') == 'T-0001')
+
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
@@ -1389,12 +1639,17 @@ def main(argv):
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
     p = sub.add_parser('close', help='after /file: file follow-ups as tickets (skipping duplicates of existing '
                                      'tickets), set the ticket done; --dry-run lists them first; '
-                                     'or --reason TEXT: set it done without a filer file')
+                                     'or --reason TEXT: set it done without a filer file; '
+                                     '--ack-warnings TEXT: close while filer warnings are open, with a reason')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--reason', metavar='TEXT',
                    help='close without a filer file (work done elsewhere): set done, append a ## Closed '
                         'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip or --expect)')
+    p.add_argument('--ack-warnings', metavar='TEXT',
+                   help='close while the filer warnings are open: record TEXT and the quoted warnings in a '
+                        '## Closed section, file follow-ups as normal (refuses with --force, with --reason, '
+                        'with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
                         'duplicate or --skip mark, then a last line `expect <digest>`; write nothing')
@@ -1429,6 +1684,7 @@ def main(argv):
         kw['dry_run'] = a.dry_run
     if cmd == 'close':
         kw['reason'] = a.reason
+        kw['ack_warnings'] = a.ack_warnings
         kw['dry_run'] = a.dry_run
         kw['expect'] = a.expect
         try:

@@ -85,6 +85,9 @@ What must not change, limits, deadlines. "None" if none.
 
 ## Question
 Only for scout, archaeologist, or researcher runs: the exact question.
+
+## Plan review
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
@@ -106,6 +109,25 @@ level: L<n>
 ### Acceptance criteria
 - ...
 ```
+
+### Merge step
+
+When a task merges one lane into another, the planner emits this block (from `agents/planner.md`, `## Merge steps`) with `<branch>`, `<n>`, and `<gate command>` filled in, and `steps.py split` copies it like any other step:
+
+```merge-step
+## Step <n>: Merge <branch>
+level: L<n>
+### Do
+Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. Resolve every conflict so both lanes' intent survives, run the gates below, and create the merge commit. Never push.
+### Acceptance criteria
+- `test "$(git rev-list --parents -n1 HEAD | wc -w)" -eq 3`
+- `git merge-base --is-ancestor <branch> HEAD`
+- (guard) `! git rev-parse -q --verify MERGE_HEAD`
+- (guard) `! git grep -nE '^(<<<<<<<|>>>>>>>)( |$)' -- $(git diff --name-only HEAD^1 HEAD)`
+- (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add <tmp> HEAD^1` copy and compare.
+```
+
+`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to.
 
 ## Free-text arguments
 

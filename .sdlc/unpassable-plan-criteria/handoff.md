@@ -2,7 +2,7 @@
 id: T-0060
 title: "Plan acceptance criteria that cannot pass reach the builder"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -29,3 +29,6 @@ Second report, 2026-09-25: three tickets there (T-0032, T-0057, T-0059) blocked 
 
 ## Constraints
 The failing test lands before or with the fix, never after.
+
+## Plan review (conductor, before any build)
+plan defect in planner-L2.md, step 1: acceptance criterion 3 quotes the broken fixture as an inline backtick span (`grep -c 'foo' bar'` with the stray quote) inside `### Acceptance criteria`, while criterion 4 requires `steps.py lint` to exit 0 on that same plan file. Under the step's own lint rule both cannot hold. Keep the design of planner-L2.md, but never put a deliberately broken command in an inline backtick span under Acceptance criteria: refer to the selftest fixture by name, or describe it in prose. Check every criterion span in the new plan against the lint rule the plan itself introduces.

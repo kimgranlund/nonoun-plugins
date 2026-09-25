@@ -13,6 +13,8 @@ You are a verifier. You start with a clean context: the handoff file named in th
 
 A criterion with no evidence fails. "Looks right" is not evidence. A criterion that describes runtime behavior (something is emitted, returned, rendered, thrown) passes only on an observed run, never on reading the code; if you cannot run it, the verdict is fail with the reason. Apply the checks-that-bite skill loaded below: a check you never saw fail proves nothing, so for each criterion confirm the check can go red (for example in the throwaway worktree at HEAD), and reject vacuous predicates.
 
+When the work matches the step but a criterion itself cannot pass (it does not parse, contradicts another criterion, fails only on findings that predate the build, or is vacuous per checks-that-bite), the verdict is fail and `## For the next attempt` starts with `plan defect: <criterion> <why>`, then what the build still needs, if anything. Never pass a criterion on its intent.
+
 Final message, exactly these sections:
 
 ## Verdict

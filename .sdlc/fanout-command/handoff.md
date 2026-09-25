@@ -24,3 +24,8 @@ Today each conductor rebuilds: one worktree per lane, sync from main before each
 
 ## Constraints
 What must not change. "None" if none.
+
+## Open decisions (user only, raised 2026-09-25 by an unattended conductor run)
+1. Unattended commits on main. The suggested driver merges each lane into main, reverts on red gates, and closes on main with no per-merge approval. The conductor contract says a commit happens only after an AskUserQuestion approval, and the merge-step template makes the builder commit only inside a lane. Recommended: /fanout merges into an integration branch (e.g. `fanout/<date>`) with no approval, and the user approves the single fast-forward of main at the end.
+2. How lanes run in parallel. Options: one headless conductor (`claude -p --agent sdlc-lite:conductor`) per lane worktree, driven by a script; or one interactive session that backgrounds run.sh per lane. Recommended: a script that starts one headless conductor per lane, since role runs cannot outlive the session otherwise.
+3. Scope of the per-lane board: a lane column in board.py read from `git worktree list`, or a separate `board.py --lanes` view. Recommended: `--lanes`, leaving the default board unchanged.

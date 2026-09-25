@@ -22,7 +22,7 @@ Use the first source that gives one:
 | L4 | Opus xhigh | Crosses modules, unclear edges, concurrency or state |
 | L5 | Fable xhigh | Earlier attempt failed, root cause unknown, or high blast radius |
 
-Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. L5 failed means stop and ask the user. There is no L6.
+Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. A builder blocked, or a verifier fail, tagged `plan defect:` goes to replan and never counts toward a bump. L5 failed means stop and ask the user. There is no L6.
 
 ## verifier (L1 to L3)
 
@@ -40,7 +40,7 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 |---|---|---|
 | L1 | Sonnet medium | 1 to 3 obvious steps |
 | L2 | Opus medium | A normal feature |
-| L3 | Fable xhigh | Cross-cutting or risky, or any replan (a builder reported blocked) |
+| L3 | Fable xhigh | Cross-cutting or risky, or any replan (a builder blocked, or a verifier or `steps.py split` tagged `plan defect:`) |
 
 ## researcher (L1 to L3)
 
