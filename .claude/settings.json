@@ -1,3 +1,6 @@
 {
-  "agent": "sdlc-lite-author"
+  "agent": "sdlc-lite-author",
+  "enabledPlugins": {
+    "harness@nonoun-plugins": true
+  }
 }
