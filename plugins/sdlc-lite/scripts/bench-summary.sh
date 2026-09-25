@@ -12,9 +12,15 @@ for d in "$bench"/results/*/; do
   steps=0; passed=0; attempts=0
   for s in "$d"step-*/; do
     [[ -d "$s" ]] || continue
+    # Superseded dirs (step-N.superseded-K) count for cost only (line below the loop), not as steps.
+    [[ "$(basename "$s")" =~ ^step-[0-9]+$ ]] || continue
     steps=$((steps+1))
     attempts=$((attempts + $(jq -s '[.[] | select(.role=="builder")] | length' "$s/runs.jsonl" 2>/dev/null || echo 0)))
-    v=$(ls -t "$s"verifier-*.md 2>/dev/null | head -1 || true)
+    v=""
+    for f in "$s"verifier-*.md; do
+      [[ -f "$f" ]] || continue
+      if [[ -z "$v" || "$f" -nt "$v" ]]; then v="$f"; fi
+    done
     [[ -n "$v" ]] && grep -A1 '^## Verdict' "$v" | grep -qx 'pass' && passed=$((passed+1))
   done
   cost=$({ cat "$d"runs.jsonl "$d"step-*/runs.jsonl 2>/dev/null || true; } | jq -s 'map(.cost_usd // 0) | add // 0 | . * 100 | round / 100')

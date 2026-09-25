@@ -2,8 +2,10 @@
 # Usage: run.sh <role> <level> <handoff.md>
 # Runs one role headless in the current directory with the level's model and effort.
 # Writes <handoff dir>/<role>-<level>.md (the agent's final message) and <role>-<level>.log
-# (raw JSON), keeps <role>-<level>.running while the run is live (for /board and the
-# status line), and appends one line to <handoff dir>/runs.jsonl for /bench.
+# (raw JSON). A rerun of the same role and level (a replan, a rebuild) never overwrites: it
+# writes <role>-<level>-<k>.md and .log with the lowest free k >= 2, and prints the path it
+# wrote; readers take the newest file. Keeps <role>-<level>.running while the run is live
+# (for /board and the status line), and appends one line to <handoff dir>/runs.jsonl for /bench.
 # Runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
 # Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight).
@@ -42,8 +44,15 @@ git rev-parse --verify -q HEAD >/dev/null || { echo "git repo has no commit: com
 plugin_root="$(cd "$(dirname "$0")/.." && pwd)"
 handoff="$(cd "$(dirname "$handoff")" && pwd)/$(basename "$handoff")"
 dir="$(dirname "$handoff")"
-result="$dir/$role-$level.md"
-log="$dir/$role-$level.log"
+# Never overwrite an earlier result: the first run is <role>-<level>, later ones <role>-<level>-<k>.
+name="$role-$level"
+if [[ -e "$dir/$name.md" ]]; then
+  k=2
+  while [[ -e "$dir/$role-$level-$k.md" ]]; do k=$((k + 1)); done
+  name="$role-$level-$k"
+fi
+result="$dir/$name.md"
+log="$dir/$name.log"
 
 # A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
 # Fable build -> Opus at the same effort; Sonnet build -> Opus medium.

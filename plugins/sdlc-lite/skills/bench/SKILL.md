@@ -8,7 +8,7 @@ Arguments: `$ARGUMENTS`
 
 First, before any `cd`, resolve the bench dir once from the session's starting directory: `BENCH=$(${CLAUDE_PLUGIN_ROOT}/scripts/bench-dir.sh)`. It honors `SDLC_BENCH_DIR` as set by `bench.sh`, then `<project>/bench/`, then the plugin's `bench/`. Keep the absolute path for the rest of the run.
 
-Tasks live in `$BENCH/tasks/<name>.md` (format in `$BENCH/tasks/README.md` or the plugin's `bench/tasks/README.md`). If there are none, say so and stop. Run every `run.sh` call in the foreground with the Bash tool's `timeout` set to 600000 or more, never `run_in_background`, and never end your turn while a role is running: in a headless session, ending the turn ends the session and abandons the run.
+Tasks live in `$BENCH/tasks/<name>.md` (format in `$BENCH/tasks/README.md` or the plugin's `bench/tasks/README.md`). If there are none, say so and stop. How to run `run.sh` depends on the session. Headless (`claude -p`, including `scripts/bench.sh`, which raises `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS`): run every call in the foreground with the Bash tool's `timeout` set to 600000 or more, do not use `run_in_background` there, and never end your turn while a role is running, because ending the turn ends the session and abandons the run. In an interactive session: a role, or a bench task's full /chain, can take 15 to 30 minutes, past the Bash tool's 10-minute cap. Run `run.sh` with `run_in_background: true`, then wait for the completion notification. Never poll with `sleep`. Once notified, read the result from `<role>-<level>.md`. Ending the turn is safe here because the notification re-invokes the session.
 
 Run each task (or only the named one) in turn:
 

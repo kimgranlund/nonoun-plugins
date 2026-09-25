@@ -2,11 +2,11 @@
 name: chain
 description: Drive one task through the whole loop: optional scout, research, and architect, then plan, then build and verify each step with escalation, then file. Use when a task should run end to end.
 argument-hint: <handoff.md | goal>
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Read, Write, Grep, Glob
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Read, Write, Grep, Glob
 ---
 Arguments: `$ARGUMENTS`
 
-Every role runs through `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>` from the project root. Levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`; layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. You orchestrate; you never do a role's work yourself. Run every `run.sh` call in the foreground with the Bash tool's `timeout` set to 600000 or more, never `run_in_background`, and never end your turn while a role is running: in a headless session, ending the turn ends the session and abandons the run.
+Every role runs through `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>` from the project root. Levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`; layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. You orchestrate; you never do a role's work yourself. How to run `run.sh` depends on the session. Headless (`claude -p`, including `scripts/bench.sh`, which raises `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS`): run every call in the foreground with the Bash tool's `timeout` set to 600000 or more, do not use `run_in_background` there, and never end your turn while a role is running, because ending the turn ends the session and abandons the run. In an interactive session: a role, or a bench task's full /chain, can take 15 to 30 minutes, past the Bash tool's 10-minute cap. Run `run.sh` with `run_in_background: true`, then wait for the completion notification. Never poll with `sleep`. Once notified, read the result from `<role>-<level>.md`. Ending the turn is safe here because the notification re-invokes the session.
 
 ## 1. Brief
 Get or create `.sdlc/<task>/handoff.md`. If it lacks context a clean agent would need, ask the user before running anything.
@@ -22,14 +22,14 @@ Get or create `.sdlc/<task>/handoff.md`. If it lacks context a clean agent would
 All run on the task handoff; their outputs land in the task dir for the planner.
 
 ## 3. Plan
-Run planner on the task handoff. For each `## Step n` block, write `step-<n>/handoff.md` per the step template.
+Run planner on the task handoff. Then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py split .sdlc/<task>`, which writes each `step-<n>/handoff.md` from the newest planner file; never parse the plan by hand.
 
 ## 4. Build and verify, one step at a time, in order
 For each step:
 1. builder at the step's `level:`.
-2. builder Status blocked → skip the verifier (never verify a blocked build) and run planner L3 on the task handoff (replan), rewrite the remaining step handoffs, continue from the blocked step.
+2. builder Status blocked → skip the verifier (never verify a blocked build) and run planner L3 on the task handoff (replan; it writes a new `planner-L3[-k].md`), move each `step-<n>/` with n at or above the blocked step that already holds builder or verifier output to `step-<n>.superseded-<k>/` (first free k), then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py split .sdlc/<task>` (optionally `--only N` for the steps being rewritten) to write the remaining step handoffs from the newest planner file (earlier plans stay in place; the script refuses a step dir that still holds builder or verifier output, so rename first), continue from the blocked step.
 3. verifier at the level the rubric derives from the build level.
-4. Verdict fail → rebuild the same level once, with the verifier's "For the next attempt" appended to the step handoff under `## Previous attempt`. A second fail → bump the builder one level and repeat. A fail at L5 → stop and ask the user.
+4. Verdict fail → rebuild the same level once (it writes `builder-L<n>-<k>.md`, so earlier attempts stay for the rubric's "earlier builder-*.md with Status blocked" count), with the verifier's "For the next attempt" appended to the step handoff under `## Previous attempt`. A second fail → bump the builder one level and repeat. A fail at L5 → stop and ask the user.
 
 ## 5. File
 Run the /file flow on the task dir. Publishing still needs the user's approval.

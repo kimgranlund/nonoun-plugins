@@ -13,17 +13,17 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - Level tables live in run.sh (source of truth), `skills/level-rubric`, and CLAUDE.md. Change all three together.
 - Model and effort choices are the user's. Never change them without an explicit decision.
 - Publishing is the user's call: the hook blocks it inside role runs, and outward actions (push, PR, issues) need approval unless the user already asked for them.
-- Numbered ticket mode persists via `new` and `close --numbered`, and `check` warns on numbered folders with no config line. Keep tickets.py, the /ticket skill, and CLAUDE.md in sync on this.
+- Numbered ticket mode persists via `new` and `close --numbered`, and `check` warns on numbered folders with no config line. Keep tickets.py, the /ticket skill, and CLAUDE.md in sync on this, and keep `--reason` in sync across tickets.py, the /ticket skill, and CLAUDE.md. Keep `close --dry-run`/`--skip` and duplicate follow-up skipping in sync across tickets.py, the /ticket skill, the /file skill, and CLAUDE.md.
 
 ## After every change
-1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, shellcheck, plugin validate).
+1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, steps.py selftest, run selftest, shellcheck, plugin validate).
 2. A new check or gate gets a negative control that is seen to fail (checks-that-bite).
 3. Behavior changes to a role get one live run, on a throwaway repo or worktree, before being called done.
 4. Commit with the attribution line, and push when the user has asked for pushes.
 
 ## Hazards learned
 - Never edit or move scripts while a bench or role run is live. Replace a script atomically (write a new file, then `mv`), and never restructure mid-bench.
-- In a headless session, ending the turn ends the session: role runs stay in the foreground. `scripts/bench.sh` raises the Bash timeouts for that.
+- In a headless session, ending the turn ends the session: role runs stay in the foreground. `scripts/bench.sh` raises the Bash timeouts for that. In an interactive session a role or a bench task's /chain can take 15 to 30 minutes, past the Bash tool's 10-minute cap, so /chain, /bench and the conductor must say: run `run.sh` with `run_in_background: true`, wait for the completion notification, never poll with `sleep`, read `<role>-<level>.md` once notified (ending the turn is safe there), and the foreground `timeout` rule is for headless sessions only. `check.py` enforces this in those three docs (words `interactive`, `run_in_background`, `notification`, `sleep`; no unqualified `never run_in_background`).
 - Benchmark tasks: the goal must name every name, field, path, and message format the hidden tests pin, and constraints must let builders update tests the change legitimately breaks. Red/green-verify a task in a throwaway worktree before adding it.
 - A verifier pass with a hidden-check fail means find out which one is wrong before tuning anything.
 - Never touch the user's working trees, branches, or stash in other repos. Use throwaway worktrees and remove them.

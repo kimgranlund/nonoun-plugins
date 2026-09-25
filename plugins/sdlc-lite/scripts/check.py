@@ -64,6 +64,15 @@ for p in sorted((root/'agents').glob('*.md')):
         if not (root/'skills'/sk/'SKILL.md').exists():
             errors.append(f'agents/{p.name} declares missing skill: {sk}')
 
+# Long role runs: interactive sessions background them; headless sessions keep them in the foreground.
+for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'agents/conductor.md'):
+    f = root/rel
+    if not f.is_file(): errors.append(f'{rel}: missing (long-run doc check)'); continue
+    text = f.read_text()
+    missing = [w for w in ('interactive', 'run_in_background', 'notification', 'sleep') if w not in text]
+    if missing: errors.append(f'{rel}: long-run rule missing words: {", ".join(missing)}')
+    if 'never `run_in_background`' in text or 'never run_in_background' in text:
+        errors.append(f'{rel}: still says "never run_in_background" unqualified')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
