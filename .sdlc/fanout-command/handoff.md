@@ -13,9 +13,9 @@ created: 2026-09-24
 Running ticket lanes in parallel needs no hand-written driver.
 
 ## Intent
-- Do:
-- Non-goals:
-- Done when:
+- Do: add `/fanout <lane>=<ids>...`: a script (`scripts/fanout.sh` or .py) that makes one worktree per lane, starts one headless conductor per lane (`claude -p --agent sdlc-lite:conductor ...`), syncs each lane from the integration branch before each ticket, runs /chain and /file, then merges each lane into an integration branch `fanout/<date>` under a lock, runs the gates there, reverts the merge on red, and closes tickets there. Add `board.py --lanes`, a per-lane view read from `git worktree list`.
+- Non-goals: committing to or fast-forwarding main (the user approves that once at the end); changing the default board.
+- Done when: a selftest or live run on a throwaway repo shows two lanes merging into `fanout/<date>`, a red gate reverting its merge, main unchanged, and `board.py --lanes` listing both lanes; check.sh passes.
 
 ## Context
 From peer session setup-sdlc-lite-generative-ui (gen-ui-system-svelte-lite), on 0.6.0, 2026-09-24.
@@ -25,7 +25,10 @@ Today each conductor rebuilds: one worktree per lane, sync from main before each
 ## Constraints
 What must not change. "None" if none.
 
-## Open decisions (user only, raised 2026-09-25 by an unattended conductor run)
+## Decisions (user, 2026-09-25; were open)
+All three recommendations below were chosen: integration branch with one user-approved main fast-forward; a script running one headless conductor per lane; `board.py --lanes`.
+
+## Options as raised
 1. Unattended commits on main. The suggested driver merges each lane into main, reverts on red gates, and closes on main with no per-merge approval. The conductor contract says a commit happens only after an AskUserQuestion approval, and the merge-step template makes the builder commit only inside a lane. Recommended: /fanout merges into an integration branch (e.g. `fanout/<date>`) with no approval, and the user approves the single fast-forward of main at the end.
 2. How lanes run in parallel. Options: one headless conductor (`claude -p --agent sdlc-lite:conductor`) per lane worktree, driven by a script; or one interactive session that backgrounds run.sh per lane. Recommended: a script that starts one headless conductor per lane, since role runs cannot outlive the session otherwise.
 3. Scope of the per-lane board: a lane column in board.py read from `git worktree list`, or a separate `board.py --lanes` view. Recommended: `--lanes`, leaving the default board unchanged.
