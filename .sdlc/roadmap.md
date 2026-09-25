@@ -77,7 +77,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0070 | [conflict-guard-gnu-xargs-probe](conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | M | P2 | none | ⏳ proposed |
 | T-0071 | [followup-dup-matches-own-ticket](followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🔵 ready |
 | T-0072 | [headless-background-abandon](headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | S | P1 | none | 🟢 done |
-| T-0073 | [verifier-no-verdict](verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🔵 ready |
+| T-0073 | [verifier-no-verdict](verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🟢 done |
 | T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🔵 ready |
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | ⏳ proposed |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | ⏳ proposed |
@@ -87,3 +87,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | ⏳ proposed |
 | T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | ⏳ proposed |
 | T-0083 | [guards-in-steps-py-split](guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | M | P2 | none | ⏳ proposed |
+| T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | ⏳ proposed |

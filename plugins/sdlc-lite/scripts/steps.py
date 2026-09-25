@@ -36,13 +36,16 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               no builder result                          -> build L<handoff level>
               newest builder Status blocked              -> replan (whatever its Notes say)
               no verifier result counts after the build  -> verify L<verifier level>
+              newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
+                but 2+ consecutive no-verdict verifiers after the build -> stop
               newest verifier Verdict pass               -> done
               fail whose ## For the next attempt starts "plan defect:" -> replan
               else count non-plan-defect fails whose paired builder (newest before each
               verifier) is at the current build level: 1 -> rebuild L<n>,
               2+ at L1..L4 -> bump L<n+1>, 2+ at L5 -> stop.
+              A verifier with no verdict is never counted as a fail.
             Errors (missing dir, no handoff level with no builder result, a builder with no
-            done/blocked Status, a verifier with no pass/fail Verdict) print one "steps next: "
+            done/blocked Status) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
@@ -398,6 +401,14 @@ def verdict(path):
     return first_word(path, 'Verdict', ('pass', 'fail'), 'verifier verdict')
 
 
+def verdict_or_none(path):
+    """'pass' or 'fail' from the first non-blank line under ## Verdict, else None. Never raises."""
+    try:
+        return verdict(path)
+    except Exception:
+        return None
+
+
 def is_plan_defect(path):
     body = section(path, 'For the next attempt') or []
     first = next((line.strip() for line in body if line.strip()), '')
@@ -436,6 +447,22 @@ def next_action(step_dir):
         return ('verify', verifier_level(level),
                 f'{why}; build L{level} -> verifier L{verifier_level(level)}', read)
     read.append(v)
+    if verdict_or_none(v) is None:
+        runs = 0
+        for w in reversed(order.ordered(d, 'verifier')):
+            if not order.counts_after(w, b):
+                continue
+            if verdict_or_none(w) is not None:
+                break
+            runs += 1
+        name = os.path.basename(v)
+        if runs <= 1:
+            return ('reverify', result_level(v),
+                    f'{name} has no verdict (pass/fail) under ## Verdict; rerun the verifier at the same level',
+                    read)
+        return ('stop', None,
+                f'{runs} consecutive verifier results with no verdict at build L{level} (newest {name}); ask the user',
+                read)
     if verdict(v) == 'pass':
         return 'done', None, f'newest verifier {os.path.basename(v)} passed', read
     if is_plan_defect(v):
@@ -447,7 +474,7 @@ def next_action(step_dir):
             continue
         if w not in read:
             read.append(w)
-        if verdict(w) == 'fail' and not is_plan_defect(w):
+        if verdict_or_none(w) == 'fail' and not is_plan_defect(w):
             count += 1
     if count <= 1:
         return 'rebuild', level, f'first counted fail at build L{level}', read
@@ -827,6 +854,22 @@ def selftest():
         check('next verify: a stale verifier older than the rebuild -> verify L1',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
                            ('builder-L2-2.md', DONE)]), 'verify L1'))
+        NOVERDICT = 'Nothing to do until the test gate reports.\n'
+        check('next reverify: a verifier with no verdict -> reverify at its level',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', NOVERDICT)]), 'reverify L1'))
+        check('next stop: two consecutive no-verdict verifiers after the build -> stop',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', NOVERDICT),
+                           ('verifier-L1-2.md', '## Notes\nhm\n')]), 'stop'))
+        check('next rebuild: no verdict then a real fail at L2 -> rebuild L2 (no-verdict not counted)',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', NOVERDICT),
+                           ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
+        check('next done: no verdict then a pass -> done',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', NOVERDICT),
+                           ('verifier-L1-2.md', PASS)]), 'done'))
+        check('next reverify: fail, rebuild, fail, then no verdict at L2 -> reverify L1, not bump',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
+                           ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL),
+                           ('verifier-L1-3.md', NOVERDICT)]), 'reverify L1'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL), ('builder-L2-2.md', DONE)])
         for i, name in enumerate(('builder-L2-2.md', 'verifier-L1.md', 'builder-L2.md')):
@@ -848,8 +891,6 @@ def selftest():
         next_refused('next error: a handoff with no level line and no builder result', d)
         next_refused('next error: a builder with no done/blocked Status',
                      step(2, [('builder-L2.md', '## Status\nmaybe\n')]))
-        next_refused('next error: a verifier with no pass/fail Verdict',
-                     step(2, [('builder-L2.md', DONE), ('verifier-L1.md', '## Notes\nhm\n')]))
 
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)])
         before = snapshot(d)

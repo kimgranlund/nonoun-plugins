@@ -23,7 +23,8 @@ A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
-the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost). A rerun at the same
+the builder's "## Status", the verifier's "## Verdict" (a verifier with no pass/fail verdict renders
+as 🟡 no verdict), and runs.jsonl (cost). A rerun at the same
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
 runs.jsonl record order (order.py), never file time.
 
@@ -110,7 +111,9 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
         verdict = section(verifies[-1], 'Verdict')
         if verdict.startswith('pass'):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
-        return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        if verdict.startswith('fail'):
+            return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        return '🟡', f'no verdict · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, rerun verify{tries}', LADDER['built']
     return '🟡', f'built · builder {level_of(last_build)}, awaiting verify{tries}', LADDER['built']
 
 
@@ -747,6 +750,11 @@ def selftest() -> int:
         got = step_row(step_fixture('inverse', runs, inverse), 'x', 'L1')[:2]
         expect(f'inverse mtimes: record order still gives the pass row, got {got}',
                got == ('🟢', 'pass · builder L2 · verifier L2 · attempt 2'))
+        novd = [('builder', 'L1', 'builder-L1.md', built),
+                ('verifier', 'L1', 'verifier-L1.md', 'Nothing to do until the test gate reports.\n')]
+        got = step_row(step_fixture('noverdict', novd), 'x', 'L1')[:2]
+        expect(f'a verifier with no verdict renders as 🟡 no verdict, got {got}',
+               got[0] == '🟡' and got[1].startswith('no verdict'))
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:
