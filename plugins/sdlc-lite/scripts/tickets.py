@@ -47,6 +47,12 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
   selftest  build fixtures in a temp dir and prove every check failure fires
 
+Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
+(<worktree>/<root relative to its toplevel>) in every `git worktree list` tree, so parallel worktrees never
+reuse an id. Outside git, or when git fails, the local root decides alone. A worktree with no such dir yet
+is skipped, and malformed tickets in another tree are ignored there. Branches not checked out in any
+worktree are not seen; check catches a clash after merge (duplicate id, naming both folders).
+
 A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped,
 except a closed-ticket folder .NNNN-<slug>: it is a ticket in every mode and command (ids, depends, from,
 roadmap), and check fails it unless its status is done or dropped (rename it without the dot to reopen).
@@ -60,6 +66,7 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -160,6 +167,57 @@ def ensure_numbered_config(root):
     if old and not old.endswith('\n'):
         old += '\n'
     path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
+
+
+GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
+
+
+def worktree_roots(root):
+    """The same-relative ticket root in every other git worktree of root's repo: <worktree>/<rel>, where rel is
+    root relative to its worktree's toplevel. Only existing dirs; the current root is left out. [] when git is
+    missing, a git call fails, or root is outside the toplevel (not in git: the local root decides alone).
+    GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer git context cannot redirect the lookup."""
+    try:
+        here = root.resolve()
+        anchor = here
+        while not anchor.is_dir() and anchor != anchor.parent:
+            anchor = anchor.parent
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def git(*args):
+            p = subprocess.run(['git', '-C', str(anchor), *args], env=env, capture_output=True, text=True)
+            if p.returncode:
+                raise ValueError(p.stderr.strip())
+            return p.stdout
+
+        top = pathlib.Path(git('rev-parse', '--show-toplevel').strip())
+        rel = here.relative_to(top.resolve())
+        out = []
+        for line in git('worktree', 'list', '--porcelain').splitlines():
+            if not line.startswith('worktree '):
+                continue
+            other = (pathlib.Path(line[len('worktree '):]) / rel).resolve()
+            if other != here and other.is_dir():
+                out.append(other)
+        return out
+    except (OSError, ValueError):
+        return []
+
+
+def id_floor(root):
+    """The highest ticket number in every other worktree's same-relative root (worktree_roots), else 0.
+    Malformed tickets and unreadable files there are ignored: another tree's problems never fail this one."""
+    floor = 0
+    for r in worktree_roots(root):
+        try:
+            ts = load(r)
+        except (OSError, UnicodeDecodeError):
+            continue
+        for _, m in ts:
+            i = m.get('id')
+            if isinstance(i, str) and ID_RE.fullmatch(i):
+                floor = max(floor, int(i[2:]))
+    return floor
 
 
 def folder_name(slug, tid, numbered):
@@ -310,15 +368,16 @@ def template(root, kind):
     raise Fail(f'no template for type {kind!r}; available types: {", ".join(template_types(root))}')
 
 
-def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=False):
+def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=False, floor=0):
     """Text and meta of a new ticket, validated against ts (which must already be clean). Writes nothing.
+    The new id is one above the max of ts's ids and floor (id_floor: the max in every other git worktree).
     origin adds `from: <id>` right after the created: line; context replaces the body of ## Context.
     numbered checks for and validates under the folder name folder_name(slug, <new id>, True)."""
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
     tpl = template(root, kind)
     nums = [int(m['id'][2:]) for _, m in ts]
-    tid = f'T-{max(nums, default=0) + 1:04d}'
+    tid = f'T-{max(nums + [floor]) + 1:04d}'
     name = folder_name(slug, tid, numbered)
     d = root / name
     if d.exists() or any(s == name for s, _ in ts):
@@ -366,7 +425,7 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     errs = problems(ts, numbered)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
-    text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered)
+    text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
     d = root / folder_name(slug, meta['id'], numbered)
     d.mkdir(parents=True)
     path = d / 'handoff.md'
@@ -544,6 +603,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     # existing tickets to check each follow-up against: (normalized title, folder without NNNN-, id, folder)
     known = [(norm_title(m['title']) if isinstance(m.get('title'), str) else '', strip_prefix(x), m['id'], x)
              for x, m in ts]
+    # ids stay above every other worktree's max; follow-ups after the first count up from `after`
+    floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
     planned, after, lines, dups = [], list(ts), [], []
     for i, item in enumerate(items, 1):
@@ -564,13 +625,13 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             lines.append(f'{i}. {title} [{base}] {mark}')
             continue
         if numbered:
-            tid = f'T-{max((int(x["id"][2:]) for _, x in after), default=0) + 1:04d}'
+            tid = f'T-{max(max((int(x["id"][2:]) for _, x in after), default=0), floor) + 1:04d}'
         s, k = base, 2
         while ((root / (name := folder_name(s, tid, True) if numbered else s)).exists()
                or any(x == name for x, _ in after)):
             s, k = f'{base}-{k}', k + 1
         ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{item}'
-        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered)
+        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
         planned.append((name, t))
         after.append((name, m))
         lines.append(f'{i}. {title} [{name}]')
@@ -748,7 +809,8 @@ def selftest():
             ('bad id', lambda r: edit(r, 'alpha', r'^id:.*$', 'id: T-12'), "alpha: id 'T-12' is not T-NNNN"),
             ('bad created', lambda r: edit(r, 'alpha', r'^created:.*$', 'created: 2026-9-1'),
              "alpha: created '2026-9-1' is not YYYY-MM-DD"),
-            ('duplicate id', lambda r: edit(r, 'beta', r'^id:.*$', 'id: T-0001'), 'duplicate id T-0001'),
+            ('duplicate id', lambda r: edit(r, 'beta', r'^id:.*$', 'id: T-0001'),
+             'beta: duplicate id T-0001, also used by alpha'),
             ('dangling depends', lambda r: edit(r, 'alpha', r'^depends:.*$', 'depends: [T-0099]'),
              'alpha: depends on T-0099'),
             ('dangling from', lambda r: edit(r, 'alpha', r'^created:(.*)$', r'created:\1\nfrom: T-0099'),
@@ -1362,6 +1424,72 @@ def selftest():
         rc, out, err = run(root, 'archive')
         expect(f'archive in plain mode refuses and writes nothing: rc={rc} {err!r}',
                rc == 1 and 'numbered mode' in err and snap(root) == before and (root / 'alpha').is_dir())
+
+        # ---- worktrees: new and close stamp ids above the max across every git worktree's same-relative root ----
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the worktree id cases')
+        else:
+            genv = {k: v for k, v in os.environ.items() if k not in ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')}
+
+            def git(cwd, *args):
+                p = subprocess.run(['git', '-C', str(cwd), *args], env=genv, capture_output=True, text=True)
+                if p.returncode:
+                    raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+
+            def tid(root, slug):
+                return dict(load(root)).get(slug, {}).get('id')
+
+            wtmp = pathlib.Path(tmp) / 'worktrees'
+            wtmp.mkdir()
+            main_dir, nosdlc_dir = wtmp / 'main', wtmp / 'nosdlc'
+            m_root, w_root, n_root = main_dir / '.sdlc', wtmp / 'wt' / '.sdlc', nosdlc_dir / '.sdlc'
+            git(wtmp, 'init', '-q', 'main')
+            rc, _, err = run(m_root, 'new', ('feature', 'alpha'))
+            expect(f'worktree: first id in a fresh repo is T-0001: rc={rc} {err!r}', rc == 0 and tid(m_root, 'alpha')
+                   == 'T-0001')
+            git(main_dir, 'add', '-A')
+            git(main_dir, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                'commit', '--no-verify', '-qam', 'alpha')
+            git(main_dir, 'worktree', 'add', '-q', '../wt', '-b', 'wt')
+            git(main_dir, 'worktree', 'add', '-q', '../nosdlc', '-b', 'nosdlc')
+            shutil.rmtree(n_root)  # a worktree with no .sdlc dir yet: skipped, never an error
+            rc_b, _, err_b = run(m_root, 'new', ('feature', 'beta'))
+            rc_g, _, err_g = run(w_root, 'new', ('feature', 'gamma'))
+            expect(f'worktree: beta in main is T-0002, then gamma in wt is T-0003 (not T-0002): rc={rc_b},{rc_g} '
+                   f'{err_b!r} {err_g!r} beta={tid(m_root, "beta")!r} gamma={tid(w_root, "gamma")!r}',
+                   rc_b == 0 and rc_g == 0 and err_b == err_g == '' and tid(m_root, 'beta') == 'T-0002'
+                   and tid(w_root, 'gamma') == 'T-0003')
+            # plain close in wt: main's delta (T-0004) sits above wt's max (T-0003), so the follow-up is T-0005
+            rc, _, err = run(m_root, 'new', ('feature', 'delta'))
+            expect(f'worktree: delta in main counts wt gamma, so it is T-0004: rc={rc} {err!r} '
+                   f'got={tid(m_root, "delta")!r}', rc == 0 and tid(m_root, 'delta') == 'T-0004')
+            filer('filer-L1.md', 'None', '- Add retry to fetch', slug='gamma')(w_root)
+            rc, out, err = run(w_root, 'close', ('gamma',))
+            made = fresh(w_root, {'alpha', 'gamma'})
+            expect(f'worktree: plain close in wt stamps its follow-up above main T-0004, as T-0005: rc={rc} {out!r} '
+                   f'{err!r} made={made}',
+                   rc == 0 and [m.get('id') for m in made.values()] == ['T-0005'] and run(w_root, 'check')[0] == 0)
+            # numbered close in wt: main's epsilon (T-0006) sits above wt's max (T-0005); folder 0007- matches T-0007
+            rc, _, err = run(m_root, 'new', ('feature', 'epsilon'))
+            expect(f'worktree: epsilon in main is T-0006: rc={rc} {err!r} got={tid(m_root, "epsilon")!r}',
+                   rc == 0 and tid(m_root, 'epsilon') == 'T-0006')
+            filer('filer-L1.md', 'None', '- Quote the docs', slug='alpha')(w_root)
+            rc, out, err = run(w_root, 'close', ('alpha',), numbered=True)
+            made = fresh(w_root, {'alpha', 'gamma', 'add-retry-to-fetch'})
+            expect(f'worktree: numbered close in wt names the follow-up 0007-quote-the-docs with id T-0007: rc={rc} '
+                   f'{out!r} {err!r} made={made}',
+                   rc == 0 and {s: m.get('id') for s, m in made.items()} == {'0007-quote-the-docs': 'T-0007'}
+                   and run(w_root, 'check')[0] == 0)
+            # the worktree with no .sdlc yet: new there creates the root and still counts every other tree
+            rc, _, err = run(n_root, 'new', ('feature', 'zeta'))
+            expect(f'worktree: first ticket in a worktree with no .sdlc yet is T-0008: rc={rc} {err!r} '
+                   f'got={tid(n_root, "zeta")!r}', rc == 0 and err == '' and tid(n_root, 'zeta') == 'T-0008')
+
+        # outside git (no worktrees to consult) the local root decides: the first id is T-0001
+        solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
+        rc, _, err = run(solo, 'new', ('feature', 'solo'))
+        expect(f'outside git the first id is T-0001, no stderr: rc={rc} {err!r} got={dict(load(solo)).get("solo")}',
+               rc == 0 and err == '' and dict(load(solo)).get('solo', {}).get('id') == 'T-0001')
 
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
