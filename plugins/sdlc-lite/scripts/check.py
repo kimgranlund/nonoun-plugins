@@ -164,6 +164,11 @@ f = root/'skills/file/SKILL.md'
 ft = f.read_text() if f.is_file() else ''
 for w in ('likely duplicate', 'open T-NNNN'):
     if w not in ft: errors.append(f'skills/file/SKILL.md: missing "{w}"')
+# AskUserQuestion allows at most 4 options per question; the publish question must fit.
+if 'at most 4 options' not in ft: errors.append('skills/file/SKILL.md: publish question missing "at most 4 options"')
+step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
+m = re.search(r'\(([^)]*)\)', step4)
+if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

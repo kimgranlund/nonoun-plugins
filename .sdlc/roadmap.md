@@ -71,7 +71,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0064 | [merge-step-conflict-marker-guard](merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🟢 done |
 | T-0065 | [fanout-py-s-default-lane](fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | 🟢 done |
 | T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🟢 done |
-| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🔵 ready |
+| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🟢 done |
 | T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🔵 ready |
 | T-0069 | [conflict-guard-lane-false-positive](conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🔵 ready |
 | T-0070 | [conflict-guard-gnu-xargs-probe](conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | M | P2 | none | ⏳ proposed |
@@ -84,3 +84,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | ⏳ proposed |
 | T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | ⏳ proposed |
 | T-0079 | [close-dry-run-lists-open](close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | ⏳ proposed |
+| T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | ⏳ proposed |
