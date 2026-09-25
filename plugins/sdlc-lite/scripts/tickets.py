@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -13,7 +13,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             (unless --force), file each Follow-ups bullet as a proposed idea ticket with
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
             names each follow-up folder NNNN-<slug> after that follow-up's own new id. On success,
-            close --numbered persists the mode in <root>/config, as new --numbered does
+            close --numbered persists the mode in <root>/config, as new --numbered does.
+            close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
+            (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
+            ## Closed section with today's date and TEXT, and files no follow-ups
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
@@ -381,11 +384,12 @@ def follow_up_title(plain):
     return plain[:cut].rstrip(' ,;:.-') + '...'
 
 
-def cmd_close(root, slug, force=False, numbered=False):
+def cmd_close(root, slug, force=False, numbered=False, reason=None):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
-    On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does."""
+    On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
+    reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups."""
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
@@ -404,6 +408,23 @@ def cmd_close(root, slug, force=False, numbered=False):
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
+    fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
+    head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
+    if reason is not None:
+        why = reason.strip()
+        if not why:
+            raise Fail(f'{slug}: empty --reason; give the reason the ticket is closed; nothing written')
+        if not n:
+            raise Fail(f'{h}: no status: line in front matter; nothing written')
+        body = raw[fm.end():]
+        if body and not body.endswith('\n'):
+            body += '\n'
+        body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
+        h.write_bytes((head + body).encode('utf-8'))
+        write_roadmap(root, load(root))
+        if flag:
+            ensure_numbered_config(root)
+        return f'{pid} done (closed by reason: {why}); no follow-ups filed'
     filers = sorted(d.glob('filer-L*.md'), key=lambda p: (p.stat().st_mtime, p.name))
     if not filers:
         raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
@@ -439,8 +460,6 @@ def cmd_close(root, slug, force=False, numbered=False):
         t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered)
         planned.append((name, t))
         after.append((name, m))
-    fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
-    head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
 
@@ -902,6 +921,41 @@ def selftest():
         expect(f'(j) refused close --numbered writes no config: rc={rc} {err!r}',
                rc == 1 and not (root / 'config').exists() and snap(root) == before)
 
+        # (k) --reason closes with no filer file: done, a ## Closed section, check passes
+        root = case(lambda r: None)
+        rc, out, err = run(root, 'close', ('alpha',), reason='done by T-0002')
+        text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
+        expect(f'(k) --reason closes without a filer: rc={rc} {err!r} {out!r}',
+               rc == 0 and status(root) == 'done' and 'reason' in out
+               and text.rstrip().endswith(f'## Closed\n\n{datetime.date.today().isoformat()}: done by T-0002')
+               and run(root, 'check')[0] == 0)
+        # (l) --reason ignores a filer with open warnings and follow-ups
+        root = case(filer('filer-L1.md', 'step-1 verifier fail', '- Add retry to fetch'))
+        rc, out, err = run(root, 'close', ('alpha',), reason='superseded')
+        expect(f'(l) --reason ignores the filer: rc={rc} {err!r}',
+               rc == 0 and status(root) == 'done' and not fresh(root, {'alpha', 'beta'}))
+        # (m) an empty or whitespace-only reason refuses and writes nothing
+        for why in ('', '   '):
+            root = case(lambda r: None)
+            before = snap(root)
+            rc, _, err = run(root, 'close', ('alpha',), reason=why)
+            expect(f'(m) empty --reason {why!r} refuses: rc={rc} {err!r}', rc == 1 and snap(root) == before)
+        # (n) --reason on a done ticket still refuses
+        root = case(lambda r: None)
+        run(root, 'close', ('alpha',), reason='first')
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), reason='second')
+        expect(f'(n) --reason on done refuses: rc={rc} {err!r}',
+               rc == 1 and 'already closed' in err and snap(root) == before)
+        # (o) --force with --reason closes; --numbered with --reason persists the config
+        root = case(lambda r: None)
+        rc, _, err = run(root, 'close', ('alpha', True), reason='x')
+        expect(f'(o) --force --reason closes: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+        root = case(lambda r: None)
+        rc, _, err = run(root, 'close', ('alpha',), numbered=True, reason='x')
+        expect(f'(o) --numbered --reason persists config: rc={rc} {err!r}',
+               rc == 0 and status(root) == 'done' and config_numbered(root))
+
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
@@ -926,9 +980,13 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name the folder NNNN-<slug> after the new id and persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
-    p = sub.add_parser('close', help='after /file: file follow-ups as tickets, set the ticket done')
+    p = sub.add_parser('close', help='after /file: file follow-ups as tickets, set the ticket done; '
+                                     'or --reason TEXT: set it done without a filer file')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
+    p.add_argument('--reason', metavar='TEXT',
+                   help='close without a filer file (work done elsewhere): set done, append a ## Closed '
+                        'section with the date and TEXT, file no follow-ups')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -945,6 +1003,8 @@ def main(argv):
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
     kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check') else {}
+    if cmd == 'close':
+        kw['reason'] = a.reason
     rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)
     if out:
         print(out)

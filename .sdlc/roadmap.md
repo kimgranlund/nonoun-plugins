@@ -41,7 +41,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0034 | [tickets-py-the-argparse-numbered](tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | M | P3 | none | 🟢 done |
 | T-0035 | [t-0026-step-2-acceptance](t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | M | P2 | none | ⚪ dropped |
 | T-0036 | [have-bench-sh-write-its](have-bench-sh-write-its/handoff.md) | Have bench.sh write its exit code and wall-clock duration to the... | idea | M | P3 | none | 🟢 done |
-| T-0037 | [close-without-filer](close-without-filer/handoff.md) | close a ticket finished by other work | feature | S | P2 | none | ⏳ proposed |
+| T-0037 | [close-without-filer](close-without-filer/handoff.md) | close a ticket finished by other work | feature | S | P2 | none | 🟢 done |
 | T-0038 | [replan-overwrites-plan](replan-overwrites-plan/handoff.md) | A replan overwrites the original plan | bug | M | P1 | none | 🟢 done |
 | T-0039 | [superseded-step-dirs](superseded-step-dirs/handoff.md) | A defined name for superseded step dirs | feature | S | P2 | none | 🟢 done |
 | T-0040 | [split-plan-into-steps](split-plan-into-steps/handoff.md) | A script writes step handoffs from a plan | feature | M | P2 | none | 🟢 done |
@@ -50,3 +50,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0043 | [board-py-summary-counts-l5](board-py-summary-counts-l5/handoff.md) | board.py summary counts L5 runs with the glob step-/builder-L5... | idea | M | P2 | none | ⏳ proposed |
 | T-0044 | [reconcile-the-chain-4-2](reconcile-the-chain-4-2/handoff.md) | Reconcile the /chain 4.2 wording from T-0040 rename, then steps.py... | idea | M | P2 | none | ⏳ proposed |
 | T-0045 | [verify-with-one-live-interactive](verify-with-one-live-interactive/handoff.md) | Verify with one live interactive /chain run on a throwaway repo... | idea | M | P2 | none | ⏳ proposed |
+| T-0046 | [tickets-py-selftest-case-m](tickets-py-selftest-case-m/handoff.md) | tickets.py selftest case m, empty --reason, passes without the new... | idea | M | P2 | none | ⏳ proposed |
