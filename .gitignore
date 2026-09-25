@@ -6,3 +6,4 @@
 *.running
 plugins/sdlc-lite/bench/logs/
 .sdlc/dogfood/
+.worktrees/
