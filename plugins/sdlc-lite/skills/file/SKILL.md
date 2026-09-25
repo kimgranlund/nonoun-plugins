@@ -9,7 +9,10 @@ Arguments: `$ARGUMENTS`
 1. Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh filer L1 <task dir>/handoff.md` from the project root.
 2. Read the result. Show the user the Warnings, the PR title, and the changelog entry.
 3. Close the ticket, only if the task `handoff.md` opens with ticket front matter (skip otherwise):
-   1. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc close <slug>`, where `<slug>` is the task dir name.
-   2. If it refuses because the filer's Warnings are open, show the warnings and ask with AskUserQuestion whether to force-close ("Leave open" recommended first). Rerun with `--force` only if the user approves. On any other refusal, report stderr.
-   3. Report the follow-up idea tickets it created.
+   1. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc close <slug> --dry-run`, where `<slug>` is the task dir name. It lists each proposed follow-up as `<i>. <title> [<slug>]`, marks any `duplicate of T-NNNN`, and writes nothing. If it refuses because the filer's Warnings are open, show the warnings and ask with AskUserQuestion whether to force-close ("Leave open" recommended first); add `--force` to every later call only if the user approves, else stop. On any other refusal, report stderr and stop.
+   2. Read the task's artifacts (plan, builder, and verifier files). Mark for dropping any follow-up they already resolve, with a one-line reason each. Items marked `duplicate of` are skipped by close automatically.
+   3. When a person is present, ask with AskUserQuestion (multiSelect) which follow-ups to file. Put the recommended set first: the non-duplicate items minus the artifact-answered ones.
+   4. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc close <slug> --skip <unselected indices>`, or plain `close <slug>` if nothing is skipped.
+   5. Unattended (no one to answer): file the non-duplicate follow-ups minus the artifact-answered ones (`--skip` the dropped indices), and state that choice and the reasons in the report.
+   6. Report the tickets created, the duplicates skipped, and the items dropped, with reasons.
 4. Publishing (commit, push, PR, changelog edit) is outward-facing: ask the user with AskUserQuestion which items to publish, then do only those. Follow-ups are now tickets, so offer them as GitHub issues only as an optional item, and file them only if the user selects it. Never publish on your own. `hooks/block-publish.sh` does not guard this session, since it only fires when `SDLC_ROLE` is set by `scripts/run.sh`; the AskUserQuestion approval here is the only publish gate in the user's own session.

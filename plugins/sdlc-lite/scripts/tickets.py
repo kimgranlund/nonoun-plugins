@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -14,6 +14,14 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
             names each follow-up folder NNNN-<slug> after that follow-up's own new id. On success,
             close --numbered persists the mode in <root>/config, as new --numbered does.
+            A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
+            NNNN- prefix) equals an existing ticket's, any status, is a duplicate: close skips it and
+            names it in the output. Follow-ups in the same filer are not checked against each other.
+            close --dry-run applies the same refusals, then lists each Follow-ups bullet as
+            `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
+            and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
+            indices from that listing; an index out of range refuses and writes nothing. Skipped
+            follow-ups get no id. --dry-run and --skip refuse together with --reason
             close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
             (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
             ## Closed section with today's date and TEXT, and files no follow-ups
@@ -384,12 +392,41 @@ def follow_up_title(plain):
     return plain[:cut].rstrip(' ,;:.-') + '...'
 
 
-def cmd_close(root, slug, force=False, numbered=False, reason=None):
+def norm_title(s):
+    """Lowercase words only, for the follow-up duplicate check: 'Fix #12' -> 'fix 12'."""
+    return ' '.join(re.findall(r'[a-z0-9]+', s.lower()))
+
+
+def strip_prefix(name):
+    """name without its NNNN- prefix(es): '0002-beta' -> 'beta'."""
+    while PREFIX_RE.match(name):
+        name = name[5:]
+    return name
+
+
+def parse_skip(text):
+    """--skip N[,N...] as a list of ints; a token that is not an integer is a refusal, not a traceback."""
+    out = []
+    for tok in text.split(','):
+        try:
+            out.append(int(tok.strip()))
+        except ValueError:
+            raise Fail(f'--skip {text!r}: {tok.strip()!r} is not an integer; give 1-based indices like '
+                       f'--skip 2,3; nothing written') from None
+    return out
+
+
+def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
     On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
-    reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups."""
+    reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
+    A follow-up matching an existing ticket (ts) by normalized title or slug base is skipped as a duplicate.
+    skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing."""
+    if reason is not None and (dry_run or skip is not None):
+        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run or --skip; '
+                   f'nothing written')
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
@@ -439,29 +476,49 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None):
     if not is_none(follow) and not items:
         raise Fail(f'{filer}: Follow-ups is prose with no top-level bullet (-, *, 1.), so its items cannot be '
                    f'filed; rewrite it as a list or "None"; nothing written:\n{follow}')
+    skipped = sorted(set(skip or ()))
+    for i in skipped:
+        if not 1 <= i <= len(items):
+            raise Fail(f'{slug}: --skip {i} is out of range: Follow-ups has {len(items)} item(s)'
+                       + (f', so indices run 1 to {len(items)}' if items else '') + '; nothing written')
 
+    # existing tickets to check each follow-up against: (normalized title, folder without NNNN-, id, folder)
+    known = [(norm_title(m['title']) if isinstance(m.get('title'), str) else '', strip_prefix(x), m['id'], x)
+             for x, m in ts]
     # plan everything first, so a refusal in the middle writes nothing
-    planned, after = [], list(ts)
-    for item in items:
+    planned, after, lines, dups = [], list(ts), [], []
+    for i, item in enumerate(items, 1):
         no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', item)
         plain = ' '.join(re.sub(r'[`*\[\]()]', '', no_emphasis).split())
         title = follow_up_title(plain)
         base = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
         if numbered:
-            while PREFIX_RE.match(base):
-                base = base[5:]
-            base = base or 'follow-up'
+            base = strip_prefix(base) or 'follow-up'
+        if i in skipped:
+            lines.append(f'{i}. {title} [{base}] skip (--skip)')
+            continue
+        key, nt = strip_prefix(base), norm_title(title)
+        dup = next(((kid, kname) for kt, kbase, kid, kname in known if (nt and kt == nt) or kbase == key), None)
+        if dup:
+            mark = f'duplicate of {dup[0]} ({dup[1]})'
+            dups.append(f'{title} ({mark})')
+            lines.append(f'{i}. {title} [{base}] {mark}')
+            continue
+        if numbered:
             tid = f'T-{max((int(x["id"][2:]) for _, x in after), default=0) + 1:04d}'
-        s, n = base, 2
+        s, k = base, 2
         while ((root / (name := folder_name(s, tid, True) if numbered else s)).exists()
                or any(x == name for x, _ in after)):
-            s, n = f'{base}-{n}', n + 1
+            s, k = f'{base}-{k}', k + 1
         ctx = f'Follow-up from {pid} ({slug}/{filer.name}):\n\n{item}'
         t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered)
         planned.append((name, t))
         after.append((name, m))
+        lines.append(f'{i}. {title} [{name}]')
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
+    if dry_run:
+        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines)
 
     for s, t in planned:
         (root / s).mkdir()
@@ -470,7 +527,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None):
     write_roadmap(root, load(root))
     if flag:
         ensure_numbered_config(root)
-    return f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
+    out = f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
+    if dups:
+        out += '; skipped duplicate(s): ' + ', '.join(dups)
+    if skipped:
+        out += '; skipped by --skip: ' + ', '.join(map(str, skipped))
+    return out
 
 
 def cmd_roadmap(root, numbered=False):
@@ -956,7 +1018,69 @@ def selftest():
         expect(f'(o) --numbered --reason persists config: rc={rc} {err!r}',
                rc == 0 and status(root) == 'done' and config_numbered(root))
 
-        empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
+        # (p) --dry-run lists every bullet with its index and duplicate mark, and writes nothing
+        three = '- Add retry to fetch\n- Quote the docs\n- Split the runner'
+        root = case(filer('filer-L1.md', 'None', '- Add retry to fetch\n- Fix #12\n- Quote the docs'))
+        before = snap(root)
+        rc, out, err = run(root, 'close', ('alpha',), numbered=True, dry_run=True)
+        lines = out.splitlines()
+        expect(f'(p) dry run lists 1 to 3, marks Fix #12 as a duplicate of beta, writes nothing: rc={rc} '
+               f'out={out!r} err={err!r} tree={tree(root)}',
+               rc == 0 and snap(root) == before and status(root) == 'proposed'
+               and lines[:1] == ['T-0001 dry run: 3 proposed follow-up(s); nothing written']
+               and [ln.split('.', 1)[0] for ln in lines[1:]] == ['1', '2', '3']
+               and lines[2].startswith('2. Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
+               and 'duplicate' not in lines[1] + lines[3])
+        root = case(filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch'))
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), dry_run=True)
+        expect(f'(p) dry run with open warnings and no --force refuses: rc={rc} {err!r}',
+               rc == 1 and '--force' in err and snap(root) == before)
+
+        # (q) --skip files every other follow-up, and the rest take consecutive ids
+        root = case(filer('filer-L1.md', 'None', three))
+        rc, out, err = run(root, 'close', ('alpha',), skip=[2])
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(q) --skip 2 files bullets 1 and 3 only: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
+               rc == 0 and status(root) == 'done' and len(made) == 2
+               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch', 'Split the runner']
+               and sorted(m.get('id') for m in made.values()) == ['T-0003', 'T-0004']
+               and 'skipped by --skip: 2' in out)
+
+        # (r) --skip out of range refuses, names the index and the count, writes nothing
+        for bad, follow in ((4, three), (0, three), (1, 'None')):
+            root = case(filer('filer-L1.md', 'None', follow))
+            before = snap(root)
+            for dry in (True, False):
+                rc, _, err = run(root, 'close', ('alpha',), skip=[bad], dry_run=dry)
+                count = 0 if follow == 'None' else 3
+                expect(f'(r) --skip {bad} (dry_run={dry}) with {count} bullet(s) refuses: rc={rc} {err!r}',
+                       rc == 1 and f'--skip {bad} ' in err and f'has {count} item' in err and snap(root) == before)
+        try:
+            parse_skip('2,x')
+            bad_token = None
+        except Fail as e:
+            bad_token = str(e)
+        expect(f'(r) a non-integer --skip token is a refusal: {bad_token!r}',
+               bad_token is not None and "'x'" in bad_token and parse_skip('3, 1') == [3, 1])
+
+        # (s) a plain close skips duplicates of existing tickets (by title, by slug base) and names them
+        root = case(filer('filer-L1.md', 'None', '- Fix #12\n- Beta\n- Add retry to fetch'))
+        rc, out, err = run(root, 'close', ('alpha',))
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(s) duplicates of beta skipped on close: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
+               rc == 0 and sorted(made) == ['add-retry-to-fetch'] and 'skipped duplicate(s)' in out
+               and out.count('T-0002 (beta)') == 2 and run(root, 'check')[0] == 0)
+
+        # (t) --reason does not combine with --dry-run or --skip
+        for kw in ({'dry_run': True}, {'skip': [1]}):
+            root = case(filer('filer-L1.md', 'None', three))
+            before = snap(root)
+            rc, _, err = run(root, 'close', ('alpha',), reason='superseded', **kw)
+            expect(f'(t) --reason with {kw} refuses and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and '--reason' in err and snap(root) == before)
+
+        empty =pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
 
@@ -980,13 +1104,20 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name the folder NNNN-<slug> after the new id and persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
-    p = sub.add_parser('close', help='after /file: file follow-ups as tickets, set the ticket done; '
+    p = sub.add_parser('close', help='after /file: file follow-ups as tickets (skipping duplicates of existing '
+                                     'tickets), set the ticket done; --dry-run lists them first; '
                                      'or --reason TEXT: set it done without a filer file')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--reason', metavar='TEXT',
                    help='close without a filer file (work done elsewhere): set done, append a ## Closed '
-                        'section with the date and TEXT, file no follow-ups')
+                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run or --skip)')
+    p.add_argument('--dry-run', action='store_true',
+                   help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
+                        'duplicate or --skip mark; write nothing')
+    p.add_argument('--skip', metavar='N[,N...]',
+                   help='file every follow-up except these 1-based indices from the --dry-run listing; '
+                        'an index out of range refuses and writes nothing')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -1005,6 +1136,12 @@ def main(argv):
     kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check') else {}
     if cmd == 'close':
         kw['reason'] = a.reason
+        kw['dry_run'] = a.dry_run
+        try:
+            kw['skip'] = None if a.skip is None else parse_skip(a.skip)
+        except Fail as e:
+            print(e, file=sys.stderr)
+            return 1
     rc, out, err = run(pathlib.Path(a.root), cmd, args, **kw)
     if out:
         print(out)

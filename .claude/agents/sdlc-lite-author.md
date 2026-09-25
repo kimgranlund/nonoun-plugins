@@ -13,7 +13,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - Level tables live in run.sh (source of truth), `skills/level-rubric`, and CLAUDE.md. Change all three together.
 - Model and effort choices are the user's. Never change them without an explicit decision.
 - Publishing is the user's call: the hook blocks it inside role runs, and outward actions (push, PR, issues) need approval unless the user already asked for them.
-- Numbered ticket mode persists via `new` and `close --numbered`, and `check` warns on numbered folders with no config line. Keep tickets.py, the /ticket skill, and CLAUDE.md in sync on this, and keep `--reason` in sync across tickets.py, the /ticket skill, and CLAUDE.md.
+- Numbered ticket mode persists via `new` and `close --numbered`, and `check` warns on numbered folders with no config line. Keep tickets.py, the /ticket skill, and CLAUDE.md in sync on this, and keep `--reason` in sync across tickets.py, the /ticket skill, and CLAUDE.md. Keep `close --dry-run`/`--skip` and duplicate follow-up skipping in sync across tickets.py, the /ticket skill, the /file skill, and CLAUDE.md.
 
 ## After every change
 1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, steps.py selftest, run selftest, shellcheck, plugin validate).
