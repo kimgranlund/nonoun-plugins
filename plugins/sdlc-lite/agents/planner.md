@@ -17,6 +17,7 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 3. A lint, test suite, or checker over a whole file or repo passes only on "no new findings versus the base commit", stated as the same command run in a `git worktree add <tmp> HEAD` copy for comparison, or as a file-scoped invocation, unless the Do fixes the existing findings.
 4. Never put a deliberately broken command in a criterion code span, because `steps.py split` parses every command span and refuses the plan as a `plan defect`: name a fixture, or describe the command in prose.
 5. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
+6. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
 
 ## Merge steps
 

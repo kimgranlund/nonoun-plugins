@@ -87,7 +87,7 @@ What must not change, limits, deadlines. "None" if none.
 Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Plan review
-Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note. Earlier entries stay. The planner fixes that step on the replan.
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)

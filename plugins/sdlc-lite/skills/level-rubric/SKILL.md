@@ -22,7 +22,7 @@ Use the first source that gives one:
 | L4 | Opus xhigh | Crosses modules, unclear edges, concurrency or state |
 | L5 | Fable xhigh | Earlier attempt failed, root cause unknown, or high blast radius |
 
-Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. A builder blocked, or a verifier fail, tagged `plan defect:` goes to replan and never counts toward a bump. L5 failed means stop and ask the user. There is no L6.
+Bump one level for each earlier `builder-*.md` in the step dir with Status blocked, and after a verifier fail on the same step twice. A builder blocked, or a verifier fail, tagged `plan defect:` goes to replan and never counts toward a bump. A recurring finding (a verifier fail or builder block that repeats an earlier attempt's finding on the same step: same criterion, same root cause, after a rebuild or replan addressed it) also goes to a planner L3 replan, like `plan defect:`; it never bumps a level and never counts toward a bump. Most fails are ordinary: the test fires only on a recurrence. L5 failed means stop and ask the user. There is no L6.
 
 ## verifier (L1 to L3)
 

@@ -6,7 +6,8 @@
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
 4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
-   "no new findings" rule appear in every doc and script that carries the route.
+   "no new findings" rule appear in every doc and script that carries the route, and the
+   `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard against a throwaway repo, and agents/builder.md
@@ -87,6 +88,8 @@ PLAN_DEFECT_DOCS = {
                     'scripts/steps.py'),
     'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'no new findings': ('agents/planner.md',),
+    'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
+                          'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:
