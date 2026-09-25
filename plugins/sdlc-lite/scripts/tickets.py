@@ -930,7 +930,8 @@ def main(argv):
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--numbered', action='store_true',
-                   help='name each follow-up folder NNNN-<slug> after its own new id (also on via <root>/config)')
+                   help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
+                        '`ticket_folders: numbered` in <root>/config (also on via that config)')
     p = sub.add_parser('roadmap', help='regenerate roadmap.md')
     p.add_argument('--numbered', action='store_true',
                    help='also refuse on a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
