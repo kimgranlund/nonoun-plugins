@@ -60,7 +60,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0053 | [the-hooks-pretooluse-command-leaves](the-hooks-pretooluse-command-leaves/handoff.md) | The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted... | idea | M | P2 | none | 🟢 done |
 | T-0054 | [tickets-py-load-reads-nnnn](tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | M | P2 | none | 🟢 done |
 | T-0055 | [worktree-id-collision](worktree-id-collision/handoff.md) | Ticket ids collide across parallel worktrees | bug | S | P2 | none | 🟢 done |
-| T-0056 | [filer-record-lost-in-worktree](filer-record-lost-in-worktree/handoff.md) | filer-L1.md stays uncommitted in a lane worktree, so close on main finds no filer file | bug | S | P2 | none | 🔵 ready |
+| T-0056 | [filer-record-lost-in-worktree](filer-record-lost-in-worktree/handoff.md) | filer-L1.md stays uncommitted in a lane worktree, so close on main finds no filer file | bug | S | P2 | none | 🟢 done |
 | T-0057 | [close-ack-warnings](close-ack-warnings/handoff.md) | close --ack-warnings to record why stale filer warnings no longer apply, instead of --force | feature | M | P2 | none | 🔵 ready |
 | T-0059 | [merge-step-template](merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | M | P2 | none | 🔵 ready |
 | T-0058 | [fanout-command](fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | M | P2 | T-0055, T-0056, T-0059 | 🔵 ready |

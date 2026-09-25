@@ -20,6 +20,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             A plain slug folder never moves. close refuses, writing nothing, when .<slug> already
             exists, and names the dot folder (`already closed`) when only .<slug> holds the ticket.
             close --dry-run adds a `rename <slug> -> .<slug>` line.
+            With no filer-L*.md here, close refuses and, when another git worktree's same-relative
+            <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
+            this tree, then rerun close.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
             NNNN- prefix) equals an existing ticket's, any status, is a duplicate: close skips it and
             names it in the output. Follow-ups in the same filer are not checked against each other.
@@ -522,7 +525,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
     The dry run ends with `expect <digest>` (follow_digest). expect: that digest; required with skip (unless
     dry_run), and any mismatch with the current Follow-ups refuses, so stale indices are never applied.
-    Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap."""
+    Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap.
+    With no filer here, the refusal names every other worktree's same-relative <slug>/ holding a filer-L*.md
+    (glob only, never read), so work filed in a lane worktree can be committed or copied in."""
     if reason is not None and (dry_run or skip is not None or expect is not None):
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip '
                    f'or --expect; '
@@ -574,7 +579,16 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}'
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
-        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
+        held = []
+        for r in worktree_roots(root):
+            try:
+                if any((r / d.name).glob('filer-L*.md')):
+                    held.append(str(r / d.name))
+            except OSError:
+                pass
+        hint = (f'; a filer record exists in {", ".join(held)}; commit or copy it into this tree, then rerun close'
+                if held else '')
+        raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first{hint}; nothing written')
     filer = filers[-1]
     text = filer.read_text(encoding='utf-8')
     warnings, follow = section(text, 'Warnings'), section(text, 'Follow-ups')
@@ -1484,6 +1498,12 @@ def selftest():
             rc, _, err = run(n_root, 'new', ('feature', 'zeta'))
             expect(f'worktree: first ticket in a worktree with no .sdlc yet is T-0008: rc={rc} {err!r} '
                    f'got={tid(n_root, "zeta")!r}', rc == 0 and err == '' and tid(n_root, 'zeta') == 'T-0008')
+            # close in main with the filer record only in wt (alpha, filed there above): refuse, name wt's folder
+            before = snap(m_root)
+            rc, _, err = run(m_root, 'close', ('alpha',))
+            expect(f'worktree: close in main names the wt folder holding the filer record, writes nothing: rc={rc} '
+                   f'{err!r}', rc == 1 and snap(m_root) == before and str((w_root / 'alpha').resolve()) in err
+                   and '/file' in err and 'nothing written' in err)
 
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
