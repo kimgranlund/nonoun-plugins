@@ -85,6 +85,9 @@ What must not change, limits, deadlines. "None" if none.
 
 ## Question
 Only for scout, archaeologist, or researcher runs: the exact question.
+
+## Plan review
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
@@ -106,6 +109,8 @@ level: L<n>
 ### Acceptance criteria
 - ...
 ```
+
+`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to.
 
 ## Free-text arguments
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] | selftest}
+Usage: steps.py {split <planner.md | task dir> [--only N ...] | lint <planner.md | task dir> | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -11,7 +11,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] | selftest}
             --only N (repeatable) writes only those steps; an N not in the plan is an error.
             Refuses a step whose step-<n>/ already holds builder-*.md or verifier-*.md: rename it
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
+            Refuses a plan whose acceptance criterion commands do not parse (see lint): the
+            refusal names each span and ends with "plan defect: replan this step (/chain 3)".
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
+  lint      pick the plan the same way split does, then check that every command-like code span
+            under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
+            each <placeholder> replaced first. Never executes a span, writes nothing, and needs no
+            handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
 import argparse
@@ -20,6 +26,8 @@ import io
 import os
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -27,6 +35,12 @@ import order
 
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
+SPAN_RE = re.compile(r'(`+)(.+?)\1')
+ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
+PLACEHOLDER_RE = re.compile(r'<[^<>\s][^<>]*>')
+BUILTINS = {'cd', 'test', '[', 'echo', 'printf', 'export', 'set', 'true', 'false', 'time', 'type',
+            'command', 'eval', 'exec', 'source', '.'}
+PLAN_DEFECT = 'plan defect: replan this step (/chain 3)'
 
 
 class Fail(Exception):
@@ -102,11 +116,90 @@ def parse_steps(plan):
     return out
 
 
+def criteria_lines(block):
+    """Lines under each ### Acceptance criteria of a step block, up to the next ## or ### line,
+    with ``` fenced lines left out."""
+    out = []
+    inside = fenced = False
+    for line in block.splitlines():
+        if line.startswith('## ') or line.startswith('### '):
+            inside = line.strip() == '### Acceptance criteria'
+            fenced = False
+            continue
+        if not inside:
+            continue
+        if line.lstrip().startswith('```'):
+            fenced = not fenced
+            continue
+        if not fenced:
+            out.append(line)
+    return out
+
+
+def is_command(text):
+    """True when a code span reads as a shell command, judged by its head token."""
+    tokens = text.split()
+    assigns = []
+    i = 0
+    while i < len(tokens) and (ASSIGN_RE.match(tokens[i]) or tokens[i] == '!'):
+        if tokens[i] != '!':
+            assigns.append(tokens[i])
+        i += 1
+    if any('$(' in a for a in assigns):
+        return True
+    if i == len(tokens):
+        return False
+    head = tokens[i]
+    return (head in BUILTINS or '/' in head or head.endswith('.py') or head.endswith('.sh')
+            or shutil.which(head) is not None)
+
+
+def command_spans(block):
+    """The command-like code spans under a step block's acceptance criteria, in order."""
+    spans = []
+    for line in criteria_lines(block):
+        for m in SPAN_RE.finditer(line):
+            text = m.group(2)
+            if text.startswith(' '):
+                text = text[1:]
+            if text.endswith(' '):
+                text = text[:-1]
+            if re.search(r'\s', text) and is_command(text):
+                spans.append(text)
+    return spans
+
+
+def lint_steps(plan, steps):
+    """Return one finding per command-like criterion span that bash -n cannot parse; [] when clean.
+    bash -n parses and never executes."""
+    findings = []
+    for n, block in steps.items():
+        for text in command_spans(block):
+            probe = PLACEHOLDER_RE.sub('PLACEHOLDER', text)
+            try:
+                r = subprocess.run(['bash', '-n', '-c', '--', probe], capture_output=True, text=True, timeout=5)
+                rc, err = r.returncode, r.stderr
+            except subprocess.TimeoutExpired:
+                rc, err = 1, 'bash -n did not finish within 5 seconds'
+            if rc != 0:
+                lines = [f'steps: {plan} step {n}: acceptance criterion command does not parse: {text}']
+                lines += [f'  {e}' for e in err.splitlines() if e.strip()]
+                findings.append('\n'.join(lines))
+    return findings
+
+
+def lint_or_fail(plan, steps):
+    findings = lint_steps(plan, steps)
+    if findings:
+        raise Fail('\n'.join(findings + [PLAN_DEFECT]))
+
+
 def split(target, only=None):
     """Check everything, then write. Returns the paths written."""
     plan, task_dir = find_plan(target)
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
+    lint_or_fail(plan, steps)
     if only:
         missing = sorted(set(n for n in only if n not in steps))
         if missing:
@@ -139,6 +232,17 @@ def cmd_split(target, only):
         return 1
     for p in written:
         print(p)
+    return 0
+
+
+def cmd_lint(target):
+    try:
+        plan, _ = find_plan(target)
+        lint_or_fail(plan, parse_steps(plan))
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    print('steps lint: ok')
     return 0
 
 
@@ -188,6 +292,10 @@ plan goal, not the task goal
 - RISKTEXT must not leak
 """
 
+BROKEN_CRITERION = "- `grep -c 'foo' bar'`"
+
+BROKEN_PLAN = PLAN.replace('- one works', BROKEN_CRITERION)
+
 
 def snapshot(root):
     """Every file under root: relative path -> (mtime_ns, bytes)."""
@@ -229,11 +337,11 @@ def selftest():
                 (d / plan_name).write_text(plan, encoding='utf-8')
             return d
 
-        def refused(name, argv, root, needle=None):
+        def refused(name, argv, root, needle=None, needles=()):
             before = snapshot(root)
             rc, out, err = run_main(argv)
             check(name, rc != 0 and err.strip() != '' and out == '' and snapshot(root) == before
-                  and (needle is None or needle in err))
+                  and (needle is None or needle in err) and all(x in err for x in needles))
 
         want1 = f'## Task goal\n{GOAL}\n\n{STEP1}\n'
         want2 = f'## Task goal\n{GOAL}\n\n{STEP2}\n'
@@ -333,6 +441,57 @@ def selftest():
         check('(i) split on .0003-x writes .0003-x/step-1/handoff.md',
               rc == 0 and h1.is_file() and h1.read_text(encoding='utf-8') == want1)
 
+        # (j) a criterion command that does not parse: split and lint refuse as a plan defect
+        d = task(plan=BROKEN_PLAN)
+        refused('(j) split refuses a broken criterion command as a plan defect, writes nothing',
+                ['split', str(d)], d, needles=('plan defect', 'step 1', 'does not parse'))
+        refused('(j) lint on the plan file exits 1 with plan defect, writes nothing',
+                ['lint', str(d / 'planner-L2.md')], d, needle='plan defect')
+
+        def j_dir(broken_name, clean_name):
+            d = task(plan=None)
+            (d / broken_name).write_text(BROKEN_PLAN, encoding='utf-8')
+            (d / clean_name).write_text(PLAN, encoding='utf-8')
+            (d / 'runs.jsonl').write_text(''.join(
+                f'{{"role": "planner", "level": "{n[8:10]}", "file": "{n}"}}\n'
+                for n in ('planner-L3.md', 'planner-L2.md')), encoding='utf-8')
+            return d
+
+        d = j_dir('planner-L2.md', 'planner-L3.md')
+        refused('(j) lint on a task dir lints the plan runs.jsonl names newest (broken planner-L2.md)',
+                ['lint', str(d)], d, needle='plan defect')
+        d = j_dir('planner-L3.md', 'planner-L2.md')
+        rc, out, err = run_main(['lint', str(d)])
+        rc2, _, _ = run_main(['split', str(d)])
+        check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
+              rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
+
+        # (k) command spans that parse, and non-command spans, pass
+        k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
+                   'python3 scripts/board.py --root <tmp>', 'SDLC_DRY_RUN=1 scripts/run.sh builder L3 x.md',
+                   'd=$(mktemp -d) && ls "$d"', '--sort recent', 'duplicate of T-0002 (beta)']
+        k_plan = PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in k_spans))
+        d = task(plan=k_plan)
+        rc, _, _ = run_main(['split', str(d)])
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        kept = command_spans(parse_steps(d / 'planner-L2.md')[1])
+        check('(k) parsing command spans, a path, a flag, and prose pass: split writes both, lint ok',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file()
+              and rc2 == 0 and out2.strip() == 'steps lint: ok'
+              and kept == [k_spans[0], k_spans[2], k_spans[3], k_spans[4]])
+
+        # (l) a broken command under ### Do is not a criterion
+        d = task(plan=PLAN.replace('Do one.', BROKEN_CRITERION))
+        rc, _, _ = run_main(['split', str(d)])
+        check('(l) a broken command under ### Do is ignored: split writes normally',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file())
+
+        # (m) a broken command inside a ``` fence under the criteria is skipped
+        d = task(plan=PLAN.replace('- one works', f'- one works\n```\n{BROKEN_CRITERION}\n```'))
+        rc, _, _ = run_main(['split', str(d)])
+        check('(m) a broken command inside a ``` fence is skipped: split writes normally',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file())
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -348,10 +507,14 @@ def main(argv):
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--only', type=int, action='append', metavar='N', help='write only step N (repeatable)')
+    p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
+    p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'lint':
+        return cmd_lint(a.target)
     return cmd_split(a.target, a.only)
 
 

@@ -4,6 +4,9 @@
 1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric vs CLAUDE.md.
 2. Every agents/<role>.md has run.sh cases, and every run.sh role has an agent file.
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
+4. Long role runs: chain, bench, and conductor state the interactive vs headless rule.
+5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
+   "no new findings" rule appear in every doc and script that carries the route.
 """
 import re, sys, pathlib
 
@@ -73,6 +76,19 @@ for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'agents/conductor.
     if missing: errors.append(f'{rel}: long-run rule missing words: {", ".join(missing)}')
     if 'never `run_in_background`' in text or 'never run_in_background' in text:
         errors.append(f'{rel}: still says "never run_in_background" unqualified')
+# Plan-defect route: a `plan defect` tag from the split lint, the builder, or the verifier goes to a replan.
+PLAN_DEFECT_DOCS = {
+    'plan defect': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'agents/conductor.md',
+                    'skills/chain/SKILL.md', 'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md',
+                    'scripts/steps.py'),
+    'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
+    'no new findings': ('agents/planner.md',),
+}
+for word, rels in PLAN_DEFECT_DOCS.items():
+    for rel in rels:
+        f = root/rel
+        if not f.is_file(): errors.append(f'{rel}: missing (plan-defect route check)'); continue
+        if word not in f.read_text(): errors.append(f'{rel}: plan-defect route missing "{word}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
