@@ -45,6 +45,8 @@ import shutil
 import sys
 import tempfile
 
+import order as run_order
+
 PLUGIN = pathlib.Path(__file__).resolve().parent.parent
 REQUIRED = ('id', 'title', 'type', 'status', 'size', 'priority', 'depends', 'created')
 ENUMS = {
@@ -462,7 +464,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if flag:
             ensure_numbered_config(root)
         return f'{pid} done (closed by reason: {why}); no follow-ups filed'
-    filers = sorted(d.glob('filer-L*.md'), key=lambda p: (p.stat().st_mtime, p.name))
+    filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
     filer = filers[-1]
@@ -935,16 +937,30 @@ def selftest():
         rc, _, err = run(root, 'close', ('alpha', True))
         expect(f'(g) second close refuses: rc={rc} {err!r}', rc == 1 and 'already closed' in err and snap(root) == before)
 
-        # (h) the newest filer file wins by mtime, even when the older one sorts later by name
-        root = case(both(filer('filer-L2.md', 'step-1 verifier fail', 'None', mtime=1_000_000),
-                         filer('filer-L1.md', 'None', 'None', mtime=2_000_000)))
+        # (h) the newest filer file is picked by recorded run order in runs.jsonl, never by file time
+        def runs(*names):
+            def put(root):
+                (root / 'alpha' / 'runs.jsonl').write_text(''.join(
+                    f'{{"role": "filer", "level": "{n[6:8]}", "file": "{n}"}}\n' for n in names), encoding='utf-8')
+            return put
+
+        bad = 'step-1 verifier fail'
+        root = case(both(both(filer('filer-L2.md', bad, 'None', mtime=1_000_000),
+                              filer('filer-L1.md', 'None', 'None', mtime=1_000_000)),
+                         runs('filer-L2.md', 'filer-L1.md')))
         rc, _, err = run(root, 'close', ('alpha',))
-        expect(f'(h) newest filer file (by mtime) is used: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
-        # and on an mtime tie the later name wins
-        root = case(both(filer('filer-L1.md', 'step-1 verifier fail', 'None', mtime=1_000_000),
+        expect(f'(h) equal mtimes: runs.jsonl picks the lower-named filer recorded last: rc={rc} {err!r}',
+               rc == 0 and status(root) == 'done')
+        root = case(both(both(filer('filer-L2.md', bad, 'None', mtime=2_000_000),
+                              filer('filer-L1.md', 'None', 'None', mtime=1_000_000)),
+                         runs('filer-L2.md', 'filer-L1.md')))
+        rc, _, err = run(root, 'close', ('alpha',))
+        expect(f'(h) inverse mtimes: runs.jsonl still decides: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+        # no records: name (level) order, filer-L2.md beats a newer filer-L1.md
+        root = case(both(filer('filer-L1.md', bad, 'None', mtime=2_000_000),
                          filer('filer-L2.md', 'None', 'None', mtime=1_000_000)))
         rc, _, err = run(root, 'close', ('alpha',))
-        expect(f'(h) mtime tie breaks by name: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
+        expect(f'(h) no runs.jsonl: name order decides, not mtime: rc={rc} {err!r}', rc == 0 and status(root) == 'done')
 
         # (i) numbered close: each follow-up folder is NNNN-<slug> with its own id; alpha keeps its name
         numbered_follow = filer('filer-L1.md', 'None', '- Add retry to fetch\n- Add retry to fetch\n'

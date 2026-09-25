@@ -2,7 +2,8 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] | selftest}
-  split     read the plan (a planner-*.md file, or the newest planner-*.md by mtime in a task dir)
+  split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
+            by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
             then write <task dir>/step-<n>/handoff.md as "## Task goal", the goal, a blank line,
             and the step block verbatim (## Step <n>: ... up to the next ## heading, trailing
@@ -22,6 +23,8 @@ import re
 import sys
 import tempfile
 
+import order
+
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
 
@@ -34,11 +37,10 @@ def find_plan(target):
     """Return (planner file, task dir) for a planner file or a task dir."""
     target = pathlib.Path(target)
     if target.is_dir():
-        plans = [p for p in target.glob('planner-*.md') if p.is_file()]
-        if not plans:
+        plan = order.newest(target, 'planner')
+        if not plan:
             raise Fail(f'steps: no planner-*.md in {target}')
-        plan = max(plans, key=lambda p: (p.stat().st_mtime_ns, p.name))
-        return plan, target
+        return pathlib.Path(plan), target
     if target.is_file():
         return target, target.parent
     raise Fail(f'steps: no such file or directory: {target}')
@@ -256,24 +258,30 @@ def selftest():
         d = task()
         refused('(b) --only 9 fails and writes nothing', ['split', str(d), '--only', '9'], d)
 
-        # (c) task dir input picks the newest planner-*.md by mtime
-        d = task(plan=PLAN.replace('Do one.', 'OLD PLAN'), plan_name='planner-L3.md')
-        (d / 'planner-L2.md').write_text(PLAN.replace('Do one.', 'NEW PLAN'), encoding='utf-8')
-        os.utime(d / 'planner-L3.md', (1_000_000, 1_000_000))
-        os.utime(d / 'planner-L2.md', (2_000_000, 2_000_000))
-        rc, _, _ = run_main(['split', str(d)])
-        h1 = d / 'step-1' / 'handoff.md'
-        got = h1.read_text(encoding='utf-8') if h1.is_file() else ''
-        c1 = rc == 0 and 'NEW PLAN' in got and 'OLD PLAN' not in got
-        d = task(plan=PLAN.replace('Do one.', 'OLD PLAN'), plan_name='planner-L2.md')
-        (d / 'planner-L3.md').write_text(PLAN.replace('Do one.', 'NEW PLAN'), encoding='utf-8')
-        os.utime(d / 'planner-L2.md', (1_000_000, 1_000_000))
-        os.utime(d / 'planner-L3.md', (2_000_000, 2_000_000))
-        rc, _, _ = run_main(['split', str(d)])
-        h1 = d / 'step-1' / 'handoff.md'
-        got = h1.read_text(encoding='utf-8') if h1.is_file() else ''
-        check('(c) task dir input uses the newer planner-*.md by mtime, not by name',
-              c1 and rc == 0 and 'NEW PLAN' in got and 'OLD PLAN' not in got)
+        # (c) task dir input picks the newest planner-*.md by recorded run order, never by file time
+        def c_case(times, runs):
+            d = task(plan=PLAN.replace('Do one.', 'L3 PLAN'), plan_name='planner-L3.md')
+            (d / 'planner-L2.md').write_text(PLAN.replace('Do one.', 'L2 PLAN'), encoding='utf-8')
+            for name, t in times.items():
+                os.utime(d / name, (t, t))
+            if runs is not None:
+                (d / 'runs.jsonl').write_text(''.join(
+                    f'{{"role": "planner", "level": "{n[8:10]}", "file": "{n}"}}\n' for n in runs), encoding='utf-8')
+            rc, _, _ = run_main(['split', str(d)])
+            h1 = d / 'step-1' / 'handoff.md'
+            return rc, h1.read_text(encoding='utf-8') if h1.is_file() else ''
+
+        def uses(res, want, other):
+            rc, got = res
+            return rc == 0 and f'{want} PLAN' in got and f'{other} PLAN' not in got
+
+        recorded = ['planner-L3.md', 'planner-L2.md']
+        check('(c) equal mtimes: runs.jsonl decides, the lower-named file recorded last is used',
+              uses(c_case({'planner-L2.md': 1_000_000, 'planner-L3.md': 1_000_000}, recorded), 'L2', 'L3'))
+        check('(c) inverse mtimes: runs.jsonl still decides, same result',
+              uses(c_case({'planner-L2.md': 1_000_000, 'planner-L3.md': 2_000_000}, recorded), 'L2', 'L3'))
+        check('(c) no runs.jsonl: level then k order, planner-L3.md beats a newer planner-L2.md',
+              uses(c_case({'planner-L3.md': 1_000_000, 'planner-L2.md': 2_000_000}, None), 'L3', 'L2'))
 
         # (d) a step with no level line
         d = task(plan=PLAN.replace('level: L1\n', 'Level is L1\n'))
@@ -328,7 +336,7 @@ def main(argv):
     ap = argparse.ArgumentParser(prog='steps.py', description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
-    p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by mtime)')
+    p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--only', type=int, action='append', metavar='N', help='write only step N (repeatable)')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
     a = ap.parse_args(argv)

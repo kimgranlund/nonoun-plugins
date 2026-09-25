@@ -5,7 +5,8 @@
 # (raw JSON). A rerun of the same role and level (a replan, a rebuild) never overwrites: it
 # writes <role>-<level>-<k>.md and .log with the lowest free k >= 2, and prints the path it
 # wrote; readers take the newest file. Keeps <role>-<level>.running while the run is live
-# (for /board and the status line), and appends one line to <handoff dir>/runs.jsonl for /bench.
+# (for /board and the status line), and appends one line to <handoff dir>/runs.jsonl for /bench;
+# its "file" field names the result, and scripts/order.py orders results by those lines.
 # Runs with --dangerously-skip-permissions; hooks/block-publish.sh still blocks publishing (via SDLC_ROLE). Every role except builder gets Edit/Write/NotebookEdit disallowed.
 # Preflight: exits 2 unless the current directory is in a git work tree with at least one commit.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight).
@@ -57,7 +58,7 @@ log="$dir/$name.log"
 # A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
 # Fable build -> Opus at the same effort; Sonnet build -> Opus medium.
 if [[ "$role" == verifier ]]; then
-  built=$(ls -t "$dir"/builder-L*.md 2>/dev/null | head -1 || true)
+  built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
     if [[ "$model" == "$bmodel" ]]; then
@@ -115,6 +116,7 @@ if ! jq -e '.is_error == false and (.result | length > 0)' "$log" >/dev/null 2>&
 fi
 { echo "<!-- role=$role level=$level model=$model effort=$effort -->"; jq -r '.result' "$log"; } >"$result"
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
-  '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort,
+  --arg file "$name.md" \
+  '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
     cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns}' "$log" >>"$dir/runs.jsonl"
 echo "$result"
