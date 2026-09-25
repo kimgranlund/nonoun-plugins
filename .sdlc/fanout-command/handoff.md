@@ -2,7 +2,7 @@
 id: T-0058
 title: "/fanout command for parallel lanes, with per-lane board view"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0055, T-0056, T-0059]          # ticket ids, e.g. [T-0002]
@@ -23,7 +23,10 @@ From peer session setup-sdlc-lite-generative-ui (gen-ui-system-svelte-lite), on 
 Today each conductor rebuilds: one worktree per lane, sync from main before each ticket, /chain, /file, merge into main under a lock, gates on main, revert on red, close on main. Suggested: `/fanout <lane>=<ids>...` in the plugin, plus board.py showing each lane.
 
 ## Constraints
-What must not change. "None" if none.
+- All code changes go in this worktree's `plugins/sdlc-lite/` (repo root: /Users/kimba/Projects/nonoun/sdlc-lite-wt-tickets12). Do not edit the installed plugin at /Users/kimba/Projects/nonoun/sdlc-agents.
+- The default `board.py` output must not change.
+- No role commits, pushes, or publishes (except a builder on a merge step, per the merge-step template). The selftest must run in throwaway repos under a temp dir and never touch this repo's branches.
+- Keep CLAUDE.md, `.claude/agents/sdlc-lite-author.md`, and the skill docs in step with any new script or flag; `scripts/check.sh` must pass.
 
 ## Decisions (user, 2026-09-25; were open)
 All three recommendations below were chosen: integration branch with one user-approved main fast-forward; a script running one headless conductor per lane; `board.py --lanes`.

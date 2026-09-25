@@ -4,7 +4,7 @@
 1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric vs CLAUDE.md.
 2. Every agents/<role>.md has run.sh cases, and every run.sh role has an agent file.
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
-4. Long role runs: chain, bench, and conductor state the interactive vs headless rule.
+4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
    "no new findings" rule appear in every doc and script that carries the route.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
@@ -71,7 +71,7 @@ for p in sorted((root/'agents').glob('*.md')):
             errors.append(f'agents/{p.name} declares missing skill: {sk}')
 
 # Long role runs: interactive sessions background them; headless sessions keep them in the foreground.
-for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'agents/conductor.md'):
+for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md'):
     f = root/rel
     if not f.is_file(): errors.append(f'{rel}: missing (long-run doc check)'); continue
     text = f.read_text()

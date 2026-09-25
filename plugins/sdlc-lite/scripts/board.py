@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """Render the sdlc status board from task dirs. Never compose the board by hand.
 
-Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [selftest]
+Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [--sort MODE] [--lanes] [selftest]
   --root     dir holding task dirs (default: .sdlc in the cwd; bench/results works too)
   --task     only this task
   --waiting  one line saying what the session waits on, printed above the table
   --summary  one compact line for the status line (newest task only; writes no state):
              "<task> <pct>% (<passed>/<steps>)", plus "🔴<n>" for blocked/failed steps and
              "⚠ L5" when a step is on the last builder level. Prints nothing if no tasks.
+  --lanes    a per-worktree table instead of the task board (see Lanes below)
   selftest   render temp fixtures with and without ticket front matter; prove the column gate bites
+
+Lanes: --lanes renders | Lane | Branch | Board |, one row per `git worktree list` entry of the
+root's repo, in list order: Lane is the worktree's basename, Branch its branch (or
+"(detached <sha>)"), and Board the --summary line of that worktree's same-relative root (or
+"no tasks"). It never renders the task board or touches the state file; --waiting still prints
+above it and --summary, --task and --sort are ignored. Outside a git work tree (any git
+failure) it prints "<root>: not inside a git work tree" on stderr and exits 1. The default board
+is unchanged.
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format).
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
@@ -326,6 +335,53 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
         state_file.write_text(json.dumps(new, indent=1))
     except OSError:
         pass
+    return '\n'.join(out)
+
+
+def lanes(root: pathlib.Path) -> str:
+    """One row per `git worktree list` entry of root's repo: Lane (worktree basename), Branch,
+    and Board, that worktree's summary() of the same-relative root. Raises ValueError outside
+    a git work tree or on any git failure."""
+    here = root.resolve()
+    anchor = here
+    while not anchor.is_dir() and anchor != anchor.parent:
+        anchor = anchor.parent
+    env = {k: v for k, v in os.environ.items() if k not in tickets.GIT_ENV_DROP}
+
+    def git(*args):
+        try:
+            p = subprocess.run(['git', '-C', str(anchor), *args], env=env, capture_output=True, text=True)
+        except OSError as e:
+            raise ValueError(str(e))
+        if p.returncode:
+            raise ValueError(p.stderr.strip())
+        return p.stdout
+
+    top = pathlib.Path(git('rev-parse', '--show-toplevel').strip()).resolve()
+    try:
+        rel = here.relative_to(top)
+    except ValueError:
+        raise ValueError(f'{here} is outside the git toplevel {top}')
+    entries = []
+    for line in git('worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            entries.append({'path': line[len('worktree '):]})
+        elif entries and line.startswith('HEAD '):
+            entries[-1]['head'] = line[len('HEAD '):]
+        elif entries and line.startswith('branch '):
+            entries[-1]['branch'] = line[len('branch '):]
+    out = ['| Lane | Branch | Board |', '|---|---|---|']
+    for e in entries:
+        path = pathlib.Path(e['path']).resolve()
+        ref = e.get('branch', '')
+        if ref.startswith('refs/heads/'):
+            branch = ref[len('refs/heads/'):]
+        elif ref:
+            branch = ref
+        else:
+            branch = f"(detached {e.get('head', '')[:7]})"
+        board = summary((path / rel).resolve()) or 'no tasks'
+        out.append(f'| {path.name} | {branch} | {board} |')
     return '\n'.join(out)
 
 
@@ -665,6 +721,59 @@ def selftest() -> int:
         expect(f'inverse mtimes: record order still gives the pass row, got {got}',
                got == ('🟢', 'pass · builder L2 · verifier L2 · attempt 2'))
 
+    # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
+    with tempfile.TemporaryDirectory() as ltmp:
+        ltmp = pathlib.Path(ltmp).resolve()
+        env = {k: v for k, v in os.environ.items() if k not in tickets.GIT_ENV_DROP}
+        repo = ltmp / 'repo'
+        (repo / '.sdlc' / 't').mkdir(parents=True)
+        (repo / '.sdlc' / 't' / 'handoff.md').write_text('## Goal\nx\n')
+
+        def git(*args):
+            p = subprocess.run(['git', '-C', str(repo), *args], env=env, capture_output=True, text=True)
+            expect(f'git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+
+        git('init', '-q')
+        git('config', 'user.name', 'board selftest')
+        git('config', 'user.email', 'selftest@example.invalid')
+        git('config', 'commit.gpgsign', 'false')
+        git('add', '.sdlc/t/handoff.md')
+        git('commit', '-q', '-m', 'fixture')
+        lanes_dir = ltmp / 'lanes'
+        git('worktree', 'add', '-q', '-b', 'alpha', str(lanes_dir / 'alpha'))
+        git('worktree', 'add', '-q', '-b', 'beta', str(lanes_dir / 'beta'))
+        (lanes_dir / 'alpha' / '.sdlc' / 't' / 'planner-L1.running').touch()
+        head = subprocess.run(['git', '-C', str(repo), 'branch', '--show-current'], env=env,
+                              capture_output=True, text=True).stdout.strip()
+
+        def run_lanes(root):
+            return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()),
+                                   '--lanes', '--root', str(root)], env=env, capture_output=True, text=True)
+
+        proc = run_lanes(repo / '.sdlc')
+        expect(f'--lanes exited 0, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 0)
+        lines = proc.stdout.splitlines()
+        expect(f'--lanes header, got {lines[:2]}', lines[:2] == ['| Lane | Branch | Board |', '|---|---|---|'])
+        data = [[c.strip() for c in ln.strip('|').split('|')] for ln in lines[2:] if ln.startswith('| ')]
+        expect(f'--lanes has exactly three data rows, got {data}', len(data) == 3)
+        cells = {r[0]: r for r in data if len(r) == 3}
+        expect(f'--lanes rows are repo, alpha, beta in list order, got {[r[0] for r in data]}',
+               [r[0] for r in data] == ['repo', 'alpha', 'beta'])
+        expect(f'--lanes Branch cells are the branch names, got {[r[1] for r in data]}',
+               [r[1] for r in data] == [head, 'alpha', 'beta'] and head)
+        expect(f"alpha's Board reads its own running marker, got {cells.get('alpha')}",
+               cells.get('alpha', [''] * 3)[2] == 't planning')
+        expect(f"beta's Board is unchanged by alpha's marker, got {cells.get('beta')}",
+               cells.get('beta', [''] * 3)[2] == 't not planned')
+        expect(f"main's Board is unchanged by alpha's marker, got {cells.get('repo')}",
+               cells.get('repo', [''] * 3)[2] == 't not planned')
+
+        plain = ltmp / 'plain'
+        plain.mkdir()
+        proc = run_lanes(plain)
+        expect(f'--lanes outside git exits 1 naming git, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 1 and 'git' in proc.stderr and not proc.stdout)
+
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -682,10 +791,22 @@ def main():
     ap.add_argument('--waiting')
     ap.add_argument('--summary', action='store_true')
     ap.add_argument('--sort', choices=['recent', 'id', 'name'], default=None)
+    ap.add_argument('--lanes', action='store_true')
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(selftest())
     root = pathlib.Path(a.root)
+    if a.lanes:
+        try:
+            table = lanes(root)
+        except ValueError:
+            print(f'{root}: not inside a git work tree', file=sys.stderr)
+            sys.exit(1)
+        if a.waiting:
+            print(a.waiting)
+            print()
+        print(table)
+        return
     if a.summary:
         print(summary(root))
         return
