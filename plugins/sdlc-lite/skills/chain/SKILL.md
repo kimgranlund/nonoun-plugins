@@ -2,7 +2,7 @@
 name: chain
 description: Drive one task through the whole loop: optional scout, research, and architect, then plan, then build and verify each step with escalation, then file. Use when a task should run end to end.
 argument-hint: <handoff.md | goal>
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Read, Write, Grep, Glob
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Read, Write, Grep, Glob, AskUserQuestion
 ---
 Arguments: `$ARGUMENTS`
 
@@ -35,6 +35,11 @@ For each step:
 
 ## 5. File
 Run the /file flow on the task dir. Publishing still needs the user's approval.
+
+## 6. Close out
+After File, run the /open-questions flow (`${CLAUDE_PLUGIN_ROOT}/skills/open-questions/SKILL.md`) on the task dir. Items already asked in /file's publishing round are stale and dropped.
+- Interactive: ask one batched AskUserQuestion round for everything left unresolved.
+- Unattended (headless, no person present): never call AskUserQuestion. List the open items as plain lines in the final report, or say nothing is open.
 
 ## Report
 At every pause (after the plan, after each verdict, at the end) the whole status message is the /board render for this task: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py --task <slug> --waiting "<line>"`, printed verbatim. Never a hand-made status table. Add only the task dir path at the end.

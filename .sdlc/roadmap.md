@@ -84,5 +84,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0082 | [criteria-or-fallback](criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | S | P2 | none | ⏳ proposed |
 | T-0084 | [port-checking-rules](port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | 🟢 done |
 | T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🟢 done |
-| T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🔵 ready |
+| T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🟢 done |
 | T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🔵 ready |
+| T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | ⏳ proposed |
