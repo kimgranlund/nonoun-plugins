@@ -11,6 +11,8 @@ Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [selftes
   selftest   render temp fixtures with and without ticket front matter; prove the column gate bites
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format).
+A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
+and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
 the builder's "## Status", the verifier's "## Verdict", and runs.jsonl (cost). A rerun at the same
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest file by mtime wins.
@@ -49,8 +51,14 @@ def by_level(d: pathlib.Path, role: str, ext: str):
     return sorted(d.glob(f'{role}-L*.{ext}'), key=lambda p: p.stat().st_mtime)
 
 
+def live_step_dirs(task: pathlib.Path):
+    """step-<n>/ dirs only; superseded dirs (step-<n>.superseded-<k>/) are left out."""
+    return [d for d in task.glob('step-*') if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
+
+
 def cost(d: pathlib.Path) -> float:
     total = 0.0
+    # step-* on purpose: superseded dirs still count toward cost.
     for f in [d / 'runs.jsonl', *d.glob('step-*/runs.jsonl')]:
         if f.exists():
             for line in f.read_text().splitlines():
@@ -106,8 +114,8 @@ def json_lines(f: pathlib.Path, role: str):
 
 def plan_steps(task: pathlib.Path):
     """Steps from step-<n>/handoff.md (rewritten by /chain on a replan), else from the newest plan."""
-    dirs = sorted((d for d in task.glob('step-*') if (d / 'handoff.md').exists()),
-                  key=lambda d: int(d.name.split('-')[1]) if d.name.split('-')[1].isdigit() else 0)
+    dirs = sorted((d for d in live_step_dirs(task) if (d / 'handoff.md').exists()),
+                  key=lambda d: int(d.name[5:]))
     if dirs:
         steps = []
         for d in dirs:
@@ -167,7 +175,7 @@ def summary(root: pathlib.Path) -> str:
     bad = sum(1 for r in step_rows if r[2] == '🔴')
     if bad:
         parts.append(f'🔴{bad}')
-    if any(t.glob('step-*/builder-L5.*')):
+    if any(any(d.glob('builder-L5.*')) for d in live_step_dirs(t)):
         parts.append('⚠ L5')
     return ' · '.join(parts)
 
@@ -186,7 +194,7 @@ def ticket_of(task: pathlib.Path):
 
 def has_step_work(task: pathlib.Path) -> bool:
     """True when the task has any recorded step work: a planner-L*.md, a step-*/handoff.md,
-    or a *.running file."""
+    or a *.running file. The step-* glob is on purpose: a superseded dir's handoff still counts."""
     return bool(list(task.glob('planner-L*.md')) or list(task.glob('step-*/handoff.md'))
                 or list(task.glob('*.running')))
 
@@ -544,6 +552,30 @@ def selftest() -> int:
         glyph, status, _ = step_row(st, 'x', 'L3')
         expect(f'newer builder-L3-2.md (done) renders built · builder L3, got {status!r}',
                status.startswith('built · builder L3') and 'blocked' not in status)
+
+        # 5e. Superseded step dirs (step-<n>.superseded-<k>/) are not steps, but their cost
+        # and recorded work still count.
+        sup_root = tmp / 'superseded'
+        sp = task_dir(sup_root, 'replanned-steps', '## Goal\nx\n')
+        for name, title in (('step-1', 'one'), ('step-2', 'two'), ('step-2.superseded-1', 'old two')):
+            (sp / name).mkdir()
+            (sp / name / 'handoff.md').write_text(f'## Step {name[5]}: {title}\nlevel: L1\n')
+        old = sp / 'step-2.superseded-1'
+        (old / 'builder-L5.md').write_text('## Status\ndone\n')
+        (old / 'runs.jsonl').write_text('{"role": "builder", "cost_usd": 1.25}\n')
+        got = plan_steps(sp)
+        expect(f'plan_steps skips superseded dirs, got {got}',
+               got == [(1, 'one', 'L1'), (2, 'two', 'L1')])
+        got = render(sup_root, [sp])
+        step_lines = [ln for ln in got.splitlines() if re.search(r'\| \d+\. ', ln)]
+        expect(f'board has exactly two step rows, got {step_lines}', len(step_lines) == 2)
+        got = summary(sup_root)
+        expect(f'summary ignores builder-L5 in a superseded dir, got {got!r}', '⚠ L5' not in got)
+        expect(f'cost includes the superseded dir, got {cost(sp)}', abs(cost(sp) - 1.25) < 1e-9)
+        only_old = task_dir(sup_root, 'only-superseded', '## Goal\nx\n')
+        (only_old / 'step-1.superseded-1').mkdir()
+        (only_old / 'step-1.superseded-1' / 'handoff.md').write_text('## Step 1: x\nlevel: L1\n')
+        expect('has_step_work counts a handoff in a superseded dir', has_step_work(only_old))
 
     if saved_state_dir is None:
         os.environ.pop('SDLC_BOARD_STATE_DIR', None)
