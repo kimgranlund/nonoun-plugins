@@ -64,3 +64,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0057 | [close-ack-warnings](close-ack-warnings/handoff.md) | close --ack-warnings to record why stale filer warnings no longer apply, instead of --force | feature | M | P2 | none | ⏳ proposed |
 | T-0058 | [fanout-command](fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | M | P2 | none | ⏳ proposed |
 | T-0059 | [merge-step-template](merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | M | P2 | none | ⏳ proposed |
+| T-0060 | [unpassable-plan-criteria](unpassable-plan-criteria/handoff.md) | Plan acceptance criteria that cannot pass reach the builder | bug | S | P2 | none | ⏳ proposed |
