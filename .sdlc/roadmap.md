@@ -54,7 +54,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0047 | [exercise-the-new-file-step](exercise-the-new-file-step/handoff.md) | Exercise the new /file step 3 flow dry run, AskUserQuestion, then... | idea | M | P2 | none | 🔵 ready |
 | T-0048 | [guard-close-skip-against-index](guard-close-skip-against-index/handoff.md) | Guard close --skip against index drift: if the filer file changes... | idea | M | P3 | none | 🔵 ready |
 | T-0049 | [newest-by-mtime](newest-by-mtime/handoff.md) | Newest result is picked by mtime, which checkout resets | bug | S | P1 | none | 🟢 done |
-| T-0050 | [dot-prefix-closed](dot-prefix-closed/handoff.md) | Dot-prefix closed ticket folders | feature | M | P2 | T-0049 | 🔵 ready |
+| T-0050 | [dot-prefix-closed](dot-prefix-closed/handoff.md) | Dot-prefix closed ticket folders | feature | M | P2 | T-0049 | 🟢 done |
 | T-0051 | [order-py-crashes-with-indexerror](order-py-crashes-with-indexerror/handoff.md) | order.py crashes with IndexError when run with no arguments while... | idea | M | P2 | none | ⚪ dropped |
 | T-0052 | [order-counts-after-returns-true](order-counts-after-returns-true/handoff.md) | order.counts_after returns true when either file has no runs.jsonl... | idea | M | P2 | none | ⚪ dropped |
 | T-0053 | [the-hooks-pretooluse-command-leaves](the-hooks-pretooluse-command-leaves/handoff.md) | The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted... | idea | M | P2 | none | 🔵 ready |
+| T-0054 | [tickets-py-load-reads-nnnn](tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | M | P2 | none | ⏳ proposed |

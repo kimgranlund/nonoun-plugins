@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--numbered] | roadmap [--numbered] | check [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--dry-run] [--skip N[,N...]] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -14,6 +14,12 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
             names each follow-up folder NNNN-<slug> after that follow-up's own new id. On success,
             close --numbered persists the mode in <root>/config, as new --numbered does.
+            In numbered mode, closing a NNNN-<slug> folder renames it to .NNNN-<slug> (after the
+            handoff and follow-ups are written, before the roadmap) so ls and Finder hide it; the
+            output adds `; moved to .<slug>` and each follow-up's context names the new folder.
+            A plain slug folder never moves. close refuses, writing nothing, when .<slug> already
+            exists, and names the dot folder (`already closed`) when only .<slug> holds the ticket.
+            close --dry-run adds a `rename <slug> -> .<slug>` line.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
             NNNN- prefix) equals an existing ticket's, any status, is a duplicate: close skips it and
             names it in the output. Follow-ups in the same filer are not checked against each other.
@@ -22,6 +28,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
             indices from that listing; an index out of range refuses and writes nothing. Skipped
             follow-ups get no id. --dry-run and --skip refuse together with --reason
+  archive   numbered mode only: rename every existing done or dropped NNNN-<slug> folder to
+            .NNNN-<slug>, then regenerate the roadmap. Refuses, writing nothing, outside numbered
+            mode, on a bad ticket, or when any target .NNNN-<slug> exists. --dry-run prints one
+            `<name> -> .<name>` line per folder and writes nothing. --numbered persists the mode
             close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
             (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
             ## Closed section with today's date and TEXT, and files no follow-ups
@@ -32,7 +42,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
   selftest  build fixtures in a temp dir and prove every check failure fires
 
-A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped.
+A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped,
+except a closed-ticket folder .NNNN-<slug>: it is a ticket in every mode and command (ids, depends, from,
+roadmap), and check fails it unless its status is done or dropped (rename it without the dot to reopen).
 Build progress is not tracked here: /board derives it from each task's step artifacts.
 """
 import argparse
@@ -60,6 +72,7 @@ ID_RE = re.compile(r'T-\d{4}')
 DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
 SLUG_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 PREFIX_RE = re.compile(r'\d{4}-')
+DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder: .NNNN-<slug>, fullmatch
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
 
 HEADER = """# Roadmap
@@ -102,11 +115,13 @@ def parse(text):
 
 
 def load(root):
-    """[(slug, meta)] for every <root>/<dir>/handoff.md with front matter, sorted by slug."""
+    """[(slug, meta)] for every <root>/<dir>/handoff.md with front matter, sorted by slug.
+    Dirs starting with _ or . are skipped, except a closed-ticket folder .NNNN-<slug> (DOT_RE)."""
     if not root.is_dir():
         return []
     out = []
-    for d in sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith(('_', '.'))):
+    for d in sorted(p for p in root.iterdir()
+                    if p.is_dir() and (not p.name.startswith(('_', '.')) or DOT_RE.fullmatch(p.name))):
         h = d / 'handoff.md'
         if h.is_file():
             meta = parse(h.read_text(encoding='utf-8'))
@@ -203,11 +218,16 @@ def cycles(ts):
 
 def problems(ts, numbered=False):
     """One line per problem, each naming the ticket slug.
-    numbered also fails a NNNN-<slug> folder whose id is not T-NNNN; plain slugs are never prefix-checked."""
+    numbered also fails a NNNN-<slug> (or .NNNN-<slug>) folder whose id is not T-NNNN; plain slugs are never
+    prefix-checked. In any mode, a .NNNN-<slug> folder fails unless its status is done or dropped."""
     errs, ids = [], {}
     for slug, m in ts:
-        if numbered and PREFIX_RE.match(slug) and isinstance(m.get('id'), str):
-            nnnn = slug[:4]
+        if DOT_RE.fullmatch(slug) and m.get('status') not in ('done', 'dropped'):
+            errs.append(f'{slug}: closed ticket folder (dot prefix) has status {m.get("status")!r}; want done or '
+                        f'dropped (rename it to {slug[1:]} to reopen)')
+        name = slug.lstrip('.')
+        if numbered and PREFIX_RE.match(name) and isinstance(m.get('id'), str):
+            nnnn = name[:4]
             if m['id'] != f'T-{nnnn}':
                 errs.append(f'{slug}: folder prefix {nnnn}- does not match id {m["id"]!r} (want T-{nnnn})')
         for k in REQUIRED:
@@ -400,7 +420,9 @@ def norm_title(s):
 
 
 def strip_prefix(name):
-    """name without its NNNN- prefix(es): '0002-beta' -> 'beta'."""
+    """name without its NNNN- prefix(es) and a closed folder's dot: '0002-beta' and '.0002-beta' -> 'beta'."""
+    if DOT_RE.fullmatch(name):
+        name = name[1:]
     while PREFIX_RE.match(name):
         name = name[5:]
     return name
@@ -425,7 +447,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
     reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
     A follow-up matching an existing ticket (ts) by normalized title or slug base is skipped as a duplicate.
-    skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing."""
+    skip: 1-based Follow-ups indices not to file. dry_run: same refusals, list the plan, write nothing.
+    Numbered mode archives a NNNN-<slug> folder: after writing, rename it to .NNNN-<slug>, then the roadmap."""
     if reason is not None and (dry_run or skip is not None):
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run or --skip; '
                    f'nothing written')
@@ -435,10 +458,17 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
     d = root / slug
     h = d / 'handoff.md'
+    dot = root / ('.' + slug)
+    archive = bool(numbered and PREFIX_RE.match(slug))
+    final = dot.name if archive else slug
+    if not h.is_file() and (dot / 'handoff.md').is_file():
+        raise Fail(f'{slug}: already closed (folder {dot.name}); nothing written')
     raw = h.read_bytes().decode('utf-8') if h.is_file() else None
     meta = parse(raw) if raw is not None else None
     if meta is None:
         raise Fail(f'{h}: missing or has no front matter, so it is not a ticket; nothing written')
+    if archive and dot.exists():
+        raise Fail(f'{slug}: close would rename it to {dot.name}, but {dot} already exists; nothing written')
     ts = load(root)
     errs = problems(ts, numbered)
     if errs:
@@ -460,10 +490,13 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             body += '\n'
         body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
         h.write_bytes((head + body).encode('utf-8'))
+        if archive:
+            d.rename(dot)
         write_roadmap(root, load(root))
         if flag:
             ensure_numbered_config(root)
-        return f'{pid} done (closed by reason: {why}); no follow-ups filed'
+        moved = f'; moved to {dot.name}' if archive else ''
+        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}'
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         raise Fail(f'{slug}: no filer-L*.md in {d}; run /file on the task first; nothing written')
@@ -512,7 +545,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         while ((root / (name := folder_name(s, tid, True) if numbered else s)).exists()
                or any(x == name for x, _ in after)):
             s, k = f'{base}-{k}', k + 1
-        ctx = f'Follow-up from {pid} ({slug}/{filer.name}):\n\n{item}'
+        ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{item}'
         t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered)
         planned.append((name, t))
         after.append((name, m))
@@ -520,12 +553,15 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
-        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines)
+        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
+                         + ([f'rename {slug} -> {dot.name}'] if archive else []))
 
     for s, t in planned:
         (root / s).mkdir()
         (root / s / 'handoff.md').write_text(t, encoding='utf-8')
     h.write_bytes((head + raw[fm.end():]).encode('utf-8'))
+    if archive:
+        d.rename(dot)
     write_roadmap(root, load(root))
     if flag:
         ensure_numbered_config(root)
@@ -534,6 +570,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += '; skipped duplicate(s): ' + ', '.join(dups)
     if skipped:
         out += '; skipped by --skip: ' + ', '.join(map(str, skipped))
+    if archive:
+        out += f'; moved to {dot.name}'
     return out
 
 
@@ -556,15 +594,42 @@ def cmd_check(root, numbered=False):
     if stale(root, ts):
         raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
     ok = f'ok: {len(ts)} tickets, roadmap current'
-    if not numbered and ts and all(PREFIX_RE.match(slug) for slug, _ in ts):
+    if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         return (ok + f"\nwarning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                 f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
     return ok
 
 
+def cmd_archive(root, numbered=False, dry_run=False):
+    flag = numbered
+    numbered = numbered or config_numbered(root)
+    if not numbered:
+        raise Fail(f'archive renames NNNN-<slug> folders and needs numbered mode (--numbered or '
+                   f'ticket_folders: numbered in {root}/config); nothing written')
+    ts = load(root)
+    errs = problems(ts, numbered)
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    names = [name for name, m in ts if PREFIX_RE.match(name) and not name.startswith('.')
+             and m.get('status') in ('done', 'dropped')]
+    taken = [f'.{n}' for n in names if (root / f'.{n}').exists()]
+    if taken:
+        raise Fail(f'archive: {", ".join(taken)} already exist(s); nothing written')
+    if dry_run:
+        return '\n'.join(f'{n} -> .{n}' for n in names) if names else 'nothing to archive'
+    if not names:
+        return 'nothing to archive'
+    for n in names:
+        (root / n).rename(root / f'.{n}')
+    write_roadmap(root, load(root))
+    if flag:
+        ensure_numbered_config(root)
+    return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names)
+
+
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
-    kw goes to new, close, roadmap and check (numbered=)."""
+    kw goes to new, close, roadmap, check and archive (numbered=)."""
     try:
         if cmd == 'new':
             return 0, cmd_new(root, *args, **kw), ''
@@ -574,6 +639,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_roadmap(root, **kw), ''
         if cmd == 'check':
             return 0, cmd_check(root, **kw), ''
+        if cmd == 'archive':
+            return 0, cmd_archive(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -830,9 +897,9 @@ def selftest():
                rc == 0 and (root / 'gamma' / 'handoff.md').is_file())
 
         # ---- close: each case in its own copy of base; alpha (T-0001) is the ticket being closed ----
-        def filer(name, warnings, follow, mtime=None):
+        def filer(name, warnings, follow, mtime=None, slug='alpha'):
             def put(root):
-                p = root / 'alpha' / name
+                p = root / slug / name
                 p.write_text(f'## Warnings\n{warnings}\n\n## PR title\nx\n\n## Follow-ups\n{follow}\n', encoding='utf-8')
                 if mtime is not None:
                     os.utime(p, (mtime, mtime))
@@ -1096,7 +1163,145 @@ def selftest():
             expect(f'(t) --reason with {kw} refuses and writes nothing: rc={rc} {err!r}',
                    rc == 1 and '--reason' in err and snap(root) == before)
 
-        empty =pathlib.Path(tmp) / 'empty' / '.sdlc'
+        # (u) numbered close archives a NNNN-<slug> folder as .NNNN-<slug>; every command still sees it
+        def numbered_x(root):
+            rc, _, err = run(root, 'new', ('feature', 'x'), numbered=True)  # 0003-x, T-0003; persists config
+            if rc:
+                raise AssertionError(f'selftest fixture 0003-x not made: {err}')
+
+        def x_filer(follow):
+            return filer('filer-L1.md', 'None', follow, slug='0003-x')
+
+        root = case(both(numbered_x, x_filer('- Add retry to fetch')))
+        rc, out, err = run(root, 'close', ('0003-x',))
+        made = fresh(root, {'alpha', 'beta', '.0003-x'})
+        ctx = ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in made)
+        expect(f'(u) numbered close with a filer renames 0003-x to .0003-x: rc={rc} out={out!r} err={err!r} '
+               f'tree={tree(root)}',
+               rc == 0 and out.endswith('; moved to .0003-x') and not (root / '0003-x').exists()
+               and (root / '.0003-x' / 'filer-L1.md').is_file() and status(root, '.0003-x') == 'done'
+               and sorted(made) == ['0004-add-retry-to-fetch']
+               and 'Follow-up from T-0003 (.0003-x/filer-L1.md):' in ctx and run(root, 'check')[0] == 0)
+        rm = (root / 'roadmap.md').read_text(encoding='utf-8')
+        expect(f'(u) roadmap lists .0003-x: {rm!r}', '| T-0003 | [.0003-x](.0003-x/handoff.md) |' in rm)
+        before = snap(root)
+        for kw in ({}, {'reason': 'again'}, {'dry_run': True}):
+            rc, _, err = run(root, 'close', ('0003-x',), **kw)
+            expect(f'(u) closing again by the old name {kw} refuses with already closed: rc={rc} {err!r}',
+                   rc == 1 and 'already closed (folder .0003-x)' in err and snap(root) == before)
+        edit(root, 'beta', r'^depends:.*$', 'depends: [T-0003]')
+        run(root, 'roadmap')
+        rc, out, err = run(root, 'check')
+        expect(f'(u) depends: [T-0003] on the dot folder resolves: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'ok: 4 tickets' in out)
+
+        root = case(numbered_x)
+        rc, out, err = run(root, 'close', ('0003-x',), reason='done elsewhere')
+        text = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8') if (root / '.0003-x').is_dir() else ''
+        expect(f'(u) numbered --reason close renames: rc={rc} out={out!r} err={err!r} tree={tree(root)}',
+               rc == 0 and out.endswith('; moved to .0003-x') and not (root / '0003-x').exists()
+               and '## Closed' in text and status(root, '.0003-x') == 'done' and run(root, 'check')[0] == 0)
+        rc, out, err = run(root, 'new', ('feature', 'y'), numbered=True)
+        got = dict(load(root)).get('0004-y', {}).get('id')
+        expect(f'(u) next new --numbered after a dot folder gets T-0004: rc={rc} {out!r} {err!r} id={got!r}',
+               rc == 0 and got == 'T-0004')
+        count = len(load(root))
+        (root / '.hidden').mkdir()
+        (root / '.hidden' / 'handoff.md').write_bytes((root / 'beta' / 'handoff.md').read_bytes())
+        (root / '.board-state.json').write_text('{}', encoding='utf-8')
+        rc, out, err = run(root, 'check')
+        expect(f'(u) .hidden/handoff.md and .board-state.json are not tickets: rc={rc} {out!r} {err!r}',
+               len(load(root)) == count == 4 and rc == 0 and out.startswith('ok: 4 tickets'))
+        edit(root, '.0003-x', r'^status:.*$', 'status: ready')
+        for label in ('numbered by config', 'plain mode'):
+            if label == 'plain mode':
+                (root / 'config').unlink()
+            rc, _, err = run(root, 'check')
+            expect(f'(u) check ({label}) fails a dot folder with status ready: rc={rc} {err!r}',
+                   rc == 1 and '.0003-x: closed ticket folder' in err and 'done or dropped' in err)
+        edit(root, '.0003-x', r'^status:.*$', 'status: dropped')
+        run(root, 'roadmap')
+        rc, out, err = run(root, 'check', numbered=True)
+        expect(f'(u) a dropped dot folder passes: rc={rc} {out!r} {err!r}', rc == 0)
+
+        # (u) the rename target already exists: refuses on every close path and writes nothing
+        for kw in ({}, {'reason': 'x'}, {'dry_run': True}):
+            root = case(both(numbered_x, x_filer('- Add retry to fetch'), lambda r: (r / '.0003-x').mkdir()))
+            before = snap(root)
+            rc, _, err = run(root, 'close', ('0003-x',), **kw)
+            expect(f'(u) close {kw} onto an existing .0003-x refuses: rc={rc} {err!r}',
+                   rc == 1 and '.0003-x' in err and 'nothing written' in err and snap(root) == before
+                   and (root / '0003-x' / 'handoff.md').is_file())
+
+        # (u) the dry run shows the rename line and writes nothing
+        root = case(both(numbered_x, x_filer('- Add retry to fetch')))
+        before = snap(root)
+        rc, out, err = run(root, 'close', ('0003-x',), dry_run=True)
+        expect(f'(u) dry run shows the rename and writes nothing: rc={rc} {out!r} {err!r}',
+               rc == 0 and 'rename 0003-x -> .0003-x' in out.splitlines() and snap(root) == before
+               and not (root / '.0003-x').exists())
+
+        # (u) numbered: a .NNNN- folder still gets the prefix/id rule; a dot folder counts as prefixed
+        def closed_as(to):
+            def put(root):
+                edit(root, 'alpha', r'^status:.*$', 'status: done')
+                (root / 'alpha').rename(root / to)
+                run(root, 'roadmap')
+            return put
+        rc, _, err = run(case(closed_as('.0005-alpha')), 'check', numbered=True)
+        expect(f'(u) .0005-alpha with id T-0001 fails check --numbered: rc={rc} {err!r}',
+               rc == 1 and ".0005-alpha: folder prefix 0005- does not match id 'T-0001'" in err)
+        rc, out, err = run(case(both(closed_as('.0001-alpha'), renamed_beta)), 'check')
+        expect(f'(u) .0001-alpha plus 0002-beta, no config: the numbered-config warning fires: rc={rc} {out!r}',
+               rc == 0 and 'warning' in out)
+        expect("(u) strip_prefix drops a closed folder's dot", strip_prefix('.0002-beta') == 'beta')
+
+        # (u) negative controls: plain mode, and a plain slug in numbered mode, never rename
+        for label, mutate in (('plain mode', lambda r: None),
+                              ('numbered, plain slug', config('ticket_folders: numbered\n'))):
+            for kw in ({'reason': 'x'}, {}):
+                root = case(both(mutate, filer('filer-L1.md', 'None', 'None')))
+                rc, out, err = run(root, 'close', ('alpha',), **kw)
+                expect(f'(u) {label} close {kw} does not rename alpha: rc={rc} {out!r} {err!r} tree={tree(root)}',
+                       rc == 0 and status(root) == 'done' and not (root / '.alpha').exists()
+                       and (root / 'alpha' / 'handoff.md').is_file() and 'moved' not in out)
+
+        # archive: done and dropped NNNN- folders move to .NNNN-, a ready one stays
+        def arch_base(root):
+            for slug, st in (('alpha', 'done'), ('beta', 'dropped')):
+                edit(root, slug, r'^status:.*$', f'status: {st}')
+            (root / 'alpha').rename(root / '0001-alpha')
+            (root / 'beta').rename(root / '0002-beta')
+            run(root, 'new', ('feature', 'gamma'), numbered=True)
+            run(root, 'roadmap')
+        root = case(arch_base)
+        before = snap(root)
+        rc, out, err = run(root, 'archive', dry_run=True)
+        expect(f'archive dry run lists renames and writes nothing: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.splitlines() == ['0001-alpha -> .0001-alpha', '0002-beta -> .0002-beta']
+               and snap(root) == before)
+        rc, out, err = run(root, 'archive')
+        expect(f'archive moves done and dropped, keeps ready: rc={rc} {out!r} {err!r} tree={tree(root)}',
+               rc == 0 and 'archived 2 folder(s)' in out and (root / '.0001-alpha').is_dir()
+               and (root / '.0002-beta').is_dir() and (root / '0003-gamma').is_dir()
+               and not (root / '0001-alpha').exists() and not (root / '0002-beta').exists())
+        rc, out, err = run(root, 'check')
+        expect(f'check passes after archive: rc={rc} {out!r} {err!r}', rc == 0)
+        rc, out, err = run(root, 'archive')
+        expect(f'second archive reports nothing to archive: rc={rc} {out!r}', rc == 0 and out == 'nothing to archive')
+        root = case(both(arch_base, lambda r: (r / '.0002-beta').mkdir()))
+        before = snap(root)
+        rc, out, err = run(root, 'archive')
+        expect(f'archive collision refuses and writes nothing: rc={rc} {err!r}',
+               rc == 1 and '.0002-beta' in err and snap(root) == before and (root / '0001-alpha').is_dir())
+        root = case(lambda r: edit(r, 'alpha', r'^status:.*$', 'status: done'))
+        run(root, 'roadmap')
+        before = snap(root)
+        rc, out, err = run(root, 'archive')
+        expect(f'archive in plain mode refuses and writes nothing: rc={rc} {err!r}',
+               rc == 1 and 'numbered mode' in err and snap(root) == before and (root / 'alpha').is_dir())
+
+        empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
 
@@ -1143,13 +1348,20 @@ def main(argv):
     p = sub.add_parser('check', help='validate tickets and roadmap freshness')
     p.add_argument('--numbered', action='store_true',
                    help='also fail a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
+    p = sub.add_parser('archive', help='numbered mode: rename done and dropped NNNN-<slug> folders to .NNNN-<slug>')
+    p.add_argument('--dry-run', action='store_true', help='print each <name> -> .<name> rename; write nothing')
+    p.add_argument('--numbered', action='store_true',
+                   help='turn numbered mode on and, on success, persist it in <root>/config '
+                        '(also on via that config)')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
     if cmd == 'selftest':
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
-    kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check') else {}
+    kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check', 'archive') else {}
+    if cmd == 'archive':
+        kw['dry_run'] = a.dry_run
     if cmd == 'close':
         kw['reason'] = a.reason
         kw['dry_run'] = a.dry_run
