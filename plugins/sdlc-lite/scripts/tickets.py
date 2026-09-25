@@ -7,7 +7,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
             Numbered mode (--numbered, or a `ticket_folders: numbered` line in <root>/config) names
-            the folder NNNN-<slug> after the stamped id; the slug is given bare
+            the folder NNNN-<slug> after the stamped id; the slug is given bare. On success,
+            new --numbered persists the mode by adding that line to <root>/config if it is absent
   close     after /file: read the task's newest filer-L*.md, refuse while its Warnings are open
             (unless --force), file each Follow-ups bullet as a proposed idea ticket with
             from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
@@ -110,6 +111,18 @@ def config_numbered(root):
         if CONFIG_RE.fullmatch(line):
             return True
     return False
+
+
+def ensure_numbered_config(root):
+    """Persist numbered mode: append `ticket_folders: numbered` to <root>/config (created if missing)
+    unless config_numbered(root) already holds. Adds a newline first if the file lacks a trailing one."""
+    if config_numbered(root):
+        return
+    path = root / 'config'
+    old = path.read_text(encoding='utf-8') if path.is_file() else ''
+    if old and not old.endswith('\n'):
+        old += '\n'
+    path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
 
 
 def folder_name(slug, tid, numbered):
@@ -297,6 +310,7 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
 
 
 def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=False):
+    flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
@@ -315,6 +329,8 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     d.mkdir(parents=True)
     path = d / 'handoff.md'
     path.write_text(text, encoding='utf-8')
+    if flag:
+        ensure_numbered_config(root)
     write_roadmap(root, load(root))
     return str(path)
 
@@ -593,6 +609,33 @@ def selftest():
         root = case(lambda r: None)
         rc, out, err = run(root, 'new', ('feature', 'gamma'), numbered=True)
         numbered_ok('new --numbered', root, rc, out, err, 'gamma')
+
+        # new --numbered persists `ticket_folders: numbered` in <root>/config, so plain check enforces it
+        expect(f'new --numbered writes config with the numbered line: tree={tree(root)}',
+               (root / 'config').is_file() and config_numbered(root))
+        (root / '0003-gamma').rename(root / '0009-gamma')
+        run(root, 'roadmap')
+        rc, _, err = run(root, 'check')
+        expect(f'after new --numbered, plain check fails a renamed 0009-gamma: rc={rc} {err!r}',
+               rc == 1 and "0009-gamma: folder prefix 0009- does not match id 'T-0003'" in err)
+        root = case(config('# keep me\nother: x\n'))
+        rc, _, err = run(root, 'new', ('feature', 'gamma'), numbered=True)
+        text = (root / 'config').read_text(encoding='utf-8') if (root / 'config').is_file() else ''
+        expect(f'new --numbered keeps existing config lines and adds the numbered line once: {text!r}',
+               rc == 0 and text.startswith('# keep me\nother: x\n')
+               and len([ln for ln in text.splitlines() if CONFIG_RE.fullmatch(ln)]) == 1)
+        for label, mutate in (('twice', lambda r: None), ('line present', config('ticket_folders: numbered\n'))):
+            root = case(mutate)
+            run(root, 'new', ('feature', 'gamma'), numbered=True)
+            if label == 'twice':
+                run(root, 'new', ('feature', 'delta'), numbered=True)
+            text = (root / 'config').read_text(encoding='utf-8') if (root / 'config').is_file() else ''
+            expect(f'new --numbered ({label}) leaves one ticket_folders: numbered line: {text!r}',
+                   len([ln for ln in text.splitlines() if CONFIG_RE.fullmatch(ln)]) == 1)
+        root = case(lambda r: None)
+        rc, _, err = run(root, 'new', ('feature', 'gamma'))
+        expect(f'plain new writes no config: rc={rc} tree={tree(root)}', rc == 0 and not (root / 'config').exists())
+
         root = case(config('# tickets\n\nticket_folders: numbered\n'))
         rc, out, err = run(root, 'new', ('feature', 'gamma'))
         numbered_ok('new with config ticket_folders: numbered', root, rc, out, err, 'gamma')
@@ -829,7 +872,8 @@ def main(argv):
     p.add_argument('slug')
     p.add_argument('title', nargs='?', default='')
     p.add_argument('--numbered', action='store_true',
-                   help='name the folder NNNN-<slug> after the new id (also on via <root>/config)')
+                   help='name the folder NNNN-<slug> after the new id and persist '
+                        '`ticket_folders: numbered` in <root>/config (also on via that config)')
     p = sub.add_parser('close', help='after /file: file follow-ups as tickets, set the ticket done')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')

@@ -28,5 +28,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0021 | [decide-whether-board-should-default](decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | 🔵 ready |
 | T-0022 | [tickets-py-roadmap-skips-the](tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | ⏳ proposed |
 | T-0023 | [in-numbered-mode-tickets-py](in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | ⏳ proposed |
-| T-0024 | [numbered-mode-not-persisted](numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | ⏳ proposed |
+| T-0024 | [numbered-mode-not-persisted](numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | 🟢 done |
 | T-0025 | [bench-project-dirs](bench-project-dirs/handoff.md) | Bench tasks and results live in the project | feature | M | P2 | none | ⏳ proposed |
+| T-0026 | [tickets-py-check-should-warn](tickets-py-check-should-warn/handoff.md) | tickets.py: check should warn when every ticket folder has an NNNN... | idea | M | P2 | none | ⏳ proposed |
+| T-0027 | [tickets-py-close-numbered-does](tickets-py-close-numbered-does/handoff.md) | tickets.py: close --numbered does not persist ticket_folders... | idea | M | P2 | none | ⏳ proposed |
