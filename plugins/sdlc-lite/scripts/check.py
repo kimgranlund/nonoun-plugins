@@ -89,6 +89,7 @@ PLAN_DEFECT_DOCS = {
                     'scripts/steps.py'),
     'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'no new findings': ('agents/planner.md',),
+    'red guard': ('skills/chain/SKILL.md', 'scripts/steps.py'),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:

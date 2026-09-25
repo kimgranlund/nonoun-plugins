@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] | lint <planner.md | task dir> |
-                 next <step dir> | selftest}
+Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
+                 lint <planner.md | task dir> | next <step dir> | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -14,6 +14,14 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] | lint <planner.md
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
+            With --only N, split then runs that step's (guard) criteria against the current tree:
+            each command-like code span on a criterion line that starts with "(guard)" runs under
+            bash -c, from the git toplevel of the task dir (else the task dir), under
+            --guard-timeout SECONDS (default 300). A span that references HEAD^1 or holds a
+            <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
+            one line per red guard with its exit code or timeout and its output tail, then a last
+            line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
+            A full split (no --only) and lint never execute a span.
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
@@ -45,9 +53,11 @@ import os
 import pathlib
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 import order
 
@@ -172,19 +182,91 @@ def is_command(text):
             or shutil.which(head) is not None)
 
 
+def line_spans(line):
+    """The command-like code spans on one line, in order."""
+    spans = []
+    for m in SPAN_RE.finditer(line):
+        text = m.group(2)
+        if text.startswith(' '):
+            text = text[1:]
+        if text.endswith(' '):
+            text = text[:-1]
+        if re.search(r'\s', text) and is_command(text):
+            spans.append(text)
+    return spans
+
+
 def command_spans(block):
     """The command-like code spans under a step block's acceptance criteria, in order."""
-    spans = []
-    for line in criteria_lines(block):
-        for m in SPAN_RE.finditer(line):
-            text = m.group(2)
-            if text.startswith(' '):
-                text = text[1:]
-            if text.endswith(' '):
-                text = text[:-1]
-            if re.search(r'\s', text) and is_command(text):
-                spans.append(text)
-    return spans
+    return [text for line in criteria_lines(block) for text in line_spans(line)]
+
+
+def is_guard_line(line):
+    """True when a criterion line, after its list marker (- or *), starts with (guard)."""
+    text = line.lstrip()
+    if text.startswith('- ') or text.startswith('* '):
+        text = text[2:].lstrip()
+    return text.startswith('(guard)')
+
+
+def guard_spans(block):
+    """The command-like code spans on a step block's (guard) criterion lines, in order.
+    Same lines (criteria_lines) and same span test (line_spans) as command_spans."""
+    return [text for line in criteria_lines(block) if is_guard_line(line) for text in line_spans(line)]
+
+
+def guard_skipped(text):
+    """A guard span that cannot run against the current tree: it references HEAD^1 (a merge
+    commit not made yet) or holds a <placeholder>."""
+    return 'HEAD^1' in text or PLACEHOLDER_RE.search(text) is not None
+
+
+def guard_cwd(task_dir):
+    """The git toplevel of the task dir, else the task dir itself."""
+    try:
+        r = subprocess.run(['git', '-C', str(task_dir), 'rev-parse', '--show-toplevel'],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return str(task_dir)
+    top = r.stdout.strip()
+    return top if r.returncode == 0 and top else str(task_dir)
+
+
+def run_guard(text, cwd, timeout):
+    """Run one guard span. Returns (rc or None on timeout, combined output tail lines).
+    It runs in its own session so a timeout kills the whole process group, grandchildren too."""
+    proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+        rc = proc.returncode
+    except subprocess.TimeoutExpired:
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        out, err = proc.communicate()
+        rc = None
+    tail = [line for line in (err + out).decode('utf-8', errors='replace').splitlines() if line.strip()]
+    return rc, tail[-5:]
+
+
+def run_guards(plan, steps, chosen, task_dir, timeout):
+    """Run the runnable (guard) spans of each chosen step; raise Fail naming every red one.
+    Called only by split --only; a full split and lint never execute a span."""
+    cwd = guard_cwd(task_dir)
+    lines, red = [], []
+    for n in chosen:
+        for text in guard_spans(steps[n]):
+            if guard_skipped(text):
+                continue
+            rc, tail = run_guard(text, cwd, timeout)
+            if rc == 0:
+                continue
+            why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+            lines.append(f'steps: {plan} step {n}: (guard) criterion is red now ({why}): {text}')
+            lines += [f'  {t}' for t in tail]
+            red.append(f'step {n} red guard: {text}')
+    if red:
+        raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
 
 
 def lint_steps(plan, steps):
@@ -212,8 +294,9 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None):
-    """Check everything, then write. Returns the paths written."""
+def split(target, only=None, guard_timeout=300):
+    """Check everything, then write. Returns the paths written. With only, the chosen steps'
+    runnable (guard) spans run before any write."""
     plan, task_dir = find_plan(target)
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
@@ -232,6 +315,8 @@ def split(target, only=None):
         if done:
             raise Fail(f'steps: {d} already holds role output ({", ".join(done)}). Per /chain 4.2, rename it '
                        f'to step-{n}.superseded-<k>/ (next free k) first, then split again. Nothing was written.')
+    if only:
+        run_guards(plan, steps, chosen, task_dir, guard_timeout)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -242,9 +327,9 @@ def split(target, only=None):
     return written
 
 
-def cmd_split(target, only):
+def cmd_split(target, only, guard_timeout=300):
     try:
-        written = split(target, only)
+        written = split(target, only, guard_timeout)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -630,6 +715,61 @@ def selftest():
         check('(m) a broken command inside a ``` fence is skipped: split writes normally',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file())
 
+        # (n) split --only runs the step's (guard) criteria; full split and lint never do.
+        # Every guard uses absolute tmp paths, so none touches the repo.
+        def guard_plan(*criteria):
+            return ('## Step 1: x\nlevel: L1\n### Do\nd\n### Acceptance criteria\n'
+                    + ''.join(f'- {c}\n' for c in criteria))
+
+        red_span = f'test -e {tmp}/nonexistent-sdlc-guard'
+        d = task(plan=guard_plan('not a guard', f'(guard) `{red_span}`'))
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        last = err.strip().splitlines()[-1] if err.strip() else ''
+        check('(n) --only with a red guard refuses, writes nothing, last line is plan defect with the span',
+              rc == 1 and out == '' and snapshot(d) == before and not (d / 'step-1').exists()
+              and last.startswith('plan defect:') and red_span in last and '(exit 1)' in err)
+
+        green = tmp / 'n-green-ran'
+        d = task(plan=guard_plan(f'(guard) `touch {green} && test -f handoff.md`'))
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(n) --only with a green guard runs it (from the task dir outside git) and writes the handoff',
+              rc == 0 and err == '' and green.exists() and (d / 'step-1' / 'handoff.md').is_file())
+
+        d = task(plan=guard_plan(f'(guard) `git diff --quiet HEAD^1 HEAD && test -e {tmp}/nope`'))
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(n) a HEAD^1 guard is skipped (it would be red if run)',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+
+        d = task(plan=guard_plan('(guard) `test -e <tmp>/nope`'))
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(n) a <placeholder> guard is skipped (it would be red if run)',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+
+        d = task(plan=guard_plan('(guard) `sleep 30`'))
+        before = snapshot(d)
+        t0 = time.monotonic()
+        rc, out, err = run_main(['split', str(d), '--only', '1', '--guard-timeout', '1'])
+        took = time.monotonic() - t0
+        last = err.strip().splitlines()[-1] if err.strip() else ''
+        check('(n) a guard past --guard-timeout refuses fast, writes nothing, plan defect last line',
+              rc == 1 and out == '' and snapshot(d) == before and took < 15
+              and 'timed out after 1s' in err and last.startswith('plan defect:') and 'sleep 30' in last)
+
+        marker = tmp / 'n-full-ran'
+        d = task(plan=guard_plan(f'(guard) `touch {marker}`', f'(guard) `{red_span}`'))
+        rc, _, _ = run_main(['split', str(d)])
+        rc2, out2, _ = run_main(['lint', str(d)])
+        check('(n) full split and lint execute no guard: marker absent, a red guard does not refuse',
+              rc == 0 and rc2 == 0 and out2.strip() == 'steps lint: ok'
+              and (d / 'step-1' / 'handoff.md').is_file() and not marker.exists())
+
+        check('(n) guard_spans keeps only (guard) lines and the same spans command_spans sees',
+              guard_spans('## Step 1: x\nlevel: L1\n### Do\n- (guard) `ls -e /`\n### Acceptance criteria\n'
+                          '- `ls -a /`\n* (guard) `ls -b /` and `ls -c /`\n  - (guard) `ls -f /`\n'
+                          '- (guard) prose\n- x (guard) `ls -d /`\n```\n- (guard) `ls -g /`\n```\n')
+              == ['ls -b /', 'ls -c /', 'ls -f /'])
+
         # next: the /chain step 4 action from the newest results, by recorded run order
         DONE, BLOCKED = '## Status\ndone\n', '## Status\nblocked\n\n## Notes\nplan defect: c1 bad\n'
         PASS = '## Verdict\npass\n\n## For the next attempt\nNone\n'
@@ -731,7 +871,10 @@ def main(argv):
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
-    p.add_argument('--only', type=int, action='append', metavar='N', help='write only step N (repeatable)')
+    p.add_argument('--only', type=int, action='append', metavar='N',
+                   help='write only step N (repeatable); runs its (guard) criteria first')
+    p.add_argument('--guard-timeout', type=float, default=300, metavar='SECONDS',
+                   help='per-guard timeout for --only (default 300); a timeout is a red guard')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
@@ -744,7 +887,10 @@ def main(argv):
         return cmd_next(a.step_dir)
     if a.cmd == 'lint':
         return cmd_lint(a.target)
-    return cmd_split(a.target, a.only)
+    if not 0 < a.guard_timeout < float('inf'):
+        print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
+        return 1
+    return cmd_split(a.target, a.only, a.guard_timeout)
 
 
 if __name__ == '__main__':
