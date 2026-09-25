@@ -28,7 +28,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             names it in the output. Follow-ups in the same filer are not checked against each other.
             close --dry-run applies the same refusals, then lists each Follow-ups bullet as
             `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
-            and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
+            then one `open T-NNNN <title> [<slug>]` line per other proposed, ready or blocked
+            ticket in id order, and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
             indices from that listing; an index out of range refuses and writes nothing. Skipped
             follow-ups get no id. The dry run's last line is `expect <digest>`, a digest of the full
             ordered Follow-ups bullets; --skip needs --expect <digest> from that line and refuses
@@ -674,7 +675,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
-        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines
+        opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
+                 for x, m in sorted(ts, key=lambda e: e[1]['id'])
+                 if m.get('status') in ('proposed', 'ready', 'blocked') and m['id'] != pid]
+        return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines + opens
                          + ([f'rename {slug} -> {dot.name}'] if archive else [])
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
                          + [f'expect {digest}'])
@@ -1246,10 +1250,22 @@ def selftest():
                f'out={out!r} err={err!r} tree={tree(root)}',
                rc == 0 and snap(root) == before and status(root) == 'proposed'
                and lines[:1] == ['T-0001 dry run: 3 proposed follow-up(s); nothing written']
-               and [ln.split('.', 1)[0] for ln in lines[1:-1]] == ['1', '2', '3']
+               and [ln.split('.', 1)[0] for ln in lines[1:-1] if not ln.startswith('open ')] == ['1', '2', '3']
                and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch', 'Fix #12', 'Quote the docs'])
                and lines[2].startswith('2. Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
                and 'duplicate' not in lines[1] + lines[3])
+        # (p2) open tickets listed: an open ticket with its full title; not done/dropped, not the closed one
+        def open_mix(r):
+            filer('filer-L1.md', 'None', '- Add retry to fetch')(r)
+            cmd_new(r, 'bug', 'gone', 'Gone bug')
+            edit(r, 'gone', r'^status:.*$', 'status: dropped')
+        root = case(open_mix)
+        rc, out, err = run(root, 'close', ('alpha',), dry_run=True)
+        opens = [ln for ln in out.splitlines() if ln.startswith('open ')]
+        beta = next(m for x, m in load(root) if x == 'beta')
+        expect(f'(p2) open tickets listed: beta with full title, not dropped gone, not alpha: rc={rc} {out!r} {err!r}',
+               rc == 0 and opens == [f'open T-0002 {beta["title"]} [beta]']
+               and out.splitlines()[-1].startswith('expect '))
         root = case(filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch'))
         before = snap(root)
         rc, _, err = run(root, 'close', ('alpha',), dry_run=True)
@@ -1652,7 +1668,8 @@ def main(argv):
                         'with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
-                        'duplicate or --skip mark, then a last line `expect <digest>`; write nothing')
+                        'duplicate or --skip mark, then one `open T-NNNN <title> [<slug>]` line per other proposed, '
+                        'ready or blocked ticket, then a last line `expect <digest>`; write nothing')
     p.add_argument('--skip', metavar='N[,N...]',
                    help='file every follow-up except these 1-based indices from the --dry-run listing; '
                         'an index out of range refuses and writes nothing; needs --expect')

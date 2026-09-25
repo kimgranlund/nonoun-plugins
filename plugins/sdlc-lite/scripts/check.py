@@ -11,6 +11,8 @@
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard against a throwaway repo, and agents/builder.md
    names `git merge --no-ff`.
+7. /file likely duplicates: skills/file/SKILL.md names the dry run's `open T-NNNN` lines and
+   the `likely duplicate` marking of follow-ups that restate an open ticket.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -158,6 +160,10 @@ if pb and pb.strip():
             shutil.rmtree(tmp, ignore_errors=True)
 b = root/'agents/builder.md'
 if not b.is_file() or 'git merge --no-ff' not in b.read_text(): errors.append('agents/builder.md: missing "git merge --no-ff"')
+f = root/'skills/file/SKILL.md'
+ft = f.read_text() if f.is_file() else ''
+for w in ('likely duplicate', 'open T-NNNN'):
+    if w not in ft: errors.append(f'skills/file/SKILL.md: missing "{w}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
