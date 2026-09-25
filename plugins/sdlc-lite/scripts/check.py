@@ -76,7 +76,7 @@ for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKI
     f = root/rel
     if not f.is_file(): errors.append(f'{rel}: missing (long-run doc check)'); continue
     text = f.read_text()
-    missing = [w for w in ('interactive', 'run_in_background', 'notification', 'sleep') if w not in text]
+    missing = [w for w in ('interactive', 'run_in_background', 'notification', 'sleep', 'SDLC_HEADLESS') if w not in text]
     if missing: errors.append(f'{rel}: long-run rule missing words: {", ".join(missing)}')
     if 'never `run_in_background`' in text or 'never run_in_background' in text:
         errors.append(f'{rel}: still says "never run_in_background" unqualified')

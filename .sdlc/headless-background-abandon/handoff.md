@@ -2,7 +2,7 @@
 id: T-0072
 title: "Headless sessions background role runs and end the turn, abandoning the work"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P1         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]

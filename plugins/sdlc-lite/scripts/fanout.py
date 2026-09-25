@@ -33,8 +33,8 @@ run
     2. driver, outside the lock: `bash -c <driver>`, cwd the lane worktree, stdin /dev/null,
        output to <lanes-dir>/logs/<lane>-<id>.log, env FANOUT_LANE, FANOUT_TICKET, FANOUT_SLUG,
        FANOUT_HANDOFF (absolute), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
-       FANOUT_PLUGIN_ROOT, and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh
-       sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
+       FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies run_in_background),
+       and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
        tests). Non-zero exit: `driver failed rc=<n>`, the tree left as is.
@@ -381,7 +381,7 @@ def run_ticket(ctx, lane, t, lock):
 
     env = dict(ENV, FANOUT_LANE=lane.name, FANOUT_TICKET=t.id, FANOUT_SLUG=t.slug,
                FANOUT_HANDOFF=str(wt / rel / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
-               FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN),
+               FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1',
                BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS)
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
     say(lane, t.id, f'driver started (log {log})')
@@ -501,6 +501,7 @@ def cmd_run(a):
 
 STUB = r'''#!/usr/bin/env bash
 set -eu
+[ "${SDLC_HEADLESS:-}" = 1 ] || { echo "SDLC_HEADLESS not set" >&2; exit 1; }
 echo "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"
 ls >"$FANOUT_TICKET.saw"
 printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"
