@@ -2,7 +2,7 @@
 id: T-0071
 title: "tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
