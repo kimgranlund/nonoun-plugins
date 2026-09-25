@@ -23,7 +23,8 @@ handoff.md) gets empty cells there. With no front matter anywhere the table stay
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
 A changed row ends with "· changed" (compared with a per-root state file in
 $SDLC_BOARD_STATE_DIR, else ${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state;
-never inside the repo).
+never inside the repo). A legacy <root>/.board-state.json left by older versions gets a one-line
+"safe to delete" hint in the full board (never in --summary); board.py never touches it.
 """
 import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 
@@ -297,6 +298,11 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
     if pcts:
         out.append('')
         out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
+    legacy = root / '.board-state.json'
+    if legacy.exists():  # read-only hint; never delete or modify it
+        out.append('')
+        out.append(f'Note: legacy {legacy} is no longer used '
+                   '(the board cache moved to a per-user dir); safe to delete.')
     try:
         state_file.parent.mkdir(parents=True, exist_ok=True)
         state_file.write_text(json.dumps(new, indent=1))
@@ -496,6 +502,20 @@ def selftest() -> int:
                '· changed' in second)
         expect('two roots get different state paths',
                state_path(clean) != state_path(plain) and state_path(clean).parent == state_dir)
+
+        # 5c. A legacy <root>/.board-state.json gets a hint, is never touched, and --summary ignores it.
+        (ct / 'planner-L1.running').unlink()
+        no_hint = render(clean, [ct])
+        sum_without = summary(clean)
+        expect(f'no legacy file means no hint, got {no_hint!r}', 'safe to delete' not in no_hint)
+        legacy = clean / '.board-state.json'
+        legacy.write_bytes(b'{"old": 1}')
+        with_hint = render(clean, [ct])
+        expect(f'legacy file gets the hint, got {with_hint!r}',
+               '.board-state.json' in with_hint and 'safe to delete' in with_hint)
+        expect('render leaves the legacy file bytes unchanged', legacy.read_bytes() == b'{"old": 1}')
+        expect('summary is unchanged by the legacy file', summary(clean) == sum_without)
+        legacy.unlink()
 
     if saved_state_dir is None:
         os.environ.pop('SDLC_BOARD_STATE_DIR', None)
