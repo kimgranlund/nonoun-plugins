@@ -2,7 +2,7 @@
 id: T-0026
 title: "tickets.py: check should warn when every ticket folder has an NNNN..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ tickets.py: `check` should warn when every ticket folder has an NNNN- prefix but
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: keep; also covers T-0027: `close --numbered` must persist `ticket_folders: numbered` like `new --numbered`.

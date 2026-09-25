@@ -2,7 +2,7 @@
 id: T-0023
 title: "In numbered mode, tickets.py new and close refuse when any existing..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -29,3 +29,6 @@ Only the user can settle this. Two readings disagree:
 Options:
 1. Keep broad (recommended): no code change. It matches how `new`/`close` already refuse on any bad ticket, and `check`/`roadmap` refuse the same way. Record the decision and close.
 2. Narrow: drop `numbered` from the pre-check `problems(ts)` calls in `cmd_new`/`cmd_close` in `scripts/tickets.py`, keep it in `stamp()`, and flip selftest case 7 to expect success.
+
+## Decision
+2026-09-24, user: keep broad. Numbered `new` and `close` refuse when any existing NNNN- folder has a mismatched id, the same contract as every other ticket problem. No code change.

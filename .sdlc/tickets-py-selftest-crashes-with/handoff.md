@@ -2,7 +2,7 @@
 id: T-0028
 title: "tickets.py selftest crashes with FileNotFoundError when run from a..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ tickets.py selftest crashes with FileNotFoundError when run from a copy outside 
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: niche; selftest runs from any cwd while it lives in the plugin.

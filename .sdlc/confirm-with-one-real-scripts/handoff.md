@@ -2,7 +2,7 @@
 id: T-0032
 title: "Confirm with one real scripts/bench.sh --bench-dir DIR run that the..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ Confirm with one real `scripts/bench.sh --bench-dir DIR` run that the headless /
 
 ## Constraints
 What must not change. "None" if none.
+
+## Triage
+2026-09-24, user-approved: keep, P2; prove the --bench-dir wiring end to end (bench.sh to the headless /bench session) with one real run, and fix it if it breaks.
