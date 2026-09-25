@@ -70,15 +70,15 @@ dry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" verif
 printf '%s\n' '{"role":"builder","level":"L1","file":"builder-L1.md"}' \
   '{"role":"builder","level":"L5","file":"builder-L5.md"}' >"$sw/runs.jsonl"
 out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
-[[ "$out" == *"--model opus --effort medium"* ]] \
-  || fail "L5 newest: verifier L2 should swap fable to '--model opus --effort medium', got: $out"
+[[ "$out" == *"--model sonnet --effort high"* ]] \
+  || fail "L5 newest: verifier L2 should stay '--model sonnet --effort high', got: $out"
 printf '%s\n' '{"role":"builder","level":"L5","file":"builder-L5.md"}' \
   '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$sw/runs.jsonl"
 out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
 [[ "$out" == *"--model opus --effort medium"* ]] \
   || fail "L1 newest: verifier L1 should swap sonnet to '--model opus --effort medium', got: $out"
 out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
-[[ "$out" == *"--model fable --effort medium"* ]] \
-  || fail "L1 newest: verifier L2 should stay '--model fable', got: $out"
+[[ "$out" == *"--model opus --effort high"* ]] \
+  || fail "L1 newest: verifier L2 should swap sonnet to '--model opus --effort high', got: $out"
 
 echo "run selftest: PASS"

@@ -26,7 +26,7 @@ case "$role:$level" in
   planner:L2)       model=opus;   effort=medium ;;
   planner:L3)       model=fable;  effort=xhigh ;;
   verifier:L1)      model=sonnet; effort=medium ;;
-  verifier:L2)      model=fable;  effort=medium ;;
+  verifier:L2)      model=sonnet; effort=high ;;
   verifier:L3)      model=fable;  effort=xhigh ;;
   researcher:L1)    model=sonnet; effort=medium ;;
   researcher:L2)    model=opus;   effort=medium ;;
@@ -56,15 +56,14 @@ result="$dir/$name.md"
 log="$dir/$name.log"
 
 # A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
-# Fable build -> Opus at the same effort; Sonnet build -> Opus medium.
+# Fable or Sonnet build -> Opus at the same effort.
 if [[ "$role" == verifier ]]; then
   built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
     if [[ "$model" == "$bmodel" ]]; then
       case "$model" in
-        fable)  model=opus ;;
-        sonnet) model=opus; effort=medium ;;
+        fable|sonnet) model=opus ;;
       esac
     fi
   fi
