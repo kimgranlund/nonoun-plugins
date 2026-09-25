@@ -22,6 +22,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
+            In a git work tree it also snapshots `git status --porcelain --untracked-files=all`
+            (plus each listed path's size and mtime) before the first runnable guard and after
+            the last; a path that is new or different afterwards means the guards changed the
+            work tree, and split refuses: one line per such path, then one last line
+            "plan defect: ... (guard) criteria changed the work tree: <paths>; replan this step
+            (/chain 3)" (a red guard, if any, is named on the same line). A tree dirty before
+            the guards passes when they leave it as it was. Nothing is undone.
             A full split (no --only) and lint never execute a span.
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
@@ -228,15 +235,57 @@ def guard_skipped(text):
     return 'HEAD^1' in text or PLACEHOLDER_RE.search(text) is not None
 
 
-def guard_cwd(task_dir):
-    """The git toplevel of the task dir, else the task dir itself."""
+def git_toplevel(task_dir):
+    """The git toplevel of the task dir, or None outside a git work tree."""
     try:
         r = subprocess.run(['git', '-C', str(task_dir), 'rev-parse', '--show-toplevel'],
                            capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
     except (OSError, subprocess.TimeoutExpired):
-        return str(task_dir)
+        return None
     top = r.stdout.strip()
-    return top if r.returncode == 0 and top else str(task_dir)
+    return top if r.returncode == 0 and top else None
+
+
+def guard_cwd(task_dir):
+    """The git toplevel of the task dir, else the task dir itself."""
+    return git_toplevel(task_dir) or str(task_dir)
+
+
+def tree_state(top):
+    """The work tree's status for side-effect detection: path -> (porcelain XY, size, mtime_ns),
+    tracked and untracked (ignored files excluded), or None when git status fails. Read-only:
+    --no-optional-locks keeps git from refreshing the index."""
+    try:
+        r = subprocess.run(['git', '--no-optional-locks', '-C', top, 'status', '--porcelain',
+                            '--untracked-files=all', '-z'],
+                           capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode != 0:
+        return None
+    state = {}
+    fields = r.stdout.decode('utf-8', errors='surrogateescape').split('\0')
+    i = 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if len(entry) < 4:
+            continue
+        xy, path = entry[:2], entry[3:]
+        if 'R' in xy or 'C' in xy:
+            i += 1  # a rename or copy is followed by its source path
+        try:
+            st = os.lstat(os.path.join(top, path))
+            stat = (st.st_size, st.st_mtime_ns)
+        except OSError:
+            stat = None
+        state[path] = (xy, stat)
+    return state
+
+
+def tree_changes(before, after):
+    """Paths new in after, gone from after, or different between the two states, sorted."""
+    return sorted(p for p in set(before) | set(after) if before.get(p) != after.get(p))
 
 
 def run_guard(text, cwd, timeout):
@@ -259,12 +308,16 @@ def run_guard(text, cwd, timeout):
 def run_guards(plan, steps, chosen, task_dir, timeout):
     """Run the runnable (guard) spans of each chosen step; raise Fail naming every red one.
     Called only by split --only; a full split and lint never execute a span."""
-    cwd = guard_cwd(task_dir)
-    lines, red = [], []
+    top = git_toplevel(task_dir)
+    cwd = top or str(task_dir)
+    lines, red, before, ran = [], [], None, False
     for n in chosen:
         for text in guard_spans(steps[n]):
             if guard_skipped(text):
                 continue
+            if top and not ran:
+                before = tree_state(top)
+            ran = True
             rc, tail = run_guard(text, cwd, timeout)
             if rc == 0:
                 continue
@@ -272,6 +325,12 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
             lines.append(f'steps: {plan} step {n}: (guard) criterion is red now ({why}): {text}')
             lines += [f'  {t}' for t in tail]
             red.append(f'step {n} red guard: {text}')
+    after = tree_state(top) if before is not None else None
+    changed = tree_changes(before, after) if after is not None else []
+    if changed:
+        which = f'step {chosen[0]}' if len(chosen) == 1 else f'steps {", ".join(map(str, chosen))}'
+        lines += [f'steps: {plan} {which}: (guard) criteria changed the work tree: {p}' for p in changed]
+        red.append(f'{which} (guard) criteria changed the work tree: {", ".join(changed)}')
     if red:
         raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
 
@@ -846,6 +905,62 @@ def selftest():
                           '- `ls -a /`\n* (guard) `ls -b /` and `ls -c /`\n  - (guard) `ls -f /`\n'
                           '- (guard) prose\n- x (guard) `ls -d /`\n```\n- (guard) `ls -g /`\n```\n')
               == ['ls -b /', 'ls -c /', 'ls -f /'])
+
+        # (o) split --only in a git work tree refuses when the guards changed the tree
+        # (tracked or untracked); a tree already dirty before passes when the guards leave it as is.
+        # Each case builds its own throwaway repo under tmp; guards run from its toplevel.
+        def o_repo(*criteria, commit=None, dirty=None):
+            count[0] += 1
+            r = tmp / f'o-repo{count[0]}'
+            r.mkdir()
+            subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+            if commit:
+                (r / commit).write_text('a\n', encoding='utf-8')
+                subprocess.run(['git', '-C', str(r), 'add', commit], check=True, capture_output=True)
+                subprocess.run(['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t',
+                                'commit', '-qm', 'i'], check=True, capture_output=True)
+            if dirty:
+                (r / dirty).write_text('pre\n', encoding='utf-8')
+            d = r / '.sdlc' / 'x'
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            (d / 'planner-L2.md').write_text(guard_plan(*criteria), encoding='utf-8')
+            return d
+
+        def o_refused(name, d, path):
+            rc, out, err = run_main(['split', str(d), '--only', '1'])
+            last = err.strip().splitlines()[-1] if err.strip() else ''
+            check(name, rc == 1 and out == '' and not (d / 'step-1').exists()
+                  and last.startswith('plan defect:') and 'changed the work tree' in last
+                  and path in last and last.endswith('; replan this step (/chain 3)')
+                  and f'(guard) criteria changed the work tree: {path}' in err)
+
+        o_refused('(o) a guard that creates an untracked file refuses, writes nothing, plan defect names the path',
+                  o_repo('(guard) `touch o-made && test -f o-made`'), 'o-made')
+        o_refused('(o) a guard that modifies a committed tracked file refuses, writes nothing, names the path',
+                  o_repo('(guard) `echo b >> tracked.txt`', commit='tracked.txt'), 'tracked.txt')
+        d = o_repo('(guard) `test -d .sdlc`', commit='tracked.txt')
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(o) a guard that changes nothing passes and writes the handoff',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+        d = o_repo('(guard) `test -f already-dirty && grep -q a tracked.txt`', commit='tracked.txt',
+                   dirty='already-dirty')
+        (d.parents[1] / 'tracked.txt').write_text('a\nedited before\n', encoding='utf-8')
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(o) a tree dirty before (untracked and modified), guards changing nothing, passes',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+        d = o_repo('(guard) `echo more >> already-dirty`', dirty='already-dirty')
+        o_refused('(o) a guard that changes an already-dirty file refuses', d, 'already-dirty')
+        d = o_repo('(guard) `touch o-both`', f'(guard) `{red_span}`')
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        lines = err.strip().splitlines()
+        check('(o) a red guard and a changed tree are both reported, one plan defect last line',
+              rc == 1 and not (d / 'step-1').exists() and red_span in lines[-1] and 'o-both' in lines[-1]
+              and sum(x.startswith('plan defect:') for x in lines) == 1)
+        d = o_repo('(guard) `touch o-full`')
+        rc, _, _ = run_main(['split', str(d)])
+        check('(o) full split in a git repo runs no guard and does not refuse',
+              rc == 0 and not (d.parents[1] / 'o-full').exists() and (d / 'step-1' / 'handoff.md').is_file())
 
         # next: the /chain step 4 action from the newest results, by recorded run order
         DONE, BLOCKED = '## Status\ndone\n', '## Status\nblocked\n\n## Notes\nplan defect: c1 bad\n'
