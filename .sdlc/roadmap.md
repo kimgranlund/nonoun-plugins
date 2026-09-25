@@ -69,7 +69,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0062 | [criteria-that-contradict-each-other](criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🔵 ready |
 | T-0063 | [run-a-live-merge-step](run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🔵 ready |
 | T-0064 | [merge-step-conflict-marker-guard](merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🔵 ready |
-| T-0065 | [fanout-py-s-default-lane](fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | ⏳ proposed |
-| T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | ⏳ proposed |
-| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | ⏳ proposed |
-| T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | ⏳ proposed |
+| T-0065 | [fanout-py-s-default-lane](fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | 🔵 ready |
+| T-0066 | [file-semantic-duplicates](file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🔵 ready |
+| T-0067 | [file-publish-question-options](file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🔵 ready |
+| T-0068 | [board-closed-not-planned](board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🔵 ready |
