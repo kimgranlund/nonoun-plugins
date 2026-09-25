@@ -57,7 +57,7 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 | architect | L1 | Fable high |
 | scout | L1 | Haiku low |
 | archaeologist | L1 | Sonnet medium |
-| filer | L1 | Opus low |
+| filer | L1 | Sonnet medium |
 
 ## Agent-tool spawns (outside run.sh)
 

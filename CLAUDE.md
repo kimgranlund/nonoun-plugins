@@ -47,7 +47,7 @@ A set of SDLC agents: declared Claude Code subagents, each launched by a `/comma
 | scout | `/scout` | L1 Haiku low | built |
 | archaeologist | `/dig` | L1 Sonnet medium | built |
 | architect | `/architect` | L1 Fable high | built |
-| filer | `/file` | L1 Opus low; drafts only, the user approves publishing | built |
+| filer | `/file` | L1 Sonnet medium; drafts only, the user approves publishing | built |
 
 Systems: shared runner, handoff format, level rubrics, `/handoff`, `/chain` (escalation), `/bench` + `scripts/bench-summary.sh`: built. Escalation is enforced by `/chain` instructions and three code gates: `steps.py next` computes the step 4 action after each builder and verifier run, the `steps.py split` lint refuses a plan whose criterion commands do not parse, and `steps.py split --only N` refuses a step with a red guard.
 
