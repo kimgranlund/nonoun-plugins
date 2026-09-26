@@ -127,7 +127,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0124 | [inherited-red-gate-steps](inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🟢 done |
 | T-0125 | [criteria-no-porcelain-clean](criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🟢 done |
 | T-0126 | [chain-stop-leaves-dirty-tree](chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🟢 done |
-| T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | 🔵 ready |
+| T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | ⚪ dropped |
 | T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🔵 ready |
 | T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | ⏳ proposed |
 | T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | ⏳ proposed |

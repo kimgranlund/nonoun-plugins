@@ -2,7 +2,7 @@
 id: T-0127
 title: "fanout: make the resync retry limit configurable"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P3         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -30,3 +30,6 @@ Blocked on a user decision. `scripts/fanout.py` has no resync retry to make conf
 - What a try retries: on `merge conflict` into integration, resync the lane from integration and re-merge; or also rerun the driver on the resynced lane; or only the pre-ticket sync.
 - Default: 1 (today's behavior, no retry) or 2 (the peer's baseline).
 - Surface: `--resync-tries N` flag, a `<root>/config` key, or both.
+
+## Closed
+Dropped 2026-09-26: the 2-try resync limit was in the peer's own lane driver script, not in fanout.py, which has no resync retry. The peer raised it locally.
