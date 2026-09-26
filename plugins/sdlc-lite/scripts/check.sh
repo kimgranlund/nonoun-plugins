@@ -2,8 +2,9 @@
 # Plugin checks: level-table and agent consistency, the coverage_check, tickets.py, board.py,
 # steps.py, order.py, and fanout.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the run.sh result-numbering selftest (stub claude, no model call), the hook selftest
-# (block-background.sh and block-publish.sh on fixture JSON), a shellcheck pass,
-# plugin manifest validation.
+# (block-background.sh and block-publish.sh on fixture JSON), the hook live probe selftest
+# (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
+# never runs here), a shellcheck pass, plugin manifest validation.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 fail=0
@@ -16,6 +17,7 @@ python3 "$root/scripts/order.py" selftest || fail=1
 python3 "$root/scripts/fanout.py" selftest || fail=1
 bash "$root/scripts/run-selftest.sh" || fail=1
 bash "$root/scripts/hook-selftest.sh" || fail=1
+bash "$root/scripts/hook-live-probe.sh" --selftest || fail=1
 if command -v shellcheck >/dev/null; then
   shellcheck --severity=warning "$root"/scripts/*.sh "$root"/hooks/*.sh && echo "ok: shellcheck" || fail=1
 else
