@@ -19,6 +19,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - No-verdict route: a verifier result with no pass/fail verdict maps to `reverify` in `steps.py next` and to 🟡 no verdict in `board.py`, is never counted as a fail, and must stay in sync across steps.py, board.py, chain SKILL.md, conductor.md, and CLAUDE.md.
 - Inherited-red route: a builder Status `inherited red: <tests>` (a gate already red at the pre-build HEAD, found by the builder's pre-build check) maps to `inherited` in `steps.py next`, to 🔴 inherited red in `board.py`, and is an accepted Status in `run.sh`; it is never a fail, a rebuild, a bump, or a replan, and must stay in sync across steps.py, board.py, run.sh, builder.md, chain SKILL.md, conductor.md, check.py, and CLAUDE.md.
 - Keep `scripts/fanout.py`, the /fanout skill, `board.py --lanes`, the /board skill, and CLAUDE.md in sync.
+- `fanout.py run --rewrite-refs` (opt-in, numbered mode) passes the flag to `tickets.py close`; the `close <id>` commit stages every file the close rewrote. /fanout offers it as a choice at Confirm, never silently.
 - Verdict and newest-file decisions go through `scripts/order.py` (latest runs.jsonl record, which carries `file`, else level then rerun index then name) and never use mtime. Keep it in sync with CLAUDE.md.
 
 ## After every change

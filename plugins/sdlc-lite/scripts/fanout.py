@@ -3,7 +3,7 @@
 merged into an integration branch under a lock, gated, and closed there. Main is never touched.
 
 Usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH]
-                     [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--dry-run]
+                     [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
        fanout.py selftest
 
 run
@@ -24,7 +24,7 @@ run
   <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration branch is
   checked out in some worktree.
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
-  tickets, the gates, the driver) and exits 0, creating nothing.
+  tickets, the gates, the driver, the close command) and exits 0, creating nothing.
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
   (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
   per lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>`; make
@@ -52,9 +52,13 @@ run
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
        logs/gate-<lane>-<id>-<k>.log; the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
-       copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there, and commit
-       `close <id>` (`merged`); a close refusal gives `merged, close refused: <first line>` and
-       the merge stands.
+       copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there (with
+       --rewrite-refs when given: in numbered mode, files outside the ticket folder that cite
+       <rel>/NNNN-<slug> are rewritten to <rel>/.NNNN-<slug>), and commit `close <id>`
+       (`merged`), staging <rel> plus every path outside it that the close changed (a
+       `git status --porcelain` snapshot before and after; never the whole worktree); a close
+       refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
+       naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
   Prints `[<lane>] <id> <event>` lines as they happen, writes <lanes-dir>/report.md
   (| Lane | Ticket | Outcome | Commit |, the integration branch and its tip, the worktree paths,
   the gates or that none were given) and prints it. Exit 0 only when every ticket is `merged`,
@@ -65,7 +69,11 @@ selftest
   A throwaway repo in a temp dir, a stub driver, two lanes: proves three merges, a red gate's
   merge reset, main untouched, closes on the integration branch, the pre-ticket sync, a lane
   stopping at its first failure, board.py --lanes listing both lanes, and that --dry-run and
-  the refusals create nothing.
+  the refusals create nothing. A numbered-mode repo with docs/spec.md citing the ticket folder
+  proves that without --rewrite-refs the close is refused (naming the flag) and the ticket stays
+  open, that with it the ticket closes to .0001-x and the `close <id>` commit carries the
+  rewritten docs/spec.md, the integration worktree stays clean either way, and the dry-run
+  close: line matches each mode.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
@@ -266,7 +274,8 @@ def preflight(a):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
-            'driver': a.driver}
+            'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
+            'numbered': tickets.config_numbered(root)}
 
 
 def driver_for(ctx, t):
@@ -297,6 +306,14 @@ def print_plan(ctx):
     else:
         out.append(f"driver: {default_driver('<handoff>')}")
         out.append("  (<handoff> is each ticket's handoff path relative to the lane worktree)")
+    if ctx['rewrite_refs']:
+        out.append('close: tickets.py close <slug> --rewrite-refs '
+                   '(files citing a ticket folder are rewritten to its .NNNN-<slug> path)')
+    elif ctx['numbered']:
+        out.append('close: tickets.py close <slug> (numbered folders: a file citing a ticket folder '
+                   'refuses the close; --rewrite-refs rewrites them)')
+    else:
+        out.append('close: tickets.py close <slug>')
     out.append(f"logs: {ctx['logs']}")
     print('\n'.join(out))
 
@@ -385,6 +402,25 @@ def in_merge(wt):
     return git(wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode == 0
 
 
+def porcelain(wt):
+    """The set of (status, path) entries in `git status --porcelain`, as paths tagged by status,
+    so a before/after diff names every path whose state changed."""
+    p = git(wt, 'status', '--porcelain=v1', '-z', '--untracked-files=all')
+    if p.returncode:
+        raise Refuse(f'git status failed: {p.stderr.strip() or p.returncode}')
+    items, parts, k = set(), p.stdout.split('\0'), 0
+    while k < len(parts):
+        e = parts[k]
+        k += 1
+        if len(e) < 4:
+            continue
+        items.add((e[:2], e[3:]))
+        if e[0] in 'RC' and k < len(parts):
+            items.add((e[:2], parts[k]))
+            k += 1
+    return items
+
+
 def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
@@ -440,13 +476,23 @@ def run_ticket(ctx, lane, t, lock):
         src, dst = wt / rel / t.slug, integ / rel / t.slug
         if not any(dst.glob('filer-L*.md')) and src.is_dir():
             shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
-        p = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug],
-                           cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
+        argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
+        if ctx['rewrite_refs']:
+            argv.append('--rewrite-refs')
+        pre = porcelain(integ)
+        p = subprocess.run(argv, cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
         if p.returncode:
             # the close wrote nothing; drop any copied files so a later close commit cannot sweep them in
             git(integ, 'clean', '-fdq', '--', (rel / t.slug).as_posix())
-            return f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', merge_sha[:7]
-        git_out(integ, 'add', '-A', '--', rel.as_posix())
+            why = f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}'
+            if not ctx['rewrite_refs'] and '--rewrite-refs' in (p.stderr or '') + (p.stdout or ''):
+                why += '; fanout.py run --rewrite-refs rewrites them'
+            return why, merge_sha[:7]
+        relp = rel.as_posix()
+        changed = {path for _, path in porcelain(integ) - pre}
+        extra = sorted(path for path in changed
+                       if relp != '.' and path != relp and not path.startswith(relp + '/'))
+        git_out(integ, 'add', '-A', '--', relp, *extra)
         if git(integ, 'diff', '--cached', '--quiet').returncode:
             git_out(integ, 'commit', '-q', '-m', f'close {t.id}')
         return 'merged', merge_sha[:7]
@@ -667,6 +713,68 @@ def selftest():
         expect('unignored .worktrees/: no worktree added',
                len([ln for ln in sh(ru, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
 
+        # 4. Numbered mode, a file outside the ticket root citing the ticket folder: without
+        # --rewrite-refs the close is refused; with it the close commit carries the rewrite.
+        numbered_stub = ('printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                         '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo x > x.txt')
+
+        def make_numbered(repo):
+            (repo / '.sdlc' / '0001-x').mkdir(parents=True)
+            (repo / 'docs').mkdir()
+            (repo / '.sdlc' / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
+            (repo / '.sdlc' / '0001-x' / 'handoff.md').write_text(
+                '---\nid: T-0001\ntitle: "x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+            (repo / 'docs' / 'spec.md').write_text('see .sdlc/0001-x/handoff.md\n', encoding='utf-8')
+            (repo / '.gitignore').write_text('.worktrees/\n', encoding='utf-8')
+            for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                         ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                         ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+                q = sh(repo, *args)
+                expect(f'numbered fixture git {args} exited 0, got {q.returncode}', q.returncode == 0)
+
+        def outcome(repo):
+            rep = repo / '.worktrees' / 'fanout' / 'report.md'
+            for line in (rep.read_text() if rep.is_file() else '').splitlines():
+                c = [x.strip() for x in line.strip('|').split('|')]
+                if line.startswith('| ') and len(c) == 4 and c[1] == 'T-0001':
+                    return c[2]
+            return None
+
+        integ_clean = lambda repo: sh(repo / '.worktrees' / 'fanout' / 'integration', 'status', '--porcelain').stdout == ''
+        nr = tmp / 'numbered-off'
+        make_numbered(nr)
+        proc = fanout(nr, '--dry-run', 'a=T-0001')
+        expect(f'numbered dry run without the flag names the refusal, got {proc.stdout!r}',
+               proc.returncode == 0 and '\nclose: tickets.py close <slug> (numbered folders' in proc.stdout)
+        proc = fanout(nr, '--dry-run', '--rewrite-refs', 'a=T-0001')
+        expect(f'dry run with the flag shows it, got {proc.stdout!r}',
+               proc.returncode == 0 and '\nclose: tickets.py close <slug> --rewrite-refs' in proc.stdout)
+        proc = fanout(nr, 'a=T-0001', '--integration', 'fanout/t', '--driver', numbered_stub)
+        got = outcome(nr) or ''
+        expect(f'numbered without the flag exits 1, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 1)
+        expect(f'numbered without the flag: merged, close refused naming --rewrite-refs, got {got!r}',
+               got.startswith('merged, close refused') and '--rewrite-refs' in got)
+        shown = sh(nr, 'show', 'fanout/t:.sdlc/0001-x/handoff.md').stdout
+        expect(f'numbered without the flag: 0001-x still ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        expect('numbered without the flag: integration worktree clean', integ_clean(nr))
+
+        nw = tmp / 'numbered-on'
+        make_numbered(nw)
+        proc = fanout(nw, 'a=T-0001', '--integration', 'fanout/t', '--rewrite-refs', '--driver', numbered_stub)
+        expect(f'numbered with the flag exits 0, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 0)
+        expect(f'numbered with the flag: merged, got {outcome(nw)!r}', outcome(nw) == 'merged')
+        expect('numbered with the flag: tip is close T-0001',
+               sh(nw, 'log', '-1', '--format=%s', 'fanout/t').stdout.strip() == 'close T-0001')
+        expect('numbered with the flag: close commit changes docs/spec.md',
+               'docs/spec.md' in sh(nw, 'diff', '--name-only', 'fanout/t~1', 'fanout/t').stdout.split())
+        expect('numbered with the flag: docs/spec.md cites the dot path',
+               sh(nw, 'show', 'fanout/t:docs/spec.md').stdout == 'see .sdlc/.0001-x/handoff.md\n')
+        expect('numbered with the flag: .sdlc/.0001-x/handoff.md on the branch',
+               sh(nw, 'cat-file', '-e', 'fanout/t:.sdlc/.0001-x/handoff.md').returncode == 0)
+        expect('numbered with the flag: integration worktree clean', integ_clean(nw))
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -681,7 +789,7 @@ def main(argv):
         return selftest()
     if argv[:1] != ['run']:
         print('usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH] '
-              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--dry-run] | fanout.py selftest', file=sys.stderr)
+              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] | fanout.py selftest', file=sys.stderr)
         return 2
     ap = argparse.ArgumentParser(prog='fanout.py run', description=__doc__.split('\n')[0])
     ap.add_argument('lanes', nargs='+', metavar='<lane>=<id>[,<id>...]')
@@ -695,6 +803,9 @@ def main(argv):
                     'red resets the merge (repeatable, in order)')
     ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
                     '(default: a headless sdlc-lite conductor running /sdlc-lite:chain)')
+    ap.add_argument('--rewrite-refs', action='store_true', help='opt-in, numbered mode only: when a ticket '
+                    'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
+                    '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 
