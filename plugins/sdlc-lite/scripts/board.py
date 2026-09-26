@@ -30,6 +30,9 @@ level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the 
 runs.jsonl record order (order.py), never file time.
 A builder whose Status starts with "inherited red" (a gate main already made red) renders as
 🔴 inherited red · builder <level>, ask the user, and --summary counts it in 🔴<n>.
+A newest verifier after the build whose Verdict starts with "inherited red:" renders as
+🔴 inherited red · builder <level> · verifier <level>, ask the user; it counts as a verdict, so it
+breaks a no-verdict run.
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
@@ -118,11 +121,13 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
         if verdict.startswith('fail'):
             return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        if verdict.startswith('inherited red:'):
+            return '🔴', f'inherited red · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, ask the user{tries}', LADDER['built']
         n = 0
         for w in map(pathlib.Path, reversed(order.ordered(step, 'verifier'))):
             if not order.counts_after(w, last_build):
                 continue
-            if section(w, 'Verdict').startswith(('pass', 'fail')):
+            if section(w, 'Verdict').startswith(('pass', 'fail', 'inherited red:')):
                 break
             n += 1
         if n >= 2:
@@ -796,6 +801,11 @@ def selftest() -> int:
         got = step_row(step_fixture('inherited-red', inh), 'x', 'L2')[:2]
         expect(f'an inherited red builder renders as 🔴 inherited red, got {got}',
                got[0] == '🔴' and got[1].startswith('inherited red'))
+        vinh = [('builder', 'L2', 'builder-L2.md', built),
+                ('verifier', 'L1', 'verifier-L1.md', '## Verdict\ninherited red: test_a\n')]
+        got = step_row(step_fixture('verifier-inherited-red', vinh), 'x', 'L2')[:2]
+        expect(f'an inherited red verifier renders as 🔴 inherited red · builder · verifier, got {got}',
+               got == ('🔴', 'inherited red · builder L2 · verifier L1, ask the user'))
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:

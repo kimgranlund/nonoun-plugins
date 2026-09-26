@@ -2,7 +2,7 @@
 id: T-0106
 title: "Extend .claude/agents/sdlc-lite-author.md line 19 to cover the..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -11,7 +11,9 @@ from: T-0103
 ---
 
 ## Goal
-One or two sentences: the outcome, not the method.
+The sdlc-lite-author invariant on line 19 covers the builder no-Status `rebuild`/`stop` route and the run.sh exit 3 rule, matching CLAUDE.md.
+
+Done: conductor trivial edit to `.claude/agents/sdlc-lite-author.md` line 19; `plugins/sdlc-lite/scripts/check.sh` exit 0 (2026-09-26).
 
 ## Context
 Follow-up from T-0103 (run-result-format-check/filer-L1.md):
@@ -19,4 +21,4 @@ Follow-up from T-0103 (run-result-format-check/filer-L1.md):
 Extend `.claude/agents/sdlc-lite-author.md` line 19 to cover the builder no-Status `rebuild`/`stop` route and run.sh exit 3, so it matches CLAUDE.md.
 
 ## Constraints
-What must not change. "None" if none.
+None.

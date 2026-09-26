@@ -9,7 +9,8 @@
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
 # main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
-# SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees.
+# SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees, and a dry run
+# of a role that declares skills leaves no mktemp skill file behind.
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -90,6 +91,11 @@ out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
 out=$(dry L2) || fail "dry run verifier L2 exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
   || fail "L1 newest: verifier L2 should swap sonnet to '--model opus --effort high', got: $out"
+# A dry run of a role that declares skills removes its mktemp skill file (T-0108).
+out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
+sf=$(awk '{for (i = 1; i < NF; i++) if ($i == "--append-system-prompt-file") print $(i + 1)}' <<<"$out")
+[[ -n "$sf" ]] || fail "dry run verifier L1 printed no --append-system-prompt-file: $out"
+[[ ! -e "$sf" ]] || fail "dry run left its skill file behind: $sf"
 
 # .nvmrc resolution against a fake NVM_DIR: dry runs assert the one stderr line, then one real
 # run checks that the stub claude sees the matched bin dir first on PATH.
@@ -164,6 +170,8 @@ want_rc 3 planner L1 $'## Steps\nx'
 grep -q '## Goal' "$tmp/rerr" || fail "planner no Goal: stderr does not name ## Goal"
 want_rc 0 builder L2 $'## Status\n\nDone \n\n## Changes\nNone'
 want_rc 0 verifier L1 $'## Verdict\npass'
+want_rc 0 verifier L1 $'## Verdict\ninherited red: test_a'
+want_rc 3 verifier L1 $'## Verdict\ninherited red'
 
 # Real run: the stub claude records the first PATH entry it sees.
 printf '20\n' >"$nrepo/.nvmrc"

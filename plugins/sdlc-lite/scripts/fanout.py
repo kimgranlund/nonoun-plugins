@@ -3,7 +3,7 @@
 merged into an integration branch under a lock, gated, and closed there. Main is never touched.
 
 Usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH]
-                     [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--dry-run]
+                     [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
        fanout.py selftest
 
 run
@@ -24,7 +24,7 @@ run
   <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration branch is
   checked out in some worktree.
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
-  tickets, the gates, the driver) and exits 0, creating nothing.
+  tickets, the gates, the driver, the close command) and exits 0, creating nothing.
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
   (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
   per lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>`; make
@@ -48,16 +48,26 @@ run
        other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
        lane branch only. It is never merged, and the report's Commit cell shows `wip <sha>`.
        Before each sync, a dirty lane tree is WIP-committed first.
-    3. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
+    3. inherited red: each <rel>/<slug>/step-<n>/ dir in the lane worktree (numeric order; a
+       step-<n>.superseded-<k> dir never counts) goes through steps.next_action; at the first
+       whose action is `inherited` (a builder Status `inherited red: <tests>`, a gate already red
+       at the pre-build HEAD) the outcome is `inherited red: step-<n>: <tests>`, the tests read
+       from that builder result's Status line. No lane commit, merge, or close; as for any stop,
+       the lane tree is WIP-committed on the lane branch and kept there for inspection.
+    4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
-    4. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
+    5. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
        logs/gate-<lane>-<id>-<k>.log; the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
-       copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there, and commit
-       `close <id>` (`merged`); a close refusal gives `merged, close refused: <first line>` and
-       the merge stands.
+       copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there (with
+       --rewrite-refs when given: in numbered mode, files outside the ticket folder that cite
+       <rel>/NNNN-<slug> are rewritten to <rel>/.NNNN-<slug>), and commit `close <id>`
+       (`merged`), staging <rel> plus every path outside it that the close changed (a
+       `git status --porcelain` snapshot before and after; never the whole worktree); a close
+       refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
+       naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
   Prints `[<lane>] <id> <event>` lines as they happen, writes <lanes-dir>/report.md
   (| Lane | Ticket | Outcome | Commit |, the integration branch and its tip, the worktree paths,
   the gates or that none were given) and prints it. Exit 0 only when every ticket is `merged`,
@@ -68,7 +78,18 @@ selftest
   A throwaway repo in a temp dir, a stub driver, two lanes: proves three merges, a red gate's
   merge reset, main untouched, closes on the integration branch, the pre-ticket sync, a lane
   stopping at its first failure, board.py --lanes listing both lanes, and that --dry-run and
-  the refusals create nothing. A one-lane case with a driver that writes a file and exits 3
+  the refusals create nothing. A numbered-mode repo with docs/spec.md citing the ticket folder
+  proves that without --rewrite-refs the close is refused (naming the flag) and the ticket stays
+  open, that with it the ticket closes to .0001-x and the `close <id>` commit carries the
+  rewritten docs/spec.md, the integration worktree stays clean either way, and the dry-run
+  close: line matches each mode. An inherited-red repo (case 5) proves that a step-1 builder
+  Status `inherited red: test_a` gives the outcome `inherited red: step-1: test_a`, no merge on
+  the integration branch, the ticket still ready, the next ticket skipped, and the step file
+  kept in the lane's `wip(T-0001): inherited red: ...` commit, not merged; its negative control,
+  a builder Status `done`, gives `merged`.
+  A full stub-driver run in the default lanes dir under .worktrees/fanout (case 6) proves lane
+  commits `<id>: <title>`, merges and closes, with `git status` in the main tree left clean.
+  A one-lane case (case 7) with a driver that writes a file and exits 3
   proves the stopped lane is WIP-committed: a clean lane tree, a `wip(T-0001): driver failed
   rc=3` tip holding the file, not merged into the integration branch, integration and main at
   the fixture commit, and a `wip <sha7>` Commit cell in the report.
@@ -76,6 +97,7 @@ selftest
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
 import tickets  # same scripts/ dir: the only front matter parser
+import steps  # same scripts/ dir: next_action and section read step results
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -272,7 +294,8 @@ def preflight(a):
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
-            'driver': a.driver}
+            'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
+            'numbered': tickets.config_numbered(root)}
 
 
 def driver_for(ctx, t):
@@ -303,6 +326,14 @@ def print_plan(ctx):
     else:
         out.append(f"driver: {default_driver('<handoff>')}")
         out.append("  (<handoff> is each ticket's handoff path relative to the lane worktree)")
+    if ctx['rewrite_refs']:
+        out.append('close: tickets.py close <slug> --rewrite-refs '
+                   '(files citing a ticket folder are rewritten to its .NNNN-<slug> path)')
+    elif ctx['numbered']:
+        out.append('close: tickets.py close <slug> (numbered folders: a file citing a ticket folder '
+                   'refuses the close; --rewrite-refs rewrites them)')
+    else:
+        out.append('close: tickets.py close <slug>')
     out.append(f"logs: {ctx['logs']}")
     print('\n'.join(out))
 
@@ -410,6 +441,51 @@ def wip_commit(wt, tid, outcome):
         return ''
 
 
+def porcelain(wt):
+    """The set of (status, path) entries in `git status --porcelain`, as paths tagged by status,
+    so a before/after diff names every path whose state changed."""
+    p = git(wt, 'status', '--porcelain=v1', '-z', '--untracked-files=all')
+    if p.returncode:
+        raise Refuse(f'git status failed: {p.stderr.strip() or p.returncode}')
+    items, parts, k = set(), p.stdout.split('\0'), 0
+    while k < len(parts):
+        e = parts[k]
+        k += 1
+        if len(e) < 4:
+            continue
+        items.add((e[:2], e[3:]))
+        if e[0] in 'RC' and k < len(parts):
+            items.add((e[:2], parts[k]))
+            k += 1
+    return items
+
+
+STEP_DIR_RE = re.compile(r'step-(\d+)')
+
+
+def inherited_red(ticket_dir):
+    """`inherited red: step-<n>: <tests>` for the first step-<n> dir (numeric order; never a
+    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken from the
+    newest builder result's ## Status line after the `inherited red:` prefix; else None."""
+    base = pathlib.Path(ticket_dir)
+    if not base.is_dir():
+        return None
+    dirs = sorted((int(m.group(1)), d) for d in base.iterdir()
+                  if d.is_dir() and (m := STEP_DIR_RE.fullmatch(d.name)))
+    for n, d in dirs:
+        try:
+            action, _, _, read = steps.next_action(d)
+            if action != 'inherited':
+                continue
+            body = steps.section(read[0], 'Status') or []
+            first = next((ln.strip() for ln in body if ln.strip()), '')
+            tests = re.sub(r'(?i)^inherited red:', '', first).strip()
+        except Exception:  # steps.Fail included: this dir is not inherited
+            continue
+        return f'inherited red: step-{n}: {tests}'
+    return None
+
+
 def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
@@ -436,6 +512,9 @@ def run_ticket(ctx, lane, t, lock):
                             stdout=f, stderr=subprocess.STDOUT, env=env).returncode
     if rc:
         return f'driver failed rc={rc}', ''
+    inherited = inherited_red(wt / rel / t.slug)
+    if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
+        return inherited, ''
 
     p = git(wt, 'add', '-A')
     if p.returncode:
@@ -469,13 +548,23 @@ def run_ticket(ctx, lane, t, lock):
         src, dst = wt / rel / t.slug, integ / rel / t.slug
         if not any(dst.glob('filer-L*.md')) and src.is_dir():
             shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
-        p = subprocess.run([sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug],
-                           cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
+        argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
+        if ctx['rewrite_refs']:
+            argv.append('--rewrite-refs')
+        pre = porcelain(integ)
+        p = subprocess.run(argv, cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
         if p.returncode:
             # the close wrote nothing; drop any copied files so a later close commit cannot sweep them in
             git(integ, 'clean', '-fdq', '--', (rel / t.slug).as_posix())
-            return f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', merge_sha[:7]
-        git_out(integ, 'add', '-A', '--', rel.as_posix())
+            why = f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}'
+            if not ctx['rewrite_refs'] and '--rewrite-refs' in (p.stderr or '') + (p.stdout or ''):
+                why += '; fanout.py run --rewrite-refs rewrites them'
+            return why, merge_sha[:7]
+        relp = rel.as_posix()
+        changed = {path for _, path in porcelain(integ) - pre}
+        extra = sorted(path for path in changed
+                       if relp != '.' and path != relp and not path.startswith(relp + '/'))
+        git_out(integ, 'add', '-A', '--', relp, *extra)
         if git(integ, 'diff', '--cached', '--quiet').returncode:
             git_out(integ, 'commit', '-q', '-m', f'close {t.id}')
         return 'merged', merge_sha[:7]
@@ -702,7 +791,167 @@ def selftest():
         expect('unignored .worktrees/: no worktree added',
                len([ln for ln in sh(ru, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
 
-        # 4. A driver that edits the lane and fails: the lane is WIP-committed, never merged.
+        # 4. Numbered mode, a file outside the ticket root citing the ticket folder: without
+        # --rewrite-refs the close is refused; with it the close commit carries the rewrite.
+        numbered_stub = ('printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                         '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo x > x.txt')
+
+        def make_numbered(repo):
+            (repo / '.sdlc' / '0001-x').mkdir(parents=True)
+            (repo / 'docs').mkdir()
+            (repo / '.sdlc' / 'config').write_text('ticket_folders: numbered\n', encoding='utf-8')
+            (repo / '.sdlc' / '0001-x' / 'handoff.md').write_text(
+                '---\nid: T-0001\ntitle: "x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+            (repo / 'docs' / 'spec.md').write_text('see .sdlc/0001-x/handoff.md\n', encoding='utf-8')
+            (repo / '.gitignore').write_text('.worktrees/\n', encoding='utf-8')
+            for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                         ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                         ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+                q = sh(repo, *args)
+                expect(f'numbered fixture git {args} exited 0, got {q.returncode}', q.returncode == 0)
+
+        def outcome(repo):
+            rep = repo / '.worktrees' / 'fanout' / 'report.md'
+            for line in (rep.read_text() if rep.is_file() else '').splitlines():
+                c = [x.strip() for x in line.strip('|').split('|')]
+                if line.startswith('| ') and len(c) == 4 and c[1] == 'T-0001':
+                    return c[2]
+            return None
+
+        integ_clean = lambda repo: sh(repo / '.worktrees' / 'fanout' / 'integration', 'status', '--porcelain').stdout == ''
+        nr = tmp / 'numbered-off'
+        make_numbered(nr)
+        proc = fanout(nr, '--dry-run', 'a=T-0001')
+        expect(f'numbered dry run without the flag names the refusal, got {proc.stdout!r}',
+               proc.returncode == 0 and '\nclose: tickets.py close <slug> (numbered folders' in proc.stdout)
+        proc = fanout(nr, '--dry-run', '--rewrite-refs', 'a=T-0001')
+        expect(f'dry run with the flag shows it, got {proc.stdout!r}',
+               proc.returncode == 0 and '\nclose: tickets.py close <slug> --rewrite-refs' in proc.stdout)
+        proc = fanout(nr, 'a=T-0001', '--integration', 'fanout/t', '--driver', numbered_stub)
+        got = outcome(nr) or ''
+        expect(f'numbered without the flag exits 1, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 1)
+        expect(f'numbered without the flag: merged, close refused naming --rewrite-refs, got {got!r}',
+               got.startswith('merged, close refused') and '--rewrite-refs' in got)
+        shown = sh(nr, 'show', 'fanout/t:.sdlc/0001-x/handoff.md').stdout
+        expect(f'numbered without the flag: 0001-x still ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        expect('numbered without the flag: integration worktree clean', integ_clean(nr))
+
+        nw = tmp / 'numbered-on'
+        make_numbered(nw)
+        proc = fanout(nw, 'a=T-0001', '--integration', 'fanout/t', '--rewrite-refs', '--driver', numbered_stub)
+        expect(f'numbered with the flag exits 0, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 0)
+        expect(f'numbered with the flag: merged, got {outcome(nw)!r}', outcome(nw) == 'merged')
+        expect('numbered with the flag: tip is close T-0001',
+               sh(nw, 'log', '-1', '--format=%s', 'fanout/t').stdout.strip() == 'close T-0001')
+        expect('numbered with the flag: close commit changes docs/spec.md',
+               'docs/spec.md' in sh(nw, 'diff', '--name-only', 'fanout/t~1', 'fanout/t').stdout.split())
+        expect('numbered with the flag: docs/spec.md cites the dot path',
+               sh(nw, 'show', 'fanout/t:docs/spec.md').stdout == 'see .sdlc/.0001-x/handoff.md\n')
+        expect('numbered with the flag: .sdlc/.0001-x/handoff.md on the branch',
+               sh(nw, 'cat-file', '-e', 'fanout/t:.sdlc/.0001-x/handoff.md').returncode == 0)
+        expect('numbered with the flag: integration worktree clean', integ_clean(nw))
+
+        # 5. Inherited red: a step-1 builder Status `inherited red: test_a` stops the lane with that
+        # cause; nothing is committed, merged, or closed. Negative control: Status `done` merges.
+        def inherited_stub(status):
+            return ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
+                    'mkdir -p "$FANOUT_ROOT/$FANOUT_SLUG/step-1"; '
+                    f'printf "## Status\\n{status}\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/step-1/builder-L2.md"; fi; '
+                    'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                    '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')
+
+        def report_rows(lanes_dir):
+            rep, got = lanes_dir / 'report.md', {}
+            for line in (rep.read_text() if rep.is_file() else '').splitlines():
+                c = [x.strip() for x in line.strip('|').split('|')]
+                if line.startswith('| ') and len(c) == 4 and tickets.ID_RE.fullmatch(c[1]):
+                    got[c[1]] = c[2]
+            return got
+
+        ir, il = tmp / 'inherited', tmp / 'ilanes'
+        make_repo(ir, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(ir, 'a=T-0001,T-0002', '--integration', 'fanout/ir', '--lanes-dir', str(il),
+                      '--driver', inherited_stub('inherited red: test_a'), '--gate', 'true')
+        got = report_rows(il)
+        expect(f'inherited red: run exits 1, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 1)
+        expect(f'inherited red: T-0001 outcome is exactly inherited red: step-1: test_a, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_a')
+        expect(f'inherited red: T-0002 skipped, got {got.get("T-0002")!r}', got.get('T-0002') == 'skipped')
+        merges = sh(ir, 'rev-list', '--merges', '--count', 'fanout/ir').stdout.strip()
+        expect(f'inherited red: fanout/ir has no merge commits, got {merges!r}', merges == '0')
+        expect('inherited red: fanout/ir does not hold work-T-0001.txt',
+               sh(ir, 'cat-file', '-e', 'fanout/ir:work-T-0001.txt').returncode != 0)
+        shown = sh(ir, 'show', 'fanout/ir:.sdlc/a/handoff.md').stdout
+        expect(f'inherited red: fanout/ir:.sdlc/a/handoff.md still says status: ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        kept = il / 'a' / '.sdlc' / 'a' / 'step-1' / 'builder-L2.md'
+        lane_status = sh(il / 'a', 'status', '--porcelain', '--untracked-files=all').stdout
+        expect(f'inherited red: the lane tree is clean after the stop (WIP-committed), got {lane_status!r}',
+               kept.is_file() and lane_status == '')
+        subj = sh(ir, 'log', '-1', '--format=%s', 'fanout/ir-a').stdout.strip()
+        expect(f'inherited red: lane tip is wip(T-0001): inherited red: step-1: test_a, got {subj!r}',
+               subj == 'wip(T-0001): inherited red: step-1: test_a')
+        expect('inherited red: the lane branch keeps the step-1 builder file',
+               sh(ir, 'cat-file', '-e', 'fanout/ir-a:.sdlc/a/step-1/builder-L2.md').returncode == 0)
+        expect('inherited red: the lane branch is not an ancestor of fanout/ir',
+               sh(ir, 'merge-base', '--is-ancestor', 'fanout/ir-a', 'fanout/ir').returncode == 1)
+
+        dr, dl = tmp / 'inherited-done', tmp / 'dlanes'
+        make_repo(dr, [('a', 'T-0001', 'ready')])
+        proc = fanout(dr, 'a=T-0001', '--integration', 'fanout/dr', '--lanes-dir', str(dl),
+                      '--driver', inherited_stub('done'), '--gate', 'true')
+        got = report_rows(dl)
+        expect(f'done builder (negative control): run exits 0, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        expect(f'done builder (negative control): T-0001 merged, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'merged')
+        shown = sh(dr, 'show', 'fanout/dr:.sdlc/a/handoff.md').stdout
+        expect(f'done builder (negative control): ticket closed on fanout/dr, got {shown[:120]!r}',
+               re.search(r'^status: done\b', shown, re.M))
+
+        # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
+        # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
+        fr = tmp / 'default-dir'
+        make_repo(fr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'.gitignore': '.worktrees/\n'})
+        fmain0 = sh(fr, 'rev-parse', 'main').stdout.strip()
+        proc = fanout(fr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/dd',
+                      '--driver', shlex.quote(str(stub)), '--gate', 'true')
+        expect(f'default lanes dir: run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        flanes = fr / '.worktrees' / 'fanout'
+        expect(f'default lanes dir: {flanes / "report.md"} exists', (flanes / 'report.md').is_file())
+        got = report_rows(flanes)
+        for tid in ('T-0001', 'T-0002'):
+            expect(f'default lanes dir: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
+        for lane, tid, slug in (('alpha', 'T-0001', 'a'), ('beta', 'T-0002', 'b')):
+            subjects = sh(fr, 'log', '--format=%s', f'fanout/dd-{lane}').stdout.splitlines()
+            expect(f'default lanes dir: fanout/dd-{lane} has a commit "{tid}: Ticket {slug}", got {subjects!r}',
+                   f'{tid}: Ticket {slug}' in subjects)
+            expect(f'default lanes dir: fanout/dd holds {tid}.txt',
+                   sh(fr, 'cat-file', '-e', f'fanout/dd:{tid}.txt').returncode == 0)
+            shown = sh(fr, 'show', f'fanout/dd:.sdlc/{slug}/handoff.md').stdout
+            expect(f'default lanes dir: fanout/dd:.sdlc/{slug}/handoff.md says status: done, got {shown[:120]!r}',
+                   re.search(r'^status: done\b', shown, re.M))
+        merges = sh(fr, 'rev-list', '--merges', '--count', 'fanout/dd').stdout.strip()
+        expect(f'default lanes dir: fanout/dd has two merge commits, got {merges!r}', merges == '2')
+        fmain1 = sh(fr, 'rev-parse', 'main').stdout.strip()
+        expect(f'default lanes dir: main sha unchanged, {fmain0!r} -> {fmain1!r}', fmain0 and fmain1 == fmain0)
+        head = sh(fr, 'symbolic-ref', 'HEAD').stdout.strip()
+        expect(f'default lanes dir: HEAD is refs/heads/main, got {head!r}', head == 'refs/heads/main')
+        status = sh(fr, 'status', '--porcelain', '--untracked-files=all')
+        expect(f'default lanes dir: git status --porcelain --untracked-files=all empty in the main tree, '
+               f'got {status.stdout!r}', status.returncode == 0 and status.stdout == '')
+        ignored = sh(fr, 'status', '--porcelain', '--ignored').stdout
+        expect(f'default lanes dir: git status --ignored lists .worktrees/ (non-vacuity), got {ignored!r}',
+               '!! .worktrees/' in ignored.splitlines())
+        wts = sh(fr, 'worktree', 'list').stdout
+        for name in ('alpha', 'beta', 'integration'):
+            expect(f'default lanes dir: git worktree list shows {flanes / name}, got {wts!r}',
+                   any(ln.split()[0] == str(flanes / name) for ln in wts.splitlines() if ln.strip()))
+
+        # 7. A driver that edits the lane and fails: the lane is WIP-committed, never merged.
         rw, wl = tmp / 'wip', tmp / 'wlanes'
         make_repo(rw, [('w', 'T-0001', 'ready')])
         fixture = sh(rw, 'rev-parse', 'main').stdout.strip()
@@ -743,7 +992,7 @@ def main(argv):
         return selftest()
     if argv[:1] != ['run']:
         print('usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH] '
-              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--dry-run] | fanout.py selftest', file=sys.stderr)
+              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] | fanout.py selftest', file=sys.stderr)
         return 2
     ap = argparse.ArgumentParser(prog='fanout.py run', description=__doc__.split('\n')[0])
     ap.add_argument('lanes', nargs='+', metavar='<lane>=<id>[,<id>...]')
@@ -757,6 +1006,9 @@ def main(argv):
                     'red resets the merge (repeatable, in order)')
     ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
                     '(default: a headless sdlc-lite conductor running /sdlc-lite:chain)')
+    ap.add_argument('--rewrite-refs', action='store_true', help='opt-in, numbered mode only: when a ticket '
+                    'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
+                    '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 
