@@ -29,7 +29,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             close --dry-run applies the same refusals, then lists each Follow-ups bullet as
             `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
             then one `open T-NNNN <title> [<slug>]` line per other proposed, ready or blocked
-            ticket in id order, and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
+            ticket in id order, then one `open T-NNNN <title> [<slug>] (worktree <name>)` line, in id
+            order, per proposed, ready or blocked ticket found only in another git worktree's
+            same-relative root (<name> is that worktree's basename; a ticket whose id exists locally
+            is decided by the local copy), and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
             indices from that listing; an index out of range refuses and writes nothing. Skipped
             follow-ups get no id. The dry run's last line is `expect <digest>`, a digest of the full
             ordered Follow-ups bullets; --skip needs --expect <digest> from that line and refuses
@@ -182,7 +185,12 @@ GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
 
 
 def worktree_roots(root):
-    """The same-relative ticket root in every other git worktree of root's repo: <worktree>/<rel>, where rel is
+    """The ticket roots of worktree_pairs(root), in the same order."""
+    return [r for _, r in worktree_pairs(root)]
+
+
+def worktree_pairs(root):
+    """(worktree dir, ticket root) pairs. The same-relative ticket root in every other git worktree of root's repo: <worktree>/<rel>, where rel is
     root relative to its worktree's toplevel. Only existing dirs; the current root is left out. [] when git is
     missing, a git call fails, or root is outside the toplevel (not in git: the local root decides alone).
     GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer git context cannot redirect the lookup."""
@@ -207,7 +215,7 @@ def worktree_roots(root):
                 continue
             other = (pathlib.Path(line[len('worktree '):]) / rel).resolve()
             if other != here and other.is_dir():
-                out.append(other)
+                out.append((pathlib.Path(line[len('worktree '):]), other))
         return out
     except (OSError, ValueError):
         return []
@@ -679,7 +687,22 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         opens = [f'open {m["id"]} {m.get("title", "")} [{x}]'
                  for x, m in sorted(ts, key=lambda e: e[1]['id'])
                  if m.get('status') in ('proposed', 'ready', 'blocked') and m['id'] != pid]
+        local_ids = {m.get('id') for _, m in ts}
+        seen = {}
+        for wdir, r in worktree_pairs(root):
+            try:
+                ots = load(r)
+            except (OSError, UnicodeDecodeError):
+                continue
+            for x, m in ots:
+                i = m.get('id')
+                if (not isinstance(i, str) or not ID_RE.fullmatch(i) or i in local_ids or i == pid or i in seen
+                        or m.get('status') not in ('proposed', 'ready', 'blocked')):
+                    continue
+                seen[i] = f'open {i} {m.get("title", "")} [{x}] (worktree {wdir.name})'
+        other_opens = [seen[i] for i in sorted(seen)]
         return '\n'.join([f'{pid} dry run: {len(items)} proposed follow-up(s); nothing written'] + lines + opens
+                         + other_opens
                          + ([f'rename {slug} -> {dot.name}'] if archive else [])
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
                          + [f'expect {digest}'])
@@ -1636,12 +1659,42 @@ def selftest():
             expect(f'worktree: close in main names the wt folder holding the filer record, writes nothing: rc={rc} '
                    f'{err!r}', rc == 1 and snap(m_root) == before and str((w_root / 'alpha').resolve()) in err
                    and '/file' in err and 'nothing written' in err)
+            # close --dry-run lists open tickets found only in another worktree, after the local ones
+            d_dir = wtmp / 'dr'
+            d_root, dw_root = d_dir / '.sdlc', wtmp / 'wtdr' / '.sdlc'
+            git(wtmp, 'init', '-q', 'dr')
+            for sl in ('alpha', 'beta', 'delta'):
+                run(d_root, 'new', ('feature', sl, sl.title()))
+            git(d_dir, 'add', '-A')
+            git(d_dir, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                'commit', '--no-verify', '-qm', 'x')
+            git(d_dir, 'worktree', 'add', '-q', '../wtdr', '-b', 'wtdr')
+            run(dw_root, 'new', ('feature', 'gamma', 'Gamma'))
+            bh = d_root / 'beta' / 'handoff.md'
+            bh.write_text(re.sub(r'(?m)^status: \w+', 'status: done', bh.read_text()), encoding='utf-8')
+            filer('filer-L1.md', 'None', 'None', slug='alpha')(d_root)
+            before = snap(d_root), snap(dw_root)
+            rc, out, err = run(d_root, 'close', ('alpha',), dry_run=True)
+            ol = out.strip().splitlines()
+            expect(f'worktree dry-run: other-worktree gamma listed once as (worktree wtdr), local delta once, '
+                   f'locally done beta absent, digest unchanged, nothing written: rc={rc} {out!r} {err!r}',
+                   rc == 0 and ol[1:] == ['open T-0003 Delta [delta]', 'open T-0004 Gamma [gamma] (worktree wtdr)',
+                                          'expect e3b0c44298fc']
+                   and (snap(d_root), snap(dw_root)) == before)
 
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
         rc, _, err = run(solo, 'new', ('feature', 'solo'))
         expect(f'outside git the first id is T-0001, no stderr: rc={rc} {err!r} got={dict(load(solo)).get("solo")}',
                rc == 0 and err == '' and dict(load(solo)).get('solo', {}).get('id') == 'T-0001')
+
+        # outside git, close --dry-run lists only local open tickets, with no worktree lines
+        run(solo, 'new', ('feature', 'solo2', 'Solo2'))
+        filer('filer-L1.md', 'None', 'None', slug='solo')(solo)
+        rc, out, err = run(solo, 'close', ('solo',), dry_run=True)
+        expect(f'outside git the worktree dry-run output is local only: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.strip().splitlines() == ['T-0001 dry run: 0 proposed follow-up(s); nothing written',
+                                                        'open T-0002 Solo2 [solo2]', 'expect e3b0c44298fc'])
 
         empty = pathlib.Path(tmp) / 'empty' / '.sdlc'
         rc, out, _ = run(empty, 'check')
@@ -1683,7 +1736,9 @@ def main(argv):
     p.add_argument('--dry-run', action='store_true',
                    help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
                         'duplicate or --skip mark, then one `open T-NNNN <title> [<slug>]` line per other proposed, '
-                        'ready or blocked ticket, then a last line `expect <digest>`; write nothing')
+                        'ready or blocked ticket, then one `open T-NNNN <title> [<slug>] (worktree <name>)` line per '
+                        'open ticket found only in another git worktree\'s same-relative root (a ticket whose id '
+                        'exists locally is decided by the local copy), then a last line `expect <digest>`; write nothing')
     p.add_argument('--skip', metavar='N[,N...]',
                    help='file every follow-up except these 1-based indices from the --dry-run listing; '
                         'an index out of range refuses and writes nothing; needs --expect')
