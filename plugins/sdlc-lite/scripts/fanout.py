@@ -44,7 +44,10 @@ run
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
-       tests). Non-zero exit: `driver failed rc=<n>`, the tree left as is.
+       tests). Non-zero exit: `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
+       other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
+       lane branch only. It is never merged, and the report's Commit cell shows `wip <sha>`.
+       Before each sync, a dirty lane tree is WIP-committed first.
     3. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
     4. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
@@ -65,7 +68,10 @@ selftest
   A throwaway repo in a temp dir, a stub driver, two lanes: proves three merges, a red gate's
   merge reset, main untouched, closes on the integration branch, the pre-ticket sync, a lane
   stopping at its first failure, board.py --lanes listing both lanes, and that --dry-run and
-  the refusals create nothing.
+  the refusals create nothing. A one-lane case with a driver that writes a file and exits 3
+  proves the stopped lane is WIP-committed: a clean lane tree, a `wip(T-0001): driver failed
+  rc=3` tip holding the file, not merged into the integration branch, integration and main at
+  the fixture commit, and a `wip <sha7>` Commit cell in the report.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
@@ -385,10 +391,33 @@ def in_merge(wt):
     return git(wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode == 0
 
 
+def wip_commit(wt, tid, outcome):
+    """Commit whatever a stopped ticket left in the lane worktree wt as `wip(<id>): <outcome>`.
+    Runs git only in wt (never the integration worktree, main, or the stash). Returns the new
+    short sha, or '' when the tree is clean or the add or commit fails; never raises."""
+    try:
+        dirty = git(wt, 'diff', '--quiet', 'HEAD').returncode != 0
+        untracked = git(wt, 'ls-files', '--others', '--exclude-standard')
+        if not dirty and not (untracked.returncode == 0 and untracked.stdout.strip()):
+            return ''
+        if git(wt, 'add', '-A').returncode:
+            return ''
+        if git(wt, 'commit', '-q', '-m', f'wip({tid}): {outcome}').returncode:
+            return ''
+        p = git(wt, 'rev-parse', 'HEAD')
+        return p.stdout.strip()[:7] if p.returncode == 0 else ''
+    except Exception:
+        return ''
+
+
 def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
     with lock:
+        # a lane tree already dirty would fail the sync: set its work aside on the lane branch first
+        sha = wip_commit(wt, t.id, 'dirty before sync')
+        if sha:
+            say(lane, t.id, f'wip {sha} on {lane.branch}')
         p = git(wt, 'merge', '--ff', '--no-edit', integration)
         if p.returncode:
             if in_merge(wt):
@@ -463,6 +492,12 @@ def run_lane(ctx, lane, lock):
             except Exception as e:  # a git or IO failure mid-ticket: record it, stop the lane
                 outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
             stopped = outcome != 'merged'
+            if stopped:
+                # a stopped ticket's work stays on the lane branch as a wip commit, never merged
+                sha = wip_commit(lane.dir, t.id, outcome)
+                if sha:
+                    say(lane, t.id, f'wip {sha} on {lane.branch}')
+                    commit = commit or f'wip {sha}'
         lane.results.append((t.id, outcome, commit))
         say(lane, t.id, outcome)
 
@@ -666,6 +701,33 @@ def selftest():
         expect('unignored .worktrees/: no fanout/* branch', sh(ru, 'branch', '--list', 'fanout/*').stdout.strip() == '')
         expect('unignored .worktrees/: no worktree added',
                len([ln for ln in sh(ru, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
+
+        # 4. A driver that edits the lane and fails: the lane is WIP-committed, never merged.
+        rw, wl = tmp / 'wip', tmp / 'wlanes'
+        make_repo(rw, [('w', 'T-0001', 'ready')])
+        fixture = sh(rw, 'rev-parse', 'main').stdout.strip()
+        proc = fanout(rw, 'alpha=T-0001', '--integration', 'fanout/wip', '--lanes-dir', str(wl),
+                      '--driver', 'echo x >edit.txt; exit 3')
+        ran = f'(stdout={proc.stdout!r} stderr={proc.stderr!r})'
+        lane_wt = wl / 'alpha'
+        expect(f'wip case: run exits 1, got {proc.returncode} {ran}', proc.returncode == 1)
+        expect('wip case: the lane tree is clean (no tracked changes, no untracked files)',
+               lane_wt.is_dir() and sh(lane_wt, 'diff', '--quiet', 'HEAD').returncode == 0
+               and sh(lane_wt, 'ls-files', '--others', '--exclude-standard').stdout.strip() == '')
+        subj = sh(rw, 'log', '-1', '--format=%s', 'fanout/wip-alpha').stdout.strip()
+        expect(f'wip case: lane branch tip subject starts wip(T-0001): driver failed rc=, got {subj!r}',
+               subj.startswith('wip(T-0001): driver failed rc='))
+        expect('wip case: the lane branch holds edit.txt',
+               sh(rw, 'cat-file', '-e', 'fanout/wip-alpha:edit.txt').returncode == 0)
+        expect('wip case: the lane branch is not an ancestor of the integration branch',
+               sh(rw, 'merge-base', '--is-ancestor', 'fanout/wip-alpha', 'fanout/wip').returncode == 1)
+        expect('wip case: the integration branch still equals the fixture commit',
+               sh(rw, 'rev-parse', 'fanout/wip').stdout.strip() == fixture and fixture)
+        expect('wip case: main still equals the fixture commit', sh(rw, 'rev-parse', 'main').stdout.strip() == fixture)
+        rep = wl / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'wip case: report row Commit cell is wip <sha7>, got {text!r}',
+               re.search(r'^\| alpha \| T-0001 \| driver failed rc=3 \| wip [0-9a-f]{7} \|$', text, re.M))
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

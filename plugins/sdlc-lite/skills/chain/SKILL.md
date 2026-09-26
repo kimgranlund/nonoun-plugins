@@ -21,6 +21,8 @@ Get or create `.sdlc/<task>/handoff.md`. If it lacks context a clean agent would
 - Cross-cutting or unfamiliar design → architect L1.
 All run on the task handoff; their outputs land in the task dir for the planner.
 
+A /chain run under fanout that stops mid-step leaves its work as a `wip(<id>): <outcome>` commit that fanout.py makes on the lane branch. A plain /chain outside fanout commits nothing and never commits on main.
+
 ## 3. Plan
 Run planner on the task handoff. Then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py split .sdlc/<task>`, which writes each `step-<n>/handoff.md` from the newest planner file; never parse the plan by hand.
 
