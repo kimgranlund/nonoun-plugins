@@ -18,5 +18,8 @@ Follow-up from T-0100 (planner-parallel-safe-criteria/filer-L1.md):
 
 Decide how the pinned-sha lint should handle a deliberate commit reference such as `git merge-base --is-ancestor <real sha> HEAD`, which is now refused with no escape hatch.
 
+## Decision (user, 2026-09-26)
+Exempt only the ancestry form: `git merge-base --is-ancestor <sha> HEAD` passes the `pins_sha` lint (scripts/steps.py). Every other pinned sha (`diff`, `<sha>..HEAD`, `<sha>^`, and so on) is still refused. Add selftest cases for both, and update planner rule 6 and CLAUDE.md to match.
+
 ## Constraints
 What must not change. "None" if none.
