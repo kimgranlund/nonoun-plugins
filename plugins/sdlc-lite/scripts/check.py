@@ -10,8 +10,11 @@
    `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
-   runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo, and agents/builder.md
-   names `git merge --no-ff`.
+   runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
+   cases (empty merge, merge-added marker, clean lane marker line, kept conflict markers,
+   both-sides lane marker line, aligned kept marker, clean merge), and agents/builder.md
+   names `git merge --no-ff`. The aligned-marker case pins a known miss: a kept marker textually
+   identical to a parent line that aligns with it shows as `+ ` or ` +`, not `++`.
 7. /file likely duplicates: skills/file/SKILL.md names the dry run's `open T-NNNN` lines and
    the `likely duplicate` marking of follow-ups that restate an open ticket.
 """
@@ -91,6 +94,7 @@ PLAN_DEFECT_DOCS = {
     'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'no new findings': ('agents/planner.md',),
     'red guard': ('skills/chain/SKILL.md', 'scripts/steps.py'),
+    'changed the work tree': ('agents/planner.md', 'skills/chain/SKILL.md', 'scripts/steps.py'),
     'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
 }
@@ -124,9 +128,12 @@ if pb and pb.strip():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 # Behavior probe: the conflict-marker guard fails only on markers the merge commit introduced.
-# It passes an empty merge, fails on a marker the merge commit added (file name with a space),
-# passes a lane line starting with >>>>>>> that merged cleanly, fails on kept git conflict
-# markers, and passes a clean merge.
+# Seven cases: it passes an empty merge, fails on a marker the merge commit added (file name
+# with a space), passes a lane line starting with >>>>>>> that merged cleanly, fails on kept git
+# conflict markers, passes a lane line starting with >>>>>>> when both sides changed the file,
+# passes an aligned kept marker, and passes a clean merge. The aligned-marker case pins a known
+# miss: a kept marker textually identical to a parent line that aligns with it shows as `+ ` or
+# ` +` in `git diff-tree --cc`, not `++`.
 if pb and pb.strip():
     guard = next((l for l in pb.splitlines() if l.startswith('- (guard) ') and '<<<<<<<' in l), None)
     if guard is None or guard.count('`') < 2:
@@ -175,6 +182,25 @@ if pb and pb.strip():
             g('add', '-A'); g('commit', '-qm', 'merge conflict kept')
             if span_rc() == 0: errors.append('merge-step conflict-marker guard: kept conflict markers not flagged')
             g('reset', '-q', '--hard', pre)
+            sp = pathlib.Path(tmp, 'sp ace.txt')
+            g('checkout', '-qb', 'both', pre)
+            sp.write_text('a\n>>>>>>> lane\n'); g('commit', '-qam', 'both lane')
+            g('checkout', '-q', 'main'); g('reset', '-q', '--hard', pre)
+            sp.write_text('top\na\n'); g('commit', '-qam', 'both main')
+            g('merge', '-q', '--no-ff', '-m', 'merge both', 'both')
+            if span_rc() != 0: errors.append('merge-step conflict-marker guard: both-sides legit lane line flagged')
+            g('reset', '-q', '--hard', pre)
+            sp.write_text('a\n>>>>>>> aligned\n'); g('commit', '-qam', 'aligned base')
+            b2 = g('rev-parse', 'HEAD')
+            g('checkout', '-qb', 'aligned', b2)
+            sp.write_text('lane\n>>>>>>> aligned\n'); g('commit', '-qam', 'aligned lane')
+            g('checkout', '-q', 'main'); g('reset', '-q', '--hard', b2)
+            sp.write_text('main\n>>>>>>> aligned\n'); g('commit', '-qam', 'aligned main')
+            gr('merge', '-q', '--no-ff', 'aligned')
+            sp.write_text(''.join(l for l in sp.read_text().splitlines(True) if not l.startswith(('<<<<<<<', '======='))))
+            g('add', '-A'); g('commit', '-qm', 'merge aligned kept')
+            if span_rc() != 0: errors.append('merge-step conflict-marker guard: aligned kept marker flagged; the documented limitation changed, update the merge-step docs')
+            g('reset', '-q', '--hard', pre)
             g('checkout', '-qb', 'clean')
             pathlib.Path(tmp, 'ok file.txt').write_text('ok\n')
             g('add', '-A'); g('commit', '-qm', 'clean')
@@ -192,6 +218,12 @@ for w in ('likely duplicate', 'open T-NNNN'):
     if w not in ft: errors.append(f'skills/file/SKILL.md: missing "{w}"')
 # AskUserQuestion allows at most 4 options per question; the publish question must fit.
 if 'at most 4 options' not in ft: errors.append('skills/file/SKILL.md: publish question missing "at most 4 options"')
+# Step 3.3 follow-ups must batch within AskUserQuestion's 4-option limit.
+def step33_bad(text):
+    l33 = next((l for l in text.splitlines() if l.startswith('   3. When a person is present')), '')
+    return 'at most 4 options per question' not in l33
+if step33_bad(ft): errors.append('skills/file/SKILL.md: step 3.3 missing "at most 4 options per question"')
+if not step33_bad(ft.replace('at most 4 options per question', '')): errors.append('check.py: step 3.3 guard negative control not flagged')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')

@@ -2,7 +2,7 @@
 id: T-0070
 title: "Run the merge-step conflict-marker guard probe under GNU xargs (Linux)"
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ Merge-step conflict-marker guard's xargs empty-input branch was checked only on 
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-25: Superseded by T-0069: the merge-step conflict-marker guard no longer uses xargs (now git diff-tree --cc HEAD piped to grep), so the GNU xargs empty-input path this probe targeted no longer exists in agents/planner.md, skills/handoff-format/SKILL.md, or check.py.

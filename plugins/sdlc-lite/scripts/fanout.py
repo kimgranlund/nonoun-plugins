@@ -15,9 +15,14 @@ run
   status is not done or dropped, has its handoff committed at the start commit, and appears once
   across all lanes. The integration branch is --integration or fanout/<YYYY-MM-DD>; lane branches
   are <integration>-<lane> (a slash form would collide with the integration ref). --lanes-dir
-  defaults to the sibling <toplevel>-fanout and must lie outside the toplevel. It refuses when a
-  lane branch, <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration
-  branch is checked out in some worktree.
+  (relative to the cwd) defaults to <toplevel>/.worktrees/fanout. The lanes dir is never the
+  toplevel itself; inside the toplevel it must be gitignored: for the default,
+  `git check-ignore -q .worktrees/x` run from the toplevel must pass (else it refuses, naming
+  `.worktrees/` to add to .gitignore); for an explicit --lanes-dir inside the toplevel, the same
+  check runs on <its path relative to the toplevel>/x and a refusal names that path. An explicit
+  --lanes-dir outside the toplevel needs no ignore check. It refuses when a lane branch,
+  <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration branch is
+  checked out in some worktree.
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
   tickets, the gates, the driver) and exits 0, creating nothing.
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
@@ -33,7 +38,7 @@ run
     2. driver, outside the lock: `bash -c <driver>`, cwd the lane worktree, stdin /dev/null,
        output to <lanes-dir>/logs/<lane>-<id>.log, env FANOUT_LANE, FANOUT_TICKET, FANOUT_SLUG,
        FANOUT_HANDOFF (absolute), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
-       FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies run_in_background),
+       FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies Bash and Agent run_in_background),
        SDLC_ROLE=conductor (hooks/block-publish.sh blocks git push, gh writes, and package publishing
        in the Claude sessions the driver launches),
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
@@ -211,10 +216,20 @@ def preflight(a):
             raise Refuse(f'--base {base} is not a commit')
         start = p.stdout.strip()
 
-    lanes_dir = pathlib.Path(a.lanes_dir) if a.lanes_dir else pathlib.Path(f'{top}-fanout')
-    lanes_dir = (cwd / lanes_dir).resolve()
-    if lanes_dir == top or top in lanes_dir.parents:
-        raise Refuse(f'--lanes-dir {lanes_dir} is inside the work tree {top}; lanes live outside it')
+    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.worktrees' / 'fanout'
+    if lanes_dir == top:
+        raise Refuse(f'--lanes-dir {lanes_dir} is the work tree toplevel; lanes need their own dir')
+    if top in lanes_dir.parents:
+        # lanes inside the work tree must be gitignored, or every lane shows up as untracked files
+        inner = lanes_dir.relative_to(top).as_posix()
+        probe, want = ('.worktrees/x', '.worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
+        p = git(top, 'check-ignore', '-q', probe)
+        if p.returncode == 1:
+            what = 'the default lanes dir' if not a.lanes_dir else '--lanes-dir'
+            raise Refuse(f'{what} {lanes_dir} is inside the work tree {top} but {want} is not gitignored; '
+                         f'add {want} to .gitignore, or pass --lanes-dir outside the repo')
+        if p.returncode:
+            raise Refuse(f'git check-ignore {probe} failed: {p.stderr.strip() or p.returncode}')
     if lanes_dir.exists() and not lanes_dir.is_dir():
         raise Refuse(f'--lanes-dir {lanes_dir} exists and is not a dir')
     wts = git_out(cwd, 'worktree', 'list', '--porcelain').splitlines()
@@ -530,8 +545,10 @@ def selftest():
     def sh(cwd, *args):
         return subprocess.run(['git', '-C', str(cwd), *args], env=ENV, capture_output=True, text=True)
 
-    def make_repo(repo, specs):
+    def make_repo(repo, specs, extra=None):
         (repo / '.sdlc').mkdir(parents=True)
+        for name, body in (extra or {}).items():
+            (repo / name).write_text(body, encoding='utf-8')
         for slug, tid, status in specs:
             (repo / '.sdlc' / slug).mkdir()
             (repo / '.sdlc' / slug / 'handoff.md').write_text(
@@ -612,11 +629,14 @@ def selftest():
 
         # 2. --dry-run and refusals create nothing.
         rr, rl = tmp / 'refuse', tmp / 'rlanes'
-        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')])
+        make_repo(rr, [('x', 'T-0001', 'ready'), ('y', 'T-0002', 'done')], {'.gitignore': '.worktrees/\n'})
+        default_lanes = rr / '.worktrees' / 'fanout'
         proc = fanout(rr, '--dry-run', '--integration', 'fanout/dry', 'alpha=T-0001')
-        expect(f'--dry-run exits 0 naming the lane branch and the default lanes dir, got {proc.returncode} '
-               f'stdout={proc.stdout!r} stderr={proc.stderr!r}',
-               proc.returncode == 0 and 'fanout/dry-alpha' in proc.stdout and f'{rr}-fanout' in proc.stdout)
+        expect(f'--dry-run exits 0 naming the lane branch and the default lanes dir under .worktrees/fanout, '
+               f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'fanout/dry-alpha' in proc.stdout
+               and f'integration worktree: {default_lanes / "integration"}' in proc.stdout
+               and f'worktree {default_lanes / "alpha"}' in proc.stdout)
         proc = fanout(rr, '--dry-run', '--lanes-dir', str(rl), 'alpha=T-0001')
         expect(f'--dry-run with --lanes-dir exits 0, got {proc.returncode} stderr={proc.stderr!r}',
                proc.returncode == 0 and str(rl) in proc.stdout)
@@ -631,8 +651,21 @@ def selftest():
                sh(rr, 'branch', '--list', 'fanout/*').stdout.strip() == '')
         expect('dry run and refusals add no worktree',
                len([ln for ln in sh(rr, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
-        expect('dry run and refusals create no lanes dir', not rl.exists() and not pathlib.Path(f'{rr}-fanout').exists())
+        expect('dry run and refusals create no lanes dir', not rl.exists() and not default_lanes.exists())
         expect('dry run and refusals leave the status clean', sh(rr, 'status', '--porcelain').stdout == '')
+
+        # 3. A repo that does not ignore .worktrees/ refuses the default lanes dir, creating nothing.
+        ru = tmp / 'unignored'
+        make_repo(ru, [('x', 'T-0001', 'ready')])
+        proc = fanout(ru, '--dry-run', 'alpha=T-0001')
+        expect(f'unignored .worktrees/: default-dir --dry-run exits 2 naming .gitignore and .worktrees/, '
+               f'got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 2 and '.gitignore' in proc.stderr and '.worktrees/' in proc.stderr
+               and 'Traceback' not in proc.stderr)
+        expect('unignored .worktrees/: no .worktrees dir created', not (ru / '.worktrees').exists())
+        expect('unignored .worktrees/: no fanout/* branch', sh(ru, 'branch', '--list', 'fanout/*').stdout.strip() == '')
+        expect('unignored .worktrees/: no worktree added',
+               len([ln for ln in sh(ru, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
@@ -655,7 +688,9 @@ def main(argv):
     ap.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
     ap.add_argument('--base', help='commit for a new integration branch (default HEAD)')
     ap.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
-    ap.add_argument('--lanes-dir', help='where the worktrees, logs and report go (default <toplevel>-fanout)')
+    ap.add_argument('--lanes-dir', help='where the worktrees, logs and report go '
+                    '(default <toplevel>/.worktrees/fanout); inside the repo it must be gitignored '
+                    '(add .worktrees/ or the dir to .gitignore) or run refuses with exit 2')
     ap.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after each merge; '
                     'red resets the merge (repeatable, in order)')
     ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '

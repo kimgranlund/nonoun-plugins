@@ -127,6 +127,8 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 - (guard) `<gate command>` shows no new findings versus the first parent: run the same command in a `git worktree add <tmp> HEAD^1` copy and compare.
 ```
 
+The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
+
 `## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to.
 
 ## Free-text arguments

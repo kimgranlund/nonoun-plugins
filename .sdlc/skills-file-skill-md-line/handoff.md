@@ -11,7 +11,7 @@ from: T-0065
 ---
 
 ## Goal
-One or two sentences: the outcome, not the method.
+skills/file/SKILL.md step 4 describes when hooks/block-publish.sh fires accurately: run.sh per role run and fanout.py (SDLC_ROLE=conductor) for lane drivers.
 
 ## Context
 Follow-up from T-0065 (fanout-py-s-default-lane/filer-L1.md):
@@ -19,4 +19,7 @@ Follow-up from T-0065 (fanout-py-s-default-lane/filer-L1.md):
 skills/file/SKILL.md line 18 still says block-publish "only fires when `SDLC_ROLE` is set by `scripts/run.sh`", which is stale now that fanout.py sets `SDLC_ROLE=conductor` for lane drivers (T-0065).
 
 ## Constraints
-What must not change. "None" if none.
+None.
+
+## Done (conductor trivial edit)
+One-line change in plugins/sdlc-lite/skills/file/SKILL.md step 4: the clause now reads "since it only fires when `SDLC_ROLE` is set (by `scripts/run.sh` per role run, and by `scripts/fanout.py` as `conductor` for lane drivers)", matching CLAUDE.md and the conductor prompt. No other doc carries the stale phrase (grep of agents, skills, hooks, CLAUDE.md, .claude). `scripts/check.sh` exit 0. No plan, builder, or verifier runs: trivial edit made by the conductor.

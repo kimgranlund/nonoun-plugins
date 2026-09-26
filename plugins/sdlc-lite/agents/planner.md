@@ -12,18 +12,23 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 
 ## Criteria that can pass
 
-1. Run each runnable criterion once on the current tree before writing it, with read-only commands only; never run one that changes the tree or git state. A criterion for the step's new behavior must be red now, and red for the right reason: the behavior is missing, not a typo, a wrong path, or a command not found. A criterion that must hold before and after the step is tagged `(guard)` and must be green now.
+1. Run each runnable criterion once on the current tree before writing it, with read-only commands only; never run one that changes the tree or git state. A criterion for the step's new behavior must be red now, and red for the right reason: the behavior is missing, not a typo, a wrong path, or a command not found. A criterion that must hold before and after the step is tagged `(guard)` and must be green now. `steps.py split --only N` runs every `(guard)` and refuses one that changed the work tree, so a guard must be side-effect free.
 2. Every criterion of a step must be able to hold at once, and none may pin a moving target: never `solution == HEAD` next to `base == HEAD~1` when the step itself commits.
 3. A lint, test suite, or checker over a whole file or repo passes only on "no new findings versus the base commit", stated as the same command run in a `git worktree add <tmp> HEAD` copy for comparison, or as a file-scoped invocation, unless the Do fixes the existing findings.
 4. Never put a deliberately broken command in a criterion code span, because `steps.py split` parses every command span and refuses the plan as a `plan defect`: name a fixture, or describe the command in prose.
-5. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
-6. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
+5. Never join two checks with `||` in one criterion, because a fallback passes when either side matches, so the criterion can hold at HEAD and never fail. State each check as its own criterion.
+   - `steps.py split` refuses a `||` join as a `plan defect`.
+   - The only allowed form is the empty-argument short circuit `test $# -eq 0 || ...`.
+6. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
+7. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
 
 ## Merge steps
 
 When a task merges one lane into another, emit this step block and fill it in. Replace `<branch>` with the lane branch. Replace `<gate command>` with the project's own check or test commands, one criterion per gate, the way you name them for any step. Pick the level with the rubric as usual.
 
 Criterion 1 above still applies: before the merge, the two-parent and ancestor criteria must be red. If `<branch>` is already an ancestor of HEAD, no merge step is needed.
+
+The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
 
 ```merge-step
 ## Step <n>: Merge <branch>

@@ -24,7 +24,8 @@ A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignor
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
 the builder's "## Status", the verifier's "## Verdict" (a verifier with no pass/fail verdict renders
-as 🟡 no verdict), and runs.jsonl (cost). A rerun at the same
+as 🟡 no verdict, rerun verify; two or more in a row after the newest build render as 🟡 stop,
+ask the user, matching steps.py next), and runs.jsonl (cost). A rerun at the same
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
 runs.jsonl record order (order.py), never file time.
 
@@ -113,6 +114,15 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
             return '🟢', f'pass · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['verified']
         if verdict.startswith('fail'):
             return '🔴', f'fail · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}{tries}', LADDER['built']
+        n = 0
+        for w in map(pathlib.Path, reversed(order.ordered(step, 'verifier'))):
+            if not order.counts_after(w, last_build):
+                continue
+            if section(w, 'Verdict').startswith(('pass', 'fail')):
+                break
+            n += 1
+        if n >= 2:
+            return '🟡', f'stop · no verdict x{n} · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, ask the user{tries}', LADDER['built']
         return '🟡', f'no verdict · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, rerun verify{tries}', LADDER['built']
     return '🟡', f'built · builder {level_of(last_build)}, awaiting verify{tries}', LADDER['built']
 
@@ -753,8 +763,31 @@ def selftest() -> int:
         novd = [('builder', 'L1', 'builder-L1.md', built),
                 ('verifier', 'L1', 'verifier-L1.md', 'Nothing to do until the test gate reports.\n')]
         got = step_row(step_fixture('noverdict', novd), 'x', 'L1')[:2]
-        expect(f'a verifier with no verdict renders as 🟡 no verdict, got {got}',
-               got[0] == '🟡' and got[1].startswith('no verdict'))
+        ok = got[0] == '🟡' and got[1].startswith('no verdict') and 'rerun verify' in got[1]
+        expect(f'a verifier with no verdict renders as 🟡 no verdict, rerun verify, got {got}', ok)
+        if ok:
+            print(f'ok: one no-verdict verifier: {got[1]}')
+        nv = 'Nothing to do until the test gate reports.\n'
+        novd2 = novd + [('verifier', 'L1', 'verifier-L1-2.md', nv)]
+        got = step_row(step_fixture('noverdict2', novd2), 'x', 'L1')[:2]
+        ok = got[0] == '🟡' and got[1].startswith('stop') and 'ask the user' in got[1]
+        expect(f'two consecutive no-verdict verifiers render as stop, ask the user, got {got}', ok)
+        if ok:
+            print(f'ok: two no-verdict verifiers: {got[1]}')
+        mixed = [('builder', 'L1', 'builder-L1.md', built),
+                 ('verifier', 'L1', 'verifier-L1.md', nv),
+                 ('verifier', 'L1', 'verifier-L1-2.md', '## Verdict\nfail\n'),
+                 ('builder', 'L1', 'builder-L1-2.md', built),
+                 ('verifier', 'L1', 'verifier-L1-3.md', nv)]
+        got = step_row(step_fixture('noverdict-rebuild', mixed), 'x', 'L1')[:2]
+        ok = got[1].startswith('no verdict') and 'rerun verify' in got[1]
+        expect(f'no-verdict results before the newest build do not count, got {got}', ok)
+        mixed2 = mixed + [('verifier', 'L1', 'verifier-L1-4.md', nv)]
+        got = step_row(step_fixture('noverdict-rebuild2', mixed2), 'x', 'L1')[:2]
+        ok = ok and got[1].startswith('stop · no verdict x2')
+        expect(f'two no-verdict results after the newest build stop at x2, got {got}', ok)
+        if ok:
+            print(f'ok: fail then rebuild counts only later no-verdicts: {got[1]}')
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:
