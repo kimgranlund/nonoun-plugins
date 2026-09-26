@@ -19,6 +19,9 @@
    identical to a parent line that aligns with it shows as `+ ` or ` +`, not `++`.
 7. /file likely duplicates: skills/file/SKILL.md names the dry run's `open T-NNNN` lines and
    the `likely duplicate` marking of follow-ups that restate an open ticket.
+8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
+   agents/builder.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
+   and scripts/run.sh.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -107,6 +110,12 @@ for word, rels in PLAN_DEFECT_DOCS.items():
         f = root/rel
         if not f.is_file(): errors.append(f'{rel}: missing (plan-defect route check)'); continue
         if word not in f.read_text(): errors.append(f'{rel}: plan-defect route missing "{word}"')
+# Inherited-red route: a builder Status `inherited red: <tests>` is routed, rendered, and accepted, never a fail.
+INHERITED_RED_DOCS = ('agents/builder.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
+                      'scripts/steps.py', 'scripts/board.py', 'scripts/run.sh')
+for rel in INHERITED_RED_DOCS:
+    f = root/rel
+    if not f.is_file() or 'inherited red' not in f.read_text(): errors.append(f'{rel}: inherited-red route missing "inherited red"')
 # Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
 def merge_block(rel):
     f = root/rel

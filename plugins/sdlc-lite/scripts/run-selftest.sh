@@ -156,6 +156,8 @@ grep -q '## Status' "$tmp/rerr" || fail "builder no Status: stderr does not name
 [[ -f "$rrepo/builder-L2.md" ]] || fail "builder no Status: result file not kept"
 grep -q '"file":"builder-L2.md"' "$rrepo/runs.jsonl" || fail "builder no Status: runs.jsonl line not kept"
 want_rc 3 builder L2 $'## Status\nmaybe'
+want_rc 0 builder L2 $'## Status\ninherited red: test_a'
+want_rc 3 builder L2 $'## Status\ninherited red'
 want_rc 3 verifier L1 $'## Verdict\nmaybe'
 grep -q '## Verdict' "$tmp/rerr" || fail "verifier maybe: stderr does not name ## Verdict"
 want_rc 3 planner L1 $'## Steps\nx'

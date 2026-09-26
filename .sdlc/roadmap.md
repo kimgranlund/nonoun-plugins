@@ -105,7 +105,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0098 | [prompt-audit-cleanup](prompt-audit-cleanup/handoff.md) | Apply prompt-audit hunks: drop history ids and dates from level-rubric, checks-that-bite, file skills | chore | M | P2 | none | 🟢 done |
 | T-0099 | [add-a-hook-live-probe](add-a-hook-live-probe/handoff.md) | Add a hook-live-probe.sh selftest case where the hook exits with a... | idea | M | P2 | none | ⏳ proposed |
 | T-0100 | [planner-parallel-safe-criteria](planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | S | P2 | none | 🟢 done |
-| T-0101 | [builder-inherited-red](builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | M | P2 | none | 🔵 ready |
+| T-0101 | [builder-inherited-red](builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | M | P2 | none | 🟢 done |
 | T-0102 | [builder-scope-hygiene](builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🟢 done |
 | T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🟢 done |
 | T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | ⏳ proposed |
@@ -117,3 +117,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | ⏳ proposed |
 | T-0111 | [pattern-kill-hook-misses-forms](pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | M | P2 | none | ⏳ proposed |
 | T-0112 | [formatter-rule-is-prompt-only](formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | M | P2 | none | ⏳ proposed |
+| T-0114 | [verifier-fail-on-a-gate](verifier-fail-on-a-gate/handoff.md) | Verifier fail on a gate that is already red at the pre-build HEAD... | idea | M | P2 | none | ⏳ proposed |
+| T-0115 | [fanout-py-treats-a-lane](fanout-py-treats-a-lane/handoff.md) | fanout.py treats a lane that ends on an inherited red builder like... | idea | M | P2 | none | ⏳ proposed |

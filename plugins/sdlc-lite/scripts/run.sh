@@ -15,7 +15,7 @@
 # dir to PATH, so the role run inherits it; no match or an alias (lts/*, node) leaves PATH alone.
 # Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
 # Result check: after the result and its runs.jsonl line are written (both kept), the result must
-# hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked),
+# hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked|inherited red: <tests>),
 # verifier ## Verdict (pass|fail), planner ## Goal, researcher ## Answer, scout ## Map,
 # archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
 # Throwaway worktrees: a real run (never a dry run) passes the role
@@ -220,7 +220,7 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
 
 # Required section per role; builder and verifier also need an allowed first value under it.
 case "$role" in
-  builder) sect=Status; allowed='done|blocked' ;;
+  builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
   verifier) sect=Verdict; allowed='pass|fail' ;;
   planner) sect=Goal; allowed='' ;;
   researcher) sect=Answer; allowed='' ;;

@@ -56,6 +56,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               no builder result                          -> build L<handoff level>
               newest builder has no done/blocked Status  -> rebuild L<level of that result>,
                 but 2+ consecutive statusless builders (newest first) -> stop
+              newest builder Status inherited red: <tests> -> inherited (a gate already red at
+                the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
+                rebuild, or a replan; a bare "inherited red" with no colon is statusless.
               newest builder Status blocked              -> replan (whatever its Notes say)
               no verifier result counts after the build  -> verify L<verifier level>
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
@@ -538,8 +541,13 @@ def verdict(path):
 
 
 def build_status_or_none(path):
-    """'done' or 'blocked' from the first non-blank line under ## Status, else None. Never raises."""
+    """'done', 'blocked', or 'inherited' (a first line starting 'inherited red:', any case) from the
+    first non-blank line under ## Status, else None. Never raises."""
     try:
+        body = section(path, 'Status')
+        first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
+        if first.lower().startswith('inherited red:'):
+            return 'inherited'
         return build_status(path)
     except Exception:
         return None
@@ -596,7 +604,11 @@ def next_action(step_dir):
                     read)
         return ('stop', None,
                 f'{runs} consecutive builder results with no Status (newest {name}); ask the user', read)
-    builders = [x for x in builders if build_status_or_none(x) is not None]
+    if build_status_or_none(b) == 'inherited':
+        return ('inherited', None,
+                f'{os.path.basename(b)} reports inherited red (gate already red at the pre-build HEAD); '
+                'ask the conductor, not a fail, rebuild, bump, or replan', read)
+    builders = [x for x in builders if build_status_or_none(x) in ('done', 'blocked')]
     if build_status(b) == 'blocked':
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
@@ -1138,6 +1150,16 @@ def selftest():
               nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', 'Waiting.\n')]), 'stop'))
         check('next verify: a statusless builder then a done builder -> verify L1',
               nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', DONE)]), 'verify L1'))
+        INHERITED = '## Status\ninherited red: test_a\n'
+        check('next inherited: newest builder reports inherited red -> inherited',
+              nxt(step(2, [('builder-L2.md', INHERITED)]), 'inherited'))
+        check('next inherited: an inherited builder then a done builder -> verify L1',
+              nxt(step(2, [('builder-L2.md', INHERITED), ('builder-L2-2.md', DONE)]), 'verify L1'))
+        check('next inherited: done, fail, then inherited -> inherited, not rebuild or bump',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
+                           ('builder-L2-2.md', INHERITED)]), 'inherited'))
+        check('next inherited: "inherited red" with no colon is statusless -> rebuild L2',
+              nxt(step(2, [('builder-L2.md', '## Status\ninherited red\n')]), 'rebuild L2'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL), ('builder-L2-2.md', DONE)])
         for i, name in enumerate(('builder-L2-2.md', 'verifier-L1.md', 'builder-L2.md')):

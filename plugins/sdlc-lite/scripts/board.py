@@ -28,6 +28,8 @@ as 🟡 no verdict, rerun verify; two or more in a row after the newest build re
 ask the user, matching steps.py next), and runs.jsonl (cost). A rerun at the same
 level writes <role>-<level>-<k>.md (run.sh never overwrites); the newest is the last in
 runs.jsonl record order (order.py), never file time.
+A builder whose Status starts with "inherited red" (a gate main already made red) renders as
+🔴 inherited red · builder <level>, ask the user, and --summary counts it in 🔴<n>.
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
@@ -108,6 +110,8 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
     last_build = builds[-1]
     if section(last_build, 'Status').startswith('blocked'):
         return '🔴', f'blocked · builder {level_of(last_build)}{tries}', LADDER['building']
+    if section(last_build, 'Status').startswith('inherited red'):
+        return '🔴', f'inherited red · builder {level_of(last_build)}, ask the user{tries}', LADDER['building']
     if verifies and order.counts_after(verifies[-1], last_build):
         verdict = section(verifies[-1], 'Verdict')
         if verdict.startswith('pass'):
@@ -788,6 +792,10 @@ def selftest() -> int:
         expect(f'two no-verdict results after the newest build stop at x2, got {got}', ok)
         if ok:
             print(f'ok: fail then rebuild counts only later no-verdicts: {got[1]}')
+        inh = [('builder', 'L2', 'builder-L2.md', '## Status\ninherited red: test_a\n')]
+        got = step_row(step_fixture('inherited-red', inh), 'x', 'L2')[:2]
+        expect(f'an inherited red builder renders as 🔴 inherited red, got {got}',
+               got[0] == '🔴' and got[1].startswith('inherited red'))
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:
