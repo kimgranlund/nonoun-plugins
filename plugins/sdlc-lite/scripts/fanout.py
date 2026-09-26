@@ -83,6 +83,8 @@ selftest
   Status `inherited red: test_a` gives the outcome `inherited red: step-1: test_a`, no merge on
   the integration branch, the ticket still ready, the next ticket skipped, and the uncommitted
   step file kept in the lane; its negative control, a builder Status `done`, gives `merged`.
+  A full stub-driver run in the default lanes dir under .worktrees/fanout (case 6) proves lane
+  commits `<id>: <title>`, merges and closes, with `git status` in the main tree left clean.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
@@ -864,6 +866,46 @@ def selftest():
         shown = sh(dr, 'show', 'fanout/dr:.sdlc/a/handoff.md').stdout
         expect(f'done builder (negative control): ticket closed on fanout/dr, got {shown[:120]!r}',
                re.search(r'^status: done\b', shown, re.M))
+
+        # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
+        # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
+        fr = tmp / 'default-dir'
+        make_repo(fr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'.gitignore': '.worktrees/\n'})
+        fmain0 = sh(fr, 'rev-parse', 'main').stdout.strip()
+        proc = fanout(fr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/dd',
+                      '--driver', shlex.quote(str(stub)), '--gate', 'true')
+        expect(f'default lanes dir: run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        flanes = fr / '.worktrees' / 'fanout'
+        expect(f'default lanes dir: {flanes / "report.md"} exists', (flanes / 'report.md').is_file())
+        got = report_rows(flanes)
+        for tid in ('T-0001', 'T-0002'):
+            expect(f'default lanes dir: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
+        for lane, tid, slug in (('alpha', 'T-0001', 'a'), ('beta', 'T-0002', 'b')):
+            subjects = sh(fr, 'log', '--format=%s', f'fanout/dd-{lane}').stdout.splitlines()
+            expect(f'default lanes dir: fanout/dd-{lane} has a commit "{tid}: Ticket {slug}", got {subjects!r}',
+                   f'{tid}: Ticket {slug}' in subjects)
+            expect(f'default lanes dir: fanout/dd holds {tid}.txt',
+                   sh(fr, 'cat-file', '-e', f'fanout/dd:{tid}.txt').returncode == 0)
+            shown = sh(fr, 'show', f'fanout/dd:.sdlc/{slug}/handoff.md').stdout
+            expect(f'default lanes dir: fanout/dd:.sdlc/{slug}/handoff.md says status: done, got {shown[:120]!r}',
+                   re.search(r'^status: done\b', shown, re.M))
+        merges = sh(fr, 'rev-list', '--merges', '--count', 'fanout/dd').stdout.strip()
+        expect(f'default lanes dir: fanout/dd has two merge commits, got {merges!r}', merges == '2')
+        fmain1 = sh(fr, 'rev-parse', 'main').stdout.strip()
+        expect(f'default lanes dir: main sha unchanged, {fmain0!r} -> {fmain1!r}', fmain0 and fmain1 == fmain0)
+        head = sh(fr, 'symbolic-ref', 'HEAD').stdout.strip()
+        expect(f'default lanes dir: HEAD is refs/heads/main, got {head!r}', head == 'refs/heads/main')
+        status = sh(fr, 'status', '--porcelain', '--untracked-files=all')
+        expect(f'default lanes dir: git status --porcelain --untracked-files=all empty in the main tree, '
+               f'got {status.stdout!r}', status.returncode == 0 and status.stdout == '')
+        ignored = sh(fr, 'status', '--porcelain', '--ignored').stdout
+        expect(f'default lanes dir: git status --ignored lists .worktrees/ (non-vacuity), got {ignored!r}',
+               '!! .worktrees/' in ignored.splitlines())
+        wts = sh(fr, 'worktree', 'list').stdout
+        for name in ('alpha', 'beta', 'integration'):
+            expect(f'default lanes dir: git worktree list shows {flanes / name}, got {wts!r}',
+                   any(ln.split()[0] == str(flanes / name) for ln in wts.splitlines() if ln.strip()))
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
