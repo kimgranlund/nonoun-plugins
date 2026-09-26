@@ -11,6 +11,12 @@
 # or the masker errors, when a quote, heredoc, or $( is unterminated, when the command holds
 # (( , or when a shell or evaluator (bash, sh, zsh, dash, ksh, eval, xargs, ssh, source, .,
 # env) appears as a command word anywhere, so bash -c "...", cat <<EOF | sh, and eval stay blocked.
+# It also scans the raw command on interpreter inline code: after masking, an interpreter word
+# (python, python3, python3.12 and other versions, node, perl, ruby, path-qualified too, as in
+# /usr/bin/python3) in command position followed, after any other options, by its inline-code
+# flag: python -c; node -e, -p, --eval, --print; perl -e, -E; ruby -e (ruby -E is encoding, not
+# code). The flag counts inside a short-option cluster (perl -ne, python3 -Sc). A plain
+# python3 script.py keeps the masked scan, and an interpreter word inside quotes is masked away.
 [[ -n "${SDLC_ROLE:-}" ]] || exit 0
 cmd=$(jq -r '.tool_input.command // ""')
 pattern='(^|[^[:alnum:]_-])(git[[:space:]]+push|gh[[:space:]]+(pr|issue)[[:space:]]+(create|merge|comment|edit|close|reopen|review|ready|delete)|gh[[:space:]]+release|gh[[:space:]]+api[^|;&]*(-X|--method)[[:space:]]*(POST|PATCH|PUT|DELETE)|(npm|pnpm|yarn)[[:space:]]+publish)'
@@ -169,7 +175,17 @@ try:
     parse(cmd, 0, False, masked)
 except Exception:
     sys.exit(1)
-sys.stdout.write(''.join(masked))
+masked = ''.join(masked)
+OPTS = r'(?:\s+-\S+)*?\s+'
+INTERP = (r'(?:^|[\s;&|(`{/])(?:'
+          r'python(?:\d+(?:\.\d+)*)?' + OPTS + r'-[A-Za-z]*c(?![\w-])'
+          r'|node' + OPTS + r'(?:-[A-Za-z]*[ep](?![\w-])|--(?:eval|print)(?![\w-]))'
+          r'|perl' + OPTS + r'-[A-Za-z]*[eE](?![\w-])'
+          r'|ruby' + OPTS + r'-[A-Za-z]*e(?![\w-])'
+          r')')
+if re.search(INTERP, masked):
+    sys.exit(1)
+sys.stdout.write(masked)
 PY
 
 scan=$(python3 -c "$masker" "$cmd" 2>/dev/null) || scan=$cmd

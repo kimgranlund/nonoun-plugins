@@ -3,7 +3,9 @@
 # run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
 # inside a role run, allows commands that only mention a publish phrase (heredoc body, quoted
 # argument, commit message) and blocks every real publish, including one fed to a shell or
-# evaluator, one in a $(...) or backtick substitution, and one behind an unterminated quote;
+# evaluator, one in a $(...) or backtick substitution, one behind an unterminated quote, and
+# one in interpreter inline code (python -c, node -e/--eval, perl -e, ruby -e), while a plain
+# python3 script run and an interpreter word inside a quoted mention pass;
 # block-pattern-kill.sh, inside a role run, blocks killing by name pattern (pkill, killall,
 # kill fed by pgrep) with a stderr naming the role and PIDs, and allows kill <pid>, kill $pid,
 # a quoted mention, and anything outside a role run.
@@ -67,9 +69,15 @@ run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 c=$(printf "sed -i 's/x/git %s/' f" push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-publish allows sed argument: exit $rc, want 0"
-c=$(printf "python3 -c 'print(\"gh %s create\")'" pr)
+c=$(printf 'python3 scripts/check.py "git %s"' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
-[[ $rc -eq 0 ]] || fail "block-publish allows python3 -c string: exit $rc, want 0"
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 script run: exit $rc, want 0"
+c="python3 -c 'print(1)'"
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows interpreter without publish: exit $rc, want 0"
+c=$(printf 'git commit -m "doc: python3 -c must never git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows interpreter word in quoted mention: exit $rc, want 0"
 c=$(printf 'git commit -m "doc: never git %s"' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-publish allows commit message: exit $rc, want 0"
@@ -78,6 +86,25 @@ run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-publish allows grep argument: exit $rc, want 0"
 
 # A real publish, direct, via a shell or evaluator, or in a substitution: blocked.
+# Interpreter inline code is scanned raw: blocked.
+c=$(printf "python3 -c 'print(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks python3 -c: exit $rc, want 2"
+c=$(printf "/usr/bin/python3 -u -c 'import os; os.system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks /usr/bin/python3 -c: exit $rc, want 2"
+c=$(printf "node -e 'require(\"child_process\").execSync(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks node -e: exit $rc, want 2"
+c=$(printf "node --eval 'require(\"child_process\").execSync(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks node --eval: exit $rc, want 2"
+c=$(printf "perl -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks perl -e: exit $rc, want 2"
+c=$(printf "ruby -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks ruby -e: exit $rc, want 2"
 c=$(printf 'git %s origin main' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks plain push: exit $rc, want 2"
