@@ -82,7 +82,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | 🟢 done |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | 🟢 done |
 | T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | 🟢 done |
-| T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | 🔵 ready |
+| T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | 🟢 done |
 | T-0079 | [close-dry-run-lists-open](close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | 🟢 done |
 | T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | 🟢 done |
 | T-0081 | [add-a-steps-py-selftest](add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | 🟢 done |
