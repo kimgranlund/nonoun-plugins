@@ -995,6 +995,8 @@ def selftest():
               nxt(step(2, [('builder-L2.md', DONE)]), 'verify L1'))
         check('next verify: build L4 done, no verifier -> verify L3',
               nxt(step(4, [('builder-L4.md', DONE)]), 'verify L3'))
+        check('next verify: build L3 done, no verifier -> verify L2',
+              nxt(step(3, [('builder-L3.md', DONE)]), 'verify L2'))
         check('next replan: a blocked builder replans, whatever its Notes say',
               nxt(step(2, [('builder-L2.md', BLOCKED)]), 'replan'))
         check('next replan: a fail whose next-attempt note starts "plan defect:" replans',
