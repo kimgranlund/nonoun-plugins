@@ -228,6 +228,14 @@ def step33_bad(text):
     return 'at most 4 options per question' not in l33
 if step33_bad(ft): errors.append('skills/file/SKILL.md: step 3.3 missing "at most 4 options per question"')
 if not step33_bad(ft.replace('at most 4 options per question', '')): errors.append('check.py: step 3.3 guard negative control not flagged')
+# Builder scope rules: formatters only on the files this step changed; kill only the PIDs you started.
+SCOPE_PHRASES = ('files this step changed', 'PIDs you started')
+def builder_scope_missing(text): return [s for s in SCOPE_PHRASES if s not in text]
+bf = root/'agents/builder.md'
+bt = bf.read_text() if bf.is_file() else ''
+for s in builder_scope_missing(bt): errors.append(f'agents/builder.md: builder scope rule missing "{s}"')
+for s in SCOPE_PHRASES:
+    if s not in builder_scope_missing(bt.replace(s, '')): errors.append('check.py: builder scope guard negative control not flagged')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')

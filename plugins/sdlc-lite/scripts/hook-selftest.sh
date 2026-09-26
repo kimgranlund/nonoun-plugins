@@ -3,8 +3,12 @@
 # run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
 # inside a role run, allows commands that only mention a publish phrase (heredoc body, quoted
 # argument, commit message) and blocks every real publish, including one fed to a shell or
-# evaluator, one in a $(...) or backtick substitution, and one behind an unterminated quote.
-# Publish phrases are built with printf so this file never holds one literally.
+# evaluator, one in a $(...) or backtick substitution, and one behind an unterminated quote;
+# block-pattern-kill.sh, inside a role run, blocks killing by name pattern (pkill, killall,
+# kill fed by pgrep) with a stderr naming the role and PIDs, and allows kill <pid>, kill $pid,
+# a quoted mention, and anything outside a role run.
+# Publish phrases and kill-pattern words are built with printf so this file never holds one
+# as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
 # Prints "hook selftest: PASS" or "hook selftest: FAIL: <case>" and exits non-zero on failure.
 set -uo pipefail
@@ -12,6 +16,7 @@ set -uo pipefail
 hooks="$(cd "$(dirname "$0")/../hooks" && pwd)"
 bg="$hooks/block-background.sh"
 pub="$hooks/block-publish.sh"
+pk="$hooks/block-pattern-kill.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -120,6 +125,26 @@ run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 c=$(printf 'echo "x" ; git %s origin main "' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks unterminated quote: exit $rc, want 2"
+
+# block-pattern-kill.sh: inside a role run, killing by name pattern is blocked; killing a PID,
+# a mention inside a quoted argument, and anything outside a role run are allowed.
+pkw=$(printf 'p%s' kill); kaw=$(printf 'kill%s' all); pgw=$(printf 'p%s' grep)
+c="$pkw -f vite"
+out=$(run "$pk" "$(pj "$c")" SDLC_ROLE=builder); rc=$?
+[[ $rc -eq 2 ]] || fail "block-pattern-kill blocks $pkw: exit $rc, want 2"
+grep -q PID <<<"$out" || fail "block-pattern-kill $pkw: stderr lacks PID"
+grep -q builder <<<"$out" || fail "block-pattern-kill $pkw: stderr lacks the role"
+for c in "$kaw node" "kill \$($pgw -f vite)" "$pgw -f vite | xargs kill" "sudo $pkw -f vite" \
+  "cd x && $pkw -f vite"; do
+  run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-pattern-kill blocks '$c': exit $rc, want 2"
+done
+for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f"; do
+  run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-pattern-kill allows '$c': exit $rc, want 0"
+done
+run "$pk" "$(pj "$pkw -f vite")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-pattern-kill without role: exit $rc, want 0"
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
