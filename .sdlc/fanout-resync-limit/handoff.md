@@ -24,3 +24,9 @@ With many lanes touching shared registries (AGENTS.md indexes, generated files),
 
 ## Constraints
 What must not change. "None" if none.
+
+## Open question (conductor, 2026-09-26)
+Blocked on a user decision. `scripts/fanout.py` has no resync retry to make configurable: in this tree, in the 0.11.1 plugin cache, and in the marketplace copy, `run_ticket` syncs the lane once and a `sync conflict`, `merge conflict`, or red gate stops the lane with no retry. The peer's "2 tries, raised to 8" was local to their setup. Delivering this means designing a new retry loop first. Decide:
+- What a try retries: on `merge conflict` into integration, resync the lane from integration and re-merge; or also rerun the driver on the resynced lane; or only the pre-ticket sync.
+- Default: 1 (today's behavior, no retry) or 2 (the peer's baseline).
+- Surface: `--resync-tries N` flag, a `<root>/config` key, or both.

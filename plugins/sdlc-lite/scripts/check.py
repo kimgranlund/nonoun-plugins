@@ -8,8 +8,11 @@
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
    "no new findings" rule appear in every doc and script that carries the route, and the
    `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it,
-   the parallel-lane rules ("sha fixed at plan time", linted by steps.py, and "owns that budget")
-   appear in the planner.
+   the parallel-lane rules ("sha fixed at plan time", linted by steps.py, "owns that budget", a guard that
+   "can go red", and "membership or structure" checks) appear in the planner, the planner's "gates green" rule
+   (whole-suite gate guards go on one final step, never on every step) appears in agents/planner.md, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
+   fail, applied by `steps.py swap`) appears in agents/verifier.md and scripts/steps.py, and the
+   `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -98,12 +101,20 @@ PLAN_DEFECT_DOCS = {
                     'scripts/steps.py'),
     'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'no new findings': ('agents/planner.md',),
+    'clean porcelain status': ('agents/planner.md', 'scripts/steps.py'),
     'red guard': ('skills/chain/SKILL.md', 'scripts/steps.py'),
     'changed the work tree': ('agents/planner.md', 'skills/chain/SKILL.md', 'scripts/steps.py'),
     'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
     'owns that budget': ('agents/planner.md',),
+    'gates green': ('agents/planner.md',),
+    'can go red': ('agents/planner.md',),
+    'membership or structure': ('agents/planner.md',),
+    'swap old:': ('agents/verifier.md', 'scripts/steps.py'),
+    'swap new:': ('agents/verifier.md', 'scripts/steps.py'),
+    'steps.py swap': ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
+                      'skills/level-rubric/SKILL.md', 'scripts/steps.py'),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:
