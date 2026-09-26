@@ -10,10 +10,14 @@
 # kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable) with a stderr
 # naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
 # echo $! | xargs kill, a variable holding another command, a quoted mention, and anything
-# outside a role run.
+# outside a role run; block-stray-worktree.sh, inside a role run, denies a git worktree add
+# that is not detached under $SDLC_TMP_WORKTREES (a path outside it or with a .. segment, -b,
+# -B, --orphan, no commit-ish, git -C, a bash -c wrapper, SDLC_TMP_WORKTREES unset) with a
+# stderr naming the role, and allows the detached form, git worktree remove, a quoted mention,
+# and anything outside a role run.
 # Publish phrases and kill-pattern words are built with printf so this file never holds one
 # as a command.
-# Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
+# Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
 # Prints "hook selftest: PASS" or "hook selftest: FAIL: <case>" and exits non-zero on failure.
 set -uo pipefail
 
@@ -21,13 +25,14 @@ hooks="$(cd "$(dirname "$0")/../hooks" && pwd)"
 bg="$hooks/block-background.sh"
 pub="$hooks/block-publish.sh"
 pk="$hooks/block-pattern-kill.sh"
+sw="$hooks/block-stray-worktree.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
 # run <hook> <json> [VAR=value ...]: prints stderr, returns the hook's exit code.
 run() {
   local hook="$1" json="$2"; shift 2
-  printf '%s' "$json" | env -u SDLC_ROLE -u SDLC_HEADLESS "$@" "$hook" 3>&1 1>/dev/null 2>&3
+  printf '%s' "$json" | env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$hook" 3>&1 1>/dev/null 2>&3
 }
 
 on='{"tool_input":{"command":"sleep 1","run_in_background":true}}'
@@ -178,6 +183,35 @@ for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f" "kill %1" "kill \$(cat p
 done
 run "$pk" "$(pj "$pkw -f vite")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-pattern-kill without role: exit $rc, want 0"
+
+# block-stray-worktree.sh: inside a role run, a git worktree add must be detached and under
+# $SDLC_TMP_WORKTREES; anything else is denied, other worktree commands and mentions pass.
+# shellcheck disable=SC2016
+tw='$SDLC_TMP_WORKTREES'
+swenv=(SDLC_ROLE=builder SDLC_TMP_WORKTREES=/r/.worktrees/tmp/builder-1)
+out=$(run "$sw" "$(pj "git worktree add /tmp/x HEAD")" "${swenv[@]}"); rc=$?
+[[ $rc -eq 2 ]] || fail "block-stray-worktree denies /tmp/x: exit $rc, want 2"
+grep -q builder <<<"$out" || fail "block-stray-worktree /tmp/x: stderr lacks the role"
+grep -q -- '--detach' <<<"$out" || fail "block-stray-worktree /tmp/x: stderr lacks the allowed form"
+for c in "git worktree add -b tmpbr \"$tw/x\" HEAD" "git worktree add -B tmpbr \"$tw/x\" HEAD" \
+  "git worktree add --orphan \"$tw/x\"" "git worktree add --orphan -b tmpbr \"$tw/x\"" \
+  "git -C . worktree add /tmp/x HEAD" "git worktree add \"$tw/x\"" \
+  "git worktree add \"$tw/../x\" HEAD" "bash -c \"git worktree add /tmp/x HEAD\"" \
+  "git worktree add --detach \"$tw\" HEAD"; do
+  run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c': exit $rc, want 2"
+done
+out=$(run "$sw" "$(pj "git worktree add --detach /r/x HEAD")" SDLC_ROLE=conductor); rc=$?
+[[ $rc -eq 2 ]] || fail "block-stray-worktree denies with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
+grep -q conductor <<<"$out" || fail "block-stray-worktree prefix unset: stderr lacks the role"
+for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add \"\${SDLC_TMP_WORKTREES}/base\" HEAD" \
+  "git worktree add --detach /r/.worktrees/tmp/builder-1/x HEAD" \
+  "git worktree remove --force \"$tw/x\"" "git worktree list" "grep -n \"git worktree add\" f"; do
+  run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c': exit $rc, want 0"
+done
+run "$sw" "$(pj "git worktree add /tmp/x HEAD")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-stray-worktree without role: exit $rc, want 0"
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
