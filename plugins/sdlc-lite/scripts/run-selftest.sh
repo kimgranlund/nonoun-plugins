@@ -164,6 +164,8 @@ want_rc 3 planner L1 $'## Steps\nx'
 grep -q '## Goal' "$tmp/rerr" || fail "planner no Goal: stderr does not name ## Goal"
 want_rc 0 builder L2 $'## Status\n\nDone \n\n## Changes\nNone'
 want_rc 0 verifier L1 $'## Verdict\npass'
+want_rc 0 verifier L1 $'## Verdict\ninherited red: test_a'
+want_rc 3 verifier L1 $'## Verdict\ninherited red'
 
 # Real run: the stub claude records the first PATH entry it sees.
 printf '20\n' >"$nrepo/.nvmrc"

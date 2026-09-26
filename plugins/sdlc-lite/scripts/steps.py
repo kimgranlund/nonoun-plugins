@@ -63,6 +63,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               no verifier result counts after the build  -> verify L<verifier level>
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
                 but 2+ consecutive no-verdict verifiers after the build -> stop
+              newest verifier Verdict inherited red: <tests> -> inherited (a gate already red at
+                the pre-build HEAD; ask the conductor). Never counted as a fail or a no-verdict
+                run, and it breaks a no-verdict run; a bare "inherited red" with no colon is no verdict.
               newest verifier Verdict pass               -> done
               fail whose ## For the next attempt starts "plan defect:" -> replan
               else count non-plan-defect fails whose paired builder (newest before each
@@ -554,8 +557,13 @@ def build_status_or_none(path):
 
 
 def verdict_or_none(path):
-    """'pass' or 'fail' from the first non-blank line under ## Verdict, else None. Never raises."""
+    """'pass', 'fail', or 'inherited' (a first line starting 'inherited red:', any case) from the
+    first non-blank line under ## Verdict, else None. Never raises."""
     try:
+        body = section(path, 'Verdict')
+        first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
+        if first.lower().startswith('inherited red:'):
+            return 'inherited'
         return verdict(path)
     except Exception:
         return None
@@ -633,6 +641,10 @@ def next_action(step_dir):
         return ('stop', None,
                 f'{runs} consecutive verifier results with no verdict at build L{level} (newest {name}); ask the user',
                 read)
+    if verdict_or_none(v) == 'inherited':
+        return ('inherited', None,
+                f'{os.path.basename(v)} reports inherited red (gate already red at the pre-build HEAD); '
+                'ask the conductor, not a fail, rebuild, bump, or replan', read)
     if verdict(v) == 'pass':
         return 'done', None, f'newest verifier {os.path.basename(v)} passed', read
     if is_plan_defect(v):
@@ -1160,6 +1172,20 @@ def selftest():
                            ('builder-L2-2.md', INHERITED)]), 'inherited'))
         check('next inherited: "inherited red" with no colon is statusless -> rebuild L2',
               nxt(step(2, [('builder-L2.md', '## Status\ninherited red\n')]), 'rebuild L2'))
+        V_INHERITED = '## Verdict\ninherited red: test_a\n'
+        check('next inherited: done builder, then verifier inherited red: <tests> -> inherited',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', V_INHERITED)]), 'inherited'))
+        check('next reverify: verifier "inherited red" with no colon is no verdict -> reverify L1',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', '## Verdict\ninherited red\n')]),
+                  'reverify L1'))
+        check('next inherited: done, fail, rebuild, then an inherited verifier -> inherited, not bump',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
+                           ('builder-L2-2.md', DONE), ('verifier-L1-2.md', V_INHERITED)]), 'inherited'))
+        check('next rebuild: an inherited verifier, rebuild, then a fail at L2 -> rebuild L2 (inherited not a fail)',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', V_INHERITED),
+                           ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
+        check('next rebuild: a fail verifier still -> rebuild L2',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)]), 'rebuild L2'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL), ('builder-L2-2.md', DONE)])
         for i, name in enumerate(('builder-L2-2.md', 'verifier-L1.md', 'builder-L2.md')):

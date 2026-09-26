@@ -118,7 +118,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0111 | [pattern-kill-hook-misses-forms](pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | M | P2 | none | 🟢 done |
 | T-0112 | [formatter-rule-is-prompt-only](formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | M | P2 | none | 🔵 ready |
 | T-0113 | [close-rename-breaks-refs](close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | 🟢 done |
-| T-0114 | [verifier-fail-on-a-gate](verifier-fail-on-a-gate/handoff.md) | Verifier fail on a gate that is already red at the pre-build HEAD... | idea | M | P2 | none | 🔵 ready |
+| T-0114 | [verifier-fail-on-a-gate](verifier-fail-on-a-gate/handoff.md) | Verifier fail on a gate that is already red at the pre-build HEAD... | idea | M | P2 | none | 🟢 done |
 | T-0115 | [fanout-py-treats-a-lane](fanout-py-treats-a-lane/handoff.md) | fanout.py treats a lane that ends on an inherited red builder like... | idea | M | P2 | none | 🟢 done |
 | T-0116 | [tickets-py-archive-renames-done](tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | M | P2 | none | 🔵 ready |
 | T-0117 | [fanout-py-closes-tickets-with](fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🟢 done |
@@ -126,3 +126,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | ⏳ proposed |
 | T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | ⏳ proposed |
 | T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | ⏳ proposed |
+| T-0122 | [fanout-py-inherited-red-reads](fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | ⏳ proposed |
