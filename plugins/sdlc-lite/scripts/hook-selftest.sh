@@ -14,7 +14,11 @@
 # that is not detached under $SDLC_TMP_WORKTREES (a path outside it or with a .. segment, -b,
 # -B, --orphan, no commit-ish, git -C, a bash -c wrapper, SDLC_TMP_WORKTREES unset) with a
 # stderr naming the role, and allows the detached form, git worktree remove, a quoted mention,
-# and anything outside a role run.
+# and anything outside a role run. block-repo-format.sh, inside a builder run, blocks a
+# repo-wide format script or formatter (npm run format, make fmt, prettier --write ., eslint
+# --fix src, cargo fmt, go fmt ./..., one behind cd x && or inside bash -c) with a stderr
+# naming the role and builder rule 6, and allows explicit file paths, npm test, a quoted
+# mention, and every other role or no role.
 # Publish phrases and kill-pattern words are built with printf so this file never holds one
 # as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
@@ -26,6 +30,7 @@ bg="$hooks/block-background.sh"
 pub="$hooks/block-publish.sh"
 pk="$hooks/block-pattern-kill.sh"
 sw="$hooks/block-stray-worktree.sh"
+rf="$hooks/block-repo-format.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -212,6 +217,33 @@ for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add \"\${SDLC_
 done
 run "$sw" "$(pj "git worktree add /tmp/x HEAD")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-stray-worktree without role: exit $rc, want 0"
+
+# block-repo-format.sh: inside a builder run, a repo-wide format script or formatter is
+# blocked; explicit file paths, other commands, a quoted mention, and other roles pass.
+out=$(run "$rf" "$(pj "npm run format")" SDLC_ROLE=builder); rc=$?
+[[ $rc -eq 2 ]] || fail "block-repo-format blocks npm run format: exit $rc, want 2"
+grep -q builder <<<"$out" || fail "block-repo-format npm run format: stderr lacks the role"
+grep -q 'rule 6' <<<"$out" || fail "block-repo-format npm run format: stderr lacks rule 6"
+rfblock=("npm run format" "pnpm run format" "yarn run lint:fix" "make fmt" "prettier --write ." \
+  "eslint --fix src" "cargo fmt" "go fmt ./..." "npx prettier -w src/" \
+  "cd x && npm run format" "bash -c 'npm run format'")
+for c in "${rfblock[@]}"; do
+  out=$(run "$rf" "$(pj "$c")" SDLC_ROLE=builder); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-repo-format blocks '$c': exit $rc, want 2"
+  grep -q builder <<<"$out" || fail "block-repo-format '$c': stderr lacks the role"
+  grep -q 'rule 6' <<<"$out" || fail "block-repo-format '$c': stderr lacks rule 6"
+done
+for c in "prettier --write a.ts" "npm run format -- a.ts" "npm test" \
+  "eslint --fix src/a.ts src/b.ts" "grep -n 'npm run format' f" "ls"; do
+  run "$rf" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-repo-format allows '$c': exit $rc, want 0"
+done
+for c in "${rfblock[@]}"; do
+  run "$rf" "$(pj "$c")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-repo-format without role allows '$c': exit $rc, want 0"
+  run "$rf" "$(pj "$c")" SDLC_ROLE=verifier >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-repo-format verifier allows '$c': exit $rc, want 0"
+done
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
