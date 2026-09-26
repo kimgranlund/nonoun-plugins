@@ -29,5 +29,7 @@ Why did the abandoned run end its turn with "Waiting for the background job to n
 - T-0103 notes: .sdlc/run-result-format-check/filer-L1.md; T-0072: .sdlc/headless-background-abandon/; T-0076: .sdlc/headless-conductors-can-still-abandon/.
 - Plugin cache for which version the peer loaded: ~/.claude/plugins (read only).
 
+More cases from the peer (gen-ui, 0.11.1), same family: (1) a late task notification became the run's last turn ("stale monitor ... no action needed"), so run.sh saved that instead of the real report and lost the `## Verdict` (log result JSON: `origin.kind: task-notification`). Fix: run.sh takes the last result that is not a task-notification origin, or the last one holding the role's required heading. (2) A verifier ended its turn waiting on its own background gate runs. Fix: the hook denies Monitor in role runs, the verifier and builder prompts say to run gates in the foreground, and the launcher sets BASH_DEFAULT_TIMEOUT_MS high so Bash never auto-backgrounds. Scope of this ticket: find the cause and fix all three routes.
+
 ## Constraints
 Read-only investigation. No edits in either repo, no git state changes.
