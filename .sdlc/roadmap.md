@@ -107,5 +107,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0100 | [planner-parallel-safe-criteria](planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | S | P2 | none | 🔵 ready |
 | T-0101 | [builder-inherited-red](builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | M | P2 | none | 🔵 ready |
 | T-0102 | [builder-scope-hygiene](builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🔵 ready |
-| T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🔵 ready |
+| T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🟢 done |
 | T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | ⏳ proposed |
+| T-0105 | [find-out-why-the-t](find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | M | P2 | none | ⏳ proposed |
+| T-0106 | [extend-claude-agents-sdlc-lite](extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | M | P2 | none | ⏳ proposed |

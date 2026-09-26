@@ -44,6 +44,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               build level = level of the newest builder result, else the handoff's level: line;
               verifier level: build L1/L2 -> L1, L3 -> L2, L4/L5 -> L3.
               no builder result                          -> build L<handoff level>
+              newest builder has no done/blocked Status  -> rebuild L<level of that result>,
+                but 2+ consecutive statusless builders (newest first) -> stop
               newest builder Status blocked              -> replan (whatever its Notes say)
               no verifier result counts after the build  -> verify L<verifier level>
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
@@ -53,9 +55,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               else count non-plan-defect fails whose paired builder (newest before each
               verifier) is at the current build level: 1 -> rebuild L<n>,
               2+ at L1..L4 -> bump L<n+1>, 2+ at L5 -> stop.
-              A verifier with no verdict is never counted as a fail.
-            Errors (missing dir, no handoff level with no builder result, a builder with no
-            done/blocked Status) print one "steps next: "
+              A verifier with no verdict is never counted as a fail. A builder with no Status is
+              never a done or a fail, never adds a bump, and is never a verifier's paired builder.
+            Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
@@ -494,6 +496,14 @@ def verdict(path):
     return first_word(path, 'Verdict', ('pass', 'fail'), 'verifier verdict')
 
 
+def build_status_or_none(path):
+    """'done' or 'blocked' from the first non-blank line under ## Status, else None. Never raises."""
+    try:
+        return build_status(path)
+    except Exception:
+        return None
+
+
 def verdict_or_none(path):
     """'pass' or 'fail' from the first non-blank line under ## Verdict, else None. Never raises."""
     try:
@@ -532,6 +542,20 @@ def next_action(step_dir):
         return 'build', n, f'no builder result; handoff level L{n}', []
     level = result_level(b)
     read = [b]
+    if build_status_or_none(b) is None:
+        runs = 0
+        for x in reversed(builders):
+            if build_status_or_none(x) is not None:
+                break
+            runs += 1
+        name = os.path.basename(b)
+        if runs <= 1:
+            return ('rebuild', level,
+                    f'{name} has no done/blocked under ## Status; not counted as a fail, rerun the builder at the same level',
+                    read)
+        return ('stop', None,
+                f'{runs} consecutive builder results with no Status (newest {name}); ask the user', read)
+    builders = [x for x in builders if build_status_or_none(x) is not None]
     if build_status(b) == 'blocked':
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
@@ -1037,6 +1061,12 @@ def selftest():
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
                            ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL),
                            ('verifier-L1-3.md', NOVERDICT)]), 'reverify L1'))
+        check('next rebuild: a builder with no done/blocked Status -> rebuild L2, not an error',
+              nxt(step(2, [('builder-L2.md', '## Status\nmaybe\n')]), 'rebuild L2'))
+        check('next stop: two consecutive builders with no Status -> stop',
+              nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', 'Waiting.\n')]), 'stop'))
+        check('next verify: a statusless builder then a done builder -> verify L1',
+              nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', DONE)]), 'verify L1'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL), ('builder-L2-2.md', DONE)])
         for i, name in enumerate(('builder-L2-2.md', 'verifier-L1.md', 'builder-L2.md')):
@@ -1056,8 +1086,6 @@ def selftest():
         d = step(2)
         (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\n', encoding='utf-8')
         next_refused('next error: a handoff with no level line and no builder result', d)
-        next_refused('next error: a builder with no done/blocked Status',
-                     step(2, [('builder-L2.md', '## Status\nmaybe\n')]))
 
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)])
         before = snapshot(d)

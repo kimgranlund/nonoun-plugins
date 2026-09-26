@@ -14,6 +14,11 @@
 # (20, v20.11) matches whole components and takes the highest installed. A match prepends its bin
 # dir to PATH, so the role run inherits it; no match or an alias (lts/*, node) leaves PATH alone.
 # Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
+# Result check: after the result and its runs.jsonl line are written (both kept), the result must
+# hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked),
+# verifier ## Verdict (pass|fail), planner ## Goal, researcher ## Answer, scout ## Map,
+# archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
+# Exit codes: 0 ok, 1 run failed or returned no result, 2 usage or preflight, 3 result lacks its section.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
 set -euo pipefail
 
@@ -165,4 +170,31 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
   --arg file "$name.md" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
     cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns}' "$log" >>"$dir/runs.jsonl"
+
+# Required section per role; builder and verifier also need an allowed first value under it.
+case "$role" in
+  builder) sect=Status; allowed='done|blocked' ;;
+  verifier) sect=Verdict; allowed='pass|fail' ;;
+  planner) sect=Goal; allowed='' ;;
+  researcher) sect=Answer; allowed='' ;;
+  scout) sect=Map; allowed='' ;;
+  archaeologist) sect=Summary; allowed='' ;;
+  architect) sect=Approach; allowed='' ;;
+  filer) sect=Warnings; allowed='' ;;
+esac
+# Prints "missing", or the first non-blank line under the section (empty if none).
+val=$(awk -v h="## $sect" '
+  !f { l=$0; sub(/[ \t\r]+$/, "", l); if (l == h) { f=1 }; next }
+  { l=$0; gsub(/^[ \t]+|[ \t\r]+$/, "", l); if (l != "") { print l; found=1; exit } }
+  END { if (!f) print "missing"; else if (!found) print "" }' "$result")
+bad=0
+if [[ "$val" == missing && -z "$allowed" ]]; then bad=1
+elif [[ -n "$allowed" ]]; then
+  lc=$(printf '%s' "$val" | tr '[:upper:]' '[:lower:]')
+  [[ "$lc" =~ ^($allowed)$ ]] || bad=1
+fi
+if (( bad )); then
+  echo "run.sh: $role result lacks ## $sect${allowed:+ ($allowed)}; see $result" >&2
+  exit 3
+fi
 echo "$result"
