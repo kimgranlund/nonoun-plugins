@@ -94,7 +94,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🟢 done |
 | T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | 🟢 done |
 | T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | 🟢 done |
-| T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🔵 ready |
+| T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🟢 done |
 | T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | 🔵 ready |
 | T-0092 | [run-a-live-probe-to](run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | ⏳ proposed |
 | T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | ⏳ proposed |
@@ -102,3 +102,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0096 | [tickets-py-selftest-checks-that](tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | M | P2 | none | ⏳ proposed |
 | T-0097 | [block-publish-sh-no-longer](block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | M | P2 | none | ⏳ proposed |
 | T-0099 | [add-a-hook-live-probe](add-a-hook-live-probe/handoff.md) | Add a hook-live-probe.sh selftest case where the hook exits with a... | idea | M | P2 | none | ⏳ proposed |
+| T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | ⏳ proposed |

@@ -32,6 +32,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - Benchmark tasks: the goal must name every name, field, path, and message format the hidden tests pin, and constraints must let builders update tests the change legitimately breaks. Red/green-verify a task in a throwaway worktree before adding it.
 - A verifier pass with a hidden-check fail means find out which one is wrong before tuning anything.
 - The merge-step conflict-marker guard reads `git diff-tree --cc HEAD` (`++` lines only), so a lane's own marker-like lines pass. The check.py probe holds seven cases: empty, marker, legit lane line, both-sides legit lane line, real conflict kept, aligned kept marker (the documented miss), and clean. A kept marker textually identical to a parent line passes by design.
+- Fanout lanes live in the gitignored `<toplevel>/.worktrees/fanout`, not a sibling dir. `.gitignore` does not exclude `.worktrees/` from vitest, tsc, or file watchers (the project must exclude it in their config), and Node module resolution walks up from a lane worktree into the main tree's `node_modules`.
 - Never touch the user's working trees, branches, or stash in other repos. Use throwaway worktrees and remove them.
 
 ## How you talk
