@@ -41,7 +41,7 @@ command -v python3 >/dev/null || { echo "hook-live-probe: python3 not found" >&2
 [[ -x "$hook" ]] || { echo "hook-live-probe: hook not found or not executable: $hook" >&2; exit 2; }
 
 # ---------------------------------------------------------------------------------------------
-# Selftest: offline, stub claude, cases (a) to (d), and no probe temp dir left behind.
+# Selftest: offline, stub claude, cases (a) to (e), and no probe temp dir left behind.
 # ---------------------------------------------------------------------------------------------
 if [[ $selftest -eq 1 ]]; then
   st="$(mktemp -d "${TMPDIR:-/tmp}/hook-live-probe-selftest.XXXXXX")"
@@ -51,7 +51,8 @@ if [[ $selftest -eq 1 ]]; then
   sfail() { echo "hook live probe selftest: FAIL: $*"; exit 1; }
   mkdir -p "$st/tmp"
   # Stub claude. STUB_MODE: hook (pipe STUB_PAYLOAD into the registered hook), none (call no
-  # hook), sleep (outlive the timeout). --version prints a fake version.
+  # hook), sleep (outlive the timeout), nodeny (case (e): like hook, but with SDLC_HEADLESS and
+  # SDLC_ROLE unset, so the hook exits 0). --version prints a fake version.
   cat >"$st/claude" <<'EOF'
 #!/usr/bin/env bash
 settings=""
@@ -65,6 +66,10 @@ case "${STUB_MODE:-hook}" in
   sleep) sleep 47; exit 0 ;;
 esac
 cmd="$(jq -r '.hooks.PreToolUse[0].hooks[0].command' "$settings")"
+if [[ "${STUB_MODE:-hook}" == "nodeny" ]]; then
+  printf '%s' "$STUB_PAYLOAD" | env -u SDLC_HEADLESS -u SDLC_ROLE "$cmd" 2>/dev/null
+  exit 0
+fi
 printf '%s' "$STUB_PAYLOAD" | "$cmd" 2>/dev/null
 exit 0
 EOF
@@ -106,6 +111,11 @@ EOF
   [[ $elapsed -le 20 ]] || sfail "(d) timeout: took ${elapsed}s, want <= 20"
   for _ in 1 2 3 4 5; do pgrep -f "sleep 47" >/dev/null || break; sleep 0.2; done
   ! pgrep -f "sleep 47" >/dev/null || sfail "(d) timeout: stub child still running"
+
+  # (e) boolean true, but the hook exits 0 (not 2): FAIL, exit 1, the reason names the exit code.
+  probe nodeny "$good"
+  [[ $prc -eq 1 ]] || sfail "(e) hook exit 0: exit $prc, want 1"
+  grep -q "^verdict: FAIL: hook exit code 0, not 2" <<<"$pout" || sfail "(e) hook exit 0: FAIL line does not name the hook exit code"
 
   # Every probe run removed its temp dir.
   left="$(find "$st/tmp" -mindepth 1 -maxdepth 1 2>/dev/null)"
