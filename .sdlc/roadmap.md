@@ -96,7 +96,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | 🟢 done |
 | T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🟢 done |
 | T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | 🔵 ready |
-| T-0092 | [run-a-live-probe-to](run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | 🔵 ready |
+| T-0092 | [run-a-live-probe-to](run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | 🟢 done |
 | T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | 🟢 done |
 | T-0094 | [steps-py-split-only-guard](steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | M | P2 | none | 🔵 ready |
 | T-0095 | [role-worktrees-left-behind](role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | S | P2 | none | 🟢 done |
