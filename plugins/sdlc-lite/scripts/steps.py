@@ -36,8 +36,14 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
             each <placeholder> replaced first, and that none holds an unquoted || operator (a
-            fallback passes on either side, so the criterion cannot fail); a || inside quotes, or
-            one whose left operand is exactly `test $# -eq 0`, is allowed. A span that parses gets
+            fallback passes on either side, so the criterion cannot fail); a || inside quotes, one
+            whose left operand is exactly `test $# -eq 0`, or one whose right operand is a
+            nonzero `exit` (`exit N` with N a nonzero integer literal ending the command, or a
+            brace group `{ ...; exit N; }` whose last command is that exit) is allowed, because a
+            nonzero exit fails the criterion when the left side fails, so it cannot pass on either
+            side; `|| exit 0`, `|| true`, `|| echo ...` stay findings. A for, while, or until span
+            ending in done, an if span ending in fi, and a { span ending in } count as commands
+            and are linted; prose starting with those words is not. A span that parses gets
             two more checks on its raw text. It must not pin a commit sha: a span holding the word
             git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
             non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
@@ -196,8 +202,14 @@ def criteria_lines(block):
     return out
 
 
+COMPOUND_END = {'for': 'done', 'while': 'done', 'until': 'done', 'if': 'fi', '{': '}'}
+
+
 def is_command(text):
-    """True when a code span reads as a shell command, judged by its head token."""
+    """True when a code span reads as a shell command, judged by its head token. A compound
+    command counts too: a for, while, or until head with a span ending in done, an if head ending
+    in fi, or a { head ending in }; prose that starts with those words (`for each changed file`)
+    does not."""
     tokens = text.split()
     assigns = []
     i = 0
@@ -210,6 +222,8 @@ def is_command(text):
     if i == len(tokens):
         return False
     head = tokens[i]
+    if head in COMPOUND_END:
+        return re.search(r'(?:^|[\s;&|])' + re.escape(COMPOUND_END[head]) + r'$', text.rstrip()) is not None
     return (head in BUILTINS or '/' in head or head.endswith('.py') or head.endswith('.sh')
             or shutil.which(head) is not None)
 
@@ -354,20 +368,80 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
 
 
 OR_ALLOWED_LEFT = ['test', '$#', '-eq', '0']
+OR_PUNCT = '();<>|&\n'
+EXIT_CODE_RE = re.compile(r'\d+')
+
+
+def or_tokens(text):
+    """shlex tokens of a span as (token, is_operator) pairs; a newline is its own operator token.
+    Raises ValueError on text shlex cannot tokenize."""
+    lex = shlex.shlex(text, posix=True, punctuation_chars=OR_PUNCT)
+    lex.commenters = ''
+    lex.whitespace = ' \t\r'
+    lex.whitespace_split = True
+    out = []
+    for tok in lex:
+        if tok and all(c in OR_PUNCT for c in tok):
+            out += [(part, True) for part in re.split(r'(\n)', tok) if part]
+        else:
+            out.append((tok, False))
+    return out
+
+
+def nonzero_exit_at(toks, i):
+    """True when toks[i:] starts with `exit N`, N a nonzero integer literal (mod 256, as the
+    shell sees it)."""
+    return (i + 1 < len(toks) and toks[i] == ('exit', False) and not toks[i + 1][1]
+            and bool(EXIT_CODE_RE.fullmatch(toks[i + 1][0])) and int(toks[i + 1][0]) % 256 != 0)
+
+
+def ends_command(toks, i):
+    """True when a command ends before toks[i]: the end of the span, ;, &&, a pipe, }, or a newline."""
+    if i >= len(toks):
+        return True
+    tok, op = toks[i]
+    return (op and (tok.startswith(';') or tok in ('&&', '|', '||', '\n'))) or (not op and tok == '}')
+
+
+def fails_fast(toks, i):
+    """True when the right operand of a || starting at toks[i] is a nonzero exit: `exit N` ending a
+    command, or a brace group `{ ...; exit N; }` whose last command is such an exit."""
+    if nonzero_exit_at(toks, i):
+        return ends_command(toks, i + 2)
+    if toks[i:i + 1] != [('{', False)]:
+        return False
+    depth = 0
+    for j in range(i, len(toks)):
+        if toks[j][1]:
+            continue
+        if toks[j][0] == '{':
+            depth += 1
+        elif toks[j][0] == '}':
+            depth -= 1
+            if depth == 0:
+                k = j - 3
+                return (k > i and toks[j - 1] in ((';', True), ('\n', True)) and nonzero_exit_at(toks, k)
+                        and (k == i + 1 or toks[k - 1] in ((';', True), ('\n', True), ('&&', True)))
+                        and ends_command(toks, j + 1))
+    return False
 
 
 def or_fallback(text):
-    """True when a span holds an unquoted || whose left operand is not exactly `test $# -eq 0`.
+    """True when a span holds an unquoted || that is a real fallback, one that lets the criterion
+    pass when either side passes. A || is allowed when its left operand is exactly `test $# -eq 0`
+    (an empty set short circuit), or when its right operand is a nonzero `exit` (`exit N`, N a
+    nonzero integer literal, ending the command, or a brace group `{ ...; exit N; }` whose last
+    command is that exit): a nonzero exit fails the criterion when the left side fails, so it
+    cannot pass on either side. `|| exit 0`, a bare `|| exit`, `|| true`, `|| return 1`,
+    `|| echo ...`, and `|| grep ...` stay findings. Pure text: executes nothing.
     Raises ValueError on text shlex cannot tokenize (an unparsable span, already reported)."""
-    lex = shlex.shlex(text, posix=True, punctuation_chars=True)
-    lex.commenters = ''
-    lex.whitespace_split = True
+    toks = or_tokens(text)
     left = []
-    for tok in lex:
-        if tok and all(c in lex.punctuation_chars for c in tok):
-            if tok == '||' and left != OR_ALLOWED_LEFT:
+    for i, (tok, op) in enumerate(toks):
+        if op:
+            if tok == '||' and left != OR_ALLOWED_LEFT and not fails_fast(toks, i + 1):
                 return True
-            if ';' in tok or '|' in tok or '&&' in tok:
+            if ';' in tok or '|' in tok or '&&' in tok or tok == '\n':
                 left = []
                 continue
         left.append(tok)
@@ -920,13 +994,30 @@ def selftest():
         refused('(k2) lint refuses a || fallback criterion with plan defect',
                 ['lint', str(d / 'planner-L2.md')], d, needle='plan defect')
         ok_spans = ['grep -qE "a||b" x', "grep -q 'a||b' x",
-                    'set -- $(ls); test $# -eq 0 || grep -q x "$@"', 'grep -q a x && grep -q b x']
+                    'set -- $(ls); test $# -eq 0 || grep -q x "$@"', 'grep -q a x && grep -q b x',
+                    'test -f a || exit 1', 'for f in a b; do test -f "$f" || exit 1; done',
+                    'for id in P1 P2; do grep -qE "x" "$f" || { echo "missing $id"; exit 1; }; done']
         d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
         rc, _, _ = run_main(['split', str(d)])
         rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
-        check('(k2) quoted ||, the test $# -eq 0 || short circuit, and && pass: split and lint ok',
+        check('(k2) quoted ||, the test $# -eq 0 || short circuit, &&, and a fail-fast || nonzero exit '
+              '(plain, in a loop, in a brace group) pass: split and lint ok',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
               and out2.strip() == 'steps lint: ok')
+        check('(k2) the for loops are linted as command spans',
+              command_spans(parse_steps(d / 'planner-L2.md')[1])[-2:] == ok_spans[-2:])
+        for form in ('test -f a || exit 0', 'test -f a || true', 'test -f a || exit',
+                     'test -f a || { exit 1; echo x; }',
+                     'for p in a b; do test -f "$p" || echo MISSING "$p"; done',
+                     'for p in a b; do grep -q a "$p" || grep -q b "$p"; done'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k2) lint refuses a || fallback ({form}) with plan defect',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        d = task(plan=PLAN.replace('- one works', '- `for each changed file`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2) prose `for each changed file` stays a non-command span: lint ok',
+              rc == 0 and out.strip() == 'steps lint: ok'
+              and command_spans(parse_steps(d / 'planner-L2.md')[1]) == [])
 
         # (k3) a criterion that pins a commit sha (bare, and in a <sha>..HEAD range): lint and split refuse
         sha = '3f9c' + '2ab'

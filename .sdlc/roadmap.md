@@ -97,7 +97,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🟢 done |
 | T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | 🔵 ready |
 | T-0092 | [run-a-live-probe-to](run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | 🔵 ready |
-| T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | 🔵 ready |
+| T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | 🟢 done |
 | T-0094 | [steps-py-split-only-guard](steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | M | P2 | none | 🔵 ready |
 | T-0095 | [role-worktrees-left-behind](role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | S | P2 | none | 🟢 done |
 | T-0096 | [tickets-py-selftest-checks-that](tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | M | P2 | none | 🟢 done |
@@ -131,3 +131,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | ⏳ proposed |
 | T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | ⏳ proposed |
 | T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | ⏳ proposed |
+| T-0137 | [the-steps-py-lint-accepts](the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | ⏳ proposed |
+| T-0138 | [the-steps-py-lint-does](the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | ⏳ proposed |
