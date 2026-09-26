@@ -18,6 +18,15 @@
 # hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked),
 # verifier ## Verdict (pass|fail), planner ## Goal, researcher ## Answer, scout ## Map,
 # archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
+# Throwaway worktrees: a real run (never a dry run) passes the role
+# SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
+# does not create it; a role makes worktrees only under it (git worktree add "$SDLC_TMP_WORKTREES/<name>"
+# HEAD makes the parents). On every exit, success or failure (exit 1, exit 3, INT, TERM, HUP), cleanup
+# runs git worktree remove --force on each registered worktree under that prefix (paths compared by
+# realpath, since macOS reports /private/var for /var), rm -rf of the prefix, git worktree prune, then
+# rmdir of .worktrees/tmp and .worktrees only when empty. It touches only this run's prefix, never other
+# worktrees that appeared during the run (concurrent fanout lanes run other role runs), and never
+# changes the exit code; INT, TERM, and HUP exit 130, 143, and 129 after it.
 # Exit codes: 0 ok, 1 run failed or returned no result, 2 usage or preflight, 3 result lacks its section.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
 set -euo pipefail
@@ -159,9 +168,47 @@ Your final message is saved verbatim as $result. Make it exactly the output form
 
 if [[ "${SDLC_DRY_RUN:-}" == 1 ]]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
 
+# Throwaway worktree prefix owned by this run (see the header). Not created here.
+toplevel="$(git rev-parse --show-toplevel)"
+wt_tmp="$toplevel/.worktrees/tmp/$role-$$"
+# phys <path>: physical path, resolving the deepest existing ancestor, so a missing path still compares.
+phys() {
+  local p="$1" rest="" r
+  while [[ "$p" == /?* && ! -d "$p" ]]; do rest="/${p##*/}$rest"; p="${p%/*}"; done
+  r=$(cd "${p:-/}" 2>/dev/null && pwd -P) || { printf '%s\n' "$1"; return 0; }
+  printf '%s%s\n' "${r%/}" "$rest"
+}
+# Removes every worktree under this run's prefix only. Runs without errexit; never fails.
+cleanup_worktrees() {
+  local wt_real line p pr
+  wt_real=$(phys "$wt_tmp")
+  while IFS= read -r line; do
+    case "$line" in "worktree "*) p="${line#worktree }" ;; *) continue ;; esac
+    pr=$(phys "$p")
+    if [[ "$pr" == "$wt_real" || "$pr" == "$wt_real"/* || "$p" == "$wt_tmp" || "$p" == "$wt_tmp"/* ]]; then
+      git -C "$toplevel" worktree remove --force --force "$p" >/dev/null 2>&1
+    fi
+  done < <(git -C "$toplevel" worktree list --porcelain 2>/dev/null)
+  rm -rf "$wt_tmp"
+  git -C "$toplevel" worktree prune >/dev/null 2>&1
+  rmdir "$toplevel/.worktrees/tmp" >/dev/null 2>&1
+  rmdir "$toplevel/.worktrees" >/dev/null 2>&1
+  return 0
+}
+on_exit() {
+  local rc=$?
+  set +e
+  rm -f "$running" ${skill_file:+"$skill_file"}
+  cleanup_worktrees
+  exit "$rc"
+}
 running="$dir/$role-$level.running"
-date +%s >"$running"; trap 'rm -f "$running" ${skill_file:+"$skill_file"}' EXIT
-SDLC_ROLE="$role" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
+date +%s >"$running"
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
 if ! jq -e '.is_error == false and (.result | length > 0)' "$log" >/dev/null 2>&1; then
   echo "$role returned no result; see $log" >&2; exit 1
 fi

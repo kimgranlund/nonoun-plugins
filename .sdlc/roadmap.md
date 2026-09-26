@@ -99,7 +99,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0092 | [run-a-live-probe-to](run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | ⏳ proposed |
 | T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | ⏳ proposed |
 | T-0094 | [steps-py-split-only-guard](steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | M | P2 | none | ⏳ proposed |
-| T-0095 | [role-worktrees-left-behind](role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | S | P2 | none | 🔵 ready |
+| T-0095 | [role-worktrees-left-behind](role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | S | P2 | none | 🟢 done |
 | T-0096 | [tickets-py-selftest-checks-that](tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | M | P2 | none | ⏳ proposed |
 | T-0097 | [block-publish-sh-no-longer](block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | M | P2 | none | ⏳ proposed |
 | T-0098 | [prompt-audit-cleanup](prompt-audit-cleanup/handoff.md) | Apply prompt-audit hunks: drop history ids and dates from level-rubric, checks-that-bite, file skills | chore | M | P2 | none | 🔵 ready |
@@ -111,3 +111,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | ⏳ proposed |
 | T-0105 | [find-out-why-the-t](find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | M | P2 | none | ⏳ proposed |
 | T-0106 | [extend-claude-agents-sdlc-lite](extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | M | P2 | none | ⏳ proposed |
+| T-0107 | [role-throwaway-worktrees-created-outside](role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | M | P2 | none | ⏳ proposed |
+| T-0108 | [a-dry-run-of-a](a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | M | P2 | none | ⏳ proposed |

@@ -34,6 +34,7 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - The merge-step conflict-marker guard reads `git diff-tree --cc HEAD` (`++` lines only), so a lane's own marker-like lines pass. The check.py probe holds seven cases: empty, marker, legit lane line, both-sides legit lane line, real conflict kept, aligned kept marker (the documented miss), and clean. A kept marker textually identical to a parent line passes by design.
 - Fanout lanes live in the gitignored `<toplevel>/.worktrees/fanout`, not a sibling dir. `.gitignore` does not exclude `.worktrees/` from vitest, tsc, or file watchers (the project must exclude it in their config), and Node module resolution walks up from a lane worktree into the main tree's `node_modules`.
 - Never touch the user's working trees, branches, or stash in other repos. Use throwaway worktrees and remove them.
+- Role runs put throwaway worktrees only under `$SDLC_TMP_WORKTREES`: run.sh exports `SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid>` and removes every worktree under it on any exit, then runs `git worktree prune`.
 
 ## How you talk
 Follow the user's global rules: lead with the result or the user's action in one or two lines; 🟢 🟡 🔴 only as states on real items; decisions through AskUserQuestion with the recommendation first; no em dashes; no narration of what you are not doing.
