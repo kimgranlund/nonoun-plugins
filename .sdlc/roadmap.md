@@ -92,7 +92,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0085 | [port-thinking-depth](port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🟢 done |
 | T-0086 | [chain-open-questions-sweep](chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🟢 done |
 | T-0087 | [agent-spawn-seat-ladder](agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🟢 done |
-| T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | 🔵 ready |
+| T-0088 | [board-py-shows-rerun-verify](board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | 🟢 done |
 | T-0089 | [the-merge-step-conflict-marker](the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | 🟢 done |
 | T-0090 | [fanout-lanes-in-worktrees-dir](fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🔵 ready |
 | T-0091 | [run-a-real-chain-close](run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | 🔵 ready |
