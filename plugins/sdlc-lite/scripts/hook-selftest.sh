@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Selftest for the PreToolUse hooks (Bash and Agent): block-background.sh denies Bash
-# run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh
-# still blocks a push inside a role run. Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
+# run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
+# inside a role run, allows commands that only mention a publish phrase (heredoc body, quoted
+# argument, commit message) and blocks every real publish, including one fed to a shell or
+# evaluator, one in a $(...) or backtick substitution, and one behind an unterminated quote.
+# Publish phrases are built with printf so this file never holds one literally.
+# Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
 # Prints "hook selftest: PASS" or "hook selftest: FAIL: <case>" and exits non-zero on failure.
 set -uo pipefail
 
@@ -47,6 +51,75 @@ run "$pub" "$push_json" SDLC_ROLE=builder >/dev/null; rc=$?
 
 run "$pub" '{"tool_input":{"command":"ls"}}' SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "block-publish ls with role: exit $rc, want 0"
+
+# pj <command>: the hook's JSON for one Bash command.
+pj() { jq -n --arg c "$1" '{tool_input:{command:$c}}'; }
+
+# Only mentions a publish phrase: allowed.
+c=$(printf 'cat > f <<%s\ngit %s origin main\nEOF\n' "'EOF'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows heredoc body: exit $rc, want 0"
+c=$(printf "sed -i 's/x/git %s/' f" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows sed argument: exit $rc, want 0"
+c=$(printf "python3 -c 'print(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 -c string: exit $rc, want 0"
+c=$(printf 'git commit -m "doc: never git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows commit message: exit $rc, want 0"
+c=$(printf 'grep -n "npm %s" f' publish)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows grep argument: exit $rc, want 0"
+
+# A real publish, direct, via a shell or evaluator, or in a substitution: blocked.
+c=$(printf 'git %s origin main' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks plain push: exit $rc, want 2"
+c=$(printf 'cd x && git %s' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks push after &&: exit $rc, want 2"
+c=$(printf 'bash -c "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks bash -c: exit $rc, want 2"
+c=$(printf "sh -c 'gh %s create'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks sh -c: exit $rc, want 2"
+c=$(printf 'bash <<EOF\ngit %s\nEOF\n' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks bash heredoc: exit $rc, want 2"
+# shellcheck disable=SC2016
+c=$(printf 'echo "$(git %s)"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks \$() in double quotes: exit $rc, want 2"
+# shellcheck disable=SC2016
+c=$(printf 'echo "`git %s`"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks backtick in double quotes: exit $rc, want 2"
+c=$(printf 'eval "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks eval: exit $rc, want 2"
+c=$(printf 'gh api -X %s repos/o/r/issues' POST)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks gh api POST: exit $rc, want 2"
+c=$(printf 'npm %s' publish)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks npm: exit $rc, want 2"
+c=$(printf 'cat <<EOF | sh\ngh %s create\nEOF\n' pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks heredoc piped to sh: exit $rc, want 2"
+c=$(printf 'ssh host "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks ssh: exit $rc, want 2"
+c=$(printf 'git log | xargs git %s' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks xargs: exit $rc, want 2"
+c=$(printf 'ls | (git %s origin main)' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks subshell: exit $rc, want 2"
+c=$(printf 'echo "x" ; git %s origin main "' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks unterminated quote: exit $rc, want 2"
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'

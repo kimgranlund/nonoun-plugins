@@ -81,7 +81,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0074 | [run-honors-nvmrc](run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🟢 done |
 | T-0075 | [confirm-with-a-live-claude](confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | 🔵 ready |
 | T-0076 | [headless-conductors-can-still-abandon](headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | 🟢 done |
-| T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | 🔵 ready |
+| T-0077 | [block-publish-sh-matches-publish](block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | 🟢 done |
 | T-0078 | [skills-file-skill-md-line](skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | 🔵 ready |
 | T-0079 | [close-dry-run-lists-open](close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | 🟢 done |
 | T-0080 | [file-step-3-3-follow](file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | 🟢 done |
@@ -100,3 +100,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0093 | [check-the-steps-py-lint](check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | ⏳ proposed |
 | T-0094 | [steps-py-split-only-guard](steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | M | P2 | none | ⏳ proposed |
 | T-0096 | [tickets-py-selftest-checks-that](tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | M | P2 | none | ⏳ proposed |
+| T-0097 | [block-publish-sh-no-longer](block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | M | P2 | none | ⏳ proposed |
