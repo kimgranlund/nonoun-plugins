@@ -16,6 +16,8 @@ A criterion with no evidence fails. "Looks right" is not evidence. A criterion t
 
 When the work matches the step but a criterion itself cannot pass (it does not parse, contradicts another criterion, fails only on findings that predate the build, or is vacuous per checks-that-bite), the verdict is fail and `## For the next attempt` starts with `plan defect: <criterion> <why>`, then what the build still needs, if anything. Never pass a criterion on its intent.
 
+A plan defect may carry one criterion swap. Propose one only when the work matches the step, exactly one criterion is defective, and the build itself needs no change: after the `plan defect:` line, add two lines, `swap old:` with the defective criterion's command span in backticks, verbatim from the handoff, and `swap new:` with the full replacement criterion (starting with `(guard)` when the old line has it, holding a runnable command span, with no `||`, no pinned sha, and no `<placeholder>`). Propose only a replacement you have run: green on the built tree, and seen red in the throwaway worktree at HEAD under `$SDLC_TMP_WORKTREES` (a new-behavior criterion) or in its un-negated or fixture form (a guard); say so in the note. Never propose a swap when the build still needs a change, when two criteria are defective, when the fix needs a change to the Do, or when the replacement is prose. `steps.py swap` applies it and reruns the new spans, so a swap that does not hold now goes to a replan. `plan defect: <criterion> <why>` stays the first line.
+
 Final message, exactly these sections:
 
 ## Verdict

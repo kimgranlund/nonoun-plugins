@@ -2,7 +2,8 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | next <step dir> | selftest}
+                 lint <planner.md | task dir> | next <step dir> |
+                 swap <step dir> [--timeout SECONDS] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -64,14 +65,40 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
                 but 2+ consecutive no-verdict verifiers after the build -> stop
               newest verifier Verdict pass               -> done
-              fail whose ## For the next attempt starts "plan defect:" -> replan
+              fail whose ## For the next attempt starts "plan defect:", holds one swap old:/swap new:
+                pair (see swap), and no other verifier result in the dir holds a pair -> swap L<build
+                level> (apply it with steps.py swap, then rebuild at that level); any other
+                plan-defect fail -> replan
               else count non-plan-defect fails whose paired builder (newest before each
               verifier) is at the current build level: 1 -> rebuild L<n>,
               2+ at L1..L4 -> bump L<n+1>, 2+ at L5 -> stop.
+              A plan-defect fail, swap-routed or not, is never counted for a rebuild or a bump.
               A verifier with no verdict is never counted as a fail. A builder with no Status is
               never a done or a fail, never adds a bump, and is never a verifier's paired builder.
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
+  swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
+            light path). The pair lives in that verifier's ## For the next attempt: exactly one
+            line starting "swap old:" holding exactly one code span (the old criterion's command,
+            verbatim), and exactly one line starting "swap new:" whose stripped rest is the full
+            replacement criterion; zero or two or more of either line, or a swap old: line with no
+            span or several, is no pair. Preconditions: a newest builder and a newest verifier
+            result, the verifier counts after the builder (order.counts_after), its Verdict is
+            fail, its note starts "plan defect:", it holds a pair, and no other verifier result in
+            the dir holds one (one swap per step). Exactly one criterion line (the criteria_lines
+            region, a - or * list item) must hold the old span among its command spans. The new
+            text starts with (guard) exactly when that line does, holds at least one command span,
+            no span references HEAD^1 or holds a <placeholder>, and it lints clean (the lint rules
+            above). Each new span then runs under bash -c from the git toplevel of the step dir
+            (else the step dir) under --timeout SECONDS (default 300): the build is in the tree,
+            so a red span or a timeout refuses; in a git work tree a span that changed the work
+            tree refuses too, naming the paths (nothing is undone). When no criterion line holds
+            the old span but one criterion line's text after its marker equals the new text, it
+            prints "swap: already applied", exits 0, and writes nothing. Otherwise it replaces
+            only the target line, as <indent><marker> <new text>, and prints one line naming the
+            step dir, the old span, and the new text. Every refusal prints on stderr, ends with a
+            last line "plan defect: steps swap refused: <why>; replan this step (/chain 4.2)",
+            exits 1, and writes nothing.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
 import argparse
@@ -173,12 +200,12 @@ def parse_steps(plan):
     return out
 
 
-def criteria_lines(block):
-    """Lines under each ### Acceptance criteria of a step block, up to the next ## or ### line,
-    with ``` fenced lines left out."""
+def criteria_indexed(lines):
+    """(index, line) for each line under each ### Acceptance criteria of a list of lines, up to the
+    next ## or ### line, with ``` fenced lines left out. The one region rule criteria_lines uses."""
     out = []
     inside = fenced = False
-    for line in block.splitlines():
+    for i, line in enumerate(lines):
         if line.startswith('## ') or line.startswith('### '):
             inside = line.strip() == '### Acceptance criteria'
             fenced = False
@@ -189,8 +216,14 @@ def criteria_lines(block):
             fenced = not fenced
             continue
         if not fenced:
-            out.append(line)
+            out.append((i, line))
     return out
+
+
+def criteria_lines(block):
+    """Lines under each ### Acceptance criteria of a step block, up to the next ## or ### line,
+    with ``` fenced lines left out."""
+    return [line for _, line in criteria_indexed(block.splitlines())]
 
 
 def is_command(text):
@@ -636,7 +669,17 @@ def next_action(step_dir):
     if verdict(v) == 'pass':
         return 'done', None, f'newest verifier {os.path.basename(v)} passed', read
     if is_plan_defect(v):
-        return 'replan', None, f'newest verifier {os.path.basename(v)} failed with a plan defect', read
+        name = os.path.basename(v)
+        if swap_pair(v) is not None and not earlier_swap(d, v):
+            return ('swap', level,
+                    f'{name} failed with a plan defect and proposes one criterion swap; '
+                    f'apply it with steps.py swap, then rebuild at L{level}', read)
+        why = ''
+        if swap_pair(v) is not None:
+            why = ' (its swap is refused: the step already had one)'
+        elif any(section_lines_start(v, p) for p in ('swap old:', 'swap new:')):
+            why = ' (its swap lines are not exactly one swap old: with one code span and one swap new:)'
+        return 'replan', None, f'newest verifier {name} failed with a plan defect{why}', read
     count = 0
     for w in order.ordered(d, 'verifier'):
         paired = [x for x in builders if order.counts_after(w, x)]
@@ -663,6 +706,148 @@ def cmd_next(step_dir):
     print(f'reason: {reason}')
     for p in read:
         print(f'read: {p}')
+    return 0
+
+
+# --- swap -------------------------------------------------------------------
+
+SWAP_DEFECT = '; replan this step (/chain 4.2)'
+
+
+def section_lines_start(path, prefix):
+    """The stripped lines under ## For the next attempt that start with prefix."""
+    try:
+        body = section(path, 'For the next attempt') or []
+    except Exception:
+        return []
+    return [line.strip() for line in body if line.strip().startswith(prefix)]
+
+
+def swap_pair(path):
+    """(old span, new text) from a verifier result's ## For the next attempt, or None.
+    A pair is exactly one line starting 'swap old:' holding exactly one code span (stripped of one
+    edge space, like line_spans) and exactly one line starting 'swap new:' with a non-empty value."""
+    olds = section_lines_start(path, 'swap old:')
+    news = section_lines_start(path, 'swap new:')
+    if len(olds) != 1 or len(news) != 1:
+        return None
+    spans = []
+    for m in SPAN_RE.finditer(olds[0][len('swap old:'):]):
+        text = m.group(2)
+        if text.startswith(' '):
+            text = text[1:]
+        if text.endswith(' '):
+            text = text[:-1]
+        spans.append(text)
+    new = news[0][len('swap new:'):].strip()
+    if len(spans) != 1 or not spans[0].strip() or not new:
+        return None
+    return spans[0], new
+
+
+def earlier_swap(d, v):
+    """True when a verifier result in d other than v proposes a swap: one swap per step."""
+    return any(w != v and swap_pair(w) is not None for w in order.ordered(d, 'verifier'))
+
+
+def list_item(line):
+    """(indent, marker, text after the marker) for a '-' or '*' list item line, else None."""
+    m = re.match(r'^(\s*)([-*]) (.*)$', line)
+    return (m.group(1), m.group(2), m.group(3)) if m else None
+
+
+def swap(step_dir, timeout=300):
+    """Apply the newest verifier's criterion swap to <step dir>/handoff.md after every check passes.
+    Returns the one stdout line. Raises Fail (last line 'plan defect: ...; replan this step (/chain 4.2)')
+    and writes nothing on any refusal."""
+    d = pathlib.Path(step_dir)
+
+    def refuse(why, detail=()):
+        raise Fail('\n'.join(list(detail) + [f'plan defect: steps swap refused: {why}{SWAP_DEFECT}']))
+
+    if not d.is_dir():
+        refuse(f'no such directory: {d}')
+    h = d / 'handoff.md'
+    if not h.is_file():
+        refuse(f'no step handoff at {h}')
+    b = order.newest(d, 'builder')
+    v = order.newest(d, 'verifier')
+    if b is None or v is None:
+        refuse('the step dir needs a builder result and a verifier result')
+    vname = os.path.basename(v)
+    if not order.counts_after(v, b):
+        refuse(f'verifier {vname} is older than the newest build {os.path.basename(b)}')
+    if verdict_or_none(v) != 'fail':
+        refuse(f'newest verifier {vname} has no fail verdict')
+    if not is_plan_defect(v):
+        refuse(f'newest verifier {vname} does not start ## For the next attempt with "plan defect:"')
+    pair = swap_pair(v)
+    if pair is None:
+        refuse(f'newest verifier {vname} has no single swap old: (one code span) and swap new: pair')
+    if earlier_swap(d, v):
+        refuse(f'another verifier result in {d} already proposed a swap; one swap per step')
+    old, new = pair
+
+    text = h.read_text(encoding='utf-8')
+    lines = text.splitlines(keepends=True)
+    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines])
+             if list_item(line)]
+    targets = [(i, line) for i, line in items if old in line_spans(line)]
+    if not targets:
+        if any(list_item(line)[2].strip() == new for _, line in items):
+            return 'swap: already applied'
+        refuse(f'no criterion line holds the old span: {old}')
+    if len(targets) > 1:
+        refuse(f'{len(targets)} criterion lines hold the old span: {old}')
+    idx, target = targets[0]
+
+    if new.startswith('(guard)') != is_guard_line(target):
+        refuse('the new text must start with (guard) exactly when the old criterion line does: '
+               f'old {"is" if is_guard_line(target) else "is not"} a (guard) line')
+    spans = line_spans(f'- {new}')
+    if not spans:
+        refuse(f'the new criterion holds no runnable command span: {new}')
+    skipped = [s for s in spans if guard_skipped(s)]
+    if skipped:
+        refuse(f'a new span references HEAD^1 or holds a <placeholder>, so it cannot run now: {skipped[0]}')
+    findings = lint_steps(h, {1: f'## Step 1: swap\nlevel: L1\n### Acceptance criteria\n- {new}'})
+    if findings:
+        refuse(f'the new criterion does not lint: {new}', findings)
+
+    top = git_toplevel(d)
+    cwd = top or str(d)
+    before = tree_state(top) if top else None
+    detail, red = [], []
+    for s in spans:
+        rc, tail = run_guard(s, cwd, timeout)
+        if rc == 0:
+            continue
+        why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+        detail.append(f'steps swap: {d}: new criterion span is red now ({why}): {s}')
+        detail += [f'  {t}' for t in tail]
+        red.append(f'red now: {s}')
+    after = tree_state(top) if before is not None else None
+    changed = tree_changes(before, after) if after is not None else []
+    if changed:
+        detail += [f'steps swap: {d}: new criterion span changed the work tree: {p}' for p in changed]
+        red.append(f'the new criterion changed the work tree: {", ".join(changed)}')
+    if red:
+        refuse('; '.join(red), detail)
+
+    indent, marker, _ = list_item(target)
+    ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
+    lines[idx] = f'{indent}{marker} {new}{ending}'
+    h.write_text(''.join(lines), encoding='utf-8')
+    return f'steps swap: {d}: old `{old}` -> new {new}'
+
+
+def cmd_swap(step_dir, timeout=300):
+    try:
+        line = swap(step_dir, timeout)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(line)
     return 0
 
 
@@ -1186,6 +1371,108 @@ def selftest():
         check('next writes nothing: the step dir snapshot is equal before and after',
               rc == 0 and snapshot(d) == before)
 
+        # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
+        # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
+        S_OLD = 'test -f zzz-old'
+        S_HANDOFF = ('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n'
+                     '- (guard) `test -d .`\n  * `' + S_OLD + '` (old check)\n- prose line\n')
+
+        def swap_v(old=S_OLD, new='`test -f handoff.md` (new check)', extra='', tag='plan defect: c bad\n'):
+            return (f'## Verdict\nfail\n\n## For the next attempt\n{tag}swap old: `{old}`\n'
+                    f'swap new: {new}\n{extra}')
+
+        def s_step(files, handoff=S_HANDOFF, where=None):
+            d = step(2, files) if where is None else where
+            (d / 'handoff.md').write_text(handoff, encoding='utf-8')
+            return d
+
+        def swap_refused(name, d, needle=None):
+            before = snapshot(d)
+            rc, out, err = run_main(['swap', str(d)])
+            last = err.strip().splitlines()[-1] if err.strip() else ''
+            check(f'swap: {name}', rc == 1 and out == '' and snapshot(d) == before
+                  and last.startswith('plan defect:') and last.endswith('; replan this step (/chain 4.2)')
+                  and (needle is None or needle in err))
+
+        # (a) a pair applies: only the target line changes, its indent and marker are kept
+        d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v())])
+        rc, out, err = run_main(['swap', str(d)])
+        want = S_HANDOFF.replace(f'  * `{S_OLD}` (old check)', '  * `test -f handoff.md` (new check)')
+        check('swap: (a) a pair applies: only the target line changes, marker, indent, and the (guard) '
+              'sibling kept, stdout names old and new',
+              rc == 0 and err == '' and (d / 'handoff.md').read_text(encoding='utf-8') == want
+              and S_OLD in out and 'test -f handoff.md' in out and len(out.splitlines()) == 1)
+        # (b) already applied: rerun on the swapped handoff exits 0 and writes nothing
+        before = snapshot(d)
+        rc, out, err = run_main(['swap', str(d)])
+        check('swap: (b) already applied: exit 0, prints swap: already applied, writes nothing',
+              rc == 0 and out.strip() == 'swap: already applied' and snapshot(d) == before)
+        # a guard line swapped for a guard line applies
+        g = S_HANDOFF.replace('(guard) `test -d .`', '(guard) `test -d zzz-nodir`')
+        d = s_step([('builder-L2.md', DONE),
+                    ('verifier-L1.md', swap_v('test -d zzz-nodir', '(guard) `test -f handoff.md`'))], g)
+        rc, _, _ = run_main(['swap', str(d)])
+        check('swap: (a) a (guard) line swapped for a (guard) line applies',
+              rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8')
+              == g.replace('(guard) `test -d zzz-nodir`', '(guard) `test -f handoff.md`'))
+
+        # (c) refusals: each writes nothing and ends with a plan defect line
+        pair = [('builder-L2.md', DONE)]
+        swap_refused('(c) old span in no criterion line',
+                     s_step(pair + [('verifier-L1.md', swap_v('test -f zzz-missing'))]), 'no criterion line')
+        swap_refused('(c) old span in two criterion lines',
+                     s_step(pair + [('verifier-L1.md', swap_v())], S_HANDOFF + f'- again `{S_OLD}`\n'),
+                     '2 criterion lines')
+        swap_refused('(c) tag mismatch: a plain line swapped for a (guard) text',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='(guard) `test -f handoff.md`'))]), '(guard)')
+        swap_refused('(c) tag mismatch: a (guard) line swapped for a plain text',
+                     s_step(pair + [('verifier-L1.md', swap_v('test -d .', '`test -f handoff.md`'))]), '(guard)')
+        swap_refused('(c) new text with no command span',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='the file exists'))]), 'no runnable')
+        swap_refused('(c) new span with an unquoted || join',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='`test -f a || test -f handoff.md`'))]),
+                     'joins two checks with ||')
+        swap_refused('(c) new span with a <placeholder>',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='`test -f <tmp>/handoff.md`'))]),
+                     '<placeholder>')
+        swap_refused('(c) new span red now',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='`test -f zzz-new`'))]), 'red now (exit 1)')
+        r = tmp / 'swap-repo'
+        r.mkdir()
+        subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+        (r / 'sdlc').mkdir()
+        d = s_step([], where=r / 'sdlc')
+        for name, text in pair + [('verifier-L1.md', swap_v(new='`touch s-made && test -f s-made`'))]:
+            (d / name).write_text(text, encoding='utf-8')
+        swap_refused('(c) new span that changes the work tree (a throwaway git repo)', d,
+                     'changed the work tree: s-made')
+        swap_refused('(c) verifier older than the newest builder',
+                     s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
+        swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')
+        swap_refused('(c) a fail with no plan defect',
+                     s_step(pair + [('verifier-L1.md', swap_v(tag='fix x\n'))]), 'plan defect:"')
+        swap_refused('(c) a plan defect with no pair', s_step(pair + [('verifier-L1.md', DEFECT)]), 'no single')
+        two_new = swap_v(extra='swap new: `test -d .`\n')
+        swap_refused('(c) two swap new: lines', s_step(pair + [('verifier-L1.md', two_new)]), 'no single')
+        swap_refused('(c) a second swap on the step',
+                     s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE),
+                                    ('verifier-L1-2.md', swap_v())]), 'one swap per step')
+
+        # (d) next routes a plan-defect fail with one pair to swap, else replan
+        check('next swap: a plan-defect fail with one pair -> swap L2, reason names steps.py swap',
+              nxt(s_step(pair + [('verifier-L1.md', swap_v())]), 'swap L2')
+              and 'steps.py swap' in run_main(['next', str(s_step(pair + [('verifier-L1.md', swap_v())]))])[1])
+        check('next swap: two swap new: lines -> replan',
+              nxt(s_step(pair + [('verifier-L1.md', two_new)]), 'replan'))
+        check('next swap: a second swap on the step -> replan',
+              nxt(s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE),
+                                 ('verifier-L1-2.md', swap_v())]), 'replan'))
+        check('next swap: the DEFECT fixture (no pair) still -> replan',
+              nxt(s_step(pair + [('verifier-L1.md', DEFECT)]), 'replan'))
+        check('next swap: a swap-routed fail is not counted: swap fail then a fail at L2 -> rebuild L2',
+              nxt(s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE),
+                                 ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -1208,12 +1495,21 @@ def main(argv):
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
+    p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
+    p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
+    p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
+                   help='per-span timeout for the new criterion (default 300); a timeout refuses')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':
         return selftest()
     if a.cmd == 'next':
         return cmd_next(a.step_dir)
+    if a.cmd == 'swap':
+        if not 0 < a.timeout < float('inf'):
+            print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
+            return 1
+        return cmd_swap(a.step_dir, a.timeout)
     if a.cmd == 'lint':
         return cmd_lint(a.target)
     if not 0 < a.guard_timeout < float('inf'):

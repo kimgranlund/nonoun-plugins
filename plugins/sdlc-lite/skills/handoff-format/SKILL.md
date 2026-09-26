@@ -87,12 +87,12 @@ What must not change, limits, deadlines. "None" if none.
 Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Plan review
-Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. Earlier entries stay. The planner fixes that step on the replan.
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
 
-`scripts/steps.py split` writes these files from the newest planner file; no one writes them by hand.
+`scripts/steps.py split` writes these files from the newest planner file; no one writes them by hand. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand.
 
 Copied from the plan's step block, plus the task goal for orientation:
 
@@ -129,7 +129,7 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 
 The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
 
-`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to.
+`## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to. A swapped plan defect (a `plan defect:` fail whose criterion `steps.py swap` replaced) rebuilds at the same level without `## Previous attempt`.
 
 ## Free-text arguments
 
