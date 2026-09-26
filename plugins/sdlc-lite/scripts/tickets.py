@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -20,6 +20,13 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             A plain slug folder never moves. close refuses, writing nothing, when .<slug> already
             exists, and names the dot folder (`already closed`) when only .<slug> holds the ticket.
             close --dry-run adds a `rename <slug> -> .<slug>` line.
+            Before that rename, close runs `git grep --untracked -lF <rel>/<slug>` from the git toplevel
+            (<rel> is the ticket root relative to it) on every close path, leaving out the ticket's own
+            folder and <root>/roadmap.md. A hit refuses, writing nothing, naming each file and
+            suggesting --rewrite-refs or --force. close --rewrite-refs rewrites <rel>/<slug> to
+            <rel>/.<slug> in each file with the rename, adding `; rewrote refs in <files>` to the
+            output; --dry-run --rewrite-refs lists one `rewrite <file>` line per file before the
+            `expect` line. --force closes and leaves them. Outside git there is no scan.
             With no filer-L*.md here, close refuses and, when another git worktree's same-relative
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
@@ -219,6 +226,37 @@ def worktree_pairs(root):
         return out
     except (OSError, ValueError):
         return []
+
+
+def outside_refs(root, slug):
+    """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
+    where rel is root relative to its git toplevel; files are the toplevel-relative paths (sorted) that
+    `git grep --untracked -I -lF old` finds, leaving out every file under the ticket's own folder and
+    <root>/roadmap.md (the folder moves with the ticket; close regenerates the roadmap). (None, '', '', [])
+    when git is missing, a git call fails, or root is outside the toplevel, the same rule as worktree_pairs.
+    GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer git context cannot redirect the scan."""
+    try:
+        here = root.resolve()
+        anchor = here
+        while not anchor.is_dir() and anchor != anchor.parent:
+            anchor = anchor.parent
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+        p = subprocess.run(['git', '-C', str(anchor), 'rev-parse', '--show-toplevel'], env=env,
+                           capture_output=True, text=True)
+        if p.returncode:
+            raise ValueError(p.stderr.strip())
+        top = pathlib.Path(p.stdout.strip()).resolve()
+        rel = here.relative_to(top)
+        old, new = (rel / slug).as_posix(), (rel / ('.' + slug)).as_posix()
+        p = subprocess.run(['git', '-C', str(top), 'grep', '--untracked', '-I', '-l', '-z', '--full-name',
+                            '-F', '-e', old], env=env, capture_output=True, text=True)
+        if p.returncode not in (0, 1):
+            raise ValueError(p.stderr.strip())
+        skip = (rel / 'roadmap.md').as_posix()
+        files = sorted(f for f in p.stdout.split('\0') if f and f != skip and not f.startswith(old + '/'))
+        return top, old, new, files
+    except (OSError, ValueError):
+        return None, '', '', []
 
 
 def id_floor(root):
@@ -530,7 +568,7 @@ def parse_skip(text):
 
 
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
-              ack_warnings=None):
+              ack_warnings=None, rewrite_refs=False):
     """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
     with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
     numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
@@ -545,7 +583,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     (glob only, never read), so work filed in a lane worktree can be committed or copied in.
     ack_warnings (not None): pass the open-warnings gate with a recorded reason instead of force; the write
     appends a ## Closed section with the date, `warnings acknowledged: <why>` and the Warnings quoted with `> `.
-    It refuses with force, with reason, when empty, and when the filer's Warnings is None."""
+    It refuses with force, with reason, when empty, and when the filer's Warnings is None.
+    Before archiving, outside_refs lists files outside the folder that name <rel>/<slug>: with hits, close
+    refuses unless rewrite_refs (rewrite each to <rel>/.<slug> with the rename; the dry run lists
+    `rewrite <file>`) or force (close and leave them). Plain slug folders never move, so never scan."""
     if ack_warnings is not None and force:
         raise Fail(f'{slug}: --ack-warnings records why open warnings no longer apply, so it does not combine '
                    f'with --force; use one; nothing written')
@@ -584,6 +625,19 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
+    top, old_ref, new_ref, refs = outside_refs(root, slug) if archive else (None, '', '', [])
+    if refs and not rewrite_refs and not force:
+        via_force = '' if ack_warnings is not None else ' or --force (close anyway, leaving them)'
+        raise Fail(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
+                   + ''.join(f'  {f}\n' for f in refs)
+                   + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
+    rewrite = refs if rewrite_refs else []
+
+    def rewrite_now():
+        for f in rewrite:
+            path = top / f
+            path.write_bytes(path.read_bytes().replace(old_ref.encode('utf-8'), new_ref.encode('utf-8')))
+        return f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
     if reason is not None:
@@ -599,11 +653,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         h.write_bytes((head + body).encode('utf-8'))
         if archive:
             d.rename(dot)
+        rewrote = rewrite_now()
         write_roadmap(root, load(root))
         if flag:
             ensure_numbered_config(root)
         moved = f'; moved to {dot.name}' if archive else ''
-        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}'
+        return f'{pid} done (closed by reason: {why}); no follow-ups filed{moved}{rewrote}'
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         held = []
@@ -705,6 +760,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + other_opens
                          + ([f'rename {slug} -> {dot.name}'] if archive else [])
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
+                         + [f'rewrite {f}' for f in rewrite]
                          + [f'expect {digest}'])
 
     for s, t in planned:
@@ -720,6 +776,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
+    rewrote = rewrite_now()
     write_roadmap(root, load(root))
     if flag:
         ensure_numbered_config(root)
@@ -732,7 +789,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         out += f'; moved to {dot.name}'
     if ack_warnings is not None:
         out += f'; warnings acknowledged: {ack_warnings.strip()}'
-    return out
+    return out + rewrote
 
 
 def cmd_roadmap(root, numbered=False):
@@ -1482,6 +1539,89 @@ def selftest():
                rc == 0 and 'warning' in out)
         expect("(u) strip_prefix drops a closed folder's dot", strip_prefix('.0002-beta') == 'beta')
 
+        # (u) numbered close refuses on files outside the folder that reference it; --rewrite-refs rewrites them
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the (u) outside-reference cases')
+        else:
+            renv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+            def rgit(cwd, *args):
+                p = subprocess.run(['git', '-C', str(cwd), *args], env=renv, capture_output=True, text=True)
+                if p.returncode:
+                    raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+
+            def ref_repo(*fs, commit=True, where='docs/spec.md', text='see .sdlc/0003-x/handoff.md\n'):
+                root = case(both(numbered_x, x_filer('None'), *fs))
+                rgit(root.parent, 'init', '-q')
+                spec = root.parent / where
+                spec.parent.mkdir(parents=True, exist_ok=True)
+                spec.write_text(text, encoding='utf-8')
+                if commit:
+                    rgit(root.parent, 'add', '-A')
+                    rgit(root.parent, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                         'commit', '--no-verify', '-qm', 'x')
+                return root, spec
+
+            def whole(root):
+                return {p.relative_to(root.parent): p.read_bytes() for p in sorted(root.parent.rglob('*'))
+                        if p.is_file() and '.git' not in p.relative_to(root.parent).parts}
+
+            for label, commit, kw in (('committed', True, {}), ('untracked', False, {}),
+                                      ('--reason', True, {'reason': 'done elsewhere'}),
+                                      ('--dry-run', True, {'dry_run': True})):
+                root, spec = ref_repo(commit=commit)
+                before = whole(root)
+                rc, out, err = run(root, 'close', ('0003-x',), **kw)
+                expect(f'(u) refs: a {label} outside reference refuses, names docs/spec.md, writes nothing: rc={rc} '
+                       f'{out!r} {err!r}',
+                       rc == 1 and 'docs/spec.md' in err and '--rewrite-refs' in err and '--force' in err
+                       and 'nothing written' in err and whole(root) == before and (root / '0003-x').is_dir())
+
+            root, spec = ref_repo()
+            rc, out, err = run(root, 'close', ('0003-x',), rewrite_refs=True)
+            got = spec.read_text(encoding='utf-8')
+            expect(f'(u) refs: --rewrite-refs rewrites and closes: rc={rc} {out!r} {err!r} spec={got!r}',
+                   rc == 0 and out.endswith('; moved to .0003-x; rewrote refs in docs/spec.md')
+                   and got == 'see .sdlc/.0003-x/handoff.md\n' and status(root, '.0003-x') == 'done'
+                   and run(root, 'check')[0] == 0)
+
+            root, spec = ref_repo()
+            rc, out, err = run(root, 'close', ('0003-x',), reason='done elsewhere', rewrite_refs=True)
+            expect(f'(u) refs: --reason --rewrite-refs rewrites and closes: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.endswith('; rewrote refs in docs/spec.md') and (root / '.0003-x').is_dir()
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/.0003-x/handoff.md\n')
+
+            root, spec = ref_repo()
+            before = whole(root)
+            rc, out, err = run(root, 'close', ('0003-x',), dry_run=True, rewrite_refs=True)
+            ol = out.splitlines()
+            expect(f'(u) refs: --dry-run --rewrite-refs lists the file before expect, writes nothing: rc={rc} '
+                   f'{out!r} {err!r}',
+                   rc == 0 and len(ol) >= 2 and ol[-2] == 'rewrite docs/spec.md' and ol[-1].startswith('expect ')
+                   and whole(root) == before)
+
+            root, spec = ref_repo()
+            rc, out, err = run(root, 'close', ('0003-x',), force=True)
+            expect(f'(u) refs: --force closes and leaves the reference: rc={rc} {out!r} {err!r}',
+                   rc == 0 and (root / '.0003-x').is_dir() and 'rewrote' not in out
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/0003-x/handoff.md\n')
+
+            # negative controls: a reference only inside the ticket's own folder (or the roadmap) closes
+            root, spec = ref_repo(where='.sdlc/0003-x/notes.md')
+            with (root / 'roadmap.md').open('a', encoding='utf-8') as f:
+                f.write('.sdlc/0003-x/handoff.md\n')
+            rc, out, err = run(root, 'close', ('0003-x',))
+            expect(f'(u) refs: a reference only inside the own folder closes: rc={rc} {out!r} {err!r}',
+                   rc == 0 and (root / '.0003-x' / 'notes.md').is_file() and 'rewrote' not in out)
+
+            # plain mode never scans: the folder does not move, so a reference stays valid
+            root = case(filer('filer-L1.md', 'None', 'None'))
+            rgit(root.parent, 'init', '-q')
+            (root.parent / 'spec.md').write_text('see .sdlc/alpha/handoff.md\n', encoding='utf-8')
+            rc, out, err = run(root, 'close', ('alpha',))
+            expect(f'(u) refs: plain mode never refuses on a reference: rc={rc} {out!r} {err!r}',
+                   rc == 0 and status(root) == 'done' and (root / 'alpha').is_dir())
+
         # (u) negative controls: plain mode, and a plain slug in numbered mode, never rename
         for label, mutate in (('plain mode', lambda r: None),
                               ('numbered, plain slug', config('ticket_folders: numbered\n'))):
@@ -1745,6 +1885,10 @@ def main(argv):
     p.add_argument('--expect', metavar='DIGEST',
                    help='the digest from the --dry-run last line (expect <digest>); required with --skip; '
                         'close refuses, writing nothing, when the Follow-ups list changed since that dry run')
+    p.add_argument('--rewrite-refs', action='store_true',
+                   help='numbered mode: when files outside the ticket folder reference <rel>/<slug>, rewrite them to '
+                        '<rel>/.<slug> with the rename (--dry-run lists each as `rewrite <file>`) instead of '
+                        'refusing; --force closes and leaves them')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -1773,6 +1917,7 @@ def main(argv):
         kw['ack_warnings'] = a.ack_warnings
         kw['dry_run'] = a.dry_run
         kw['expect'] = a.expect
+        kw['rewrite_refs'] = a.rewrite_refs
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)
         except Fail as e:
