@@ -19,8 +19,11 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 5. Never join two checks with `||` in one criterion, because a fallback passes when either side matches, so the criterion can hold at HEAD and never fail. State each check as its own criterion.
    - `steps.py split` refuses a `||` join as a `plan defect`.
    - The only allowed form is the empty-argument short circuit `test $# -eq 0 || ...`.
-6. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
-7. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
+6. Compare against HEAD at build start (`HEAD`, `HEAD~1`), never a sha fixed at plan time. Other lanes merge into main while a plan waits, so `git diff --quiet <sha> -- ...` goes stale on the first main sync. `steps.py split` refuses a criterion that pins a commit sha as a `plan defect`.
+7. Never compare a count over a set other lanes change (tickets, handoffs, files under a glob) with a fixed number. Instead, derive the set at run time, or check only the items this step adds. `steps.py split` refuses a glob, `ls`, or `find` count compared with a literal of 2 or more as a `plan defect`.
+8. A criterion over a generated or aggregate budget (a catalog token size, an exact deviation list, a total across all tickets) belongs only to the ticket that owns that budget. Any other step checks only its own delta ("adds no new deviation") against a `git worktree add <tmp> HEAD` copy, as in rule 3.
+9. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest.
+10. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
 
 ## Merge steps
 

@@ -104,7 +104,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0097 | [block-publish-sh-no-longer](block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | M | P2 | none | ⏳ proposed |
 | T-0098 | [prompt-audit-cleanup](prompt-audit-cleanup/handoff.md) | Apply prompt-audit hunks: drop history ids and dates from level-rubric, checks-that-bite, file skills | chore | M | P2 | none | 🟢 done |
 | T-0099 | [add-a-hook-live-probe](add-a-hook-live-probe/handoff.md) | Add a hook-live-probe.sh selftest case where the hook exits with a... | idea | M | P2 | none | ⏳ proposed |
-| T-0100 | [planner-parallel-safe-criteria](planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | S | P2 | none | 🔵 ready |
+| T-0100 | [planner-parallel-safe-criteria](planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | S | P2 | none | 🟢 done |
 | T-0101 | [builder-inherited-red](builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | M | P2 | none | 🔵 ready |
 | T-0102 | [builder-scope-hygiene](builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🔵 ready |
 | T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🟢 done |
@@ -113,3 +113,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0106 | [extend-claude-agents-sdlc-lite](extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | M | P2 | none | ⏳ proposed |
 | T-0107 | [role-throwaway-worktrees-created-outside](role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | M | P2 | none | ⏳ proposed |
 | T-0108 | [a-dry-run-of-a](a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | M | P2 | none | ⏳ proposed |
+| T-0109 | [make-the-fixed-count-lint](make-the-fixed-count-lint/handoff.md) | Make the fixed-count lint skip a bare = assignment such as n=26... | idea | M | P2 | none | ⏳ proposed |
+| T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | ⏳ proposed |

@@ -7,7 +7,9 @@
 4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
    "no new findings" rule appear in every doc and script that carries the route, and the
-   `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it.
+   `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it,
+   the parallel-lane rules ("sha fixed at plan time", linted by steps.py, and "owns that budget")
+   appear in the planner.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -97,6 +99,8 @@ PLAN_DEFECT_DOCS = {
     'changed the work tree': ('agents/planner.md', 'skills/chain/SKILL.md', 'scripts/steps.py'),
     'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
+    'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
+    'owns that budget': ('agents/planner.md',),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:
