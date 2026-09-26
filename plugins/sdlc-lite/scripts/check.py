@@ -7,7 +7,9 @@
 4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
    "no new findings" rule appear in every doc and script that carries the route, and the
-   `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it.
+   `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it,
+   the parallel-lane rules ("sha fixed at plan time", linted by steps.py, and "owns that budget")
+   appear in the planner.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -17,6 +19,9 @@
    identical to a parent line that aligns with it shows as `+ ` or ` +`, not `++`.
 7. /file likely duplicates: skills/file/SKILL.md names the dry run's `open T-NNNN` lines and
    the `likely duplicate` marking of follow-ups that restate an open ticket.
+8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
+   agents/builder.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
+   and scripts/run.sh.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -97,12 +102,20 @@ PLAN_DEFECT_DOCS = {
     'changed the work tree': ('agents/planner.md', 'skills/chain/SKILL.md', 'scripts/steps.py'),
     'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
+    'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
+    'owns that budget': ('agents/planner.md',),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:
         f = root/rel
         if not f.is_file(): errors.append(f'{rel}: missing (plan-defect route check)'); continue
         if word not in f.read_text(): errors.append(f'{rel}: plan-defect route missing "{word}"')
+# Inherited-red route: a builder Status `inherited red: <tests>` is routed, rendered, and accepted, never a fail.
+INHERITED_RED_DOCS = ('agents/builder.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
+                      'scripts/steps.py', 'scripts/board.py', 'scripts/run.sh')
+for rel in INHERITED_RED_DOCS:
+    f = root/rel
+    if not f.is_file() or 'inherited red' not in f.read_text(): errors.append(f'{rel}: inherited-red route missing "inherited red"')
 # Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
 def merge_block(rel):
     f = root/rel
@@ -224,6 +237,14 @@ def step33_bad(text):
     return 'at most 4 options per question' not in l33
 if step33_bad(ft): errors.append('skills/file/SKILL.md: step 3.3 missing "at most 4 options per question"')
 if not step33_bad(ft.replace('at most 4 options per question', '')): errors.append('check.py: step 3.3 guard negative control not flagged')
+# Builder scope rules: formatters only on the files this step changed; kill only the PIDs you started.
+SCOPE_PHRASES = ('files this step changed', 'PIDs you started')
+def builder_scope_missing(text): return [s for s in SCOPE_PHRASES if s not in text]
+bf = root/'agents/builder.md'
+bt = bf.read_text() if bf.is_file() else ''
+for s in builder_scope_missing(bt): errors.append(f'agents/builder.md: builder scope rule missing "{s}"')
+for s in SCOPE_PHRASES:
+    if s not in builder_scope_missing(bt.replace(s, '')): errors.append('check.py: builder scope guard negative control not flagged')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')

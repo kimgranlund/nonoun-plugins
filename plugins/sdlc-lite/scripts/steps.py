@@ -14,7 +14,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
-            It also refuses a criterion span that joins two checks with an unquoted || (see lint).
+            It also refuses a criterion span that joins two checks with an unquoted || (see lint),
+            one that pins a commit sha fixed at plan time, and one that compares a count over a
+            changing set with a fixed number (see lint).
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
             bash -c, from the git toplevel of the task dir (else the task dir), under
@@ -35,7 +37,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
             each <placeholder> replaced first, and that none holds an unquoted || operator (a
             fallback passes on either side, so the criterion cannot fail); a || inside quotes, or
-            one whose left operand is exactly `test $# -eq 0`, is allowed. Never executes a span, writes nothing, and needs no
+            one whose left operand is exactly `test $# -eq 0`, is allowed. A span that parses gets
+            two more checks on its raw text. It must not pin a commit sha: a span holding the word
+            git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
+            non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
+            first sync from main; compare against HEAD at build start instead. It must not compare
+            a count over a changing set with a fixed number: a count tool (wc -l, grep -c,
+            grep --count), a set source (a * glob, or ls or find as a word), and a comparison
+            (-eq -ne -ge -gt -le -lt = == !=) with a literal integer of 2 or more, all in one span.
+            Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
             builder-*.md and verifier-*.md by order.py (ordered, newest, counts_after; never file
@@ -44,6 +54,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               build level = level of the newest builder result, else the handoff's level: line;
               verifier level: build L1/L2 -> L1, L3 -> L2, L4/L5 -> L3.
               no builder result                          -> build L<handoff level>
+              newest builder has no done/blocked Status  -> rebuild L<level of that result>,
+                but 2+ consecutive statusless builders (newest first) -> stop
+              newest builder Status inherited red: <tests> -> inherited (a gate already red at
+                the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
+                rebuild, or a replan; a bare "inherited red" with no colon is statusless.
               newest builder Status blocked              -> replan (whatever its Notes say)
               no verifier result counts after the build  -> verify L<verifier level>
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
@@ -53,9 +68,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               else count non-plan-defect fails whose paired builder (newest before each
               verifier) is at the current build level: 1 -> rebuild L<n>,
               2+ at L1..L4 -> bump L<n+1>, 2+ at L5 -> stop.
-              A verifier with no verdict is never counted as a fail.
-            Errors (missing dir, no handoff level with no builder result, a builder with no
-            done/blocked Status) print one "steps next: "
+              A verifier with no verdict is never counted as a fail. A builder with no Status is
+              never a done or a fail, never adds a bump, and is never a verifier's paired builder.
+            Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
@@ -356,9 +371,30 @@ def or_fallback(text):
     return False
 
 
+GIT_WORD_RE = re.compile(r'(?<![\w.-])git(?![\w-])')
+SHA_RE = re.compile(r'(?<![A-Za-z0-9])(?=[0-9a-f]*[0-9])(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}(?![A-Za-z0-9])')
+COUNT_TOOL_RE = re.compile(r'(?<![\w-])wc\s+-[A-Za-z]*l'
+                           r'|(?<![\w-])grep\b[^|;&)`]*?\s(?:-[A-Za-z]*c[A-Za-z]*|--count)(?![\w-])')
+SET_SOURCE_RE = re.compile(r'\*|(?<![\w./-])(?:ls|find)(?![\w.-])')
+COMPARE_RE = re.compile(r'(?:(?<![\w-])-(?:eq|ne|ge|gt|le|lt)|==|!=|=)\s*["\']?(\d+)(?![\w.])')
+
+
+def pins_sha(text):
+    """True when a span holds the word git and a commit-sha-like hex run fixed at plan time."""
+    return bool(GIT_WORD_RE.search(text) and SHA_RE.search(text))
+
+
+def fixed_set_count(text):
+    """True when a span counts over a changing set (a glob, ls, or find) and compares the count
+    with a literal integer of 2 or more."""
+    return bool(COUNT_TOOL_RE.search(text) and SET_SOURCE_RE.search(text)
+                and any(int(m.group(1)) >= 2 for m in COMPARE_RE.finditer(text)))
+
+
 def lint_steps(plan, steps):
-    """Return one finding per command-like criterion span that bash -n cannot parse, and one per
-    span that joins two checks with an unquoted ||; [] when clean. bash -n parses and never executes."""
+    """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
+    parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
+    set compared with a fixed number; [] when clean. bash -n parses and never executes."""
     findings = []
     for n, block in steps.items():
         for text in command_spans(block):
@@ -376,11 +412,21 @@ def lint_steps(plan, steps):
             try:
                 joined = or_fallback(text)
             except ValueError:
-                continue
+                joined = False
             if joined:
                 findings.append(f'steps: {plan} step {n}: acceptance criterion joins two checks with ||: {text}\n'
                                 '  the fallback can pass on either side, so the criterion cannot fail: '
                                 'split it into separate criteria')
+            if pins_sha(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion pins a commit sha fixed at plan time: '
+                                f'{text}\n'
+                                '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
+                                'a fixed sha goes stale on the first sync from main')
+            if fixed_set_count(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion compares a count over a changing set '
+                                f'with a fixed number: {text}\n'
+                                '  other lanes change the set: derive the set at run time, '
+                                "or check only this step's own items")
     return findings
 
 
@@ -494,6 +540,19 @@ def verdict(path):
     return first_word(path, 'Verdict', ('pass', 'fail'), 'verifier verdict')
 
 
+def build_status_or_none(path):
+    """'done', 'blocked', or 'inherited' (a first line starting 'inherited red:', any case) from the
+    first non-blank line under ## Status, else None. Never raises."""
+    try:
+        body = section(path, 'Status')
+        first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
+        if first.lower().startswith('inherited red:'):
+            return 'inherited'
+        return build_status(path)
+    except Exception:
+        return None
+
+
 def verdict_or_none(path):
     """'pass' or 'fail' from the first non-blank line under ## Verdict, else None. Never raises."""
     try:
@@ -532,6 +591,24 @@ def next_action(step_dir):
         return 'build', n, f'no builder result; handoff level L{n}', []
     level = result_level(b)
     read = [b]
+    if build_status_or_none(b) is None:
+        runs = 0
+        for x in reversed(builders):
+            if build_status_or_none(x) is not None:
+                break
+            runs += 1
+        name = os.path.basename(b)
+        if runs <= 1:
+            return ('rebuild', level,
+                    f'{name} has no done/blocked under ## Status; not counted as a fail, rerun the builder at the same level',
+                    read)
+        return ('stop', None,
+                f'{runs} consecutive builder results with no Status (newest {name}); ask the user', read)
+    if build_status_or_none(b) == 'inherited':
+        return ('inherited', None,
+                f'{os.path.basename(b)} reports inherited red (gate already red at the pre-build HEAD); '
+                'ask the conductor, not a fail, rebuild, bump, or replan', read)
+    builders = [x for x in builders if build_status_or_none(x) in ('done', 'blocked')]
     if build_status(b) == 'blocked':
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
@@ -839,6 +916,36 @@ def selftest():
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
               and out2.strip() == 'steps lint: ok')
 
+        # (k3) a criterion that pins a commit sha (bare, and in a <sha>..HEAD range): lint and split refuse
+        sha = '3f9c' + '2ab'
+        for form in (f'git diff --quiet {sha} -- src', f'git diff --quiet {sha}..HEAD -- src'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k3) split refuses a criterion that pins a commit sha ({form}), writes nothing',
+                    ['split', str(d)], d, needles=('plan defect', 'step 1', 'pins a commit sha fixed at plan time'))
+            refused(f'(k3) lint refuses a criterion that pins a commit sha ({form}) with plan defect',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'pins a commit sha'))
+
+        # (k4) a glob count compared with a fixed number: lint and split refuse
+        d = task(plan=PLAN.replace('- one works', '- `test "$(ls .sdlc/*/handoff.md | wc -l)" -eq 26`'))
+        refused('(k4) split refuses a glob count compared with a fixed number, writes nothing',
+                ['split', str(d)], d,
+                needles=('plan defect', 'step 1', 'compares a count over a changing set with a fixed number'))
+        refused('(k4) lint refuses a glob count compared with a fixed number with plan defect',
+                ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'fixed number'))
+
+        # (k5) HEAD-relative git, %H, a single-file count, a glob count -eq 0, and the merge-step
+        # two-parent criterion pass
+        ok_spans = ['git diff --quiet HEAD -- src', 'git log -1 --format=%H HEAD~1',
+                    'test "$(grep -c foo x.txt)" -eq 2', 'test "$(ls .sdlc/*/handoff.md | wc -l)" -eq 0',
+                    'test "$(git rev-list --parents -n1 HEAD | wc -w)" -eq 3']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc, _, _ = run_main(['split', str(d)])
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k5) HEAD, %H, single-file count, glob count -eq 0, and two-parent check pass: '
+              'no pins a commit sha, no fixed number finding',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
+              and out2.strip() == 'steps lint: ok')
+
         # (l) a broken command under ### Do is not a criterion
         d = task(plan=PLAN.replace('Do one.', BROKEN_CRITERION))
         rc, _, _ = run_main(['split', str(d)])
@@ -1037,6 +1144,22 @@ def selftest():
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
                            ('builder-L2-2.md', DONE), ('verifier-L1-2.md', FAIL),
                            ('verifier-L1-3.md', NOVERDICT)]), 'reverify L1'))
+        check('next rebuild: a builder with no done/blocked Status -> rebuild L2, not an error',
+              nxt(step(2, [('builder-L2.md', '## Status\nmaybe\n')]), 'rebuild L2'))
+        check('next stop: two consecutive builders with no Status -> stop',
+              nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', 'Waiting.\n')]), 'stop'))
+        check('next verify: a statusless builder then a done builder -> verify L1',
+              nxt(step(2, [('builder-L2.md', 'Waiting.\n'), ('builder-L2-2.md', DONE)]), 'verify L1'))
+        INHERITED = '## Status\ninherited red: test_a\n'
+        check('next inherited: newest builder reports inherited red -> inherited',
+              nxt(step(2, [('builder-L2.md', INHERITED)]), 'inherited'))
+        check('next inherited: an inherited builder then a done builder -> verify L1',
+              nxt(step(2, [('builder-L2.md', INHERITED), ('builder-L2-2.md', DONE)]), 'verify L1'))
+        check('next inherited: done, fail, then inherited -> inherited, not rebuild or bump',
+              nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL),
+                           ('builder-L2-2.md', INHERITED)]), 'inherited'))
+        check('next inherited: "inherited red" with no colon is statusless -> rebuild L2',
+              nxt(step(2, [('builder-L2.md', '## Status\ninherited red\n')]), 'rebuild L2'))
         # order comes from runs.jsonl, never from file times: times set inverse to the run order
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL), ('builder-L2-2.md', DONE)])
         for i, name in enumerate(('builder-L2-2.md', 'verifier-L1.md', 'builder-L2.md')):
@@ -1056,8 +1179,6 @@ def selftest():
         d = step(2)
         (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\n', encoding='utf-8')
         next_refused('next error: a handoff with no level line and no builder result', d)
-        next_refused('next error: a builder with no done/blocked Status',
-                     step(2, [('builder-L2.md', '## Status\nmaybe\n')]))
 
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)])
         before = snapshot(d)

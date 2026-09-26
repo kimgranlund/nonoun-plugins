@@ -24,8 +24,8 @@ should fail if X breaks" is a prediction, not evidence, and does not close a che
 
 ## Negative controls name the variable that bites
 
-A negative control restores the pre-fix condition and must go red. Two measured NCs that went
-green instead, both from 2026-07-29:
+A negative control restores the pre-fix condition and must go red. Two that went green
+instead:
 
 - "restore `position: absolute`" didn't fail a popover probe — top-layer membership was the
   biting variable, and a promoted popover paints regardless of `position`.
@@ -37,7 +37,7 @@ An NC whose biting variable isn't named is an NC that hasn't been designed yet.
 
 ## The vacuous-predicate bestiary
 
-Each entry measured in the wild, each a check that passed while examining nothing.
+Each entry is a check that passed while examining nothing.
 
 | Vacuous form | Why it can't fail | Write instead |
 |---|---|---|
