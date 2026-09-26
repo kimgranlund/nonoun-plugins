@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -49,8 +49,14 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             refuse together with --reason
   archive   numbered mode only: rename every existing done or dropped NNNN-<slug> folder to
             .NNNN-<slug>, then regenerate the roadmap. Refuses, writing nothing, outside numbered
-            mode, on a bad ticket, or when any target .NNNN-<slug> exists. --dry-run prints one
-            `<name> -> .<name>` line per folder and writes nothing. --numbered persists the mode
+            mode, on a bad ticket, or when any target .NNNN-<slug> exists. Before any write it runs
+            close's reference scan (git grep --untracked from the git toplevel) for each folder it
+            would rename and refuses, writing nothing, naming each cited <rel>/NNNN-<slug> and each
+            citing file; a file inside one archived folder that cites another counts. --rewrite-refs
+            rewrites each cite to <rel>/.NNNN-<slug> before the renames; --force archives and leaves
+            them. Outside git there is no scan. --dry-run prints one `<name> -> .<name>` line per
+            folder, then with --rewrite-refs one `rewrite <file>` line per citing file, and writes
+            nothing; without either flag it refuses the same way. --numbered persists the mode
             close --reason TEXT is for a ticket whose work other tickets did: it skips the filer
             (no filer needed, warnings and follow-ups ignored), sets the ticket done, appends a
             ## Closed section with today's date and TEXT, and files no follow-ups
@@ -257,6 +263,13 @@ def outside_refs(root, slug):
         return top, old, new, files
     except (OSError, ValueError):
         return None, '', '', []
+
+
+def rewrite_files(top, files, old, new):
+    """Replace old with new, as bytes, in each toplevel-relative file under top."""
+    for f in files:
+        path = top / f
+        path.write_bytes(path.read_bytes().replace(old.encode('utf-8'), new.encode('utf-8')))
 
 
 def id_floor(root):
@@ -634,9 +647,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     rewrite = refs if rewrite_refs else []
 
     def rewrite_now():
-        for f in rewrite:
-            path = top / f
-            path.write_bytes(path.read_bytes().replace(old_ref.encode('utf-8'), new_ref.encode('utf-8')))
+        rewrite_files(top, rewrite, old_ref, new_ref)
         return f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
@@ -817,7 +828,7 @@ def cmd_check(root, numbered=False):
     return ok
 
 
-def cmd_archive(root, numbered=False, dry_run=False):
+def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=False):
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not numbered:
@@ -832,16 +843,30 @@ def cmd_archive(root, numbered=False, dry_run=False):
     taken = [f'.{n}' for n in names if (root / f'.{n}').exists()]
     if taken:
         raise Fail(f'archive: {", ".join(taken)} already exist(s); nothing written')
+    hits = [(name, top, old, new, files) for name in names
+            for top, old, new, files in [outside_refs(root, name)] if files]
+    if hits and not rewrite_refs and not force:
+        raise Fail('archive would rename these folders, but other files reference them:\n'
+                   + ''.join(f'{old}:\n' + ''.join(f'  {f}\n' for f in files) for _, _, old, _, files in hits)
+                   + 'rerun with --rewrite-refs (rewrite them to the dot form) or --force (archive anyway, '
+                     'leaving them); nothing written')
+    rewrite = sorted({f for *_, files in hits for f in files}) if rewrite_refs else []
     if dry_run:
-        return '\n'.join(f'{n} -> .{n}' for n in names) if names else 'nothing to archive'
+        if not names:
+            return 'nothing to archive'
+        return '\n'.join([f'{n} -> .{n}' for n in names] + [f'rewrite {f}' for f in rewrite])
     if not names:
         return 'nothing to archive'
+    if rewrite_refs:
+        for _, top, old, new, files in hits:
+            rewrite_files(top, files, old, new)
     for n in names:
         (root / n).rename(root / f'.{n}')
     write_roadmap(root, load(root))
     if flag:
         ensure_numbered_config(root)
-    return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names)
+    rewrote = f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
+    return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names) + rewrote
 
 
 def run(root, cmd, args=(), **kw):
@@ -1734,6 +1759,82 @@ def selftest():
         expect(f'archive in plain mode refuses and writes nothing: rc={rc} {err!r}',
                rc == 1 and 'numbered mode' in err and snap(root) == before and (root / 'alpha').is_dir())
 
+        # archive runs close's reference scan: a cite refuses; --rewrite-refs rewrites it; --force leaves it
+        def arch_ref(where='docs/spec.md', text='see .sdlc/0001-alpha/handoff.md\n', git=True):
+            root = case(arch_base)
+            spec = root.parent / where
+            spec.parent.mkdir(parents=True, exist_ok=True)
+            spec.write_text(text, encoding='utf-8')
+            if git:
+                rgit(root.parent, 'init', '-q')
+                rgit(root.parent, 'add', '-A')
+                rgit(root.parent, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                     'commit', '--no-verify', '-qm', 'x')
+            return root, spec
+
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the archive reference cases')
+        else:
+            for label, kw in (('committed', {}), ('--dry-run', {'dry_run': True})):
+                root, spec = arch_ref()
+                before = whole(root)
+                rc, out, err = run(root, 'archive', **kw)
+                expect(f'archive refs: a {label} reference refuses, names docs/spec.md, writes nothing: rc={rc} '
+                       f'{out!r} {err!r}',
+                       rc == 1 and 'docs/spec.md' in err and '.sdlc/0001-alpha' in err and '--rewrite-refs' in err
+                       and '--force' in err and err.endswith('nothing written') and whole(root) == before
+                       and (root / '0001-alpha').is_dir())
+
+            root, spec = arch_ref()
+            rc, out, err = run(root, 'archive', rewrite_refs=True)
+            expect(f'archive refs: --rewrite-refs rewrites and renames: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.endswith('; rewrote refs in docs/spec.md') and (root / '.0001-alpha').is_dir()
+                   and (root / '.0002-beta').is_dir()
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/.0001-alpha/handoff.md\n'
+                   and run(root, 'check')[0] == 0)
+
+            root, spec = arch_ref()
+            rc, out, err = run(root, 'archive', force=True)
+            expect(f'archive refs: --force renames and leaves the reference: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'rewrote' not in out and (root / '.0001-alpha').is_dir()
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/0001-alpha/handoff.md\n')
+
+            root, spec = arch_ref()
+            before = whole(root)
+            rc, out, err = run(root, 'archive', dry_run=True, rewrite_refs=True)
+            expect(f'archive refs: --dry-run --rewrite-refs lists renames then the file, writes nothing: rc={rc} '
+                   f'{out!r} {err!r}',
+                   rc == 0 and out.splitlines() == ['0001-alpha -> .0001-alpha', '0002-beta -> .0002-beta',
+                                                    'rewrite docs/spec.md']
+                   and whole(root) == before)
+
+            root, spec = arch_ref()
+            before = whole(root)
+            rc, out, err = run(root, 'archive', dry_run=True, force=True)
+            expect(f'archive refs: --dry-run --force lists only the renames, writes nothing: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.splitlines() == ['0001-alpha -> .0001-alpha', '0002-beta -> .0002-beta']
+                   and whole(root) == before)
+
+            # a file in one archived folder citing another archived folder is rewritten before both renames
+            root, spec = arch_ref(where='.sdlc/0001-alpha/notes.md', text='see .sdlc/0002-beta/handoff.md\n')
+            before = whole(root)
+            rc, out, err = run(root, 'archive')
+            expect(f'archive refs: a cite between two archived folders refuses: rc={rc} {err!r}',
+                   rc == 1 and '.sdlc/0001-alpha/notes.md' in err and whole(root) == before)
+            rc, out, err = run(root, 'archive', rewrite_refs=True)
+            got = (root / '.0001-alpha' / 'notes.md').read_text(encoding='utf-8')
+            expect(f'archive refs: --rewrite-refs rewrites a cite between two archived folders: rc={rc} {out!r} '
+                   f'{err!r} notes={got!r}',
+                   rc == 0 and got == 'see .sdlc/.0002-beta/handoff.md\n' and (root / '.0002-beta').is_dir()
+                   and out.endswith('; rewrote refs in .sdlc/0001-alpha/notes.md'))
+
+        # outside git there is no scan: a citing file does not block the archive and is left alone
+        root, spec = arch_ref(git=False)
+        rc, out, err = run(root, 'archive')
+        expect(f'archive refs: outside git a reference does not block: rc={rc} {out!r} {err!r}',
+               rc == 0 and (root / '.0001-alpha').is_dir()
+               and spec.read_text(encoding='utf-8') == 'see .sdlc/0001-alpha/handoff.md\n')
+
         # ---- worktrees: new and close stamp ids above the max across every git worktree's same-relative root ----
         if shutil.which('git') is None:
             print('tickets selftest: git not found; skipping the worktree id cases')
@@ -1899,7 +2000,13 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='also fail a NNNN-<slug> folder whose id is not T-NNNN (also on via <root>/config)')
     p = sub.add_parser('archive', help='numbered mode: rename done and dropped NNNN-<slug> folders to .NNNN-<slug>')
-    p.add_argument('--dry-run', action='store_true', help='print each <name> -> .<name> rename; write nothing')
+    p.add_argument('--dry-run', action='store_true',
+                   help='print each <name> -> .<name> rename (and each rewrite <file> with --rewrite-refs); '
+                        'write nothing')
+    p.add_argument('--rewrite-refs', action='store_true',
+                   help='rewrite files that reference an archived NNNN-<slug> folder to the .NNNN-<slug> form')
+    p.add_argument('--force', action='store_true',
+                   help='archive even when files reference a folder, leaving those references')
     p.add_argument('--numbered', action='store_true',
                    help='turn numbered mode on and, on success, persist it in <root>/config '
                         '(also on via that config)')
@@ -1912,6 +2019,8 @@ def main(argv):
     kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check', 'archive') else {}
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
+        kw['rewrite_refs'] = a.rewrite_refs
+        kw['force'] = a.force
     if cmd == 'close':
         kw['reason'] = a.reason
         kw['ack_warnings'] = a.ack_warnings
