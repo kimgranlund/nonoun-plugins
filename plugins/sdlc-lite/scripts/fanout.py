@@ -45,9 +45,15 @@ run
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
        tests). Non-zero exit: `driver failed rc=<n>`, the tree left as is.
-    3. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
+    3. inherited red: each <rel>/<slug>/step-<n>/ dir in the lane worktree (numeric order; a
+       step-<n>.superseded-<k> dir never counts) goes through steps.next_action; at the first
+       whose action is `inherited` (a builder Status `inherited red: <tests>`, a gate already red
+       at the pre-build HEAD) the outcome is `inherited red: step-<n>: <tests>`, the tests read
+       from that builder result's Status line. Nothing is committed, merged, or closed, and the
+       lane tree is left as is for inspection.
+    4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
-    4. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
+    5. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
        logs/gate-<lane>-<id>-<k>.log; the first red one runs `git reset --hard <pre-merge HEAD>`
@@ -73,11 +79,15 @@ selftest
   proves that without --rewrite-refs the close is refused (naming the flag) and the ticket stays
   open, that with it the ticket closes to .0001-x and the `close <id>` commit carries the
   rewritten docs/spec.md, the integration worktree stays clean either way, and the dry-run
-  close: line matches each mode.
+  close: line matches each mode. An inherited-red repo (case 5) proves that a step-1 builder
+  Status `inherited red: test_a` gives the outcome `inherited red: step-1: test_a`, no merge on
+  the integration branch, the ticket still ready, the next ticket skipped, and the uncommitted
+  step file kept in the lane; its negative control, a builder Status `done`, gives `merged`.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
 import tickets  # same scripts/ dir: the only front matter parser
+import steps  # same scripts/ dir: next_action and section read step results
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -421,6 +431,32 @@ def porcelain(wt):
     return items
 
 
+STEP_DIR_RE = re.compile(r'step-(\d+)')
+
+
+def inherited_red(ticket_dir):
+    """`inherited red: step-<n>: <tests>` for the first step-<n> dir (numeric order; never a
+    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken from the
+    newest builder result's ## Status line after the `inherited red:` prefix; else None."""
+    base = pathlib.Path(ticket_dir)
+    if not base.is_dir():
+        return None
+    dirs = sorted((int(m.group(1)), d) for d in base.iterdir()
+                  if d.is_dir() and (m := STEP_DIR_RE.fullmatch(d.name)))
+    for n, d in dirs:
+        try:
+            action, _, _, read = steps.next_action(d)
+            if action != 'inherited':
+                continue
+            body = steps.section(read[0], 'Status') or []
+            first = next((ln.strip() for ln in body if ln.strip()), '')
+            tests = re.sub(r'(?i)^inherited red:', '', first).strip()
+        except Exception:  # steps.Fail included: this dir is not inherited
+            continue
+        return f'inherited red: step-{n}: {tests}'
+    return None
+
+
 def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
@@ -443,6 +479,9 @@ def run_ticket(ctx, lane, t, lock):
                             stdout=f, stderr=subprocess.STDOUT, env=env).returncode
     if rc:
         return f'driver failed rc={rc}', ''
+    inherited = inherited_red(wt / rel / t.slug)
+    if inherited:  # main was already red: commit, merge, and close nothing; keep the tree
+        return inherited, ''
 
     p = git(wt, 'add', '-A')
     if p.returncode:
@@ -774,6 +813,57 @@ def selftest():
         expect('numbered with the flag: .sdlc/.0001-x/handoff.md on the branch',
                sh(nw, 'cat-file', '-e', 'fanout/t:.sdlc/.0001-x/handoff.md').returncode == 0)
         expect('numbered with the flag: integration worktree clean', integ_clean(nw))
+
+        # 5. Inherited red: a step-1 builder Status `inherited red: test_a` stops the lane with that
+        # cause; nothing is committed, merged, or closed. Negative control: Status `done` merges.
+        def inherited_stub(status):
+            return ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
+                    'mkdir -p "$FANOUT_ROOT/$FANOUT_SLUG/step-1"; '
+                    f'printf "## Status\\n{status}\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/step-1/builder-L2.md"; fi; '
+                    'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                    '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')
+
+        def report_rows(lanes_dir):
+            rep, got = lanes_dir / 'report.md', {}
+            for line in (rep.read_text() if rep.is_file() else '').splitlines():
+                c = [x.strip() for x in line.strip('|').split('|')]
+                if line.startswith('| ') and len(c) == 4 and tickets.ID_RE.fullmatch(c[1]):
+                    got[c[1]] = c[2]
+            return got
+
+        ir, il = tmp / 'inherited', tmp / 'ilanes'
+        make_repo(ir, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(ir, 'a=T-0001,T-0002', '--integration', 'fanout/ir', '--lanes-dir', str(il),
+                      '--driver', inherited_stub('inherited red: test_a'), '--gate', 'true')
+        got = report_rows(il)
+        expect(f'inherited red: run exits 1, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 1)
+        expect(f'inherited red: T-0001 outcome is exactly inherited red: step-1: test_a, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_a')
+        expect(f'inherited red: T-0002 skipped, got {got.get("T-0002")!r}', got.get('T-0002') == 'skipped')
+        merges = sh(ir, 'rev-list', '--merges', '--count', 'fanout/ir').stdout.strip()
+        expect(f'inherited red: fanout/ir has no merge commits, got {merges!r}', merges == '0')
+        expect('inherited red: fanout/ir does not hold work-T-0001.txt',
+               sh(ir, 'cat-file', '-e', 'fanout/ir:work-T-0001.txt').returncode != 0)
+        shown = sh(ir, 'show', 'fanout/ir:.sdlc/a/handoff.md').stdout
+        expect(f'inherited red: fanout/ir:.sdlc/a/handoff.md still says status: ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        kept = il / 'a' / '.sdlc' / 'a' / 'step-1' / 'builder-L2.md'
+        lane_status = sh(il / 'a', 'status', '--porcelain', '--untracked-files=all').stdout
+        expect(f'inherited red: the lane keeps the uncommitted step-1 builder file, got {lane_status!r}',
+               kept.is_file() and '?? .sdlc/a/step-1/builder-L2.md' in lane_status.splitlines())
+
+        dr, dl = tmp / 'inherited-done', tmp / 'dlanes'
+        make_repo(dr, [('a', 'T-0001', 'ready')])
+        proc = fanout(dr, 'a=T-0001', '--integration', 'fanout/dr', '--lanes-dir', str(dl),
+                      '--driver', inherited_stub('done'), '--gate', 'true')
+        got = report_rows(dl)
+        expect(f'done builder (negative control): run exits 0, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        expect(f'done builder (negative control): T-0001 merged, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'merged')
+        shown = sh(dr, 'show', 'fanout/dr:.sdlc/a/handoff.md').stdout
+        expect(f'done builder (negative control): ticket closed on fanout/dr, got {shown[:120]!r}',
+               re.search(r'^status: done\b', shown, re.M))
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

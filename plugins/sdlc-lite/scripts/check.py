@@ -21,7 +21,7 @@
    the `likely duplicate` marking of follow-ups that restate an open ticket.
 8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
    agents/builder.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
-   and scripts/run.sh.
+   scripts/run.sh, scripts/fanout.py, and skills/fanout/SKILL.md.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -112,6 +112,7 @@ for word, rels in PLAN_DEFECT_DOCS.items():
         if word not in f.read_text(): errors.append(f'{rel}: plan-defect route missing "{word}"')
 # Inherited-red route: a builder Status `inherited red: <tests>` is routed, rendered, and accepted, never a fail.
 INHERITED_RED_DOCS = ('agents/builder.md', 'agents/conductor.md', 'skills/chain/SKILL.md',
+                      'scripts/fanout.py', 'skills/fanout/SKILL.md',
                       'scripts/steps.py', 'scripts/board.py', 'scripts/run.sh')
 for rel in INHERITED_RED_DOCS:
     f = root/rel
