@@ -51,6 +51,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             a count over a changing set with a fixed number: a count tool (wc -l, grep -c,
             grep --count), a set source (a * glob, or ls or find as a word), and a comparison
             (-eq -ne -ge -gt -le -lt = == !=) with a literal integer of 2 or more, all in one span.
+            A bare = counts only with whitespace before it, so a bare name=value assignment such as
+            n=26 is not a comparison.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
@@ -453,7 +455,7 @@ SHA_RE = re.compile(r'(?<![A-Za-z0-9])(?=[0-9a-f]*[0-9])(?=[0-9a-f]*[a-f])[0-9a-
 COUNT_TOOL_RE = re.compile(r'(?<![\w-])wc\s+-[A-Za-z]*l'
                            r'|(?<![\w-])grep\b[^|;&)`]*?\s(?:-[A-Za-z]*c[A-Za-z]*|--count)(?![\w-])')
 SET_SOURCE_RE = re.compile(r'\*|(?<![\w./-])(?:ls|find)(?![\w.-])')
-COMPARE_RE = re.compile(r'(?:(?<![\w-])-(?:eq|ne|ge|gt|le|lt)|==|!=|=)\s*["\']?(\d+)(?![\w.])')
+COMPARE_RE = re.compile(r'(?:(?<![\w-])-(?:eq|ne|ge|gt|le|lt)|==|!=|(?<=\s)=)\s*["\']?(\d+)(?![\w.])')
 
 
 def pins_sha(text):
@@ -1048,6 +1050,22 @@ def selftest():
               'no pins a commit sha, no fixed number finding',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
               and out2.strip() == 'steps lint: ok')
+
+        # (k6) a bare name=value assignment is not a comparison; = == != comparisons still refuse
+        ok_spans = ['n=26; ls .sdlc/*/handoff.md | wc -l', 'export N=26; find . -name "*.md" | grep -c md']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc, _, _ = run_main(['split', str(d)])
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k6) a bare n=26 assignment beside a glob count passes: split and lint ok',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
+              and out2.strip() == 'steps lint: ok'
+              and command_spans(parse_steps(d / 'planner-L2.md')[1]) == ok_spans)
+        for form in ('[ "$(ls x* | wc -l)" = 26 ]', '[ "$(ls x* | wc -l)" == 26 ]',
+                     '[ "$(ls x* | wc -l)" != 26 ]', 'n=26; ls x* | wc -l | grep -q x; [ "$n" == 26 ]'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k6) lint refuses a glob count compared with a fixed number ({form})',
+                    ['lint', str(d / 'planner-L2.md')], d,
+                    needles=('plan defect', 'compares a count over a changing set with a fixed number'))
 
         # (l) a broken command under ### Do is not a criterion
         d = task(plan=PLAN.replace('Do one.', BROKEN_CRITERION))
