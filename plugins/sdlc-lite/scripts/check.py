@@ -100,6 +100,7 @@ PLAN_DEFECT_DOCS = {
                     'scripts/steps.py'),
     'Plan review': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'no new findings': ('agents/planner.md',),
+    'clean porcelain status': ('agents/planner.md', 'scripts/steps.py'),
     'red guard': ('skills/chain/SKILL.md', 'scripts/steps.py'),
     'changed the work tree': ('agents/planner.md', 'skills/chain/SKILL.md', 'scripts/steps.py'),
     'recurring finding': ('agents/planner.md', 'agents/conductor.md', 'skills/chain/SKILL.md',

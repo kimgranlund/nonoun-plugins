@@ -46,6 +46,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             a count over a changing set with a fixed number: a count tool (wc -l, grep -c,
             grep --count), a set source (a * glob, or ls or find as a word), and a comparison
             (-eq -ne -ge -gt -le -lt = == !=) with a literal integer of 2 or more, all in one span.
+            It must not require a clean porcelain status: a span holding git status in a porcelain
+            or short form (--porcelain[=v1|v2], --short, -s) with no `-- <pathspec>`, tested for
+            emptiness (-z, -eq/=/== with 0 or "", or ! over grep -q), can never pass, because
+            builders never commit and the step's own changes keep the status dirty; check
+            git diff --quiet HEAD -- <path> plus git ls-files --others --exclude-standard instead.
+            A path-scoped status stays allowed.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
@@ -424,6 +430,26 @@ def fixed_set_count(text):
                 and any(int(m.group(1)) >= 2 for m in COMPARE_RE.finditer(text)))
 
 
+STATUS_RE = re.compile(r'(?<![\w.-])git\s+status(?![\w-])([^|;&)`]*)')
+PORCELAIN_RE = re.compile(r'(?<![\w-])(?:--porcelain(?:=v[12])?|--short|-s)(?![\w-])')
+PATHSPEC_RE = re.compile(r'(?<!\S)--(?=\s|$)')
+EMPTY_TEST_RE = re.compile(r'(?<![\w-])-z(?![\w-])'
+                           r'|(?:(?<![\w-])-eq|==|(?<![=!<>])=(?!=))\s*(?:["\']?0(?![\w.])|""|\'\')'
+                           r'|(?<![\w-])!\s[^|;&]*?\|\s*grep\s+(?:-[A-Za-z]*\s+)*-[A-Za-z]*q'
+                           r'|(?<![\w-])!\s.*?\bgrep\s+(?:-[A-Za-z]*\s+)*-[A-Za-z]*q')
+
+
+def requires_clean_status(text):
+    """True when a span requires an empty porcelain or short git status with no pathspec: a
+    no-commit builder's own changes keep the status dirty, so the criterion can never pass."""
+    hit = False
+    for m in STATUS_RE.finditer(text):
+        args = m.group(1)
+        if PORCELAIN_RE.search(args) and not PATHSPEC_RE.search(args):
+            hit = True
+    return hit and bool(EMPTY_TEST_RE.search(text))
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -460,6 +486,12 @@ def lint_steps(plan, steps):
                                 f'with a fixed number: {text}\n'
                                 '  other lanes change the set: derive the set at run time, '
                                 "or check only this step's own items")
+            if requires_clean_status(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion requires a clean porcelain status: '
+                                f'{text}\n'
+                                "  builders never commit, so the step's own changes keep the status dirty and the "
+                                'criterion can never pass: check `git diff --quiet HEAD -- <path>` plus untracked '
+                                'files (`git ls-files --others --exclude-standard -- <path>`) instead')
     return findings
 
 
@@ -1130,6 +1162,22 @@ def selftest():
               'no pins a commit sha, no fixed number finding',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and rc2 == 0
               and out2.strip() == 'steps lint: ok')
+
+        # (k6) a criterion that requires a clean porcelain status: lint and split refuse
+        st = 'git ' + 'status'
+        for form in (f'test -z "$({st} --porcelain)"', f'test -z "$({st} -s)"',
+                     f'test "$({st} --porcelain | wc -l)" -eq 0'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k6) split refuses a criterion that requires a clean porcelain status ({form}), writes nothing',
+                    ['split', str(d)], d, needles=('plan defect', 'step 1', 'clean porcelain status'))
+            refused(f'(k6) lint refuses a criterion that requires a clean porcelain status ({form}) with plan defect',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'clean porcelain status'))
+        ok_spans = ['git diff --quiet HEAD -- src', 'test -z "$(git ls-files --others --exclude-standard -- src)"',
+                    f'test -z "$({st} --porcelain -- src)"', '! git rev-parse -q --verify MERGE_HEAD']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k6) diff HEAD, untracked ls-files, path-scoped status, and no MERGE_HEAD pass lint',
+              rc2 == 0 and out2.strip() == 'steps lint: ok')
 
         # (l) a broken command under ### Do is not a criterion
         d = task(plan=PLAN.replace('Do one.', BROKEN_CRITERION))
