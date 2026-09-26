@@ -7,8 +7,10 @@
 # one in interpreter inline code (python -c, node -e/--eval, perl -e, ruby -e), while a plain
 # python3 script run and an interpreter word inside a quoted mention pass;
 # block-pattern-kill.sh, inside a role run, blocks killing by name pattern (pkill, killall,
-# kill fed by pgrep) with a stderr naming the role and PIDs, and allows kill <pid>, kill $pid,
-# a quoted mention, and anything outside a role run.
+# kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable) with a stderr
+# naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
+# echo $! | xargs kill, a variable holding another command, a quoted mention, and anything
+# outside a role run.
 # Publish phrases and kill-pattern words are built with printf so this file never holds one
 # as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS.
@@ -161,12 +163,16 @@ out=$(run "$pk" "$(pj "$c")" SDLC_ROLE=builder); rc=$?
 [[ $rc -eq 2 ]] || fail "block-pattern-kill blocks $pkw: exit $rc, want 2"
 grep -q PID <<<"$out" || fail "block-pattern-kill $pkw: stderr lacks PID"
 grep -q builder <<<"$out" || fail "block-pattern-kill $pkw: stderr lacks the role"
+psw=$(printf 'p%s' s); awk2="awk '{print \$2}'"
 for c in "$kaw node" "kill \$($pgw -f vite)" "$pgw -f vite | xargs kill" "sudo $pkw -f vite" \
-  "cd x && $pkw -f vite"; do
+  "cd x && $pkw -f vite" "$psw aux | grep x | $awk2 | xargs kill" \
+  "$psw -ef | grep x | $awk2 | xargs kill -9" "kill \$($psw aux | grep x | $awk2)" \
+  "p=$pkw; \$p x" "k=$kaw; \${k} node"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-pattern-kill blocks '$c': exit $rc, want 2"
 done
-for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f"; do
+for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f" "kill %1" "kill \$(cat pidfile)" \
+  "echo \$! | xargs kill" "cmd=ls; \$cmd -la"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-pattern-kill allows '$c': exit $rc, want 0"
 done
