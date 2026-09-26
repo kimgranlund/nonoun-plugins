@@ -137,6 +137,8 @@ skills=$(awk '/^---$/{n++; next} n==1 && /^skills:/{f=1; next} n==1 && f && /^  
 skill_prompt=()
 if [[ -n "$skills" ]]; then
   skill_file=$(mktemp)
+  # Removes it on a dry run or an early exit; on_exit replaces this trap and removes it too.
+  trap 'rm -f "$skill_file"' EXIT
   while IFS= read -r sk; do
     src="$plugin_root/skills/$sk/SKILL.md"
     [[ -f "$src" ]] || { echo "agent $role declares missing skill: $sk" >&2; exit 2; }
