@@ -2,7 +2,7 @@
 id: T-0123
 title: "Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P1         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
