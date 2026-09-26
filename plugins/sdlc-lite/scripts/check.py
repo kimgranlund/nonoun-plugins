@@ -9,7 +9,8 @@
    "no new findings" rule appear in every doc and script that carries the route, and the
    `recurring finding` rule (a repeat fail or block takes a replan) appears in every doc that routes it,
    the parallel-lane rules ("sha fixed at plan time", linted by steps.py, "owns that budget", a guard that
-   "can go red", and "membership or structure" checks) appear in the planner, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
+   "can go red", and "membership or structure" checks) appear in the planner, the planner's "gates green" rule
+   (whole-suite gate guards go on one final step, never on every step) appears in agents/planner.md, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
    fail, applied by `steps.py swap`) appears in agents/verifier.md and scripts/steps.py, and the
    `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
@@ -107,6 +108,7 @@ PLAN_DEFECT_DOCS = {
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
     'owns that budget': ('agents/planner.md',),
+    'gates green': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
     'membership or structure': ('agents/planner.md',),
     'swap old:': ('agents/verifier.md', 'scripts/steps.py'),

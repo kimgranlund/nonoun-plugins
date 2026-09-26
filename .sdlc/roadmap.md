@@ -124,7 +124,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0117 | [fanout-py-closes-tickets-with](fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🔵 ready |
 | T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🔵 ready |
 | T-0123 | [replan-light-criterion-swap](replan-light-criterion-swap/handoff.md) | Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan | bug | S | P1 | none | 🟢 done |
-| T-0124 | [inherited-red-gate-steps](inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🔵 ready |
+| T-0124 | [inherited-red-gate-steps](inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🟢 done |
 | T-0125 | [criteria-no-porcelain-clean](criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🟢 done |
 | T-0126 | [chain-stop-leaves-dirty-tree](chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🟢 done |
 | T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | 🔵 ready |
@@ -133,3 +133,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | ⏳ proposed |
 | T-0136 | [decide-whether-path-scoped-git](decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | M | P2 | none | ⏳ proposed |
 | T-0139 | [pre-sync-wip-id-dirty](pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | M | P2 | none | ⏳ proposed |
+| T-0140 | [no-code-gate-detects-a](no-code-gate-detects-a/handoff.md) | No code gate detects a full-suite guard placed on a non-final step... | idea | M | P2 | none | ⏳ proposed |
