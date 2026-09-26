@@ -128,3 +128,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0125 | [criteria-no-porcelain-clean](criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🔵 ready |
 | T-0126 | [chain-stop-leaves-dirty-tree](chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🔵 ready |
 | T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | 🔵 ready |
+| T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🔵 ready |
