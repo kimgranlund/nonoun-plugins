@@ -122,7 +122,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0115 | [fanout-py-treats-a-lane](fanout-py-treats-a-lane/handoff.md) | fanout.py treats a lane that ends on an inherited red builder like... | idea | M | P2 | none | 🟢 done |
 | T-0116 | [tickets-py-archive-renames-done](tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | M | P2 | none | 🟢 done |
 | T-0117 | [fanout-py-closes-tickets-with](fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🟢 done |
-| T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🔵 ready |
+| T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🟢 done |
 | T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | ⏳ proposed |
 | T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | ⏳ proposed |
 | T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | ⏳ proposed |
@@ -130,3 +130,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0128 | [tickets-py-outside-refs-matches](tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | ⏳ proposed |
 | T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | ⏳ proposed |
 | T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | ⏳ proposed |
+| T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | ⏳ proposed |
