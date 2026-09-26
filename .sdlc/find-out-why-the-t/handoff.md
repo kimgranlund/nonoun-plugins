@@ -11,7 +11,7 @@ from: T-0103
 ---
 
 ## Goal
-One or two sentences: the outcome, not the method.
+A confirmed root cause for why hooks/block-background.sh (T-0072) did not stop the builder L2 run in T-0103's reported incident, and whether the Agent guard shipped in T-0076 (or anything else) now closes that route.
 
 ## Context
 Follow-up from T-0103 (run-result-format-check/filer-L1.md):
@@ -20,5 +20,14 @@ Find out why the T-0072 background hook did not stop the run in T-0103 (likely a
 
 Evidence, 2026-09-26: in an interactive Claude Code session, a plain Bash call (no run_in_background) running `check.sh` passed the default 120s timeout, and the harness reported "Command did not complete within its 120s timeout and was moved to the background". So Bash auto-backgrounds on timeout without the run_in_background flag, which PreToolUse hooks can't see. A likely fix is launchers setting BASH_DEFAULT_TIMEOUT_MS high, which bench.sh and dogfood do already, plus a check that run.sh and fanout set it too.
 
+## Question
+Why did the abandoned run end its turn with "Waiting for the background job to notify." without the T-0072 hook denying it? Which tool call backgrounded the work (Bash run_in_background, Agent, Monitor, Workflow, or something else), what did the hook see (was it installed, matched, was SDLC_ROLE/SDLC_HEADLESS set, which plugin version was loaded), and does the current hook set (plugins/sdlc-lite/hooks/hooks.json, block-background.sh at 0.11.1) cover that route? If not covered, name the gap precisely for a follow-up ticket.
+
+## Evidence
+- Abandoned run transcript: /Users/kimba/Projects/nonoun/gen-ui-system-svelte-lite/.worktrees/ports/.sdlc/sync-ports-2/step-1/builder-L2.log and builder-L2.md (peer repo, plugin 0.9.0 per T-0103). Read-only; never change that repo.
+- Hook history in this repo: git log -- plugins/sdlc-lite/hooks/ (T-0072 commit 753993b, T-0076 commit 12c0c9f).
+- T-0103 notes: .sdlc/run-result-format-check/filer-L1.md; T-0072: .sdlc/headless-background-abandon/; T-0076: .sdlc/headless-conductors-can-still-abandon/.
+- Plugin cache for which version the peer loaded: ~/.claude/plugins (read only).
+
 ## Constraints
-What must not change. "None" if none.
+Read-only investigation. No edits in either repo, no git state changes.

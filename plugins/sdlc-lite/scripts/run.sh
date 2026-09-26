@@ -16,7 +16,7 @@
 # Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
 # Result check: after the result and its runs.jsonl line are written (both kept), the result must
 # hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked|inherited red: <tests>),
-# verifier ## Verdict (pass|fail), planner ## Goal, researcher ## Answer, scout ## Map,
+# verifier ## Verdict (pass|fail|inherited red: <tests>), planner ## Goal, researcher ## Answer, scout ## Map,
 # archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
@@ -137,6 +137,8 @@ skills=$(awk '/^---$/{n++; next} n==1 && /^skills:/{f=1; next} n==1 && f && /^  
 skill_prompt=()
 if [[ -n "$skills" ]]; then
   skill_file=$(mktemp)
+  # Removes it on a dry run or an early exit; on_exit replaces this trap and removes it too.
+  trap 'rm -f "$skill_file"' EXIT
   while IFS= read -r sk; do
     src="$plugin_root/skills/$sk/SKILL.md"
     [[ -f "$src" ]] || { echo "agent $role declares missing skill: $sk" >&2; exit 2; }
@@ -221,7 +223,7 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
 # Required section per role; builder and verifier also need an allowed first value under it.
 case "$role" in
   builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
-  verifier) sect=Verdict; allowed='pass|fail' ;;
+  verifier) sect=Verdict; allowed='pass|fail|inherited red: .+' ;;
   planner) sect=Goal; allowed='' ;;
   researcher) sect=Answer; allowed='' ;;
   scout) sect=Map; allowed='' ;;
