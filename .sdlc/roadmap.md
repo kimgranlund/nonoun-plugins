@@ -109,4 +109,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0102 | [builder-scope-hygiene](builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🔵 ready |
 | T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🔵 ready |
 | T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | ⏳ proposed |
-| T-0113 | [close-rename-breaks-refs](close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | ⏳ proposed |
+| T-0113 | [close-rename-breaks-refs](close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | 🔵 ready |
