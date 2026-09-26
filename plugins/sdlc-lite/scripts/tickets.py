@@ -2072,6 +2072,16 @@ def selftest():
                    rc == 0 and ol[1:] == ['open T-0003 Delta [delta]', 'open T-0004 Gamma [gamma] (worktree wtdr)',
                                           'expect e3b0c44298fc']
                    and (snap(d_root), snap(dw_root)) == before)
+            # with follow-ups present, the digest still covers only the ordered follow-ups, not the open lines
+            filer('filer-L1.md', 'None', '- A\n- B', slug='delta')(d_root)
+            before = snap(d_root), snap(dw_root)
+            rc, out, err = run(d_root, 'close', ('delta',), dry_run=True)
+            ol = out.strip().splitlines()
+            expect(f'worktree dry-run with follow-ups: gamma listed as (worktree wtdr), digest covers only the '
+                   f'follow-ups, nothing written: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'open T-0004 Gamma [gamma] (worktree wtdr)' in ol
+                   and ol[-1] == 'expect ' + follow_digest(['A', 'B'])
+                   and (snap(d_root), snap(dw_root)) == before)
 
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
