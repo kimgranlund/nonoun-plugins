@@ -229,14 +229,17 @@ for c in "git worktree add -b tmpbr \"$tw/x\" HEAD" "git worktree add -B tmpbr \
   "git worktree add --orphan \"$tw/x\"" "git worktree add --orphan -b tmpbr \"$tw/x\"" \
   "git -C . worktree add /tmp/x HEAD" "git worktree add \"$tw/x\"" \
   "git worktree add \"$tw/../x\" HEAD" "bash -c \"git worktree add /tmp/x HEAD\"" \
-  "git worktree add --detach \"$tw\" HEAD"; do
+  "git worktree add --detach \"$tw\" HEAD" "git worktree add \"$tw/x\" feature-x" \
+  "git worktree add \"$tw/x\" HEAD" "git worktree add --no-detach \"$tw/x\" HEAD" \
+  "git worktree add \"$tw/x\" -- feature-x" "git worktree add \"\${SDLC_TMP_WORKTREES}/base\" HEAD"; do
   run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c': exit $rc, want 2"
 done
 out=$(run "$sw" "$(pj "git worktree add --detach /r/x HEAD")" SDLC_ROLE=conductor); rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
 grep -q conductor <<<"$out" || fail "block-stray-worktree prefix unset: stderr lacks the role"
-for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add \"\${SDLC_TMP_WORKTREES}/base\" HEAD" \
+for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add --detach \"\${SDLC_TMP_WORKTREES}/base\" HEAD" \
+  "git worktree add -d \"$tw/x\" HEAD" "git worktree add --detach \"$tw/x\" origin/feature-x" \
   "git worktree add --detach /r/.worktrees/tmp/builder-1/x HEAD" \
   "git worktree remove --force \"$tw/x\"" "git worktree list" "grep -n \"git worktree add\" f"; do
   run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?

@@ -20,7 +20,7 @@
 # archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
-# does not create it; a role makes worktrees only under it (git worktree add "$SDLC_TMP_WORKTREES/<name>"
+# does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
 # HEAD makes the parents). On every exit, success or failure (exit 1, exit 3, INT, TERM, HUP), cleanup
 # runs git worktree remove --force on each registered worktree under that prefix (paths compared by
 # realpath, since macOS reports /private/var for /var), rm -rf of the prefix, git worktree prune, then
