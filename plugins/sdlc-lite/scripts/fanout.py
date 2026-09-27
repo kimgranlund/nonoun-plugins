@@ -54,9 +54,10 @@ run
        `dirty before sync`: no sync, driver, lane commit, or merge.
     3. inherited red: each <rel>/<slug>/step-<n>/ dir in the lane worktree (numeric order; a
        step-<n>.superseded-<k> dir never counts) goes through steps.next_action; at the first
-       whose action is `inherited` (a builder Status `inherited red: <tests>`, a gate already red
-       at the pre-build HEAD) the outcome is `inherited red: step-<n>: <tests>`, the tests read
-       from that builder result's Status line. No lane commit, merge, or close; as for any stop,
+       whose action is `inherited` (a builder Status or newer verifier Verdict
+       `inherited red: <tests>`, a gate already red at the pre-build HEAD) the outcome is
+       `inherited red: step-<n>: <tests>`, the tests read from the verifier's Verdict line when
+       the verifier reported the inherited red, else from the builder result's Status line. No lane commit, merge, or close; as for any stop,
        the lane tree is WIP-committed on the lane branch and kept there for inspection.
     4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
@@ -90,7 +91,9 @@ selftest
   Status `inherited red: test_a` gives the outcome `inherited red: step-1: test_a`, no merge on
   the integration branch, the ticket still ready, the next ticket skipped, and the step file
   kept in the lane's `wip(T-0001): inherited red: ...` commit, not merged; its negative control,
-  a builder Status `done`, gives `merged`.
+  a builder Status `done`, gives `merged`. A variant with builder Status `done` and a newer
+  verifier Verdict `inherited red: test_v` proves the outcome names the verifier's tests,
+  `inherited red: step-1: test_v`, not `done`.
   A full stub-driver run in the default lanes dir under .worktrees/fanout (case 6) proves lane
   commits `<id>: <title>`, merges and closes, with `git status` in the main tree left clean.
   A one-lane case (case 7) with a driver that writes a file and exits 3
@@ -475,8 +478,9 @@ STEP_DIR_RE = re.compile(r'step-(\d+)')
 
 def inherited_red(ticket_dir):
     """`inherited red: step-<n>: <tests>` for the first step-<n> dir (numeric order; never a
-    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken from the
-    newest builder result's ## Status line after the `inherited red:` prefix; else None."""
+    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken after the
+    `inherited red:` prefix from the newest verifier result's ## Verdict line when the verifier
+    reported it, else from the newest builder result's ## Status line; else None."""
     base = pathlib.Path(ticket_dir)
     if not base.is_dir():
         return None
@@ -487,7 +491,10 @@ def inherited_red(ticket_dir):
             action, _, _, read = steps.next_action(d)
             if action != 'inherited':
                 continue
-            body = steps.section(read[0], 'Status') or []
+            if len(read) == 2:  # verifier-inherited: its Verdict names the tests
+                body = steps.section(read[1], 'Verdict') or []
+            else:  # builder-inherited
+                body = steps.section(read[0], 'Status') or []
             first = next((ln.strip() for ln in body if ln.strip()), '')
             tests = re.sub(r'(?i)^inherited red:', '', first).strip()
         except Exception:  # steps.Fail included: this dir is not inherited
@@ -947,6 +954,25 @@ def selftest():
         shown = sh(dr, 'show', 'fanout/dr:.sdlc/a/handoff.md').stdout
         expect(f'done builder (negative control): ticket closed on fanout/dr, got {shown[:120]!r}',
                re.search(r'^status: done\b', shown, re.M))
+
+        # 5c. Verifier-inherited: builder Status `done`, a newer verifier Verdict
+        # `inherited red: test_v`; the outcome names the verifier's tests, not `done`.
+        vstub = ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
+                 's="$FANOUT_ROOT/$FANOUT_SLUG/step-1"; mkdir -p "$s"; '
+                 'printf "## Status\\ndone\\n" > "$s/builder-L2.md"; '
+                 'printf "## Verdict\\ninherited red: test_v\\n" > "$s/verifier-L1.md"; '
+                 'printf \'{"file": "builder-L2.md"}\\n{"file": "verifier-L1.md"}\\n\' > "$s/runs.jsonl"; fi; '
+                 'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                 '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')
+        vr, vl = tmp / 'inherited-verifier', tmp / 'vlanes'
+        make_repo(vr, [('a', 'T-0001', 'ready')])
+        proc = fanout(vr, 'a=T-0001', '--integration', 'fanout/vr', '--lanes-dir', str(vl),
+                      '--driver', vstub, '--gate', 'true')
+        got = report_rows(vl)
+        expect(f'verifier inherited red: run exits 1, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 1)
+        expect(f'verifier inherited red: outcome is inherited red: step-1: test_v, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_v')
 
         # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
         # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
