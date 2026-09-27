@@ -23,6 +23,14 @@
 # to it; a base-sha holding junk or a commit that is not an ancestor is replaced by HEAD; a planner
 # run sees unset and writes no base-sha even with SDLC_BASE_SHA exported by the caller; a builder
 # dry run writes no base-sha.
+# Stray report: a stub that makes a worktree outside the prefix (detached and on a branch) and a
+# branch from inside its own script gets one "stray worktree appeared during this run" line per
+# worktree (" [<branch>]" only for the branched one) and one "stray branch appeared during this run"
+# line per branch on stderr, and matching stray_worktrees and stray_branches arrays in runs.jsonl; a
+# failing run (exit 1) that leaves strays still reports them and still exits 1; a run that creates
+# nothing, or only a worktree under $SDLC_TMP_WORKTREES (also every worktree run above), prints no
+# stray line and records empty arrays. The dry-run .nvmrc checks compare stderr exactly, so a dry run
+# prints no stray line. Strays the cases make are removed inside the temp repo.
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -293,6 +301,7 @@ want_wt() {
   [[ -n "$env_seen" ]] || fail "worktree $1 run: claude saw no SDLC_TMP_WORKTREES (missing or empty)"
   [[ "$env_seen" == "$wtop/.worktrees/tmp/"?* ]] \
     || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under $wtop/.worktrees/tmp/"
+  ! grep -q stray "$tmp/werr" || fail "worktree $1 run: printed a stray line: $(cat "$tmp/werr")"
 }
 want_wt ok 0
 want_wt fail 1
@@ -362,5 +371,79 @@ echo "$na" >"$brepo/s/base-sha"
 seen=$(brun verifier)
 [[ "$seen" == "$head_now" ]] || fail "base non-ancestor: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
 [[ "$(bfile)" == "$head_now" ]] || fail "base non-ancestor: base-sha is '$(bfile)', want HEAD $head_now"
+
+# Stray report: a third stub makes worktrees and a branch from inside its own script (STUB_MODE
+# stray|strayfail|prefix|none), outside the Bash tool text the hooks see.
+mkdir -p "$tmp/sbin"
+cat >"$tmp/sbin/claude" <<'EOF'
+#!/usr/bin/env bash
+case "${STUB_MODE:-none}" in
+  stray|strayfail)
+    { git worktree add -q --detach "$SDLC_TMP_WORKTREES/w" HEAD
+      git worktree add -q --detach "$PWD-stray-det" HEAD
+      git worktree add -q -b stray-wt-br "$PWD-stray-br" HEAD
+      git branch stray-br; } >/dev/null 2>&1 || { echo "stub: stray setup failed" >&2; exit 9; } ;;
+  prefix) git worktree add -q --detach "$SDLC_TMP_WORKTREES/w" HEAD >/dev/null 2>&1 \
+    || { echo "stub: git worktree add failed" >&2; exit 9; } ;;
+esac
+[[ "${STUB_MODE:-}" == strayfail ]] && exit 1
+jq -nc '{type:"result",is_error:false,result:"## Status\ndone",total_cost_usd:0,duration_ms:1,num_turns:1}'
+EOF
+chmod +x "$tmp/sbin/claude"
+srepo="$tmp/srepo"
+mkdir -p "$srepo"
+echo x >"$srepo/h.md"
+git -C "$srepo" init -q
+git -C "$srepo" add -A
+git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+# stray_run <mode> <rc>: one real run with that stub mode; stderr lands in $tmp/serr.
+stray_run() {
+  local rc=0
+  rm -f "$srepo"/*-L*.md "$srepo"/*.log "$srepo/runs.jsonl"
+  (cd "$srepo" && STUB_MODE="$1" PATH="$tmp/sbin:$PATH" "$here/run.sh" builder L1 h.md \
+    >/dev/null 2>"$tmp/serr") || rc=$?
+  [[ "$rc" == "$2" ]] || fail "stray $1 run: exit $rc, want $2 ($(cat "$tmp/serr"))"
+}
+# stray_clean: removes the strays a stray run made (inside the temp repo only).
+stray_clean() {
+  git -C "$srepo" worktree remove --force "$srepo-stray-det" >/dev/null 2>&1 || true
+  git -C "$srepo" worktree remove --force "$srepo-stray-br" >/dev/null 2>&1 || true
+  git -C "$srepo" branch -D stray-br stray-wt-br >/dev/null 2>&1 || true
+  [[ "$(git -C "$srepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stray cleanup left a worktree"
+}
+# want_strays <label>: the stderr lines for the two worktrees and two branches the stub made.
+want_strays() {
+  local n
+  n=$(grep -c '^run.sh: stray worktree appeared during this run: ' "$tmp/serr" || true)
+  [[ "$n" == 2 ]] || fail "$1: $n stray worktree lines, want 2: $(cat "$tmp/serr")"
+  grep -qx 'run.sh: stray worktree appeared during this run: .*/srepo-stray-det' "$tmp/serr" \
+    || fail "$1: no detached stray worktree line (without a branch): $(cat "$tmp/serr")"
+  grep -qx 'run.sh: stray worktree appeared during this run: .*/srepo-stray-br \[stray-wt-br\]' "$tmp/serr" \
+    || fail "$1: no branched stray worktree line with ' [stray-wt-br]': $(cat "$tmp/serr")"
+  n=$(grep -c '^run.sh: stray branch appeared during this run: ' "$tmp/serr" || true)
+  [[ "$n" == 2 ]] || fail "$1: $n stray branch lines, want 2: $(cat "$tmp/serr")"
+  grep -qx 'run.sh: stray branch appeared during this run: stray-br' "$tmp/serr" \
+    || fail "$1: no stray branch line for stray-br: $(cat "$tmp/serr")"
+  grep -qx 'run.sh: stray branch appeared during this run: stray-wt-br' "$tmp/serr" \
+    || fail "$1: no stray branch line for stray-wt-br: $(cat "$tmp/serr")"
+  ! grep -q '/.worktrees/tmp/' "$tmp/serr" || fail "$1: reported a worktree under the prefix: $(cat "$tmp/serr")"
+}
+stray_run stray 0
+want_strays "stray ok run"
+jq -e '(.stray_branches | sort) == ["stray-br", "stray-wt-br"]
+  and (.stray_worktrees | length == 2)
+  and (.stray_worktrees | map(test("/srepo-stray-(det|br)$")) | all)' "$srepo/runs.jsonl" >/dev/null \
+  || fail "stray ok run: runs.jsonl stray fields wrong: $(cat "$srepo/runs.jsonl")"
+stray_clean
+stray_run strayfail 1
+want_strays "stray failing run"
+stray_clean
+for m in none prefix; do
+  stray_run "$m" 0
+  ! grep -q stray "$tmp/serr" || fail "stray $m run: printed a stray line: $(cat "$tmp/serr")"
+  jq -e '.stray_worktrees == [] and .stray_branches == []' "$srepo/runs.jsonl" >/dev/null \
+    || fail "stray $m run: runs.jsonl stray fields not empty arrays: $(cat "$srepo/runs.jsonl")"
+done
 
 echo "run selftest: PASS"

@@ -20,13 +20,24 @@
 # archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
-# does not create it; a role makes worktrees only under it (git worktree add "$SDLC_TMP_WORKTREES/<name>"
+# does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
 # HEAD makes the parents). On every exit, success or failure (exit 1, exit 3, INT, TERM, HUP), cleanup
 # runs git worktree remove --force on each registered worktree under that prefix (paths compared by
 # realpath, since macOS reports /private/var for /var), rm -rf of the prefix, git worktree prune, then
 # rmdir of .worktrees/tmp and .worktrees only when empty. It touches only this run's prefix, never other
 # worktrees that appeared during the run (concurrent fanout lanes run other role runs), and never
 # changes the exit code; INT, TERM, and HUP exit 130, 143, and 129 after it.
+# Stray report: a real run (never a dry run) snapshots `git worktree list --porcelain` and the local
+# branches (refs/heads) before the role starts. Worktrees and branches that appeared during this run
+# (from a script, make target, or other program the hooks cannot see) are reported, leaving out this
+# run's own prefix (compared by realpath). This run's runs.jsonl line always holds stray_worktrees
+# (array of worktree paths) and stray_branches (array of branch names), empty arrays when none
+# appeared. At exit, on success or failure (exit 1, exit 3, INT, TERM, HUP), after the cleanup, stderr
+# gets one line per item, once per run: "run.sh: stray worktree appeared during this run: <path>
+# [<branch>]" (no " [<branch>]" for a detached worktree) and "run.sh: stray branch appeared during
+# this run: <branch>". It says "appeared during this run", not that this role made them, because
+# concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
+# it never removes or deletes anything and never changes the exit code.
 # Exit codes: 0 ok, 1 run failed or returned no result, 2 usage or preflight, 3 result lacks its section.
 # Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
 # session's last result, and a background task notification arriving after the report ends the session
@@ -179,6 +190,7 @@ if [[ -n "$skills" ]]; then
     src="$plugin_root/skills/$sk/SKILL.md"
     [[ -f "$src" ]] || { echo "agent $role declares missing skill: $sk" >&2; exit 2; }
     { echo "# Skill: $sk (loaded for this role; its relative paths are under $plugin_root/skills/$sk/)"
+      # shellcheck disable=SC2016 # ${CLAUDE_PLUGIN_ROOT} is the literal text to replace.
       awk '/^---$/{n++; next} n>=2' "$src" | sed 's|${CLAUDE_PLUGIN_ROOT}|'"$plugin_root"'|g'
       echo; } >>"$skill_file"
   done <<<"$skills"
@@ -252,11 +264,71 @@ cleanup_worktrees() {
   rmdir "$toplevel/.worktrees" >/dev/null 2>&1
   return 0
 }
+# Stray report baseline (see the header): worktree paths and local branches before the role runs.
+snap_wt=$(git -C "$toplevel" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p') || snap_wt=""
+snap_br=$(git -C "$toplevel" for-each-ref --format='%(refname:short)' refs/heads 2>/dev/null) || snap_br=""
+stray_done=0; stray_reported=0
+stray_wt=(); stray_wt_br=(); stray_br=()
+# in_list <item> <newline-separated list>: exact line match.
+in_list() {
+  local x
+  while IFS= read -r x; do [[ "$x" == "$1" ]] && return 0; done <<<"$2"
+  return 1
+}
+# Fills stray_wt (paths), stray_wt_br (branch or "" per path), and stray_br once per run.
+# Called in an || list, so it runs without errexit; never fails.
+detect_strays() {
+  (( stray_done )) && return 0
+  stray_done=1
+  local wt_real line p="" b="" pr br now_wt now_br
+  wt_real=$(phys "$wt_tmp")
+  now_wt=$(git -C "$toplevel" worktree list --porcelain 2>/dev/null)
+  # Porcelain records end at a blank line; $(...) strips the last one, so the input adds it back.
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) p="${line#worktree }"; b="" ;;
+      "branch "*) b="${line#branch }"; b="${b#refs/heads/}" ;;
+      "")
+        if [[ -n "$p" ]] && ! in_list "$p" "$snap_wt"; then
+          pr=$(phys "$p")
+          if ! [[ "$pr" == "$wt_real" || "$pr" == "$wt_real"/* || "$p" == "$wt_tmp" || "$p" == "$wt_tmp"/* ]]; then
+            stray_wt+=("$p"); stray_wt_br+=("$b")
+          fi
+        fi
+        p=""; b="" ;;
+    esac
+  done <<<"$now_wt"$'\n'
+  now_br=$(git -C "$toplevel" for-each-ref --format='%(refname:short)' refs/heads 2>/dev/null)
+  while IFS= read -r br; do
+    [[ -n "$br" ]] && ! in_list "$br" "$snap_br" && stray_br+=("$br")
+  done <<<"$now_br"
+  return 0
+}
+# json_array <item>...: a compact JSON array of strings.
+json_array() {
+  if (( $# == 0 )); then echo '[]'; return 0; fi
+  printf '%s\n' "$@" | jq -Rsc 'split("\n") | .[:-1]'
+}
+# Prints the stray lines on stderr, once per run.
+report_strays() {
+  (( stray_reported )) && return 0
+  stray_reported=1
+  local i
+  for (( i = 0; i < ${#stray_wt[@]}; i++ )); do
+    echo "run.sh: stray worktree appeared during this run: ${stray_wt[$i]}${stray_wt_br[$i]:+ [${stray_wt_br[$i]}]}" >&2
+  done
+  for (( i = 0; i < ${#stray_br[@]}; i++ )); do
+    echo "run.sh: stray branch appeared during this run: ${stray_br[$i]}" >&2
+  done
+  return 0
+}
 on_exit() {
   local rc=$?
   set +e
   rm -f "$running" ${skill_file:+"$skill_file"}
   cleanup_worktrees
+  detect_strays || :
+  report_strays
   exit "$rc"
 }
 running="$dir/$role-$level.running"
@@ -282,10 +354,14 @@ if [[ -z "$pick" ]] || ! jq -e '.is_error == false and (.result | strings | leng
   echo "$role returned no result; see $log" >&2; exit 1
 fi
 { echo "<!-- role=$role level=$level model=$model effort=$effort -->"; jq -r '.result' <<<"$pick"; } >"$result"
+detect_strays || :
+stray_wt_json=$(json_array ${stray_wt[@]+"${stray_wt[@]}"}) || stray_wt_json='[]'
+stray_br_json=$(json_array ${stray_br[@]+"${stray_br[@]}"}) || stray_br_json='[]'
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
-  --arg file "$name.md" \
+  --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
-    cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns}' <<<"$last_ev" >>"$dir/runs.jsonl"
+    cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
+    stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
 
 # Prints "missing", or the first non-blank line under the section (empty if none).
 val=$(awk -v h="## $sect" '

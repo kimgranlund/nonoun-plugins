@@ -47,7 +47,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             nonzero exit fails the criterion when the left side fails, so it cannot pass on either
             side; `|| exit 0`, `|| true`, `|| echo ...` stay findings. A for, while, or until span
             ending in done, an if span ending in fi, and a { span ending in } count as commands
-            and are linted; prose starting with those words is not. A span that parses gets
+            and are linted, also when a trailing redirect or pipe follows the closing keyword
+            (`done < f`, `done 2>/dev/null`, `done | cat`); prose starting with those words is not. A span that parses gets
             two more checks on its raw text. It must not pin a commit sha: a span holding the word
             git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
             non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
@@ -65,6 +66,14 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             builders never commit and the step's own changes keep the status dirty; check
             git diff --quiet HEAD -- <path> plus git ls-files --others --exclude-standard instead.
             A path-scoped status stays allowed.
+            It must not require a clean whole-tree diff either: a git diff (never git diff-tree)
+            with no `-- <pathspec>`, no commit-to-commit range (A..B, A...B, or two revision
+            words), and no --no-index, that uses --quiet or --exit-code without a ! right before
+            git, or whose output the span tests for emptiness, can never pass for the same reason;
+            a single rev such as HEAD or "$SDLC_BASE_SHA" still diffs against the work tree. Check
+            git diff --quiet "$SDLC_BASE_SHA" -- <path> plus git ls-files --others
+            --exclude-standard -- <path> instead. The detector reads only span text, so a clean
+            check hidden inside a script the span calls stays out of reach.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
@@ -256,8 +265,10 @@ COMPOUND_END = {'for': 'done', 'while': 'done', 'until': 'done', 'if': 'fi', '{'
 def is_command(text):
     """True when a code span reads as a shell command, judged by its head token. A compound
     command counts too: a for, while, or until head with a span ending in done, an if head ending
-    in fi, or a { head ending in }; prose that starts with those words (`for each changed file`)
-    does not."""
+    in fi, or a { head ending in }. A trailing redirect or pipe after the closing keyword counts
+    too (`done < f`, `fi 2>&1`, `} | cat`, never `||`) when a `;`, `&`, or newline comes before
+    that keyword. Prose that starts with those words (`for each changed file`, `for each file
+    done < f`) does not."""
     tokens = text.split()
     assigns = []
     i = 0
@@ -271,7 +282,10 @@ def is_command(text):
         return False
     head = tokens[i]
     if head in COMPOUND_END:
-        return re.search(r'(?:^|[\s;&|])' + re.escape(COMPOUND_END[head]) + r'$', text.rstrip()) is not None
+        end = re.escape(COMPOUND_END[head])
+        if re.search(r'(?:^|[\s;&|])' + end + r'$', text.rstrip()):
+            return True
+        return re.search(r'[;&\n]\s*' + end + r'\s*(?:\d*(?:<<<|>>|&>|>&?|<)|\|(?!\|))', text) is not None
     return (head in BUILTINS or '/' in head or head.endswith('.py') or head.endswith('.sh')
             or shutil.which(head) is not None)
 
@@ -479,11 +493,13 @@ def nonzero_exit_at(toks, i):
 
 
 def ends_command(toks, i):
-    """True when a command ends before toks[i]: the end of the span, ;, &&, a pipe, }, or a newline."""
+    """True when a command ends before toks[i]: the end of the span, ;, &&, ||, }, or a newline. A
+    lone pipe does not end a command here: `exit N | cat` pipes exit's status into cat, so the
+    command's real exit status is cat's, not N's, and is not a fail-fast right operand."""
     if i >= len(toks):
         return True
     tok, op = toks[i]
-    return (op and (tok.startswith(';') or tok in ('&&', '|', '||', '\n'))) or (not op and tok == '}')
+    return (op and (tok.startswith(';') or tok in ('&&', '||', '\n'))) or (not op and tok == '}')
 
 
 def fails_fast(toks, i):
@@ -516,7 +532,10 @@ def or_fallback(text):
     nonzero integer literal, ending the command, or a brace group `{ ...; exit N; }` whose last
     command is that exit): a nonzero exit fails the criterion when the left side fails, so it
     cannot pass on either side. `|| exit 0`, a bare `|| exit`, `|| true`, `|| return 1`,
-    `|| echo ...`, and `|| grep ...` stay findings. Pure text: executes nothing.
+    `|| echo ...`, and `|| grep ...` stay findings. So does `|| exit N | cat` (or a brace group
+    piped the same way): the pipe hands the exit's status to the next command, so the criterion's
+    real exit status is the pipeline's last command, not N, and the left side's failure is masked.
+    Pure text: executes nothing.
     Raises ValueError on text shlex cannot tokenize (an unparsable span, already reported)."""
     toks = or_tokens(text)
     left = []
@@ -578,6 +597,33 @@ def requires_clean_status(text):
     return hit and bool(EMPTY_TEST_RE.search(text))
 
 
+DIFF_RE = re.compile(r'(?<![\w.-])git\s+diff(?![\w-])([^|;&)`]*)')
+DIFF_QUIET_RE = re.compile(r'(?<![\w-])(?:--quiet|--exit-code)(?![\w-])')
+NEGATED_RE = re.compile(r'(?<!\S)!\s+$')
+REDIRECT_RE = re.compile(r'^\d*[<>]')
+
+
+def requires_clean_diff(text):
+    """True when a span requires an empty git diff of the whole work tree: no `--` pathspec, no
+    commit-to-commit range, no --no-index, and either an un-negated --quiet/--exit-code or an
+    emptiness test on the output. A no-commit builder's own changes keep that diff non-empty."""
+    empty_test = bool(EMPTY_TEST_RE.search(text))
+    for m in DIFF_RE.finditer(text):
+        args = m.group(1)
+        if PATHSPEC_RE.search(args):
+            continue
+        words = [w.strip('"\'') for w in args.split()]
+        if '--no-index' in words or any('..' in w for w in words):
+            continue
+        revs = [w for w in words if w and not w.startswith('-') and not REDIRECT_RE.match(w)]
+        if len(revs) >= 2:
+            continue
+        quiet = bool(DIFF_QUIET_RE.search(args)) and not NEGATED_RE.search(text[:m.start()])
+        if quiet or empty_test:
+            return True
+    return False
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -621,6 +667,13 @@ def lint_steps(plan, steps):
                                 "  builders never commit, so the step's own changes keep the status dirty and the "
                                 'criterion can never pass: check `git diff --quiet HEAD -- <path>` plus untracked '
                                 'files (`git ls-files --others --exclude-standard -- <path>`) instead')
+            if requires_clean_diff(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion requires a clean whole-tree diff: '
+                                f'{text}\n'
+                                "  builders never commit, so the step's own changes keep the whole-tree diff "
+                                'non-empty and the criterion can never pass: check '
+                                '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
+                                '(`git ls-files --others --exclude-standard -- <path>`) instead')
     return findings
 
 
@@ -1278,11 +1331,26 @@ def selftest():
               command_spans(parse_steps(d / 'planner-L2.md')[1])[-2:] == ok_spans[-2:])
         for form in ('test -f a || exit 0', 'test -f a || true', 'test -f a || exit',
                      'test -f a || { exit 1; echo x; }',
+                     'test -f a || exit 1 | cat',
+                     'test -f a || { echo x; exit 1; } | cat',
                      'for p in a b; do test -f "$p" || echo MISSING "$p"; done',
                      'for p in a b; do grep -q a "$p" || grep -q b "$p"; done'):
             d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
             refused(f'(k2) lint refuses a || fallback ({form}) with plan defect',
                     ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        for form in ('while read x; do test -f x || echo m; done < f',
+                     'for p in a b; do grep -q a "$p" || grep -q b "$p"; done | cat'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k2) lint refuses a || fallback in a compound with a trailing redirect or pipe ({form})',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        form = 'while read x; do test -f x || exit 1; done < f'
+        d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2) a fail-fast loop with a trailing redirect is a command span and lints ok',
+              rc == 0 and out.strip() == 'steps lint: ok'
+              and command_spans(parse_steps(d / 'planner-L2.md')[1]) == [form])
+        check('(k2) prose `for each file done < f` with a trailing redirect stays a non-command',
+              not is_command('for each file done < f'))
         d = task(plan=PLAN.replace('- one works', '- `for each changed file`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k2) prose `for each changed file` stays a non-command span: lint ok',
@@ -1346,6 +1414,23 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
         rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k6) diff HEAD, untracked ls-files, path-scoped status, and no MERGE_HEAD pass lint',
+              rc2 == 0 and out2.strip() == 'steps lint: ok')
+
+        # (k8) a criterion that requires a clean whole-tree diff: lint and split refuse; a pathspec, a
+        # commit-to-commit range, a negated --quiet, a plain listing, and diff-tree pass
+        df = 'git ' + 'diff'
+        for form in (f'{df} --quiet', f'{df} --exit-code HEAD', f'{df} --quiet "$SDLC_BASE_SHA"',
+                     f'test -z "$({df} --name-only HEAD)"'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k8) split refuses a criterion that requires a clean whole-tree diff ({form}), writes nothing',
+                    ['split', str(d)], d, needles=('plan defect', 'step 1', 'clean whole-tree diff'))
+            refused(f'(k8) lint refuses a criterion that requires a clean whole-tree diff ({form}) with plan defect',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'clean whole-tree diff'))
+        ok_spans = [f'{df} --quiet HEAD -- src', f'{df} --quiet HEAD~1 HEAD', f'{df} --exit-code main...HEAD',
+                    f'! {df} --quiet', f'{df} --name-only HEAD', f'{df}-tree --cc HEAD']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k8) a pathspec, a two-commit range, a negated --quiet, a listing, and diff-tree pass lint',
               rc2 == 0 and out2.strip() == 'steps lint: ok')
 
         # (k7) a bare name=value assignment is not a comparison; = == != comparisons still refuse

@@ -44,15 +44,20 @@ run
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
-       tests). Non-zero exit: `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
+       tests). Non-zero exit: the lane's step dirs are checked for an inherited-red step as in
+       step 3, giving `inherited red: step-<n>: <tests> (driver rc=<n>)`; with none, the outcome
+       stays `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
        other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
        lane branch only. It is never merged, and the report's Commit cell shows `wip <sha>`.
-       Before each sync, a dirty lane tree is WIP-committed first.
+       A lane tree already dirty before a ticket's sync is committed as
+       `wip(<id>): dirty before sync` on the lane branch, and that ticket stops with the outcome
+       `dirty before sync`: no sync, driver, lane commit, or merge.
     3. inherited red: each <rel>/<slug>/step-<n>/ dir in the lane worktree (numeric order; a
        step-<n>.superseded-<k> dir never counts) goes through steps.next_action; at the first
-       whose action is `inherited` (a builder Status `inherited red: <tests>`, a gate already red
-       at the pre-build HEAD) the outcome is `inherited red: step-<n>: <tests>`, the tests read
-       from that builder result's Status line. No lane commit, merge, or close; as for any stop,
+       whose action is `inherited` (a builder Status or newer verifier Verdict
+       `inherited red: <tests>`, a gate already red at the pre-build HEAD) the outcome is
+       `inherited red: step-<n>: <tests>`, the tests read from the verifier's Verdict line when
+       the verifier reported the inherited red, else from the builder result's Status line. No lane commit, merge, or close; as for any stop,
        the lane tree is WIP-committed on the lane branch and kept there for inspection.
     4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
@@ -86,13 +91,21 @@ selftest
   Status `inherited red: test_a` gives the outcome `inherited red: step-1: test_a`, no merge on
   the integration branch, the ticket still ready, the next ticket skipped, and the step file
   kept in the lane's `wip(T-0001): inherited red: ...` commit, not merged; its negative control,
-  a builder Status `done`, gives `merged`.
+  a builder Status `done`, gives `merged`. A variant with builder Status `done` and a newer
+  verifier Verdict `inherited red: test_v` proves the outcome names the verifier's tests,
+  `inherited red: step-1: test_v`, not `done`.
   A full stub-driver run in the default lanes dir under .worktrees/fanout (case 6) proves lane
   commits `<id>: <title>`, merges and closes, with `git status` in the main tree left clean.
   A one-lane case (case 7) with a driver that writes a file and exits 3
   proves the stopped lane is WIP-committed: a clean lane tree, a `wip(T-0001): driver failed
   rc=3` tip holding the file, not merged into the integration branch, integration and main at
   the fixture commit, and a `wip <sha7>` Commit cell in the report.
+  A dirty-sync case (case 8), one lane `alpha=T-0001,T-0002` with the stub driver and a gate that
+  writes dirty.txt into the lane tree, proves that T-0001 merges, T-0002 stops with the outcome
+  `dirty before sync` and a `wip <sha7>` Commit cell, the lane tip is
+  `wip(T-0002): dirty before sync` and not an ancestor of the integration branch, the integration
+  branch holds T-0001.txt but not dirty.txt, T-0002 stays ready there, and main is untouched; its
+  negative control, the same run with no gate, merges both tickets with no `wip(` lane tip.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
@@ -465,8 +478,9 @@ STEP_DIR_RE = re.compile(r'step-(\d+)')
 
 def inherited_red(ticket_dir):
     """`inherited red: step-<n>: <tests>` for the first step-<n> dir (numeric order; never a
-    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken from the
-    newest builder result's ## Status line after the `inherited red:` prefix; else None."""
+    step-<n>.superseded-<k> dir) whose steps.next_action is `inherited`, the tests taken after the
+    `inherited red:` prefix from the newest verifier result's ## Verdict line when the verifier
+    reported it, else from the newest builder result's ## Status line; else None."""
     base = pathlib.Path(ticket_dir)
     if not base.is_dir():
         return None
@@ -477,7 +491,10 @@ def inherited_red(ticket_dir):
             action, _, _, read = steps.next_action(d)
             if action != 'inherited':
                 continue
-            body = steps.section(read[0], 'Status') or []
+            if len(read) == 2:  # verifier-inherited: its Verdict names the tests
+                body = steps.section(read[1], 'Verdict') or []
+            else:  # builder-inherited
+                body = steps.section(read[0], 'Status') or []
             first = next((ln.strip() for ln in body if ln.strip()), '')
             tests = re.sub(r'(?i)^inherited red:', '', first).strip()
         except Exception:  # steps.Fail included: this dir is not inherited
@@ -490,10 +507,12 @@ def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
     with lock:
-        # a lane tree already dirty would fail the sync: set its work aside on the lane branch first
+        # a lane tree already dirty before the sync: set its work aside on the lane branch and stop
+        # the ticket (no sync, driver, lane commit, or merge), so that wip commit is never merged
         sha = wip_commit(wt, t.id, 'dirty before sync')
         if sha:
             say(lane, t.id, f'wip {sha} on {lane.branch}')
+            return 'dirty before sync', f'wip {sha}'
         p = git(wt, 'merge', '--ff', '--no-edit', integration)
         if p.returncode:
             if in_merge(wt):
@@ -510,9 +529,9 @@ def run_ticket(ctx, lane, t, lock):
     with open(log, 'wb') as f:
         rc = subprocess.run(['bash', '-c', driver_for(ctx, t)], cwd=str(wt), stdin=subprocess.DEVNULL,
                             stdout=f, stderr=subprocess.STDOUT, env=env).returncode
-    if rc:
-        return f'driver failed rc={rc}', ''
     inherited = inherited_red(wt / rel / t.slug)
+    if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
+        return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
         return inherited, ''
 
@@ -900,6 +919,31 @@ def selftest():
         expect('inherited red: the lane branch is not an ancestor of fanout/ir',
                sh(ir, 'merge-base', '--is-ancestor', 'fanout/ir-a', 'fanout/ir').returncode == 1)
 
+        # 5b. Inherited red after a non-zero driver exit: the cause is still reported, with the
+        # driver rc as a suffix. Negative control: a non-zero exit with no step stays plain.
+        nr, nl = tmp / 'inherited-rc', tmp / 'nlanes'
+        make_repo(nr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(nr, 'a=T-0001,T-0002', '--integration', 'fanout/nr', '--lanes-dir', str(nl),
+                      '--driver', inherited_stub('inherited red: test_a') + '; exit 7', '--gate', 'true')
+        got = report_rows(nl)
+        expect(f'inherited red rc=7: run exits 1, got {proc.returncode}', proc.returncode == 1)
+        expect(f'inherited red rc=7: T-0001 outcome, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_a (driver rc=7)')
+        expect(f'inherited red rc=7: T-0002 skipped, got {got.get("T-0002")!r}', got.get('T-0002') == 'skipped')
+        merges = sh(nr, 'rev-list', '--merges', '--count', 'fanout/nr').stdout.strip()
+        expect(f'inherited red rc=7: fanout/nr has no merge commits, got {merges!r}', merges == '0')
+        shown = sh(nr, 'show', 'fanout/nr:.sdlc/a/handoff.md').stdout
+        expect(f'inherited red rc=7: ticket still ready on fanout/nr, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        lane_status = sh(nl / 'a', 'status', '--porcelain', '--untracked-files=all').stdout
+        expect(f'inherited red rc=7: lane tree clean (WIP-committed), got {lane_status!r}', lane_status == '')
+        cr, cl = tmp / 'plain-rc', tmp / 'clanes'
+        make_repo(cr, [('a', 'T-0001', 'ready')])
+        fanout(cr, 'a=T-0001', '--integration', 'fanout/cr', '--lanes-dir', str(cl), '--driver', 'exit 7')
+        got = report_rows(cl)
+        expect(f'no inherited step, rc=7 (negative control): outcome is driver failed rc=7, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'driver failed rc=7')
+
         dr, dl = tmp / 'inherited-done', tmp / 'dlanes'
         make_repo(dr, [('a', 'T-0001', 'ready')])
         proc = fanout(dr, 'a=T-0001', '--integration', 'fanout/dr', '--lanes-dir', str(dl),
@@ -912,6 +956,25 @@ def selftest():
         shown = sh(dr, 'show', 'fanout/dr:.sdlc/a/handoff.md').stdout
         expect(f'done builder (negative control): ticket closed on fanout/dr, got {shown[:120]!r}',
                re.search(r'^status: done\b', shown, re.M))
+
+        # 5c. Verifier-inherited: builder Status `done`, a newer verifier Verdict
+        # `inherited red: test_v`; the outcome names the verifier's tests, not `done`.
+        vstub = ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
+                 's="$FANOUT_ROOT/$FANOUT_SLUG/step-1"; mkdir -p "$s"; '
+                 'printf "## Status\\ndone\\n" > "$s/builder-L2.md"; '
+                 'printf "## Verdict\\ninherited red: test_v\\n" > "$s/verifier-L1.md"; '
+                 'printf \'{"file": "builder-L2.md"}\\n{"file": "verifier-L1.md"}\\n\' > "$s/runs.jsonl"; fi; '
+                 'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
+                 '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')
+        vr, vl = tmp / 'inherited-verifier', tmp / 'vlanes'
+        make_repo(vr, [('a', 'T-0001', 'ready')])
+        proc = fanout(vr, 'a=T-0001', '--integration', 'fanout/vr', '--lanes-dir', str(vl),
+                      '--driver', vstub, '--gate', 'true')
+        got = report_rows(vl)
+        expect(f'verifier inherited red: run exits 1, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 1)
+        expect(f'verifier inherited red: outcome is inherited red: step-1: test_v, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_v')
 
         # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
         # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
@@ -979,6 +1042,50 @@ def selftest():
         text = rep.read_text() if rep.is_file() else ''
         expect(f'wip case: report row Commit cell is wip <sha7>, got {text!r}',
                re.search(r'^\| alpha \| T-0001 \| driver failed rc=3 \| wip [0-9a-f]{7} \|$', text, re.M))
+
+        # 8. A gate leaves the lane tree dirty after T-0001 merges: T-0002's pre-sync wip commit
+        # stops the ticket, so it is never synced, driven, committed, or merged.
+        # Negative control: the same run with no gate merges both tickets.
+        sr, sl = tmp / 'dirty-sync', tmp / 'slanes'
+        make_repo(sr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        sfixture = sh(sr, 'rev-parse', 'main').stdout.strip()
+        proc = fanout(sr, 'alpha=T-0001,T-0002', '--integration', 'fanout/ds', '--lanes-dir', str(sl),
+                      '--driver', shlex.quote(str(stub)), '--gate', f'echo x >{shlex.quote(str(sl))}/alpha/dirty.txt')
+        ran = f'(stdout={proc.stdout!r} stderr={proc.stderr!r})'
+        expect(f'dirty-sync case: run exits 1, got {proc.returncode} {ran}', proc.returncode == 1)
+        rep = sl / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'dirty-sync case: report row | alpha | T-0002 | dirty before sync | wip <sha7> |, got {text!r}',
+               re.search(r'^\| alpha \| T-0002 \| dirty before sync \| wip [0-9a-f]{7} \|$', text, re.M))
+        subj = sh(sr, 'log', '-1', '--format=%s', 'fanout/ds-alpha').stdout.strip()
+        expect(f'dirty-sync case: lane tip subject is wip(T-0002): dirty before sync, got {subj!r}',
+               subj == 'wip(T-0002): dirty before sync')
+        expect('dirty-sync case: the lane tip is not an ancestor of the integration branch',
+               sh(sr, 'merge-base', '--is-ancestor', 'fanout/ds-alpha', 'fanout/ds').returncode == 1)
+        expect('dirty-sync case: the integration branch holds T-0001.txt',
+               sh(sr, 'cat-file', '-e', 'fanout/ds:T-0001.txt').returncode == 0)
+        expect('dirty-sync case: the integration branch does not hold dirty.txt',
+               sh(sr, 'cat-file', '-e', 'fanout/ds:dirty.txt').returncode != 0)
+        shown = sh(sr, 'show', 'fanout/ds:.sdlc/b/handoff.md').stdout
+        expect(f'dirty-sync case: fanout/ds:.sdlc/b/handoff.md still says status: ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        expect('dirty-sync case: main still equals the fixture commit',
+               sfixture and sh(sr, 'rev-parse', 'main').stdout.strip() == sfixture)
+
+        cr, cl = tmp / 'dirty-sync-control', tmp / 'sclanes'
+        make_repo(cr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(cr, 'alpha=T-0001,T-0002', '--integration', 'fanout/dc', '--lanes-dir', str(cl),
+                      '--driver', shlex.quote(str(stub)))
+        got = report_rows(cl)
+        expect(f'dirty-sync control: run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        for tid in ('T-0001', 'T-0002'):
+            expect(f'dirty-sync control: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
+        subj = sh(cr, 'log', '-1', '--format=%s', 'fanout/dc-alpha').stdout.strip()
+        expect(f'dirty-sync control: lane tip subject does not start with wip(, got {subj!r}',
+               subj and not subj.startswith('wip('))
+        expect('dirty-sync control: the integration branch holds T-0002.txt',
+               sh(cr, 'cat-file', '-e', 'fanout/dc:T-0002.txt').returncode == 0)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

@@ -7,8 +7,8 @@
 # one in interpreter inline code (python -c, node -e/--eval, perl -e, ruby -e), while a plain
 # python3 script run and an interpreter word inside a quoted mention pass;
 # block-pattern-kill.sh, inside a role run, blocks killing by name pattern (pkill, killall,
-# kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable) with a stderr
-# naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
+# kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable, also one
+# assigned through a $(...) or backtick substitution) with a stderr naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
 # echo $! | xargs kill, a variable holding another command, a quoted mention, and anything
 # outside a role run; block-stray-worktree.sh, inside a role run, denies a git worktree add
 # that is not detached under $SDLC_TMP_WORKTREES (a path outside it or with a .. segment, -b,
@@ -37,7 +37,9 @@ fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 # run <hook> <json> [VAR=value ...]: prints stderr, returns the hook's exit code.
 run() {
   local hook="$1" json="$2"; shift 2
-  printf '%s' "$json" | env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$hook" 3>&1 1>/dev/null 2>&3
+  # Stdin comes from process substitution, not a pipe stage: a hook that exits
+  # before reading stdin would SIGPIPE a feeder and pipefail would report 141.
+  env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$hook" 3>&1 1>/dev/null 2>&3 < <(printf '%s' "$json")
 }
 
 on='{"tool_input":{"command":"sleep 1","run_in_background":true}}'
@@ -117,6 +119,28 @@ run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 c=$(printf "ruby -e 'system(\"git %s\")'" push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks ruby -e: exit $rc, want 2"
+c=$(printf "python3 -X dev -c 'import os; os.system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks python3 -X dev -c: exit $rc, want 2"
+c=$(printf "python3 -W ignore -c 'import os; os.system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks python3 -W ignore -c: exit $rc, want 2"
+c=$(printf "node --require x -e 'require(\"child_process\").execSync(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks node --require x -e: exit $rc, want 2"
+c=$(printf "perl -I lib -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks perl -I lib -e: exit $rc, want 2"
+c=$(printf "ruby -I lib -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks ruby -I lib -e: exit $rc, want 2"
+# A script path ends the option run: masked scan, allowed.
+c=$(printf 'python3 -X dev scripts/check.py "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 -X dev script.py: exit $rc, want 0"
+c=$(printf 'python3 scripts/check.py -c "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 script.py -c: exit $rc, want 0"
 c=$(printf 'git %s origin main' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks plain push: exit $rc, want 2"
@@ -177,12 +201,15 @@ psw=$(printf 'p%s' s); awk2="awk '{print \$2}'"
 for c in "$kaw node" "kill \$($pgw -f vite)" "$pgw -f vite | xargs kill" "sudo $pkw -f vite" \
   "cd x && $pkw -f vite" "$psw aux | grep x | $awk2 | xargs kill" \
   "$psw -ef | grep x | $awk2 | xargs kill -9" "kill \$($psw aux | grep x | $awk2)" \
-  "p=$pkw; \$p x" "k=$kaw; \${k} node"; do
+  "p=$pkw; \$p x" "k=$kaw; \${k} node" "p=\$(command -v $pkw); \$p x" \
+  "k=\$(which $kaw); \${k} node" "p=\`command -v $pkw\`; \$p x" "p=\$(echo find $pkw); \$p x" \
+  "k=\$(compgen -c | grep $kaw | head -1); \${k} node" "k=\$(command -v kill); \$k \$($pgw -f vite)"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-pattern-kill blocks '$c': exit $rc, want 2"
 done
 for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f" "kill %1" "kill \$(cat pidfile)" \
-  "echo \$! | xargs kill" "cmd=ls; \$cmd -la"; do
+  "echo \$! | xargs kill" "cmd=ls; \$cmd -la" "cmd=\$(command -v ls); \$cmd -la" \
+  "cmd=\`command -v ls\`; \$cmd -la" "echo 'p=\$(command -v $pkw); \$p x'"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-pattern-kill allows '$c': exit $rc, want 0"
 done
@@ -202,14 +229,17 @@ for c in "git worktree add -b tmpbr \"$tw/x\" HEAD" "git worktree add -B tmpbr \
   "git worktree add --orphan \"$tw/x\"" "git worktree add --orphan -b tmpbr \"$tw/x\"" \
   "git -C . worktree add /tmp/x HEAD" "git worktree add \"$tw/x\"" \
   "git worktree add \"$tw/../x\" HEAD" "bash -c \"git worktree add /tmp/x HEAD\"" \
-  "git worktree add --detach \"$tw\" HEAD"; do
+  "git worktree add --detach \"$tw\" HEAD" "git worktree add \"$tw/x\" feature-x" \
+  "git worktree add \"$tw/x\" HEAD" "git worktree add --no-detach \"$tw/x\" HEAD" \
+  "git worktree add \"$tw/x\" -- feature-x" "git worktree add \"\${SDLC_TMP_WORKTREES}/base\" HEAD"; do
   run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c': exit $rc, want 2"
 done
 out=$(run "$sw" "$(pj "git worktree add --detach /r/x HEAD")" SDLC_ROLE=conductor); rc=$?
 [[ $rc -eq 2 ]] || fail "block-stray-worktree denies with SDLC_TMP_WORKTREES unset: exit $rc, want 2"
 grep -q conductor <<<"$out" || fail "block-stray-worktree prefix unset: stderr lacks the role"
-for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add \"\${SDLC_TMP_WORKTREES}/base\" HEAD" \
+for c in "git worktree add --detach \"$tw/x\" HEAD" "git worktree add --detach \"\${SDLC_TMP_WORKTREES}/base\" HEAD" \
+  "git worktree add -d \"$tw/x\" HEAD" "git worktree add --detach \"$tw/x\" origin/feature-x" \
   "git worktree add --detach /r/.worktrees/tmp/builder-1/x HEAD" \
   "git worktree remove --force \"$tw/x\"" "git worktree list" "grep -n \"git worktree add\" f"; do
   run "$sw" "$(pj "$c")" "${swenv[@]}" >/dev/null; rc=$?

@@ -1,0 +1,43 @@
+<!-- role=planner level=L3 model=fable effort=xhigh -->
+## Goal
+Inside a role run, `plugins/sdlc-lite/hooks/block-pattern-kill.sh` blocks a kill word that reaches a shell variable through a `$(...)` or backtick substitution and is then run as a command, while a substitution holding another command and a quoted mention still pass, with the selftest fixtures and the hook's docs kept accurate.
+
+## Step 1: Catch a kill word assigned through a command substitution
+level: L3
+### Do
+Today `held_kill` in `plugins/sdlc-lite/hooks/block-pattern-kill.sh` (line 52) extracts variable names with `assign` (`NAME=<path>(pkill|killall|kill)<end>`, line 40) and blocks when `$NAME` or `${NAME}` stands in command position (`cp`). The ticket's two named forms, `p=$(command -v pkill); $p x` and `k=$(which killall); ${k} node`, already exit 2 on the current tree, but only by accident: `cp`'s `VAR=value` wrapper lets `strict` read `k=$(which` as an assignment prefix in front of `killall`. Any body where the kill word is not the next bare word after that prefix passes today: `p=$(echo find pkill); $p x`, its backtick form, `k=$(compgen -c | grep killall | head -1); ${k} node`, and `k=$(command -v kill); $k $(pgrep -f vite)`.
+
+Change the hook so the variable path is caught by design: next to `assign`, add a second assignment pattern (or extend `assign`) that matches `NAME=`, an optional `"`, then `$(` or a backtick, then a body running to the closing `)` or backtick that holds `pkill`, `killall`, or `kill` as a whole word, using the existing `word`/`wend` boundaries so `pattern-kill`, `killer`, and `skill` do not count. Feed its matches through the same `sed` name extraction (the match must start at the name so `s/=.*//; s/.*[^[:alnum:]_]//` still yields it) and the same `$NAME`/`${NAME}` command-position check in `held_kill`. Leave `strict`, the cheap exit at lines 27 to 28 (it already lets `kill` plus `=` plus `$` through), and the raw `loose` path (it already blocks `pkill`/`killall` anywhere and `kill` with `pgrep`/`ps`) unchanged. `cmd=$(command -v ls); $cmd -la` and `echo 'p=$(command -v pkill); $p x'` must keep exiting 0 (the masker drops the single-quoted body).
+
+Edit the hook with the Edit tool, never with `sed -i` through Bash: this hook guards your own session, and a Bash call that holds a kill word in a matched position is denied. In every Bash test call build the words with printf (`pk=$(printf 'pk%s' ill)`, `ka=$(printf 'k%s' illall)`), as the selftest and the criteria below do.
+
+Fixtures in `plugins/sdlc-lite/scripts/hook-selftest.sh`, following the `$pkw`/`$kaw`/`$pgw` printf convention at line 194: add to the block loop (line 201) `"p=\$(command -v $pkw); \$p x"`, `"k=\$(which $kaw); \${k} node"`, the backtick form of the first (escape the backticks, or build one with `bt=$(printf '\140')`), `"p=\$(echo find $pkw); \$p x"`, `"k=\$(compgen -c | grep $kaw | head -1); \${k} node"`, and `"k=\$(command -v kill); \$k \$($pgw -f vite)"`; add to the pass loop (line 208) `"cmd=\$(command -v ls); \$cmd -la"`, its backtick form, and `"echo 'p=\$(command -v $pkw); \$p x'"`. Every existing fixture keeps its result.
+
+Docs, each using the word "substitution": the hook's header comment (lines 6 to 7, the "a kill word held in a shell variable (...)" list gains the `$(...)` and backtick forms); the selftest header at line 10, extending "a kill word held in a variable" with ", also one assigned through a $(...) or backtick substitution" inside the clause that ends at "outside a role run;"; the one-line `hooks/block-pattern-kill.sh` Layout entry in the repo-root `CLAUDE.md` (line 26), after the `k=killall; ${k} node` example; and the kill-pattern hazard line in `.claude/agents/sdlc-lite-author.md` (line 33), for example "or through a substitution (`p=$(command -v pkill); $p x`)". Shellcheck at severity warning runs over both scripts in step 2's gate.
+### Acceptance criteria
+- `pk=$(printf 'pk%s' ill); c="p=\$(echo find $pk); \$p x"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- `pk=$(printf 'pk%s' ill); bt=$(printf '\140'); c="p=${bt}echo find $pk${bt}; \$p x"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- `ka=$(printf 'k%s' illall); c="k=\$(compgen -c | grep $ka | head -1); \${k} node"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- `kw=$(printf 'k%s' ill); pg=$(printf 'pg%s' rep); c="k=\$(command -v $kw); \$k \$($pg -f vite)"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- (guard) `pk=$(printf 'pk%s' ill); c="p=\$(command -v $pk); \$p x"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- (guard) `ka=$(printf 'k%s' illall); c="k=\$(which $ka); \${k} node"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- (guard) `pk=$(printf 'pk%s' ill); bt=$(printf '\140'); c="p=${bt}command -v $pk${bt}; \$p x"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 2`
+- (guard) `c='cmd=$(command -v ls); $cmd -la'; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 0`
+- (guard) `bt=$(printf '\140'); c="cmd=${bt}command -v ls${bt}; \$cmd -la"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 0`
+- (guard) `pk=$(printf 'pk%s' ill); c="echo 'p=\$(command -v $pk); \$p x'"; SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-pattern-kill.sh <<<"$(jq -n --arg c "$c" '{tool_input:{command:$c}}')" >/dev/null 2>&1; test $? -eq 0`
+- (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh`
+- The new fixtures bite: the edited selftest fails against the pre-step hook. `tmp=$(mktemp -d); mkdir -p "$tmp/scripts" "$tmp/hooks"; cp plugins/sdlc-lite/hooks/*.sh "$tmp/hooks/"; git show HEAD:plugins/sdlc-lite/hooks/block-pattern-kill.sh > "$tmp/hooks/block-pattern-kill.sh"; chmod +x "$tmp"/hooks/*.sh; cp plugins/sdlc-lite/scripts/hook-selftest.sh "$tmp/scripts/"; ! bash "$tmp/scripts/hook-selftest.sh" >/dev/null 2>&1; rc=$?; rm -rf "$tmp"; test "$rc" -eq 0`
+- `sed -n '1,/^[^#]/p' plugins/sdlc-lite/hooks/block-pattern-kill.sh | grep -q substitution`
+- `grep -E '^- .hooks/block-pattern-kill.sh.:' CLAUDE.md | grep -q substitution`
+- `grep -E 'block-pattern-kill' .claude/agents/sdlc-lite-author.md | grep -q substitution`
+- `sed -n '1,/^set -/p' plugins/sdlc-lite/scripts/hook-selftest.sh | tr '\n' ' ' | grep -qE 'kill word held in a variable[^;]*substitution'`
+
+## Step 2: Gates green
+level: L1
+### Do
+Run `bash plugins/sdlc-lite/scripts/check.sh` from the repo root and fix any red step 1 introduced (a shellcheck warning in the hook or the selftest, a fixture with the wrong expected exit code, a check.py doc guard), touching only the files step 1 changed. A gate already red at the pre-build HEAD is reported as Status `inherited red: <tests>`, not fixed here. Never commit.
+### Acceptance criteria
+- (guard) `bash plugins/sdlc-lite/scripts/check.sh`
+
+## Risks
+The step 2 gate ran 311 s on this host under load and 62 s in a quiet HEAD copy; `steps.py split --only 2` runs guards under a 300 s default timeout and `/chain` passes no `--guard-timeout`, so a loaded host can refuse step 2 on timing alone. The other 24 plans in `.sdlc/` carry the same guard, so this is the repo's convention, and a rerun on a quiet host clears it. The ticket's two named forms are already blocked today, so a builder who only re-derives those leaves criteria 1 to 4 red, which is the intended fail. The criteria feed the hook with `<<<`, which the masker's `<<(?!<)` test reads as a heredoc, so in the verifier's session they take the hook's raw `loose` path; they hold no kill word outside the hyphenated file name and passed the current hook when run here under `SDLC_ROLE=planner`, and the Do keeps `loose` unchanged. The bite criterion compares against `HEAD` at build start; a main sync that already carried this fix would turn it red, which cannot happen inside one lane because builders never commit.

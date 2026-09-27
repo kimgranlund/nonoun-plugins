@@ -123,28 +123,32 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0116 | [tickets-py-archive-renames-done](tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | M | P2 | none | 🟢 done |
 | T-0117 | [fanout-py-closes-tickets-with](fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🟢 done |
 | T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🟢 done |
-| T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🔵 ready |
-| T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | 🔵 ready |
-| T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🔵 ready |
-| T-0122 | [fanout-py-inherited-red-reads](fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | 🔵 ready |
+| T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🟢 done |
+| T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | 🟢 done |
+| T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🟢 done |
+| T-0122 | [fanout-py-inherited-red-reads](fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | 🟢 done |
 | T-0123 | [replan-light-criterion-swap](replan-light-criterion-swap/handoff.md) | Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan | bug | S | P1 | none | 🟢 done |
 | T-0124 | [inherited-red-gate-steps](inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🟢 done |
 | T-0125 | [criteria-no-porcelain-clean](criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🟢 done |
 | T-0126 | [chain-stop-leaves-dirty-tree](chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🟢 done |
 | T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | ⚪ dropped |
-| T-0128 | [tickets-py-outside-refs-matches](tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | 🔵 ready |
-| T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | 🔵 ready |
-| T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | 🔵 ready |
-| T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🔵 ready |
+| T-0128 | [tickets-py-outside-refs-matches](tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | 🟢 done |
+| T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | 🟢 done |
+| T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | 🟢 done |
+| T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🟢 done |
 | T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🟢 done |
-| T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🔵 ready |
-| T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🔵 ready |
-| T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🔵 ready |
+| T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🟢 done |
+| T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🟢 done |
+| T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🟢 done |
 | T-0136 | [decide-whether-path-scoped-git](decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | M | P2 | none | 🔵 ready |
-| T-0137 | [the-steps-py-lint-accepts](the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | 🔵 ready |
-| T-0138 | [the-steps-py-lint-does](the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | 🔵 ready |
-| T-0139 | [pre-sync-wip-id-dirty](pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | M | P2 | none | 🔵 ready |
+| T-0137 | [the-steps-py-lint-accepts](the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | 🟢 done |
+| T-0138 | [the-steps-py-lint-does](the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | 🟢 done |
+| T-0139 | [pre-sync-wip-id-dirty](pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | M | P2 | none | 🟢 done |
 | T-0140 | [no-code-gate-detects-a](no-code-gate-detects-a/handoff.md) | No code gate detects a full-suite guard placed on a non-final step... | idea | M | P2 | none | 🔵 ready |
 | T-0141 | [criteria-build-base-var](criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | S | P2 | none | 🟢 done |
 | T-0142 | [finish-in-session](finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | M | P1 | none | 🔵 ready |
 | T-0143 | [step-2-s-fix-picking](step-2-s-fix-picking/handoff.md) | step 2's fix picking the correct result event from a stream-json... | idea | M | P2 | none | ⏳ proposed |
+| T-0144 | [the-node-perl-and-ruby](the-node-perl-and-ruby/handoff.md) | The node, perl, and ruby value-option lists are best-effort the... | idea | M | P2 | none | ⏳ proposed |
+| T-0145 | [block-pattern-kill-sh-s](block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⏳ proposed |
+| T-0146 | [the-step-1-acceptance-criterion](the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | M | P2 | none | ⏳ proposed |
+| T-0147 | [a-compound-span-followed-by](a-compound-span-followed-by/handoff.md) | a compound span followed by &&, ;, or \|\| after its closing keyword... | idea | M | P2 | none | ⏳ proposed |

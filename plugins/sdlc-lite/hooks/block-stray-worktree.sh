@@ -7,8 +7,11 @@
 # conductor has SDLC_ROLE but no prefix); a path that is not strictly under the prefix (a
 # literal $SDLC_TMP_WORKTREES or ${SDLC_TMP_WORKTREES} in the path is expanded, a relative path
 # is resolved against the hook JSON's cwd, else $PWD, and against -C; a path with a .. segment,
-# an unresolved expansion, or a relative path after cd is denied); and an add with neither
-# --detach/-d nor a commit-ish after the path (git would create a branch named after it).
+# an unresolved expansion, or a relative path after cd is denied); and any add without
+# --detach/-d. Without --detach git can create a branch through DWIM (a name that exists only
+# on a remote becomes a new tracking branch, no commit makes one named after the path) or check
+# out an existing branch; with --detach it skips all branch DWIM whatever refs exist, so the
+# rule stays textual and the hook never queries the repo.
 # Allowed: git worktree add --detach "$SDLC_TMP_WORKTREES/<name>" <commit>, every other git
 # worktree subcommand (list, remove, prune), a mention inside a quoted argument
 # (grep -n "git worktree add" f), and anything outside a role run.
@@ -274,8 +277,8 @@ def check_add(args, base, moved):
         full = posixpath.normpath(posixpath.join(base or '/', path))
         if not full.startswith(root.rstrip('/') + '/'):
             reasons.append(f'the path {full} is not under $SDLC_TMP_WORKTREES ({prefix})')
-    if not detach and len(pos) < 2:
-        reasons.append('without --detach or a commit, git creates a branch named after the path')
+    if not detach:
+        reasons.append('without --detach git can create a branch (a name that exists only on a remote becomes a new tracking branch, no commit makes one named after the path) or check out an existing branch')
     return reasons
 
 
