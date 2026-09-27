@@ -240,17 +240,23 @@ def worktree_pairs(root):
 
 
 def literal_re(old):
-    """The literal folder path old, matched only when no folder-name character follows it, so <rel>/<slug> ends
-    at `/`, the end of a token, or punctuation and never runs on into a longer folder name."""
-    return re.compile(re.escape(old) + r'(?![A-Za-z0-9_-])')
+    """The literal folder path old, matched only where it starts a path token (start of text or after a TOKEN_RE
+    delimiter: whitespace, a quote, a backtick, a paren, or an angle or square bracket), so a path into another
+    tree (other/<rel>/<slug>, /elsewhere/<rel>/<slug>, ../other/<rel>/<slug>) is not the literal, and only when
+    no folder-name character follows it, so <rel>/<slug> ends at `/`, the end of a token, or punctuation and
+    never runs on into a longer folder name. A URL or prefixed form (https://host/<rel>/<slug>,
+    key=<rel>/<slug>) is therefore not the literal either."""
+    return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
 def outside_refs(root, slug):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
-    rule), ending at `/`, the end of a token, or punctuation and never running on into a longer folder name
-    (.sdlc/0001-a never matches inside .sdlc/0001-ab; literal_re), or a path token that ref_tokens resolves to the folder (relative to the citing file, toplevel-relative
+    rule), counted only where it starts a path token (start of text or after a TOKEN_RE delimiter, so
+    other/.sdlc/0001-a and /elsewhere/.sdlc/0001-a are not it) and ending at `/`, the end of a token, or
+    punctuation, never running on into a longer folder name (.sdlc/0001-a never matches inside .sdlc/0001-ab;
+    literal_re), or a path token that ref_tokens resolves to the folder (relative to the citing file, toplevel-relative
     or absolute, for example ../<slug>/filer-L1.md or ./<slug>/handoff.md). A bare <slug> word and a path that
     resolves elsewhere are not references. files are the toplevel-relative paths (sorted), leaving out every
     file under the ticket's own folder and <root>/roadmap.md (the folder moves with the ticket; close
@@ -328,7 +334,8 @@ def ref_tokens(text, top, f, old):
 
 def rewrite_files(top, files, old, new):
     """In each toplevel-relative file under top, replace old (<rel>/<slug>) with new (<rel>/.<slug>) as bytes
-    wherever the literal ends at `/`, the end of a token, or punctuation (literal_re; never inside a longer
+    wherever the literal starts a path token (start of text or after a TOKEN_RE delimiter, never inside
+    other/<rel>/<slug>) and ends at `/`, the end of a token, or punctuation (literal_re; never inside a longer
     folder name such as <rel>/<slug>b), then turn the <slug> component of each path token that ref_tokens resolves to the folder into .<slug>,
     keeping the token's form (relative, ./, absolute); all other bytes stay. Tokens resolve against each file's
     current location, so archive runs this before any rename."""
@@ -1764,6 +1771,28 @@ def selftest():
                        rc == 0 and 'rewrote' not in out and (root / '.0003-x').is_dir()
                        and spec.read_bytes() == text.encode('utf-8'))
 
+            # a path into another tree that only contains .sdlc/0003-x is not a reference: the literal must
+            # start a path token
+            for text in ('see other/.sdlc/0003-x/handoff.md\n', 'see /elsewhere/repo/.sdlc/0003-x/handoff.md\n',
+                         'see ../other/.sdlc/0003-x/handoff.md\n'):
+                root, spec = ref_repo(text=text)
+                rc, out, err = run(root, 'close', ('0003-x',))
+                expect(f'(u) refs: other-tree path {text.strip()!r} does not block close: rc={rc} {out!r} {err!r}',
+                       rc == 0 and 'rewrote' not in out and (root / '.0003-x').is_dir()
+                       and spec.read_bytes() == text.encode('utf-8'))
+                root, spec = ref_repo(text=text)
+                rc, out, err = run(root, 'close', ('0003-x',), rewrite_refs=True)
+                expect(f'(u) refs: --rewrite-refs leaves other-tree path {text.strip()!r}: rc={rc} {out!r} {err!r}',
+                       rc == 0 and 'rewrote' not in out and (root / '.0003-x').is_dir()
+                       and spec.read_bytes() == text.encode('utf-8'))
+            root, spec = ref_repo(text='see other/.sdlc/0003-x/a.md and .sdlc/0003-x/b.md\n')
+            rc, out, err = run(root, 'close', ('0003-x',), rewrite_refs=True)
+            got = spec.read_text(encoding='utf-8')
+            expect(f'(u) refs: --rewrite-refs rewrites only the real cite, not other/.sdlc/0003-x: rc={rc} {out!r} '
+                   f'got={got!r}',
+                   rc == 0 and out.endswith('; rewrote refs in docs/spec.md')
+                   and got == 'see other/.sdlc/0003-x/a.md and .sdlc/.0003-x/b.md\n')
+
             # a literal that runs on into a longer folder name (0003-xy) is not a reference to 0003-x
             text = 'see .sdlc/0003-xy/handoff.md\n'
             root, spec = ref_repo(text=text)
@@ -2015,6 +2044,23 @@ def selftest():
                    f'{err!r}',
                    rc == 0 and 'rewrote' not in out and (root / '.0001-alpha').is_dir()
                    and spec.read_bytes() == text.encode('utf-8'))
+
+            # a path into another tree that only contains .sdlc/0001-alpha does not block the archive
+            text = ('see other/.sdlc/0001-alpha/handoff.md and /elsewhere/repo/.sdlc/0001-alpha/handoff.md '
+                    'and ../other/.sdlc/0001-alpha/handoff.md\n')
+            for kw in ({}, {'rewrite_refs': True}):
+                root, spec = arch_ref(text=text)
+                rc, out, err = run(root, 'archive', **kw)
+                expect(f'archive refs: other-tree paths are not references {kw}: rc={rc} {out!r} {err!r}',
+                       rc == 0 and 'rewrote' not in out and (root / '.0001-alpha').is_dir()
+                       and spec.read_bytes() == text.encode('utf-8'))
+            root, spec = arch_ref(text='see other/.sdlc/0001-alpha/a.md and .sdlc/0001-alpha/b.md\n')
+            rc, out, err = run(root, 'archive', rewrite_refs=True)
+            got = spec.read_text(encoding='utf-8')
+            expect(f'archive refs: --rewrite-refs rewrites only the real cite, not other/.sdlc/0001-alpha: rc={rc} '
+                   f'{out!r} got={got!r}',
+                   rc == 0 and out.endswith('; rewrote refs in docs/spec.md')
+                   and got == 'see other/.sdlc/0001-alpha/a.md and .sdlc/.0001-alpha/b.md\n')
 
             # a literal that runs on into a longer folder name (0001-alphax) is left alone by archive
             text = 'see .sdlc/0001-alpha/a.md and .sdlc/0001-alphax/b.md\n'
