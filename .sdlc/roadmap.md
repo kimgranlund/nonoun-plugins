@@ -138,7 +138,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🟢 done |
 | T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🔵 ready |
 | T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🟢 done |
-| T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🔵 ready |
+| T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🟢 done |
 | T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🔵 ready |
 | T-0136 | [decide-whether-path-scoped-git](decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | M | P2 | none | 🔵 ready |
 | T-0137 | [the-steps-py-lint-accepts](the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | 🔵 ready |
@@ -149,3 +149,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0142 | [finish-in-session](finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | M | P1 | none | 🔵 ready |
 | T-0144 | [the-node-perl-and-ruby](the-node-perl-and-ruby/handoff.md) | The node, perl, and ruby value-option lists are best-effort the... | idea | M | P2 | none | ⏳ proposed |
 | T-0145 | [block-pattern-kill-sh-s](block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⏳ proposed |
+| T-0146 | [the-step-1-acceptance-criterion](the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | M | P2 | none | ⏳ proposed |
