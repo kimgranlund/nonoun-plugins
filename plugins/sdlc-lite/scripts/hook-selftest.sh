@@ -37,7 +37,9 @@ fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 # run <hook> <json> [VAR=value ...]: prints stderr, returns the hook's exit code.
 run() {
   local hook="$1" json="$2"; shift 2
-  printf '%s' "$json" | env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$hook" 3>&1 1>/dev/null 2>&3
+  # Stdin comes from process substitution, not a pipe stage: a hook that exits
+  # before reading stdin would SIGPIPE a feeder and pipefail would report 141.
+  env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$hook" 3>&1 1>/dev/null 2>&3 < <(printf '%s' "$json")
 }
 
 on='{"tool_input":{"command":"sleep 1","run_in_background":true}}'
