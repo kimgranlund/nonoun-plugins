@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -10,10 +10,23 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             the folder NNNN-<slug> after the stamped id; the slug is given bare. On success,
             new --numbered persists the mode by adding that line to <root>/config if it is absent
   close     after /file: read the task's newest filer-L*.md, refuse while its Warnings are open
-            (unless --force), file each Follow-ups bullet as a proposed idea ticket with
-            from: <id>, set the ticket done, then regenerate the roadmap. Numbered mode (as for new)
-            names each follow-up folder NNNN-<slug> after that follow-up's own new id. On success,
-            close --numbered persists the mode in <root>/config, as new --numbered does.
+            (unless --force), file at most one Follow-ups bullet as a proposed idea ticket with
+            from: <id>, append the rest to <root>/notes.md, set the ticket done, then regenerate the
+            roadmap. Each bullet starts with a tag, `fix-now:`, `decide:` or `note:` (case as written,
+            optional spaces after the colon); an untagged bullet counts as decide. Title, slug, duplicate
+            check and ticket context use the text after the tag; the digest covers the full bullet.
+            close --ticket N files only item N (1-based) as a ticket; it refuses, writing nothing, when N
+            is out of range, in --skip, a fix-now: or note: item (only a decide: item can become a
+            ticket), a duplicate (already tracked by T-NNNN), with --reason, and, outside --dry-run,
+            without --expect. Without --ticket close files no ticket; there is no way to file two.
+            Every item that is not the --ticket item, not skipped and not a duplicate is appended to
+            <root>/notes.md after every refusal check: the file is created with a `# Notes` heading and
+            a line saying close appends follow-ups that did not become tickets, then each close adds
+            `## <id>: <title> (<YYYY-MM-DD>)` and one `- <tag>: <text>` line per item (untagged as
+            `- decide: <text>`). notes.md holds no folder paths, and nothing is appended when no item
+            goes there. The output names the one ticket (or none) and the count appended to notes.md.
+            Numbered mode (as for new) names the follow-up folder NNNN-<slug> after its new id. On
+            success, close --numbered persists the mode in <root>/config, as new --numbered does.
             In numbered mode, closing a NNNN-<slug> folder renames it to .NNNN-<slug> (after the
             handoff and follow-ups are written, before the roadmap) so ls and Finder hide it; the
             output adds `; moved to .<slug>` and each follow-up's context names the new folder.
@@ -35,21 +48,22 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             this tree, then rerun close.
             A follow-up whose normalized title (lowercase, words only) or slug base (no -N suffix, no
             NNNN- prefix) equals any other ticket's, any status, is a duplicate: close skips it and
-            names it in the output. Follow-ups in the same filer are not checked against each other.
-            close --dry-run applies the same refusals, then lists each Follow-ups bullet as
-            `<i>. <title> [<slug>]` with any `duplicate of T-NNNN (<slug>)` or `skip (--skip)` mark,
+            names it in the output, writing it nowhere. Follow-ups in the same filer are not checked
+            against each other. close --dry-run applies the same refusals, then lists each Follow-ups
+            bullet as `<i>. <tag>: <title>` with a mark: ` [<slug>] ticket` (the --ticket item), ` note`
+            (bound for notes.md), ` [<slug>] skip (--skip)` or ` [<slug>] duplicate of T-NNNN (<slug>)`,
             then one `open T-NNNN <title> [<slug>]` line per other proposed, ready or blocked
             ticket in id order, then one `open T-NNNN <title> [<slug>] (worktree <name>)` line, in id
             order, per proposed, ready or blocked ticket found only in another git worktree's
             same-relative root (<name> is that worktree's basename; a ticket whose id exists locally
-            is decided by the local copy), and writes nothing. close --skip N[,N...] files every follow-up except the named 1-based
-            indices from that listing; an index out of range refuses and writes nothing. Skipped
-            follow-ups get no id. The dry run's last line is `expect <digest>`, a digest of the full
-            ordered Follow-ups bullets; --skip needs --expect <digest> from that line and refuses
-            without it. close --expect DIGEST refuses, writing nothing, when the current Follow-ups
+            is decided by the local copy), and writes nothing (no notes.md either); --dry-run --ticket N
+            needs no --expect. close --skip N[,N...] drops the named 1-based indices from that listing:
+            neither ticket nor notes.md; an index out of range refuses and writes nothing. The dry run's
+            last line is `expect <digest>`, a digest of the full ordered Follow-ups bullets; --skip and
+            --ticket need --expect <digest> from that line and refuse without it. close --expect DIGEST refuses, writing nothing, when the current Follow-ups
             no longer match (the list changed since the dry run, so the indices may point at other
-            items). Plain close without --skip needs no token. --dry-run, --skip and --expect
-            refuse together with --reason
+            items). Plain close without --skip or --ticket needs no token. --dry-run, --skip, --expect
+            and --ticket refuse together with --reason
   archive   numbered mode only: rename every existing done or dropped NNNN-<slug> folder to
             .NNNN-<slug>, then regenerate the roadmap. Refuses, writing nothing, outside numbered
             mode, on a bad ticket, or when any target .NNNN-<slug> exists. Before any write it runs
@@ -638,11 +652,39 @@ def parse_skip(text):
     return out
 
 
+TAG_RE = re.compile(r'(fix-now|decide|note):[ \t]*')
+
+
+def follow_tag(item):
+    """(tag, text) of a Follow-ups bullet: a leading `fix-now:`, `decide:` or `note:` (case as written) is the
+    tag and the rest is the text; an untagged bullet counts as decide, so legacy filer output stays closable."""
+    m = TAG_RE.match(item)
+    return (m.group(1), item[m.end():]) if m else ('decide', item)
+
+
+def append_notes(root, pid, title, entries):
+    """Append one `## <id>: <title> (<date>)` block with a `- <tag>: <text>` line per entry to <root>/notes.md,
+    creating it with a heading first. Never a folder path, so the numbered reference scan never hits it."""
+    p = root / 'notes.md'
+    old = p.read_text(encoding='utf-8') if p.is_file() else (
+        '# Notes\n\n`tickets.py close` appends follow-ups that did not become tickets.\n')
+    if not old.endswith('\n'):
+        old += '\n'
+    block = f'\n## {pid}: {title} ({datetime.date.today().isoformat()})\n\n' + ''.join(
+        f'- {tag}: {text}\n' for tag, text in entries)
+    p.write_text(old + block, encoding='utf-8')
+
+
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
-              ack_warnings=None, rewrite_refs=False):
-    """Read the newest filer-L*.md: refuse on open warnings, file follow-ups as proposed idea tickets
-    with from: <id>, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
-    numbered (or <root>/config) names each follow-up folder NNNN-<slug> after its own new id.
+              ack_warnings=None, rewrite_refs=False, ticket=None):
+    """Read the newest filer-L*.md: refuse on open warnings, file at most one follow-up (the --ticket item) as
+    a proposed idea ticket with from: <id>, append every other follow-up that is not skipped or a duplicate to
+    <root>/notes.md, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
+    Each Follow-ups bullet has a tag (follow_tag): fix-now, decide or note; untagged counts as decide. Title,
+    slug, duplicate check and ticket context use the text after the tag; the digest covers the full bullets.
+    ticket: the one 1-based index to file; it must be a decide item, in range, not skipped, not a duplicate,
+    and (unless dry_run) comes with expect. Without it, close files no ticket.
+    numbered (or <root>/config) names the follow-up folder NNNN-<slug> after its new id.
     On success, --numbered persists `ticket_folders: numbered` in <root>/config, as new does.
     reason (not None) skips the filer: set done, append a ## Closed section, file no follow-ups.
     A follow-up matching any other ticket (ts, never the one being closed) by normalized title or slug base is skipped as a duplicate.
@@ -669,9 +711,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if ack_warnings is not None and not ack_warnings.strip():
         raise Fail(f'{slug}: empty --ack-warnings; give the reason the open warnings no longer apply; '
                    f'nothing written')
-    if reason is not None and (dry_run or skip is not None or expect is not None):
-        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip '
-                   f'or --expect; '
+    if reason is not None and (dry_run or skip is not None or expect is not None or ticket is not None):
+        raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip, '
+                   f'--expect or --ticket; '
                    f'nothing written')
     flag = numbered
     numbered = numbered or config_numbered(root)
@@ -761,6 +803,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if skip is not None and not dry_run and expect is None:
         raise Fail(f'{slug}: --skip needs --expect <digest> from the dry run that listed the indices '
                    f'(run close --dry-run first); nothing written')
+    if ticket is not None and not dry_run and expect is None:
+        raise Fail(f'{slug}: --ticket needs --expect <digest> from the dry run that listed the indices '
+                   f'(run close --dry-run first); nothing written')
     if expect is not None and expect.strip() != digest:
         raise Fail(f'{slug}: --expect {expect} does not match the current Follow-ups in {filer.name} '
                    f'(digest {digest}); the list changed since the dry run, so the --skip indices may point '
@@ -771,42 +816,58 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             raise Fail(f'{slug}: --skip {i} is out of range: Follow-ups has {len(items)} item(s)'
                        + (f', so indices run 1 to {len(items)}' if items else '') + '; nothing written')
 
+    if ticket is not None:
+        if not 1 <= ticket <= len(items):
+            raise Fail(f'{slug}: --ticket {ticket} is out of range: Follow-ups has {len(items)} item(s)'
+                       + (f', so indices run 1 to {len(items)}' if items else '') + '; nothing written')
+        if ticket in skipped:
+            raise Fail(f'{slug}: --ticket {ticket} is also in --skip; pick one; nothing written')
+        tag = follow_tag(items[ticket - 1])[0]
+        if tag != 'decide':
+            raise Fail(f'{slug}: --ticket {ticket} is a {tag}: item; only a decide: item can become a ticket; '
+                       f'nothing written')
+
     # the other tickets to check each follow-up against (never the one being closed):
     # (normalized title, folder without NNNN-, id, folder)
     known = [(norm_title(m['title']) if isinstance(m.get('title'), str) else '', strip_prefix(x), m['id'], x)
              for x, m in ts if m.get('id') != pid and x != slug]
-    # ids stay above every other worktree's max; follow-ups after the first count up from `after`
+    # ids stay above every other worktree's max
     floor = id_floor(root)
     # plan everything first, so a refusal in the middle writes nothing
-    planned, after, lines, dups = [], list(ts), [], []
+    planned, notes, lines, dups = [], [], [], []
     for i, item in enumerate(items, 1):
-        no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', item)
+        tag, text = follow_tag(item)
+        no_emphasis = re.sub(r'(?<!\w)_{1,2}(\S.*?\S|\S)_{1,2}(?!\w)', r'\1', text)
         plain = ' '.join(re.sub(r'[`*\[\]()]', '', no_emphasis).split())
         title = follow_up_title(plain)
         base = '-'.join(re.findall(r'[a-z0-9]+', plain.lower())[:5]) or 'follow-up'
         if numbered:
             base = strip_prefix(base) or 'follow-up'
         if i in skipped:
-            lines.append(f'{i}. {title} [{base}] skip (--skip)')
+            lines.append(f'{i}. {tag}: {title} [{base}] skip (--skip)')
             continue
         key, nt = strip_prefix(base), norm_title(title)
         dup = next(((kid, kname) for kt, kbase, kid, kname in known if (nt and kt == nt) or kbase == key), None)
         if dup:
+            if i == ticket:
+                raise Fail(f'{slug}: --ticket {ticket} ({title}) is already tracked by {dup[0]} ({dup[1]}); '
+                           f'nothing written')
             mark = f'duplicate of {dup[0]} ({dup[1]})'
             dups.append(f'{title} ({mark})')
-            lines.append(f'{i}. {title} [{base}] {mark}')
+            lines.append(f'{i}. {tag}: {title} [{base}] {mark}')
             continue
-        if numbered:
-            tid = f'T-{max(max((int(x["id"][2:]) for _, x in after), default=0), floor) + 1:04d}'
+        if i != ticket:
+            notes.append((tag, text))
+            lines.append(f'{i}. {tag}: {title} note')
+            continue
+        tid = f'T-{max(max((int(x["id"][2:]) for _, x in ts), default=0), floor) + 1:04d}'
         s, k = base, 2
-        while ((root / (name := folder_name(s, tid, True) if numbered else s)).exists()
-               or any(x == name for x, _ in after)):
+        while (root / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
             s, k = f'{base}-{k}', k + 1
-        ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{item}'
-        t, m = stamp(root, after, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
+        ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{text}'
+        t, _ = stamp(root, ts, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
         planned.append((name, t))
-        after.append((name, m))
-        lines.append(f'{i}. {title} [{name}]')
+        lines.append(f'{i}. {tag}: {title} [{name}] ticket')
     if not n:
         raise Fail(f'{h}: no status: line in front matter; nothing written')
     if dry_run:
@@ -837,6 +898,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     for s, t in planned:
         (root / s).mkdir()
         (root / s / 'handoff.md').write_text(t, encoding='utf-8')
+    if notes:
+        append_notes(root, pid, meta.get('title') or slug, notes)
     body = raw[fm.end():]
     if ack_warnings is not None:
         if body and not body.endswith('\n'):
@@ -851,7 +914,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     write_roadmap(root, load(root))
     if flag:
         ensure_numbered_config(root)
-    out = f'{pid} done; {len(planned)} follow-up ticket(s): ' + (', '.join(s for s, _ in planned) or 'none')
+    out = (f'{pid} done; follow-up ticket: ' + (', '.join(s for s, _ in planned) or 'none')
+           + f'; {len(notes)} follow-up(s) appended to notes.md')
     if dups:
         out += '; skipped duplicate(s): ' + ', '.join(dups)
     if skipped:
@@ -1214,6 +1278,19 @@ def selftest():
         def status(root, slug='alpha'):
             return dict(load(root)).get(slug, {}).get('status')
 
+        def close_one(root, i, slug='alpha', force=False, **kw):
+            """The capped path: a dry run for the digest, then close --ticket i --expect <digest>."""
+            rc, out, _ = run(root, 'close', (slug, force), dry_run=True, **kw)
+            token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else 'none'
+            return run(root, 'close', (slug, force), ticket=i, expect=token, **kw)
+
+        def notes(root):
+            p = root / 'notes.md'
+            return p.read_text(encoding='utf-8') if p.is_file() else None
+
+        notes_head = '# Notes\n\n`tickets.py close` appends follow-ups that did not become tickets.\n'
+        today = datetime.date.today().isoformat()
+
         long_item = ('Split the runner into a preflight module and an exec module so the Fable swap can be '
                      'tested on its own')
         short_first_sentence_item = ('Optional id and status columns in board.py. T-0001 listed this as '
@@ -1228,14 +1305,31 @@ def selftest():
             with (root / 'alpha' / 'handoff.md').open('a', encoding='utf-8') as f:
                 f.write('\nstatus: this body line is not front matter\n')
 
-        # (a) Warnings None, two bullets (a backtick, and one over 70 chars wrapped onto a continuation line)
-        root = case(both(good, with_body_status))
-        before_h = (root / 'alpha' / 'handoff.md').read_bytes()
-        rc, out, err = run(root, 'close', ('alpha',))
-        made = fresh(root, {'alpha', 'beta'})
-        expect(f'(a) close: rc={rc} out={out!r} err={err!r}',
-               rc == 0 and out.startswith('T-0001 done; 4 follow-up ticket(s): '))
-        expect(f'(a) four idea/proposed tickets from T-0001, got {made}', len(made) == 4 and all(
+        # (a) Warnings None, four untagged bullets (so each counts as decide; one has a backtick, one is over
+        # 70 chars wrapped onto a continuation line): close --ticket i files only item i and appends the other
+        # three to notes.md as `- decide: <text>`; across i = 1..4 every title is checked
+        made, ctx = {}, ''
+        for i in range(1, 5):
+            root = case(both(good, with_body_status))
+            before_h = (root / 'alpha' / 'handoff.md').read_bytes()
+            rc, out, err = close_one(root, i)
+            one = fresh(root, {'alpha', 'beta'})
+            nt = notes(root) or ''
+            expect(f'(a) close --ticket {i}: one ticket, three notes: rc={rc} out={out!r} err={err!r} '
+                   f'made={sorted(one)} notes={nt!r}',
+                   rc == 0 and len(one) == 1
+                   and out == f'T-0001 done; follow-up ticket: {next(iter(one), "")}; 3 follow-up(s) appended to notes.md'
+                   and nt.startswith(notes_head) and nt.count('\n- decide: ') == 3)
+            made.update(one)
+            ctx += ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in one)
+            if i == 1:
+                expect('(a) parent done, rest byte-identical, body status line untouched',
+                       (root / 'alpha' / 'handoff.md').read_bytes()
+                       == before_h.replace(b'status: proposed', b'status: done', 1)
+                       and b'status: this body line is not front matter' in before_h)
+                rc, out, err = run(root, 'check')
+                expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 3 tickets' in out)
+        expect(f'(a) four idea/proposed tickets from T-0001, one per close, got {made}', len(made) == 4 and all(
             m.get('type') == 'idea' and m.get('status') == 'proposed' and m.get('from') == 'T-0001'
             for m in made.values()))
         titles = sorted(m.get('title', '') for m in made.values())
@@ -1250,21 +1344,23 @@ def selftest():
                bool(empty_first_sentence_title) and not empty_first_sentence_title.startswith('.'))
         long_title = next((t for t in titles if t.endswith('...')), None)
         expect(f'(a) long_item title ends with ...: {titles}', long_title is not None)
-        prefix = long_title[:-3]
+        prefix = (long_title or '')[:-3]
         expect(f'(a) long_item title is a whole-word prefix of long_item, no trailing space/punct before ...: '
                f'{long_title!r}',
                long_item.startswith(prefix) and len(long_item) > len(prefix)
                and long_item[len(prefix)] == ' ' and prefix == prefix.rstrip()
                and (not prefix or prefix[-1] not in ',;:.-'))
-        ctx = ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in made)
         expect('(a) context names the source and keeps the joined continuation line',
                'Follow-up from T-0001 (alpha/filer-L1.md):' in ctx and long_item in ctx)
-        expect('(a) parent done, rest byte-identical, body status line untouched',
-               (root / 'alpha' / 'handoff.md').read_bytes()
-               == before_h.replace(b'status: proposed', b'status: done', 1)
-               and b'status: this body line is not front matter' in before_h)
-        rc, out, err = run(root, 'check')
-        expect(f'(a) check passes after close: rc={rc} {err}', rc == 0 and 'ok: 6 tickets' in out)
+        # (a) plain close of the same filer: no ticket, all four bullets in notes.md under one dated block
+        root = case(good)
+        rc, out, err = run(root, 'close', ('alpha',))
+        nt = notes(root) or ''
+        expect(f'(a) plain close files no ticket and appends all four: rc={rc} out={out!r} err={err!r} notes={nt!r}',
+               rc == 0 and not fresh(root, {'alpha', 'beta'}) and status(root) == 'done'
+               and out == 'T-0001 done; follow-up ticket: none; 4 follow-up(s) appended to notes.md'
+               and nt.startswith(notes_head + f'\n## T-0001: Alpha | one ({today})\n\n- decide: Quote the `--root`')
+               and nt.count('\n- decide: ') == 4 and long_item in nt and run(root, 'check')[0] == 0)
 
         # (b) Warnings open, no --force: refuses and writes nothing
         warned = filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch')
@@ -1278,11 +1374,16 @@ def selftest():
         expect(f'(b) refusal names --ack-warnings before --force: {err!r}',
                '--ack-warnings "<why>"' in err and err.find('--ack-warnings') < err.find('--force'))
 
-        # (c) the same with --force closes
+        # (c) the same with --force closes: plain files no ticket and notes the item; --ticket 1 files it
         root = case(warned)
         rc, out, err = run(root, 'close', ('alpha', True))
         expect(f'(c) --force closes: rc={rc} {err!r}', rc == 0 and status(root) == 'done'
-               and len(fresh(root, {'alpha', 'beta'})) == 1)
+               and not fresh(root, {'alpha', 'beta'}) and '- decide: Add retry to fetch\n' in (notes(root) or ''))
+        root = case(warned)
+        rc, out, err = close_one(root, 1, force=True)
+        expect(f'(c) --force --ticket 1 files the one follow-up: rc={rc} {out!r} {err!r}', rc == 0
+               and status(root) == 'done' and sorted(fresh(root, {'alpha', 'beta'})) == ['add-retry-to-fetch']
+               and notes(root) is None)
 
         # (d) Follow-ups None: no tickets, parent done
         root = case(filer('filer-L1.md', 'None.', 'None'))
@@ -1340,25 +1441,25 @@ def selftest():
         for label, mutate, kw in (('flag', numbered_follow, {'numbered': True}),
                                   ('config', both(numbered_follow, config('ticket_folders: numbered\n')), {})):
             root = case(mutate)
-            rc, out, err = run(root, 'close', ('alpha',), **kw)
+            rc, out, err = close_one(root, 3, **kw)
             made = fresh(root, {'alpha', 'beta'})
             ok = all(re.match(r'\d{4}-', s) and s[:4] == m.get('id', '')[2:] for s, m in made.items())
-            expect(f'(i) numbered close ({label}): rc={rc} {err!r} made={sorted(made)}',
-                   rc == 0 and len(made) == 3 and ok and status(root) == 'done'
-                   and sorted(made) == ['0003-add-retry-to-fetch', '0004-add-retry-to-fetch',
-                                        '0005-fix-the-parser'] and run(root, 'check')[0] == 0)
+            expect(f'(i) numbered close --ticket 3 ({label}): rc={rc} {err!r} made={sorted(made)}',
+                   rc == 0 and len(made) == 1 and ok and status(root) == 'done'
+                   and sorted(made) == ['0003-fix-the-parser'] and run(root, 'check')[0] == 0
+                   and (notes(root) or '').count('- decide: Add retry to fetch\n') == 2)
         # (i) a clash on the final numbered name appends -2
         root = case(both(filer('filer-L1.md', 'None', '- Add retry to fetch'),
                          lambda r: (r / '0003-add-retry-to-fetch').mkdir()))
-        rc, out, err = run(root, 'close', ('alpha',), numbered=True)
+        rc, out, err = close_one(root, 1, numbered=True)
         expect(f'(i) numbered clash appends -2: rc={rc} {err!r} {out!r}',
                rc == 0 and (root / '0003-add-retry-to-fetch-2' / 'handoff.md').is_file())
         # (i) negative control: no flag, no config -> bare-slug follow-ups
         root = case(numbered_follow)
-        rc, out, err = run(root, 'close', ('alpha',))
+        rc, out, err = close_one(root, 3)
         made = fresh(root, {'alpha', 'beta'})
         expect(f'(i) plain close keeps bare slugs: rc={rc} {sorted(made)}',
-               rc == 0 and sorted(made) == ['0042-fix-the-parser', 'add-retry-to-fetch', 'add-retry-to-fetch-2'])
+               rc == 0 and sorted(made) == ['0042-fix-the-parser'])
         expect(f'(i) plain close writes no config: tree={tree(root)}', not (root / 'config').exists())
         # (j) close --numbered persists `ticket_folders: numbered`, like new --numbered; a refusal writes none
         root = case(numbered_follow)
@@ -1418,8 +1519,9 @@ def selftest():
                and lines[:1] == ['T-0001 dry run: 3 proposed follow-up(s); nothing written']
                and [ln.split('.', 1)[0] for ln in lines[1:-1] if not ln.startswith('open ')] == ['1', '2', '3']
                and lines[-1] == 'expect ' + follow_digest(['Add retry to fetch', 'Fix #12', 'Quote the docs'])
-               and lines[2].startswith('2. Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
-               and 'duplicate' not in lines[1] + lines[3])
+               and lines[2].startswith('2. decide: Fix #12 ') and lines[2].endswith('duplicate of T-0002 (beta)')
+               and 'duplicate' not in lines[1] + lines[3]
+               and lines[1] == '1. decide: Add retry to fetch note' and lines[3] == '3. decide: Quote the docs note')
         # (p2) open tickets listed: an open ticket with its full title; not done/dropped, not the closed one
         def open_mix(r):
             filer('filer-L1.md', 'None', '- Add retry to fetch')(r)
@@ -1438,14 +1540,17 @@ def selftest():
         expect(f'(p) dry run with open warnings and no --force refuses: rc={rc} {err!r}',
                rc == 1 and '--force' in err and snap(root) == before)
 
-        # (q) --skip files every other follow-up, and the rest take consecutive ids
+        # (q) --skip drops an item entirely: --skip 2 --ticket 1 files bullet 1 and notes only bullet 3
         root = case(filer('filer-L1.md', 'None', three))
-        rc, out, err = run(root, 'close', ('alpha',), skip=[2], expect=follow_digest(bullets(three)))
+        rc, out, err = run(root, 'close', ('alpha',), skip=[2], ticket=1, expect=follow_digest(bullets(three)))
         made = fresh(root, {'alpha', 'beta'})
-        expect(f'(q) --skip 2 files bullets 1 and 3 only: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
-               rc == 0 and status(root) == 'done' and len(made) == 2
-               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch', 'Split the runner']
-               and sorted(m.get('id') for m in made.values()) == ['T-0003', 'T-0004']
+        nt = notes(root) or ''
+        expect(f'(q) --skip 2 --ticket 1 files bullet 1, notes bullet 3: rc={rc} out={out!r} err={err!r} '
+               f'made={sorted(made)} notes={nt!r}',
+               rc == 0 and status(root) == 'done' and len(made) == 1
+               and [m.get('title') for m in made.values()] == ['Add retry to fetch']
+               and [m.get('id') for m in made.values()] == ['T-0003']
+               and '- decide: Split the runner\n' in nt and 'Quote the docs' not in nt
                and 'skipped by --skip: 2' in out)
 
         # (r) --skip out of range refuses, names the index and the count, writes nothing
@@ -1467,28 +1572,42 @@ def selftest():
                bad_token is not None and "'x'" in bad_token and parse_skip('3, 1') == [3, 1])
 
         # (s) a plain close skips duplicates of existing tickets (by title, by slug base) and names them
-        root = case(filer('filer-L1.md', 'None', '- Fix #12\n- Beta\n- Add retry to fetch'))
-        rc, out, err = run(root, 'close', ('alpha',))
+        dup_follow = filer('filer-L1.md', 'None', '- Fix #12\n- Beta\n- Add retry to fetch')
+        root = case(dup_follow)
+        rc, out, err = close_one(root, 3)
         made = fresh(root, {'alpha', 'beta'})
         expect(f'(s) duplicates of beta skipped on close: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
                rc == 0 and sorted(made) == ['add-retry-to-fetch'] and 'skipped duplicate(s)' in out
-               and out.count('T-0002 (beta)') == 2 and run(root, 'check')[0] == 0)
+               and out.count('T-0002 (beta)') == 2 and run(root, 'check')[0] == 0
+               and notes(root) is None and '0 follow-up(s) appended to notes.md' in out)
+        root = case(dup_follow)
+        rc, out, err = run(root, 'close', ('alpha',))
+        nt = notes(root) or ''
+        expect(f'(s) plain close notes only the non-duplicate: rc={rc} out={out!r} notes={nt!r}',
+               rc == 0 and not fresh(root, {'alpha', 'beta'}) and out.count('T-0002 (beta)') == 2
+               and nt.endswith('\n- decide: Add retry to fetch\n') and 'Fix #12' not in nt and 'Beta' not in nt)
 
         # (s2) the ticket being closed is not a duplicate target: follow-ups that start with its own
         # title ("Alpha | one" -> "alpha one") are filed, and colliding slugs take a -2 suffix
         root = case(filer('filer-L1.md', 'None', '- Alpha one\n- Alpha one.'))
         rc, out, err = run(root, 'close', ('alpha',), dry_run=True)
         expect(f'(s2) dry run marks no bullet a duplicate of the closing ticket: rc={rc} out={out!r} err={err!r}',
-               rc == 0 and 'duplicate' not in out and '1. Alpha one ' in out and '2. Alpha one. ' in out)
-        rc, out, err = run(root, 'close', ('alpha',))
+               rc == 0 and 'duplicate' not in out and '1. decide: Alpha one ' in out
+               and '2. decide: Alpha one. ' in out)
+        rc, out, err = close_one(root, 2)
         made = fresh(root, {'alpha', 'beta'})
-        expect(f'(s2) close files both follow-ups, the second as -2: rc={rc} out={out!r} err={err!r} '
+        expect(f'(s2) close --ticket 2 files it, notes the other: rc={rc} out={out!r} err={err!r} '
                f'made={sorted(made)}',
-               rc == 0 and sorted(made) == ['alpha-one', 'alpha-one-2'] and 'duplicate' not in out
-               and run(root, 'check')[0] == 0)
+               rc == 0 and sorted(made) == ['alpha-one'] and 'duplicate' not in out
+               and (notes(root) or '').endswith('\n- decide: Alpha one\n') and run(root, 'check')[0] == 0)
+        # a folder already holding the slug (not a ticket) makes the one follow-up take -2
+        root = case(both(filer('filer-L1.md', 'None', '- Alpha one'), lambda r: (r / 'alpha-one').mkdir()))
+        rc, out, err = close_one(root, 1)
+        expect(f'(s2) a taken slug appends -2: rc={rc} out={out!r} err={err!r}',
+               rc == 0 and sorted(fresh(root, {'alpha', 'beta'})) == ['alpha-one-2'])
 
         # (t) --reason does not combine with --dry-run or --skip
-        for kw in ({'dry_run': True}, {'skip': [1]}, {'expect': 'x'}):
+        for kw in ({'dry_run': True}, {'skip': [1]}, {'expect': 'x'}, {'ticket': 1}):
             root = case(filer('filer-L1.md', 'None', three))
             before = snap(root)
             rc, _, err = run(root, 'close', ('alpha',), reason='superseded', **kw)
@@ -1509,9 +1628,19 @@ def selftest():
         root = case(filer('filer-L1.md', 'None', three))
         rc, out, _ = run(root, 'close', ('alpha',), dry_run=True)
         token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
-        rc, out, err = run(root, 'close', ('alpha',), skip=[2], expect=token)
-        expect(f'(v2) an unchanged list closes with --skip --expect: rc={rc} {out!r} {err!r}',
-               rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 2)
+        rc, out, err = run(root, 'close', ('alpha',), skip=[2], ticket=3, expect=token)
+        expect(f'(v2) an unchanged list closes with --skip --ticket --expect: rc={rc} {out!r} {err!r}',
+               rc == 0 and status(root) == 'done' and sorted(fresh(root, {'alpha', 'beta'})) == ['split-the-runner']
+               and (notes(root) or '').endswith('\n- decide: Add retry to fetch\n'))
+        # (v2) --ticket is tied to the dry run's list too: a reordered list refuses a stale --expect
+        root = case(filer('filer-L1.md', 'None', three))
+        rc, out, _ = run(root, 'close', ('alpha',), dry_run=True)
+        old = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
+        filer('filer-L1.md', 'None', '- Quote the docs\n- Add retry to fetch\n- Split the runner')(root)
+        before = snap(root)
+        rc, _, err = run(root, 'close', ('alpha',), ticket=1, expect=old)
+        expect(f'(v2) a reordered Follow-ups list refuses a stale --ticket: rc={rc} {err!r}',
+               rc == 1 and 'does not match' in err and snap(root) == before and notes(root) is None)
         root = case(filer('filer-L1.md', 'None', three))
         before = snap(root)
         rc, _, err = run(root, 'close', ('alpha',), skip=[2])
@@ -1531,6 +1660,114 @@ def selftest():
         expect(f'(v5) rewording past the title cut refuses: rc={rc} {err!r}',
                rc == 1 and 'does not match' in err and snap(root) == before)
 
+        # (cap) each Follow-ups bullet carries a tag (fix-now:, decide:, note:; untagged = decide); close files at
+        # most one ticket, the decide: item named by --ticket N, and appends every other item to <root>/notes.md
+        two = filer('filer-L1.md', 'None', '- decide: Add retry to fetch\n- decide: Split the runner')
+        root = case(two)
+        rc, out, err = close_one(root, 1)
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(cap) two decide: items, --ticket 1 files one ticket and notes item 2: rc={rc} out={out!r} '
+               f'err={err!r} made={made} notes={notes(root)!r}',
+               rc == 0 and list(made) == ['add-retry-to-fetch'] and made['add-retry-to-fetch'].get('title')
+               == 'Add retry to fetch' and made['add-retry-to-fetch'].get('from') == 'T-0001'
+               and notes(root) == notes_head + f'\n## T-0001: Alpha | one ({today})\n\n- decide: Split the runner\n'
+               and out == 'T-0001 done; follow-up ticket: add-retry-to-fetch; 1 follow-up(s) appended to notes.md'
+               and status(root) == 'done' and run(root, 'check')[0] == 0)
+        h = root / 'add-retry-to-fetch' / 'handoff.md'
+        ctx = h.read_text(encoding='utf-8') if h.is_file() else ''
+        expect(f'(cap) the ticket context holds the text after the tag, not the tag: {ctx!r}',
+               'alpha/filer-L1.md):\n\nAdd retry to fetch' in ctx and 'decide:' not in ctx)
+        # (cap) a second close elsewhere appends its own dated block under the one heading
+        filer('filer-L1.md', 'None', '- note: Beta also saw it', slug='beta')(root)
+        rc, out, err = run(root, 'close', ('beta',))
+        nt = notes(root) or ''
+        expect(f'(cap) a second close appends a block, heading once: rc={rc} {err!r} notes={nt!r}',
+               rc == 0 and nt.count('# Notes') == 1 and nt.endswith(
+                   f'- decide: Split the runner\n\n## T-0002: Fix #12 ({today})\n\n- note: Beta also saw it\n'))
+        # (cap) plain close files zero tickets and appends all, untagged written as decide:
+        mixed = filer('filer-L1.md', 'None', '- decide: Add retry to fetch\n- fix-now: Quote the docs\n'
+                      '- note:Split the runner\n- Untagged legacy item')
+        root = case(mixed)
+        rc, out, err = run(root, 'close', ('alpha',))
+        expect(f'(cap) plain close files zero tickets and appends all four: rc={rc} out={out!r} err={err!r} '
+               f'notes={notes(root)!r}',
+               rc == 0 and not fresh(root, {'alpha', 'beta'}) and status(root) == 'done'
+               and out == 'T-0001 done; follow-up ticket: none; 4 follow-up(s) appended to notes.md'
+               and (notes(root) or '').endswith('\n\n- decide: Add retry to fetch\n- fix-now: Quote the docs\n'
+                                                '- note: Split the runner\n- decide: Untagged legacy item\n')
+               and not any((root / x).exists() for x in ('add-retry-to-fetch', 'quote-the-docs',
+                                                         'split-the-runner', 'untagged-legacy-item')))
+        # (cap) note: items never appear as folders, with or without --ticket elsewhere
+        root = case(filer('filer-L1.md', 'None', '- note: Add retry to fetch\n- decide: Split the runner\n'
+                          '- note: Quote the docs'))
+        rc, out, err = close_one(root, 2)
+        expect(f'(cap) note: items never become folders: rc={rc} {out!r} {err!r} tree={tree(root)}',
+               rc == 0 and sorted(fresh(root, {'alpha', 'beta'})) == ['split-the-runner']
+               and not (root / 'add-retry-to-fetch').exists() and not (root / 'quote-the-docs').exists()
+               and (notes(root) or '').endswith('\n- note: Add retry to fetch\n- note: Quote the docs\n'))
+        # (cap) refusals: each writes nothing (no notes.md, status unchanged, tree snapshot equal)
+        for label, follow, kw, want in (
+                ('--ticket on a note: item', '- decide: Add retry to fetch\n- note: Split the runner',
+                 {'ticket': 2}, 'is a note: item; only a decide: item can become a ticket'),
+                ('--ticket on a fix-now: item', '- decide: Add retry to fetch\n- fix-now: Split the runner',
+                 {'ticket': 2}, 'is a fix-now: item; only a decide: item can become a ticket'),
+                ('--ticket on a duplicate', '- decide: Fix #12\n- decide: Add retry to fetch',
+                 {'ticket': 1}, 'already tracked by T-0002'),
+                ('--ticket without --expect', '- decide: Add retry to fetch', {'ticket': 1, 'expect': None},
+                 '--ticket needs --expect'),
+                ('--ticket inside --skip', '- decide: Add retry to fetch\n- decide: Split the runner',
+                 {'ticket': 1, 'skip': [1]}, 'also in --skip'),
+                ('--ticket with --reason', '- decide: Add retry to fetch', {'ticket': 1, 'reason': 'x',
+                                                                            'expect': None},
+                 '--reason files no follow-ups'),
+                ('--ticket out of range', '- decide: Add retry to fetch', {'ticket': 2}, '--ticket 2 is out of range'),
+                ('--ticket 0', '- decide: Add retry to fetch', {'ticket': 0}, '--ticket 0 is out of range'),
+                ('dry run --ticket on a note: item', '- note: Add retry to fetch',
+                 {'ticket': 1, 'dry_run': True, 'expect': None}, 'is a note: item')):
+            root = case(filer('filer-L1.md', 'None', follow))
+            kw = {'expect': follow_digest(bullets(follow)), **kw}
+            before = snap(root)
+            rc, out, err = run(root, 'close', ('alpha',), **kw)
+            expect(f'(cap) {label} refuses and writes nothing: rc={rc} out={out!r} err={err!r}',
+                   rc == 1 and want in err and err.endswith('nothing written') and notes(root) is None
+                   and status(root) == 'proposed' and snap(root) == before)
+        # (cap) an untagged item counts as decide: and takes --ticket; its title and slug are the whole text
+        root = case(filer('filer-L1.md', 'None', '- Add retry to fetch\n- note: keep'))
+        rc, out, err = close_one(root, 1)
+        made = fresh(root, {'alpha', 'beta'})
+        expect(f'(cap) an untagged item takes --ticket as decide: rc={rc} {out!r} {err!r} made={made}',
+               rc == 0 and list(made) == ['add-retry-to-fetch']
+               and made['add-retry-to-fetch'].get('title') == 'Add retry to fetch'
+               and (notes(root) or '').endswith('\n- note: keep\n'))
+        # (cap) numbered mode names the one folder NNNN-<slug>; notes.md holds no folder path
+        root = case(two)
+        rc, out, err = close_one(root, 2, numbered=True)
+        made = fresh(root, {'alpha', 'beta'})
+        nt = notes(root) or ''
+        expect(f'(cap) numbered mode names the one folder 0003-split-the-runner: rc={rc} {out!r} {err!r} '
+               f'made={made} notes={nt!r}',
+               rc == 0 and {x: m.get('id') for x, m in made.items()} == {'0003-split-the-runner': 'T-0003'}
+               and nt.endswith('\n- decide: Add retry to fetch\n') and '/' not in nt
+               and run(root, 'check')[0] == 0)
+        # (cap) a dry run writes no notes.md and carries the ticket/note marks; the tag leads each line
+        root = case(filer('filer-L1.md', 'None', '- decide:   Add retry to fetch\n- note: Split the runner\n'
+                          '- decide: Quote the docs\n- fix-now: Fix #12'))
+        before = snap(root)
+        rc, out, err = run(root, 'close', ('alpha',), dry_run=True, ticket=3)
+        ol = out.splitlines()
+        expect(f'(cap) a dry run with --ticket 3 marks ticket and note, writes nothing: rc={rc} out={out!r} '
+               f'err={err!r}',
+               rc == 0 and snap(root) == before and notes(root) is None
+               and ol[0] == 'T-0001 dry run: 4 proposed follow-up(s); nothing written'
+               and ol[1:5] == ['1. decide: Add retry to fetch note', '2. note: Split the runner note',
+                               '3. decide: Quote the docs [quote-the-docs] ticket',
+                               '4. fix-now: Fix #12 [fix-12] duplicate of T-0002 (beta)']
+               and ol[-1] == 'expect ' + follow_digest(['decide:   Add retry to fetch', 'note: Split the runner',
+                                                        'decide: Quote the docs', 'fix-now: Fix #12']))
+        # (cap) the digest covers the full bullet, tag included: retagging an item changes it
+        expect('(cap) the digest changes when only a tag changes',
+               follow_digest(['decide: A']) != follow_digest(['note: A']) != follow_digest(['A']))
+
         # (u) numbered close archives a NNNN-<slug> folder as .NNNN-<slug>; every command still sees it
         def numbered_x(root):
             rc, _, err = run(root, 'new', ('feature', 'x'), numbered=True)  # 0003-x, T-0003; persists config
@@ -1541,7 +1778,7 @@ def selftest():
             return filer('filer-L1.md', 'None', follow, slug='0003-x')
 
         root = case(both(numbered_x, x_filer('- Add retry to fetch')))
-        rc, out, err = run(root, 'close', ('0003-x',))
+        rc, out, err = close_one(root, 1, slug='0003-x')
         made = fresh(root, {'alpha', 'beta', '.0003-x'})
         ctx = ''.join((root / s / 'handoff.md').read_text(encoding='utf-8') for s in made)
         expect(f'(u) numbered close with a filer renames 0003-x to .0003-x: rc={rc} out={out!r} err={err!r} '
@@ -1767,7 +2004,7 @@ def selftest():
         today = datetime.date.today().isoformat()
         # (w1) ack close: done, the follow-up filed, a ## Closed section quoting the warning, check passes
         root = case(warned)
-        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='committed later')
+        rc, out, err = close_one(root, 1, ack_warnings='committed later')
         text = (root / 'alpha' / 'handoff.md').read_text(encoding='utf-8')
         expect(f'(w1) --ack-warnings closes with open warnings: rc={rc} out={out!r} err={err!r} text={text!r}',
                rc == 0 and status(root) == 'done' and len(fresh(root, {'alpha', 'beta'})) == 1
@@ -1812,11 +2049,13 @@ def selftest():
         root = case(filer('filer-L1.md', 'step-2 verifier fail', three))
         rc, out, _ = run(root, 'close', ('alpha',), ack_warnings='ok', dry_run=True)
         token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else ''
-        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='ok', skip=[2], expect=token)
+        rc, out, err = run(root, 'close', ('alpha',), ack_warnings='ok', skip=[2], ticket=1, expect=token)
         made = fresh(root, {'alpha', 'beta'})
-        expect(f'(w8) --ack-warnings --skip 2 files 1 and 3: rc={rc} out={out!r} err={err!r} made={sorted(made)}',
+        expect(f'(w8) --ack-warnings --skip 2 --ticket 1 files 1, notes 3: rc={rc} out={out!r} err={err!r} '
+               f'made={sorted(made)}',
                rc == 0 and status(root) == 'done'
-               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch', 'Split the runner']
+               and sorted(m.get('title') for m in made.values()) == ['Add retry to fetch']
+               and (notes(root) or '').endswith('\n- decide: Split the runner\n')
                and 'skipped by --skip: 2' in out and 'warnings acknowledged: ok' in out)
         # (w9) numbered: an ack close renames 0003-x to .0003-x and the moved handoff holds ## Closed
         root = case(both(numbered_x, filer('filer-L1.md', 'step-2 verifier fail', '- Add retry to fetch',
@@ -2024,7 +2263,7 @@ def selftest():
             expect(f'worktree: delta in main counts wt gamma, so it is T-0004: rc={rc} {err!r} '
                    f'got={tid(m_root, "delta")!r}', rc == 0 and tid(m_root, 'delta') == 'T-0004')
             filer('filer-L1.md', 'None', '- Add retry to fetch', slug='gamma')(w_root)
-            rc, out, err = run(w_root, 'close', ('gamma',))
+            rc, out, err = close_one(w_root, 1, slug='gamma')
             made = fresh(w_root, {'alpha', 'gamma'})
             expect(f'worktree: plain close in wt stamps its follow-up above main T-0004, as T-0005: rc={rc} {out!r} '
                    f'{err!r} made={made}',
@@ -2034,7 +2273,7 @@ def selftest():
             expect(f'worktree: epsilon in main is T-0006: rc={rc} {err!r} got={tid(m_root, "epsilon")!r}',
                    rc == 0 and tid(m_root, 'epsilon') == 'T-0006')
             filer('filer-L1.md', 'None', '- Quote the docs', slug='alpha')(w_root)
-            rc, out, err = run(w_root, 'close', ('alpha',), numbered=True)
+            rc, out, err = close_one(w_root, 1, numbered=True)
             made = fresh(w_root, {'alpha', 'gamma', 'add-retry-to-fetch'})
             expect(f'worktree: numbered close in wt names the follow-up 0007-quote-the-docs with id T-0007: rc={rc} '
                    f'{out!r} {err!r} made={made}',
@@ -2080,6 +2319,7 @@ def selftest():
             expect(f'worktree dry-run with follow-ups: gamma listed as (worktree wtdr), digest covers only the '
                    f'follow-ups, nothing written: rc={rc} {out!r} {err!r}',
                    rc == 0 and 'open T-0004 Gamma [gamma] (worktree wtdr)' in ol
+                   and ol[1:3] == ['1. decide: A note', '2. decide: B note']
                    and ol[-1] == 'expect ' + follow_digest(['A', 'B'])
                    and (snap(d_root), snap(dw_root)) == before)
 
@@ -2121,30 +2361,38 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='name the folder NNNN-<slug> after the new id and persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
-    p = sub.add_parser('close', help='after /file: file follow-ups as tickets (skipping duplicates of existing '
-                                     'tickets), set the ticket done; --dry-run lists them first; '
+    p = sub.add_parser('close', help='after /file: set the ticket done, file at most one decide: follow-up as a '
+                                     'ticket (--ticket N) and append the rest to <root>/notes.md (skipping '
+                                     'duplicates of existing tickets); --dry-run lists them first; '
                                      'or --reason TEXT: set it done without a filer file; '
                                      '--ack-warnings TEXT: close while filer warnings are open, with a reason')
     p.add_argument('slug')
     p.add_argument('--force', action='store_true', help='close even while the filer warnings are open')
     p.add_argument('--reason', metavar='TEXT',
                    help='close without a filer file (work done elsewhere): set done, append a ## Closed '
-                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip or --expect)')
+                        'section with the date and TEXT, file no follow-ups (refuses with --dry-run, --skip, --expect '
+                        'or --ticket)')
     p.add_argument('--ack-warnings', metavar='TEXT',
                    help='close while the filer warnings are open: record TEXT and the quoted warnings in a '
                         '## Closed section, file follow-ups as normal (refuses with --force, with --reason, '
                         'with empty TEXT, or when no warnings are open)')
     p.add_argument('--dry-run', action='store_true',
-                   help='apply the same refusals, then list each follow-up as <i>. <title> [<slug>] with any '
-                        'duplicate or --skip mark, then one `open T-NNNN <title> [<slug>]` line per other proposed, '
+                   help='apply the same refusals, then list each follow-up as <i>. <tag>: <title> with a mark: '
+                        '[<slug>] ticket (the --ticket item), note (bound for notes.md), skip (--skip), or '
+                        'duplicate of T-NNNN (<slug>), then one `open T-NNNN <title> [<slug>]` line per other proposed, '
                         'ready or blocked ticket, then one `open T-NNNN <title> [<slug>] (worktree <name>)` line per '
                         'open ticket found only in another git worktree\'s same-relative root (a ticket whose id '
                         'exists locally is decided by the local copy), then a last line `expect <digest>`; write nothing')
     p.add_argument('--skip', metavar='N[,N...]',
                    help='file every follow-up except these 1-based indices from the --dry-run listing; '
                         'an index out of range refuses and writes nothing; needs --expect')
+    p.add_argument('--ticket', metavar='N', type=int,
+                   help='file only this 1-based follow-up as a proposed idea ticket; it must be a decide: (or '
+                        'untagged) item, in range, not in --skip and not a duplicate; needs --expect. Without it, '
+                        'close files no ticket. Every other item that is not skipped or a duplicate goes to '
+                        '<root>/notes.md')
     p.add_argument('--expect', metavar='DIGEST',
-                   help='the digest from the --dry-run last line (expect <digest>); required with --skip; '
+                   help='the digest from the --dry-run last line (expect <digest>); required with --skip and --ticket; '
                         'close refuses, writing nothing, when the Follow-ups list changed since that dry run')
     p.add_argument('--rewrite-refs', action='store_true',
                    help='numbered mode: when files outside the ticket folder reference <rel>/<slug>, rewrite them to '
@@ -2186,6 +2434,7 @@ def main(argv):
         kw['ack_warnings'] = a.ack_warnings
         kw['dry_run'] = a.dry_run
         kw['expect'] = a.expect
+        kw['ticket'] = a.ticket
         kw['rewrite_refs'] = a.rewrite_refs
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)

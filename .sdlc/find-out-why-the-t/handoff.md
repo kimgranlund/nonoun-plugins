@@ -2,7 +2,7 @@
 id: T-0105
 title: "Find out why the T-0072 background hook did not stop the run in..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,6 +20,20 @@ Find out why the T-0072 background hook did not stop the run in T-0103 (likely a
 
 Evidence, 2026-09-26: in an interactive Claude Code session, a plain Bash call (no run_in_background) running `check.sh` passed the default 120s timeout, and the harness reported "Command did not complete within its 120s timeout and was moved to the background". So Bash auto-backgrounds on timeout without the run_in_background flag, which PreToolUse hooks can't see. A likely fix is launchers setting BASH_DEFAULT_TIMEOUT_MS high, which bench.sh and dogfood do already, plus a check that run.sh and fanout set it too.
 
+## Intent
+Literal ask: find the cause of the T-0103 abandon and fix all three routes (folded in 2026-09-26, commit 579f73d).
+Deltas:
+- Constraints say "read-only investigation", but the later Context line sets scope to "find the cause and fix all three routes": defaulted: the later scope line wins; plugin edits in this repo are in scope; the peer repo stays read-only; no commits, pushes, or publishing.
+- Cause: defaulted: archaeologist-L1.md is the recorded root-cause finding (Bash auto-backgrounds a foreground call past its timeout; no PreToolUse hook sees it; Monitor unguarded). No live repro is required for done.
+- (gap: exact BASH_DEFAULT_TIMEOUT_MS value; default: match bench.sh's values.)
+Do: fix the three routes in plugins/sdlc-lite:
+  1. Auto-background on timeout: run.sh exports BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS high for every role run (same values as bench.sh) unless already set higher, and fanout.py sets them for lane drivers; a check proves both.
+  2. Late task notification as last turn: run.sh saves the last result that is not a task-notification origin (log result JSON `origin.kind: task-notification`), or the last one holding the role's required heading, instead of a trailing notification turn; covered by run.sh's selftest.
+  3. Background gate runs: hooks/block-background.sh also denies Monitor in headless sessions (hooks.json gets a Monitor matcher), with hook-selftest fixtures; agents/builder.md and agents/verifier.md say to run gates and tests in the foreground and never end the turn waiting on background work.
+  Update docs that describe these (CLAUDE.md, .claude/agents/sdlc-lite-author.md, conductor/chain wording that lists what block-background denies) in the same change.
+Non-goals: Workflow guarding; live repro of the peer run; any change in the peer repo; hook-live-probe live mode for Monitor.
+Done when: scripts/check.sh is green, and each of the three fixes has a selftest or check that fails without it.
+
 ## Question
 Why did the abandoned run end its turn with "Waiting for the background job to notify." without the T-0072 hook denying it? Which tool call backgrounded the work (Bash run_in_background, Agent, Monitor, Workflow, or something else), what did the hook see (was it installed, matched, was SDLC_ROLE/SDLC_HEADLESS set, which plugin version was loaded), and does the current hook set (plugins/sdlc-lite/hooks/hooks.json, block-background.sh at 0.11.1) cover that route? If not covered, name the gap precisely for a follow-up ticket.
 
@@ -33,3 +47,4 @@ More cases from the peer (gen-ui, 0.11.1), same family: (1) a late task notifica
 
 ## Constraints
 Read-only investigation. No edits in either repo, no git state changes.
+(Superseded for this repo by the fix scope in Intent: the peer repo stays read-only; this repo gets the fixes, with no commits, pushes, or git state changes by roles other than the builder's working-tree edits.)

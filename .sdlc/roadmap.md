@@ -109,12 +109,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0102 | [builder-scope-hygiene](builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🟢 done |
 | T-0103 | [run-result-format-check](run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🟢 done |
 | T-0104 | [fanout-selftest-covers-the-default](fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | 🟢 done |
-| T-0105 | [find-out-why-the-t](find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | M | P2 | none | 🔵 ready |
+| T-0105 | [find-out-why-the-t](find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | M | P2 | none | 🟢 done |
 | T-0106 | [extend-claude-agents-sdlc-lite](extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | M | P2 | none | 🟢 done |
 | T-0107 | [role-throwaway-worktrees-created-outside](role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | M | P2 | none | 🟢 done |
 | T-0108 | [a-dry-run-of-a](a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | M | P2 | none | 🟢 done |
 | T-0109 | [make-the-fixed-count-lint](make-the-fixed-count-lint/handoff.md) | Make the fixed-count lint skip a bare = assignment such as n=26... | idea | M | P2 | none | 🟢 done |
-| T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | 🔵 ready |
+| T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | 🟢 done |
 | T-0111 | [pattern-kill-hook-misses-forms](pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | M | P2 | none | 🟢 done |
 | T-0112 | [formatter-rule-is-prompt-only](formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | M | P2 | none | 🟢 done |
 | T-0113 | [close-rename-breaks-refs](close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | 🟢 done |
@@ -136,7 +136,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | 🔵 ready |
 | T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | 🔵 ready |
 | T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🔵 ready |
-| T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🔵 ready |
+| T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🟢 done |
 | T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🔵 ready |
 | T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🔵 ready |
 | T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🔵 ready |
@@ -145,5 +145,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0138 | [the-steps-py-lint-does](the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | 🔵 ready |
 | T-0139 | [pre-sync-wip-id-dirty](pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | M | P2 | none | 🔵 ready |
 | T-0140 | [no-code-gate-detects-a](no-code-gate-detects-a/handoff.md) | No code gate detects a full-suite guard placed on a non-final step... | idea | M | P2 | none | 🔵 ready |
-| T-0141 | [criteria-build-base-var](criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | S | P2 | none | 🔵 ready |
+| T-0141 | [criteria-build-base-var](criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | S | P2 | none | 🟢 done |
 | T-0142 | [finish-in-session](finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | M | P1 | none | 🔵 ready |
+| T-0143 | [step-2-s-fix-picking](step-2-s-fix-picking/handoff.md) | step 2's fix picking the correct result event from a stream-json... | idea | M | P2 | none | ⏳ proposed |

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Selftest for the PreToolUse hooks (Bash and Agent): block-background.sh denies Bash
-# run_in_background, and Agent unless run_in_background is false, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
+# Selftest for the PreToolUse hooks (Bash, Agent, Monitor): block-background.sh denies Bash
+# run_in_background, Agent unless run_in_background is false, and every Monitor call, in a headless session (SDLC_ROLE set or SDLC_HEADLESS=1) and passes everything else; block-publish.sh,
 # inside a role run, allows commands that only mention a publish phrase (heredoc body, quoted
 # argument, commit message) and blocks every real publish, including one fed to a shell or
 # evaluator, one in a $(...) or backtick substitution, one behind an unterminated quote, and
@@ -273,5 +273,20 @@ run "$bg" "$a_absent" SDLC_HEADLESS=0 >/dev/null; rc=$?
 
 run "$bg" '{"tool_name":"Bash","tool_input":{"command":"sleep 1"}}' SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "bash tool_name role + absent: exit $rc, want 0"
+
+m_json='{"tool_name":"Monitor","tool_input":{"command":"x"}}'
+
+out=$(run "$bg" "$m_json" SDLC_ROLE=verifier); rc=$?
+[[ $rc -eq 2 ]] || fail "monitor role: exit $rc, want 2"
+grep -qi foreground <<<"$out" || fail "monitor role: stderr lacks foreground"
+
+run "$bg" "$m_json" SDLC_HEADLESS=1 >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "monitor SDLC_HEADLESS=1: exit $rc, want 2"
+
+run "$bg" "$m_json" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "monitor neither set: exit $rc, want 0"
+
+run "$bg" "$m_json" SDLC_HEADLESS=0 >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "monitor SDLC_HEADLESS=0: exit $rc, want 0"
 
 echo "hook selftest: PASS"

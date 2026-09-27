@@ -13,6 +13,7 @@ Scan for items still open:
 - `(gap: ...; default: ...)` lines in the task handoff's `## Intent`, written by the /clarify flow.
 - `## Plan review` entries in the task handoff that are still unanswered.
 - Builder `## Notes`, verifier `## For the next attempt`, and filer output in the task dir that ask for a user decision.
+- The newest filer result's `decide:` follow-ups, when /file has not asked about them yet: one question, which one becomes the one ticket, or none.
 - Questions raised earlier in this session that got no answer.
 
 Ground every item in something actually raised, and note where. Do not invent items.
@@ -29,6 +30,7 @@ Make exactly ONE AskUserQuestion call: 1 to 4 questions, each with 2 to 4 option
 
 - Put an option first, marked recommended, only where a default or lean was actually stated (the `default:` of a gap line, or a stated lean in the source). Otherwise leave the options unranked.
 - More than 4 items: ask the 4 most consequential and name the count of the rest in the question framing ("4 of 7 open; 3 minor left").
+- Under /chain 7 (its close-out), the /file decide and publish questions ride in this same call and take two of the four slots, leaving two for the other items.
 - Never a second round in the same turn.
 
 ## 4. Resolve

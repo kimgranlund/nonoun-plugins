@@ -6,11 +6,23 @@
 # partial with numeric highest pick, whole-component matching, alias, missing, no .nvmrc), plus one
 # real run proving the role run sees the matched node bin dir first on PATH, and the result
 # check (exit 3 when a result lacks its role's required section; STUB_RESULT picks the result).
+# Result pick: stubs emit stream-json lines ("type":"result" events, plus a non-JSON stderr line that
+# must be skipped). A log holding a "## Verdict" result and then a trailing task-notification result
+# ("stale monitor") saves the Verdict and exits 0; when neither holds the heading, the
+# non-notification one is saved and run.sh exits 3. runs.jsonl takes cost from the last event.
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
 # main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
 # SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees, and a dry run
 # of a role that declares skills leaves no mktemp skill file behind.
+# Bash timeouts: the stub records BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS; unset or an
+# inherited 120000 must reach it as 3600000, an inherited 7200000 as 7200000 (T-0105).
+# Build base: a stub records ${SDLC_BASE_SHA:-unset}. The first builder run writes base-sha equal
+# to HEAD and the stub sees it; after a plain commit a verifier still sees the old base; after a
+# git merge --no-ff of a side branch the next run sees the merge commit and base-sha is rewritten
+# to it; a base-sha holding junk or a commit that is not an ancestor is replaced by HEAD; a planner
+# run sees unset and writes no base-sha even with SDLC_BASE_SHA exported by the caller; a builder
+# dry run writes no base-sha.
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -28,9 +40,10 @@ cat >"$tmp/bin/claude" <<EOF
 n=\$(( \$(cat "$tmp/count" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" >"$tmp/count"
 echo "\${PATH%%:*}" >"$tmp/pathhead"
-echo "\${BASH_DEFAULT_TIMEOUT_MS:-} \${BASH_MAX_TIMEOUT_MS:-}" >"$tmp/bashto"
+echo "\${BASH_DEFAULT_TIMEOUT_MS:-unset} \${BASH_MAX_TIMEOUT_MS:-unset}" >"$tmp/timeouts"
+echo "stub: stderr noise, not JSON" >&2
 if [[ -n "\${STUB_RESULT:-}" ]]; then cat "\$STUB_RESULT"; exit 0; fi
-printf '{"is_error":false,"result":"## Goal\\\\nrun %s","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n' "\$n"
+printf '{"type":"result","is_error":false,"result":"## Goal\\\\nrun %s","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n' "\$n"
 EOF
 chmod +x "$tmp/bin/claude"
 
@@ -142,7 +155,7 @@ got=$(cd "$nrepo" && { NVM_DIR="$nvm" SDLC_DRY_RUN=1 "$here/run.sh" builder L1 h
 [[ "$got" == "$(pre v20.11.0 v20.11.0)" ]] || fail ".nvmrc with whitespace: stderr is '$got'"
 
 # Result check: a result lacking the role's required section exits 3 and keeps its files.
-res() { jq -n --arg r "$1" '{is_error:false,result:$r,total_cost_usd:0,duration_ms:1,num_turns:1}' >"$tmp/res.json"; }
+res() { jq -nc --arg r "$1" '{type:"result",is_error:false,result:$r,total_cost_usd:0,duration_ms:1,num_turns:1}' >"$tmp/res.json"; }
 rrepo="$tmp/rrepo"
 mkdir -p "$rrepo"
 echo x >"$rrepo/h.md"
@@ -174,6 +187,44 @@ want_rc 0 verifier L1 $'## Verdict\npass'
 want_rc 0 verifier L1 $'## Verdict\ninherited red: test_a'
 want_rc 3 verifier L1 $'## Verdict\ninherited red'
 
+# Result pick: a trailing task-notification result must not replace the report. The stub output
+# holds a system event and a non-JSON line (from the stub's stderr), then two result events.
+# res2 <first result> <cost>: writes that log shape, the second result a task notification (cost 3).
+res2() {
+  { echo '{"type":"system","subtype":"init"}'
+    jq -nc --arg r "$1" --argjson c "$2" '{type:"result",is_error:false,result:$r,total_cost_usd:$c,duration_ms:1,num_turns:1}'
+    echo 'not json: stderr line'
+    jq -nc '{type:"result",is_error:false,result:"stale monitor, no action needed",origin:{kind:"task-notification"},total_cost_usd:3,duration_ms:9,num_turns:4}'
+  } >"$tmp/res.json"
+}
+# pick_rc <rc> <role> <level>: runs run.sh on the current res.json, checks the exit code.
+pick_rc() {
+  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo/runs.jsonl"
+  local rc=0
+  (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
+    >/dev/null 2>"$tmp/rerr") || rc=$?
+  [[ "$rc" == "$1" ]] || fail "result pick $2 $3: exit $rc, want $1 ($(cat "$tmp/rerr"))"
+}
+res2 $'## Verdict\npass' 1
+pick_rc 0 verifier L1
+grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
+! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md holds the task-notification result"
+grep -q 'stderr noise' "$rrepo/verifier-L1.log" || fail "result pick: the log holds no non-JSON stderr line"
+cost=$(jq -r '.cost_usd' "$rrepo/runs.jsonl")
+[[ "$cost" == 3 ]] || fail "result pick: runs.jsonl cost_usd is '$cost', want 3 (the last result event)"
+res2 'working on it' 1
+pick_rc 3 verifier L1
+grep -q 'working on it' "$rrepo/verifier-L1.md" || fail "no heading: the non-notification result was not saved"
+! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "no heading: verifier-L1.md holds the task-notification result"
+# heading rule: two results, neither a task notification; the earlier one holds the heading, the
+# later one does not. Only the heading rule saves the earlier one (the fallback picks the last).
+{ jq -nc '{type:"result",is_error:false,result:"## Verdict\npass",total_cost_usd:1,duration_ms:1,num_turns:1}'
+  jq -nc '{type:"result",is_error:false,result:"done, see above",total_cost_usd:2,duration_ms:1,num_turns:2}'
+} >"$tmp/res.json"
+pick_rc 0 verifier L1
+grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
+! grep -q 'done, see above' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md holds the later headingless result"
+
 # Real run: the stub claude records the first PATH entry it sees.
 printf '20\n' >"$nrepo/.nvmrc"
 res $'## Status\ndone'
@@ -182,6 +233,23 @@ res $'## Status\ndone'
 head_seen=$(cat "$tmp/pathhead" 2>/dev/null || echo MISSING)
 [[ "$head_seen" == "$node/v20.11.0/bin" ]] \
   || fail ".nvmrc real run: claude saw PATH head '$head_seen', want '$node/v20.11.0/bin'"
+
+# Bash timeouts: the stub claude records both values it sees.
+want_to() { # want_to <inherited value or ""> <expected>
+  rm -f "$tmp/timeouts" "$nrepo"/*-L*.md "$nrepo"/*.log
+  if [[ -n "$1" ]]; then
+    (cd "$nrepo" && STUB_RESULT="$tmp/res.json" BASH_DEFAULT_TIMEOUT_MS="$1" BASH_MAX_TIMEOUT_MS="$1" \
+      PATH="$tmp/bin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) || fail "timeouts '$1': run.sh exited non-zero"
+  else
+    (cd "$nrepo" && unset BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS && STUB_RESULT="$tmp/res.json" \
+      PATH="$tmp/bin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) || fail "timeouts unset: run.sh exited non-zero"
+  fi
+  local seen; seen=$(cat "$tmp/timeouts" 2>/dev/null || echo MISSING)
+  [[ "$seen" == "$2 $2" ]] || fail "timeouts '${1:-unset}': claude saw '$seen', want '$2 $2'"
+}
+want_to "" 3600000
+want_to 120000 3600000
+want_to 7200000 7200000
 
 # Throwaway worktrees: a second stub records SDLC_TMP_WORKTREES and adds a worktree under it
 # (under .worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
@@ -194,8 +262,8 @@ git worktree add -q --detach "\${SDLC_TMP_WORKTREES:-\$PWD/.worktrees/tmp/unset}
   || { echo "stub: git worktree add failed" >&2; exit 9; }
 case "\${STUB_MODE:-ok}" in
   fail) exit 1 ;;
-  nosect) jq -n '{is_error:false,result:"## Changes\\nNone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
-  *) jq -n '{is_error:false,result:"## Status\\ndone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
+  nosect) jq -nc '{type:"result",is_error:false,result:"## Changes\\nNone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
+  *) jq -nc '{type:"result",is_error:false,result:"## Status\\ndone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
 esac
 EOF
 chmod +x "$tmp/wbin/claude"
@@ -226,17 +294,73 @@ want_wt() {
   [[ "$env_seen" == "$wtop/.worktrees/tmp/"?* ]] \
     || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under $wtop/.worktrees/tmp/"
 }
-# Bash timeouts: a headless role defaults both to 600000, so a slow gate never auto-backgrounds
-# into a poll loop; a caller's own value (bench.sh raises it) is kept.
-(cd "$repo" && env -u BASH_DEFAULT_TIMEOUT_MS -u BASH_MAX_TIMEOUT_MS PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md >/dev/null) \
-  || fail "timeout default run: run.sh exited non-zero"
-[[ "$(cat "$tmp/bashto")" == "600000 600000" ]] || fail "Bash timeouts default: claude saw '$(cat "$tmp/bashto")', want '600000 600000'"
-(cd "$repo" && BASH_DEFAULT_TIMEOUT_MS=3600000 BASH_MAX_TIMEOUT_MS=3600000 PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md >/dev/null) \
-  || fail "timeout override run: run.sh exited non-zero"
-[[ "$(cat "$tmp/bashto")" == "3600000 3600000" ]] || fail "Bash timeouts override: claude saw '$(cat "$tmp/bashto")', want '3600000 3600000'"
-
 want_wt ok 0
 want_wt fail 1
 want_wt nosect 3
+
+# Build base: a third stub records ${SDLC_BASE_SHA:-unset}. Builder and verifier runs resolve and
+# store <step dir>/base-sha; other roles see unset and write none; a dry run writes none.
+mkdir -p "$tmp/bbin"
+cat >"$tmp/bbin/claude" <<EOF
+#!/usr/bin/env bash
+echo "\${SDLC_BASE_SHA:-unset}" >"$tmp/baseseen"
+jq -nc '{type:"result",is_error:false,result:"## Status\\ndone\\n## Verdict\\npass\\n## Goal\\nx",total_cost_usd:0,duration_ms:1,num_turns:1}'
+EOF
+chmod +x "$tmp/bbin/claude"
+brepo="$tmp/brepo"
+mkdir -p "$brepo/s"
+echo '## Goal' >"$brepo/s/handoff.md"
+bg() { git -C "$brepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false "$@"; }
+bg init -q
+bg add -A
+bg commit -q -m init
+b0=$(bg rev-parse HEAD)
+# brun <role>: one real run in brepo; stub output lands in $tmp/baseseen.
+brun() {
+  rm -f "$tmp/baseseen"
+  (cd "$brepo" && PATH="$tmp/bbin:$PATH" "$here/run.sh" "$1" L1 s/handoff.md >/dev/null 2>"$tmp/berr") \
+    || fail "base $1 run: run.sh exited non-zero ($(cat "$tmp/berr"))"
+  cat "$tmp/baseseen" 2>/dev/null || echo MISSING
+}
+bfile() { head -1 "$brepo/s/base-sha" 2>/dev/null || echo MISSING; }
+(cd "$brepo" && SDLC_DRY_RUN=1 PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 s/handoff.md >/dev/null 2>&1) \
+  || fail "base dry run: run.sh exited non-zero"
+[[ ! -e "$brepo/s/base-sha" ]] || fail "base dry run: builder dry run wrote base-sha"
+seen=$(SDLC_BASE_SHA=leak brun planner)
+[[ "$seen" == unset ]] || fail "base planner: SDLC_BASE_SHA is '$seen', want unset (caller exported 'leak')"
+[[ ! -e "$brepo/s/base-sha" ]] || fail "base planner: planner run wrote base-sha"
+seen=$(brun builder)
+[[ "$seen" == "$b0" ]] || fail "base first builder: SDLC_BASE_SHA is '$seen', want HEAD $b0"
+[[ "$(bfile)" == "$b0" ]] || fail "base first builder: base-sha is '$(bfile)', want HEAD $b0"
+echo w >"$brepo/w.txt"
+bg add w.txt
+bg commit -q -m work
+seen=$(brun verifier)
+[[ "$seen" == "$b0" ]] || fail "base after plain commit: SDLC_BASE_SHA is '$seen', want old base $b0"
+[[ "$(bfile)" == "$b0" ]] || fail "base after plain commit: base-sha is '$(bfile)', want $b0"
+bg branch -q side "$b0"
+bg checkout -q side
+bg commit -q --allow-empty -m main
+bg checkout -q -
+bg merge -q --no-ff -m sync side
+bm=$(bg rev-parse HEAD)
+seen=$(brun verifier)
+[[ "$seen" == "$bm" ]] || fail "base after resync merge: SDLC_BASE_SHA is '$seen', want merge $bm"
+[[ "$(bfile)" == "$bm" ]] || fail "base after resync merge: base-sha is '$(bfile)', want $bm"
+echo junk >"$brepo/s/base-sha"
+seen=$(brun builder)
+head_now=$(bg rev-parse HEAD)
+[[ "$seen" == "$head_now" ]] || fail "base junk: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
+[[ "$(bfile)" == "$head_now" ]] || fail "base junk: base-sha is '$(bfile)', want HEAD $head_now"
+bg branch -q other "$b0"
+bg checkout -q other
+bg commit -q --allow-empty -m other
+na=$(bg rev-parse HEAD)
+bg checkout -q -
+bg merge-base --is-ancestor "$na" HEAD && fail "base non-ancestor: fixture commit $na is an ancestor of HEAD"
+echo "$na" >"$brepo/s/base-sha"
+seen=$(brun verifier)
+[[ "$seen" == "$head_now" ]] || fail "base non-ancestor: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
+[[ "$(bfile)" == "$head_now" ]] || fail "base non-ancestor: base-sha is '$(bfile)', want HEAD $head_now"
 
 echo "run selftest: PASS"

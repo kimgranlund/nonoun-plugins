@@ -13,9 +13,10 @@ created: 2026-09-26
 Small related work gets finished in the session that found it. A new ticket exists only for work that is out of scope, large, or needs the user.
 
 ## Intent
-- Do:
-- Non-goals:
-- Done when:
+- Do: ship all four parts in the Context (loose-ends step in /chain, a `/fix` fast-lane skill routed by the conductor for size-S asks, filer Follow-ups tagged `fix-now` / `decide` / `note`, and a code-enforced cap of one follow-up ticket per `tickets.py close` with the rest going to `.sdlc/notes.md`), plus the doc and check.py updates listed there.
+- Non-goals: no change to `close --reason`, `--ack-warnings`, `--rewrite-refs`, the dry-run digest confirmation, the level tables, or fanout's merge flow; no retry ladder in the loose-ends step.
+- Done when: `tickets.py selftest` proves the cap (a second eligible follow-up is refused as a ticket and lands in `.sdlc/notes.md`; `note` items never become tickets), check.py guards the new filer tags and the loose-ends and fast-lane wording, the named docs agree, and `scripts/check.sh` is green.
+- Gaps named (unattended clarify, not blocking): the ticket allows a `/fix` skill or a `/chain --fast` mode; prefer a `/fix` skill unless the planner finds a concrete reason otherwise. How close tells a user-approved `decide` item or a real bug/risk from other items is the planner's design (for example a tag on the filer line that the conductor sets after the user answers "ticket").
 
 ## Context
 User decision, 2026-09-26: "the endless ticket filing ... tasks or issues [should] be fully completed in sessions instead of filing more tickets and enduring the full lifecycle". Today most batches were follow-ups that earlier batches filed: the filer proposes 1 to 3 per ticket, and each runs plan, build, verify, file and close at $1 to $4. The user chose all four of these:

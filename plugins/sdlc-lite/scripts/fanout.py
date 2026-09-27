@@ -644,6 +644,8 @@ STUB = r'''#!/usr/bin/env bash
 set -eu
 [ "${SDLC_HEADLESS:-}" = 1 ] || { echo "SDLC_HEADLESS not set" >&2; exit 1; }
 [ "${SDLC_ROLE:-}" = conductor ] || { echo "SDLC_ROLE not conductor" >&2; exit 1; }
+[ "${BASH_DEFAULT_TIMEOUT_MS:-}" = 3600000 ] || { echo "BASH_DEFAULT_TIMEOUT_MS not 3600000" >&2; exit 1; }
+[ "${BASH_MAX_TIMEOUT_MS:-}" = 3600000 ] || { echo "BASH_MAX_TIMEOUT_MS not 3600000" >&2; exit 1; }
 echo "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"
 ls >"$FANOUT_TICKET.saw"
 printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"

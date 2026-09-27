@@ -16,12 +16,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
             It also refuses a criterion span that joins two checks with an unquoted || (see lint),
-            one that pins a commit sha fixed at plan time, and one that compares a count over a
+            one that pins a commit sha fixed at plan time (except the ancestry form
+            git merge-base --is-ancestor <sha> HEAD), and one that compares a count over a
             changing set with a fixed number (see lint).
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
             bash -c, from the git toplevel of the task dir (else the task dir), under
-            --guard-timeout SECONDS (default 300). A span that references HEAD^1 or holds a
+            --guard-timeout SECONDS (default 300), with SDLC_BASE_SHA set to git rev-parse HEAD
+            at the toplevel (no build has started, so HEAD is the base; unset outside git, never
+            inherited from the caller). A span that references HEAD^1 or holds a
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
@@ -48,7 +51,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             two more checks on its raw text. It must not pin a commit sha: a span holding the word
             git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
             non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
-            first sync from main; compare against HEAD at build start instead. It must not compare
+            first sync from main; compare against HEAD at build start instead. One form is exempt:
+            git merge-base --is-ancestor <sha> HEAD (HEAD as a whole word) is a deliberate ancestry
+            check that stays true after a sync; any other hex run in the span still counts. It must not compare
             a count over a changing set with a fixed number: a count tool (wc -l, grep -c,
             grep --count), a set source (a * glob, or ls or find as a word), and a comparison
             (-eq -ne -ge -gt -le -lt = == !=) with a literal integer of 2 or more, all in one span.
@@ -107,7 +112,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             text starts with (guard) exactly when that line does, holds at least one command span,
             no span references HEAD^1 or holds a <placeholder>, and it lints clean (the lint rules
             above). Each new span then runs under bash -c from the git toplevel of the step dir
-            (else the step dir) under --timeout SECONDS (default 300): the build is in the tree,
+            (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA set to
+            the first line of <step dir>/base-sha when it names a commit, else HEAD (unset outside
+            git, never inherited from the caller): the build is in the tree,
             so a red span or a timeout refuses; in a git work tree a span that changed the work
             tree refuses too, naming the paths (nothing is undone). When no criterion line holds
             the old span but one criterion line's text after its marker equals the new text, it
@@ -361,10 +368,44 @@ def tree_changes(before, after):
     return sorted(p for p in set(before) | set(after) if before.get(p) != after.get(p))
 
 
-def run_guard(text, cwd, timeout):
-    """Run one guard span. Returns (rc or None on timeout, combined output tail lines).
+def rev_commit(top, rev):
+    """The full sha of rev as a commit in the repo at top, or None."""
+    try:
+        r = subprocess.run(['git', '-C', top, 'rev-parse', '--verify', '--quiet', f'{rev}^{{commit}}'],
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout.strip() or None if r.returncode == 0 else None
+
+
+def base_sha(top, step_dir=None):
+    """SDLC_BASE_SHA for a span: the first line of <step dir>/base-sha when it names a commit,
+    else HEAD at top; None outside git."""
+    if not top:
+        return None
+    if step_dir is not None:
+        f = pathlib.Path(step_dir) / 'base-sha'
+        with contextlib.suppress(OSError, UnicodeDecodeError):
+            first = (f.read_text(encoding='utf-8').splitlines() or [''])[0].strip()
+            sha = rev_commit(top, first) if first else None
+            if sha:
+                return sha
+    return rev_commit(top, 'HEAD')
+
+
+def span_env(base):
+    """The env a span runs with: SDLC_BASE_SHA set to base, never inherited; unset when base is None."""
+    env = {k: v for k, v in os.environ.items() if k != 'SDLC_BASE_SHA'}
+    if base:
+        env['SDLC_BASE_SHA'] = base
+    return env
+
+
+def run_guard(text, cwd, timeout, base=None):
+    """Run one guard span with SDLC_BASE_SHA=base (unset when None).
+    Returns (rc or None on timeout, combined output tail lines).
     It runs in its own session so a timeout kills the whole process group, grandchildren too."""
-    proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL,
+    proc = subprocess.Popen(['bash', '-c', '--', text], cwd=cwd, stdin=subprocess.DEVNULL, env=span_env(base),
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     try:
         out, err = proc.communicate(timeout=timeout)
@@ -383,6 +424,7 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
     Called only by split --only; a full split and lint never execute a span."""
     top = git_toplevel(task_dir)
     cwd = top or str(task_dir)
+    base = base_sha(top)
     lines, red, before, ran = [], [], None, False
     for n in chosen:
         for text in guard_spans(steps[n]):
@@ -391,7 +433,7 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
             if top and not ran:
                 before = tree_state(top)
             ran = True
-            rc, tail = run_guard(text, cwd, timeout)
+            rc, tail = run_guard(text, cwd, timeout, base)
             if rc == 0:
                 continue
             why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
@@ -497,9 +539,16 @@ SET_SOURCE_RE = re.compile(r'\*|(?<![\w./-])(?:ls|find)(?![\w.-])')
 COMPARE_RE = re.compile(r'(?:(?<![\w-])-(?:eq|ne|ge|gt|le|lt)|==|!=|(?<=\s)=)\s*["\']?(\d+)(?![\w.])')
 
 
+ANCESTRY_RE = re.compile(r'(?<![\w.-])git\s+merge-base\s+--is-ancestor\s+'
+                         r'(?<![A-Za-z0-9])[0-9a-f]{7,40}\s+HEAD(?![\w~^@:./-])')
+
+
 def pins_sha(text):
-    """True when a span holds the word git and a commit-sha-like hex run fixed at plan time."""
-    return bool(GIT_WORD_RE.search(text) and SHA_RE.search(text))
+    """True when a span holds the word git and a commit-sha-like hex run fixed at plan time.
+    The ancestry form git merge-base --is-ancestor <sha> HEAD is exempt; other hex runs still count."""
+    if not GIT_WORD_RE.search(text):
+        return False
+    return bool(SHA_RE.search(ANCESTRY_RE.sub(' ', text)))
 
 
 def fixed_set_count(text):
@@ -559,7 +608,8 @@ def lint_steps(plan, steps):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion pins a commit sha fixed at plan time: '
                                 f'{text}\n'
                                 '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
-                                'a fixed sha goes stale on the first sync from main')
+                                'a fixed sha goes stale on the first sync from main '
+                                '(only `git merge-base --is-ancestor <sha> HEAD` may name a sha)')
             if fixed_set_count(text):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion compares a count over a changing set '
                                 f'with a fixed number: {text}\n'
@@ -936,10 +986,11 @@ def swap(step_dir, timeout=300):
 
     top = git_toplevel(d)
     cwd = top or str(d)
+    base = base_sha(top, d)
     before = tree_state(top) if top else None
     detail, red = [], []
     for s in spans:
-        rc, tail = run_guard(s, cwd, timeout)
+        rc, tail = run_guard(s, cwd, timeout, base)
         if rc == 0:
             continue
         why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
@@ -1247,6 +1298,19 @@ def selftest():
             refused(f'(k3) lint refuses a criterion that pins a commit sha ({form}) with plan defect',
                     ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'pins a commit sha'))
 
+        # (k3) the ancestry form is exempt; a second pinned sha beside it is still refused
+        d = task(plan=PLAN.replace('- one works', f'- `git merge-base --is-ancestor {sha} HEAD`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        rc2, _, _ = run_main(['split', str(d)])
+        check('(k3) is-ancestor <sha> HEAD pass: lint ok and split writes the step',
+              rc == 0 and out.strip() == 'steps lint: ok' and rc2 == 0
+              and (d / 'step-1' / 'handoff.md').is_file())
+        sha2 = 'e81d' + '04c'
+        d = task(plan=PLAN.replace('- one works',
+                                   f'- `git merge-base --is-ancestor {sha} HEAD && git diff --quiet {sha2} -- src`'))
+        refused('(k3) is-ancestor plus a second pinned sha: refuse with plan defect',
+                ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'pins a commit sha'))
+
         # (k4) a glob count compared with a fixed number: lint and split refuse
         d = task(plan=PLAN.replace('- one works', '- `test "$(ls .sdlc/*/handoff.md | wc -l)" -eq 26`'))
         refused('(k4) split refuses a glob count compared with a fixed number, writes nothing',
@@ -1548,6 +1612,25 @@ def selftest():
         (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\n', encoding='utf-8')
         next_refused('next error: a handoff with no level line and no builder result', d)
 
+        # SDLC_BASE_SHA: split --only sets it to HEAD at the toplevel, never inherited from the caller
+        d = o_repo('(guard) `test "$SDLC_BASE_SHA" = "$(git rev-parse HEAD)"`', commit='o-base')
+        saved = os.environ.get('SDLC_BASE_SHA')
+        os.environ['SDLC_BASE_SHA'] = 'inherited-bogus'
+        try:
+            rc, _, err = run_main(['split', str(d), '--only', '1'])
+        finally:
+            if saved is None:
+                os.environ.pop('SDLC_BASE_SHA', None)
+            else:
+                os.environ['SDLC_BASE_SHA'] = saved
+        check('(o) split --only runs a guard with SDLC_BASE_SHA = HEAD, overriding the caller env',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+        p = tmp / 'base-lint.md'
+        p.write_text(guard_plan('`git diff --name-only "$SDLC_BASE_SHA"`'), encoding='utf-8')
+        rc, out, _ = run_main(['lint', str(p)])
+        check('lint does not flag git diff --name-only "$SDLC_BASE_SHA" as pinning a sha',
+              rc == 0 and out.strip() == 'steps lint: ok')
+
         d = step(2, [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)])
         before = snapshot(d)
         rc, _, _ = run_main(['next', str(d)])
@@ -1629,6 +1712,24 @@ def selftest():
             (d / name).write_text(text, encoding='utf-8')
         swap_refused('(c) new span that changes the work tree (a throwaway git repo)', d,
                      'changed the work tree: s-made')
+        # a swap span sees SDLC_BASE_SHA from <step dir>/base-sha, not HEAD
+        r = tmp / 'swap-base-repo'
+        r.mkdir()
+        g = ['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+        subprocess.run(g + ['commit', '-q', '--allow-empty', '-m', 'a'], check=True, capture_output=True)
+        first = subprocess.run(['git', '-C', str(r), 'rev-parse', 'HEAD'], check=True, capture_output=True,
+                               text=True).stdout.strip()
+        subprocess.run(g + ['commit', '-q', '--allow-empty', '-m', 'b'], check=True, capture_output=True)
+        (r / 'sdlc').mkdir()
+        d = s_step([], where=r / 'sdlc')
+        (d / 'base-sha').write_text(first + '\n', encoding='utf-8')
+        new = '`test "$SDLC_BASE_SHA" = "$(head -n 1 sdlc/base-sha)" && test "$SDLC_BASE_SHA" != "$(git rev-parse HEAD)"`'
+        for name, text in pair + [('verifier-L1.md', swap_v(new=new))]:
+            (d / name).write_text(text, encoding='utf-8')
+        rc, out, err = run_main(['swap', str(d)])
+        check('swap: a new span sees SDLC_BASE_SHA from the stored base-sha, not HEAD',
+              rc == 0 and 'base-sha' in (d / 'handoff.md').read_text(encoding='utf-8'))
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
         swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')
@@ -1671,7 +1772,7 @@ def main(argv):
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--only', type=int, action='append', metavar='N',
-                   help='write only step N (repeatable); runs its (guard) criteria first')
+                   help='write only step N (repeatable); runs its (guard) criteria first, with SDLC_BASE_SHA=HEAD')
     p.add_argument('--guard-timeout', type=float, default=300, metavar='SECONDS',
                    help='per-guard timeout for --only (default 300); a timeout is a red guard')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
@@ -1681,7 +1782,8 @@ def main(argv):
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
-                   help='per-span timeout for the new criterion (default 300); a timeout refuses')
+                   help='per-span timeout for the new criterion (default 300); a timeout refuses. Spans run with '
+                        'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':

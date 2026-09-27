@@ -12,7 +12,8 @@
    "can go red", and "membership or structure" checks) appear in the planner, the planner's "gates green" rule
    (whole-suite gate guards go on one final step, never on every step) appears in agents/planner.md, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
    fail, applied by `steps.py swap`) appears in agents/verifier.md and scripts/steps.py, and the
-   `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills.
+   `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills,
+   and the build-start base `SDLC_BASE_SHA` appears in the planner, builder, verifier, run.sh, and steps.py.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -25,6 +26,12 @@
 8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
    agents/builder.md, agents/verifier.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
    scripts/run.sh, scripts/fanout.py, and skills/fanout/SKILL.md.
+9. Finish-in-session: the follow-up tags `fix-now:` and `decide:` and the `notes.md` sink appear in
+   agents/filer.md, scripts/tickets.py, skills/file/SKILL.md, and skills/ticket/SKILL.md; `fix-now:` also in
+   skills/chain/SKILL.md and agents/conductor.md; `decide:` also there and in skills/open-questions/SKILL.md;
+   `notes.md` also in skills/handoff-format/SKILL.md and agents/conductor.md; and `Loose ends` (/chain 5) in
+   skills/chain/SKILL.md, agents/filer.md, skills/handoff-format/SKILL.md, skills/level-rubric/SKILL.md, and
+   agents/conductor.md.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -86,7 +93,8 @@ for p in sorted((root/'agents').glob('*.md')):
             errors.append(f'agents/{p.name} declares missing skill: {sk}')
 
 # Long role runs: interactive sessions background them; headless sessions keep them in the foreground.
-for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md'):
+for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md',
+            'skills/fix/SKILL.md'):
     f = root/rel
     if not f.is_file(): errors.append(f'{rel}: missing (long-run doc check)'); continue
     text = f.read_text()
@@ -110,7 +118,10 @@ PLAN_DEFECT_DOCS = {
     'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
     'owns that budget': ('agents/planner.md',),
     'gates green': ('agents/planner.md',),
+    'one Bash call': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
+    'SDLC_BASE_SHA': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'scripts/run.sh',
+                      'scripts/steps.py'),
     'membership or structure': ('agents/planner.md',),
     'swap old:': ('agents/verifier.md', 'scripts/steps.py'),
     'swap new:': ('agents/verifier.md', 'scripts/steps.py'),
@@ -129,6 +140,24 @@ INHERITED_RED_DOCS = ('agents/builder.md', 'agents/verifier.md', 'agents/conduct
 for rel in INHERITED_RED_DOCS:
     f = root/rel
     if not f.is_file() or 'inherited red' not in f.read_text(): errors.append(f'{rel}: inherited-red route missing "inherited red"')
+# Finish-in-session: follow-ups are tagged fix-now, decide, or note; only one decide item becomes a ticket.
+FINISH_FILES = ('agents/filer.md', 'scripts/tickets.py', 'skills/file/SKILL.md', 'skills/ticket/SKILL.md')
+CHAIN, CONDUCTOR, HANDOFF_FMT = 'skills/chain/SKILL.md', 'agents/conductor.md', 'skills/handoff-format/SKILL.md'
+FINISH_DOCS = {'fix-now:': FINISH_FILES + (CHAIN, CONDUCTOR),
+               'decide:': FINISH_FILES + (CHAIN, CONDUCTOR, 'skills/open-questions/SKILL.md'),
+               'notes.md': FINISH_FILES + (HANDOFF_FMT, CONDUCTOR),
+               'Loose ends': (CHAIN, 'agents/filer.md', HANDOFF_FMT, 'skills/level-rubric/SKILL.md', CONDUCTOR),
+               'sdlc-lite:fix': (CONDUCTOR,),
+               'fast lane': ('skills/fix/SKILL.md', CONDUCTOR, 'skills/level-rubric/SKILL.md')}
+def finish_missing(text, word): return not re.search(re.escape(word) + r'(?![\w-])', text)
+for word, rels in FINISH_DOCS.items():
+    for rel in rels:
+        f = root/rel
+        if not f.is_file(): errors.append(f'{rel}: missing (finish-in-session check)'); continue
+        text = f.read_text()
+        if finish_missing(text, word): errors.append(f'{rel}: finish-in-session wording missing "{word}"')
+        elif not finish_missing(text.replace(word, ''), word):
+            errors.append(f'{rel}: finish-in-session negative control not flagged for "{word}"')
 # Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
 def merge_block(rel):
     f = root/rel
@@ -258,6 +287,11 @@ bt = bf.read_text() if bf.is_file() else ''
 for s in builder_scope_missing(bt): errors.append(f'agents/builder.md: builder scope rule missing "{s}"')
 for s in SCOPE_PHRASES:
     if s not in builder_scope_missing(bt.replace(s, '')): errors.append('check.py: builder scope guard negative control not flagged')
+# Builder and verifier keep gates in the foreground: a headless run ends with the turn.
+FG_PHRASE = 'never end the turn while background work runs'
+for rel in ('agents/builder.md', 'agents/verifier.md'):
+    fp = root/rel
+    if not fp.is_file() or FG_PHRASE not in fp.read_text(): errors.append(f'{rel}: foreground rule missing "{FG_PHRASE}"')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')
