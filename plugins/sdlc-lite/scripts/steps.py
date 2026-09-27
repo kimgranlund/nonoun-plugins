@@ -44,7 +44,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             nonzero exit fails the criterion when the left side fails, so it cannot pass on either
             side; `|| exit 0`, `|| true`, `|| echo ...` stay findings. A for, while, or until span
             ending in done, an if span ending in fi, and a { span ending in } count as commands
-            and are linted; prose starting with those words is not. A span that parses gets
+            and are linted, also when a trailing redirect or pipe follows the closing keyword
+            (`done < f`, `done 2>/dev/null`, `done | cat`); prose starting with those words is not. A span that parses gets
             two more checks on its raw text. It must not pin a commit sha: a span holding the word
             git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
             non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
@@ -257,8 +258,10 @@ COMPOUND_END = {'for': 'done', 'while': 'done', 'until': 'done', 'if': 'fi', '{'
 def is_command(text):
     """True when a code span reads as a shell command, judged by its head token. A compound
     command counts too: a for, while, or until head with a span ending in done, an if head ending
-    in fi, or a { head ending in }; prose that starts with those words (`for each changed file`)
-    does not."""
+    in fi, or a { head ending in }. A trailing redirect or pipe after the closing keyword counts
+    too (`done < f`, `fi 2>&1`, `} | cat`, never `||`) when a `;`, `&`, or newline comes before
+    that keyword. Prose that starts with those words (`for each changed file`, `for each file
+    done < f`) does not."""
     tokens = text.split()
     assigns = []
     i = 0
@@ -272,7 +275,10 @@ def is_command(text):
         return False
     head = tokens[i]
     if head in COMPOUND_END:
-        return re.search(r'(?:^|[\s;&|])' + re.escape(COMPOUND_END[head]) + r'$', text.rstrip()) is not None
+        end = re.escape(COMPOUND_END[head])
+        if re.search(r'(?:^|[\s;&|])' + end + r'$', text.rstrip()):
+            return True
+        return re.search(r'[;&\n]\s*' + end + r'\s*(?:\d*(?:<<<|>>|&>|>&?|<)|\|(?!\|))', text) is not None
     return (head in BUILTINS or '/' in head or head.endswith('.py') or head.endswith('.sh')
             or shutil.which(head) is not None)
 
@@ -1281,6 +1287,19 @@ def selftest():
             d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
             refused(f'(k2) lint refuses a || fallback ({form}) with plan defect',
                     ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        for form in ('while read x; do test -f x || echo m; done < f',
+                     'for p in a b; do grep -q a "$p" || grep -q b "$p"; done | cat'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k2) lint refuses a || fallback in a compound with a trailing redirect or pipe ({form})',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        form = 'while read x; do test -f x || exit 1; done < f'
+        d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2) a fail-fast loop with a trailing redirect is a command span and lints ok',
+              rc == 0 and out.strip() == 'steps lint: ok'
+              and command_spans(parse_steps(d / 'planner-L2.md')[1]) == [form])
+        check('(k2) prose `for each file done < f` with a trailing redirect stays a non-command',
+              not is_command('for each file done < f'))
         d = task(plan=PLAN.replace('- one works', '- `for each changed file`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k2) prose `for each changed file` stays a non-command span: lint ok',
