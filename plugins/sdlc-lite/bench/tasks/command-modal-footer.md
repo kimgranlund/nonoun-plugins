@@ -15,7 +15,7 @@ Add an always-visible footer to the command modal (`ui-command-modal`). It shows
 
 Interface the tests rely on:
 - One `<footer data-part="footer">` element, appended into the modal (`ui-modal`) together with the existing search, list and status parts, rendered below the list and inside the dialog surface.
-- Exactly 3 hints, each containing at least one `<kbd>`, with the labels `Navigate`, `Select` and `Close`.
+- Exactly 3 hints, each an element carrying a `data-hint` attribute (tests select them with `[data-hint]`) and containing at least one `<kbd>`, with the labels `Navigate`, `Select` and `Close`.
 - The footer and its `<kbd>` elements carry no `tabindex` and no `role`.
 - It stays visible (not `hidden`, not `display: none`, non-zero height) even when filtering leaves zero options.
 - `footer` is listed as a part in the component's descriptor, next to `search`, `list`, `status` and `empty`.

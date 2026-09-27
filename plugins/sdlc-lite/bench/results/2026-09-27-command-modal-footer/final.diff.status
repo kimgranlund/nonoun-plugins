@@ -1,0 +1,9 @@
+ M .claude/docs/lld/command-modal.lld.md
+ M packages/agent-ui/components/src/controls/command-modal/command-modal-descriptor.test.ts
+ M packages/agent-ui/components/src/controls/command-modal/command-modal.browser.test.ts
+ M packages/agent-ui/components/src/controls/command-modal/command-modal.css
+ M packages/agent-ui/components/src/controls/command-modal/command-modal.md
+ M packages/agent-ui/components/src/controls/command-modal/command-modal.test.ts
+ M packages/agent-ui/components/src/controls/command-modal/command-modal.ts
+ M site/public/llms-full.txt
+?? .sdlc/

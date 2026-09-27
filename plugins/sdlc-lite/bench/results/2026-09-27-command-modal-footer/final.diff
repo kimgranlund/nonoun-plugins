@@ -1,0 +1,402 @@
+diff --git a/.claude/docs/lld/command-modal.lld.md b/.claude/docs/lld/command-modal.lld.md
+index f3f0af54..4ab4143d 100644
+--- a/.claude/docs/lld/command-modal.lld.md
++++ b/.claude/docs/lld/command-modal.lld.md
+@@ -44,7 +44,7 @@ wiring (the nested modal + the search/list parts + the filter/active-descendant
+ | ID | Component | File | Traces |
+ |---|---|---|---|
+ | LLD-C1 | class + tag + self-define (tier pattern) AND the props schema (`open`/`label`/`placeholder`/`hotkey`/`filter` — REV 2026-07-11, ADR-0127) | `controls/command-modal/command-modal.ts` | SPEC-R1, R2 |
+-| LLD-C2 | `#ensureParts()` — create the nested `ui-modal` + the search/list/status parts, child-move the author `[role=option]`/`[role=group]` children into the list, assign stable option ids (idempotent) | `controls/command-modal/command-modal.ts` | SPEC-R3, R4 |
++| LLD-C2 | `#ensureParts()` — create the nested `ui-modal` + the search/list/status/footer parts (the footer an always-visible `<footer data-part="footer">` holding 3 `[data-hint]` keyboard hints as `<kbd>`s, below the list — AMENDMENT below), child-move the author `[role=option]`/`[role=group]` children into the list, assign stable option ids (idempotent) | `controls/command-modal/command-modal.ts` | SPEC-R3, R4 |
+ | LLD-C3 | the nested-`ui-modal` surface seam — drive `open`→modal, sync the modal's `close`/`toggle` back, forward the accessible name, NO own dialog/backdrop/Escape | `controls/command-modal/command-modal.ts` | SPEC-R3, R9 |
+ | LLD-C4 | the search field — `role=combobox` contenteditable, aria wiring (`aria-controls`/`aria-expanded`/`aria-autocomplete`), reactive `aria-label`, focus-on-open | `controls/command-modal/command-modal.ts` | SPEC-R4 |
+ | LLD-C5 | filter — `hidden`-based substring/keyword match (default), OR a regex test over the same haystack when `filter="regex"` (REV 2026-07-11, ADR-0127) — an invalid pattern is caught and that keystroke falls back to substring, never throwing; group-heading hide, active reset | `controls/command-modal/command-modal.ts` | SPEC-R5 |
+@@ -53,7 +53,7 @@ wiring (the nested modal + the search/list parts + the filter/active-descendant
+ | LLD-C8 | result-count live region — `[data-part=status]` `aria-live=polite`, updated on filter | `controls/command-modal/command-modal.ts` | SPEC-R7 |
+ | LLD-C9 | empty state — author `[slot=empty]` override else a default `role=presentation` "No results" row | `controls/command-modal/command-modal.ts` | SPEC-R8 |
+ | LLD-C10 | the opt-in `hotkey` — an effect that binds ONE document `keydown` only while `hotkey` is non-empty (teardown-returning effect, per-instance, no singleton) | `controls/command-modal/command-modal.ts` | SPEC-R10 |
+-| LLD-C11 | `command-modal.css` — search/list/item/group/active geometry, the bounded scroll viewport, the container surface via the nested modal, the `--ui-command-modal-*` token chain, forced-colors | `controls/command-modal/command-modal.css` | SPEC-R11 |
++| LLD-C11 | `command-modal.css` — search/list/item/group/active geometry, the bounded scroll viewport, the container surface via the nested modal, the `--ui-command-modal-*` token chain, forced-colors; plus the `[data-part=footer]` row (always-visible, non-zero block-size, laid out below the list, `<kbd>` hint styling — AMENDMENT below) | `controls/command-modal/command-modal.css` | SPEC-R11 |
+ | LLD-C12 | `command-modal.md` descriptor (tier: pattern, extends UIElement, events, parts, content model, keyboard map) | `controls/command-modal/command-modal.md` | SPEC-R12 |
+ | LLD-C13 | descriptor↔props trip-wire test | `controls/command-modal/command-modal-descriptor.test.ts` | SPEC-R12 |
+ | LLD-C14 | jsdom behavior suite (props reflect/fail-open, parts/ARIA, filter, selection detail, no-router negative control, hotkey add/remove) | `controls/command-modal/command-modal.test.ts` | SPEC-R2, R4, R5, R6, R10 |
+@@ -208,7 +208,7 @@ export class UICommandModalElement extends UIElement {
+     if (this.label) modal.setAttribute('aria-label', this.label)
+     // ORDER: put the parts inside the modal BEFORE appending the modal to the host, so when ui-modal connects it
+     // moves search/status/list into its <dialog> together (identity preserved; our refs stay valid). §3 note.
+-    modal.append(search, status, list)
++    modal.append(search, status, list, footer)
+     this.#modal = modal
+     this.append(modal)
+     return { modal, search, list }
+@@ -392,6 +392,7 @@ parts:
+   - { name: list,   role: listbox,  note: 'control-created; author [role=option]/[role=group] children moved in (ADR-0017)' }
+   - { name: status, note: 'visually-hidden aria-live=polite result-count region' }
+   - { name: empty,  role: presentation, note: 'default No-results row; an author [slot=empty] overrides it' }
++  - { name: footer, note: 'always-visible <footer> below the list, holding 3 [data-hint] kbd hints (Navigate/Select/Close); no tabindex/role; never hidden, even at zero results' }
+ slots:
+   - { name: empty, note: 'author empty-state affordance shown when the filter matches nothing' }
+ contentModel: '[role=option][value] children (optional leading icon element + label text + optional [data-role=shortcut] display + optional data-keywords), optionally grouped under [role=group] with a [data-role=group-label] heading'
+@@ -484,3 +485,15 @@ what jsdom's locators and non-layout engine cannot; jsdom is also blind to the `
+ - **A `ui-command-group` sub-tag** (F3) — fenced additive v2; v1 groups with `[role=group]` children.
+ - **A live dialog accessible name** — needs a `ui-modal` labelling-seam amendment (the §3 note); the named
+   escalation only, not a v1 requirement.
++
++## 9 · Amendments
++
++- **2026-09-27 — always-visible keyboard-hint footer.** `#ensureParts()` (LLD-C2) now also creates a
++  `<footer data-part="footer">`, appended into the nested `ui-modal` alongside search/list/status, positioned
++  below the list inside the dialog surface. It holds exactly 3 `[data-hint]` elements (Navigate ↑↓, Select ↵,
++  Close Esc), each containing at least one `<kbd>`; the footer and its `<kbd>`s carry no `tabindex` and no
++  `role`. It stays visible (not `hidden`, no `display: none`, non-zero block-size) even when the filter leaves
++  zero visible options — it is NOT part of the empty-state (LLD-C9) and is unaffected by it. Adds no new prop;
++  `command-modal.md` (LLD-C12) lists `footer` alongside `search`/`list`/`status`/`empty` in `parts:`, with no
++  `role:` line. `command-modal.css` (LLD-C11) gets the `[data-part=footer]` layout rule. No existing LLD-C ID is
++  renumbered; SPEC-R3/R4/R11/R12 traces are extended, not replaced.
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal-descriptor.test.ts b/packages/agent-ui/components/src/controls/command-modal/command-modal-descriptor.test.ts
+index 881ada56..cb7d1f7a 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal-descriptor.test.ts
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal-descriptor.test.ts
+@@ -66,7 +66,7 @@ describe('command-modal.md descriptor — frontmatter parses + schema-valid', ()
+ 
+   it('declares the search/list/status/empty parts + the empty slot', () => {
+     const parts = (parsed.sequences.get('parts') ?? []).map((i) => i.get('name'))
+-    expect(parts).toEqual(expect.arrayContaining(['search', 'list', 'status', 'empty']))
++    expect(parts).toEqual(expect.arrayContaining(['search', 'list', 'status', 'empty', 'footer']))
+     const slots = (parsed.sequences.get('slots') ?? []).map((i) => i.get('name'))
+     expect(slots).toContain('empty')
+   })
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal.browser.test.ts b/packages/agent-ui/components/src/controls/command-modal/command-modal.browser.test.ts
+index 83e29ea4..4a00cba1 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal.browser.test.ts
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal.browser.test.ts
+@@ -380,6 +380,42 @@ describe('ui-command-modal — TKT-0017: the fixed frame (both engines)', () =>
+   })
+ })
+ 
++describe('ui-command-modal — the keyboard-hint footer stays visible below the list (both engines)', () => {
++  it('a zero-match filter leaves the footer rendered inside the dialog, below the list, with 3 visible kbd hints', async () => {
++    const { el } = mount(PALETTE_MARKUP)
++    el.open = true
++    await el.updateComplete
++    const dialog = el.querySelector<HTMLDialogElement>('[data-part="dialog"]')!
++    const search = el.querySelector<HTMLElement>('[data-part="search"]')!
++    const list = el.querySelector<HTMLElement>('[data-part="list"]')!
++    search.focus()
++    await userEvent.keyboard('zzzz-no-match')
++    await el.updateComplete
++    expect([...el.querySelectorAll<HTMLElement>('[role=option]')].filter((o) => !o.hidden)).toHaveLength(0)
++
++    const footer = el.querySelector<HTMLElement>('[data-part="footer"]')!
++    expect(footer, 'no footer part').toBeTruthy()
++    expect(dialog.open).toBe(true)
++    expect(dialog.contains(footer), `${server.browser}: footer is outside the open dialog`).toBe(true)
++    expect(footer.getBoundingClientRect().top, `${server.browser}: footer is not below the list`).toBeGreaterThanOrEqual(
++      list.getBoundingClientRect().bottom,
++    )
++    expect(getComputedStyle(footer).display).not.toBe('none')
++    expect(footer.hidden).toBe(false)
++    expect(footer.getBoundingClientRect().height, `${server.browser}: footer collapsed`).toBeGreaterThan(0)
++
++    const hints = footer.querySelectorAll<HTMLElement>('[data-hint]')
++    expect(hints).toHaveLength(3)
++    for (const hint of hints) {
++      const kbd = hint.querySelector<HTMLElement>('kbd')
++      expect(kbd, 'hint has no kbd').toBeTruthy()
++      const r = kbd!.getBoundingClientRect()
++      expect(getComputedStyle(kbd!).display).not.toBe('none')
++      expect(r.width * r.height, `${server.browser}: kbd not visible`).toBeGreaterThan(0)
++    }
++  })
++})
++
+ // ════════════════════════════════════════════════════════════════════════════════════════════════════
+ //  GH #906 (supersedes TKT-0084) — the results list scrolls with a thin, auto-hiding scrollbar, never
+ //  the platform-default chunky bar. MEASURED (both engines under test fully expose the computed-style
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal.css b/packages/agent-ui/components/src/controls/command-modal/command-modal.css
+index 03fda9ae..31cacf8c 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal.css
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal.css
+@@ -8,7 +8,7 @@
+  *   [2] STYLES BLOCK — `@scope (ui-command-modal)` CONSUMES only `--ui-command-modal-*`. The host itself is
+  *       `display: contents` — it paints NOTHING; the nested `ui-modal` owns the whole surface (the modal's own
+  *       sheet supplies the dialog/backdrop/frame). This sheet styles only the parts THIS control creates:
+- *       search / list / status / empty / option / group, all rendered INSIDE the nested modal's <dialog>.
++ *       search / list / status / empty / footer / option / group, all rendered INSIDE the nested modal's <dialog>.
+  *
+  * Standalone stylesheet — NOT injected from command-modal.ts (behaviour-only `.ts`, plan §2). Linked via the
+  * component-styles barrel, appended after every other control (ADR-0003 append-only import order).
+@@ -67,6 +67,15 @@
+      signifier itself (never color-only intent, ADR-0057). */
+   --ui-command-modal-active-bg: var(--md-sys-color-neutral-tint-dim);
+   --ui-command-modal-active-ink: var(--md-sys-color-neutral-on-surface);
++
++  /* The always-visible keyboard-hint footer (navigate/select/close) — muted caption read, aliases existing roles only. */
++  --ui-command-modal-footer-ink: var(--md-sys-color-neutral-on-surface-variant);
++  --ui-command-modal-footer-bg: var(--ui-command-modal-search-bg);
++  --ui-command-modal-footer-pad-inline: var(--md-sys-space-sm);
++  --ui-command-modal-footer-pad-block: var(--md-sys-space-xs);
++  --ui-command-modal-footer-gap: var(--md-sys-space-sm);
++  --ui-command-modal-footer-font: var(--md-sys-font-sm);
++  --ui-command-modal-footer-kbd-pad-inline: var(--md-sys-space-xs);
+ }
+ 
+ /* ════════════════ [2] STYLES BLOCK — @scope (ui-command-modal) ════════════════ */
+@@ -246,6 +255,28 @@
+     display: none;
+   }
+ 
++  /* ── Footer — always-visible keyboard hints; flex-shrink:0 keeps it sized when the list is empty ── */
++
++  :scope [data-part='footer'] {
++    box-sizing: border-box;
++    display: flex;
++    flex-wrap: wrap;
++    align-items: center;
++    flex-shrink: 0;
++    gap: var(--ui-command-modal-footer-gap);
++    padding-inline: var(--ui-command-modal-footer-pad-inline);
++    padding-block: var(--ui-command-modal-footer-pad-block);
++    font-size: var(--ui-command-modal-footer-font);
++    color: var(--ui-command-modal-footer-ink);
++    background-color: var(--ui-command-modal-footer-bg);
++  }
++  :scope [data-part='footer'] kbd {
++    font: inherit;
++    padding-inline: var(--ui-command-modal-footer-kbd-pad-inline);
++    border-radius: var(--ui-command-modal-radius);
++    border: 1px solid currentColor;
++  }
++
+   /* forced-colors (WHCM) — the active-option highlight becomes Highlight/HighlightText (not a faint bg that
+      vanishes under WHCM); the aria-activedescendant + [data-active] pairing is the non-color signifier, so no
+      color-only intent exists (the combo-box [data-active] forced-colors precedent). */
+@@ -260,5 +291,8 @@
+       color: HighlightText;
+       forced-color-adjust: none;
+     }
++    :scope [data-part='footer'] {
++      color: CanvasText;
++    }
+   }
+ }
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal.md b/packages/agent-ui/components/src/controls/command-modal/command-modal.md
+index 83dda410..5cb25e68 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal.md
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal.md
+@@ -73,6 +73,8 @@ parts:
+   - name: empty
+     role: presentation
+     description: The control-created default "No results" row shown when the filter matches nothing and no author `[slot=empty]`/`[data-role=empty]` child is present. `role=presentation` — never reachable by Arrow/Enter/click.
++  - name: footer
++    description: The control-created always-visible `<footer>` below the list, inside the dialog, holding 3 `[data-hint]` keyboard hints (Navigate ↑↓, Select ↵, Close Esc) as `<kbd>`s; no tabindex or role; never hidden, even at zero results; not a prop.
+ 
+ customStates: []         # none — the palette uses no :state() custom states of its own (the nested modal owns its own surface state)
+ 
+@@ -152,9 +154,10 @@ active-descendant filter pattern (ADR-0085) — typing filters the list; Arrow k
+ The palette is **arrangement + filter + selection semantics**, never a command bus, a router, or a store
+ (ADR-0125). It composes three mechanisms the fleet already ships:
+ 
+-- **The surface = a nested `ui-modal`.** `connected()` creates a `<ui-modal>`, moves the search/list/status
+-  parts inside it, then appends the modal to the host — so when `ui-modal` connects it relocates the whole
+-  subtree into its own `<dialog>` together. The palette's `open` drives the modal's `open`; a platform
++- **The surface = a nested `ui-modal`.** `connected()` creates a `<ui-modal>`, moves the search/list/status/
++  footer parts inside it, then appends the modal to the host — so when `ui-modal` connects it relocates the
++  whole subtree into its own `<dialog>` together. The always-visible `<footer data-part="footer">` renders
++  below the list, inside the dialog surface. The palette's `open` drives the modal's `open`; a platform
+   dismissal (Escape/backdrop) syncs the palette's `open` back to `false` and re-emits `close`+`toggle` one
+   level up. The palette owns **no** dialog/backdrop/Escape machinery of its own.
+ - **The filter = the combo-box active-descendant pattern, re-derived.** The search field is a control-created
+@@ -211,6 +214,13 @@ per-instance document `keydown` that toggles its own `open` — never a global s
+ sharing a hotkey both toggle themselves, which is the documented, accepted sharp edge, not something the palette
+ arbitrates.
+ 
++## The keyboard-hint footer
++
++An always-visible `<footer data-part="footer">` renders below the list, inside the dialog. It holds exactly 3
++`[data-hint]` entries — Navigate (↑↓), Select (↵), Close (Esc) — each wrapping its shortcut in a `<kbd>`. Neither
++the footer nor its `<kbd>`s carry `tabindex` or `role`; it is decorative, never part of the navigation order. It
++adds no new prop, and it never hides — including when filtering leaves zero visible options.
++
+ ## Catalog disposition
+ 
+ `ui-command-modal` is **permanently excluded** from the A2UI generative-UI catalog (`CommandModal` in the
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal.test.ts b/packages/agent-ui/components/src/controls/command-modal/command-modal.test.ts
+index 2a60c040..96155379 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal.test.ts
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal.test.ts
+@@ -688,3 +688,68 @@ describe('ui-command-modal — zero residue across connect/disconnect', () => {
+     el.remove()
+   })
+ })
++
++// ── the always-visible keyboard-hint footer ─────────────────────────────────────────────────────────────
++
++describe('ui-command-modal — footer part (keyboard hints)', () => {
++  it('creates exactly ONE <footer data-part="footer"> after the list, inside the same ui-modal dialog', () => {
++    const { el, list, modal, dialog } = makePalette([option('a', 'Alpha')])
++    const footers = el.querySelectorAll('[data-part="footer"]')
++    expect(footers).toHaveLength(1)
++    const footer = footers[0] as HTMLElement
++    expect(footer.tagName).toBe('FOOTER')
++    expect(footer.closest('[data-part="dialog"]')).toBe(dialog)
++    expect(footer.closest('ui-modal')).toBe(modal)
++    expect(list.closest('[data-part="dialog"]')).toBe(dialog)
++    let sib = footer.previousElementSibling
++    let foundList = false
++    while (sib) { if (sib === list) { foundList = true; break } sib = sib.previousElementSibling }
++    expect(foundList).toBe(true)
++    el.remove()
++  })
++
++  it('holds exactly 3 hints, each with at least one <kbd>, labelled Navigate / Select / Close', () => {
++    const { el } = makePalette([option('a', 'Alpha')])
++    const footer = el.querySelector<HTMLElement>('[data-part="footer"]')!
++    const hints = footer.querySelectorAll<HTMLElement>('[data-hint]')
++    expect(hints).toHaveLength(3)
++    for (const h of hints) expect(h.querySelectorAll('kbd').length).toBeGreaterThan(0)
++    const texts = [...hints].map((h) => h.textContent ?? '')
++    expect(texts.some((t) => t.includes('Navigate'))).toBe(true)
++    expect(texts.some((t) => t.includes('Select'))).toBe(true)
++    expect(texts.some((t) => t.includes('Close'))).toBe(true)
++    el.remove()
++  })
++
++  it('the footer and its <kbd>s carry no tabindex and no role', () => {
++    const { el } = makePalette([option('a', 'Alpha')])
++    const footer = el.querySelector<HTMLElement>('[data-part="footer"]')!
++    for (const node of [footer, ...footer.querySelectorAll('kbd')]) {
++      expect(node.hasAttribute('tabindex')).toBe(false)
++      expect(node.hasAttribute('role')).toBe(false)
++    }
++    el.remove()
++  })
++
++  it('stays visible and attached when the query matches nothing', () => {
++    const { el, search } = makePalette([option('a', 'Alpha')])
++    const footer = el.querySelector<HTMLElement>('[data-part="footer"]')!
++    search.textContent = 'zzzz-no-match'
++    search.dispatchEvent(new Event('input', { bubbles: true }))
++    expect(el.querySelector('[role=option]:not([hidden])')).toBeNull()
++    expect(footer.hidden).toBe(false)
++    expect(footer.isConnected).toBe(true)
++    expect(el.contains(footer)).toBe(true)
++    el.remove()
++  })
++
++  it('disconnect + reconnect keeps exactly one footer, the same node', () => {
++    const { el } = makePalette([option('a', 'Alpha')])
++    const before = el.querySelector('[data-part="footer"]')
++    el.remove()
++    document.body.append(el)
++    expect(el.querySelectorAll('[data-part="footer"]')).toHaveLength(1)
++    expect(el.querySelector('[data-part="footer"]')).toBe(before)
++    el.remove()
++  })
++})
+diff --git a/packages/agent-ui/components/src/controls/command-modal/command-modal.ts b/packages/agent-ui/components/src/controls/command-modal/command-modal.ts
+index 8a3c23ea..22545127 100644
+--- a/packages/agent-ui/components/src/controls/command-modal/command-modal.ts
++++ b/packages/agent-ui/components/src/controls/command-modal/command-modal.ts
+@@ -3,7 +3,8 @@
+ // modal surface + dismissal contract (ADR-0017/0019/0020), and inside that modal renders a control-created
+ // role=combobox search field over a control-created role=listbox list built from the consumer's author-declared
+ // [role=option]/[role=group] children (ADR-0017 child-move), re-deriving `ui-combo-box`'s active-descendant
+-// filter pattern (ADR-0085; the ~60 lines are re-implemented — combo-box's own methods are private). Choosing a
++// filter pattern (ADR-0085; the ~60 lines are re-implemented — combo-box's own methods are private), and below the list
++// an always-visible, non-interactive footer part of keyboard hints (navigate/select/close; no prop). Choosing a
+ // command emits `select` + closes. It owns no form value, no command registry, no router, and no recents state.
+ //
+ // Composes on: UIElement (the coordinator base — the ui-theme-provider/ui-form-provider precedent, no surface of
+@@ -48,6 +49,7 @@ export class UICommandModalElement extends UIElement {
+   #list: HTMLElement | null = null
+   #status: HTMLElement | null = null
+   #emptyRow: HTMLElement | null = null
++  #footer: HTMLElement | null = null
+   #activeIdx = -1
+ 
+   protected connected(): void {
+@@ -109,11 +111,11 @@ export class UICommandModalElement extends UIElement {
+     this.#filter('') // initial: all options visible, status seeded, empty-state resolved
+   }
+ 
+-  // LLD-C2 — create the nested modal + parts ONCE, child-move author items in. ORDER IS LOAD-BEARING (see the LLD
++  // LLD-C2 — create the nested modal + parts (search, status, list, footer) ONCE, child-move author items in. ORDER IS LOAD-BEARING (see the LLD
+   // §3 note: `ui-modal`'s #ensureDialog() moves its OWN children into its <dialog> at ITS connect, so the parts
+   // must go INTO the ui-modal element while it is still detached, and only THEN get appended to the host).
+   #ensureParts(): { modal: UIModalElement; search: HTMLElement; list: HTMLElement } {
+-    if (this.#modal && this.#search && this.#list) return { modal: this.#modal, search: this.#search, list: this.#list }
++    if (this.#modal && this.#search && this.#list && this.#footer) return { modal: this.#modal, search: this.#search, list: this.#list }
+     const seq = ++_nextId
+ 
+     const search = document.createElement('div')
+@@ -157,6 +159,26 @@ export class UICommandModalElement extends UIElement {
+     list.append(emptyRow)
+     this.#emptyRow = emptyRow
+ 
++    // The footer part — always-visible keyboard hints below the list. Static, non-interactive (no tabindex/role),
++    // never hidden, and never touched by #filter.
++    const footer = document.createElement('footer')
++    footer.setAttribute('data-part', 'footer')
++    for (const [hint, keys, text] of [
++      ['navigate', ['↑', '↓'], 'Navigate'],
++      ['select', ['↵'], 'Select'],
++      ['close', ['Esc'], 'Close'],
++    ] as const) {
++      const item = document.createElement('span')
++      item.setAttribute('data-hint', hint)
++      for (const k of keys) { const kbd = document.createElement('kbd'); kbd.textContent = k; item.append(kbd) }
++      const lbl = document.createElement('span')
++      lbl.setAttribute('data-hint-label', '')
++      lbl.textContent = text
++      item.append(lbl)
++      footer.append(item)
++    }
++    this.#footer = footer
++
+     // The nested ui-modal — accessible name forwarded from the INITIAL label (the modal forwards aria-label→dialog
+     // ONCE at its ensureDialog; a reactive label updates the SEARCH field name, not the dialog's — LLD §3 note).
+     const modal = document.createElement('ui-modal') as UIModalElement
+@@ -168,8 +190,8 @@ export class UICommandModalElement extends UIElement {
+     modal.style.setProperty('--ui-modal-inline-size', 'var(--ui-command-modal-inline-size)')
+     modal.style.setProperty('--ui-modal-margin-block-start', 'var(--ui-command-modal-block-anchor)')
+     // ORDER: put the parts inside the modal BEFORE appending the modal to the host, so when ui-modal connects it
+-    // moves search/status/list into its <dialog> together (identity preserved; our refs stay valid). LLD §3 note.
+-    modal.append(search, status, list)
++    // moves search/status/list/footer into its <dialog> together (identity preserved; our refs stay valid). LLD §3 note.
++    modal.append(search, status, list, footer)
+     this.#modal = modal
+     this.append(modal)
+     return { modal, search, list }
+diff --git a/site/public/llms-full.txt b/site/public/llms-full.txt
+index d9fc74ac..ff8fae6f 100644
+--- a/site/public/llms-full.txt
++++ b/site/public/llms-full.txt
+@@ -1704,9 +1704,10 @@ active-descendant filter pattern (ADR-0085) — typing filters the list; Arrow k
+ The palette is **arrangement + filter + selection semantics**, never a command bus, a router, or a store
+ (ADR-0125). It composes three mechanisms the fleet already ships:
+ 
+-- **The surface = a nested `ui-modal`.** `connected()` creates a `<ui-modal>`, moves the search/list/status
+-  parts inside it, then appends the modal to the host — so when `ui-modal` connects it relocates the whole
+-  subtree into its own `<dialog>` together. The palette's `open` drives the modal's `open`; a platform
++- **The surface = a nested `ui-modal`.** `connected()` creates a `<ui-modal>`, moves the search/list/status/
++  footer parts inside it, then appends the modal to the host — so when `ui-modal` connects it relocates the
++  whole subtree into its own `<dialog>` together. The always-visible `<footer data-part="footer">` renders
++  below the list, inside the dialog surface. The palette's `open` drives the modal's `open`; a platform
+   dismissal (Escape/backdrop) syncs the palette's `open` back to `false` and re-emits `close`+`toggle` one
+   level up. The palette owns **no** dialog/backdrop/Escape machinery of its own.
+ - **The filter = the combo-box active-descendant pattern, re-derived.** The search field is a control-created
+@@ -1763,6 +1764,13 @@ per-instance document `keydown` that toggles its own `open` — never a global s
+ sharing a hotkey both toggle themselves, which is the documented, accepted sharp edge, not something the palette
+ arbitrates.
+ 
++## The keyboard-hint footer
++
++An always-visible `<footer data-part="footer">` renders below the list, inside the dialog. It holds exactly 3
++`[data-hint]` entries — Navigate (↑↓), Select (↵), Close (Esc) — each wrapping its shortcut in a `<kbd>`. Neither
++the footer nor its `<kbd>`s carry `tabindex` or `role`; it is decorative, never part of the navigation order. It
++adds no new prop, and it never hides — including when filtering leaves zero visible options.
++
+ ## Catalog disposition
+ 
+ `ui-command-modal` is **permanently excluded** from the A2UI generative-UI catalog (`CommandModal` in the
