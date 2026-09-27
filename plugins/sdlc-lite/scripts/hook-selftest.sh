@@ -119,6 +119,28 @@ run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 c=$(printf "ruby -e 'system(\"git %s\")'" push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks ruby -e: exit $rc, want 2"
+c=$(printf "python3 -X dev -c 'import os; os.system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks python3 -X dev -c: exit $rc, want 2"
+c=$(printf "python3 -W ignore -c 'import os; os.system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks python3 -W ignore -c: exit $rc, want 2"
+c=$(printf "node --require x -e 'require(\"child_process\").execSync(\"gh %s create\")'" pr)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks node --require x -e: exit $rc, want 2"
+c=$(printf "perl -I lib -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks perl -I lib -e: exit $rc, want 2"
+c=$(printf "ruby -I lib -e 'system(\"git %s\")'" push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-publish blocks ruby -I lib -e: exit $rc, want 2"
+# A script path ends the option run: masked scan, allowed.
+c=$(printf 'python3 -X dev scripts/check.py "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 -X dev script.py: exit $rc, want 0"
+c=$(printf 'python3 scripts/check.py -c "git %s"' push)
+run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-publish allows python3 script.py -c: exit $rc, want 0"
 c=$(printf 'git %s origin main' push)
 run "$pub" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "block-publish blocks plain push: exit $rc, want 2"

@@ -15,7 +15,9 @@
 # (python, python3, python3.12 and other versions, node, perl, ruby, path-qualified too, as in
 # /usr/bin/python3) in command position followed, after any other options, by its inline-code
 # flag: python -c; node -e, -p, --eval, --print; perl -e, -E; ruby -e (ruby -E is encoding, not
-# code). The flag counts inside a short-option cluster (perl -ne, python3 -Sc). A plain
+# code). The flag counts inside a short-option cluster (perl -ne, python3 -Sc). Options that
+# take a separate value word may come before the flag (python3 -X dev -c, node --require x -e,
+# perl -I lib -e); any other non-option word ends the option run. A plain
 # python3 script.py keeps the masked scan, and an interpreter word inside quotes is masked away.
 [[ -n "${SDLC_ROLE:-}" ]] || exit 0
 cmd=$(jq -r '.tool_input.command // ""')
@@ -176,12 +178,30 @@ try:
 except Exception:
     sys.exit(1)
 masked = ''.join(masked)
-OPTS = r'(?:\s+-\S+)*?\s+'
+# Options that take a separate value word (python3 -X dev -c): the value word joins the run.
+VALOPTS = {
+    'python': ['-X', '-W', '--check-hash-based-pycs'],
+    'node': ['-r', '--require', '--import', '--loader', '--experimental-loader', '-C',
+             '--conditions', '--input-type', '--title', '--env-file', '--inspect-port',
+             '--max-http-header-size', '--openssl-config', '--redirect-warnings',
+             '--stack-trace-limit', '--unhandled-rejections', '--disable-warning',
+             '--diagnostic-dir', '--heapsnapshot-signal', '--icu-data-dir',
+             '--report-dir', '--report-directory', '--report-filename', '--report-signal',
+             '--secure-heap', '--secure-heap-min', '--tls-cipher-list', '--use-largepages',
+             '--watch-path', '--experimental-policy', '--policy-integrity',
+             '--cpu-prof-dir', '--cpu-prof-name', '--heap-prof-dir', '--heap-prof-name',
+             '--dns-result-order', '--trace-event-categories', '--trace-event-file-pattern'],
+    'perl': ['-I', '-M', '-m', '-x'],
+    'ruby': ['-I', '-r', '-C', '-E', '-x', '-W'],
+}
+def opts(name):
+    vals = '|'.join(re.escape(v) for v in sorted(VALOPTS[name], key=len, reverse=True))
+    return r'(?:\s+(?:(?:' + vals + r')\s+\S+|-\S+))*?\s+'
 INTERP = (r'(?:^|[\s;&|(`{/])(?:'
-          r'python(?:\d+(?:\.\d+)*)?' + OPTS + r'-[A-Za-z]*c(?![\w-])'
-          r'|node' + OPTS + r'(?:-[A-Za-z]*[ep](?![\w-])|--(?:eval|print)(?![\w-]))'
-          r'|perl' + OPTS + r'-[A-Za-z]*[eE](?![\w-])'
-          r'|ruby' + OPTS + r'-[A-Za-z]*e(?![\w-])'
+          r'python(?:\d+(?:\.\d+)*)?' + opts('python') + r'-[A-Za-z]*c(?![\w-])'
+          r'|node' + opts('node') + r'(?:-[A-Za-z]*[ep](?![\w-])|--(?:eval|print)(?![\w-]))'
+          r'|perl' + opts('perl') + r'-[A-Za-z]*[eE](?![\w-])'
+          r'|ruby' + opts('ruby') + r'-[A-Za-z]*e(?![\w-])'
           r')')
 if re.search(INTERP, masked):
     sys.exit(1)
