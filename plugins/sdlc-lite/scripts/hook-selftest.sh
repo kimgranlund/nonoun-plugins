@@ -7,8 +7,8 @@
 # one in interpreter inline code (python -c, node -e/--eval, perl -e, ruby -e), while a plain
 # python3 script run and an interpreter word inside a quoted mention pass;
 # block-pattern-kill.sh, inside a role run, blocks killing by name pattern (pkill, killall,
-# kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable) with a stderr
-# naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
+# kill fed by pgrep or ps, ps ... | xargs kill, a kill word held in a variable, also one
+# assigned through a $(...) or backtick substitution) with a stderr naming the role and PIDs, and allows kill <pid>, kill $pid, kill %1, kill $(cat pidfile),
 # echo $! | xargs kill, a variable holding another command, a quoted mention, and anything
 # outside a role run; block-stray-worktree.sh, inside a role run, denies a git worktree add
 # that is not detached under $SDLC_TMP_WORKTREES (a path outside it or with a .. segment, -b,
@@ -201,12 +201,15 @@ psw=$(printf 'p%s' s); awk2="awk '{print \$2}'"
 for c in "$kaw node" "kill \$($pgw -f vite)" "$pgw -f vite | xargs kill" "sudo $pkw -f vite" \
   "cd x && $pkw -f vite" "$psw aux | grep x | $awk2 | xargs kill" \
   "$psw -ef | grep x | $awk2 | xargs kill -9" "kill \$($psw aux | grep x | $awk2)" \
-  "p=$pkw; \$p x" "k=$kaw; \${k} node"; do
+  "p=$pkw; \$p x" "k=$kaw; \${k} node" "p=\$(command -v $pkw); \$p x" \
+  "k=\$(which $kaw); \${k} node" "p=\`command -v $pkw\`; \$p x" "p=\$(echo find $pkw); \$p x" \
+  "k=\$(compgen -c | grep $kaw | head -1); \${k} node" "k=\$(command -v kill); \$k \$($pgw -f vite)"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 2 ]] || fail "block-pattern-kill blocks '$c': exit $rc, want 2"
 done
 for c in "kill 12345" "kill \$pid" "grep -n \"$pkw\" f" "kill %1" "kill \$(cat pidfile)" \
-  "echo \$! | xargs kill" "cmd=ls; \$cmd -la"; do
+  "echo \$! | xargs kill" "cmd=ls; \$cmd -la" "cmd=\$(command -v ls); \$cmd -la" \
+  "cmd=\`command -v ls\`; \$cmd -la" "echo 'p=\$(command -v $pkw); \$p x'"; do
   run "$pk" "$(pj "$c")" SDLC_ROLE=builder >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-pattern-kill allows '$c': exit $rc, want 0"
 done

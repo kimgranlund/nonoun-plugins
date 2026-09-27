@@ -4,7 +4,8 @@
 # other sessions, lanes, or the user started. Blocked: pkill or killall in command position,
 # kill fed by pgrep or ps (kill $(pgrep ...), kill `pgrep ...`, pgrep ... | xargs kill,
 # kill $(ps ... | awk ...), ps ... | grep ... | awk ... | xargs kill), and a kill word held in
-# a shell variable (p=pkill; $p x, k=killall; ${k} node, k=kill; "$k" ...). Command position
+# a shell variable (p=pkill; $p x, k=killall; ${k} node, k=kill; "$k" ..., or one assigned
+# through a $(...) or backtick substitution: p=$(command -v pkill); $p x). Command position
 # is the start of the command or after ; & | ( { ` or $( , optionally behind sudo, xargs, env,
 # command, nohup, timeout N, a VAR=value assignment, or a shell keyword.
 # Allowed: kill <pid>, kill $pid, kill %1, kill $(cat pidfile), echo $! | xargs kill, a
@@ -40,6 +41,9 @@ strict+="|${cp}(pgrep|ps)([[:space:]][^;&]*)?\\|[[:space:]]*($w)*xargs([[:space:
 assign="(^|[^[:alnum:]_])[[:alpha:]_][[:alnum:]_]*=${path}(pkill|killall|kill)${end}"
 word='(^|[^[:alnum:]_-])'
 wend='([^[:alnum:]_-]|$)'
+# The same through a substitution: NAME=, an optional ", then $( or a backtick whose body (up to
+# the closing ) or backtick) holds a kill word as a whole word (p=$(command -v pkill)).
+assign+="|(^|[^[:alnum:]_])[[:alpha:]_][[:alnum:]_]*=\"?(\\\$\\(([^)]*[^[:alnum:]_-])?|\`([^\`]*[^[:alnum:]_-])?)(pkill|killall|kill)${wend}"
 loose="${word}(pkill|killall)${wend}|${word}kill${wend}.*${word}(pgrep|ps)${wend}|${word}(pgrep|ps)${wend}.*${word}kill${wend}"
 loose+="|[[:alpha:]_][[:alnum:]_]*=[\"']?([^[:space:];&|()\`]*/)?(pkill|killall|kill)${wend}.*(^|[;&|({\`]|\\\$\\()[[:space:]]*[\"']?\\\$\\{?[[:alpha:]_]"
 

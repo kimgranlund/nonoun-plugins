@@ -125,7 +125,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🟢 done |
 | T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🟢 done |
 | T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | 🟢 done |
-| T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🔵 ready |
+| T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🟢 done |
 | T-0122 | [fanout-py-inherited-red-reads](fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | 🟢 done |
 | T-0123 | [replan-light-criterion-swap](replan-light-criterion-swap/handoff.md) | Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan | bug | S | P1 | none | 🟢 done |
 | T-0124 | [inherited-red-gate-steps](inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🟢 done |
@@ -148,3 +148,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0141 | [criteria-build-base-var](criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | S | P2 | none | 🔵 ready |
 | T-0142 | [finish-in-session](finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | M | P1 | none | 🔵 ready |
 | T-0144 | [the-node-perl-and-ruby](the-node-perl-and-ruby/handoff.md) | The node, perl, and ruby value-option lists are best-effort the... | idea | M | P2 | none | ⏳ proposed |
+| T-0145 | [block-pattern-kill-sh-s](block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⏳ proposed |
