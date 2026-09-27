@@ -25,6 +25,12 @@
 8. Inherited-red route: the phrase `inherited red` (a gate already red at the pre-build HEAD) appears in
    agents/builder.md, agents/verifier.md, agents/conductor.md, skills/chain/SKILL.md, scripts/steps.py, scripts/board.py,
    scripts/run.sh, scripts/fanout.py, and skills/fanout/SKILL.md.
+9. Finish-in-session: the follow-up tags `fix-now:` and `decide:` and the `notes.md` sink appear in
+   agents/filer.md, scripts/tickets.py, skills/file/SKILL.md, and skills/ticket/SKILL.md; `fix-now:` also in
+   skills/chain/SKILL.md and agents/conductor.md; `decide:` also there and in skills/open-questions/SKILL.md;
+   `notes.md` also in skills/handoff-format/SKILL.md and agents/conductor.md; and `Loose ends` (/chain 5) in
+   skills/chain/SKILL.md, agents/filer.md, skills/handoff-format/SKILL.md, skills/level-rubric/SKILL.md, and
+   agents/conductor.md.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -86,7 +92,8 @@ for p in sorted((root/'agents').glob('*.md')):
             errors.append(f'agents/{p.name} declares missing skill: {sk}')
 
 # Long role runs: interactive sessions background them; headless sessions keep them in the foreground.
-for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md'):
+for rel in ('skills/chain/SKILL.md', 'skills/bench/SKILL.md', 'skills/fanout/SKILL.md', 'agents/conductor.md',
+            'skills/fix/SKILL.md'):
     f = root/rel
     if not f.is_file(): errors.append(f'{rel}: missing (long-run doc check)'); continue
     text = f.read_text()
@@ -129,6 +136,24 @@ INHERITED_RED_DOCS = ('agents/builder.md', 'agents/verifier.md', 'agents/conduct
 for rel in INHERITED_RED_DOCS:
     f = root/rel
     if not f.is_file() or 'inherited red' not in f.read_text(): errors.append(f'{rel}: inherited-red route missing "inherited red"')
+# Finish-in-session: follow-ups are tagged fix-now, decide, or note; only one decide item becomes a ticket.
+FINISH_FILES = ('agents/filer.md', 'scripts/tickets.py', 'skills/file/SKILL.md', 'skills/ticket/SKILL.md')
+CHAIN, CONDUCTOR, HANDOFF_FMT = 'skills/chain/SKILL.md', 'agents/conductor.md', 'skills/handoff-format/SKILL.md'
+FINISH_DOCS = {'fix-now:': FINISH_FILES + (CHAIN, CONDUCTOR),
+               'decide:': FINISH_FILES + (CHAIN, CONDUCTOR, 'skills/open-questions/SKILL.md'),
+               'notes.md': FINISH_FILES + (HANDOFF_FMT, CONDUCTOR),
+               'Loose ends': (CHAIN, 'agents/filer.md', HANDOFF_FMT, 'skills/level-rubric/SKILL.md', CONDUCTOR),
+               'sdlc-lite:fix': (CONDUCTOR,),
+               'fast lane': ('skills/fix/SKILL.md', CONDUCTOR, 'skills/level-rubric/SKILL.md')}
+def finish_missing(text, word): return not re.search(re.escape(word) + r'(?![\w-])', text)
+for word, rels in FINISH_DOCS.items():
+    for rel in rels:
+        f = root/rel
+        if not f.is_file(): errors.append(f'{rel}: missing (finish-in-session check)'); continue
+        text = f.read_text()
+        if finish_missing(text, word): errors.append(f'{rel}: finish-in-session wording missing "{word}"')
+        elif not finish_missing(text.replace(word, ''), word):
+            errors.append(f'{rel}: finish-in-session negative control not flagged for "{word}"')
 # Merge-step template: one block, kept identical in the planner and handoff-format, that lints clean.
 def merge_block(rel):
     f = root/rel
