@@ -118,6 +118,7 @@ PLAN_DEFECT_DOCS = {
     'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
     'owns that budget': ('agents/planner.md',),
     'gates green': ('agents/planner.md',),
+    'one Bash call': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
     'SDLC_BASE_SHA': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'scripts/run.sh',
                       'scripts/steps.py'),
