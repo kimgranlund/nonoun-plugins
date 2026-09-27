@@ -123,7 +123,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0116 | [tickets-py-archive-renames-done](tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | M | P2 | none | 🟢 done |
 | T-0117 | [fanout-py-closes-tickets-with](fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🟢 done |
 | T-0118 | [the-reference-scan-matches-only](the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🟢 done |
-| T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🔵 ready |
+| T-0119 | [fanout-py-still-reports-only](fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🟢 done |
 | T-0120 | [block-publish-sh-an-option](block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | 🔵 ready |
 | T-0121 | [pattern-kill-hook-does-not](pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🔵 ready |
 | T-0122 | [fanout-py-inherited-red-reads](fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | 🔵 ready |

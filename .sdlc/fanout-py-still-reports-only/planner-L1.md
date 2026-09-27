@@ -1,0 +1,26 @@
+<!-- role=planner level=L1 model=sonnet effort=medium -->
+Good, check.sh is green now (guard baseline confirmed). Now I have everything needed to write the plan.
+
+## Goal
+Make fanout.py surface the inherited-red cause (with the driver's exit code) even when a lane's driver exits non-zero, instead of reporting only `driver failed rc=<n>`.
+
+## Step 1: Detect inherited-red on a non-zero driver exit and update docs/tests
+level: L2
+### Do
+In `plugins/sdlc-lite/scripts/fanout.py`'s `run_ticket` (around lines 523-527), call `inherited_red(wt / rel / t.slug)` before returning on a non-zero driver `rc`, not only after `rc == 0`. When an inherited step is found, return that outcome with the driver's exit code appended as a suffix, exactly `f'{inherited} (driver rc={rc})'` (no such suffix when `rc == 0`, per the existing zero-exit path, which stays byte-for-byte unchanged). When `rc` is non-zero and `inherited_red` finds nothing, keep returning `f'driver failed rc={rc}'` exactly as today.
+
+Update the docstring (module header, step 2/3 around lines 44-58) to state that a non-zero driver exit is also checked for an inherited-red step, giving the outcome `inherited red: step-<n>: <tests> (driver rc=<n>)`, and that a non-zero exit with no inherited step keeps `driver failed rc=<n>`.
+
+Add a new `selftest` case next to case 5 (~line 866-922): a stub driver that, only for T-0001, writes a step-1 builder result with `## Status\ninherited red: test_a` and then exits non-zero (e.g. `exit 7`), reusing the `inherited_stub`/`report_rows` helpers where they fit. Assert the outcome is exactly `inherited red: step-1: test_a (driver rc=7)`, the run exits 1, no merge on the integration branch, the ticket stays `ready` there, the lane tree is WIP-committed clean, and the next ticket is `skipped`. Add its negative control: the same non-zero-exit driver but with no inherited step written, asserting the outcome stays exactly `driver failed rc=<n>` (the existing case 7 already covers this shape; a compact new assertion suffices instead of duplicating case 7 wholesale).
+
+Update the fanout.py entry in `/Users/kimba/Projects/nonoun/sdlc-agents/.worktrees/tickets-23/CLAUDE.md` (Layout section) and `.claude/agents/sdlc-lite-author.md`'s inherited-red route line to state that the inherited-red outcome is also reported after a non-zero driver exit, with the driver rc visible in that case. Update `plugins/sdlc-lite/skills/fanout/SKILL.md`'s `inherited red: step-<n>: <tests>` mention (line 25) only if it describes the outcome format in a way that would now be incomplete or wrong; otherwise leave it (it just tells the conductor what the outcome string means, not when it fires).
+
+### Acceptance criteria
+- New behavior, currently red: given a throwaway repo with one ready ticket and a driver that writes `.sdlc/a/step-1/builder-L2.md` with `## Status\ninherited red: test_a` for T-0001 and then exits 7, the run's report row for T-0001 is exactly `inherited red: step-1: test_a (driver rc=7)`:
+  `F=$PWD/plugins/sdlc-lite/scripts/fanout.py; d=$(mktemp -d) && git init -q -b main "$d/r" && git -C "$d/r" config user.name t && git -C "$d/r" config user.email t@t.invalid && git -C "$d/r" config commit.gpgsign false && mkdir -p "$d/r/.sdlc/a" && printf -- '---\nid: T-0001\ntitle: "A"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\na\n' >"$d/r/.sdlc/a/handoff.md" && git -C "$d/r" add -A && git -C "$d/r" commit -qm fixture && DRIVER='mkdir -p "$FANOUT_ROOT/$FANOUT_SLUG/step-1"; printf "## Status\ninherited red: test_a\n" > "$FANOUT_ROOT/$FANOUT_SLUG/step-1/builder-L2.md"; exit 7' && (cd "$d/r" && python3 "$F" run alpha=T-0001 --integration fanout/w --lanes-dir "$d/l" --driver "$DRIVER" >"$d/out" 2>&1); grep -qE '^\| alpha \| T-0001 \| inherited red: step-1: test_a \(driver rc=7\) \|' "$d/l/report.md"`
+- (guard) Unchanged existing behavior, a non-zero exit with no inherited step still reports plain `driver failed rc=<n>`:
+  `F=$PWD/plugins/sdlc-lite/scripts/fanout.py; d=$(mktemp -d) && git init -q -b main "$d/r" && git -C "$d/r" config user.name t && git -C "$d/r" config user.email t@t.invalid && git -C "$d/r" config commit.gpgsign false && mkdir -p "$d/r/.sdlc/a" && printf -- '---\nid: T-0001\ntitle: "A"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\na\n' >"$d/r/.sdlc/a/handoff.md" && git -C "$d/r" add -A && git -C "$d/r" commit -qm fixture && (cd "$d/r" && python3 "$F" run alpha=T-0001 --integration fanout/w --lanes-dir "$d/l" --driver 'exit 7' >"$d/out" 2>&1); grep -qE '^\| alpha \| T-0001 \| driver failed rc=7 \|' "$d/l/report.md"`
+- (guard) `bash plugins/sdlc-lite/scripts/check.sh` exits 0
+
+## Risks
+The exact wording of the `(driver rc=<n>)` suffix is taken from the handoff's own example; a builder could instead pick a slightly different separator (e.g. no space, different parens) and still satisfy the grep-based criterion loosely, so the criterion pins the exact string `inherited red: step-1: test_a (driver rc=7)` to remove that ambiguity. `plugins/sdlc-lite/skills/fanout/SKILL.md` may need no change at all; the Do says to check but not force an edit there, since forcing an edit with nothing to say would be busywork.

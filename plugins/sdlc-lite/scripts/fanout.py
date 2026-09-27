@@ -44,7 +44,9 @@ run
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
-       tests). Non-zero exit: `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
+       tests). Non-zero exit: the lane's step dirs are checked for an inherited-red step as in
+       step 3, giving `inherited red: step-<n>: <tests> (driver rc=<n>)`; with none, the outcome
+       stays `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
        other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
        lane branch only. It is never merged, and the report's Commit cell shows `wip <sha>`.
        A lane tree already dirty before a ticket's sync is committed as
@@ -520,9 +522,9 @@ def run_ticket(ctx, lane, t, lock):
     with open(log, 'wb') as f:
         rc = subprocess.run(['bash', '-c', driver_for(ctx, t)], cwd=str(wt), stdin=subprocess.DEVNULL,
                             stdout=f, stderr=subprocess.STDOUT, env=env).returncode
-    if rc:
-        return f'driver failed rc={rc}', ''
     inherited = inherited_red(wt / rel / t.slug)
+    if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
+        return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
         return inherited, ''
 
@@ -907,6 +909,31 @@ def selftest():
                sh(ir, 'cat-file', '-e', 'fanout/ir-a:.sdlc/a/step-1/builder-L2.md').returncode == 0)
         expect('inherited red: the lane branch is not an ancestor of fanout/ir',
                sh(ir, 'merge-base', '--is-ancestor', 'fanout/ir-a', 'fanout/ir').returncode == 1)
+
+        # 5b. Inherited red after a non-zero driver exit: the cause is still reported, with the
+        # driver rc as a suffix. Negative control: a non-zero exit with no step stays plain.
+        nr, nl = tmp / 'inherited-rc', tmp / 'nlanes'
+        make_repo(nr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(nr, 'a=T-0001,T-0002', '--integration', 'fanout/nr', '--lanes-dir', str(nl),
+                      '--driver', inherited_stub('inherited red: test_a') + '; exit 7', '--gate', 'true')
+        got = report_rows(nl)
+        expect(f'inherited red rc=7: run exits 1, got {proc.returncode}', proc.returncode == 1)
+        expect(f'inherited red rc=7: T-0001 outcome, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'inherited red: step-1: test_a (driver rc=7)')
+        expect(f'inherited red rc=7: T-0002 skipped, got {got.get("T-0002")!r}', got.get('T-0002') == 'skipped')
+        merges = sh(nr, 'rev-list', '--merges', '--count', 'fanout/nr').stdout.strip()
+        expect(f'inherited red rc=7: fanout/nr has no merge commits, got {merges!r}', merges == '0')
+        shown = sh(nr, 'show', 'fanout/nr:.sdlc/a/handoff.md').stdout
+        expect(f'inherited red rc=7: ticket still ready on fanout/nr, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        lane_status = sh(nl / 'a', 'status', '--porcelain', '--untracked-files=all').stdout
+        expect(f'inherited red rc=7: lane tree clean (WIP-committed), got {lane_status!r}', lane_status == '')
+        cr, cl = tmp / 'plain-rc', tmp / 'clanes'
+        make_repo(cr, [('a', 'T-0001', 'ready')])
+        fanout(cr, 'a=T-0001', '--integration', 'fanout/cr', '--lanes-dir', str(cl), '--driver', 'exit 7')
+        got = report_rows(cl)
+        expect(f'no inherited step, rc=7 (negative control): outcome is driver failed rc=7, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'driver failed rc=7')
 
         dr, dl = tmp / 'inherited-done', tmp / 'dlanes'
         make_repo(dr, [('a', 'T-0001', 'ready')])
