@@ -17,6 +17,12 @@
 # of a role that declares skills leaves no mktemp skill file behind.
 # Bash timeouts: the stub records BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS; unset or an
 # inherited 120000 must reach it as 3600000, an inherited 7200000 as 7200000 (T-0105).
+# Build base: a stub records ${SDLC_BASE_SHA:-unset}. The first builder run writes base-sha equal
+# to HEAD and the stub sees it; after a plain commit a verifier still sees the old base; after a
+# git merge --no-ff of a side branch the next run sees the merge commit and base-sha is rewritten
+# to it; a base-sha holding junk or a commit that is not an ancestor is replaced by HEAD; a planner
+# run sees unset and writes no base-sha even with SDLC_BASE_SHA exported by the caller; a builder
+# dry run writes no base-sha.
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -291,5 +297,70 @@ want_wt() {
 want_wt ok 0
 want_wt fail 1
 want_wt nosect 3
+
+# Build base: a third stub records ${SDLC_BASE_SHA:-unset}. Builder and verifier runs resolve and
+# store <step dir>/base-sha; other roles see unset and write none; a dry run writes none.
+mkdir -p "$tmp/bbin"
+cat >"$tmp/bbin/claude" <<EOF
+#!/usr/bin/env bash
+echo "\${SDLC_BASE_SHA:-unset}" >"$tmp/baseseen"
+jq -nc '{type:"result",is_error:false,result:"## Status\\ndone\\n## Verdict\\npass\\n## Goal\\nx",total_cost_usd:0,duration_ms:1,num_turns:1}'
+EOF
+chmod +x "$tmp/bbin/claude"
+brepo="$tmp/brepo"
+mkdir -p "$brepo/s"
+echo '## Goal' >"$brepo/s/handoff.md"
+bg() { git -C "$brepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false "$@"; }
+bg init -q
+bg add -A
+bg commit -q -m init
+b0=$(bg rev-parse HEAD)
+# brun <role>: one real run in brepo; stub output lands in $tmp/baseseen.
+brun() {
+  rm -f "$tmp/baseseen"
+  (cd "$brepo" && PATH="$tmp/bbin:$PATH" "$here/run.sh" "$1" L1 s/handoff.md >/dev/null 2>"$tmp/berr") \
+    || fail "base $1 run: run.sh exited non-zero ($(cat "$tmp/berr"))"
+  cat "$tmp/baseseen" 2>/dev/null || echo MISSING
+}
+bfile() { head -1 "$brepo/s/base-sha" 2>/dev/null || echo MISSING; }
+(cd "$brepo" && SDLC_DRY_RUN=1 PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 s/handoff.md >/dev/null 2>&1) \
+  || fail "base dry run: run.sh exited non-zero"
+[[ ! -e "$brepo/s/base-sha" ]] || fail "base dry run: builder dry run wrote base-sha"
+seen=$(SDLC_BASE_SHA=leak brun planner)
+[[ "$seen" == unset ]] || fail "base planner: SDLC_BASE_SHA is '$seen', want unset (caller exported 'leak')"
+[[ ! -e "$brepo/s/base-sha" ]] || fail "base planner: planner run wrote base-sha"
+seen=$(brun builder)
+[[ "$seen" == "$b0" ]] || fail "base first builder: SDLC_BASE_SHA is '$seen', want HEAD $b0"
+[[ "$(bfile)" == "$b0" ]] || fail "base first builder: base-sha is '$(bfile)', want HEAD $b0"
+echo w >"$brepo/w.txt"
+bg add w.txt
+bg commit -q -m work
+seen=$(brun verifier)
+[[ "$seen" == "$b0" ]] || fail "base after plain commit: SDLC_BASE_SHA is '$seen', want old base $b0"
+[[ "$(bfile)" == "$b0" ]] || fail "base after plain commit: base-sha is '$(bfile)', want $b0"
+bg branch -q side "$b0"
+bg checkout -q side
+bg commit -q --allow-empty -m main
+bg checkout -q -
+bg merge -q --no-ff -m sync side
+bm=$(bg rev-parse HEAD)
+seen=$(brun verifier)
+[[ "$seen" == "$bm" ]] || fail "base after resync merge: SDLC_BASE_SHA is '$seen', want merge $bm"
+[[ "$(bfile)" == "$bm" ]] || fail "base after resync merge: base-sha is '$(bfile)', want $bm"
+echo junk >"$brepo/s/base-sha"
+seen=$(brun builder)
+head_now=$(bg rev-parse HEAD)
+[[ "$seen" == "$head_now" ]] || fail "base junk: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
+[[ "$(bfile)" == "$head_now" ]] || fail "base junk: base-sha is '$(bfile)', want HEAD $head_now"
+bg branch -q other "$b0"
+bg checkout -q other
+bg commit -q --allow-empty -m other
+na=$(bg rev-parse HEAD)
+bg checkout -q -
+bg merge-base --is-ancestor "$na" HEAD && fail "base non-ancestor: fixture commit $na is an ancestor of HEAD"
+echo "$na" >"$brepo/s/base-sha"
+seen=$(brun verifier)
+[[ "$seen" == "$head_now" ]] || fail "base non-ancestor: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
+[[ "$(bfile)" == "$head_now" ]] || fail "base non-ancestor: base-sha is '$(bfile)', want HEAD $head_now"
 
 echo "run selftest: PASS"

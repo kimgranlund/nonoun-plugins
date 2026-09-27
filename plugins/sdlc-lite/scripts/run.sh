@@ -42,6 +42,18 @@
 # bench.sh does), keeping an inherited value only when it is a plain integer of at least 3600000.
 # Claude Code moves a foreground Bash call to the background once it passes its timeout, and no
 # PreToolUse hook sees that move, so hooks/block-background.sh cannot stop it (T-0105).
+# Build base: a real run (never a dry run) of builder or verifier resolves the commit the step's
+# build started from and stores it in <handoff dir>/base-sha (the handoff dir is the step dir). The
+# first line of base-sha is valid when it names a commit that is an ancestor of HEAD. Missing or
+# invalid (junk, or a sha no longer an ancestor after a reset or rewrite): base = HEAD. Valid: base =
+# the stored sha, except that when git rev-list --first-parent --merges <stored>..HEAD is non-empty,
+# base = its first line (the newest resync merge on the first-parent chain), since builders commit
+# only on merge steps and any other commit since the base is the step's own work. base-sha is
+# written when it was missing or changed. The role gets SDLC_BASE_SHA=<base> next to SDLC_ROLE, so
+# scope criteria can diff against the tree the build started from whether or not anything is
+# committed later. Every other role gets SDLC_BASE_SHA removed from its env (even when the caller
+# exported it) and writes no base-sha. Caveat: on a merge step the builder's own merge commit moves
+# the base on the verifier run, so merge-step criteria use HEAD^1 instead.
 set -euo pipefail
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
@@ -194,6 +206,25 @@ Your final message is saved verbatim as $result. Make it exactly the output form
 
 if [[ "${SDLC_DRY_RUN:-}" == 1 ]]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
 
+# Build base (see the header): builder and verifier only; every other role gets no SDLC_BASE_SHA.
+unset SDLC_BASE_SHA
+base_env=()
+if [[ "$role" == builder || "$role" == verifier ]]; then
+  stored=""
+  [[ -f "$dir/base-sha" ]] && { IFS= read -r stored <"$dir/base-sha" || true; }
+  stored="${stored//[[:space:]]/}"
+  base=""
+  if [[ -n "$stored" ]] && git rev-parse -q --verify "$stored^{commit}" >/dev/null 2>&1 \
+    && git merge-base --is-ancestor "$stored" HEAD >/dev/null 2>&1; then
+    base=$(git rev-parse "$stored^{commit}")
+    resync=$(git rev-list --first-parent --merges "$base..HEAD" | head -1 || true)
+    [[ -n "$resync" ]] && base="$resync"
+  fi
+  [[ -n "$base" ]] || base=$(git rev-parse HEAD)
+  [[ "$base" == "$stored" ]] || printf '%s\n' "$base" >"$dir/base-sha"
+  base_env=("SDLC_BASE_SHA=$base")
+fi
+
 # Throwaway worktree prefix owned by this run (see the header). Not created here.
 toplevel="$(git rev-parse --show-toplevel)"
 wt_tmp="$toplevel/.worktrees/tmp/$role-$$"
@@ -238,7 +269,7 @@ trap 'exit 129' HUP
 bash_timeout() { if [[ "${1:-}" =~ ^[0-9]+$ ]] && (( 10#$1 >= 3600000 )); then echo "$1"; else echo 3600000; fi; }
 bash_default_ms=$(bash_timeout "${BASH_DEFAULT_TIMEOUT_MS:-}")
 bash_max_ms=$(bash_timeout "${BASH_MAX_TIMEOUT_MS:-}")
-SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" BASH_DEFAULT_TIMEOUT_MS="$bash_default_ms" BASH_MAX_TIMEOUT_MS="$bash_max_ms" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
+env ${base_env[@]+"${base_env[@]}"} SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" BASH_DEFAULT_TIMEOUT_MS="$bash_default_ms" BASH_MAX_TIMEOUT_MS="$bash_max_ms" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
 # Result pick (see the header): result events only, non-JSON lines skipped.
 events=$(jq -R -c 'fromjson? // empty | select(type == "object" and .type == "result")' "$log" 2>/dev/null || true)
 pick=$(jq -s -c --arg h "## $sect" '

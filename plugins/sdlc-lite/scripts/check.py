@@ -12,7 +12,8 @@
    "can go red", and "membership or structure" checks) appear in the planner, the planner's "gates green" rule
    (whole-suite gate guards go on one final step, never on every step) appears in agents/planner.md, and the one-criterion swap (`swap old:` and `swap new:` lines on a plan-defect
    fail, applied by `steps.py swap`) appears in agents/verifier.md and scripts/steps.py, and the
-   `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills.
+   `steps.py swap` route appears in the conductor, the chain, handoff-format, and level-rubric skills,
+   and the build-start base `SDLC_BASE_SHA` appears in the planner, builder, verifier, run.sh, and steps.py.
 6. Merge-step template: the fenced merge-step block in agents/planner.md and
    skills/handoff-format/SKILL.md is present and identical, passes `steps.py lint`,
    runs its conflict-marker guard (merge-introduced markers only) against a throwaway repo in seven
@@ -118,6 +119,8 @@ PLAN_DEFECT_DOCS = {
     'owns that budget': ('agents/planner.md',),
     'gates green': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
+    'SDLC_BASE_SHA': ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'scripts/run.sh',
+                      'scripts/steps.py'),
     'membership or structure': ('agents/planner.md',),
     'swap old:': ('agents/verifier.md', 'scripts/steps.py'),
     'swap new:': ('agents/verifier.md', 'scripts/steps.py'),
