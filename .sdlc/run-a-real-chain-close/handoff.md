@@ -2,7 +2,7 @@
 id: T-0091
 title: "Run a real /chain close-out, both interactive and headless, to..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ Run a real /chain close-out, both interactive and headless, to confirm open-ques
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-27: Headless half confirmed: five unattended /chain runs 2026-09-26/27 (T-0105, T-0141, T-0132, T-0110, T-0142) closed out without AskUserQuestion; interactive half is covered by normal use

@@ -2,7 +2,7 @@
 id: T-0143
 title: "step 2's fix picking the correct result event from a stream-json..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ step 2's fix (picking the correct result event from a `stream-json` log) rests o
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-27: Confirmed live 2026-09-27: claude -p stream-json emits one result event per turn incl. the task-notification turn; last one carries the final answer

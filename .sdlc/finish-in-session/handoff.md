@@ -2,7 +2,7 @@
 id: T-0142
 title: "Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P1         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -30,3 +30,7 @@ Keep what exists: `close --reason`, `--ack-warnings`, `--rewrite-refs`, and dry-
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-27: Steps 1-5 hold on main 0.15.0: step 5 criteria green, check.sh green three runs in a row

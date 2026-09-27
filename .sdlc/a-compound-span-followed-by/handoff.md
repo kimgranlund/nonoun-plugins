@@ -2,7 +2,7 @@
 id: T-0147
 title: "a compound span followed by &&, ;, or || after its closing keyword..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped       # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ a compound span followed by `&&`, `;`, or `||` after its closing keyword (for ex
 
 ## Constraints
 What must not change. "None" if none.
+
+## Decision
+Dropped 2026-09-27: speculative hardening with no observed failure; reopen if the form shows up in a real run.

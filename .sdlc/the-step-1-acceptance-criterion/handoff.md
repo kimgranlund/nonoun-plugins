@@ -2,7 +2,7 @@
 id: T-0146
 title: "The step-1 acceptance criterion pattern git diff --stat HEAD | awk..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ The step-1 acceptance criterion pattern `git diff --stat HEAD | awk '{print $1}'
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-27: Fixed in session: planner rule 6 scope checks exclude .sdlc

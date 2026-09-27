@@ -2,7 +2,7 @@
 id: T-0145
 title: "block-pattern-kill.sh's new substitution matcher reads a..."
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped       # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ Follow-up from T-0121 (pattern-kill-hook-does-not/filer-L1.md):
 
 ## Constraints
 What must not change. "None" if none.
+
+## Decision
+Dropped 2026-09-27: speculative hardening with no observed failure; reopen if the form shows up in a real run.
