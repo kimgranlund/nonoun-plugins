@@ -139,7 +139,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0132 | [planner-batch-probes](planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🔵 ready |
 | T-0133 | [investigate-the-intermittent-check-sh](investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🟢 done |
 | T-0134 | [mirror-the-extended-planner-rules](mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🟢 done |
-| T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🔵 ready |
+| T-0135 | [extend-the-clean-status-lint](extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🟢 done |
 | T-0136 | [decide-whether-path-scoped-git](decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | M | P2 | none | 🔵 ready |
 | T-0137 | [the-steps-py-lint-accepts](the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | 🔵 ready |
 | T-0138 | [the-steps-py-lint-does](the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | 🔵 ready |

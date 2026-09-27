@@ -60,6 +60,14 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             builders never commit and the step's own changes keep the status dirty; check
             git diff --quiet HEAD -- <path> plus git ls-files --others --exclude-standard instead.
             A path-scoped status stays allowed.
+            It must not require a clean whole-tree diff either: a git diff (never git diff-tree)
+            with no `-- <pathspec>`, no commit-to-commit range (A..B, A...B, or two revision
+            words), and no --no-index, that uses --quiet or --exit-code without a ! right before
+            git, or whose output the span tests for emptiness, can never pass for the same reason;
+            a single rev such as HEAD or "$SDLC_BASE_SHA" still diffs against the work tree. Check
+            git diff --quiet "$SDLC_BASE_SHA" -- <path> plus git ls-files --others
+            --exclude-standard -- <path> instead. The detector reads only span text, so a clean
+            check hidden inside a script the span calls stays out of reach.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
@@ -529,6 +537,33 @@ def requires_clean_status(text):
     return hit and bool(EMPTY_TEST_RE.search(text))
 
 
+DIFF_RE = re.compile(r'(?<![\w.-])git\s+diff(?![\w-])([^|;&)`]*)')
+DIFF_QUIET_RE = re.compile(r'(?<![\w-])(?:--quiet|--exit-code)(?![\w-])')
+NEGATED_RE = re.compile(r'(?<!\S)!\s+$')
+REDIRECT_RE = re.compile(r'^\d*[<>]')
+
+
+def requires_clean_diff(text):
+    """True when a span requires an empty git diff of the whole work tree: no `--` pathspec, no
+    commit-to-commit range, no --no-index, and either an un-negated --quiet/--exit-code or an
+    emptiness test on the output. A no-commit builder's own changes keep that diff non-empty."""
+    empty_test = bool(EMPTY_TEST_RE.search(text))
+    for m in DIFF_RE.finditer(text):
+        args = m.group(1)
+        if PATHSPEC_RE.search(args):
+            continue
+        words = [w.strip('"\'') for w in args.split()]
+        if '--no-index' in words or any('..' in w for w in words):
+            continue
+        revs = [w for w in words if w and not w.startswith('-') and not REDIRECT_RE.match(w)]
+        if len(revs) >= 2:
+            continue
+        quiet = bool(DIFF_QUIET_RE.search(args)) and not NEGATED_RE.search(text[:m.start()])
+        if quiet or empty_test:
+            return True
+    return False
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -571,6 +606,13 @@ def lint_steps(plan, steps):
                                 "  builders never commit, so the step's own changes keep the status dirty and the "
                                 'criterion can never pass: check `git diff --quiet HEAD -- <path>` plus untracked '
                                 'files (`git ls-files --others --exclude-standard -- <path>`) instead')
+            if requires_clean_diff(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion requires a clean whole-tree diff: '
+                                f'{text}\n'
+                                "  builders never commit, so the step's own changes keep the whole-tree diff "
+                                'non-empty and the criterion can never pass: check '
+                                '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
+                                '(`git ls-files --others --exclude-standard -- <path>`) instead')
     return findings
 
 
@@ -1282,6 +1324,23 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
         rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k6) diff HEAD, untracked ls-files, path-scoped status, and no MERGE_HEAD pass lint',
+              rc2 == 0 and out2.strip() == 'steps lint: ok')
+
+        # (k8) a criterion that requires a clean whole-tree diff: lint and split refuse; a pathspec, a
+        # commit-to-commit range, a negated --quiet, a plain listing, and diff-tree pass
+        df = 'git ' + 'diff'
+        for form in (f'{df} --quiet', f'{df} --exit-code HEAD', f'{df} --quiet "$SDLC_BASE_SHA"',
+                     f'test -z "$({df} --name-only HEAD)"'):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k8) split refuses a criterion that requires a clean whole-tree diff ({form}), writes nothing',
+                    ['split', str(d)], d, needles=('plan defect', 'step 1', 'clean whole-tree diff'))
+            refused(f'(k8) lint refuses a criterion that requires a clean whole-tree diff ({form}) with plan defect',
+                    ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'clean whole-tree diff'))
+        ok_spans = [f'{df} --quiet HEAD -- src', f'{df} --quiet HEAD~1 HEAD', f'{df} --exit-code main...HEAD',
+                    f'! {df} --quiet', f'{df} --name-only HEAD', f'{df}-tree --cc HEAD']
+        d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
+        rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k8) a pathspec, a two-commit range, a negated --quiet, a listing, and diff-tree pass lint',
               rc2 == 0 and out2.strip() == 'steps lint: ok')
 
         # (k7) a bare name=value assignment is not a comparison; = == != comparisons still refuse
