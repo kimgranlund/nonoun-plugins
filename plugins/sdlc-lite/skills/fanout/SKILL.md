@@ -6,7 +6,7 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(pyt
 ---
 Arguments: `$ARGUMENTS`
 
-Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged; a dirty tree is also WIP-committed before each sync), so inspect a stopped lane's `wip(` commit on its lane branch.
+Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. Inspect a stopped lane's `wip(` commit on its lane branch.
 
 Lanes live in `<toplevel>/.worktrees/fanout/<lane>` by default (`--lanes-dir` overrides). `.worktrees/` must be in `.gitignore`; otherwise preflight refuses with exit 2 and says to add it, and an explicit `--lanes-dir` inside the tree must be ignored too. Caveat: `.gitignore` does not exclude `.worktrees/` from vitest, tsc, or file watchers, so exclude it in the project's own config; Node module resolution also walks up from a lane worktree into the main tree's `node_modules`.
 

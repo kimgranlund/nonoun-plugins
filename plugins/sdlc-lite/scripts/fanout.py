@@ -47,7 +47,9 @@ run
        tests). Non-zero exit: `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
        other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
        lane branch only. It is never merged, and the report's Commit cell shows `wip <sha>`.
-       Before each sync, a dirty lane tree is WIP-committed first.
+       A lane tree already dirty before a ticket's sync is committed as
+       `wip(<id>): dirty before sync` on the lane branch, and that ticket stops with the outcome
+       `dirty before sync`: no sync, driver, lane commit, or merge.
     3. inherited red: each <rel>/<slug>/step-<n>/ dir in the lane worktree (numeric order; a
        step-<n>.superseded-<k> dir never counts) goes through steps.next_action; at the first
        whose action is `inherited` (a builder Status `inherited red: <tests>`, a gate already red
@@ -93,6 +95,12 @@ selftest
   proves the stopped lane is WIP-committed: a clean lane tree, a `wip(T-0001): driver failed
   rc=3` tip holding the file, not merged into the integration branch, integration and main at
   the fixture commit, and a `wip <sha7>` Commit cell in the report.
+  A dirty-sync case (case 8), one lane `alpha=T-0001,T-0002` with the stub driver and a gate that
+  writes dirty.txt into the lane tree, proves that T-0001 merges, T-0002 stops with the outcome
+  `dirty before sync` and a `wip <sha7>` Commit cell, the lane tip is
+  `wip(T-0002): dirty before sync` and not an ancestor of the integration branch, the integration
+  branch holds T-0001.txt but not dirty.txt, T-0002 stays ready there, and main is untouched; its
+  negative control, the same run with no gate, merges both tickets with no `wip(` lane tip.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
 
@@ -490,10 +498,12 @@ def run_ticket(ctx, lane, t, lock):
     """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
     wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
     with lock:
-        # a lane tree already dirty would fail the sync: set its work aside on the lane branch first
+        # a lane tree already dirty before the sync: set its work aside on the lane branch and stop
+        # the ticket (no sync, driver, lane commit, or merge), so that wip commit is never merged
         sha = wip_commit(wt, t.id, 'dirty before sync')
         if sha:
             say(lane, t.id, f'wip {sha} on {lane.branch}')
+            return 'dirty before sync', f'wip {sha}'
         p = git(wt, 'merge', '--ff', '--no-edit', integration)
         if p.returncode:
             if in_merge(wt):
@@ -977,6 +987,50 @@ def selftest():
         text = rep.read_text() if rep.is_file() else ''
         expect(f'wip case: report row Commit cell is wip <sha7>, got {text!r}',
                re.search(r'^\| alpha \| T-0001 \| driver failed rc=3 \| wip [0-9a-f]{7} \|$', text, re.M))
+
+        # 8. A gate leaves the lane tree dirty after T-0001 merges: T-0002's pre-sync wip commit
+        # stops the ticket, so it is never synced, driven, committed, or merged.
+        # Negative control: the same run with no gate merges both tickets.
+        sr, sl = tmp / 'dirty-sync', tmp / 'slanes'
+        make_repo(sr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        sfixture = sh(sr, 'rev-parse', 'main').stdout.strip()
+        proc = fanout(sr, 'alpha=T-0001,T-0002', '--integration', 'fanout/ds', '--lanes-dir', str(sl),
+                      '--driver', shlex.quote(str(stub)), '--gate', f'echo x >{shlex.quote(str(sl))}/alpha/dirty.txt')
+        ran = f'(stdout={proc.stdout!r} stderr={proc.stderr!r})'
+        expect(f'dirty-sync case: run exits 1, got {proc.returncode} {ran}', proc.returncode == 1)
+        rep = sl / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'dirty-sync case: report row | alpha | T-0002 | dirty before sync | wip <sha7> |, got {text!r}',
+               re.search(r'^\| alpha \| T-0002 \| dirty before sync \| wip [0-9a-f]{7} \|$', text, re.M))
+        subj = sh(sr, 'log', '-1', '--format=%s', 'fanout/ds-alpha').stdout.strip()
+        expect(f'dirty-sync case: lane tip subject is wip(T-0002): dirty before sync, got {subj!r}',
+               subj == 'wip(T-0002): dirty before sync')
+        expect('dirty-sync case: the lane tip is not an ancestor of the integration branch',
+               sh(sr, 'merge-base', '--is-ancestor', 'fanout/ds-alpha', 'fanout/ds').returncode == 1)
+        expect('dirty-sync case: the integration branch holds T-0001.txt',
+               sh(sr, 'cat-file', '-e', 'fanout/ds:T-0001.txt').returncode == 0)
+        expect('dirty-sync case: the integration branch does not hold dirty.txt',
+               sh(sr, 'cat-file', '-e', 'fanout/ds:dirty.txt').returncode != 0)
+        shown = sh(sr, 'show', 'fanout/ds:.sdlc/b/handoff.md').stdout
+        expect(f'dirty-sync case: fanout/ds:.sdlc/b/handoff.md still says status: ready, got {shown[:120]!r}',
+               re.search(r'^status: ready\b', shown, re.M))
+        expect('dirty-sync case: main still equals the fixture commit',
+               sfixture and sh(sr, 'rev-parse', 'main').stdout.strip() == sfixture)
+
+        cr, cl = tmp / 'dirty-sync-control', tmp / 'sclanes'
+        make_repo(cr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')])
+        proc = fanout(cr, 'alpha=T-0001,T-0002', '--integration', 'fanout/dc', '--lanes-dir', str(cl),
+                      '--driver', shlex.quote(str(stub)))
+        got = report_rows(cl)
+        expect(f'dirty-sync control: run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        for tid in ('T-0001', 'T-0002'):
+            expect(f'dirty-sync control: {tid} merged, got {got.get(tid)!r}', got.get(tid) == 'merged')
+        subj = sh(cr, 'log', '-1', '--format=%s', 'fanout/dc-alpha').stdout.strip()
+        expect(f'dirty-sync control: lane tip subject does not start with wip(, got {subj!r}',
+               subj and not subj.startswith('wip('))
+        expect('dirty-sync control: the integration branch holds T-0002.txt',
+               sh(cr, 'cat-file', '-e', 'fanout/dc:T-0002.txt').returncode == 0)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
