@@ -22,7 +22,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             close --dry-run adds a `rename <slug> -> .<slug>` line.
             Before that rename, close runs `git grep --untracked -lF <rel>/<slug>` from the git toplevel
             (<rel> is the ticket root relative to it) on every close path, leaving out the ticket's own
-            folder and <root>/roadmap.md. It keeps files with a literal <rel>/<slug> or a path token that
+            folder and <root>/roadmap.md. It keeps files with a literal <rel>/<slug> (ending at `/`, the end
+            of a token, or punctuation, never running on into a longer folder name) or a path token that
             resolves to the folder: toplevel-relative, relative to the citing file's directory, or
             absolute. Only matched tokens are rewritten, keeping their form; no case folding, symlink
             resolution, ~ expansion or self-reference handling. A hit refuses, writing nothing, naming each file and
@@ -238,11 +239,18 @@ def worktree_pairs(root):
         return []
 
 
+def literal_re(old):
+    """The literal folder path old, matched only when no folder-name character follows it, so <rel>/<slug> ends
+    at `/`, the end of a token, or punctuation and never runs on into a longer folder name."""
+    return re.compile(re.escape(old) + r'(?![A-Za-z0-9_-])')
+
+
 def outside_refs(root, slug):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
-    finds candidate files; each is kept only when it holds a reference: the literal substring old (the original
-    rule), or a path token that ref_tokens resolves to the folder (relative to the citing file, toplevel-relative
+    finds candidate files; each is kept only when it holds a reference: the literal old (the original
+    rule), ending at `/`, the end of a token, or punctuation and never running on into a longer folder name
+    (.sdlc/0001-a never matches inside .sdlc/0001-ab; literal_re), or a path token that ref_tokens resolves to the folder (relative to the citing file, toplevel-relative
     or absolute, for example ../<slug>/filer-L1.md or ./<slug>/handoff.md). A bare <slug> word and a path that
     resolves elsewhere are not references. files are the toplevel-relative paths (sorted), leaving out every
     file under the ticket's own folder and <root>/roadmap.md (the folder moves with the ticket; close
@@ -267,6 +275,7 @@ def outside_refs(root, slug):
         if p.returncode not in (0, 1):
             raise ValueError(p.stderr.strip())
         skip = (rel / 'roadmap.md').as_posix()
+        lit = literal_re(old)
         files = []
         for f in sorted(f for f in p.stdout.split('\0') if f and f != skip and not f.startswith(old + '/')):
             try:
@@ -274,7 +283,7 @@ def outside_refs(root, slug):
             except OSError:
                 files.append(f)  # unreadable: keep it, so the scan refuses instead of passing silently
                 continue
-            if old in text or ref_tokens(text, top, f, old):
+            if lit.search(text) or ref_tokens(text, top, f, old):
                 files.append(f)
         return top, old, new, files
     except (OSError, ValueError):
@@ -318,13 +327,15 @@ def ref_tokens(text, top, f, old):
 
 
 def rewrite_files(top, files, old, new):
-    """In each toplevel-relative file under top, replace old (<rel>/<slug>) with new (<rel>/.<slug>) as bytes,
-    then turn the <slug> component of each path token that ref_tokens resolves to the folder into .<slug>,
+    """In each toplevel-relative file under top, replace old (<rel>/<slug>) with new (<rel>/.<slug>) as bytes
+    wherever the literal ends at `/`, the end of a token, or punctuation (literal_re; never inside a longer
+    folder name such as <rel>/<slug>b), then turn the <slug> component of each path token that ref_tokens resolves to the folder into .<slug>,
     keeping the token's form (relative, ./, absolute); all other bytes stay. Tokens resolve against each file's
     current location, so archive runs this before any rename."""
+    lit = literal_re(old)
     for f in files:
         path = top / f
-        text = path.read_bytes().decode('utf-8', 'surrogateescape').replace(old, new)
+        text = lit.sub(lambda m: new, path.read_bytes().decode('utf-8', 'surrogateescape'))
         for start, end, tok in reversed(ref_tokens(text, top, f, old)):
             text = text[:start] + tok + text[end:]
         path.write_bytes(text.encode('utf-8', 'surrogateescape'))
@@ -656,7 +667,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     appends a ## Closed section with the date, `warnings acknowledged: <why>` and the Warnings quoted with `> `.
     It refuses with force, with reason, when empty, and when the filer's Warnings is None.
     Before archiving, outside_refs lists files outside the folder that reference it, as the literal <rel>/<slug>
-    or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
+    (ending at `/`, the end of a token, or punctuation, never running on into a longer folder name) or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
     close refuses unless rewrite_refs (rewrite_files turns each reference into the .<slug> form, keeping its
     relative or absolute form, with the rename; the dry run lists `rewrite <file>`) or force (close and leave
     them). Plain slug folders never move, so never scan."""
@@ -1753,6 +1764,33 @@ def selftest():
                        rc == 0 and 'rewrote' not in out and (root / '.0003-x').is_dir()
                        and spec.read_bytes() == text.encode('utf-8'))
 
+            # a literal that runs on into a longer folder name (0003-xy) is not a reference to 0003-x
+            text = 'see .sdlc/0003-xy/handoff.md\n'
+            root, spec = ref_repo(text=text)
+            rc, out, err = run(root, 'close', ('0003-x',))
+            expect(f'(u) refs: a cite of only the prefix sibling .sdlc/0003-xy does not block: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'rewrote' not in out and (root / '.0003-x').is_dir()
+                   and spec.read_bytes() == text.encode('utf-8'))
+            root, spec = ref_repo(text='see .sdlc/0003-x/a.md and .sdlc/0003-xy/b.md\n')
+            rc, out, err = run(root, 'close', ('0003-x',), rewrite_refs=True)
+            got = spec.read_text(encoding='utf-8')
+            expect(f'(u) refs: --rewrite-refs rewrites only the 0003-x cite, not 0003-xy: rc={rc} {out!r} got={got!r}',
+                   rc == 0 and got == 'see .sdlc/.0003-x/a.md and .sdlc/0003-xy/b.md\n')
+            # the same through outside_refs and rewrite_files with both 0001-a and 0001-ab folders present
+            d = pathlib.Path(tempfile.mkdtemp())
+            (d / '.sdlc' / '0001-a').mkdir(parents=True)
+            (d / '.sdlc' / '0001-ab').mkdir()
+            (d / 'only.md').write_text('see .sdlc/0001-ab/handoff.md\n', encoding='utf-8')
+            (d / 'both.md').write_text('see .sdlc/0001-a/x.md and .sdlc/0001-ab/y.md\n', encoding='utf-8')
+            rgit(d, 'init', '-q')
+            top, old, new, fs = outside_refs(d / '.sdlc', '0001-a')
+            rewrite_files(top, fs, old, new)
+            expect(f'(u) refs: outside_refs skips a cite of only .sdlc/0001-ab and rewrite_files leaves it: {fs!r}',
+                   fs == ['both.md'] and (d / 'only.md').read_text(encoding='utf-8') == 'see .sdlc/0001-ab/handoff.md\n'
+                   and (d / 'both.md').read_text(encoding='utf-8')
+                   == 'see .sdlc/.0001-a/x.md and .sdlc/0001-ab/y.md\n')
+            shutil.rmtree(d, ignore_errors=True)
+
         # (u) negative controls: plain mode, and a plain slug in numbered mode, never rename
         for label, mutate in (('plain mode', lambda r: None),
                               ('numbered, plain slug', config('ticket_folders: numbered\n'))):
@@ -1977,6 +2015,20 @@ def selftest():
                    f'{err!r}',
                    rc == 0 and 'rewrote' not in out and (root / '.0001-alpha').is_dir()
                    and spec.read_bytes() == text.encode('utf-8'))
+
+            # a literal that runs on into a longer folder name (0001-alphax) is left alone by archive
+            text = 'see .sdlc/0001-alpha/a.md and .sdlc/0001-alphax/b.md\n'
+            root, spec = arch_ref(text=text)
+            rc, out, err = run(root, 'archive', rewrite_refs=True)
+            got = spec.read_text(encoding='utf-8')
+            expect(f'archive refs: --rewrite-refs rewrites only the 0001-alpha cite, not 0001-alphax: rc={rc} '
+                   f'{out!r} got={got!r}',
+                   rc == 0 and got == 'see .sdlc/.0001-alpha/a.md and .sdlc/0001-alphax/b.md\n')
+            root, spec = arch_ref(text='see .sdlc/0001-alphax/b.md\n')
+            rc, out, err = run(root, 'archive')
+            expect(f'archive refs: a cite of only .sdlc/0001-alphax does not block: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'rewrote' not in out
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/0001-alphax/b.md\n')
 
         # outside git there is no scan: a citing file does not block the archive and is left alone
         root, spec = arch_ref(git=False)

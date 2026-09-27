@@ -132,7 +132,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0125 | [criteria-no-porcelain-clean](criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🟢 done |
 | T-0126 | [chain-stop-leaves-dirty-tree](chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🟢 done |
 | T-0127 | [fanout-resync-limit](fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | ⚪ dropped |
-| T-0128 | [tickets-py-outside-refs-matches](tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | 🔵 ready |
+| T-0128 | [tickets-py-outside-refs-matches](tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | 🟢 done |
 | T-0129 | [worktrees-created-from-inside-a](worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | 🔵 ready |
 | T-0130 | [git-worktree-add-path-name](git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | 🔵 ready |
 | T-0131 | [the-reference-scan-still-treats](the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🔵 ready |
