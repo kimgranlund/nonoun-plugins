@@ -2,7 +2,7 @@
 id: T-0140
 title: "No code gate detects a full-suite guard placed on a non-final step..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,6 @@ No code gate detects a full-suite guard placed on a non-final step; the planner-
 
 ## Constraints
 What must not change. "None" if none.
+
+## Decision
+Dropped 2026-09-27: both build options (a `## Checks` section, a guessing lint) cost more than the rare miss they catch.

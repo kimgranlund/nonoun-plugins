@@ -2,7 +2,7 @@
 id: T-0136
 title: "Decide whether path-scoped git status --porcelain -- <path>..."
 type: idea            # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -20,3 +20,7 @@ Decide whether path-scoped `git status --porcelain -- <path>` emptiness criteria
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-09-27: decided rule only; planner rule 13 now forbids a path-scoped porcelain emptiness criterion on a changed path
