@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Usage: run.sh <role> <level> <handoff.md>
 # Runs one role headless in the current directory with the level's model and effort.
-# Writes <handoff dir>/<role>-<level>.md (the agent's final message) and <role>-<level>.log
-# (raw JSON). A rerun of the same role and level (a replan, a rebuild) never overwrites: it
+# Writes <handoff dir>/<role>-<level>.md (the agent's report) and <role>-<level>.log
+# (raw stream-json: one JSON event per line, stderr mixed in). A rerun of the same role and level (a replan, a rebuild) never overwrites: it
 # writes <role>-<level>-<k>.md and .log with the lowest free k >= 2, and prints the path it
 # wrote; readers take the newest file. Keeps <role>-<level>.running while the run is live
 # (for /board and the status line), and appends one line to <handoff dir>/runs.jsonl for /bench;
@@ -28,7 +28,20 @@
 # worktrees that appeared during the run (concurrent fanout lanes run other role runs), and never
 # changes the exit code; INT, TERM, and HUP exit 130, 143, and 129 after it.
 # Exit codes: 0 ok, 1 run failed or returned no result, 2 usage or preflight, 3 result lacks its section.
+# Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
+# session's last result, and a background task notification arriving after the report ends the session
+# with its own result ("origin":{"kind":"task-notification"}), losing the report. The log is parsed
+# leniently (lines that are not JSON are skipped) and only "type":"result" events count. The saved
+# event is the last one whose .result holds a line exactly the role's required heading (trailing
+# whitespace ignored), else the last one whose .origin.kind is not task-notification, else the last
+# one. It must have is_error false and a non-empty .result (else exit 1); its .result is written to
+# the result file. The runs.jsonl cost, duration, and turns come from the last result event, which
+# holds the session totals.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
+# Bash timeouts: a real run passes BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS of 3600000 (as
+# bench.sh does), keeping an inherited value only when it is a plain integer of at least 3600000.
+# Claude Code moves a foreground Bash call to the background once it passes its timeout, and no
+# PreToolUse hook sees that move, so hooks/block-background.sh cannot stop it (T-0105).
 set -euo pipefail
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
@@ -55,6 +68,17 @@ case "$role:$level" in
   archaeologist:L1) model=sonnet; effort=medium ;;
   filer:L1)         model=sonnet; effort=medium ;;
   *) usage ;;
+esac
+# Required section per role; builder and verifier also need an allowed first value under it.
+case "$role" in
+  builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
+  verifier) sect=Verdict; allowed='pass|fail|inherited red: .+' ;;
+  planner) sect=Goal; allowed='' ;;
+  researcher) sect=Answer; allowed='' ;;
+  scout) sect=Map; allowed='' ;;
+  archaeologist) sect=Summary; allowed='' ;;
+  architect) sect=Approach; allowed='' ;;
+  filer) sect=Warnings; allowed='' ;;
 esac
 [[ -f "$handoff" ]] || { echo "handoff not found: $handoff" >&2; exit 2; }
 # Git preflight: roles need a repo with a commit (diffs, worktrees). Never init git here.
@@ -160,7 +184,7 @@ cmd=(claude -p
   --agent "sdlc-lite:$role"
   --model "$model" --effort "$effort"
   --dangerously-skip-permissions
-  --output-format json
+  --output-format stream-json --verbose
   ${read_only[@]+"${read_only[@]}"}
   ${skill_prompt[@]+"${skill_prompt[@]}"}
   --
@@ -210,27 +234,28 @@ trap on_exit EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'exit 129' HUP
-SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
-if ! jq -e '.is_error == false and (.result | length > 0)' "$log" >/dev/null 2>&1; then
+# Bash timeouts (see the header, T-0105): at least 3600000 ms, else replaced.
+bash_timeout() { if [[ "${1:-}" =~ ^[0-9]+$ ]] && (( 10#$1 >= 3600000 )); then echo "$1"; else echo 3600000; fi; }
+bash_default_ms=$(bash_timeout "${BASH_DEFAULT_TIMEOUT_MS:-}")
+bash_max_ms=$(bash_timeout "${BASH_MAX_TIMEOUT_MS:-}")
+SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" BASH_DEFAULT_TIMEOUT_MS="$bash_default_ms" BASH_MAX_TIMEOUT_MS="$bash_max_ms" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
+# Result pick (see the header): result events only, non-JSON lines skipped.
+events=$(jq -R -c 'fromjson? // empty | select(type == "object" and .type == "result")' "$log" 2>/dev/null || true)
+pick=$(jq -s -c --arg h "## $sect" '
+  def has_head: (.result | strings | split("\n") | map(sub("[ \t\r]+$"; "")) | any(. == $h)) // false;
+  (map(select(has_head)) | last)
+  // (map(select((.origin.kind? // "") != "task-notification")) | last)
+  // last // empty' <<<"$events" 2>/dev/null || true)
+last_ev=$(jq -s -c 'last // empty' <<<"$events" 2>/dev/null || true)
+if [[ -z "$pick" ]] || ! jq -e '.is_error == false and (.result | strings | length > 0)' <<<"$pick" >/dev/null 2>&1; then
   echo "$role returned no result; see $log" >&2; exit 1
 fi
-{ echo "<!-- role=$role level=$level model=$model effort=$effort -->"; jq -r '.result' "$log"; } >"$result"
+{ echo "<!-- role=$role level=$level model=$model effort=$effort -->"; jq -r '.result' <<<"$pick"; } >"$result"
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
   --arg file "$name.md" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
-    cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns}' "$log" >>"$dir/runs.jsonl"
+    cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns}' <<<"$last_ev" >>"$dir/runs.jsonl"
 
-# Required section per role; builder and verifier also need an allowed first value under it.
-case "$role" in
-  builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
-  verifier) sect=Verdict; allowed='pass|fail|inherited red: .+' ;;
-  planner) sect=Goal; allowed='' ;;
-  researcher) sect=Answer; allowed='' ;;
-  scout) sect=Map; allowed='' ;;
-  archaeologist) sect=Summary; allowed='' ;;
-  architect) sect=Approach; allowed='' ;;
-  filer) sect=Warnings; allowed='' ;;
-esac
 # Prints "missing", or the first non-blank line under the section (empty if none).
 val=$(awk -v h="## $sect" '
   !f { l=$0; sub(/[ \t\r]+$/, "", l); if (l == h) { f=1 }; next }

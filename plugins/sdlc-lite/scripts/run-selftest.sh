@@ -6,11 +6,17 @@
 # partial with numeric highest pick, whole-component matching, alias, missing, no .nvmrc), plus one
 # real run proving the role run sees the matched node bin dir first on PATH, and the result
 # check (exit 3 when a result lacks its role's required section; STUB_RESULT picks the result).
+# Result pick: stubs emit stream-json lines ("type":"result" events, plus a non-JSON stderr line that
+# must be skipped). A log holding a "## Verdict" result and then a trailing task-notification result
+# ("stale monitor") saves the Verdict and exits 0; when neither holds the heading, the
+# non-notification one is saved and run.sh exits 3. runs.jsonl takes cost from the last event.
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
 # main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
 # SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees, and a dry run
 # of a role that declares skills leaves no mktemp skill file behind.
+# Bash timeouts: the stub records BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS; unset or an
+# inherited 120000 must reach it as 3600000, an inherited 7200000 as 7200000 (T-0105).
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -28,8 +34,10 @@ cat >"$tmp/bin/claude" <<EOF
 n=\$(( \$(cat "$tmp/count" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" >"$tmp/count"
 echo "\${PATH%%:*}" >"$tmp/pathhead"
+echo "\${BASH_DEFAULT_TIMEOUT_MS:-unset} \${BASH_MAX_TIMEOUT_MS:-unset}" >"$tmp/timeouts"
+echo "stub: stderr noise, not JSON" >&2
 if [[ -n "\${STUB_RESULT:-}" ]]; then cat "\$STUB_RESULT"; exit 0; fi
-printf '{"is_error":false,"result":"## Goal\\\\nrun %s","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n' "\$n"
+printf '{"type":"result","is_error":false,"result":"## Goal\\\\nrun %s","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n' "\$n"
 EOF
 chmod +x "$tmp/bin/claude"
 
@@ -141,7 +149,7 @@ got=$(cd "$nrepo" && { NVM_DIR="$nvm" SDLC_DRY_RUN=1 "$here/run.sh" builder L1 h
 [[ "$got" == "$(pre v20.11.0 v20.11.0)" ]] || fail ".nvmrc with whitespace: stderr is '$got'"
 
 # Result check: a result lacking the role's required section exits 3 and keeps its files.
-res() { jq -n --arg r "$1" '{is_error:false,result:$r,total_cost_usd:0,duration_ms:1,num_turns:1}' >"$tmp/res.json"; }
+res() { jq -nc --arg r "$1" '{type:"result",is_error:false,result:$r,total_cost_usd:0,duration_ms:1,num_turns:1}' >"$tmp/res.json"; }
 rrepo="$tmp/rrepo"
 mkdir -p "$rrepo"
 echo x >"$rrepo/h.md"
@@ -173,6 +181,44 @@ want_rc 0 verifier L1 $'## Verdict\npass'
 want_rc 0 verifier L1 $'## Verdict\ninherited red: test_a'
 want_rc 3 verifier L1 $'## Verdict\ninherited red'
 
+# Result pick: a trailing task-notification result must not replace the report. The stub output
+# holds a system event and a non-JSON line (from the stub's stderr), then two result events.
+# res2 <first result> <cost>: writes that log shape, the second result a task notification (cost 3).
+res2() {
+  { echo '{"type":"system","subtype":"init"}'
+    jq -nc --arg r "$1" --argjson c "$2" '{type:"result",is_error:false,result:$r,total_cost_usd:$c,duration_ms:1,num_turns:1}'
+    echo 'not json: stderr line'
+    jq -nc '{type:"result",is_error:false,result:"stale monitor, no action needed",origin:{kind:"task-notification"},total_cost_usd:3,duration_ms:9,num_turns:4}'
+  } >"$tmp/res.json"
+}
+# pick_rc <rc> <role> <level>: runs run.sh on the current res.json, checks the exit code.
+pick_rc() {
+  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo/runs.jsonl"
+  local rc=0
+  (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
+    >/dev/null 2>"$tmp/rerr") || rc=$?
+  [[ "$rc" == "$1" ]] || fail "result pick $2 $3: exit $rc, want $1 ($(cat "$tmp/rerr"))"
+}
+res2 $'## Verdict\npass' 1
+pick_rc 0 verifier L1
+grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
+! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "result pick: verifier-L1.md holds the task-notification result"
+grep -q 'stderr noise' "$rrepo/verifier-L1.log" || fail "result pick: the log holds no non-JSON stderr line"
+cost=$(jq -r '.cost_usd' "$rrepo/runs.jsonl")
+[[ "$cost" == 3 ]] || fail "result pick: runs.jsonl cost_usd is '$cost', want 3 (the last result event)"
+res2 'working on it' 1
+pick_rc 3 verifier L1
+grep -q 'working on it' "$rrepo/verifier-L1.md" || fail "no heading: the non-notification result was not saved"
+! grep -q 'stale monitor' "$rrepo/verifier-L1.md" || fail "no heading: verifier-L1.md holds the task-notification result"
+# heading rule: two results, neither a task notification; the earlier one holds the heading, the
+# later one does not. Only the heading rule saves the earlier one (the fallback picks the last).
+{ jq -nc '{type:"result",is_error:false,result:"## Verdict\npass",total_cost_usd:1,duration_ms:1,num_turns:1}'
+  jq -nc '{type:"result",is_error:false,result:"done, see above",total_cost_usd:2,duration_ms:1,num_turns:2}'
+} >"$tmp/res.json"
+pick_rc 0 verifier L1
+grep -qx '## Verdict' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md lacks ## Verdict: $(tr '\n' ' ' <"$rrepo/verifier-L1.md")"
+! grep -q 'done, see above' "$rrepo/verifier-L1.md" || fail "heading rule: verifier-L1.md holds the later headingless result"
+
 # Real run: the stub claude records the first PATH entry it sees.
 printf '20\n' >"$nrepo/.nvmrc"
 res $'## Status\ndone'
@@ -181,6 +227,23 @@ res $'## Status\ndone'
 head_seen=$(cat "$tmp/pathhead" 2>/dev/null || echo MISSING)
 [[ "$head_seen" == "$node/v20.11.0/bin" ]] \
   || fail ".nvmrc real run: claude saw PATH head '$head_seen', want '$node/v20.11.0/bin'"
+
+# Bash timeouts: the stub claude records both values it sees.
+want_to() { # want_to <inherited value or ""> <expected>
+  rm -f "$tmp/timeouts" "$nrepo"/*-L*.md "$nrepo"/*.log
+  if [[ -n "$1" ]]; then
+    (cd "$nrepo" && STUB_RESULT="$tmp/res.json" BASH_DEFAULT_TIMEOUT_MS="$1" BASH_MAX_TIMEOUT_MS="$1" \
+      PATH="$tmp/bin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) || fail "timeouts '$1': run.sh exited non-zero"
+  else
+    (cd "$nrepo" && unset BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS && STUB_RESULT="$tmp/res.json" \
+      PATH="$tmp/bin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) || fail "timeouts unset: run.sh exited non-zero"
+  fi
+  local seen; seen=$(cat "$tmp/timeouts" 2>/dev/null || echo MISSING)
+  [[ "$seen" == "$2 $2" ]] || fail "timeouts '${1:-unset}': claude saw '$seen', want '$2 $2'"
+}
+want_to "" 3600000
+want_to 120000 3600000
+want_to 7200000 7200000
 
 # Throwaway worktrees: a second stub records SDLC_TMP_WORKTREES and adds a worktree under it
 # (under .worktrees/tmp/unset when it is unset), then succeeds, fails, or returns a result
@@ -193,8 +256,8 @@ git worktree add -q --detach "\${SDLC_TMP_WORKTREES:-\$PWD/.worktrees/tmp/unset}
   || { echo "stub: git worktree add failed" >&2; exit 9; }
 case "\${STUB_MODE:-ok}" in
   fail) exit 1 ;;
-  nosect) jq -n '{is_error:false,result:"## Changes\\nNone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
-  *) jq -n '{is_error:false,result:"## Status\\ndone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
+  nosect) jq -nc '{type:"result",is_error:false,result:"## Changes\\nNone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
+  *) jq -nc '{type:"result",is_error:false,result:"## Status\\ndone",total_cost_usd:0,duration_ms:1,num_turns:1}' ;;
 esac
 EOF
 chmod +x "$tmp/wbin/claude"

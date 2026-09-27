@@ -16,6 +16,12 @@
         "hooks": [
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-background.sh\"" }
         ]
+      },
+      {
+        "matcher": "Monitor",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-background.sh\"" }
+        ]
       }
     ]
   }

@@ -283,6 +283,11 @@ bt = bf.read_text() if bf.is_file() else ''
 for s in builder_scope_missing(bt): errors.append(f'agents/builder.md: builder scope rule missing "{s}"')
 for s in SCOPE_PHRASES:
     if s not in builder_scope_missing(bt.replace(s, '')): errors.append('check.py: builder scope guard negative control not flagged')
+# Builder and verifier keep gates in the foreground: a headless run ends with the turn.
+FG_PHRASE = 'never end the turn while background work runs'
+for rel in ('agents/builder.md', 'agents/verifier.md'):
+    fp = root/rel
+    if not fp.is_file() or FG_PHRASE not in fp.read_text(): errors.append(f'{rel}: foreground rule missing "{FG_PHRASE}"')
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Plugin checks: level-table and agent consistency, the coverage_check, tickets.py, board.py,
 # steps.py, order.py, and fanout.py selftests (fanout: throwaway repos and a stub driver, no model
-# call), the run.sh result-numbering selftest (stub claude, no model call), the hook selftest
-# (block-background.sh, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, and block-repo-format.sh on fixture JSON), the
+# call), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
+# (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, and block-repo-format.sh on fixture JSON), the
 # hook live probe selftest
 # (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
 # never runs here), a shellcheck pass, plugin manifest validation.
