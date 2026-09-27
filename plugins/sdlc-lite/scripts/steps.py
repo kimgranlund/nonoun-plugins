@@ -445,11 +445,13 @@ def nonzero_exit_at(toks, i):
 
 
 def ends_command(toks, i):
-    """True when a command ends before toks[i]: the end of the span, ;, &&, a pipe, }, or a newline."""
+    """True when a command ends before toks[i]: the end of the span, ;, &&, ||, }, or a newline. A
+    lone pipe does not end a command here: `exit N | cat` pipes exit's status into cat, so the
+    command's real exit status is cat's, not N's, and is not a fail-fast right operand."""
     if i >= len(toks):
         return True
     tok, op = toks[i]
-    return (op and (tok.startswith(';') or tok in ('&&', '|', '||', '\n'))) or (not op and tok == '}')
+    return (op and (tok.startswith(';') or tok in ('&&', '||', '\n'))) or (not op and tok == '}')
 
 
 def fails_fast(toks, i):
@@ -482,7 +484,10 @@ def or_fallback(text):
     nonzero integer literal, ending the command, or a brace group `{ ...; exit N; }` whose last
     command is that exit): a nonzero exit fails the criterion when the left side fails, so it
     cannot pass on either side. `|| exit 0`, a bare `|| exit`, `|| true`, `|| return 1`,
-    `|| echo ...`, and `|| grep ...` stay findings. Pure text: executes nothing.
+    `|| echo ...`, and `|| grep ...` stay findings. So does `|| exit N | cat` (or a brace group
+    piped the same way): the pipe hands the exit's status to the next command, so the criterion's
+    real exit status is the pipeline's last command, not N, and the left side's failure is masked.
+    Pure text: executes nothing.
     Raises ValueError on text shlex cannot tokenize (an unparsable span, already reported)."""
     toks = or_tokens(text)
     left = []
@@ -1269,6 +1274,8 @@ def selftest():
               command_spans(parse_steps(d / 'planner-L2.md')[1])[-2:] == ok_spans[-2:])
         for form in ('test -f a || exit 0', 'test -f a || true', 'test -f a || exit',
                      'test -f a || { exit 1; echo x; }',
+                     'test -f a || exit 1 | cat',
+                     'test -f a || { echo x; exit 1; } | cat',
                      'for p in a b; do test -f "$p" || echo MISSING "$p"; done',
                      'for p in a b; do grep -q a "$p" || grep -q b "$p"; done'):
             d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
