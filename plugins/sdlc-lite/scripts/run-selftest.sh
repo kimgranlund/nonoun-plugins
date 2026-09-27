@@ -28,6 +28,7 @@ cat >"$tmp/bin/claude" <<EOF
 n=\$(( \$(cat "$tmp/count" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" >"$tmp/count"
 echo "\${PATH%%:*}" >"$tmp/pathhead"
+echo "\${BASH_DEFAULT_TIMEOUT_MS:-} \${BASH_MAX_TIMEOUT_MS:-}" >"$tmp/bashto"
 if [[ -n "\${STUB_RESULT:-}" ]]; then cat "\$STUB_RESULT"; exit 0; fi
 printf '{"is_error":false,"result":"## Goal\\\\nrun %s","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n' "\$n"
 EOF
@@ -225,6 +226,15 @@ want_wt() {
   [[ "$env_seen" == "$wtop/.worktrees/tmp/"?* ]] \
     || fail "worktree $1 run: SDLC_TMP_WORKTREES is '$env_seen', want it under $wtop/.worktrees/tmp/"
 }
+# Bash timeouts: a headless role defaults both to 600000, so a slow gate never auto-backgrounds
+# into a poll loop; a caller's own value (bench.sh raises it) is kept.
+(cd "$repo" && env -u BASH_DEFAULT_TIMEOUT_MS -u BASH_MAX_TIMEOUT_MS PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md >/dev/null) \
+  || fail "timeout default run: run.sh exited non-zero"
+[[ "$(cat "$tmp/bashto")" == "600000 600000" ]] || fail "Bash timeouts default: claude saw '$(cat "$tmp/bashto")', want '600000 600000'"
+(cd "$repo" && BASH_DEFAULT_TIMEOUT_MS=3600000 BASH_MAX_TIMEOUT_MS=3600000 PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/handoff.md >/dev/null) \
+  || fail "timeout override run: run.sh exited non-zero"
+[[ "$(cat "$tmp/bashto")" == "3600000 3600000" ]] || fail "Bash timeouts override: claude saw '$(cat "$tmp/bashto")', want '3600000 3600000'"
+
 want_wt ok 0
 want_wt fail 1
 want_wt nosect 3

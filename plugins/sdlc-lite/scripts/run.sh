@@ -210,6 +210,9 @@ trap on_exit EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'exit 129' HUP
+# A Bash call past its timeout auto-backgrounds, and a headless role then burns turns polling it
+# (sleep, Monitor, ScheduleWakeup). Default both limits to 10 minutes; a caller's larger value wins.
+export BASH_DEFAULT_TIMEOUT_MS="${BASH_DEFAULT_TIMEOUT_MS:-600000}" BASH_MAX_TIMEOUT_MS="${BASH_MAX_TIMEOUT_MS:-600000}"
 SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
 if ! jq -e '.is_error == false and (.result | length > 0)' "$log" >/dev/null 2>&1; then
   echo "$role returned no result; see $log" >&2; exit 1
