@@ -469,10 +469,81 @@ OR_PUNCT = '();<>|&\n'
 EXIT_CODE_RE = re.compile(r'\d+')
 
 
+def skip_dquote(text, i):
+    """Index just past the double-quoted string that opens at text[i], honoring a `$(...)` nested
+    inside it, whose own quotes start fresh as bash reads them. Raises ValueError when unclosed."""
+    i += 1
+    while i < len(text):
+        c = text[i]
+        if c == '\\':
+            i += 2
+        elif c == '"':
+            return i + 1
+        elif text.startswith('$(', i):
+            i = skip_subst(text, i + 2)
+        else:
+            i += 1
+    raise ValueError('unclosed double quote')
+
+
+def skip_subst(text, i):
+    """Index just past the `)` closing a `$(` whose body starts at text[i]. Raises ValueError when
+    unclosed."""
+    depth = 1
+    while i < len(text):
+        c = text[i]
+        if c == '\\':
+            i += 2
+            continue
+        if c == "'":
+            j = text.find("'", i + 1)
+            if j < 0:
+                raise ValueError('unclosed single quote')
+            i = j + 1
+            continue
+        if c == '"':
+            i = skip_dquote(text, i)
+            continue
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise ValueError('unclosed $(')
+
+
+def mask_dquotes(text):
+    """The span with each top-level double-quoted string replaced by `"x"`. shlex ends a string at
+    the first inner `"`, so `"$(node -e "a || b")"` would otherwise leak the quoted || as an
+    operator. Single-quoted strings are kept as they are. Raises ValueError when a quote is unclosed."""
+    out, i = [], 0
+    while i < len(text):
+        c = text[i]
+        if c == '\\':
+            out.append(text[i:i + 2])
+            i += 2
+        elif c == "'":
+            j = text.find("'", i + 1)
+            if j < 0:
+                raise ValueError('unclosed single quote')
+            out.append(text[i:j + 1])
+            i = j + 1
+        elif c == '"':
+            i = skip_dquote(text, i)
+            out.append('"x"')
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
+
 def or_tokens(text):
     """shlex tokens of a span as (token, is_operator) pairs; a newline is its own operator token.
-    Raises ValueError on text shlex cannot tokenize."""
-    lex = shlex.shlex(text, posix=True, punctuation_chars=OR_PUNCT)
+    Double-quoted strings are masked first (mask_dquotes). Raises ValueError on text shlex cannot
+    tokenize."""
+    lex = shlex.shlex(mask_dquotes(text), posix=True, punctuation_chars=OR_PUNCT)
     lex.commenters = ''
     lex.whitespace = ' \t\r'
     lex.whitespace_split = True
@@ -1319,7 +1390,8 @@ def selftest():
         ok_spans = ['grep -qE "a||b" x', "grep -q 'a||b' x",
                     'set -- $(ls); test $# -eq 0 || grep -q x "$@"', 'grep -q a x && grep -q b x',
                     'test -f a || exit 1', 'for f in a b; do test -f "$f" || exit 1; done',
-                    'for id in P1 P2; do grep -qE "x" "$f" || { echo "missing $id"; exit 1; }; done']
+                    'for id in P1 P2; do grep -qE "x" "$f" || { echo "missing $id"; exit 1; }; done',
+                    'test "$(node -e "process.stdout.write(String(a || b))")" = 1']
         d = task(plan=PLAN.replace('- one works', '\n'.join(f'- `{s}`' for s in ok_spans)))
         rc, _, _ = run_main(['split', str(d)])
         rc2, out2, _ = run_main(['lint', str(d / 'planner-L2.md')])
@@ -1332,6 +1404,7 @@ def selftest():
         for form in ('test -f a || exit 0', 'test -f a || true', 'test -f a || exit',
                      'test -f a || { exit 1; echo x; }',
                      'test -f a || exit 1 | cat',
+                     'test "$(node -e "x")" = 1 || true',
                      'test -f a || { echo x; exit 1; } | cat',
                      'for p in a b; do test -f "$p" || echo MISSING "$p"; done',
                      'for p in a b; do grep -q a "$p" || grep -q b "$p"; done'):

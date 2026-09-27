@@ -1,0 +1,4 @@
+{"ts":"2026-09-27T15:49:00Z","role":"researcher","level":"L1","model":"sonnet","effort":"medium","file":"researcher-L1.md","cost_usd":0.3279254000000001,"duration_ms":55322,"turns":12,"stray_worktrees":[],"stray_branches":[]}
+{"ts":"2026-09-27T15:51:47Z","role":"planner","level":"L2","model":"opus","effort":"medium","file":"planner-L2.md","cost_usd":0.5756776,"duration_ms":159310,"turns":7,"stray_worktrees":[],"stray_branches":[]}
+{"ts":"2026-09-27T16:12:02Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","file":"planner-L3.md","cost_usd":3.0454072500000002,"duration_ms":395436,"turns":16,"stray_worktrees":[],"stray_branches":[]}
+{"ts":"2026-09-27T16:22:01Z","role":"filer","level":"L1","model":"sonnet","effort":"medium","file":"filer-L1.md","cost_usd":0.211262,"duration_ms":51418,"turns":11,"stray_worktrees":[],"stray_branches":[]}

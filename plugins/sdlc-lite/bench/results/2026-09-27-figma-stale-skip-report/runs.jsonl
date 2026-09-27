@@ -1,0 +1,2 @@
+{"ts":"2026-09-27T14:03:11Z","role":"planner","level":"L2","model":"opus","effort":"medium","file":"planner-L2.md","cost_usd":0.9651969999999999,"duration_ms":291624,"turns":11,"stray_worktrees":[],"stray_branches":[]}
+{"ts":"2026-09-27T14:36:44Z","role":"planner","level":"L3","model":"fable","effort":"xhigh","file":"planner-L3.md","cost_usd":8.50171825,"duration_ms":2000977,"turns":36,"stray_worktrees":[],"stray_branches":[]}

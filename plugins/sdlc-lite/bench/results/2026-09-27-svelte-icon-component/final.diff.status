@@ -1,0 +1,9 @@
+ src/lib/Icon/Icon.ssr.spec.ts         |  28 +++++++
+ src/lib/Icon/Icon.svelte              |  71 ++++++++++++++++++
+ src/lib/Icon/Icon.svelte.spec.ts      | 136 ++++++++++++++++++++++++++++++++++
+ src/lib/Icon/index.ts                 |   2 +
+ src/lib/index.ts                      |   1 +
+ src/lib/preset/index.ts               |   3 +-
+ src/lib/preset/recipes/icon.recipe.ts |  21 ++++++
+ src/routes/+page.svelte               |   6 +-
+ 8 files changed, 263 insertions(+), 5 deletions(-)

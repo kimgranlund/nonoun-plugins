@@ -1,0 +1,335 @@
+diff --git a/src/lib/Icon/Icon.ssr.spec.ts b/src/lib/Icon/Icon.ssr.spec.ts
+new file mode 100644
+index 0000000..053996a
+--- /dev/null
++++ b/src/lib/Icon/Icon.ssr.spec.ts
+@@ -0,0 +1,28 @@
++import { describe, expect, it } from 'vitest';
++import { render } from 'svelte/server';
++import Icon from './Icon.svelte';
++
++// Server (node) project: there is no `document` here, so a successful render proves
++// the component only touches the DOM from $effect, which never runs during SSR.
++describe('Icon.svelte SSR', () => {
++	it('renders an <i> with the Phosphor classes without touching document', () => {
++		expect(typeof (globalThis as { document?: unknown }).document).toBe('undefined');
++
++		let body = '';
++		expect(() => {
++			body = render(Icon, { props: { name: 'house' } }).body;
++		}).not.toThrow();
++
++		expect(body).toContain('<i');
++		expect(body).toContain('ph-house');
++		expect(body).toContain('aria-hidden="true"');
++	});
++
++	it('renders a labelled bold icon as role="img" on the server', () => {
++		const { body } = render(Icon, { props: { name: 'house', weight: 'bold', label: 'Home' } });
++
++		expect(body).toContain('ph-bold');
++		expect(body).toContain('role="img"');
++		expect(body).toContain('aria-label="Home"');
++	});
++});
+diff --git a/src/lib/Icon/Icon.svelte b/src/lib/Icon/Icon.svelte
+new file mode 100644
+index 0000000..84f5a5f
+--- /dev/null
++++ b/src/lib/Icon/Icon.svelte
+@@ -0,0 +1,71 @@
++<script module lang="ts">
++	import type { HTMLAttributes } from 'svelte/elements';
++
++	export type IconWeight = 'regular' | 'thin' | 'light' | 'bold' | 'fill' | 'duotone';
++
++	// No `size` prop: size is context (data-tier / data-scale / data-size on an
++	// ancestor or on this element via ...rest), never a recipe variant.
++	export type IconProps = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
++		name: string;
++		weight?: IconWeight;
++		label?: string;
++	};
++
++	const PHOSPHOR_BASE = 'https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/';
++
++	// SRI hashes for @phosphor-icons/web@2.1.2 src/<weight>/style.css (researcher-L1.md).
++	const PHOSPHOR_SRI: Record<IconWeight, string> = {
++		regular: 'sha384-6p9AefaqUhEVheRlj1mpAkbngHXy9mbYMrIdcIt4Jlc9lOLIablJq3bBsLOjGwZ7',
++		bold: 'sha384-nblAP2mo2pVPyMQZDw9Xy9Cwgs9lowushAYep4w5+Q9kF4Ibf3n0B/gCMVdR+Vqy',
++		fill: 'sha384-pPVoXE8ft+zxKtxIDDI7SfTK6y95NHm4qa+hKEg/hs8VkjW5IP+9/dGOPCbDpUPl',
++		light: 'sha384-GzhNOdwUkh38xzoNEY1vRdLr+w8q+bXEJsd/km6Ef61w1Kfk+lself6cn14ilrpO',
++		thin: 'sha384-ZrguSahlNzFt9jT0cuIhTCpssPYg2cCEoWz7Bpd96tKHthb+kBAIugSMdw0DUcEy',
++		duotone: 'sha384-UVFvhZP7fWAENUPOoq61rJg5ef6QZW0k5vpAn71041/QS4STvUcJQCGNhStZLGx9'
++	};
++
++	/**
++	 * Appends the weight's Phosphor stylesheet to document.head once, shared by every
++	 * Icon instance. Client-only: call it from $effect, never during SSR.
++	 */
++	function ensurePhosphorStylesheet(weight: IconWeight) {
++		if (document.head.querySelector(`link[data-phosphor-weight="${weight}"]`)) return;
++
++		const link = document.createElement('link');
++		link.rel = 'stylesheet';
++		link.href = `${PHOSPHOR_BASE}${weight}/style.css`;
++		link.integrity = PHOSPHOR_SRI[weight];
++		link.crossOrigin = 'anonymous';
++		link.setAttribute('data-phosphor-weight', weight);
++		document.head.appendChild(link);
++	}
++</script>
++
++<script lang="ts">
++	import { icon } from 'styled-system/recipes/index.mjs';
++
++	let { name, weight = 'regular', label, class: className, ...rest }: IconProps = $props();
++
++	// $effect never runs during SSR, so document is only touched on the client;
++	// it re-runs when `weight` changes after mount.
++	$effect(() => {
++		ensurePhosphorStylesheet(weight);
++	});
++
++	// Regular weight uses the bare `ph` class; other weights use `ph-<weight>` only.
++	// Svelte 5 clsx-style array: falsy entries drop, className may be any ClassValue.
++	const classes = $derived([
++		icon(),
++		weight === 'regular' ? 'ph' : `ph-${weight}`,
++		`ph-${name}`,
++		className
++	]);
++</script>
++
++<!-- rest first, so pass-through attributes (data-size, ...) land but cannot override the a11y contract -->
++<i
++	class={classes}
++	{...rest}
++	role={label ? 'img' : undefined}
++	aria-label={label || undefined}
++	aria-hidden={label ? undefined : 'true'}
++></i>
+diff --git a/src/lib/Icon/Icon.svelte.spec.ts b/src/lib/Icon/Icon.svelte.spec.ts
+new file mode 100644
+index 0000000..a6ce68f
+--- /dev/null
++++ b/src/lib/Icon/Icon.svelte.spec.ts
+@@ -0,0 +1,136 @@
++import { page } from 'vitest/browser';
++import { afterEach, describe, expect, it } from 'vitest';
++import { render } from 'vitest-browser-svelte';
++import '../../app.css';
++import Icon from './Icon.svelte';
++import { geometryRows } from '../preset/geometry/geometry.generated.js';
++
++const CDN_BASE = 'https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/';
++
++function classList(el: Element): string[] {
++	return [...el.classList].sort();
++}
++
++function phosphorLinks(weight: string): HTMLLinkElement[] {
++	return [
++		...document.head.querySelectorAll<HTMLLinkElement>(`link[data-phosphor-weight="${weight}"]`)
++	];
++}
++
++describe('Icon.svelte', () => {
++	afterEach(() => {
++		document.body.querySelectorAll('[data-testid]').forEach((el) => el.remove());
++	});
++
++	it('renders `icon ph ph-<name>` for the regular weight', async () => {
++		await render(Icon, { name: 'house', 'data-testid': 'regular' });
++
++		const el = page.getByTestId('regular').element();
++		expect(el.tagName).toBe('I');
++		expect(classList(el)).toEqual(['icon', 'ph', 'ph-house']);
++	});
++
++	it('renders `icon ph-bold ph-<name>` for the bold weight, with no bare `ph`', async () => {
++		await render(Icon, { name: 'house', weight: 'bold', 'data-testid': 'bold' });
++
++		const el = page.getByTestId('bold').element();
++		expect(classList(el)).toEqual(['icon', 'ph-bold', 'ph-house']);
++		expect(el.classList.contains('ph')).toBe(false);
++	});
++
++	it('appends a caller class after the recipe and Phosphor classes', async () => {
++		await render(Icon, { name: 'gear', class: 'extra', 'data-testid': 'extra' });
++
++		expect(classList(page.getByTestId('extra').element())).toEqual([
++			'extra',
++			'icon',
++			'ph',
++			'ph-gear'
++		]);
++	});
++
++	it('is aria-hidden with no role when no label is given', async () => {
++		await render(Icon, { name: 'house', 'data-testid': 'decorative' });
++
++		const el = page.getByTestId('decorative').element();
++		expect(el.getAttribute('aria-hidden')).toBe('true');
++		expect(el.hasAttribute('role')).toBe(false);
++		expect(el.hasAttribute('aria-label')).toBe(false);
++	});
++
++	it('is role="img" named by the label when a label is given', async () => {
++		await render(Icon, { name: 'house', label: 'Home' });
++
++		const img = page.getByRole('img', { name: 'Home' });
++		await expect.element(img).toBeInTheDocument();
++		expect(img.element().hasAttribute('aria-hidden')).toBe(false);
++	});
++
++	it('does not let pass-through attributes override the a11y contract', async () => {
++		await render(Icon, {
++			name: 'house',
++			role: 'button',
++			'aria-hidden': 'false',
++			'data-testid': 'override'
++		});
++
++		const el = page.getByTestId('override').element();
++		expect(el.getAttribute('aria-hidden')).toBe('true');
++		expect(el.hasAttribute('role')).toBe(false);
++	});
++
++	it('passes data-size through to the element', async () => {
++		await render(Icon, { name: 'house', 'data-size': 'lg', 'data-testid': 'sized' });
++
++		expect(page.getByTestId('sized').element().getAttribute('data-size')).toBe('lg');
++	});
++
++	it('injects exactly one stylesheet link per weight, with the jsdelivr href, SRI and crossorigin', async () => {
++		await render(Icon, { name: 'house' });
++		await render(Icon, { name: 'gear' });
++		await render(Icon, { name: 'house', weight: 'bold' });
++
++		for (const weight of ['regular', 'bold']) {
++			const links = phosphorLinks(weight);
++			expect(links, `${weight} link count`).toHaveLength(1);
++			const [link] = links;
++			expect(link.getAttribute('rel')).toBe('stylesheet');
++			expect(link.getAttribute('href')).toBe(`${CDN_BASE}${weight}/style.css`);
++			expect(link.getAttribute('integrity')).toMatch(/^sha384-[A-Za-z0-9+/]+={0,2}$/);
++			expect(link.getAttribute('crossorigin')).toBe('anonymous');
++		}
++	});
++});
++
++describe('Icon resolved-CSS cells', () => {
++	it('resolves font-size, width and height to the geometry icon value for every geometryRows cell (27 cases)', async () => {
++		let casesRun = 0;
++
++		for (const row of geometryRows) {
++			const wrapper = document.createElement('div');
++			wrapper.setAttribute('data-tier', row.tier);
++			wrapper.setAttribute('data-scale', row.scale);
++			document.body.appendChild(wrapper);
++
++			const screen = await render(
++				Icon,
++				{ target: wrapper, props: { name: 'house', 'data-size': row.size } },
++				{}
++			);
++			const el = wrapper.querySelector('i');
++			if (!el) throw new Error('Icon did not render an <i> element');
++
++			const computed = getComputedStyle(el);
++			const label = `${row.tier}/${row.scale}/${row.size}`;
++			expect(computed.fontSize, label).toBe(`${row.icon}px`);
++			expect(computed.width, label).toBe(`${row.icon}px`);
++			expect(computed.height, label).toBe(`${row.icon}px`);
++
++			await screen.unmount();
++			wrapper.remove();
++			casesRun++;
++		}
++
++		expect(casesRun).toBe(27);
++	});
++});
+diff --git a/src/lib/Icon/index.ts b/src/lib/Icon/index.ts
+new file mode 100644
+index 0000000..90b5013
+--- /dev/null
++++ b/src/lib/Icon/index.ts
+@@ -0,0 +1,2 @@
++export { default as Icon } from './Icon.svelte';
++export type { IconProps, IconWeight } from './Icon.svelte';
+diff --git a/src/lib/index.ts b/src/lib/index.ts
+index 14de93b..d862fbe 100644
+--- a/src/lib/index.ts
++++ b/src/lib/index.ts
+@@ -1,2 +1,3 @@
+ // Reexport your entry components here
+ export { Button, type ButtonProps } from './Button/index.js';
++export { Icon, type IconProps, type IconWeight } from './Icon/index.js';
+diff --git a/src/lib/preset/index.ts b/src/lib/preset/index.ts
+index 57b739e..5320641 100644
+--- a/src/lib/preset/index.ts
++++ b/src/lib/preset/index.ts
+@@ -2,10 +2,11 @@ import { definePreset } from '@pandacss/dev';
+ import { semanticTokens } from './tokens.js';
+ import { geometryGlobalCss } from './geometry/geometry.generated.js';
+ import { button } from './recipes/button.recipe.js';
++import { icon } from './recipes/icon.recipe.js';
+ 
+ // Config recipes for the geometry design system live here (doc AGENTS.md rule 6:
+ // "Config recipes (defineRecipe / defineSlotRecipe) in a preset, not cva/sva").
+-const recipes = { button };
++const recipes = { button, icon };
+ 
+ export const geometryPreset = definePreset({
+ 	name: 'geometry-design-system',
+diff --git a/src/lib/preset/recipes/icon.recipe.ts b/src/lib/preset/recipes/icon.recipe.ts
+new file mode 100644
+index 0000000..66507c2
+--- /dev/null
++++ b/src/lib/preset/recipes/icon.recipe.ts
+@@ -0,0 +1,21 @@
++import { defineRecipe } from '@pandacss/dev';
++
++// Icon recipe, doc 13-panda-implementation.md Layer 3.
++// Size comes only from var(--g-icon) (Layer 1, context-resolved from the CSV via
++// the generator): font-size, width and height all track the icon geometry.
++// `size` is not a variant here: it is the `data-size` context attribute (AGENTS.md
++// rule 2). Phosphor classes (ph, ph-<weight>, ph-<name>) are added by the component.
++export const icon = defineRecipe({
++	className: 'icon',
++	staticCss: ['*'],
++	base: {
++		display: 'inline-flex',
++		alignItems: 'center',
++		justifyContent: 'center',
++		lineHeight: '1',
++		flexShrink: '0',
++		fontSize: 'var(--g-icon)',
++		width: 'var(--g-icon)',
++		height: 'var(--g-icon)'
++	}
++});
+diff --git a/src/routes/+page.svelte b/src/routes/+page.svelte
+index 0fbad2d..b8c5c85 100644
+--- a/src/routes/+page.svelte
++++ b/src/routes/+page.svelte
+@@ -1,5 +1,5 @@
+ <script lang="ts">
+-	import { Button } from '$lib/index.js';
++	import { Button, Icon } from '$lib/index.js';
+ 	import { geometryRows } from '$lib/preset/geometry/geometry.generated.js';
+ 
+ 	const variants = ['primary', 'secondary', 'outline', 'ghost', 'destructive'] as const;
+@@ -31,9 +31,7 @@
+ 	<section>
+ 		<h2>Icon only</h2>
+ 		<Button iconOnly aria-label="Close">
+-			<span style:display="inline-flex" style:width="var(--g-icon)" style:height="var(--g-icon)"
+-				>×</span
+-			>
++			<Icon name="x" />
+ 		</Button>
+ 	</section>
+ 

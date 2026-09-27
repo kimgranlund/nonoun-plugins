@@ -1,0 +1,56 @@
+diff --git a/packages/agent-ui/devtools/src/timeline/events.test.ts b/packages/agent-ui/devtools/src/timeline/events.test.ts
+index fdab8613..f9011375 100644
+--- a/packages/agent-ui/devtools/src/timeline/events.test.ts
++++ b/packages/agent-ui/devtools/src/timeline/events.test.ts
+@@ -1,7 +1,7 @@
+ import { describe, it, expect } from 'vitest'
+ import type { AgentTransport, TurnInput } from '@agent-ui/a2ui/agent/agent-transport'
+ import { formatErrorLine } from '@agent-ui/a2ui/agent/meta-line'
+-import { recordTurn, serializeDevtoolsEvent } from './events.ts'
++import { recordTurn, serializeDevtoolsEvent, SUBAGENT_TOOL_NAMES, isSubagentToolName } from './events.ts'
+ import type { DevtoolsEvent } from './events.ts'
+ import { scriptTransport } from '../transports/replay.ts'
+ 
+@@ -99,3 +99,21 @@ describe('recordTurn (SPEC-R7)', () => {
+     if (end.kind === 'turn-end') expect(end.ms).toBe(steppingClock() - 25 - 25) // start=25, end=50 → ms=25
+   })
+ })
++
++describe('subagent tool names', () => {
++  it('accepts both spellings', () => {
++    expect(isSubagentToolName('Task')).toBe(true)
++    expect(isSubagentToolName('Agent')).toBe(true)
++  })
++
++  it('rejects everything else', () => {
++    expect(isSubagentToolName('Bash')).toBe(false)
++    expect(isSubagentToolName('task')).toBe(false)
++    expect(isSubagentToolName('')).toBe(false)
++    expect(isSubagentToolName(undefined)).toBe(false)
++  })
++
++  it('SUBAGENT_TOOL_NAMES carries exactly both spellings', () => {
++    expect(SUBAGENT_TOOL_NAMES).toStrictEqual(['Task', 'Agent'])
++  })
++})
+diff --git a/packages/agent-ui/devtools/src/timeline/events.ts b/packages/agent-ui/devtools/src/timeline/events.ts
+index ce5bf11f..374bc303 100644
+--- a/packages/agent-ui/devtools/src/timeline/events.ts
++++ b/packages/agent-ui/devtools/src/timeline/events.ts
+@@ -34,6 +34,16 @@ export type TurnEndStatus = 'ok' | 'error' | 'halt'
+ export const DEVTOOLS_EVENT_KINDS = ['turn-start', 'line', 'meta', 'client', 'render', 'turn-end', 'error'] as const
+ export type DevtoolsEventKind = (typeof DEVTOOLS_EVENT_KINDS)[number]
+ 
++/** The subagent tool's name as Claude Code spells it: both `Task` (older) and `Agent` (current) are
++ *  accepted. ONE shared recogniser for every devtools consumer, never a second list. */
++export const SUBAGENT_TOOL_NAMES = ['Task', 'Agent'] as const
++export type SubagentToolName = (typeof SUBAGENT_TOOL_NAMES)[number]
++
++/** True iff `name` is one of `SUBAGENT_TOOL_NAMES` (exact, case-sensitive); narrows to `SubagentToolName`. */
++export function isSubagentToolName(name: unknown): name is SubagentToolName {
++  return (SUBAGENT_TOOL_NAMES as readonly unknown[]).includes(name)
++}
++
+ /** The shared envelope: `seq` contiguous from 0 per timeline; `at` an ISO-8601 timestamp (injectable in
+  *  `recordTurn` for deterministic tests — NEVER part of the replay contract, which is `seq`-ordered
+  *  `line` payloads only, ADR-0200 Consequences' determinism law). */
