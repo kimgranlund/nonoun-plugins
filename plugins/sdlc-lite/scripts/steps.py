@@ -16,7 +16,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             Refuses a plan whose acceptance criterion commands do not parse (see lint): the
             refusal names each span and ends with "plan defect: replan this step (/chain 3)".
             It also refuses a criterion span that joins two checks with an unquoted || (see lint),
-            one that pins a commit sha fixed at plan time, and one that compares a count over a
+            one that pins a commit sha fixed at plan time (except the ancestry form
+            git merge-base --is-ancestor <sha> HEAD), and one that compares a count over a
             changing set with a fixed number (see lint).
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
@@ -50,7 +51,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             two more checks on its raw text. It must not pin a commit sha: a span holding the word
             git and a 7 to 40 char lowercase hex run (at least one digit and one of a-f, bounded by
             non-alphanumerics, so also inside <sha>..HEAD, <sha>^, <sha>~2) goes stale on the
-            first sync from main; compare against HEAD at build start instead. It must not compare
+            first sync from main; compare against HEAD at build start instead. One form is exempt:
+            git merge-base --is-ancestor <sha> HEAD (HEAD as a whole word) is a deliberate ancestry
+            check that stays true after a sync; any other hex run in the span still counts. It must not compare
             a count over a changing set with a fixed number: a count tool (wc -l, grep -c,
             grep --count), a set source (a * glob, or ls or find as a word), and a comparison
             (-eq -ne -ge -gt -le -lt = == !=) with a literal integer of 2 or more, all in one span.
@@ -536,9 +539,16 @@ SET_SOURCE_RE = re.compile(r'\*|(?<![\w./-])(?:ls|find)(?![\w.-])')
 COMPARE_RE = re.compile(r'(?:(?<![\w-])-(?:eq|ne|ge|gt|le|lt)|==|!=|(?<=\s)=)\s*["\']?(\d+)(?![\w.])')
 
 
+ANCESTRY_RE = re.compile(r'(?<![\w.-])git\s+merge-base\s+--is-ancestor\s+'
+                         r'(?<![A-Za-z0-9])[0-9a-f]{7,40}\s+HEAD(?![\w~^@:./-])')
+
+
 def pins_sha(text):
-    """True when a span holds the word git and a commit-sha-like hex run fixed at plan time."""
-    return bool(GIT_WORD_RE.search(text) and SHA_RE.search(text))
+    """True when a span holds the word git and a commit-sha-like hex run fixed at plan time.
+    The ancestry form git merge-base --is-ancestor <sha> HEAD is exempt; other hex runs still count."""
+    if not GIT_WORD_RE.search(text):
+        return False
+    return bool(SHA_RE.search(ANCESTRY_RE.sub(' ', text)))
 
 
 def fixed_set_count(text):
@@ -598,7 +608,8 @@ def lint_steps(plan, steps):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion pins a commit sha fixed at plan time: '
                                 f'{text}\n'
                                 '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
-                                'a fixed sha goes stale on the first sync from main')
+                                'a fixed sha goes stale on the first sync from main '
+                                '(only `git merge-base --is-ancestor <sha> HEAD` may name a sha)')
             if fixed_set_count(text):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion compares a count over a changing set '
                                 f'with a fixed number: {text}\n'
@@ -1286,6 +1297,19 @@ def selftest():
                     ['split', str(d)], d, needles=('plan defect', 'step 1', 'pins a commit sha fixed at plan time'))
             refused(f'(k3) lint refuses a criterion that pins a commit sha ({form}) with plan defect',
                     ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'pins a commit sha'))
+
+        # (k3) the ancestry form is exempt; a second pinned sha beside it is still refused
+        d = task(plan=PLAN.replace('- one works', f'- `git merge-base --is-ancestor {sha} HEAD`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        rc2, _, _ = run_main(['split', str(d)])
+        check('(k3) is-ancestor <sha> HEAD pass: lint ok and split writes the step',
+              rc == 0 and out.strip() == 'steps lint: ok' and rc2 == 0
+              and (d / 'step-1' / 'handoff.md').is_file())
+        sha2 = 'e81d' + '04c'
+        d = task(plan=PLAN.replace('- one works',
+                                   f'- `git merge-base --is-ancestor {sha} HEAD && git diff --quiet {sha2} -- src`'))
+        refused('(k3) is-ancestor plus a second pinned sha: refuse with plan defect',
+                ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'pins a commit sha'))
 
         # (k4) a glob count compared with a fixed number: lint and split refuse
         d = task(plan=PLAN.replace('- one works', '- `test "$(ls .sdlc/*/handoff.md | wc -l)" -eq 26`'))

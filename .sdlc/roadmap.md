@@ -114,7 +114,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0107 | [role-throwaway-worktrees-created-outside](role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | M | P2 | none | 🟢 done |
 | T-0108 | [a-dry-run-of-a](a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | M | P2 | none | 🟢 done |
 | T-0109 | [make-the-fixed-count-lint](make-the-fixed-count-lint/handoff.md) | Make the fixed-count lint skip a bare = assignment such as n=26... | idea | M | P2 | none | 🟢 done |
-| T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | 🔵 ready |
+| T-0110 | [decide-how-the-pinned-sha](decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | 🟢 done |
 | T-0111 | [pattern-kill-hook-misses-forms](pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | M | P2 | none | 🟢 done |
 | T-0112 | [formatter-rule-is-prompt-only](formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | M | P2 | none | 🟢 done |
 | T-0113 | [close-rename-breaks-refs](close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | 🟢 done |
