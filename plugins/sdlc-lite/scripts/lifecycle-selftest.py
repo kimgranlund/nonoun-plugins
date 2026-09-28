@@ -144,7 +144,9 @@ class LifecycleTests(fixture.CodexTests):
         retry = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=20)
         self.assertEqual(retry.returncode, 0, retry.stderr)
         self.assertIn('Recovered stale Claude attempts', retry.stderr)
-        self.assertEqual(json.loads(path.read_text())['status'], 'interrupted')
+        recovered = json.loads(path.read_text())
+        self.assertEqual((recovered['backend'], recovered['transport'], recovered['status']),
+                         ('claude', 'exec', 'interrupted'))
         self.assertEqual(json.loads((directory/'scout-L1-2.attempt.json').read_text())['status'], 'completed')
         self.assertFalse((directory/'scout-L1.running').exists())
 
@@ -162,8 +164,50 @@ class LifecycleTests(fixture.CodexTests):
         self.assertEqual(json.loads(stale.read_text())['status'], 'running')
         self.assertEqual(len(list(native.glob('*.attempt.json'))), 1)
 
+    def test_claude_retry_refuses_unsafe_or_unknown_stale_records(self):
+        (self.bin/'claude').write_text(CLAUDE)
+        command = ['bash', str(fixture.ROOT/'scripts/run.sh'), 'scout', 'L1']
+        claude = dict(self.env, SDLC_BACKEND='claude', MODE='pass')
+        cases = {
+            'codex-native': [('codex', 'subagent')],
+            'codex-exec': [('codex', 'exec')],
+            'mixed': [('claude', 'exec'), ('codex', 'subagent')],
+            'missing-backend': [(None, 'exec')],
+            'missing-transport': [('claude', None)],
+            'unknown-backend': [('other', 'exec')],
+            'unknown-transport': [('claude', 'other')],
+        }
+        for name, attempts in cases.items():
+            with self.subTest(name=name):
+                directory = self.repo/name
+                directory.mkdir()
+                handoff = directory/'handoff.md'
+                handoff.write_text('## Goal\nMap seed.txt\n')
+                originals = {}
+                for index, (backend, transport) in enumerate(attempts):
+                    stem = 'scout-L1' if index == 0 else 'verifier-L1'
+                    record = dict(role=stem.split('-')[0], level='L1', status='running',
+                                  attempt_id=name + '-' + str(index))
+                    if backend is not None:
+                        record['backend'] = backend
+                    if transport is not None:
+                        record['transport'] = transport
+                    path = directory/(stem + '.attempt.json')
+                    path.write_text(json.dumps(record))
+                    originals[path.name] = path.read_bytes()
+                    (directory/(stem + '.running')).write_text('preserved marker')
+                    (directory/(stem + '.log')).write_text('preserved log')
+                refused = subprocess.run(command + [str(handoff)], cwd=self.repo, env=claude,
+                                         capture_output=True, text=True, timeout=10)
+                self.assertEqual(refused.returncode, 2, refused.stderr)
+                self.assertIn('Interrupted attempt needs review', refused.stderr)
+                self.assertEqual({p.name: p.read_bytes() for p in directory.glob('*.attempt.json')}, originals)
+                for stem in ('scout-L1', 'verifier-L1')[:len(attempts)]:
+                    self.assertEqual((directory/(stem + '.running')).read_text(), 'preserved marker')
+                    self.assertEqual((directory/(stem + '.log')).read_text(), 'preserved log')
+
 
 if __name__ == '__main__':
-    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report','test_sigkill_recovers_claude_but_codex_native_refuses']
+    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report','test_sigkill_recovers_claude_but_codex_native_refuses','test_claude_retry_refuses_unsafe_or_unknown_stale_records']
     result=unittest.TextTestRunner().run(unittest.TestSuite(LifecycleTests(n) for n in names))
     sys.exit(not result.wasSuccessful())

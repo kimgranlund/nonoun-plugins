@@ -66,13 +66,16 @@ def run(role, level, handoff, backend, model, effort):
     if not check['ready']:
         raise ValueError('\n'.join(check['errors']))
     with lock(directory) as owner:
-        stale = [p.name for p in directory.glob('*.attempt.json') if json.loads(p.read_text()).get('status') == 'running']
+        stale = [(p.name, data) for p in directory.glob('*.attempt.json')
+                 if (data := json.loads(p.read_text())).get('status') == 'running']
         if stale:
-            if backend == 'claude' and transport == 'exec':
+            if (backend == 'claude' and transport == 'exec' and
+                    all(data.get('backend') == 'claude' and data.get('transport') == 'exec'
+                        for _, data in stale)):
                 recovered = recover_unlocked(directory)
                 print('Recovered stale Claude attempts before new run: ' + ', '.join(recovered), file=sys.stderr)
             else:
-                raise ValueError('Interrupted attempt needs review; run run_lifecycle.py recover "' + str(directory) + '": ' + ', '.join(stale))
+                raise ValueError('Interrupted attempt needs review; run run_lifecycle.py recover "' + str(directory) + '": ' + ', '.join(name for name, _ in stale))
         stem = role + '-' + level
         name = stem
         n = 1
