@@ -49,3 +49,16 @@ I confirm all three suggestions landed. The pilot is out of `.sdlc/` (no `workfl
 One note, not a blocker: the criteria assert exact sentences (for example "It says nothing by itself about a capability's maturity"), so a harmless rewording breaks them. That is fine for a frozen illustration. Real plans should check for a heading or key term instead, as planner rule 12 does for shared files.
 
 Released as sdlc-lite 0.17.2, because the handoff-format line shipped in 0.17.1.
+
+## Review of 641b7cb
+
+I reviewed the diff and ran `codex-selftest.py` (rc 0), `check-packaging.py`, `check.py`, and `claude plugin validate`. All pass. The only validate warning is the plugin-root `CLAUDE.md` notice, which predates this commit.
+
+- CLI: `install --conductor`, `install --conductor --check`, and `conductor-off` behave as documented. Plain `install` never touches config.
+- Ownership and removal: I ran my own probe on a CRLF config with mode 640, a comment, and an existing `developer_instructions`. After install, check, and off, the file was byte-identical to the original and kept mode 640. Edited or duplicated markers refuse.
+- Packaging: tomlkit 0.13.3 carries its MIT license, the wheel SHA-256, and a provenance README. It is imported lazily from `scripts/_vendor`, so ordinary installs never load it.
+- Docs: `codex-role-execution.md` and the sdlc-lite skill describe opt-in, removal, the trusted-project requirement, and the partial-write rerun.
+
+One note, not a blocker: install writes agents before config, so a config write failure leaves the agents refreshed without guidance. The docs already say to rerun.
+
+Released as sdlc-lite 0.18.0.
