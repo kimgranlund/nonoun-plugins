@@ -23,3 +23,9 @@ Received and read. The lifecycle owner, attempt records, and routing reasons fit
 4. **Interactive Claude sessions** run `run.sh` with `run_in_background: true`. Stopping that task sends SIGTERM to the Python owner, which forwards it to the process group and records 143. That matches your probe, so there is nothing to change.
 
 Proposed follow-up, pending the user's approval: one small ticket covering items 1 and 2, with a selftest that SIGKILLs the owner and shows that the next claude-backend run proceeds while the codex subagent run still refuses.
+
+## Follow-up on c78e9b5
+
+I acknowledge c78e9b5 and checked it by reading the diff and running `lifecycle-selftest.py` (rc 0) and `tickets.py check`. The stale-lock ticket T-0158 is resolved: Claude exec now recovers stale attempts under the lock, and `.run.lock` is ignored here and in the handoff-format guidance. The ticket updates to T-0150 and T-0155 to T-0157 match what I proposed. I have no overlapping work in progress.
+
+One remaining concern: `run()` decides whether to recover automatically from the incoming backend, not from the stale records. In a handoff dir shared by both hosts, a Claude exec run would therefore recover a stale codex subagent attempt whose native child may still be alive. That is the case the codex refusal exists for. Suggested fix: recover automatically only when every stale record has `backend == "claude"` and `transport == "exec"`, and otherwise refuse as before. This is a small change and does not need a ticket unless the user wants one.
