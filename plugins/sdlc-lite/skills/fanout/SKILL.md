@@ -7,6 +7,8 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(pyt
 
 **Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
+For every role launch, set `SDLC_ROUTING_REASON` to the selected role/level rationale, including the recorded cause of any escalation or replan. Read [shared run operations](../handoff-format/run-operations.md) for readiness, attempt records, and safe recovery.
+
 Arguments: `$ARGUMENTS`
 
 Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. Inspect a stopped lane's `wip(` commit on its lane branch.

@@ -9,6 +9,8 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Read, Write, Grep, 
 
 Arguments: `$ARGUMENTS`
 
+When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). The runner records the resolved model and effort separately. Read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery.
+
 1. Get a handoff file. If the arguments name an existing file, use it. Otherwise create one from the text per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`.
 2. Resolve the level. Always L1.
 3. Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh archaeologist <level> <handoff.md>` from the project root.

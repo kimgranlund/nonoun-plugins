@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-09-28",
+  "plugin_source_version": "0.17.0",
+  "installed_cache_version_at_trial": "0.16.0",
+  "assessed_source_sha256": {
+    "plugins/sdlc-lite/scripts/readiness.py": "dcd7148f382b189f5643d758028dfbed5d3085be368edb8e1353613875806ea9",
+    "plugins/sdlc-lite/scripts/run_lifecycle.py": "46b284944d879e84f72942e8e939107b3f279a02b43a7e3d5ab1b98b65e2ac11",
+    "plugins/sdlc-lite/scripts/run.sh": "a58b7d15b34008be307ddf582f4f1e36590269827ea520a2aa419a3bcd4433f3",
+    "plugins/sdlc-lite/scripts/codex_exchange.py": "1e3fd4fad14a57c4c46f173168c5988397fee7049e2ef9683adf1e1ff57c69fc"
+  },
+  "fixture": "label-whitespace",
+  "hosts": {
+    "claude": {
+      "readiness": "ready; local configuration scope",
+      "acceptance": {
+        "baseline": "failed for repeated spaces, tabs, and newlines",
+        "implementation": "passed all five independent oracle cases",
+        "unit_tests": "5 passed"
+      },
+      "workflow": "planned, built, independently verified, filed, and ticket closed"
+    },
+    "codex": {
+      "readiness": "ready; local configuration scope",
+      "acceptance": {
+        "baseline": "failed for repeated spaces, tabs, and newlines",
+        "implementation": "passed all five independent oracle cases",
+        "unit_tests": "6 passed"
+      },
+      "workflow": "planned, built, independently verified, filed, and ticket closed"
+    }
+  },
+  "routing_history": {
+    "claude": "L1 planner criterion rejected because fallback logic used an ambiguous OR; replanned at L3 with Fable xhigh. Final builder Sonnet L1 low; verifier Opus L1 medium passed.",
+    "codex": "L1 planner criterion was ambiguous about test coverage; Astra verifier identified plan defect, then an L3 Astra high replan specified resulting coverage. The original implementation was retained and the superseded step remains recorded; final verifier passed. An early filer attempt was cancelled before closure; final filer passed. All Astra calls predate the user's no-Astra instruction."
+  },
+  "native_codex": {
+    "result": "named scout exchange completed; request received and attempt recorded completed",
+    "note": "An earlier probe failed because ps was blocked by sandbox; that failed attempt remains in the evidence."
+  },
+  "repository_checks": {
+    "focused_runner_selftest": "passed after fixture reset",
+    "packaging": "passed",
+    "generated_agent_parity": "passed",
+    "role_contract_check": "passed",
+    "full_suite": "passed: scripts/check.sh exited 0; Codex adapter 13 tests, lifecycle 3 tests, runner, fanout, hooks, shellcheck, and plugin validation"
+  },
+  "interruption": [
+    {"backend": "claude", "host_start_observed": true, "exit_code": 143, "status": "interrupted", "report_exists": false},
+    {"backend": "codex", "host_start_observed": true, "exit_code": 143, "status": "interrupted", "report_exists": false}
+  ],
+  "scope_limits": [
+    "Readiness confirms local configuration only; authentication and model access were exercised separately by live trials.",
+    "Trials were role-by-role orchestration, not an unattended full-chain run or multi-lane benchmark.",
+    "Not every role and level was exercised live."
+  ],
+  "independent_oracle": {
+    "inputs": ["  Alpha  BETA ", "Alpha\t\tBETA", "Alpha\n\nBETA", "", " \t\n "],
+    "expected": ["alpha-beta", "alpha-beta", "alpha-beta", "", ""],
+    "baseline_results": [false, false, false, true, true],
+    "implementation_results": [true, true, true, true, true]
+  }
+}

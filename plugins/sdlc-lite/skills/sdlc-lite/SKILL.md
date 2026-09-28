@@ -39,6 +39,8 @@ Read referenced rubric, handoff format, templates, or scripts only as required. 
 
 ## Native execution
 
+Read [shared run operations](../handoff-format/run-operations.md) for readiness, routing rationale, and safe recovery. Set `SDLC_ROUTING_REASON` when launching a role; do not invent a task-specific rationale when none was supplied.
+
 Run from the target project root. For runner calls inside Codex, use `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent` and follow the exchange below. Standalone terminal launchers use `SDLC_BACKEND=codex`; do not rely on an exported variable surviving between shell tool calls. Example inside Codex: `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent "<plugin-root>/scripts/run.sh" builder L2 .sdlc/example/step-1/handoff.md`.
 
 Verify `codex`, `python3`, `jq`, and `git` are available. The exec transport runs Codex directly; the in-session transport uses predefined native subagents. Neither falls back to Claude. Use the scope rules in level-rubric; the Codex model/effort mapping lives in `adapters/codex/models.json`. The runner chooses a different model from the latest builder when necessary for verification.

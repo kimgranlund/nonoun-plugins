@@ -146,6 +146,7 @@ class CodexTests(unittest.TestCase):
     def test_native_exchange_preserves_runner_artifacts(self):
         import time
         import codex_exchange
+        codex_roles.install(self.repo)
         env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
         proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -171,6 +172,7 @@ class CodexTests(unittest.TestCase):
     def test_conductor_exchange_needs_no_nested_cli(self):
         import time
         import codex_exchange
+        codex_roles.install(self.repo)
         env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
         proc=subprocess.Popen(['python3',str(ROOT/'scripts/codex_exec.py'),'conductor','L1','Process fixture task'],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -191,6 +193,7 @@ class CodexTests(unittest.TestCase):
             if proc.poll() is None:proc.kill();proc.communicate()
 
     def test_unanswered_native_request_fails_and_cleans_marker(self):
+        codex_roles.install(self.repo)
         self.env['SDLC_CODEX_TRANSPORT']='subagent'
         p=self.role('timeout')
         self.assertNotEqual(p.returncode,0)

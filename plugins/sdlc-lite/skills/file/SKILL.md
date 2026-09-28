@@ -9,6 +9,8 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAU
 
 Arguments: `$ARGUMENTS`
 
+When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). The runner records the resolved model and effort separately. Read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery.
+
 1. Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh filer L1 <task dir>/handoff.md` from the project root.
 2. Read the result. Show the user the Warnings, the PR title, and the changelog entry.
 3. Close the ticket, only if the task `handoff.md` opens with ticket front matter (skip otherwise):

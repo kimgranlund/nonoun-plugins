@@ -36,3 +36,5 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 
 A role behavior change needs a focused live run on a throwaway project. Benchmark fixtures must expose all names and constraints pinned by hidden checks and demonstrate both failure and success. If a verifier passes while a hidden check fails, resolve the discrepancy before tuning models.
 Raw transcripts and benchmark logs are ignored; retain appropriate result reports and run records. Keep dated validation evidence separate from current instructions.
+
+Readiness and run ownership live in `scripts/readiness.py` and `scripts/run_lifecycle.py`. Preserve failure evidence and handoff-directory exclusion for both backends. Run `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py` after changes to routing records, cancellation, or recovery; it includes negative readiness and duplicate-launch controls. Runtime `completed` status means a valid report was delivered, not that a task or verification passed.

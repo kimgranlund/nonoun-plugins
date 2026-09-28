@@ -162,6 +162,8 @@ got=$(cd "$nrepo" && { NVM_DIR="$nvm" SDLC_DRY_RUN=1 "$here/run.sh" builder L1 h
   || fail ".nvmrc with whitespace: dry run exited non-zero: $got"
 [[ "$got" == "$(pre v20.11.0 v20.11.0)" ]] || fail ".nvmrc with whitespace: stderr is '$got'"
 
+# Independent fixture resets remove attempt records as well as reports/logs.
+# Retry preservation and interrupted attempts are exercised by lifecycle-selftest.py.
 # Result check: a result lacking the role's required section exits 3 and keeps its files.
 res() { jq -nc --arg r "$1" '{type:"result",is_error:false,result:$r,total_cost_usd:0,duration_ms:1,num_turns:1}' >"$tmp/res.json"; }
 rrepo="$tmp/rrepo"
@@ -173,7 +175,7 @@ git -C "$rrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
   commit -q -m init
 # want_rc <rc> <role> <level> <result text>: runs run.sh with that result, checks the exit code.
 want_rc() {
-  res "$4"; rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo/runs.jsonl"
+  res "$4"; rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
   local rc=0
   (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
     >/dev/null 2>"$tmp/rerr") || rc=$?
@@ -207,7 +209,7 @@ res2() {
 }
 # pick_rc <rc> <role> <level>: runs run.sh on the current res.json, checks the exit code.
 pick_rc() {
-  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo/runs.jsonl"
+  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
   local rc=0
   (cd "$rrepo" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" "$2" "$3" h.md \
     >/dev/null 2>"$tmp/rerr") || rc=$?
@@ -244,7 +246,7 @@ head_seen=$(cat "$tmp/pathhead" 2>/dev/null || echo MISSING)
 
 # Bash timeouts: the stub claude records both values it sees.
 want_to() { # want_to <inherited value or ""> <expected>
-  rm -f "$tmp/timeouts" "$nrepo"/*-L*.md "$nrepo"/*.log
+  rm -f "$tmp/timeouts" "$nrepo"/*-L*.md "$nrepo"/*.log "$nrepo"/*.attempt.json
   if [[ -n "$1" ]]; then
     (cd "$nrepo" && STUB_RESULT="$tmp/res.json" BASH_DEFAULT_TIMEOUT_MS="$1" BASH_MAX_TIMEOUT_MS="$1" \
       PATH="$tmp/bin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>&1) || fail "timeouts '$1': run.sh exited non-zero"
@@ -289,7 +291,7 @@ wtop=$(git -C "$wrepo" rev-parse --show-toplevel)
 # want_wt <mode> <rc>: one real run with that stub mode, then the worktree assertions.
 want_wt() {
   local rc=0 env_seen wts
-  rm -f "$tmp/wtenv" "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo/runs.jsonl"
+  rm -f "$tmp/wtenv" "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
   (cd "$wrepo" && STUB_MODE="$1" PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md \
     >/dev/null 2>"$tmp/werr") || rc=$?
   [[ "$rc" == "$2" ]] || fail "worktree $1 run: exit $rc, want $2 ($(cat "$tmp/werr"))"
@@ -400,7 +402,7 @@ git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c 
 # stray_run <mode> <rc>: one real run with that stub mode; stderr lands in $tmp/serr.
 stray_run() {
   local rc=0
-  rm -f "$srepo"/*-L*.md "$srepo"/*.log "$srepo/runs.jsonl"
+  rm -f "$srepo"/*-L*.md "$srepo"/*.log "$srepo"/*.attempt.json "$srepo/runs.jsonl"
   (cd "$srepo" && STUB_MODE="$1" PATH="$tmp/sbin:$PATH" "$here/run.sh" builder L1 h.md \
     >/dev/null 2>"$tmp/serr") || rc=$?
   [[ "$rc" == "$2" ]] || fail "stray $1 run: exit $rc, want $2 ($(cat "$tmp/serr"))"

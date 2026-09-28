@@ -63,3 +63,7 @@ For fanout or benchmark launchers inside Codex, select the subagent transport to
 The live native builder/verifier sequence also passed using `sdlc-builder-l1` and `sdlc-verifier-l1-alternate`. The initial native verifier reported a sandbox-blocked worktree probe. The fixture then specified an in-memory baseline probe under the same acceptance assertion; a fresh verification passed without permission changes. Both outcomes were retained. [Smoke-test evidence and source hashes](validation/native-codex-smoke.json) bind these observations to the exercised implementation.
 
 The final `scripts/check.sh` run passed, including all 13 Codex backend tests, shared workflow and runner regressions, hook fixtures, shellcheck, and Claude plugin validation.
+
+## Readiness and recovery
+
+The shared runner now checks local readiness, reserves a durable attempt record, and locks the handoff directory for both host backends. See [shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md) for routing rationale, configuration checks, and interrupted-attempt recovery. Native subagents remain host-managed: stop or await a dispatched agent before retrying after its shell waiter is cancelled.

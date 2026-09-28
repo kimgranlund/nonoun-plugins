@@ -9,6 +9,8 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Read, Grep, Glob
 
 Arguments: `$ARGUMENTS`
 
+When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). The runner records the resolved model and effort separately. Read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery.
+
 1. Resolve the level per `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`, section builder. Without an explicit level or a `level:` line, read the handoff and the files it names, then assess. State the level and a one-line reason.
 2. Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh builder <level> <handoff.md>` from the project root.
 3. On success the script prints the result path. Read it and report its Status plus one line per change. On failure, report the error and the log path.
