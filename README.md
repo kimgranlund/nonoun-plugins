@@ -11,9 +11,9 @@ Progressive Context works directly in either host. SDLC Lite supports native Cod
 
 ## Install
 
-Codex: add this repository as a marketplace with `codex plugin marketplace add /absolute/path/to/sdlc-agents`, then select the plugins in the app. The catalog is `.agents/plugins/marketplace.json`.
+Codex: add this repository as a marketplace with `codex plugin marketplace add /absolute/path/to/sdlc-lite`, then select the plugins in the app. The catalog is `.agents/plugins/marketplace.json`.
 
-Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-agents`, then install `progressive-context@sdlc-lite` and/or `sdlc-lite@sdlc-lite`. Its catalog is `.claude-plugin/marketplace.json`.
+Claude Code: `/plugin marketplace add /absolute/path/to/sdlc-lite`, then install `progressive-context@sdlc-lite` and/or `sdlc-lite@sdlc-lite`. Its catalog is `.claude-plugin/marketplace.json`.
 
 Start a fresh chat after installation. No plugin installs itself or modifies your user configuration.
 
