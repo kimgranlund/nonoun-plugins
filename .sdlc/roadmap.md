@@ -159,3 +159,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0152 | [external-lane-owners](external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | ⏳ proposed |
 | T-0153 | [depends-on-capability](depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | ⏳ proposed |
 | T-0154 | [nested-tmp-worktrees](nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | ⏳ proposed |
+| T-0155 | [trace-run-ids](trace-run-ids/handoff.md) | Run id on every lane and gate log line | feature | S | P2 | none | ⏳ proposed |
+| T-0156 | [per-attempt-gate-logs](per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | S | P2 | none | ⏳ proposed |
+| T-0157 | [review-sdlc-traces](review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | ⏳ proposed |
