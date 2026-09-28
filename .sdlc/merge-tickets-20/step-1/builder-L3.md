@@ -5,7 +5,7 @@ done
 ## Changes
 - Merge commit `ca69fc4` ("Merge tickets-20: T-0092..T-0118 follow-ups"). Parents are `5a7881e` (HEAD) and `d476465` (tickets-20). Nothing was pushed.
 - `.claude/agents/sdlc-lite-author.md`: kept both sides. From tickets-20: archive/reference-scan text, the fail-fast `||` rule, no-verdict and inherited-red route details. From main: the porcelain lint and the swap route. The inherited-red line now says fanout makes no `<id>: <title>` lane commit and WIP-commits the tree like any other stop.
-- `.sdlc/find-out-why-the-t/handoff.md`: kept main's evidence note in Context, plus tickets-20's `## Question` and `## Evidence` sections.
+- `.sdlc/.0105-find-out-why-the-t/handoff.md`: kept main's evidence note in Context, plus tickets-20's `## Question` and `## Evidence` sections.
 - `.sdlc/roadmap.md`: regenerated with `tickets.py roadmap`, not edited by hand.
 - `CLAUDE.md`: started from tickets-20's steps.py and fanout.py entries, then added main's porcelain lint, the `swap` action and `steps.py swap` text, and the WIP-commit sentence. The inherited-red wording now says the work is kept in the stop's `wip(<id>)` commit.
 - `plugins/sdlc-lite/agents/conductor.md`: tickets-20's verifier inherited red and "or a reverify", plus main's swap exception.

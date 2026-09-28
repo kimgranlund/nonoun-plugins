@@ -12,7 +12,7 @@ pass
 
 Beyond the listed criteria, spot-checked the actual conflict resolutions against the handoff's "keep both lanes' intent" instruction:
 - `.sdlc/roadmap.md`: regenerated (matches `tickets.py check`'s "roadmap current").
-- `.sdlc/find-out-why-the-t/handoff.md`: `git show` on both parents vs merged file confirms main's evidence paragraph in Context plus tickets-20's `## Question`/`## Evidence` sections and richer `## Goal`/`## Constraints` all survived.
+- `.sdlc/.0105-find-out-why-the-t/handoff.md`: `git show` on both parents vs merged file confirms main's evidence paragraph in Context plus tickets-20's `## Question`/`## Evidence` sections and richer `## Goal`/`## Constraints` all survived.
 - `plugins/sdlc-lite/scripts/check.py`: both `PLAN_DEFECT_DOCS` entries (`clean porcelain status`, `` nonzero `exit` ``) present in merged file, one each side.
 - `plugins/sdlc-lite/scripts/steps.py`: both parents' `(k6)` selftest blocks (porcelain-guard on main, bare-assignment on tickets-20) both present in merged file, tickets-20's relabeled to `(k7)` as the builder stated; `check.sh`'s "steps selftest: PASS" line confirms both still execute and pass.
 - `plugins/sdlc-lite/scripts/fanout.py`: merged docstring and selftest now assert a WIP commit and clean lane tree for the inherited-red outcome (matching main/T-0126's stated intent), with the lane tip `wip(T-0001): inherited red: step-1: test_a` and non-ancestor checks added; `check.sh`'s "fanout selftest: PASS" confirms it runs green.

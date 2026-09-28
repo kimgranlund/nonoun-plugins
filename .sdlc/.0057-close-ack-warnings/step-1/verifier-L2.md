@@ -1,0 +1,18 @@
+<!-- role=verifier level=L2 model=fable effort=medium -->
+## Verdict
+pass
+
+## Criteria
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest` prints PASS and exits 0: pass. Evidence: ran it in the build tree, output `tickets selftest: PASS`, `rc=0`. The check can go red: in a throwaway worktree at HEAD with the current tickets.py copied in and the gate changed to `if not is_none(warnings) and not force:`, the same command printed `tickets selftest: FAIL, these did not bite:` listing (w1), (w2), (w7), (w8), (w9), rc 1.
+- grep shows the parameter in `cmd_close`, the argparse flag, the Usage line, and at least 8 selftest asserts: pass. Evidence: `grep -n "ack_warnings\|ack-warnings" plugins/sdlc-lite/scripts/tickets.py` gives 46 lines: Usage line at 5, `ack_warnings=None` in the `cmd_close` signature at 524, `p.add_argument('--ack-warnings', metavar='TEXT'` at 1649, `kw['ack_warnings'] = a.ack_warnings` at 1687, and `expect(...)` asserts at 1108 (b), 1448 (w1), 1458 (w2), 1469 (w3/w4/w5 loop, 4 runs), 1477 (w6, 2 runs), 1484 (w7), 1493 (w8), 1503 (w9): 9 expect calls covering 13 runs.
+- Negative control in a throwaway worktree: pass. Evidence: `git worktree add <tmp>/wt HEAD`, copied the built tickets.py in, first confirmed the unmodified copy passes there (rc 0), then rewrote line 618 to drop `and ack_warnings is None`; selftest rc 1, failing cases `(w1) (w2) (w7) (w8) (w9)` (w1's captured err was the open-warnings refusal). Worktree removed with `git worktree remove --force`; `git worktree list` shows only the two original trees. Baseline at pristine HEAD: selftest PASS and `close --help | grep -c ack-warnings` = 0, so the help and selftest checks below discriminate HEAD from the build.
+- Manual run, ack close: pass. Evidence: temp dir, `new feature demo`, filer-L1.md with Warnings `nothing committed yet` and Follow-ups `- Add retry`, `close demo --ack-warnings "committed later"` printed `T-0001 done; 1 follow-up ticket(s): add-retry; warnings acknowledged: committed later`, rc=0; `grep '^status:' demo/handoff.md` → `status: done`; `ls .sdlc` → `add-retry demo roadmap.md`, add-retry has `type: idea`, `status: proposed`; `tail -6 demo/handoff.md` ends `## Closed` / `2026-09-25: warnings acknowledged: committed later` / `> nothing committed yet` (`date +%F` = 2026-09-25).
+- Manual run, refusals: pass. Evidence: `close demo` rc=1, stderr `filer warnings are open, not closing (rerun with --ack-warnings "<why>" to record why they no longer apply, or --force to override):\nnothing committed yet`, index of `--ack-warnings` 55 < index of `--force` 117. `close demo --ack-warnings x --force` rc=1, `nothing written`, sha256 tree snapshot unchanged. `close demo --ack-warnings "  "` rc=1, `empty --ack-warnings; ...; nothing written`, snapshot unchanged.
+- `close --help` lists `--ack-warnings TEXT`: pass. Evidence: usage line `[--ack-warnings TEXT]` and the option row `--ack-warnings TEXT  close while the filer warnings are open: record TEXT and the quoted warnings in a ## Closed section, ...`; at HEAD the same grep matched 0 lines.
+- Neighbors: `plugins/sdlc-lite/scripts/check.sh` rc=0 (tickets, board, steps, order, run selftests PASS, shellcheck ok, plugin validate ok).
+
+## Out of scope changes
+`.sdlc/0057-close-ack-warnings/handoff.md` is modified (Intent and Constraints filled in). Its mtime (07:48) predates the builder run (07:51) and it is the task brief, so it was written by the clarify/plan stage, not by this step; no other files changed. Untracked `.sdlc/0057-close-ack-warnings/{planner-L2.md,runs.jsonl,step-1/,step-2/}` are chain artifacts.
+
+## For the next attempt
+None
