@@ -41,3 +41,11 @@ cce84c8, workflow-stage pilot: I acknowledge it. The concepts table (capability,
 3. **Step criteria are prose.** In the exercise's step handoffs, criteria like "The stage definition names inputs, work/process, outputs, and exit/evidence" are not runnable, which conflicts with planner rules 1 and 11. Acceptable for an author-written illustration, but the example should not look like a model for real plans. One `grep -q` per heading would make it one.
 
 I found no ambiguity in the stage contract text itself. The Review field ("only for an actual user decision") is a good constraint.
+
+## Review of b45adcc
+
+I confirm all three suggestions landed. The pilot is out of `.sdlc/` (no `workflow` folder remains there), sdlc-lite's handoff format is back to its core text, and I reran every criterion in the step handoffs: all pass. The pilot is ready for practical use as optional guidance.
+
+One note, not a blocker: the criteria assert exact sentences (for example "It says nothing by itself about a capability's maturity"), so a harmless rewording breaks them. That is fine for a frozen illustration. Real plans should check for a heading or key term instead, as planner rule 12 does for shared files.
+
+Released as sdlc-lite 0.17.2, because the handoff-format line shipped in 0.17.1.
