@@ -2,7 +2,7 @@
 """Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
 This script is the only writer of .sdlc/roadmap.md.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | selftest}
   --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
@@ -89,6 +89,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
             also fails a NNNN-<slug> folder whose id is not T-NNNN. Outside numbered mode, when every
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
+  number    convert a plain-slug root: rename each ticket folder <slug> to NNNN-<slug> after its id, rewrite
+            every cite of <rel>/<slug> (as close's scan finds them, plus files inside the folder) to
+            <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
+            nothing, on a bad ticket, a non T-NNNN id, or an existing target. --dry-run lists the renames
+            and rewrites. Follow with archive --rewrite-refs to hide done and dropped folders
   selftest  build fixtures in a temp dir and prove every check failure fires
 
 Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
@@ -263,7 +268,7 @@ def literal_re(old):
     return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
-def outside_refs(root, slug):
+def outside_refs(root, slug, own=False):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
@@ -276,7 +281,8 @@ def outside_refs(root, slug):
     file under the ticket's own folder and <root>/roadmap.md (the folder moves with the ticket; close
     regenerates the roadmap). (None, '', '', []) when git is missing, a git call fails, or root is outside the
     toplevel, the same rule as worktree_pairs. GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer
-    git context cannot redirect the scan."""
+    git context cannot redirect the scan. own=True (number) keeps files under the ticket's own folder too, since
+    a literal <rel>/<slug> cite there goes stale when the folder is renamed."""
     try:
         here = root.resolve()
         anchor = here
@@ -297,7 +303,7 @@ def outside_refs(root, slug):
         skip = (rel / 'roadmap.md').as_posix()
         lit = literal_re(old)
         files = []
-        for f in sorted(f for f in p.stdout.split('\0') if f and f != skip and not f.startswith(old + '/')):
+        for f in sorted(f for f in p.stdout.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))):
             try:
                 text = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
             except OSError:
@@ -314,7 +320,7 @@ def outside_refs(root, slug):
 TOKEN_RE = re.compile(r"[^\s'\"`()<>\[\]]+")
 
 
-def ref_tokens(text, top, f, old):
+def ref_tokens(text, top, f, old, dest=None):
     """[(start, end, rewritten)] for each path token in text (read from toplevel-relative file f under top) that
     names the folder top/old: a token holding a '/' whose component <slug> (old's last part) is a whole path
     component, where the path up to that component lands on top/old, and the whole token (trailing .,;:!?
@@ -322,6 +328,7 @@ def ref_tokens(text, top, f, old):
     absolute path (also after resolving symlinks). rewritten is the token with only that component turned into
     .<slug>; every other byte is kept. Lexical: the folder need not exist, so it works after the rename."""
     slug = old.rsplit('/', 1)[-1]
+    dest = dest or '.' + slug
     target = os.path.normpath(str(top / old))
     fdir = os.path.dirname(os.path.normpath(str(top / f)))
     bases = [fdir, str(top)]
@@ -340,7 +347,7 @@ def ref_tokens(text, top, f, old):
         parts = tok.split('/')
         for i, part in enumerate(parts):
             if part == slug and lands('/'.join(parts[:i + 1]) or '/', True) and lands(tok, False):
-                parts[i] = '.' + slug
+                parts[i] = dest
                 out.append((m.start(), m.start() + len(tok), '/'.join(parts)))
                 break
     return out
@@ -357,7 +364,7 @@ def rewrite_files(top, files, old, new):
     for f in files:
         path = top / f
         text = lit.sub(lambda m: new, path.read_bytes().decode('utf-8', 'surrogateescape'))
-        for start, end, tok in reversed(ref_tokens(text, top, f, old)):
+        for start, end, tok in reversed(ref_tokens(text, top, f, old, new.rsplit('/', 1)[-1])):
             text = text[:start] + tok + text[end:]
         path.write_bytes(text.encode('utf-8', 'surrogateescape'))
 
@@ -1011,6 +1018,47 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names) + rewrote
 
 
+def cmd_number(root, dry_run=False):
+    """Convert a plain-slug ticket root to numbered mode: rename each <slug> ticket folder to NNNN-<slug> after
+    its own id, rewrite every cite of <rel>/<slug> (the literal, or a path token that resolves to the folder,
+    including files inside the folder itself) to <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, and
+    regenerate the roadmap. Refuses, writing nothing, on a bad ticket, a ticket whose id is not T-NNNN, or an
+    existing target folder. Done and dropped folders get NNNN- too; `archive --rewrite-refs` hides them after."""
+    ts = load(root)
+    errs = problems(ts)
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    plain = [(n, m) for n, m in ts if not n.startswith('.') and not PREFIX_RE.match(n)]
+    bad = [n for n, m in plain if not re.fullmatch(r'T-\d{4}', str(m.get('id', '')))]
+    if bad:
+        raise Fail(f'number: no T-NNNN id in {", ".join(bad)}; nothing written')
+    moves = [(n, folder_name(n, m['id'], True)) for n, m in plain]
+    taken = [new for _, new in moves if (root / new).exists() or (root / f'.{new}').exists()]
+    if taken:
+        raise Fail(f'number: {", ".join(taken)} already exist(s); nothing written')
+    hits = []
+    for n, new in moves:
+        top, old, _, files = outside_refs(root, n, own=True)
+        if files:
+            hits.append((n, new, top, old, old.rsplit('/', 1)[0] + '/' + new if '/' in old else new, files))
+    rewrite = sorted({f for *_, files in hits for f in files})
+    if dry_run:
+        if not moves:
+            return 'nothing to number'
+        return '\n'.join([f'{n} -> {new}' for n, new in moves] + [f'rewrite {f}' for f in rewrite])
+    for n, new, top, old, dest, files in hits:
+        rewrite_files(top, files, old, dest)
+    for n, new in moves:
+        (root / n).rename(root / new)
+    ensure_numbered_config(root)
+    write_roadmap(root, load(root))
+    if not moves:
+        return 'nothing to number; numbered mode on'
+    rewrote = f'; rewrote refs in {len(rewrite)} file(s)' if rewrite else ''
+    return (f'numbered {len(moves)} folder(s){rewrote}; run `archive --rewrite-refs` to hide done and dropped '
+            'ones')
+
+
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
     kw goes to new, close, roadmap, check and archive (numbered=)."""
@@ -1025,6 +1073,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_check(root, **kw), ''
         if cmd == 'archive':
             return 0, cmd_archive(root, **kw), ''
+        if cmd == 'number':
+            return 0, cmd_number(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -2184,6 +2234,32 @@ def selftest():
                      'commit', '--no-verify', '-qm', 'x')
             return root, spec
 
+        # number converts a plain root; the refusals write nothing
+        if shutil.which('git') is not None:
+            root, spec = arch_ref(text='see .sdlc/alpha/handoff.md and ../.sdlc/beta\n')
+            for slug, new in (('0001-alpha', 'alpha'), ('0002-beta', 'beta')):
+                (root / slug).rename(root / new)
+            (root / 'config').unlink()
+            (root / 'alpha' / 'note.md').write_text('in .sdlc/alpha/step-1\n', encoding='utf-8')
+            before = whole(root)
+            rc, out, err = run(root, 'number', dry_run=True)
+            expect(f'number dry run lists and writes nothing: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'alpha -> 0001-alpha' in out and 'rewrite docs/spec.md' in out
+                   and whole(root) == before)
+            rc, out, err = run(root, 'number')
+            expect(f'number renames, rewrites, persists mode: rc={rc} {out!r} {err!r} tree={tree(root)}',
+                   rc == 0 and (root / '0001-alpha').is_dir() and (root / '0002-beta').is_dir()
+                   and (root / '0003-gamma').is_dir() and config_numbered(root)
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/0001-alpha/handoff.md and ../.sdlc/0002-beta\n'
+                   and (root / '0001-alpha' / 'note.md').read_text(encoding='utf-8') == 'in .sdlc/0001-alpha/step-1\n'
+                   and run(root, 'check')[0] == 0)
+            root = case(both(arch_base, lambda r: ((r / '0001-alpha').rename(r / 'alpha'),
+                                                   (r / '0001-alpha').mkdir())))
+            before = snap(root)
+            rc, out, err = run(root, 'number')
+            expect(f'number collision refuses and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and '0001-alpha' in err and snap(root) == before and (root / 'alpha').is_dir())
+
         if shutil.which('git') is None:
             print('tickets selftest: git not found; skipping the archive reference cases')
         else:
@@ -2516,6 +2592,10 @@ def main(argv):
     p.add_argument('--numbered', action='store_true',
                    help='turn numbered mode on and, on success, persist it in <root>/config '
                         '(also on via that config)')
+    p = sub.add_parser('number', help='convert plain <slug> ticket folders to NNNN-<slug>, rewrite their cites, '
+                                      'and turn numbered mode on')
+    p.add_argument('--dry-run', action='store_true',
+                   help='print each <slug> -> NNNN-<slug> rename and each rewrite <file>; write nothing')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
@@ -2523,6 +2603,8 @@ def main(argv):
         return selftest()
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force)}.get(cmd, tuple)()
     kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check', 'archive') else {}
+    if cmd == 'number':
+        kw['dry_run'] = a.dry_run
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs
