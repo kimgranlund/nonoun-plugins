@@ -14,7 +14,7 @@ A skill plus scripts/traces.py reads a project's sdlc run traces and reports ine
 
 ## Intent
 - Do: 6 stages.
-  1. `traces.py ingest <repo>`: normalize .sdlc/*/ handoffs, builder and verifier files, base-sha, stream-json transcripts, lane and gate logs, tickets.py state, and git history into one event table (run_id, ticket, step, role, level, attempt, verdict, turns, cost, secs, tool calls, exit).
+  1. `traces.py ingest <repo>`: normalize `*.attempt.json` as the primary attempt source, then join .sdlc/*/ handoffs, `runs.jsonl`, builder and verifier files, base-sha, stream-json transcripts, lane and gate logs, tickets.py state, and git history into one event table (attempt_id, ticket, step, role, level, attempt, verdict, turns, cost, secs, tool calls, exit). Attempt records include interrupted and failed runs that never reached `runs.jsonl`.
   2. `traces.py detect`: deterministic detectors with thresholds, no model. Start set: replan loops and recurring findings; escalation with unchanged verdict; plan-defect refusals by lint rule and criteria that never went red; background polling past timeouts vs host load; cost per verified step vs bench baseline; stray worktrees, tracked runtime files, resets over a dirty tree; stale log lines by run id. Incremental via a cursor in .sdlc/runtime/.
   3. Diagnose: scout or archaeologist at L2 per finding cluster, reading only cited evidence; classify cause as sdlc-lite, project, host, or task text, and name the plugin file or rule at fault.
   4. Verify: an independent verifier reproduces each finding from its evidence or drops it.

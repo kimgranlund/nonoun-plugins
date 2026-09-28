@@ -38,13 +38,15 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 ```
 .sdlc/**/*.running
 .sdlc/**/*.log
+.sdlc/**/.run.lock
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
 - `.sdlc/**/*.running`: marker for a role run in progress
 - `.sdlc/**/*.log`: raw role transcript (stream-json: one JSON event per line, stderr mixed in)
+- `.sdlc/**/.run.lock`: local lock state used to prevent overlapping runs
 
-Keep the results `.md` files and `runs.jsonl` committed.
+Keep the results `.md` files, `runs.jsonl`, and `*.attempt.json` committed. Attempt records preserve failed and interrupted runs even when no normal run row was written.
 
 ## Ticket front matter (optional)
 

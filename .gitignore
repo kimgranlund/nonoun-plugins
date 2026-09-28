@@ -4,6 +4,7 @@
 *.log
 .board-state.json
 *.running
+.run.lock
 plugins/sdlc-lite/bench/logs/
 .sdlc/dogfood/
 .worktrees/

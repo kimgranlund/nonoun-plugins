@@ -2,7 +2,7 @@
 id: T-0158
 title: "Stale running attempt blocks headless Claude runs; .run.lock not ignored"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -31,3 +31,7 @@ Raised in docs/claude-response.md (items 1 and 2) on Codex commit d4ad342 (0.17.
 
 ## Constraints
 No change to role, model, or effort mappings. Keep the codex subagent refusal.
+
+## Closed
+
+2026-09-28: Claude exec recovers stale attempts under the directory lock; Codex native still requires explicit recovery; lock files are ignored.

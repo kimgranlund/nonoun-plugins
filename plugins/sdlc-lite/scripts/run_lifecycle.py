@@ -35,21 +35,26 @@ def lock(directory):
     return handle
 
 
+def recover_unlocked(directory):
+    """Mark stale attempts interrupted while the caller holds the directory lock."""
+    changed = []
+    for path in directory.glob('*.attempt.json'):
+        data = json.loads(path.read_text())
+        if data['status'] == 'running':
+            marker = directory / (data['role'] + '-' + data['level'] + '.running')
+            if marker.parent != directory:
+                raise ValueError('invalid role in attempt record: ' + str(path))
+            data.update(status='interrupted', finished_at=now(), recovery='Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt.')
+            write(path, data)
+            marker.unlink(missing_ok=True)
+            changed.append(path.name)
+    return changed
+
+
 def recover(directory):
     directory = Path(directory).resolve()
     with lock(directory):
-        changed = []
-        for path in directory.glob('*.attempt.json'):
-            data = json.loads(path.read_text())
-            if data['status'] == 'running':
-                data.update(status='interrupted', finished_at=now(), recovery='Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt.')
-                write(path, data)
-                marker = directory / (data['role'] + '-' + data['level'] + '.running')
-                if marker.parent != directory:
-                    raise ValueError('invalid role in attempt record: ' + str(path))
-                marker.unlink(missing_ok=True)
-                changed.append(path.name)
-        return changed
+        return recover_unlocked(directory)
 
 
 def run(role, level, handoff, backend, model, effort):
@@ -63,7 +68,11 @@ def run(role, level, handoff, backend, model, effort):
     with lock(directory) as owner:
         stale = [p.name for p in directory.glob('*.attempt.json') if json.loads(p.read_text()).get('status') == 'running']
         if stale:
-            raise ValueError('Interrupted attempt needs review; run run_lifecycle.py recover "' + str(directory) + '": ' + ', '.join(stale))
+            if backend == 'claude' and transport == 'exec':
+                recovered = recover_unlocked(directory)
+                print('Recovered stale Claude attempts before new run: ' + ', '.join(recovered), file=sys.stderr)
+            else:
+                raise ValueError('Interrupted attempt needs review; run run_lifecycle.py recover "' + str(directory) + '": ' + ', '.join(stale))
         stem = role + '-' + level
         name = stem
         n = 1

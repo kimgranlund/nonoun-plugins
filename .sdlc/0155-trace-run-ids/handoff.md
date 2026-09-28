@@ -1,6 +1,6 @@
 ---
 id: T-0155
-title: "Run id on every lane and gate log line"
+title: "Attempt id on lane and gate log lines"
 type: feature        # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
@@ -10,15 +10,15 @@ created: 2026-09-28
 ---
 
 ## Goal
-Every lane, fanout, and gate log line names the run that wrote it, so a line from an earlier run never reads as a new failure.
+Every lane and gate log line names the attempt that wrote it, so a line from an earlier attempt never reads as a new failure.
 
 ## Intent
-- Do: generate a run id per run.sh and fanout invocation, export it as SDLC_RUN_ID, and prefix it on each log line those scripts write.
+- Do: use the existing `SDLC_ATTEMPT_ID` from the lifecycle runner and prefix it on lane and gate log lines. Define a separate identifier only for fanout lines that have no role attempt.
 - Non-goals: rewriting old logs.
-- Done when: a selftest resumes a stopped run and shows the old STOPPED line and the new lines carry different run ids.
+- Done when: a selftest resumes a stopped run and shows the old STOPPED line and the new lines carry different attempt ids.
 
 ## Context
-From gen-ui batch 3 item 14. Prerequisite for review-sdlc-traces (T-0157), which joins events by run id.
+From gen-ui batch 3 item 14. `run_lifecycle.py` already records `attempt_id` in `*.attempt.json` and normal `runs.jsonl` rows. Prerequisite for review-sdlc-traces (T-0157), which joins events by attempt id.
 
 ## Constraints
 None.

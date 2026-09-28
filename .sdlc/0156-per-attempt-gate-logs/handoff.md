@@ -18,7 +18,7 @@ A retried gate keeps every attempt's log, so the first failure survives.
 - Done when: a selftest runs a gate twice and both logs exist with distinct content.
 
 ## Context
-From gen-ui batch 3 item 5 (T-0365 at 07:40 lost its first failure). Confirm first which sdlc-lite script, if any, overwrites; if none does, close as not-sdlc. Prerequisite for T-0157.
+From gen-ui batch 3 item 5 (T-0365 at 07:40 lost its first failure). fanout currently names gate logs `gate-<lane>-<id>-<k>.log`, where `<k>` numbers gates, not attempts; check whether a retry overwrites the same path. The lifecycle runner preserves role logs but does not own gate logs. If no sdlc-lite script overwrites them, close as not-sdlc. Prerequisite for T-0157.
 
 ## Constraints
 None.

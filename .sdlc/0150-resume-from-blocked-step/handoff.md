@@ -16,7 +16,7 @@ The bug is fixed and a test that failed before the fix passes after it.
 1. Exact command or steps, from a clean checkout.
 
 ## Expected
-After an earlier step blocks, a resumed /chain rebuilds from that blocked step; it never builds a later step first. Confirm first whether steps.py next already does this; gen-ui worked around it with a local stepn.sh.
+After an earlier step blocks, a resumed /chain rebuilds from that blocked step; it never builds a later step first. Before choosing the step, use `run_lifecycle.py recover <handoff-directory>` for a stale attempt when explicit recovery is required (especially Codex native), and inspect its artifacts. Confirm first whether steps.py next already chooses the blocked step; gen-ui worked around it with a local stepn.sh.
 
 ## Actual
 Paste the output or error verbatim.

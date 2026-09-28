@@ -94,8 +94,76 @@ class LifecycleTests(fixture.CodexTests):
             codex_exchange.respond(request,report)
         self.assertFalse(request.with_suffix('.response.json').exists())
 
+    def test_sigkill_recovers_claude_but_codex_native_refuses(self):
+        (self.bin/'claude').write_text(CLAUDE)
+        directory = self.repo/'killed'
+        directory.mkdir()
+        handoff = directory/'handoff.md'
+        handoff.write_text('## Goal\nMap seed.txt\n')
+        command = ['bash', str(fixture.ROOT/'scripts/run.sh'), 'scout', 'L1', str(handoff)]
+        env = dict(self.env, SDLC_BACKEND='claude', MODE='timeout')
+        owner = subprocess.Popen(command, cwd=self.repo, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        child_pid = None
+        try:
+            path = directory/'scout-L1.attempt.json'
+            deadline = time.monotonic()+10
+            while time.monotonic()<deadline:
+                if path.exists():
+                    record = json.loads(path.read_text())
+                    child_pid = record.get('process_pid')
+                    if child_pid and (directory/'scout-L1.running').exists():
+                        break
+                time.sleep(.05)
+            self.assertIsNotNone(child_pid)
+            os.kill(owner.pid, signal.SIGKILL)
+            owner.wait(timeout=5)
+            self.assertEqual(json.loads(path.read_text())['status'], 'running')
+            active = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=10)
+            self.assertEqual(active.returncode, 2, active.stderr)
+            self.assertIn('still owns', active.stderr)
+        finally:
+            if child_pid:
+                try:
+                    os.killpg(child_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            if owner.poll() is None:
+                owner.kill(); owner.wait(timeout=5)
+            owner.stdout.close(); owner.stderr.close()
+
+        # The killed child's inherited descriptor may close just after killpg returns.
+        deadline = time.monotonic()+10
+        while time.monotonic()<deadline:
+            try:
+                with run_lifecycle.lock(directory):
+                    break
+            except ValueError:
+                time.sleep(.05)
+        else:
+            self.fail('killed child did not release the handoff lock')
+        retry = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=20)
+        self.assertEqual(retry.returncode, 0, retry.stderr)
+        self.assertIn('Recovered stale Claude attempts', retry.stderr)
+        self.assertEqual(json.loads(path.read_text())['status'], 'interrupted')
+        self.assertEqual(json.loads((directory/'scout-L1-2.attempt.json').read_text())['status'], 'completed')
+        self.assertFalse((directory/'scout-L1.running').exists())
+
+        native = self.repo/'native-stale'
+        native.mkdir()
+        (native/'handoff.md').write_text('## Goal\nMap seed.txt\n')
+        stale = native/'scout-L1.attempt.json'
+        stale.write_text(json.dumps(dict(role='scout', level='L1', status='running', attempt_id='native-old')))
+        fixture.codex_roles.install(self.repo)
+        native_env = dict(self.env, SDLC_BACKEND='codex', SDLC_CODEX_TRANSPORT='subagent')
+        refused = subprocess.run(command[:-1]+[str(native/'handoff.md')], cwd=self.repo, env=native_env,
+                                 capture_output=True, text=True, timeout=10)
+        self.assertEqual(refused.returncode, 2, refused.stderr)
+        self.assertIn('Interrupted attempt needs review', refused.stderr)
+        self.assertEqual(json.loads(stale.read_text())['status'], 'running')
+        self.assertEqual(len(list(native.glob('*.attempt.json'))), 1)
+
 
 if __name__ == '__main__':
-    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report']
+    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report','test_sigkill_recovers_claude_but_codex_native_refuses']
     result=unittest.TextTestRunner().run(unittest.TestSuite(LifecycleTests(n) for n in names))
     sys.exit(not result.wasSuccessful())
