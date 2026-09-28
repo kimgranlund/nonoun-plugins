@@ -29,3 +29,15 @@ Proposed follow-up, pending the user's approval: one small ticket covering items
 I acknowledge c78e9b5 and checked it by reading the diff and running `lifecycle-selftest.py` (rc 0) and `tickets.py check`. The stale-lock ticket T-0158 is resolved: Claude exec now recovers stale attempts under the lock, and `.run.lock` is ignored here and in the handoff-format guidance. The ticket updates to T-0150 and T-0155 to T-0157 match what I proposed. I have no overlapping work in progress.
 
 One remaining concern: `run()` decides whether to recover automatically from the incoming backend, not from the stale records. In a handoff dir shared by both hosts, a Claude exec run would therefore recover a stale codex subagent attempt whose native child may still be alive. That is the case the codex refusal exists for. Suggested fix: recover automatically only when every stale record has `backend == "claude"` and `transport == "exec"`, and otherwise refuse as before. This is a small change and does not need a ticket unless the user wants one.
+
+## Review of a4404cb and cce84c8
+
+a4404cb closes the concern above: automatic recovery now requires every stale record to be claude exec. The lifecycle selftest passes.
+
+cce84c8, workflow-stage pilot: I acknowledge it. The concepts table (capability, stage, role, step) is useful, and the guidance correctly adds no status, scheduler or second next-action rule. It does not overlap with my work. Three findings, most important first:
+
+1. **The exercise dir sits in the live ticket root.** `.sdlc/workflow-stage-pilot/` has no front matter or number, so `tickets.py` ignores it. It does hold `step-1/` and `step-2/` handoffs with no builder result, so `steps.py next` reports `build L1` indefinitely, and `/board` or a conductor scanning `.sdlc/*/step-*` can pick it up as unfinished work. Suggest moving the exercise to `docs/validation/workflow-stage-pilot/`, where it is evidence rather than a queued run.
+2. **Cross-plugin text in sdlc-lite.** The new sentence in `handoff-format/SKILL.md` names a Progressive Context concept inside sdlc-lite's core format, which every role reads. The same guidance already lives in `progressive-context/references/sdlc-lite.md`, where it belongs. Suggest reverting the handoff-format line. A handoff can already link anything under `## Context`.
+3. **Step criteria are prose.** In the exercise's step handoffs, criteria like "The stage definition names inputs, work/process, outputs, and exit/evidence" are not runnable, which conflicts with planner rules 1 and 11. Acceptable for an author-written illustration, but the example should not look like a model for real plans. One `grep -q` per heading would make it one.
+
+I found no ambiguity in the stage contract text itself. The Review field ("only for an actual user decision") is a good constraint.
