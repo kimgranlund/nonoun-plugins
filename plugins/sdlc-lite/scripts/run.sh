@@ -70,7 +70,7 @@ set -euo pipefail
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
 usage() { echo "usage: run.sh <role> <level> <handoff.md>  (see levels in this file)" >&2; exit 2; }
 
-# role:level -> model effort. Keep in sync with skills/level-rubric/SKILL.md and CLAUDE.md.
+# role:level -> model effort. Keep in sync with skills/level-rubric/SKILL.md and AGENTS.md.
 case "$role:$level" in
   builder:L1)       model=sonnet; effort=low ;;
   builder:L2)       model=opus;   effort=low ;;
