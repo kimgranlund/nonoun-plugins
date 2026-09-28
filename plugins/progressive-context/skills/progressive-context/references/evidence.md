@@ -8,7 +8,7 @@ A compact Markdown assessment is enough. Record:
 - Each criterion, check actually run, observed result, and evidence link.
 - Failures, missing checks, limitations, and the accepted use scope.
 
-A base commit alone does not identify a dirty working tree. Commit the checked material when appropriate, or capture a content digest/snapshot including relevant untracked files and changes. Never mark evidence current if the material cannot be identified. Link existing SDLC verifier artifacts when they contain the needed facts; add only missing qualification information.
+A base commit alone does not identify a dirty working tree. Commit the checked material when appropriate, or capture a content digest/snapshot including relevant untracked files and changes. Never mark evidence current if the material cannot be identified. Link existing verification or evaluation records when they contain the needed facts; add only missing qualification information.
 
 Use “not assessed” for missing evidence, “failed” for a demonstrated violation, and “stale” when relevant checked inputs changed. Changes invalidate affected claims, not every unrelated claim in the project. A proposed test is not an assessment. Schema validation establishes structural validity only.
 
