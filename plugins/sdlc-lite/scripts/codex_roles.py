@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
-"""Generate/install native Codex agents from shared SDLC role contracts (Python 3.9+)."""
+"""Generate/install native Codex agents and optional project conductor guidance (Python 3.9+)."""
 import argparse
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = ROOT / 'adapters/codex'
 TOKEN = '@SDLC_PLUGIN_ROOT@'
 REQUIRED = {'name', 'description', 'model', 'model_reasoning_effort', 'sandbox_mode', 'developer_instructions'}
+CONDUCTOR_MARKER = '<!-- SDLC Lite Codex project conductor'
+CONDUCTOR_TEXT = (
+    'For this project, act as the SDLC Lite conductor for software delivery work. '
+    'Load the installed sdlc-lite skill, follow its workflow routing, and coordinate '
+    'implementation and verification through the configured SDLC Lite roles and runner. '
+    'Honor the user\'s instructions and the project\'s existing guidance.'
+)
 
 FIELDS = REQUIRED
 
@@ -83,7 +92,109 @@ def resolve(role, level, directory=None):
     return model, effort
 
 
-def install(project, check=False):
+def conductor_block(created_key):
+    mode = 'created-key' if created_key else 'appended'
+    return (f'{CONDUCTOR_MARKER}: {mode} begin -->\n'
+            + CONDUCTOR_TEXT + '\n'
+            + f'{CONDUCTOR_MARKER}: {mode} end -->')
+
+
+def instruction_string(tomlkit, value):
+    # TOML strips the first newline after a multiline opener. A basic string
+    # with escapes preserves leading newlines in preexisting user guidance.
+    return tomlkit.string(value, multiline='\n' in value and not value.startswith(('\n', '\r')))
+
+
+def conductor_config(project, enabled, check=False):
+    """Plan a style-preserving project config edit; never change unrelated TOML."""
+    path = project.resolve() / '.codex/config.toml'
+    if path.parent.is_symlink() or path.is_symlink():
+        raise ValueError('refusing symlinked project config destination: ' + str(path))
+    if not path.exists() and not enabled:
+        return path, None
+    # Only the explicit project-conductor commands need the vendored TOML editor.
+    vendor = str(Path(__file__).resolve().parent / '_vendor')
+    if vendor not in sys.path:
+        sys.path.insert(0, vendor)
+    import tomlkit
+    if path.exists():
+        with path.open('r', encoding='utf-8', newline='') as source:
+            original = source.read()
+    else:
+        original = ''
+    try:
+        document = tomlkit.parse(original)
+    except tomlkit.exceptions.ParseError as exc:
+        raise ValueError('invalid project config TOML: ' + str(path) + ': ' + str(exc)) from exc
+    had_key = 'developer_instructions' in document
+    current = document.get('developer_instructions', '')
+    if not isinstance(current, str):
+        raise ValueError('project developer_instructions must be a string: ' + str(path))
+    created = conductor_block(True)
+    appended = conductor_block(False)
+    control_markers = tuple(line for block in (created, appended)
+                            for line in (block.split('\n')[0], block.split('\n')[-1]))
+    if any(marker in current for marker in control_markers) and (
+            sum(current.count(marker) for marker in control_markers) != 2 or
+            (created in current) == (appended in current)):
+        raise ValueError('refusing to change edited SDLC Lite conductor instructions: ' + str(path))
+    if enabled:
+        if created in current or appended in current:
+            return path, None
+        if check:
+            raise ValueError('project conductor instructions are missing: ' + str(path))
+        block = appended if had_key else created
+        document['developer_instructions'] = instruction_string(
+            tomlkit, current + ('\n\n' if current else '') + block)
+    else:
+        if created in current:
+            remaining = current.replace(created, '', 1)
+            if remaining:
+                document['developer_instructions'] = instruction_string(tomlkit, remaining)
+            else:
+                del document['developer_instructions']
+        elif appended in current:
+            # Remove only the exact managed text and the separator we inserted.
+            prefix, suffix = current.split(appended, 1)
+            if prefix.endswith('\n\n'):
+                prefix = prefix[:-2]
+            remaining = prefix + suffix
+            document['developer_instructions'] = instruction_string(tomlkit, remaining)
+        else:
+            return path, None
+    updated = tomlkit.dumps(document)
+    try:
+        reparsed = tomlkit.parse(updated)
+    except tomlkit.exceptions.ParseError as exc:
+        raise ValueError('refusing to write invalid project config TOML: ' + str(path) + ': ' + str(exc)) from exc
+    if 'developer_instructions' in document and reparsed['developer_instructions'] != document['developer_instructions']:
+        raise ValueError('refusing to change project developer instructions during TOML serialization: ' + str(path))
+    if updated == original:
+        return path, None
+    return path, updated
+
+
+def write_conductor_config(path, updated):
+    if updated is None:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.is_symlink():
+        raise ValueError('refusing symlinked project config destination: ' + str(path))
+    mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o600
+    descriptor, name = tempfile.mkstemp(prefix='.config.toml.tmp-', dir=path.parent)
+    temp = Path(name)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='') as output:
+            output.write(updated)
+        temp.chmod(mode)
+        temp.replace(path)
+    finally:
+        if temp.exists():
+            temp.unlink()
+    return True
+
+
+def install(project, check=False, conductor=False):
     dest = project.resolve() / '.codex/agents'
     receipt = dest / '.sdlc-managed.json'
     if dest.is_symlink() or dest.parent.is_symlink() or receipt.is_symlink():
@@ -104,11 +215,12 @@ def install(project, check=False):
             digest = hashlib.sha256(target.read_bytes()).hexdigest()
             if previous.get(name) != digest:
                 raise ValueError('refusing to overwrite edited/unmanaged agent: ' + str(target))
+    config_path, config_text = conductor_config(project, True, check) if conductor else (None, None)
     if check:
         missing = [name for name, text in generated.items() if not (dest / name).exists() or (dest / name).read_text() != text]
         if missing:
             raise ValueError('agents missing or stale: ' + ', '.join(missing))
-        print('Codex agents are current: ' + str(dest))
+        print('Codex agents and project conductor are current: ' + str(dest) if conductor else 'Codex agents are current: ' + str(dest))
         return
     dest.mkdir(parents=True, exist_ok=True)
     for name, text in generated.items():
@@ -117,20 +229,28 @@ def install(project, check=False):
         temp.write_text(text)
         temp.replace(target)
     receipt.write_text(json.dumps({n: hashlib.sha256(t.encode()).hexdigest() for n, t in generated.items()}, indent=2) + '\n')
-    print(f'Installed {len(generated)-1} project agents in {dest}; start a fresh Codex session.')
+    if conductor:
+        write_conductor_config(config_path, config_text)
+    print(f'Installed {len(generated)-1} project agents in {dest}'
+          + (' with project conductor' if conductor else '') + '; start a fresh Codex session.')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     subs = parser.add_subparsers(dest='command', required=True)
     gen = subs.add_parser('generate'); gen.add_argument('--check', action='store_true')
-    setup = subs.add_parser('install'); setup.add_argument('project', type=Path); setup.add_argument('--check', action='store_true')
+    setup = subs.add_parser('install'); setup.add_argument('project', type=Path); setup.add_argument('--check', action='store_true'); setup.add_argument('--conductor', action='store_true', help='opt in to the SDLC Lite main-session conductor for this project')
+    off = subs.add_parser('conductor-off'); off.add_argument('project', type=Path)
     res = subs.add_parser('resolve'); res.add_argument('role'); res.add_argument('level'); res.add_argument('directory', nargs='?')
     args = parser.parse_args()
     if args.command == 'resolve':
         print(*resolve(args.role, args.level, args.directory))
     elif args.command == 'install':
-        install(args.project, args.check)
+        install(args.project, args.check, args.conductor)
+    elif args.command == 'conductor-off':
+        path, updated = conductor_config(args.project, False)
+        changed = write_conductor_config(path, updated)
+        print(('Removed' if changed else 'No') + ' SDLC Lite project conductor instructions in ' + str(path) + '; start a fresh Codex session.')
     else:
         for name, data in definitions():
             target = ADAPTER / 'agents' / (name + '.toml')

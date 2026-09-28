@@ -8,6 +8,11 @@ SDLC Lite supports native Codex pipeline roles and predefined project subagents.
 # Register project agents; start a fresh Codex session afterwards.
 python3 /path/to/sdlc-lite/scripts/codex_roles.py install /path/to/project
 
+# Opt in to SDLC Lite conductor guidance for the main session in this project.
+python3 /path/to/sdlc-lite/scripts/codex_roles.py install /path/to/project --conductor
+# Later, remove only that guidance while keeping the project agents.
+python3 /path/to/sdlc-lite/scripts/codex_roles.py conductor-off /path/to/project
+
 # From the target project, run a pipeline step and retain its artifacts.
 SDLC_BACKEND=codex /path/to/sdlc-lite/scripts/run.sh builder L2 .sdlc/example/step-1/handoff.md
 SDLC_BACKEND=codex /path/to/sdlc-lite/scripts/run.sh verifier L1 .sdlc/example/step-1/handoff.md
@@ -18,6 +23,8 @@ SDLC_BACKEND=codex /path/to/sdlc-lite/scripts/bench.sh example
 ```
 
 There are 22 project agent definitions, including three alternate verifier models. The project agents include `sdlc-builder-l1` through `sdlc-builder-l5`, three levels each of planner/verifier/researcher, and one each of scout/architect/archaeologist/filer/conductor. Ask Codex to delegate to one by name and give it a self-contained handoff. Direct delegation returns a report; the pipeline runner additionally validates and records that report. Use the runner for build/verify steps and the board.
+
+The `--conductor` option adds a short managed block to the project's top-level `developer_instructions` in `.codex/config.toml`. It tells the main session to load the installed `sdlc-lite` skill and coordinate delivery through the configured workflows and roles. Existing developer instructions, settings, and comments are preserved; repeated setup is idempotent, and `conductor-off` removes only the managed block. Ordinary `install` never opts an existing project in. Run `install ... --conductor --check` to check both agent definitions and conductor guidance. Codex loads project config only for trusted projects, and a new session is needed to pick up changes. This is developer guidance for the main session, not a native named-main-agent binding. See the [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
 ## Default model mapping
 
@@ -41,6 +48,8 @@ There are two transports over the same runner. Standalone terminal automation us
 
 Headless conductors prepare the managed project agents before entering their sandbox and use native subagent exchange for role steps. This avoids needing sandbox write access to Codex's private runtime state. Generated agent files have a narrow project-local ignore file, preventing runtime setup from becoming unrelated implementation changes. User-edited managed files, symlinks, or an unrelated existing ignore file cause refusal rather than overwrite.
 
+Project-conductor setup preflights the TOML and managed agents before writing. Malformed config, a non-string `developer_instructions`, or an edited managed block causes refusal. The opt-in TOML editor is a pinned, vendored `tomlkit` 0.13.3 under `scripts/_vendor` so it can preserve arbitrary valid TOML without requiring a package install; ordinary agent setup does not import it. A filesystem write failure may leave refreshed agents with conductor guidance unapplied; rerun the same command after resolving the error.
+
 Native agent format and inheritance: [official Codex subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents).
 
 ## Validation
@@ -51,6 +60,8 @@ Offline tests cover artifact creation, rerun ordering, required-section failures
 - Sol-low builder changed the greeting fixture; Astra-medium verifier returned pass and demonstrated that the acceptance assertion failed against the original code. Model selection, base tracking, result files and usage records were inspected.
 - A fresh native session spawned the installed scout and returned a unique marker present only in its agent instructions. This caught and fixed a TOML Unicode serialization defect; the repeated test had no malformed-agent errors.
 - A native headless conductor completed the request → predefined scout → response → runner-validation cycle inside its workspace sandbox. The report and run record identified `transport: subagent`.
+
+Project-conductor setup also has focused tests for existing and empty developer instructions, other TOML settings and comments, repeated setup, targeted removal, malformed config, and edited managed text. In an isolated trusted throwaway project, `codex debug prompt-input` showed both the original developer instructions and the managed conductor guidance. After removal, the original instructions remained and the conductor guidance disappeared. This prompt inspection made no model call.
 
 An earlier attempt to nest a Codex CLI inside the conductor sandbox failed on runtime-state writes; the native exchange replaced that approach. No permission widening was used to make that test pass. Full multi-lane live benchmarks and every role/level combination have not been exercised; script regression tests cover their orchestration mechanics.
 

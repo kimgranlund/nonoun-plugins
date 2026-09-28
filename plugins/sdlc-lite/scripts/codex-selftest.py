@@ -104,6 +104,130 @@ class CodexTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'symlinked agent'):
             codex_roles.install(self.repo)
 
+    def test_project_conductor_preserves_existing_config_and_removes_only_its_block(self):
+        config=self.repo/'.codex/config.toml';config.parent.mkdir()
+        original='''# keep this project comment
+developer_instructions = ''' + "'''Keep the user's review rules.'''" + ''' # keep this inline comment
+model = "gpt-6-sol"
+
+[features] # keep this table
+apps = true
+tags = ["a", "b"]
+'''
+        config.write_text(original)
+        config.chmod(0o600)
+        codex_roles.install(self.repo,conductor=True)
+        self.assertEqual(config.stat().st_mode & 0o777,0o600)
+        import tomlkit
+        doc=tomlkit.parse(config.read_text())
+        self.assertTrue(str(doc['developer_instructions']).startswith("Keep the user's review rules.\n\n"))
+        self.assertIn(codex_roles.CONDUCTOR_TEXT,str(doc['developer_instructions']))
+        self.assertEqual(doc['features']['tags'],['a','b'])
+        self.assertIn('# keep this project comment',config.read_text())
+        self.assertIn('# keep this inline comment',config.read_text())
+        self.assertIn('[features] # keep this table',config.read_text())
+        first=config.read_text()
+        codex_roles.install(self.repo,conductor=True)
+        codex_roles.install(self.repo,check=True,conductor=True)
+        self.assertEqual(config.read_text(),first)
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        self.assertEqual(str(tomlkit.parse(config.read_text())['developer_instructions']),
+                         "Keep the user's review rules.")
+        codex_roles.install(self.repo,conductor=True)
+        doc=tomlkit.parse(config.read_text())
+        doc['developer_instructions']=str(doc['developer_instructions'])+'\nExtra user rule.'
+        config.write_text(tomlkit.dumps(doc))
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        restored=tomlkit.parse(config.read_text())
+        self.assertEqual(str(restored['developer_instructions']),"Keep the user's review rules.\nExtra user rule.")
+        self.assertEqual(restored['features']['tags'],['a','b'])
+        self.assertNotIn(codex_roles.CONDUCTOR_MARKER,config.read_text())
+
+    def test_project_conductor_fresh_config_check_and_removal(self):
+        codex_roles.install(self.repo)
+        with self.assertRaisesRegex(ValueError,'conductor instructions are missing'):
+            codex_roles.install(self.repo,check=True,conductor=True)
+        codex_roles.install(self.repo,conductor=True)
+        config=self.repo/'.codex/config.toml'
+        self.assertEqual(config.stat().st_mode & 0o777,0o600)
+        self.assertIn('created-key',config.read_text())
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        import tomlkit
+        self.assertNotIn('developer_instructions',tomlkit.parse(config.read_text()))
+        self.assertTrue((self.repo/'.codex/agents/sdlc-scout-l1.toml').exists())
+        self.assertEqual(codex_roles.conductor_config(self.repo,False)[1],None)
+        codex_roles.install(self.repo,conductor=True)
+        parsed=tomlkit.parse(config.read_text())
+        parsed['developer_instructions']=str(parsed['developer_instructions'])+'\nA later user rule.'
+        config.write_text(tomlkit.dumps(parsed))
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        self.assertEqual(str(tomlkit.parse(config.read_text())['developer_instructions']),
+                         '\nA later user rule.')
+
+    def test_project_conductor_preserves_an_existing_empty_key_and_unrelated_markers(self):
+        config=self.repo/'.codex/config.toml';config.parent.mkdir()
+        config.write_text('''# <!-- SDLC Lite Codex project conductor: unrelated note -->
+developer_instructions = ""
+[features]
+apps = true
+[other]
+message = "<!-- SDLC Lite Codex project conductor: example -->"
+''')
+        codex_roles.install(self.repo,conductor=True)
+        self.assertIn('appended begin',config.read_text())
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        import tomlkit
+        parsed=tomlkit.parse(config.read_text())
+        self.assertIn('developer_instructions',parsed)
+        self.assertEqual(str(parsed['developer_instructions']),'')
+        self.assertEqual(str(parsed['other']['message']),
+                         '<!-- SDLC Lite Codex project conductor: example -->')
+        self.assertIn('# <!-- SDLC Lite Codex project conductor: unrelated note -->',config.read_text())
+
+    def test_project_conductor_preserves_crlf_instruction_and_file_newlines(self):
+        config=self.repo/'.codex/config.toml';config.parent.mkdir()
+        with config.open('w',encoding='utf-8',newline='') as output:
+            output.write('developer_instructions = "a\\r\\nb"\r\n[features]\r\napps = true\r\n')
+        codex_roles.install(self.repo,conductor=True)
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        import tomlkit
+        with config.open('r',encoding='utf-8',newline='') as source:
+            result=source.read()
+        self.assertEqual(str(tomlkit.parse(result)['developer_instructions']),'a\r\nb')
+        self.assertIn('[features]\r\napps = true\r\n',result)
+
+    def test_project_conductor_refuses_invalid_or_edited_config_before_agent_writes(self):
+        config=self.repo/'.codex/config.toml';config.parent.mkdir()
+        config.write_text('developer_instructions = [broken\n')
+        with self.assertRaisesRegex(ValueError,'invalid project config TOML'):
+            codex_roles.install(self.repo,conductor=True)
+        self.assertFalse((self.repo/'.codex/agents').exists())
+        config.write_text('developer_instructions = 7\n')
+        with self.assertRaisesRegex(ValueError,'must be a string'):
+            codex_roles.install(self.repo,conductor=True)
+        config.write_text('developer_instructions = "User rules"\n')
+        codex_roles.install(self.repo,conductor=True)
+        edited=config.read_text().replace('act as the SDLC Lite conductor','ignore the SDLC Lite conductor')
+        config.write_text(edited)
+        with self.assertRaisesRegex(ValueError,'edited SDLC Lite conductor'):
+            codex_roles.conductor_config(self.repo,False)
+        with self.assertRaisesRegex(ValueError,'edited SDLC Lite conductor'):
+            codex_roles.install(self.repo,conductor=True)
+        self.assertEqual(config.read_text(),edited)
+        config.write_text('developer_instructions = "Quote: <!-- SDLC Lite Codex project conductor: user note -->"\n')
+        codex_roles.install(self.repo,conductor=True)
+        path,updated=codex_roles.conductor_config(self.repo,False)
+        codex_roles.write_conductor_config(path,updated)
+        import tomlkit
+        self.assertEqual(str(tomlkit.parse(config.read_text())['developer_instructions']),
+                         'Quote: <!-- SDLC Lite Codex project conductor: user note -->')
+
     def test_verifier_uses_different_model(self):
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-sol effort=low -->\n## Status\ndone\n')
         self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium'))
