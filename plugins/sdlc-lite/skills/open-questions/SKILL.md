@@ -1,9 +1,12 @@
 ---
 name: open-questions
-description: Clear a task's unresolved items (open questions, unconfirmed defaults, undecided choices) in one batched AskUserQuestion round at the end of a /chain run or session. Use for "anything still open", "loose ends", "close this out", or "what's still pending". NOT for ambiguity before a task starts (/clarify); NOT for filing new work as tickets (/ticket).
-argument-hint: [task dir]
+description: "Clear a task's unresolved items (open questions, unconfirmed defaults, undecided choices) in one batched AskUserQuestion round at the end of a /chain run or session. Use for \"anything still open\", \"loose ends\", \"close this out\", or \"what's still pending\". NOT for ambiguity before a task starts (/clarify); NOT for filing new work as tickets (/ticket)."
+argument-hint: "[task dir]"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS` (a task dir such as `.sdlc/<slug>/`; empty means the current task).
 
 ## 1. Collect

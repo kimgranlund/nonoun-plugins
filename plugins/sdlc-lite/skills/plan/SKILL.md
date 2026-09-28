@@ -1,9 +1,12 @@
 ---
 name: plan
-description: Plan a task: run the planner to produce ordered steps with acceptance criteria and a builder level per step. Use when a goal is ready to be broken into buildable steps.
-argument-hint: [L1..L3] <handoff.md | goal>
+description: "Plan a task: run the planner to produce ordered steps with acceptance criteria and a builder level per step. Use when a goal is ready to be broken into buildable steps."
+argument-hint: "[L1..L3] <handoff.md | goal>"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Read, Write, Grep, Glob
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 1. Get a handoff file. If the arguments name an existing file, use it. Otherwise create one from the text per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`.

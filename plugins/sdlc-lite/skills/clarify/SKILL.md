@@ -1,9 +1,12 @@
 ---
 name: clarify
-description: Sharpen a vague or overloaded ask into an executable one (root goal, deltas, scoped do with a done-condition) and write it into the task handoff. An ask that already states its scope and done-condition passes through in one line. Use for "what are they actually asking for", "is this ask scoped", or before /plan on a fuzzy request. NOT for a greenfield design with most decisions unmade (/grill); NOT for splitting scoped work into parts (/decompose).
-argument-hint: <ask | handoff.md>
+description: "Sharpen a vague or overloaded ask into an executable one (root goal, deltas, scoped do with a done-condition) and write it into the task handoff. An ask that already states its scope and done-condition passes through in one line. Use for \"what are they actually asking for\", \"is this ask scoped\", or before /plan on a fuzzy request. NOT for a greenfield design with most decisions unmade (/grill); NOT for splitting scoped work into parts (/decompose)."
+argument-hint: "<ask | handoff.md>"
 allowed-tools: Read, Write, Edit, Grep, Glob, AskUserQuestion
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 Minimize questions: resolve what defaults settle, ask only what changes the output.

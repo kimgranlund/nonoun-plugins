@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""Behavioral Codex-backend tests with a stub CLI; no model calls."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+import codex_roles
+
+ROOT = codex_roles.ROOT
+STUB = '''#!/usr/bin/env python3
+import json, os, pathlib, sys, time
+args=sys.argv[1:]
+prompt=sys.stdin.read()
+pathlib.Path(os.environ['PROBE']).write_text(json.dumps({'args':args,'prompt':prompt,'backend':os.environ.get('SDLC_BACKEND')}))
+mode=os.environ.get('MODE','pass')
+if mode=='timeout': time.sleep(30)
+if mode=='exit': sys.exit(7)
+if mode!='missing':
+ text='## Map\\n- seed.txt:1: fixture\\n\\n## Entry points\\nseed.txt\\n\\n## Not found\\nNone'
+ if mode=='bad': text='No required section'
+ pathlib.Path(args[args.index('--output-last-message')+1]).write_text(text)
+print(json.dumps({'type':'turn.completed','usage':{'input_tokens':10,'output_tokens':5}}))
+'''
+
+
+class CodexTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='sdlc native test ')
+        self.base = Path(self.tmp.name)
+        self.repo = self.base / 'project'; self.repo.mkdir()
+        self.bin = self.base / 'bin'; self.bin.mkdir()
+        for name, text in [('codex', STUB), ('claude', '#!/bin/sh\nexit 99\n')]:
+            p = self.bin / name; p.write_text(text); p.chmod(0o755)
+        self.env = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ['PATH'], SDLC_BACKEND='codex', SDLC_CODEX_TRANSPORT='exec', PROBE=str(self.base/'probe.json'))
+        for args in [('init', '-q'), ('config','user.email','test@example.invalid'), ('config','user.name','Test')]:
+            self.git(*args)
+        (self.repo/'seed.txt').write_text('seed=3\n')
+        self.git('add','seed.txt'); self.git('commit','-qm','fixture')
+        self.step = self.repo/'work'; self.step.mkdir()
+        self.handoff = self.step/'handoff.md'; self.handoff.write_text('## Goal\nLocate seed.\n')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def git(self,*args):
+        return subprocess.check_output(['git',*args],cwd=self.repo,stderr=subprocess.DEVNULL,text=True)
+
+    def role(self,mode='pass',dry=False):
+        env=dict(self.env,MODE=mode)
+        if dry:env['SDLC_DRY_RUN']='1'
+        if mode=='timeout':env['SDLC_CODEX_TIMEOUT_SECONDS']='1'
+        return subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],cwd=self.repo,env=env,capture_output=True,text=True,timeout=20)
+
+    def test_result_and_rerun(self):
+        for suffix in ['', '-2']:
+            p=self.role(); self.assertEqual(p.returncode,0,p.stderr)
+            self.assertIn('## Map',(self.step/f'scout-L1{suffix}.md').read_text())
+        records=[json.loads(s) for s in (self.step/'runs.jsonl').read_text().splitlines()]
+        self.assertEqual([r['file'] for r in records],['scout-L1.md','scout-L1-2.md'])
+        self.assertEqual(records[-1]['backend'],'codex')
+        self.assertIsNone(records[-1]['cost_usd'])
+        self.assertEqual(records[-1]['usage']['output_tokens'],5)
+        probe=json.loads((self.base/'probe.json').read_text())
+        self.assertEqual(probe['backend'],'codex')
+        self.assertIn('approval_policy="never"',probe['args'])
+        self.assertEqual(probe['args'][probe['args'].index('--sandbox')+1],'read-only')
+        self.assertFalse(any('dangerously' in a for a in probe['args']))
+        self.assertIn(str(self.handoff),probe['prompt'])
+        self.assertFalse(list(self.step.glob('*.running')))
+
+    def test_invalid_result_is_kept_but_fails(self):
+        p=self.role('bad');self.assertEqual(p.returncode,3,p.stderr)
+        self.assertTrue((self.step/'scout-L1.md').exists())
+        self.assertIn('lacks ## Map',p.stderr)
+
+    def test_failed_or_missing_result_never_passes(self):
+        for mode in ['exit','missing','timeout']:
+            p=self.role(mode);self.assertNotEqual(p.returncode,0)
+            self.assertFalse((self.step/'scout-L1.md').exists())
+            self.assertFalse(list(self.step.glob('*.running')))
+
+    def test_dry_run(self):
+        before=set(self.step.iterdir());p=self.role(dry=True)
+        self.assertEqual(p.returncode,0,p.stderr)
+        self.assertIn('codex_exec.py',p.stdout)
+        self.assertEqual(before,set(self.step.iterdir()))
+        self.assertFalse((self.base/'probe.json').exists())
+
+    def test_install_is_idempotent_and_preserves_edits(self):
+        codex_roles.install(self.repo)
+        codex_roles.install(self.repo,check=True)
+        self.assertNotIn('.codex/',self.git('ls-files','--others','--exclude-standard'))
+        target=self.repo/'.codex/agents/sdlc-scout-l1.toml'
+        data=codex_roles.loads(target)
+        self.assertNotIn(codex_roles.TOKEN,data['developer_instructions'])
+        target.write_text(target.read_text()+'# user edit\n')
+        with self.assertRaisesRegex(ValueError,'refusing to overwrite'):
+            codex_roles.install(self.repo)
+        self.assertTrue(target.read_text().endswith('# user edit\n'))
+        target.unlink();target.symlink_to(self.handoff)
+        with self.assertRaisesRegex(ValueError,'symlinked agent'):
+            codex_roles.install(self.repo)
+
+    def test_verifier_uses_different_model(self):
+        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-sol effort=low -->\n## Status\ndone\n')
+        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium'))
+        (self.step/'builder-L1.md').write_text('<!-- model=gpt-6-astra -->\n')
+        self.assertEqual(codex_roles.resolve('verifier','L3',self.step),('gpt-6-sol','high'))
+
+    def test_definitions_match_shared_contracts(self):
+        for name,data in codex_roles.definitions():
+            self.assertEqual(codex_roles.loads(ROOT/'adapters/codex/agents'/(name+'.toml')),data)
+        verifier=codex_roles.loads(ROOT/'adapters/codex/agents/sdlc-verifier-l1.toml')
+        self.assertIn('# Required skill: checks-that-bite',verifier['developer_instructions'])
+        self.assertIn('# Required skill: checking-rules',verifier['developer_instructions'])
+
+    def test_toml_contains_unicode_scalars_not_surrogates(self):
+        import re
+        text=codex_roles.dumps({'developer_instructions':'Status: 🟢 done'})
+        # TOML forbids surrogate escapes, even though a JSON reader would accept them.
+        self.assertIsNone(re.search(r'\\u[dD][89a-fA-F][0-9a-fA-F]{2}',text))
+        self.assertIn('🟢',text)
+
+    def test_benchmark_native_driver_and_unknown_cost(self):
+        bench=self.repo/'bench';(bench/'tasks').mkdir(parents=True)
+        (bench/'tasks/demo.md').write_text('Fixture benchmark')
+        p=subprocess.run(['bash',str(ROOT/'scripts/bench.sh'),'--bench-dir',str(bench),'demo'],
+                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=20)
+        self.assertEqual(p.returncode,0,p.stderr)
+        probe=json.loads((self.base/'probe.json').read_text())
+        self.assertIn('/sdlc-lite:bench demo',probe['prompt'])
+        self.assertIn('agents.enabled=true',probe['args'])
+        self.assertNotIn('sandbox_workspace_write.network_access=true',probe['args'])
+        results=bench/'results/demo';results.mkdir(parents=True)
+        (results/'runs.jsonl').write_text(json.dumps({'backend':'codex','cost_usd':None})+'\n')
+        p=subprocess.run(['bash',str(ROOT/'scripts/bench-summary.sh'),'--bench-dir',str(bench)],
+                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=20)
+        self.assertEqual(p.returncode,0,p.stderr);self.assertIn('unknown',p.stdout)
+        p=subprocess.run(['bash',str(ROOT/'scripts/bench.sh'),'--bench-dir',str(bench),'demo'],
+                         cwd=self.repo,env=dict(self.env,MODE='exit'),capture_output=True,text=True,timeout=20)
+        self.assertNotEqual(p.returncode,0,'A failed Codex conductor must fail the benchmark launcher')
+
+    def test_native_exchange_preserves_runner_artifacts(self):
+        import time
+        import codex_exchange
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
+        proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
+                              cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        request=self.step/'scout-L1.request.json'
+        try:
+            deadline=time.monotonic()+10
+            while not request.exists() and time.monotonic()<deadline:time.sleep(0.05)
+            payload=json.loads(request.read_text())
+            self.assertEqual(payload['agent'],'sdlc-scout-l1')
+            self.assertIn('SDLC_TMP_WORKTREES=',payload['prompt'])
+            report=self.step/'child-report.txt';report.write_text('## Map\nseed.txt:1\n')
+            codex_exchange.respond(request,report)
+            stdout,stderr=proc.communicate(timeout=10)
+            self.assertEqual(proc.returncode,0,stderr)
+            self.assertTrue((self.step/'scout-L1.md').exists())
+            self.assertFalse((self.base/'probe.json').exists(),'Subagent transport must not launch codex or claude')
+            record=json.loads((self.step/'runs.jsonl').read_text())
+            self.assertEqual(record['transport'],'subagent')
+            with self.assertRaises(ValueError):codex_exchange.respond(request,report)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+
+    def test_conductor_exchange_needs_no_nested_cli(self):
+        import time
+        import codex_exchange
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
+        proc=subprocess.Popen(['python3',str(ROOT/'scripts/codex_exec.py'),'conductor','L1','Process fixture task'],
+                              cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        try:
+            deadline=time.monotonic()+10;requests=[]
+            while not requests and time.monotonic()<deadline:
+                requests=list((self.repo/'.sdlc').glob('native-conductor-*.request.json'));time.sleep(0.05)
+            request=requests[0];payload=json.loads(request.read_text())
+            self.assertEqual(payload['agent'],'sdlc-conductor-l1')
+            self.assertIn(str(self.repo),payload['prompt'])
+            report=self.repo/'conductor-report.txt';report.write_text('Fixture completed')
+            codex_exchange.respond(request,report)
+            stdout,stderr=proc.communicate(timeout=10)
+            self.assertEqual(proc.returncode,0,stderr)
+            self.assertEqual(json.loads(stdout)['result'],'Fixture completed')
+            self.assertFalse((self.base/'probe.json').exists())
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+
+    def test_unanswered_native_request_fails_and_cleans_marker(self):
+        self.env['SDLC_CODEX_TRANSPORT']='subagent'
+        p=self.role('timeout')
+        self.assertNotEqual(p.returncode,0)
+        self.assertFalse((self.step/'scout-L1.md').exists())
+        self.assertFalse(list(self.step.glob('*.running')))
+        request=json.loads((self.step/'scout-L1.request.json').read_text())
+        self.assertEqual(request['status'],'failed')
+
+    def test_fanout_uses_codex(self):
+        import fanout
+        previous=os.environ.get('SDLC_BACKEND')
+        try:
+            os.environ['SDLC_BACKEND']='codex'
+            command=fanout.default_driver('work/handoff.md')
+            self.assertIn('codex_exec.py',command)
+            self.assertNotIn('claude',command)
+            os.environ['SDLC_BACKEND']='wrong'
+            with self.assertRaises(fanout.Refuse):fanout.default_driver('work/handoff.md')
+        finally:
+            if previous is None:os.environ.pop('SDLC_BACKEND',None)
+            else:os.environ['SDLC_BACKEND']=previous
+
+
+if __name__=='__main__':
+    unittest.main()

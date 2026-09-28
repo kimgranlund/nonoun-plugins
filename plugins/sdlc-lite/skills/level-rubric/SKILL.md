@@ -1,9 +1,14 @@
 ---
 name: level-rubric
-description: Level tables and routing rubrics for every sdlc-lite role (model and effort per level, and how to pick a level). Reference for the launcher skills; not a command.
+description: "Level tables and routing rubrics for every sdlc-lite role (model and effort per level, and how to pick a level). Reference for the launcher skills; not a command."
 user-invocable: false
 ---
-The model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`. This file says how to pick a level. Keep the two in sync.
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
+The tables below describe the Claude backend. For Codex, model and effort are defined in `adapters/codex/models.json`; the level scope and escalation rules below still apply. The Codex runner records its selected model and switches matching builder/verifier models between Sol and Astra.
+
+The Claude model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`. This file says how to pick a level. Keep the two in sync.
 
 ## How to resolve a level
 

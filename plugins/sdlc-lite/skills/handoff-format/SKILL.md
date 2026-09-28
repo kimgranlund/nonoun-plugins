@@ -1,8 +1,11 @@
 ---
 name: handoff-format
-description: Layout and templates for sdlc-lite task folders (.sdlc/<task>/) and handoff files. Reference for the launcher skills; not a command.
+description: "Layout and templates for sdlc-lite task folders (.sdlc/<task>/) and handoff files. Reference for the launcher skills; not a command."
 user-invocable: false
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 ## Layout
 
 ```

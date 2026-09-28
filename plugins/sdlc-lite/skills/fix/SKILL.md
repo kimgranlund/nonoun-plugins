@@ -1,9 +1,12 @@
 ---
 name: fix
-description: Fast lane for a size-S item (a doc line, a lint tweak, one test, a one-file fix). The conductor writes the step handoff itself, runs builder L1 or L2 and verifier L1, and closes the ticket inline with `tickets.py close --reason`; no planner, no filer, no follow-up tickets. Use for "quick fix", "small fix", or a size-S ticket. NOT for work touching more than one file's behavior or needing a plan, which is /chain.
-argument-hint: <ticket slug | one-line ask>
+description: "Fast lane for a size-S item (a doc line, a lint tweak, one test, a one-file fix). The conductor writes the step handoff itself, runs builder L1 or L2 and verifier L1, and closes the ticket inline with `tickets.py close --reason`; no planner, no filer, no follow-up tickets. Use for \"quick fix\", \"small fix\", or a size-S ticket. NOT for work touching more than one file's behavior or needing a plan, which is /chain."
+argument-hint: "<ticket slug | one-line ask>"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Read, Write, Grep, Glob, AskUserQuestion
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 The fast lane: one step, no planner, no filer, no follow-up tickets. Layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`; levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`.

@@ -9,6 +9,8 @@
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 fail=0
+python3 "$root/scripts/codex_roles.py" generate --check || fail=1
+python3 "$root/scripts/codex-selftest.py" || fail=1
 python3 "$root/scripts/check.py" "$root" || fail=1
 python3 "$root/skills/decompose/scripts/coverage_check.py" selftest || fail=1
 python3 "$root/scripts/tickets.py" selftest || fail=1

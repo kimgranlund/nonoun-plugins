@@ -1,9 +1,12 @@
 ---
 name: grill
-description: Derive the load-bearing design decisions for a greenfield system, component family, or feature whose decision space is mostly unmade, in grounded, cascading AskUserQuestion rounds until it settles, then write the ratified design to the task. Use for "grill me on the design", "nothing is decided yet", "what do we need to decide". NOT for sharpening one given ask (/clarify); NOT for splitting settled work into parts (/decompose).
-argument-hint: <what is being designed | handoff.md>
+description: "Derive the load-bearing design decisions for a greenfield system, component family, or feature whose decision space is mostly unmade, in grounded, cascading AskUserQuestion rounds until it settles, then write the ratified design to the task. Use for \"grill me on the design\", \"nothing is decided yet\", \"what do we need to decide\". NOT for sharpening one given ask (/clarify); NOT for splitting settled work into parts (/decompose)."
+argument-hint: "<what is being designed | handoff.md>"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git log:*), Bash(git show:*), AskUserQuestion
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 /clarify minimizes questions for one ask. /grill derives the questions a mostly-unmade design implies. Same closed-question discipline, opposite posture. Depth: `references/foundations.md`, `references/best-practices.md`; score the result with `references/rubric.md`.

@@ -1,10 +1,14 @@
 # AGENTS.md
 
-Guidance for coding agents working in this repository. `CLAUDE.md` imports this file for Claude Code.
+Guidance for coding agents working in this repository. `AGENTS.md` imports this file for Claude Code.
 
 ## Status
 
-A plugin marketplace (`sdlc-lite`, `.claude-plugin/marketplace.json`) holding one plugin, `sdlc-lite`, in `plugins/sdlc-lite/`. Paths below are relative to that plugin folder unless they start with the repo root. Git remote: `kimgranlund/sdlc-lite` (private). Raw role transcripts (`*.log`) and `bench/logs/` are gitignored; results `.md` and `runs.jsonl` are committed. All roles, skills, and systems on the roadmap are built. Five benchmark tasks are in `bench/tasks/`; the first baseline ran 2026-09-24 (3 of 5 hidden checks passed, $37.13; both failures were task-spec gaps, since fixed).
+A plugin marketplace (`sdlc-lite`) with Claude (`.claude-plugin/marketplace.json`) and Codex (`.agents/plugins/marketplace.json`) catalogs. It holds `sdlc-lite` and `progressive-context` under `plugins/`. The SDLC details below apply to `sdlc-lite`; see `docs/plugin-compatibility.md` for host boundaries. Paths below are relative to that plugin folder unless they start with the repo root. Git remote: `kimgranlund/sdlc-lite` (private). Raw role transcripts (`*.log`) and `bench/logs/` are gitignored; results `.md` and `runs.jsonl` are committed. All roles, skills, and systems on the roadmap are built. Five benchmark tasks are in `bench/tasks/`; the first baseline ran 2026-09-24 (3 of 5 hidden checks passed, $37.13; both failures were task-spec gaps, since fixed).
+
+## Native Codex backend
+
+`SDLC_BACKEND=codex` selects native Codex for run.sh, fanout.py, and bench.sh. The legacy default is Claude. Codex mappings live in `plugins/sdlc-lite/adapters/codex/models.json`; regenerate definitions with `scripts/codex_roles.py generate` after changing shared role/required-skill bodies or the Codex prelude. Project setup installs managed `.codex/agents/sdlc-*.toml` files and preserves user edits. `scripts/codex-selftest.py` covers the backend and runs in check.sh. See `docs/codex-role-execution.md` for the native run/agent distinction, model-independent verifier selection, permissions, and validation.
 
 ## Commands
 

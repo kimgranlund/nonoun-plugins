@@ -1,9 +1,12 @@
 ---
 name: ticket
-description: Stamp a typed ticket with the next id, or generate .sdlc/roadmap.md from ticket front matter in dependency order. NOT for free-text briefs, which stay with /handoff.
-argument-hint: new <type> <slug> "title" [--numbered] | close <slug> [--force] [--reason "<text>"] [--ack-warnings "<why>"] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered]
+description: "Stamp a typed ticket with the next id, or generate .sdlc/roadmap.md from ticket front matter in dependency order. NOT for free-text briefs, which stay with /handoff."
+argument-hint: "new <type> <slug> \"title\" [--numbered] | close <slug> [--force] [--reason \"<text>\"] [--ack-warnings \"<why>\"] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*)
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 1. Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc $ARGUMENTS`. With no args, run `check`.

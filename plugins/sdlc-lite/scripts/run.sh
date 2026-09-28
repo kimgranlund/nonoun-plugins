@@ -68,6 +68,8 @@
 set -euo pipefail
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
+backend="${SDLC_BACKEND:-claude}"
+case "$backend" in claude|codex) ;; *) echo "unknown SDLC_BACKEND: $backend" >&2; exit 2 ;; esac
 usage() { echo "usage: run.sh <role> <level> <handoff.md>  (see levels in this file)" >&2; exit 2; }
 
 # role:level -> model effort. Keep in sync with skills/level-rubric/SKILL.md and AGENTS.md.
@@ -155,9 +157,9 @@ handoff="$(cd "$(dirname "$handoff")" && pwd)/$(basename "$handoff")"
 dir="$(dirname "$handoff")"
 # Never overwrite an earlier result: the first run is <role>-<level>, later ones <role>-<level>-<k>.
 name="$role-$level"
-if [[ -e "$dir/$name.md" ]]; then
+if [[ -e "$dir/$name.md" || -e "$dir/$name.request.json" ]]; then
   k=2
-  while [[ -e "$dir/$role-$level-$k.md" ]]; do k=$((k + 1)); done
+  while [[ -e "$dir/$role-$level-$k.md" || -e "$dir/$role-$level-$k.request.json" ]]; do k=$((k + 1)); done
   name="$role-$level-$k"
 fi
 result="$dir/$name.md"
@@ -165,7 +167,7 @@ log="$dir/$name.log"
 
 # A verifier never runs on the build's model family (T-0005, user decision 2026-09-24):
 # Fable or Sonnet build -> Opus at the same effort.
-if [[ "$role" == verifier ]]; then
+if [[ "$backend" == claude && "$role" == verifier ]]; then
   built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
@@ -177,12 +179,17 @@ if [[ "$role" == verifier ]]; then
   fi
 fi
 
+if [[ "$backend" == codex ]]; then
+  resolved=$(python3 "$plugin_root/scripts/codex_roles.py" resolve "$role" "$level" "$dir") || exit 2
+  read -r model effort <<<"$resolved"
+fi
+
 # Skills declared in the agent's frontmatter (skills: list). `claude --agent` does not preload
 # them (probed 2026-09-24), so append each skill body to the system prompt here.
 agent_file="$plugin_root/agents/$role.md"
 skills=$(awk '/^---$/{n++; next} n==1 && /^skills:/{f=1; next} n==1 && f && /^  - /{sub(/^  - /,""); print; next} n==1 && f{f=0}' "$agent_file")
 skill_prompt=()
-if [[ -n "$skills" ]]; then
+if [[ "$backend" == claude && -n "$skills" ]]; then
   skill_file=$(mktemp)
   # Removes it on a dry run or an early exit; on_exit replaces this trap and removes it too.
   trap 'rm -f "$skill_file"' EXIT
@@ -215,6 +222,14 @@ cmd=(claude -p
   "Handoff: $handoff
 Artifacts dir: $dir
 Your final message is saved verbatim as $result. Make it exactly the output format your instructions define: start with its first heading, with nothing before it and nothing after the last section.")
+
+if [[ "$backend" == codex ]]; then
+  cmd=(python3 "$plugin_root/scripts/codex_exec.py" "$role" "$level"
+    "Handoff: $handoff
+Artifacts dir: $dir
+Your final message is saved verbatim as $result. Use exactly the sections in your role contract."
+    --model "$model" --effort "$effort" --request-file "$dir/$name.request.json")
+fi
 
 if [[ "${SDLC_DRY_RUN:-}" == 1 ]]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
 
@@ -358,9 +373,9 @@ detect_strays || :
 stray_wt_json=$(json_array ${stray_wt[@]+"${stray_wt[@]}"}) || stray_wt_json='[]'
 stray_br_json=$(json_array ${stray_br[@]+"${stray_br[@]}"}) || stray_br_json='[]'
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
-  --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
+  --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
-    cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
+    backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
 
 # Prints "missing", or the first non-blank line under the section (empty if none).

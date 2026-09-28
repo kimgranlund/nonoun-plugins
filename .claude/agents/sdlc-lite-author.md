@@ -23,6 +23,10 @@ Understand, plan, execute, evaluate. State acceptance criteria before building. 
 - `fanout.py run --rewrite-refs` (opt-in, numbered mode) passes the flag to `tickets.py close`; the `close <id>` commit stages every file the close rewrote. /fanout offers it as a choice at Confirm, never silently.
 - Verdict and newest-file decisions go through `scripts/order.py` (latest runs.jsonl record, which carries `file`, else level then rerun index then name) and never use mtime. Keep it in sync with AGENTS.md.
 
+## Native Codex maintenance
+
+The peer backend uses `SDLC_BACKEND=codex` and the same role contracts and artifacts. After editing shared role or preloaded skill bodies, run `plugins/sdlc-lite/scripts/codex_roles.py generate`; check.sh verifies generated-source parity and runs the Codex backend selftests. Preserve the legacy Claude model tables. Native defaults live in `adapters/codex/models.json`, with runtime and sandbox limitations in `docs/codex-role-execution.md`.
+
 ## After every change
 1. `plugins/sdlc-lite/scripts/check.sh` must exit 0 (table sync, agents, declared skills, decompose selftest, tickets selftest, board selftest, steps.py selftest, fanout.py selftest, run selftest, hook selftest (block-publish.sh, block-background.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh), hook-live-probe.sh --selftest (offline; the live probe spends a model call and never runs in check.sh), shellcheck, plugin validate).
 2. A new check or gate gets a negative control that is seen to fail (checks-that-bite).

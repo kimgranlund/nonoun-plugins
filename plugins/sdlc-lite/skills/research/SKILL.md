@@ -1,9 +1,12 @@
 ---
 name: research
-description: Research an outside-world question (docs, APIs, libraries) with cited findings.
-argument-hint: [L1..L3] <handoff.md | question>
+description: "Research an outside-world question (docs, APIs, libraries) with cited findings."
+argument-hint: "[L1..L3] <handoff.md | question>"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Read, Write, Grep, Glob
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 1. Get a handoff file. If the arguments name an existing file, use it. Otherwise create one from the text per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`.

@@ -1,0 +1,11 @@
+{
+  "builder": {"L1": ["gpt-6-sol", "low"], "L2": ["gpt-6-sol", "medium"], "L3": ["gpt-6-sol", "high"], "L4": ["gpt-6-astra", "high"], "L5": ["gpt-6-astra", "xhigh"]},
+  "planner": {"L1": ["gpt-6-sol", "medium"], "L2": ["gpt-6-sol", "high"], "L3": ["gpt-6-astra", "high"]},
+  "verifier": {"L1": ["gpt-6-sol", "medium"], "L2": ["gpt-6-sol", "high"], "L3": ["gpt-6-astra", "high"]},
+  "researcher": {"L1": ["gpt-6-sol", "medium"], "L2": ["gpt-6-sol", "high"], "L3": ["gpt-6-astra", "high"]},
+  "architect": {"L1": ["gpt-6-astra", "high"]},
+  "scout": {"L1": ["gpt-6-luna", "high"]},
+  "archaeologist": {"L1": ["gpt-6-sol", "medium"]},
+  "filer": {"L1": ["gpt-6-sol", "medium"]},
+  "conductor": {"L1": ["gpt-6-sol", "medium"]}
+}

@@ -1,9 +1,12 @@
 ---
 name: board
-description: The status board for sdlc work: one table (Task, Step, Status, %) rendered from .sdlc/ by scripts/board.py, never written by hand; gains optional ID and Ticket columns when a rendered task's handoff.md has ticket front matter. Use for any status ask ("status?", "where are we", "show the board", "what is running") and at every natural pause in /chain or /bench.
-argument-hint: [task] [--root DIR] [--sort {recent,id,name}] [--lanes]
+description: "The status board for sdlc work: one table (Task, Step, Status, %) rendered from .sdlc/ by scripts/board.py, never written by hand; gains optional ID and Ticket columns when a rendered task's handoff.md has ticket front matter. Use for any status ask (\"status?\", \"where are we\", \"show the board\", \"what is running\") and at every natural pause in /chain or /bench."
+argument-hint: "[task] [--root DIR] [--sort {recent,id,name}] [--lanes]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*)
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 1. Write one waiting line: `Waiting on: builder L3, step 2` or `Waiting on you: approve publishing`. If nothing is running or pending, `Waiting on: nothing`.

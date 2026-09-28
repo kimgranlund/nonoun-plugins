@@ -1,8 +1,9 @@
 {
   "name": "sdlc-lite",
-  "version": "0.15.3",
-  "description": "SDLC agent team. Builders run headless with a fixed model and effort per level.",
+  "version": "0.16.0",
+  "description": "SDLC agent team with native Codex and Claude role execution, explicit model levels, and shared delivery artifacts.",
   "author": {
     "name": "Kim Granlund"
-  }
+  },
+  "hooks": "./adapters/claude/hooks.json"
 }

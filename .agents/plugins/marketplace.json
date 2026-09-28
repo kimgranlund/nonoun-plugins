@@ -1,0 +1,32 @@
+{
+  "name": "sdlc-lite",
+  "interface": {
+    "displayName": "Sdlc Lite"
+  },
+  "plugins": [
+    {
+      "name": "progressive-context",
+      "source": {
+        "source": "local",
+        "path": "./plugins/progressive-context"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "sdlc-lite",
+      "source": {
+        "source": "local",
+        "path": "./plugins/sdlc-lite"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

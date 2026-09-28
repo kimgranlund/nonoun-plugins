@@ -19,16 +19,23 @@ if [[ $# -eq 0 ]]; then
   while IFS= read -r t; do tasks+=("$t"); done < <(find "$bench/tasks" -name '*.md' ! -name README.md -exec basename {} .md \; | sort)
   set -- "${tasks[@]}"
 fi
+fail=0
 for t in "$@"; do
   echo "== $t $(date +%H:%M)"
   log="$bench/logs/$(date +%Y-%m-%d)-$t.txt"
   start=$SECONDS
+  case "${SDLC_BACKEND:-claude}" in
+    codex) cmd=(python3 "$root/scripts/codex_exec.py" conductor L1 "/sdlc-lite:bench $t") ;;
+    claude) cmd=(claude -p --plugin-dir "$root" --model opus --effort medium --dangerously-skip-permissions "/sdlc-lite:bench $t") ;;
+    *) echo "unknown SDLC_BACKEND" >&2; exit 2 ;;
+  esac
   SDLC_BENCH_DIR="$bench" SDLC_HEADLESS=1 BASH_DEFAULT_TIMEOUT_MS=3600000 BASH_MAX_TIMEOUT_MS=3600000 \
-    claude -p --plugin-dir "$root" --model opus --effort medium --dangerously-skip-permissions \
-    "/sdlc-lite:bench $t" </dev/null >"$log" 2>&1
+    "${cmd[@]}" </dev/null >"$log" 2>&1
   rc=$?
+  if (( rc != 0 )); then fail=1; fi
   line="exit=$rc duration=$((SECONDS - start))s"
   echo "$line" >>"$log"
   echo "$line"
 done
-"$root/scripts/bench-summary.sh" --bench-dir "$bench"
+"$root/scripts/bench-summary.sh" --bench-dir "$bench" || fail=1
+exit "$fail"

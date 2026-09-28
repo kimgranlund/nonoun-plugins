@@ -1,9 +1,12 @@
 ---
 name: bench
-description: Benchmark the agent team: run each saved task through /chain in a throwaway worktree, grade it with the real solution's hidden tests, and compare pass rate, cost, and attempts across runs. Use after changing a role, a level table, or a rubric.
-argument-hint: [task name]
+description: "Benchmark the agent team: run each saved task through /chain in a throwaway worktree, grade it with the real solution's hidden tests, and compare pass rate, cost, and attempts across runs. Use after changing a role, a level table, or a rubric."
+argument-hint: "[task name]"
 allowed-tools: Bash, Read, Write, Grep, Glob
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 First, before any `cd`, resolve the bench dir once from the session's starting directory: `BENCH=$(${CLAUDE_PLUGIN_ROOT}/scripts/bench-dir.sh)`. It honors `SDLC_BENCH_DIR` as set by `bench.sh`, then `<project>/bench/`, then the plugin's `bench/`. Keep the absolute path for the rest of the run.

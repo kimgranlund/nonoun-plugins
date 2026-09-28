@@ -19,7 +19,7 @@ for d in "$bench"/results/*/; do
     v=$(python3 "$root/scripts/order.py" newest "$s" verifier)
     [[ -n "$v" ]] && grep -A1 '^## Verdict' "$v" | grep -qx 'pass' && passed=$((passed+1))
   done
-  cost=$({ cat "$d"runs.jsonl "$d"step-*/runs.jsonl 2>/dev/null || true; } | jq -s 'map(.cost_usd // 0) | add // 0 | . * 100 | round / 100')
+  cost=$({ cat "$d"runs.jsonl "$d"step-*/runs.jsonl 2>/dev/null || true; } | jq -r -s 'if any(.[]; .backend == "codex" and .cost_usd == null) then "unknown" else (map(.cost_usd // 0) | add // 0 | . * 100 | round / 100) end')
   hidden=$(grep -o 'hidden_check: [a-z]*' "$d"grade.md 2>/dev/null | cut -d' ' -f2 || true)
   printf '%-40s %7s %6s %7s %9s %9s\n' "$(basename "$d")" "${hidden:-none}" "$steps" "$passed" "$attempts" "$cost"
 done

@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-09-28T04:55:40.114820+00:00",
+  "codex_cli": "0.155.0",
+  "plugin_version": "0.16.0",
+  "fixture": {
+    "before": "def greet(name):\n    return \"Hi \" + name\n",
+    "after": "def greet(name):\n    return \"Hello \" + name\n",
+    "working_assertion_exit": 0,
+    "baseline_assertion_exit": 1
+  },
+  "observed": {
+    "standalone_scout": "pass",
+    "standalone_builder_verifier": "pass",
+    "named_agent_unique_instruction_marker": "pass",
+    "conductor_native_scout_exchange": "pass",
+    "native_builder": "done",
+    "native_verifier_initial": "fail: sandbox blocked worktree negative control",
+    "native_verifier_retry": "pass: same assertion, read-only in-memory baseline",
+    "native_verifier_profile": "sdlc-verifier-l1-alternate",
+    "backend": "codex",
+    "transport": "subagent"
+  },
+  "limits": [
+    "No live multi-lane benchmark was run.",
+    "Not every role and level was exercised live.",
+    "Sandbox restrictions were preserved; blocked checks must be reported."
+  ],
+  "source_sha256": {
+    "plugins/sdlc-lite/scripts/run.sh": "993c8d3e063193b6c888fdcad885689f4b76832b651ab9abb14f8393e5a3f21c",
+    "plugins/sdlc-lite/scripts/codex_roles.py": "fa8c797b3a62200c35e3b4387e55c743a9ae3f6c2d8a5dd4520aef2a829548ba",
+    "plugins/sdlc-lite/scripts/codex_exec.py": "9bf5663311c9f61d41411a5841d1db9992418a6eaf6a2f9893dab0ae54418725",
+    "plugins/sdlc-lite/scripts/codex_exchange.py": "c5fa7de16ca82ffdadb299aaaa8e8da6f422e6bbc07af52c7c36ecf669058377",
+    "plugins/sdlc-lite/scripts/codex-selftest.py": "80ca16ad8728b0aae964c0c9dbfb4cc5f4c664eca11a23ea36866a15bd221734",
+    "plugins/sdlc-lite/scripts/fanout.py": "af2129689f988310393a2e0777cc8940ad193ee47eb56566cd6e1fee95d5d639",
+    "plugins/sdlc-lite/scripts/bench.sh": "ec900cbbb853b28e2f4d8154b6b4fb46207cb15dbd5656976f7a87647196c472",
+    "plugins/sdlc-lite/scripts/bench-summary.sh": "2a3909ca6761d1dc585f08fcbf509abdbad5dea8138a0df61333c06781fe6382",
+    "plugins/sdlc-lite/adapters/codex/models.json": "3ee92d0ca7a043e8551f3642e076b651b754fb94a10280d3c9bd74d38cde33b9",
+    "plugins/sdlc-lite/adapters/codex/instructions.md": "f1c5eb28c9ee3ceedc26cb3aa74e9ab8443a72508450487e716060225dd8253d",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l3.toml": "ddec40bec353e3d6b1755fc7af40812f250d749f1de94294a0f26a975ab9b457",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-builder-l1.toml": "87bf698022c5beee49deaba966ce0907371ae86b64aa177b8c761408176096ea",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l1-alternate.toml": "bb4cdab251e35822def15223a7ebf487499bc1a3c6dca947350e89d9a2d043e9",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l2.toml": "be1ea3917c28302b2cf1ec03c8fd168ab593fb1885583fc51d728e5c2ef6f188",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-researcher-l3.toml": "06d84f98fedb217bafd0420e6b981f37061c1c277c2cf2b00088d1f632feeb8e",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml": "ff1d76373fa9ed6a2456a2b3a4ed80b63fb61f9aaef720bb03ca29a0d51474fc",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l3-alternate.toml": "e5998a5aac90854fc558c1ad29098e311c3de20c4b080a03349d91e81a4c9a52",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-archaeologist-l1.toml": "f53e747a58670ca4fcd968ee35fd18d4f4c13fcc56a24b2757a3ac1e654ab1c2",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l2-alternate.toml": "637823aa6433ed8f9ab282887f6b37a67db02dde78f11b89d48b3555ab445a9d",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l3.toml": "2d37cc7942e56daacbb7229c38a41a452ad32c26a94ef580cbc28c04ff9dd9ae",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-researcher-l2.toml": "2a209cacdb4f63d69a8f0c192bddf3e4c7ac914bac69ea37f36d210c859c5bba",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-conductor-l1.toml": "005021bf7bce218a12ddbe08adc11fa3c19bc49c41bc628cb157204793cd2ffc",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-filer-l1.toml": "eb966f4980e663fcb4d7f94f32e0381837d9c4ff12f1262eaf45b0c721443f74",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-researcher-l1.toml": "a45414aa209620ae19a58eeb7267b6a3407cfe742e08b77f3390b9d0a7cf6561",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-builder-l4.toml": "2bc9eb51959da1f0d59fb014605ffc359a625e6872b163d0c036f1c9afb2d39c",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l1.toml": "1748128c77169391e3475f7071385889eea2804b07c346a9cbed59231f521252",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-builder-l5.toml": "e86bf17c2eca658746ac0227ed22041acab9a21c7632a9d273ad3472cd803d49",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-builder-l2.toml": "bf5bb6e05c6d912cd21b5433743aeeffac0622b1d53e2ba1eef74e01b46597a5",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-verifier-l1.toml": "5478cf53fd4cc7dec2a4b88cc113211a6f1fe7d5073953955117a493407062b6",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-builder-l3.toml": "201fde83d4588f87a65033c74c3c4e43f601585bf8c34c880536b0aa0bfdebd0",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-architect-l1.toml": "e8269bbeb3d74aedd460f0b27b57d3e2811e1e880d39ca11eeab05853e46712a",
+    "plugins/sdlc-lite/adapters/codex/agents/sdlc-scout-l1.toml": "2b5d4b1f84e005a5c826d22005e3da1ad9b9f9e5944c0f638ca9097b924440d2"
+  }
+}

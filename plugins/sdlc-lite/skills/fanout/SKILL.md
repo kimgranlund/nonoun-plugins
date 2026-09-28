@@ -1,9 +1,12 @@
 ---
 name: fanout
 description: "Run ticket lanes in parallel: each lane is a git worktree whose tickets run through a headless /chain one at a time, merge into an integration branch behind gates, and close there. Use when several ready tickets can run side by side."
-argument-hint: <lane>=<ids>... [--base REF] [--integration BRANCH] [--gate CMD]... [--lanes-dir DIR] [--rewrite-refs]
+argument-hint: "<lane>=<ids>... [--base REF] [--integration BRANCH] [--gate CMD]... [--lanes-dir DIR] [--rewrite-refs]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Bash(git merge --ff-only:*), Read
 ---
+
+**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+
 Arguments: `$ARGUMENTS`
 
 Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. Inspect a stopped lane's `wip(` commit on its lane branch.

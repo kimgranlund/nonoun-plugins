@@ -1,0 +1,21 @@
+{
+  "name": "sdlc-lite",
+  "version": "0.16.0",
+  "description": "SDLC agent team with native Codex and Claude role execution, explicit model levels, and shared delivery artifacts.",
+  "author": {
+    "name": "Kim Granlund"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "SDLC Lite",
+    "shortDescription": "Native Codex and Claude roles for structured software delivery.",
+    "longDescription": "Tickets, plans, builders, verifiers and predefined Codex agents with shared handoffs and result artifacts.",
+    "developerName": "Kim Granlund",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": "Use $sdlc-lite to help with this project."
+  }
+}

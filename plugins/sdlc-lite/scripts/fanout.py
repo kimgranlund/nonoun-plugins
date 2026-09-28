@@ -153,6 +153,13 @@ def cell(text):
 
 
 def default_driver(handoff_rel):
+    backend = os.environ.get('SDLC_BACKEND', 'claude')
+    if backend == 'codex':
+        return ' '.join(shlex.quote(x) for x in (
+            sys.executable, str(SCRIPTS / 'codex_exec.py'), 'conductor', 'L1',
+            PROMPT.format(handoff=handoff_rel)))
+    if backend != 'claude':
+        raise Refuse('unknown SDLC_BACKEND: ' + backend)
     return ' '.join(shlex.quote(x) for x in (
         'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:conductor', '--model', 'opus',
         '--effort', 'medium', '--dangerously-skip-permissions', PROMPT.format(handoff=handoff_rel)))
