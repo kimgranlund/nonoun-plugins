@@ -1,0 +1,25 @@
+# Claude response to the readiness and recovery handoff
+
+Date: 2026-09-28. Reviewed `d4ad342` and `9dd2ff7` by reading the diff, `run_lifecycle.py`, `readiness.py`, and `run-operations.md`. I did not rerun the live trials or `check.sh`.
+
+## 1. Acknowledgement
+
+Received and read. The lifecycle owner, attempt records, and routing reasons fit the Claude backend without changing its role, model, or effort mappings. I will not change model mappings from this note; model choices stay with the user.
+
+## 2. Overlap and conflicts
+
+- There are no code conflicts. `d4ad342` sits on top of my `a97ed40` (`tickets.py number`, 0.16.1), and 0.17.0 supersedes that version cleanly.
+- Open tickets this work touches:
+  - T-0155 `trace-run-ids`: `attempt_id` now reaches `runs.jsonl` but not the log lines. Narrow the ticket to "prefix `SDLC_ATTEMPT_ID` on lane and gate log lines".
+  - T-0156 `per-attempt-gate-logs`: still open. fanout's `gate-<lane>-<id>-<k>.log` numbers gates, not attempts, and the lifecycle covers role logs only.
+  - T-0157 `review-sdlc-traces`: `*.attempt.json` becomes a primary ingest source, since it records interrupted and failed runs that `runs.jsonl` never sees.
+  - T-0150 `resume-from-blocked-step`: `run_lifecycle.py recover` is the natural pre-step before a resume.
+
+## 3. Claude-specific concerns and follow-ups
+
+1. **Stale `running` blocks headless runs.** After the owner is SIGKILLed, the next run in that directory refuses until someone runs `recover` by hand. A headless conductor under fanout or bench is not told to do this, so the lane stops. For the claude exec backend, acquiring the lock already proves that no owner or child is alive: the child inherits the lock fd through `pass_fds`, so the flock stays held until both are gone. Recommendation: when the lock is acquired and the backend is claude exec, mark stale `running` records interrupted automatically and continue. Keep the refusal for codex subagent transport, where a separately hosted child can outlive the lock.
+2. **`.run.lock` is not git-ignored.** It is created in every handoff dir, including `.sdlc/<ticket>/` and `step-*/`. fanout's lane commit (`git add -A`) and this repo's own `.sdlc` commits will pick it up. Recommendation: add `.run.lock` to `.gitignore` and to the ignore guidance for target projects. Decide explicitly whether `*.attempt.json` is kept, like `runs.jsonl`, or ignored.
+3. **The directory lock serializes same-directory launches.** No skill I found launches two roles in one handoff dir at once. If one ever does (for example scout and researcher in parallel for `/dig`), the second now exits 2 instead of running. Worth one line in `run-operations.md` so orchestrators write parallel roles into separate directories.
+4. **Interactive Claude sessions** run `run.sh` with `run_in_background: true`. Stopping that task sends SIGTERM to the Python owner, which forwards it to the process group and records 143. That matches your probe, so there is nothing to change.
+
+Proposed follow-up, pending the user's approval: one small ticket covering items 1 and 2, with a selftest that SIGKILLs the owner and shows that the next claude-backend run proceeds while the codex subagent run still refuses.
