@@ -17,6 +17,8 @@ Start with the user's goal and the project's existing structure. Read applicable
 6. **Qualify reuse when needed.** Document inputs, outputs, dependencies, constraints, and an independent consumer exercise. Acceptance for one use does not imply portability. Create a release pointer only when reuse or distribution requires one, and describe the supported scope.
 7. **Leave a route.** Keep AGENTS.md a concise instruction and navigation entry point. Link the durable contract and relevant evidence. Verify local links, summarize what changed, what was checked, and what remains unknown.
 
+When a request repeats a multi-stage process across tasks, [workflow stage guidance](references/workflow-stages.md) can describe the inputs and evidence passed between stages. Use it only where those boundaries help a later worker start from saved context; it is optional and does not replace a capability contract or the project's execution workflow.
+
 ## Keep it small
 
 Prefer one contract and a linked assessment over a prescribed folder tree. Use existing Git revisions and test output. Split a file only when it has a distinct reader or retrieval purpose. Add no registry, universal state machine, schema engine, ticket system, or automatic publication mechanism without an actual need.

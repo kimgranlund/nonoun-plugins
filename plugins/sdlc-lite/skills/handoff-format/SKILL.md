@@ -84,7 +84,7 @@ One or two sentences: the outcome, not the method.
 Written by /clarify: literal ask, deltas, do, non-goals, done when. Optional.
 
 ## Context
-Decisions already made, relevant paths, links. Point to `design.md` and `decompose/report.md` when they exist. Everything a clean-context agent needs; it sees nothing else.
+Decisions already made, relevant paths, links. Point to `design.md` and `decompose/report.md` when they exist. If the project uses a reusable workflow-stage contract, optionally link its definition and the stage relevant to this handoff; include the actual task inputs, outputs so far, and unresolved findings. The workflow definition stays outside `.sdlc/<task>/` run artifacts. Everything a clean-context agent needs; it sees nothing else.
 
 ## Constraints
 What must not change, limits, deadlines. "None" if none.
