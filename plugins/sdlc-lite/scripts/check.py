@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Consistency checks for the sdlc-lite plugin. Exit 1 on any mismatch.
 
-1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric vs AGENTS.md.
+1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric. Repository guidance links these sources instead of copying tables.
 2. Every agents/<role>.md has run.sh cases, and every run.sh role has an agent file.
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
 4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
@@ -59,26 +59,12 @@ for line in (root/'skills/level-rubric/SKILL.md').read_text().splitlines():
     m = re.match(r'^\| (\w+) \| (L\d) \| (\w+ \w+) \|', line)
     if m: rubric[(m.group(1), m.group(2))] = m.group(3)
 
-# AGENTS.md: builder table "  | L1 | Sonnet | low |", role table "  | Researcher | Sonnet medium | ... |",
-# and roadmap rows for single-level roles "| scout | `/scout` | L1 Haiku low ...".
-claude_md_path = next((p for p in (root/'AGENTS.md', root.parent.parent/'AGENTS.md') if p.exists()), None)
-if claude_md_path is None: errors.append('AGENTS.md not found at the plugin root or the repo root'); claude_md = ''
-else: claude_md = claude_md_path.read_text()
-doc = {}
-for lvl, model, effort in re.findall(r'^\s*\| (L\d) \| (\w+) \| (\w+) \|\s*$', claude_md, re.M):
-    doc[('builder', lvl)] = f'{model} {effort}'
-for name, *cells in re.findall(r'^\s*\| (Researcher|Planner|Verifier) \| (\w+ \w+) \| (\w+ \w+) \| (\w+ \w+) \|', claude_md, re.M):
-    for i, c in enumerate(cells): doc[(name.lower(), f'L{i+1}')] = c
-for name, lvl, me in re.findall(r'^\| (\w+) \| `/\w+` \| (L\d) (?!to )(\w+ \w+)', claude_md, re.M):
-    doc[(name, lvl)] = me
-
 def compare(label, other):
     for k in sorted(set(run) | set(other)):
         if k not in other: errors.append(f'{label}: missing {k[0]}:{k[1]} (run.sh has {run[k]})')
         elif k not in run: errors.append(f'{label}: has {k[0]}:{k[1]} = {other[k]}, run.sh does not')
         elif run[k] != other[k]: errors.append(f'{label}: {k[0]}:{k[1]} = {other[k]}, run.sh = {run[k]}')
 compare('level-rubric', rubric)
-compare('AGENTS.md', doc)
 
 SESSION_AGENTS = {'conductor'}  # run as the main session (settings "agent"), not through run.sh
 agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS
