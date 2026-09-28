@@ -152,3 +152,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0145 | [block-pattern-kill-sh-s](block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⚪ dropped |
 | T-0146 | [the-step-1-acceptance-criterion](the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | M | P2 | none | 🟢 done |
 | T-0147 | [a-compound-span-followed-by](a-compound-span-followed-by/handoff.md) | a compound span followed by &&, ;, or \|\| after its closing keyword... | idea | M | P2 | none | ⚪ dropped |
+| T-0148 | [decisions-update-criteria](decisions-update-criteria/handoff.md) | Conductor scope decisions update the acceptance criteria, not just prose | feature | M | P2 | none | ⏳ proposed |
+| T-0149 | [trace-contract-dependents](trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | M | P2 | none | ⏳ proposed |
+| T-0150 | [resume-from-blocked-step](resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | S | P2 | none | ⏳ proposed |
+| T-0151 | [fanout-reset-guards-dirty-tree](fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | ⏳ proposed |
+| T-0152 | [external-lane-owners](external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | ⏳ proposed |
+| T-0153 | [depends-on-capability](depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | ⏳ proposed |
+| T-0154 | [nested-tmp-worktrees](nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | ⏳ proposed |
