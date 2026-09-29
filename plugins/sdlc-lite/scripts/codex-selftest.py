@@ -21,6 +21,7 @@ if mode=='exit': sys.exit(7)
 if mode!='missing':
  text='## Map\\n- seed.txt:1: fixture\\n\\n## Entry points\\nseed.txt\\n\\n## Not found\\nNone'
  if mode=='bad': text='No required section'
+ if mode=='verdict': text='## Verdict\\npass\\n\\n## Evidence\\nfixture'
  pathlib.Path(args[args.index('--output-last-message')+1]).write_text(text)
 print(json.dumps({'type':'turn.completed','usage':{'input_tokens':10,'output_tokens':5}}))
 '''
@@ -228,11 +229,34 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.assertEqual(str(tomlkit.parse(config.read_text())['developer_instructions']),
                          'Quote: <!-- SDLC Lite Codex project conductor: user note -->')
 
-    def test_verifier_uses_different_model(self):
-        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-sol effort=low -->\n## Status\ndone\n')
-        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium'))
-        (self.step/'builder-L1.md').write_text('<!-- model=gpt-6-astra -->\n')
-        self.assertEqual(codex_roles.resolve('verifier','L3',self.step),('gpt-6-sol','high'))
+    def test_verifier_shares_builder_model_without_alternate(self):
+        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
+        self.assertEqual(codex_roles.verifier_alternates(),{})
+        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',True))
+        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=other-model effort=low -->\n')
+        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',False))
+        self.assertFalse(any(name.endswith('-alternate') for name,_ in codex_roles.definitions()))
+
+    def test_verifier_alternate_comes_from_config(self):
+        from unittest import mock
+        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
+        with mock.patch.object(codex_roles,'verifier_alternates',return_value={'gpt-6-astra':'fixture-alt'}):
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('fixture-alt','medium',False))
+            defs=dict(codex_roles.definitions())
+        self.assertEqual(defs['sdlc-verifier-l1-alternate']['model'],'fixture-alt')
+        self.assertEqual(defs['sdlc-verifier-l1-alternate']['model_reasoning_effort'],'medium')
+
+    def test_runner_records_shared_verifier_model(self):
+        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
+        p=subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'verifier','L1',str(self.handoff)],cwd=self.repo,
+                         env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=20)
+        self.assertEqual(p.returncode,0,p.stderr)
+        header=(self.step/'verifier-L1.md').read_text().splitlines()[0]
+        self.assertIn('model=gpt-6-astra',header)
+        self.assertIn('shared_with_builder=yes',header)
+        record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
+        self.assertEqual(record['role'],'verifier')
+        self.assertIs(record['shared_with_builder'],True)
 
     def test_definitions_match_shared_contracts(self):
         for name,data in codex_roles.definitions():
