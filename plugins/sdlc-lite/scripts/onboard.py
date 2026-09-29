@@ -851,6 +851,27 @@ def gate_import_detection(detect):
         expect(detect(text) is False, 'counted an import in %r' % text)
 
 
+def gate_digest(digest_of):
+    # Expected values: printf 'line one\nline two\n' | shasum -a 256 (first 12 hex characters).
+    lf = 'line one\nline two\n'
+    crlf = 'line one\r\nline two\r\n'
+    want = 'e9024f1a07d2'
+    got = digest_of(lf)
+    expect(got == want, 'LF text hashed to %r, expected %r' % (got, want))
+    got = digest_of(crlf)
+    expect(got == want, 'CRLF text hashed to %r, expected %r' % (got, want))
+
+
+def _digest_raw(text):
+    """Defect variant: hashes without normalizing line endings."""
+    return hashlib.sha256(text.encode('utf-8', 'surrogateescape')).hexdigest()[:12]
+
+
+def _digest_prefix(length):
+    """Defect variant: returns a prefix of a different length."""
+    return lambda text: hashlib.sha256(text.replace('\r\n', '\n').encode('utf-8')).hexdigest()[:length]
+
+
 # Fixtures for the setup and check gates: throwaway Git work trees named `demo`.
 
 ROOT_STARTER = '# demo\n\n## What this repository is\n\n## Shared rules\n\n## Checks\n\n'
@@ -1187,6 +1208,10 @@ GATES = [
     ]),
     ('import-detection', gate_import_detection, has_import, [
         ('skips the code fence rule', functools.partial(_has_import, fences=False)),
+    ]),
+    ('digest', gate_digest, digest, [
+        ('hashes without normalizing line endings', _digest_raw),
+        ('returns a 16-character prefix', _digest_prefix(16)),
     ]),
     ('create', gate_create, REAL, [
         ('writes before checking every path', REAL._replace(preflight=False)),
