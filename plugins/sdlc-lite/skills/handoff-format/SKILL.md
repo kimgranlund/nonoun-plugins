@@ -108,6 +108,8 @@ Copied from the plan's step block, plus the task goal for orientation:
 
 ## Step <n>: <title>
 level: L<n>
+### Read first
+- `<path>`
 
 ### Do
 ...
@@ -115,6 +117,8 @@ level: L<n>
 ### Acceptance criteria
 - ...
 ```
+
+`### Read first` is optional. For each file the step changes, it lists the nearest `AGENTS.md` in that file's folder or a folder above it, leaving out the root entry, one ``- `<path>` `` line each, relative to the repository root. A step whose only entry is the root has no `### Read first`. `steps.py lint` refuses a listed path that does not exist.
 
 ### Merge step
 
