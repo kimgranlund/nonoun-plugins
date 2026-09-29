@@ -18,7 +18,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             It also refuses a criterion span that joins two checks with an unquoted || (see lint),
             one that pins a commit sha fixed at plan time (except the ancestry form
             git merge-base --is-ancestor <sha> HEAD), and one that compares a count over a
-            changing set with a fixed number (see lint).
+            changing set with a fixed number (see lint), and one whose ### Read first lists a
+            path that does not exist (see lint). An optional ### Read first subsection is copied
+            verbatim with the rest of the step block.
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
             bash -c, from the git toplevel of the task dir (else the task dir), under
@@ -74,6 +76,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             git diff --quiet "$SDLC_BASE_SHA" -- <path> plus git ls-files --others
             --exclude-standard -- <path> instead. The detector reads only span text, so a clean
             check hidden inside a script the span calls stays out of reach.
+            A step may carry a ### Read first subsection: the entry files a role reads before
+            the step, one list item per path in the one-line form - `<path>`. Each listed path
+            (the text of the item's code span; lines up to the next ## or ### line, ``` fences
+            left out) resolves against the git toplevel of the plan file's folder, else that
+            folder outside git. A path that does not exist is a finding: "steps: <plan> step <n>:
+            ### Read first lists a path that does not exist: <path>", and lint and split refuse
+            with the plan defect last line. A step with no ### Read first stays valid.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
@@ -695,12 +704,49 @@ def requires_clean_diff(text):
     return False
 
 
+def read_first_paths(block):
+    """The paths listed under a step block's ### Read first, up to the next ## or ### line, with
+    ``` fenced lines left out. Each list item (- or *) that holds a code span gives one path: the
+    text of its first code span."""
+    out = []
+    inside = fenced = False
+    for line in block.splitlines():
+        if line.startswith('## ') or line.startswith('### '):
+            inside = line.strip() == '### Read first'
+            fenced = False
+            continue
+        if not inside:
+            continue
+        if line.lstrip().startswith('```'):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        text = line.lstrip()
+        if not (text.startswith('- ') or text.startswith('* ')):
+            continue
+        m = SPAN_RE.search(text)
+        if m and m.group(2).strip():
+            out.append(m.group(2).strip())
+    return out
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
-    set compared with a fixed number; [] when clean. bash -n parses and never executes."""
+    set compared with a fixed number; one per ### Read first path that does not exist, resolved against
+    the git toplevel of the plan's folder (else that folder); [] when clean. bash -n parses and never
+    executes."""
     findings = []
+    base = None
     for n, block in steps.items():
+        paths = read_first_paths(block)
+        if paths and base is None:
+            folder = pathlib.Path(plan).resolve().parent
+            base = pathlib.Path(git_toplevel(folder) or folder)
+        for rel in paths:
+            if not (base / rel).exists():
+                findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
         for text in command_spans(block):
             probe = PLACEHOLDER_RE.sub('PLACEHOLDER', text)
             try:
@@ -1644,6 +1690,34 @@ def selftest():
         rc, _, _ = run_main(['split', str(d)])
         check('(o) full split in a git repo runs no guard and does not refuse',
               rc == 0 and not (d.parents[1] / 'o-full').exists() and (d / 'step-1' / 'handoff.md').is_file())
+
+        # (r) ### Read first: each listed path must exist under the git toplevel of the plan's folder
+        r = tmp / 'r-repo'
+        (r / 'sub').mkdir(parents=True)
+        subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+        (r / 'sub' / 'AGENTS.md').write_text('x\n', encoding='utf-8')
+        rf_ok = STEP1.replace('### Do', '### Read first\n- `sub/AGENTS.md`\n### Do')
+        d = r / '.sdlc' / 'r-ok'
+        d.mkdir(parents=True)
+        (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (d / 'planner-L2.md').write_text(PLAN.replace(STEP1, rf_ok), encoding='utf-8')
+        rc, out, err = run_main(['lint', str(d)])
+        check('(r) lint accepts a ### Read first path that exists', rc == 0 and 'steps lint: ok' in out)
+        rc, out, _ = run_main(['split', str(d)])
+        h = d / 'step-1' / 'handoff.md'
+        check('(r) split copies ### Read first into the step handoff',
+              rc == 0 and h.is_file() and h.read_text(encoding='utf-8') == f'## Task goal\n{GOAL}\n\n{rf_ok}\n')
+        d = r / '.sdlc' / 'r-bad'
+        d.mkdir(parents=True)
+        (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+        (d / 'planner-L2.md').write_text(PLAN.replace(STEP1, rf_ok.replace('sub/AGENTS', 'gone/AGENTS')),
+                                          encoding='utf-8')
+        rc, out, err = run_main(['lint', str(d)])
+        rc2, out2, err2 = run_main(['split', str(d)])
+        check('(r) lint refuses a ### Read first path that does not exist',
+              rc == 1 and out == '' and 'does not exist: gone/AGENTS.md' in err
+              and err.strip().splitlines()[-1].startswith('plan defect')
+              and rc2 == 1 and 'gone/AGENTS.md' in err2 and not (d / 'step-1').exists())
 
         # next: the /chain step 4 action from the newest results, by recorded run order
         DONE, BLOCKED = '## Status\ndone\n', '## Status\nblocked\n\n## Notes\nplan defect: c1 bad\n'
