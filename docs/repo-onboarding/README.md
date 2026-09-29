@@ -1,6 +1,6 @@
 # Repository onboarding
 
-Proposals for preparing a repository that adopts SDLC Lite. Nothing here is implemented.
+Proposals for preparing a repository that adopts SDLC Lite. The design is implemented; the reorganization is not.
 
 - [Entry files and docs layout](design.md): the `onboard` skill, entry file rules, upsert behavior, default layout, and templates. Ticket T-0160. Role access is ticket T-0162.
 - [Document reorganization](reorganization.md): draft rules for plan, approval, and apply, with open findings. Spike T-0161.

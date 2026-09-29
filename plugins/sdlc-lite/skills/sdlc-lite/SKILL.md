@@ -24,6 +24,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Architecture / finish and file work | architect / file |
 | Parallel ticket lanes / benchmark | fanout / bench |
 | Resolve outstanding questions | open-questions |
+| Set up or check entry files and docs layout | onboard |
 
 Read referenced rubric, handoff format, templates, or scripts only as required. The selected file owns workflow decisions, output format, and completion conditions. Apply the following host translations to its Claude-specific syntax.
 

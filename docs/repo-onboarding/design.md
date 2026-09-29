@@ -1,6 +1,6 @@
 # Repository onboarding: entry files and docs layout
 
-Status: proposed v0.7. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0160.
+Status: proposed v0.7. Recorded: 2026-09-29. T-0160 implements it in `plugins/sdlc-lite/scripts/onboard.py` and the `onboard` skill. Ticket: T-0160.
 
 This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), the [third review](../validation/repo-onboarding-design-review-3.md), and the [loading probe](../validation/nested-entry-file-loading.md).
 
