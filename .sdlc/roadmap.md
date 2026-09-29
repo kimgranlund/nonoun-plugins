@@ -164,3 +164,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | ⏳ proposed |
 | T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | S | P2 | none | 🟢 done |
 | T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | ⏳ proposed |
+| T-0160 | [0160-repo-onboarding-skill](0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and scan-then-ticket reorganization | feature | L | P2 | none | ⏳ proposed |
