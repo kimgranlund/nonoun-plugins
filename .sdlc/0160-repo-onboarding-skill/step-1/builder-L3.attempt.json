@@ -1,0 +1,20 @@
+{
+  "attempt_id": "5e04466a12d7487190117ee2e002cdac",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "T-0160 step 1: new script with parser and selftest harness, planner-assigned L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T22:27:23.894414+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0160-repo-onboarding-skill/step-1/handoff.md",
+  "owner_pid": 20406,
+  "process_pid": 20420,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T22:29:12.149268+00:00"
+}
