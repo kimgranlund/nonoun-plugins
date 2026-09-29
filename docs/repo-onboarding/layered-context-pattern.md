@@ -37,7 +37,7 @@ my-project/
         └── shared_runner.py       # one runtime script
 ```
 
-Every folder that has an `AGENTS.md` also has a `CLAUDE.md`. Without it Claude Code does not load that folder's `AGENTS.md`.
+In this pattern every folder that has an `AGENTS.md` also has a `CLAUDE.md`. Without an import, Claude Code does not load a nested `AGENTS.md`.
 
 ## 2. How each harness resolves context
 
@@ -45,7 +45,7 @@ The harnesses do not resolve context the same way. Two of them were measured.
 
 | Harness | What triggers loading | What is loaded | Status |
 | --- | --- | --- | --- |
-| Claude Code 2.1.284 | Reading a file | The `CLAUDE.md` in that file's folder and in each parent folder up to the root. A nested `AGENTS.md` loads only through an `@AGENTS.md` import in the `CLAUDE.md` beside it. | Observed |
+| Claude Code 2.1.284 | Reading a file | The `CLAUDE.md` in that file's folder and in each parent folder up to the root. A nested `AGENTS.md` loads only through an `@` import in a `CLAUDE.md` that is itself loaded. | Observed |
 | Codex CLI 0.154.0 | The working directory at session start | Every `AGENTS.md` from the repository root down to the working directory. Reading a file in another folder loads nothing more. `CLAUDE.md` is not read. | Observed |
 | Google Antigravity | `AGENTS.md` and `GEMINI.md` scanning | Not tested | Unverified |
 
@@ -127,7 +127,7 @@ A skill that is pure guidance, with nothing mechanical to run, needs no script.
 1. Avoid symlinks. Use the `@AGENTS.md` import in each `CLAUDE.md`. The claim that Antigravity rejects symlinks is unverified.
 2. Keep skills at `.claude/skills/<name>/SKILL.md`. Whether Claude Code discovers skills in a nested `.claude/skills/` folder is unverified.
 3. Keep entry files short. The original limit was 300 lines. The [onboarding design](design.md) proposes 60 lines for a root entry and 30 for a nested one. Move procedure into scripts.
-4. Each nested entry costs tokens whenever it loads. In the probe, two 25-line entries added roughly 1,600 to 1,800 input tokens to a short run.
+4. Each nested entry costs tokens whenever it loads. In the probe, two 25-line entries added about 1,600 input tokens on Claude Code and about 1,800 on Codex, so roughly 800 to 900 per entry.
 
 ## Changes from the original text
 

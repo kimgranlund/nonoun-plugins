@@ -1,84 +1,161 @@
 # Document reorganization
 
-Status: proposed v0.4. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0161, which depends on T-0160.
+Status: proposed v0.5. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0161, which depends on T-0160.
 
-This document covers moving existing files to match a repository's layout. The layout and the entry files are defined in the [onboarding design](design.md). Evidence is in the [design review](../validation/repo-onboarding-design-review.md).
+This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](design.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md) and the [second review](../validation/repo-onboarding-design-review-2.md).
 
 ## Decisions
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Flow | Read-only scan, then a move plan filed as a ticket, then approval | Moves touch links across the whole repository and may collide with concurrent work. |
-| Mechanics | One deterministic script owns inventory, the link graph, refusals, and the final check | A refusal has to come from something that can be tested with a negative control. |
-| Classification | Path and name rules in the script | A file the rules cannot place goes to the user. No role judges it. |
-| Link rewriting | A new rewriter in the script | The rewriting in `tickets.py` replaces only the last path component of a cite, so it cannot express a move to another directory. |
+| Flow | Plan, approve, apply | Moves touch links across the whole repository and may collide with concurrent work. |
+| Mechanics | One deterministic script owns inventory, planning, refusals, moves, and the final check | A refusal has to come from something that can be tested with a negative control. |
+| Classification | Globs in `docs/layout.md` | No content is read to guess a type, and no role judges a file. |
+| User decisions | Recorded by editing `docs/layout.md`, then planning again | The plan is always generated. It is never edited by hand. |
+| Who applies | The skill, in the user's session | A role holds a run lock while it works, which would trip the running check. |
+| Link rewriting | A new rewriter in the script | The rewriting in `tickets.py` replaces only the last path component of a cite. |
+| Broken links | Compared with a baseline | A repository can hold links that were already broken before any move. |
 
-## Inputs
+## Layout file
 
-The script reads two sections of `docs/AGENTS.md`. Each is a list of paths relative to `docs/`, one per line, in backticks.
+`docs/layout.md` has two sections that the script parses. Within each section only lines that start with `- ` are parsed. Any other line is ignored, so the file can hold explanatory text.
 
-- `## Layout` lists the homes. The text after the colon on each line names the document types that belong there.
-- `## Frozen paths` lists paths the script never moves or rewrites.
+```text
+## Homes
+- `<home>/`
+- `<home>/` takes `<glob>`, `<glob>`
 
-A `docs/AGENTS.md` without both sections makes the script stop with a message that names the missing section.
+## Frozen paths
+- `<glob>`
+```
 
-## Steps
+| Element | Meaning |
+| --- | --- |
+| `<home>/` | A folder path relative to `docs/`, ending in a slash. |
+| `<glob>` under Homes | A pattern matched against a candidate's path relative to `docs/`. `*` matches within one path segment and `**` matches across segments. A pattern without a slash matches the file name in any folder. |
+| `<glob>` under Frozen paths | A pattern matched against a path relative to the repository root. A pattern ending in a slash matches everything under that folder. |
 
-1. **Inventory.** List tracked Markdown files and the entry files the onboarding skill manages. Classify each by path and name rules. List a file the rules cannot place as unclassified. Build the link graph. This step writes nothing.
-2. **Plan.** Write a move plan as a normal ticket in `.sdlc/`: each source path, its destination, the reason, every link that must change, the frozen candidates, the unclassified files, and a digest of the inventory.
-3. **Approve.** The user reviews the ticket, decides each unclassified file and frozen candidate, and marks the ticket ready. Nothing moves before that.
-4. **Apply.** The script recomputes the inventory digest and refuses when it differs from the plan's. Moves use `git mv`. Links are rewritten in citing files and inside each moved file.
-5. **Check.** Every link in every file that is not frozen resolves. Frozen files are byte-identical to their state before the run.
+The script stops, writing nothing, and names the file and line number when:
+
+- Either section heading is missing or appears twice.
+- A parsed line does not fit the forms above.
+- The same glob is listed under two homes.
+
+An empty section is valid.
+
+## Inventory
+
+- The link graph covers every tracked Markdown file in the repository.
+- A candidate is a tracked document under `docs/` that is not frozen. Entry files, stubs, `README.md`, and `layout.md` are never candidates.
+- A candidate is placed when it sits under a listed home or under a topic folder, and no glob of another home matches it.
+- A candidate is misplaced when a home's glob matches it and it sits elsewhere. Its destination is that home, keeping the file name.
+- A candidate is unplaced when it sits directly in `docs/` and no glob matches it. It has no destination and does not move.
+
+The user decides an unplaced file by adding a glob for it to a home in `docs/layout.md`, or by creating a topic folder and listing it as a home with that glob, and then planning again.
 
 ## Frozen material
 
-The script never moves or rewrites:
+Always frozen, with no listing needed:
 
-- Ticket folders and run records under `.sdlc/`.
-- Benchmark results, including stored diffs.
-- Generated files: `.sdlc/roadmap.md`, a consumer project's `.codex/agents/`, and in this repository `plugins/sdlc-lite/adapters/codex/agents/`.
-- Vendored paths and paths Git ignores.
-- Every path listed under `## Frozen paths` in `docs/AGENTS.md`.
+- Everything under `.sdlc/`.
+- Every path Git ignores.
 
-The inventory proposes further candidates: a file with a date in its name or a `Recorded:` line near its top. Detection only proposes. A candidate becomes frozen when the user adds it to `docs/AGENTS.md`.
+Frozen by listing in `docs/layout.md`: anything else, such as benchmark results, generated agent files, vendored folders, and dated evidence.
+
+The script never moves or rewrites a frozen file. The plan lists frozen candidates: tracked Markdown files that are not frozen and have a date in the form `YYYY-MM-DD` in their name or a line starting with `Recorded:` in their first ten lines. Detection only proposes. A candidate becomes frozen when the user lists it.
 
 Frozen material that does not match the layout is not a defect to fix by moving. It stays where it is, and new records follow the layout.
 
 A frozen record may cite a path that has since moved. That is accepted. The record describes the material that was assessed at the time, and rewriting it would break the binding between evidence and the revision it checked.
 
-## Refusals
+## Plan
+
+`onboard plan` writes nothing outside the plan ticket. It creates one ticket through `tickets.py new` and writes `plan.json` into that ticket's folder.
+
+`plan.json` fields:
+
+| Field | Content |
+| --- | --- |
+| `version` | Format version, `1`. |
+| `digest` | See below. |
+| `moves` | List of `{from, to, rule}`. Paths are relative to the repository root. `rule` is the home line that matched. |
+| `rewrites` | List of `{file, line, old, new}` for every link that will change. |
+| `unplaced` | List of paths. |
+| `frozen_candidates` | List of `{path, reason}`. |
+| `baseline_broken` | List of `{file, line, target}` for links that do not resolve before any move. |
+
+The ticket's Context section holds the same content as tables, generated from `plan.json`. When the two disagree, `plan.json` decides.
+
+### Digest
+
+The digest is the SHA-256 of these lines, sorted:
+
+- One line per tracked file outside `.sdlc/`: its path.
+- One line per tracked Markdown file that is not frozen: its path and the SHA-256 of its working tree content. This includes `docs/layout.md`.
+
+The digest does not cover `.sdlc/`, so changing the plan ticket's status does not change it. Any edit to `docs/layout.md` or to a document changes it, and the plan has to be generated again.
+
+## Approve
+
+The user reviews the ticket. To change the outcome the user edits `docs/layout.md` and runs `onboard plan` again, which replaces `plan.json` and the tables in the same ticket. The user approves by setting the ticket's status to `ready`.
+
+## Apply
+
+`onboard apply <ticket>` is run by the skill in the user's session and never by a role. It:
+
+1. Runs every refusal below.
+2. Moves each file with `git mv`.
+3. Rewrites links in citing files that are not frozen, and links inside each moved file.
+4. Runs the final check. When it fails, the script restores the working tree to its state before step 2 and exits nonzero.
+
+The user then runs setup again to refresh the managed link lists, reviews the diff, and commits.
+
+### Refusals
 
 The script refuses, writing nothing, when:
 
-- A destination collides with an existing path after case folding. macOS and Windows would overwrite silently.
-- The plan would leave a broken link in any file that is not frozen.
-- The plan moves or rewrites a frozen path.
-- A `.run.lock` or `*.running` marker exists under `.sdlc/`, which means a role is running.
-- The inventory digest differs from the one in the plan.
+- The ticket's status is not `ready`.
+- The digest recomputed now differs from the one in `plan.json`.
+- A move's destination exists, or collides with another tracked or untracked path after case folding.
+- A move's source or a rewrite's file is frozen.
+- A run owns a handoff directory. The test is a non-blocking exclusive lock on every `.run.lock` file found under the repository, outside `.git/`. A lock that cannot be taken means a run is active. The existence of the file alone means nothing, because it is never deleted.
+- The working tree has uncommitted changes to a file that a move or rewrite touches.
+
+### Final check
+
+- Every link in every tracked Markdown file that is not frozen resolves, except the links listed in `baseline_broken`.
+- Every frozen file has the same content hash as before the run.
 
 ## Validation required before shipping
 
-Each gate needs a positive case and an observed negative control.
+Each gate needs a positive case and an observed negative control in the script's selftest, except the end-to-end run.
 
 | Gate | Positive case | Negative control |
 | --- | --- | --- |
-| Script selftest | The selftest passes. | Each refusal above is observed in the selftest. |
-| Inventory | A fixture repository yields the expected classification and link graph. | A fixture with an unplaceable file lists it as unclassified and does not guess a home. |
-| Link rewrite | A move to another directory updates relative, root-relative, and in-file links. | A link to a different file with the same name is left unchanged. |
-| Frozen | Frozen files are byte-identical after a run. | A plan that cites a frozen path as a source is refused. |
-| Staleness | A plan applies when the inventory is unchanged. | A file added after planning makes apply refuse. |
-| End to end | In a throwaway project, the plan ticket passes verification and no link is broken. | The same run with one broken link seeded fails the final check. |
+| Layout parsing | A valid file parses into homes, globs, and frozen patterns. | A line without backticks, a duplicate heading, and a glob under two homes each stop the script with the line number. |
+| Classification | A fixture yields the expected placed, misplaced, and unplaced lists. | A file in `docs/` that no glob matches gets no destination. |
+| Frozen | A listed path and an ignored path are absent from the candidates. | A plan edited by hand to move a frozen file is refused. |
+| Link rewrite | A move to another folder updates relative links in citing files and inside the moved file. | A link to a different file with the same name is unchanged. |
+| Baseline | A fixture with one link that was already broken applies and passes the final check. | A rewrite that is skipped on purpose leaves a new broken link and fails the final check. |
+| Digest | An unchanged fixture applies. | A document edited after planning makes apply refuse. A status change on the ticket does not. |
+| Running check | A leftover `.run.lock` that nobody holds does not block apply. | A `.run.lock` held by another process makes apply refuse. |
+| Collision | A free destination is accepted. | A destination that differs from an existing file only by case is refused. |
+| Restore | A passing apply leaves the moves in place. | A failing final check leaves the working tree as it was before apply. |
+| End to end | In a throwaway project, plan, approve, and apply complete, and the final check passes. | The same project with the ticket left at `proposed` refuses to apply. |
 
 ## First trial: this repository
 
 This repository does not match the default layout, which makes it a realistic first case:
 
-- Five documents sit loose in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, `plugin-compatibility.md`, and `readiness-recovery-validation.md`.
-- `docs/validation/` and `docs/readiness-recovery-validation.md` are dated evidence. They are frozen, so they stay where they are and `docs/AGENTS.md` lists them.
+- Five documents sit directly in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, `plugin-compatibility.md`, and `readiness-recovery-validation.md`.
+- `docs/validation/` and `docs/readiness-recovery-validation.md` are dated evidence. They are to be listed as frozen and stay where they are.
+- `plugins/sdlc-lite/bench/results/` and `plugins/sdlc-lite/adapters/codex/agents/` are to be listed as frozen.
 - `docs/`, `docs/generative-constructs/`, and `docs/repo-onboarding/` use `README.md` as their index and have no `AGENTS.md`.
 - `docs/` paths are cited by the root `AGENTS.md`, the root `README.md`, `plugins/sdlc-lite/AGENTS.md`, and both plugins' `HARNESS-NOTES.md`. A move would change those cites.
+- Two links already do not resolve on a machine without the sibling UI project: one in `docs/generative-constructs/README.md` and one in `docs/generative-constructs/progressive-context-plugin.md`. They belong in the baseline.
 
 ## Unverified assumptions
 
-- `git mv` followed by link rewriting keeps file history readable in `git log --follow`. Not tested.
-- Path and name rules classify enough files to be useful. The share of unclassified files in a real repository is unknown.
+- `git mv` followed by link rewriting keeps file history readable in `git log --follow`.
+- Globs classify enough files to be useful. The share of unplaced files in a real repository is unknown.
+- Restoring the working tree after a failed final check is reliable when moves and rewrites are the only changes. The refusal on uncommitted changes is meant to guarantee that.
