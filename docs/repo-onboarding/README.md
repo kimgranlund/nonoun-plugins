@@ -12,3 +12,4 @@ Evidence:
 - [Design review, second round](../validation/repo-onboarding-design-review-2.md): independent review of design v0.4.
 - [Design review, third round](../validation/repo-onboarding-design-review-3.md): independent review of design v0.5.
 - [Nested entry file loading](../validation/nested-entry-file-loading.md): live probe on both hosts.
+- [Onboard live run](../validation/onboard-live-run.md): live run gate on both hosts, with the negative control.
