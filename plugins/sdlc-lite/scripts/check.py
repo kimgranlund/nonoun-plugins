@@ -282,6 +282,14 @@ for rel in ('agents/builder.md', 'agents/verifier.md'):
 step4 = next((l for l in ft.splitlines() if l.startswith('4. ')), '')
 m = re.search(r'\(([^)]*)\)', step4)
 if (m and 'issue' in m.group(1).lower()) or 'optional item' in step4: errors.append('skills/file/SKILL.md: step 4 lists GitHub issues among the publish options')
+# /fix lints its handwritten step handoff, not the task folder (a folder lint needs a planner file /fix never writes).
+def fix_lint_bad(text):
+    targets = re.findall(r'steps\.py lint (\S+?)`', text)
+    return not targets or any(not t.endswith('/step-1/handoff.md') for t in targets)
+fx = root/'skills/fix/SKILL.md'
+fxt = fx.read_text() if fx.is_file() else ''
+if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not .sdlc/<slug>/step-1/handoff.md')
+if not fix_lint_bad(fxt.replace('/step-1/handoff.md`', '`')): errors.append('check.py: /fix lint-target guard negative control not flagged')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

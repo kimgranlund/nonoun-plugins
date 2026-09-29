@@ -1,0 +1,20 @@
+{
+  "attempt_id": "06667f5dd9344deca0ae7eacf95f4a56",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "T-0164 /fix fast lane: two-file doc and contract-check fix, builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T21:47:21.651977+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0164-fix-skill-lints-task-folder/step-1/handoff.md",
+  "owner_pid": 86081,
+  "process_pid": 86121,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T21:47:51.106174+00:00"
+}

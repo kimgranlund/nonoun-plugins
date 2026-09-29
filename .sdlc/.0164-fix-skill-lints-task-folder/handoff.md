@@ -2,7 +2,7 @@
 id: T-0164
 title: "/fix lints the task folder, which has no planner file"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -35,3 +35,7 @@ Guess: the `/fix` text should name the step handoff path, as `/chain` does. Not 
 
 ## Constraints
 The failing test lands before or with the fix, never after. Generated Codex agents are regenerated if a preloaded skill body changes.
+
+## Closed
+
+2026-09-29: fixed in session by /fix: /fix lints the step handoff, guarded by a check.py contract check
