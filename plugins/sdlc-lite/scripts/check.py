@@ -32,6 +32,9 @@
    `notes.md` also in skills/handoff-format/SKILL.md and agents/conductor.md; and `Loose ends` (/chain 5) in
    skills/chain/SKILL.md, agents/filer.md, skills/handoff-format/SKILL.md, skills/level-rubric/SKILL.md, and
    agents/conductor.md.
+10. Read-first route: the phrase `Read first` (entry files a role reads before a step) appears in
+   agents/planner.md, agents/builder.md, agents/verifier.md, skills/fix/SKILL.md, skills/chain/SKILL.md,
+   skills/handoff-format/SKILL.md, and scripts/steps.py.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -296,6 +299,17 @@ def subst_missing(text): return SUBST_PHRASE not in text
 ct = (root/CONDUCTOR).read_text() if (root/CONDUCTOR).is_file() else ''
 if subst_missing(ct): errors.append(f'{CONDUCTOR}: run.sh-only rule missing "{SUBST_PHRASE}"')
 if not subst_missing(ct.replace(SUBST_PHRASE, '')): errors.append('check.py: substitute-agent guard negative control not flagged')
+# Read-first route: every role and doc that carries step entry files names `Read first`.
+READ_FIRST = 'Read first'
+READ_FIRST_FILES = ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'skills/fix/SKILL.md',
+                    'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py')
+def read_first_missing(text): return READ_FIRST not in text
+for rel in READ_FIRST_FILES:
+    f = root/rel
+    text = f.read_text() if f.is_file() else ''
+    if read_first_missing(text): errors.append(f'{rel}: read-first route missing "{READ_FIRST}"')
+    elif not read_first_missing(text.replace(READ_FIRST, '')):
+        errors.append(f'{rel}: read-first negative control not flagged')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
