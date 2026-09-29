@@ -272,6 +272,7 @@ DOCS_AGENTS_TEMPLATE = """\
 
 ## Contents
 
+<a link to README.md when it exists>
 <one link per topic: to its entry, or to its single document>
 <one line per home that exists: a link to its README.md, or the folder name>
 <one link per loose document>
@@ -306,6 +307,7 @@ Describe what this topic covers.
 <!-- sdlc-lite:managed:end -->
 """
 
+PH_README = '<a link to README.md when it exists>'
 PH_TOPICS = '<one link per topic: to its entry, or to its single document>'
 PH_HOMES = '<one line per home that exists: a link to its README.md, or the folder name>'
 PH_LOOSE = '<one link per loose document>'
@@ -321,9 +323,10 @@ NESTED_SIZE_TARGET = 30
 Template = collections.namedtuple('Template', 'before block after')
 Template.__doc__ = 'One entry file: starter text before the block, the block text, starter text after it.'
 
-Model = collections.namedtuple('Model', 'name topics homes loose')
+Model = collections.namedtuple('Model', 'name topics homes loose readme')
 Model.__doc__ = ('name: repository folder name. topics: list of Topic with one or more documents. '
-                 'homes: list of Home that exist. loose: documents directly in docs/.')
+                 'homes: list of Home that exist. loose: documents directly in docs/. '
+                 'readme: docs/README.md exists.')
 Topic = collections.namedtuple('Topic', 'name docs readme')
 Home = collections.namedtuple('Home', 'path readme')
 
@@ -394,7 +397,8 @@ def render_templates(model):
         loose_lines.append(_link(doc, doc))
     t = _split_template(DOCS_AGENTS_TEMPLATE)
     out['docs/AGENTS.md'] = Template(t.before, _substitute(
-        t.block, {PH_TOPICS: topic_lines, PH_HOMES: home_lines, PH_LOOSE: loose_lines}), t.after)
+        t.block, {PH_README: [_link('README.md', 'README.md')] if model.readme else [],
+                  PH_TOPICS: topic_lines, PH_HOMES: home_lines, PH_LOOSE: loose_lines}), t.after)
     out['docs/CLAUDE.md'] = stub
     t = _split_template(TOPIC_AGENTS_TEMPLATE)
     for topic in model.topics:
@@ -466,7 +470,8 @@ def build_model(root, layout, documents):
     home_list = [Home(h, os.path.isfile(os.path.join(root, 'docs', h, 'README.md')))
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
-    return Model(name, topic_list, home_list, sorted(loose))
+    return Model(name, topic_list, home_list, sorted(loose),
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')))
 
 
 # ---------------------------------------------------------------- managed blocks
@@ -856,12 +861,13 @@ RICH_DOCS = {
     'docs/alpha/design.md': '# Design\n',
     'docs/alpha/notes/one.md': '# One\n',
     'docs/alpha/README.md': '# Alpha\n',
+    'docs/README.md': '# Docs\n',
     'docs/beta/only.md': '# Only\n',
     'docs/loose.md': '# Loose\n',
     'docs/maintenance/README.md': '# Operating\n',
     'docs/reports/2026-09-29.md': '# Report\n',
 }
-RICH_CONTENTS = ('- [alpha/](alpha/AGENTS.md)\n- [beta/only.md](beta/only.md)\n'
+RICH_CONTENTS = ('- [README.md](README.md)\n- [alpha/](alpha/AGENTS.md)\n- [beta/only.md](beta/only.md)\n'
                  '- [maintenance/](maintenance/README.md)\n- `reports/`\n- [loose.md](loose.md)\n')
 
 
