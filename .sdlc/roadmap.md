@@ -164,4 +164,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | ⏳ proposed |
 | T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | S | P2 | none | 🟢 done |
 | T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | ⏳ proposed |
-| T-0160 | [0160-repo-onboarding-skill](0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and scan-then-ticket reorganization | feature | L | P2 | none | ⏳ proposed |
+| T-0160 | [0160-repo-onboarding-skill](0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | ⏳ proposed |
+| T-0161 | [0161-repo-reorganization](0161-repo-reorganization/handoff.md) | Reorganize documents: scan, plan ticket, approved apply | feature | L | P2 | T-0160 | ⏳ proposed |
+| T-0162 | [0162-entry-files-in-step-handoffs](0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | ⏳ proposed |
+| T-0163 | [0163-codex-default-models-rejected](0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | S | P2 | none | ⏳ proposed |

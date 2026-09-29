@@ -1,8 +1,8 @@
-# Repository onboarding and document reorganization
+# Repository onboarding: entry files and docs layout
 
-Status: proposed v0.3. Recorded: 2026-09-29. Nothing in this document is implemented.
+Status: proposed v0.4. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0160.
 
-v0.2 incorporates an independent review of v0.1 made on 2026-09-29. The review did not cover the number prefix section, which was added after it started. v0.3 adds the results of a [live loading probe](../validation/nested-entry-file-loading.md) on Claude Code and Codex. A [corrected reference on the layered context pattern](layered-context-pattern.md) sits beside this document.
+This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [design review](../validation/repo-onboarding-design-review.md) and the [loading probe](../validation/nested-entry-file-loading.md).
 
 ## Problem
 
@@ -10,7 +10,7 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 
 - No guaranteed root entry file, so a role has no stated route into the project.
 - No instructions inside `.sdlc/` or `docs/` explaining how their content is managed.
-- Documents wherever they happened to be written, with no stated home per document type.
+- No stated home per document type.
 
 [Progressive Context](../../plugins/progressive-context/skills/progressive-context/SKILL.md) already defines the navigation model: small entry points that link to durable contracts and evidence. This proposal applies that model at the moment a repository adopts SDLC Lite.
 
@@ -18,60 +18,84 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Owner | A new SDLC Lite skill, provisionally `onboard` | Progressive Context is an authoring skill with no runtime and no prescribed folder tree. Setup and file moves are execution work. |
+| Owner | A new SDLC Lite skill named `onboard` | Progressive Context is an authoring skill with no runtime and no prescribed folder tree. Setup is execution work. |
 | Navigation model | Progressive Context | It is this repository's own model. ICM is not used and is not a dependency. |
 | Entry file name | `AGENTS.md` in every scoped folder | Progressive Context names `AGENTS.md` as the concise instruction and navigation entry point. |
+| Existing `README.md` indexes | Kept in place | The entry file links to an index that already owns the folder's contents. |
 | Docs layout | Opinionated default that a repository can override | A default removes a decision for new repositories. An existing coherent layout is kept. |
 | Number prefixes | Optional, order only | A number can order documents or stages. It never stores maturity. |
-| Reorganization | Read-only scan, then a move plan filed as a ticket, then approval | Moves touch links across the whole repository and may collide with concurrent work. |
-| Mechanics | One deterministic script owns inventory, the link graph, refusals, and the final check | A refusal has to come from something that can be tested with a negative control. |
+| Monorepos | Out of scope for version 1 | One root, one `docs/`, one `.sdlc/`. Per-package entries can follow the layered context reference later. |
+| How roles reach entries | The planner names them per step | The hosts load nested entries differently, so roles cannot depend on host loading. Ticket T-0162. |
 
 ## Entry files
 
 An entry file routes and instructs. It states where the reader is, what lives in the folder, which rules apply to changing it, and which linked file to read for a given task. It does not hold contracts, task history, or evaluation results.
 
-| Location | Managed block content |
-| --- | --- |
-| Root `AGENTS.md` | Route lines to `docs/AGENTS.md` and `.sdlc/AGENTS.md`. Project description, shared rules, and checks are authored by the project and are outside the block. |
-| Root `CLAUDE.md` | One line, `@AGENTS.md`, so Claude Code loads the same file. |
-| `CLAUDE.md` beside a nested `AGENTS.md` | The same one-line import. Claude Code did not load a nested `AGENTS.md` without it. |
-| `.sdlc/AGENTS.md` | Routes only: which SDLC Lite skill owns the handoff format, which owns tickets, that `roadmap.md` is generated, and where repository settings live (`.sdlc/config`). |
-| `docs/AGENTS.md` | The layout this repository uses, the document type map, the frozen paths, and how to add a document. |
-| `docs/<topic>/AGENTS.md` | What the topic covers, its documents, and any rule that differs from the parent. |
+Each entry file has two parts:
 
-Rules for every entry file:
+- A managed block that the skill owns and replaces on update.
+- Starter text that the skill writes once when it creates the file. After that the repository owns it and the skill never changes it.
 
-- A parent entry links each child entry with an ordinary Markdown link. Reaching a child never depends on the host loading it automatically, because a file named `AGENTS.md` is not proof it was loaded.
-- A parent never imports a child entry with `@`. Claude Code expanded such an import as soon as the parent loaded, which pulls every child into context and defeats progressive loading. The only `@` import is `@AGENTS.md` for the file in the same folder.
-- `.sdlc/` gets no `CLAUDE.md` stub by default. A stub there would load the entry into every role run that reads a handoff. Roles reach `.sdlc/AGENTS.md` through the link in the root entry.
-- `.sdlc/AGENTS.md` does not restate the handoff or ticket format. Those facts are owned by the plugin's skills and would go stale in a per-repository copy after a plugin update. It names the owning skill and stops.
-- `.sdlc/AGENTS.md` never contains a ticket folder path. The skill checks its own managed block for one and refuses to write it. This cannot be left to `tickets.py close`: the close scan refuses on a cite only when the citing file is visible to Git, and a repository that ignores `.sdlc/` gets no refusal and keeps the stale cite.
-- When `.sdlc/` is ignored by Git, `.sdlc/AGENTS.md` is a local file. The skill reports that, and the root entry carries the route either way.
-- An existing `README.md` that already owns a folder's index is kept. The entry file links to it and does not repeat it.
+| File | Managed block | Starter text |
+| --- | --- | --- |
+| Root `AGENTS.md` | Links to `docs/AGENTS.md` and `.sdlc/AGENTS.md` | Headings for project description, shared rules, and checks |
+| Root `CLAUDE.md` | `@AGENTS.md` | None |
+| `.sdlc/AGENTS.md` | Which skill owns the handoff format, which owns tickets, that `roadmap.md` is generated, and that settings live in `.sdlc/config` | None |
+| `docs/AGENTS.md` | How to add a document and a link to each topic entry | The layout and the frozen paths |
+| `docs/<topic>/AGENTS.md` | None | What the topic covers and a link to each document |
+| `CLAUDE.md` beside a nested `AGENTS.md` in `docs/` | `@AGENTS.md` | None |
+
+The template text is in [Templates](#templates).
+
+### Rules
+
+- A parent entry links each child entry with an ordinary Markdown link.
+- The only `@` import is `@AGENTS.md` for the file in the same folder. A parent never imports a child, because the import loads at once and pulls every child into context.
+- Nested entries narrow the root rules and never contradict them. How a host settles a conflict is untested.
+- `.sdlc/` gets no `CLAUDE.md`. A stub there would load the entry into every Claude Code role run that reads a handoff. This is revisited when the token cost in a real role run is measured.
+- `.sdlc/AGENTS.md` does not restate the handoff or ticket format. It names the owning skill, so it cannot go stale when the plugin updates.
+- `.sdlc/AGENTS.md` never contains a ticket folder path. The skill checks its own managed block for one and refuses to write it. `tickets.py close` cannot be relied on for this, because it does not see a file that Git ignores.
+- When Git ignores `.sdlc/`, `.sdlc/AGENTS.md` is a local file. The skill reports that, and the root entry carries the link either way.
 - A topic folder gets an entry file once it holds two or more documents. A single document is linked directly from the parent.
-- Proposed size targets are 60 lines for the root entry and 30 lines for a nested one. The skill reports a file over target and never trims it. This repository's root entry is 70 lines and the SDLC Lite plugin entry is 40, so the targets are starting values to test, not established limits.
+- Size targets are 60 lines for the root entry and 30 lines for a nested one. The skill reports a file over target and never trims it. These are starting values. This repository's own root entry is 70 lines.
+
+### How roles reach an entry
+
+Claude Code loads a nested entry only through a `CLAUDE.md` beside it. Codex loads entries from the repository root down to its working directory, and SDLC Lite roles start at the root. Host loading therefore cannot be the mechanism for roles.
+
+- For each plan step, the planner names the entry file of every folder the step changes. The list reaches the step handoff, and the role reads those files.
+- A Claude Code role that reads a file in a `docs/` folder also gets that folder's entry through the stub. The entry is then in context twice. The cost is accepted: it is bounded by the 30-line target, about 400 tokens per entry in the probe.
+- The stubs in `docs/` serve interactive sessions, which have no handoff.
+
+The planner and handoff change is its own ticket, T-0162, because it alters role behavior and needs a live run.
 
 ### Upsert behavior
 
+A target is a link or import that the managed block would add.
+
 | State | Action |
 | --- | --- |
-| File missing | Create it from the template. |
-| File exists and already links every target the block would add | No change. |
-| File exists without a managed block and lacks a target | Append one managed block holding only the missing routes. Existing content stays byte-identical. |
+| File missing | Create it with the managed block and the starter text. |
+| File exists and already contains every target | No change. |
+| File exists without a managed block and lacks a target | Append one managed block holding only the missing targets. Existing content stays byte-identical. |
 | File exists with a managed block | Replace only the text between the markers. |
-| Only `CLAUDE.md` exists | Create `AGENTS.md` with the managed block, then append a managed block to `CLAUDE.md` holding `@AGENTS.md`. Existing `CLAUDE.md` content stays byte-identical. |
+| `CLAUDE.md` exists and `AGENTS.md` does not | Create `AGENTS.md`, then treat `CLAUDE.md` by the rows above. |
+
+A target counts as present when the file contains a Markdown link whose path resolves to the target file, or for an import, a line that is exactly `@AGENTS.md`.
 
 The managed block is delimited by `<!-- sdlc-lite:managed:start v<N> -->` and `<!-- sdlc-lite:managed:end -->`, where `<N>` is the template version. Every change is shown as a diff before it is written. Running the skill twice in a row produces no change.
 
-A check mode reports managed blocks whose template version is older than the installed plugin's and writes nothing. It follows the existing `codex_roles.py install --check` pattern.
+Check mode reports managed blocks whose template version is older than the installed plugin's and writes nothing. It follows the existing `codex_roles.py install --check` pattern.
 
 ## Default docs layout
 
 ```text
 docs/
-  AGENTS.md        entry: layout, document type map, frozen paths
+  AGENTS.md        entry: layout, frozen paths, how to add a document
+  CLAUDE.md        @AGENTS.md
   <topic>/         one folder per concept the project reasons about
     AGENTS.md      entry, once the topic has two or more documents
+    CLAUDE.md      @AGENTS.md
     design.md      approach, interfaces, rejected alternatives
     decisions/     one file per decision
   maintenance/     how to operate, release, and repair
@@ -92,6 +116,10 @@ The `docs/reports/` home is a default of this skill. Progressive Context does no
 
 A contract is not required per topic. One capability can span several topics and one topic can hold several capabilities. A contract keeps a stable ID, so its path is a locator and not its identity.
 
+### Override
+
+The layout a repository uses is the `## Layout` section of its `docs/AGENTS.md`. That section is starter text, so the repository edits it freely and an update never overwrites it. The default above is only what the skill writes on creation.
+
 ### Number prefixes
 
 An `NN-` prefix is optional and expresses order only. It may be used for:
@@ -101,54 +129,13 @@ An `NN-` prefix is optional and expresses order only. It may be used for:
 
 A number never expresses maturity or status. Whether a capability is intended, implemented, or accepted is derived from its contract and evidence, and a folder name that stored that claim would go stale when the code or criteria change. A document does not move between numbered folders as its state changes.
 
-Inserting an item into a numbered sequence renames the items after it. That is a move, so it follows the scan and ticket path below and is not done by hand.
-
-### Override
-
-`docs/AGENTS.md` states the layout the repository actually uses, including where its existing dated evidence lives. The default above is only the starting text. The scan compares files against the layout stated there, so a repository changes the layout by editing one file.
-
-## Scan and reorganization
-
-The skill has two modes with different risk. Setup writes entry files and is safe to repeat. Reorganization moves files and always goes through a ticket.
-
-One script performs every mechanical step below. It has a selftest, like the other SDLC Lite scripts. The link rewriting in `tickets.py` is not reused: it replaces only the last path component of a cite, so it cannot express a move to another directory, and it does not adjust links inside a moved file.
-
-1. **Inventory.** List tracked Markdown files and the entry files the skill manages. Classify each by path and name rules. A file the rules cannot place is listed as unclassified for the user to decide. Build the link graph. This step is read-only.
-2. **Plan.** Write a move plan as a normal ticket in `.sdlc/`: each source path, its destination, the reason, every link that must change, and a digest of the inventory the plan was made from.
-3. **Approve.** The user reviews the ticket. Nothing moves before approval.
-4. **Apply.** The script recomputes the inventory digest and refuses when it differs from the plan's. Moves use `git mv`. Links are rewritten in citing files and inside each moved file.
-5. **Check.** Every link in every file that is not frozen resolves. Frozen files are byte-identical to their state before the run.
-
-### Frozen material
-
-The scan never moves or rewrites:
-
-- Ticket folders and run records under `.sdlc/`.
-- Benchmark results, including stored diffs.
-- Dated reports and validation evidence.
-- Generated files: `.sdlc/roadmap.md`, a consumer project's `.codex/agents/`, and in this repository `plugins/sdlc-lite/adapters/codex/agents/`.
-- Vendored and ignored paths.
-
-The frozen set is the default paths above plus the paths listed in `docs/AGENTS.md`. The inventory proposes further candidates, such as a file with a date in its name or a `Recorded:` line, and the user confirms them in the plan. Detection only proposes. The list in `docs/AGENTS.md` decides.
-
-Frozen material that does not match the layout is not a defect to fix by moving. `docs/AGENTS.md` records where it lives, and new records follow the layout.
-
-A frozen record may cite a path that has since moved. That is accepted. The record describes the material that was assessed at the time, and rewriting it would break the binding between evidence and the revision it checked.
-
-### Move safety
-
-The script refuses, writing nothing, when:
-
-- A destination collides with an existing path after case folding. macOS and Windows would overwrite silently.
-- The plan would leave a broken link in any file that is not frozen.
-- The plan moves or rewrites a frozen path.
-- A `.run.lock` or `*.running` marker exists under `.sdlc/`, which means a role is running.
+Inserting an item into a numbered sequence renames the items after it. That is a move, so it follows [document reorganization](reorganization.md).
 
 ## Relationship to Progressive Context
 
-Progressive Context stays domain-neutral and keeps its rule against a prescribed folder tree. The default layout belongs to the SDLC Lite skill. When the skill ships, the Progressive Context SDLC Lite integration reference names it by skill name. It does not link across plugins by path, because no shipped Progressive Context file does so today and an installed plugin may not have its peer at a known relative path.
+Progressive Context stays domain-neutral and keeps its rule against a prescribed folder tree. The default layout belongs to the SDLC Lite skill. When the skill ships, the Progressive Context SDLC Lite integration reference names it by skill name. It does not link across plugins by path, because an installed plugin may not have its peer at a known relative path.
 
-Ticket closure still does not accept a capability. The onboarding skill creates routes and homes for documents. It creates no contracts, assessments, or lifecycle states.
+The skill creates routes and homes for documents. It creates no contracts, assessments, or lifecycle states.
 
 ## Validation required before shipping
 
@@ -156,54 +143,106 @@ Each gate needs a positive case and an observed negative control.
 
 | Gate | Positive case | Negative control |
 | --- | --- | --- |
-| Skill packaging | Packaging checks, role and skill contract checks, and generated Codex agent parity pass. | The existing checks already carry their own controls. |
-| Upsert | A missing file is created. A second run changes nothing. | A template change that would alter bytes outside the markers makes the selftest fail. |
+| Skill packaging | Packaging checks, role and skill contract checks, and generated Codex agent parity pass. | A skill folder with a broken route fails the packaging check. |
+| Create | Each missing file is created with its managed block and starter text. | A run against a read-only target reports the failure and writes nothing else. |
+| Preserve | A file with user content gains a block and the content outside the markers is byte-identical. | A template change that alters bytes outside the markers makes the selftest fail. |
+| Idempotence | A second run produces no diff. | A template that writes a timestamp makes the selftest fail. |
+| Target detection | A file that already links every target is left unchanged. | A file that links a different path with the same name still gains the block. |
 | Ticket path check | A managed block with routes only is written. | A managed block containing a ticket folder path is refused. |
 | Staleness check | A current block reports clean. | A block with an older template version is reported stale. |
-| Move plan | A valid plan applies and every link resolves. | Each refusal is observed: frozen path, broken link, case-folded collision, running marker, and changed inventory digest. |
 | Ticket closure | A numbered ticket closes in a repository that has `.sdlc/AGENTS.md`, with `.sdlc/` tracked and with `.sdlc/` ignored. | An entry file that cites the ticket blocks closure when `.sdlc/` is tracked. |
-| End to end | In a throwaway project: entry files exist, the plan ticket passes verification, and no link is broken. | The same run with one broken link seeded fails the final check. |
-
-Two items are measurements that inform the design. They are not gates until a threshold is chosen:
-
-- Which entry files each host loads. Measured for both hosts.
-- Input tokens for a role run with and without nested entry files. Measured for a short probe, still open for a real role run.
-
-## First trial: this repository
-
-This repository does not match the default, which makes it a realistic first case:
-
-- Five documents sit loose in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, `plugin-compatibility.md`, and `readiness-recovery-validation.md`.
-- `docs/validation/` and `docs/readiness-recovery-validation.md` are dated evidence. They are frozen, so they stay where they are and `docs/AGENTS.md` records their location.
-- `docs/` and `docs/generative-constructs/` use `README.md` as their index and have no `AGENTS.md`.
-- `docs/` paths are cited by the root `AGENTS.md`, the root `README.md`, `plugins/sdlc-lite/AGENTS.md`, and both plugins' `HARNESS-NOTES.md`. A move would change those cites.
-- Both plugin folders already hold a one-line `CLAUDE.md` containing `@AGENTS.md`.
-
-## Observed during review
-
-- An `AGENTS.md` file in the `.sdlc/` root did not disturb `tickets.py` (check, roadmap, close, archive dry run), `board.py` (default, summary, lanes), or a `fanout.py` dry run. Their root enumerations read directories only. `steps.py`, `run.sh`, a real fanout run, and the Codex paths were not run.
-- `tickets.py close` refused on a cite in `.sdlc/AGENTS.md` when `.sdlc/` was tracked, and did not refuse when `.sdlc/` was ignored.
-
-## Observed in the loading probe
-
-Claude Code 2.1.284 and Codex CLI 0.154.0, one trial per arm. Details and limits are in the [probe report](../validation/nested-entry-file-loading.md). The first five items are for Claude Code.
-
-- A nested `CLAUDE.md` loaded when a file in its folder or in a child folder was read.
-- A nested `AGENTS.md` with no `CLAUDE.md` beside it did not load.
-- The `@AGENTS.md` import worked between HTML comment markers, at the root and nested.
-- An `@` import of a child folder's entry loaded at once, before anything in that folder was read.
-- Two nested 25-line entries with their stubs added about 1,600 input tokens to a four-turn run. That figure is not separated from output differences between the runs.
-- Codex loaded every `AGENTS.md` from the repository root down to its working directory and nothing else. Reading a file in a nested folder loaded no entry. SDLC Lite roles start at the project root, so a Codex role reaches a nested entry only by following a link and reading it.
+| Live run | In a throwaway project on each host, the skill creates the entry files and a following role run completes. | The same project with the root import removed shows the root entry absent from a Claude Code session. |
 
 ## Unverified assumptions
 
-- How either host settles a conflict between a nested rule and a root rule. Nested entries should narrow the root rules and never contradict them.
 - The token cost of nested entries in a real role run, which has more turns than the probe.
 - An installed plugin can read its own template version at run time on both hosts.
+- How either host settles a conflict between a nested rule and a root rule.
 
-## Open questions
+## Templates
 
-- Should `.sdlc/` get a `CLAUDE.md` stub after all, once the token cost in a real role run is known?
-- In a monorepo, does each package get its own entry file and `docs/` folder?
-- Should an existing `README.md` index be converted to `AGENTS.md`, or left in place as it is in this proposal?
-- Is `onboard` the right skill name?
+Text in angle brackets is filled in by the skill. Everything outside the markers is starter text.
+
+Root `AGENTS.md`:
+
+```markdown
+# <repository name>
+
+## What this repository is
+
+## Shared rules
+
+## Checks
+
+<!-- sdlc-lite:managed:start v1 -->
+## Routes
+
+- Documents: read [the docs entry](docs/AGENTS.md).
+- Tickets, plans, and run records: read [the work entry](.sdlc/AGENTS.md).
+<!-- sdlc-lite:managed:end -->
+```
+
+`CLAUDE.md`, at the root and beside a nested entry in `docs/`:
+
+```markdown
+<!-- sdlc-lite:managed:start v1 -->
+@AGENTS.md
+<!-- sdlc-lite:managed:end -->
+```
+
+`.sdlc/AGENTS.md`:
+
+```markdown
+<!-- sdlc-lite:managed:start v1 -->
+# Work records
+
+This folder holds SDLC Lite tickets, plans, and run records.
+
+- Handoff and result formats are owned by the `sdlc-lite:handoff-format` skill.
+- Tickets are created, closed, and archived through the `sdlc-lite:ticket` skill.
+- `roadmap.md` is generated. Do not edit it by hand.
+- Repository settings live in `config`.
+- Do not move or rewrite a finished run record.
+<!-- sdlc-lite:managed:end -->
+```
+
+`docs/AGENTS.md`:
+
+```markdown
+# Documents
+
+## Layout
+
+- `<topic>/`: designs, specifications, and decisions for one concept
+- `maintenance/`: operating procedures
+- `reference/`: lookup material
+- `reports/`: dated results and assessments
+
+## Frozen paths
+
+- `reports/`
+
+<!-- sdlc-lite:managed:start v1 -->
+## Adding a document
+
+1. Pick the home from the layout above.
+2. Link the document from the entry of its folder.
+3. Put dated evidence in its own file. Do not add it to an entry file.
+
+## Topics
+
+<one link per topic entry>
+<!-- sdlc-lite:managed:end -->
+```
+
+`docs/<topic>/AGENTS.md`:
+
+```markdown
+# <topic>
+
+<one sentence on what the topic covers>
+
+## Documents
+
+<one link per document, with a short description>
+```
