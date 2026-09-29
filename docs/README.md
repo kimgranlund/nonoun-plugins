@@ -5,6 +5,7 @@
 - [Plugin compatibility and validation](plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
 
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
+- [Repository onboarding and document reorganization](repo-onboarding/design.md): proposed entry files, default docs layout, and scan-then-ticket reorganization.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
