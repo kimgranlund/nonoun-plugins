@@ -1,8 +1,8 @@
 # Repository onboarding and document reorganization
 
-Status: proposed v0.2. Recorded: 2026-09-29. Nothing in this document is implemented.
+Status: proposed v0.3. Recorded: 2026-09-29. Nothing in this document is implemented.
 
-v0.2 incorporates an independent review of v0.1 made on 2026-09-29. The review did not cover the number prefix section, which was added after it started.
+v0.2 incorporates an independent review of v0.1 made on 2026-09-29. The review did not cover the number prefix section, which was added after it started. v0.3 adds the results of a [live loading probe](../validation/nested-entry-file-loading.md) on Claude Code.
 
 ## Problem
 
@@ -34,13 +34,16 @@ An entry file routes and instructs. It states where the reader is, what lives in
 | --- | --- |
 | Root `AGENTS.md` | Route lines to `docs/AGENTS.md` and `.sdlc/AGENTS.md`. Project description, shared rules, and checks are authored by the project and are outside the block. |
 | Root `CLAUDE.md` | One line, `@AGENTS.md`, so Claude Code loads the same file. |
+| `CLAUDE.md` beside a nested `AGENTS.md` | The same one-line import. Claude Code did not load a nested `AGENTS.md` without it. |
 | `.sdlc/AGENTS.md` | Routes only: which SDLC Lite skill owns the handoff format, which owns tickets, that `roadmap.md` is generated, and where repository settings live (`.sdlc/config`). |
 | `docs/AGENTS.md` | The layout this repository uses, the document type map, the frozen paths, and how to add a document. |
 | `docs/<topic>/AGENTS.md` | What the topic covers, its documents, and any rule that differs from the parent. |
 
 Rules for every entry file:
 
-- A parent entry links each child entry. Reaching a child never depends on the host loading it automatically, because a file named `AGENTS.md` is not proof it was loaded.
+- A parent entry links each child entry with an ordinary Markdown link. Reaching a child never depends on the host loading it automatically, because a file named `AGENTS.md` is not proof it was loaded.
+- A parent never imports a child entry with `@`. Claude Code expanded such an import as soon as the parent loaded, which pulls every child into context and defeats progressive loading. The only `@` import is `@AGENTS.md` for the file in the same folder.
+- `.sdlc/` gets no `CLAUDE.md` stub by default. A stub there would load the entry into every role run that reads a handoff. Roles reach `.sdlc/AGENTS.md` through the link in the root entry.
 - `.sdlc/AGENTS.md` does not restate the handoff or ticket format. Those facts are owned by the plugin's skills and would go stale in a per-repository copy after a plugin update. It names the owning skill and stops.
 - `.sdlc/AGENTS.md` never contains a ticket folder path. The skill checks its own managed block for one and refuses to write it. This cannot be left to `tickets.py close`: the close scan refuses on a cite only when the citing file is visible to Git, and a repository that ignores `.sdlc/` gets no refusal and keeps the stale cite.
 - When `.sdlc/` is ignored by Git, `.sdlc/AGENTS.md` is a local file. The skill reports that, and the root entry carries the route either way.
@@ -163,8 +166,8 @@ Each gate needs a positive case and an observed negative control.
 
 Two items are measurements that inform the design. They are not gates until a threshold is chosen:
 
-- Which entry files each host loads, recorded from a live run per host.
-- Input tokens for a role run with and without nested entry files.
+- Which entry files each host loads. Measured for Claude Code, still open for Codex.
+- Input tokens for a role run with and without nested entry files. Measured for a short probe, still open for a real role run.
 
 ## First trial: this repository
 
@@ -181,16 +184,25 @@ This repository does not match the default, which makes it a realistic first cas
 - An `AGENTS.md` file in the `.sdlc/` root did not disturb `tickets.py` (check, roadmap, close, archive dry run), `board.py` (default, summary, lanes), or a `fanout.py` dry run. Their root enumerations read directories only. `steps.py`, `run.sh`, a real fanout run, and the Codex paths were not run.
 - `tickets.py close` refused on a cite in `.sdlc/AGENTS.md` when `.sdlc/` was tracked, and did not refuse when `.sdlc/` was ignored.
 
+## Observed in the loading probe
+
+Claude Code 2.1.284, one trial per arm. Details and limits are in the [probe report](../validation/nested-entry-file-loading.md).
+
+- A nested `CLAUDE.md` loaded when a file in its folder or in a child folder was read.
+- A nested `AGENTS.md` with no `CLAUDE.md` beside it did not load.
+- The `@AGENTS.md` import worked between HTML comment markers, at the root and nested.
+- An `@` import of a child folder's entry loaded at once, before anything in that folder was read.
+- Two nested 25-line entries with their stubs added about 1,600 input tokens to a four-turn run. That figure is not separated from output differences between the runs.
+
 ## Unverified assumptions
 
-- Claude Code loads a nested `CLAUDE.md` when it reads files in that folder and does not load a nested `AGENTS.md`. Codex loading of nested `AGENTS.md` is also untested here.
-- An `@AGENTS.md` import works when it sits between HTML comment markers.
-- A nested entry file adds input tokens to each role run that reads files in that folder. The amount is unmeasured.
+- Codex loading of nested `AGENTS.md` is untested. The Codex probe could not run with this machine's default model.
+- The token cost of nested entries in a real role run, which has more turns than the probe.
 - An installed plugin can read its own template version at run time on both hosts.
 
 ## Open questions
 
-- Does a nested folder also need a one-line `CLAUDE.md` stub beside its `AGENTS.md`? This repository already does that for its plugin folders. The host loading measurement decides whether topic folders need it too.
+- Should `.sdlc/` get a `CLAUDE.md` stub after all, once the token cost in a real role run is known?
 - In a monorepo, does each package get its own entry file and `docs/` folder?
 - Should an existing `README.md` index be converted to `AGENTS.md`, or left in place as it is in this proposal?
 - Is `onboard` the right skill name?
