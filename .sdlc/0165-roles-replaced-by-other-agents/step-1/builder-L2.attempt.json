@@ -1,0 +1,20 @@
+{
+  "attempt_id": "3e744aa36e754f6f8e05198766a4c60b",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "T-0165 /fix fast lane: conductor rule plus check.py guard, two files, builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T21:50:42.574842+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0165-roles-replaced-by-other-agents/step-1/handoff.md",
+  "owner_pid": 35474,
+  "process_pid": 35488,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T21:51:23.287172+00:00"
+}

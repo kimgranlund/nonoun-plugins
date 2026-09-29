@@ -1,0 +1,20 @@
+{
+  "attempt_id": "c60b9ddfd4424bed949ea3cf10738ed0",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "T-0165 /fix fast lane: verifier L1 after builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T21:51:30.012168+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0165-roles-replaced-by-other-agents/step-1/handoff.md",
+  "owner_pid": 82089,
+  "process_pid": 82144,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T21:51:51.466372+00:00"
+}

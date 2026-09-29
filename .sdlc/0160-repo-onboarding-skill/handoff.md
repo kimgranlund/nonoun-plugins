@@ -13,7 +13,7 @@ created: 2026-09-29
 A repository that adopts SDLC Lite gets entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout, without losing anything it already wrote.
 
 ## Intent
-- Do: build the `onboard` skill and its script as specified in `docs/repo-onboarding/design.md` (v0.6). The script is `plugins/sdlc-lite/scripts/onboard.py` with the commands `setup --dry-run`, `setup [--force]`, and `check`.
+- Do: build the `onboard` skill and its script as specified in `docs/repo-onboarding/design.md` (v0.7). v0.7 adds a role routing line to the root managed block, from T-0165. The script is `plugins/sdlc-lite/scripts/onboard.py` with the commands `setup --dry-run`, `setup [--force]`, and `check`.
   1. Setup mode: create or update the files in the design's Files table from its templates. One script writes every file.
   2. The upsert table, rows 1 to 8, first match wins. Start markers carry a template version and a content hash.
   3. Check mode with the seven labels and a nonzero exit when any file is not current.

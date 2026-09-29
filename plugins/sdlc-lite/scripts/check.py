@@ -290,6 +290,12 @@ fx = root/'skills/fix/SKILL.md'
 fxt = fx.read_text() if fx.is_file() else ''
 if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not .sdlc/<slug>/step-1/handoff.md')
 if not fix_lint_bad(fxt.replace('/step-1/handoff.md`', '`')): errors.append('check.py: /fix lint-target guard negative control not flagged')
+# The conductor forbids substituting other plugins' agents for run.sh roles.
+SUBST_PHRASE = "Other plugins' agents are not substitutes"
+def subst_missing(text): return SUBST_PHRASE not in text
+ct = (root/CONDUCTOR).read_text() if (root/CONDUCTOR).is_file() else ''
+if subst_missing(ct): errors.append(f'{CONDUCTOR}: run.sh-only rule missing "{SUBST_PHRASE}"')
+if not subst_missing(ct.replace(SUBST_PHRASE, '')): errors.append('check.py: substitute-agent guard negative control not flagged')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
