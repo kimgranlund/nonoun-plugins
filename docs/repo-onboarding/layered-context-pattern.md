@@ -127,7 +127,8 @@ A skill that is pure guidance, with nothing mechanical to run, needs no script.
 1. Avoid symlinks. Use the `@AGENTS.md` import in each `CLAUDE.md`. The claim that Antigravity rejects symlinks is unverified.
 2. Keep skills at `.claude/skills/<name>/SKILL.md`. Whether Claude Code discovers skills in a nested `.claude/skills/` folder is unverified.
 3. Keep entry files short. The original limit was 300 lines. The [onboarding design](design.md) proposes 60 lines for a root entry and 30 for a nested one. Move procedure into scripts.
-4. Each nested entry costs tokens whenever it loads. In the probe, two 25-line entries added about 1,600 input tokens on Claude Code and about 1,800 on Codex, so roughly 800 to 900 per entry.
+4. Each nested entry costs tokens whenever it loads. In the probe, a run with two 25-line entries used about 1,600 more input tokens on Claude Code and about 1,800 more on Codex. The difference is not purely the entry files, which by size alone are about 430 tokens each.
+5. Claude Code removes HTML comments from entry files before the model sees them. Codex passes them through. Do not put an instruction inside a comment.
 
 ## Changes from the original text
 

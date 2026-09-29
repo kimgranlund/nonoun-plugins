@@ -1,36 +1,42 @@
 ---
 id: T-0161
-title: "Reorganize documents: scan, plan ticket, approved apply"
-type: feature        # feature | bug | chore | spike | idea
+title: "Spike: read-only reorganization plan on this repository"
+type: spike        # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: L              # S | M | L | XL
+size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0160]          # ticket ids, e.g. [T-0002]
 created: 2026-09-29
 ---
 
-## Goal
-A repository can bring its existing documents into its stated layout through a generated plan the user approves, with no new broken link and no change to frozen files.
+## Question
+Which rules let a script classify this repository's documents and produce a move plan that a person would accept, and which of the open findings in the draft design are real in practice?
 
-## Intent
-- Do: build the plan and apply modes of the `onboard` skill and its script as specified in `docs/repo-onboarding/reorganization.md` (v0.5).
-  1. The `docs/layout.md` parser with the grammar and stop conditions in the design.
-  2. Inventory: link graph over every tracked Markdown file, and candidates classified as placed, misplaced, or unplaced by globs.
-  3. `onboard plan`: one ticket plus `plan.json` with the fields and digest the design defines. Planning again replaces both in the same ticket.
-  4. `onboard apply`: the six refusals, `git mv`, the new link rewriter, the final check against the baseline, and restore on failure.
-- Non-goals: reusing the `tickets.py` link rewriting; reading content to guess a document type; a role that judges classification or applies the plan; editing `plan.json` by hand; moving or rewriting frozen files; moving documents outside `docs/`.
-- Done when: every gate in the design's validation table has a passing positive case and an observed negative control in the script's selftest, and the end-to-end gate passes in a throwaway project.
+## Goal
+A recommendation with cited evidence, written back into this file: the rules to keep, the rules to change, and whether apply is worth building.
 
 ## Context
-Design: `docs/repo-onboarding/reorganization.md`. It depends on `docs/layout.md`, which T-0160 creates.
+Draft design: `docs/repo-onboarding/reorganization.md` (v0.6). Three review rounds each found new edge cases, so the user chose on 2026-09-29 to test the rules against real files before specifying more. The design's "Open findings" section lists N1, N2, N3, N5, N8, N9, and N15 from `docs/validation/repo-onboarding-design-review-3.md`.
 
-Evidence: `docs/validation/repo-onboarding-design-review.md` finding 2 showed that `tickets.py` rewriting replaces only the last path component of a cite. `docs/validation/repo-onboarding-design-review-2.md` findings 1 to 4 led to the current running check, plan format, layout grammar, and link baseline.
+Build a throwaway prototype that does only the read-only part:
 
-A run holds a non-blocking exclusive lock on `.run.lock` in its handoff directory (`scripts/run_lifecycle.py`, function `lock`). The file is never deleted, so only a failed lock attempt shows an active run.
+1. Parse `docs/layout.md` with the parser from T-0160.
+2. Inventory every tracked Markdown file and build the link graph.
+3. Classify the documents under `docs/` as placed, misplaced, or unplaced.
+4. Print a plan: moves, link rewrites, unplaced files, frozen candidates, and links that are already broken.
 
-This repository is the intended first real trial after the throwaway project. Its mismatches, the paths to list as frozen, and the two links for the baseline are in the design.
+Run it on this repository with a `docs/layout.md` written for the trial. The design's "First trial" section lists the known mismatches, the paths to freeze, and the two links that are already broken.
 
-Unsettled: whether history stays readable with `git log --follow` after a move plus link rewrite, what share of files the globs leave unplaced, and whether restore is reliable in every failure case.
+Answer at least these:
+
+- How many documents are placed, misplaced, and unplaced, and does each proposed move look right to a person?
+- How many cites of a moved document are Markdown links, and how many are backticked paths or other forms (N5)?
+- Do any of the ambiguous inputs in N2 occur?
+- Is a glob on a topic needed (N3)?
+- What should hold the plan: a ticket, or a file outside `.sdlc/` (N1, N9, N15)?
+- Is apply worth building, or is a reviewed plan that a person carries out by hand enough?
+
+The answer unblocks a later ticket for apply, or a decision to drop it.
 
 ## Constraints
-Nothing moves unless the plan ticket's status is `ready`. Frozen files keep the same content hash. Apply is run in the user's session and never by a role. The script writes nothing under `.sdlc/` except the plan ticket it created.
+Timebox: one working session. No production code lands from a spike. The prototype stays outside the plugin's shipped folders. Nothing in this repository is moved or rewritten. No ticket is created by the prototype.

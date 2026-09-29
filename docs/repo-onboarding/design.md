@@ -1,8 +1,8 @@
 # Repository onboarding: entry files and docs layout
 
-Status: proposed v0.5. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0160.
+Status: proposed v0.6. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0160.
 
-This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), and the [loading probe](../validation/nested-entry-file-loading.md).
+This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), the [third review](../validation/repo-onboarding-design-review-3.md), and the [loading probe](../validation/nested-entry-file-loading.md).
 
 ## Problem
 
@@ -28,7 +28,8 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 | Number prefixes | Optional, order only | A number can order documents or stages. It never stores maturity. |
 | Monorepos | Out of scope for version 1 | One root, one `docs/`, one `.sdlc/`. |
 | How roles reach entries | The planner names them per step | The hosts load nested entries differently, so roles cannot depend on host loading. Ticket T-0162. |
-| Who writes | One script writes every file | All output is deterministic and testable. The model fills nothing in. |
+| Who writes | One script, `scripts/onboard.py`, writes every file | All output is deterministic and testable. The model fills nothing in. |
+| Git | Required | Setup stops outside a Git work tree, because tracked files and ignore rules define what it sees. |
 
 ## Files
 
@@ -36,9 +37,9 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 | --- | --- | --- |
 | Root `AGENTS.md` | Link to `docs/AGENTS.md` and the guidance for work records | Headings for project description, shared rules, and checks |
 | Root `CLAUDE.md` | `@AGENTS.md` | None |
-| `docs/AGENTS.md` | How to add a document and a link to each topic | None |
+| `docs/AGENTS.md` | How to add a document, and links to topics, homes, and loose documents | None |
 | `docs/CLAUDE.md` | `@AGENTS.md` | None |
-| `docs/layout.md` | None. The repository owns the whole file | The default layout and frozen paths |
+| `docs/layout.md` | None. The repository owns the whole file. The upsert table does not apply to it | The default layout and frozen paths |
 | `docs/<topic>/AGENTS.md` | Link to each document in the topic | A placeholder line for what the topic covers |
 | `docs/<topic>/CLAUDE.md` | `@AGENTS.md` | None |
 
@@ -48,10 +49,15 @@ The template text is in [Templates](#templates).
 
 ### Definitions
 
-- A topic is a folder directly under `docs/` that `docs/layout.md` does not list as a home.
-- A document is a tracked Markdown file other than `AGENTS.md`, `CLAUDE.md`, and `README.md`.
-- A topic gets an entry file and a stub once it holds two or more documents. A topic with one document is linked from `docs/AGENTS.md` directly.
+- A home is a folder that `docs/layout.md` lists under `## Homes`.
+- A topic is a folder directly under `docs/` that is not a home and is not matched by a frozen path.
+- A document is a tracked Markdown file other than `AGENTS.md`, `CLAUDE.md`, `README.md`, and `docs/layout.md`.
+- A loose document is a document directly in `docs/`.
+- A topic's documents are counted through all its subfolders. A topic gets an entry file and a stub once it holds two or more documents. A topic with one document is linked from `docs/AGENTS.md` directly.
 - When a topic has a `README.md`, the topic entry links to it first.
+- A home gets no entry file in version 1. `docs/AGENTS.md` links to the home's `README.md` when it exists and names the folder otherwise.
+- Setup writes nothing inside a folder that a frozen path matches.
+- Setup never deletes a file. An entry stays when its topic later falls to one document.
 - Setup creates no empty folders.
 
 ### Rules
@@ -66,12 +72,24 @@ The template text is in [Templates](#templates).
 Claude Code loads a nested `AGENTS.md` only through an `@` import in a `CLAUDE.md` that is itself loaded. Codex loads entries from the repository root down to its working directory, and SDLC Lite roles start at the root. Host loading therefore cannot be the mechanism for roles.
 
 - For each plan step, the planner names the nearest entry file above each file the step changes. The list reaches the step handoff, and the role reads those files. Details are in ticket T-0162.
-- A Claude Code role that reads a file in a `docs/` folder also gets that folder's entry through the stub. The entry is then in context twice. The cost is accepted. In the probe, two 25-line entries added about 1,600 input tokens on Claude Code and about 1,800 on Codex, so roughly 800 to 900 per entry.
+- A Claude Code role that reads a file in a `docs/` folder also gets that folder's entry through the stub. The entry is then in context twice. The cost is accepted. In the probe, a run with two 25-line entries used about 1,600 more input tokens on Claude Code and about 1,800 more on Codex. The probe report notes that the difference is not purely the entry files, which by size alone are about 430 tokens each.
 - The stubs in `docs/` serve interactive sessions, which have no handoff.
+
+## Commands
+
+| Command | Effect |
+| --- | --- |
+| `onboard.py setup --dry-run` | Prints the diff of every change and writes nothing. |
+| `onboard.py setup [--force]` | Writes the changes. |
+| `onboard.py check` | Reports the state of each file and writes nothing. |
+
+The skill runs the dry run, shows the diff, asks the user once, and then runs setup.
+
+Setup and check parse `docs/layout.md` when it exists, to tell topics from homes and to find frozen paths. On a parse error they stop, name the file and line number, and write nothing.
 
 ## Upsert behavior
 
-The script decides per file, in this order. The first row that matches applies.
+The script decides per file, in this order. The first row that matches applies. `docs/layout.md` is outside this table: setup creates it when it is missing and never touches it otherwise.
 
 | # | State | Action |
 | --- | --- | --- |
@@ -86,15 +104,19 @@ The script decides per file, in this order. The first row that matches applies.
 
 Definitions for the table:
 
+- A marker is a whole line outside any code fence. A marker line inside a code fence is ordinary text.
 - Markers are malformed when a start marker has no end marker after it, an end marker has no start marker before it, or the file has more than one block.
-- The start marker is `<!-- sdlc-lite:managed:start v<N> sha256:<H> -->` and the end marker is `<!-- sdlc-lite:managed:end -->`. `<N>` is the template version. `<H>` is the first 12 hex characters of the SHA-256 of the block text as the skill wrote it.
+- The start marker is `<!-- sdlc-lite:managed:start v<N> sha256:<H> -->` and the end marker is `<!-- sdlc-lite:managed:end -->`.
+- `<N>` is one version number for the whole template set. It rises when any template changes.
+- The block text is the bytes strictly between the two marker lines, with line endings normalized to LF. The marker lines are not part of it, so the hash is computed before the start marker is written.
+- `<H>` is the first 12 hex characters of the SHA-256 of the block text as the skill wrote it.
 - A block is edited by hand when the hash of its current text differs from `<H>`.
 - A file has the import when a line outside any code fence, with trailing whitespace removed, is exactly `@AGENTS.md` or `@./AGENTS.md`.
 - Row 8 can repeat a link the file already has elsewhere. That is accepted, because detecting an equivalent link in free text is unreliable.
 
 Every change is shown as a diff before it is written. A second run in a row matches row 5 or row 7 for every file and changes nothing.
 
-Check mode writes nothing. It reports each file as current, stale (row 6), edited (row 4), newer (row 3), malformed (row 2), or missing (row 1). It exits nonzero when any file is not current. The markers and the hash are the ownership record. There is no separate receipt file.
+Check mode writes nothing. It reports each file as current (rows 5 and 7), stale (row 6), edited (row 4), newer (row 3), malformed (row 2), missing (row 1), or unmanaged (row 8). For `docs/layout.md` it reports only present or missing. It exits nonzero when any file is not current or present. The markers and the hash are the ownership record. There is no separate receipt file.
 
 ## Default docs layout
 
@@ -128,7 +150,34 @@ A contract is not required per topic. One capability can span several topics and
 
 ### Override
 
-The layout a repository uses is whatever its `docs/layout.md` says. The repository edits that file freely, and the skill never changes it after creating it. The format is defined in [document reorganization](reorganization.md#layout-file).
+The layout a repository uses is whatever its `docs/layout.md` says. The repository edits that file freely, and the skill never changes it after creating it.
+
+### Layout file
+
+`docs/layout.md` has two sections that the script parses. Inside a section, a line is a list line when its first character after optional spaces is `-`, `*`, or `+`. Every list line must fit one of the forms below. Any other line is ignored, so the file can hold explanatory text.
+
+```text
+## Homes
+- `<home>/`
+- `<home>/` takes `<glob>`, `<glob>`
+
+## Frozen paths
+- `<glob>`
+```
+
+| Element | Meaning |
+| --- | --- |
+| `<home>/` | A folder path relative to `docs/`, ending in a slash. |
+| `<glob>` under Homes | A pattern matched against a document's path relative to `docs/`. `*` matches within one path segment and `**` matches across segments. A pattern without a slash matches the file name in any folder. Setup ignores these globs. They are for document reorganization. |
+| `<glob>` under Frozen paths | A pattern matched against a path relative to the repository root. A pattern ending in a slash matches everything under that folder. |
+
+The script stops, writing nothing, and names the file and line number when:
+
+- Either section heading is missing or appears twice.
+- A list line does not fit the forms above.
+- The same home is listed twice.
+
+An empty section is valid.
 
 ### Number prefixes
 
@@ -159,14 +208,15 @@ New gates. Each tests the skill's own output and needs a positive case and an ob
 | --- | --- | --- |
 | Create | In an empty fixture, every file in the Files table that applies is created with its block and starter text. | A fixture where `docs/` is a regular file makes the run exit nonzero and leaves the fixture unchanged. |
 | Preserve | A file with user content gains a block, and the bytes outside the markers are identical. | A template variant that writes outside the markers makes the selftest fail. |
-| Idempotence | A second run produces no diff. | A template variant that embeds the current time makes the selftest fail. |
-| Row order | One fixture per row of the upsert table produces that row's action. | A fixture that matches rows 4 and 6 is left unchanged, which shows row 4 wins. |
-| Import detection | `@AGENTS.md` and `@./AGENTS.md` lines count as the import. | An import inside a code fence does not count, and the block is appended. |
+| Idempotence | A second run produces no diff. | A template variant that embeds a run counter makes the selftest fail. |
+| Row order | One fixture per row of the upsert table produces that row's action. | A script variant with rows 4 and 6 swapped makes the selftest fail. |
+| Import detection | `@AGENTS.md` and `@./AGENTS.md` lines count as the import, and an import inside a code fence does not. | A script variant that skips the code fence rule makes the selftest fail. |
+| Layout parsing | A valid file parses into homes and frozen patterns. | A list line without backticks, a duplicate heading, and a home listed twice each stop the script with the line number. |
 | Malformed markers | A well-formed block is replaced. | A start marker with no end marker leaves the file byte-identical and is reported. |
-| Check mode | A current fixture exits zero. | A stale, an edited, and a missing fixture each exit nonzero with the matching label. |
-| Live run | In a throwaway project on each host, after setup, a session started at the root reports the version string of the root managed block when asked for it. | The same project with the root managed block deleted does not report it. |
+| Check mode | A current fixture exits zero. | A stale, an edited, a missing, and an unmanaged fixture each exit nonzero with the matching label. |
+| Live run | In a throwaway project on Claude Code and on Codex, after setup, a session started at the root with tools disabled reports the visible marker line of the root managed block. | The same project with the root managed block deleted does not report it. |
 
-The Codex live run uses a level whose model the account accepts, or waits for T-0163.
+The live run reads a visible line and not the marker comments, because Claude Code removes HTML comments from entry files before the model sees them. Codex does not. The Codex live run is a plain session, so it needs only a model the account accepts.
 
 ## Unverified assumptions
 
@@ -194,6 +244,8 @@ Root `AGENTS.md`:
 ## Documents
 
 Read [the docs entry](docs/AGENTS.md) before adding or moving a document.
+
+Managed by SDLC Lite onboard, template <N>.
 
 ## Work records
 
@@ -223,12 +275,14 @@ Read [the docs entry](docs/AGENTS.md) before adding or moving a document.
 ## Adding a document
 
 1. Pick the home from [the layout](layout.md).
-2. Link the document from the entry of its folder.
+2. Run the onboard setup again to refresh the links below.
 3. Put dated evidence in its own file. Do not add it to an entry file.
 
-## Topics
+## Contents
 
 <one link per topic: to its entry, or to its single document>
+<one line per home that exists: a link to its README.md, or the folder name>
+<one link per loose document>
 <!-- sdlc-lite:managed:end -->
 ```
 

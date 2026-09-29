@@ -59,6 +59,16 @@ The nested and control layouts were reused. Codex read the files with `cat`.
 | Is `CLAUDE.md` read? | No. Its canaries were absent in every arm. |
 | Negative control | The unread canary was absent in every arm. |
 
+## HTML comments
+
+Added 2026-09-29, after the third design review. One project held a root `CLAUDE.md` and a root `AGENTS.md`, each with one canary inside an HTML comment and one in visible text. The `CLAUDE.md` imported the `AGENTS.md`. The session had no tools on Claude Code and ran no command on Codex.
+
+| Host | Canary in a comment | Canary in visible text |
+| --- | --- | --- |
+| Claude Code, `CLAUDE.md` | Absent | Present |
+| Claude Code, imported `AGENTS.md` | Absent | Present |
+| Codex, `AGENTS.md` | Present | Present |
+
 ## Token cost
 
 Claude Code:

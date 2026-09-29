@@ -1,8 +1,10 @@
 # Document reorganization
 
-Status: proposed v0.5. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0161, which depends on T-0160.
+Status: draft v0.6, not ready to build. Recorded: 2026-09-29. Nothing in this document is implemented.
 
-This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](design.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md) and the [second review](../validation/repo-onboarding-design-review-2.md).
+Three review rounds each found new edge cases in these rules, so they will not be settled on paper. Spike T-0161 builds the read-only inventory and plan and runs them on this repository. Its results decide the rules below. Apply is deferred to a later ticket. The [open findings](#open-findings) list what is known to be unsettled.
+
+This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](design.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), and the [third review](../validation/repo-onboarding-design-review-3.md).
 
 ## Decisions
 
@@ -13,35 +15,12 @@ This document covers moving existing files to match a repository's layout. Entry
 | Classification | Globs in `docs/layout.md` | No content is read to guess a type, and no role judges a file. |
 | User decisions | Recorded by editing `docs/layout.md`, then planning again | The plan is always generated. It is never edited by hand. |
 | Who applies | The skill, in the user's session | A role holds a run lock while it works, which would trip the running check. |
-| Link rewriting | A new rewriter in the script | The rewriting in `tickets.py` replaces only the last path component of a cite. |
+| Link rewriting | A new rewriter in the script | The rewriting in `tickets.py` replaces only the ticket folder's own component of a cite. |
 | Broken links | Compared with a baseline | A repository can hold links that were already broken before any move. |
 
 ## Layout file
 
-`docs/layout.md` has two sections that the script parses. Within each section only lines that start with `- ` are parsed. Any other line is ignored, so the file can hold explanatory text.
-
-```text
-## Homes
-- `<home>/`
-- `<home>/` takes `<glob>`, `<glob>`
-
-## Frozen paths
-- `<glob>`
-```
-
-| Element | Meaning |
-| --- | --- |
-| `<home>/` | A folder path relative to `docs/`, ending in a slash. |
-| `<glob>` under Homes | A pattern matched against a candidate's path relative to `docs/`. `*` matches within one path segment and `**` matches across segments. A pattern without a slash matches the file name in any folder. |
-| `<glob>` under Frozen paths | A pattern matched against a path relative to the repository root. A pattern ending in a slash matches everything under that folder. |
-
-The script stops, writing nothing, and names the file and line number when:
-
-- Either section heading is missing or appears twice.
-- A parsed line does not fit the forms above.
-- The same glob is listed under two homes.
-
-An empty section is valid.
+The format of `docs/layout.md` is defined in the [onboarding design](design.md#layout-file). Its parser is built in T-0160.
 
 ## Inventory
 
@@ -132,7 +111,6 @@ Each gate needs a positive case and an observed negative control in the script's
 
 | Gate | Positive case | Negative control |
 | --- | --- | --- |
-| Layout parsing | A valid file parses into homes, globs, and frozen patterns. | A line without backticks, a duplicate heading, and a glob under two homes each stop the script with the line number. |
 | Classification | A fixture yields the expected placed, misplaced, and unplaced lists. | A file in `docs/` that no glob matches gets no destination. |
 | Frozen | A listed path and an ignored path are absent from the candidates. | A plan edited by hand to move a frozen file is refused. |
 | Link rewrite | A move to another folder updates relative links in citing files and inside the moved file. | A link to a different file with the same name is unchanged. |
@@ -142,6 +120,20 @@ Each gate needs a positive case and an observed negative control in the script's
 | Collision | A free destination is accepted. | A destination that differs from an existing file only by case is refused. |
 | Restore | A passing apply leaves the moves in place. | A failing final check leaves the working tree as it was before apply. |
 | End to end | In a throwaway project, plan, approve, and apply complete, and the final check passes. | The same project with the ticket left at `proposed` refuses to apply. |
+
+## Open findings
+
+From the third review. Each is unsettled and is input to the spike.
+
+| # | Finding |
+| --- | --- |
+| N1 | Planning again cannot go through `tickets.py new`. In numbered mode a second call creates a second ticket, and in plain mode it refuses. A ticket already at `ready` would stay approved for a plan nobody reviewed. The plan ticket needs a defined slug, type, and lookup, and planning has to reset or refuse an approved ticket. |
+| N2 | Three inputs are ambiguous: a file that matches globs of two homes, two files with the same name headed for one destination, and a move into a home that is also frozen. |
+| N3 | Listing a topic as a home to give it a glob removes it from the topic rules. A glob on a topic needs its own form. |
+| N5 | "Link" is undefined. The forms to rewrite and check have to be listed: inline, reference style, autolinks, HTML, anchors, and links in code fences. This repository also cites documents as backticked paths, which a link rewriter does not see. |
+| N8 | Restore is unspecified: index state after `git mv`, new folders, files with unrelated uncommitted changes, and failures before the final check. |
+| N9 | "Writes nothing outside the plan ticket" is false. `tickets.py new` also rewrites `.sdlc/roadmap.md` and can write `.sdlc/config`, and it refuses when any existing ticket has a problem. No command sets a ticket's status, and a hand edit makes `tickets.py check` report a stale roadmap until it is regenerated. |
+| N15 | `plan.json` decides over the tables the user reviews, and the digest covers inputs only, so a hand edit to `plan.json` would be applied. |
 
 ## First trial: this repository
 
