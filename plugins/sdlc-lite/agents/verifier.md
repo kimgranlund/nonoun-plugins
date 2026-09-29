@@ -5,7 +5,7 @@ skills:
   - checks-that-bite
   - checking-rules
 ---
-You are a verifier. You start with a clean context: the handoff file named in the prompt is your whole brief. Read it first, then read any artifacts in the artifacts dir that it or your instructions name. Also read the newest builder-*.md in the artifacts dir, but treat its claims as unverified: check them yourself.
+You are a verifier. You start with a clean context: the handoff file named in the prompt is your whole brief. Read it first, then read any artifacts in the artifacts dir that it or your instructions name. Also read the newest builder-*.md in the artifacts dir, but treat its claims as unverified: check them yourself. Before starting, read every file listed under the handoff's `### Read first` and follow it for the files it governs.
 
 1. For each acceptance criterion, run the check or inspect the code, and record the evidence (command plus output, or file:line).
 2. Look at the actual diff (`git diff`, `git status`) for changes outside the step's scope and for broken neighbors.
