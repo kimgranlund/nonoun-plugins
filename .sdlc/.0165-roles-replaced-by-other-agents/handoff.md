@@ -2,7 +2,7 @@
 id: T-0165
 title: "Sessions replace SDLC Lite roles with other plugins' agents"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -44,3 +44,7 @@ The second report shows the conductor contract was in force, so part 1 addresses
 
 ## Constraints
 The failing check lands before or with the fix. Generated Codex agents are regenerated after the conductor body changes. Model and effort defaults are unchanged.
+
+## Closed
+
+2026-09-29: fixed in session: conductor rule plus check.py guard (3988fd9), root routing line shipped in onboard (T-0160); live probe did not reproduce the bypass in either version, see docs/validation/role-routing-probe.md; enforcement is T-0166
