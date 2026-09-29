@@ -37,6 +37,6 @@ Verdict: ready after fixes. No blockers, 8 major findings, 5 minor.
 
 ## Limits
 
-- One claim in finding 1 could not be confirmed afterwards. The reviewer cited `handoff-format/SKILL.md:32` as telling projects to ignore `.sdlc/`. That line describes result file naming and says nothing about ignoring the folder. This repository tracks `.sdlc/`. The tested behavior still holds for a repository that chooses to ignore it.
+- Correction, 2026-09-29. An earlier version of this record said that `handoff-format/SKILL.md:32` says nothing about ignoring `.sdlc/`. That was wrong. The line ends with "Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed." The author of this record had read a truncated view of the line. The reviewer's citation in finding 1 is correct, and an ignored `.sdlc/` is the documented default for a consumer project. This repository tracks `.sdlc/` by choice.
 - The review did not cover the number prefix section, the split into two documents, or anything added from v0.3 on.
 - The reviewer's findings were not independently rerun, apart from spot checks of the cited line counts, file lists, and `tickets.py` source.
