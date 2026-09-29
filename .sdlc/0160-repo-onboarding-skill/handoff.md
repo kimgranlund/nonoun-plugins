@@ -29,9 +29,9 @@ An independent review of v0.1 found that `tickets.py` link rewriting replaces on
 
 The Codex install in `scripts/codex_roles.py` already uses managed files, an ownership receipt, and `install --check`. Follow that pattern for the managed blocks and check mode.
 
-A live probe on Claude Code (`docs/validation/nested-entry-file-loading.md`) showed that a nested `AGENTS.md` loads only with a `CLAUDE.md` stub beside it and that an `@` import of a child entry loads at once. Design v0.3 reflects both.
+A live probe on Claude Code (`docs/validation/nested-entry-file-loading.md`) showed that a nested `AGENTS.md` loads only with a `CLAUDE.md` stub beside it and that an `@` import of a child entry loads at once. The same probe on Codex showed that it loads entries from the root down to its working directory only, so a role started at the root reaches a nested entry by link. Design v0.3 reflects these.
 
-Unsettled, to resolve at plan time or by a spike first: which nested entry files Codex loads, the input token cost of nested entries in a real role run, whether `.sdlc/` gets a `CLAUDE.md` stub, monorepo handling, whether an existing `README.md` index is converted, and the skill name. Split into setup plus check, then scan plus apply, if the plan needs it.
+Unsettled, to resolve at plan time or by a spike first: the input token cost of nested entries in a real role run, whether `.sdlc/` gets a `CLAUDE.md` stub, monorepo handling, whether an existing `README.md` index is converted, and the skill name. Split into setup plus check, then scan plus apply, if the plan needs it.
 
 ## Constraints
 Progressive Context core files stay domain-neutral and keep the rule against a prescribed folder tree. Existing user content in an entry file stays byte-identical. Generated files are not edited by hand. No move runs while a `.run.lock` or `*.running` marker exists under `.sdlc/`. Model and effort defaults are unchanged.

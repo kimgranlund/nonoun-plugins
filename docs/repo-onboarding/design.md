@@ -2,7 +2,7 @@
 
 Status: proposed v0.3. Recorded: 2026-09-29. Nothing in this document is implemented.
 
-v0.2 incorporates an independent review of v0.1 made on 2026-09-29. The review did not cover the number prefix section, which was added after it started. v0.3 adds the results of a [live loading probe](../validation/nested-entry-file-loading.md) on Claude Code.
+v0.2 incorporates an independent review of v0.1 made on 2026-09-29. The review did not cover the number prefix section, which was added after it started. v0.3 adds the results of a [live loading probe](../validation/nested-entry-file-loading.md) on Claude Code and Codex. A [corrected reference on the layered context pattern](layered-context-pattern.md) sits beside this document.
 
 ## Problem
 
@@ -166,7 +166,7 @@ Each gate needs a positive case and an observed negative control.
 
 Two items are measurements that inform the design. They are not gates until a threshold is chosen:
 
-- Which entry files each host loads. Measured for Claude Code, still open for Codex.
+- Which entry files each host loads. Measured for both hosts.
 - Input tokens for a role run with and without nested entry files. Measured for a short probe, still open for a real role run.
 
 ## First trial: this repository
@@ -186,17 +186,18 @@ This repository does not match the default, which makes it a realistic first cas
 
 ## Observed in the loading probe
 
-Claude Code 2.1.284, one trial per arm. Details and limits are in the [probe report](../validation/nested-entry-file-loading.md).
+Claude Code 2.1.284 and Codex CLI 0.154.0, one trial per arm. Details and limits are in the [probe report](../validation/nested-entry-file-loading.md). The first five items are for Claude Code.
 
 - A nested `CLAUDE.md` loaded when a file in its folder or in a child folder was read.
 - A nested `AGENTS.md` with no `CLAUDE.md` beside it did not load.
 - The `@AGENTS.md` import worked between HTML comment markers, at the root and nested.
 - An `@` import of a child folder's entry loaded at once, before anything in that folder was read.
 - Two nested 25-line entries with their stubs added about 1,600 input tokens to a four-turn run. That figure is not separated from output differences between the runs.
+- Codex loaded every `AGENTS.md` from the repository root down to its working directory and nothing else. Reading a file in a nested folder loaded no entry. SDLC Lite roles start at the project root, so a Codex role reaches a nested entry only by following a link and reading it.
 
 ## Unverified assumptions
 
-- Codex loading of nested `AGENTS.md` is untested. The Codex probe could not run with this machine's default model.
+- How either host settles a conflict between a nested rule and a root rule. Nested entries should narrow the root rules and never contradict them.
 - The token cost of nested entries in a real role run, which has more turns than the probe.
 - An installed plugin can read its own template version at run time on both hosts.
 

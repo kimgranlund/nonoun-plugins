@@ -6,9 +6,10 @@
 
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding and document reorganization](repo-onboarding/design.md): proposed entry files, default docs layout, and scan-then-ticket reorganization.
+- [Layered context pattern](repo-onboarding/layered-context-pattern.md): reference on nested entry files per harness, corrected against the loading probe.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
-- [Nested entry file loading](validation/nested-entry-file-loading.md): dated probe of which entry files Claude Code loads, with token cost and limits.
+- [Nested entry file loading](validation/nested-entry-file-loading.md): dated probe of which entry files Claude Code and Codex load, with token cost and limits.
 - [Dual-host readiness and recovery validation](readiness-recovery-validation.md): dated live trials, oracle outcomes, routing history, and scope limits.

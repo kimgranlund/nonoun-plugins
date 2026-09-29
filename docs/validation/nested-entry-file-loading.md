@@ -5,7 +5,7 @@ Recorded: 2026-09-29. Live probe for the [repository onboarding design](../repo-
 ## Environment
 
 - Claude Code 2.1.284, headless `claude -p`, model `claude-fable-5-1`, tools limited to Read, user settings and plugins at their defaults.
-- Codex CLI 0.154.0. Not measured, see Limits.
+- Codex CLI 0.154.0, headless `codex exec`, read-only sandbox, model `gpt-6-astra`. The default model `gpt-6-sol` and `gpt-6-luna` were rejected, see Limits.
 - macOS, Darwin 25.6.0. Throwaway Git repositories in the session scratchpad. They are not kept in this repository.
 
 ## Method
@@ -41,7 +41,27 @@ Every nested `AGENTS.md` was 25 lines and about 1,650 bytes.
 | Is a backticked import evaluated? | No. |
 | Negative control | The unread canary was absent in every arm. |
 
+## Results for Codex
+
+The nested and control layouts were reused. Codex read the files with `cat`.
+
+| Arm | Working directory | Entry files loaded |
+| --- | --- | --- |
+| nested | Repository root | Root `AGENTS.md` only |
+| nested | `docs/topic-a/` | Root, `docs/`, and `docs/topic-a/` `AGENTS.md` |
+| control | Repository root | Root `AGENTS.md` only |
+
+| Question | Observed |
+| --- | --- |
+| Is a nested `AGENTS.md` loaded when a file in its folder is read? | No. From the root, reading files in nested folders loaded no nested entry. |
+| Are entries between the root and the working directory loaded? | Yes. |
+| Is a sibling folder's entry loaded? | No. `docs/topic-b/` was absent when working in `docs/topic-a/`. |
+| Is `CLAUDE.md` read? | No. Its canaries were absent in every arm. |
+| Negative control | The unread canary was absent in every arm. |
+
 ## Token cost
+
+Claude Code:
 
 | Arm | Turns | Total input tokens | Output tokens |
 | --- | --- | --- | --- |
@@ -50,9 +70,12 @@ Every nested `AGENTS.md` was 25 lines and about 1,650 bytes.
 
 Total input is the sum of uncached input, cache creation, and cache read over the run. The nested arm loaded four extra files (two `AGENTS.md`, two `CLAUDE.md`) and used 1,584 more input tokens. The arms also differed in output, and earlier output is sent back as input on later turns, so the difference is not purely the entry files. By size alone the four files are about 870 tokens at four bytes per token.
 
+For Codex, the run started in `docs/topic-a/` used 43,356 input tokens and the run started at the root used 41,559. The difference of 1,797 covers two nested `AGENTS.md` files. Each run made one command call.
+
 ## Limits
 
 - One trial per arm. No repeat runs, so variance is unknown.
 - Results rely on the model reporting canaries. The negative control and the transcript check support the reports but the injected context was not inspected directly.
 - A real role run uses `--agent`, a plugin directory, and more turns. Those were not part of this probe.
-- Codex was not measured. `codex exec` with this machine's default model returned status 400: "The 'gpt-6-sol' model is not supported when using Codex with a ChatGPT account." Every Codex claim in the design stays unverified.
+- `codex exec` rejected two models with status 400, for example: "The 'gpt-6-sol' model is not supported when using Codex with a ChatGPT account." `gpt-6-luna` failed the same way. `gpt-6-sol` is this machine's default and appears in SDLC Lite's Codex defaults. The probe used `gpt-6-astra`.
+- How either host settles a conflict between a nested rule and a root rule was not tested.
