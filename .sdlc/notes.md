@@ -76,3 +76,8 @@
 - decide: `steps.py widen` refuses the exact `test "$(git diff ...)" = "<file>"` and prefix `grep -v '^path$'` scope-guard forms that past plans used, so those steps take the slower L3 replan. Decide whether to add those forms or standardize the planner's guard form.
 - note: The step-3 verifier saw one unexplained non-zero `check.sh` exit that did not reproduce, and no log was saved. If it recurs, capture the log and check whether it depends on concurrent runner activity.
 - note: The live conductor behavior for widening in an unattended lane is untested, and no throwaway-project live run was done. AGENTS.md asks for live evidence when changed host behavior is claimed.
+
+## T-0156: Keep gate logs per attempt, never overwrite (2026-09-29)
+
+- note: driver logs (`<lane>-<id>.log`) are still overwritten on a fanout rerun. The planner left this to T-0157 or a later follow-up.
+- note: shellcheck is not installed on this host, so `check.sh` skipped shell lint for this change.
