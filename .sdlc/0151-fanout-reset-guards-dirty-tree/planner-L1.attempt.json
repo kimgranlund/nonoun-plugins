@@ -1,0 +1,20 @@
+{
+  "attempt_id": "a0fd3694af2c4e4bb4b83d45e43bfba0",
+  "name": "planner-L1",
+  "role": "planner",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "planner L1: size S bug, 1 to 3 obvious steps (failing test plus guard in fanout.py reset)",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T02:52:32.848069+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0151-fanout-reset-guards-dirty-tree/handoff.md",
+  "owner_pid": 31800,
+  "process_pid": 31817,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T02:53:18.499363+00:00"
+}
