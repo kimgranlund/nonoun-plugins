@@ -1,0 +1,20 @@
+{
+  "attempt_id": "6dd69b188284405682199d80c36bd8a1",
+  "name": "builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "low",
+  "routing_reason": "builder L1: planner-assigned level for docs step 2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T04:10:16.285703+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0153-depends-on-capability/step-2/handoff.md",
+  "owner_pid": 57115,
+  "process_pid": 57132,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T04:10:48.629402+00:00"
+}

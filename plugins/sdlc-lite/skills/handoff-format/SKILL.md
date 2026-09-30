@@ -62,11 +62,14 @@ type: feature|bug|chore|spike|idea
 status: proposed|ready|blocked|done|dropped
 size: S|M|L|XL
 priority: P1|P2|P3
-depends: [T-NNNN, ...]
+depends: [T-NNNN, file:<path>, cap:<name>, ...]
 created: YYYY-MM-DD
 from: T-NNNN   # optional, origin ticket id
+provides: [name, ...]   # optional, capability names this ticket delivers
 ---
 ```
+
+A `file:` depends entry is repo-relative and met once the path exists; it never orders tickets. A `cap:` entry is met once a `done` ticket provides it, and orders the ticket after every provider. `check` fails a malformed entry or an unprovided `cap:`.
 
 Front matter is purely additive: a handoff with no front matter keeps working unchanged, and `run.sh` never requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
 
