@@ -156,7 +156,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0149 | [.0149-trace-contract-dependents](.0149-trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | M | P2 | none | 🟢 done |
 | T-0150 | [.0150-resume-from-blocked-step](.0150-resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | S | P2 | none | 🟢 done |
 | T-0151 | [.0151-fanout-reset-guards-dirty-tree](.0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | 🟢 done |
-| T-0152 | [0152-external-lane-owners](0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | 🔵 ready |
+| T-0152 | [.0152-external-lane-owners](.0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | 🟢 done |
 | T-0153 | [.0153-depends-on-capability](.0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | 🟢 done |
 | T-0154 | [.0154-nested-tmp-worktrees](.0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | 🟢 done |
 | T-0155 | [.0155-trace-run-ids](.0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | S | P2 | none | 🟢 done |

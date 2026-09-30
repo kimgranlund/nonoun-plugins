@@ -104,3 +104,9 @@
 - note: The reaper keeps a stale prefix whose dead pid was reused by an unrelated live process until that process exits. This is conservative and never destructive.
 - note: The root cause of the 2026-09-28 leftovers is inferred from the code. The lane logs in the other repo were not reachable, and a live claude's shutdown time under TERM is not shown by the selftests.
 - note: `check.sh` skipped shellcheck because it is not installed on the build host, so the new shell scripts were not linted.
+
+## T-0152: External agents (Codex) get lane integration and reserved ticket ids (2026-09-29)
+
+- note: For an external ticket whose merge brings in nothing new (a second ticket on the same branch), the report's Commit cell shows the previous close commit, not a merge commit. Step 5 reworded the docs to say so.
+- note: Live host validation on Codex was not run for this change. Only the shared-script selftests and `check.sh` covered it.
+- note: The step 1 builder's six mutation checks and three of the step 2 builder's five were not re-run by the verifiers. The base-SHA red runs and two re-run mutations cover the behavior.
