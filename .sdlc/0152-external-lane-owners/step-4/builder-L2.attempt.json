@@ -1,0 +1,20 @@
+{
+  "attempt_id": "3f11d837f6dc468d870cb9525d270e52",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: step 4 planned level",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T04:44:39.728903+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0152-external-lane-owners/step-4/handoff.md",
+  "owner_pid": 5953,
+  "process_pid": 5970,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T04:48:48.905693+00:00"
+}

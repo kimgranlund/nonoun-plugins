@@ -1,19 +1,37 @@
 #!/usr/bin/env python3
 """Run ticket lanes in parallel: one git worktree and one headless conductor per lane, each lane
 merged into an integration branch under a lock, gated, and closed there. Main is never touched.
+An external lane merges a registered branch an outside agent owns, with no worktree and no driver.
 
-Usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH]
+Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
        fanout.py selftest
+  where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
 run
+  Lane specs: <lane>=<id>[,<id>...] is a regular lane (a worktree and a driver per ticket).
+  <lane>@<branch>=<id>[,<id>...] is an external lane: <branch> is a local branch an outside agent
+  (Codex, say) owns and commits to, registered by an `external_branch: <branch>` line in
+  <root>/config (the line tickets.py reads to mint ids above the ones committed there, so a
+  branch never joins a run while its ids are unguarded). A spec is split at its last `=` for the
+  ids, then at the first `@` for the branch; an empty branch (`alpha@=T-0001`) or no `=`
+  (`alpha@x`) refuses with the usage text.
   Preflight (every refusal prints on stderr, exits 2, and creates nothing): the cwd is in a git
   work tree with a commit; --root (default .sdlc, relative to the cwd) lies inside the toplevel,
   and its path relative to the toplevel (rel) is the ticket root in every worktree; lane names
   match ^[a-z0-9]+(-[a-z0-9]+)*$ (not `integration` or `logs`, which name the lanes dir's own
   entries); each id is T-NNNN, resolves through tickets.load(root) to exactly one folder whose
   status is not done or dropped, has its handoff committed at the start commit, and appears once
-  across all lanes. The integration branch is --integration or fanout/<YYYY-MM-DD>; lane branches
+  across all lanes. An external lane's branch must be registered in <root>/config (else the
+  refusal names the `external_branch: <branch>` line and that file), refs/heads/<branch> must
+  resolve to a commit, the branch must not be the integration branch or any <integration>-<lane>
+  of this run, and no two lanes may name one branch; its ids resolve through
+  tickets.branch_tickets(root, <branch>) (read from git objects, so a ticket may exist only on
+  that branch; a missing one refuses with `<id>: no ticket on branch <branch> has this id`) with
+  the same one-folder, not-done-or-dropped and once-across-all-lanes checks. The lane-branch and
+  lane-dir checks, the branch-name format check, and the handoff-at-start check below are for
+  regular lanes only (an external ticket's handoff was read from its branch).
+  The integration branch is --integration or fanout/<YYYY-MM-DD>; lane branches
   are <integration>-<lane> (a slash form would collide with the integration ref). --lanes-dir
   (relative to the cwd) defaults to <toplevel>/.worktrees/fanout. The lanes dir is never the
   toplevel itself; inside the toplevel it must be gitignored: for the default,
@@ -24,14 +42,16 @@ run
   <lanes-dir>/<lane> or <lanes-dir>/integration exists, or when the integration branch is
   checked out in some worktree.
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
-  tickets, the gates, the driver, the close command) and exits 0, creating nothing.
+  tickets, the gates, the driver, the close command) and exits 0, creating nothing; an external
+  lane prints `lane <name>: external branch <branch> (registered; no worktree, no driver)`.
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
   (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
-  per lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>`; make
-  <lanes-dir>/logs/. A ticket handoff missing in a lane worktree removes what this run created
-  and exits 2 (the .sdlc/ trail must be committed).
+  per regular lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>` (an
+  external lane gets no worktree and no branch); make <lanes-dir>/logs/. A ticket handoff missing
+  in a regular lane worktree removes what this run created and exits 2 (the .sdlc/ trail must be
+  committed).
   Then one thread per lane. A lane walks its tickets in order and stops at its first outcome
-  other than `merged`; every later ticket is `skipped`. Per ticket:
+  other than `merged`; every later ticket is `skipped`. Per ticket of a regular lane:
     1. sync, under the lock: `git merge --ff --no-edit <integration>` in the lane worktree;
        a conflict is aborted (`sync conflict`). Under the lock so a lane never picks up a merge
        whose gates are still running.
@@ -79,6 +99,16 @@ run
        `git status --porcelain` snapshot before and after; never the whole worktree); a close
        refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
        naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
+  Per ticket of an external lane: no pre-sync wip, no sync, no driver (so no driver log), and no
+  lane commit; straight to step 5 under the lock, sharing its code: the integration-dirty
+  refusal, then `git merge --no-ff --no-edit -m "Merge <branch>: <id>" refs/heads/<branch>` (a
+  conflict is aborted: `merge conflict`, and the outside agent merges the integration branch on
+  their side before a rerun). When HEAD is unchanged after the merge (the branch was already
+  merged, as for the second ticket on one branch or a resume) the gates are skipped; else they run
+  as above, the first red one resetting to the pre-merge commit. There is no lane dir, so nothing
+  is copied in: the ticket folder came in with the merge. Then the same close and `close <id>`
+  commit. The outside branch is never written (no sync merge onto it, no ref update, no wip
+  commit), and a stopped external lane leaves nothing to inspect but the report.
   Run id: each non-dry run mints ctx run_id `fanout-<12 hex>` (uuid4), never read from
   SDLC_ATTEMPT_ID: run_lifecycle.py sets that only for a run.sh role process, a fanout run is not a
   role attempt (the roles its driver launches record their own attempt_id), and a fanout run inside
@@ -89,8 +119,11 @@ run
   `[<run_id>] <line>` (a last line without a newline too); driver and gate env carry
   FANOUT_RUN_ID=<run_id>. Writes <lanes-dir>/report.md
   (| Lane | Ticket | Outcome | Commit |, a `- Run: <run_id>` line, the integration branch and its tip, the worktree paths,
-  the gates or that none were given) and prints it. Exit 0 only when every ticket is `merged`,
-  else 1; 2 for a refusal. checkout, switch, reset and commit run only inside the lanes dir;
+  an external lane's `- Lane <name>: external branch <branch> at <sha>` line (each value in
+  backticks, the full sha of the branch tip), the gates or that none were given) and prints it.
+  An external lane's Commit cell is the merge commit when the merge made one, the integration HEAD (the previous `close` commit) when it merged nothing new, else the branch tip's sha7.
+  Exit 0 only when every ticket is `merged`, else 1; 2 for a refusal. checkout, switch, reset and
+  commit run only inside the lanes dir;
   nothing is pushed; the worktrees stay for inspection.
 
 selftest
@@ -129,6 +162,20 @@ selftest
   A gate retry case (case 10), one lane `alpha=T-0001` with a gate red until a marker exists, a red
   first run, then worktrees and lane branch removed and a green rerun, proves the first attempt's
   output survives in gate-alpha-T-0001-1-a1.log and the second lands in gate-alpha-T-0001-1-a2.log.
+  An external lane case (case 12), a repo whose .sdlc/config registers `external_branch: ext`
+  (committed on main) and a branch `ext` made by `checkout -b` holding .sdlc/b (T-0002) and
+  .sdlc/c (T-0003), each with a handoff and a filer-L1.md, plus a file: a mixed run
+  `alpha@ext=T-0002,T-0003 beta=T-0001` with the stub driver and `--gate true` exits 0, merges
+  both lanes (two merge commits on the integration branch), closes a, b and c there, leaves the
+  ext tip and main unchanged, creates no <integration>-alpha ref and no <lanes-dir>/alpha dir,
+  writes no alpha-T-0002.log driver log, one gate-alpha-T-0002-1-a1.log and no gate log for
+  T-0003, and report.md holds the external lane line and every row; `--dry-run` prints the plan
+  line and creates nothing. Negative control: the same lane with the config line absent exits 2
+  naming `external_branch: ext` and .sdlc/config, with no fanout/* branch and no lanes dir.
+  Refusals, each exit 2 creating nothing: `alpha@=T-0002`, `alpha@ext`, a registered name with
+  no local ref, one branch in two lanes, an id absent on the branch, and the branch as the
+  integration branch. A `--gate false` run reports `red: false rc=1` and leaves the integration
+  branch at its base and ext unchanged.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
 
@@ -193,9 +240,15 @@ class Ticket:
         self.id, self.slug, self.title = tid, slug, title
 
 
+SPEC_FORMS = '<lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]'
+
+
 class Lane:
-    def __init__(self, name, tids):
+    def __init__(self, name, tids, external=None):
         self.name, self.tids, self.tickets = name, tids, []
+        # external: the registered branch an outside agent owns (<lane>@<branch>=...), else None;
+        # an external lane's branch is that branch and its dir stays None (no worktree, no driver)
+        self.external, self.tip = external, None  # tip: the external branch's commit at preflight
         self.branch = self.dir = None
         self.results = []  # (ticket id, outcome, commit)
 
@@ -230,12 +283,14 @@ def preflight(a):
         ts = tickets.load(root)
     except (OSError, UnicodeDecodeError) as e:
         raise Refuse(f'{root}: cannot read tickets: {e}')
+    registered = tickets.external_branches(root)
     lanes, seen, errs = [], {}, []
     for spec in a.lanes:
-        name, eq, ids = spec.partition('=')
+        left, eq, ids = spec.rpartition('=')
+        name, at, ext = left.partition('@')
         tids = [x.strip() for x in ids.split(',') if x.strip()]
-        if not eq or not tids:
-            errs.append(f'{spec!r}: want <lane>=<id>[,<id>...]')
+        if not eq or not tids or (at and not ext):
+            errs.append(f'{spec!r}: want {SPEC_FORMS}')
             continue
         if not LANE_RE.fullmatch(name):
             errs.append(f'lane {name!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
@@ -243,8 +298,25 @@ def preflight(a):
             errs.append(f'lane {name!r} is reserved (the lanes dir holds {" and ".join(RESERVED)})')
         elif any(x.name == name for x in lanes):
             errs.append(f'lane {name!r} is given twice')
-        lane = Lane(name, tids)
+        lane = Lane(name, tids, ext or None)
         lanes.append(lane)
+        pool = ts
+        if lane.external:
+            # an external lane's tickets may exist only on its branch: read them from git objects there
+            pool = None
+            other = next((x.name for x in lanes[:-1] if x.external == ext), None)
+            if other:
+                errs.append(f'branch {ext} is named by lane {other} and lane {name}; a branch runs in one lane only')
+            p = git(cwd, 'rev-parse', '-q', '--verify', f'refs/heads/{ext}^{{commit}}')
+            if ext not in registered:
+                errs.append(f'lane {name}: branch {ext} is not registered; an external lane needs the line '
+                            f'`external_branch: {ext}` in {root / "config"}')
+            elif p.returncode:
+                errs.append(f'lane {name}: external branch {ext} is registered but refs/heads/{ext} is not a '
+                            f'local branch with a commit')
+            else:
+                lane.tip = p.stdout.strip()
+                pool = tickets.branch_tickets(root, ext)
         for tid in tids:
             if not tickets.ID_RE.fullmatch(tid):
                 errs.append(f'{name}: {tid!r} is not a ticket id like T-0001')
@@ -253,9 +325,12 @@ def preflight(a):
                 errs.append(f'{tid} appears in lane {seen[tid]} and lane {name}; a ticket runs in one lane only')
                 continue
             seen[tid] = name
-            hits = [(s, m) for s, m in ts if m.get('id') == tid]
+            if pool is None:  # the branch itself was refused above
+                continue
+            hits = [(s, m) for s, m in pool if m.get('id') == tid]
             if not hits:
-                errs.append(f'{tid}: no ticket under {root} has this id')
+                errs.append(f'{tid}: no ticket on branch {ext} has this id' if lane.external
+                            else f'{tid}: no ticket under {root} has this id')
             elif len(hits) > 1:
                 errs.append(f'{tid}: {len(hits)} folders share this id ({", ".join(s for s, _ in hits)})')
             elif hits[0][1].get('status') in ('done', 'dropped'):
@@ -264,15 +339,20 @@ def preflight(a):
                 s, m = hits[0]
                 lane.tickets.append(Ticket(tid, s, str(m.get('title', ''))))
     if not lanes and not errs:
-        errs.append('no lanes given: want <lane>=<id>[,<id>...]')
+        errs.append(f'no lanes given: want {SPEC_FORMS}')
     if errs:
         raise Refuse('\n'.join(errs))
 
     integration = a.integration or f'fanout/{datetime.date.today().isoformat()}'
-    names = [integration] + [f'{integration}-{x.name}' for x in lanes]
+    names = [integration] + [f'{integration}-{x.name}' for x in lanes if not x.external]
     for n in names:
         if git(cwd, 'check-ref-format', '--branch', n).returncode:
             raise Refuse(f'{n!r} is not a valid branch name')
+    ours = {integration} | {f'{integration}-{x.name}' for x in lanes}
+    for lane in lanes:
+        if lane.external in ours:
+            raise Refuse(f'lane {lane.name}: external branch {lane.external} is the integration branch or an '
+                         f'<integration>-<lane> branch of this run; name the outside agent\'s own branch')
     refs = git_out(cwd, 'for-each-ref', '--format=%(refname)', 'refs/heads/').splitlines()
     reuse = ('refs/heads/' + integration) in refs
     if reuse:
@@ -316,6 +396,9 @@ def preflight(a):
         raise Refuse(f'{integ_dir} exists (an earlier run?); remove it with git worktree remove, '
                      f'or pass another --lanes-dir')
     for lane in lanes:
+        if lane.external:  # no lane branch or worktree to create; the dir stays None
+            lane.branch = lane.external
+            continue
         lane.branch, lane.dir = f'{integration}-{lane.name}', lanes_dir / lane.name
         clash = branch_clash(lane.branch, refs)
         if clash:
@@ -326,6 +409,8 @@ def preflight(a):
     relp = rel.as_posix()
     missing = []
     for lane in lanes:
+        if lane.external:  # its handoffs were read from the branch itself
+            continue
         for t in lane.tickets:
             path = f'{t.slug}/handoff.md' if relp == '.' else f'{relp}/{t.slug}/handoff.md'
             if git(cwd, 'cat-file', '-e', f'{start}:{path}').returncode:
@@ -357,7 +442,10 @@ def print_plan(ctx):
     out.append(f"integration worktree: {ctx['integ_dir']}")
     out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
     for lane in ctx['lanes']:
-        out.append(f'lane {lane.name}: branch {lane.branch}, worktree {lane.dir}')
+        if lane.external:
+            out.append(f'lane {lane.name}: external branch {lane.branch} (registered; no worktree, no driver)')
+        else:
+            out.append(f'lane {lane.name}: branch {lane.branch}, worktree {lane.dir}')
         for t in lane.tickets:
             out.append(f'  {t.id} {t.slug}: {t.title}')
     if ctx['gates']:
@@ -408,13 +496,17 @@ def setup(ctx):
         git_out(cwd, 'worktree', 'add', '-q', str(ctx['integ_dir']), integration)
         worktrees.append(ctx['integ_dir'])
         print(f"worktree integration: {ctx['integ_dir']}", flush=True)
-        for lane in ctx['lanes']:
+        regular = [lane for lane in ctx['lanes'] if not lane.external]
+        for lane in regular:
             git_out(cwd, 'worktree', 'add', '-q', '-b', lane.branch, str(lane.dir), integration)
             worktrees.append(lane.dir)
             branches.append(lane.branch)
             print(f'worktree {lane.name}: {lane.dir} (branch {lane.branch})', flush=True)
+        for lane in ctx['lanes']:
+            if lane.external:
+                print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
         missing = [str(lane.dir / ctx['rel'] / t.slug / 'handoff.md')
-                   for lane in ctx['lanes'] for t in lane.tickets
+                   for lane in regular for t in lane.tickets
                    if not (lane.dir / ctx['rel'] / t.slug / 'handoff.md').is_file()]
         if missing:
             raise Refuse(f'missing in the lane worktrees: {", ".join(missing)}; the .sdlc/ trail must be '
@@ -551,8 +643,13 @@ def inherited_red(ticket_dir):
 
 
 def run_ticket(ctx, lane, t, lock):
-    """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit)."""
-    wt, integ, rel, integration = lane.dir, ctx['integ_dir'], ctx['rel'], ctx['integration']
+    """One ticket through sync, driver, lane commit, and the locked merge. Returns (outcome, commit).
+    An external lane (no dir) goes straight to the locked merge of its branch: no pre-sync wip, sync,
+    driver, or lane commit, and the outside branch is never written."""
+    if lane.dir is None:
+        tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'refs/heads/{lane.branch}^{{commit}}')
+        return merge_gate_close(ctx, lane, t, lock, f'refs/heads/{lane.branch}', tip[:7])
+    wt, rel, integration = lane.dir, ctx['rel'], ctx['integration']
     with lock:
         # a lane tree already dirty before the sync: set its work aside on the lane branch and stop
         # the ticket (no sync, driver, lane commit, or merge), so that wip commit is never merged
@@ -594,26 +691,39 @@ def run_ticket(ctx, lane, t, lock):
         return f'lane commit failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', ''
     lane_sha = git_out(wt, 'rev-parse', 'HEAD')
     say(ctx, lane, t.id, f'committed {lane_sha[:7]} on {lane.branch}')
+    return merge_gate_close(ctx, lane, t, lock, lane.branch, lane_sha[:7])
 
+
+def merge_gate_close(ctx, lane, t, lock, ref, cell):
+    """Step 5 for both lane kinds, under the merge lock in the integration worktree: refuse a dirty tree,
+    merge ref --no-ff as `Merge <lane branch>: <id>`, run the gates (skipped when the merge left HEAD
+    unchanged: an external branch already merged, as for its second ticket or a resume), close the
+    ticket, and commit `close <id>`. cell is the Commit cell for an outcome before the merge stands (the
+    lane commit, or an external branch's tip). Returns (outcome, commit)."""
+    integ, rel = ctx['integ_dir'], ctx['rel']
     with lock:
         # uncommitted tracked edits in the integration tree: refuse before the merge, so neither
         # `reset --hard <before>` below can discard them (untracked files survive a reset)
         p = git(integ, 'status', '--porcelain', '--untracked-files=no')
         if p.returncode:
-            return f'integration status failed: {first_line(p.stderr, f"rc={p.returncode}")}', lane_sha[:7]
+            return f'integration status failed: {first_line(p.stderr, f"rc={p.returncode}")}', cell
         if p.stdout.strip():
-            return f'integration dirty: {p.stdout.splitlines()[0][3:]}', lane_sha[:7]
+            return f'integration dirty: {p.stdout.splitlines()[0][3:]}', cell
         before = git_out(integ, 'rev-parse', 'HEAD')
-        p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', lane.branch)
+        p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', ref)
         if p.returncode:
             conflict = in_merge(integ)
             if not conflict or git(integ, 'merge', '--abort').returncode:
                 git(integ, 'reset', '-q', '--hard', before)
             if conflict:
-                return 'merge conflict', lane_sha[:7]
-            return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', lane_sha[:7]
+                return 'merge conflict', cell
+            return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', cell
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
-        for k, gate in enumerate(ctx['gates'], 1):
+        gates = ctx['gates']
+        if merge_sha == before:  # nothing new came in, so there is nothing to gate
+            say(ctx, lane, t.id, f'{lane.branch} already merged: nothing new, gates skipped')
+            gates = []
+        for k, gate in enumerate(gates, 1):
             stem = f'gate-{lane.name}-{t.id}-{k}-a'
             pat = re.compile(re.escape(stem) + r'(\d+)\.log$')
             n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
@@ -621,10 +731,11 @@ def run_ticket(ctx, lane, t, lock):
                             ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
             if rc:
                 git_out(integ, 'reset', '-q', '--hard', before)
-                return f'red: {gate} rc={rc}', lane_sha[:7]
-        src, dst = wt / rel / t.slug, integ / rel / t.slug
-        if not any(dst.glob('filer-L*.md')) and src.is_dir():
-            shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
+                return f'red: {gate} rc={rc}', cell
+        if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
+            src, dst = lane.dir / rel / t.slug, integ / rel / t.slug
+            if not any(dst.glob('filer-L*.md')) and src.is_dir():
+                shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
@@ -658,7 +769,7 @@ def run_lane(ctx, lane, lock):
             except Exception as e:  # a git or IO failure mid-ticket: record it, stop the lane
                 outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
             stopped = outcome != 'merged'
-            if stopped:
+            if stopped and lane.dir is not None:  # an external lane has no tree here and its branch is not ours
                 # a stopped ticket's work stays on the lane branch as a wip commit, never merged
                 sha = wip_commit(lane.dir, t.id, outcome)
                 if sha:
@@ -675,7 +786,12 @@ def report(ctx):
            f"- Integration branch: `{ctx['integration']}` at `{tip}`"
            + (' (reused)' if ctx['reuse'] else f" (from `{ctx['start'][:12]}`)"),
            f'- Integration worktree: `{integ}`']
-    out += [f'- Lane `{x.name}`: `{x.dir}` (branch `{x.branch}`)' for x in ctx['lanes']]
+    for x in ctx['lanes']:
+        if x.external:  # the branch tip now (fanout never writes it), else the tip preflight saw
+            sha = git(ctx['cwd'], 'rev-parse', '-q', '--verify', f'refs/heads/{x.branch}^{{commit}}').stdout.strip()
+            out.append(f'- Lane `{x.name}`: external branch `{x.branch}` at `{sha or x.tip}`')
+        else:
+            out.append(f'- Lane `{x.name}`: `{x.dir}` (branch `{x.branch}`)')
     if ctx['gates']:
         out += [f'- Gate {k}: `{g}`' for k, g in enumerate(ctx['gates'], 1)]
     else:
@@ -1261,6 +1377,116 @@ def selftest():
         expect(f'lane tmp prefix reaped: T-0001 merged, got {report_rows(rpl).get("T-0001")!r}',
                report_rows(rpl).get('T-0001') == 'merged')
 
+        # 12. External lane: a registered branch `ext` that an outside agent owns joins as alpha@ext, with
+        # no worktree, no lane branch, and no driver, beside a regular beta lane. The branch is never written.
+        def make_ext(repo, config):
+            fm = ('---\nid: {}\ntitle: "Ticket {}"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                  'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n')
+            (repo / '.sdlc' / 'a').mkdir(parents=True)
+            (repo / '.sdlc' / 'a' / 'handoff.md').write_text(fm.format('T-0001', 'a'), encoding='utf-8')
+            if config:
+                (repo / '.sdlc' / 'config').write_text(config, encoding='utf-8')
+            for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                         ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                         ('add', '-A'), ('commit', '-q', '-m', 'fixture'), ('checkout', '-q', '-b', 'ext')):
+                q = sh(repo, *args)
+                expect(f'external fixture git {args} exited 0, got {q.returncode} stderr={q.stderr!r}',
+                       q.returncode == 0)
+            for slug, tid in (('b', 'T-0002'), ('c', 'T-0003')):
+                (repo / '.sdlc' / slug).mkdir()
+                (repo / '.sdlc' / slug / 'handoff.md').write_text(fm.format(tid, slug), encoding='utf-8')
+                (repo / '.sdlc' / slug / 'filer-L1.md').write_text('## Warnings\nNone\n\n## Follow-ups\nNone\n',
+                                                                   encoding='utf-8')
+            (repo / 'ext.txt').write_text('ext\n', encoding='utf-8')
+            for args in (('add', '-A'), ('commit', '-q', '-m', 'outside agent work'), ('checkout', '-q', 'main')):
+                q = sh(repo, *args)
+                expect(f'external fixture git {args} exited 0, got {q.returncode} stderr={q.stderr!r}',
+                       q.returncode == 0)
+
+        er, el = tmp / 'external', tmp / 'elanes'
+        make_ext(er, 'external_branch: ext\nexternal_branch: gone\n')
+        e0, em0 = sh(er, 'rev-parse', 'ext').stdout.strip(), sh(er, 'rev-parse', 'main').stdout.strip()
+        eargs = ('--integration', 'fanout/ext', '--lanes-dir', str(el))
+        proc = fanout(er, '--dry-run', *eargs, 'alpha@ext=T-0002,T-0003', 'beta=T-0001')
+        expect(f'external: --dry-run exits 0 with the plan line and no alpha lane branch, got {proc.returncode} '
+               f'stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0
+               and 'lane alpha: external branch ext (registered; no worktree, no driver)' in proc.stdout.splitlines()
+               and 'fanout/ext-alpha' not in proc.stdout and 'lane beta: branch fanout/ext-beta' in proc.stdout)
+        for label, args, want in (
+                ('an empty branch', ('alpha@=T-0002',), SPEC_FORMS),
+                ('no =', ('alpha@ext',), SPEC_FORMS),
+                ('a registered name with no local ref', ('alpha@gone=T-0002',), 'refs/heads/gone'),
+                ('one branch in two lanes', ('alpha@ext=T-0002', 'beta@ext=T-0003'),
+                 'branch ext is named by lane alpha and lane beta'),
+                ('an id absent on the branch', ('alpha@ext=T-0009',), 'T-0009: no ticket on branch ext has this id')):
+            proc = fanout(er, *eargs, '--driver', 'exit 3', *args)
+            expect(f'external refusal, {label}: exit 2 naming {want!r}, got {proc.returncode} stderr={proc.stderr!r}',
+                   proc.returncode == 2 and want in proc.stderr and 'Traceback' not in proc.stderr)
+        proc = fanout(er, '--integration', 'ext', '--lanes-dir', str(el), '--driver', 'exit 3', 'alpha@ext=T-0002')
+        expect(f'external refusal, the branch as the integration branch: exit 2, got {proc.returncode} '
+               f'stderr={proc.stderr!r}', proc.returncode == 2 and 'is the integration branch' in proc.stderr)
+        expect('external: dry run and refusals create no fanout/* branch',
+               sh(er, 'branch', '--list', 'fanout/*').stdout.strip() == '')
+        expect('external: dry run and refusals create no lanes dir', not el.exists())
+        expect('external: dry run and refusals add no worktree',
+               len([ln for ln in sh(er, 'worktree', 'list').stdout.splitlines() if ln.strip()]) == 1)
+
+        proc = fanout(er, *eargs, 'alpha@ext=T-0002,T-0003', 'beta=T-0001', '--driver', shlex.quote(str(stub)),
+                      '--gate', 'true')
+        expect(f'external: the mixed run exits 0, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        expect('external: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
+        expect('external: main is unchanged', em0 and sh(er, 'rev-parse', 'main').stdout.strip() == em0)
+        expect('external: no fanout/ext-alpha ref, while the regular fanout/ext-beta exists',
+               sh(er, 'branch', '--list', 'fanout/ext-alpha').stdout.strip() == ''
+               and sh(er, 'branch', '--list', 'fanout/ext-beta').stdout.strip() != '')
+        expect('external: no <lanes-dir>/alpha dir, while <lanes-dir>/beta exists',
+               not (el / 'alpha').exists() and (el / 'beta').is_dir())
+        expect('external: no alpha driver log, while beta-T-0001.log exists',
+               not (el / 'logs' / 'alpha-T-0002.log').exists() and not (el / 'logs' / 'alpha-T-0003.log').exists()
+               and (el / 'logs' / 'beta-T-0001.log').is_file())
+        glogs = sorted(f.name for f in (el / 'logs').iterdir() if f.name.startswith('gate-alpha-')) \
+            if (el / 'logs').is_dir() else []
+        expect(f'external: exactly one alpha gate log, gate-alpha-T-0002-1-a1.log (T-0003 merged nothing new), '
+               f'got {glogs}', glogs == ['gate-alpha-T-0002-1-a1.log'])
+        merges = sh(er, 'rev-list', '--merges', '--count', 'fanout/ext').stdout.strip()
+        expect(f'external: fanout/ext has two merge commits (one per lane), got {merges!r}', merges == '2')
+        for f in ('ext.txt', 'T-0001.txt'):
+            expect(f'external: fanout/ext holds {f}', sh(er, 'cat-file', '-e', f'fanout/ext:{f}').returncode == 0)
+        for slug in 'abc':
+            shown = sh(er, 'show', f'fanout/ext:.sdlc/{slug}/handoff.md').stdout
+            expect(f'external: fanout/ext:.sdlc/{slug}/handoff.md says status: done, got {shown[:120]!r}',
+                   re.search(r'^status: done\b', shown, re.M))
+        rep = el / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'external: report.md holds the external lane line at the ext tip, got {text!r}',
+               e0 and f'- Lane `alpha`: external branch `ext` at `{e0}`' in text.splitlines())
+        got = report_rows(el)
+        expect(f'external: report rows T-0002 and T-0003 (alpha) and T-0001 (beta) all merged, got {got}',
+               got == {'T-0001': 'merged', 'T-0002': 'merged', 'T-0003': 'merged'})
+        expect('external: the main tree status stays clean', sh(er, 'status', '--porcelain').stdout == '')
+
+        en, enl = tmp / 'external-unregistered', tmp / 'enlanes'
+        make_ext(en, None)
+        proc = fanout(en, '--integration', 'fanout/ext', '--lanes-dir', str(enl), '--driver', 'exit 3',
+                      'alpha@ext=T-0002,T-0003')
+        expect(f'external negative control, no config line: exit 2 naming external_branch: ext and .sdlc/config, '
+               f'got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 2 and 'external_branch: ext' in proc.stderr and '/.sdlc/config' in proc.stderr)
+        expect('external negative control: no fanout/* branch and no lanes dir',
+               sh(en, 'branch', '--list', 'fanout/*').stdout.strip() == '' and not enl.exists())
+
+        erl = tmp / 'erlanes'
+        proc = fanout(er, '--integration', 'fanout/ext-red', '--lanes-dir', str(erl), '--driver', 'exit 3',
+                      '--gate', 'false', 'alpha@ext=T-0002')
+        got = report_rows(erl)
+        expect(f'external red gate: exit 1 with red: false rc=1, got {proc.returncode} {got} stderr={proc.stderr!r}',
+               proc.returncode == 1 and got.get('T-0002') == 'red: false rc=1')
+        expect('external red gate: the integration branch stays at its base',
+               em0 and sh(er, 'rev-parse', 'fanout/ext-red').stdout.strip() == em0)
+        expect('external red gate: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -1274,11 +1500,18 @@ def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
     if argv[:1] != ['run']:
-        print('usage: fanout.py run <lane>=<id>[,<id>...]... [--root .sdlc] [--base REF] [--integration BRANCH] '
-              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] | fanout.py selftest', file=sys.stderr)
+        print('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
+              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] | fanout.py selftest\n'
+              '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
+              '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
+              'line in <root>/config: no worktree, no driver)', file=sys.stderr)
         return 2
     ap = argparse.ArgumentParser(prog='fanout.py run', description=__doc__.split('\n')[0])
-    ap.add_argument('lanes', nargs='+', metavar='<lane>=<id>[,<id>...]')
+    ap.add_argument('lanes', nargs='+', metavar='<lane>[@<branch>]=<id>[,<id>...]',
+                    help='a lane spec: <lane>=<id>[,<id>...] runs a worktree and a driver per ticket; '
+                    '<lane>@<branch>=<id>[,<id>...] merges an outside agent\'s branch, registered by an '
+                    '`external_branch: <branch>` line in <root>/config (else run refuses with exit 2), with no '
+                    'worktree and no driver, and never writes that branch')
     ap.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
     ap.add_argument('--base', help='commit for a new integration branch (default HEAD)')
     ap.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
