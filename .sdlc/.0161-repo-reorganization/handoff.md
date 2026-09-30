@@ -2,7 +2,7 @@
 id: T-0161
 title: "Spike: read-only reorganization plan on this repository"
 type: spike        # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0160]          # ticket ids, e.g. [T-0002]
