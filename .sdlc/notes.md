@@ -87,3 +87,9 @@
 - decide: Run a focused live run of the planner and verifier contract-dependents rule on a throwaway project, since this change proves only wording and the `check.py` gate, not role behavior.
 - note: The ticket's Intent section was empty, so the planner vs. verifier split is the planner's own reading of the Goal; both roles got the rule.
 - note: The planner did not read the source run's evidence (gen-ui-system-svelte-lite lane logs), so the contract kinds listed may miss the exact shape that broke there.
+
+## T-0150: Resuming a chain restarts at the blocked step, not the newest step (2026-09-29)
+
+- decide: The ticket's Repro and Actual were placeholders, and gen-ui's lane logs and `stepn.sh` were never available. If gen-ui's conductor picked the right step dir and `next` misread it, this fix does not cover that case. Someone should compare against the gen-ui evidence.
+- note: The resume rule in the chain skill (including running `run_lifecycle.py recover` first) is prose. No automated check proves a conductor follows it before `resume`.
+- note: shellcheck is not installed on the host, so `check.sh` skipped that part and it stayed unverified.
