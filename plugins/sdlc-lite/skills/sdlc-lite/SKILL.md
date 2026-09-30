@@ -25,6 +25,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Parallel ticket lanes / benchmark | fanout / bench |
 | Resolve outstanding questions | open-questions |
 | Set up or check entry files and docs layout | onboard |
+| Review sdlc run traces for sdlc-lite waste and bugs | review-traces |
 
 Read referenced rubric, handoff format, templates, or scripts only as required. The selected file owns workflow decisions, output format, and completion conditions. Apply the following host translations to its Claude-specific syntax.
 

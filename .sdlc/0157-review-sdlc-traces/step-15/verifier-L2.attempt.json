@@ -1,0 +1,20 @@
+{
+  "attempt_id": "f2eb92d5022e4a9a97440afec9810770",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "high",
+  "routing_reason": "verifier L2: steps.py next printed 'verify L2' for step 15",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T07:37:21.551488+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces/.sdlc/0157-review-sdlc-traces/step-15/handoff.md",
+  "owner_pid": 73892,
+  "process_pid": 73912,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T07:38:11.678246+00:00"
+}
