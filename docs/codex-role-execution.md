@@ -34,13 +34,13 @@ The `--conductor` option adds a short managed block to the project's top-level `
 | Planner | Astra medium | Astra high | Astra high | | |
 | Verifier | Astra medium | Astra high | Astra high | | |
 | Researcher | Astra medium | Astra high | Astra high | | |
-| Scout | Astra high | | | | |
+| Scout | Luna high | | | | |
 | Architect | Astra high | | | | |
 | Archaeologist, filer, conductor | Astra medium | | | | |
 
 These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. When a pipeline verifier's model matches the latest builder's model, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`. The selected model is recorded in the result and run log. The current alternate pairs `gpt-6-astra` builders with `gpt-6.1-sol` verifiers at the verifier’s configured effort; other role defaults stay as listed above.
 
-Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. On 2026-09-30 the user set scout L1 to `gpt-6-astra` at effort `high`, because `gpt-6-luna` is rejected on a ChatGPT account and `gpt-6-astra` was the only accepted model in the probes. API-key accounts were not tested. After updating the CLI to 0.159.2 on 2026-09-30, account discovery listed `gpt-6.1-sol`, `gpt-6-sol`, and `gpt-6-luna`, and all completed live turns. `gpt-6.1-sol` is now the configured verifier alternate, preserving the existing Astra role defaults. See the [dated account and role validation report](validation/codex-account-models-2026-09-30.md) for exact IDs, limits, and attempt evidence.
+Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. On 2026-09-30 the scout was briefly moved to `gpt-6-astra` on the strength of those 0.154.0 probes. API-key accounts were not tested. After updating the CLI to 0.159.2 on 2026-09-30, account discovery listed `gpt-6.1-sol`, `gpt-6-sol`, and `gpt-6-luna`, and all completed live turns. `gpt-6.1-sol` is now the configured verifier alternate, preserving the existing Astra role defaults. The user then returned scout L1 to `gpt-6-luna` at effort `high`, because luna completes live turns on CLI 0.159.2. See the [dated account and role validation report](validation/codex-account-models-2026-09-30.md) for exact IDs, limits, and attempt evidence.
 
 ## Boundaries
 
