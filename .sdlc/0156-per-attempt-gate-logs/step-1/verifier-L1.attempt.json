@@ -1,0 +1,20 @@
+{
+  "attempt_id": "308ae28a366040e5a8510ffba2d0378a",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "verifier L1: follows build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:25:53.091809+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0156-per-attempt-gate-logs/step-1/handoff.md",
+  "owner_pid": 86448,
+  "process_pid": 86529,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:30:58.498616+00:00"
+}

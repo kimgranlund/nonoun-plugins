@@ -66,7 +66,8 @@ run
        no merge, reset, or gate runs, so the edit survives); else
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
-       logs/gate-<lane>-<id>-<k>.log; the first red one runs `git reset --hard <pre-merge HEAD>`
+       logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
+       the highest attempt already logged for that gate, so it grows on each rerun); the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
        copy has no filer-L*.md, run `tickets.py --root <rel> close <slug>` there (with
        --rewrite-refs when given: in numbered mode, files outside the ticket folder that cite
@@ -81,7 +82,7 @@ run
   a role would inherit the role's id, so two runs, or a run and its resume, would share it.
   Prints `[<run_id>] [<lane>] <id> <event>` lines as they happen and appends each, under the
   print lock, to <lanes-dir>/logs/fanout.log (append-only: earlier runs' lines survive a resume).
-  Driver and gate log files keep their names and are overwritten, each output line written as
+  Driver logs are overwritten; gate logs are never overwritten, one file per attempt. Each output line is written as
   `[<run_id>] <line>` (a last line without a newline too); driver and gate env carry
   FANOUT_RUN_ID=<run_id>. Writes <lanes-dir>/report.md
   (| Lane | Ticket | Outcome | Commit |, a `- Run: <run_id>` line, the integration branch and its tip, the worktree paths,
@@ -122,6 +123,9 @@ selftest
   holds the second run's `merged` line under two distinct `fanout-<12 hex>` ids, that every line
   of the second run's lane and gate logs starts with its id, that the driver saw FANOUT_RUN_ID,
   and that report.md names the id.
+  A gate retry case (case 10), one lane `alpha=T-0001` with a gate red until a marker exists, a red
+  first run, then worktrees and lane branch removed and a green rerun, proves the first attempt's
+  output survives in gate-alpha-T-0001-1-a1.log and the second lands in gate-alpha-T-0001-1-a2.log.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
 
@@ -459,7 +463,7 @@ def say(ctx, lane, tid, event):
 
 
 def run_logged(argv, cwd, env, log, run_id):
-    """Run argv with stdin /dev/null, writing each output line to log (overwritten) as
+    """Run argv with stdin /dev/null, writing each output line to a fresh log file (the caller picks a unique name) as
     `[<run_id>] <line>`; a final line without a newline still gets the prefix. Returns the exit code."""
     prefix = f'[{run_id}] '.encode()
     with open(log, 'wb') as f:
@@ -603,8 +607,11 @@ def run_ticket(ctx, lane, t, lock):
             return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', lane_sha[:7]
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
         for k, gate in enumerate(ctx['gates'], 1):
+            stem = f'gate-{lane.name}-{t.id}-{k}-a'
+            pat = re.compile(re.escape(stem) + r'(\d+)\.log$')
+            n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
             rc = run_logged(['bash', '-c', gate], str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
-                            ctx['logs'] / f'gate-{lane.name}-{t.id}-{k}.log', ctx['run_id'])
+                            ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
             if rc:
                 git_out(integ, 'reset', '-q', '--hard', before)
                 return f'red: {gate} rc={rc}', lane_sha[:7]
@@ -1180,7 +1187,7 @@ def selftest():
         expect(f'resume case: the two runs have distinct ids, got {a_id!r} and {b_id!r}', a_id and a_id != b_id)
         expect(f'resume case: every fanout.log line starts with a run id, got {ftext!r}',
                ftext and all(re.match(rf'\[{rid}\] ', ln) for ln in ftext.splitlines()))
-        for name in ('alpha-T-0001.log', 'gate-alpha-T-0001-1.log'):
+        for name in ('alpha-T-0001.log', 'gate-alpha-T-0001-1-a1.log'):
             lg = ql / 'logs' / name
             lines = lg.read_text().splitlines() if lg.is_file() else []
             expect(f'resume case: every {name} line starts with [{b_id}] , got {lines!r}',
@@ -1188,7 +1195,7 @@ def selftest():
         dlog = ql / 'logs' / 'alpha-T-0001.log'
         expect(f'resume case: the driver saw FANOUT_RUN_ID={b_id}',
                b_id and dlog.is_file() and f'[{b_id}] rid={b_id}' in dlog.read_text().splitlines())
-        gl = ql / 'logs' / 'gate-alpha-T-0001-1.log'
+        gl = ql / 'logs' / 'gate-alpha-T-0001-1-a1.log'
         expect('resume case: the gate log holds the prefixed gate output',
                b_id and gl.is_file() and f'[{b_id}] gated' in gl.read_text().splitlines())
         expect(f'resume case: the second run printed [{b_id}] [alpha] T-0001 merged',
@@ -1196,6 +1203,30 @@ def selftest():
         qrep = ql / 'report.md'
         expect(f'resume case: report.md names the run id {b_id}',
                b_id and qrep.is_file() and f'- Run: `{b_id}`' in qrep.read_text())
+
+        # 10. Gate retry case: a red gate run, then a green rerun on the reused integration branch.
+        # Each attempt gets its own gate log, so the first failure survives the retry.
+        gr, gls, gok = tmp / 'gretry', tmp / 'glanes', tmp / 'gretry-ok'
+        make_repo(gr, [('a', 'T-0001', 'ready')])
+        gdriver = ('echo hi > f.txt; '
+                   'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"')
+        ggate = f'if test -e {shlex.quote(str(gok))}; then echo attempt-two; else echo attempt-one; exit 1; fi'
+        gargs = ('alpha=T-0001', '--integration', 'fanout/g', '--lanes-dir', str(gls), '--driver', gdriver,
+                 '--gate', ggate)
+        g1 = fanout(gr, *gargs)
+        expect(f'gate retry case: first run exits 1, got {g1.returncode} stderr={g1.stderr!r}', g1.returncode == 1)
+        gok.touch()
+        for args in (('worktree', 'remove', '--force', str(gls / 'integration')),
+                     ('worktree', 'remove', '--force', str(gls / 'alpha')), ('branch', '-D', 'fanout/g-alpha')):
+            q = sh(gr, *args)
+            expect(f'gate retry case: git {args} exited 0, got {q.returncode} stderr={q.stderr!r}', q.returncode == 0)
+        g2 = fanout(gr, *gargs)
+        expect(f'gate retry case: second run exits 0, got {g2.returncode} stdout={g2.stdout!r} stderr={g2.stderr!r}',
+               g2.returncode == 0)
+        for name, word in (('gate-alpha-T-0001-1-a1.log', 'attempt-one'), ('gate-alpha-T-0001-1-a2.log', 'attempt-two')):
+            lg = gls / 'logs' / name
+            text = lg.read_text() if lg.is_file() else ''
+            expect(f'gate retry case: {name} holds {word}, got {text!r}', word in text)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
