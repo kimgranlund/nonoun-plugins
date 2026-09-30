@@ -43,3 +43,6 @@ The Codex live run needs a model the account accepts. See T-0163. In `adapters/c
 
 ## Constraints
 The merge-step template stays consistent across planner and handoff-format. `steps.py` keeps ownership of next-action decisions. A plan without the subsection stays valid. Model and effort defaults are unchanged.
+
+## Plan review
+- step 5 builder blocked (`step-5/builder-L3.md`, `plan defect:`): the Codex verifier resolved to `gpt-6-sol`, which the maintainer's account rejects, so the Codex arm "verifier read the entry" could not run. Resolved outside this task by T-0163 (commits 1f25376 and the T-0163 step 2 commit): the user chose to replace `gpt-6-sol` with `gpt-6-astra` in `adapters/codex/models.json`, and with no alternate configured the Codex verifier now shares the builder's model. Any Codex level now runs on `gpt-6-astra`. Seven of eight arms already passed in the blocked attempt; its throwaway projects may be reused.

@@ -293,6 +293,12 @@ fx = root/'skills/fix/SKILL.md'
 fxt = fx.read_text() if fx.is_file() else ''
 if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not .sdlc/<slug>/step-1/handoff.md')
 if not fix_lint_bad(fxt.replace('/step-1/handoff.md`', '`')): errors.append('check.py: /fix lint-target guard negative control not flagged')
+# /fix step 5 stops at publish when unattended: no push, no pull request.
+def fix_unattended_bad(text):
+    m = re.search(r'^5\. .*$', text, re.M)
+    return not m or 'Unattended' not in m.group(0) or 'never push' not in m.group(0)
+if fix_unattended_bad(fxt): errors.append('skills/fix/SKILL.md: step 5 lacks the Unattended rule with "never push"')
+if not fix_unattended_bad(fxt.replace('never push', 'push')): errors.append('check.py: /fix unattended-publish guard negative control not flagged')
 # The conductor forbids substituting other plugins' agents for run.sh roles.
 SUBST_PHRASE = "Other plugins' agents are not substitutes"
 def subst_missing(text): return SUBST_PHRASE not in text
