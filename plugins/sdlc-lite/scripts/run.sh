@@ -103,7 +103,7 @@ case "$role:$level" in
   builder:L5)       model=fable;  effort=xhigh ;;
   planner:L1)       model=sonnet; effort=medium ;;
   planner:L2)       model=opus;   effort=medium ;;
-  planner:L3)       model=fable;  effort=xhigh ;;
+  planner:L3)       model=opus;   effort=xhigh ;;
   verifier:L1)      model=sonnet; effort=medium ;;
   verifier:L2)      model=sonnet; effort=high ;;
   verifier:L3)      model=fable;  effort=xhigh ;;
@@ -111,7 +111,7 @@ case "$role:$level" in
   researcher:L2)    model=opus;   effort=medium ;;
   researcher:L3)    model=opus;   effort=high ;;
   architect:L1)     model=fable;  effort=high ;;
-  scout:L1)         model=haiku;  effort=low ;;
+  scout:L1)         model=claude-haiku-4-5;  effort=low ;;
   archaeologist:L1) model=sonnet; effort=medium ;;
   filer:L1)         model=sonnet; effort=medium ;;
   plan-reviewer:L1) model=opus; effort=high ;;

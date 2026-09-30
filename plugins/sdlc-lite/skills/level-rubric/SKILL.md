@@ -51,7 +51,7 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 |---|---|---|
 | L1 | Sonnet medium | 1 to 3 obvious steps |
 | L2 | Opus medium | A normal feature |
-| L3 | Fable xhigh | Cross-cutting or risky, or any replan (a builder blocked, or a verifier or `steps.py split` tagged `plan defect:`) |
+| L3 | Opus xhigh | Cross-cutting or risky, or any replan (a builder blocked, or a verifier or `steps.py split` tagged `plan defect:`) |
 
 ## When a plan is reviewed
 
@@ -63,7 +63,7 @@ The plan-reviewer (L1, one level) reviews a plan before any builder starts. It i
 
 Routine plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
 
-The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. `run.sh` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
+The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. With planner L2 and L3 both on Opus, a review of a plan by planner L2 or L3 runs on Fable high; only a plan by the Sonnet planner L1 is reviewed on Opus high. `run.sh` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
 
 The verdict routes the plan:
 - `pass`: `steps.py split`.
@@ -83,7 +83,7 @@ The verdict routes the plan:
 | Role | Level | Model / effort |
 |---|---|---|
 | architect | L1 | Fable high |
-| scout | L1 | Haiku low |
+| scout | L1 | Haiku 4.5 low |
 | archaeologist | L1 | Sonnet medium |
 | filer | L1 | Sonnet medium |
 | plan-reviewer | L1 | Opus high |
@@ -94,7 +94,7 @@ This section applies to any in-session Agent-tool spawn that has no run.sh role:
 
 Every such spawn states `model` explicitly. An unset `model` inherits the session's top model. Pick the seat by class of work:
 
-- Mechanical or gather-only work: `haiku`.
+- Mechanical or gather-only work: `haiku`. On the maintainer's login (Claude Code 2.1.285) the alias `haiku` resolves to Sonnet 5.5, and the Agent tool takes an alias, so this seat runs Sonnet there; the run.sh scout pins `claude-haiku-4-5`.
 - Search, review, and routine coding: `sonnet`, the default.
 - Judgment-heavy synthesis: `opus`.
 

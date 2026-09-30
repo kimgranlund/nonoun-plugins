@@ -1,0 +1,20 @@
+{
+  "attempt_id": "528fb4c7e97b4a37b4373f1954daa948",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "T-0173 /fix fast lane: one run.sh row plus rubric, selftest, docs and regenerated agents; builder L2 from the main checkout's run.sh -> verifier L1",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T17:50:31.137477+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/model-fit",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/model-fit/.sdlc/0173-planner-l3-opus/step-1/handoff.md",
+  "owner_pid": 18874,
+  "process_pid": 18911,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T17:51:44.248850+00:00"
+}
