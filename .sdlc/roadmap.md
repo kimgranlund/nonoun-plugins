@@ -173,5 +173,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0166 | [0166-agent-spawn-hook](0166-agent-spawn-hook/handoff.md) | Warn when the conductor spawns another plugin's role agent | feature | M | P2 | none | 🔵 ready |
 | T-0167 | [0167-role-in-temp-worktree](0167-role-in-temp-worktree/handoff.md) | Document running a role from a temporary worktree | feature | M | P2 | none | 🔵 ready |
 | T-0168 | [.0168-unattended-publish](.0168-unattended-publish/handoff.md) | Decide how publishing works during an unattended run | idea | S | P2 | none | 🟢 done |
-| T-0169 | [0169-role-whole-disk-search](0169-role-whole-disk-search/handoff.md) | A role's whole-disk find hung a planner run for 25 minutes | bug | S | P2 | none | 🔵 ready |
+| T-0169 | [.0169-role-whole-disk-search](.0169-role-whole-disk-search/handoff.md) | A role's whole-disk find hung a planner run for 25 minutes | bug | S | P2 | none | 🟢 done |
 | T-0170 | [0170-builder-edits-running-runner](0170-builder-edits-running-runner/handoff.md) | A builder that edits run.sh loses its own result | bug | S | P2 | none | 🔵 ready |

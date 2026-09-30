@@ -21,3 +21,9 @@
 - fix-now: Freeze `docs/claude-handoff.md` and `docs/claude-response.md` in a real `docs/layout.md` before any reorganization of this repository uses the plan.
 - note: The two-sources-one-destination collision code path in `reorg_plan.py` was never exercised on this tree.
 - note: A broad glob such as `claude-*.md` pulls the placed file `docs/maintenance/claude-hooks.md`, so the design's glob rules need a warning for it.
+
+## T-0169: A role's whole-disk find hung a planner run for 25 minutes (2026-09-29)
+
+- decide: Codex roles have no guard against whole-disk searches, because the hook is Claude-only; a line in the shared role contracts (needs `codex_roles.py generate`) was left out of this S-sized ticket.
+- note: `scripts/check-packaging.py` still passes when a hook registered in `hooks.json` points at a missing script; only `check.sh` catches it (the step-2 verifier found this, and it predates this change).
+- note: The hook bypasses are `cd / && find .`, a scan reached through a script, and a variable path such as `p=/; find "$p"`. There is no live role-session probe of the hook.
