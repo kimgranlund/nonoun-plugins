@@ -1,0 +1,20 @@
+{
+  "attempt_id": "55f89bfd95c441f88c6ecbe3479cbba5",
+  "name": "builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "codex",
+  "transport": "exec",
+  "model": "gpt-6-astra",
+  "effort": "low",
+  "routing_reason": "User-requested live builder/verifier proof; L1 plain-text fixture with one-file scope",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T13:28:43.590194+00:00",
+  "project": "/private/tmp/sdlc-codex-account-20260930/project",
+  "handoff": "/private/tmp/sdlc-codex-account-20260930/project/.sdlc/model-pair/step-1/handoff.md",
+  "owner_pid": 73686,
+  "process_pid": 73901,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T13:30:03.667097+00:00"
+}

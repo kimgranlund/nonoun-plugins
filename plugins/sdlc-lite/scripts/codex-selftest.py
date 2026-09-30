@@ -254,12 +254,13 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                          'Quote: <!-- SDLC Lite Codex project conductor: user note -->')
 
     def test_verifier_shares_builder_model_without_alternate(self):
+        from unittest import mock
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
-        self.assertEqual(codex_roles.verifier_alternates(),{})
-        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',True))
-        (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=other-model effort=low -->\n')
-        self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',False))
-        self.assertFalse(any(name.endswith('-alternate') for name,_ in codex_roles.definitions()))
+        with mock.patch.object(codex_roles,'verifier_alternates',return_value={}):
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',True))
+            (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=other-model effort=low -->\n')
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-astra','medium',False))
+            self.assertFalse(any(name.endswith('-alternate') for name,_ in codex_roles.definitions()))
 
     def test_verifier_alternate_comes_from_config(self):
         from unittest import mock
@@ -270,17 +271,29 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         self.assertEqual(defs['sdlc-verifier-l1-alternate']['model'],'fixture-alt')
         self.assertEqual(defs['sdlc-verifier-l1-alternate']['model_reasoning_effort'],'medium')
 
-    def test_runner_records_shared_verifier_model(self):
+    def test_runner_records_verifier_model_with_and_without_alternate(self):
+        import shutil
+        plugin=self.base/'plugin'
+        shutil.copytree(ROOT,plugin,ignore=shutil.ignore_patterns('__pycache__','*.log'))
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
-        p=subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'verifier','L1',str(self.handoff)],cwd=self.repo,
-                         env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=DEADLINE)
-        self.assertEqual(p.returncode,0,p.stderr)
-        header=(self.step/'verifier-L1.md').read_text().splitlines()[0]
-        self.assertIn('model=gpt-6-astra',header)
-        self.assertIn('shared_with_builder=yes',header)
-        record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
-        self.assertEqual(record['role'],'verifier')
-        self.assertIs(record['shared_with_builder'],True)
+        for alternates,model,shared in [({},'gpt-6-astra',True),({'gpt-6-astra':'fixture-alt'},'fixture-alt',False)]:
+            with self.subTest(alternates=alternates):
+                config=codex_roles.config();config['verifier_alternates']=alternates
+                (plugin/'adapters/codex/models.json').write_text(json.dumps(config))
+                subprocess.run(['python3',str(plugin/'scripts/codex_roles.py'),'generate'],check=True,
+                               capture_output=True,text=True,timeout=DEADLINE)
+                p=subprocess.run(['bash',str(plugin/'scripts/run.sh'),'verifier','L1',str(self.handoff)],cwd=self.repo,
+                                 env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=DEADLINE)
+                self.assertEqual(p.returncode,0,p.stderr)
+                record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
+                header=(self.step/record['file']).read_text().splitlines()[0]
+                self.assertIn('model='+model,header)
+                self.assertEqual('shared_with_builder=yes' in header,shared)
+                self.assertEqual(record['role'],'verifier')
+                self.assertEqual(record['model'],model)
+                self.assertIs(record['shared_with_builder'],shared)
+                probe=json.loads((self.base/'probe.json').read_text())
+                self.assertEqual(probe['args'][probe['args'].index('--model')+1],model)
 
     def test_definitions_match_shared_contracts(self):
         for name,data in codex_roles.definitions():

@@ -8,5 +8,5 @@
   "archaeologist": {"L1": ["gpt-6-astra", "medium"]},
   "filer": {"L1": ["gpt-6-astra", "medium"]},
   "conductor": {"L1": ["gpt-6-astra", "medium"]},
-  "verifier_alternates": {}
+  "verifier_alternates": {"gpt-6-astra": "gpt-6.1-sol"}
 }

@@ -1,0 +1,172 @@
+[
+  {
+    "model": "gpt-6.1-sol",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 7.85,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 19275,
+      "cached_input_tokens": 7168,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-6-astra",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 7.34,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 19211,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-6-sol",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.64,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18762,
+      "cached_input_tokens": 7168,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-6-luna",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 4.13,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18465,
+      "cached_input_tokens": 6912,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-reserve",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 4.33,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18269,
+      "cached_input_tokens": 11008,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-sol",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.89,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18269,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-terra",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.78,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18269,
+      "cached_input_tokens": 5888,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-luna",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 7.87,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18269,
+      "cached_input_tokens": 11008,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.5",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 4.97,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 19785,
+      "cached_input_tokens": 2432,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "codex-auto-review",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 7.3,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17860,
+      "cached_input_tokens": 11008,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  }
+]

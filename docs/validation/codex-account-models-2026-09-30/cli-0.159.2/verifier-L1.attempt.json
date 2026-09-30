@@ -1,0 +1,20 @@
+{
+  "attempt_id": "2bc313dbe8ed4cffba8612f95c1c3779",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "codex",
+  "transport": "exec",
+  "model": "gpt-6.1-sol",
+  "effort": "medium",
+  "routing_reason": "User-requested final independent verifier on CLI 0.159.2; prefer working 6.1 Sol paired with Astra 6.0 builder",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T13:45:36.483919+00:00",
+  "project": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project",
+  "handoff": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project/.sdlc/model-pair/step-1/handoff.md",
+  "owner_pid": 1143,
+  "process_pid": 1164,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T13:48:50.123029+00:00"
+}
