@@ -31,6 +31,9 @@ def body(path):
 
 
 ALTERNATES = 'verifier_alternates'
+# Checking role -> producing role whose newest result's model it must not share. The alternates
+# map keeps its verifier_alternates name and serves every role here (T-0171).
+PAIRED = {'verifier': 'builder', 'plan-reviewer': 'planner'}
 
 
 def config():
@@ -43,7 +46,7 @@ def models():
 
 
 def verifier_alternates():
-    """Builder model -> model the verifier uses when its own configured model equals it. Empty means share."""
+    """Producer model -> model a PAIRED checking role uses when its own configured model equals it. Empty means share."""
     return dict(config().get(ALTERNATES) or {})
 
 
@@ -89,20 +92,25 @@ def definitions():
                             sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect') else 'read-only',
                             developer_instructions=instructions(role))
             yield name, data
-            if role == 'verifier' and model in alternates:
+            if role in PAIRED and model in alternates:
                 alternate = dict(data, name=name+'-alternate', model=alternates[model])
                 yield alternate['name'], alternate
 
 
 def resolve(role, level, directory=None):
-    """Return (model, effort, shared); shared means the verifier runs on the builder's model."""
+    """Return (model, effort, shared) for role at level.
+
+    For a PAIRED checking role (verifier, plan-reviewer), the newest result of its producer
+    (builder, planner) in directory is read; when that result's model= header equals the
+    configured model, the alternate is used, or shared is True when no alternate is configured.
+    shared means the checking role runs on its producer's model."""
     model, effort = models()[role][level]
     shared = False
-    if role == 'verifier' and directory:
+    if role in PAIRED and directory:
         import order
-        built = order.newest(Path(directory), 'builder')
-        if built:
-            match = re.search(r'\bmodel=([^\s>]+)', Path(built).read_text())
+        produced = order.newest(Path(directory), PAIRED[role])
+        if produced:
+            match = re.search(r'\bmodel=([^\s>]+)', Path(produced).read_text())
             if match and match[1] == model:
                 alternate = verifier_alternates().get(model)
                 if alternate:
