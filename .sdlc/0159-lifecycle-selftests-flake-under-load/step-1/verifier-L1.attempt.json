@@ -1,0 +1,20 @@
+{
+  "attempt_id": "8258122c73934155b0d7b442b7530235",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "verifier L1: derived from build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T05:27:32.659883+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/runner2",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/runner2/.sdlc/0159-lifecycle-selftests-flake-under-load/step-1/handoff.md",
+  "owner_pid": 24927,
+  "process_pid": 24956,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T05:33:58.875041+00:00"
+}

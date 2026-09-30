@@ -1,0 +1,20 @@
+{
+  "attempt_id": "f9bfca804e8d452d87974d69a88112f0",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "planner L2: size S bug, test-only polling fix across two selftests",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T05:18:02.125350+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/runner2",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/runner2/.sdlc/0159-lifecycle-selftests-flake-under-load/handoff.md",
+  "owner_pid": 21932,
+  "process_pid": 21994,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T05:21:06.280981+00:00"
+}

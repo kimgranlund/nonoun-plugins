@@ -21,7 +21,7 @@ spec.loader.exec_module(fixture)
 
 CLAUDE = '''#!/usr/bin/env python3
 import json, os, time
-if os.environ.get('MODE') == 'timeout': time.sleep(60)
+if os.environ.get('MODE') == 'timeout': time.sleep(600)
 print(json.dumps(dict(type='result',is_error=False,result='## Map\\nseed.txt',total_cost_usd=0,duration_ms=1,num_turns=1)))
 '''
 
@@ -52,22 +52,20 @@ class LifecycleTests(fixture.CodexTests):
             cmd = ['bash',str(fixture.ROOT/'scripts/run.sh'),'scout','L1',str(handoff)]
             proc = subprocess.Popen(cmd,cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
             try:
-                deadline = time.monotonic()+10
-                while not (directory/'scout-L1.running').exists() and time.monotonic()<deadline:
-                    time.sleep(.05)
+                self.wait_for((directory/'scout-L1.running').exists, directory=directory, owner=proc)
                 self.assertTrue((directory/'scout-L1.running').exists())
-                duplicate = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=10)
+                duplicate = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=fixture.DEADLINE)
                 self.assertEqual(duplicate.returncode,2,duplicate.stderr)
                 self.assertIn('still owns',duplicate.stderr)
                 with self.assertRaisesRegex(ValueError,'still owns'):
                     run_lifecycle.recover(directory)
                 proc.send_signal(signal.SIGTERM)
-                proc.communicate(timeout=15)
+                proc.communicate(timeout=fixture.DEADLINE)
                 record = json.loads((directory/'scout-L1.attempt.json').read_text())
                 self.assertEqual(record['status'],'interrupted')
                 self.assertEqual(record['exit_code'],143)
                 env['MODE']='pass'
-                retry = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=20)
+                retry = subprocess.run(cmd,cwd=self.repo,env=env,capture_output=True,text=True,timeout=fixture.DEADLINE)
                 self.assertEqual(retry.returncode,0,retry.stderr)
                 latest = json.loads((directory/'scout-L1-2.attempt.json').read_text())
                 self.assertEqual(latest['status'],'completed')
@@ -78,7 +76,7 @@ class LifecycleTests(fixture.CodexTests):
                 self.assertFalse(list(directory.glob('*.running')))
             finally:
                 if proc.poll() is None:
-                    proc.terminate();proc.communicate(timeout=15)
+                    proc.terminate();proc.communicate(timeout=fixture.DEADLINE)
 
     def test_recovery_preserves_evidence_and_rejects_late_native_report(self):
         path = self.step/'scout-L1.attempt.json'
@@ -106,19 +104,20 @@ class LifecycleTests(fixture.CodexTests):
         child_pid = None
         try:
             path = directory/'scout-L1.attempt.json'
-            deadline = time.monotonic()+10
-            while time.monotonic()<deadline:
+            def started():
+                nonlocal child_pid
                 if path.exists():
-                    record = json.loads(path.read_text())
-                    child_pid = record.get('process_pid')
-                    if child_pid and (directory/'scout-L1.running').exists():
-                        break
-                time.sleep(.05)
+                    try:
+                        child_pid = json.loads(path.read_text()).get('process_pid')
+                    except ValueError:
+                        return False
+                return bool(child_pid) and (directory/'scout-L1.running').exists()
+            self.wait_for(started, lambda: f'process_pid={child_pid}', directory=directory, owner=owner)
             self.assertIsNotNone(child_pid)
             os.kill(owner.pid, signal.SIGKILL)
-            owner.wait(timeout=5)
+            owner.wait(timeout=fixture.DEADLINE)
             self.assertEqual(json.loads(path.read_text())['status'], 'running')
-            active = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=10)
+            active = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=fixture.DEADLINE)
             self.assertEqual(active.returncode, 2, active.stderr)
             self.assertIn('still owns', active.stderr)
         finally:
@@ -128,20 +127,18 @@ class LifecycleTests(fixture.CodexTests):
                 except ProcessLookupError:
                     pass
             if owner.poll() is None:
-                owner.kill(); owner.wait(timeout=5)
+                owner.kill(); owner.wait(timeout=fixture.DEADLINE)
             owner.stdout.close(); owner.stderr.close()
 
         # The killed child's inherited descriptor may close just after killpg returns.
-        deadline = time.monotonic()+10
-        while time.monotonic()<deadline:
+        def released():
             try:
                 with run_lifecycle.lock(directory):
-                    break
+                    return True
             except ValueError:
-                time.sleep(.05)
-        else:
-            self.fail('killed child did not release the handoff lock')
-        retry = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=20)
+                return False
+        self.wait_for(released, lambda: 'killed child did not release the handoff lock', directory=directory)
+        retry = subprocess.run(command, cwd=self.repo, env=dict(env, MODE='pass'), capture_output=True, text=True, timeout=fixture.DEADLINE)
         self.assertEqual(retry.returncode, 0, retry.stderr)
         self.assertIn('Recovered stale Claude attempts', retry.stderr)
         recovered = json.loads(path.read_text())
@@ -158,7 +155,7 @@ class LifecycleTests(fixture.CodexTests):
         fixture.codex_roles.install(self.repo)
         native_env = dict(self.env, SDLC_BACKEND='codex', SDLC_CODEX_TRANSPORT='subagent')
         refused = subprocess.run(command[:-1]+[str(native/'handoff.md')], cwd=self.repo, env=native_env,
-                                 capture_output=True, text=True, timeout=10)
+                                 capture_output=True, text=True, timeout=fixture.DEADLINE)
         self.assertEqual(refused.returncode, 2, refused.stderr)
         self.assertIn('Interrupted attempt needs review', refused.stderr)
         self.assertEqual(json.loads(stale.read_text())['status'], 'running')
@@ -198,7 +195,7 @@ class LifecycleTests(fixture.CodexTests):
                     (directory/(stem + '.running')).write_text('preserved marker')
                     (directory/(stem + '.log')).write_text('preserved log')
                 refused = subprocess.run(command + [str(handoff)], cwd=self.repo, env=claude,
-                                         capture_output=True, text=True, timeout=10)
+                                         capture_output=True, text=True, timeout=fixture.DEADLINE)
                 self.assertEqual(refused.returncode, 2, refused.stderr)
                 self.assertIn('Interrupted attempt needs review', refused.stderr)
                 self.assertEqual({p.name: p.read_bytes() for p in directory.glob('*.attempt.json')}, originals)
