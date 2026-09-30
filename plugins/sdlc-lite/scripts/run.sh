@@ -27,6 +27,14 @@
 # rmdir of .worktrees/tmp and .worktrees only when empty. It touches only this run's prefix, never other
 # worktrees that appeared during the run (concurrent fanout lanes run other role runs), and never
 # changes the exit code; INT, TERM, and HUP exit 130, 143, and 129 after it.
+# Prompt TERM: the role runs in the background and run.sh waits on it, since bash defers a trap until
+# a foreground child exits. On INT, TERM, or HUP the wait returns at once; the exit handler sends a
+# still-running role TERM, waits up to 2 s, sends KILL, and only then cleans up, so a dying role cannot
+# recreate files and the handler ends well inside run_lifecycle.py's 5 s grace before its SIGKILL.
+# Reaper: a run SIGKILLed anyway skips that cleanup, so a real run also calls
+# scripts/reap-tmp-worktrees.sh on <toplevel> at the start (before the stray snapshot) and again
+# after removing its own prefix. It removes prefixes under .worktrees/tmp whose <pid> names no live
+# process, never this run's own, and never changes the exit code.
 # Stray report: a real run (never a dry run) snapshots `git worktree list --porcelain` and the local
 # branches (refs/heads) before the role starts. Worktrees and branches that appeared during this run
 # (from a script, make target, or other program the hooks cannot see) are reported, leaving out this
@@ -280,6 +288,10 @@ phys() {
   r=$(cd "${p:-/}" 2>/dev/null && pwd -P) || { printf '%s\n' "$1"; return 0; }
   printf '%s%s\n' "${r%/}" "$rest"
 }
+# Reaps dead-owner prefixes under .worktrees/tmp, never this run's own (see the header). Never fails.
+reap_tmp() {
+  bash "$plugin_root/scripts/reap-tmp-worktrees.sh" "$toplevel" "$wt_tmp" >/dev/null 2>&1 || :
+}
 # Removes every worktree under this run's prefix only. Runs without errexit; never fails.
 cleanup_worktrees() {
   local wt_real line p pr
@@ -292,11 +304,13 @@ cleanup_worktrees() {
     fi
   done < <(git -C "$toplevel" worktree list --porcelain 2>/dev/null)
   rm -rf "$wt_tmp"
+  reap_tmp
   git -C "$toplevel" worktree prune >/dev/null 2>&1
   rmdir "$toplevel/.worktrees/tmp" >/dev/null 2>&1
   rmdir "$toplevel/.worktrees" >/dev/null 2>&1
   return 0
 }
+reap_tmp
 # Stray report baseline (see the header): worktree paths and local branches before the role runs.
 snap_wt=$(git -C "$toplevel" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p') || snap_wt=""
 snap_br=$(git -C "$toplevel" for-each-ref --format='%(refname:short)' refs/heads 2>/dev/null) || snap_br=""
@@ -355,9 +369,21 @@ report_strays() {
   done
   return 0
 }
+# Stops a role still running (TERM, up to 2 s, then KILL) so it cannot recreate files during cleanup.
+stop_role() {
+  local i
+  [[ -n "$role_pid" ]] && kill -0 "$role_pid" 2>/dev/null || return 0
+  kill -TERM "$role_pid" 2>/dev/null
+  for (( i = 0; i < 20; i++ )); do kill -0 "$role_pid" 2>/dev/null || break; sleep 0.1; done
+  kill -0 "$role_pid" 2>/dev/null && kill -KILL "$role_pid" 2>/dev/null
+  wait "$role_pid" 2>/dev/null
+  role_pid=""
+  return 0
+}
 on_exit() {
   local rc=$?
   set +e
+  stop_role
   rm -f "$running" ${skill_file:+"$skill_file"}
   cleanup_worktrees
   detect_strays || :
@@ -366,6 +392,7 @@ on_exit() {
 }
 running="$dir/$role-$level.running"
 date +%s >"$running"
+role_pid=""
 trap on_exit EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -374,7 +401,14 @@ trap 'exit 129' HUP
 bash_timeout() { if [[ "${1:-}" =~ ^[0-9]+$ ]] && (( 10#$1 >= 3600000 )); then echo "$1"; else echo 3600000; fi; }
 bash_default_ms=$(bash_timeout "${BASH_DEFAULT_TIMEOUT_MS:-}")
 bash_max_ms=$(bash_timeout "${BASH_MAX_TIMEOUT_MS:-}")
-env -u SDLC_LIFECYCLE_CHILD -u SDLC_ATTEMPT_NAME ${base_env[@]+"${base_env[@]}"} SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" BASH_DEFAULT_TIMEOUT_MS="$bash_default_ms" BASH_MAX_TIMEOUT_MS="$bash_max_ms" "${cmd[@]}" </dev/null >"$log" 2>&1 || { echo "$role exited non-zero; see $log" >&2; exit 1; }
+# The role runs in the background and run.sh waits for it, because bash defers a trap until a
+# foreground child exits; wait returns at once on INT, TERM, or HUP, so on_exit runs promptly.
+env -u SDLC_LIFECYCLE_CHILD -u SDLC_ATTEMPT_NAME ${base_env[@]+"${base_env[@]}"} SDLC_ROLE="$role" SDLC_TMP_WORKTREES="$wt_tmp" BASH_DEFAULT_TIMEOUT_MS="$bash_default_ms" BASH_MAX_TIMEOUT_MS="$bash_max_ms" "${cmd[@]}" </dev/null >"$log" 2>&1 &
+role_pid=$!
+role_rc=0
+wait "$role_pid" || role_rc=$?
+role_pid=""
+(( role_rc == 0 )) || { echo "$role exited non-zero; see $log" >&2; exit 1; }
 # Result pick (see the header): result events only, non-JSON lines skipped.
 events=$(jq -R -c 'fromjson? // empty | select(type == "object" and .type == "result")' "$log" 2>/dev/null || true)
 pick=$(jq -s -c --arg h "## $sect" '

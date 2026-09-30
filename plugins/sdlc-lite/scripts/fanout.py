@@ -44,7 +44,10 @@ run
        and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
-       tests). Non-zero exit: the lane's step dirs are checked for an inherited-red step as in
+       tests). After the driver returns, whatever its rc and before step 3 or any lane commit,
+       `bash reap-tmp-worktrees.sh <lane worktree>` runs (exit code ignored): it removes each
+       <lane>/.worktrees/tmp/<role>-<pid> prefix whose owner pid is dead, which the lane's last
+       role run leaves when SIGKILLed, since no later run.sh in the lane would reap it. Non-zero exit: the lane's step dirs are checked for an inherited-red step as in
        step 3, giving `inherited red: step-<n>: <tests> (driver rc=<n>)`; with none, the outcome
        stays `driver failed rc=<n>`. On step 2 (driver non-zero exit) and on any outcome
        other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the
@@ -571,6 +574,10 @@ def run_ticket(ctx, lane, t, lock):
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
     say(ctx, lane, t.id, f'driver started (log {log})')
     rc = run_logged(['bash', '-c', driver_for(ctx, t)], str(wt), env, log, ctx['run_id'])
+    # The lane's last role run has no successor run.sh to reap a SIGKILLed run's prefix; reap it here,
+    # before any lane commit. Only dead-owner prefixes go; the exit code is ignored.
+    subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), str(wt)], stdin=subprocess.DEVNULL,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
     inherited = inherited_red(wt / rel / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
@@ -730,6 +737,14 @@ if [ "$FANOUT_TICKET" = T-0002 ]; then
     sleep 0.1
   done
 fi
+'''
+
+# A driver that leaves a dead-owner run.sh tmp prefix in the lane, as a SIGKILLed last role run would.
+REAP_STUB = r'''#!/usr/bin/env bash
+set -eu
+git worktree add -q --detach "$PWD/.worktrees/tmp/builder-$DEADPID/w" HEAD
+echo "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"
+printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"
 '''
 
 
@@ -1227,6 +1242,24 @@ def selftest():
             lg = gls / 'logs' / name
             text = lg.read_text() if lg.is_file() else ''
             expect(f'gate retry case: {name} holds {word}, got {text!r}', word in text)
+
+        # 11. The lane's last driver leaves a dead-owner tmp prefix; fanout reaps it after the driver.
+        rp, rpl = tmp / 'reap', tmp / 'rplanes'
+        make_repo(rp, [('a', 'T-0001', 'ready')])
+        dead = subprocess.Popen(['true'])
+        dead.wait()
+        rstub = tmp / 'reap-stub.sh'
+        rstub.write_text(REAP_STUB)
+        rstub.chmod(0o755)
+        proc = fanout(rp, 'alpha=T-0001', '--integration', 'fanout/rp', '--lanes-dir', str(rpl),
+                      '--driver', f'DEADPID={dead.pid} {shlex.quote(str(rstub))}', '--gate', 'true')
+        prefix = rpl / 'alpha' / '.worktrees' / 'tmp' / f'builder-{dead.pid}'
+        wts = sh(rp, 'worktree', 'list', '--porcelain').stdout
+        expect(f'lane tmp prefix reaped: {prefix} gone and unlisted, got exists={prefix.exists()} '
+               f'rc={proc.returncode} worktrees={wts!r}',
+               not prefix.exists() and f'builder-{dead.pid}' not in wts)
+        expect(f'lane tmp prefix reaped: T-0001 merged, got {report_rows(rpl).get("T-0001")!r}',
+               report_rows(rpl).get('T-0001') == 'merged')
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
