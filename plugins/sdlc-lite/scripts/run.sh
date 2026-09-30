@@ -214,8 +214,9 @@ if [[ "$backend" == claude && "$role" == plan-reviewer ]]; then
   fi
 fi
 
-# Codex: a verifier whose model equals the build's switches to a configured alternate, or else
-# shares the build's model; resolve then prints a third token "shared" (T-0163).
+# Codex: a verifier, or a plan-reviewer, whose model equals the model it reviews (the newest
+# builder's, or the newest planner's) switches to a configured alternate, or else shares that
+# model; resolve then prints a third token "shared" (T-0163, T-0171).
 shared=""
 if [[ "$backend" == codex ]]; then
   resolved=$(python3 "$plugin_root/scripts/codex_roles.py" resolve "$role" "$level" "$dir") || exit 2
