@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d9c5a1d9731c4292a04498c33a7c36f8",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "filer L1: loose-ends draft after last step done",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:12:26.508711+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0155-trace-run-ids/handoff.md",
+  "owner_pid": 78241,
+  "process_pid": 78318,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:12:42.204741+00:00"
+}

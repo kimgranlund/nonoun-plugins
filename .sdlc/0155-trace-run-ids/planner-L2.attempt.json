@@ -1,0 +1,20 @@
+{
+  "attempt_id": "8728000724b146ee9faf291ec54dd84d",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "planner L2: normal feature, attempt id prefixes on lane and gate log lines plus a resume selftest",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T02:58:56.665702+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0155-trace-run-ids/handoff.md",
+  "owner_pid": 83998,
+  "process_pid": 84015,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:04:13.907557+00:00"
+}

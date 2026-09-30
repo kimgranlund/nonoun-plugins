@@ -75,8 +75,16 @@ run
        `git status --porcelain` snapshot before and after; never the whole worktree); a close
        refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
        naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
-  Prints `[<lane>] <id> <event>` lines as they happen, writes <lanes-dir>/report.md
-  (| Lane | Ticket | Outcome | Commit |, the integration branch and its tip, the worktree paths,
+  Run id: each non-dry run mints ctx run_id `fanout-<12 hex>` (uuid4), never read from
+  SDLC_ATTEMPT_ID: run_lifecycle.py sets that only for a run.sh role process, a fanout run is not a
+  role attempt (the roles its driver launches record their own attempt_id), and a fanout run inside
+  a role would inherit the role's id, so two runs, or a run and its resume, would share it.
+  Prints `[<run_id>] [<lane>] <id> <event>` lines as they happen and appends each, under the
+  print lock, to <lanes-dir>/logs/fanout.log (append-only: earlier runs' lines survive a resume).
+  Driver and gate log files keep their names and are overwritten, each output line written as
+  `[<run_id>] <line>` (a last line without a newline too); driver and gate env carry
+  FANOUT_RUN_ID=<run_id>. Writes <lanes-dir>/report.md
+  (| Lane | Ticket | Outcome | Commit |, a `- Run: <run_id>` line, the integration branch and its tip, the worktree paths,
   the gates or that none were given) and prints it. Exit 0 only when every ticket is `merged`,
   else 1; 2 for a refusal. checkout, switch, reset and commit run only inside the lanes dir;
   nothing is pushed; the worktrees stay for inspection.
@@ -108,8 +116,14 @@ selftest
   `wip(T-0002): dirty before sync` and not an ancestor of the integration branch, the integration
   branch holds T-0001.txt but not dirty.txt, T-0002 stays ready there, and main is untouched; its
   negative control, the same run with no gate, merges both tickets with no `wip(` lane tip.
+  A resume case (case 9), one lane `alpha=T-0001` with a driver that exits 3 on the first run,
+  then its worktrees and lane branch removed and a rerun on the reused integration branch where
+  the driver succeeds, proves logs/fanout.log keeps the first run's `driver failed rc=3` line and
+  holds the second run's `merged` line under two distinct `fanout-<12 hex>` ids, that every line
+  of the second run's lane and gate logs starts with its id, that the driver saw FANOUT_RUN_ID,
+  and that report.md names the id.
 """
-import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading
+import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
@@ -435,9 +449,26 @@ class MergeLock:
 PRINT = threading.Lock()
 
 
-def say(lane, tid, event):
+def say(ctx, lane, tid, event):
+    """Print `[<run_id>] [<lane>] <id> <event>` and append the same line to logs/fanout.log."""
+    line = f"[{ctx['run_id']}] [{lane.name}] {tid} {event}"
     with PRINT:
-        print(f'[{lane.name}] {tid} {event}', flush=True)
+        print(line, flush=True)
+        with open(ctx['logs'] / 'fanout.log', 'a', encoding='utf-8') as f:
+            f.write(line + '\n')
+
+
+def run_logged(argv, cwd, env, log, run_id):
+    """Run argv with stdin /dev/null, writing each output line to log (overwritten) as
+    `[<run_id>] <line>`; a final line without a newline still gets the prefix. Returns the exit code."""
+    prefix = f'[{run_id}] '.encode()
+    with open(log, 'wb') as f:
+        p = subprocess.Popen(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT, env=env)
+        for line in p.stdout:
+            f.write(prefix + line)
+        p.stdout.close()
+        return p.wait()
 
 
 def in_merge(wt):
@@ -520,7 +551,7 @@ def run_ticket(ctx, lane, t, lock):
         # the ticket (no sync, driver, lane commit, or merge), so that wip commit is never merged
         sha = wip_commit(wt, t.id, 'dirty before sync')
         if sha:
-            say(lane, t.id, f'wip {sha} on {lane.branch}')
+            say(ctx, lane, t.id, f'wip {sha} on {lane.branch}')
             return 'dirty before sync', f'wip {sha}'
         p = git(wt, 'merge', '--ff', '--no-edit', integration)
         if p.returncode:
@@ -532,12 +563,10 @@ def run_ticket(ctx, lane, t, lock):
     env = dict(ENV, FANOUT_LANE=lane.name, FANOUT_TICKET=t.id, FANOUT_SLUG=t.slug,
                FANOUT_HANDOFF=str(wt / rel / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
                FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1', SDLC_ROLE='conductor',
-               BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS)
+               BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS, FANOUT_RUN_ID=ctx['run_id'])
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
-    say(lane, t.id, f'driver started (log {log})')
-    with open(log, 'wb') as f:
-        rc = subprocess.run(['bash', '-c', driver_for(ctx, t)], cwd=str(wt), stdin=subprocess.DEVNULL,
-                            stdout=f, stderr=subprocess.STDOUT, env=env).returncode
+    say(ctx, lane, t.id, f'driver started (log {log})')
+    rc = run_logged(['bash', '-c', driver_for(ctx, t)], str(wt), env, log, ctx['run_id'])
     inherited = inherited_red(wt / rel / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
@@ -553,7 +582,7 @@ def run_ticket(ctx, lane, t, lock):
     if p.returncode:
         return f'lane commit failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', ''
     lane_sha = git_out(wt, 'rev-parse', 'HEAD')
-    say(lane, t.id, f'committed {lane_sha[:7]} on {lane.branch}')
+    say(ctx, lane, t.id, f'committed {lane_sha[:7]} on {lane.branch}')
 
     with lock:
         # uncommitted tracked edits in the integration tree: refuse before the merge, so neither
@@ -574,9 +603,8 @@ def run_ticket(ctx, lane, t, lock):
             return f'merge failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', lane_sha[:7]
         merge_sha = git_out(integ, 'rev-parse', 'HEAD')
         for k, gate in enumerate(ctx['gates'], 1):
-            with open(ctx['logs'] / f'gate-{lane.name}-{t.id}-{k}.log', 'wb') as f:
-                rc = subprocess.run(['bash', '-c', gate], cwd=str(integ), stdin=subprocess.DEVNULL,
-                                    stdout=f, stderr=subprocess.STDOUT, env=ENV).returncode
+            rc = run_logged(['bash', '-c', gate], str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
+                            ctx['logs'] / f'gate-{lane.name}-{t.id}-{k}.log', ctx['run_id'])
             if rc:
                 git_out(integ, 'reset', '-q', '--hard', before)
                 return f'red: {gate} rc={rc}', lane_sha[:7]
@@ -620,16 +648,16 @@ def run_lane(ctx, lane, lock):
                 # a stopped ticket's work stays on the lane branch as a wip commit, never merged
                 sha = wip_commit(lane.dir, t.id, outcome)
                 if sha:
-                    say(lane, t.id, f'wip {sha} on {lane.branch}')
+                    say(ctx, lane, t.id, f'wip {sha} on {lane.branch}')
                     commit = commit or f'wip {sha}'
         lane.results.append((t.id, outcome, commit))
-        say(lane, t.id, outcome)
+        say(ctx, lane, t.id, outcome)
 
 
 def report(ctx):
     integ = ctx['integ_dir']
     tip = git(integ, 'rev-parse', 'HEAD').stdout.strip()
-    out = ['# fanout report', '',
+    out = ['# fanout report', '', f"- Run: `{ctx['run_id']}`",
            f"- Integration branch: `{ctx['integration']}` at `{tip}`"
            + (' (reused)' if ctx['reuse'] else f" (from `{ctx['start'][:12]}`)"),
            f'- Integration worktree: `{integ}`']
@@ -654,6 +682,8 @@ def cmd_run(a):
         if a.dry_run:
             print_plan(ctx)
             return 0
+        # fanout mints its own id on every run; an inherited SDLC_ATTEMPT_ID belongs to a role attempt
+        ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
         setup(ctx)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
@@ -1118,6 +1148,54 @@ def selftest():
                subj and not subj.startswith('wip('))
         expect('dirty-sync control: the integration branch holds T-0002.txt',
                sh(cr, 'cat-file', '-e', 'fanout/dc:T-0002.txt').returncode == 0)
+
+        # 9. Resume: a failed run, its worktrees and lane branch removed, then a rerun on the reused
+        # integration branch. logs/fanout.log keeps both runs' lines under two distinct run ids,
+        # and the second run's lane and gate log lines all carry its own id.
+        qr, ql, ok = tmp / 'resume', tmp / 'qlanes', tmp / 'resume-ok'
+        make_repo(qr, [('a', 'T-0001', 'ready')])
+        qdriver = (f'if test -e {shlex.quote(str(ok))}; then echo rid=$FANOUT_RUN_ID; '
+                   'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; '
+                   'else exit 3; fi')
+        qargs = ('alpha=T-0001', '--integration', 'fanout/q', '--lanes-dir', str(ql), '--driver', qdriver,
+                 '--gate', 'echo gated')
+        p1 = fanout(qr, *qargs)
+        expect(f'resume case: first run exits 1, got {p1.returncode} stderr={p1.stderr!r}', p1.returncode == 1)
+        ok.touch()
+        for args in (('worktree', 'remove', '--force', str(ql / 'integration')),
+                     ('worktree', 'remove', '--force', str(ql / 'alpha')), ('branch', '-D', 'fanout/q-alpha')):
+            q = sh(qr, *args)
+            expect(f'resume case: git {args} exited 0, got {q.returncode} stderr={q.stderr!r}', q.returncode == 0)
+        p2 = fanout(qr, *qargs)
+        expect(f'resume case: second run exits 0, got {p2.returncode} stdout={p2.stdout!r} stderr={p2.stderr!r}',
+               p2.returncode == 0)
+        rid = r'fanout-[0-9a-f]{12}'
+        flog = ql / 'logs' / 'fanout.log'
+        ftext = flog.read_text() if flog.is_file() else ''
+        ma = re.search(rf'^\[({rid})\] \[alpha\] T-0001 driver failed rc=3$', ftext, re.M)
+        mb = re.search(rf'^\[({rid})\] \[alpha\] T-0001 merged$', ftext, re.M)
+        a_id, b_id = (ma.group(1) if ma else ''), (mb.group(1) if mb else '')
+        expect(f'resume case: fanout.log keeps the first run driver failed line, got {ftext!r}', a_id)
+        expect(f'resume case: fanout.log holds the second run merged line, got {ftext!r}', b_id)
+        expect(f'resume case: the two runs have distinct ids, got {a_id!r} and {b_id!r}', a_id and a_id != b_id)
+        expect(f'resume case: every fanout.log line starts with a run id, got {ftext!r}',
+               ftext and all(re.match(rf'\[{rid}\] ', ln) for ln in ftext.splitlines()))
+        for name in ('alpha-T-0001.log', 'gate-alpha-T-0001-1.log'):
+            lg = ql / 'logs' / name
+            lines = lg.read_text().splitlines() if lg.is_file() else []
+            expect(f'resume case: every {name} line starts with [{b_id}] , got {lines!r}',
+                   b_id and lines and all(ln.startswith(f'[{b_id}] ') for ln in lines))
+        dlog = ql / 'logs' / 'alpha-T-0001.log'
+        expect(f'resume case: the driver saw FANOUT_RUN_ID={b_id}',
+               b_id and dlog.is_file() and f'[{b_id}] rid={b_id}' in dlog.read_text().splitlines())
+        gl = ql / 'logs' / 'gate-alpha-T-0001-1.log'
+        expect('resume case: the gate log holds the prefixed gate output',
+               b_id and gl.is_file() and f'[{b_id}] gated' in gl.read_text().splitlines())
+        expect(f'resume case: the second run printed [{b_id}] [alpha] T-0001 merged',
+               b_id and f'[{b_id}] [alpha] T-0001 merged' in p2.stdout.splitlines())
+        qrep = ql / 'report.md'
+        expect(f'resume case: report.md names the run id {b_id}',
+               b_id and qrep.is_file() and f'- Run: `{b_id}`' in qrep.read_text())
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
