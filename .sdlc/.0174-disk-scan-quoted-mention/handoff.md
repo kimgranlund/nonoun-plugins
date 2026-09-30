@@ -2,7 +2,7 @@
 id: T-0174
 title: "block-disk-scan.sh denies a quoted mention of a scan inside a compound command"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ The hook matches scans after masking quoted strings in other role-run hooks (`bl
 
 ## Constraints
 The failing test lands before or with the fix, in `scripts/hook-selftest.sh`, together with a positive case that a real scan is still denied. Do not loosen the real-scan cases.
+
+## Closed
+
+2026-09-30: Not reproduced as a false positive. A quoted find / inside a compound command exits 0 for pipes, redirects, && chains and jq. The denial appears only when the command also holds a heredoc or a shell word (bash, sh, eval), which block-disk-scan.sh denies on purpose (header, line 48). The verifier command likely held bash check.sh. No hook change.
