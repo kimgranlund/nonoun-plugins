@@ -26,3 +26,6 @@ T-0165 adds the text rule. This ticket is the enforcement behind it.
 
 ## Constraints
 Claude hook enforcement does not imply Codex enforcement; say so where the rule is documented. A warning must not block a session that is not the conductor.
+
+## Plan review
+- split refusal on planner-L2.md, step 3: acceptance criterion commands do not parse. Backticks inside inline-code criteria split the span: `grep -qF "## \`hooks/block-role-spawn.sh\`" ...` and the `awk "/^## \`hooks\/block-role-spawn.sh\`/..."` criterion. Write those criteria without backticks inside the command (for example grep -qF "block-role-spawn.sh" with a heading pattern that avoids backticks, or grep -qE with `.` in place of the backtick). plan defect: replan this step (/chain 3)

@@ -1,0 +1,20 @@
+{
+  "attempt_id": "88834425d3fc4080a9a08123962bcde1",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "planner L3: replan after steps.py split plan defect (step 3 criteria with backticks do not parse)",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T01:27:41.011168+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/hooks",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/hooks/.sdlc/0166-agent-spawn-hook/handoff.md",
+  "owner_pid": 80352,
+  "process_pid": 80381,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T01:44:01.361159+00:00"
+}
