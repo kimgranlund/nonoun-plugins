@@ -62,6 +62,8 @@ run
     4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
     5. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
+       uncommitted tracked changes there refuse the ticket first (`integration dirty: <first path>`;
+       no merge, reset, or gate runs, so the edit survives); else
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
        logs/gate-<lane>-<id>-<k>.log; the first red one runs `git reset --hard <pre-merge HEAD>`
@@ -554,6 +556,13 @@ def run_ticket(ctx, lane, t, lock):
     say(lane, t.id, f'committed {lane_sha[:7]} on {lane.branch}')
 
     with lock:
+        # uncommitted tracked edits in the integration tree: refuse before the merge, so neither
+        # `reset --hard <before>` below can discard them (untracked files survive a reset)
+        p = git(integ, 'status', '--porcelain', '--untracked-files=no')
+        if p.returncode:
+            return f'integration status failed: {first_line(p.stderr, f"rc={p.returncode}")}', lane_sha[:7]
+        if p.stdout.strip():
+            return f'integration dirty: {p.stdout.splitlines()[0][3:]}', lane_sha[:7]
         before = git_out(integ, 'rev-parse', 'HEAD')
         p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', lane.branch)
         if p.returncode:
@@ -982,6 +991,22 @@ def selftest():
                proc.returncode == 1)
         expect(f'verifier inherited red: outcome is inherited red: step-1: test_v, got {got.get("T-0001")!r}',
                got.get('T-0001') == 'inherited red: step-1: test_v')
+
+        # 5d. A human edit in the integration worktree before the merge: the ticket is refused
+        # with `integration dirty`, no merge or reset runs, and the edit survives.
+        xr, xl = tmp / 'integ-dirty', tmp / 'xlanes'
+        make_repo(xr, [('a', 'T-0001', 'ready')], {'notes.txt': 'base\n'})
+        proc = fanout(xr, 'a=T-0001', '--integration', 'fanout/xr', '--lanes-dir', str(xl),
+                      '--driver', 'echo human >> ../integration/notes.txt; echo x > work.txt',
+                      '--gate', 'test -z "$(git status --porcelain --untracked-files=no)"')
+        got = report_rows(xl)
+        expect(f'integration dirty: run exits 1, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 1)
+        expect(f'integration dirty: outcome is integration dirty: notes.txt, got {got.get("T-0001")!r}',
+               got.get('T-0001') == 'integration dirty: notes.txt')
+        diff = sh(xl / 'integration', 'diff').stdout
+        expect(f'integration dirty: the edit survives in the integration worktree, got {diff!r}', '+human' in diff)
+        merges = sh(xr, 'rev-list', '--merges', '--count', 'fanout/xr').stdout.strip()
+        expect(f'integration dirty: fanout/xr has no merge commits, got {merges!r}', merges == '0')
 
         # 6. A full stub-driver run in the default lanes dir (<toplevel>/.worktrees/fanout, no
         # --lanes-dir): lane commits, merges and closes, with the main tree's status left clean.
