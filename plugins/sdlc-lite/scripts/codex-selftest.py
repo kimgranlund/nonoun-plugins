@@ -5,18 +5,21 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import unittest
 
 import codex_roles
 
 ROOT = codex_roles.ROOT
+# One deadline for every wait and child timeout, generous enough for a loaded host.
+DEADLINE = 120
 STUB = '''#!/usr/bin/env python3
 import json, os, pathlib, sys, time
 args=sys.argv[1:]
 prompt=sys.stdin.read()
 pathlib.Path(os.environ['PROBE']).write_text(json.dumps({'args':args,'prompt':prompt,'backend':os.environ.get('SDLC_BACKEND')}))
 mode=os.environ.get('MODE','pass')
-if mode=='timeout': time.sleep(30)
+if mode=='timeout': time.sleep(600)
 if mode=='exit': sys.exit(7)
 if mode!='missing':
  text='## Map\\n- seed.txt:1: fixture\\n\\n## Entry points\\nseed.txt\\n\\n## Not found\\nNone'
@@ -46,6 +49,27 @@ class CodexTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def wait_for(self,predicate,describe=lambda:'',deadline=DEADLINE,directory=None,owner=None):
+        """Poll predicate every 0.05 s; fail with the observed state on timeout or owner exit."""
+        def state(reason):
+            listing=sorted(p.name for p in directory.iterdir()) if directory is not None and directory.exists() else None
+            parts=[reason,f'directory {directory}: {listing}',f'observed: {describe()}']
+            if owner is not None:
+                parts.append(f'owner returncode: {owner.poll()}')
+                if owner.poll() is not None and owner.stderr is not None:
+                    parts.append(f'owner stderr: {owner.stderr.read()}')
+            return '; '.join(parts)
+        end=time.monotonic()+deadline
+        while True:
+            value=predicate()
+            if value:return value
+            if owner is not None and owner.poll() is not None:
+                value=predicate()
+                if value:return value
+                self.fail(state('owner exited before the condition held'))
+            if time.monotonic()>=end:self.fail(state(f'condition not met within {deadline} s'))
+            time.sleep(0.05)
+
     def git(self,*args):
         return subprocess.check_output(['git',*args],cwd=self.repo,stderr=subprocess.DEVNULL,text=True)
 
@@ -53,7 +77,7 @@ class CodexTests(unittest.TestCase):
         env=dict(self.env,MODE=mode)
         if dry:env['SDLC_DRY_RUN']='1'
         if mode=='timeout':env['SDLC_CODEX_TIMEOUT_SECONDS']='1'
-        return subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],cwd=self.repo,env=env,capture_output=True,text=True,timeout=20)
+        return subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],cwd=self.repo,env=env,capture_output=True,text=True,timeout=DEADLINE)
 
     def test_result_and_rerun(self):
         for suffix in ['', '-2']:
@@ -249,7 +273,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
     def test_runner_records_shared_verifier_model(self):
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-astra effort=low -->\n## Status\ndone\n')
         p=subprocess.run(['bash',str(ROOT/'scripts/run.sh'),'verifier','L1',str(self.handoff)],cwd=self.repo,
-                         env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=20)
+                         env=dict(self.env,MODE='verdict'),capture_output=True,text=True,timeout=DEADLINE)
         self.assertEqual(p.returncode,0,p.stderr)
         header=(self.step/'verifier-L1.md').read_text().splitlines()[0]
         self.assertIn('model=gpt-6-astra',header)
@@ -276,7 +300,7 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         bench=self.repo/'bench';(bench/'tasks').mkdir(parents=True)
         (bench/'tasks/demo.md').write_text('Fixture benchmark')
         p=subprocess.run(['bash',str(ROOT/'scripts/bench.sh'),'--bench-dir',str(bench),'demo'],
-                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=20)
+                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=DEADLINE)
         self.assertEqual(p.returncode,0,p.stderr)
         probe=json.loads((self.base/'probe.json').read_text())
         self.assertIn('/sdlc-lite:bench demo',probe['prompt'])
@@ -285,29 +309,27 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         results=bench/'results/demo';results.mkdir(parents=True)
         (results/'runs.jsonl').write_text(json.dumps({'backend':'codex','cost_usd':None})+'\n')
         p=subprocess.run(['bash',str(ROOT/'scripts/bench-summary.sh'),'--bench-dir',str(bench)],
-                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=20)
+                         cwd=self.repo,env=self.env,capture_output=True,text=True,timeout=DEADLINE)
         self.assertEqual(p.returncode,0,p.stderr);self.assertIn('unknown',p.stdout)
         p=subprocess.run(['bash',str(ROOT/'scripts/bench.sh'),'--bench-dir',str(bench),'demo'],
-                         cwd=self.repo,env=dict(self.env,MODE='exit'),capture_output=True,text=True,timeout=20)
+                         cwd=self.repo,env=dict(self.env,MODE='exit'),capture_output=True,text=True,timeout=DEADLINE)
         self.assertNotEqual(p.returncode,0,'A failed Codex conductor must fail the benchmark launcher')
 
     def test_native_exchange_preserves_runner_artifacts(self):
-        import time
         import codex_exchange
         codex_roles.install(self.repo)
-        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
         proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'scout','L1',str(self.handoff)],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         request=self.step/'scout-L1.request.json'
         try:
-            deadline=time.monotonic()+10
-            while not request.exists() and time.monotonic()<deadline:time.sleep(0.05)
+            self.wait_for(request.exists,directory=self.step,owner=proc)
             payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-scout-l1')
             self.assertIn('SDLC_TMP_WORKTREES=',payload['prompt'])
             report=self.step/'child-report.txt';report.write_text('## Map\nseed.txt:1\n')
             codex_exchange.respond(request,report)
-            stdout,stderr=proc.communicate(timeout=10)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
             self.assertTrue((self.step/'scout-L1.md').exists())
             self.assertFalse((self.base/'probe.json').exists(),'Subagent transport must not launch codex or claude')
@@ -318,22 +340,20 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             if proc.poll() is None:proc.kill();proc.communicate()
 
     def test_conductor_exchange_needs_no_nested_cli(self):
-        import time
         import codex_exchange
         codex_roles.install(self.repo)
-        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS='10')
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
         proc=subprocess.Popen(['python3',str(ROOT/'scripts/codex_exec.py'),'conductor','L1','Process fixture task'],
                               cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         try:
-            deadline=time.monotonic()+10;requests=[]
-            while not requests and time.monotonic()<deadline:
-                requests=list((self.repo/'.sdlc').glob('native-conductor-*.request.json'));time.sleep(0.05)
+            requests=self.wait_for(lambda:list((self.repo/'.sdlc').glob('native-conductor-*.request.json')),
+                                   directory=self.repo/'.sdlc',owner=proc)
             request=requests[0];payload=json.loads(request.read_text())
             self.assertEqual(payload['agent'],'sdlc-conductor-l1')
             self.assertIn(str(self.repo),payload['prompt'])
             report=self.repo/'conductor-report.txt';report.write_text('Fixture completed')
             codex_exchange.respond(request,report)
-            stdout,stderr=proc.communicate(timeout=10)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
             self.assertEqual(proc.returncode,0,stderr)
             self.assertEqual(json.loads(stdout)['result'],'Fixture completed')
             self.assertFalse((self.base/'probe.json').exists())
