@@ -1,0 +1,20 @@
+{
+  "attempt_id": "3b3131fe5a2046048f218d52664e4dc3",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: step level from plan (guard plus selftest in fanout.py)",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T02:53:24.200215+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0151-fanout-reset-guards-dirty-tree/step-1/handoff.md",
+  "owner_pid": 34887,
+  "process_pid": 34900,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T02:55:07.768087+00:00"
+}

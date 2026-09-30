@@ -1,0 +1,20 @@
+{
+  "attempt_id": "ffc2a6fd3af44a9fa441edc5d452d23b",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: planner-set level, one-script change in a known pattern with existing selftest",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:04:18.791986+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0155-trace-run-ids/step-1/handoff.md",
+  "owner_pid": 10748,
+  "process_pid": 10770,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:08:54.651929+00:00"
+}

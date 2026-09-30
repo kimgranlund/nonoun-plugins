@@ -1,0 +1,20 @@
+{
+  "attempt_id": "c720a1dcb17f4dc595c31a1d8aaf62f9",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "planner L3: cross-cutting size-L subsystem, architect manifest with 26 nodes",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T05:34:39.677183+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces/.sdlc/0157-review-sdlc-traces/handoff.md",
+  "owner_pid": 36043,
+  "process_pid": 36061,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T06:13:55.120243+00:00"
+}

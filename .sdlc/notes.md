@@ -58,3 +58,66 @@
 - decide: No live `scripts/run.sh` run with the Codex backend on a ChatGPT account was made. The root AGENTS.md asks for a focused live run in a throwaway project for changed role behavior.
 - note: `docs/validation/native-codex-smoke.json` hashes the deleted alternate TOMLs. It was left as historical evidence, and it may look stale next to the current agent set.
 - note: Projects that installed the old agents keep stale `sdlc-verifier-lN-alternate` TOMLs in `.codex/agents/`, because `install` does not remove files it no longer generates. They are unused while no alternate is configured.
+
+## T-0151: fanout.py never discards uncommitted edits when it resets the integration tree (2026-09-29)
+
+- note: The `integration status failed: ...` outcome in `fanout.py` was added beyond the plan, and only the dirty path has a selftest case; the status-failure path is untested.
+- note: The merge-commit assertion in selftest case 5d passes even with the guard removed, so only the outcome-row and edit-survives assertions catch a regression.
+- note: The guard ignores untracked files in the integration tree by design, since `reset --hard` leaves them alone.
+
+## T-0155: Attempt id on lane and gate log lines (2026-09-29)
+
+- decide: The ticket says to use `SDLC_ATTEMPT_ID`, but fanout mints its own `fanout-<hex>` id, so T-0157's join by attempt id needs a rule for how fanout run ids relate to role attempt ids.
+- note: Lane and gate log files are still overwritten on resume, and only `logs/fanout.log` keeps history. T-0156 owns per-attempt gate logs and may rename the `gate-<lane>-<id>-<k>.log` path the probe reads.
+- note: Driver and gate log lines now carry a `[<run_id>] ` prefix that T-0157's trace ingest must strip. Nothing in the repo parses lane logs today.
+
+## T-0148: Conductor scope decisions update the acceptance criteria, not just prose (2026-09-29)
+
+- decide: `steps.py widen` refuses the exact `test "$(git diff ...)" = "<file>"` and prefix `grep -v '^path$'` scope-guard forms that past plans used, so those steps take the slower L3 replan. Decide whether to add those forms or standardize the planner's guard form.
+- note: The step-3 verifier saw one unexplained non-zero `check.sh` exit that did not reproduce, and no log was saved. If it recurs, capture the log and check whether it depends on concurrent runner activity.
+- note: The live conductor behavior for widening in an unattended lane is untested, and no throwaway-project live run was done. AGENTS.md asks for live evidence when changed host behavior is claimed.
+
+## T-0156: Keep gate logs per attempt, never overwrite (2026-09-29)
+
+- note: driver logs (`<lane>-<id>.log`) are still overwritten on a fanout rerun. The planner left this to T-0157 or a later follow-up.
+- note: shellcheck is not installed on this host, so `check.sh` skipped shell lint for this change.
+
+## T-0149: A step that changes a shared contract pulls its dependents into scope (2026-09-29)
+
+- decide: Run a focused live run of the planner and verifier contract-dependents rule on a throwaway project, since this change proves only wording and the `check.py` gate, not role behavior.
+- note: The ticket's Intent section was empty, so the planner vs. verifier split is the planner's own reading of the Goal; both roles got the rule.
+- note: The planner did not read the source run's evidence (gen-ui-system-svelte-lite lane logs), so the contract kinds listed may miss the exact shape that broke there.
+
+## T-0150: Resuming a chain restarts at the blocked step, not the newest step (2026-09-29)
+
+- decide: The ticket's Repro and Actual were placeholders, and gen-ui's lane logs and `stepn.sh` were never available. If gen-ui's conductor picked the right step dir and `next` misread it, this fix does not cover that case. Someone should compare against the gen-ui evidence.
+- note: The resume rule in the chain skill (including running `run_lifecycle.py recover` first) is prose. No automated check proves a conductor follows it before `resume`.
+- note: shellcheck is not installed on the host, so `check.sh` skipped that part and it stayed unverified.
+
+## T-0153: Ticket depends can name a capability or file, not only a whole ticket (2026-09-29)
+
+- note: shellcheck is not installed on the build machine, so the shellcheck part of `check.sh` was skipped and is unverified.
+- note: fanout lane scheduling does not read `depends`, so `file:` and `cap:` entries do not affect lane scheduling. The ticket lists this as a non-goal.
+
+## T-0154: Builders inside a lane leave nested tmp worktrees behind (2026-09-29)
+
+- note: The reaper keeps a stale prefix whose dead pid was reused by an unrelated live process until that process exits. This is conservative and never destructive.
+- note: The root cause of the 2026-09-28 leftovers is inferred from the code. The lane logs in the other repo were not reachable, and a live claude's shutdown time under TERM is not shown by the selftests.
+- note: `check.sh` skipped shellcheck because it is not installed on the build host, so the new shell scripts were not linted.
+
+## T-0152: External agents (Codex) get lane integration and reserved ticket ids (2026-09-29)
+
+- note: For an external ticket whose merge brings in nothing new (a second ticket on the same branch), the report's Commit cell shows the previous close commit, not a merge commit. Step 5 reworded the docs to say so.
+- note: Live host validation on Codex was not run for this change. Only the shared-script selftests and `check.sh` covered it.
+- note: The step 1 builder's six mutation checks and three of the step 2 builder's five were not re-run by the verifiers. The base-SHA red runs and two re-run mutations cover the behavior.
+
+## T-0159: Lifecycle and codex selftests time out under host load (2026-09-29)
+
+- note: The verifier did not independently re-check the builder's claim that `codex_exec.py` kills the stub on timeout (the stub sleep is now 600 s). A `pgrep` after the runs found no orphans.
+- note: The negative-control guard fails as a whole only if every test passes against the old `run_lifecycle.py`. It already fails through `test_sigkill_recovers_claude_but_codex_native_refuses` and `test_exit_zero_without_result_fails`, so loosening one of those tests would go unnoticed while the other still fails.
+
+## T-0157: review-sdlc-traces: find SDLC-caused waste and bugs in project traces (2026-09-30)
+
+- decide: the done-condition run on the gen-ui-system-svelte-lite traces of 2026-09-28 (batch 3, T-0148 to T-0154) was never run; the architect could not find that repo or `sdlc-feedback-batch3.md` on this machine, and no step's artifacts show the run. Supply the corpus or accept the synthetic and self-repo evidence.
+- decide: the handoff asks for scout or archaeologist at L2 for diagnosis, but the architect found only L1 for those roles in `run.sh`. The artifacts do not show how the skill settled this, so a person must accept L1 or authorize a model change.
+- note: the `overwritten-gate-log` corpus branch has never run here, because `.worktrees/fanout-night/logs` is absent on this host.

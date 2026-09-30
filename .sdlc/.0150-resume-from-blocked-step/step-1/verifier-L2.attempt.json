@@ -1,0 +1,20 @@
+{
+  "attempt_id": "1093310028144da7bf37efe8e0c34b03",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "high",
+  "routing_reason": "verifier L2: derived from build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:43:19.173068+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0150-resume-from-blocked-step/step-1/handoff.md",
+  "owner_pid": 48752,
+  "process_pid": 48775,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:44:23.758983+00:00"
+}

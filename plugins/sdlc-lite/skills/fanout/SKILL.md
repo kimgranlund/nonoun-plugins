@@ -1,7 +1,7 @@
 ---
 name: fanout
 description: "Run ticket lanes in parallel: each lane is a git worktree whose tickets run through a headless /chain one at a time, merge into an integration branch behind gates, and close there. Use when several ready tickets can run side by side."
-argument-hint: "<lane>=<ids>... [--base REF] [--integration BRANCH] [--gate CMD]... [--lanes-dir DIR] [--rewrite-refs]"
+argument-hint: "<lane>=<ids>... <lane>@<branch>=<ids>... [--base REF] [--integration BRANCH] [--gate CMD]... [--lanes-dir DIR] [--rewrite-refs]"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Bash(git merge --ff-only:*), Read
 ---
 
@@ -11,9 +11,11 @@ For every role launch, set `SDLC_ROUTING_REASON` to the selected role/level rati
 
 Arguments: `$ARGUMENTS`
 
-Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. Inspect a stopped lane's `wip(` commit on its lane branch.
+Run from the project root. `fanout.py` makes commits only inside the lanes dir (the lane branches and the integration branch); it never touches main and never pushes. Lane worktrees stay after the run so they can be inspected. When a lane stops on a driver failure or any outcome other than `merged`, a dirty lane tree is committed as `wip(<id>): <outcome>` on the lane branch only (never merged). A tree already dirty before a ticket's sync is WIP-committed as `wip(<id>): dirty before sync` and that ticket stops with the outcome `dirty before sync`, never merged. An integration worktree with uncommitted tracked changes is refused before the merge with the outcome `integration dirty: <path>`; nothing is merged or reset, so the edit survives. Inspect a stopped lane's `wip(` commit on its lane branch.
 
 Lanes live in `<toplevel>/.worktrees/fanout/<lane>` by default (`--lanes-dir` overrides). `.worktrees/` must be in `.gitignore`; otherwise preflight refuses with exit 2 and says to add it, and an explicit `--lanes-dir` inside the tree must be ignored too. Caveat: `.gitignore` does not exclude `.worktrees/` from vitest, tsc, or file watchers, so exclude it in the project's own config; Node module resolution also walks up from a lane worktree into the main tree's `node_modules`.
+
+An external lane (`<lane>@<branch>=<ids>`) names a branch an outside agent (for example Codex) owns, registered with an `external_branch: <branch>` line in `.sdlc/config`. Fanout runs no driver on it, creates no worktree and no `<integration>-<lane>` branch, and never writes that branch. It is merged `--no-ff` into the integration branch under the lock, gated, and its tickets are closed there; a second ticket on the same branch merges nothing new and skips the gates. A `merge conflict` outcome means the outside agent merges the integration branch on their side before the run is repeated. The lane shows in `report.md` but not in `board.py --lanes`, which lists worktrees.
 
 ## 1. Dry run
 Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py run <arguments> --gate "<cmd>"... --dry-run`, adding the project's own check or test commands (for example `scripts/check.sh` or the test command from its README, AGENTS.md, or CLAUDE.md) as `--gate`s unless the arguments already name gates. Show the plan it prints; its `close:` line shows whether the repo is in numbered mode. A refusal (exit 2) stops here: show it and fix the arguments with the user.

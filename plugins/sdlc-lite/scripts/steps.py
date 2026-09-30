@@ -2,8 +2,9 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | next <step dir> |
-                 swap <step dir> [--timeout SECONDS] | selftest}
+                 lint <planner.md | task dir> | next <step dir> | resume <task dir> |
+                 swap <step dir> [--timeout SECONDS] |
+                 widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -117,6 +118,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               never a done or a fail, never adds a bump, and is never a verifier's paired builder.
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
+  resume    pick the step a resumed /chain continues from (/chain step 4). Candidates are the task
+            dir's direct children named exactly step-<n> (step-<n>.superseded-<k>/ left out),
+            sorted by the integer n (step-2 before step-10). For each in order it runs the next
+            rules above; the first whose action is not done wins. Stdout: that step dir as
+            <task dir as given>/step-<n>, then exactly what next prints for it; exit 0. When every
+            candidate is done: "done", then "reason: every step-<n>/ passed"; exit 0. It never
+            picks the newest or highest step dir. Writes nothing and never reads file times.
+            A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
+            a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
             light path). The pair lives in that verifier's ## For the next attempt: exactly one
             line starting "swap old:" holding exactly one code span (the old criterion's command,
@@ -141,6 +151,29 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step dir, the old span, and the new text. Every refusal prints on stderr, ends with a
             last line "plan defect: steps swap refused: <why>; replan this step (/chain 4.2)",
             exits 1, and writes nothing.
+  widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS]: apply a conductor scope
+            decision to <step dir>/handoff.md, so the next builder does not block on the old scope
+            guard. Each path must be repo-relative, match [A-Za-z0-9._/@+-]+, not start with - or /,
+            and hold no .. component. Exactly one criterion line (the criteria_lines region, a - or
+            * list item) must hold one command span with git diff --name-only and a grep -v
+            allow-list, in exactly one recognized form:
+              F  grep -vxF -e <word>...      each path is appended as -e <path> after the last -e arg
+              E  grep -vxE "<pattern>"       |<path> is appended inside the quotes
+              A  grep -vE "^(...)$" (or grep -E -v)   |<path> is inserted before )$
+            In E and A the path is ERE-escaped (a backslash before each of .^$*+?()[]{}|\).
+            Zero or several such lines, or an unrecognized form, refuses. A path already listed
+            (an -e word for F, its escaped form an alternative for E and A) is skipped; when every
+            path is listed it prints "widen: already applied", exits 0, and writes nothing. The
+            rewritten line must keep its marker and (guard) tag and lint clean (the lint rules
+            above). The widened span then runs under bash -c from the git toplevel of the step dir
+            (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA from
+            <step dir>/base-sha, else HEAD, as swap does: a red span, a timeout, or a span that
+            changed the work tree refuses. Otherwise it replaces only the target line, appends one
+            item per added path, "- `<path>`: allowed by a conductor scope decision (steps.py
+            widen)", to a ## Scope widened section (created if missing, earlier items kept), and
+            prints "steps widen: <step dir>: added <paths> to the scope criterion: <new span>".
+            Every refusal prints on stderr, ends with a last line "plan defect: steps widen
+            refused: <why>; replan this step (/chain 4.2)", exits 1, and writes nothing.
   selftest  build fixtures in a temp dir and prove every case and every failure fires
 """
 import argparse
@@ -1049,6 +1082,51 @@ def cmd_next(step_dir):
     return 0
 
 
+# --- resume -----------------------------------------------------------------
+
+STEP_DIR_RE = re.compile(r'step-(\d+)')
+
+
+def resume_action(task):
+    """Return (step dir or None, action, level or None, reason, [result paths read]) for a task dir:
+    the lowest-numbered step-<n>/ (by integer n; step-<n>.superseded-<k>/ left out) whose next_action
+    is not done, else (None, 'done', None, reason, []). Reads only; never file times."""
+    t = pathlib.Path(task)
+    if not t.is_dir():
+        raise Fail(f'steps resume: no such directory: {t}')
+    nums = sorted(int(m.group(1)) for c in t.iterdir()
+                  if c.is_dir() and (m := STEP_DIR_RE.fullmatch(c.name)))
+    if not nums:
+        raise Fail(f'steps resume: {t} has no step-<n>/ dirs; run steps.py split {t} first')
+    for n in nums:
+        d = pathlib.Path(task) / f'step-{n}'
+        try:
+            action, level, reason, read = next_action(d)
+        except Fail as e:
+            msg = ' '.join(str(e).split('\n'))
+            if msg.startswith('steps next: '):
+                msg = msg[len('steps next: '):]
+            raise Fail(f'steps resume: {d}: {msg}')
+        if action != 'done':
+            return d, action, level, reason, read
+    return None, 'done', None, 'every step-<n>/ passed', []
+
+
+def cmd_resume(task):
+    try:
+        d, action, level, reason, read = resume_action(task)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    if d is not None:
+        print(d)
+    print(action if level is None else f'{action} L{level}')
+    print(f'reason: {reason}')
+    for p in read:
+        print(f'read: {p}')
+    return 0
+
+
 # --- swap -------------------------------------------------------------------
 
 SWAP_DEFECT = '; replan this step (/chain 4.2)'
@@ -1185,6 +1263,177 @@ def swap(step_dir, timeout=300):
 def cmd_swap(step_dir, timeout=300):
     try:
         line = swap(step_dir, timeout)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(line)
+    return 0
+
+
+# --- widen ------------------------------------------------------------------
+
+WIDEN_PATH_RE = re.compile(r'^[A-Za-z0-9._/@+-]+$')
+ERE_SPECIAL = set('.^$*+?()[]{}|\\')
+INVERT_GREP_RE = re.compile(r'(?<![\w-])grep(?:\s+-[A-Za-z]+)*\s+(?:-[A-Za-z]*v|--invert-match(?![\w-]))')
+WIDEN_F_RE = re.compile(r'(?<![\w-])grep\s+-vxF((?:\s+-e\s+(?:"[^"]*"|\'[^\']*\'|[^\s|;&)\'"]+))+)')
+WIDEN_F_WORD_RE = re.compile(r'-e\s+("[^"]*"|\'[^\']*\'|[^\s|;&)\'"]+)')
+WIDEN_E_RE = re.compile(r'(?<![\w-])grep\s+-vxE\s+(?:"((?:\\.|[^"\\])*)"|\'([^\']*)\')')
+WIDEN_A_RE = re.compile(r'(?<![\w-])grep\s+(?:-vE|-E\s+-v)\s+'
+                        r'(?:"\^\(((?:\\.|[^"\\])*)\)\$"|\'\^\(([^\']*)\)\$\')')
+
+
+def ere_escape(path):
+    """The path with a backslash before each ERE special character."""
+    return ''.join('\\' + c if c in ERE_SPECIAL else c for c in path)
+
+
+def ere_alternatives(pattern):
+    """The top-level alternatives of an ERE pattern, split on each | not escaped by a backslash."""
+    return re.split(r'(?<!\\)\|', pattern)
+
+
+def widen_forms(span):
+    """[(form, match)] for each recognized allow-list form in a span: F (grep -vxF -e ...),
+    E (grep -vxE "<pattern>"), A (grep -vE or grep -E -v "^(...)$")."""
+    return [(form, m) for form, rx in (('F', WIDEN_F_RE), ('E', WIDEN_E_RE), ('A', WIDEN_A_RE))
+            for m in rx.finditer(span)]
+
+
+def widen_listed(form, m):
+    """The entries a form already allows: the -e words (quotes stripped) for F, the alternatives for E and A."""
+    if form == 'F':
+        return [w[1:-1] if w[:1] in '"\'' and w[-1:] == w[:1] and len(w) > 1 else w
+                for w in WIDEN_F_WORD_RE.findall(m.group(1))]
+    return ere_alternatives(m.group(1) if m.group(1) is not None else m.group(2))
+
+
+def widen_span(span, form, m, paths):
+    """The span with paths added to its allow-list form."""
+    if form == 'F':
+        at, add = m.end(), ''.join(f' -e {p}' for p in paths)
+    else:
+        at = m.end() - (1 if form == 'E' else 3)
+        add = ''.join(f'|{ere_escape(p)}' for p in paths)
+    return span[:at] + add + span[at:]
+
+
+def replace_span(line, old, new):
+    """The line with its code span whose text (one edge space stripped, like line_spans) is old
+    replaced by new, the backtick fence and edge spaces kept."""
+    for m in SPAN_RE.finditer(line):
+        text = m.group(2)
+        lead = ' ' if text.startswith(' ') else ''
+        trail = ' ' if text.endswith(' ') and len(text) > 1 else ''
+        if text[len(lead):len(text) - len(trail)] == old:
+            return line[:m.start(2)] + lead + new + trail + line[m.end(2):]
+    return None
+
+
+def add_scope_widened(text, paths):
+    """The handoff text with one '## Scope widened' item per path: appended to the existing section,
+    after its last non-blank line, or in a new section at the end."""
+    items = [f'- `{p}`: allowed by a conductor scope decision (steps.py widen)' for p in paths]
+    lines = text.splitlines()
+    start = next((i for i, x in enumerate(lines) if x.rstrip() == '## Scope widened'), None)
+    if start is None:
+        body = text.rstrip('\n')
+        return f'{body}\n\n## Scope widened\n' + '\n'.join(items) + '\n'
+    end = next((j for j in range(start + 1, len(lines)) if lines[j].startswith('## ')), len(lines))
+    last = end
+    while last > start + 1 and not lines[last - 1].strip():
+        last -= 1
+    out = lines[:last] + items + lines[last:]
+    return '\n'.join(out) + '\n'
+
+
+def widen(step_dir, paths, timeout=300):
+    """Add paths to the one scope criterion of <step dir>/handoff.md after every check passes, and
+    record them under ## Scope widened. Returns the one stdout line. Raises Fail (last line
+    'plan defect: steps widen refused: ...; replan this step (/chain 4.2)') and writes nothing on any
+    refusal."""
+    d = pathlib.Path(step_dir)
+
+    def refuse(why, detail=()):
+        raise Fail('\n'.join(list(detail) + [f'plan defect: steps widen refused: {why}{SWAP_DEFECT}']))
+
+    h = d / 'handoff.md'
+    if not h.is_file():
+        refuse(f'no step handoff at {h}')
+    if not paths:
+        refuse('no path given')
+    for p in paths:
+        if (not WIDEN_PATH_RE.match(p) or p.startswith('-') or p.startswith('/')
+                or '..' in p.split('/')):
+            refuse(f'not a repo-relative path of [A-Za-z0-9._/@+-] with no leading - or / and no .. '
+                   f'component: {p}')
+    paths = list(dict.fromkeys(paths))
+
+    text = h.read_text(encoding='utf-8')
+    lines = text.splitlines(keepends=True)
+    items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines]) if list_item(line)]
+    scope = [(i, line, s) for i, line in items for s in line_spans(line)
+             if 'git diff --name-only' in s and INVERT_GREP_RE.search(s)]
+    rows = sorted(set(i for i, _, _ in scope))
+    if not rows:
+        refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list')
+    if len(rows) > 1:
+        refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list; '
+               'need exactly one')
+    if len(scope) > 1:
+        refuse('the scope criterion line has several git diff --name-only spans with a grep -v allow-list')
+    idx, target, old = scope[0]
+    forms = widen_forms(old)
+    if not forms:
+        refuse('the scope criterion has an unrecognized allow-list form (want grep -vxF -e <word>..., '
+               f'grep -vxE "<pattern>", or grep -vE "^(...)$"): {old}')
+    if len(forms) > 1:
+        refuse(f'the scope criterion has {len(forms)} allow-list forms; need exactly one: {old}')
+    form, m = forms[0]
+    listed = widen_listed(form, m)
+    add = [p for p in paths if (p if form == 'F' else ere_escape(p)) not in listed]
+    if not add:
+        return 'widen: already applied'
+
+    new = widen_span(old, form, m, add)
+    new_line = replace_span(target, old, new)
+    if new_line is None or list_item(new_line) is None:
+        refuse(f'cannot rewrite the scope criterion line: {target}')
+    if list_item(new_line)[:2] != list_item(target)[:2] or is_guard_line(new_line) != is_guard_line(target):
+        refuse('the rewritten line lost its list marker or its (guard) tag')
+    if new not in line_spans(new_line):
+        refuse(f'the rewritten span is not a command span: {new}')
+    findings = lint_steps(h, {1: f'## Step 1: widen\nlevel: L1\n### Acceptance criteria\n{new_line}'})
+    if findings:
+        refuse(f'the widened criterion does not lint: {new}', findings)
+
+    top = git_toplevel(d)
+    cwd = top or str(d)
+    base = base_sha(top, d)
+    before = tree_state(top) if top else None
+    detail, red = [], []
+    rc, tail = run_guard(new, cwd, timeout, base)
+    if rc != 0:
+        why = f'timed out after {timeout:g}s' if rc is None else f'exit {rc}'
+        detail.append(f'steps widen: {d}: widened scope span is red now ({why}): {new}')
+        detail += [f'  {t}' for t in tail]
+        red.append(f'red now: {new}')
+    after = tree_state(top) if before is not None else None
+    changed = tree_changes(before, after) if after is not None else []
+    if changed:
+        detail += [f'steps widen: {d}: widened scope span changed the work tree: {p}' for p in changed]
+        red.append(f'the widened span changed the work tree: {", ".join(changed)}')
+    if red:
+        refuse('; '.join(red), detail)
+
+    ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
+    lines[idx] = new_line + ending
+    h.write_text(add_scope_widened(''.join(lines), add), encoding='utf-8')
+    return f'steps widen: {d}: added {", ".join(add)} to the scope criterion: {new}'
+
+
+def cmd_widen(step_dir, paths, timeout=300):
+    try:
+        line = widen(step_dir, paths, timeout)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -1869,6 +2118,64 @@ def selftest():
         check('next writes nothing: the step dir snapshot is equal before and after',
               rc == 0 and snapshot(d) == before)
 
+        # resume: the lowest-numbered non-superseded step whose next action is not done
+        def r_task(steps_files):
+            """steps_files: {dir name: [(name, text)] in run order}; each dir gets an L2 handoff."""
+            count[0] += 1
+            t = tmp / f'resume{count[0]}'
+            t.mkdir()
+            for name, files in steps_files.items():
+                d = t / name
+                d.mkdir()
+                (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n', encoding='utf-8')
+                for fname, text in files:
+                    (d / fname).write_text(text, encoding='utf-8')
+                if files:
+                    (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files),
+                                                  encoding='utf-8')
+            return t
+
+        def rsm(t):
+            before = snapshot(t)
+            rc, out, err = run_main(['resume', str(t)])
+            return rc, out.splitlines(), err, snapshot(t) == before
+
+        PASSED = [('builder-L2.md', DONE), ('verifier-L1.md', PASS)]
+        t = r_task({'step-1': PASSED, 'step-2': [('builder-L2.md', BLOCKED)],
+                    'step-3': [('builder-L2.md', DONE)]})
+        rc, lines, err, same = rsm(t)
+        check('resume: a blocked step-2 is chosen over a later step-3 with a done builder',
+              rc == 0 and err == '' and same and lines[:2] == [str(t / 'step-2'), 'replan']
+              and len(lines) >= 3 and lines[2].startswith('reason: ')
+              and lines[3:] == [f'read: {t / "step-2" / "builder-L2.md"}'])
+        t = r_task({'step-1': PASSED, 'step-2': PASSED})
+        rc, lines, err, same = rsm(t)
+        check('resume: every step passed prints done',
+              rc == 0 and err == '' and same and lines == ['done', 'reason: every step-<n>/ passed'])
+        t = r_task({'step-1': PASSED, 'step-2': [], 'step-10': [],
+                    'step-2.superseded-1': [('builder-L2.md', BLOCKED)]})
+        rc, lines, err, same = rsm(t)
+        check('resume: a superseded dir is ignored and step-2 comes before step-10',
+              rc == 0 and err == '' and same and lines[:2] == [str(t / 'step-2'), 'build L2'])
+        t = r_task({'step-1': PASSED, 'step-10': [('builder-L2.md', BLOCKED)], 'step-2.superseded-1': []})
+        rc, lines, err, same = rsm(t)
+        check('resume: step-10 is reached after step-1 when only a superseded step-2 exists',
+              rc == 0 and same and lines[:2] == [str(t / 'step-10'), 'replan'])
+        t = r_task({})
+        rc, lines, err, same = rsm(t)
+        check('resume error: no step dirs exits 1 with "steps resume:" on stderr',
+              rc == 1 and lines == [] and err.startswith('steps resume: ') and 'split' in err
+              and len(err.strip().splitlines()) == 1 and same)
+        rc, out, err = run_main(['resume', str(tmp / 'no-such-task')])
+        check('resume error: a missing task dir exits 1 with "steps resume:" on stderr',
+              rc == 1 and out == '' and err.startswith('steps resume: ') and len(err.strip().splitlines()) == 1)
+        t = r_task({'step-1': PASSED, 'step-2': []})
+        (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: x\n', encoding='utf-8')
+        rc, lines, err, same = rsm(t)
+        check('resume error: a next error on a candidate exits 1 with one "steps resume:" line',
+              rc == 1 and lines == [] and err.startswith('steps resume: ') and 'step-2' in err
+              and len(err.strip().splitlines()) == 1 and same)
+
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
         S_OLD = 'test -f zzz-old'
@@ -1989,6 +2296,121 @@ def selftest():
               nxt(s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE),
                                  ('verifier-L1-2.md', FAIL)]), 'rebuild L2'))
 
+        # widen: a conductor scope decision adds paths to the one scope criterion. Each case builds a
+        # throwaway repo with one empty commit; the step dir is <repo>/sdlc, recorded base-sha = HEAD.
+        W_LIST = '{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude)sdlc"; ' \
+                 'git ls-files --others --exclude-standard -- . ":(exclude)sdlc"; }'
+        W_FORMS = {'F': f'{W_LIST} | grep -vxF -e a.txt | {{ ! grep -q .; }}',
+                   'E': f'{W_LIST} | grep -vxE "a\\.txt" | {{ ! grep -q .; }}',
+                   'A': f"{W_LIST} | grep -vE '^(a\\.txt)$' | {{ ! grep -q .; }}"}
+
+        def w_handoff(*criteria):
+            return ('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n'
+                    + ''.join(f'- {c}\n' for c in criteria))
+
+        def w_repo(handoff, base=True):
+            count[0] += 1
+            r = tmp / f'w-repo{count[0]}'
+            r.mkdir()
+            g = ['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+            subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+            subprocess.run(g + ['commit', '-q', '--allow-empty', '-m', 'a'], check=True, capture_output=True)
+            d = r / 'sdlc'
+            d.mkdir()
+            (d / 'handoff.md').write_text(handoff, encoding='utf-8')
+            if base:
+                head = subprocess.run(['git', '-C', str(r), 'rev-parse', 'HEAD'], check=True,
+                                      capture_output=True, text=True).stdout.strip()
+                (d / 'base-sha').write_text(head + '\n', encoding='utf-8')
+            (r / 'a.txt').write_text('x\n', encoding='utf-8')
+            return r, d
+
+        def w_span(d):
+            spans = [s for line in criteria_lines((d / 'handoff.md').read_text(encoding='utf-8'))
+                     for s in line_spans(line) if 'git diff --name-only' in s]
+            return spans[0] if len(spans) == 1 else None
+
+        def w_green(r, d):
+            span = w_span(d)
+            return span is not None and run_guard(span, str(r), 30, base_sha(str(r), d))[0] == 0
+
+        def widen_refused(name, d, argv_paths, needle=None):
+            before = snapshot(d)
+            rc, out, err = run_main(['widen', str(d)] + argv_paths)
+            last = err.strip().splitlines()[-1] if err.strip() else ''
+            check(f'widen: {name}', rc == 1 and out == '' and snapshot(d) == before
+                  and last.startswith('plan defect: steps widen refused:')
+                  and last.endswith('; replan this step (/chain 4.2)') and (needle is None or needle in err))
+
+        for form, span in W_FORMS.items():
+            r, d = w_repo(w_handoff(f'(guard) `{span}`', '`test -d .`'))
+            rc, out, err = run_main(['widen', str(d), 'b.txt', 'dir/c+d.txt'])
+            text = (d / 'handoff.md').read_text(encoding='utf-8')
+            (r / 'b.txt').write_text('x\n', encoding='utf-8')
+            (r / 'dir').mkdir()
+            (r / 'dir' / 'c+d.txt').write_text('x\n', encoding='utf-8')
+            widened = w_green(r, d)
+            (r / 'bxtxt').write_text('x\n', encoding='utf-8')
+            outside = not w_green(r, d)
+            want_add = {'F': '-e a.txt -e b.txt -e dir/c+d.txt', 'E': 'a\\.txt|b\\.txt|dir/c\\+d\\.txt',
+                        'A': '^(a\\.txt|b\\.txt|dir/c\\+d\\.txt)$'}[form]
+            check(f'widen: (a) the {form} form applies: the widened files pass the span, a lookalike outside '
+                  'the set fails it, (guard) kept, ## Scope widened lists each path, one stdout line',
+                  rc == 0 and err == '' and len(out.splitlines()) == 1
+                  and out.startswith(f'steps widen: {d}: added b.txt, dir/c+d.txt to the scope criterion: ')
+                  and want_add in text and '- (guard) `' in text and widened and outside
+                  and '## Scope widened\n- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
+                      '- `dir/c+d.txt`: allowed by a conductor scope decision (steps.py widen)\n' in text)
+            # (b) rerun: every path already listed
+            before = snapshot(d)
+            rc, out, err = run_main(['widen', str(d), 'b.txt', 'dir/c+d.txt'])
+            check(f'widen: (b) the {form} form rerun prints widen: already applied, exit 0, writes nothing',
+                  rc == 0 and out.strip() == 'widen: already applied' and snapshot(d) == before)
+
+        # a second widen keeps the earlier ## Scope widened items and adds only the new path
+        r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
+        rc1, _, _ = run_main(['widen', str(d), 'b.txt'])
+        rc2, out, _ = run_main(['widen', str(d), 'b.txt', 'e.txt'])
+        text = (d / 'handoff.md').read_text(encoding='utf-8')
+        check('widen: a second widen adds only the unlisted path and keeps the earlier Scope widened item',
+              rc1 == 0 and rc2 == 0 and 'added e.txt to' in out and '-e a.txt -e b.txt -e e.txt' in text
+              and text.count('## Scope widened') == 1 and text.count('`b.txt`: allowed') == 1
+              and text.endswith('- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
+                                '- `e.txt`: allowed by a conductor scope decision (steps.py widen)\n'))
+
+        # (c) refusals: each writes nothing and ends with the plan-defect line
+        r, d = w_repo(w_handoff('`test -d .`'))
+        widen_refused('(c) no scope criterion line', d, ['b.txt'], 'no criterion line')
+        r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`', f'`{W_FORMS["E"]}`'))
+        widen_refused('(c) two scope criterion lines', d, ['b.txt'], '2 criterion lines')
+        r, d = w_repo(w_handoff(f'`{W_LIST} | grep -v -e a.txt | {{ ! grep -q .; }}`'))
+        widen_refused('(c) an unrecognized allow-list form (grep -v -e)', d, ['b.txt'], 'unrecognized')
+        r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
+        for bad in ('../x', '/x', '-x', 'a b', 'x/../y'):
+            widen_refused(f'(c) a bad path {bad!r}', d, ['b.txt', bad], 'not a repo-relative path')
+        widen_refused('(c) no path given', d, [], 'no path given')
+        (r / 'z.txt').write_text('x\n', encoding='utf-8')
+        widen_refused('(c) a red new span (an unlisted file already changed)', d, ['b.txt'], 'red now (exit 1)')
+        r, d = w_repo(w_handoff(f'`{W_LIST} | grep -vxF -e a.txt | {{ ! grep -q .; }} && touch w-made`'))
+        widen_refused('(c) a new span that changes the work tree', d, ['b.txt'], 'changed the work tree: w-made')
+        d = tmp / 'w-nohandoff'
+        d.mkdir()
+        widen_refused('(c) no step handoff', d, ['b.txt'], 'no step handoff')
+
+        # (d) the span sees SDLC_BASE_SHA from <step dir>/base-sha, not HEAD: without base-sha it is red
+        d_span = f'test "$SDLC_BASE_SHA" != "$(git rev-parse HEAD)" && {W_FORMS["F"]}'
+        for with_base in (True, False):
+            r, d = w_repo(w_handoff(f'`{d_span}`'))
+            g = ['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+            subprocess.run(g + ['commit', '-q', '--allow-empty', '-m', 'b'], check=True, capture_output=True)
+            if not with_base:
+                (d / 'base-sha').unlink()
+                widen_refused('(d) with no base-sha the span sees HEAD and is red', d, ['b.txt'], 'red now')
+                continue
+            rc, _, err = run_main(['widen', str(d), 'b.txt'])
+            check('widen: (d) the span sees SDLC_BASE_SHA from base-sha, not HEAD',
+                  rc == 0 and err == '' and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8'))
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -2011,17 +2433,35 @@ def main(argv):
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
+    p = sub.add_parser('resume', help='print the step dir a resumed /chain continues from, and its next action')
+    p.add_argument('task', help='a task dir holding step-<n>/ dirs')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='per-span timeout for the new criterion (default 300); a timeout refuses. Spans run with '
                         'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+    p = sub.add_parser('widen', help='add paths to the one scope criterion of a step handoff')
+    p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md')
+    p.add_argument('paths', nargs='*', metavar='path', help='repo-relative paths to allow (one or more)')
+    p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
+                   help='timeout for the widened span (default 300); a timeout refuses. It runs with '
+                        'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
-    a = ap.parse_args(argv)
+    a, extra = ap.parse_known_args(argv)
+    if extra and a.cmd != 'widen':
+        ap.error(f'unrecognized arguments: {" ".join(extra)}')
+    if a.cmd == 'widen':
+        # a path such as -x reaches here as an unknown option; widen refuses it as a bad path
+        if not 0 < a.timeout < float('inf'):
+            print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
+            return 1
+        return cmd_widen(a.step_dir, a.paths + extra, a.timeout)
     if a.cmd == 'selftest':
         return selftest()
     if a.cmd == 'next':
         return cmd_next(a.step_dir)
+    if a.cmd == 'resume':
+        return cmd_resume(a.task)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)

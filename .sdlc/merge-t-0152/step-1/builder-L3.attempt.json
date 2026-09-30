@@ -1,0 +1,20 @@
+{
+  "attempt_id": "ffac7e24de1a4ce7b7daccf6c7a3adec",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "night fanout merge step T-0152, three files including fanout.py already changed by T-0154: build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T05:05:11.088726+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/integration",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/integration/.sdlc/merge-t-0152/step-1/handoff.md",
+  "owner_pid": 1475,
+  "process_pid": 1488,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T05:11:19.430532+00:00"
+}

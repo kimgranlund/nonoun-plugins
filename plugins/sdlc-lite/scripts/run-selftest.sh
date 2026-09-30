@@ -15,6 +15,15 @@
 # main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
 # SDLC_TMP_WORKTREES under <toplevel>/.worktrees/tmp/. A dry run creates no .worktrees, and a dry run
 # of a role that declares skills leaves no mktemp skill file behind.
+# Stale prefix: before a real run, detached worktrees are registered under .worktrees/tmp/builder-<pid
+# of an exited subshell>/w and .worktrees/tmp/builder-<pid of this selftest>/w; after the run the dead
+# owner's prefix is gone from disk and from git worktree list, and the live owner's worktree is still
+# on disk and listed (then removed by the case). Its failures read "stale prefix: <reason>".
+# Term cleanup: a stub claude adds a worktree under $SDLC_TMP_WORKTREES, ignores TERM (trap ''), writes
+# a ready marker holding its pid, and execs sleep 30 (which inherits the ignore). run.sh runs in the
+# background; once the marker appears, the run.sh pid (the run_lifecycle.py process) gets TERM and
+# must exit 143 with no worktree under .worktrees/tmp registered, no .worktrees/tmp, and the stub no
+# longer alive. Its failures read "term cleanup: <reason>". Both cases drive run.sh only.
 # Bash timeouts: the stub records BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS; unset or an
 # inherited 120000 must reach it as 3600000, an inherited 7200000 as 7200000 (T-0105).
 # Build base: a stub records ${SDLC_BASE_SHA:-unset}. The first builder run writes base-sha equal
@@ -324,6 +333,68 @@ want_wt() {
 want_wt ok 0
 want_wt fail 1
 want_wt nosect 3
+
+# Stale prefix: a prefix whose owner pid is dead is reaped by the next real run; a live owner's stays.
+dead=$(bash -c 'echo $$')
+! ps -p "$dead" >/dev/null 2>&1 || fail "stale prefix: fixture pid $dead is still alive"
+git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$dead/w" HEAD >/dev/null 2>&1 \
+  || fail "stale prefix: could not add the dead-owner worktree"
+git -C "$wrepo" worktree add -q --detach "$wrepo/.worktrees/tmp/builder-$$/w" HEAD >/dev/null 2>&1 \
+  || fail "stale prefix: could not add the live-owner worktree"
+rm -f "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
+src=0
+(cd "$wrepo" && STUB_MODE=ok PATH="$tmp/wbin:$PATH" "$here/run.sh" builder L1 h.md >/dev/null 2>"$tmp/werr") || src=$?
+[[ "$src" == 0 ]] || fail "stale prefix: run.sh exited $src, want 0 ($(cat "$tmp/werr"))"
+[[ ! -e "$wrepo/.worktrees/tmp/builder-$dead" ]] || fail "stale prefix: dead-owner prefix builder-$dead is still on disk"
+swl=$(git -C "$wrepo" worktree list --porcelain)
+! grep -qF "/builder-$dead/w" <<<"$swl" \
+  || fail "stale prefix: dead-owner worktree builder-$dead/w is still in git worktree list"
+[[ -d "$wrepo/.worktrees/tmp/builder-$$/w" ]] || fail "stale prefix: live-owner worktree builder-$$/w was removed from disk"
+grep -qF "/builder-$$/w" <<<"$swl" \
+  || fail "stale prefix: live-owner worktree builder-$$/w is no longer in git worktree list"
+git -C "$wrepo" worktree remove --force --force "$wrepo/.worktrees/tmp/builder-$$/w" >/dev/null 2>&1 || true
+rm -rf "$wrepo/.worktrees"
+git -C "$wrepo" worktree prune >/dev/null 2>&1 || true
+[[ "$(git -C "$wrepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stale prefix: cleanup left a worktree"
+
+# Term cleanup: a stub that adds a worktree under its prefix and ignores TERM (sleep inherits the
+# ignore through exec) must still leave nothing behind when the run gets TERM: run.sh stops the
+# stub and cleans up inside run_lifecycle.py's 5 s grace, before its SIGKILL.
+mkdir -p "$tmp/tbin"
+cat >"$tmp/tbin/claude" <<'EOF'
+#!/usr/bin/env bash
+trap '' TERM
+git worktree add -q --detach "$SDLC_TMP_WORKTREES/w" HEAD >/dev/null 2>&1 \
+  || { echo "stub: git worktree add failed" >&2; exit 9; }
+echo "$$" >"$STUB_READY.tmp" && mv "$STUB_READY.tmp" "$STUB_READY"
+exec sleep 30
+EOF
+chmod +x "$tmp/tbin/claude"
+rm -f "$tmp/term.ready" "$wrepo"/*-L*.md "$wrepo"/*.log "$wrepo"/*.attempt.json "$wrepo/runs.jsonl"
+(cd "$wrepo" || exit 1; export STUB_READY="$tmp/term.ready" PATH="$tmp/tbin:$PATH"
+  exec "$here/run.sh" builder L1 h.md) >/dev/null 2>"$tmp/terr" &
+tpid=$!
+for (( i = 0; i < 300; i++ )); do
+  [[ -s "$tmp/term.ready" ]] && break
+  kill -0 "$tpid" 2>/dev/null || break
+  sleep 0.1
+done
+if [[ ! -s "$tmp/term.ready" ]]; then
+  kill -KILL "$tpid" 2>/dev/null || true
+  fail "term cleanup: the stub never wrote its ready marker ($(cat "$tmp/terr"))"
+fi
+stub_pid=$(cat "$tmp/term.ready")
+kill -TERM "$tpid"
+trc=0
+wait "$tpid" || trc=$?
+[[ "$trc" == 143 ]] || fail "term cleanup: run.sh exited $trc after TERM, want 143 ($(cat "$tmp/terr"))"
+left=$(git -C "$wrepo" worktree list --porcelain | sed -n 's/^worktree //p' | grep -F '/.worktrees/tmp/' || true)
+[[ -z "$left" ]] || fail "term cleanup: a worktree under .worktrees/tmp is still registered: $(tr '\n' ' ' <<<"$left")"
+[[ ! -e "$wrepo/.worktrees/tmp" ]] || fail "term cleanup: $wrepo/.worktrees/tmp is left over"
+if ps -p "$stub_pid" >/dev/null 2>&1; then
+  kill -KILL "$stub_pid" 2>/dev/null || true
+  fail "term cleanup: the stub claude (pid $stub_pid) is still alive"
+fi
 
 # Build base: a third stub records ${SDLC_BASE_SHA:-unset}. Builder and verifier runs resolve and
 # store <step dir>/base-sha; other roles see unset and write none; a dry run writes none.
