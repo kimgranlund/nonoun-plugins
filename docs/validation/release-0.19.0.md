@@ -21,6 +21,7 @@ Every role behavior change above was built by a builder role and checked by an i
 
 - `gpt-6-luna` (scout L1 on Codex) is rejected on a ChatGPT account, like `gpt-6-sol` was. It was not part of the T-0163 decision and is still pending a user decision (`docs/codex-role-execution.md`, T-0163 follow-ups in `.sdlc/notes.md`). Codex scout runs fail on such an account until then.
   Correction, 2026-09-30: this limit held on Codex CLI 0.154.0. On CLI 0.159.2 `gpt-6-luna` completes live turns on that account, and the scout is on `gpt-6-luna` again (`docs/validation/codex-account-models-2026-09-30.md`).
+  Later the same day the scout moved to `gpt-5.6-terra` low under the user's Claude-tier mirror; the current mapping is in `docs/codex-role-execution.md`.
 - With no `verifier_alternates` configured, Codex verification is not model-independent. The run records it.
 - The conductor routing probe did not reproduce the reported bypass with either 0.18.0 or this version (`docs/validation/role-routing-probe.md`). Hook enforcement is T-0166, not in this release.
 - A project that installed 0.18.0 Codex agents and then runs `codex_roles.py install` for 0.19.0 keeps the three `sdlc-verifier-lN-alternate.toml` files from 0.18.0 (one pinned to `gpt-6-sol`). They are outside the receipt and the generated `.gitignore`, `install --check` reports the agents current, and the runner never selects them while no alternate is configured. Remove them by hand.
