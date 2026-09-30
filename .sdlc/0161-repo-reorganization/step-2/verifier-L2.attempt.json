@@ -1,0 +1,20 @@
+{
+  "attempt_id": "552e8911de5f4625b2bc67aa038f5379",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "high",
+  "routing_reason": "verifier L2: derived from build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T01:13:46.721882+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/spike",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/spike/.sdlc/0161-repo-reorganization/step-2/handoff.md",
+  "owner_pid": 80735,
+  "process_pid": 80786,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T01:14:29.912718+00:00"
+}
