@@ -18,9 +18,12 @@
 # repo-wide format script or formatter (npm run format, make fmt, prettier --write ., eslint
 # --fix src, cargo fmt, go fmt ./..., one behind cd x && or inside bash -c) with a stderr
 # naming the role and builder rule 6, and allows explicit file paths, npm test, a quoted
-# mention, and every other role or no role.
-# Publish phrases and kill-pattern words are built with printf so this file never holds one
-# as a command.
+# mention, and every other role or no role. block-disk-scan.sh, inside a role run, blocks a
+# search of the whole filesystem or a home folder (find, bfs, rg, grep -r on /, ~, "$HOME",
+# /Users, also behind sudo or inside bash -c) with a stderr naming the role, and allows
+# find ., a path below those roots, ls / without -R, a quoted mention, and no role.
+# Publish phrases, kill-pattern words, and root-search phrases are built with printf so this
+# file never holds one as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
 # Prints "hook selftest: PASS" or "hook selftest: FAIL: <case>" and exits non-zero on failure.
 set -uo pipefail
@@ -31,6 +34,7 @@ pub="$hooks/block-publish.sh"
 pk="$hooks/block-pattern-kill.sh"
 sw="$hooks/block-stray-worktree.sh"
 rf="$hooks/block-repo-format.sh"
+ds="$hooks/block-disk-scan.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -274,6 +278,28 @@ for c in "${rfblock[@]}"; do
   run "$rf" "$(pj "$c")" SDLC_ROLE=verifier >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-repo-format verifier allows '$c': exit $rc, want 0"
 done
+
+# block-disk-scan.sh: inside a role run, a search of the whole filesystem or a home folder is
+# blocked; a bounded path, ls without -R, a quoted mention, and no role pass.
+fw=$(printf 'f%s' ind); bw=$(printf 'b%s' fs); rw=$(printf 'r%s' g); gw=$(printf 'g%s' rep)
+# shellcheck disable=SC2016
+hv='"$HOME"'
+out=$(run "$ds" "$(pj "$fw / -name quick_validate.py -path \"*skill*\" 2>/dev/null | head -3")" SDLC_ROLE=planner); rc=$?
+[[ $rc -eq 2 ]] || fail "block-disk-scan blocks the T-0160 repro: exit $rc, want 2"
+grep -q planner <<<"$out" || fail "block-disk-scan T-0160 repro: stderr lacks the role"
+for c in "$bw / -name x" "$fw ~ -name x" "$fw $hv -name x" "$fw /Users -name x" "$rw -l x /" \
+  "$gw -r x ~" "sudo $fw / -name x" "bash -c \"$fw / -name x\""; do
+  out=$(run "$ds" "$(pj "$c")" SDLC_ROLE=scout); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-disk-scan blocks '$c': exit $rc, want 2"
+  grep -q scout <<<"$out" || fail "block-disk-scan '$c': stderr lacks the role"
+done
+for c in "$fw . -name x" "$fw /tmp/x -name y" "$fw ~/.claude/plugins -name x" "ls /" \
+  "$gw -n \"$fw / -name x\" notes.md"; do
+  run "$ds" "$(pj "$c")" SDLC_ROLE=planner >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-disk-scan allows '$c': exit $rc, want 0"
+done
+run "$ds" "$(pj "$fw / -name x")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-disk-scan without role: exit $rc, want 0"
 
 a_absent='{"tool_name":"Agent","tool_input":{"prompt":"x"}}'
 a_on='{"tool_name":"Agent","tool_input":{"prompt":"x","run_in_background":true}}'
