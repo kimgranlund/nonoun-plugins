@@ -107,6 +107,8 @@ PLAN_DEFECT_DOCS = {
                           'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md'),
     'sha fixed at plan time': ('agents/planner.md', 'scripts/steps.py'),
     'owns that budget': ('agents/planner.md',),
+    'steps.py widen': ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
+                       'skills/level-rubric/SKILL.md', 'scripts/steps.py'),
     'gates green': ('agents/planner.md',),
     'one Bash call': ('agents/planner.md',),
     'can go red': ('agents/planner.md',),
