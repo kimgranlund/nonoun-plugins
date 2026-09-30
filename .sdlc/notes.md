@@ -93,3 +93,8 @@
 - decide: The ticket's Repro and Actual were placeholders, and gen-ui's lane logs and `stepn.sh` were never available. If gen-ui's conductor picked the right step dir and `next` misread it, this fix does not cover that case. Someone should compare against the gen-ui evidence.
 - note: The resume rule in the chain skill (including running `run_lifecycle.py recover` first) is prose. No automated check proves a conductor follows it before `resume`.
 - note: shellcheck is not installed on the host, so `check.sh` skipped that part and it stayed unverified.
+
+## T-0153: Ticket depends can name a capability or file, not only a whole ticket (2026-09-29)
+
+- note: shellcheck is not installed on the build machine, so the shellcheck part of `check.sh` was skipped and is unverified.
+- note: fanout lane scheduling does not read `depends`, so `file:` and `cap:` entries do not affect lane scheduling. The ticket lists this as a non-goal.
