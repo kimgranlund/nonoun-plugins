@@ -158,7 +158,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0151 | [.0151-fanout-reset-guards-dirty-tree](.0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | 🟢 done |
 | T-0152 | [0152-external-lane-owners](0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | 🔵 ready |
 | T-0153 | [.0153-depends-on-capability](.0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | 🟢 done |
-| T-0154 | [0154-nested-tmp-worktrees](0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | 🔵 ready |
+| T-0154 | [.0154-nested-tmp-worktrees](.0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | 🟢 done |
 | T-0155 | [.0155-trace-run-ids](.0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | S | P2 | none | 🟢 done |
 | T-0156 | [.0156-per-attempt-gate-logs](.0156-per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | S | P2 | none | 🟢 done |
 | T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | 🔵 ready |

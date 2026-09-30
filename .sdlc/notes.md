@@ -98,3 +98,9 @@
 
 - note: shellcheck is not installed on the build machine, so the shellcheck part of `check.sh` was skipped and is unverified.
 - note: fanout lane scheduling does not read `depends`, so `file:` and `cap:` entries do not affect lane scheduling. The ticket lists this as a non-goal.
+
+## T-0154: Builders inside a lane leave nested tmp worktrees behind (2026-09-29)
+
+- note: The reaper keeps a stale prefix whose dead pid was reused by an unrelated live process until that process exits. This is conservative and never destructive.
+- note: The root cause of the 2026-09-28 leftovers is inferred from the code. The lane logs in the other repo were not reachable, and a live claude's shutdown time under TERM is not shown by the selftests.
+- note: `check.sh` skipped shellcheck because it is not installed on the build host, so the new shell scripts were not linted.
