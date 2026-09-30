@@ -8,8 +8,8 @@ On 2026-09-30 the user moved Claude planner L3 (cross-cutting plans and every re
 
 Recorded cost from `runs.jsonl` across this repository's `.sdlc/` folders, at list price, with bench runs and lane worktrees excluded:
 
-- 912 recorded role runs; Fable was 44 of them (5%).
-- Fable was about $164 of $537 (31%) of recorded cost.
+- About 900 recorded role runs (912 when counted); Fable was about 44 of them (5%).
+- Fable was about $164 of $537 (31%) of recorded cost. These totals are approximate: the verifier reproduced them only to within about 1% from a later tree.
 - Planner L3 was the largest Fable item: 18 runs, about $103.
 
 ## Consequence
