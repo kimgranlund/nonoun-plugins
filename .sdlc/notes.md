@@ -46,3 +46,15 @@
 - note: the fix protects only a `run.sh` child that has already started. A role that corrupts `run.sh` still breaks later runs, and the hook option to refuse role writes to `run.sh` and `run_lifecycle.py` was not built.
 - note: the criteria's one-line worktree negative controls are blocked by `block-stray-worktree.sh` in role runs, so verifiers must split them into separate commands.
 - note: shellcheck was not installed, so the changed `run.sh` was never shellchecked.
+## T-0162: Planner names the entry files each step needs (2026-09-29)
+
+- note: `check.sh` skipped shellcheck (not installed), so the shell-lint part of the release gate was not run for this change.
+- note: The Codex live run put builder and verifier on one model (`gpt-6-astra`, `shared_with_builder=yes`), so it does not show independent verification on Codex.
+- note: In the live run, the Codex reads were combined `cat` commands, and the report records that the evidence is the read, not rule compliance.
+
+## T-0163: Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account (2026-09-29)
+
+- decide: Scout L1 still uses `gpt-6-luna`, which a ChatGPT account rejects, so Codex scout runs fail there until the user picks a replacement or accepts it.
+- decide: No live `scripts/run.sh` run with the Codex backend on a ChatGPT account was made. The root AGENTS.md asks for a focused live run in a throwaway project for changed role behavior.
+- note: `docs/validation/native-codex-smoke.json` hashes the deleted alternate TOMLs. It was left as historical evidence, and it may look stale next to the current agent set.
+- note: Projects that installed the old agents keep stale `sdlc-verifier-lN-alternate` TOMLs in `.codex/agents/`, because `install` does not remove files it no longer generates. They are unused while no alternate is configured.

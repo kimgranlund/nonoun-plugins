@@ -1,0 +1,20 @@
+{
+  "attempt_id": "bf21c4e03ea641a2a3aab283b46e2fb9",
+  "name": "verifier-L3-2",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "release 0.19.0: second verifier pass after the record was corrected by the maintainer (doc-only edit)",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T01:25:58.900288+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/release-0.19.0/step-1/handoff.md",
+  "owner_pid": 67456,
+  "process_pid": 67569,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T01:38:12.483930+00:00"
+}
