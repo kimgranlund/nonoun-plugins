@@ -23,7 +23,7 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 7. Never compare a count over a set other lanes change (tickets, handoffs, files under a glob) with a fixed number. Instead, derive the set at run time, or check only the items this step adds. `steps.py split` refuses a glob, `ls`, or `find` count compared with a literal of 2 or more as a `plan defect`.
    - A negative check (`! grep -qF <text> <file>`) on a file that already holds that text never passes. Grep the file at base first; if the text is there, compare the count against `git show "$SDLC_BASE_SHA":<file>` instead.
 8. A criterion over a generated or aggregate budget (a catalog token size, an exact deviation list, a total across all tickets) belongs only to the ticket that owns that budget. Any other step checks only its own delta ("adds no new deviation") against a `git worktree add --detach <tmp> HEAD` copy, as in rule 3.
-9. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest. A `scope decision:` entry in `## Plan review` names paths the conductor allowed for that step: widen that step's scope criterion to hold them. This applies at replan time only; the plan-time scope-guard rules are unchanged.
+9. On a replan, read the handoff's `## Plan review` section, every `step-*/builder-*.md` with Status blocked, and every `step-*/verifier-*.md` whose For the next attempt starts with `plan defect:`. Fix that criterion or step, and keep the numbers and text of steps that already passed, so `steps.py split --only` can rewrite only the rest. A `scope decision:` entry in `## Plan review` names paths the conductor allowed for that step: widen that step's scope criterion to hold them. A `plan review:` entry in `## Plan review` quotes the plan-reviewer's findings, one `plan review: <verdict>: <finding>` line each: fix every step a finding names, and keep the numbers and text of steps it does not name. This applies at replan time only; the plan-time scope-guard rules are unchanged.
 10. When `## Plan review` holds a `recurring finding:` entry, the same finding came back after a rebuild or replan addressed it, so first ask whether the criterion, the step, or a rule is wrong. Land a concrete change: a rewritten criterion or step, or a changed Do whose text states why the rule holds. A replan that only adds commentary is not allowed.
 11. A `(guard)` is a check that can go red. Before writing one, within rule 1's read-only limits, see it red: run its un-negated form, or run it on a fixture or in a `git worktree add --detach <tmp> HEAD` copy where the property is absent, and keep in the criterion the exact command shape that went red (the same flags and the same output form: `vitest list` without `--filesOnly` prints test names, not file paths, so a path grep on it never matches; a cold-cache check that moves the wrong cache dir aside never runs cold). A guard, or a new-behavior criterion, whose red state cannot be observed on this host (a cold cache, a CI-only failure) is not a criterion: check the configuration or structure the step changes instead, and say in the Do that the runtime behavior is not proven by this step.
 12. A file other lanes also change (a generated index, a registry, a catalog, a shared config) is checked by membership or structure, never by an exact line or a whole-file comparison: `grep -qF` for the entry this step adds, or a parse that finds the key, so a main sync that extends the line or the file keeps the criterion green. An exact `children: [...]` line that main later extended stopped a lane.
@@ -70,12 +70,18 @@ level: L<n>
 - `<path/to/AGENTS.md>`
 (Only when the step changes files governed by a non-root entry; see Entry files.)
 ### Do
-What to change and where (paths).
+The implementation targets (paths and symbols); the settled interface decisions the step relies on or creates (names, signatures, keys, paths, formats), each with the evidence that settled it; the earlier steps it depends on (`Depends on: none` or `Depends on: step 2`); and the focused checks it runs. A design decision is never left to the builder ("choose a convention", "as you see fit"): settle it here with evidence, or list it as `unresolved:` under `## Assumptions`, because the plan-reviewer returns `blocked` for a step that depends on an unsettled decision.
 ### Acceptance criteria
 - <runnable or observable check>
 
 ## Step 2: <title>
 ...
+
+## Assumptions
+One list item per load-bearing assumption:
+- <assumption>: verified by <how> (a file:line, or a command you ran)
+- unresolved: <decision>: <what settles it> (a design decision the handoff, the artifacts, and the code do not settle)
+`steps.py split` ignores this section, because it copies only `## Step` blocks. `steps.py review` stops on an `unresolved:` item so the user decides.
 
 ## Risks
 What could make this plan wrong. "None" if nothing.
