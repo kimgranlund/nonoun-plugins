@@ -121,3 +121,10 @@
 - decide: the done-condition run on the gen-ui-system-svelte-lite traces of 2026-09-28 (batch 3, T-0148 to T-0154) was never run; the architect could not find that repo or `sdlc-feedback-batch3.md` on this machine, and no step's artifacts show the run. Supply the corpus or accept the synthetic and self-repo evidence.
 - decide: the handoff asks for scout or archaeologist at L2 for diagnosis, but the architect found only L1 for those roles in `run.sh`. The artifacts do not show how the skill settled this, so a person must accept L1 or authorize a model change.
 - note: the `overwritten-gate-log` corpus branch has never run here, because `.worktrees/fanout-night/logs` is absent on this host.
+
+## T-0171: Independent plan-reviewer role before implementation (2026-09-30)
+
+- decide: `steps.py review` is enforced only by docs, the `check.py` route words, and the `split` refusal, so a conductor that skips it on a plan with no reviewer result still splits and no script catches that.
+- note: `verifier_alternates` and `shared_with_builder` keep their names while also serving the plan-reviewer, so the names understate their scope.
+- note: `/chain` 4.2 mid-build replans still go straight to `steps.py split --only` without `steps.py review`, and the 4.2 item text was left unchanged (step 3 builder note).
+- note: The bench comparison against the same tasks without the reviewer is not done, and it is required before any claim the reviewer helps.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Order role results (<role>-L*.md) in a step or task dir by recorded run order.
+"""Order role results (<role>-L*.md, a role such as plan-reviewer may hold hyphens) in a step or task dir by recorded run order.
 
 Usage: order.py newest <dir> <role>   print the newest result path for the role, or nothing
        order.py selftest              prove the ordering rule on temp fixtures
@@ -19,8 +19,8 @@ Importable from the same scripts/ dir: records, ordered, newest, counts_after.
 """
 import json, os, re, sys, tempfile
 
-RESULT = re.compile(r'^([a-z]+)-L(\d+)(?:-(\d+))?\.md$')
-LOOSE = re.compile(r'^([a-z]+)-L(\d+)')
+RESULT = re.compile(r'^([a-z][a-z-]*)-L(\d+)(?:-(\d+))?\.md$')
+LOOSE = re.compile(r'^([a-z][a-z-]*)-L(\d+)')
 
 
 def records(d):
@@ -211,6 +211,18 @@ def selftest():
                     times={'planner-L2.md': 1_700_000_100, 'planner-L2-2.md': 1_700_000_900})
         check('(e) bad lines skipped', [i for i, _ in records(d)] == [0, 4])
         check('(e) newest after bad lines', base(newest(d, 'planner')) == 'planner-L2.md')
+
+        # (f) hyphenated role: recorded order by runs.jsonl line, not file time; role 'plan' finds nothing.
+        d = fixture(['plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'],
+                    [rec('plan-reviewer', 'L1', 'plan-reviewer-L1-2.md'),
+                     rec('plan-reviewer', 'L1', 'plan-reviewer-L1.md')],
+                    times={'plan-reviewer-L1.md': 1_700_000_100, 'plan-reviewer-L1-2.md': 1_700_000_900})
+        check('(f) plan-reviewer results order by line, not by file time',
+              [base(p) for p in ordered(d, 'plan-reviewer')]
+              == ['plan-reviewer-L1-2.md', 'plan-reviewer-L1.md'])
+        check('(f) newest plan-reviewer is the last recorded file',
+              base(newest(d, 'plan-reviewer')) == 'plan-reviewer-L1.md')
+        check('(f) role plan finds nothing', newest(d, 'plan') is None and ordered(d, 'plan') == [])
 
     if misses:
         print('order selftest: FAIL, these did not hold:', file=sys.stderr)

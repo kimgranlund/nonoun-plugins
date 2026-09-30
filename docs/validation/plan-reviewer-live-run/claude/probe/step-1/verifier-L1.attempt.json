@@ -1,0 +1,20 @@
+{
+  "attempt_id": "968e96702586406eb3e89d40b3962f94",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-09-30T16:22:08.820322+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude/.sdlc/probe/step-1/handoff.md",
+  "owner_pid": 8708,
+  "process_pid": 8730,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T16:22:45.620519+00:00"
+}

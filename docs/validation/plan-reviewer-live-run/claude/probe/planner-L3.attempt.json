@@ -1,0 +1,20 @@
+{
+  "attempt_id": "385dca41cdbe4b45ad85df17ada3a1af",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-09-30T16:18:52.425381+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude/.sdlc/probe/handoff.md",
+  "owner_pid": 6525,
+  "process_pid": 6541,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T16:21:19.261418+00:00"
+}

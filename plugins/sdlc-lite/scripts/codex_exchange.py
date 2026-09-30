@@ -45,7 +45,8 @@ def _wait_for_agent(role, level, prompt, model, effort, request_file, timeout):
         raise ValueError('native exchange already exists: ' + str(request))
     agent = f'sdlc-{role}-{level.lower()}'
     default_model = codex_roles.models()[role][level][0]
-    if role == 'verifier' and model != default_model:
+    # A PAIRED checking role (verifier, plan-reviewer) moved off its default model runs its alternate profile.
+    if role in codex_roles.PAIRED and model != default_model:
         agent += '-alternate'
     context = '\n'.join(f'{key}={os.environ[key]}' for key in ('SDLC_BASE_SHA','SDLC_TMP_WORKTREES') if key in os.environ)
     message = 'Project working directory: ' + str(Path.cwd()) + '\nRun all project commands from that directory, even if your default cwd differs.\n' + prompt + '\n\nRunner context (use these exact values in commands when needed):\n' + context

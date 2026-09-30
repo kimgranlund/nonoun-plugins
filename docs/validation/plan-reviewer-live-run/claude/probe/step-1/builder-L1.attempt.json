@@ -1,0 +1,20 @@
+{
+  "attempt_id": "01ee1bdb4d9d405db5e449324b3eb445",
+  "name": "builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "low",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-09-30T16:21:57.347480+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude/.sdlc/probe/step-1/handoff.md",
+  "owner_pid": 8479,
+  "process_pid": 8499,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T16:22:05.446686+00:00"
+}

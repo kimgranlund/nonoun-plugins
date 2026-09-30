@@ -295,6 +295,63 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
                 probe=json.loads((self.base/'probe.json').read_text())
                 self.assertEqual(probe['args'][probe['args'].index('--model')+1],model)
 
+    def test_plan_reviewer_alternate_follows_newest_planner(self):
+        from unittest import mock
+        planner=self.step/'planner-L3.md'
+        planner.write_text('<!-- role=planner level=L3 model=gpt-6-astra effort=high -->\n## Goal\nx\n')
+        self.assertEqual(codex_roles.resolve('plan-reviewer','L1',self.step),('gpt-6.1-sol','high',False))
+        with mock.patch.object(codex_roles,'verifier_alternates',return_value={}):
+            self.assertEqual(codex_roles.resolve('plan-reviewer','L1',self.step),('gpt-6-astra','high',True))
+        planner.unlink()
+        (self.step/'planner-L2.md').write_text('<!-- role=planner level=L2 model=gpt-6.1-sol effort=high -->\n## Goal\nx\n')
+        self.assertEqual(codex_roles.resolve('plan-reviewer','L1',self.step),('gpt-6-astra','high',False))
+        defs=dict(codex_roles.definitions())
+        self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['model'],'gpt-6.1-sol')
+        self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['model_reasoning_effort'],'high')
+        self.assertEqual(defs['sdlc-plan-reviewer-l1-alternate']['sandbox_mode'],'read-only')
+
+    def test_runner_records_plan_reviewer_alternate_agent(self):
+        import codex_exchange
+        codex_roles.install(self.repo)
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(DEADLINE))
+        planner=self.step/'planner-L3.md'
+        planner.write_text('<!-- role=planner level=L3 model=gpt-6-astra effort=high -->\n## Goal\nx\n')
+        proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'plan-reviewer','L1',str(self.handoff)],
+                              cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        request=self.step/'plan-reviewer-L1.request.json'
+        try:
+            self.wait_for(request.exists,directory=self.step,owner=proc)
+            payload=json.loads(request.read_text())
+            self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1-alternate')
+            self.assertEqual(payload['model'],'gpt-6.1-sol')
+            report=self.step/'child-report.txt';report.write_text('## Verdict\npass\n\n## Findings\nNone\n')
+            codex_exchange.respond(request,report)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,0,stderr)
+            header=(self.step/'plan-reviewer-L1.md').read_text().splitlines()[0]
+            self.assertIn('model=gpt-6.1-sol',header)
+            record=json.loads((self.step/'runs.jsonl').read_text().splitlines()[-1])
+            self.assertEqual(record['role'],'plan-reviewer')
+            self.assertEqual(record['model'],'gpt-6.1-sol')
+            self.assertIs(record['shared_with_builder'],False)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        # Negative control: a Sol plan keeps the reviewer on its default Astra profile.
+        planner.write_text('<!-- role=planner level=L3 model=gpt-6.1-sol effort=high -->\n## Goal\nx\n')
+        proc=subprocess.Popen(['bash',str(ROOT/'scripts/run.sh'),'plan-reviewer','L1',str(self.handoff)],
+                              cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        request=self.step/'plan-reviewer-L1-2.request.json'
+        try:
+            self.wait_for(request.exists,directory=self.step,owner=proc)
+            payload=json.loads(request.read_text())
+            self.assertEqual(payload['agent'],'sdlc-plan-reviewer-l1')
+            self.assertEqual(payload['model'],'gpt-6-astra')
+            codex_exchange.respond(request,report)
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+            self.assertEqual(proc.returncode,0,stderr)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+
     def test_definitions_match_shared_contracts(self):
         for name,data in codex_roles.definitions():
             self.assertEqual(codex_roles.loads(ROOT/'adapters/codex/agents'/(name+'.toml')),data)
