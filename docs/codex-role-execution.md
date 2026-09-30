@@ -22,7 +22,7 @@ SDLC_BACKEND=codex python3 /path/to/sdlc-lite/scripts/fanout.py run lane=T-0001 
 SDLC_BACKEND=codex /path/to/sdlc-lite/scripts/bench.sh example
 ```
 
-There are 19 project agent definitions while no verifier alternate is configured; each configured alternate adds one alternate verifier definition. The project agents include `sdlc-builder-l1` through `sdlc-builder-l5`, three levels each of planner/verifier/researcher, and one each of scout/architect/archaeologist/filer/conductor. Ask Codex to delegate to one by name and give it a self-contained handoff. Direct delegation returns a report; the pipeline runner additionally validates and records that report. Use the runner for build/verify steps and the board.
+There are 22 project agent definitions: 19 base definitions and three alternate verifier definitions. The project agents include `sdlc-builder-l1` through `sdlc-builder-l5`, three levels each of planner/verifier/researcher, and one each of scout/architect/archaeologist/filer/conductor. Ask Codex to delegate to one by name and give it a self-contained handoff. Direct delegation returns a report; the pipeline runner additionally validates and records that report. Use the runner for build/verify steps and the board.
 
 The `--conductor` option adds a short managed block to the project's top-level `developer_instructions` in `.codex/config.toml`. It tells the main session to load the installed `sdlc-lite` skill and coordinate delivery through the configured workflows and roles. Existing developer instructions, settings, and comments are preserved; repeated setup is idempotent, and `conductor-off` removes only the managed block. Ordinary `install` never opts an existing project in. Run `install ... --conductor --check` to check both agent definitions and conductor guidance. Codex loads project config only for trusted projects, and a new session is needed to pick up changes. This is developer guidance for the main session, not a native named-main-agent binding. See the [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
@@ -30,17 +30,18 @@ The `--conductor` option adds a short managed block to the project's top-level `
 
 | Role | L1 | L2 | L3 | L4 | L5 |
 |---|---|---|---|---|---|
-| Builder | Astra low | Astra medium | Astra high | Astra high | Astra xhigh |
-| Planner | Astra medium | Astra high | Astra high | | |
-| Verifier | Astra medium | Astra high | Astra high | | |
-| Researcher | Astra medium | Astra high | Astra high | | |
-| Scout | Luna high | | | | |
+| Builder | Luna low | Sol 6.1 low | Sol 6.1 medium | Sol 6.1 high | Sol 6.1 xhigh |
+| Planner | Sol 6.1 medium | Sol 6.1 high | Astra high | | |
+| Verifier | Luna low | Luna medium | Astra high | | |
+| Researcher | Luna medium | Sol 6.1 medium | Sol 6.1 high | | |
+| Scout | Terra 5.6 low | | | | |
 | Architect | Astra high | | | | |
-| Archaeologist, filer, conductor | Astra medium | | | | |
+| Archaeologist, filer | Luna medium | | | | |
+| Conductor | Astra medium | | | | |
 
-These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. When a pipeline verifier's model matches the latest builder's model, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`. The selected model is recorded in the result and run log.
+These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. When a pipeline verifier's model matches the latest builder's model, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`. The selected model is recorded in the result and run log. The current alternates map `gpt-6-luna` and `gpt-6-astra` to `gpt-6.1-sol`, so a verifier that would share its builder's model runs on `gpt-6.1-sol` at the verifier's configured effort. With the default allocation the only builder and verifier pair that shares a model is builder L1 and verifier L1, both Luna; other role defaults stay as listed above.
 
-Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. Luna for scout is kept pending a user decision. API-key accounts were not tested.
+Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. On 2026-09-30 the scout was briefly moved to `gpt-6-astra` on the strength of those 0.154.0 probes. API-key accounts were not tested. After updating the CLI to 0.159.2 on 2026-09-30, account discovery listed `gpt-6.1-sol`, `gpt-6-sol`, and `gpt-6-luna`, and all completed live turns. `gpt-6.1-sol` is now the configured verifier alternate, preserving the existing Astra role defaults. The user then returned scout L1 to `gpt-6-luna` at effort `high`, because luna completes live turns on CLI 0.159.2. On 2026-09-30 the user mirrored the Claude tiers: Opus maps to `gpt-6.1-sol`, Fable to `gpt-6-astra`, Sonnet to `gpt-6-luna`, Haiku to `gpt-5.6-terra`, with the Claude effort, and verifier alternates mirror the Claude family rule. See the [dated account and role validation report](validation/codex-account-models-2026-09-30.md) for exact IDs, limits, and attempt evidence. Later on 2026-09-30 the user adopted a role-based allocation for planner, builder, and verifier, proposed by the Codex session, replacing the Claude-tier mirror for those roles. It is a proposed setting, not a demonstrated performance equivalent.
 
 ## Boundaries
 
@@ -73,7 +74,7 @@ The conductor does not receive extra network or Codex-home write permissions. Be
 For fanout or benchmark launchers inside Codex, select the subagent transport too. Their waiting native conductor requests appear in `.sdlc/native-conductor-*.request.json` under each driver's project directory. The parent dispatches them and submits actual reports using the same exchange. This requires sufficient native delegation depth and concurrency; capacity or permission failures must be reported. Standalone terminal launchers use exec for the conductor and native exchange for its children.
 
 
-The live native builder/verifier sequence also passed using `sdlc-builder-l1` and `sdlc-verifier-l1-alternate`. The initial native verifier reported a sandbox-blocked worktree probe. The fixture then specified an in-memory baseline probe under the same acceptance assertion; a fresh verification passed without permission changes. Both outcomes were retained. [Smoke-test evidence and source hashes](validation/native-codex-smoke.json) bind these observations to the exercised implementation. That alternate profile is generated only when `verifier_alternates` in `models.json` configures one; the defaults configure none.
+The live native builder/verifier sequence also passed using `sdlc-builder-l1` and `sdlc-verifier-l1-alternate`. The initial native verifier reported a sandbox-blocked worktree probe. The fixture then specified an in-memory baseline probe under the same acceptance assertion; a fresh verification passed without permission changes. Both outcomes were retained. [Smoke-test evidence and source hashes](validation/native-codex-smoke.json) bind these observations to the exercised implementation. Alternate profiles are generated only when `verifier_alternates` in `models.json` configures one. This smoke test predates the alternate mapping described above.
 
 The final `scripts/check.sh` run passed, including all 13 Codex backend tests, shared workflow and runner regressions, hook fixtures, shellcheck, and Claude plugin validation.
 

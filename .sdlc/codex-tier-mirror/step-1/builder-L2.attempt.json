@@ -1,0 +1,20 @@
+{
+  "attempt_id": "027dd0aa5b424642b8dea5d66bdf3ffb",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "/fix fast lane: data mapping plus generated agents, selftest fixtures and one doc table, builder L2: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T14:37:44.677260+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/codex-tier-mirror/step-1/handoff.md",
+  "owner_pid": 27792,
+  "process_pid": 27805,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T14:38:51.765232+00:00"
+}

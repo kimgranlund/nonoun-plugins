@@ -1,0 +1,23 @@
+{
+  "cli_version": "0.159.2",
+  "configured_model": "gpt-6.1-sol",
+  "configured_effort": "high",
+  "model_override": false,
+  "effort_override": false,
+  "sandbox": "read-only",
+  "completion_events": [
+    {
+      "type": "turn.completed",
+      "usage": {
+        "input_tokens": 19275,
+        "cached_input_tokens": 12288,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 8,
+        "reasoning_output_tokens": 0
+      }
+    }
+  ],
+  "final_messages": [
+    "MODEL_PROBE_OK"
+  ]
+}

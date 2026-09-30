@@ -1,0 +1,20 @@
+{
+  "attempt_id": "796caccdd3464e869ee59677e80f6274",
+  "name": "builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "codex",
+  "transport": "exec",
+  "model": "gpt-6-astra",
+  "effort": "low",
+  "routing_reason": "User-requested proof on updated CLI 0.159.2; L1 one-file fixture, preserve Astra 6.0 builder default",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T13:41:59.612363+00:00",
+  "project": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project",
+  "handoff": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project/.sdlc/model-pair/step-1/handoff.md",
+  "owner_pid": 93844,
+  "process_pid": 93868,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T13:42:32.041556+00:00"
+}

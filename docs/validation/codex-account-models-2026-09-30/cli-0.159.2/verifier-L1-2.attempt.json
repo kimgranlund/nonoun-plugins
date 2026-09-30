@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d970b7aaf4d44a088b14d455a9e9d182",
+  "name": "verifier-L1-2",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "codex",
+  "transport": "exec",
+  "model": "gpt-6.1-sol",
+  "effort": "medium",
+  "routing_reason": "Rerun final 6.1 Sol verifier after its specific historical-guidance finding was corrected; mapping and fixture unchanged",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T13:49:55.367732+00:00",
+  "project": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project",
+  "handoff": "/private/tmp/sdlc-codex-account-20260930/cli-0.159.2/project/.sdlc/model-pair/step-1/handoff.md",
+  "owner_pid": 8460,
+  "process_pid": 8485,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T13:53:07.854317+00:00"
+}

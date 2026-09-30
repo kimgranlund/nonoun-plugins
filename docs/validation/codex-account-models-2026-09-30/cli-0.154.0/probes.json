@@ -1,0 +1,154 @@
+[
+  {
+    "model": "gpt-6-astra",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 6.44,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 18484,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-reserve",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.42,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17660,
+      "cached_input_tokens": 5888,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-sol",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 6.75,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17533,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-terra",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.99,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17533,
+      "cached_input_tokens": 5888,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.6-luna",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 4.75,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17533,
+      "cached_input_tokens": 9984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-5.5",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 5.72,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 19119,
+      "cached_input_tokens": 2432,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "codex-auto-review",
+    "exit_code": 0,
+    "completed": true,
+    "duration_seconds": 4.38,
+    "final_messages": [
+      "MODEL_PROBE_OK"
+    ],
+    "errors": [],
+    "usage": {
+      "input_tokens": 17124,
+      "cached_input_tokens": 9984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 8,
+      "reasoning_output_tokens": 0
+    }
+  },
+  {
+    "model": "gpt-6.1-sol",
+    "exit_code": 1,
+    "completed": false,
+    "duration_seconds": 3.77,
+    "final_messages": [],
+    "errors": [
+      "{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.\"}}"
+    ],
+    "usage": null
+  },
+  {
+    "model": "gpt-6-sol",
+    "exit_code": 1,
+    "completed": false,
+    "duration_seconds": 3.41,
+    "final_messages": [],
+    "errors": [
+      "{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6-sol' model is not supported when using Codex with a ChatGPT account.\"}}"
+    ],
+    "usage": null
+  },
+  {
+    "model": "gpt-6-luna",
+    "exit_code": 1,
+    "completed": false,
+    "duration_seconds": 3.44,
+    "final_messages": [],
+    "errors": [
+      "{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6-luna' model is not supported when using Codex with a ChatGPT account.\"}}"
+    ],
+    "usage": null
+  }
+]
