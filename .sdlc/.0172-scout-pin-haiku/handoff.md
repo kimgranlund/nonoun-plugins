@@ -2,7 +2,7 @@
 id: T-0172
 title: "Pin the scout to claude-haiku-4-5"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -21,3 +21,7 @@ Not in this ticket: the Codex scout (`gpt-5.6-terra` low), the `haiku` default o
 
 ## Constraints
 Only the scout row changes model. Add a `check.py` guard that fails when the `scout:L1` row and the rubric disagree, with a negative control. Run `codex_roles.py generate --check` and the full `check.sh`. Live check: one scout run through `run.sh` whose `modelUsage` shows `claude-haiku-4-5`.
+
+## Closed
+
+2026-09-30: fixed in session by /fix: scout:L1 pins claude-haiku-4-5, check.py and the rubric follow, live scout run shows claude-haiku-4-5

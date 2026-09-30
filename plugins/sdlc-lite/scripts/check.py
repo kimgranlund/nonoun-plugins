@@ -47,11 +47,14 @@ import re, sys, pathlib, subprocess, tempfile, shutil
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent.parent)
 errors = []
 
-def cap(m): return m.capitalize()
+def cap(m):
+    """Alias -> "Sonnet"; pinned id claude-<family>-<major>-<minor> -> "Haiku 4.5"."""
+    pin = re.fullmatch(r'claude-([a-z]+)-(\d+)-(\d+)', m)
+    return f'{pin.group(1).capitalize()} {pin.group(2)}.{pin.group(3)}' if pin else m.capitalize()
 
 # run.sh: "  builder:L1)  model=sonnet; effort=low ;;"
 run = {}
-for role, lvl, model, effort in re.findall(r'^\s*([\w-]+):(L\d)\)\s*model=(\w+);\s*effort=(\w+)', (root/'scripts/run.sh').read_text(), re.M):
+for role, lvl, model, effort in re.findall(r'^\s*([\w-]+):(L\d)\)\s*model=([\w-]+);\s*effort=(\w+)', (root/'scripts/run.sh').read_text(), re.M):
     run[(role, lvl)] = f'{cap(model)} {effort}'
 if not run: errors.append('run.sh: no role:level cases parsed')
 
@@ -63,9 +66,9 @@ for line in (root/'skills/level-rubric/SKILL.md').read_text().splitlines():
     h = re.match(r'^## ([\w-]+) \(L', line)
     if h: role = h.group(1); continue
     if line.startswith('## '): role = None
-    m = re.match(r'^\| (L\d) \| (\w+ \w+) \|', line)
+    m = re.match(r'^\| (L\d) \| (\w+(?: \d+\.\d+)? \w+) \|', line)
     if m and role: rubric[(role, m.group(1))] = m.group(2)
-    m = re.match(r'^\| ([\w-]+) \| (L\d) \| (\w+ \w+) \|', line)
+    m = re.match(r'^\| ([\w-]+) \| (L\d) \| (\w+(?: \d+\.\d+)? \w+) \|', line)
     if m: rubric[(m.group(1), m.group(2))] = m.group(3)
 
 def compare(label, other):
@@ -74,6 +77,17 @@ def compare(label, other):
         elif k not in run: errors.append(f'{label}: has {k[0]}:{k[1]} = {other[k]}, run.sh does not')
         elif run[k] != other[k]: errors.append(f'{label}: {k[0]}:{k[1]} = {other[k]}, run.sh = {run[k]}')
 compare('level-rubric', rubric)
+# Scout pin guard: run.sh scout row and rubric scout row agree, with a built-in negative control.
+def scout_mismatch(run_text, rubric_text):
+    m = re.search(r'^\s*scout:L1\)\s*model=([\w-]+);\s*effort=(\w+)', run_text, re.M)
+    r = re.search(r'^\| scout \| L1 \| (\w+(?: \d+\.\d+)? \w+) \|', rubric_text, re.M)
+    return not (m and r and f'{cap(m.group(1))} {m.group(2)}' == r.group(1))
+_rs, _rb = (root/'scripts/run.sh').read_text(), (root/'skills/level-rubric/SKILL.md').read_text()
+if scout_mismatch(_rs, _rb): errors.append('run.sh scout:L1 and level-rubric scout row disagree')
+if cap('claude-haiku-4-5') != 'Haiku 4.5' or cap('sonnet') != 'Sonnet':
+    errors.append('check.py: cap() pinned-id mapping broken')
+if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku-9-9', _rs), _rb):
+    errors.append('check.py: scout pin guard negative control not flagged')
 
 SESSION_AGENTS = {'conductor'}  # run as the main session (settings "agent"), not through run.sh
 agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS

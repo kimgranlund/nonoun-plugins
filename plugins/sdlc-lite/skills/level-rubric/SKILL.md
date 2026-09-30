@@ -83,7 +83,7 @@ The verdict routes the plan:
 | Role | Level | Model / effort |
 |---|---|---|
 | architect | L1 | Fable high |
-| scout | L1 | Haiku low |
+| scout | L1 | Haiku 4.5 low |
 | archaeologist | L1 | Sonnet medium |
 | filer | L1 | Sonnet medium |
 | plan-reviewer | L1 | Opus high |
@@ -94,7 +94,7 @@ This section applies to any in-session Agent-tool spawn that has no run.sh role:
 
 Every such spawn states `model` explicitly. An unset `model` inherits the session's top model. Pick the seat by class of work:
 
-- Mechanical or gather-only work: `haiku`.
+- Mechanical or gather-only work: `haiku`. On the maintainer's login (Claude Code 2.1.285) the alias `haiku` resolves to Sonnet 5.5, and the Agent tool takes an alias, so this seat runs Sonnet there; the run.sh scout pins `claude-haiku-4-5`.
 - Search, review, and routine coding: `sonnet`, the default.
 - Judgment-heavy synthesis: `opus`.
 
