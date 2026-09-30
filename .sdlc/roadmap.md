@@ -152,18 +152,18 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0145 | [.0145-block-pattern-kill-sh-s](.0145-block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⚪ dropped |
 | T-0146 | [.0146-the-step-1-acceptance-criterion](.0146-the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | M | P2 | none | 🟢 done |
 | T-0147 | [.0147-a-compound-span-followed-by](.0147-a-compound-span-followed-by/handoff.md) | a compound span followed by &&, ;, or \|\| after its closing keyword... | idea | M | P2 | none | ⚪ dropped |
-| T-0148 | [0148-decisions-update-criteria](0148-decisions-update-criteria/handoff.md) | Conductor scope decisions update the acceptance criteria, not just prose | feature | M | P2 | none | ⏳ proposed |
-| T-0149 | [0149-trace-contract-dependents](0149-trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | M | P2 | none | ⏳ proposed |
-| T-0150 | [0150-resume-from-blocked-step](0150-resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | S | P2 | none | ⏳ proposed |
-| T-0151 | [0151-fanout-reset-guards-dirty-tree](0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | ⏳ proposed |
-| T-0152 | [0152-external-lane-owners](0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | ⏳ proposed |
-| T-0153 | [0153-depends-on-capability](0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | ⏳ proposed |
-| T-0154 | [0154-nested-tmp-worktrees](0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | ⏳ proposed |
-| T-0155 | [0155-trace-run-ids](0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | S | P2 | none | ⏳ proposed |
-| T-0156 | [0156-per-attempt-gate-logs](0156-per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | S | P2 | none | ⏳ proposed |
-| T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | ⏳ proposed |
+| T-0148 | [0148-decisions-update-criteria](0148-decisions-update-criteria/handoff.md) | Conductor scope decisions update the acceptance criteria, not just prose | feature | M | P2 | none | 🔵 ready |
+| T-0149 | [0149-trace-contract-dependents](0149-trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | M | P2 | none | 🔵 ready |
+| T-0150 | [0150-resume-from-blocked-step](0150-resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | S | P2 | none | 🔵 ready |
+| T-0151 | [0151-fanout-reset-guards-dirty-tree](0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | 🔵 ready |
+| T-0152 | [0152-external-lane-owners](0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | 🔵 ready |
+| T-0153 | [0153-depends-on-capability](0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | 🔵 ready |
+| T-0154 | [0154-nested-tmp-worktrees](0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | 🔵 ready |
+| T-0155 | [0155-trace-run-ids](0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | S | P2 | none | 🔵 ready |
+| T-0156 | [0156-per-attempt-gate-logs](0156-per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | S | P2 | none | 🔵 ready |
+| T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | 🔵 ready |
 | T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | S | P2 | none | 🟢 done |
-| T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | ⏳ proposed |
+| T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | 🔵 ready |
 | T-0160 | [.0160-repo-onboarding-skill](.0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | 🟢 done |
 | T-0161 | [.0161-repo-reorganization](.0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | M | P2 | T-0160 | 🟢 done |
 | T-0162 | [.0162-entry-files-in-step-handoffs](.0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🟢 done |
