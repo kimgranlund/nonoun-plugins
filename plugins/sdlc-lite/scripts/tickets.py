@@ -102,6 +102,15 @@ reuse an id. Outside git, or when git fails, the local root decides alone. A wor
 is skipped, and malformed tickets in another tree are ignored there. Branches not checked out in any
 worktree are not seen; check catches a clash after merge (duplicate id, naming both folders).
 
+Depends entries take three forms. T-NNNN names a ticket that must exist. file:<path> names a file relative
+to the git toplevel of the ticket root (else the root's parent dir); the path is non-empty, not absolute, and
+has no .. segment. It never orders tickets and a missing file is not an error. cap:<name> (name matches
+[A-Za-z0-9][A-Za-z0-9._-]*) names a capability that some ticket, any status, lists in its optional
+`provides: [<name>, ...]` front matter; it orders the ticket after every provider, so check also finds cycles
+through capabilities. Any other entry fails check. In the roadmap a file: entry reads `(unmet)` until the file
+exists and a cap: entry until a done ticket provides it. The roadmap goes stale when a named file appears or a
+provider closes, so rerun `roadmap` then.
+
 A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped,
 except a closed-ticket folder .NNNN-<slug>: it is a ticket in every mode and command (ids, depends, from,
 roadmap), and check fails it unless its status is done or dropped (rename it without the dot to reopen).
@@ -131,6 +140,7 @@ ENUMS = {
 }
 GLYPH = {'proposed': '⏳', 'ready': '🔵', 'blocked': '🔴', 'done': '🟢', 'dropped': '⚪'}
 ID_RE = re.compile(r'T-\d{4}')
+CAP_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]*')  # a capability name, fullmatch (cap:<name>, provides)
 DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
 SLUG_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 PREFIX_RE = re.compile(r'\d{4}-')
@@ -395,18 +405,63 @@ def deps_of(m):
     return d if isinstance(d, list) else []
 
 
+def dep_kind(d):
+    """'id' (T-NNNN), 'file' (file:<relative path, no ..>), 'cap' (cap:<name>), or None when malformed."""
+    if not isinstance(d, str):
+        return None
+    if ID_RE.fullmatch(d):
+        return 'id'
+    if d.startswith('file:'):
+        p = d[len('file:'):]
+        return 'file' if p and not p.startswith('/') and '..' not in p.split('/') else None
+    if d.startswith('cap:'):
+        return 'cap' if CAP_RE.fullmatch(d[len('cap:'):]) else None
+    return None
+
+
+def provides_of(m):
+    """The valid capability names m lists in `provides`; [] when absent or not a list."""
+    p = m.get('provides', [])
+    return [x for x in p if isinstance(x, str) and CAP_RE.fullmatch(x)] if isinstance(p, list) else []
+
+
+def providers(ts):
+    """{capability name: [id of every ticket, any status, that provides it]}. Tickets without a string id are left out."""
+    out = {}
+    for _, m in ts:
+        i = m.get('id')
+        if isinstance(i, str):
+            for name in provides_of(m):
+                out.setdefault(name, []).append(i)
+    return out
+
+
+def edges_of(m, prov):
+    """The ids m waits on: its T-NNNN entries plus every provider of each cap: entry. file: entries add none."""
+    out = set()
+    for d in deps_of(m):
+        k = dep_kind(d)
+        if k == 'id':
+            out.add(d)
+        elif k == 'cap':
+            out.update(prov.get(d[len('cap:'):], ()))
+    return out
+
+
 # ---------- validation ----------
 
 def order(ts):
     """Kahn's algorithm, ties by id ascending. Returns (ordered [(slug, meta)], {stuck id: its deps}, by_id).
-    Stuck ids sit on or behind a dependency cycle.
+    Stuck ids sit on or behind a dependency cycle. A cap:<name> entry is an edge to every ticket that provides
+    <name>; a file: entry is never an edge.
     Only tickets with a string id are placed; dangling depends are ignored here (problems() reports them)."""
     by_id = {}
     for slug, m in ts:
         i = m.get('id')
         if isinstance(i, str) and i not in by_id:
             by_id[i] = (slug, m)
-    need = {i: {d for d in deps_of(m) if d in by_id} for i, (_, m) in by_id.items()}
+    prov = providers(ts)
+    need = {i: {d for d in edges_of(m, prov) if d in by_id} for i, (_, m) in by_id.items()}
     users = {i: set() for i in by_id}
     for i, ds in need.items():
         for d in ds:
@@ -477,12 +532,25 @@ def problems(ts, numbered=False):
             errs.append(f'{slug}: created {m["created"]!r} is not YYYY-MM-DD')
         if 'depends' in m and not isinstance(m['depends'], list):
             errs.append(f'{slug}: depends {m["depends"]!r} is not a list like [T-0002]')
+        if 'provides' in m:
+            if not isinstance(m['provides'], list):
+                errs.append(f"{slug}: provides '{m['provides']}' is not a list like [name]")
+            else:
+                for x in m['provides']:
+                    if not (isinstance(x, str) and CAP_RE.fullmatch(x)):
+                        errs.append(f"{slug}: provides item '{x}' is not a name like [A-Za-z0-9][A-Za-z0-9._-]*")
         if 'from' in m and not isinstance(m['from'], str):
             errs.append(f'{slug}: from {m["from"]!r} is not a single ticket id')
+    prov = providers(ts)
     for slug, m in ts:
         for dep in deps_of(m):
-            if dep not in ids:
+            k = dep_kind(dep)
+            if k is None:
+                errs.append(f"{slug}: depends entry '{dep}' is not T-NNNN, file:<path> or cap:<name>")
+            elif k == 'id' and dep not in ids:
                 errs.append(f'{slug}: depends on {dep}, which no ticket has')
+            elif k == 'cap' and dep[len('cap:'):] not in prov:
+                errs.append(f'{slug}: depends on {dep}, which no ticket provides')
         f = m.get('from')
         if isinstance(f, str) and f not in ids:
             errs.append(f'{slug}: from {f}, which no ticket has')
@@ -493,12 +561,46 @@ def problems(ts, numbered=False):
 
 # ---------- roadmap ----------
 
-def render(ts):
+def file_base(root):
+    """The dir file:<path> entries resolve against: the git toplevel of root, else root's parent directory
+    (git missing or failing, or root outside git). GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped."""
+    anchor = root.resolve()
+    while not anchor.is_dir() and anchor != anchor.parent:
+        anchor = anchor.parent
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    try:
+        p = subprocess.run(['git', '-C', str(anchor), 'rev-parse', '--show-toplevel'], env=env,
+                           capture_output=True, text=True)
+        if p.returncode == 0 and p.stdout.strip():
+            return pathlib.Path(p.stdout.strip())
+    except OSError:
+        pass
+    return root.resolve().parent
+
+
+def render_dep(d, met_caps, base):
+    """One Depends on entry: T-NNNN as is; file:/cap: as is when met, else with ' (unmet)'; '|' escaped."""
+    k = dep_kind(d)
+    if k == 'file' and not (base() / d[len('file:'):]).exists():
+        d += ' (unmet)'
+    elif k == 'cap' and d[len('cap:'):] not in met_caps:
+        d += ' (unmet)'
+    return d.replace('|', '\\|')
+
+
+def render(ts, root):
     rows = ['| ID | Ticket | Title | Type | Size | Pri | Depends on | Status |',
             '|---|---|---|---|---|---|---|---|']
     ordered, _, _ = order(ts)
+    met_caps = {name for _, m in ts if m.get('status') == 'done' for name in provides_of(m)}
+    cache = []
+
+    def base():
+        if not cache:
+            cache.append(file_base(root))
+        return cache[0]
     for slug, m in ordered:
-        deps = ', '.join(m['depends']) or 'none'
+        deps = ', '.join(render_dep(d, met_caps, base) for d in m['depends']) or 'none'
         title = m['title'].replace('|', '\\|')
         rows.append(f"| {m['id']} | [{slug}]({slug}/handoff.md) | {title} | {m['type']} | {m['size']} | "
                     f"{m['priority']} | {deps} | {GLYPH[m['status']]} {m['status']} |")
@@ -507,7 +609,7 @@ def render(ts):
 
 def write_roadmap(root, ts):
     path = root / 'roadmap.md'
-    path.write_bytes(render(ts).encode('utf-8'))
+    path.write_bytes(render(ts, root).encode('utf-8'))
     return path
 
 
@@ -515,7 +617,7 @@ def stale(root, ts):
     path = root / 'roadmap.md'
     if not path.exists():
         return bool(ts)
-    return path.read_bytes() != render(ts).encode('utf-8')
+    return path.read_bytes() != render(ts, root).encode('utf-8')
 
 
 # ---------- commands ----------
@@ -1175,6 +1277,86 @@ def selftest():
         expect('roadmap refuses on a bad ticket', rc == 1 and "type='epic'" in err)
         rc, _, err = run(case(mutations[0][1]), 'new', ('idea', 'delta'))
         expect('new refuses on a bad ticket', rc == 1 and "type='epic'" in err)
+
+        # ---- file: and cap: depends entries; base: alpha T-0001 depends [T-0002], beta T-0002 depends [] ----
+        def steps(*fs):
+            def put(r):
+                for f in fs:
+                    f(r)
+            return put
+
+        def deps(slug, value):
+            return lambda r: edit(r, slug, r'^depends:.*$', f'depends: [{value}]')
+
+        def provides(slug, value):
+            return lambda r: edit(r, slug, r'^created:(.*)$', rf'created:\1\nprovides: {value}')
+
+        def status(slug, value):
+            return lambda r: edit(r, slug, r'^status:.*$', f'status: {value}')
+
+        def row(root, tid):
+            rm = (root / 'roadmap.md').read_text(encoding='utf-8')
+            return next((ln for ln in rm.splitlines() if ln.startswith(f'| {tid} |')), ''), rm
+
+        root = case(steps(deps('alpha', 'cap:widget'), provides('beta', '[widget]'), status('beta', 'done')))
+        rc_r, _, err_r = run(root, 'roadmap')
+        rc, _, err = run(root, 'check')
+        a, rm = row(root, 'T-0001')
+        expect(f'cap: edge orders after its provider: rc={rc_r}/{rc} {err_r!r} {err!r} {rm!r}',
+               rc_r == 0 and rc == 0 and '| cap:widget |' in a and 0 <= rm.find('| T-0002 |') < rm.find('| T-0001 |'))
+        root = case(steps(deps('alpha', 'cap:widget'), provides('beta', '[widget]')))
+        rc, _, err = run(root, 'roadmap')
+        a, rm = row(root, 'T-0001')
+        expect(f'cap: provided by an open ticket renders (unmet) and still orders: rc={rc} {err!r} {a!r}',
+               rc == 0 and '| cap:widget (unmet) |' in a and 0 <= rm.find('| T-0002 |') < rm.find('| T-0001 |'))
+
+        root = case(deps('alpha', 'file:src/present.txt'))
+        (root.parent / 'src').mkdir()
+        (root.parent / 'src' / 'present.txt').write_text('x\n', encoding='utf-8')
+        rc_r, _, err_r = run(root, 'roadmap')
+        rc, _, err = run(root, 'check')
+        a, rm = row(root, 'T-0001')
+        expect(f'file: entry that exists does not block: rc={rc_r}/{rc} {err_r!r} {err!r} {rm!r}',
+               rc_r == 0 and rc == 0 and '| file:src/present.txt |' in a
+               and 0 <= rm.find('| T-0001 |') < rm.find('| T-0002 |'))
+        (root.parent / 'src' / 'present.txt').unlink()
+        rc, _, err = run(root, 'check')
+        expect(f'file: entry whose file vanished makes the roadmap stale: rc={rc} {err!r}', rc == 1 and 'stale' in err)
+        root = case(deps('alpha', 'file:missing.txt, file:a|b'))
+        rc_r, _, err_r = run(root, 'roadmap')
+        rc, _, err = run(root, 'check')
+        a, _ = row(root, 'T-0001')
+        expect(f'file: entry that is missing renders (unmet) and passes check: rc={rc_r}/{rc} {err_r!r} {err!r} {a!r}',
+               rc_r == 0 and rc == 0 and '| file:missing.txt (unmet), file:a\\|b (unmet) |' in a)
+
+        for bad in ('bogus', 'file:/etc/hosts', 'file:../up.txt', 'file:src/../x', 'file:', 'cap:', 'cap:-x', 'T-12'):
+            rc, _, err = run(case(deps('alpha', bad)), 'check')
+            want = f"alpha: depends entry '{bad}' is not T-NNNN, file:<path> or cap:<name>"
+            expect(f'malformed depends entry fails check: {bad!r} rc={rc} {err!r}', rc == 1 and want in err)
+        rc, _, err = run(case(deps('alpha', 'cap:nobody')), 'check')
+        expect(f'unprovided cap: fails check: rc={rc} {err!r}',
+               rc == 1 and 'alpha: depends on cap:nobody, which no ticket provides' in err)
+        rc, _, err = run(case(steps(deps('alpha', 'cap:widget'), deps('beta', 'T-0001'), provides('beta', '[widget]'))),
+                         'check')
+        expect(f'cap: cycle through a provider fails check: rc={rc} {err!r}',
+               rc == 1 and 'dependency cycle T-0001 -> T-0002 -> T-0001' in err)
+        rc, _, err = run(case(provides('beta', 'widget')), 'check')
+        expect(f'non-list provides fails check: rc={rc} {err!r}',
+               rc == 1 and "beta: provides 'widget' is not a list like [name]" in err)
+        rc, _, err = run(case(provides('beta', '[-bad]')), 'check')
+        expect(f'bad provides item fails check: rc={rc} {err!r}', rc == 1 and "beta: provides item '-bad'" in err)
+        if shutil.which('git'):
+            root = pathlib.Path(tmp) / 'gitcase' / 'proj' / '.sdlc'
+            shutil.copytree(base, root)
+            deps('alpha', 'file:src/top.txt')(root)
+            genv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            subprocess.run(['git', '-C', str(root.parent.parent), 'init', '-q'], env=genv, capture_output=True)
+            (root.parent.parent / 'src').mkdir()
+            (root.parent.parent / 'src' / 'top.txt').write_text('x\n', encoding='utf-8')
+            rc, _, err = run(root, 'roadmap')
+            a, _ = row(root, 'T-0001')
+            expect(f'file: resolves against the git toplevel, not the root parent: rc={rc} {err!r} {a!r}',
+                   rc == 0 and '| file:src/top.txt |' in a)
 
         def snap(root):
             return {p.relative_to(root): p.read_bytes() for p in sorted(root.rglob('*')) if p.is_file()}
