@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d0b02d206db042779b019e9044d3007e",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "planner L2: normal feature, doc recipe plus a live end-to-end run in a throwaway bare-clone repo",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T01:02:32.591008+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/worktree",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout/worktree/.sdlc/0167-role-in-temp-worktree/handoff.md",
+  "owner_pid": 22948,
+  "process_pid": 22964,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T01:07:12.176759+00:00"
+}

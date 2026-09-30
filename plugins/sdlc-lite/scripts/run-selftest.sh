@@ -31,6 +31,17 @@
 # nothing, or only a worktree under $SDLC_TMP_WORKTREES (also every worktree run above), prints no
 # stray line and records empty arrays. The dry-run .nvmrc checks compare stderr exactly, so a dry run
 # prints no stray line. Strays the cases make are removed inside the temp repo.
+# Temporary worktree recipe: a source repo with a tracked file and a .gitignore holding .sdlc/ is
+# cloned with git clone --bare to proj.git, which gets a primary worktree on the default branch and
+# an unrelated user worktree on its own branch. The primary is made dirty (a modified tracked file,
+# an untracked file) and holds the task handoff .sdlc/t/handoff.md. The run-operations recipe then
+# runs: a mktemp path, a detached worktree added from the bare repo, run.sh scout L1 <absolute
+# handoff> from inside it, and a worktree remove without --force. run.sh exits 0 from the temporary
+# worktree (the stub records its cwd); scout-L1.md and runs.jsonl land beside the handoff in the
+# primary's .sdlc/t and no result file appears under the temporary worktree; after removal its path
+# is gone from git worktree list and from disk, the user worktree is still listed, refs/heads is
+# unchanged, the primary's porcelain status and tracked-file bytes are byte-identical to the
+# snapshot, and the primary has no .worktrees dir.
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -48,6 +59,7 @@ cat >"$tmp/bin/claude" <<EOF
 n=\$(( \$(cat "$tmp/count" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" >"$tmp/count"
 echo "\${PATH%%:*}" >"$tmp/pathhead"
+pwd -P >"$tmp/cwd"
 echo "\${BASH_DEFAULT_TIMEOUT_MS:-unset} \${BASH_MAX_TIMEOUT_MS:-unset}" >"$tmp/timeouts"
 echo "stub: stderr noise, not JSON" >&2
 if [[ -n "\${STUB_RESULT:-}" ]]; then cat "\$STUB_RESULT"; exit 0; fi
@@ -447,5 +459,64 @@ for m in none prefix; do
   jq -e '.stray_worktrees == [] and .stray_branches == []' "$srepo/runs.jsonl" >/dev/null \
     || fail "stray $m run: runs.jsonl stray fields not empty arrays: $(cat "$srepo/runs.jsonl")"
 done
+
+# Temporary worktree recipe (run-operations): a bare clone with a dirty primary worktree. The role
+# runs from a detached mktemp worktree; its result lands beside the absolute handoff in the primary.
+rtmp=$(cd "$tmp" && pwd -P)
+tg() { git -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false "$@"; }
+tsrc="$rtmp/tsrc"
+mkdir -p "$tsrc"
+echo tracked >"$tsrc/file.txt"
+echo '.sdlc/' >"$tsrc/.gitignore"
+tg -C "$tsrc" init -q
+tg -C "$tsrc" add -A
+tg -C "$tsrc" commit -q -m init
+tbranch=$(git -C "$tsrc" symbolic-ref --short HEAD)
+bare="$rtmp/proj.git"
+git clone -q --bare "$tsrc" "$bare" || fail "temporary worktree recipe: clone --bare failed"
+primary="$rtmp/proj/$tbranch"
+userwt="$rtmp/proj/user"
+git -C "$bare" worktree add -q "$primary" "$tbranch" >/dev/null 2>&1 || fail "temporary worktree recipe: primary worktree add failed"
+git -C "$bare" worktree add -q -b user-work "$userwt" HEAD >/dev/null 2>&1 || fail "temporary worktree recipe: user worktree add failed"
+echo 'uncommitted edit' >>"$primary/file.txt"
+echo untracked >"$primary/scratch.txt"
+mkdir -p "$primary/.sdlc/t"
+echo '## Goal' >"$primary/.sdlc/t/handoff.md"
+# Snapshots, taken before the recipe path exists.
+snap_status=$(git -C "$primary" status --porcelain)
+cp "$primary/file.txt" "$rtmp/file.snap"
+snap_wts=$(git -C "$bare" worktree list --porcelain)
+snap_refs=$(git -C "$bare" for-each-ref refs/heads)
+[[ -n "$snap_status" ]] || fail "temporary worktree recipe: fixture primary is not dirty"
+# The recipe, in the doc's command shapes.
+wt="$(mktemp -d "$rtmp/recipe.XXXXXX")/wt"
+git -C "$bare" worktree add -q --detach "$wt" HEAD >/dev/null 2>&1 || fail "temporary worktree recipe: detached worktree add failed"
+res $'## Map\nfile.txt'
+rm -f "$tmp/cwd"
+rc=0
+(cd "$wt" && STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" "$here/run.sh" scout L1 "$primary/.sdlc/t/handoff.md" \
+  >/dev/null 2>"$tmp/terr") || rc=$?
+[[ "$rc" == 0 ]] || fail "temporary worktree recipe: run.sh exited $rc, want 0 ($(cat "$tmp/terr"))"
+cwd_seen=$(cat "$tmp/cwd" 2>/dev/null || echo MISSING)
+[[ "$cwd_seen" == "$wt" ]] || fail "temporary worktree recipe: the role ran in '$cwd_seen', want the temporary worktree $wt"
+[[ -f "$primary/.sdlc/t/scout-L1.md" ]] || fail "temporary worktree recipe: $primary/.sdlc/t/scout-L1.md is missing"
+[[ -f "$primary/.sdlc/t/runs.jsonl" ]] || fail "temporary worktree recipe: $primary/.sdlc/t/runs.jsonl is missing"
+inwt=$(find "$wt" \( -name 'scout-L1*' -o -name runs.jsonl -o -name '*.attempt.json' -o -name handoff.md \) -print)
+[[ -z "$inwt" ]] || fail "temporary worktree recipe: result files appeared under the temporary worktree: $(tr '\n' ' ' <<<"$inwt")"
+wtstat=$(git -C "$wt" status --porcelain --ignored)
+[[ -z "$wtstat" ]] || fail "temporary worktree recipe: the temporary worktree is not clean before removal: $(tr '\n' ' ' <<<"$wtstat")"
+git -C "$bare" worktree remove "$wt" >/dev/null 2>"$tmp/terr" \
+  || fail "temporary worktree recipe: worktree remove without --force failed: $(cat "$tmp/terr")"
+rmdir "$(dirname "$wt")" || fail "temporary worktree recipe: could not remove the mktemp parent of $wt"
+now_wts=$(git -C "$bare" worktree list --porcelain)
+! grep -qF "$wt" <<<"$now_wts" || fail "temporary worktree recipe: $wt is still in git worktree list"
+[[ ! -e "$wt" && ! -e "$(dirname "$wt")" ]] || fail "temporary worktree recipe: $wt is still on disk"
+[[ "$now_wts" == "$snap_wts" ]] || fail "temporary worktree recipe: git worktree list changed: $(tr '\n' ' ' <<<"$now_wts")"
+grep -qx "worktree $userwt" <<<"$now_wts" || fail "temporary worktree recipe: the user worktree $userwt is no longer listed"
+[[ "$(git -C "$bare" for-each-ref refs/heads)" == "$snap_refs" ]] || fail "temporary worktree recipe: refs/heads changed"
+[[ "$(git -C "$primary" status --porcelain)" == "$snap_status" ]] \
+  || fail "temporary worktree recipe: the primary's porcelain status changed: $(git -C "$primary" status --porcelain | tr '\n' ' ')"
+cmp -s "$primary/file.txt" "$rtmp/file.snap" || fail "temporary worktree recipe: the primary's tracked file bytes changed"
+[[ ! -e "$primary/.worktrees" ]] || fail "temporary worktree recipe: the primary has a .worktrees dir"
 
 echo "run selftest: PASS"

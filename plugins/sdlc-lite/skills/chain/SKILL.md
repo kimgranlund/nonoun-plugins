@@ -7,7 +7,7 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAU
 
 **Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
-For every role launch, set `SDLC_ROUTING_REASON` to the selected role/level rationale, including the recorded cause of any escalation or replan. Read [shared run operations](../handoff-format/run-operations.md) for readiness, attempt records, and safe recovery.
+For every role launch, set `SDLC_ROUTING_REASON` to the selected role/level rationale, including the recorded cause of any escalation or replan. Read [shared run operations](../handoff-format/run-operations.md) for readiness, attempt records, safe recovery, and `Run a role from a temporary worktree`.
 
 Arguments: `$ARGUMENTS`
 
