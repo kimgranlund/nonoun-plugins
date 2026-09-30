@@ -2,7 +2,7 @@
 id: T-0173
 title: "Move planner L3 from Fable xhigh to Opus xhigh"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Replan wording: the rubric says any replan uses planner L3; it stays, now on Opu
 
 ## Constraints
 Only planner L3 changes model and effort in `run.sh`. Keep a negative control for the family rule. Run `check.py`, `run-selftest.sh`, and the full `check.sh`. Live check: one planner L3 run and one plan-reviewer run through `run.sh` showing planner `opus xhigh` and reviewer `fable high`.
+
+## Closed
+
+2026-09-30: fixed in session by /fix: planner:L3 is Opus xhigh, rubric and selftest follow, regenerated agents; live planner and review runs show opus and fable

@@ -103,7 +103,7 @@ case "$role:$level" in
   builder:L5)       model=fable;  effort=xhigh ;;
   planner:L1)       model=sonnet; effort=medium ;;
   planner:L2)       model=opus;   effort=medium ;;
-  planner:L3)       model=fable;  effort=xhigh ;;
+  planner:L3)       model=opus;   effort=xhigh ;;
   verifier:L1)      model=sonnet; effort=medium ;;
   verifier:L2)      model=sonnet; effort=high ;;
   verifier:L3)      model=fable;  effort=xhigh ;;

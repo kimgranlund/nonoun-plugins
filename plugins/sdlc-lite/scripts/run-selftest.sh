@@ -175,6 +175,17 @@ printf '%s\n' '{"role":"planner","level":"L2","file":"planner-L2.md"}' \
 out=$(prdry) || fail "dry run plan-reviewer L1 (fable planner) exited non-zero"
 [[ "$out" == *"--model opus --effort high"* ]] \
   || fail "fable planner newest: plan-reviewer should stay '--model opus --effort high', got: $out"
+# Planner L3 runs on Opus xhigh, so a review after an Opus L3 plan moves to Fable high.
+out=$(cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/t/review/handoff.md) \
+  || fail "dry run planner L3 exited non-zero"
+[[ "$out" == *"--model opus --effort xhigh"* ]] \
+  || fail "planner L3 should run '--model opus --effort xhigh', got: $out"
+echo '<!-- role=planner level=L3 model=opus effort=xhigh -->' >"$pr/planner-L3.md"
+printf '%s\n' '{"role":"planner","level":"L2","file":"planner-L2.md"}' \
+  '{"role":"planner","level":"L3","file":"planner-L3.md"}' >"$pr/runs.jsonl"
+out=$(prdry) || fail "dry run plan-reviewer L1 (opus L3 planner) exited non-zero"
+[[ "$out" == *"--model fable --effort high"* ]] \
+  || fail "opus L3 planner newest: plan-reviewer should swap to '--model fable --effort high', got: $out"
 
 # .nvmrc resolution against a fake NVM_DIR: dry runs assert the one stderr line, then one real
 # run checks that the stub claude sees the matched bin dir first on PATH.
