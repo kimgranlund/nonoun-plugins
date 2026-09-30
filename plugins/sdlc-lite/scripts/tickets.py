@@ -88,19 +88,28 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
             also fails a NNNN-<slug> folder whose id is not T-NNNN. Outside numbered mode, when every
-            ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing
+            ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing.
+            Inside a git work tree it also prints `warning: external_branch <b> is not a local branch` (exit
+            stays 0) for each registered branch with no refs/heads/<b>
   number    convert a plain-slug root: rename each ticket folder <slug> to NNNN-<slug> after its id, rewrite
             every cite of <rel>/<slug> (as close's scan finds them, plus files inside the folder) to
             <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
             nothing, on a bad ticket, a non T-NNNN id, or an existing target. --dry-run lists the renames
             and rewrites. Follow with archive --rewrite-refs to hide done and dropped folders
+  config    <root>/config may also hold `external_branch: <branch>` lines, one branch per line (blank lines, #
+            comment lines and a trailing # comment are ignored; a repeated name counts once), each registering a
+            branch an outside agent owns that no worktree here checks out. new and close read the ticket folders
+            committed at <branch>:<rel> from git objects (no checkout) and stamp every new ticket and follow-up
+            id above their max; check warns for a registered name with no local branch. Outside git the lines
+            change nothing
   selftest  build fixtures in a temp dir and prove every check failure fires
 
 Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
 (<worktree>/<root relative to its toplevel>) in every `git worktree list` tree, so parallel worktrees never
-reuse an id. Outside git, or when git fails, the local root decides alone. A worktree with no such dir yet
-is skipped, and malformed tickets in another tree are ignored there. Branches not checked out in any
-worktree are not seen; check catches a clash after merge (duplicate id, naming both folders).
+reuse an id. Ids committed on a registered external_branch are read from git objects and counted too.
+Outside git, or when git fails, the local root decides alone. A worktree with no such dir yet is skipped, and
+malformed tickets in another tree or branch are ignored there. An unregistered branch not checked out in any
+worktree stays unseen; check catches a clash after merge (duplicate id, naming both folders).
 
 A handoff with no front matter is not a ticket and is skipped. Dirs starting with _ or . are skipped,
 except a closed-ticket folder .NNNN-<slug>: it is a ticket in every mode and command (ids, depends, from,
@@ -136,6 +145,7 @@ SLUG_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
 PREFIX_RE = re.compile(r'\d{4}-')
 DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder: .NNNN-<slug>, fullmatch
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
+EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
 
 HEADER = """# Roadmap
 
@@ -218,6 +228,22 @@ def ensure_numbered_config(root):
     path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
 
 
+def external_branches(root):
+    """The branch names registered by `external_branch: <branch>` lines in <root>/config, in file order,
+    deduplicated; blank and # comment lines are ignored, as in config_numbered. [] when the file is missing."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = EXTERNAL_RE.fullmatch(line)
+        if m and m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
 GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
 
 
@@ -255,6 +281,91 @@ def worktree_pairs(root):
                 out.append((pathlib.Path(line[len('worktree '):]), other))
         return out
     except (OSError, ValueError):
+        return []
+
+
+def branch_tickets(root, branch):
+    """[(slug, meta)] for the ticket folders committed at <branch>:<rel>, read from git objects with no checkout
+    (rel is root relative to its worktree's toplevel, as in worktree_pairs). Folders follow load()'s rule (names
+    starting with _ or . are skipped, except a closed-ticket folder .NNNN-<slug>); each <dir>/handoff.md blob is
+    read through one `git cat-file --batch` process, and only those with front matter count, sorted by dir name.
+    [] when git is missing, a git call fails, the branch does not exist, or root is outside the toplevel. A
+    handoff that is missing, not a blob, undecodable or malformed is skipped, never raised. GIT_DIR,
+    GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer git context cannot redirect the lookup."""
+    try:
+        if not branch or branch.startswith('-'):
+            return []
+        here = root.resolve()
+        anchor = here
+        while not anchor.is_dir() and anchor != anchor.parent:
+            anchor = anchor.parent
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def git(cwd, *args, data=None):
+            p = subprocess.run(['git', '-C', str(cwd), *args], env=env, input=data, capture_output=True)
+            if p.returncode:
+                raise ValueError(p.stderr.decode('utf-8', 'replace').strip())
+            return p.stdout
+
+        top = pathlib.Path(git(anchor, 'rev-parse', '--show-toplevel').decode('utf-8').strip()).resolve()
+        rel = here.relative_to(top).as_posix()
+        prefix = f'{branch}:' if rel == '.' else f'{branch}:{rel}/'
+        dirs = []
+        for entry in git(top, 'ls-tree', '-z', branch if rel == '.' else f'{branch}:{rel}').split(b'\0'):
+            head, sep, raw = entry.partition(b'\t')
+            if not sep or head.split(b' ')[1:2] != [b'tree']:
+                continue
+            try:
+                name = raw.decode('utf-8')
+            except UnicodeDecodeError:
+                continue
+            if '\n' not in name and (not name.startswith(('_', '.')) or DOT_RE.fullmatch(name)):
+                dirs.append(name)
+        if not dirs:
+            return []
+        data = git(top, 'cat-file', '--batch',
+                   data=''.join(f'{prefix}{d}/handoff.md\n' for d in dirs).encode('utf-8'))
+        out, pos = [], 0
+        for d in dirs:
+            end = data.index(b'\n', pos)
+            parts = data[pos:end].split(b' ')
+            pos = end + 1
+            if len(parts) != 3 or not parts[2].isdigit():
+                continue  # `<name> missing` (or ambiguous): no content follows
+            size = int(parts[2])
+            blob, pos = data[pos:pos + size], pos + size + 1
+            if parts[1] != b'blob':
+                continue
+            try:
+                meta = parse(blob.decode('utf-8'))
+            except (ValueError, TypeError):
+                continue
+            if meta is not None:
+                out.append((d, meta))
+        return sorted(out, key=lambda t: t[0])
+    except (OSError, ValueError, IndexError):
+        return []
+
+
+def unknown_branches(root, names):
+    """The names with no local branch (`git rev-parse -q --verify refs/heads/<b>^{commit}` fails), in order.
+    [] when root is not inside a git work tree or git is missing: outside git nothing is checked."""
+    if not names:
+        return []
+    try:
+        anchor = root.resolve()
+        while not anchor.is_dir() and anchor != anchor.parent:
+            anchor = anchor.parent
+        env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+        def git(*args):
+            return subprocess.run(['git', '-C', str(anchor), *args], env=env, capture_output=True, text=True)
+
+        p = git('rev-parse', '--is-inside-work-tree')
+        if p.returncode or p.stdout.strip() != 'true':
+            return []
+        return [b for b in names if git('rev-parse', '-q', '--verify', f'refs/heads/{b}^{{commit}}').returncode]
+    except OSError:
         return []
 
 
@@ -370,14 +481,20 @@ def rewrite_files(top, files, old, new):
 
 
 def id_floor(root):
-    """The highest ticket number in every other worktree's same-relative root (worktree_roots), else 0.
-    Malformed tickets and unreadable files there are ignored: another tree's problems never fail this one."""
+    """The highest ticket number in every other worktree's same-relative root (worktree_roots) and in every
+    branch registered by an `external_branch: <branch>` line in <root>/config (branch_tickets, read from git
+    objects at <branch>:<rel>), else 0. Malformed tickets and unreadable files there are ignored: another
+    tree's or branch's problems never fail this one."""
     floor = 0
+    found = []
     for r in worktree_roots(root):
         try:
-            ts = load(r)
+            found.append(load(r))
         except (OSError, UnicodeDecodeError):
             continue
+    for b in external_branches(root):
+        found.append(branch_tickets(root, b))
+    for ts in found:
         for _, m in ts:
             i = m.get('id')
             if isinstance(i, str) and ID_RE.fullmatch(i):
@@ -970,11 +1087,13 @@ def cmd_check(root, numbered=False):
         raise Fail('\n'.join(errs))
     if stale(root, ts):
         raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
-    ok = f'ok: {len(ts)} tickets, roadmap current'
+    out = [f'ok: {len(ts)} tickets, roadmap current']
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
-        return (ok + f"\nwarning: every ticket folder has an NNNN- prefix but {root}/config lacks "
-                f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
-    return ok
+        out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
+                   f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
+    out += [f'warning: external_branch {b} is not a local branch'
+            for b in unknown_branches(root, external_branches(root))]
+    return '\n'.join(out)
 
 
 def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=False):
@@ -2496,6 +2615,101 @@ def selftest():
                    and ol[1:3] == ['1. decide: A note', '2. decide: B note']
                    and ol[-1] == 'expect ' + follow_digest(['A', 'B'])
                    and (snap(d_root), snap(dw_root)) == before)
+
+            # ---- external_branch: ids committed on a registered branch count, read from git objects ----
+            def commit(cwd, msg):
+                git(cwd, 'add', '-A')
+                git(cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                    'commit', '--no-verify', '-qm', msg)
+
+            # (i) config parsing: order kept, duplicates once, comments and blanks skipped, numbered still holds
+            cfg = wtmp / 'cfg'
+            cfg.mkdir()
+            (cfg / 'config').write_text('# external_branch: hidden\nticket_folders: numbered\n\n'
+                                        'external_branch: codex/x\n   \nexternal_branch: ext # note\n'
+                                        'external_branch: codex/x\n', encoding='utf-8')
+            got = external_branches(cfg)
+            expect(f'external: config yields the two names in order, numbered still holds: {got!r}',
+                   got == ['codex/x', 'ext'] and config_numbered(cfg))
+            expect('external: a missing config yields []', external_branches(wtmp / 'nocfg') == [])
+
+            # (ii) branch_tickets reads a branch checked out nowhere, by load()'s folder rule
+            e_dir = wtmp / 'ext'
+            e_root = e_dir / '.sdlc'
+            git(wtmp, 'init', '-q', '-b', 'main', 'ext')
+            (e_dir / 'README').write_text('x\n', encoding='utf-8')
+            commit(e_dir, 'readme')
+            git(e_dir, 'checkout', '-q', '-b', 'ext')
+            fm = ('---\nid: {}\ntitle: "t"\ntype: chore\nstatus: {}\nsize: S\npriority: P2\ndepends: []\n'
+                  'created: 2026-01-01\n---\n')
+            for d, text in (('0002-b', fm.format('T-0002', 'ready')), ('.0003-c', fm.format('T-0003', 'done')),
+                            ('_templates', fm.format('T-0009', 'ready')), ('plain', '## Goal\n')):
+                (e_root / d).mkdir(parents=True)
+                (e_root / d / 'handoff.md').write_text(text, encoding='utf-8')
+            commit(e_dir, 'ext tickets')
+            git(e_dir, 'checkout', '-q', 'main')
+            got = [(sl, m.get('id'), m.get('status')) for sl, m in branch_tickets(e_root, 'ext')]
+            expect(f'external: branch_tickets reads exactly the two tickets on ext, from git objects: {got!r}',
+                   got == [('.0003-c', 'T-0003', 'done'), ('0002-b', 'T-0002', 'ready')] and not e_root.exists())
+            expect('external: branch_tickets on a missing branch is []', branch_tickets(e_root, 'nosuch') == [])
+            expect('external: branch_tickets outside git is []',
+                   branch_tickets(pathlib.Path(tmp) / 'noext' / '.sdlc', 'ext') == [])
+
+            # (iii) case (b): T-0002 committed only on ext; registered, new and close mint above it
+            b_dir = wtmp / 'extb'
+            b_root = b_dir / '.sdlc'
+            git(wtmp, 'init', '-q', '-b', 'main', 'extb')
+            run(b_root, 'new', ('feature', 'a'))
+            commit(b_dir, 'a')
+            git(b_dir, 'checkout', '-q', '-b', 'ext')
+            rc, _, err = run(b_root, 'new', ('feature', 'b'))
+            expect(f'external: fixture b on ext is T-0002: rc={rc} {err!r}', rc == 0 and tid(b_root, 'b') == 'T-0002')
+            commit(b_dir, 'b')
+            git(b_dir, 'checkout', '-q', 'main')
+            filer('filer-L1.md', 'None', '- Add retry to fetch', slug='a')(b_root)
+            copies = {}
+            for name in ('close', 'bare', 'bare-close'):
+                shutil.copytree(b_dir, wtmp / f'extb-{name}', symlinks=True)
+                copies[name] = wtmp / f'extb-{name}' / '.sdlc'
+            for r in (b_root, copies['close']):
+                (r / 'config').write_text('external_branch: ext\n', encoding='utf-8')
+            rc, _, err = run(b_root, 'new', ('feature', 'z'))
+            expect(f'external: registered, new in main mints T-0003 above ext T-0002: rc={rc} {err!r} '
+                   f'got={tid(b_root, "z")!r}', rc == 0 and err == '' and tid(b_root, 'z') == 'T-0003')
+            rc, out, err = close_one(copies['close'], 1, slug='a')
+            made = fresh(copies['close'], {'a'})
+            expect(f'external: registered, close --ticket 1 --expect mints its follow-up above ext T-0002, as '
+                   f'T-0003: rc={rc} {out!r} {err!r} made={made}',
+                   rc == 0 and [m.get('id') for m in made.values()] == ['T-0003'])
+            rc, _, err = run(copies['bare'], 'new', ('feature', 'z'))
+            expect(f'external: negative control, unregistered, new mints the colliding T-0002: rc={rc} {err!r}',
+                   rc == 0 and tid(copies['bare'], 'z') == 'T-0002')
+            rc, out, err = close_one(copies['bare-close'], 1, slug='a')
+            made = fresh(copies['bare-close'], {'a'})
+            expect(f'external: negative control, unregistered, the close follow-up collides as T-0002: rc={rc} '
+                   f'{out!r} {err!r} made={made}', rc == 0 and [m.get('id') for m in made.values()] == ['T-0002'])
+            rc, out, err = run(b_root, 'check')
+            expect(f'external: check with a registered local branch has no external warning: rc={rc} {out!r}',
+                   rc == 0 and 'external_branch' not in out)
+
+            # (iv) a registered name with no local branch: check warns, exit 0; new is unaffected
+            n_dir = wtmp / 'extn'
+            nn_root = n_dir / '.sdlc'
+            git(wtmp, 'init', '-q', 'extn')
+            nn_root.mkdir()
+            (nn_root / 'config').write_text('external_branch: nosuch\n', encoding='utf-8')
+            rc, out, err = run(nn_root, 'check')
+            expect(f'external: check warns on a registered branch that is not local, exit 0: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'warning: external_branch nosuch is not a local branch' in out.splitlines())
+            rc, _, err = run(nn_root, 'new', ('feature', 'q'))
+            expect(f'external: new with an unknown registered branch mints T-0001, empty stderr: rc={rc} {err!r} '
+                   f'got={tid(nn_root, "q")!r}', rc == 0 and err == '' and tid(nn_root, 'q') == 'T-0001')
+            loose = pathlib.Path(tmp) / 'extloose' / '.sdlc'
+            loose.mkdir(parents=True)
+            (loose / 'config').write_text('external_branch: nosuch\n', encoding='utf-8')
+            rc, out, err = run(loose, 'check')
+            expect(f'external: outside git check gives no external warning: rc={rc} {out!r}',
+                   rc == 0 and 'external_branch' not in out)
 
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
