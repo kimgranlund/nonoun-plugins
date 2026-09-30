@@ -6,7 +6,7 @@ user-invocable: false
 
 **Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
-The tables below describe the Claude backend. For Codex, model and effort are defined in `adapters/codex/models.json`; the level scope and escalation rules below still apply. The Codex runner records its selected model. When the builder and verifier models match, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`.
+The tables below describe the Claude backend. For Codex, model and effort are defined in `adapters/codex/models.json`; the level scope and escalation rules below still apply. The Codex runner records its selected model. When the builder and verifier models match, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to; the Codex plan-reviewer takes the model that map gives for the newest planner result's recorded model. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`.
 
 The Claude model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`. This file says how to pick a level. Keep the two in sync.
 
@@ -53,6 +53,23 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 | L2 | Opus medium | A normal feature |
 | L3 | Fable xhigh | Cross-cutting or risky, or any replan (a builder blocked, or a verifier or `steps.py split` tagged `plan defect:`) |
 
+## When a plan is reviewed
+
+The plan-reviewer (L1, one level) reviews a plan before any builder starts. It is required for:
+- any plan by planner L3,
+- any plan with a step at builder L4 or L5,
+- any plan with a merge step,
+- every replan.
+
+Routine plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
+
+The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. `run.sh` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
+
+The verdict routes the plan:
+- `pass`: `steps.py split`.
+- `replan`: the findings are appended under `## Plan review` and a planner L3 replan runs. A second `replan` stops and asks the user.
+- `blocked`: a design decision is missing. It always stops for the user.
+
 ## researcher (L1 to L3)
 
 | Level | Model / effort | Fits when |
@@ -69,6 +86,7 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 | scout | L1 | Haiku low |
 | archaeologist | L1 | Sonnet medium |
 | filer | L1 | Sonnet medium |
+| plan-reviewer | L1 | Opus high |
 
 ## Agent-tool spawns (outside run.sh)
 

@@ -45,7 +45,7 @@ def cap(m): return m.capitalize()
 
 # run.sh: "  builder:L1)  model=sonnet; effort=low ;;"
 run = {}
-for role, lvl, model, effort in re.findall(r'^\s*(\w+):(L\d)\)\s*model=(\w+);\s*effort=(\w+)', (root/'scripts/run.sh').read_text(), re.M):
+for role, lvl, model, effort in re.findall(r'^\s*([\w-]+):(L\d)\)\s*model=(\w+);\s*effort=(\w+)', (root/'scripts/run.sh').read_text(), re.M):
     run[(role, lvl)] = f'{cap(model)} {effort}'
 if not run: errors.append('run.sh: no role:level cases parsed')
 
@@ -54,12 +54,12 @@ if not run: errors.append('run.sh: no role:level cases parsed')
 rubric = {}
 role = None
 for line in (root/'skills/level-rubric/SKILL.md').read_text().splitlines():
-    h = re.match(r'^## (\w+) \(L', line)
+    h = re.match(r'^## ([\w-]+) \(L', line)
     if h: role = h.group(1); continue
     if line.startswith('## '): role = None
     m = re.match(r'^\| (L\d) \| (\w+ \w+) \|', line)
     if m and role: rubric[(role, m.group(1))] = m.group(2)
-    m = re.match(r'^\| (\w+) \| (L\d) \| (\w+ \w+) \|', line)
+    m = re.match(r'^\| ([\w-]+) \| (L\d) \| (\w+ \w+) \|', line)
     if m: rubric[(m.group(1), m.group(2))] = m.group(3)
 
 def compare(label, other):
@@ -308,6 +308,18 @@ def subst_missing(text): return SUBST_PHRASE not in text
 ct = (root/CONDUCTOR).read_text() if (root/CONDUCTOR).is_file() else ''
 if subst_missing(ct): errors.append(f'{CONDUCTOR}: run.sh-only rule missing "{SUBST_PHRASE}"')
 if not subst_missing(ct.replace(SUBST_PHRASE, '')): errors.append('check.py: substitute-agent guard negative control not flagged')
+# Plan-reviewer role: run.sh holds its L1 row and its Verdict section line with the allowed values.
+PR_SECT = "plan-reviewer) sect=Verdict; allowed='pass|replan|blocked' ;;"
+def plan_reviewer_missing(runs, text):
+    out = []
+    if ('plan-reviewer', 'L1') not in runs: out.append('no plan-reviewer:L1 row')
+    if not any(l.strip() == PR_SECT for l in text.splitlines()): out.append(f'no section line "{PR_SECT}"')
+    return out
+rt = (root/'scripts/run.sh').read_text()
+for e in plan_reviewer_missing(run, rt): errors.append(f'scripts/run.sh: plan-reviewer role: {e}')
+if len(plan_reviewer_missing({k: v for k, v in run.items() if k[0] != 'plan-reviewer'},
+                             rt.replace("'pass|replan|blocked'", "'pass|fail'"))) != 2:
+    errors.append('check.py: plan-reviewer run.sh guard negative control not flagged')
 # Read-first route: every role and doc that carries step entry files names `Read first`.
 READ_FIRST = 'Read first'
 READ_FIRST_FILES = ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'skills/fix/SKILL.md',

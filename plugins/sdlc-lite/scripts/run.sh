@@ -16,8 +16,14 @@
 # Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
 # Result check: after the result and its runs.jsonl line are written (both kept), the result must
 # hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked|inherited red: <tests>),
-# verifier ## Verdict (pass|fail|inherited red: <tests>), planner ## Goal, researcher ## Answer, scout ## Map,
-# archaeologist ## Summary, architect ## Approach, filer ## Warnings. Otherwise one stderr line, exit 3.
+# verifier ## Verdict (pass|fail|inherited red: <tests>), plan-reviewer ## Verdict (pass|replan|blocked),
+# planner ## Goal, researcher ## Answer, scout ## Map, archaeologist ## Summary, architect ## Approach,
+# filer ## Warnings. Otherwise one stderr line, exit 3.
+# Family rules (Claude backend only; each reads the model= token of the newest result by
+# scripts/order.py): a verifier never runs on the newest build's family (a Fable or Sonnet build
+# moves it to Opus, same effort), and a plan-reviewer never runs on the newest planner result's
+# family (an Opus planner moves it to Fable, same effort; a Fable or Sonnet planner, or no planner
+# result, keeps Opus high).
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
 # does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
@@ -108,12 +114,14 @@ case "$role:$level" in
   scout:L1)         model=haiku;  effort=low ;;
   archaeologist:L1) model=sonnet; effort=medium ;;
   filer:L1)         model=sonnet; effort=medium ;;
+  plan-reviewer:L1) model=opus; effort=high ;;
   *) usage ;;
 esac
-# Required section per role; builder and verifier also need an allowed first value under it.
+# Required section per role; builder, verifier, and plan-reviewer also need an allowed first value under it.
 case "$role" in
   builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
   verifier) sect=Verdict; allowed='pass|fail|inherited red: .+' ;;
+  plan-reviewer) sect=Verdict; allowed='pass|replan|blocked' ;;
   planner) sect=Goal; allowed='' ;;
   researcher) sect=Answer; allowed='' ;;
   scout) sect=Map; allowed='' ;;
@@ -194,6 +202,17 @@ if [[ "$backend" == claude && "$role" == verifier ]]; then
     fi
   fi
 fi
+# A plan-reviewer never runs on the planner's model family (T-0171, user decision 2026-09-30):
+# an Opus planner -> Fable at the same effort; a Fable or Sonnet planner, or none, keeps Opus.
+if [[ "$backend" == claude && "$role" == plan-reviewer ]]; then
+  planned=$(python3 "$plugin_root/scripts/order.py" newest "$dir" planner 2>/dev/null || true)
+  if [[ -n "$planned" ]]; then
+    pmodel=$(grep -o 'model=[a-z]*' "$planned" | head -1 | cut -d= -f2 || true)
+    if [[ "$model" == "$pmodel" && "$model" == opus ]]; then
+      model=fable
+    fi
+  fi
+fi
 
 # Codex: a verifier whose model equals the build's switches to a configured alternate, or else
 # shares the build's model; resolve then prints a third token "shared" (T-0163).
@@ -232,7 +251,7 @@ fi
 
 read_only=()
 case "$role" in
-  planner|verifier|researcher|architect|scout|archaeologist|filer)
+  planner|verifier|plan-reviewer|researcher|architect|scout|archaeologist|filer)
     read_only=(--disallowedTools Edit Write NotebookEdit) ;;
 esac
 

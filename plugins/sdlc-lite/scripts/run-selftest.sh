@@ -2,10 +2,13 @@
 # Selftest for run.sh result numbering: three runs of the same role and level must keep every
 # result. The first run writes <role>-<level>.md, later runs write <role>-<level>-2.md, -3.md, ...
 # Each runs.jsonl line must name its result in a "file" field, in run order.
-# Also checks the verifier model swap, and .nvmrc resolution against a fake NVM_DIR (exact,
+# Also checks the verifier model swap, the plan-reviewer family rule (dry run: newest planner opus ->
+# --model fable --effort high; newest planner fable, planner sonnet, or no planner -> --model opus
+# --effort high), and .nvmrc resolution against a fake NVM_DIR (exact,
 # partial with numeric highest pick, whole-component matching, alias, missing, no .nvmrc), plus one
 # real run proving the role run sees the matched node bin dir first on PATH, and the result
-# check (exit 3 when a result lacks its role's required section; STUB_RESULT picks the result).
+# check (exit 3 when a result lacks its role's required section; STUB_RESULT picks the result; a
+# plan-reviewer ## Verdict of pass, replan, or blocked exits 0, maybe or no ## Verdict exits 3).
 # Result pick: stubs emit stream-json lines ("type":"result" events, plus a non-JSON stderr line that
 # must be skipped). A log holding a "## Verdict" result and then a trailing task-notification result
 # ("stale monitor") saves the Verdict and exits 0; when neither holds the heading, the
@@ -144,6 +147,35 @@ sf=$(awk '{for (i = 1; i < NF; i++) if ($i == "--append-system-prompt-file") pri
 [[ -n "$sf" ]] || fail "dry run verifier L1 printed no --append-system-prompt-file: $out"
 [[ ! -e "$sf" ]] || fail "dry run left its skill file behind: $sf"
 
+# Plan-reviewer family rule reads the newest planner result by runs.jsonl order (dry run).
+pr="$repo/.sdlc/t/review"
+mkdir -p "$pr"
+echo '## Goal' >"$pr/handoff.md"
+prdry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" plan-reviewer L1 .sdlc/t/review/handoff.md); }
+out=$(prdry) || fail "dry run plan-reviewer L1 (no planner) exited non-zero"
+[[ "$out" == *"--agent sdlc-lite:plan-reviewer --model opus --effort high"* ]] \
+  || fail "no planner: plan-reviewer should stay '--model opus --effort high', got: $out"
+[[ "$out" == *"--disallowedTools Edit Write NotebookEdit"* ]] \
+  || fail "plan-reviewer is not read-only, got: $out"
+echo '<!-- role=planner level=L1 model=sonnet effort=medium -->' >"$pr/planner-L1.md"
+echo '{"role":"planner","level":"L1","file":"planner-L1.md"}' >"$pr/runs.jsonl"
+out=$(prdry) || fail "dry run plan-reviewer L1 (sonnet planner) exited non-zero"
+[[ "$out" == *"--model opus --effort high"* ]] \
+  || fail "sonnet planner: plan-reviewer should stay '--model opus --effort high', got: $out"
+echo '<!-- role=planner level=L2 model=opus effort=medium -->' >"$pr/planner-L2.md"
+echo '<!-- role=planner level=L3 model=fable effort=xhigh -->' >"$pr/planner-L3.md"
+touch -t 202601010000 "$pr/planner-L2.md" "$pr/planner-L3.md"
+printf '%s\n' '{"role":"planner","level":"L3","file":"planner-L3.md"}' \
+  '{"role":"planner","level":"L2","file":"planner-L2.md"}' >"$pr/runs.jsonl"
+out=$(prdry) || fail "dry run plan-reviewer L1 (opus planner) exited non-zero"
+[[ "$out" == *"--model fable --effort high"* ]] \
+  || fail "opus planner newest: plan-reviewer should swap to '--model fable --effort high', got: $out"
+printf '%s\n' '{"role":"planner","level":"L2","file":"planner-L2.md"}' \
+  '{"role":"planner","level":"L3","file":"planner-L3.md"}' >"$pr/runs.jsonl"
+out=$(prdry) || fail "dry run plan-reviewer L1 (fable planner) exited non-zero"
+[[ "$out" == *"--model opus --effort high"* ]] \
+  || fail "fable planner newest: plan-reviewer should stay '--model opus --effort high', got: $out"
+
 # .nvmrc resolution against a fake NVM_DIR: dry runs assert the one stderr line, then one real
 # run checks that the stub claude sees the matched bin dir first on PATH.
 nvm="$tmp/nvm"
@@ -221,6 +253,12 @@ want_rc 0 builder L2 $'## Status\n\nDone \n\n## Changes\nNone'
 want_rc 0 verifier L1 $'## Verdict\npass'
 want_rc 0 verifier L1 $'## Verdict\ninherited red: test_a'
 want_rc 3 verifier L1 $'## Verdict\ninherited red'
+want_rc 0 plan-reviewer L1 $'## Verdict\npass'
+want_rc 0 plan-reviewer L1 $'## Verdict\nreplan\n\n## Findings\n- step 1: scope: x. Evidence: a:1'
+want_rc 0 plan-reviewer L1 $'## Verdict\nblocked'
+want_rc 3 plan-reviewer L1 $'## Verdict\nmaybe'
+grep -q '## Verdict' "$tmp/rerr" || fail "plan-reviewer maybe: stderr does not name ## Verdict"
+want_rc 3 plan-reviewer L1 $'## Findings\nNone'
 
 # Result pick: a trailing task-notification result must not replace the report. The stub output
 # holds a system event and a non-JSON line (from the stub's stderr), then two result events.
