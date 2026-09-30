@@ -2,7 +2,7 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | next <step dir> |
+                 lint <planner.md | task dir> | next <step dir> | resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
@@ -118,6 +118,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               never a done or a fail, never adds a bump, and is never a verifier's paired builder.
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
+  resume    pick the step a resumed /chain continues from (/chain step 4). Candidates are the task
+            dir's direct children named exactly step-<n> (step-<n>.superseded-<k>/ left out),
+            sorted by the integer n (step-2 before step-10). For each in order it runs the next
+            rules above; the first whose action is not done wins. Stdout: that step dir as
+            <task dir as given>/step-<n>, then exactly what next prints for it; exit 0. When every
+            candidate is done: "done", then "reason: every step-<n>/ passed"; exit 0. It never
+            picks the newest or highest step dir. Writes nothing and never reads file times.
+            A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
+            a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
             light path). The pair lives in that verifier's ## For the next attempt: exactly one
             line starting "swap old:" holding exactly one code span (the old criterion's command,
@@ -1066,6 +1075,51 @@ def cmd_next(step_dir):
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
+    print(action if level is None else f'{action} L{level}')
+    print(f'reason: {reason}')
+    for p in read:
+        print(f'read: {p}')
+    return 0
+
+
+# --- resume -----------------------------------------------------------------
+
+STEP_DIR_RE = re.compile(r'step-(\d+)')
+
+
+def resume_action(task):
+    """Return (step dir or None, action, level or None, reason, [result paths read]) for a task dir:
+    the lowest-numbered step-<n>/ (by integer n; step-<n>.superseded-<k>/ left out) whose next_action
+    is not done, else (None, 'done', None, reason, []). Reads only; never file times."""
+    t = pathlib.Path(task)
+    if not t.is_dir():
+        raise Fail(f'steps resume: no such directory: {t}')
+    nums = sorted(int(m.group(1)) for c in t.iterdir()
+                  if c.is_dir() and (m := STEP_DIR_RE.fullmatch(c.name)))
+    if not nums:
+        raise Fail(f'steps resume: {t} has no step-<n>/ dirs; run steps.py split {t} first')
+    for n in nums:
+        d = pathlib.Path(task) / f'step-{n}'
+        try:
+            action, level, reason, read = next_action(d)
+        except Fail as e:
+            msg = ' '.join(str(e).split('\n'))
+            if msg.startswith('steps next: '):
+                msg = msg[len('steps next: '):]
+            raise Fail(f'steps resume: {d}: {msg}')
+        if action != 'done':
+            return d, action, level, reason, read
+    return None, 'done', None, 'every step-<n>/ passed', []
+
+
+def cmd_resume(task):
+    try:
+        d, action, level, reason, read = resume_action(task)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    if d is not None:
+        print(d)
     print(action if level is None else f'{action} L{level}')
     print(f'reason: {reason}')
     for p in read:
@@ -2064,6 +2118,64 @@ def selftest():
         check('next writes nothing: the step dir snapshot is equal before and after',
               rc == 0 and snapshot(d) == before)
 
+        # resume: the lowest-numbered non-superseded step whose next action is not done
+        def r_task(steps_files):
+            """steps_files: {dir name: [(name, text)] in run order}; each dir gets an L2 handoff."""
+            count[0] += 1
+            t = tmp / f'resume{count[0]}'
+            t.mkdir()
+            for name, files in steps_files.items():
+                d = t / name
+                d.mkdir()
+                (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n', encoding='utf-8')
+                for fname, text in files:
+                    (d / fname).write_text(text, encoding='utf-8')
+                if files:
+                    (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files),
+                                                  encoding='utf-8')
+            return t
+
+        def rsm(t):
+            before = snapshot(t)
+            rc, out, err = run_main(['resume', str(t)])
+            return rc, out.splitlines(), err, snapshot(t) == before
+
+        PASSED = [('builder-L2.md', DONE), ('verifier-L1.md', PASS)]
+        t = r_task({'step-1': PASSED, 'step-2': [('builder-L2.md', BLOCKED)],
+                    'step-3': [('builder-L2.md', DONE)]})
+        rc, lines, err, same = rsm(t)
+        check('resume: a blocked step-2 is chosen over a later step-3 with a done builder',
+              rc == 0 and err == '' and same and lines[:2] == [str(t / 'step-2'), 'replan']
+              and len(lines) >= 3 and lines[2].startswith('reason: ')
+              and lines[3:] == [f'read: {t / "step-2" / "builder-L2.md"}'])
+        t = r_task({'step-1': PASSED, 'step-2': PASSED})
+        rc, lines, err, same = rsm(t)
+        check('resume: every step passed prints done',
+              rc == 0 and err == '' and same and lines == ['done', 'reason: every step-<n>/ passed'])
+        t = r_task({'step-1': PASSED, 'step-2': [], 'step-10': [],
+                    'step-2.superseded-1': [('builder-L2.md', BLOCKED)]})
+        rc, lines, err, same = rsm(t)
+        check('resume: a superseded dir is ignored and step-2 comes before step-10',
+              rc == 0 and err == '' and same and lines[:2] == [str(t / 'step-2'), 'build L2'])
+        t = r_task({'step-1': PASSED, 'step-10': [('builder-L2.md', BLOCKED)], 'step-2.superseded-1': []})
+        rc, lines, err, same = rsm(t)
+        check('resume: step-10 is reached after step-1 when only a superseded step-2 exists',
+              rc == 0 and same and lines[:2] == [str(t / 'step-10'), 'replan'])
+        t = r_task({})
+        rc, lines, err, same = rsm(t)
+        check('resume error: no step dirs exits 1 with "steps resume:" on stderr',
+              rc == 1 and lines == [] and err.startswith('steps resume: ') and 'split' in err
+              and len(err.strip().splitlines()) == 1 and same)
+        rc, out, err = run_main(['resume', str(tmp / 'no-such-task')])
+        check('resume error: a missing task dir exits 1 with "steps resume:" on stderr',
+              rc == 1 and out == '' and err.startswith('steps resume: ') and len(err.strip().splitlines()) == 1)
+        t = r_task({'step-1': PASSED, 'step-2': []})
+        (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: x\n', encoding='utf-8')
+        rc, lines, err, same = rsm(t)
+        check('resume error: a next error on a candidate exits 1 with one "steps resume:" line',
+              rc == 1 and lines == [] and err.startswith('steps resume: ') and 'step-2' in err
+              and len(err.strip().splitlines()) == 1 and same)
+
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
         S_OLD = 'test -f zzz-old'
@@ -2321,6 +2433,8 @@ def main(argv):
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
+    p = sub.add_parser('resume', help='print the step dir a resumed /chain continues from, and its next action')
+    p.add_argument('task', help='a task dir holding step-<n>/ dirs')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -2346,6 +2460,8 @@ def main(argv):
         return selftest()
     if a.cmd == 'next':
         return cmd_next(a.step_dir)
+    if a.cmd == 'resume':
+        return cmd_resume(a.task)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
