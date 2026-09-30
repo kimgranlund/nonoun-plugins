@@ -1,0 +1,20 @@
+{
+  "attempt_id": "eae5e2fdafd34d83b8e2a383fe77360a",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: planner-set level, small change in fanout.py with selftest",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:20:56.438983+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/fanout/.sdlc/0156-per-attempt-gate-logs/step-1/handoff.md",
+  "owner_pid": 95702,
+  "process_pid": 95966,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:25:50.099074+00:00"
+}
