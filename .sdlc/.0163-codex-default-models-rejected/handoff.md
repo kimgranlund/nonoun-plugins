@@ -2,7 +2,7 @@
 id: T-0163
 title: "Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
@@ -46,7 +46,7 @@ Required change:
 2. `codex_roles.resolve`: the verifier's alternate model comes from configuration in `models.json`, not from a literal in the code. When no alternate other than the builder's model is configured, the verifier keeps the builder's model and the runner records that verification shared the builder's model. Documented in the level rubric and in `docs/codex-role-execution.md`.
 3. Regenerate the Codex agents and update the Codex selftest.
 
-Found blocking T-0162 step 5 (`.sdlc/0162-entry-files-in-step-handoffs/step-5/builder-L3.md`, Notes).
+Found blocking T-0162 step 5 (`.sdlc/.0162-entry-files-in-step-handoffs/step-5/builder-L3.md`, Notes).
 
 ## Constraints
 Model and effort defaults are user decisions. The user has chosen the replacement above. Claude model defaults in `run.sh` do not change. The failing test lands before or with the fix, never after.

@@ -166,8 +166,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | ⏳ proposed |
 | T-0160 | [.0160-repo-onboarding-skill](.0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | 🟢 done |
 | T-0161 | [0161-repo-reorganization](0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | M | P2 | T-0160 | 🔵 ready |
-| T-0162 | [0162-entry-files-in-step-handoffs](0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🔵 ready |
-| T-0163 | [0163-codex-default-models-rejected](0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | M | P2 | none | 🔵 ready |
+| T-0162 | [.0162-entry-files-in-step-handoffs](.0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🟢 done |
+| T-0163 | [.0163-codex-default-models-rejected](.0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | M | P2 | none | 🟢 done |
 | T-0164 | [.0164-fix-skill-lints-task-folder](.0164-fix-skill-lints-task-folder/handoff.md) | /fix lints the task folder, which has no planner file | bug | S | P2 | none | 🟢 done |
 | T-0165 | [.0165-roles-replaced-by-other-agents](.0165-roles-replaced-by-other-agents/handoff.md) | Sessions replace SDLC Lite roles with other plugins' agents | bug | S | P2 | none | 🟢 done |
 | T-0166 | [0166-agent-spawn-hook](0166-agent-spawn-hook/handoff.md) | Warn when the conductor spawns another plugin's role agent | feature | M | P2 | none | 🔵 ready |
