@@ -28,3 +28,6 @@ Design agreed with the user 2026-09-28. Batch 3 was this job done by hand; its s
 
 ## Constraints
 Read-only on the analyzed repo. Model calls capped per run.
+
+## Plan review
+- step 2 builder blocked (builder-L2.md, now in step-2.superseded-1/): plan defect: (guard) scope regex `^(plugins/sdlc-lite/scripts/traces/.*)$` rejects `plugins/sdlc-lite/scripts/traces.py` and step 1's `.gitignore` change, because the guard diffs from the chain base SHA, so every later step's scope guard sees earlier steps' files. Scope guards must allow files earlier steps created, or diff from the step's own start. Step 2's attempts.py work is left in the tree.

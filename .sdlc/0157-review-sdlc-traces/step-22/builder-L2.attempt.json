@@ -1,0 +1,20 @@
+{
+  "attempt_id": "6b416ef49b6742919037a18135590ccf",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: steps.py next printed 'build L2' for step 22",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T07:46:01.673844+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night2/traces/.sdlc/0157-review-sdlc-traces/step-22/handoff.md",
+  "owner_pid": 88777,
+  "process_pid": 88791,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T07:46:57.131182+00:00"
+}

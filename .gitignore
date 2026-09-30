@@ -8,3 +8,5 @@
 plugins/sdlc-lite/bench/logs/
 .sdlc/dogfood/
 .worktrees/
+__pycache__/
+.sdlc/runtime/
