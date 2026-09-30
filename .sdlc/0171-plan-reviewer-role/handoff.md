@@ -2,7 +2,7 @@
 id: T-0171
 title: "Independent plan-reviewer role before implementation"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,6 +30,15 @@ Decisions needed before building:
 5. The output section name `run.sh` requires for the role, and the level-rubric and handoff-format entries.
 
 Touches: `agents/plan-reviewer.md`, `scripts/run.sh` role and section tables, `scripts/check.py`, `skills/level-rubric`, `skills/handoff-format`, `skills/chain`, `agents/planner.md`, `adapters/codex/models.json`, generated Codex agents, `docs/codex-role-execution.md`.
+
+## Decisions
+Made 2026-09-30, after the Codex session's review of the Codex allocation. Decision 1 is the user's; the rest are defaults the user accepted by asking for the build, recorded so the planner does not reopen them.
+
+1. Claude row: `plan-reviewer` runs on Opus high (user choice). It never shares the planner's family: after an Opus planner (L2) `run.sh` moves the review to Fable high; after a Fable or Sonnet planner it stays Opus high.
+2. Codex: Astra high reviewing Sol plans, and `gpt-6.1-sol` high reviewing Astra plans, using the existing `verifier_alternates` map keyed by the newest planner result's recorded model. A `plan-reviewer` entry in `models.json` at level L1.
+3. Required for: any plan by planner L3, any plan with a step at builder L4 or L5, any plan with a merge step, and every replan. Routine plans keep structural validation alone.
+4. Output: `## Verdict` with `pass`, `replan`, or `blocked`, plus `## Findings` tied to steps. `pass` proceeds to `steps.py split`. `replan` takes the existing plan-defect route in `/chain` 3 with the findings appended under `## Plan review`, and after the second review that says `replan` the conductor stops and asks the user. `blocked` means a design decision is missing and always stops for the user.
+5. `run.sh` required section for the role is `Verdict`, allowed values `pass|replan|blocked`.
 
 ## Constraints
 Pipeline roles stay routed through `scripts/run.sh`. Existing Claude model rows do not change. The failing check lands before or with the role.
