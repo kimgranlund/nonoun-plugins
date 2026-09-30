@@ -17,6 +17,17 @@ In a throwaway Git project with a one-line fixture, `SDLC_BACKEND=codex SDLC_COD
 
 The verifier's mapped model is `gpt-6-luna`, the builder's model, so `verifier_alternates` moved it to `gpt-6.1-sol`. That is the Claude rule (a Sonnet build is verified on Opus) expressed on Codex.
 
+## Later the same day: role-based allocation
+
+The user then adopted the Codex session's role-based allocation for planner, builder, and verifier (`.sdlc/codex-role-allocation/`), keeping the mirror for the other roles. Every model and effort pair it uses (`gpt-6-luna` low and medium, `gpt-6.1-sol` medium, high, and xhigh in addition to low, `gpt-6-astra` high) is in the pair list above. The runner check was repeated on the new mapping in a fresh throwaway project:
+
+| Attempt | Recorded model / effort | `shared_with_builder` | Outcome |
+| --- | --- | --- | --- |
+| builder L1 | `gpt-6-luna` / low | false | done, fixture changed as requested |
+| verifier L1 | `gpt-6.1-sol` / low | false | pass |
+
+The verifier's mapped model is `gpt-6-luna` at effort low, the builder's model, so `verifier_alternates` moved it to `gpt-6.1-sol` and kept the mapped effort.
+
 ## Limits
 
 One account, one machine, one fixture. Short probes establish that each pair is accepted, not that the tiers are equivalent in quality. Native named-agent transport was not exercised.

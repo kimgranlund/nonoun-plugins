@@ -257,19 +257,19 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         from unittest import mock
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-luna effort=low -->\n## Status\ndone\n')
         with mock.patch.object(codex_roles,'verifier_alternates',return_value={}):
-            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-luna','medium',True))
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-luna','low',True))
             (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=other-model effort=low -->\n')
-            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-luna','medium',False))
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-luna','low',False))
             self.assertFalse(any(name.endswith('-alternate') for name,_ in codex_roles.definitions()))
 
     def test_verifier_alternate_comes_from_config(self):
         from unittest import mock
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-luna effort=low -->\n## Status\ndone\n')
         with mock.patch.object(codex_roles,'verifier_alternates',return_value={'gpt-6-luna':'fixture-alt'}):
-            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('fixture-alt','medium',False))
+            self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('fixture-alt','low',False))
             defs=dict(codex_roles.definitions())
         self.assertEqual(defs['sdlc-verifier-l1-alternate']['model'],'fixture-alt')
-        self.assertEqual(defs['sdlc-verifier-l1-alternate']['model_reasoning_effort'],'medium')
+        self.assertEqual(defs['sdlc-verifier-l1-alternate']['model_reasoning_effort'],'low')
 
     def test_runner_records_verifier_model_with_and_without_alternate(self):
         import shutil
