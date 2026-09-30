@@ -207,7 +207,29 @@ class LifecycleTests(fixture.CodexTests):
                     self.assertEqual((directory/(stem + '.log')).read_text(), 'preserved log')
 
 
+    def test_exit_zero_without_result_fails(self):
+        import contextlib, io, tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)/'root'
+            (root/'scripts').mkdir(parents=True)
+            (root/'scripts/run.sh').write_text('exit 0\n')
+            directory = Path(tmp)/'task'
+            directory.mkdir()
+            handoff = directory/'handoff.md'
+            handoff.write_text('## Goal\nMap seed.txt\n')
+            err = io.StringIO()
+            with patch.object(run_lifecycle.readiness, 'ROOT', root), \
+                 patch.object(run_lifecycle.readiness, 'inspect', return_value=dict(ready=True, errors=[])), \
+                 contextlib.redirect_stderr(err):
+                rc = run_lifecycle.run('scout', 'L1', handoff, 'claude', 'm', 'e')
+            self.assertEqual(rc, 1)
+            record = json.loads((directory/'scout-L1.attempt.json').read_text())
+            self.assertEqual(record['status'], 'failed')
+            self.assertEqual(record['exit_code'], 1)
+            self.assertIn('wrote no result', err.getvalue())
+
+
 if __name__ == '__main__':
-    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report','test_sigkill_recovers_claude_but_codex_native_refuses','test_claude_retry_refuses_unsafe_or_unknown_stale_records']
+    names = ['test_readiness_controls','test_both_hosts_cancel_lock_retry_and_routing','test_recovery_preserves_evidence_and_rejects_late_native_report','test_sigkill_recovers_claude_but_codex_native_refuses','test_claude_retry_refuses_unsafe_or_unknown_stale_records','test_exit_zero_without_result_fails']
     result=unittest.TextTestRunner().run(unittest.TestSuite(LifecycleTests(n) for n in names))
     sys.exit(not result.wasSuccessful())
