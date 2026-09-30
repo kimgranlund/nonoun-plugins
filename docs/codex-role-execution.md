@@ -22,7 +22,7 @@ SDLC_BACKEND=codex python3 /path/to/sdlc-lite/scripts/fanout.py run lane=T-0001 
 SDLC_BACKEND=codex /path/to/sdlc-lite/scripts/bench.sh example
 ```
 
-There are 22 project agent definitions, including three alternate verifier models. The project agents include `sdlc-builder-l1` through `sdlc-builder-l5`, three levels each of planner/verifier/researcher, and one each of scout/architect/archaeologist/filer/conductor. Ask Codex to delegate to one by name and give it a self-contained handoff. Direct delegation returns a report; the pipeline runner additionally validates and records that report. Use the runner for build/verify steps and the board.
+There are 19 project agent definitions while no verifier alternate is configured; each configured alternate adds one alternate verifier definition. The project agents include `sdlc-builder-l1` through `sdlc-builder-l5`, three levels each of planner/verifier/researcher, and one each of scout/architect/archaeologist/filer/conductor. Ask Codex to delegate to one by name and give it a self-contained handoff. Direct delegation returns a report; the pipeline runner additionally validates and records that report. Use the runner for build/verify steps and the board.
 
 The `--conductor` option adds a short managed block to the project's top-level `developer_instructions` in `.codex/config.toml`. It tells the main session to load the installed `sdlc-lite` skill and coordinate delivery through the configured workflows and roles. Existing developer instructions, settings, and comments are preserved; repeated setup is idempotent, and `conductor-off` removes only the managed block. Ordinary `install` never opts an existing project in. Run `install ... --conductor --check` to check both agent definitions and conductor guidance. Codex loads project config only for trusted projects, and a new session is needed to pick up changes. This is developer guidance for the main session, not a native named-main-agent binding. See the [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
@@ -30,15 +30,17 @@ The `--conductor` option adds a short managed block to the project's top-level `
 
 | Role | L1 | L2 | L3 | L4 | L5 |
 |---|---|---|---|---|---|
-| Builder | Sol low | Sol medium | Sol high | Astra high | Astra xhigh |
-| Planner | Sol medium | Sol high | Astra high | | |
-| Verifier | Sol medium | Sol high | Astra high | | |
-| Researcher | Sol medium | Sol high | Astra high | | |
+| Builder | Astra low | Astra medium | Astra high | Astra high | Astra xhigh |
+| Planner | Astra medium | Astra high | Astra high | | |
+| Verifier | Astra medium | Astra high | Astra high | | |
+| Researcher | Astra medium | Astra high | Astra high | | |
 | Scout | Luna high | | | | |
 | Architect | Astra high | | | | |
-| Archaeologist, filer, conductor | Sol medium | | | | |
+| Archaeologist, filer, conductor | Astra medium | | | | |
 
-These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. A pipeline verifier configured to use the latest builder's model switches between Sol and Astra to preserve independent-model verification; the selected model is recorded in the result and run log.
+These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. When a pipeline verifier's model matches the latest builder's model, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`. The selected model is recorded in the result and run log.
+
+Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. Luna for scout is kept pending a user decision. API-key accounts were not tested.
 
 ## Boundaries
 
