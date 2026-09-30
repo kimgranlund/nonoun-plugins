@@ -42,6 +42,10 @@
 # is gone from git worktree list and from disk, the user worktree is still listed, refs/heads is
 # unchanged, the primary's porcelain status and tracked-file bytes are byte-identical to the
 # snapshot, and the primary has no .worktrees dir.
+# Self-edit: a copy of the plugin runs a real planner run whose stub claude truncates the copy's
+# scripts/run.sh in place (same inode) before printing its result; the run must still exit 0, print
+# the result path, save the stub's text, write its runs.jsonl line, and mark the attempt completed.
+# The real run.sh is never touched. Its failures read "run selftest: FAIL: self-edit: <reason>".
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -518,5 +522,37 @@ grep -qx "worktree $userwt" <<<"$now_wts" || fail "temporary worktree recipe: th
   || fail "temporary worktree recipe: the primary's porcelain status changed: $(git -C "$primary" status --porcelain | tr '\n' ' ')"
 cmp -s "$primary/file.txt" "$rtmp/file.snap" || fail "temporary worktree recipe: the primary's tracked file bytes changed"
 [[ ! -e "$primary/.worktrees" ]] || fail "temporary worktree recipe: the primary has a .worktrees dir"
+
+# Self-edit: a role that rewrites run.sh in place while it runs must still get its result saved.
+# Runs a copy of the plugin, so the real run.sh is never touched.
+copy="$tmp/plugin-copy"
+cp -R "$here/.." "$copy"
+mkdir -p "$tmp/ebin"
+cat >"$tmp/ebin/claude" <<EOF
+#!/usr/bin/env bash
+: >"$copy/scripts/run.sh"
+jq -nc '{type:"result",is_error:false,result:"## Goal\\nself-edit survived",total_cost_usd:0,duration_ms:1,num_turns:1}'
+EOF
+chmod +x "$tmp/ebin/claude"
+erepo="$tmp/erepo"
+mkdir -p "$erepo"
+echo '## Goal' >"$erepo/h.md"
+git -C "$erepo" init -q
+git -C "$erepo" add -A
+git -C "$erepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+edir="$(cd "$erepo" && pwd)"
+erc=0
+eout=$(cd "$erepo" && PATH="$tmp/ebin:$PATH" "$copy/scripts/run.sh" planner L3 h.md 2>"$tmp/eerr") || erc=$?
+[[ ! -s "$copy/scripts/run.sh" ]] || fail "self-edit: the stub did not truncate the copy's run.sh"
+[[ "$erc" == 0 ]] || fail "self-edit: run.sh exited $erc, want 0 ($(cat "$tmp/eerr"))"
+[[ "$eout" == "$edir/planner-L3.md" ]] || fail "self-edit: stdout is '$eout', want '$edir/planner-L3.md'"
+[[ -f "$edir/planner-L3.md" ]] || fail "self-edit: result file planner-L3.md is missing"
+grep -qx 'self-edit survived' "$edir/planner-L3.md" \
+  || fail "self-edit: planner-L3.md lacks the stub's text: $(tr '\n' ' ' <"$edir/planner-L3.md")"
+jq -e 'select(.file == "planner-L3.md")' "$edir/runs.jsonl" >/dev/null 2>&1 \
+  || fail "self-edit: runs.jsonl has no line with file planner-L3.md"
+est=$(jq -r '.status' "$edir/planner-L3.attempt.json" 2>/dev/null || echo MISSING)
+[[ "$est" == completed ]] || fail "self-edit: planner-L3.attempt.json status is '$est', want completed"
 
 echo "run selftest: PASS"

@@ -38,7 +38,8 @@
 # this run: <branch>". It says "appeared during this run", not that this role made them, because
 # concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
 # it never removes or deletes anything and never changes the exit code.
-# Exit codes: 0 ok, 1 run failed or returned no result, 2 usage or preflight, 3 result lacks its section.
+# Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
+# saved result into 1), 2 usage or preflight, 3 result lacks its section.
 # Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
 # session's last result, and a background task notification arriving after the report ends the session
 # with its own result ("origin":{"kind":"task-notification"}), losing the report. The log is parsed
@@ -65,7 +66,14 @@
 # committed later. Every other role gets SDLC_BASE_SHA removed from its env (even when the caller
 # exported it) and writes no base-sha. Caveat: on a merge step the builder's own merge commit moves
 # the base on the verifier run, so merge-step criteria use HEAD^1 instead.
+# Self-edit: bash reads a script from disk as it runs it, so a role that rewrites run.sh in place
+# (a builder editing this file) would move the running process to its old byte offset in the new
+# text, and a shorter file ends the run at EOF with status 0 and no result. Everything after
+# set -euo pipefail is one { ... } group ending in an explicit exit: bash parses the whole group
+# before running any of it and never reads the file again, so the running process keeps its
+# behavior and still saves its result. Keep new code inside the group.
 set -euo pipefail
+{
 
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
 backend="${SDLC_BACKEND:-claude}"
@@ -406,3 +414,5 @@ if (( bad )); then
   exit 3
 fi
 echo "$result"
+exit 0
+}
