@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d3bb8aa24e61416cb6e5f238a00ac69d",
+  "name": "builder-L1",
+  "role": "builder",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "low",
+  "routing_reason": "builder L1: step level from plan, run gates",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:26:13.404905+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0149-trace-contract-dependents/step-2/handoff.md",
+  "owner_pid": 89439,
+  "process_pid": 89459,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:28:21.726405+00:00"
+}

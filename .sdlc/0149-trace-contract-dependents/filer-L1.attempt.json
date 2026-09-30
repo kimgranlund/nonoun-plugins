@@ -1,0 +1,20 @@
+{
+  "attempt_id": "0e30123b55e74722a152988c0b5b52d7",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "filer L1: chain loose-ends draft",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:33:29.066697+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0149-trace-contract-dependents/handoff.md",
+  "owner_pid": 69309,
+  "process_pid": 69352,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:33:45.292789+00:00"
+}
