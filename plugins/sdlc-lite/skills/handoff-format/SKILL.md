@@ -16,6 +16,7 @@ user-invocable: false
   scout-L1.md           outputs of task-level roles: <role>-<level>.md
   planner-L2.md
   planner-L3-2.md       a replan; the latest runs.jsonl record is current
+  plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
@@ -99,7 +100,7 @@ What must not change, limits, deadlines. "None" if none.
 Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Plan review
-Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. A scope widening (/chain 4.9) adds `scope widened: step <n>: <steps.py widen stdout line>`; a `steps.py widen` refusal adds `scope decision: step <n>: <paths>` and its stderr before the replan. Earlier entries stay. The planner fixes that step on the replan.
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. A scope widening (/chain 4.9) adds `scope widened: step <n>: <steps.py widen stdout line>`; a `steps.py widen` refusal adds `scope decision: step <n>: <paths>` and its stderr before the replan. A plan review whose Verdict is `replan` (`steps.py review` prints `replan`, /chain 3) adds `plan review: replan: <result path>` and one `plan review: <verdict>: <finding>` entry per item of the reviewer's `## Findings`, before the planner L3 replan. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)

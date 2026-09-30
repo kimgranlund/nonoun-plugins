@@ -2,7 +2,7 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | next <step dir> | resume <task dir> |
+                 lint <planner.md | task dir> | review <task dir> | next <step dir> | resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
@@ -39,6 +39,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             (/chain 3)" (a red guard, if any, is named on the same line). A tree dirty before
             the guards passes when they leave it as it was. Nothing is undone.
             A full split (no --only) and lint never execute a span.
+            Refuses a plan the plan review rejected: when the newest plan-reviewer-*.md that counts
+            after the chosen plan (order.counts_after) has Verdict replan or blocked, it prints
+            "steps: <plan>: the newest plan review <file> says <verdict>; a rejected plan is never
+            split" and a last line "plan defect: plan review: <verdict>; run steps.py review
+            (/chain 3)", with or without --only, for a file or a dir target.
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
@@ -86,6 +91,27 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             with the plan defect last line. A step with no ### Read first stays valid.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
+  review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
+            a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
+            or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
+            exit 0. Rules, in order:
+              no planner-*.md                            -> one "steps review: " line on stderr,
+                nothing on stdout, exit 1
+              the plan's ## Assumptions section (lines up to the next ## heading) holds a list item
+                whose text after "- " or "* " starts with "unresolved:" -> stop (the reason quotes
+                the item; the user decides)
+              required when: the plan's file name level is L3, or a step block's level: is L4 or L5,
+                or a step title starts with "Merge ", or the task dir holds two or more planner
+                results (a replan), or handoff.md holds a line "## Plan review"
+              not required                               -> split
+              no plan-reviewer-*.md counts after the plan (order.counts_after) -> review L1
+              newest such result's Verdict (first non-blank line under ## Verdict, lowercased):
+                pass                                     -> split
+                replan                                   -> replan, but stop when the task dir holds
+                  two or more plan-reviewer results with Verdict replan (the count is per task dir)
+                blocked                                  -> stop (ask its ## Missing decisions)
+                anything else                            -> review L1 (a rerun, never a replan), but
+                  two consecutive verdict-less reviews after the plan -> stop
   next      print the next escalation action for a step dir (/chain step 4), from its newest
             builder-*.md and verifier-*.md by order.py (ordered, newest, counts_after; never file
             times). Writes nothing. Stdout: "<action>" or "<action> L<n>", then "reason: <text>",
@@ -179,6 +205,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
 import argparse
 import contextlib
 import io
+import json
 import os
 import pathlib
 import re
@@ -837,6 +864,12 @@ def split(target, only=None, guard_timeout=300):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write."""
     plan, task_dir = find_plan(target)
+    rejected = rejected_by_review(plan, task_dir)
+    if rejected:
+        r, v = rejected
+        raise Fail(f'steps: {plan}: the newest plan review {os.path.basename(r)} says {v}; '
+                   f'a rejected plan is never split\n'
+                   f'plan defect: plan review: {v}; run steps.py review (/chain 3)')
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
     lint_or_fail(plan, steps)
@@ -891,7 +924,7 @@ def cmd_lint(target):
 # --- next -------------------------------------------------------------------
 
 HANDOFF_LEVEL_RE = re.compile(r'^level: L([1-5])\s*$')
-RESULT_LEVEL_RE = re.compile(r'^[a-z]+-L(\d+)')
+RESULT_LEVEL_RE = re.compile(r'^[a-z][a-z-]*-L(\d+)')
 
 
 def verifier_level(build_level):
@@ -1120,6 +1153,138 @@ def cmd_resume(task):
         return 1
     if d is not None:
         print(d)
+    print(action if level is None else f'{action} L{level}')
+    print(f'reason: {reason}')
+    for p in read:
+        print(f'read: {p}')
+    return 0
+
+
+# --- review -----------------------------------------------------------------
+
+REVIEW_VERDICTS = ('pass', 'replan', 'blocked')
+
+
+def review_verdict(path):
+    """'pass', 'replan', or 'blocked' from the first non-blank line under ## Verdict (lowercased), else
+    None. Never raises."""
+    try:
+        body = section(path, 'Verdict')
+    except Exception:
+        return None
+    first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
+    return first.lower() if first.lower() in REVIEW_VERDICTS else None
+
+
+def plan_facts(plan):
+    """(unresolved assumption items, step levels, step titles) of a plan, read leniently: a malformed
+    plan is split's and lint's to refuse, never review's."""
+    unresolved, levels, titles = [], [], []
+    in_assume = in_step = False
+    for line in pathlib.Path(plan).read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            in_assume = line.rstrip() == '## Assumptions'
+            m = STEP_RE.match(line)
+            in_step = bool(m)
+            if m:
+                titles.append(m.group(2).strip())
+            continue
+        if in_assume:
+            m = re.match(r'^\s*[-*] (.*)$', line)
+            if m and m.group(1).lstrip().startswith('unresolved:'):
+                unresolved.append(m.group(1).strip())
+        if in_step:
+            m = HANDOFF_LEVEL_RE.match(line)
+            if m:
+                levels.append(int(m.group(1)))
+    return unresolved, levels, titles
+
+
+def rejected_by_review(plan, task_dir):
+    """(plan-reviewer result, verdict) when the newest plan-reviewer result that counts after plan
+    says replan or blocked, else None."""
+    after = [r for r in order.ordered(task_dir, 'plan-reviewer') if order.counts_after(r, plan)]
+    if not after:
+        return None
+    v = review_verdict(after[-1])
+    return (after[-1], v) if v in ('replan', 'blocked') else None
+
+
+def review_action(task):
+    """Return (action, level or None, reason, [result paths read]) for a task dir's newest plan:
+    split, review L1, replan, or stop. Reads only; never file times. Ordering comes from order.py
+    alone (ordered, newest, counts_after)."""
+    t = pathlib.Path(task)
+    if not t.is_dir():
+        raise Fail(f'steps review: no such directory: {t}')
+    plans = order.ordered(t, 'planner')
+    if not plans:
+        raise Fail(f'steps review: no planner-*.md in {t}; run the planner first (/chain 3)')
+    plan = plans[-1]
+    pname = os.path.basename(plan)
+    read = [plan]
+    unresolved, levels, titles = plan_facts(plan)
+    if unresolved:
+        return ('stop', None, f'{pname} lists an unresolved assumption: "{unresolved[0]}"; the user decides',
+                read)
+    why = []
+    if result_level(plan) == 3:
+        why.append(f'{pname} is a planner L3 plan')
+    if any(n in (4, 5) for n in levels):
+        why.append('a step is at builder L4 or L5')
+    if any(x.startswith('Merge ') for x in titles):
+        why.append('the plan has a merge step')
+    if len(plans) >= 2:
+        why.append(f'{len(plans)} planner results (a replan)')
+    h = t / 'handoff.md'
+    if h.is_file() and any(line.rstrip() == '## Plan review'
+                           for line in h.read_text(encoding='utf-8').splitlines()):
+        why.append('handoff.md holds ## Plan review')
+    if not why:
+        return 'split', None, f'{pname} is a routine plan; no plan review is required', read
+    need = '; '.join(why)
+    reviews = order.ordered(t, 'plan-reviewer')
+    after = [r for r in reviews if order.counts_after(r, plan)]
+    if not after:
+        return 'review', 1, f'a plan review is required ({need}) and none counts after {pname}', read
+    r = after[-1]
+    rname = os.path.basename(r)
+    read.append(r)
+    v = review_verdict(r)
+    if v == 'pass':
+        return 'split', None, f'the newest plan review {rname} passed {pname}', read
+    if v == 'replan':
+        replans = [x for x in reviews if review_verdict(x) == 'replan']
+        if len(replans) >= 2:
+            read += [x for x in replans if x not in read]
+            return ('stop', None,
+                    f'{len(replans)} plan reviews in {t} say replan (newest {rname}); '
+                    'the second replan review asks the user', read)
+        return 'replan', None, f'the newest plan review {rname} says replan; replan at planner L3', read
+    if v == 'blocked':
+        return ('stop', None,
+                f'the newest plan review {rname} says blocked; ask the user its ## Missing decisions', read)
+    runs = 0
+    for x in reversed(after):
+        if review_verdict(x) is not None:
+            break
+        runs += 1
+        if x not in read:
+            read.append(x)
+    if runs <= 1:
+        return ('review', 1,
+                f'{rname} has no verdict (pass/replan/blocked) under ## Verdict; rerun the plan-reviewer, '
+                'never a replan', read)
+    return ('stop', None,
+            f'{runs} consecutive plan reviews with no verdict after {pname} (newest {rname}); ask the user', read)
+
+
+def cmd_review(task):
+    try:
+        action, level, reason, read = review_action(task)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
     print(action if level is None else f'{action} L{level}')
     print(f'reason: {reason}')
     for p in read:
@@ -2411,6 +2576,139 @@ def selftest():
             check('widen: (d) the span sees SDLC_BASE_SHA from base-sha, not HEAD',
                   rc == 0 and err == '' and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8'))
 
+        # (r) review: whether a plan needs a plan review, and the verdict routing; each rule with its
+        # negative form. Plan files hold STEP-shaped blocks; runs.jsonl orders results when given.
+        def r_plan(level='L1', title='a', tail=''):
+            return (f'## Step 1: {title}\nlevel: {level}\n### Do\nx\n### Acceptance criteria\n- one works\n'
+                    f'{tail}')
+
+        def r_review(v):
+            return f'## Verdict\n{v}\n\n## Findings\n- step 1: x\n\n## Missing decisions\nNone\n'
+
+        def r_task(files, runs=None, handoff='## Goal\ng\n'):
+            count[0] += 1
+            d = tmp / f'review{count[0]}'
+            d.mkdir()
+            if handoff is not None:
+                (d / 'handoff.md').write_text(handoff, encoding='utf-8')
+            for name, text in files.items():
+                (d / name).write_text(text, encoding='utf-8')
+            if runs is not None:
+                (d / 'runs.jsonl').write_text(''.join(json.dumps(
+                    {'role': n.rsplit('-L', 1)[0], 'level': 'L' + n.rsplit('-L', 1)[1][0], 'file': n}) + '\n'
+                    for n in runs), encoding='utf-8')
+            return d
+
+        def r_first(d):
+            before = snapshot(d)
+            rc, out, err = run_main(['review', str(d)])
+            lines = out.splitlines()
+            return (lines[0] if rc == 0 and len(lines) >= 2 and lines[1].startswith('reason: ')
+                    and snapshot(d) == before else f'rc={rc} err={err.strip()}')
+
+        d = r_task({})
+        before = snapshot(d)
+        rc, out, err = run_main(['review', str(d)])
+        d2 = r_task({'planner-L2.md': r_plan()})
+        check('(r) no planner-*.md: one steps review: line on stderr, nothing on stdout, exit 1; '
+              'a planner result exits 0',
+              rc == 1 and out == '' and err.startswith('steps review: ') and len(err.strip().splitlines()) == 1
+              and snapshot(d) == before and run_main(['review', str(d2)])[0] == 0)
+        rc, out, _ = run_main(['review', str(d2)])
+        check('(r) output: the action, then reason:, then read: <plan path>',
+              rc == 0 and out.splitlines()[0] == 'split' and out.splitlines()[1].startswith('reason: ')
+              and out.splitlines()[2] == f'read: {d2 / "planner-L2.md"}')
+        check('(r) an unresolved: item under ## Assumptions stops, for - and * items, and the reason quotes it',
+              r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: flag or positional\n')}))
+              == 'stop'
+              and r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n* unresolved: which one\n')}))
+              == 'stop'
+              and 'unresolved: flag or positional' in run_main(['review', str(r_task(
+                  {'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: flag or positional\n')}))])[1])
+        check('(r) negative: a settled assumption, an unresolved: item outside ## Assumptions, or one not at the '
+              'item start does not stop',
+              r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- settled: flag\n')})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan(tail='\n## Risks\n- unresolved: x\n')})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- was unresolved: x\n')}))
+              == 'split')
+        check('(r) a routine plan (planner L2, steps at L1..L3, no merge, one plan, no ## Plan review) -> split',
+              r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
+        check('(r) a planner L3 plan -> review L1; negative: planner L2 -> split',
+              r_first(r_task({'planner-L3.md': r_plan()})) == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
+        check('(r) a step at L4 or L5 -> review L1; negative: a step at L3 -> split',
+              r_first(r_task({'planner-L2.md': r_plan('L4')})) == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan('L5')})) == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
+        check('(r) a step titled Merge <branch> -> review L1; negative: a title Merger or merge -> split',
+              r_first(r_task({'planner-L2.md': r_plan(title='Merge lane/x')})) == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan(title='Merger of x')})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan(title='merge lane/x')})) == 'split')
+        check('(r) two planner results (a replan) -> review L1; negative: one -> split',
+              r_first(r_task({'planner-L2.md': r_plan(), 'planner-L2-2.md': r_plan()})) == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
+        check('(r) handoff.md with a ## Plan review line -> review L1; negative: ### Plan review -> split',
+              r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n## Plan review\nplan defect: x\n'))
+              == 'review L1'
+              and r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n### Plan review\nx\n'))
+              == 'split')
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})
+        rc, out, _ = run_main(['review', str(d)])
+        check('(r) a pass review after the plan -> split, reading the plan and the review',
+              rc == 0 and out.splitlines()[0] == 'split'
+              and f'read: {d / "plan-reviewer-L1.md"}' in out.splitlines())
+        check('(r) negative: a pass review before a newer plan does not count -> review L1',
+              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass'),
+                              'planner-L3-2.md': r_plan()},
+                             ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md'])) == 'review L1')
+        check('(r) one replan review -> replan; a PASS verdict is read lowercased -> split',
+              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan')})) == 'replan'
+              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('PASS')})) == 'split')
+        check('(r) a second replan review in the task dir -> stop; negative: a replan then a pass -> split',
+              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
+                              'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('replan')},
+                             ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md', 'plan-reviewer-L1-2.md']))
+              == 'stop'
+              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
+                                  'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('pass')},
+                                 ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md',
+                                  'plan-reviewer-L1-2.md'])) == 'split')
+        check('(r) a blocked review -> stop; negative: the same review with pass -> split',
+              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('blocked')})) == 'stop'
+              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})) == 'split')
+        check('(r) one verdict-less review -> review L1 (a rerun, never a replan); two consecutive -> stop',
+              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe')})) == 'review L1'
+              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe'),
+                                  'plan-reviewer-L1-2.md': '## Findings\nNone\n'},
+                                 ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'])) == 'stop')
+        check('(r) negative: a verdict-less review before the plan does not count toward two -> review L1',
+              r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan(),
+                              'plan-reviewer-L1-2.md': r_review('maybe')},
+                             ['plan-reviewer-L1.md', 'planner-L3.md', 'plan-reviewer-L1-2.md'])) == 'review L1')
+
+        # (r) split refuses a plan whose newest counting review says replan or blocked, before any write
+        for v in ('replan', 'blocked'):
+            for how, argv in (('a dir target', lambda d: ['split', str(d)]),
+                              ('--only 1', lambda d: ['split', str(d), '--only', '1']),
+                              ('a file target', lambda d: ['split', str(d / 'planner-L3.md')])):
+                d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review(v)})
+                before = snapshot(d)
+                rc, out, err = run_main(argv(d))
+                last = err.strip().splitlines()[-1] if err.strip() else ''
+                check(f'(r) split refuses a plan whose newest review says {v} ({how}), writes nothing',
+                      rc == 1 and out == '' and snapshot(d) == before and not (d / 'step-1').exists()
+                      and f'the newest plan review plan-reviewer-L1.md says {v}; a rejected plan is never split'
+                      in err and last == f'plan defect: plan review: {v}; run steps.py review (/chain 3)')
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})
+        rc, _, _ = run_main(['split', str(d)])
+        check('(r) negative: split writes a plan whose newest review says pass',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
+                    'planner-L3-2.md': r_plan()}, ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md'])
+        rc, _, _ = run_main(['split', str(d)])
+        check('(r) negative: split writes a replan whose rejecting review ran before it',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -2435,6 +2733,8 @@ def main(argv):
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p = sub.add_parser('resume', help='print the step dir a resumed /chain continues from, and its next action')
     p.add_argument('task', help='a task dir holding step-<n>/ dirs')
+    p = sub.add_parser('review', help='print whether a task dir\'s newest plan needs a plan review, and the next action')
+    p.add_argument('task', help='a task dir holding planner-*.md and any plan-reviewer-*.md results')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -2462,6 +2762,8 @@ def main(argv):
         return cmd_next(a.step_dir)
     if a.cmd == 'resume':
         return cmd_resume(a.task)
+    if a.cmd == 'review':
+        return cmd_review(a.task)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)

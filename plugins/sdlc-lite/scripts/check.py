@@ -35,6 +35,12 @@
 10. Read-first route: the phrase `Read first` (entry files a role reads before a step) appears in
    agents/planner.md, agents/builder.md, agents/verifier.md, skills/fix/SKILL.md, skills/chain/SKILL.md,
    skills/handoff-format/SKILL.md, and scripts/steps.py.
+11. Plan-review route (in the plan-defect route dict): `plan-reviewer` appears in scripts/run.sh, the level-rubric,
+   chain, plan, and handoff-format skills, agents/conductor.md, and scripts/steps.py; `steps.py review` in the chain,
+   plan, level-rubric, and handoff-format skills, agents/conductor.md, and scripts/steps.py; `## Assumptions` and
+   `unresolved:` in agents/planner.md, agents/plan-reviewer.md, and scripts/steps.py; `Missing decisions` in
+   agents/plan-reviewer.md, skills/chain/SKILL.md, and agents/conductor.md; and `plan review:` in agents/planner.md,
+   skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and agents/conductor.md.
 """
 import re, sys, pathlib, subprocess, tempfile, shutil
 
@@ -120,6 +126,16 @@ PLAN_DEFECT_DOCS = {
     'swap new:': ('agents/verifier.md', 'scripts/steps.py'),
     'steps.py swap': ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
                       'skills/level-rubric/SKILL.md', 'scripts/steps.py'),
+    # Plan-review route (docstring item 11): a plan the rubric names is reviewed before any split.
+    'plan-reviewer': ('scripts/run.sh', 'skills/level-rubric/SKILL.md', 'skills/chain/SKILL.md', 'agents/conductor.md',
+                      'skills/plan/SKILL.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py'),
+    'steps.py review': ('skills/chain/SKILL.md', 'agents/conductor.md', 'skills/plan/SKILL.md',
+                        'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py'),
+    '## Assumptions': ('agents/planner.md', 'agents/plan-reviewer.md', 'scripts/steps.py'),
+    'unresolved:': ('agents/planner.md', 'agents/plan-reviewer.md', 'scripts/steps.py'),
+    'Missing decisions': ('agents/plan-reviewer.md', 'skills/chain/SKILL.md', 'agents/conductor.md'),
+    'plan review:': ('agents/planner.md', 'skills/chain/SKILL.md', 'skills/handoff-format/SKILL.md',
+                     'agents/conductor.md'),
 }
 for word, rels in PLAN_DEFECT_DOCS.items():
     for rel in rels:
