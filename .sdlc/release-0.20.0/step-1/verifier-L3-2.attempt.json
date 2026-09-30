@@ -1,0 +1,20 @@
+{
+  "attempt_id": "cad24905d54f4b8899625837d71f576f",
+  "name": "verifier-L3-2",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "release 0.20.0: second independent pass after the Upgrading note was corrected, verifier L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T17:22:17.426231+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/release-0.20.0/step-1/handoff.md",
+  "owner_pid": 26661,
+  "process_pid": 26900,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T17:43:31.629322+00:00"
+}
