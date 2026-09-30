@@ -22,6 +22,10 @@
 # search of the whole filesystem or a home folder (find, bfs, rg, grep -r on /, ~, "$HOME",
 # /Users, also behind sudo or inside bash -c) with a stderr naming the role, and allows
 # find ., a path below those roots, ls / without -R, a quoted mention, and no role.
+# block-role-spawn.sh, in a conductor session (agent_type sdlc-lite:conductor or conductor, or
+# SDLC_ROLE=conductor), denies an Agent spawn of an sdlc-lite: agent or another plugin's builder,
+# verifier, reviewer, planner, or checker agent with a stderr naming run.sh, and allows Explore,
+# general-purpose, harness:fact-finder, non-conductor sessions, and non-Agent tools.
 # Publish phrases, kill-pattern words, and root-search phrases are built with printf so this
 # file never holds one as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
@@ -35,6 +39,7 @@ pk="$hooks/block-pattern-kill.sh"
 sw="$hooks/block-stray-worktree.sh"
 rf="$hooks/block-repo-format.sh"
 ds="$hooks/block-disk-scan.sh"
+rs="$hooks/block-role-spawn.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -344,5 +349,33 @@ run "$bg" "$m_json" >/dev/null; rc=$?
 
 run "$bg" "$m_json" SDLC_HEADLESS=0 >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "monitor SDLC_HEADLESS=0: exit $rc, want 0"
+
+# rsj <agent_type or empty> <subagent_type> [tool]: the hook's JSON for one Agent spawn.
+rsj() {
+  local at="" tool="${3:-Agent}"
+  [[ -n "$1" ]] && at=$(printf ',"agent_type":"%s"' "$1")
+  printf '{"tool_name":"%s"%s,"tool_input":{"subagent_type":"%s","prompt":"x"}}' "$tool" "$at" "$2"
+}
+out=$(run "$rs" "$(rsj sdlc-lite:conductor sdlc-lite:builder)"); rc=$?
+[[ $rc -eq 2 ]] || fail "role-spawn conductor + sdlc-lite:builder: exit $rc, want 2"
+grep -q run.sh <<<"$out" || fail "role-spawn conductor + sdlc-lite:builder: stderr lacks run.sh"
+while IFS='|' read -r at sub env want; do
+  if [[ -n "$env" ]]; then run "$rs" "$(rsj "$at" "$sub")" "$env" >/dev/null; rc=$?
+  else run "$rs" "$(rsj "$at" "$sub")" >/dev/null; rc=$?; fi
+  [[ $rc -eq $want ]] || fail "role-spawn agent_type '$at' + $sub ${env}: exit $rc, want $want"
+done <<'CASES'
+sdlc-lite:conductor|sdlc-lite:scout||2
+sdlc-lite:conductor|other:code-reviewer||2
+sdlc-lite:conductor|harness:agent-checker||2
+conductor|sdlc-lite:verifier||2
+|sdlc-lite:planner|SDLC_ROLE=conductor|2
+sdlc-lite:conductor|Explore||0
+sdlc-lite:conductor|general-purpose||0
+sdlc-lite:conductor|harness:fact-finder||0
+|sdlc-lite:builder||0
+probecond|sdlc-lite:builder||0
+CASES
+run "$rs" "$(rsj sdlc-lite:conductor sdlc-lite:builder Bash)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "role-spawn tool Bash + conductor: exit $rc, want 0"
 
 echo "hook selftest: PASS"
