@@ -93,12 +93,12 @@ What must not change, limits, deadlines. "None" if none.
 Only for scout, archaeologist, or researcher runs: the exact question.
 
 ## Plan review
-Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. Earlier entries stay. The planner fixes that step on the replan.
+Optional. Written by /chain or the conductor, never by a role: a plan defect found before or during the build, quoting the `steps.py split` refusal or the role's `plan defect:` note, or a `recurring finding:` entry quoting both notes of a finding that repeated after it was addressed. A criterion swap adds one line, `swap applied: step <n>: <steps.py swap stdout line>`, and a swap refusal adds the `steps.py swap` stderr (its last line starts `plan defect:`) before the replan. A scope widening (/chain 4.9) adds `scope widened: step <n>: <steps.py widen stdout line>`; a `steps.py widen` refusal adds `scope decision: step <n>: <paths>` and its stderr before the replan. Earlier entries stay. The planner fixes that step on the replan.
 ```
 
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
 
-`scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand.
+`scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand. `steps.py widen` widens the scope criterion with conductor-allowed paths (/chain 4.9) and appends one item per path to a `## Scope widened` section at the end of the step handoff: ``- `<path>`: allowed by a conductor scope decision (steps.py widen)``.
 
 Copied from the plan's step block, plus the task goal for orientation:
 
