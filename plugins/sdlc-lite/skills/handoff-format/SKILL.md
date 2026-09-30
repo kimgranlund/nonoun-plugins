@@ -72,7 +72,7 @@ Front matter is purely additive: a handoff with no front matter keeps working un
 
 `status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 
-Origin: this convention comes from `/Users/kimba/Projects/nonoun/gen-ui-system-svelte-lite/.sdlc/_templates/*.md` and that repo's `CONTEXT.md`. In this repo, `.sdlc/tickets/T-*.md` are in-repo examples of the format.
+Origin: this convention comes from the `.sdlc/_templates/` and `CONTEXT.md` of the gen-ui-system-svelte-lite project. The ticket templates this plugin ships are in `skills/ticket/templates/`.
 
 ## Task handoff (`.sdlc/<task>/handoff.md`)
 
@@ -108,6 +108,8 @@ Copied from the plan's step block, plus the task goal for orientation:
 
 ## Step <n>: <title>
 level: L<n>
+### Read first
+- `<path>`
 
 ### Do
 ...
@@ -115,6 +117,8 @@ level: L<n>
 ### Acceptance criteria
 - ...
 ```
+
+`### Read first` is optional. For each file the step changes, it lists the nearest `AGENTS.md` in that file's folder or a folder above it, leaving out the root entry, one ``- `<path>` `` line each, relative to the repository root. A step whose only entry is the root has no `### Read first`. `steps.py lint` refuses a listed path that does not exist.
 
 ### Merge step
 

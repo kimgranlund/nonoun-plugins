@@ -2,7 +2,7 @@
 
 Read only when SDLC Lite is present. Other projects should use their existing work and verification records.
 
-Progressive Context owns durable intent, capability boundaries, context routes, and qualification claims. SDLC Lite owns work execution: tickets, plans, runs, verification, and work closure.
+Progressive Context owns durable intent, capability boundaries, context routes, and qualification claims. SDLC Lite owns work execution: tickets, plans, runs, verification, and work closure. SDLC Lite's `onboard` skill is the setup step for a repository's entry files and docs layout.
 
 - Ticket: a desired change; link the capability contract from its Context section.
 - Plan: steps toward that change; derive checks from the contract's criteria.

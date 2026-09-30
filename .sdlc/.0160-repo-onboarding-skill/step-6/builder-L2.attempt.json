@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d506d08bb3ef44eea800c02fd3e45bb5",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "T-0160 /chain loose ends: three small fixes inside the task goal, builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T22:59:44.813159+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/0160-repo-onboarding-skill/step-6/handoff.md",
+  "owner_pid": 65667,
+  "process_pid": 65682,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T23:00:20.798245+00:00"
+}

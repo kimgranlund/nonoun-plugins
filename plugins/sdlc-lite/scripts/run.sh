@@ -179,10 +179,15 @@ if [[ "$backend" == claude && "$role" == verifier ]]; then
   fi
 fi
 
+# Codex: a verifier whose model equals the build's switches to a configured alternate, or else
+# shares the build's model; resolve then prints a third token "shared" (T-0163).
+shared=""
 if [[ "$backend" == codex ]]; then
   resolved=$(python3 "$plugin_root/scripts/codex_roles.py" resolve "$role" "$level" "$dir") || exit 2
-  read -r model effort <<<"$resolved"
+  read -r model effort shared <<<"$resolved"
 fi
+shared_with_builder=false; shared_note=""
+if [[ "$shared" == shared ]]; then shared_with_builder=true; shared_note=" shared_with_builder=yes"; fi
 
 # Shared lifecycle owner holds the directory lock across either backend.
 if [[ "${SDLC_DRY_RUN:-}" != 1 && "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
@@ -373,14 +378,15 @@ last_ev=$(jq -s -c 'last // empty' <<<"$events" 2>/dev/null || true)
 if [[ -z "$pick" ]] || ! jq -e '.is_error == false and (.result | strings | length > 0)' <<<"$pick" >/dev/null 2>&1; then
   echo "$role returned no result; see $log" >&2; exit 1
 fi
-{ echo "<!-- role=$role level=$level model=$model effort=$effort -->"; jq -r '.result' <<<"$pick"; } >"$result"
+{ echo "<!-- role=$role level=$level model=$model effort=$effort$shared_note -->"; jq -r '.result' <<<"$pick"; } >"$result"
 detect_strays || :
 stray_wt_json=$(json_array ${stray_wt[@]+"${stray_wt[@]}"}) || stray_wt_json='[]'
 stray_br_json=$(json_array ${stray_br[@]+"${stray_br[@]}"}) || stray_br_json='[]'
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
   --arg attempt_id "${SDLC_ATTEMPT_ID:-}" --arg routing_reason "${SDLC_ROUTING_REASON:-}" \
   --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
-  '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file,
+  --argjson shared_with_builder "$shared_with_builder" \
+  '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file, shared_with_builder: $shared_with_builder,
     attempt_id: $attempt_id, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
 

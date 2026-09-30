@@ -1,0 +1,20 @@
+{
+  "attempt_id": "4c4a40cae21843b2a1b70a279ca32f6a",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "/fix fast lane: verifier L1 after builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T23:03:02.905110+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/onboard-digest-gate/step-1/handoff.md",
+  "owner_pid": 70608,
+  "process_pid": 70627,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T23:03:28.509128+00:00"
+}

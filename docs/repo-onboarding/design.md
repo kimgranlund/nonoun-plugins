@@ -1,6 +1,6 @@
 # Repository onboarding: entry files and docs layout
 
-Status: proposed v0.6. Recorded: 2026-09-29. Nothing in this document is implemented. Ticket: T-0160.
+Status: implemented v0.7. Recorded: 2026-09-29. T-0160 implements it in `plugins/sdlc-lite/scripts/onboard.py` and the `onboard` skill. Ticket: T-0160.
 
 This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), the [third review](../validation/repo-onboarding-design-review-3.md), and the [loading probe](../validation/nested-entry-file-loading.md).
 
@@ -35,7 +35,7 @@ SDLC Lite on Claude Code has no setup step. The runner and ticket scripts create
 
 | File | Managed block | Starter text |
 | --- | --- | --- |
-| Root `AGENTS.md` | Link to `docs/AGENTS.md` and the guidance for work records | Headings for project description, shared rules, and checks |
+| Root `AGENTS.md` | Link to `docs/AGENTS.md`, the guidance for work records, and the rule that plan, build, and verify work runs through SDLC Lite | Headings for project description, shared rules, and checks |
 | Root `CLAUDE.md` | `@AGENTS.md` | None |
 | `docs/AGENTS.md` | How to add a document, and links to topics, homes, and loose documents | None |
 | `docs/CLAUDE.md` | `@AGENTS.md` | None |
@@ -71,7 +71,7 @@ The template text is in [Templates](#templates).
 
 Claude Code loads a nested `AGENTS.md` only through an `@` import in a `CLAUDE.md` that is itself loaded. Codex loads entries from the repository root down to its working directory, and SDLC Lite roles start at the root. Host loading therefore cannot be the mechanism for roles.
 
-- For each plan step, the planner names the nearest entry file above each file the step changes. The list reaches the step handoff, and the role reads those files. Details are in ticket T-0162.
+- For each plan step, the planner names the nearest entry file above each file the step changes. The list reaches the step handoff, and the role reads those files. Details are in ticket T-0162, and the [entry files live run](../validation/entry-files-live-run.md) shows it on both hosts.
 - A Claude Code role that reads a file in a `docs/` folder also gets that folder's entry through the stub. The entry is then in context twice. The cost is accepted. In the probe, a run with two 25-line entries used about 1,600 more input tokens on Claude Code and about 1,800 more on Codex. The probe report notes that the difference is not purely the entry files, which by size alone are about 430 tokens each.
 - The stubs in `docs/` serve interactive sessions, which have no handoff.
 
@@ -198,6 +198,10 @@ T-0160 adds one sentence to the Progressive Context SDLC Lite integration refere
 
 The skill creates routes and homes for documents. It creates no contracts, assessments, or lifecycle states.
 
+## Role routing
+
+A consumer conductor on 0.18.0 replaced SDLC Lite roles with other plugins' agents for a full day (ticket T-0165). The conductor contract now forbids that. A session that is not the conductor has no such contract, so the root managed block carries the same rule to every session in the repository.
+
 ## Validation required before shipping
 
 Existing checks to run, which carry their own controls: the packaging check, the role and skill contract check, generated Codex agent parity, and the Progressive Context skill validation for the one-sentence edit.
@@ -251,6 +255,7 @@ Managed by SDLC Lite onboard, template <N>.
 
 `.sdlc/` holds SDLC Lite tickets, plans, and run records.
 
+- Plan, build, and verify work runs through SDLC Lite: `/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`, which launch roles with `run.sh`. Do not spawn another plugin's builder, planner, or reviewer agent in their place.
 - Handoff files follow the `sdlc-lite:handoff-format` skill.
 - Tickets are created, closed, and archived through the `sdlc-lite:ticket` skill.
 - `.sdlc/roadmap.md` is generated. Do not edit it by hand.
@@ -280,6 +285,7 @@ Managed by SDLC Lite onboard, template <N>.
 
 ## Contents
 
+<a link to README.md when it exists>
 <one link per topic: to its entry, or to its single document>
 <one line per home that exists: a link to its README.md, or the folder name>
 <one link per loose document>

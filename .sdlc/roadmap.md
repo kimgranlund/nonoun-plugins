@@ -164,8 +164,14 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0157 | [0157-review-sdlc-traces](0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | ⏳ proposed |
 | T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | S | P2 | none | 🟢 done |
 | T-0159 | [0159-lifecycle-selftests-flake-under-load](0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | ⏳ proposed |
-| T-0160 | [0160-repo-onboarding-skill](0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | 🔵 ready |
-| T-0161 | [0161-repo-reorganization](0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | M | P2 | T-0160 | ⏳ proposed |
-| T-0162 | [0162-entry-files-in-step-handoffs](0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🔵 ready |
-| T-0163 | [0163-codex-default-models-rejected](0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | S | P2 | none | ⏳ proposed |
-| T-0164 | [0164-fix-skill-lints-task-folder](0164-fix-skill-lints-task-folder/handoff.md) | /fix lints the task folder, which has no planner file | bug | S | P2 | none | ⏳ proposed |
+| T-0160 | [.0160-repo-onboarding-skill](.0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | 🟢 done |
+| T-0161 | [0161-repo-reorganization](0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | M | P2 | T-0160 | 🔵 ready |
+| T-0162 | [.0162-entry-files-in-step-handoffs](.0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🟢 done |
+| T-0163 | [.0163-codex-default-models-rejected](.0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | M | P2 | none | 🟢 done |
+| T-0164 | [.0164-fix-skill-lints-task-folder](.0164-fix-skill-lints-task-folder/handoff.md) | /fix lints the task folder, which has no planner file | bug | S | P2 | none | 🟢 done |
+| T-0165 | [.0165-roles-replaced-by-other-agents](.0165-roles-replaced-by-other-agents/handoff.md) | Sessions replace SDLC Lite roles with other plugins' agents | bug | S | P2 | none | 🟢 done |
+| T-0166 | [0166-agent-spawn-hook](0166-agent-spawn-hook/handoff.md) | Warn when the conductor spawns another plugin's role agent | feature | M | P2 | none | 🔵 ready |
+| T-0167 | [0167-role-in-temp-worktree](0167-role-in-temp-worktree/handoff.md) | Document running a role from a temporary worktree | feature | M | P2 | none | 🔵 ready |
+| T-0168 | [.0168-unattended-publish](.0168-unattended-publish/handoff.md) | Decide how publishing works during an unattended run | idea | S | P2 | none | 🟢 done |
+| T-0169 | [0169-role-whole-disk-search](0169-role-whole-disk-search/handoff.md) | A role's whole-disk find hung a planner run for 25 minutes | bug | S | P2 | none | 🔵 ready |
+| T-0170 | [0170-builder-edits-running-runner](0170-builder-edits-running-runner/handoff.md) | A builder that edits run.sh loses its own result | bug | S | P2 | none | 🔵 ready |

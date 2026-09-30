@@ -1,0 +1,20 @@
+{
+  "attempt_id": "a2a377764608453aa5a59db0d01e8048",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "/fix fast lane: one selftest gate in one file, builder L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-29T23:02:01.940963+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/onboard-digest-gate/step-1/handoff.md",
+  "owner_pid": 68483,
+  "process_pid": 68500,
+  "exit_code": 0,
+  "finished_at": "2026-09-29T23:02:39.677516+00:00"
+}

@@ -30,6 +30,10 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 13. Never require a clean porcelain status (an empty `git status --porcelain` or `git status -s`) as a criterion. Builders never commit, so the step's own changes keep the status dirty and the criterion can never pass. Check the step's changes with `git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files with `git ls-files --others --exclude-standard -- <path>`. `steps.py split` refuses an emptiness test on an unscoped porcelain or short status as a `plan defect`. A status scoped to a path the step itself changes (`git status --porcelain -- <path>`) never passes either, so never require it empty; the lint does not catch this form. For the same reason never require a clean whole-tree diff: `git diff --quiet` or `git diff --exit-code` with no `-- <pathspec>` and no two-commit range, or an empty `git diff` output; `steps.py split` refuses a clean whole-tree diff as a `plan defect` too. The detector reads only span text, so a clean check hidden inside a script the span calls is not caught; never write one.
 14. Put the project's whole gates (the full test suite, lint, typecheck, the repo check script) as `(guard)` criteria on one final `gates green` step, never on every step. Builders never commit, so red that an earlier step or a main sync introduced lands on every later step's gate and blocks a step whose own work is green. Earlier steps check only their own behavior, with file-scoped or test-scoped commands. The final step's Do runs every gate and fixes any red the earlier steps introduced. A gate already red at the build-start HEAD comes back as builder Status `inherited red`. In a one-step plan, that step is the gates green step. A merge step keeps its own gate guards.
 
+## Entry files
+
+For each file a step changes, find the nearest `AGENTS.md` in that file's folder or a folder above it. Leave out the root entry. List the rest under a `### Read first` subsection, placed after the step's `level:` line and before `### Do`. Each item is one line, ``- `<path>` ``, with the path relative to the repository root. A step whose only entry is the root has no subsection. Files the step only reads are not listed. `steps.py lint` refuses a listed path that does not exist.
+
 ## Merge steps
 
 When a task merges one lane into another, emit this step block and fill it in. Replace `<branch>` with the lane branch. Replace `<gate command>` with the project's own check or test commands, one criterion per gate, the way you name them for any step. Pick the level with the rubric as usual.
@@ -58,6 +62,9 @@ One sentence.
 
 ## Step 1: <title>
 level: L<n>
+### Read first
+- `<path/to/AGENTS.md>`
+(Only when the step changes files governed by a non-root entry; see Entry files.)
 ### Do
 What to change and where (paths).
 ### Acceptance criteria

@@ -30,8 +30,21 @@ def body(path):
     return text.split('---', 2)[2].strip() if text.startswith('---\n') else text.strip()
 
 
-def models():
+ALTERNATES = 'verifier_alternates'
+
+
+def config():
     return json.loads((ADAPTER / 'models.json').read_text())
+
+
+def models():
+    """Role entries only: {role: {level: [model, effort]}}."""
+    return {role: levels for role, levels in config().items() if role != ALTERNATES}
+
+
+def verifier_alternates():
+    """Builder model -> model the verifier uses when its own configured model equals it. Empty means share."""
+    return dict(config().get(ALTERNATES) or {})
 
 
 def instructions(role):
@@ -67,6 +80,7 @@ def loads(path):
 
 
 def definitions():
+    alternates = verifier_alternates()
     for role, levels in models().items():
         for level, (model, effort) in levels.items():
             name = 'sdlc-' + role + '-' + level.lower()
@@ -75,21 +89,27 @@ def definitions():
                             sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect') else 'read-only',
                             developer_instructions=instructions(role))
             yield name, data
-            if role == 'verifier':
-                alternate = dict(data, name=name+'-alternate', model='gpt-6-sol' if model == 'gpt-6-astra' else 'gpt-6-astra')
+            if role == 'verifier' and model in alternates:
+                alternate = dict(data, name=name+'-alternate', model=alternates[model])
                 yield alternate['name'], alternate
 
 
 def resolve(role, level, directory=None):
+    """Return (model, effort, shared); shared means the verifier runs on the builder's model."""
     model, effort = models()[role][level]
+    shared = False
     if role == 'verifier' and directory:
         import order
         built = order.newest(Path(directory), 'builder')
         if built:
             match = re.search(r'\bmodel=([^\s>]+)', Path(built).read_text())
             if match and match[1] == model:
-                model = 'gpt-6-sol' if model == 'gpt-6-astra' else 'gpt-6-astra'
-    return model, effort
+                alternate = verifier_alternates().get(model)
+                if alternate:
+                    model = alternate
+                else:
+                    shared = True
+    return model, effort, shared
 
 
 def conductor_block(created_key):
@@ -244,7 +264,8 @@ def main():
     res = subs.add_parser('resolve'); res.add_argument('role'); res.add_argument('level'); res.add_argument('directory', nargs='?')
     args = parser.parse_args()
     if args.command == 'resolve':
-        print(*resolve(args.role, args.level, args.directory))
+        model, effort, shared = resolve(args.role, args.level, args.directory)
+        print(model, effort, *(['shared'] if shared else []))
     elif args.command == 'install':
         install(args.project, args.check, args.conductor)
     elif args.command == 'conductor-off':
@@ -252,7 +273,9 @@ def main():
         changed = write_conductor_config(path, updated)
         print(('Removed' if changed else 'No') + ' SDLC Lite project conductor instructions in ' + str(path) + '; start a fresh Codex session.')
     else:
+        names = set()
         for name, data in definitions():
+            names.add(name)
             target = ADAPTER / 'agents' / (name + '.toml')
             text = dumps(data)
             if args.check:
@@ -260,6 +283,12 @@ def main():
                     raise ValueError('generated agent drift: ' + str(target))
             else:
                 target.write_text(text)
+        # install copies every *.toml, so a profile no definition produces must not linger.
+        for orphan in sorted((ADAPTER / 'agents').glob('sdlc-*.toml')):
+            if orphan.stem not in names:
+                if args.check:
+                    raise ValueError('generated agent drift: orphan ' + str(orphan))
+                orphan.unlink()
         print('Codex agent definitions verified' if args.check else 'Codex agent definitions generated')
 
 
