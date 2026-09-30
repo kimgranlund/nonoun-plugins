@@ -40,7 +40,7 @@ The `--conductor` option adds a short managed block to the project's top-level `
 
 These are initial configurable Codex defaults, not claimed equivalents of Claude models. `adapters/codex/models.json` owns the mapping. Regenerate the agent files after changes. When a pipeline verifier's model matches the latest builder's model, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`. The selected model is recorded in the result and run log.
 
-Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. Luna for scout is kept pending a user decision. API-key accounts were not tested.
+Note (2026-09-29, Codex CLI 0.154.0): a ChatGPT account rejected `gpt-6-sol` and `gpt-6-luna`, and `gpt-6-astra` was accepted, so the defaults moved from Sol to Astra. On 2026-09-30 the user set scout L1 to `gpt-6-astra` at effort `high`, because `gpt-6-luna` is rejected on a ChatGPT account and `gpt-6-astra` was the only accepted model in the probes. API-key accounts were not tested.
 
 ## Boundaries
 
