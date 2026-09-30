@@ -1,0 +1,20 @@
+{
+  "attempt_id": "21790fa8bbac4c9e914deb3a1979e2b6",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "verifier L1: build L1 -> verifier L1 per rubric",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:28:25.891275+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0149-trace-contract-dependents/step-2/handoff.md",
+  "owner_pid": 83487,
+  "process_pid": 83696,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:33:24.837370+00:00"
+}

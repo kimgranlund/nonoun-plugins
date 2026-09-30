@@ -1,0 +1,20 @@
+{
+  "attempt_id": "8af6a24891564cd4836fefc84245e844",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "builder L2: step level from plan, small change in known pattern (agent docs + check.py pin)",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-09-30T03:25:02.968547+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-night/steps/.sdlc/0149-trace-contract-dependents/step-1/handoff.md",
+  "owner_pid": 68397,
+  "process_pid": 68432,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T03:25:37.108597+00:00"
+}
