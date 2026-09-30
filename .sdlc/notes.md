@@ -110,3 +110,8 @@
 - note: For an external ticket whose merge brings in nothing new (a second ticket on the same branch), the report's Commit cell shows the previous close commit, not a merge commit. Step 5 reworded the docs to say so.
 - note: Live host validation on Codex was not run for this change. Only the shared-script selftests and `check.sh` covered it.
 - note: The step 1 builder's six mutation checks and three of the step 2 builder's five were not re-run by the verifiers. The base-SHA red runs and two re-run mutations cover the behavior.
+
+## T-0159: Lifecycle and codex selftests time out under host load (2026-09-29)
+
+- note: The verifier did not independently re-check the builder's claim that `codex_exec.py` kills the stub on timeout (the stub sleep is now 600 s). A `pgrep` after the runs found no orphans.
+- note: The negative-control guard fails as a whole only if every test passes against the old `run_lifecycle.py`. It already fails through `test_sigkill_recovers_claude_but_codex_native_refuses` and `test_exit_zero_without_result_fails`, so loosening one of those tests would go unnoticed while the other still fails.
