@@ -22,8 +22,8 @@ Every code change above was built by a builder role and checked by an independen
 
 ## Upgrading
 
-- Codex defaults changed. Roles now run on `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-luna`, and `gpt-5.6-terra`. On a ChatGPT account these ran on Codex CLI 0.159.2; on 0.154.0 three of them returned HTTP 400. Check `codex --version` and your account's models before relying on them (`docs/validation/codex-account-models-2026-09-30.md`).
-- Regenerate and reinstall Codex agents after upgrading (`codex_roles.py install <project> --check`). A project that installed 0.18.0 Codex agents keeps the three `sdlc-verifier-lN-alternate.toml` files from 0.18.0; they are outside the receipt, so remove them by hand.
+- Codex defaults changed. Roles now run on `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-luna`, and `gpt-5.6-terra`. On a ChatGPT account these ran on Codex CLI 0.159.2; on 0.154.0 `gpt-6.1-sol` and `gpt-6-luna` returned HTTP 400 (`gpt-6-sol` did too, and is not one of the four), and the other two were not recorded failing. Check `codex --version` and your account's models before relying on them (`docs/validation/codex-account-models-2026-09-30.md`).
+- Regenerate and reinstall Codex agents after upgrading (`codex_roles.py install <project> --check`). A project upgrading Codex agents straight from 0.18.0 needs no manual step: `install` overwrites the three `sdlc-verifier-lN-alternate.toml` files and records them in the new receipt. A project whose 0.19.0 install left the 0.18.0 alternate files outside the receipt gets `refusing to overwrite edited/unmanaged agent` from 0.20.0 `install`; delete those three files, then run `install` again. Do not delete them after a successful 0.20.0 install: the runner selects them for the luna and astra to `gpt-6.1-sol` swap.
 - The new hooks apply to Claude Code only.
 
 ## Known limits
@@ -48,4 +48,4 @@ Run on branch `release-0.20.0` on 2026-09-30, from the repository root, all exit
 - `git diff --check main -- . ":(exclude).sdlc"`
 - Version parity across each plugin's Claude and Codex manifests
 
-An independent whole-release verifier pass follows; its record is `.sdlc/release-0.20.0/`.
+An independent whole-release verifier (L3, `.sdlc/release-0.20.0/step-1/`) checked the record against the commits, tickets and code. Its first pass failed on the Upgrading note above, which described the 0.19.0 situation and would have told users to delete managed agent files. The note is corrected, and a second pass follows.
