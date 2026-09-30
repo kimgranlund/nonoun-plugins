@@ -1,0 +1,20 @@
+{
+  "attempt_id": "c64533a4c0b44c33b1f1ae4fa3363305",
+  "name": "plan-reviewer-L1",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "codex",
+  "transport": "exec",
+  "model": "gpt-6.1-sol",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-09-30T16:23:08.534427+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/codex",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/codex/.sdlc/probe-defective/handoff.md",
+  "owner_pid": 9676,
+  "process_pid": 9693,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T16:24:52.481917+00:00"
+}

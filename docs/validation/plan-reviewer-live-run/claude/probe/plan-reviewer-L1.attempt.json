@@ -1,0 +1,20 @@
+{
+  "attempt_id": "35a3a5a1d2254ad7a20384eaf6910eba",
+  "name": "plan-reviewer-L1",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-09-30T16:21:22.626790+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/plan-review-probe.3WrEjPYrWb/claude/.sdlc/probe/handoff.md",
+  "owner_pid": 7926,
+  "process_pid": 7949,
+  "exit_code": 0,
+  "finished_at": "2026-09-30T16:21:53.267847+00:00"
+}
