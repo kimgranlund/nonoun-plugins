@@ -81,3 +81,9 @@
 
 - note: driver logs (`<lane>-<id>.log`) are still overwritten on a fanout rerun. The planner left this to T-0157 or a later follow-up.
 - note: shellcheck is not installed on this host, so `check.sh` skipped shell lint for this change.
+
+## T-0149: A step that changes a shared contract pulls its dependents into scope (2026-09-29)
+
+- decide: Run a focused live run of the planner and verifier contract-dependents rule on a throwaway project, since this change proves only wording and the `check.py` gate, not role behavior.
+- note: The ticket's Intent section was empty, so the planner vs. verifier split is the planner's own reading of the Goal; both roles got the rule.
+- note: The planner did not read the source run's evidence (gen-ui-system-svelte-lite lane logs), so the contract kinds listed may miss the exact shape that broke there.
