@@ -114,6 +114,11 @@ def run(role, level, handoff, backend, model, effort):
                         os.killpg(process.pid, signal.SIGKILL)
                 time.sleep(.1)
             rc = 128 + interrupted[0] if interrupted else process.returncode
+            result = directory / (name + '.md')
+            if not interrupted and rc == 0 and not result.exists():
+                print('run_lifecycle: runner exited 0 but wrote no result: expected ' + str(result)
+                      + '; see ' + str(directory / (name + '.log')), file=sys.stderr)
+                rc = 1
         finally:
             for sig, handler in previous.items():
                 signal.signal(sig, handler)

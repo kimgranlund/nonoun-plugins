@@ -11,32 +11,46 @@
 # the hook exits 2, the allow run's field is the JSON boolean false and the hook exits 0, and a
 # PostToolUse(Agent) record proves the allowed call ran. A match-all logger records every
 # tool_name, so a FAIL names the tool called instead (for example Task).
+# --conductor mode (hook-live-probe.sh --conductor) probes hooks/block-role-spawn.sh with two
+# small sessions run as the plugin's conductor (--plugin-dir <plugin root> --agent
+# sdlc-lite:conductor). The deny run is told to call the Agent tool once with subagent_type
+# sdlc-lite:scout, the allow run with general-purpose; both pass run_in_background: false, so
+# block-background.sh (which the loaded plugin registers, and SDLC_HEADLESS=1 arms) lets them
+# through. It passes only when both runs capture a PreToolUse(Agent) payload whose agent_type is
+# a conductor value (sdlc-lite:conductor or conductor, recorded as observed), the deny run's
+# hook exits 2, and the allow run's hook exits 0.
 # Live mode spends model calls, so check.sh never runs it; check.sh runs only --selftest, which
-# is offline (a stub claude, no model call) and covers both the Bash and the Agent path.
+# is offline (a stub claude, no model call) and covers the Bash, Agent, and conductor paths.
 #
-# Usage: hook-live-probe.sh [--agent] [--out FILE] [--model M] [--timeout SEC] [--selftest]
+# Usage: hook-live-probe.sh [--agent | --conductor] [--out FILE] [--model M] [--timeout SEC] [--selftest]
 #   --agent        probe the Agent tool (two claude runs) instead of Bash
+#   --conductor    probe block-role-spawn.sh in two conductor-session claude runs
 #   --out FILE     also write the report as markdown to FILE
 #   --model M      model for the probe session (default: haiku)
 #   --timeout SEC  bound each claude run (default: 120)
 #   --selftest     offline selftest with a stub claude; makes no model call
 # The claude binary is ${SDLC_PROBE_CLAUDE:-claude}.
 # Everything is written into a mktemp -d dir removed by trap, apart from the --out file. It never
-# touches user or project settings files and never passes --plugin-dir: the hooks are registered
-# only through --settings <tmp>/.../settings.json.
+# touches user or project settings files. The Bash and Agent modes never pass --plugin-dir: their
+# hooks are registered only through --settings <tmp>/.../settings.json. The --conductor mode
+# deliberately loads this plugin with --plugin-dir so the session runs as sdlc-lite:conductor;
+# its capture hook still comes only from --settings.
 # Exit: 0 PASS, 1 FAIL or inconclusive, 2 usage or setup error.
 set -uo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 hook="$(cd "$here/../hooks" && pwd)/block-background.sh"
+role_hook="$(cd "$here/../hooks" && pwd)/block-role-spawn.sh"
+plugin_root="$(cd "$here/.." && pwd)"
 self="$here/$(basename "$0")"
 
-usage() { echo "usage: hook-live-probe.sh [--agent] [--out FILE] [--model M] [--timeout SEC] [--selftest]" >&2; exit 2; }
+usage() { echo "usage: hook-live-probe.sh [--agent | --conductor] [--out FILE] [--model M] [--timeout SEC] [--selftest]" >&2; exit 2; }
 
-out="" model="haiku" timeout=120 selftest=0 agent=0
+out="" model="haiku" timeout=120 selftest=0 agent=0 conductor=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent) agent=1; shift ;;
+    --conductor) conductor=1; shift ;;
     --out) [[ $# -ge 2 ]] || usage; out="$2"; shift 2 ;;
     --model) [[ $# -ge 2 ]] || usage; model="$2"; shift 2 ;;
     --timeout) [[ $# -ge 2 ]] || usage; timeout="$2"; shift 2 ;;
@@ -45,17 +59,21 @@ while [[ $# -gt 0 ]]; do
     *) echo "hook-live-probe: unknown argument: $1" >&2; usage ;;
   esac
 done
+[[ $agent -eq 1 && $conductor -eq 1 ]] && { echo "hook-live-probe: --agent and --conductor are exclusive" >&2; usage; }
 [[ "$timeout" =~ ^[0-9]+$ && "$timeout" -gt 0 ]] || { echo "hook-live-probe: --timeout must be a positive integer" >&2; exit 2; }
 command -v jq >/dev/null || { echo "hook-live-probe: jq not found" >&2; exit 2; }
 command -v python3 >/dev/null || { echo "hook-live-probe: python3 not found" >&2; exit 2; }
 [[ -x "$hook" ]] || { echo "hook-live-probe: hook not found or not executable: $hook" >&2; exit 2; }
+if [[ $conductor -eq 1 && $selftest -eq 0 ]]; then
+  [[ -x "$role_hook" ]] || { echo "hook-live-probe: hook not found or not executable: $role_hook" >&2; exit 2; }
+fi
 
 # The allow run's subagent prompt. The selftest stub tells the two Agent runs apart by it.
 allow_marker="Reply with the word ok and use no tools"
 
 # ---------------------------------------------------------------------------------------------
-# Selftest: offline, stub claude, cases (a) to (e) for Bash, (f) to (j) for Agent, and no probe
-# temp dir left behind.
+# Selftest: offline, stub claude, cases (a) to (e) for Bash, (f) to (j) for Agent, (k) to (o)
+# for conductor, and no probe temp dir left behind.
 # ---------------------------------------------------------------------------------------------
 if [[ $selftest -eq 1 ]]; then
   st="$(mktemp -d "${TMPDIR:-/tmp}/hook-live-probe-selftest.XXXXXX")"
@@ -70,13 +88,14 @@ if [[ $selftest -eq 1 ]]; then
   # when the prompt holds the allow marker, else STUB_PAYLOAD. Hooks are found by matcher (the
   # payload's tool_name, or a match-all "*", "" or missing matcher), like Claude Code does; the
   # PostToolUse hooks run only when every PreToolUse hook exited 0. --version prints a fake
-  # version.
+  # version. When STUB_ARGS_LOG is set, each run appends its argument list to that file.
   cat >"$st/claude" <<EOF
 #!/usr/bin/env bash
 marker=$(printf '%q' "$allow_marker")
 EOF
   cat >>"$st/claude" <<'EOF'
 settings="" prompt=""
+[[ -n "${STUB_ARGS_LOG:-}" ]] && printf '%s\n' "$*" >>"$STUB_ARGS_LOG"
 while [[ $# -gt 0 ]]; do
   [[ "$1" == "--version" ]] && { echo "0.0.0 (stub)"; exit 0; }
   [[ "$1" == "--settings" && $# -ge 2 ]] && settings="$2"
@@ -213,7 +232,61 @@ EOF
   [[ $prc -eq 1 ]] || sfail "(j) agent hook exit 0: exit $prc, want 1"
   grep -q "^verdict: FAIL: .*agent deny: hook exit code 0, not 2" <<<"$pout" || sfail "(j) agent hook exit 0: FAIL line does not name the hook exit code"
 
-  # Every probe run, Bash and Agent, removed its temp dir.
+  # Conductor payloads: the deny run spawns sdlc-lite:scout, the allow run general-purpose.
+  cdeny='{"tool_name":"Agent","agent_type":"sdlc-lite:conductor","tool_input":{"description":"hook probe","prompt":"Say hello","subagent_type":"sdlc-lite:scout","run_in_background":false}}'
+  callow='{"tool_name":"Agent","agent_type":"sdlc-lite:conductor","tool_input":{"description":"hook probe","prompt":"Reply with the word ok and use no tools","subagent_type":"general-purpose","run_in_background":false}}'
+  cdeny_noat='{"tool_name":"Agent","tool_input":{"description":"hook probe","prompt":"Say hello","subagent_type":"sdlc-lite:scout","run_in_background":false}}'
+  callow_noat='{"tool_name":"Agent","tool_input":{"description":"hook probe","prompt":"Reply with the word ok and use no tools","subagent_type":"general-purpose","run_in_background":false}}'
+  cdeny_short="${cdeny/sdlc-lite:conductor/conductor}"
+  callow_short="${callow/sdlc-lite:conductor/conductor}"
+
+  # (k) conductor deny plus allow, with the real hook: PASS, exit 0; both lines on stdout and in
+  # the --out report, which ends with the verdict; claude got --plugin-dir and --agent.
+  : >"$st/args.log"
+  STUB_ARGS_LOG="$st/args.log" STUB_ALLOW_PAYLOAD="$callow" probe hook "$cdeny" --conductor --out "$st/conductor-report.md"
+  [[ $prc -eq 0 ]] || sfail "(k) conductor: exit $prc, want 0 ($(grep '^verdict' <<<"$pout"))"
+  grep -qx "verdict: PASS" <<<"$pout" || sfail "(k) conductor: no 'verdict: PASS' line"
+  kdeny="conductor deny: agent_type sdlc-lite:conductor, subagent_type sdlc-lite:scout, hook exit code 2"
+  kallow="conductor allow: agent_type sdlc-lite:conductor, subagent_type general-purpose, hook exit code 0"
+  grep -qx "$kdeny" <<<"$pout" || sfail "(k) conductor: stdout lacks the conductor deny line"
+  grep -qx "$kallow" <<<"$pout" || sfail "(k) conductor: stdout lacks the conductor allow line"
+  grep -qx "# Hook live probe (conductor)" "$st/conductor-report.md" || sfail "(k) --out report lacks heading"
+  grep -qx "$kdeny" "$st/conductor-report.md" || sfail "(k) --out report lacks the conductor deny line"
+  grep -qx "$kallow" "$st/conductor-report.md" || sfail "(k) --out report lacks the conductor allow line"
+  grep -q '"subagent_type": "sdlc-lite:scout"' "$st/conductor-report.md" || sfail "(k) --out report lacks the deny payload"
+  grep -q '"subagent_type": "general-purpose"' "$st/conductor-report.md" || sfail "(k) --out report lacks the allow payload"
+  [[ "$(tail -n 1 "$st/conductor-report.md")" == "verdict: PASS" ]] || sfail "(k) --out report last line is not the verdict"
+  [[ "$(grep -c -- "--agent sdlc-lite:conductor" "$st/args.log")" -eq 2 ]] || sfail "(k) claude runs lack --agent sdlc-lite:conductor"
+  [[ "$(grep -cF -- "--plugin-dir $(cd "$here/.." && pwd) " "$st/args.log")" -eq 2 ]] || sfail "(k) claude runs lack --plugin-dir <plugin root>"
+
+  # (l) the short agent_type "conductor" passes too.
+  STUB_ALLOW_PAYLOAD="$callow_short" probe hook "$cdeny_short" --conductor
+  [[ $prc -eq 0 ]] || sfail "(l) agent_type conductor: exit $prc, want 0 ($(grep '^verdict' <<<"$pout"))"
+
+  # (m) the hook exits 0 on the deny run: FAIL naming the hook exit code. A copy of this script
+  # runs against a block-role-spawn.sh that allows everything.
+  mkdir -p "$st/allow-all/scripts" "$st/allow-all/hooks"
+  cp "$self" "$st/allow-all/scripts/hook-live-probe.sh"
+  cp "$hook" "$st/allow-all/hooks/block-background.sh"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 0\n' >"$st/allow-all/hooks/block-role-spawn.sh"
+  chmod +x "$st/allow-all/hooks/block-role-spawn.sh"
+  STUB_ALLOW_PAYLOAD="$callow" PROBE_SCRIPT="$st/allow-all/scripts/hook-live-probe.sh" probe hook "$cdeny" --conductor
+  [[ $prc -eq 1 ]] || sfail "(m) deny allowed: exit $prc, want 1"
+  grep -q "^verdict: FAIL: .*conductor deny: hook exit code 0, not 2" <<<"$pout" || sfail "(m) deny allowed: FAIL line does not name the hook exit code"
+
+  # (n) no agent_type in either payload: FAIL naming the missing field.
+  STUB_ALLOW_PAYLOAD="$callow_noat" probe hook "$cdeny_noat" --conductor
+  [[ $prc -eq 1 ]] || sfail "(n) no agent_type: exit $prc, want 1"
+  grep -q "^verdict: FAIL: .*conductor deny: no agent_type in payload" <<<"$pout" || sfail "(n) no agent_type: FAIL line does not name agent_type"
+  grep -qx "conductor deny: agent_type (absent), subagent_type sdlc-lite:scout, hook exit code 0" <<<"$pout" \
+    || sfail "(n) no agent_type: deny line does not record agent_type (absent)"
+
+  # (o) no Agent call captured: FAIL.
+  probe none "" --conductor
+  [[ $prc -eq 1 ]] || sfail "(o) no Agent call: exit $prc, want 1"
+  grep -q "^verdict: FAIL: conductor deny: no Agent call captured" <<<"$pout" || sfail "(o) no Agent call: wrong FAIL reason"
+
+  # Every probe run, Bash, Agent, and conductor, removed its temp dir.
   left="$(find "$st/tmp" -mindepth 1 -maxdepth 1 2>/dev/null)"
   [[ -z "$left" ]] || sfail "temp dir left behind: $left"
   echo "hook live probe selftest: PASS"
@@ -236,16 +309,16 @@ trap cleanup EXIT
 trap 'cleanup; exit 130' INT
 trap 'cleanup; exit 143' TERM
 
-# write_capture <dir>: the capture wrapper. The first call's stdin goes to <dir>/payload.json and
-# the hook's exit code to <dir>/rc (a model that retries after the deny must not overwrite the
-# call under test). Every call is piped into the real hook; its stderr is forwarded and its exit
-# code returned.
+# write_capture <dir> [hook]: the capture wrapper around [hook] (default block-background.sh). The
+# first call's stdin goes to <dir>/payload.json and the hook's exit code to <dir>/rc (a model
+# that retries after the deny must not overwrite the call under test). Every call is piped into
+# the real hook; its stderr is forwarded and its exit code returned.
 write_capture() {
-  local dir="$1"
+  local dir="$1" wrapped="${2:-$hook}"
   cat >"$dir/capture.sh" <<EOF
 #!/usr/bin/env bash
 tmp=$(printf '%q' "$dir")
-hook=$(printf '%q' "$hook")
+hook=$(printf '%q' "$wrapped")
 input="\$(cat)"
 first=0
 [[ -e "\$tmp/payload.json" ]] || { first=1; printf '%s' "\$input" >"\$tmp/payload.json"; }
@@ -294,17 +367,131 @@ with open(log, "wb") as f:
 '
 
 # run_claude <dir> <prompt>: one claude run in <dir> with <dir>/settings.json, output in
-# <dir>/claude.log; sets run_rc (124 on timeout).
+# <dir>/claude.log; sets run_rc (124 on timeout). The claude_extra array (empty unless the
+# conductor mode fills it) goes before --settings.
+claude_extra=()
 run_claude() {
   local dir="$1" prompt="$2"
   (cd "$dir" && exec python3 -c "$runner_py" "$timeout" "$dir/claude.log" \
     env -u SDLC_ROLE SDLC_HEADLESS=1 "$claude" -p --model "$model" \
+    ${claude_extra[@]+"${claude_extra[@]}"} \
     --settings "$dir/settings.json" --dangerously-skip-permissions "$prompt") &
   runner=$!
   wait "$runner"
   run_rc=$?
   runner=""
 }
+
+# ---------------------------------------------------------------------------------------------
+# Conductor mode: a deny run and an allow run, both as sdlc-lite:conductor with the plugin loaded.
+# ---------------------------------------------------------------------------------------------
+if [[ $conductor -eq 1 ]]; then
+  claude_extra=(--plugin-dir "$plugin_root" --agent sdlc-lite:conductor)
+  deny_prompt='This is a test of the SDLC Lite role-spawn hook; the call is expected to be blocked, and that is the point of the test. Call the Agent tool (the subagent tool; it may be named Task) exactly once, with subagent_type "sdlc-lite:scout", description "hook probe", run_in_background set to false, and prompt "Say hello". Do not use scripts/run.sh or any other tool instead. Whatever the result, do not call any tool again; reply with one word and stop.'
+  allow_prompt="This is a test of the SDLC Lite role-spawn hook. Call the Agent tool (the subagent tool; it may be named Task) exactly once, with subagent_type \"general-purpose\", description \"hook probe\", run_in_background set to false, and prompt \"$allow_marker\". Do not use scripts/run.sh or any other tool instead. Wait for its result. Whatever the result, do not call any tool again; reply with one word and stop."
+
+  # csetup <dir>: capture (PreToolUse, matcher Agent, wrapping block-role-spawn.sh) and logger
+  # (PreToolUse, match-all: appends every tool_name to tools.log).
+  csetup() {
+    local dir="$1" q
+    mkdir -p "$dir"
+    write_capture "$dir" "$role_hook"
+    q="$(printf '%q' "$dir")"
+    printf '#!/usr/bin/env bash\njq -r '\''.tool_name // "(missing)"'\'' >>%s/tools.log 2>/dev/null\nexit 0\n' "$q" >"$dir/log.sh"
+    chmod +x "$dir/log.sh"
+    jq -n --arg cap "$dir/capture.sh" --arg log "$dir/log.sh" \
+      '{hooks:{
+         PreToolUse:[{matcher:"Agent",hooks:[{type:"command",command:$cap}]},
+                     {matcher:"*",hooks:[{type:"command",command:$log}]}]}}' >"$dir/settings.json"
+  }
+
+  # ceval <dir> <deny|allow> <run_rc>: sets c_atype, c_sub, c_rc, c_pretty, c_reason.
+  ceval() {
+    local dir="$1" kind="$2" rrc="$3" seen tool want
+    c_atype="(absent)" c_sub="(absent)" c_rc="none" c_pretty="(none)" c_reason=""
+    [[ "$kind" == "deny" ]] && want=2 || want=0
+    [[ -s "$dir/rc" ]] && c_rc="$(tr -d '[:space:]' <"$dir/rc")"
+    if [[ ! -s "$dir/payload.json" ]]; then
+      seen="$(sort -u "$dir/tools.log" 2>/dev/null | sed '/^$/d' | paste -sd, - | sed 's/,/, /g')"
+      if [[ -z "$seen" ]]; then c_reason="no Agent call captured (no tool call seen)"
+      else c_reason="no Agent call captured (tool names seen: $seen)"
+      fi
+      [[ "$rrc" -eq 124 ]] && c_reason="$c_reason (claude timed out after ${timeout}s)"
+    elif ! c_pretty="$(jq . "$dir/payload.json" 2>/dev/null)"; then
+      c_pretty="$(cat "$dir/payload.json")"
+      c_reason="payload is not valid JSON"
+    else
+      tool="$(jq -r '.tool_name // "(missing)"' "$dir/payload.json")"
+      c_atype="$(jq -r '.agent_type // "(absent)"' "$dir/payload.json")"
+      c_sub="$(jq -r '.tool_input.subagent_type // "(absent)"' "$dir/payload.json")"
+      if [[ "$tool" != "Agent" ]]; then
+        c_reason="no Agent call captured (tool_name is $tool)"
+      elif [[ "$c_atype" == "(absent)" ]]; then
+        c_reason="no agent_type in payload"
+      elif [[ "$c_atype" != "sdlc-lite:conductor" && "$c_atype" != "conductor" ]]; then
+        c_reason="agent_type is $c_atype, want sdlc-lite:conductor or conductor"
+      elif [[ "$c_rc" != "$want" ]]; then
+        c_reason="hook exit code $c_rc, not $want"
+      fi
+    fi
+    [[ -n "$c_reason" ]] && c_reason="conductor $kind: $c_reason"
+  }
+
+  csetup "$tmp/deny"
+  csetup "$tmp/allow"
+  run_claude "$tmp/deny" "$deny_prompt"; deny_run_rc=$run_rc
+  run_claude "$tmp/allow" "$allow_prompt"; allow_run_rc=$run_rc
+
+  ceval "$tmp/deny" deny "$deny_run_rc"
+  deny_line="conductor deny: agent_type $c_atype, subagent_type $c_sub, hook exit code $c_rc"
+  deny_pretty="$c_pretty" deny_reason="$c_reason"
+  ceval "$tmp/allow" allow "$allow_run_rc"
+  allow_line="conductor allow: agent_type $c_atype, subagent_type $c_sub, hook exit code $c_rc"
+  allow_pretty="$c_pretty" allow_reason="$c_reason"
+
+  reason="$deny_reason"
+  if [[ -n "$allow_reason" ]]; then reason="${reason:+$reason; }$allow_reason"; fi
+  if [[ -z "$reason" ]]; then verdict="verdict: PASS"; code=0; else verdict="verdict: FAIL: $reason"; code=1; fi
+
+  echo "$deny_line"
+  echo "$allow_line"
+  if [[ $code -ne 0 ]]; then
+    for kind in deny allow; do
+      [[ -s "$tmp/$kind/claude.log" ]] || continue
+      { echo "claude output, $kind run (last 20 lines):"; tail -n 20 "$tmp/$kind/claude.log"; } >&2
+    done
+  fi
+  echo "$verdict"
+
+  if [[ -n "$out" ]]; then
+    version="$("$claude" --version 2>/dev/null | head -n 1)"
+    {
+      echo "# Hook live probe (conductor)"
+      echo
+      echo "- date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      echo "- model: $model"
+      echo "- claude --version: ${version:-unknown}"
+      echo
+      echo "Captured PreToolUse(Agent) payload, deny run:"
+      echo
+      echo '```json'
+      printf '%s\n' "$deny_pretty"
+      echo '```'
+      echo
+      echo "Captured PreToolUse(Agent) payload, allow run:"
+      echo
+      echo '```json'
+      printf '%s\n' "$allow_pretty"
+      echo '```'
+      echo
+      echo "$deny_line"
+      echo "$allow_line"
+      echo
+      echo "$verdict"
+    } >"$out" || { echo "hook-live-probe: cannot write $out" >&2; exit 2; }
+  fi
+  exit "$code"
+fi
 
 # ---------------------------------------------------------------------------------------------
 # Agent mode: a deny run and an allow run.

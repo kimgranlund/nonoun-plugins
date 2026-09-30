@@ -23,3 +23,36 @@ python3 "<plugin-root>/scripts/run_lifecycle.py" recover "<handoff-directory>"
 Status reads attempt records; `running` may be stale after a forced process kill. Recovery acquires the directory lock and refuses while a local runner still owns it. Once unlocked, it marks unfinished attempts interrupted and clears their stale display markers, preserving logs and reports. The Claude exec runner performs this recovery automatically after acquiring the lock only when every stale record explicitly says `backend: claude` and `transport: exec`, then starts a fresh attempt. Codex, mixed-host, and records with missing or unknown backend or transport still require explicit recovery. Recovery never reruns work, publishes a result, rolls back edits, or interprets an old report as new evidence.
 
 Before manually retrying, inspect the actual working tree, logs, and prior report. A headless Claude conductor can continue after automatic recovery; it should use the preserved attempt record to recognize the interruption. For Codex native transport, the parent must also stop or await the previously dispatched native agent using the host tools: cancelling a shell waiter cannot cancel a separately hosted subagent. Then rerun the original command as a fresh attempt. Do not replay a late report; native responses are bound to a unique request and its live owner. Recovery does not resume an LLM conversation or guarantee host-managed children have stopped.
+
+## Run a role from a temporary worktree
+
+Use this when the project's checkout must not be touched, for example a bare-clone layout (`<repo>.git` plus worktrees) whose primary worktree has uncommitted work. `run.sh` runs the role in the current directory and exits 2 outside a git work tree, so give it a clean worktree of its own.
+
+This is for interactive or headless conductors outside fanout. A fanout lane conductor already runs in a clean lane worktree and has `SDLC_ROLE=conductor`, so `hooks/block-stray-worktree.sh` denies this worktree add there.
+
+1. Create a detached worktree outside every existing worktree, so nothing is written into the dirty checkout. `--detach` creates no branch.
+2. Run the role from it, passing the absolute path of the handoff in the task's home `.sdlc/<task>/` (the `.sdlc/` the conductor already uses for `/board` and `steps.py`).
+3. Run the verifier for the same step in the same `$wt` before removal.
+4. To keep a builder's edits, commit them on a named branch. Otherwise they are discarded with the worktree.
+5. Remove only this recipe's worktree, without `--force`, then its `mktemp` parent.
+
+```sh
+wt="$(mktemp -d)/wt"
+git -C <any worktree or the bare repo> worktree add --detach "$wt" <commit>
+cd "$wt"
+run.sh builder <level> /abs/path/.sdlc/<task>/step-N/handoff.md
+run.sh verifier <level> /abs/path/.sdlc/<task>/step-N/handoff.md
+git -C "$wt" switch -c <branch>          # only to keep the work
+git -C "$wt" add -A && git -C "$wt" commit -m "<message>"
+cd /
+git -C <repo> worktree remove "$wt"      # no --force
+rmdir "$(dirname "$wt")"
+```
+
+The result and `runs.jsonl` land next to the absolute handoff path in the task's home `.sdlc/<task>/`, with nothing to copy back: `run.sh` writes `<role>-<level>.md`, `.log`, `runs.jsonl`, `*.attempt.json`, and, for builder and verifier, `base-sha` beside the handoff it is given. If that home `.sdlc/` sits inside the checkout, it must be git-ignored there, as handoff-format already advises; otherwise the run dirties that checkout.
+
+A builder's edits exist only in `$wt`. They must be committed on a named branch (`git -C "$wt" switch -c <branch>`, then commit) before removal, or they are lost.
+
+Removal uses no `--force`, so a dirty worktree is refused instead of silently discarded. Only the recipe's own worktree is removed. Never prune or remove other worktrees, branches, or stashes.
+
+The recipe does not reuse `SDLC_TMP_WORKTREES`. `run.sh` sets that prefix only inside one role run, under `<toplevel>/.worktrees/tmp/<role>-<pid>` of the checkout it runs in, and deletes it when that run exits. It cannot hold a worktree that must outlive a builder run for the verifier, and it would sit inside the checkout that must not be touched. The run's own stray report does not flag `$wt`, because `$wt` exists before the run's snapshot.
