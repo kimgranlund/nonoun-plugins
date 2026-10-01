@@ -27,3 +27,7 @@ Design: `docs/ticket-stages/design.md` (sections Message bus, Two roots, Validat
 
 ## Constraints
 Do not hand-edit generated Codex TOML. `run.sh`'s role table and Claude model rows stay unchanged. Preserve managed-agent install ownership checks.
+
+## Plan review
+plan review: replan: step 2 builder blocked on a plan defect (.sdlc/0178-messenger-agent/step-2/builder-L2.md): the criterion that greps `messenger` in `sdlc-conductor-l1.toml` assumes the conductor preloads level-rubric, but `agents/conductor.md` lists no skills, so `codex_roles.py generate` never changes that TOML.
+plan review: replan: keep step 1 as done. Rewrite step 2 without conductor-l1 in the TOML loop (planner and plan-reviewer TOMLs carry the level-rubric note). The step 2 edits (level-rubric, docs/codex-role-execution.md, both AGENTS files, regenerated planner and plan-reviewer TOMLs) are already in the working tree uncommitted and passed every other criterion; the new step 2 criteria must hold on that tree. Keep step 3 (gates green).

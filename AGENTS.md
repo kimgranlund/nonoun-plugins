@@ -39,7 +39,7 @@ Read only the linked details needed for the change. Keep scope-specific instruct
 
 | Concern | Source |
 |---|---|
-| Shared role and output contracts | `plugins/sdlc-lite/agents/*.md` |
+| Shared role and output contracts | `plugins/sdlc-lite/agents/*.md` (pipeline roles plus the `conductor` and `messenger` session agents) |
 | Claude role models and efforts | `plugins/sdlc-lite/scripts/run.sh`; the level rubric is checked against it |
 | Codex models and efforts | `plugins/sdlc-lite/adapters/codex/models.json` |
 | Codex agent generation | `plugins/sdlc-lite/scripts/codex_roles.py`; generated TOML files are not edited directly |

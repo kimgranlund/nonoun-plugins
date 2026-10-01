@@ -88,6 +88,10 @@ The verdict routes the plan:
 | filer | L1 | Sonnet medium |
 | plan-reviewer | L1 | Opus high |
 
+## Session agents (not run.sh roles)
+
+The `conductor` and the `messenger` are session agents. The messenger is not a run.sh role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `run.sh` has no messenger case.
+
 ## Agent-tool spawns (outside run.sh)
 
 This section applies to any in-session Agent-tool spawn that has no run.sh role: `general-purpose`, `Explore`, `Plan`, or any spawn that names no agent file. Work that has a run.sh role goes through run.sh, not the Agent tool.
