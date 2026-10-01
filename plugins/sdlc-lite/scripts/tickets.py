@@ -90,7 +90,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             writing nothing, with --force, with --reason, with empty TEXT, or when Warnings is None
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
-  check     validate every ticket; fail if roadmap.md is missing or stale. Numbered mode (as for new)
+  check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
+            Router below). Numbered mode (as for new)
             also fails a NNNN-<slug> folder whose id is not T-NNNN. Outside numbered mode, when every
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing.
             Inside a git work tree it also prints `warning: external_branch <b> is not a local branch` (exit
@@ -127,6 +128,26 @@ Outside git, or when git fails, the local root decides alone. A worktree with no
 malformed tickets in another tree or branch are ignored there. An unregistered branch not checked out in any
 worktree stays unseen; check catches a clash after merge (duplicate id, naming both folders).
 
+Router: write_roadmap also keeps a managed router block current, so an agent reads one short file and opens only
+the tickets in the stage it needs. The managed files are <root>/AGENTS.md (the router: stage counts, one line
+per proposed, ready or blocked ticket as `  - <id> <title> (<folder>)`, plus `, claimed by <value>` when the
+ticket's front matter has a non-empty `claimed_by:`, and the create, claim and close procedures) and
+<root>/CLAUDE.md, and with `ticket_root: tickets` also <root>/tickets/AGENTS.md (the same procedures) and
+<root>/tickets/CLAUDE.md. Every command that regenerates the roadmap (new, close, roadmap, archive, number)
+regenerates them. The block uses onboard.py's managed-block format and helpers (wrap_block, find_block,
+digest, has_import, _replace_region, _append_region; same scripts/ dir, standard library only): a missing
+AGENTS.md is created as the block alone, a file with no block gets it appended, a file with a block gets it
+replaced, and every byte outside the markers is kept. A CLAUDE.md that lacks an `@AGENTS.md` import line gets
+one appended (a missing one is created as that line). Paths in the text are relative to the git toplevel
+(else root's parent) in posix form, so the text is the same on every machine. new, close (--dry-run
+included), roadmap, archive and number refuse, writing nothing, while a managed AGENTS.md holds a malformed
+block. new and close follow-ups stamp `router: <ticket dir>/AGENTS.md  # how to claim and close this ticket` as
+the last front matter line; neither `router` nor `claimed_by` is validated, so older tickets stay valid.
+check fails, after the ticket problems and the stale-roadmap check, with one line per cause:
+`<label>: router block missing`, `router block stale`, `router block malformed: <reason>`, or
+`no @AGENTS.md import`, where <label> is AGENTS.md, CLAUDE.md, tickets/AGENTS.md or tickets/CLAUDE.md. With
+no ticket and no <root>/AGENTS.md, check passes.
+
 Depends entries take three forms. T-NNNN names a ticket that must exist. file:<path> names a file relative
 to the git toplevel of the ticket root (else the root's parent dir); the path is non-empty, not absolute, and
 has no .. segment. It never orders tickets and a missing file is not an error. cap:<name> (name matches
@@ -153,6 +174,7 @@ import subprocess
 import sys
 import tempfile
 
+import onboard  # same scripts/ dir: the managed-block format and helpers the router block reuses
 import order as run_order
 
 PLUGIN = pathlib.Path(__file__).resolve().parent.parent
@@ -815,6 +837,7 @@ def render(ts, root):
 def write_roadmap(root, ts):
     path = root / 'roadmap.md'
     path.write_bytes(render(ts, root).encode('utf-8'))
+    write_router(root, ts)
     return path
 
 
@@ -823,6 +846,200 @@ def stale(root, ts):
     if not path.exists():
         return bool(ts)
     return path.read_bytes() != render(ts, root).encode('utf-8')
+
+
+# ---------- router ----------
+
+ROUTER_PLUGIN_LINE = ('- `<plugin-root>` is the installed sdlc-lite plugin folder, the one holding `scripts/tickets.py`: '
+                      '`${CLAUDE_PLUGIN_ROOT}` in Claude Code; in Codex, the folder two levels above the `sdlc-lite` '
+                      'skill.\n')
+
+ROUTER_PROCEDURES = """\
+## Procedures
+
+Create a ticket:
+1. Run `python3 <plugin-root>/scripts/tickets.py --root <R> new <feature|bug|chore|spike|idea> <slug> "<title>"`. \
+Never pick an id by hand: `new` stamps the next id above every worktree's.
+2. Fill in the body sections of the new `handoff.md`.
+
+Claim a ticket:
+1. Open its `handoff.md`. A `claimed_by:` front matter line means another agent holds it: pick another ticket or \
+ask the user.
+2. Add `claimed_by: <claude|codex> <YYYY-MM-DD>` to the front matter, then run \
+`python3 <plugin-root>/scripts/tickets.py --root <R> roadmap`.
+3. Start the work through `run.sh`, which puts it in progress: \
+`<plugin-root>/scripts/run.sh planner <level> <T>/<folder>/handoff.md`, or `/sdlc-lite:chain <T>/<folder>`. \
+`status` stays a person's decision; progress shows on `/board`.
+
+Close a ticket:
+1. Run the filer (`/file`): `<plugin-root>/scripts/run.sh filer L1 <T>/<folder>/handoff.md`.
+2. Run `python3 <plugin-root>/scripts/tickets.py --root <R> close <folder> --dry-run`. It lists each follow-up as \
+`<i>. <tag>: <title>` and ends with `expect <digest>`.
+3. Run `python3 <plugin-root>/scripts/tickets.py --root <R> close <folder>`. To file the one `decide:` follow-up \
+worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to \
+`notes.md`; `fix-now:` items are finished before the close.
+4. Work already done by another ticket: \
+`python3 <plugin-root>/scripts/tickets.py --root <R> close <folder> --reason "<why>"`.
+"""
+
+ROUTER_TEMPLATE = """\
+# Work records
+
+This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` \
+(also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front \
+matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are \
+history: open one only when asked.
+
+<ticket folders line>
+- Mailbox: `messages/` is a git-ignored mailbox, not a record; read it with `<plugin-root>/scripts/messages.py`.
+""" + ROUTER_PLUGIN_LINE + """
+## Stages
+
+<stage lines>
+
+""" + ROUTER_PROCEDURES
+
+TICKETS_TEMPLATE = """\
+# Tickets
+
+One folder per ticket: `<slug>/` or `NNNN-<slug>/` while open, `.NNNN-<slug>/` once closed. Stage counts and the \
+open tickets are in `../AGENTS.md`. `tickets.py roadmap` generates this block: do not edit inside it.
+
+""" + ROUTER_PLUGIN_LINE + '\n' + ROUTER_PROCEDURES
+
+ROUTER_HERE = '- Ticket folders: next to this file.'
+ROUTER_TICKETS = '- Ticket folders: `tickets/`; the same procedures are in `tickets/AGENTS.md`.'
+ACTIVE = ('proposed', 'ready', 'blocked')
+
+
+def router_paths(root):
+    """(R, T): root and its ticket dir relative to file_base(root), in posix form (`.sdlc`, and `.sdlc` or
+    `.sdlc/tickets` for the usual root), so the router text holds no absolute path."""
+    here, base = root.resolve(), file_base(root).resolve()
+    try:
+        rel = here.relative_to(base).as_posix()
+    except ValueError:
+        rel = pathlib.Path(os.path.relpath(here, base)).as_posix()
+    if ticket_dir(root) == root:
+        return rel, rel
+    return rel, (pathlib.PurePosixPath(rel) / 'tickets').as_posix()
+
+
+def router_files(root):
+    """[(label, path, kind)] for the managed router files: AGENTS.md and CLAUDE.md at <root>, and with
+    `ticket_root: tickets` also tickets/AGENTS.md and tickets/CLAUDE.md. kind is 'agents' or 'claude'."""
+    out = [('AGENTS.md', root / 'AGENTS.md', 'agents'), ('CLAUDE.md', root / 'CLAUDE.md', 'claude')]
+    if ticket_dir(root) != root:
+        out += [('tickets/AGENTS.md', root / 'tickets' / 'AGENTS.md', 'agents'),
+                ('tickets/CLAUDE.md', root / 'tickets' / 'CLAUDE.md', 'claude')]
+    return out
+
+
+def stage_lines(ts):
+    """One `- <stage>: <count>` line per status in ENUMS order; under proposed, ready and blocked one
+    `  - <id> <title> (<folder>)` line per ticket in id order, with `, claimed by <value>` for a non-empty
+    string claimed_by. The folder is the bare folder name, never a path."""
+    out = []
+    for st in ENUMS['status']:
+        group = sorted(((m.get('id') if isinstance(m.get('id'), str) else '', slug, m)
+                        for slug, m in ts if m.get('status') == st), key=lambda e: (e[0], e[1]))
+        out.append(f'- {st}: {len(group)}')
+        if st in ACTIVE:
+            for tid, slug, m in group:
+                title = m.get('title') if isinstance(m.get('title'), str) else ''
+                line = f'  - {tid} {title} ({slug})'
+                c = m.get('claimed_by')
+                if isinstance(c, str) and c.strip():
+                    line += f', claimed by {c.strip()}'
+                out.append(line)
+    return out
+
+
+def router_bodies(root, ts):
+    """{label: block text} for every managed AGENTS.md: the router at <root> and, with `ticket_root: tickets`,
+    the tickets/AGENTS.md block. Text between the markers, ending with a newline."""
+    r, t = router_paths(root)
+    nested = ticket_dir(root) != root
+    body = (ROUTER_TEMPLATE.replace('<ticket folders line>', ROUTER_TICKETS if nested else ROUTER_HERE)
+            .replace('<stage lines>', '\n'.join(stage_lines(ts))))
+    out = {'AGENTS.md': body.replace('<R>', r).replace('<T>', t)}
+    if nested:
+        out['tickets/AGENTS.md'] = TICKETS_TEMPLATE.replace('<R>', r).replace('<T>', t)
+    return out
+
+
+def read_text(path):
+    return path.read_bytes().decode('utf-8', 'surrogateescape')
+
+
+def router_preflight(root):
+    """Refuse, before any write, while a managed AGENTS.md holds a malformed block."""
+    errs = []
+    for label, path, kind in router_files(root):
+        if kind == 'agents' and path.is_file():
+            f = onboard.find_block(read_text(path))
+            if f.status == 'malformed':
+                errs.append(f'{label}: router block malformed: {f.reason}; fix its markers by hand, then rerun; '
+                            f'nothing written')
+    if errs:
+        raise Fail('\n'.join(errs))
+
+
+def write_router(root, ts):
+    """Write or refresh every managed router file (router_files) from ts, the tickets of the ticket dir. An
+    AGENTS.md: missing is created as the wrapped block alone; no block gets it appended (_append_region); a
+    block gets it replaced (_replace_region); a malformed one is left alone (the preflight refuses first). A
+    CLAUDE.md: missing becomes `@AGENTS.md`; without the import the line is appended; else untouched."""
+    bodies = router_bodies(root, ts)
+    for label, path, kind in router_files(root):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        old = read_text(path) if path.is_file() else None
+        if kind == 'agents':
+            region = onboard.wrap_block(bodies[label])
+            if old is None:
+                new = region
+            else:
+                f = onboard.find_block(old)
+                if f.status == 'malformed':
+                    continue
+                new = (onboard._replace_region(old, f.block, region) if f.status == 'block'
+                       else onboard._append_region(old, region))
+        elif old is None:
+            new = '@AGENTS.md\n'
+        elif onboard.has_import(old):
+            continue
+        else:
+            new = old + ('' if not old or old.endswith('\n') else '\n') + '@AGENTS.md\n'
+        if new != old:
+            path.write_bytes(new.encode('utf-8', 'surrogateescape'))
+
+
+def router_problems(root, ts):
+    """One line per router problem, for check: a managed AGENTS.md whose file or block is missing, whose block
+    is stale (text, digest or version differs from onboard.wrap_block of the expected body) or malformed, and a
+    managed CLAUDE.md with no @AGENTS.md import. [] when ts is empty and <root>/AGENTS.md does not exist."""
+    if not ts and not (root / 'AGENTS.md').exists():
+        return []
+    bodies = router_bodies(root, ts)
+    run_it = f'run tickets.py --root {root} roadmap'
+    out = []
+    for label, path, kind in router_files(root):
+        text = read_text(path) if path.is_file() else None
+        if kind == 'claude':
+            if text is None or not onboard.has_import(text):
+                out.append(f'{label}: no @AGENTS.md import; {run_it}')
+            continue
+        f = onboard.find_block(text) if text is not None else None
+        if f is None or f.status == 'none':
+            out.append(f'{label}: router block missing; {run_it}')
+        elif f.status == 'malformed':
+            out.append(f'{label}: router block malformed: {f.reason}; fix its markers by hand, then {run_it}')
+        else:
+            body = bodies[label]
+            if (f.block.text != body or f.block.digest != onboard.digest(body)
+                    or f.block.version != onboard.TEMPLATE_VERSION):
+                out.append(f'{label}: router block stale; {run_it}')
+    return out
 
 
 # ---------- commands ----------
@@ -871,6 +1088,11 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
             raise Fail(f'{tpl}: template has no ## Context section; nothing written')
         gap = '\n\n' if m.end(1) < len(text) else '\n'
         text = text[:m.start(1)] + context.strip('\n') + gap + text[m.end(1):]
+    fm = re.match(r'---\r?\n.*?^(---[ \t]*\r?$)', text, re.S | re.M)
+    if fm:
+        t = router_paths(root)[1]
+        text = (text[:fm.start(1)] + f'router: {t}/AGENTS.md  # how to claim and close this ticket\n'
+                + text[fm.start(1):])
     meta = parse(text)
     if meta is None:
         raise Fail(f'{tpl}: template has no front matter; nothing written')
@@ -899,6 +1121,7 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
     errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
+    router_preflight(root)
     text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
     d = td / folder_name(slug, meta['id'], numbered)
     d.mkdir(parents=True)
@@ -1071,6 +1294,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to close: fix the problems above first']))
+    router_preflight(root)
     pid = meta['id']
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
@@ -1270,6 +1494,7 @@ def cmd_roadmap(root, numbered=False):
     errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['roadmap not written: fix the problems above first']))
+    router_preflight(root)
     root.mkdir(parents=True, exist_ok=True)
     return f'wrote {write_roadmap(root, ts)}'
 
@@ -1283,6 +1508,9 @@ def cmd_check(root, numbered=False):
         raise Fail('\n'.join(errs))
     if stale(root, ts):
         raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
+    errs = router_problems(root, ts)
+    if errs:
+        raise Fail('\n'.join(errs))
     out = [f'ok: {len(ts)} tickets, roadmap current']
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
@@ -1303,6 +1531,7 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    router_preflight(root)
     names = [name for name, m in ts if PREFIX_RE.match(name) and not name.startswith('.')
              and m.get('status') in ('done', 'dropped')]
     taken = [f'.{n}' for n in names if (td / f'.{n}').exists()]
@@ -1346,6 +1575,7 @@ def cmd_number(root, dry_run=False):
     errs = problems(ts) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    router_preflight(root)
     plain = [(n, m) for n, m in ts if not n.startswith('.') and not PREFIX_RE.match(n)]
     bad = [n for n, m in plain if not re.fullmatch(r'T-\d{4}', str(m.get('id', '')))]
     if bad:
@@ -3196,6 +3426,171 @@ def selftest():
                    rc == 0 and ticket_dir(nc) == nc and (nc / 'alpha' / 'handoff.md').is_file()
                    and not (nc / 'tickets').exists() and '| [alpha](alpha/handoff.md) |' in tr_text(nc / 'roadmap.md')
                    and run(nc, 'check')[0] == 0)
+
+        # ---- router: <root>/AGENTS.md holds a managed block with stage counts, open tickets and procedures ----
+        def block_of(path):
+            f = onboard.find_block(tr_text(path))
+            return f.block.text if f.status == 'block' else ''
+
+        def stage_text(root):
+            b = block_of(root / 'AGENTS.md')
+            return b[b.index('## Stages\n\n') + len('## Stages\n\n'):b.index('\n\n## Procedures')] if b else ''
+
+        def router_line(path):
+            return next((ln for ln in tr_text(path).splitlines() if ln.startswith('router: ')), '')
+
+        def check_err(root):
+            rc, out, err = run(root, 'check')
+            return rc, err
+
+        # regeneration: new, a status edit plus roadmap, and close each rewrite the counts and lines
+        rl = pathlib.Path(tmp) / 'rt-life' / '.sdlc'
+        rc, _, err = run(rl, 'new', ('feature', 'alpha', 'Alpha'))
+        st = stage_text(rl)
+        expect(f'router: new writes proposed 1 and the ticket line: rc={rc} {err!r} {st!r}',
+               rc == 0 and st == '- proposed: 1\n  - T-0001 Alpha (alpha)\n- ready: 0\n- blocked: 0\n- done: 0\n'
+                                 '- dropped: 0' and tr_text(rl / 'CLAUDE.md') == '@AGENTS.md\n'
+               and run(rl, 'check')[0] == 0)
+        edit(rl, 'alpha', r'^status:.*$', 'status: ready')
+        rc_c, _ = check_err(rl)
+        run(rl, 'roadmap')
+        st = stage_text(rl)
+        expect(f'router: a status edit plus roadmap moves the line to ready: rc_check={rc_c} {st!r}',
+               rc_c == 1 and st == '- proposed: 0\n- ready: 1\n  - T-0001 Alpha (alpha)\n- blocked: 0\n- done: 0\n'
+                                    '- dropped: 0' and run(rl, 'check')[0] == 0)
+        filer('filer-L1.md', 'None', '- decide: Add retry to fetch')(rl)
+        rc, out, err = close_one(rl, 1)
+        st = stage_text(rl)
+        expect(f'router: close raises done, drops the line, and the follow-up adds a proposed line: rc={rc} {out!r} '
+               f'{err!r} {st!r}',
+               rc == 0 and st == '- proposed: 1\n  - T-0002 Add retry to fetch (add-retry-to-fetch)\n- ready: 0\n'
+                                 '- blocked: 0\n- done: 1\n- dropped: 0' and run(rl, 'check')[0] == 0)
+        expect(f'router: new and follow-up tickets carry the router line: '
+               f'{router_line(rl / "alpha" / "handoff.md")!r} {router_line(rl / "add-retry-to-fetch" / "handoff.md")!r}',
+               router_line(rl / 'alpha' / 'handoff.md') == router_line(rl / 'add-retry-to-fetch' / 'handoff.md')
+               == 'router: .sdlc/AGENTS.md  # how to claim and close this ticket'
+               and dict(load(rl)).get('alpha', {}).get('router') == '.sdlc/AGENTS.md')
+        b = block_of(rl / 'AGENTS.md')
+        expect(f'router: procedures name .sdlc paths and no absolute path: {b!r}',
+               '--root .sdlc new <feature|bug|chore|spike|idea>' in b
+               and '<plugin-root>/scripts/run.sh filer L1 .sdlc/<folder>/handoff.md' in b
+               and '${CLAUDE_PLUGIN_ROOT}' in b and str(tmp) not in b and ROUTER_HERE in b)
+
+        # contents with tickets in all five statuses, closed dot folders included
+        r5 = pathlib.Path(tmp) / 'rt-five' / '.sdlc'
+        for sl in ('a', 'b', 'c', 'd', 'e', 'f'):
+            run(r5, 'new', ('feature', sl, sl.upper()), numbered=True)
+        for sl, s in (('0002-b', 'ready'), ('0003-c', 'blocked'), ('0004-d', 'done'), ('0005-e', 'dropped')):
+            edit(r5, sl, r'^status:.*$', f'status: {s}')
+        run(r5, 'roadmap')
+        rc_a, out_a, err_a = run(r5, 'archive')
+        rc_f, out_f, err_f = run(r5, 'close', ('0006-f',), reason='done elsewhere')
+        st = stage_text(r5)
+        expect(f'router: five statuses, dot folders counted under their status, done and dropped count only: '
+               f'rc={rc_a},{rc_f} {err_a!r} {err_f!r} tree={tree(r5)} {st!r}',
+               rc_a == rc_f == 0 and (r5 / '.0004-d').is_dir() and (r5 / '.0006-f').is_dir()
+               and st == '- proposed: 1\n  - T-0001 A (0001-a)\n- ready: 1\n  - T-0002 B (0002-b)\n- blocked: 1\n'
+                         '  - T-0003 C (0003-c)\n- done: 2\n- dropped: 1' and run(r5, 'check')[0] == 0)
+        # claimed_by shows on an active line; while only the router is stale, check names AGENTS.md, not roadmap.md
+        edit(r5, '0002-b', r'^created:(.*)$', r'created:\1\nclaimed_by: claude 2026-09-30')
+        rc, err = check_err(r5)
+        expect(f'router: claimed_by added, roadmap current: check names AGENTS.md stale, not roadmap.md: rc={rc} '
+               f'{err!r}',
+               rc == 1 and 'AGENTS.md: router block stale' in err and 'roadmap.md' not in err)
+        run(r5, 'roadmap')
+        expect(f'router: claimed_by shows on the active line: {stage_text(r5)!r}',
+               '  - T-0002 B (0002-b), claimed by claude 2026-09-30\n' in stage_text(r5) and run(r5, 'check')[0] == 0)
+
+        # text outside the block and existing CLAUDE.md content are kept; one block and one import after reruns
+        rk = pathlib.Path(tmp) / 'rt-keep' / '.sdlc'
+        rk.mkdir(parents=True)
+        (rk / 'AGENTS.md').write_text('# Mine\n\nKeep me.', encoding='utf-8')
+        (rk / 'CLAUDE.md').write_text('Hello', encoding='utf-8')
+        run(rk, 'new', ('feature', 'alpha', 'Alpha'))
+        with (rk / 'AGENTS.md').open('a', encoding='utf-8') as f:
+            f.write('\n## After\n\nKeep me too.\n')
+        run(rk, 'new', ('feature', 'beta', 'Beta'))
+        run(rk, 'roadmap')
+        run(rk, 'roadmap')
+        a, c = tr_text(rk / 'AGENTS.md'), tr_text(rk / 'CLAUDE.md')
+        expect(f'router: outside text and CLAUDE.md content kept, one block, one import: {a!r} {c!r}',
+               a.startswith('# Mine\n\nKeep me.\n<!-- sdlc-lite:managed:start v1 sha256:')
+               and a.endswith('<!-- sdlc-lite:managed:end -->\n\n## After\n\nKeep me too.\n')
+               and a.count('sdlc-lite:managed:start') == 1 and c == 'Hello\n@AGENTS.md\n'
+               and '  - T-0002 Beta (beta)\n' in a and run(rk, 'check')[0] == 0)
+
+        # ticket_root: tickets: tickets/AGENTS.md and tickets/CLAUDE.md, identical procedures, .sdlc/tickets paths
+        rt = tr_root('rt-tickets')
+        run(rt, 'new', ('feature', 'alpha', 'Alpha'))
+        tr_filer(rt, 'alpha', '- decide: Add retry to fetch')
+        rc, out, _ = run(rt, 'close', ('alpha',), dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else 'none'
+        rc, out, err = run(rt, 'close', ('alpha',), ticket=1, expect=token)
+        top, nested = block_of(rt / 'AGENTS.md'), block_of(rt / 'tickets' / 'AGENTS.md')
+        expect(f'router: ticket_root writes tickets/AGENTS.md and tickets/CLAUDE.md with the same procedures: '
+               f'rc={rc} {err!r} {nested!r}',
+               rc == 0 and nested.startswith('# Tickets\n') and tr_text(rt / 'tickets' / 'CLAUDE.md') == '@AGENTS.md\n'
+               and ROUTER_TICKETS in top and nested[nested.index('## Procedures'):] == top[top.index('## Procedures'):]
+               and '<plugin-root>/scripts/run.sh planner <level> .sdlc/tickets/<folder>/handoff.md' in nested
+               and '--root .sdlc close <folder>' in nested
+               and '  - T-0002 Add retry to fetch (add-retry-to-fetch)\n' in top and run(rt, 'check')[0] == 0)
+        want = 'router: .sdlc/tickets/AGENTS.md  # how to claim and close this ticket'
+        expect(f'router: ticket_root new and follow-up carry the tickets/ router line',
+               router_line(rt / 'tickets' / 'alpha' / 'handoff.md') == want
+               and router_line(rt / 'tickets' / 'add-retry-to-fetch' / 'handoff.md') == want)
+
+        # negative controls, one per check cause, each next to its passing clean case
+        def router_case(name, tickets_root=False):
+            r = tr_root(name) if tickets_root else pathlib.Path(tmp) / name / '.sdlc'
+            run(r, 'new', ('feature', 'alpha', 'Alpha'))
+            return r
+
+        for label, tickets_root, mutate, want in (
+                ('missing block', False, lambda r: (r / 'AGENTS.md').unlink(), 'AGENTS.md: router block missing'),
+                ('block removed', False, lambda r: (r / 'AGENTS.md').write_text('# Mine\n', encoding='utf-8'),
+                 'AGENTS.md: router block missing'),
+                ('stale count', False, lambda r: (r / 'AGENTS.md').write_text(
+                    tr_text(r / 'AGENTS.md').replace('- proposed: 1\n', '- proposed: 2\n'), encoding='utf-8'),
+                 'AGENTS.md: router block stale'),
+                ('missing import', False, lambda r: (r / 'CLAUDE.md').write_text('Other\n', encoding='utf-8'),
+                 'CLAUDE.md: no @AGENTS.md import'),
+                ('missing tickets/AGENTS.md', True, lambda r: (r / 'tickets' / 'AGENTS.md').unlink(),
+                 'tickets/AGENTS.md: router block missing'),
+                ('missing tickets/CLAUDE.md import', True,
+                 lambda r: (r / 'tickets' / 'CLAUDE.md').write_text('Other\n', encoding='utf-8'),
+                 'tickets/CLAUDE.md: no @AGENTS.md import')):
+            r = router_case('rt-neg-' + re.sub(r'\W+', '-', label), tickets_root)
+            rc0, err0 = check_err(r)
+            mutate(r)
+            rc, err = check_err(r)
+            expect(f'router: {label}: clean passes, then check fails with {want!r}: rc={rc0},{rc} {err0!r} {err!r}',
+                   rc0 == 0 and rc == 1 and want in err and 'roadmap.md' not in err)
+            run(r, 'roadmap')
+            expect(f'router: {label}: roadmap repairs it', run(r, 'check')[0] == 0)
+
+        # malformed block: new, close (dry run included) and roadmap refuse, writing nothing; check fails
+        r = router_case('rt-malformed')
+        filer('filer-L1.md', 'None', 'None')(r)
+        (r / 'AGENTS.md').write_text('<!-- sdlc-lite:managed:start v1 sha256:000000000000 -->\nno end\n',
+                                     encoding='utf-8')
+        before = snap(r)
+        for cmd, args, kw in (('new', ('feature', 'beta'), {}), ('close', ('alpha',), {}),
+                              ('close', ('alpha',), {'dry_run': True}), ('close', ('alpha',), {'reason': 'x'}),
+                              ('roadmap', (), {}), ('number', (), {}), ('archive', (), {'numbered': True})):
+            rc, _, err = run(r, cmd, args, **kw)
+            expect(f'router: malformed block refuses {cmd} {kw}, writing nothing: rc={rc} {err!r}',
+                   rc == 1 and 'AGENTS.md: router block malformed:' in err and err.endswith('nothing written')
+                   and snap(r) == before)
+        rc, err = check_err(r)
+        expect(f'router: malformed block fails check: rc={rc} {err!r}',
+               rc == 1 and 'AGENTS.md: router block malformed:' in err and 'fix its markers by hand' in err)
+
+        # positive: zero tickets and no AGENTS.md passes check
+        rz = pathlib.Path(tmp) / 'rt-zero' / '.sdlc'
+        rz.mkdir(parents=True)
+        rc, out, err = run(rz, 'check')
+        expect(f'router: zero tickets and no AGENTS.md passes check: rc={rc} {out!r} {err!r}',
+               rc == 0 and out == 'ok: 0 tickets, roadmap current')
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
