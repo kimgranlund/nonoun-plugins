@@ -128,3 +128,27 @@
 - note: `verifier_alternates` and `shared_with_builder` keep their names while also serving the plan-reviewer, so the names understate their scope.
 - note: `/chain` 4.2 mid-build replans still go straight to `steps.py split --only` without `steps.py review`, and the 4.2 item text was left unchanged (step 3 builder note).
 - note: The bench comparison against the same tasks without the reviewer is not done, and it is required before any claim the reviewer helps.
+
+## T-0177: Mailbox core: messages.py, lifecycle, schema, and run.sh notice (2026-10-01)
+
+- note: shellcheck is not installed on this host, so `check.sh` skipped it. `run.sh` and `run-selftest.sh` were not shellchecked.
+- note: the selftest race control catches a non-atomic claim only when the copy and delete straddle the barrier. If the copy and delete both run after the barrier, the selftest passes. The verifier saw this as a plain-unlink variant failing in 1 of 3 full runs.
+- note: live host validation of the mailbox is T-0179. The messenger agent is T-0178. Neither was exercised here.
+
+## T-0178: Messenger agent: declared agent, Codex mapping, and check.py coverage (2026-10-01)
+
+- note: `check.sh` skipped shellcheck in both step runs because it is not installed, so the shell checks there were not run.
+- note: the step 3 `run.sh` unchanged guard compared against `SDLC_BASE_SHA`, which equalled HEAD, so it could not go red there. The `run.sh` diff was not otherwise independently inspected in the artifacts.
+- note: the messenger has not been run live on Claude or on Codex. That evidence is T-0179's scope.
+## T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router (2026-09-30)
+
+- decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
+- note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
+- note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.
+
+## T-0179: Messages entry files and fresh-role live validation (2026-10-01)
+
+- decide: The Codex messenger spawn check in `docs/validation/messages-live-run/probe.py` prints `messenger_spawned=yes` even when no agent spawned, because the entry file it prints names the agent. Decide whether to base it on the subagent rollout's `session_meta` (`agent_role` plus `parent_thread_id`).
+- decide: A Claude messenger can return "polling" with no claim, and a parent that stops at the first report misses the message. Decide whether `messages/AGENTS.md` or the messenger agent should state the spawn-again rule.
+- note: The Claude path-only live arm ran in safe mode, so nested `CLAUDE.md` loading of the mailbox files was not exercised there.
+- note: The negative control and every arm ran one trial each on one machine, and the negative control ran on Claude Code only.

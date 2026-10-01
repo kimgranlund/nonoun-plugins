@@ -80,6 +80,10 @@
 # committed later. Every other role gets SDLC_BASE_SHA removed from its env (even when the caller
 # exported it) and writes no base-sha. Caveat: on a merge step the builder's own merge commit moves
 # the base on the verifier run, so merge-step criteria use HEAD^1 instead.
+# Mailbox notice: before launching a role (dry runs too, never in the run_lifecycle.py child), run.sh
+# adds messages.py count --receiver for the role name and for the backend name (claude or codex). When
+# the sum is above 0 it prints one stderr line "run.sh: <n> new message(s) for <role>; read with
+# messages.py". A failed count adds 0. It never prints a body and never changes the exit code.
 # Self-edit: bash reads a script from disk as it runs it, so a role that rewrites run.sh in place
 # (a builder editing this file) would move the running process to its old byte offset in the new
 # text, and a shorter file ends the run at EOF with status 0 and no result. Everything after
@@ -224,6 +228,19 @@ if [[ "$backend" == codex ]]; then
 fi
 shared_with_builder=false; shared_note=""
 if [[ "$shared" == shared ]]; then shared_with_builder=true; shared_note=" shared_with_builder=yes"; fi
+
+# Mailbox notice (see the header): new messages for the role and the backend; parent process only.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
+  msg_total=0
+  for msg_name in "$role" "$backend"; do
+    if msg_n=$(python3 "$plugin_root/scripts/messages.py" count --receiver "$msg_name" 2>/dev/null) && [[ "$msg_n" =~ ^[0-9]+$ ]]; then
+      msg_total=$((msg_total + msg_n))
+    fi
+  done
+  if (( msg_total > 0 )); then
+    echo "run.sh: $msg_total new message(s) for $role; read with messages.py" >&2
+  fi
+fi
 
 # Shared lifecycle owner holds the directory lock across either backend.
 if [[ "${SDLC_DRY_RUN:-}" != 1 && "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then

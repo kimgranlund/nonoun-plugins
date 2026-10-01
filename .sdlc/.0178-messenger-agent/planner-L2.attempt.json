@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d495e524feea48d797ade3b83b9143d3",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "T-0178 planner L2: handoff split from T-0176, requirements fully specified",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T04:41:11.936542+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0178-messenger-agent/handoff.md",
+  "owner_pid": 97610,
+  "process_pid": 97677,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T04:48:46.654175+00:00"
+}

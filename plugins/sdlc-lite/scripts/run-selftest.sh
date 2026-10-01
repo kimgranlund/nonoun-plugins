@@ -58,6 +58,10 @@
 # scripts/run.sh in place (same inode) before printing its result; the run must still exit 0, print
 # the result path, save the stub's text, write its runs.jsonl line, and mark the attempt completed.
 # The real run.sh is never touched. Its failures read "run selftest: FAIL: self-edit: <reason>".
+# Mailbox notice: in a fresh repo a planner dry run with no mailbox prints no stderr and creates no
+# .sdlc; after one message to planner the dry run's stderr is exactly "run.sh: 1 new message(s) for
+# planner; read with messages.py"; after one more to claude it says 2, and a builder dry run says 1;
+# a real planner run prints the line exactly once and no message body. Its failures read "notice: <reason>".
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -674,5 +678,38 @@ jq -e 'select(.file == "planner-L3.md")' "$edir/runs.jsonl" >/dev/null 2>&1 \
   || fail "self-edit: runs.jsonl has no line with file planner-L3.md"
 est=$(jq -r '.status' "$edir/planner-L3.attempt.json" 2>/dev/null || echo MISSING)
 [[ "$est" == completed ]] || fail "self-edit: planner-L3.attempt.json status is '$est', want completed"
+
+# Mailbox notice.
+mrepo="$tmp/mrepo"
+mkdir -p "$mrepo"
+echo x >"$mrepo/h.md"
+git -C "$mrepo" init -q
+git -C "$mrepo" add -A
+git -C "$mrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+nline() { echo "run.sh: $1 new message(s) for $2; read with messages.py"; }
+(cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" planner L2 h.md >/dev/null 2>"$tmp/n0") \
+  || fail "notice: dry run with no mailbox exited non-zero"
+[[ ! -s "$tmp/n0" ]] || fail "notice: dry run with no mailbox printed stderr: $(cat "$tmp/n0")"
+[[ ! -e "$mrepo/.sdlc" ]] || fail "notice: dry run with no mailbox created .sdlc"
+(cd "$mrepo" && python3 "$here/messages.py" send --receiver planner --sender alice --topic t \
+  --follow-up false notice-body-1 >/dev/null) || fail "notice: send to planner failed"
+(cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" planner L2 h.md >/dev/null 2>"$tmp/n1") \
+  || fail "notice: planner dry run exited non-zero"
+[[ "$(cat "$tmp/n1")" == "$(nline 1 planner)" ]] || fail "notice: one message: stderr is '$(cat "$tmp/n1")'"
+(cd "$mrepo" && python3 "$here/messages.py" send --receiver claude --sender codex --topic t \
+  --follow-up false notice-body-2 >/dev/null) || fail "notice: send to claude failed"
+(cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" planner L2 h.md >/dev/null 2>"$tmp/n2") \
+  || fail "notice: planner dry run exited non-zero"
+[[ "$(cat "$tmp/n2")" == "$(nline 2 planner)" ]] || fail "notice: role plus backend: stderr is '$(cat "$tmp/n2")'"
+(cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" builder L2 h.md >/dev/null 2>"$tmp/n3") \
+  || fail "notice: builder dry run exited non-zero"
+[[ "$(cat "$tmp/n3")" == "$(nline 1 builder)" ]] || fail "notice: builder: stderr is '$(cat "$tmp/n3")'"
+nrc=0
+(cd "$mrepo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L2 h.md >"$tmp/n4o" 2>"$tmp/n4e") || nrc=$?
+[[ "$nrc" == 0 ]] || fail "notice: real run exited $nrc ($(cat "$tmp/n4e"))"
+[[ "$(grep -cF "new message(s)" "$tmp/n4e")" == 1 ]] || fail "notice: real run did not print the notice exactly once: $(cat "$tmp/n4e")"
+grep -qxF "$(nline 2 planner)" "$tmp/n4e" || fail "notice: real run notice line is wrong: $(cat "$tmp/n4e")"
+! grep -qF notice-body "$tmp/n4o" "$tmp/n4e" || fail "notice: real run printed a message body"
 
 echo "run selftest: PASS"

@@ -1,0 +1,20 @@
+{
+  "attempt_id": "b345a206207a4a5780e98006582e1818",
+  "name": "planner-L3-2",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "T-0175 planner L3 attempt hit the 30 minute background limit and was killed with no result; rerun on the updated handoff with a 2 hour limit",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T04:02:31.716884+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0175-ticket-root-router/handoff.md",
+  "owner_pid": 43700,
+  "process_pid": 43910,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T04:54:41.641925+00:00"
+}

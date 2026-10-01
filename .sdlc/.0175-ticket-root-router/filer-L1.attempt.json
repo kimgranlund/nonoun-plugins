@@ -1,0 +1,20 @@
+{
+  "attempt_id": "11f8409d913740c5b459e441a686df7c",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "T-0175 filer draft after all steps verified",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T06:10:53.180143+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0175-ticket-root-router/handoff.md",
+  "owner_pid": 87792,
+  "process_pid": 87839,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T06:11:22.491252+00:00"
+}

@@ -1,0 +1,20 @@
+{
+  "attempt_id": "f53d789d002c48dc80b1ee85287fa52b",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-4: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T07:28:28.608623+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages-b",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages-b/.sdlc/0177-mailbox-core/step-4/handoff.md",
+  "owner_pid": 44460,
+  "process_pid": 44506,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T07:29:36.046798+00:00"
+}

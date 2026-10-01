@@ -179,5 +179,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0172 | [.0172-scout-pin-haiku](.0172-scout-pin-haiku/handoff.md) | Pin the scout to claude-haiku-4-5 | chore | S | P2 | none | 🟢 done |
 | T-0173 | [.0173-planner-l3-opus](.0173-planner-l3-opus/handoff.md) | Move planner L3 from Fable xhigh to Opus xhigh | chore | S | P2 | none | 🟢 done |
 | T-0174 | [.0174-disk-scan-quoted-mention](.0174-disk-scan-quoted-mention/handoff.md) | block-disk-scan.sh denies a quoted mention of a scan inside a compound command | bug | S | P2 | none | 🟢 done |
-| T-0175 | [0175-ticket-root-router](0175-ticket-root-router/handoff.md) | Opt-in tickets/ root and generated .sdlc/AGENTS.md router | feature | L | P2 | none | 🔵 ready |
-| T-0176 | [0176-messages-mailbox](0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | M | P2 | none | 🔵 ready |
+| T-0175 | [.0175-ticket-root-router](.0175-ticket-root-router/handoff.md) | Opt-in tickets/ root and generated .sdlc/AGENTS.md router | feature | L | P2 | none | 🟢 done |
+| T-0176 | [.0176-messages-mailbox](.0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | L | P2 | none | 🟢 done |
+| T-0177 | [.0177-mailbox-core](.0177-mailbox-core/handoff.md) | Mailbox core: messages.py, lifecycle, schema, and run.sh notice | feature | L | P2 | none | 🟢 done |
+| T-0178 | [.0178-messenger-agent](.0178-messenger-agent/handoff.md) | Messenger agent: declared agent, Codex mapping, and check.py coverage | feature | M | P2 | T-0177 | 🟢 done |
+| T-0179 | [.0179-messages-entry-files](.0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | M | P2 | T-0177, T-0178 | 🟢 done |

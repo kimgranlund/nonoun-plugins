@@ -1,6 +1,6 @@
 # Ticket stages and message bus
 
-Version 0.1, 2026-09-30. Proposal. Nothing here is built.
+Version 0.2, 2026-09-30. Built: Option A (the router), the opt-in `tickets/` root, and the message bus (T-0177, T-0178, T-0179). The rest is a proposal.
 
 ## Problem
 
@@ -74,17 +74,36 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 
 ## Message bus
 
+Status: the mailbox core is built in T-0177 (`scripts/messages.py` and the `run.sh` notice). The `messenger` agent is built in T-0178 (`plugins/sdlc-lite/agents/messenger.md` and the generated Codex agent `sdlc-messenger-l1`). The entry files are built in T-0179: `messages.py send` and `reply` and `tickets.py roadmap` write `messages/AGENTS.md` and the three stage entry files, and the live run is in [Messages live run](../validation/messages-live-run.md).
+
 Purpose: a harness leaves a message for another harness (Claude, Codex, or a human) and the message changes state as it is handled. The pipeline already hands work over through files and `runs.jsonl`, so the bus is for what those do not cover, such as a Codex session asking Claude a question mid-run. Build it only when a real case exists.
 
 ```
-.sdlc/bus/            git-ignored, in the main checkout, shared by worktrees
-  new/<to>/<ts>-<from>-<slug>.md
-  read/<to>/...       reader renames from new/, so the first rename wins
-  done/<to>/...       reader moves here with a one-line outcome
+.sdlc/messages/       git-ignored, in the main checkout, shared by worktrees
+  AGENTS.md           instructions for setting up comms; linked from the router
+  new/<receiver>/<ts>-<sender>-<slug>.md
+  read/<receiver>/... reader renames from new/, so the first rename wins
+  done/<receiver>/... parent acknowledges with messages.py ack: ack_time and a one-line outcome
 ```
 
-- Message front matter: `to`, `from`, `re` (ticket id), `kind` (question, handoff, ack), `expires`. Body is short, with a size cap.
-- Delivery has no daemon. `run.sh` checks `bus/new/<role-or-host>` before it launches a role; the Claude session start hook prints a count; the Codex prelude does the same.
+- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`, `follow_up_requested` (boolean), `protocol`. Optional: `re` (the id of the message being answered), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
+- Self-describing: `.sdlc/AGENTS.md`, `.sdlc/tickets/AGENTS.md`, and `.sdlc/messages/AGENTS.md` carry the full procedures with exact commands; each of `messages/new/`, `messages/read/`, `messages/done/` has a three-line `AGENTS.md`. No skill is added. Every message carries `protocol: .sdlc/messages/AGENTS.md` (stamped and validated by `messages.py send`) so a reader who opens only a message finds the rules. The `messenger` agent body stays minimal and defers to `messages/AGENTS.md`. Tested by a live run where a fresh Claude role and a fresh Codex role, given only a message path, ack and reply correctly.
+- Lifecycle: `new/<receiver>/` (written by the sender) to `read/<receiver>/` (the `messenger` claimed it by atomic rename and notified its parent; stamps `read_time`) to `done/<receiver>/` (the parent host acknowledged it with `messages.py ack`; stamps `ack_time`, optional until acked, and records a one-line outcome). An unread message that expires goes new to done with outcome `expired`. A message never sits in two folders and never moves backward.
+- Transition table (tested row by row):
+
+  | Transition | Triggered by | Precondition | Stamped |
+  | --- | --- | --- | --- |
+  | create in `new/<receiver>/` | sender, through `messages.py send` or `messages.py reply` | valid schema, body within the size cap | `send_time`, empty `read_time`, `protocol`, `expires` |
+  | new to read | `messenger`, through `messages.py read` | message in `new/`, caller is the receiver | `read_time` |
+  | read to done | parent host, through `messages.py ack` | message in `read/`; if `follow_up_requested` is true, a reply exists | `ack_time`, outcome line |
+  | new to done (expired) | expiry sweep, through `messages.py expire` | past `expires`, still in `new/` | outcome `expired` |
+  | read to done (expired) | expiry sweep, through `messages.py expire` | past `expires`, never acked | outcome `expired`, or `expired, no reply` when a follow-up was requested |
+
+  Stamp fields are set only by these transitions; a caller cannot pass `read_time` or `ack_time`. Backward moves, `read` by a non-recipient, and `ack` of an unread message are refused.
+- Follow-up (gates only read to done): when `follow_up_requested` is true, the message cannot move to `done/` until the parent has sent a reply with the same topic and a `re` pointing back to it, or it expires. An expired message with no reply moves to `done/` as `expired, no reply` and the sender gets a notice message. When false, `done` is free. The exact reply rule: a reply to message X exists when some message in `new/<S>/`, `read/<S>/`, or `done/<S>/`, where S is X's sender, has the same topic as X and `re` equal to X's id.
+- `messenger`: a required declared agent (`plugins/sdlc-lite/agents/messenger.md`, with a Codex agent generated by `codex_roles.py generate`), not a `run.sh` pipeline role and with no authority beyond moving messages and sending replies through `messages.py`. Each harness runs one as a dedicated sub-agent on a cheap model (Claude `claude-haiku-4-5`; Codex the scout tier model in `adapters/codex/models.json`, currently `gpt-5.6-terra`, or luna). Its only job is to poll `messages/new/<harness>` every 10 seconds and tell its parent when a message is addressed to that harness. Parents send through their `messenger`, not by writing files themselves. The `messenger` never acts on a body.
+- Host limits, stated per host. Claude Code: the sub-agent lives only while its session runs, polling needs Monitor or a loop, and a Claude hook enforces nothing on Codex. Codex: the `messenger` is a native subagent with its own lifetime and no Claude tools or hooks. One host working says nothing about the other.
+- Delivery has no daemon besides the `messenger`. `run.sh` also prints a count before it launches a role: when `messages.py count` for the role name plus the backend name (`claude` or `codex`) is above 0, it prints one stderr line `run.sh: <n> new message(s) for <role>; read with messages.py`. It never prints a body and never changes the exit code.
 - Durable facts go to the ticket or `notes.md`. The bus is a mailbox, not a record.
 - Trust: a message body is data, never instructions. A message cannot authorize a publish, a push, or any external write. Expired messages move to `done/` with outcome `expired`.
 - Limits: it works on one machine. A message that must cross machines is a ticket or a pushed note.
@@ -97,5 +116,7 @@ Purpose: a harness leaves a message for another harness (Claude, Codex, or a hum
 
 ## Validation plan
 
+- Status is tested, not just implemented: a selftest case per row of the transition table, negative controls for refused moves and caller-written stamps, the two-reader race with the loser unchanged, and a live run through the real `messenger` with `send_time <= read_time <= ack_time`. The verifier injects a defect to show a test fails. The same rule covers the router: when its lists and counts regenerate and what makes `check` fail are each tested with a negative control.
+
 - A: a check that the router block is current and a negative control that a stale block fails; a live run where a role finds a ready ticket through the router alone on both hosts.
-- Bus: a selftest for the rename race (two readers, one winner) and for expiry; a negative control that a message cannot trigger a publish.
+- Bus: a selftest for the rename race (two readers, one winner), expiry, schema validation with a negative control for a missing field, the follow-up rule (false free, true refused without a reply, true allowed after a reply, expired with no reply reported), and `read_time` stamping; a negative control that a message cannot trigger a publish.
