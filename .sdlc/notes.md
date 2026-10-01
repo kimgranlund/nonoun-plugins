@@ -140,3 +140,8 @@
 - note: `check.sh` skipped shellcheck in both step runs because it is not installed, so the shell checks there were not run.
 - note: the step 3 `run.sh` unchanged guard compared against `SDLC_BASE_SHA`, which equalled HEAD, so it could not go red there. The `run.sh` diff was not otherwise independently inspected in the artifacts.
 - note: the messenger has not been run live on Claude or on Codex. That evidence is T-0179's scope.
+## T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router (2026-09-30)
+
+- decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
+- note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
+- note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.

@@ -1,6 +1,6 @@
 # Ticket stages and message bus
 
-Version 0.1, 2026-09-30. Proposal. Nothing here is built.
+Version 0.2, 2026-09-30. Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal.
 
 ## Problem
 
