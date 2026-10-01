@@ -1,0 +1,20 @@
+{
+  "attempt_id": "b6000fd5c73b4441988fbbeab08cb5c4",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "T-0176 scope grew (messenger agent, schema, follow-up rule, check.py): replan at L3, earlier L2 plan used the old handoff",
+  "reason_source": "caller",
+  "status": "failed",
+  "started_at": "2026-10-01T03:40:38.856956+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0176-messages-mailbox/handoff.md",
+  "owner_pid": 97977,
+  "process_pid": 98002,
+  "exit_code": 143,
+  "finished_at": "2026-10-01T04:02:35.138367+00:00"
+}

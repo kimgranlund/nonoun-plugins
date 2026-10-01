@@ -2,7 +2,7 @@
 id: T-0176
 title: "Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,7 @@ Design: `docs/ticket-stages/design.md` (sections Message bus and Two roots). Ref
 
 ## Constraints
 Existing run.sh output and exit codes are unchanged apart from the one notice line. No message content is ever executed or interpreted. Do not edit run.sh while a role run is using it: build in the worktree copy and run roles from the main checkout's copy. Do not bump versions.
+
+## Closed
+
+2026-09-30: Split by user decision into T-0177 (mailbox core), T-0178 (messenger agent), T-0179 (entry files and live validation); every recorded requirement is carried in those three.

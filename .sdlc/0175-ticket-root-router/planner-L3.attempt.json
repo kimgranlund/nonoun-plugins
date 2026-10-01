@@ -9,10 +9,12 @@
   "effort": "xhigh",
   "routing_reason": "T-0175 size L, cross-cutting tickets.py change: planner L3",
   "reason_source": "caller",
-  "status": "running",
+  "status": "interrupted",
   "started_at": "2026-10-01T03:32:21.393175+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0175-ticket-root-router/handoff.md",
   "owner_pid": 27819,
-  "process_pid": 27844
+  "process_pid": 27844,
+  "exit_code": 143,
+  "finished_at": "2026-10-01T04:02:20.294279+00:00"
 }
