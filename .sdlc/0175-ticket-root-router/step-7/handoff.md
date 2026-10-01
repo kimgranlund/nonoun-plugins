@@ -40,3 +40,10 @@ Depends on: steps 1 to 3 (the code under test) and step 6 (the docs/README.md li
 - `grep -qx '## Scripted run' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- proposed: 1' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- ready: 1' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- done: 1' docs/validation/ticket-root-router-live-run.md && grep -qF 'ticket_root: tickets' docs/validation/ticket-root-router-live-run.md`
 - `grep -qx '## Fresh role' docs/validation/ticket-root-router-live-run.md && grep -qE '^Result: (verified|unverified: .+)$' docs/validation/ticket-root-router-live-run.md && grep -qx '## Limits' docs/validation/ticket-root-router-live-run.md`
 - (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/tickets.py|plugins/sdlc-lite/scripts/board.py|plugins/sdlc-lite/scripts/traces/ingest.py|plugins/sdlc-lite/scripts/traces/sources/tickets.py|plugins/sdlc-lite/scripts/traces/selftest.py|docs/maintenance/sdlc-internals.md|plugins/sdlc-lite/skills/handoff-format/SKILL.md|plugins/sdlc-lite/skills/ticket/SKILL.md|docs/ticket-stages/design.md|docs/ticket-stages/README.md|docs/README.md|docs/validation/ticket-root-router-live-run.md" | { ! grep -q .; }`
+
+## Previous attempt (verifier-L2.md)
+Only `docs/validation/ticket-root-router-live-run.md` needs a change. No re-run is needed.
+- Change the Fresh role `Result:` line from `Result: verified` to `Result: unverified: <reasons>`, giving two reasons that match the doc's own observations.
+  - The role did not read `.sdlc/tickets/AGENTS.md` through the handoff's `router:` line. It received it through Claude Code nested-memory loading.
+  - The `, claimed by` router state before the close was not captured live. It was reproduced only by replay.
+- Keep the rest of the doc. The README line can stay.
