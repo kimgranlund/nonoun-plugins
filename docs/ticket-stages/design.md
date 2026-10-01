@@ -84,7 +84,8 @@ Purpose: a harness leaves a message for another harness (Claude, Codex, or a hum
   done/<receiver>/... reader moves here with a one-line outcome
 ```
 
-- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`. Optional: `re` (ticket id), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
+- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`, `follow_up_requested` (boolean). Optional: `re` (ticket id), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
+- Follow-up: when `follow_up_requested` is true, the message cannot move to `done/` until the parent has sent a reply with the same topic and a `re` pointing back to it, or it expires. An expired message with no reply moves to `done/` as `expired, no reply` and the sender gets a notice message. When false, `done` is free.
 - Messenger: each harness creates a dedicated sub-agent on a cheap model (Claude `claude-haiku-4-5`; Codex the scout tier model in `adapters/codex/models.json`, currently `gpt-5.6-terra`, or luna). Its only job is to poll `messages/new/<harness>` every 10 seconds and tell its parent when a message is addressed to that harness. Parents send through their messenger, not by writing files themselves. The messenger never acts on a body.
 - Host limits, stated per host. Claude Code: the sub-agent lives only while its session runs, polling needs Monitor or a loop, and a Claude hook enforces nothing on Codex. Codex: the messenger is a native subagent with its own lifetime and no Claude tools or hooks. One host working says nothing about the other.
 - Delivery has no daemon besides the messenger. `run.sh` also prints a count before it launches a role.
@@ -101,4 +102,4 @@ Purpose: a harness leaves a message for another harness (Claude, Codex, or a hum
 ## Validation plan
 
 - A: a check that the router block is current and a negative control that a stale block fails; a live run where a role finds a ready ticket through the router alone on both hosts.
-- Bus: a selftest for the rename race (two readers, one winner), expiry, schema validation with a negative control for a missing field, and `read_time` stamping; a negative control that a message cannot trigger a publish.
+- Bus: a selftest for the rename race (two readers, one winner), expiry, schema validation with a negative control for a missing field, the follow-up rule (false free, true refused without a reply, true allowed after a reply, expired with no reply reported), and `read_time` stamping; a negative control that a message cannot trigger a publish.
