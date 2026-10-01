@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Tickets are .sdlc/<slug>/handoff.md files that open with front matter (see skills/handoff-format).
+"""Tickets are .sdlc/<slug>/handoff.md (or .sdlc/tickets/<slug>/handoff.md) files that open with front matter.
+See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of .sdlc/roadmap.md.
 
 Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | selftest}
-  --root    dir holding ticket dirs (default: .sdlc in the cwd, like board.py)
+  --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
+            like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
+            <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
+            and roadmap rows link tickets/<slug>/handoff.md
   new       copy <root>/_templates/<type>.md (else <plugin>/skills/ticket/templates/<type>.md),
             stamp the next id, today's date and the title, then regenerate the roadmap.
             Numbered mode (--numbered, or a `ticket_folders: numbered` line in <root>/config) names
@@ -101,7 +105,16 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             branch an outside agent owns that no worktree here checks out. new and close read the ticket folders
             committed at <branch>:<rel> from git objects (no checkout) and stamp every new ticket and follow-up
             id above their max; check warns for a registered name with no local branch. Outside git the lines
-            change nothing
+            change nothing.
+            A `ticket_root: tickets` line (same comment rules) puts the ticket dirs in <root>/tickets for new, close,
+            roadmap, check, archive and number; `tickets` is the only supported value, and any other value refuses
+            every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. With it,
+            a ticket folder (handoff.md with front matter, under load's folder rule) left directly under <root> is
+            a stray, `outside the ticket root`: check fails it and new, close, roadmap, archive and number refuse,
+            writing nothing, until it moves to tickets/<slug>. A plain task (no front matter) is never a stray. The
+            reference scan in close, archive and number then names <rel>/<slug> with <rel> the ticket root
+            (.sdlc/tickets) and leaves out <root>/roadmap.md. Ids across worktrees and external branches, the
+            no-filer hint and close --dry-run's worktree lines still read the other trees' <root>
   selftest  build fixtures in a temp dir and prove every check failure fires
 
 Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
@@ -156,6 +169,7 @@ PREFIX_RE = re.compile(r'\d{4}-')
 DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder: .NNNN-<slug>, fullmatch
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
 EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
+TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
 
 HEADER = """# Roadmap
 
@@ -252,6 +266,41 @@ def external_branches(root):
         if m and m.group(1) not in out:
             out.append(m.group(1))
     return out
+
+
+def ticket_dir(root):
+    """The dir holding the ticket folders: <root>/tickets when <root>/config has a `ticket_root: tickets` line,
+    else root. Blank and # comment lines are ignored and a missing file is no line, as in config_numbered. Any
+    other ticket_root value raises Fail before anything is read or written: the only supported value is
+    `tickets`. roadmap.md, config, notes.md and _templates stay at <root> either way."""
+    path = root / 'config'
+    if not path.is_file():
+        return root
+    values = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = TICKET_ROOT_RE.fullmatch(line)
+        if m:
+            values.append(m.group(1))
+    if not values:
+        return root
+    for v in values:
+        if v != 'tickets':
+            raise Fail(f'{path}: ticket_root: {v} is not supported; the only supported value is '
+                       f'ticket_root: tickets; nothing written')
+    return root / 'tickets'
+
+
+def strays(root):
+    """One problem line per ticket folder left directly under <root> while <root>/config sets
+    `ticket_root: tickets`: a dir other than tickets that load()'s folder rule takes (not _ or . prefixed, except
+    a closed-ticket .NNNN-<slug>) whose handoff.md has front matter. A plain task (no front matter) is never a
+    stray. [] when the ticket root is <root> itself."""
+    if ticket_dir(root) == root:
+        return []
+    return [f'{name}: ticket folder outside the ticket root; {root}/config sets ticket_root: tickets, so move it '
+            f'to tickets/{name}' for name, _ in load(root) if name != 'tickets']
 
 
 GIT_ENV_DROP = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE')
@@ -389,7 +438,7 @@ def literal_re(old):
     return re.compile(r'(?<![^\s\'"`()<>\[\]])' + re.escape(old) + r'(?![A-Za-z0-9_-])')
 
 
-def outside_refs(root, slug, own=False):
+def outside_refs(root, slug, own=False, roadmap=None):
     """(toplevel, old, new, files) for a numbered close of root/slug. old is <rel>/<slug> and new <rel>/.<slug>,
     where rel is root relative to its git toplevel. One `git grep --untracked -I -lF <slug>` from the toplevel
     finds candidate files; each is kept only when it holds a reference: the literal old (the original
@@ -403,7 +452,9 @@ def outside_refs(root, slug, own=False):
     regenerates the roadmap). (None, '', '', []) when git is missing, a git call fails, or root is outside the
     toplevel, the same rule as worktree_pairs. GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped so an outer
     git context cannot redirect the scan. own=True (number) keeps files under the ticket's own folder too, since
-    a literal <rel>/<slug> cite there goes stale when the folder is renamed."""
+    a literal <rel>/<slug> cite there goes stale when the folder is renamed. roadmap is the roadmap path to leave
+    out, default <root>/roadmap.md; with `ticket_root: tickets` callers pass the ticket dir as root and
+    roadmap=<root>/roadmap.md, whose tickets/<slug>/handoff.md link would otherwise count as a cite."""
     try:
         here = root.resolve()
         anchor = here
@@ -421,7 +472,10 @@ def outside_refs(root, slug, own=False):
                             '-F', '-e', slug], env=env, capture_output=True, text=True)
         if p.returncode not in (0, 1):
             raise ValueError(p.stderr.strip())
-        skip = (rel / 'roadmap.md').as_posix()
+        if roadmap is None:
+            skip = (rel / 'roadmap.md').as_posix()
+        else:
+            skip = (roadmap.parent.resolve() / roadmap.name).relative_to(top).as_posix()
         lit = literal_re(old)
         files = []
         for f in sorted(f for f in p.stdout.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))):
@@ -716,10 +770,11 @@ def render(ts, root):
         if not cache:
             cache.append(file_base(root))
         return cache[0]
+    prefix = '' if ticket_dir(root) == root else 'tickets/'
     for slug, m in ordered:
         deps = ', '.join(render_dep(d, met_caps, base) for d in m['depends']) or 'none'
         title = m['title'].replace('|', '\\|')
-        rows.append(f"| {m['id']} | [{slug}]({slug}/handoff.md) | {title} | {m['type']} | {m['size']} | "
+        rows.append(f"| {m['id']} | [{slug}]({prefix}{slug}/handoff.md) | {title} | {m['type']} | {m['size']} | "
                     f"{m['priority']} | {deps} | {GLYPH[m['status']]} {m['status']} |")
     return HEADER + '\n' + '\n'.join(rows) + '\n'
 
@@ -756,14 +811,15 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
     """Text and meta of a new ticket, validated against ts (which must already be clean). Writes nothing.
     The new id is one above the max of ts's ids and floor (id_floor: the max in every other git worktree).
     origin adds `from: <id>` right after the created: line; context replaces the body of ## Context.
-    numbered checks for and validates under the folder name folder_name(slug, <new id>, True)."""
+    numbered checks for and validates under the folder name folder_name(slug, <new id>, True). The template
+    comes from <root>; the exists check is under ticket_dir(root)."""
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
     tpl = template(root, kind)
     nums = [int(m['id'][2:]) for _, m in ts]
     tid = f'T-{max(nums + [floor]) + 1:04d}'
     name = folder_name(slug, tid, numbered)
-    d = root / name
+    d = ticket_dir(root) / name
     if d.exists() or any(s == name for s, _ in ts):
         raise Fail(f'{name}: {d} already exists; nothing written')
     text = tpl.read_text(encoding='utf-8')
@@ -795,6 +851,7 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
 
 
 def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=False):
+    td = ticket_dir(root)
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
@@ -803,20 +860,20 @@ def cmd_new(root, kind, slug, title='', origin=None, context=None, numbered=Fals
         raise Fail(f'slug {slug!r} already starts with NNNN-: numbered mode adds the prefix itself, so this '
                    f'would double it; pass the bare slug {slug[5:]!r}; nothing written')
     template(root, kind)
-    if not numbered and (root / slug).exists():
-        raise Fail(f'{slug}: {root / slug} already exists; nothing written')
-    ts = load(root)
-    errs = problems(ts, numbered)
+    if not numbered and (td / slug).exists():
+        raise Fail(f'{slug}: {td / slug} already exists; nothing written')
+    ts = load(td)
+    errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to add a ticket: fix the problems above first']))
     text, meta = stamp(root, ts, kind, slug, title, origin, context, numbered, floor=id_floor(root))
-    d = root / folder_name(slug, meta['id'], numbered)
+    d = td / folder_name(slug, meta['id'], numbered)
     d.mkdir(parents=True)
     path = d / 'handoff.md'
     path.write_text(text, encoding='utf-8')
     if flag:
         ensure_numbered_config(root)
-    write_roadmap(root, load(root))
+    write_roadmap(root, load(td))
     return str(path)
 
 
@@ -959,13 +1016,14 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{slug}: --reason files no follow-ups, so it does not combine with --dry-run, --skip, '
                    f'--expect or --ticket; '
                    f'nothing written')
+    td = ticket_dir(root)
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not SLUG_RE.fullmatch(slug):
         raise Fail(f'slug {slug!r} must match ^[a-z0-9]+(-[a-z0-9]+)*$')
-    d = root / slug
+    d = td / slug
     h = d / 'handoff.md'
-    dot = root / ('.' + slug)
+    dot = td / ('.' + slug)
     archive = bool(numbered and PREFIX_RE.match(slug))
     final = dot.name if archive else slug
     if not h.is_file() and (dot / 'handoff.md').is_file():
@@ -976,15 +1034,16 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         raise Fail(f'{h}: missing or has no front matter, so it is not a ticket; nothing written')
     if archive and dot.exists():
         raise Fail(f'{slug}: close would rename it to {dot.name}, but {dot} already exists; nothing written')
-    ts = load(root)
-    errs = problems(ts, numbered)
+    ts = load(td)
+    errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['refusing to close: fix the problems above first']))
     pid = meta['id']
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
-    top, old_ref, new_ref, refs = outside_refs(root, slug) if archive else (None, '', '', [])
+    top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=root / 'roadmap.md') if archive
+                                   else (None, '', '', []))
     if refs and not rewrite_refs and not force:
         via_force = '' if ack_warnings is not None else ' or --force (close anyway, leaving them)'
         raise Fail(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
@@ -1011,7 +1070,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if archive:
             d.rename(dot)
         rewrote = rewrite_now()
-        write_roadmap(root, load(root))
+        write_roadmap(root, load(td))
         if flag:
             ensure_numbered_config(root)
         moved = f'; moved to {dot.name}' if archive else ''
@@ -1106,7 +1165,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
             continue
         tid = f'T-{max(max((int(x["id"][2:]) for _, x in ts), default=0), floor) + 1:04d}'
         s, k = base, 2
-        while (root / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
+        while (td / (name := folder_name(s, tid, numbered))).exists() or any(x == name for x, _ in ts):
             s, k = f'{base}-{k}', k + 1
         ctx = f'Follow-up from {pid} ({final}/{filer.name}):\n\n{text}'
         t, _ = stamp(root, ts, 'idea', s, title, origin=pid, context=ctx, numbered=numbered, floor=floor)
@@ -1140,8 +1199,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + [f'expect {digest}'])
 
     for s, t in planned:
-        (root / s).mkdir()
-        (root / s / 'handoff.md').write_text(t, encoding='utf-8')
+        (td / s).mkdir()
+        (td / s / 'handoff.md').write_text(t, encoding='utf-8')
     if notes:
         append_notes(root, pid, meta.get('title') or slug, notes)
     body = raw[fm.end():]
@@ -1155,7 +1214,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if archive:
         d.rename(dot)
     rewrote = rewrite_now()
-    write_roadmap(root, load(root))
+    write_roadmap(root, load(td))
     if flag:
         ensure_numbered_config(root)
     out = (f'{pid} done; follow-up ticket: ' + (', '.join(s for s, _ in planned) or 'none')
@@ -1172,9 +1231,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
 
 
 def cmd_roadmap(root, numbered=False):
+    td = ticket_dir(root)
     numbered = numbered or config_numbered(root)
-    ts = load(root)
-    errs = problems(ts, numbered)
+    ts = load(td)
+    errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['roadmap not written: fix the problems above first']))
     root.mkdir(parents=True, exist_ok=True)
@@ -1182,9 +1242,10 @@ def cmd_roadmap(root, numbered=False):
 
 
 def cmd_check(root, numbered=False):
+    td = ticket_dir(root)
     numbered = numbered or config_numbered(root)
-    ts = load(root)
-    errs = problems(ts, numbered)
+    ts = load(td)
+    errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs))
     if stale(root, ts):
@@ -1199,22 +1260,23 @@ def cmd_check(root, numbered=False):
 
 
 def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=False):
+    td = ticket_dir(root)
     flag = numbered
     numbered = numbered or config_numbered(root)
     if not numbered:
         raise Fail(f'archive renames NNNN-<slug> folders and needs numbered mode (--numbered or '
                    f'ticket_folders: numbered in {root}/config); nothing written')
-    ts = load(root)
-    errs = problems(ts, numbered)
+    ts = load(td)
+    errs = problems(ts, numbered) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
     names = [name for name, m in ts if PREFIX_RE.match(name) and not name.startswith('.')
              and m.get('status') in ('done', 'dropped')]
-    taken = [f'.{n}' for n in names if (root / f'.{n}').exists()]
+    taken = [f'.{n}' for n in names if (td / f'.{n}').exists()]
     if taken:
         raise Fail(f'archive: {", ".join(taken)} already exist(s); nothing written')
     hits = [(name, top, old, new, files) for name in names
-            for top, old, new, files in [outside_refs(root, name)] if files]
+            for top, old, new, files in [outside_refs(td, name, roadmap=root / 'roadmap.md')] if files]
     if hits and not rewrite_refs and not force:
         raise Fail('archive would rename these folders, but other files reference them:\n'
                    + ''.join(f'{old}:\n' + ''.join(f'  {f}\n' for f in files) for _, _, old, _, files in hits)
@@ -1231,8 +1293,8 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
         for _, top, old, new, files in hits:
             rewrite_files(top, files, old, new)
     for n in names:
-        (root / n).rename(root / f'.{n}')
-    write_roadmap(root, load(root))
+        (td / n).rename(td / f'.{n}')
+    write_roadmap(root, load(td))
     if flag:
         ensure_numbered_config(root)
     rewrote = f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
@@ -1244,9 +1306,11 @@ def cmd_number(root, dry_run=False):
     its own id, rewrite every cite of <rel>/<slug> (the literal, or a path token that resolves to the folder,
     including files inside the folder itself) to <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, and
     regenerate the roadmap. Refuses, writing nothing, on a bad ticket, a ticket whose id is not T-NNNN, or an
-    existing target folder. Done and dropped folders get NNNN- too; `archive --rewrite-refs` hides them after."""
-    ts = load(root)
-    errs = problems(ts)
+    existing target folder. Done and dropped folders get NNNN- too; `archive --rewrite-refs` hides them after.
+    With `ticket_root: tickets` the folders are under <root>/tickets; config and roadmap.md stay at <root>."""
+    td = ticket_dir(root)
+    ts = load(td)
+    errs = problems(ts) + strays(root)
     if errs:
         raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
     plain = [(n, m) for n, m in ts if not n.startswith('.') and not PREFIX_RE.match(n)]
@@ -1254,12 +1318,12 @@ def cmd_number(root, dry_run=False):
     if bad:
         raise Fail(f'number: no T-NNNN id in {", ".join(bad)}; nothing written')
     moves = [(n, folder_name(n, m['id'], True)) for n, m in plain]
-    taken = [new for _, new in moves if (root / new).exists() or (root / f'.{new}').exists()]
+    taken = [new for _, new in moves if (td / new).exists() or (td / f'.{new}').exists()]
     if taken:
         raise Fail(f'number: {", ".join(taken)} already exist(s); nothing written')
     hits = []
     for n, new in moves:
-        top, old, _, files = outside_refs(root, n, own=True)
+        top, old, _, files = outside_refs(td, n, own=True, roadmap=root / 'roadmap.md')
         if files:
             hits.append((n, new, top, old, old.rsplit('/', 1)[0] + '/' + new if '/' in old else new, files))
     rewrite = sorted({f for *_, files in hits for f in files})
@@ -1270,9 +1334,9 @@ def cmd_number(root, dry_run=False):
     for n, new, top, old, dest, files in hits:
         rewrite_files(top, files, old, dest)
     for n, new in moves:
-        (root / n).rename(root / new)
+        (td / n).rename(td / new)
     ensure_numbered_config(root)
-    write_roadmap(root, load(root))
+    write_roadmap(root, load(td))
     if not moves:
         return 'nothing to number; numbered mode on'
     rewrote = f'; rewrote refs in {len(rewrite)} file(s)' if rewrite else ''
@@ -2911,6 +2975,125 @@ def selftest():
         rc, out, _ = run(empty, 'check')
         expect('zero tickets and no roadmap passes', rc == 0 and out.startswith('ok: 0 tickets'))
 
+        # ---- ticket_root: tickets: ticket folders live in <root>/tickets; roadmap, config, notes, _templates stay ----
+        def tr_root(name, extra=''):
+            r = pathlib.Path(tmp) / name / '.sdlc'
+            r.mkdir(parents=True)
+            (r / 'config').write_text('ticket_root: tickets\n' + extra, encoding='utf-8')
+            return r
+
+        def tr_text(path):
+            return path.read_text(encoding='utf-8') if path.is_file() else ''
+
+        def tr_filer(root, folder, follow):
+            (root / 'tickets' / folder / 'filer-L1.md').write_text(
+                f'## Warnings\nNone\n\n## Follow-ups\n{follow}\n', encoding='utf-8')
+
+        tr = tr_root('tr-new')
+        rc, out, err = run(tr, 'new', ('feature', 'alpha', 'Alpha'))
+        rm = tr_text(tr / 'roadmap.md')
+        expect(f'ticket_root: new lands in tickets/alpha and the roadmap links tickets/alpha/handoff.md: rc={rc} '
+               f'{out!r} {err!r} {rm!r}',
+               rc == 0 and ticket_dir(tr) == tr / 'tickets' and (tr / 'tickets' / 'alpha' / 'handoff.md').is_file()
+               and not (tr / 'alpha').exists() and '| [alpha](tickets/alpha/handoff.md) |' in rm
+               and not (tr / 'tickets' / 'roadmap.md').exists() and run(tr, 'check')[0] == 0)
+        (tr / 'task-x').mkdir()
+        (tr / 'task-x' / 'handoff.md').write_text('## Goal\nNo front matter here.\n', encoding='utf-8')
+        rc, out, err = run(tr, 'check')
+        expect(f'ticket_root: a plain task at <root> is not a stray: rc={rc} {out!r} {err!r}',
+               rc == 0 and out.startswith('ok: 1 tickets'))
+
+        tr = tr_root('tr-close')
+        run(tr, 'new', ('feature', 'alpha', 'Alpha'))
+        tr_filer(tr, 'alpha', '- note: Keep this\n- decide: Add a gizmo')
+        rc, out, _ = run(tr, 'close', ('alpha',), dry_run=True)
+        token = out.splitlines()[-1].split(' ', 1)[1] if rc == 0 else 'none'
+        rc, out, err = run(tr, 'close', ('alpha',), ticket=2, expect=token)
+        got = dict(load(tr / 'tickets'))
+        expect(f'ticket_root: plain close sets done, files the follow-up in tickets/ and notes at <root>: rc={rc} '
+               f'{out!r} {err!r} tickets={sorted(got)}',
+               rc == 0 and got.get('alpha', {}).get('status') == 'done'
+               and (tr / 'tickets' / 'add-a-gizmo' / 'handoff.md').is_file() and not (tr / 'add-a-gizmo').exists()
+               and 'note: Keep this' in tr_text(tr / 'notes.md') and not (tr / 'tickets' / 'notes.md').exists()
+               and run(tr, 'check')[0] == 0)
+
+        tr = tr_root('tr-nclose', 'ticket_folders: numbered\n')
+        run(tr, 'new', ('feature', 'alpha', 'Alpha'))
+        tr_filer(tr, '0001-alpha', 'None')
+        rc, out, err = run(tr, 'close', ('0001-alpha',))
+        expect(f'ticket_root: numbered close renames to tickets/.0001-alpha: rc={rc} {out!r} {err!r}',
+               rc == 0 and (tr / 'tickets' / '.0001-alpha' / 'handoff.md').is_file()
+               and not (tr / 'tickets' / '0001-alpha').exists() and not (tr / '.0001-alpha').exists()
+               and '(tickets/.0001-alpha/handoff.md)' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
+
+        if shutil.which('git'):
+            tr = tr_root('tr-git', 'ticket_folders: numbered\n')
+            tenv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+            subprocess.run(['git', '-C', str(tr.parent), 'init', '-q'], env=tenv, capture_output=True)
+            run(tr, 'new', ('feature', 'alpha', 'Alpha'))
+            tr_filer(tr, '0001-alpha', 'None')
+            spec = tr.parent / 'spec.md'
+            spec.write_text('see .sdlc/tickets/0001-alpha/handoff.md\n', encoding='utf-8')
+            rc, _, err = run(tr, 'close', ('0001-alpha',))
+            expect(f'ticket_root: a cite of .sdlc/tickets/0001-alpha refuses close, naming spec.md and never the '
+                   f'roadmap: rc={rc} {err!r}',
+                   rc == 1 and 'spec.md' in err and 'roadmap.md' not in err and '.sdlc/tickets/0001-alpha' in err
+                   and (tr / 'tickets' / '0001-alpha').is_dir())
+            rc, out, err = run(tr, 'close', ('0001-alpha',), rewrite_refs=True)
+            expect(f'ticket_root: close --rewrite-refs rewrites the cite to .sdlc/tickets/.0001-alpha: rc={rc} '
+                   f'{out!r} {err!r} {tr_text(spec)!r}',
+                   rc == 0 and tr_text(spec) == 'see .sdlc/tickets/.0001-alpha/handoff.md\n'
+                   and (tr / 'tickets' / '.0001-alpha').is_dir())
+
+        tr = tr_root('tr-num')
+        run(tr, 'new', ('feature', 'alpha', 'Alpha'))
+        run(tr, 'close', ('alpha',), reason='done elsewhere')
+        rc, out, err = run(tr, 'number')
+        expect(f'ticket_root: number renames tickets/alpha to tickets/0001-alpha, config stays at <root>: rc={rc} '
+               f'{out!r} {err!r}',
+               rc == 0 and (tr / 'tickets' / '0001-alpha').is_dir() and not (tr / 'tickets' / 'alpha').exists()
+               and not (tr / '0001-alpha').exists() and config_numbered(tr)
+               and not (tr / 'tickets' / 'config').exists())
+        rc, out, err = run(tr, 'archive')
+        expect(f'ticket_root: archive renames to tickets/.0001-alpha: rc={rc} {out!r} {err!r}',
+               rc == 0 and (tr / 'tickets' / '.0001-alpha').is_dir() and not (tr / '.0001-alpha').exists()
+               and '(tickets/.0001-alpha/handoff.md)' in tr_text(tr / 'roadmap.md') and run(tr, 'check')[0] == 0)
+
+        bad = pathlib.Path(tmp) / 'tr-bad' / '.sdlc'
+        bad.mkdir(parents=True)
+        (bad / 'config').write_text('ticket_root: work\n', encoding='utf-8')
+        rc, _, err = run(bad, 'new', ('feature', 'alpha'))
+        expect(f'ticket_root: an unsupported value refuses new, writing nothing: rc={rc} {err!r} '
+               f'tree={tree(bad)}', rc == 1 and 'ticket_root: tickets' in err and tree(bad) == ['config'])
+        rc, _, err = run(bad, 'check')
+        expect(f'ticket_root: an unsupported value fails check: rc={rc} {err!r}',
+               rc == 1 and 'ticket_root: work' in err)
+
+        st = pathlib.Path(tmp) / 'tr-stray' / '.sdlc'
+        run(st, 'new', ('feature', 'alpha', 'Alpha'))
+        (st / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+        rc, _, err = run(st, 'check')
+        expect(f'ticket_root: a ticket folder left at <root> fails check as a stray: rc={rc} {err!r}',
+               rc == 1 and 'alpha: ticket folder outside the ticket root' in err and 'tickets/alpha' in err)
+        before = snap(st)
+        rc, _, err = run(st, 'new', ('feature', 'beta'))
+        expect(f'ticket_root: a stray refuses new, writing nothing: rc={rc} {err!r}',
+               rc == 1 and 'outside the ticket root' in err and snap(st) == before
+               and not (st / 'tickets').exists())
+
+        # negative control: no ticket_root line (no config, or other lines only) keeps <root>/<slug>
+        for label, cfg in (('no config', None), ('other lines', '# ticket_root: tickets\nticket_folders: plain\n')):
+            nc = pathlib.Path(tmp) / f'tr-none-{label.replace(" ", "-")}' / '.sdlc'
+            if cfg is not None:
+                nc.mkdir(parents=True)
+                (nc / 'config').write_text(cfg, encoding='utf-8')
+            rc, out, err = run(nc, 'new', ('feature', 'alpha', 'Alpha'))
+            expect(f'ticket_root absent ({label}): new lands in <root>/alpha with link alpha/handoff.md: rc={rc} '
+                   f'{out!r} {err!r}',
+                   rc == 0 and ticket_dir(nc) == nc and (nc / 'alpha' / 'handoff.md').is_file()
+                   and not (nc / 'tickets').exists() and '| [alpha](alpha/handoff.md) |' in tr_text(nc / 'roadmap.md')
+                   and run(nc, 'check')[0] == 0)
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -2922,7 +3105,9 @@ def selftest():
 
 def main(argv):
     ap = argparse.ArgumentParser(prog='tickets.py', description=__doc__.split('\n')[0])
-    ap.add_argument('--root', default='.sdlc', help='dir holding ticket dirs (default: .sdlc in the cwd)')
+    ap.add_argument('--root', default='.sdlc',
+                    help='dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc '
+                         'in the cwd); `ticket_root: tickets` in <root>/config moves the ticket dirs to <root>/tickets')
     sub = ap.add_subparsers(dest='cmd')
     p = sub.add_parser('new', help='stamp a typed ticket with the next id')
     p.add_argument('type')
