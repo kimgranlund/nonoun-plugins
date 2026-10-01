@@ -179,3 +179,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0172 | [.0172-scout-pin-haiku](.0172-scout-pin-haiku/handoff.md) | Pin the scout to claude-haiku-4-5 | chore | S | P2 | none | 🟢 done |
 | T-0173 | [.0173-planner-l3-opus](.0173-planner-l3-opus/handoff.md) | Move planner L3 from Fable xhigh to Opus xhigh | chore | S | P2 | none | 🟢 done |
 | T-0174 | [.0174-disk-scan-quoted-mention](.0174-disk-scan-quoted-mention/handoff.md) | block-disk-scan.sh denies a quoted mention of a scan inside a compound command | bug | S | P2 | none | 🟢 done |
+| T-0175 | [0175-ticket-root-router](0175-ticket-root-router/handoff.md) | Opt-in tickets/ root and generated .sdlc/AGENTS.md router | feature | L | P2 | none | 🔵 ready |
+| T-0176 | [0176-messages-mailbox](0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | M | P2 | none | 🔵 ready |
