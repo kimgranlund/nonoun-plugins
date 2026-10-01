@@ -7,6 +7,8 @@
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
 
+- [Ticket stages and message bus](ticket-stages/README.md): proposed router file for `.sdlc/`, stage folders, and a cross-harness mailbox.
+
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
