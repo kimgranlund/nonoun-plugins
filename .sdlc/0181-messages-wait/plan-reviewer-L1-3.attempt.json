@@ -1,0 +1,20 @@
+{
+  "attempt_id": "4d9c9c1aab4c42118e7f1d7bd9df9a08",
+  "name": "plan-reviewer-L1-3",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "0181-messages-wait: plan review required",
+  "reason_source": "caller",
+  "status": "failed",
+  "started_at": "2026-10-01T15:19:44.164324+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/.sdlc/0181-messages-wait/handoff.md",
+  "owner_pid": 36762,
+  "process_pid": 37061,
+  "exit_code": 1,
+  "finished_at": "2026-10-01T15:21:30.473016+00:00"
+}
