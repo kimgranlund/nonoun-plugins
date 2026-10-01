@@ -1,0 +1,20 @@
+{
+  "attempt_id": "b2d8ab57be5b4b30980771e9c952e8ff",
+  "name": "verifier-L1-2",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "0181-messages-wait: verify L1",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T16:39:47.484209+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/.sdlc/0181-messages-wait/step-5/handoff.md",
+  "owner_pid": 25251,
+  "process_pid": 25340,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T16:48:14.070070+00:00"
+}

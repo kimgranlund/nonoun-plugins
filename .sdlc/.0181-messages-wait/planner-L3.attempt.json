@@ -1,0 +1,20 @@
+{
+  "attempt_id": "1af677b4f6b54ad6b6bc40645234e345",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "T-0181 replan after plan defect at split (unparseable criterion), planner L3 per chain",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T14:40:41.576759+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/.sdlc/0181-messages-wait/handoff.md",
+  "owner_pid": 56520,
+  "process_pid": 56557,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T15:13:09.207884+00:00"
+}
