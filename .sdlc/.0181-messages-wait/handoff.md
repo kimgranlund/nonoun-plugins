@@ -2,7 +2,7 @@
 id: T-0181
 title: "messages.py wait: one blocking call that returns when a message arrives"
 type: feature
-status: ready
+status: done
 size: M
 priority: P2
 depends: [T-0180]
@@ -47,3 +47,7 @@ plan review: replan: step 3: acceptance criteria: no criterion can go red on the
 plan review: replan: step 1: acceptance criteria: the negative control (selftest case 7) asserts only that `st_wait_present` raises `SelftestFail` on the patched copy, so it cannot tell which assertion fired. A patched copy that exits nonzero for any other reason (a broken replacement line, a traceback) fails the earlier "exit 0" assertion, raises the same `SelftestFail`, and the case prints `ok`. The handoff requires that "the state-unchanged assertion must fail on the patched copy". The plan defines the distinguishing message `wait changed the mailbox` but case 7 never matches on it, and criterion 1 only checks the `ok: wait: a claiming wait is caught` label.
 plan review: replan: step 1: builder readiness: selftest case 4 lists the `b.refused` calls as `--timeout 601`, `--timeout 0`, `--timeout 1.5`, `--interval abc`, `--interval 0` with no `--receiver bob` and no `want=`. The Do validates the receiver first, and `need()` refuses a missing `--receiver` with exit 1, so a literal build passes all five on the missing-receiver branch and never reaches the timeout or interval checks. `Box.refused` has a `want` parameter for the stderr text that the Do does not use.
 plan review: replan: step 2: builder readiness: level L2 does not fit the builder table row "Small change in a known pattern, 1 to 3 files". The step hand-edits four files (`messages.py`, `agents/messenger.md`, `docs/maintenance/sdlc-internals.md`, `docs/ticket-stages/design.md`), regenerates a fifth, and leaves the entry-file sentences for the builder to compose from "It says that ..." descriptions.
+
+## Closed
+
+2026-10-01: built and verified step by step (5 steps) by /chain; live proof on Claude and Codex in docs/validation/messages-wait-live-run.md

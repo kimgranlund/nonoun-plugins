@@ -9,12 +9,13 @@ Usage: messages.py [--root DIR] send --receiver NAME --sender NAME --topic TEXT 
        messages.py [--root DIR] reply <id> [--follow-up true|false] [--ttl TTL] <body|->
        messages.py [--root DIR] expire [--now TIMESTAMP]
        messages.py [--root DIR] count --receiver NAME
+       messages.py [--root DIR] wait --receiver NAME [--timeout SECONDS] [--interval SECONDS]
        messages.py selftest
   A body of `-` is read from stdin. TTL is a positive integer followed by s, m, h or d (default 7d).
   Exit 0 on success. Exit 1 on every refusal or validation failure: one stderr line
   `messages.py: <reason>`, nothing on stdout, nothing written or moved. Exit 2 only for a usage
   error (an unknown flag, a missing positional, no subcommand). Every value check is made here, so a
-  missing --receiver, --sender, --topic or --follow-up exits 1.
+  missing --receiver, --sender, --topic or --follow-up exits 1. Exit 3 only when wait times out.
 
 Commands
   send    write a message to new/<receiver>/ and print its absolute path. send stamps send_time,
@@ -44,6 +45,10 @@ Commands
           topic, re: <original id>, body `expired, no reply`, follow_up_requested: false). No
           ack_time is stamped. Prints each done path, then each notice path.
   count   print the number of message files in new/<receiver>/.
+  wait    check new/<receiver>/ every --interval seconds (default 5, at least 1) for up to --timeout
+          seconds (default 120, 1 to 600). Print `<id>\\t<absolute path>` per valid message, sorted by
+          id, and exit 0. At the timeout print `no new messages` and exit 3. It skips an invalid file.
+          It never claims, moves, writes, stamps, or prints a body.
   selftest
           run every transition and refusal against throwaway git repos in a temp dir, calling this
           file as `<python> <this file>`, so a copied file tests itself. It never touches the
@@ -72,7 +77,7 @@ Layout
   the mailbox, so read, ack and reply find a message by id in any state folder.
   send and reply create new/<receiver>/ and also write the entry files, which creates new/, read/ and
   done/; read still creates only read/<receiver>/, and ack and expire only done/<receiver>/. list,
-  count, and expire on a missing mailbox create nothing and exit 0.
+  count, wait, and expire on a missing mailbox create nothing; list, count, and expire exit 0.
 
 Mailbox root
   --root DIR (relative to the cwd): the mailbox is DIR/messages.
@@ -122,8 +127,9 @@ Schema
   characters with no control character and no leading or trailing whitespace. In new/, read_time is
   empty and ack_time and outcome are absent; in read/, ack_time and outcome are absent. The body is
   UTF-8 of at most 4000 bytes, may be empty, and holds no line equal to a data marker.
-  Every subcommand validates every message file it opens or counts before it writes or moves
-  anything; one invalid file exits 1 with `messages.py: invalid message <path>: <reason>`.
+  Every subcommand except wait validates every message file it opens or counts before it writes or
+  moves anything; one invalid file exits 1 with `messages.py: invalid message <path>: <reason>`.
+  wait skips an invalid file instead.
 
 Reply rule
   A reply to message X exists when some message in new/<S>/, read/<S>/ or done/<S>/, where S is X's
@@ -223,6 +229,8 @@ Names match `[a-z0-9]+(-[a-z0-9]+)*`. `--follow-up true` makes `ack` wait for a 
 
 Count new messages with `python3 "{{scripts}}/messages.py" count --receiver <name>`. List them with `python3 "{{scripts}}/messages.py" list --receiver <name> --state new`; the id is the third tab-separated field. Claim one with `python3 "{{scripts}}/messages.py" read <id> --receiver <name>`. `read` prints the body between the BEGIN and END data markers.
 
+To block until a message arrives, run `python3 "{{scripts}}/messages.py" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
+
 ## Reply
 
 `python3 "{{scripts}}/messages.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.
@@ -237,10 +245,12 @@ Count new messages with `python3 "{{scripts}}/messages.py" count --receiver <nam
 
 ## Messenger
 
-Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`count`, then `list` and `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
+Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
 - Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-4-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
 - Codex: install the project agents once with `python3 "{{scripts}}/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
+
+While the parent is active, `wait` is the cheaper alternative to a polling subagent. The messenger may run it in its loop, or the parent may skip the messenger and run `python3 "{{scripts}}/messages.py" wait --receiver <harness> --timeout 100 --interval 10` itself, then claim each printed id with `read`. On Claude Code, `--timeout 100` keeps the call under the default 120-second Bash timeout. `wait` returns only into an active parent, so it does not wake an idle host.
 
 ## Host limits
 
@@ -973,6 +983,46 @@ def cmd_count(a):
             n += 1
     emit(f'{n}\n')
     return 0
+
+
+WAIT_NUM_RE = re.compile(r'[0-9]{1,9}')  # the TTL_RE digit cap keeps int() under Python's digit limit
+
+
+def wait_ready(mbox, receiver):
+    """Every valid message in new/<receiver>/ as (id, path), sorted by id. An invalid file is skipped."""
+    ready = []
+    for mid in message_ids(os.path.join(mbox, 'new', receiver)):
+        path = msg_path(mbox, 'new', receiver, mid)
+        try:
+            got = load_or_none(path, 'new', receiver)
+        except Refuse:
+            continue
+        if got is not None:
+            ready.append((mid, path))
+    return ready
+
+
+def cmd_wait(a):
+    receiver = arg_name(a.receiver, '--receiver')
+    timeout = '120' if a.timeout is None else a.timeout
+    if WAIT_NUM_RE.fullmatch(timeout) is None or not 1 <= int(timeout) <= 600:
+        raise Refuse(f'--timeout must be an integer from 1 to 600: {short(timeout)}')
+    interval = '5' if a.interval is None else a.interval
+    if WAIT_NUM_RE.fullmatch(interval) is None or int(interval) < 1:
+        raise Refuse(f'--interval must be an integer of at least 1: {short(interval)}')
+    timeout, interval = int(timeout), int(interval)
+    mbox = mailbox(a.root)
+    deadline = time.monotonic() + timeout
+    while True:
+        ready = wait_ready(mbox, receiver)
+        if ready:
+            emit(''.join(f'{mid}\t{path}\n' for mid, path in ready))
+            return 0
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            emit('no new messages\n')
+            return 3
+        time.sleep(min(interval, remaining))
 
 
 # ---------------------------------------------------------------- selftest
@@ -1726,7 +1776,7 @@ def case_entry_parses(h):
                 if tok.startswith('--') and tok not in usage:
                     st_fail(f'{rel}: {cmd!r} uses {tok}, which {argv[2]} --help does not list')
             seen.add(argv[2])
-    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count'}
+    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count', 'wait'}
     if seen != want:
         st_fail(f'the entry files run {sorted(seen)}, expected {sorted(want)}')
 
@@ -1777,6 +1827,137 @@ def case_entry_scripted_no_reply(h):
     b.only(mid, 'read', 'bob')
 
 
+def st_wait_present(h):
+    """A wait on a box holding one message for bob returns it at once and leaves the mailbox unchanged."""
+    b = Box(h)
+    mid, path = b.send()
+    before = b.snap()
+    t0 = time.monotonic()
+    r = b.run('wait', '--receiver', 'bob', '--interval', '5', '--timeout', '3')
+    took = time.monotonic() - t0
+    if r.returncode != 0:
+        st_fail(f'wait exited {r.returncode}: {r.stderr.decode("utf-8", "replace").strip()}')
+    if took >= 2:
+        st_fail(f'wait took {took:.2f} s')
+    out = r.stdout.decode('utf-8', 'replace')
+    if out != f'{mid}\t{path}\n':
+        st_fail(f'wait printed {out!r}')
+    after = b.snap()
+    if after != before:
+        changed = sorted((set(before) ^ set(after)) | {k for k in set(before) & set(after) if before[k] != after[k]})
+        st_fail(f'wait changed the mailbox: {changed}')
+    b.only(mid, 'new', 'bob')
+    if b.load('new', 'bob', mid)[0].get('read_time') != '':
+        st_fail('wait stamped read_time')
+
+
+def case_wait_present(h):
+    st_wait_present(h)
+
+
+def case_wait_wakes(h):
+    b = Box(h)
+    t0 = time.monotonic()
+    p = subprocess.Popen([sys.executable, h.me, 'wait', '--receiver', 'bob', '--timeout', '10', '--interval', '1'],
+                         cwd=b.repo, env=h.env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    try:
+        time.sleep(1.5)
+        mid, _ = b.send()
+        try:
+            out, err = p.communicate(timeout=max(0.1, 10 - (time.monotonic() - t0)))
+        except subprocess.TimeoutExpired:
+            st_fail('wait did not exit within 10 s of its start')
+        took = time.monotonic() - t0
+    finally:
+        if p.poll() is None:
+            p.kill()
+            p.wait()
+    if p.returncode != 0:
+        st_fail(f'wait exited {p.returncode}: {err.decode("utf-8", "replace").strip()}')
+    if took > 10:
+        st_fail(f'wait took {took:.2f} s')
+    got = out.decode('utf-8', 'replace').split('\t', 1)[0]
+    if got != mid:
+        st_fail(f'wait printed {out!r}, expected the id {mid} first')
+
+
+def case_wait_timeout(h):
+    b = Box(h)
+    b.send(receiver='carol')
+    before = b.snap()
+    r = b.run('wait', '--receiver', 'bob', '--timeout', '1', '--interval', '1')
+    if r.returncode != 3:
+        st_fail(f'wait exited {r.returncode}, expected 3: {r.stderr.decode("utf-8", "replace").strip()}')
+    if r.stdout != b'no new messages\n':
+        st_fail(f'wait printed {r.stdout!r}, expected no new messages')
+    if b.snap() != before:
+        st_fail('a timed-out wait changed the mailbox')
+
+
+def case_wait_refused(h):
+    b = Box(h)
+    b.send()  # a message for bob, so a wait that wrongly accepts a value exits 0 at once
+    b.refused('wait', want='--receiver is required')
+    b.refused('wait', '--receiver', 'Bob', want='--receiver must match')
+    for value in ('601', '0', '1.5'):
+        b.refused('wait', '--receiver', 'bob', '--timeout', value, want='--timeout must be an integer from 1 to 600')
+    for value in ('abc', '0'):
+        b.refused('wait', '--receiver', 'bob', '--interval', value, want='--interval must be an integer of at least 1')
+
+
+def case_wait_skips(h):
+    b = Box(h)
+    b.put('bob', '20260101T000000000000Z-alice-garbage', b'not a message\n')
+    b.send(receiver='carol')
+    r = b.run('wait', '--receiver', 'bob', '--timeout', '1', '--interval', '1')
+    if r.returncode != 3 or r.stdout != b'no new messages\n':
+        st_fail(f'wait with only a malformed file and another receiver\'s message exited {r.returncode} '
+                f'and printed {r.stdout!r}: {r.stderr.decode("utf-8", "replace").strip()}')
+    mid, path = b.send()
+    r = b.run('wait', '--receiver', 'bob', '--timeout', '3', '--interval', '1')
+    if r.returncode != 0 or r.stdout.decode('utf-8', 'replace') != f'{mid}\t{path}\n':
+        st_fail(f'wait exited {r.returncode} and printed {r.stdout!r}, expected only {mid}: '
+                f'{r.stderr.decode("utf-8", "replace").strip()}')
+
+
+def case_wait_no_body(h):
+    b = Box(h)
+    marker = 'WAIT-BODY-MARKER-7f3a'
+    b.send(body=f'secret {marker} text')
+    r = b.run('wait', '--receiver', 'bob', '--timeout', '2', '--interval', '1')
+    if r.returncode != 0:
+        st_fail(f'wait exited {r.returncode}: {r.stderr.decode("utf-8", "replace").strip()}')
+    if marker.encode('utf-8') in r.stdout or marker.encode('utf-8') in r.stderr:
+        st_fail('wait printed the message body')
+
+
+def case_wait_claim_control(h):
+    anchor = 'ready = wait_' + 'ready(mbox, receiver)'
+    with open(h.me, encoding='utf-8') as f:
+        src = f.read()
+    if src.count(anchor) != 1:
+        st_fail(f'the anchor {anchor!r} occurs {src.count(anchor)} times in {h.me}, expected once')
+    patched = (anchor + "; [(os.makedirs(os.path.join(mbox, 'read', receiver), exist_ok=True), "
+               "claim(p, msg_path(mbox, 'read', receiver, m))) for m, p in ready]")
+    d = h.fresh('claiming')
+    os.mkdir(d)
+    copy = os.path.join(d, 'messages.py')
+    with open(copy, 'w', encoding='utf-8') as f:
+        f.write(src.replace(anchor, patched))
+    t2 = h.fresh('claiming-harness')
+    os.mkdir(t2)
+    h2 = Harness(t2)
+    h2.me = copy
+    try:
+        st_wait_present(h2)
+    except SelftestFail as e:
+        if not str(e).startswith('wait changed the mailbox'):
+            st_fail(f'the claiming copy failed another check first: {e}')
+    else:
+        st_fail('the state check passed a wait that claims the message')
+
+
 SELFTEST_CASES = (
     ('create', case_create),
     ('new to read', case_new_to_read),
@@ -1804,6 +1985,13 @@ SELFTEST_CASES = (
     ('entry files: every command parses', case_entry_parses),
     ('entry files: scripted path-only run', case_entry_scripted),
     ('entry files: scripted run without the reply is refused', case_entry_scripted_no_reply),
+    ('wait: a present message returns at once, state unchanged', case_wait_present),
+    ('wait: wakes on a message sent mid-wait', case_wait_wakes),
+    ('wait: timeout exits 3, state unchanged', case_wait_timeout),
+    ('refused: wait with a bad receiver, timeout, or interval', case_wait_refused),
+    ('wait: ignores a malformed file and another receiver', case_wait_skips),
+    ('wait: never prints a body', case_wait_no_body),
+    ('wait: a claiming wait is caught', case_wait_claim_control),
 )
 
 
@@ -1830,7 +2018,7 @@ def cmd_selftest(a):
 
 
 COMMANDS = {'send': cmd_send, 'list': cmd_list, 'read': cmd_read, 'ack': cmd_ack, 'reply': cmd_reply,
-            'expire': cmd_expire, 'count': cmd_count, 'selftest': cmd_selftest}
+            'expire': cmd_expire, 'count': cmd_count, 'wait': cmd_wait, 'selftest': cmd_selftest}
 
 
 def parser():
@@ -1839,7 +2027,7 @@ def parser():
     ap.add_argument('--root', metavar='DIR',
                     help='the mailbox is DIR/messages, DIR relative to the cwd (default: resolved through git, '
                          'see Mailbox root)')
-    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,wait,selftest}')
 
     p = sub.add_parser('send', allow_abbrev=False, help='write a message to new/<receiver>/')
     p.add_argument('--receiver', metavar='NAME', help='required: who the message is for')
@@ -1878,6 +2066,14 @@ def parser():
 
     p = sub.add_parser('count', allow_abbrev=False, help='print the number of messages in new/<receiver>/')
     p.add_argument('--receiver', metavar='NAME', help='required: the receiver')
+
+    p = sub.add_parser('wait', allow_abbrev=False,
+                       help='block until a message is in new/<receiver>/; never claims it')
+    p.add_argument('--receiver', metavar='NAME', help='required: the receiver')
+    p.add_argument('--timeout', metavar='SECONDS',
+                   help='give up after this many seconds: an integer from 1 to 600 (default 120)')
+    p.add_argument('--interval', metavar='SECONDS',
+                   help='check this often, in seconds: an integer of at least 1 (default 5)')
 
     sub.add_parser('selftest', allow_abbrev=False, help='prove every transition and refusal in temp repos')
     return ap

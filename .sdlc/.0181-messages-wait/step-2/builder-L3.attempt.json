@@ -1,0 +1,20 @@
+{
+  "attempt_id": "5ae7c7634db44efbbb0e62b4cc736bd3",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "0181-messages-wait: build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T16:03:14.265863+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/.sdlc/0181-messages-wait/step-2/handoff.md",
+  "owner_pid": 45649,
+  "process_pid": 46349,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T16:05:45.900026+00:00"
+}

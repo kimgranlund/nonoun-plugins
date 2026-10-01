@@ -1,0 +1,16 @@
+arm=claude
+project=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/messages-wait-live-mjp7xh_h/project
+plugin=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/plugins/sdlc-lite
+message=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/messages-wait-live-mjp7xh_h/project/.sdlc/messages/new/claude/20261001T161417595639Z-probe-live-probe.md
+isolation=yes skills=0 slash_commands=0 sdlc_agents=0 skill_calls=0
+tool=Bash sub=- in_subagent=no background=no cmd=python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/plugins/sdlc-lite/scripts/messages.py wait --receiver claude --timeout 120 --interval
+tool=Read sub=- in_subagent=no background=no cmd=-
+tool=Read sub=- in_subagent=no background=no cmd=-
+tool=Bash sub=- in_subagent=no background=no cmd=S=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host/plugins/sdlc-lite/scripts/messages.py; I=20261001T161417595639Z-probe-live-probe\npython3 $S
+state=new 2026-10-01T16:14:17.679501Z
+state=done 2026-10-01T16:14:25.694207Z
+wait_calls=1 poll_calls=0
+wait_returned=20261001T161417595639Z-probe-live-probe
+wait_before_send=yes
+send_time=2026-10-01T16:14:17.595639Z read_time=2026-10-01T16:14:24.598511Z ack_time=2026-10-01T16:14:24.905212Z outcome=answered: 5 reply=20261001T161424746631Z-claude-live-probe
+result=pass
