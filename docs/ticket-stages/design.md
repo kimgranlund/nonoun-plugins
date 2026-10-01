@@ -1,6 +1,6 @@
 # Ticket stages and message bus
 
-Version 0.2, 2026-09-30. Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal.
+Version 0.2, 2026-09-30. Built: Option A (the router), the opt-in `tickets/` root, and the message bus (T-0177, T-0178, T-0179). The rest is a proposal.
 
 ## Problem
 
@@ -74,7 +74,7 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 
 ## Message bus
 
-Status: the mailbox core is built in T-0177 (`scripts/messages.py` and the `run.sh` notice). The `messenger` agent is built in T-0178 (`plugins/sdlc-lite/agents/messenger.md` and the generated Codex agent `sdlc-messenger-l1`). The entry files with the live run (T-0179) are pending.
+Status: the mailbox core is built in T-0177 (`scripts/messages.py` and the `run.sh` notice). The `messenger` agent is built in T-0178 (`plugins/sdlc-lite/agents/messenger.md` and the generated Codex agent `sdlc-messenger-l1`). The entry files are built in T-0179: `messages.py send` and `reply` and `tickets.py roadmap` write `messages/AGENTS.md` and the three stage entry files, and the live run is in [Messages live run](../validation/messages-live-run.md).
 
 Purpose: a harness leaves a message for another harness (Claude, Codex, or a human) and the message changes state as it is handled. The pipeline already hands work over through files and `runs.jsonl`, so the bus is for what those do not cover, such as a Codex session asking Claude a question mid-run. Build it only when a real case exists.
 

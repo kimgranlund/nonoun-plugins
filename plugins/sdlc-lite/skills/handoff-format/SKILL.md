@@ -33,7 +33,7 @@ user-invocable: false
 .sdlc/config            optional lines: ticket_folders: numbered, external_branch: <branch>, ticket_root: tickets
 .sdlc/tickets/          the ticket folders when config has ticket_root: tickets, with its own AGENTS.md and CLAUDE.md; roadmap.md, notes.md, config, and _templates/ stay in .sdlc/
 .sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
-.sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed
+.sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
