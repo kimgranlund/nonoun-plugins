@@ -183,4 +183,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0176 | [.0176-messages-mailbox](.0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | L | P2 | none | 🟢 done |
 | T-0177 | [.0177-mailbox-core](.0177-mailbox-core/handoff.md) | Mailbox core: messages.py, lifecycle, schema, and run.sh notice | feature | L | P2 | none | 🟢 done |
 | T-0178 | [.0178-messenger-agent](.0178-messenger-agent/handoff.md) | Messenger agent: declared agent, Codex mapping, and check.py coverage | feature | M | P2 | T-0177 | 🟢 done |
-| T-0179 | [0179-messages-entry-files](0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | M | P2 | T-0177, T-0178 | 🔵 ready |
+| T-0179 | [.0179-messages-entry-files](.0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | M | P2 | T-0177, T-0178 | 🟢 done |

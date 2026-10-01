@@ -145,3 +145,10 @@
 - decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
 - note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
 - note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.
+
+## T-0179: Messages entry files and fresh-role live validation (2026-10-01)
+
+- decide: The Codex messenger spawn check in `docs/validation/messages-live-run/probe.py` prints `messenger_spawned=yes` even when no agent spawned, because the entry file it prints names the agent. Decide whether to base it on the subagent rollout's `session_meta` (`agent_role` plus `parent_thread_id`).
+- decide: A Claude messenger can return "polling" with no claim, and a parent that stops at the first report misses the message. Decide whether `messages/AGENTS.md` or the messenger agent should state the spawn-again rule.
+- note: The Claude path-only live arm ran in safe mode, so nested `CLAUDE.md` loading of the mailbox files was not exercised there.
+- note: The negative control and every arm ran one trial each on one machine, and the negative control ran on Claude Code only.
