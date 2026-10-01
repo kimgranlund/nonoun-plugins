@@ -1,0 +1,18 @@
+{
+  "attempt_id": "0df1b612b7314ce1b1cade33bef015d7",
+  "name": "architect-L1",
+  "role": "architect",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "T-0182 independent design review, architect not on the author family",
+  "reason_source": "caller",
+  "status": "running",
+  "started_at": "2026-10-01T14:32:34.895388+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host-w",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host-w/.sdlc/0182-idle-host-watcher-design/review/handoff.md",
+  "owner_pid": 19949,
+  "process_pid": 19984
+}

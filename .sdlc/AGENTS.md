@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:20598ccfcacc -->
+<!-- sdlc-lite:managed:start v1 sha256:b6b7936ca9f1 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,9 +10,14 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 ## Stages
 
 - proposed: 0
-- ready: 2
+- ready: 7
   - T-0181 messages.py wait: one blocking call that returns when a message arrives (0181-messages-wait)
   - T-0182 Design an external watcher that resumes an idle host when a message arrives (0182-idle-host-watcher-design)
+  - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
+  - T-0184 One declared result schema per role, validated before the next role reads it (0184-role-result-schema)
+  - T-0185 evals/ folder, evals.py, and a model-table change must cite an eval (0185-evals-folder)
+  - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
+  - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
 - blocked: 0
 - done: 161
 - dropped: 19
