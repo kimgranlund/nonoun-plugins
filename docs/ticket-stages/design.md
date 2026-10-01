@@ -51,26 +51,26 @@ Recommendation: A first. It delivers the progressive-disclosure benefit without 
 - A claim is a rename done under a lock in the git common dir, so two worktrees cannot both claim; without the lock the clash surfaces only at merge.
 - Moves run the existing citing-file scan and refuse on a cite, as `close` does today.
 
-## Two roots: `issues/` and `messages/`
+## Two roots: `tickets/` and `messages/`
 
-Proposed by the user, 2026-09-30. It fits the two lifecycles better than stage folders do.
+Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for the first root on 2026-09-30. It fits the two lifecycles better than stage folders do.
 
 ```
 .sdlc/
   AGENTS.md      router: names both roots, the three ticket procedures, the mailbox rules
   CLAUDE.md      @AGENTS.md
   config  notes.md  roadmap.md  _templates/
-  issues/        git-tracked work records: ticket and task folders, as today
+  tickets/       git-tracked work records: ticket and task folders, as today
     NNNN-slug/
     .NNNN-slug/  closed
   messages/      git-ignored mailbox: new/ read/ done/ per recipient
 ```
 
-- Why it fits: issues are durable, reviewed, and merged across branches; messages are short-lived, local, and must not be committed. Two roots make the tracking rule a path rule (`messages/` is ignored, `issues/` is not) instead of a convention.
+- Why it fits: issues are durable, reviewed, and merged across branches; messages are short-lived, local, and must not be committed. Two roots make the tracking rule a path rule (`messages/` is ignored, `tickets/` is not) instead of a convention.
 - Why it beats `bus/` nested in the ticket root: `tickets.py`, `board.py`, and `check` scan a root for ticket folders, so a mailbox inside it would need skip rules everywhere.
-- Cost: `tickets.py --root DIR` already takes a root, and ids, closure, and the roadmap follow it. Tools and docs that cite `.sdlc/NNNN-slug` change to `.sdlc/issues/NNNN-slug`; the existing citing-file scan lists them, and `number` or `archive --rewrite-refs` style rewriting would be extended for a one-time move. Existing consumer repos keep working if `.sdlc/` stays a valid root until they opt in with a `ticket_root: issues` line in `config`.
-- Name: "issues" collides in speech with GitHub issues. Every skill, check, and script says "ticket" today; renaming the folder but not the vocabulary leaves `.sdlc/issues/` holding "tickets". Either use `tickets/` or accept the mismatch knowingly.
-- Stage folders become optional. With two roots, option A (router plus generated stage lists) still gives progressive disclosure inside `issues/`.
+- Cost: `tickets.py --root DIR` already takes a root, and ids, closure, and the roadmap follow it. Tools and docs that cite `.sdlc/NNNN-slug` change to `.sdlc/tickets/NNNN-slug`; the existing citing-file scan lists them, and `number` or `archive --rewrite-refs` style rewriting would be extended for a one-time move. Existing consumer repos keep working if `.sdlc/` stays a valid root until they opt in with a `ticket_root: tickets` line in `config`.
+- Name: `tickets/` keeps the vocabulary every skill, check, and script already uses and avoids confusion with GitHub issues.
+- Stage folders become optional. With two roots, option A (router plus generated stage lists) still gives progressive disclosure inside `tickets/`.
 
 ## Message bus
 
