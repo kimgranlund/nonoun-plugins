@@ -11,8 +11,8 @@ The script is `${CLAUDE_PLUGIN_ROOT}/scripts/messages.py`.
 
 1. Every 10 seconds, run `messages.py count --receiver <harness>`.
 2. When the count is above 0, run `messages.py list --receiver <harness> --state new`.
-3. Claim each listed message with `messages.py read <path>`.
-4. End your turn with a report that lists each claimed path. That report is how your parent is notified. Your parent spawns you again to keep polling.
+3. Claim each listed message with `messages.py read <id> --receiver <harness>`, where `<id>` is the third tab-separated field of its `list` line.
+4. End your turn with a report that lists, for each claimed message, its id and its path `read/<harness>/<id>.md` in the mailbox (`.sdlc/messages/` in the main checkout). That report is how your parent is notified. Your parent spawns you again to keep polling.
 
 ## Authority
 
