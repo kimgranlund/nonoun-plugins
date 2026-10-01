@@ -59,7 +59,7 @@ Focused checks: the criteria below, including the three temp-copy negative contr
 - `test -f plugins/sdlc-lite/agents/messenger.md`
 - `grep -qx "model: claude-haiku-4-5" plugins/sdlc-lite/agents/messenger.md`
 - `f=plugins/sdlc-lite/agents/messenger.md; for w in "messages.py count --receiver" "messages.py list" "messages.py read" ".sdlc/messages/AGENTS.md" "10 seconds" "follow_up_requested" "Monitor" "no Claude tools or hooks" "publish"; do grep -qF -- "$w" "$f" || exit 1; done`
-- `test -f plugins/sdlc-lite/agents/messenger.md && ! grep -q "—" plugins/sdlc-lite/agents/messenger.md`
+- `test -f plugins/sdlc-lite/agents/messenger.md && ! grep -q $'\xe2\x80\x94' plugins/sdlc-lite/agents/messenger.md`
 - `python3 -c "import json; d=json.load(open('plugins/sdlc-lite/adapters/codex/models.json')); assert d['messenger']['L1']==d['scout']['L1'], d.get('messenger')"`
 - `f=plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml; grep -qx 'sandbox_mode = "workspace-write"' "$f" && grep -qF "messages.py read" "$f"`
 - `tmp=$(mktemp -d); cp -R plugins/sdlc-lite "$tmp/p"; rm -f "$tmp/p/agents/messenger.md"; python3 "$tmp/p/scripts/check.py" "$tmp/p" >"$tmp/out" 2>&1; rc=$?; grep -q "^FAIL.*messenger" "$tmp/out" && test $rc -eq 1`
