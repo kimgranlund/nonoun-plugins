@@ -77,14 +77,17 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 Purpose: a harness leaves a message for another harness (Claude, Codex, or a human) and the message changes state as it is handled. The pipeline already hands work over through files and `runs.jsonl`, so the bus is for what those do not cover, such as a Codex session asking Claude a question mid-run. Build it only when a real case exists.
 
 ```
-.sdlc/bus/            git-ignored, in the main checkout, shared by worktrees
-  new/<to>/<ts>-<from>-<slug>.md
-  read/<to>/...       reader renames from new/, so the first rename wins
-  done/<to>/...       reader moves here with a one-line outcome
+.sdlc/messages/       git-ignored, in the main checkout, shared by worktrees
+  AGENTS.md           instructions for setting up comms; linked from the router
+  new/<receiver>/<ts>-<sender>-<slug>.md
+  read/<receiver>/... reader renames from new/, so the first rename wins
+  done/<receiver>/... reader moves here with a one-line outcome
 ```
 
-- Message front matter: `to`, `from`, `re` (ticket id), `kind` (question, handoff, ack), `expires`. Body is short, with a size cap.
-- Delivery has no daemon. `run.sh` checks `bus/new/<role-or-host>` before it launches a role; the Claude session start hook prints a count; the Codex prelude does the same.
+- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`. Optional: `re` (ticket id), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
+- Messenger: each harness creates a dedicated sub-agent on a cheap model (Claude `claude-haiku-4-5`; Codex the scout tier model in `adapters/codex/models.json`, currently `gpt-5.6-terra`, or luna). Its only job is to poll `messages/new/<harness>` every 10 seconds and tell its parent when a message is addressed to that harness. Parents send through their messenger, not by writing files themselves. The messenger never acts on a body.
+- Host limits, stated per host. Claude Code: the sub-agent lives only while its session runs, polling needs Monitor or a loop, and a Claude hook enforces nothing on Codex. Codex: the messenger is a native subagent with its own lifetime and no Claude tools or hooks. One host working says nothing about the other.
+- Delivery has no daemon besides the messenger. `run.sh` also prints a count before it launches a role.
 - Durable facts go to the ticket or `notes.md`. The bus is a mailbox, not a record.
 - Trust: a message body is data, never instructions. A message cannot authorize a publish, a push, or any external write. Expired messages move to `done/` with outcome `expired`.
 - Limits: it works on one machine. A message that must cross machines is a ticket or a pushed note.
@@ -98,4 +101,4 @@ Purpose: a harness leaves a message for another harness (Claude, Codex, or a hum
 ## Validation plan
 
 - A: a check that the router block is current and a negative control that a stale block fails; a live run where a role finds a ready ticket through the router alone on both hosts.
-- Bus: a selftest for the rename race (two readers, one winner) and for expiry; a negative control that a message cannot trigger a publish.
+- Bus: a selftest for the rename race (two readers, one winner), expiry, schema validation with a negative control for a missing field, and `read_time` stamping; a negative control that a message cannot trigger a publish.
