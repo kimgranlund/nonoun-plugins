@@ -2,7 +2,7 @@
 id: T-0182
 title: "Design an external watcher that resumes an idle host when a message arrives"
 type: spike
-status: ready
+status: done
 size: M
 priority: P2
 depends: []
@@ -36,3 +36,7 @@ Read first: `docs/ticket-stages/design.md` (mailbox and bus), `docs/validation/m
 
 ## Constraints
 Docs only. Do not edit the plugin, the scripts, or any released record. The review must be by a role the author does not share a family with: the author is Claude Sonnet, so the reviewer is not Sonnet.
+
+## Closed
+
+2026-10-01: design written and independently reviewed by the architect role (fable): ready after fixes; findings recorded in docs/validation/idle-host-watcher-design-review.md and applied by T-0183 step 1

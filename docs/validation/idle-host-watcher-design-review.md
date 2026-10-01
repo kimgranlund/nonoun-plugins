@@ -1,6 +1,6 @@
 # Idle-host watcher design review
 
-Recorded: 2026-10-01. Independent review of `docs/ticket-stages/watcher-design.md` v0.1 (commit 5c1f574 on branch `idle-host-watcher`), ticket T-0182. The reviewer was the `architect` role, `run.sh architect L1`, model `fable` effort high, a different family from the author (Claude Sonnet). It was read-only in the repository except for its own `decompose/` folder. Raw result: `.sdlc/0182-idle-host-watcher-design/review/architect-L1.md`; handoff: `.sdlc/0182-idle-host-watcher-design/review/handoff.md`. The reviewer ran one probe per host in `/tmp` with `claude 2.1.286` and `codex-cli 0.159.2`, each a single trial on one machine and account.
+Recorded: 2026-10-01. Independent review of `docs/ticket-stages/watcher-design.md` v0.1 (commit 5c1f574 on branch `idle-host-watcher`), ticket T-0182. The reviewer was the `architect` role, `run.sh architect L1`, model `fable` effort high, a different family from the author (Claude Sonnet). It was read-only in the repository except for its own `decompose/` folder. Raw result: `.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`; handoff: `.sdlc/.0182-idle-host-watcher-design/review/handoff.md`. The reviewer ran one probe per host in `/tmp` with `claude 2.1.286` and `codex-cli 0.159.2`, each a single trial on one machine and account.
 
 ## Verdict
 
