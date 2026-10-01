@@ -192,3 +192,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0185 | [0185-evals-folder](0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🔵 ready |
 | T-0186 | [0186-proposals-folder](0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🔵 ready |
 | T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | 🔵 ready |
+| T-0188 | [0188-tighten-idle-note](0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | ⏳ proposed |
