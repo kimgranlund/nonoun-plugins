@@ -2,7 +2,7 @@
 id: T-0180
 title: "Document that the messenger reaches only an active parent host"
 type: chore
-status: ready
+status: done
 size: S
 priority: P2
 depends: []
@@ -26,3 +26,7 @@ The note file states the date (2026-10-01), the limit, the evidence it was not t
 
 ## Constraints
 `messages.py selftest` and `bash plugins/sdlc-lite/scripts/check.sh` must still pass: the selftest has entry-file cases that parse every command in the template. Do not change a command, flag, or procedure step. Generated Codex agent TOML files are never edited by hand.
+
+## Closed
+
+2026-10-01: fixed in session by /fix: idle-host limit added to the entry template, messenger body, design, Codex doc and a dated note; verifier L1 passed on the second build

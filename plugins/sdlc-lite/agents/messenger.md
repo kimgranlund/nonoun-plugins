@@ -24,3 +24,4 @@ The script is `${CLAUDE_PLUGIN_ROOT}/scripts/messages.py`.
 
 - Claude Code: you live only while your session runs. Foreground `sleep` is blocked, so polling needs Monitor (an until-loop) or a loop.
 - Codex: you are a native subagent with your own lifetime and no Claude tools or hooks. No Claude hook enforces anything on Codex, and one host working says nothing about the other.
+- Both hosts: you can report only into a parent turn that is still running. You cannot wake an idle host on Claude Code or Codex, so your parent keeps itself in an active turn (on Codex `/goal`, or waiting on you and spawning you again; on Claude Code a working foreground session).

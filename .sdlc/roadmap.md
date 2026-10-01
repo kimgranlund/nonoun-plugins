@@ -184,6 +184,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0177 | [.0177-mailbox-core](.0177-mailbox-core/handoff.md) | Mailbox core: messages.py, lifecycle, schema, and run.sh notice | feature | L | P2 | none | 🟢 done |
 | T-0178 | [.0178-messenger-agent](.0178-messenger-agent/handoff.md) | Messenger agent: declared agent, Codex mapping, and check.py coverage | feature | M | P2 | T-0177 | 🟢 done |
 | T-0179 | [.0179-messages-entry-files](.0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | M | P2 | T-0177, T-0178 | 🟢 done |
-| T-0180 | [0180-idle-host-limit-docs](0180-idle-host-limit-docs/handoff.md) | Document that the messenger reaches only an active parent host | chore | S | P2 | none | 🔵 ready |
+| T-0180 | [.0180-idle-host-limit-docs](.0180-idle-host-limit-docs/handoff.md) | Document that the messenger reaches only an active parent host | chore | S | P2 | none | 🟢 done |
 | T-0181 | [0181-messages-wait](0181-messages-wait/handoff.md) | messages.py wait: one blocking call that returns when a message arrives | feature | M | P2 | T-0180 | 🔵 ready |
 | T-0182 | [0182-idle-host-watcher-design](0182-idle-host-watcher-design/handoff.md) | Design an external watcher that resumes an idle host when a message arrives | spike | M | P2 | none | 🔵 ready |
