@@ -128,3 +128,9 @@
 - note: `verifier_alternates` and `shared_with_builder` keep their names while also serving the plan-reviewer, so the names understate their scope.
 - note: `/chain` 4.2 mid-build replans still go straight to `steps.py split --only` without `steps.py review`, and the 4.2 item text was left unchanged (step 3 builder note).
 - note: The bench comparison against the same tasks without the reviewer is not done, and it is required before any claim the reviewer helps.
+
+## T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router (2026-09-30)
+
+- decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
+- note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
+- note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.
