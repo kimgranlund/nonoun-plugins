@@ -16,4 +16,4 @@ Keep the parent in an active turn: on Codex run `/goal` or have the parent wait 
 
 ## Follow-up
 
-T-0181 adds a blocking `wait` command and T-0182 designs an external watcher; both address this limit.
+T-0181 adds a blocking `wait` command, which is cheaper than a polling subagent but still returns only into a running parent turn, so it does not address this limit. T-0182 designs an external watcher that would resume an idle host; it is a design only and is not built.
