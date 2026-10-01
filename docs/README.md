@@ -7,7 +7,7 @@
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
 
-- [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), stage folders and a cross-harness mailbox (proposed).
+- [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
@@ -27,6 +27,6 @@
 - [Entry files live run](validation/entry-files-live-run.md): dated live run for T-0162 showing that planner, builder, and verifier on Claude Code and Codex list and read the entry file governing a step's files.
 - [Agent spawn hook live run](validation/agent-spawn-hook-live-run.md): dated live run for T-0166 showing that a conductor session sends `agent_type` `sdlc-lite:conductor` and that `block-role-spawn.sh` denies an `sdlc-lite:scout` spawn and allows a `general-purpose` one.
 - [Plan reviewer live run](validation/plan-reviewer-live-run.md): dated live run for T-0171 showing that the plan-reviewer rejects a defective plan on Claude Code and Codex, `steps.py split` refuses it, and a sound plan passes, builds, and verifies.
-- [Ticket root and router live run](validation/ticket-root-router-live-run.md): dated live run for T-0175 showing the router block change as a ticket moves proposed to ready to done under `ticket_root: tickets`, and a fresh role claiming and closing a ticket from `tickets/AGENTS.md` alone.
+- [Ticket root and router live run](validation/ticket-root-router-live-run.md): dated live run for T-0175 showing the router block change as a ticket moves proposed to ready to done under `ticket_root: tickets`, and a fresh-role claim and close run recorded as unverified (the role reached `tickets/AGENTS.md` through nested-memory loading).
 - [Messages live run](validation/messages-live-run.md): dated live run for T-0179 showing that a fresh Claude Code role and a fresh Codex role, given only a message path and no skill, read, reply, and ack from the entry files alone, with the messenger on both hosts and a negative control.
 - [Dual-host readiness and recovery validation](readiness-recovery-validation.md): dated live trials, oracle outcomes, routing history, and scope limits.
