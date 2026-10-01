@@ -29,6 +29,7 @@ user-invocable: false
 .sdlc/notes.md          follow-ups that did not become tickets, appended by `tickets.py close`; never a ticket
 .sdlc/_templates/<type>.md  optional; overrides the plugin's skills/ticket/templates/<type>.md
 .sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
+.sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
@@ -42,6 +43,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 .sdlc/**/*.log
 .sdlc/**/.run.lock
 .sdlc/runtime/
+.sdlc/messages/
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
@@ -49,6 +51,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 - `.sdlc/**/*.log`: raw role transcript (stream-json: one JSON event per line, stderr mixed in)
 - `.sdlc/**/.run.lock`: local lock state used to prevent overlapping runs
 - `.sdlc/runtime/`: `traces.py` analysis outputs and ingest cursor, regenerated on each run
+- `.sdlc/messages/`: the local mailbox written by `scripts/messages.py`; never committed, even when the trail is.
 
 Keep the results `.md` files, `runs.jsonl`, and `*.attempt.json` committed. Attempt records preserve failed and interrupted runs even when no normal run row was written.
 

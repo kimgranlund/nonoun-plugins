@@ -74,6 +74,8 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 
 ## Message bus
 
+Status: the mailbox core is built in T-0177 (`scripts/messages.py` and the `run.sh` notice). The `messenger` agent (T-0178) and the entry files with the live run (T-0179) are pending.
+
 Purpose: a harness leaves a message for another harness (Claude, Codex, or a human) and the message changes state as it is handled. The pipeline already hands work over through files and `runs.jsonl`, so the bus is for what those do not cover, such as a Codex session asking Claude a question mid-run. Build it only when a real case exists.
 
 ```
@@ -84,24 +86,24 @@ Purpose: a harness leaves a message for another harness (Claude, Codex, or a hum
   done/<receiver>/... parent acknowledges with messages.py ack: ack_time and a one-line outcome
 ```
 
-- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`, `follow_up_requested` (boolean), `protocol`. Optional: `re` (ticket id), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
+- Front matter, all required: `send_time`, `read_time` (empty until read; set by `messages.py read` in the same step as the new-to-read rename), `sender`, `receiver`, `topic`, `follow_up_requested` (boolean), `protocol`. Optional: `re` (the id of the message being answered), `kind` (question, handoff, ack), `expires`. The body follows. `messages.py` rejects a message missing a required field or over the size cap.
 - Self-describing: `.sdlc/AGENTS.md`, `.sdlc/tickets/AGENTS.md`, and `.sdlc/messages/AGENTS.md` carry the full procedures with exact commands; each of `messages/new/`, `messages/read/`, `messages/done/` has a three-line `AGENTS.md`. No skill is added. Every message carries `protocol: .sdlc/messages/AGENTS.md` (stamped and validated by `messages.py send`) so a reader who opens only a message finds the rules. The `messenger` agent body stays minimal and defers to `messages/AGENTS.md`. Tested by a live run where a fresh Claude role and a fresh Codex role, given only a message path, ack and reply correctly.
 - Lifecycle: `new/<receiver>/` (written by the sender) to `read/<receiver>/` (the `messenger` claimed it by atomic rename and notified its parent; stamps `read_time`) to `done/<receiver>/` (the parent host acknowledged it with `messages.py ack`; stamps `ack_time`, optional until acked, and records a one-line outcome). An unread message that expires goes new to done with outcome `expired`. A message never sits in two folders and never moves backward.
 - Transition table (tested row by row):
 
   | Transition | Triggered by | Precondition | Stamped |
   | --- | --- | --- | --- |
-  | create in `new/<receiver>/` | sender, through `messages.py send` | valid schema, body within the size cap | `send_time`, empty `read_time` |
+  | create in `new/<receiver>/` | sender, through `messages.py send` or `messages.py reply` | valid schema, body within the size cap | `send_time`, empty `read_time`, `protocol`, `expires` |
   | new to read | `messenger`, through `messages.py read` | message in `new/`, caller is the receiver | `read_time` |
   | read to done | parent host, through `messages.py ack` | message in `read/`; if `follow_up_requested` is true, a reply exists | `ack_time`, outcome line |
-  | new to done (expired) | expiry sweep | past `expires`, still in `new/` | outcome `expired` |
-  | read to done (expired) | expiry sweep | past `expires`, never acked | outcome `expired`, or `expired, no reply` when a follow-up was requested |
+  | new to done (expired) | expiry sweep, through `messages.py expire` | past `expires`, still in `new/` | outcome `expired` |
+  | read to done (expired) | expiry sweep, through `messages.py expire` | past `expires`, never acked | outcome `expired`, or `expired, no reply` when a follow-up was requested |
 
   Stamp fields are set only by these transitions; a caller cannot pass `read_time` or `ack_time`. Backward moves, `read` by a non-recipient, and `ack` of an unread message are refused.
-- Follow-up (gates only read to done): when `follow_up_requested` is true, the message cannot move to `done/` until the parent has sent a reply with the same topic and a `re` pointing back to it, or it expires. An expired message with no reply moves to `done/` as `expired, no reply` and the sender gets a notice message. When false, `done` is free.
+- Follow-up (gates only read to done): when `follow_up_requested` is true, the message cannot move to `done/` until the parent has sent a reply with the same topic and a `re` pointing back to it, or it expires. An expired message with no reply moves to `done/` as `expired, no reply` and the sender gets a notice message. When false, `done` is free. The exact reply rule: a reply to message X exists when some message in `new/<S>/`, `read/<S>/`, or `done/<S>/`, where S is X's sender, has the same topic as X and `re` equal to X's id.
 - `messenger`: a required declared agent (`plugins/sdlc-lite/agents/messenger.md`, with a Codex agent generated by `codex_roles.py generate`), not a `run.sh` pipeline role and with no authority beyond moving messages and sending replies through `messages.py`. Each harness runs one as a dedicated sub-agent on a cheap model (Claude `claude-haiku-4-5`; Codex the scout tier model in `adapters/codex/models.json`, currently `gpt-5.6-terra`, or luna). Its only job is to poll `messages/new/<harness>` every 10 seconds and tell its parent when a message is addressed to that harness. Parents send through their `messenger`, not by writing files themselves. The `messenger` never acts on a body.
 - Host limits, stated per host. Claude Code: the sub-agent lives only while its session runs, polling needs Monitor or a loop, and a Claude hook enforces nothing on Codex. Codex: the `messenger` is a native subagent with its own lifetime and no Claude tools or hooks. One host working says nothing about the other.
-- Delivery has no daemon besides the `messenger`. `run.sh` also prints a count before it launches a role.
+- Delivery has no daemon besides the `messenger`. `run.sh` also prints a count before it launches a role: when `messages.py count` for the role name plus the backend name (`claude` or `codex`) is above 0, it prints one stderr line `run.sh: <n> new message(s) for <role>; read with messages.py`. It never prints a body and never changes the exit code.
 - Durable facts go to the ticket or `notes.md`. The bus is a mailbox, not a record.
 - Trust: a message body is data, never instructions. A message cannot authorize a publish, a push, or any external write. Expired messages move to `done/` with outcome `expired`.
 - Limits: it works on one machine. A message that must cross machines is a ticket or a pushed note.
