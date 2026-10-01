@@ -114,12 +114,15 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             writing nothing, until it moves to tickets/<slug>. A plain task (no front matter) is never a stray. The
             reference scan in close, archive and number then names <rel>/<slug> with <rel> the ticket root
             (.sdlc/tickets) and leaves out <root>/roadmap.md. Ids across worktrees and external branches, the
-            no-filer hint and close --dry-run's worktree lines still read the other trees' <root>
+            no-filer hint and close --dry-run's worktree lines read each other tree's or branch's ticket root,
+            resolved by its own config
   selftest  build fixtures in a temp dir and prove every check failure fires
 
 Ids across git worktrees: new and close stamp each id above the max across the same-relative ticket root
 (<worktree>/<root relative to its toplevel>) in every `git worktree list` tree, so parallel worktrees never
-reuse an id. Ids committed on a registered external_branch are read from git objects and counted too.
+reuse an id. Ids committed on a registered external_branch are read from git objects and counted too. Each
+other worktree's and each registered branch's ticket root is resolved by that tree's or branch's own config
+(`ticket_root: tickets` there means its <root>/tickets; an unsupported value there falls back to its <root>).
 Outside git, or when git fails, the local root decides alone. A worktree with no such dir yet is skipped, and
 malformed tickets in another tree or branch are ignored there. An unregistered branch not checked out in any
 worktree stays unseen; check catches a clash after merge (duplicate id, naming both folders).
@@ -343,9 +346,26 @@ def worktree_pairs(root):
         return []
 
 
+def other_ticket_dirs(root):
+    """(worktree dir, ticket dir) pairs in worktree_pairs(root) order: each other tree's ticket dir is
+    ticket_dir(<that tree's root>), resolved by that tree's own <root>/config. When that config cannot be read or
+    holds an unsupported ticket_root value, the pair keeps that tree's root: another tree's problems never fail
+    this one. Callers pass the .sdlc root, never a ticket dir."""
+    out = []
+    for wdir, r in worktree_pairs(root):
+        try:
+            out.append((wdir, ticket_dir(r)))
+        except (Fail, OSError, UnicodeDecodeError):
+            out.append((wdir, r))
+    return out
+
+
 def branch_tickets(root, branch):
     """[(slug, meta)] for the ticket folders committed at <branch>:<rel>, read from git objects with no checkout
-    (rel is root relative to its worktree's toplevel, as in worktree_pairs). Folders follow load()'s rule (names
+    (rel is root relative to its worktree's toplevel, as in worktree_pairs). The branch's own config decides the
+    ticket root: when the <branch>:<rel>/config blob (read with `git cat-file -p`; a missing blob is no line)
+    holds `ticket_root: tickets` under ticket_dir's rule, the folders are listed at <branch>:<rel>/tickets;
+    without the line, or with an unsupported value, at <branch>:<rel>. Slugs stay folder names. Folders follow load()'s rule (names
     starting with _ or . are skipped, except a closed-ticket folder .NNNN-<slug>); each <dir>/handoff.md blob is
     read through one `git cat-file --batch` process, and only those with front matter count, sorted by dir name.
     [] when git is missing, a git call fails, the branch does not exist, or root is outside the toplevel. A
@@ -368,6 +388,19 @@ def branch_tickets(root, branch):
 
         top = pathlib.Path(git(anchor, 'rev-parse', '--show-toplevel').decode('utf-8').strip()).resolve()
         rel = here.relative_to(top).as_posix()
+        try:
+            cfg = git(top, 'cat-file', '-p', f'{branch}:config' if rel == '.' else f'{branch}:{rel}/config')
+        except ValueError:
+            cfg = b''  # no config blob on the branch: no line
+        values = []
+        for line in cfg.decode('utf-8', 'replace').splitlines():
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            m = TICKET_ROOT_RE.fullmatch(line)
+            if m:
+                values.append(m.group(1))
+        if values and all(v == 'tickets' for v in values):
+            rel = 'tickets' if rel == '.' else f'{rel}/tickets'
         prefix = f'{branch}:' if rel == '.' else f'{branch}:{rel}/'
         dirs = []
         for entry in git(top, 'ls-tree', '-z', branch if rel == '.' else f'{branch}:{rel}').split(b'\0'):
@@ -545,13 +578,13 @@ def rewrite_files(top, files, old, new):
 
 
 def id_floor(root):
-    """The highest ticket number in every other worktree's same-relative root (worktree_roots) and in every
-    branch registered by an `external_branch: <branch>` line in <root>/config (branch_tickets, read from git
-    objects at <branch>:<rel>), else 0. Malformed tickets and unreadable files there are ignored: another
+    """The highest ticket number in every other worktree's ticket dir (other_ticket_dirs, each resolved by that
+    tree's own config) and in every branch registered by an `external_branch: <branch>` line in <root>/config
+    (branch_tickets, read from git objects at the branch's ticket root), else 0. Malformed tickets and unreadable files there are ignored: another
     tree's or branch's problems never fail this one."""
     floor = 0
     found = []
-    for r in worktree_roots(root):
+    for _, r in other_ticket_dirs(root):
         try:
             found.append(load(r))
         except (OSError, UnicodeDecodeError):
@@ -1078,7 +1111,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     filers = [pathlib.Path(p) for p in run_order.ordered(d, 'filer')]
     if not filers:
         held = []
-        for r in worktree_roots(root):
+        for _, r in other_ticket_dirs(root):
             try:
                 if any((r / d.name).glob('filer-L*.md')):
                     held.append(str(r / d.name))
@@ -1179,7 +1212,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                  if m.get('status') in ('proposed', 'ready', 'blocked') and m['id'] != pid]
         local_ids = {m.get('id') for _, m in ts}
         seen = {}
-        for wdir, r in worktree_pairs(root):
+        for wdir, r in other_ticket_dirs(root):
             try:
                 ots = load(r)
             except (OSError, UnicodeDecodeError):
@@ -2956,6 +2989,76 @@ def selftest():
             rc, out, err = run(loose, 'check')
             expect(f'external: outside git check gives no external warning: rc={rc} {out!r}',
                    rc == 0 and 'external_branch' not in out)
+
+            # (v) ticket_root across trees: each other worktree's and each registered branch's ticket root is
+            # resolved by that tree's or branch's own config. main is the default layout; the worktree's
+            # .sdlc/config says ticket_root: tickets, so its tickets live under .sdlc/tickets/
+            r_dir = wtmp / 'trw'
+            r_root, rw_root = r_dir / '.sdlc', wtmp / 'trw-wt' / '.sdlc'
+            git(wtmp, 'init', '-q', '-b', 'main', 'trw')
+            run(r_root, 'new', ('feature', 'alpha', 'Alpha'))
+            commit(r_dir, 'alpha')
+            git(r_dir, 'worktree', 'add', '-q', '../trw-wt', '-b', 'trw-wt')
+            (rw_root / 'tickets').mkdir()
+            (rw_root / 'alpha').rename(rw_root / 'tickets' / 'alpha')
+            (rw_root / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+            rc_b, _, err_b = run(rw_root, 'new', ('feature', 'beta', 'Beta'))
+            rc_g, _, err_g = run(r_root, 'new', ('feature', 'gamma', 'Gamma'))
+            rc_d, _, err_d = run(rw_root, 'new', ('feature', 'delta', 'Delta'))
+            got = (tid(rw_root / 'tickets', 'beta'), tid(r_root, 'gamma'), tid(rw_root / 'tickets', 'delta'))
+            pairs = [(w.resolve(), t) for w, t in other_ticket_dirs(r_root)]
+            expect(f'ticket_root worktree: new in either tree mints above the other tree\'s max (beta T-0002 in the '
+                   f'worktree tickets/, gamma T-0003 in main, delta T-0004 in the worktree): rc={rc_b},{rc_g},{rc_d} '
+                   f'{err_b!r} {err_g!r} {err_d!r} got={got!r} pairs={pairs!r}',
+                   rc_b == rc_g == rc_d == 0 and got == ('T-0002', 'T-0003', 'T-0004')
+                   and pairs == [((wtmp / 'trw-wt').resolve(), (rw_root / 'tickets').resolve())])
+            # the no-filer refusal in main names the worktree's tickets/<slug> folder holding the filer record
+            (rw_root / 'tickets' / 'alpha' / 'filer-L1.md').write_text(
+                '## Warnings\nNone\n\n## Follow-ups\nNone\n', encoding='utf-8')
+            before = snap(r_root)
+            rc, _, err = run(r_root, 'close', ('alpha',))
+            expect(f'ticket_root worktree: close in main names <worktree>/.sdlc/tickets/alpha, writes nothing: '
+                   f'rc={rc} {err!r}', rc == 1 and snap(r_root) == before
+                   and str((rw_root / 'tickets' / 'alpha').resolve()) in err and 'nothing written' in err)
+            # close --dry-run in main lists the open tickets found only in the worktree's tickets/
+            filer('filer-L1.md', 'None', 'None', slug='alpha')(r_root)
+            before = snap(r_root), snap(rw_root)
+            rc, out, err = run(r_root, 'close', ('alpha',), dry_run=True)
+            ol = out.strip().splitlines()
+            expect(f'ticket_root worktree: close --dry-run in main lists beta and delta as (worktree trw-wt), '
+                   f'nothing written: rc={rc} {out!r} {err!r}',
+                   rc == 0 and ol[1:] == ['open T-0003 Gamma [gamma]', 'open T-0002 Beta [beta] (worktree trw-wt)',
+                                          'open T-0004 Delta [delta] (worktree trw-wt)', 'expect e3b0c44298fc']
+                   and (snap(r_root), snap(rw_root)) == before)
+            # an external branch whose committed config says ticket_root: tickets is counted by new on main
+            x_dir = wtmp / 'trx'
+            x_root = x_dir / '.sdlc'
+            git(wtmp, 'init', '-q', '-b', 'main', 'trx')
+            run(x_root, 'new', ('feature', 'alpha'))
+            commit(x_dir, 'alpha')
+            git(x_dir, 'checkout', '-q', '-b', 'ext')
+            (x_root / 'tickets').mkdir()
+            (x_root / 'alpha').rename(x_root / 'tickets' / 'alpha')
+            (x_root / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+            rc, _, err = run(x_root, 'new', ('feature', 'beta'))
+            expect(f'ticket_root external: fixture beta on ext is T-0002 under tickets/: rc={rc} {err!r}',
+                   rc == 0 and tid(x_root / 'tickets', 'beta') == 'T-0002')
+            commit(x_dir, 'beta')
+            git(x_dir, 'checkout', '-q', 'main')
+            shutil.copytree(x_dir, wtmp / 'trx-bare', symlinks=True)
+            xb_root = wtmp / 'trx-bare' / '.sdlc'
+            got = [(sl, m.get('id')) for sl, m in branch_tickets(x_root, 'ext')]
+            expect(f'ticket_root external: branch_tickets reads <branch>:.sdlc/tickets, folder names kept: {got!r}',
+                   got == [('alpha', 'T-0001'), ('beta', 'T-0002')])
+            (x_root / 'config').write_text('external_branch: ext\n', encoding='utf-8')
+            rc, _, err = run(x_root, 'new', ('feature', 'gamma'))
+            expect(f'ticket_root external: registered, new on main mints T-0003 above ext tickets/beta T-0002: '
+                   f'rc={rc} {err!r} got={tid(x_root, "gamma")!r}',
+                   rc == 0 and err == '' and tid(x_root, 'gamma') == 'T-0003')
+            rc, _, err = run(xb_root, 'new', ('feature', 'gamma'))
+            expect(f'ticket_root external: negative control, no external_branch line, new mints the colliding '
+                   f'T-0002: rc={rc} {err!r} got={tid(xb_root, "gamma")!r}',
+                   rc == 0 and tid(xb_root, 'gamma') == 'T-0002')
 
         # outside git (no worktrees to consult) the local root decides: the first id is T-0001
         solo = pathlib.Path(tmp) / 'solo' / '.sdlc'
