@@ -19,7 +19,9 @@ above it and --summary, --task and --sort are ignored. Outside a git work tree (
 failure) it prints "<root>: not inside a git work tree" on stderr and exits 1. The default board
 is unchanged.
 
-A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format).
+A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format),
+or also .sdlc/tickets/<task>/ when .sdlc/config has a `ticket_root: tickets` line (an unsupported
+ticket_root value is ignored: the board lists root tasks only and never fails on config).
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
@@ -200,10 +202,26 @@ def task_rows(task: pathlib.Path):
     return rows, steps
 
 
+def task_dirs(root: pathlib.Path):
+    """Dirs directly under root holding a handoff.md, plus those directly under the ticket dir
+    when tickets.ticket_dir(root) is not root. An unsupported ticket_root value (tickets.Fail)
+    counts root only: the board is display-only and never fails on config."""
+    def under(d):
+        return [c for c in d.iterdir() if c.is_dir() and (c / 'handoff.md').exists()] if d.is_dir() else []
+    found = under(root)
+    try:
+        td = tickets.ticket_dir(root)
+    except tickets.Fail:
+        return found
+    if td != root:
+        found += under(td)
+    return found
+
+
 def summary(root: pathlib.Path) -> str:
     if not root.is_dir():
         return ''
-    tasks = [d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()]
+    tasks = task_dirs(root)
     if not tasks:
         return ''
     t = max(tasks, key=lambda d: max((p.stat().st_mtime for p in d.rglob('*')), default=0))
@@ -860,6 +878,44 @@ def selftest() -> int:
         expect(f'--lanes outside git exits 1 naming git, got {proc.returncode} stderr={proc.stderr!r}',
                proc.returncode == 1 and 'git' in proc.stderr and not proc.stdout)
 
+    # 9. ticket_root: tickets: tasks under <root>/tickets/ join the root's tasks.
+    with tempfile.TemporaryDirectory() as ttmp:
+        ttmp = pathlib.Path(ttmp)
+        me = str(pathlib.Path(__file__).resolve())
+
+        def board(root, *args):
+            env = dict(os.environ, SDLC_BOARD_STATE_DIR=str(ttmp / 'state'))
+            return subprocess.run([sys.executable, me, '--root', str(root), *args],
+                                  env=env, capture_output=True, text=True)
+
+        tr = ttmp / 'tr' / '.sdlc'
+        tk = task_dir(tr / 'tickets', '0001-a', front.replace('T-0042', 'T-0001'))
+        (tk / 'planner-L1.md').write_text('## Step 1: x\nlevel: L1\n')
+        side = task_dir(tr, 'side', '## Goal\ny\n')
+        (side / 'planner-L1.md').write_text('## Step 1: y\nlevel: L1\n')
+        (tr / 'config').write_text('ticket_root: tickets\n')
+        out = board(tr).stdout
+        expect(f'ticket_root: tickets renders the ticket and the root task, got {out!r}',
+               '| T-0001 | 0001-a |' in out and '| side |' in out)
+        proc = board(tr, '--task', '0001-a')
+        expect(f'--task finds a ticket under tickets/, got {proc.returncode} {proc.stdout!r}',
+               proc.returncode == 0 and '0001-a' in proc.stdout)
+        (side / 'planner-L1.md').unlink()
+        (side / 'handoff.md').unlink()
+        out = board(tr, '--summary').stdout.strip()
+        expect(f'--summary names the ticket under tickets/, got {out!r}', out.startswith('0001-a '))
+        # Negative controls: no config line, and an unsupported value.
+        (tr / 'config').write_text('# nothing\n')
+        out = board(tr).stdout
+        expect(f'with no ticket_root line tickets/<dir> is not a task, got {out!r}', '0001-a' not in out)
+        bad = ttmp / 'bad' / '.sdlc'
+        rt = task_dir(bad, '0002-b', front.replace('T-0042', 'T-0002'))
+        (rt / 'planner-L1.md').write_text('## Step 1: x\nlevel: L1\n')
+        (bad / 'config').write_text('ticket_root: work\n')
+        proc = board(bad)
+        expect(f'an unsupported ticket_root still lists root tasks, got {proc.returncode} {proc.stdout!r}',
+               proc.returncode == 0 and '| T-0002 | 0002-b |' in proc.stdout)
+
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -899,7 +955,7 @@ def main():
     if not root.is_dir():
         print(f'no task dirs: {root} does not exist', file=sys.stderr)
         sys.exit(1)
-    candidates = [d for d in root.iterdir() if d.is_dir() and (d / 'handoff.md').exists()]
+    candidates = task_dirs(root)
     tasks = [t for t in candidates if belongs_on_board(t)]
     mode = a.sort or ('auto' if any(ticket_of(t) for t in tasks) else 'recent')
     tasks = sort_tasks(tasks, mode)
