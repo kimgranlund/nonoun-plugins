@@ -41,8 +41,11 @@
    `unresolved:` in agents/planner.md, agents/plan-reviewer.md, and scripts/steps.py; `Missing decisions` in
    agents/plan-reviewer.md, skills/chain/SKILL.md, and agents/conductor.md; and `plan review:` in agents/planner.md,
    skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and agents/conductor.md.
+12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-4-5`, and names `messages.py` and
+   `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
+   adapters/codex/agents/sdlc-messenger-l1.toml exists. Negative controls: empty text, no `messenger` key, no TOML.
 """
-import re, sys, pathlib, subprocess, tempfile, shutil
+import re, sys, json, pathlib, subprocess, tempfile, shutil
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent.parent)
 errors = []
@@ -89,7 +92,7 @@ if cap('claude-haiku-4-5') != 'Haiku 4.5' or cap('sonnet') != 'Sonnet':
 if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku-9-9', _rs), _rb):
     errors.append('check.py: scout pin guard negative control not flagged')
 
-SESSION_AGENTS = {'conductor'}  # run as the main session (settings "agent"), not through run.sh
+SESSION_AGENTS = {'conductor', 'messenger'}  # both run as session agents (main session or its sub-agent), not through run.sh
 agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS
 roles = {r for r, _ in run}
 for r in sorted(agents - roles): errors.append(f'agents/{r}.md has no run.sh case')
@@ -361,6 +364,23 @@ for rel in READ_FIRST_FILES:
     if read_first_missing(text): errors.append(f'{rel}: read-first route missing "{READ_FIRST}"')
     elif not read_first_missing(text.replace(READ_FIRST, '')):
         errors.append(f'{rel}: read-first negative control not flagged')
+# Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
+MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
+def messenger_missing(agent_text, codex_models, toml_present):
+    out = []
+    if not agent_text.strip(): out.append('messenger: agents/messenger.md missing or empty')
+    else: out += [f'messenger: agents/messenger.md missing "{w}"' for w in MESSENGER_WORDS if w not in agent_text]
+    if 'messenger' not in codex_models: out.append('messenger: adapters/codex/models.json has no messenger entry')
+    if not toml_present: out.append('messenger: adapters/codex/agents/sdlc-messenger-l1.toml missing')
+    return out
+mf, mj = root/'agents/messenger.md', root/'adapters/codex/models.json'
+mt = mf.read_text() if mf.is_file() else ''
+mc = json.loads(mj.read_text()) if mj.is_file() else {}
+mtoml = (root/'adapters/codex/agents/sdlc-messenger-l1.toml').is_file()
+errors.extend(messenger_missing(mt, mc, mtoml))
+if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
+        or not messenger_missing(mt, mc, False)):
+    errors.append('check.py: messenger guard negative control not flagged')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
