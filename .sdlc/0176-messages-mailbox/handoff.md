@@ -3,7 +3,7 @@ id: T-0176
 title: "Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice"
 type: feature        # feature | bug | chore | spike | idea
 status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-09-30
