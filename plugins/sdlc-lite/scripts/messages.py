@@ -1022,11 +1022,13 @@ def st_parse(data, where):
     return fields, body
 
 
-def st_message(drop=None, body=b'hand'):
-    """A hand-written message file for new/bob/ from alice, without the key named by drop."""
+def st_message(drop=None, body=b'hand', **values):
+    """A hand-written message file for new/bob/ from alice, without the key named by drop,
+    with any key given in values set to that value."""
     pairs = [('send_time', '2026-01-01T00:00:00.000000Z'), ('read_time', ''), ('sender', 'alice'),
              ('receiver', 'bob'), ('topic', 'hand'), ('follow_up_requested', 'false'),
              ('protocol', ST_PROTOCOL), ('expires', ST_FAR)]
+    pairs = [(k, values.get(k, v)) for k, v in pairs]
     lines = [f'{k}: {v}' if v else f'{k}:' for k, v in pairs if k != drop]
     return ('---\n' + ''.join(ln + '\n' for ln in lines) + '---\n').encode('utf-8') + body
 
@@ -1403,6 +1405,31 @@ def case_missing_fields(h):
         b.only(mid, 'new', 'bob')
 
 
+def st_bad_value(b, mid, key, value):
+    """A hand-written file with key set to value is refused by read and stays unread in new/."""
+    b.put('bob', mid, st_message(**{key: value}))
+    b.refused('read', mid, '--receiver', 'bob', want=key)
+    b.only(mid, 'new', 'bob')
+    st_expect(b.load('new', 'bob', mid)[0], {'read_time': '', key: value}, f'refused {key} message')
+
+
+def case_bad_protocol(h):
+    b = Box(h)
+    st_bad_value(b, '20260101T000000000001Z-alice-hand', 'protocol', 'elsewhere/AGENTS.md')
+
+
+def case_bad_follow_up(h):
+    b = Box(h)
+    st_bad_value(b, '20260101T000000000001Z-alice-hand', 'follow_up_requested', 'maybe')
+    b = Box(h)  # count refuses the invalid hand-written file, so the send half uses a clean mailbox
+    b.send(topic='valid')
+    before = b.ok('count', '--receiver', 'bob')
+    b.refused(*st_send_args('--receiver', 'bob', '--sender', 'alice', '--topic', 't', '--follow-up', 'maybe'),
+              want='--follow-up')
+    if b.ok('count', '--receiver', 'bob') != before:
+        st_fail('a refused send --follow-up maybe changed the count')
+
+
 def case_malformed(h):
     b = Box(h)
     b.send(topic='valid new')
@@ -1761,6 +1788,8 @@ SELFTEST_CASES = (
     ('refused: ack with follow-up and no reply', case_ack_no_reply),
     ('refused: caller-set stamps', case_caller_stamps),
     ('refused: missing required fields', case_missing_fields),
+    ('refused: protocol value not the mailbox AGENTS.md', case_bad_protocol),
+    ('refused: follow_up_requested not true or false', case_bad_follow_up),
     ('refused: malformed file in every subcommand', case_malformed),
     ('refused: size cap', case_size_cap),
     ('refused: invalid names and ids', case_invalid_names),
