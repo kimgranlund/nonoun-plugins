@@ -2,7 +2,7 @@
 id: T-0178
 title: "Messenger agent: declared agent, Codex mapping, and check.py coverage"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0177]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]

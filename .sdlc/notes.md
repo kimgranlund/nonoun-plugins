@@ -128,3 +128,15 @@
 - note: `verifier_alternates` and `shared_with_builder` keep their names while also serving the plan-reviewer, so the names understate their scope.
 - note: `/chain` 4.2 mid-build replans still go straight to `steps.py split --only` without `steps.py review`, and the 4.2 item text was left unchanged (step 3 builder note).
 - note: The bench comparison against the same tasks without the reviewer is not done, and it is required before any claim the reviewer helps.
+
+## T-0177: Mailbox core: messages.py, lifecycle, schema, and run.sh notice (2026-10-01)
+
+- note: shellcheck is not installed on this host, so `check.sh` skipped it. `run.sh` and `run-selftest.sh` were not shellchecked.
+- note: the selftest race control catches a non-atomic claim only when the copy and delete straddle the barrier. If the copy and delete both run after the barrier, the selftest passes. The verifier saw this as a plain-unlink variant failing in 1 of 3 full runs.
+- note: live host validation of the mailbox is T-0179. The messenger agent is T-0178. Neither was exercised here.
+
+## T-0178: Messenger agent: declared agent, Codex mapping, and check.py coverage (2026-10-01)
+
+- note: `check.sh` skipped shellcheck in both step runs because it is not installed, so the shell checks there were not run.
+- note: the step 3 `run.sh` unchanged guard compared against `SDLC_BASE_SHA`, which equalled HEAD, so it could not go red there. The `run.sh` diff was not otherwise independently inspected in the artifacts.
+- note: the messenger has not been run live on Claude or on Codex. That evidence is T-0179's scope.
