@@ -26,9 +26,9 @@ Ready after fixes. The core holds: a deterministic poller that only counts, plus
 
 Alternatives the design did not weigh: notify the person or wake the host the user left with a fixed prompt; a fresh ephemeral session per wake; running a wake through the existing role path (`run.sh`, `codex_exec.py`, `SDLC_ROLE`); progress-based success; a wake naming one message id restricted to the timestamp prefix; `claude --bg --resume` as an active-session check; a global cap across receivers.
 
-## Decision needed from the user
+## Decision from the user
 
-Finding 4: which default serves the idle Codex host? Options in the review: wake the attached session the user left with a fixed prompt, notify the person only, or a fresh ephemeral session per wake. Until the user decides, T-0183 builds ephemeral-per-wake as the default, attached mode and notify-only as opt-ins.
+Finding 4, decided 2026-10-01: the default for an idle host is a fresh ephemeral session per wake (it reads the message and entry files, handles it, and exits). Attached-session resume and notify-only stay opt-in. Recorded in `docs/ticket-stages/watcher-design.md` and applied by T-0183.
 
 ## What this review does not cover
 

@@ -6,6 +6,10 @@ Version 0.1, 2026-10-01. Design only. Nothing here is built. Independent review:
 
 A subagent, including the `messenger`, and a `messages.py wait` call can report only into a parent turn that is still running. They cannot wake an idle host. A host whose turn has ended never sees new mail. Today a user keeps a Codex host awake with `/goal`. Only a process outside any agent can start a new turn. This document designs that process, the watcher, and its safety limits. The planned script is `plugins/sdlc-lite/scripts/supervisor.py` with its configuration and state under `.sdlc/supervisor/`.
 
+## Resolved decision
+
+User decision, 2026-10-01 (review finding 4): the default for an idle host is a fresh ephemeral session per wake. It reads the message and the entry files, handles the mail, and exits. Attached-session resume (waking a session a person left) and notify-only (tell the person, wake nothing) stay opt-in per receiver. The owned, growing session of section 1 is replaced by this default; sections 1 to 9 are revised from this decision and the review findings in T-0183 step 1.
+
 ## Principles
 
 - The watcher is deterministic code. It contains no model call. It decides only from counts and front matter.
