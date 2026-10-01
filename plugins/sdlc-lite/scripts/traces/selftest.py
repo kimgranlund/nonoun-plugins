@@ -1932,3 +1932,39 @@ def _corpus():
         else:
             ok = has(det, **ev)
         assert ok, f'no {det} finding with evidence {ev}'
+
+
+_TICKET_FM = ('---\nid: T-0001\ntitle: "A"\ntype: feature\nstatus: ready\nsize: S\npriority: P2\n'
+              'depends: []\ncreated: 2026-09-30\n---\n')
+
+
+@case('tickets: task_dirs lists tickets/<name> and root tasks under ticket_root: tickets')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        _write(repo, '.sdlc/side/handoff.md', '## Goal\nx\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['side', 'tickets/0001-a'], got
+
+
+@case('tickets: by_slug comes from the tickets/ dir under ticket_root: tickets')
+def _():
+    from .sources import tickets as reader
+    with tempfile.TemporaryDirectory() as repo:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        got = reader.read(os.path.join(repo, '.sdlc'))['by_slug']
+        assert got == {'0001-a': ('T-0001', 'ready')}, got
+
+
+@case('tickets: with no ticket_root line a tickets dir is a plain task dir name')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo:
+        _write(repo, '.sdlc/config', '# no ticket_root\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        _write(repo, '.sdlc/side/handoff.md', '## Goal\nx\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['side', 'tickets'], got

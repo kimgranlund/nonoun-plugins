@@ -1,7 +1,8 @@
 """Ticket reader: the ticket facts of one .sdlc root, through scripts/tickets.py.
 
 read(root) returns one dict:
-  by_slug   {slug: (id, status)} for every ticket folder tickets.load finds, closed
+  by_slug   {slug: (id, status)} for every ticket folder tickets.load finds in
+            tickets.ticket_dir(root) (root itself on tickets.Fail), closed
             .NNNN-<slug> folders included (a missing field reads as None);
   problems  tickets.problems(ts, tickets.config_numbered(root)), one line per problem;
   external  tickets.external_branches(root), the external_branch names in <root>/config;
@@ -15,7 +16,11 @@ import tickets  # same scripts/ dir: there are no implicit relative imports, so 
 
 def read(root):
     root = Path(root)
-    ts = tickets.load(root)
+    try:
+        tdir = tickets.ticket_dir(root)
+    except tickets.Fail:
+        tdir = root
+    ts = tickets.load(tdir)
     return {
         'by_slug': {slug: (m.get('id'), m.get('status')) for slug, m in ts},
         'problems': tickets.problems(ts, tickets.config_numbered(root)),

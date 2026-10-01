@@ -4,7 +4,9 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
     load_series=None) returns the out dir (store.out_dir). It walks:
   handoff dirs  each task dir directly under <repo>/.sdlc/ (closed .NNNN-<slug> folders and
                 other `.`-prefixed folders holding a handoff.md included; `_templates`,
-                `runtime`, other `_`- or `.`-prefixed names, and plain files skipped), then each step-<n> and step-<n>.superseded-<k> dir under it, then any
+                `runtime`, other `_`- or `.`-prefixed names, and plain files skipped; when
+                <repo>/.sdlc/config sets `ticket_root: tickets`, the `tickets` dir itself is not a
+                task and each task dir under it follows as tickets/<name>, by the same filter), then each step-<n> and step-<n>.superseded-<k> dir under it, then any
                 other subdir holding a runs.jsonl (its rows keep step None). Per dir:
                 the attempt, run, and result readers, the transcript reader on each <name>.log
                 next to a result <name>.md (its tool_calls, denials count, and rate_limits go on
@@ -26,7 +28,7 @@ With load_series (a path to a JSON list of [iso timestamp, load1] pairs, the CLI
 --load-series), aux also gets `load_series`: those pairs (a pair that is not a two-item list
 with a string timestamp and a numeric load is dropped; an unreadable file gives []).
 """
-import json, os
+import json, os, pathlib
 
 import tickets  # same scripts/ dir
 
@@ -42,9 +44,10 @@ def _rel(path, repo):
     return os.path.relpath(path, repo).replace(os.sep, '/')
 
 
-def task_dirs(sdlc):
+def _names(d):
+    """Task dir names directly under d, by the task dir filter, sorted."""
     try:
-        names = sorted(os.listdir(sdlc))
+        names = sorted(os.listdir(d))
     except OSError:
         return []
     out = []
@@ -52,11 +55,23 @@ def task_dirs(sdlc):
         if n in SKIP_TASK or n.startswith('_'):
             continue
         if (n.startswith('.') and not tickets.DOT_RE.fullmatch(n)
-                and not os.path.isfile(os.path.join(sdlc, n, 'handoff.md'))):
+                and not os.path.isfile(os.path.join(d, n, 'handoff.md'))):
             continue
-        if os.path.isdir(os.path.join(sdlc, n)):
+        if os.path.isdir(os.path.join(d, n)):
             out.append(n)
     return out
+
+
+def task_dirs(sdlc):
+    root = pathlib.Path(sdlc)
+    try:
+        tdir = tickets.ticket_dir(root)
+    except tickets.Fail:
+        tdir = root
+    out = _names(sdlc)
+    if tdir == root:
+        return out
+    return [n for n in out if n != 'tickets'] + ['tickets/' + n for n in _names(tdir)]
 
 
 def step_dirs(task):

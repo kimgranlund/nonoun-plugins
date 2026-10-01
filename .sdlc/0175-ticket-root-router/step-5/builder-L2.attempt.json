@@ -1,0 +1,20 @@
+{
+  "attempt_id": "f4d0fb6868294189aa749736d46ad022",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-5: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T05:43:28.185288+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ticket-stages/.sdlc/0175-ticket-root-router/step-5/handoff.md",
+  "owner_pid": 93601,
+  "process_pid": 93772,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T05:44:23.756243+00:00"
+}
