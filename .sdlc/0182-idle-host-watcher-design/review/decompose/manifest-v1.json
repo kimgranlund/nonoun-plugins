@@ -1,0 +1,59 @@
+{
+  "domain": "technical-architecture",
+  "plan": false,
+  "nodes": [
+    {"id": "n0", "label": "watcher design under review (docs/ticket-stages/watcher-design.md)", "leaf": false, "justify": "grouping"},
+    {"id": "n1", "label": "s1 resume commands and session modes (owned, attached)", "leaf": true, "justify": null},
+    {"id": "n2", "label": "s2 launch mechanisms", "leaf": true, "justify": null},
+    {"id": "n3", "label": "s3 claim race and active-host detection, watcher lock", "leaf": true, "justify": null},
+    {"id": "n4", "label": "s4 authority of a woken host: fixed prompt, tool limits per host", "leaf": true, "justify": null},
+    {"id": "n5", "label": "s5 auth and cost caps", "leaf": true, "justify": null},
+    {"id": "n6", "label": "s6 loop and storm limits", "leaf": true, "justify": null},
+    {"id": "n7", "label": "s7 failure, cleanup, status, kill switch", "leaf": true, "justify": null},
+    {"id": "n8", "label": "s8 host-specific versus shared", "leaf": true, "justify": null},
+    {"id": "n9", "label": "s9 validation plan", "leaf": true, "justify": null},
+    {"id": "n10", "label": "s10 open questions", "leaf": true, "justify": null}
+  ],
+  "actions": [
+    {"id": "a1", "label": "start a new turn in a named idle session on Claude"},
+    {"id": "a2", "label": "start a new turn in a named idle session on Codex with a writable, network-free sandbox"},
+    {"id": "a3", "label": "notice mail without reading a body or changing a message file"},
+    {"id": "a4", "label": "tell an idle host from an active one before waking"},
+    {"id": "a5", "label": "deny push, publish, and external writes by mechanism on each host"},
+    {"id": "a6", "label": "let the woken host run the mailbox script (read, reply, ack) and nothing wider"},
+    {"id": "a7", "label": "keep message-derived text out of the wake prompt and argv"},
+    {"id": "a8", "label": "bound spend per wake, per hour, per day"},
+    {"id": "a9", "label": "stop reply loops and storms across two receivers"},
+    {"id": "a10", "label": "judge a wake by mailbox progress, not exit code, and back off"},
+    {"id": "a11", "label": "stop the watcher and its child; show status"},
+    {"id": "a12", "label": "keep the watcher running across logout and sleep with working logins"},
+    {"id": "a13", "label": "prove each safety rule with a case that can fail"},
+    {"id": "a14", "label": "record what is verified, unverified, and undecided"},
+    {"id": "a15", "label": "serve the stated user case: wake the idle Codex host the user left"},
+    {"id": "a16", "label": "resolve the mailbox and writable roots when the wake runs from a linked worktree"}
+  ],
+  "hosts": [
+    {"action": "a1", "node": "n1"},
+    {"action": "a2", "node": "n1"},
+    {"action": "a2", "node": "n4"},
+    {"action": "a3", "node": "n3"},
+    {"action": "a4", "node": "n3"},
+    {"action": "a5", "node": "n4"},
+    {"action": "a6", "node": "n4"},
+    {"action": "a7", "node": "n4"},
+    {"action": "a8", "node": "n5"},
+    {"action": "a9", "node": "n6"},
+    {"action": "a10", "node": "n7"},
+    {"action": "a11", "node": "n7"},
+    {"action": "a12", "node": "n2"},
+    {"action": "a13", "node": "n9"},
+    {"action": "a14", "node": "n10"},
+    {"action": "a14", "node": "n8"},
+    {"action": "a15", "node": "n1"},
+    {"action": "a16", "node": "n3"}
+  ],
+  "edges": [
+    {"from": "n4", "to": "n9", "why": "the validation rows test the limits s4 pins, so s4 must name real flags first"},
+    {"from": "n1", "to": "n4", "why": "the tool limits attach to the resume command s1 fixes; codex exec resume takes no --sandbox"}
+  ]
+}

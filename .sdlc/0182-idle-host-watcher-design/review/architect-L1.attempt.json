@@ -9,10 +9,12 @@
   "effort": "high",
   "routing_reason": "T-0182 independent design review, architect not on the author family",
   "reason_source": "caller",
-  "status": "running",
+  "status": "completed",
   "started_at": "2026-10-01T14:32:34.895388+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host-w",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/idle-host-w/.sdlc/0182-idle-host-watcher-design/review/handoff.md",
   "owner_pid": 19949,
-  "process_pid": 19984
+  "process_pid": 19984,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T14:40:31.115982+00:00"
 }

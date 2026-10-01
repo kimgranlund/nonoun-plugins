@@ -1,6 +1,6 @@
 # External watcher for idle hosts
 
-Version 0.1, 2026-10-01. Design only. Nothing here is built. Ticket T-0182. It builds on the mailbox in [design.md](design.md) and on T-0180 (the limit) and T-0181 (`messages.py wait`).
+Version 0.1, 2026-10-01. Design only. Nothing here is built. Independent review: ready after fixes, four blockers open (see [the review](../validation/idle-host-watcher-design-review.md)); T-0183 applies them to this document before any code. Ticket T-0182. It builds on the mailbox in [design.md](design.md) and on T-0180 (the limit) and T-0181 (`messages.py wait`).
 
 ## Problem
 

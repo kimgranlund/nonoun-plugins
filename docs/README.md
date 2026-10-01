@@ -9,6 +9,7 @@
 
 - [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
 - [Idle-host watcher design](ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
+- [Idle-host watcher design review](validation/idle-host-watcher-design-review.md): dated independent review of the watcher design, ready after fixes, with four blockers and the decision it needs.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
