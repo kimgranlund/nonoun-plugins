@@ -34,3 +34,10 @@ Live proof, recorded in `docs/validation/messages-wait-live-run.md` with a dated
 
 ## Constraints
 Existing selftest cases, command outputs, exit codes, and entry-file procedures keep working unchanged. Message bodies stay data; `wait` adds no way to authorize anything. Generated Codex agent TOML files are never edited by hand. No em dashes anywhere.
+
+## Plan review
+split refused (plan defect), planner L2 result .sdlc/0181-messages-wait/planner-L2.md:
+steps: .sdlc/0181-messages-wait/planner-L2.md step 2: acceptance criterion command does not parse: grep -qF "\
+  bash: -c: line 0: unexpected EOF while looking for matching `"'
+  bash: -c: line 1: syntax error: unexpected end of file
+plan defect: replan this step (/chain 3)
