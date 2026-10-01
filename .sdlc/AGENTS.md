@@ -1,22 +1,19 @@
-<!-- sdlc-lite:managed:start v1 sha256:131486d0a741 -->
+<!-- sdlc-lite:managed:start v1 sha256:4dfd9280dae6 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
 
 - Ticket folders: next to this file.
-- Mailbox: `messages/` is a git-ignored mailbox, not a record; read it with `<plugin-root>/scripts/messages.py`.
+- Mailbox: `messages/` is a git-ignored mailbox, not a record; follow `messages/AGENTS.md` to send, read, reply, ack, or expire a message with `<plugin-root>/scripts/messages.py`.
 - `<plugin-root>` is the installed sdlc-lite plugin folder, the one holding `scripts/tickets.py`: `${CLAUDE_PLUGIN_ROOT}` in Claude Code; in Codex, the folder two levels above the `sdlc-lite` skill.
 
 ## Stages
 
 - proposed: 0
-- ready: 4
-  - T-0175 Opt-in tickets/ root and generated .sdlc/AGENTS.md router (0175-ticket-root-router)
-  - T-0177 Mailbox core: messages.py, lifecycle, schema, and run.sh notice (0177-mailbox-core)
-  - T-0178 Messenger agent: declared agent, Codex mapping, and check.py coverage (0178-messenger-agent)
+- ready: 1
   - T-0179 Messages entry files and fresh-role live validation (0179-messages-entry-files)
 - blocked: 0
-- done: 156
+- done: 159
 - dropped: 19
 
 ## Procedures

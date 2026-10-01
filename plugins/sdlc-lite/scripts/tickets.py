@@ -147,6 +147,10 @@ check fails, after the ticket problems and the stale-roadmap check, with one lin
 `<label>: router block missing`, `router block stale`, `router block malformed: <reason>`, or
 `no @AGENTS.md import`, where <label> is AGENTS.md, CLAUDE.md, tickets/AGENTS.md or tickets/CLAUDE.md. With
 no ticket and no <root>/AGENTS.md, check passes.
+write_roadmap also writes the mailbox entry files under <root>/messages/ through messages.write_entries, creating
+the folder: .gitignore, AGENTS.md, CLAUDE.md, and AGENTS.md and CLAUDE.md in each of new/, read/, done/. The
+router's Mailbox line links messages/AGENTS.md. check does not validate the entry files: they are git-ignored
+local state that a fresh clone lacks.
 
 Depends entries take three forms. T-NNNN names a ticket that must exist. file:<path> names a file relative
 to the git toplevel of the ticket root (else the root's parent dir); the path is non-empty, not absolute, and
@@ -838,6 +842,8 @@ def write_roadmap(root, ts):
     path = root / 'roadmap.md'
     path.write_bytes(render(ts, root).encode('utf-8'))
     write_router(root, ts)
+    import messages  # same scripts/ dir; local so board, fanout and traces, which import tickets to parse, skip it
+    messages.write_entries(os.path.join(root, 'messages'))
     return path
 
 
@@ -891,7 +897,7 @@ matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order.
 history: open one only when asked.
 
 <ticket folders line>
-- Mailbox: `messages/` is a git-ignored mailbox, not a record; read it with `<plugin-root>/scripts/messages.py`.
+- Mailbox: `messages/` is a git-ignored mailbox, not a record; follow `messages/AGENTS.md` to send, read, reply, ack, or expire a message with `<plugin-root>/scripts/messages.py`.
 """ + ROUTER_PLUGIN_LINE + """
 ## Stages
 
@@ -3584,6 +3590,38 @@ def selftest():
         rc, err = check_err(r)
         expect(f'router: malformed block fails check: rc={rc} {err!r}',
                rc == 1 and 'AGENTS.md: router block malformed:' in err and 'fix its markers by hand' in err)
+
+        # mailbox entry files: roadmap writes them under <root>/messages, restores edits, never under tickets/
+        mbox_files = ['.gitignore', 'AGENTS.md', 'CLAUDE.md'] + [f'{s}/{n}' for s in ('new', 'read', 'done')
+                                                                  for n in ('AGENTS.md', 'CLAUDE.md')]
+        rm = pathlib.Path(tmp) / 'rt-mbox' / '.sdlc'
+        rc, _, err = run(rm, 'roadmap')
+        expect(f'router: roadmap writes the mailbox entry files: rc={rc} {err!r}',
+               rc == 0 and all((rm / 'messages' / f).is_file() for f in mbox_files)
+               and tr_text(rm / 'messages' / 'new' / 'CLAUDE.md') == '@AGENTS.md\n')
+        want_new = tr_text(rm / 'messages' / 'new' / 'AGENTS.md')
+        (rm / 'messages' / 'new' / 'AGENTS.md').write_text('edited\n', encoding='utf-8')
+        (rm / 'messages' / 'read' / 'CLAUDE.md').unlink()
+        rc, _, err = run(rm, 'roadmap')
+        expect(f'router: roadmap restores an edited mailbox entry file: rc={rc} {err!r}',
+               rc == 0 and tr_text(rm / 'messages' / 'new' / 'AGENTS.md') == want_new != 'edited\n'
+               and tr_text(rm / 'messages' / 'read' / 'CLAUDE.md') == '@AGENTS.md\n')
+        expect('router: ticket_root keeps the mailbox at <root>/messages',
+               (rt / 'messages' / 'AGENTS.md').is_file() and not (rt / 'tickets' / 'messages').exists())
+        rf = pathlib.Path(tmp) / 'rt-mbox-refused' / '.sdlc'
+        rf.mkdir(parents=True)
+        (rf / 'AGENTS.md').write_text('<!-- sdlc-lite:managed:start v1 sha256:000000000000 -->\nno end\n',
+                                      encoding='utf-8')
+        rc, _, err = run(rf, 'roadmap')
+        expect(f'router: a refused roadmap writes no mailbox entry files: rc={rc} {err!r}',
+               rc == 1 and 'router block malformed' in err and not (rf / 'messages').exists())
+        rc0 = run(rm, 'check')[0]
+        shutil.rmtree(rm / 'messages')
+        rc, err = check_err(rm)
+        expect(f'router: check passes without the mailbox entry files: rc={rc0},{rc} {err!r}', rc0 == 0 and rc == 0)
+        expect('router: the router links messages/AGENTS.md',
+               any(ln.startswith('- Mailbox:') and 'messages/AGENTS.md' in ln
+                   for ln in block_of(rm / 'AGENTS.md').splitlines()))
 
         # positive: zero tickets and no AGENTS.md passes check
         rz = pathlib.Path(tmp) / 'rt-zero' / '.sdlc'
