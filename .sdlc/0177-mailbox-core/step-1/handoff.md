@@ -126,3 +126,15 @@ The worktree criterion runs inside a role run. There, run.sh sets `SDLC_TMP_WORK
 - `d=$(mktemp -d) && M="$PWD/plugins/sdlc-lite/scripts/messages.py" && git -C "$d" init -q && git -C "$d" -c user.email=a@b -c user.name=a -c commit.gpgsign=false commit -q --allow-empty -m init && rm -rf "${SDLC_TMP_WORKTREES:?}/mbox-wt" && git -C "$d" worktree add -q --detach "$SDLC_TMP_WORKTREES/mbox-wt" HEAD && ( cd "$SDLC_TMP_WORKTREES/mbox-wt" && python3 "$M" send --receiver bob --sender alice --topic wt --follow-up false hi >/dev/null && test ! -e .sdlc && test "$(python3 "$M" count --receiver bob)" = 1 ) && ( cd "$d" && test "$(python3 "$M" count --receiver bob)" = 1 && test -n "$(ls .sdlc/messages/new/bob)" )`
 - `test -f plugins/sdlc-lite/scripts/messages.py && ! grep -q "$(printf "\xe2\x80\x94")" plugins/sdlc-lite/scripts/messages.py`
 - (guard) `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF plugins/sdlc-lite/scripts/messages.py ); test -z "$out"`
+
+## Previous attempt (verifier-L3.md)
+All 13 acceptance criteria pass; keep them green. One defect remains in `plugins/sdlc-lite/scripts/messages.py`.
+
+`locate` and `locate_one` (lines 380-392) scan the state folders one after another. A message that moves forward during the scan is counted in two folders, and `locate_one` refuses with `id <id> is in more than one folder`. Callers affected: `cmd_read` (line 639), `cmd_reply` (line 605), `cmd_ack` (line 698).
+
+Required behavior:
+- A `read` that loses a claim race exits 1 with `already claimed`, every time.
+- `reply` finds an original that is mid-move and sends the reply.
+- The duplicate-id refusal fires only when the id really sits in two folders. A message only moves forward, so a re-scan or taking the furthest state resolves a transient double sighting.
+
+Reproduce: in a throwaway repo, loop 40 times: `send` one message to `bob`, start 8 background `read <id> --receiver bob` calls, `wait`, and collect stderr. Every one of the 7 losers per round must say `already claimed`; today about 1 in 80 says `in more than one folder`.
