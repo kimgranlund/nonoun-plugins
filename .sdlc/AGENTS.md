@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4cb4376c9f6f -->
+<!-- sdlc-lite:managed:start v1 sha256:d44eeeee7650 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 0
+- proposed: 4
+  - T-0189 Lean chain: fewer, coarser planner builder verifier steps for size M work (0189-lean-chain)
+  - T-0190 Organize every .sdlc/ content type into topic sub-folders (0190-sdlc-topic-subfolders)
+  - T-0191 One plan record per ticket; later roles do not repeat research or planning (0191-single-plan-record)
+  - T-0192 Conductor rule: finish work the fastest way, batch reviews and verifications (0192-conductor-batching)
 - ready: 5
   - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
   - T-0184 One declared result schema per role, validated before the next role reads it (0184-role-result-schema)

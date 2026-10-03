@@ -193,3 +193,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0186 | [0186-proposals-folder](0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🔵 ready |
 | T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | 🔵 ready |
 | T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | 🟢 done |
+| T-0189 | [0189-lean-chain](0189-lean-chain/handoff.md) | Lean chain: fewer, coarser planner builder verifier steps for size M work | chore | M | P2 | none | ⏳ proposed |
+| T-0190 | [0190-sdlc-topic-subfolders](0190-sdlc-topic-subfolders/handoff.md) | Organize every .sdlc/ content type into topic sub-folders | chore | M | P2 | none | ⏳ proposed |
+| T-0191 | [0191-single-plan-record](0191-single-plan-record/handoff.md) | One plan record per ticket; later roles do not repeat research or planning | chore | M | P2 | none | ⏳ proposed |
+| T-0192 | [0192-conductor-batching](0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | M | P2 | none | ⏳ proposed |
