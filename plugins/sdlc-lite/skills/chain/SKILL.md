@@ -44,7 +44,7 @@ A /chain run under fanout that stops mid-step leaves its work as a `wip(<id>): <
 ## 3. Plan
 Run planner on the task handoff. Then run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py review .sdlc/<task>` and follow the action on its first line:
 - `split` → run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py split .sdlc/<task>`, which writes each `step-<n>/handoff.md` from the newest planner file; never parse the plan by hand.
-- `review L1` → run `run.sh plan-reviewer L1 .sdlc/<task>/handoff.md`, then `steps.py review` again.
+- `review L1` → run `run.sh plan-reviewer L1 .sdlc/<task>/handoff.md`, then `steps.py review` again. If that run exits 2 with `specgate:` lines on stderr, `specgate.py check` refused the plan before any model call: append those lines under `## Plan review` and replan as for a `steps.py split` `plan defect` (below).
 - `replan` → append to the task handoff's `## Plan review` (create it if missing, keep earlier entries) one line `plan review: replan: <result path>` and one `plan review: replan: <finding>` line per `## Findings` item of that result, rerun planner L3 on the task handoff, then `steps.py review` again (a replan is always reviewed).
 - `stop` → interactive: one AskUserQuestion carrying the reviewer's `## Missing decisions` (a `blocked` verdict), or whether to replan once more (a second `replan` verdict), or the plan's `unresolved:` assumption; unattended: stop the task and report the reason line.
 
