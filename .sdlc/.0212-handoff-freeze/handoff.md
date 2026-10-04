@@ -2,7 +2,7 @@
 id: T-0212
 title: "Handoff freeze: stale_input flag, rerun action, handoff edit hook"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L
 priority: P2         # P1 | P2 | P3
 depends: [T-0196, T-0197, T-0199, T-0211, T-0183]
@@ -26,3 +26,7 @@ Follow the root and plugin AGENTS.md invariants: independent verification, model
 
 ## Update
 Un-parked 2026-10-04 for the 0.20.5 release scope (user decision). Build as one handwritten step under the burn-down rules: no planner, one verifier. Pull main first; T-0212 and T-0214 share files, so build T-0214 first, then T-0212.
+
+## Closed
+
+2026-10-04: Built as one step (warn mode): stale_input flag and handoff_sha256 on the run line, warn-handoff-edit hook with deny switch, selftests with negative controls, check.py item 18, live Claude run. Independent L3 verifier found one defect (check-packaging route count), fixed. Not built: rerun action in steps.py and the footprint exclusion (outside this lane's files), Codex arm. See docs/validation/handoff-freeze-live-run.md.
