@@ -1,6 +1,8 @@
 # Lean SDLC design
 
-Version 0.1, 2026-10-03. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
+Version 0.2, 2026-10-03. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
+
+v0.2 applies the independent review (`../validation/lean-sdlc-design-review.md`, verdict not ready at v0.1): the plan record keeps the existing planner result names, batched verification needs a runner change first, the layout move is re-scoped around a path resolver, and the build order is re-cut so each file has one writer.
 
 ## Problem
 
@@ -61,14 +63,18 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 - Planner level L1 or L2 (never the cross-cutting L3 plan).
 - At most two steps, and every step at builder L1 to L3.
-- No merge step and no replan.
+- No merge step and no replan. A replan cannot be known at plan time, so `lane` is advisory and recomputed (see Decision points).
 - The change stays within one nearest `AGENTS.md` owner, or one script and its tests, with no change to a contract that other roles parse (role output sections, `run.sh` tables, `steps.py`, `tickets.py` invariants, hooks).
 
 ### Full chain is mandatory when any holds
 
-- Planner L3, any step at builder L4 or L5, any merge step, or any replan. These are exactly the cases `steps.py review` already requires a plan review for (`steps.py` line 103), so the rule is not new and cannot drift from it.
+- Planner L3, any step at builder L4 or L5, any merge step, any replan, a `## Plan review` line in the ticket handoff, or an `unresolved:` assumption in the plan. These are the cases `steps.py review` requires a review or a stop for (`steps.py:103`, `1227-1242`). `lane` calls the same function `review` uses, so the two cannot disagree.
 - The ticket changes role behavior, a runner invariant, a hook, or a check. A focused live run is still required (plugin guidance), and lean does not waive it.
 - A step that touches shared generated state (roadmap, router, generated Codex agents) alongside other tickets in flight.
+
+### Decision points
+
+`lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size and owner), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
 
 ### Coarse steps
 
@@ -80,31 +86,31 @@ The planner rule changes from "one step per file or concern" to "one step per in
 
 - Plan review: not required, because a lean plan is a routine plan under the existing rule. The conductor may still request one.
 - One verifier per step, which is already one per two steps at most. A verifier never runs on the builder's family (`run.sh` enforces it), so independence is unchanged.
-- Close-out: `tickets.py close --reason` with the verifier's result as evidence, as `/fix` does, unless the builder or verifier reported follow-ups or warnings. Then the filer runs. This keeps `close`'s existing refusal rule intact.
+- Close-out: `tickets.py close --reason` skips every filer gate (`tickets.py:83-85`) and reads no builder or verifier notes, so a rule "filer only when there are follow-ups" would be prose with no check. Decision for the user (open question 6): the lean lane always runs the filer (one Sonnet run, about 2 KB, keeps close's gates intact; recommended), or `close` gains a gate that reads the verifier result's follow-ups. `/fix` stays without a filer.
 
 ## 2. Single plan record (T-0191)
 
 ### Constraint
 
-`run.sh`, `steps.py next`, and `order.py` read per-role result files by name (`builder-L*.md`, `verifier-L*.md`, newest wins). Replacing them with one appended file would rewrite the pipeline's decision core. So this design keeps the result files and removes the duplicated prose around them.
+The pipeline fixes result names and reads them by name. `run.sh` writes every result as `<role>-<level>[-k].md` and requires `## Goal` in a planner result (`run.sh:17-21`, `186-191`). `order.py` ranks only files matching that pattern (`order.py:22`). `steps.py review` detects a replan as two or more `planner-*.md` files (`steps.py:1237`), `split` reads only the newest planner file, and the plan-reviewer reads the newest and reaches earlier ones only through `## Plan review` (`agents/plan-reviewer.md:10`). A file named `plan.md` is invisible to all of them, so this design keeps the existing names and changes what is written inside them.
 
 ### Changes
 
-1. **One plan file per ticket, revised by delta.** The planner writes `plan.md` once. A replan writes `plan-rev-<k>.md` holding only the changed or added steps and the findings it addresses, plus the unchanged step numbers by reference. `steps.py split` reads `plan.md` then applies revisions in order. Today a replan rewrites the whole plan (T-0181: 33,296 then 50,094 bytes). Target: a replan file at most a quarter of the plan it revises.
-2. **Step handoffs by reference.** `split` writes each step handoff with the step block and a `### Read first` list, and replaces the restated plan context with one line naming `plan.md` and the settled-decision anchors the step cites. The builder reads the anchors, not a copy.
-3. **An Understanding section, written once.** The scout, researcher, archaeologist, and architect each end their result with a short `## Carry forward` section (at most 15 lines: facts and paths that later roles must not re-derive). The planner copies none of it. It cites the result path. Later roles are told, in their contracts, to read `## Carry forward` before searching and to search only what it does not answer.
+1. **Replan by delta, inside the existing names.** The first plan is `planner-L<n>.md`. A replan is the next `planner-L<n>-<k>.md` and carries a `revises: <planner file>` header line and only the changed or added steps and the findings it addresses; unchanged steps are named by number. `steps.py split` merges the base and its deltas in order and refuses a delta that names a missing step as a `plan defect:`. `steps.py resolve <task dir>` prints the merged plan for people and for the plan-reviewer. The plan-reviewer's read rule gains "and the file its `revises:` line names". Result names, `order.py`, and `steps.py next` are unchanged. Today a replan rewrites the whole plan (T-0181: 33,296 then 50,094 bytes); target: a delta at most a quarter of the plan it revises.
+2. **Planner-written step blocks stop restating the plan.** `split` copies the goal and the planner's step block verbatim and adds no plan context (`steps.py:897`); in T-0181 step 1 the goal is 166 bytes and the planner-authored block is the other 12,900. So the fix is a planner rule and a lint, not a `split` change. The rule: a step block holds the criteria, scope, `### Read first`, and `### Do`, and cites a settled decision by anchor (`plan: <planner file>#<anchor>`) instead of restating it. `steps.py lint` resolves each anchor against the plan file named in the same step block (a step handoff carries no other plan reference) and refuses a dangling one.
+3. **A `## Carry forward` section, written once.** The scout, researcher, archaeologist, and architect each end their result with a short `## Carry forward` section (at most 15 lines: facts and paths later roles must not re-derive). The planner cites the result path and does not copy it. Planner and builder contracts say to read `## Carry forward` before searching and to search only what it does not answer. This changes five role contracts and the generated Codex agents.
 4. **What each role reads and writes.**
 
 | Role | Reads | Writes |
 | --- | --- | --- |
-| scout, researcher, architect | ticket handoff | one result with `## Carry forward` |
-| planner | ticket handoff, the `## Carry forward` sections | `plan.md` (or `plan-rev-<k>.md`) |
-| plan-reviewer | ticket handoff, `plan.md` and revisions | one result |
-| builder | its step handoff, the cited anchors in `plan.md`, its `### Read first` files | one result, with files changed |
+| scout, researcher, architect, archaeologist | ticket handoff | one result with `## Carry forward` |
+| planner | ticket handoff, the `## Carry forward` sections | `planner-L<n>.md`, or a delta `planner-L<n>-<k>.md` |
+| plan-reviewer | ticket handoff, newest planner file and the file it revises | one result |
+| builder | its step handoff, the cited anchors in the plan, its `### Read first` files | one result, with files changed |
 | verifier | its step handoff and the builder result | one result |
 | filer | the ticket handoff, results by name | one record |
 
-5. **Handoff files stay the roles' only brief.** Nothing here widens what a role may read beyond what it cites. Progressive disclosure is the rule that keeps a role's context small.
+5. **Handoff files stay the roles' only brief.** Nothing here widens what a role may read beyond what it cites.
 
 ### Targets
 
@@ -125,23 +131,25 @@ For a two-step ticket on the lean lane: at most 14 files and 60 KB of `.md`, aga
     AGENTS.md  CLAUDE.md
   messages/            new/ read/ done/ (T-0177 to T-0179, unchanged)
   notes/               notes.md and its entry file
-  evals/  proposals/  supervisor/    from T-0183 to T-0187, each with its own entry file
+  evals/  proposals/  supervisor/    planned in T-0183 to T-0187 (still proposed); each gets its own entry file when built
   _templates/
+  runtime/  dogfood/   git-ignored today (`.gitignore`), unchanged
 ```
 
-Root holds only the router, its import, `config`, and `_templates/`. `roadmap.md` moves to `tickets/roadmap.md` and `notes.md` to `notes/notes.md`.
+Root holds only the router, its import, `config`, `_templates/`, and the git-ignored `runtime/` and `dogfood/`. The target moves `roadmap.md` to `tickets/roadmap.md` and `notes.md` to `notes/notes.md`. That move is a user decision (open question 3): `tickets.py` hardcodes the root paths (`tickets.py:842, 851, 1231, 1308, 1547, 1595`), `ticket_dir` documents that they "stay at <root> either way" (`tickets.py:304`), the citing-file scan skips `<rel>/roadmap.md` by that path (`tickets.py:535`), `onboard.py:252` prints `.sdlc/roadmap.md` inside the managed `AGENTS.md` block (a template version bump for every consumer), `tickets.py roadmap` also regenerates `messages/AGENTS.md`, and ten files outside the plugin, including the repository root `AGENTS.md`, cite `.sdlc/roadmap.md`. The alternative leaves both files at the root and removes all of that, at the cost of the "root holds only entry files" rule.
 
-A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/step-1/...`). Step paths and `runs.jsonl` therefore stay relative to the ticket folder, and `steps.py`, `run.sh`, and the verifiers, which take a task directory as an argument, do not change. The layout change is in the code that finds the task directory.
+A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/step-1/...`). Step paths and `runs.jsonl` therefore stay relative to the ticket folder, and `steps.py`, `run.sh`, and the verifiers, which take a task directory as an argument, do not change. The layout change is in one resolver (below) that returns the ticket directory, the roadmap path, and the notes path; every caller that today builds `root / 'roadmap.md'` goes through it.
 
 ### What changes
 
 | Component | Change |
 | --- | --- |
-| `tickets.py` | `ticket_root` default becomes `tickets`; reads `layout: flat` for old repos. Roadmap, router, `check`, `new`, `close`, `archive`, `number` use the resolved root. `check` fails on stray root content once `layout: topics` is set |
+| `tickets.py` | A `layout: topics\|flat` config key beside `ticket_root`, and one function returning the ticket directory, roadmap path, and notes path. Roadmap, router, `check`, `new`, `close`, `archive`, `number` use it. `check` fails on stray root content once `layout: topics` is set, and `check.py:330`, which pins the literal `.sdlc/<slug>/step-1/handoff.md` in the fix skill, takes the resolved form |
 | `board.py`, `statusline.sh`, `traces/` | Resolve task dirs through `tickets.ticket_dir`, as `board.py` already does for `ticket_root` (T-0175). `traces/sources/tickets.py` already reads `ticket_root` |
-| `fanout.py` | Does not support `ticket_root` yet (known limit, `.sdlc/notes.md`). It must resolve lane ticket roots through the same function. This is a prerequisite, not an option |
+| `fanout.py` | Does not support `ticket_root` yet (known limit, `.sdlc/notes.md`). Lane ticket paths (`fanout.py:432, 508-510, 668, 678, 736, 746`) must go through `tickets.ticket_dir`. A prerequisite, not an option |
 | Hooks | No hook names `.sdlc/` paths (checked: none under `hooks/`); no change |
-| `onboard.py` | New repos get `layout: topics` and the folder entry files. Existing repos are untouched until they migrate |
+| `onboard.py` | New repos get `layout: topics` and the folder entry files. If `roadmap.md` moves, the managed block prints the resolved path and its template version bumps. Existing repos are untouched until they migrate |
+| Codex host skill | `skills/sdlc-lite/SKILL.md` has no `steps.py` mention today, so `steps.py lane` and `resolve` reach Codex only if that skill is changed. It is part of the lane ticket |
 | `check.py` | Guards that the entry files exist for each topic folder, and that docs name `tickets/` paths |
 | Docs and skills | 38 files under `scripts/`, `hooks/`, `skills/`, and `agents/` mention `.sdlc`; the migration ticket updates the paths they print and the citing-file scan lists any that cite a moved folder |
 
@@ -153,7 +161,7 @@ A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/ste
 
 `tickets.py migrate-layout [--dry-run] [--rewrite-refs]`:
 
-1. Refuses on a dirty tree or when ticket ids clash across worktrees.
+1. Refuses on a dirty tree. Id uniqueness is not a precondition: each worktree resolves its own ticket root from its own config (`tickets.py:122-129`), so a migrated tree beside a flat one keeps ids unique, and `check` reports a clash after merge.
 2. Moves ticket folders into `tickets/`, task folders without a ticket into `work/`, and `notes.md` and `roadmap.md` to their folders.
 3. Runs the existing citing-file scan (`close` and `archive` use it) for every moved folder and refuses naming each citing file, or rewrites the cites with `--rewrite-refs`.
 4. Writes `layout: topics`, regenerates the router and roadmap, and runs `check`.
@@ -170,12 +178,12 @@ Before any work, the conductor runs `steps.py lane` and follows it. After that, 
 ### Batch
 
 - **Plan reviews:** reviews required for several tickets in one fanout run are queued and run back to back on one model family. A later phase may let one reviewer run name several plans and return one verdict per plan; that changes the role contract, so it needs its own design and is not part of the first build.
-- **Verification:** when several steps of one ticket are each at builder L1 to L3, are independent, and are all checkable on the final tree, one whole-ticket verifier replaces per-step verifiers. This is the branch verifier used for T-0175 to T-0184. Per-step verification stays for any step at L4 or L5, any merge step, and the `gates green` step.
+- **Verification:** when several steps of one ticket are each at builder L1 to L3, are independent, and are all checkable on the final tree, one whole-ticket verifier replaces per-step verifiers. Per-step verification stays for any step at L4 or L5, any merge step, and the `gates green` step. **This needs a runner change first.** The family rule reads the newest builder in the verifier's own handoff dir (`run.sh:198-207`; `codex_roles.resolve` has the same shape, `codex_roles.py:100-120`). A verifier launched at the task dir finds no builder there, so the rule never fires. The branch verifier this design cites as its model ran in `.sdlc/verify-ticket-stages/step-1/` with no builder result, so its family was not enforced by the runner. Verifier L1 and L2 are Sonnet and builder L1 is Sonnet (`run.sh:102, 111-112`), so a batched verifier of L1 builds would share the family. The runner change, a leaf in the build order, makes the family rule read the newest builder of every `step-*/` when the handoff dir holds none. Until it ships, batched verification is pinned to verifier L3 (Fable), which is independent of every builder level by the current table alone. Decision for the user (open question 2).
 - **Close-outs:** one `/open-questions` round per ticket set, not per ticket.
 
 ### Parallelize
 
-Independent tickets run in `fanout` lanes when their declared file sets are disjoint and none is in another's `depends`. The planner lists the files it will change in a `Files:` line; `steps.py lane` and `fanout.py` check the overlap before launch. Shared generated files (roadmap, router, `check.py`, generated Codex agents) serialize by merge order. In this session the T-0175 merge into the T-0177 branch conflicted on duplicate planning files, and T-0185 had to wait for T-0184 to merge because both edit `check.py`; an overlap check would have made that ordering explicit.
+Independent tickets run in `fanout` lanes when their file sets are disjoint and none is in another's `depends`. Lanes plan inside the lane (`fanout.py:432`), so no plan exists at launch and a separate `Files:` line would be a second copy of a fact the plan already holds (planner rules 6 and 35 put each step's files in its scope criterion, so a `Files:` line would also break principle 2). The overlap check therefore has two points: for tickets already planned, from their scope criteria; and at merge time, from `git diff --name-only` of each lane against the integration branch, which fanout's locked merge already serializes. Shared generated files (roadmap, router, `check.py`, generated Codex agents) serialize by merge order. In this session the T-0175 merge into the T-0177 branch conflicted on duplicate planning files, and T-0185 had to wait for T-0184 to merge because both edit `check.py`; an overlap check would have made that ordering explicit.
 
 ### Skip, and record every skip
 
@@ -195,18 +203,21 @@ These are the invariants in the repository and plugin `AGENTS.md`. Nothing in th
 
 Each ticket is sized to plan at L2 where possible. L3 appears only where a ticket changes a contract other roles parse.
 
-| Order | Ticket | Work | Plan level |
+| Order | Ticket | Work (one owning file group per row) | Plan level |
 | --- | --- | --- | --- |
 | A0 | new | `scripts/footprint.py`: files, bytes, and role runs per ticket, with a selftest. Gives every later target a measurement | L2 |
-| A | T-0192 | `steps.py lane` and the conductor rule, `skips.md`, the `check` guard. Smallest, lands first | L2 |
-| B | T-0189 | Lean lane text in chain and planner, coarse-step rule, the `steps.py lint` warning | L2 |
-| C1 | T-0191 | Replan delta: `plan.md`, `plan-rev-<k>.md`, `split` applying revisions | L3 (parses plans) |
-| C2 | T-0191 | Step handoffs by reference | L3 (changes `split`) |
-| C3 | T-0191 | `## Carry forward` in scout, researcher, architect, archaeologist; reader rule in planner and builder | L2 |
-| D0 | T-0190 | `fanout.py` honors `ticket_root` (prerequisite) | L2 |
-| D1 | T-0190 | Layout resolver, `layout: topics`, `check`, `onboard.py` for new repos | L3 (touches `tickets.py` invariants) |
-| D2 | T-0190 | `migrate-layout` with the citing-file scan | L3 |
+| A1 | T-0192 | `steps.py lane` (calls the `review` decision function), `skips.md`, the `check.py` guard, conductor rule text, Codex host skill change | L3 (`steps.py` decision core and a Codex skill) |
+| B | T-0189 | Lean lane text in chain and planner, coarse-step rule, `steps.py lint` warning | L2 |
+| C1 | T-0191 | `steps.py`: `revises:` deltas in `split`, `resolve`, `plan defect` refusal; plan-reviewer read rule. One writer on `steps.py` | L3 |
+| C2 | T-0191 | Planner rule and `steps.py lint` anchor check (`plan: <file>#<anchor>`). After C1, same file | L2 |
+| C3 | T-0191 | `## Carry forward` in four role contracts, reader rule in planner and builder, `codex_roles.py generate`, focused live run. Full chain by this design's own list | L3 |
+| V | T-0192 | `run.sh` and `codex_roles.resolve`: family rule reads every `step-*/` builder when the handoff dir has none; `run-selftest.sh` case with a negative control. Enables batched verification | L3 (runner) |
+| D0 | T-0190 | `fanout.py` through `tickets.ticket_dir` (prerequisite) | L2 |
+| D1 | T-0190 | `tickets.py`: `layout` key and the one path resolver (ticket dir, roadmap, notes), `check` guards, `onboard.py` for new repos. One writer on the ticket-root code | L3 |
+| D2 | T-0190 | `migrate-layout` with the citing-file scan, after D1 (same file) | L3 |
 | D3 | T-0190 | `board.py`, `statusline.sh`, `traces/`, docs and skills path updates | L2 |
+
+Rows that share a file run in sequence, never in parallel lanes.
 
 Why this order: A and B change only decisions and guidance and pay back at once. C comes before D so migration moves the final file names once. D is last because it has the largest blast radius.
 
@@ -220,9 +231,9 @@ Why this order: A and B change only decisions and guidance and pay back at once.
 
 | Risk | Mitigation |
 | --- | --- |
-| Lean lane lets a risky change skip review | Lane is computed from facts, mandatory list matches `steps.py review`, skips need a record, negative controls prove refusal |
+| Lean lane lets a risky change skip review | Lane is computed from facts by the same function `review` uses, recomputed at each decision point, skips need a record, negative controls prove refusal |
 | Batched verification finds a failure late and the rebuild costs more | Batch only independent steps checkable on the final tree; keep per-step verification at L4/L5, merge, and gates |
-| Replan deltas make a plan unreadable | `split` and a `plan.md --resolve` view print the merged plan; a delta that does not apply cleanly is refused |
+| Replan deltas make a plan unreadable | `steps.py resolve` prints the merged plan; a delta that does not apply cleanly is refused |
 | Migration breaks citations or ids | Reuses the existing citing-file scan, dry run first, idempotent, refuses on a dirty tree |
 | `fanout.py` and `traces` miss the new layout | D0 and D3 are prerequisites with selftests on a topics-layout fixture |
 | Contract text grows while the goal is to shrink it | Each ticket reports `footprint.py` before and after, and removes text as it adds |
@@ -231,10 +242,11 @@ Why this order: A and B change only decisions and guidance and pay back at once.
 ## Open questions
 
 1. Lean thresholds: at most two steps and 12 criteria per step. Are these right for your repos?
-2. Is whole-ticket batched verification acceptable at L3 builds, or only at L1 and L2?
-3. `roadmap.md` and `notes.md` leave the `.sdlc/` root. Do other tools or docs in your repos read `.sdlc/roadmap.md` directly?
+2. Batched verification: ship it only after the runner change (row V), or ship it earlier pinned to verifier L3? Is whole-ticket batching acceptable for L3 builds at all?
+3. Do `roadmap.md` and `notes.md` leave the `.sdlc/` root? Moving them meets the "root holds only entry files" rule and costs the changes listed under Target layout (ten outside cites, a managed template bump). Leaving them is smaller. The review recommends the user decide.
 4. Migration: opt-in forever, or flip the default for existing repos after one release with a warning?
 5. Who may record a skip: the conductor alone, or only after a user prompt for anything above size S?
+6. Lean close-out: always run the filer (recommended), or add a `close` gate that reads the verifier's follow-ups?
 
 ## Validation plan
 
@@ -242,11 +254,11 @@ Every guard below has a positive case and a negative control.
 
 | Behavior | Positive | Negative control |
 | --- | --- | --- |
-| `steps.py lane` | A size-S fixture gives `fix`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`, not `lean` |
+| `steps.py lane` | A size-S fixture gives `fix`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`; a lean ticket whose handoff gains a `## Plan review` line flips to `full` on the next call |
 | Skip record | A lean ticket with `skips.md` entries closes | A lean ticket missing an entry fails `check` |
-| Lean verification independence | The lean verifier runs on a different family from the builder | A forced same-family run is refused by `run.sh` |
-| Replan delta | A delta applies and `split` produces the merged plan | A delta naming a step that does not exist is refused |
-| Step handoff by reference | The builder finds the anchored decision with only the step handoff and `plan.md` | A step handoff with a dangling anchor fails `steps.py lint` |
+| Batched verification independence | A task-dir verifier of Sonnet builds runs on a non-Sonnet family and the run record names it (after row V) | Before row V, a task-dir verifier of L1 builds is detected as unguarded by a selftest; run.sh remaps silently and has no refusal path, so the control asserts the remap, not a refusal |
+| Replan delta | A delta in `planner-L3-2.md` with `revises:` applies and `split` produces the merged plan; the plan-reviewer reads both | A delta naming a missing step is refused with a `plan defect:` last line |
+| Step block by reference | The builder finds the anchored decision with only the step handoff and the planner file | A step block with a dangling anchor fails `steps.py lint` |
 | Footprint targets | A fixture ticket on `full` and on `lean` shows the bytes and files reduction | A fixture that writes extra files fails the target check |
 | `migrate-layout` | A fixture repo with cites migrates, `check` is clean, a second run is a no-op | A stray root folder fails `check`; a dirty tree is refused; an unrewritten cite is reported |
 | Live runs | One lean ticket and one full ticket run end to end on Claude and Codex in a throwaway project, with the footprint recorded | A ticket that changes `steps.py` is routed to `full` by `lane` |
