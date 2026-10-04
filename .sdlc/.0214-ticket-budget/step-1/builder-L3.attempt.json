@@ -1,0 +1,20 @@
+{
+  "attempt_id": "67e4c61b353b4124b66b39eaf5f10b71",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "T-0214 one handwritten step per burn-down rules, L3: contract (run.sh exit 4) and four files",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T19:48:19.371024+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0214",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0214/.sdlc/0214-ticket-budget/step-1/handoff.md",
+  "owner_pid": 4553,
+  "process_pid": 4732,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T20:07:30.165092+00:00"
+}
