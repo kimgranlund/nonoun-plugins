@@ -58,12 +58,17 @@
 # concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
 # it never removes or deletes anything and never changes the exit code.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
-# saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check.
+# saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
+# 4 ticket budget at 80 percent or more with no ack.
 # Spec gate: before a plan-reviewer run (dry runs too, never in the run_lifecycle.py child, either
 # backend), run.sh runs scripts/specgate.py check on the handoff dir. A refusal prints specgate's
 # lines and "run.sh: specgate.py check refused the plan in <dir>; replan, or set SDLC_SPECGATE=off"
 # on stderr and exits 2 before the lifecycle starts, so no attempt record, .running file, or
 # runs.jsonl line exists. A pass or a skip prints nothing.
+# Budget gate: before launching a role (dry runs too, never in the run_lifecycle.py child), run.sh runs
+# budget.py status on the handoff. Exit 3 (warn or over) prints "run.sh: budget <pct>%: ask the user;
+# budget.py ack" on stderr and exits 4 before any attempt record, .running file, or runs.jsonl line;
+# any other exit (no budget, a crash) launches unchanged.
 # Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
 # session's last result, and a background task notification arriving after the report ends the session
 # with its own result ("origin":{"kind":"task-notification"}), losing the report. The log is parsed
@@ -266,6 +271,17 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && "$role" == plan-reviewer ]]; then
     [[ -z "$specgate_out" ]] || printf '%s\n' "$specgate_out" >&2
     echo "run.sh: specgate.py check refused the plan in $dir; replan, or set SDLC_SPECGATE=off" >&2
     exit 2
+  fi
+fi
+
+# Budget gate (see the header): a ticket at 80 percent of its budget with no ack stops before launch.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
+  budget_rc=0
+  budget_out=$(python3 "$plugin_root/scripts/budget.py" status "$handoff" 2>/dev/null) || budget_rc=$?
+  if [[ "$budget_rc" == 3 ]]; then
+    budget_pct=$(sed -n 's/^percent: //p' <<<"$budget_out" | head -1)
+    echo "run.sh: budget ${budget_pct}%: ask the user; budget.py ack" >&2
+    exit 4
   fi
 fi
 

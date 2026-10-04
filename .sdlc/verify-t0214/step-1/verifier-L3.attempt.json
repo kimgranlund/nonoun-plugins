@@ -1,0 +1,20 @@
+{
+  "attempt_id": "47da894b15514b499be9292db38aa169",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "T-0214 one branch verifier, L3, new exit code contract in run.sh",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T21:29:15.659744+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0214",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0214/.sdlc/verify-t0214/step-1/handoff.md",
+  "owner_pid": 90466,
+  "process_pid": 90506,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T21:54:33.678947+00:00"
+}

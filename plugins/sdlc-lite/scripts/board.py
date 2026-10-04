@@ -45,6 +45,11 @@ where ID is the ticket id and Ticket its status; a task without front matter (or
 handoff.md) gets empty cells there. With no front matter anywhere the table stays
 | Task | Step | Status | % |. --summary never shows ticket fields.
 
+Budget column: when at least one rendered ticket has a valid `budget_usd` (budget.py report, the only
+spend and ceiling logic), the table becomes | ID | Task | Ticket | Budget | Step | Status | % |, with
+the cell `$<spend>/$<ceiling> <percent>%` and an empty cell for a task with no budget. With no budget
+anywhere the output is unchanged, byte for byte.
+
 % ladder: 0 queued, 10 building, 50 built, 70 verifying, 100 verifier pass.
 A changed row ends with "· changed" (compared with a per-root state file in
 $SDLC_BOARD_STATE_DIR, else ${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state;
@@ -56,6 +61,7 @@ import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 import tickets  # same scripts/ dir: the only front matter parser
 import order  # same scripts/ dir: recorded run order for result files
 import steps  # same scripts/ dir: the batch verification rule (steps.batch_verified)
+import budget  # same scripts/ dir: per-ticket spend and ceiling (budget.report)
 
 LADDER = {'queued': 0, 'building': 10, 'built': 50, 'verifying': 70, 'verified': 100}
 
@@ -262,6 +268,17 @@ def ticket_of(task: pathlib.Path):
     return tuple(v if isinstance(v, str) else '' for v in (meta.get('id'), meta.get('status')))
 
 
+def budget_cell(task: pathlib.Path) -> str:
+    """'$<spend>/$<ceiling> <percent>%' from budget.report, or '' with no budget or on any error."""
+    try:
+        r = budget.report(task)
+    except Exception:
+        return ''
+    if not r:
+        return ''
+    return f"${r['spend']:.2f}/${budget.fmt(r['budget'])} {r['percent']}%"
+
+
 def has_step_work(task: pathlib.Path) -> bool:
     """True when the task has any recorded step work: a planner-L*.md, a step-*/handoff.md,
     or a *.running file. The step-* glob is on purpose: a superseded dir's handoff still counts."""
@@ -350,11 +367,16 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
         old = {}
     fronts = {t: ticket_of(t) for t in tasks}
     with_ticket = any(f is not None for f in fronts.values())
+    budgets = {t: budget_cell(t) if fronts[t] is not None else '' for t in tasks}
+    with_budget = any(budgets.values())
     new, out = {}, []
     if waiting:
         out.append(waiting)
         out.append('')
-    if with_ticket:
+    if with_budget:
+        out.append('| ID | Task | Ticket | Budget | Step | Status | % |')
+        out.append('|---|---|---|---|---|---|---|')
+    elif with_ticket:
         out.append('| ID | Task | Ticket | Step | Status | % |')
         out.append('|---|---|---|---|---|---|')
     else:
@@ -370,7 +392,9 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
             cell = f'{glyph} {status}'
             new[key] = cell
             changed = ' · changed' if old and old.get(key) != cell else ''
-            if with_ticket:
+            if with_budget:
+                out.append(f'| {tid} | {task} | {tstatus} | {budgets[t]} | {step} | {cell}{changed} | {pct} |')
+            elif with_ticket:
                 out.append(f'| {tid} | {task} | {tstatus} | {step} | {cell}{changed} | {pct} |')
             else:
                 out.append(f'| {task} | {step} | {cell}{changed} | {pct} |')
@@ -473,6 +497,27 @@ def selftest() -> int:
         got = render(plain, [t])
         want = '| Task | Step | Status | % |\n|---|---|---|---|\n| plain-task | task | ⏳ not planned | 0 |'
         expect(f'no front matter renders the 4-column table byte for byte, got {got!r}', got == want)
+
+        # 1b. Budget column: absent with no budget_usd anywhere (6-column table byte for byte),
+        # present once one ticket has budget_usd; a task without a budget gets an empty cell.
+        nob = tmp / 'nob'
+        t = task_dir(nob, 'ticketed', front)
+        (t / 'runs.jsonl').write_text('{"role":"builder","cost_usd":4,"attempt_id":"a1"}\n')
+        got = render(nob, [t])
+        expect(f'budget column: absent when no ticket has budget_usd, got {got!r}',
+               got == '| ID | Task | Ticket | Step | Status | % |\n|---|---|---|---|---|---|\n'
+                      '| T-0042 | ticketed | ready | task | ⏳ not planned | 0 |')
+        wb = tmp / 'wb'
+        tb = task_dir(wb, 'budgeted', front.replace('created: 2026-01-01\n', 'created: 2026-01-01\nbudget_usd: 10\n'))
+        (tb / 'runs.jsonl').write_text('{"role":"builder","cost_usd":8.5,"attempt_id":"a1"}\n')
+        tn = task_dir(wb, 'unbudgeted', front)
+        tp = task_dir(wb, 'bare', '## Goal\nno front matter\n')
+        lines = render(wb, [tb, tn, tp]).splitlines()
+        expect(f'budget column: present when a ticket has budget_usd, got {lines!r}',
+               lines[:2] == ['| ID | Task | Ticket | Budget | Step | Status | % |', '|---|---|---|---|---|---|---|']
+               and '| T-0042 | budgeted | ready | $8.50/$10 85% | task | ⏳ not planned | 0 |' in lines
+               and '| T-0042 | unbudgeted | ready |  | task | ⏳ not planned | 0 |' in lines
+               and '|  | bare |  |  | task | ⏳ not planned | 0 |' in lines)
 
         # 2. Front matter mixed with no front matter and an undecodable handoff.md.
         mixed = tmp / 'mixed'
