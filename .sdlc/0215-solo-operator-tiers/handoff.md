@@ -2,10 +2,10 @@
 id: T-0215
 title: "Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
-priority: P2         # P1 | P2 | P3
-depends: [T-0199]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+priority: P1         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-04
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
@@ -19,7 +19,7 @@ A declared session agent, `solo`, delivers one ticket end to end in a single ses
 - Done when: the agent file, mapping, lane output and check exist, an independent verifier passed, one live run per host shows a size-M ticket delivered by solo with a batched verifier, and the lane output is recorded.
 
 ## Context
-User decision 2026-10-04 after "if an orchestration-based system cannot compete with a basic single-session agent ... we have some really big problems". Evidence to read first: docs/validation/solo-vs-lean-benchmark-2026-10-04.md (in progress) and docs/other/orchestration-optimization-question.md. Build only after the benchmark result exists. Depends on T-0197 (merged) and T-0199 for the conductor text.
+User decision 2026-10-04 after "if an orchestration-based system cannot compete with a basic single-session agent ... we have some really big problems". Evidence to read first: docs/validation/solo-vs-lean-benchmark-2026-10-04.md (in progress) and docs/other/orchestration-optimization-question.md. User decision 2026-10-04 (course correction): build NOW, do not wait for the benchmark to finish; solo becomes the default lane for S and M. Priority P1. Depends on T-0197 (merged); reconcile conductor text with T-0199 when it lands, do not block on it.
 
 ## Constraints
 Keep it small and one authoritative location per fact. Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." The solo agent file stays short.

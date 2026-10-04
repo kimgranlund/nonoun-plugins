@@ -2,7 +2,7 @@
 id: T-0212
 title: "Handoff freeze: stale_input flag, rerun action, handoff edit hook"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: blocked     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L
 priority: P2         # P1 | P2 | P3
 depends: [T-0196, T-0197, T-0199, T-0211, T-0183]
@@ -23,3 +23,6 @@ Cost-control addendum to the lean SDLC design: `docs/lean-sdlc/cost-control.md` 
 
 ## Constraints
 Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's (change none), no em dashes, one authoritative location for each fact, checks that can fail with a negative control. Read the design first: docs/lean-sdlc/cost-control.md (v0.2) and docs/validation/lean-sdlc-cost-control-review.md; re-read every cited line number at plan time, since T-0196, T-0197, T-0199, T-0200, T-0201 and T-0202 move them. Conductor wording is T-0199's file (agents/conductor.md): do not restate it, and edit it only as a pointer line after T-0199 merges. Merge main into the build branch before each local merge and keep both sides of check.py and check.sh conflicts. Run roles from the main checkout's run.sh in a separate worktree. No version bump, tag, push or publish.
+
+## Deferred
+Parked 2026-10-04 by user decision (course correction): the solo-vs-lean evidence showed the default lane is the problem, so tuning the orchestrated chain is frozen until solo has run on real tickets. Revisit with that data. Status blocked, not dropped; handoff otherwise unchanged.
