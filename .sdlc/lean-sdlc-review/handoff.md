@@ -7,7 +7,7 @@ Review docs/lean-sdlc/design.md (v0.1, branch lean-sdlc) as an independent archi
 - Done when: your result lists a verdict (ready, ready after fixes, or not ready), numbered findings each with severity (blocker, major, minor), evidence as path:line or command output, and the user decisions still needed.
 
 ## Context
-The design answers feedback from another repo: planner/builder/verifier granularity excessive; .sdlc/ should always use topic sub-folders; too many planning docs, later steps should not repeat research and planning; the conductor should find the fastest path including batching reviews. Tickets T-0189 to T-0192 (.sdlc/0189-lean-chain through 0192-conductor-batching). The author is Claude Sonnet, so you must not share its family.
+The design answers feedback from another repo: planner/builder/verifier granularity excessive; .sdlc/ should always use topic sub-folders; too many planning docs, later steps should not repeat research and planning; the conductor should find the fastest path including batching reviews. Tickets T-0189 to T-0192 (.sdlc/.0189-lean-chain through 0192-conductor-batching). The author is Claude Sonnet, so you must not share its family.
 
 ## Constraints
 Read-only. No em dashes. Be concrete and do not soften.

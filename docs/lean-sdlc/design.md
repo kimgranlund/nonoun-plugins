@@ -244,6 +244,8 @@ Each ticket is sized to plan at L2 where possible. L3 appears only where a ticke
 | L15 | T-0190 | `layout-readers-docs` (D3): `board.py`, `statusline.sh`, `traces/sources/tickets.py:28`, docs and skills path updates | L2 | L14 |
 | L16 | T-0189 | `live-evidence`: one lean and one full ticket on Claude and Codex with footprint recorded | L2 | L7, L9, L15 |
 
+Filed 2026-10-04 as proposed tickets: L1 T-0193, L2 T-0194, L3 T-0195, L4 T-0196, L5 T-0197, L6 T-0198, L7 T-0199, L8 T-0200, L9 T-0201, L10 T-0202, L11 T-0203, L12 T-0204, L13 T-0205, L14 T-0206, L15 T-0207, L16 T-0208, each with its `depends` set from the Depends column. T-0189 to T-0192 are closed as superseded.
+
 Rows that share a file run in sequence, never in parallel lanes.
 
 Why this order: L1, L2, L3, L10, and L11 have no dependencies and can be filed and planned at once (rows that share a file still run in sequence). The runner and step-state pieces (L3, L4) come before the conductor rules that use them. Plan work (L8, L9) comes before layout so migration moves final file names once. Layout is last because it has the largest blast radius. T-0189 to T-0192 are the original four tickets; the sixteen rows supersede them.
