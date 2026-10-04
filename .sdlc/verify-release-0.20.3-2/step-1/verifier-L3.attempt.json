@@ -1,0 +1,20 @@
+{
+  "attempt_id": "de9c37b71f7d4cc4b9f684af92212890",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-04T17:13:16.659598+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/release-0.20.3",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/release-0.20.3/.sdlc/verify-release-0.20.3-2/step-1/handoff.md",
+  "owner_pid": 66096,
+  "process_pid": 66202,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T17:30:23.321849+00:00"
+}
