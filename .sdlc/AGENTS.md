@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:78f80b32d2a4 -->
+<!-- sdlc-lite:managed:start v1 sha256:daa62a1922e1 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 2
+- proposed: 3
   - T-0199 Conductor batching and skip rules (0199-conductor-rules)
   - T-0216 Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex (0216-solo-live-proof)
+  - T-0217 Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix (0217-solo-start-path)
 - ready: 1
   - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
 - blocked: 9

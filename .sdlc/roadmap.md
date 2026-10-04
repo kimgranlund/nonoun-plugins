@@ -221,3 +221,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0214 | [0214-ticket-budget](0214-ticket-budget/handoff.md) | Per-ticket cost budget: budget.py, run.sh exit 4, board column | chore | L | P2 | T-0187, T-0199, T-0212 | 🔵 ready |
 | T-0215 | [.0215-solo-operator-tiers](.0215-solo-operator-tiers/handoff.md) | Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets | feature | M | P1 | none | 🟢 done |
 | T-0216 | [0216-solo-live-proof](0216-solo-live-proof/handoff.md) | Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex | chore | S | P2 | T-0215 | ⏳ proposed |
+| T-0217 | [0217-solo-start-path](0217-solo-start-path/handoff.md) | Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix | bug | S | P1 | none | ⏳ proposed |
