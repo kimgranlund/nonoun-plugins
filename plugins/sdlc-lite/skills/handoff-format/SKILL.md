@@ -19,6 +19,10 @@ user-invocable: false
   plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
+                        and, under ## Skipped, one entry per full-chain role (planner, verifier
+                        per step, filer) a lean or fix lane skipped, in the form
+                        "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
+                        (reason and decided non-empty); tickets.py check and close enforce it
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md

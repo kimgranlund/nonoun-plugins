@@ -88,6 +88,9 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             as for a plain close, and the handoff gains a ## Closed section with today's date,
             `warnings acknowledged: TEXT`, and the Warnings text quoted line by line (`> `). It refuses,
             writing nothing, with --force, with --reason, with empty TEXT, or when Warnings is None
+            On every path (plain, --reason, --ack-warnings, --dry-run) close refuses, writing nothing, when
+            the ticket's skips.md records lane lean or fix but lacks a ## Skipped entry for a role the full
+            chain would have run, as check does; no skips.md or no lane record is exempt
   roadmap   regenerate <root>/roadmap.md in dependency order (refuses on any ticket problem, including,
             in numbered mode (as for new), the NNNN-<slug> prefix/id rule)
   check     validate every ticket; fail if roadmap.md is missing or stale, then on each router problem (see
@@ -96,6 +99,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing.
             Inside a git work tree it also prints `warning: external_branch <b> is not a local branch` (exit
             stays 0) for each registered branch with no refs/heads/<b>
+            Last, it fails each done ticket whose skips.md records lane lean or fix (the last `- lane:` line
+            under ## Lane) but has no ## Skipped entry (format: skills/handoff-format) for a missing planner,
+            verifier step <n> or filer result; no skips.md or no lane record (tickets closed before the
+            guard) is exempt
   number    convert a plain-slug root: rename each ticket folder <slug> to NNNN-<slug> after its id, rewrite
             every cite of <rel>/<slug> (as close's scan finds them, plus files inside the folder) to
             <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
@@ -791,6 +798,74 @@ def problems(ts, numbered=False):
 
 # ---------- roadmap ----------
 
+def skip_section(text, heading):
+    """Lines of the `## <heading>` section (from that exact line to the next `## ` line), or None if absent."""
+    out = None
+    for ln in text.splitlines():
+        if out is None:
+            if ln.rstrip() == f'## {heading}':
+                out = []
+        elif ln.startswith('## '):
+            break
+        else:
+            out.append(ln)
+    return out
+
+
+def skip_missing(d):
+    """(lane, [missing roles]) for ticket dir d's skips.md, or None when exempt: no skips.md, no ## Lane
+    section, no `- lane:` line in it, or a last lane other than lean or fix. The full chain's planner,
+    verifier per live step-<digits>/ and filer each need a counting `- skip: <role>; ...` entry under
+    ## Skipped when their result is missing (format: skills/handoff-format, Layout)."""
+    f = d / 'skips.md'
+    if not f.is_file():
+        return None
+    text = f.read_text(encoding='utf-8')
+    lanes = [ln[len('- lane: '):].split(';', 1)[0].strip()
+             for ln in (skip_section(text, 'Lane') or []) if ln.startswith('- lane: ')]
+    if not lanes or lanes[-1] not in ('lean', 'fix'):
+        return None
+    cover = {}
+    for ln in skip_section(text, 'Skipped') or []:
+        if not ln.startswith('- skip: '):
+            continue
+        parts = ln[len('- skip: '):].split(';')
+        kv = {}
+        for part in parts[1:]:
+            if ':' in part:
+                k, v = part.split(':', 1)
+                kv[k.strip()] = v.strip()
+        if kv.get('reason') and kv.get('decided'):
+            cover.setdefault(parts[0].strip(), set()).add(kv.get('step', ''))
+    missing = []
+    if not run_order.ordered(d, 'planner') and 'planner' not in cover:
+        missing.append('planner')
+    steps = sorted(int(p.name[5:]) for p in d.iterdir() if p.is_dir() and re.fullmatch(r'step-\d+', p.name))
+    for n in steps:
+        if not run_order.ordered(d / f'step-{n}', 'verifier') and not (
+                cover.get('verifier', set()) & {str(n), 'all'}):
+            missing.append(f'verifier step {n}')
+    if not run_order.ordered(d, 'filer') and 'filer' not in cover:
+        missing.append('filer')
+    return (lanes[-1], missing) if missing else None
+
+
+def skip_line(folder, got):
+    return f'{folder}: skips.md records lane {got[0]} but has no ## Skipped entry for {", ".join(got[1])}'
+
+
+def skip_problems(td, ts):
+    """One line per done ticket whose skips.md records lane lean or fix but lacks a ## Skipped entry for a
+    role the full chain would have run (skip_missing). Only check and close use it, not problems()."""
+    out = []
+    for folder, m in ts:
+        if m.get('status') == 'done':
+            got = skip_missing(td / folder)
+            if got:
+                out.append(skip_line(folder, got))
+    return out
+
+
 def file_base(root):
     """The dir file:<path> entries resolve against: the git toplevel of root, else root's parent directory
     (git missing or failing, or root outside git). GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped."""
@@ -1305,6 +1380,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
+    got = skip_missing(d)
+    if got:
+        raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
+                   f'decided: <who>" line per role under ## Skipped in {d / "skips.md"}; nothing written')
     top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=root / 'roadmap.md') if archive
                                    else (None, '', '', []))
     if refs and not rewrite_refs and not force:
@@ -1515,6 +1594,9 @@ def cmd_check(root, numbered=False):
     if stale(root, ts):
         raise Fail(f'roadmap.md: stale or missing, run tickets.py --root {root} roadmap')
     errs = router_problems(root, ts)
+    if errs:
+        raise Fail('\n'.join(errs))
+    errs = skip_problems(td, ts)
     if errs:
         raise Fail('\n'.join(errs))
     out = [f'ok: {len(ts)} tickets, roadmap current']
@@ -3629,6 +3711,67 @@ def selftest():
         rc, out, err = run(rz, 'check')
         expect(f'router: zero tickets and no AGENTS.md passes check: rc={rc} {out!r} {err!r}',
                rc == 0 and out == 'ok: 0 tickets, roadmap current')
+
+        # ---- (skips): a lean or fix lane record needs a ## Skipped entry per missing full-chain role ----
+        PL = '- skip: planner; step: all; reason: no plan; decided: lane\n'
+        FL = '- skip: filer; step: all; reason: closed by reason; decided: lane\n'
+
+        def sk_root(name, lane_lines, skipped=None, files=(), status_done=True):
+            r = pathlib.Path(tmp) / f'sk-{name}' / '.sdlc'
+            run(r, 'new', ('feature', 'lean-a'))
+            d = r / 'lean-a'
+            for f in files:
+                (d / f).parent.mkdir(parents=True, exist_ok=True)
+                (d / f).write_text('', encoding='utf-8')
+            if lane_lines is not None or skipped is not None:
+                t = '# Skips\n'
+                if lane_lines is not None:
+                    t += '\n## Lane\n' + ''.join(f'- lane: {x}; point: p; reasons: r\n' for x in lane_lines)
+                if skipped is not None:
+                    t += '\n## Skipped\n' + skipped
+                (d / 'skips.md').write_text(t, encoding='utf-8')
+            if status_done:
+                edit(r, 'lean-a', r'^status:\s*\S+', 'status: done')
+            run(r, 'roadmap')
+            return r
+
+        built = ('step-1/builder-L1.md', 'step-1/verifier-L1.md')
+        rc, _, err = run(sk_root('fix-miss', ['fix'], files=built), 'check')
+        expect(f'(skips) check: fix ticket missing planner and filer fails: rc={rc} {err!r}',
+               rc == 1 and 'lean-a: skips.md records lane fix but has no ## Skipped entry for planner, filer' in err)
+        rc, _, err = run(sk_root('fix-ok', ['fix'], PL + FL, files=built), 'check')
+        expect(f'(skips) check: entries for planner and filer pass: rc={rc} {err!r}', rc == 0)
+        rc, _, err = run(sk_root('none', None, files=built), 'check')
+        expect(f'(skips) check: done ticket with no skips.md passes: rc={rc} {err!r}', rc == 0)
+        rc, _, err = run(sk_root('nolane', None, '', files=built), 'check')
+        expect(f'(skips) check: only ## Skipped, no lane, passes: rc={rc} {err!r}', rc == 0)
+        rc, _, err = run(sk_root('tofull', ['lean', 'full'], files=built), 'check')
+        expect(f'(skips) check: lane lean then full passes: rc={rc} {err!r}', rc == 0)
+        sup = ('planner-L2.md', 'filer-L1.md', 'step-1/builder-L2.md', 'step-2.superseded-1/builder-L2.md')
+        rc, _, err = run(sk_root('verif', ['lean'], files=sup), 'check')
+        expect(f'(skips) check: step-1 without verifier fails, superseded step not named: rc={rc} {err!r}',
+               rc == 1 and err.endswith('no ## Skipped entry for verifier step 1') and 'step 2' not in err)
+        rc, _, err = run(sk_root('verif-all', ['lean'], '- skip: verifier; step: all; reason: x; decided: y\n',
+                                 files=sup), 'check')
+        expect(f'(skips) check: step: all covers a verifier: rc={rc} {err!r}', rc == 0)
+        rc, _, err = run(sk_root('empty-reason', ['fix'], '- skip: planner; step: all; reason: ; decided: y\n' + FL,
+                                 files=built), 'check')
+        expect(f'(skips) check: an empty reason does not count: rc={rc} {err!r}',
+               rc == 1 and err.endswith('entry for planner'))
+        r = sk_root('close-reason', ['fix'], files=built, status_done=False)
+        rc, _, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(skips) close --reason without entries refuses, status unchanged: rc={rc} {err!r}',
+               rc == 1 and 'no ## Skipped entry for planner, filer' in err and err.endswith('nothing written')
+               and status(r, 'lean-a') == 'proposed')
+        r = sk_root('close-filer', ['lean'], files=built, status_done=False)
+        filer('filer-L1.md', 'None', 'None', slug='lean-a')(r)
+        rc, _, err = run(r, 'close', ('lean-a',))
+        expect(f'(skips) close (filer path) on lean ticket without planner refuses: rc={rc} {err!r}',
+               rc == 1 and 'no ## Skipped entry for planner;' in err and status(r, 'lean-a') == 'proposed')
+        r = sk_root('close-ok', ['fix'], PL + FL, files=built, status_done=False)
+        rc, out, err = run(r, 'close', ('lean-a',), reason='x')
+        expect(f'(skips) close --reason with entries succeeds: rc={rc} {err!r}',
+               rc == 0 and status(r, 'lean-a') == 'done' and run(r, 'check')[0] == 0)
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
