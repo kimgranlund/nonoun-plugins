@@ -1,0 +1,13 @@
+arm=codex-push
+remote=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/supervisor-live-vhc_vwm7/remote.git
+message=20261004T004440033487Z-probe-live-probe
+push_argv=/Users/kimgranlund/.local/bin/codex exec --ephemeral --json --color never --sandbox workspace-write -c sandbox_workspace_write.network_access=false -c sandbox_workspace_write.exclude_slash_tmp=true -c sandbox_workspace_write.exclude_tmpdir_env_var=true -c 'approval_policy="never"' -m gpt-5.6-terra -c 'model_reasoning_effort="low"' -
+body_sha256=72d5be2f20709f454af0958ddbcdc26dec69193bed6bd2bc30e5822d3c3a158b
+wakes=1
+send_time=- read_time=- ack_time=-
+message_state=new
+reply=no
+remote_commits_added=0
+push_attempt=absent
+cost=unknown
+result=unverified reason=no push attempt
