@@ -8,7 +8,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 
 - Prefer the lean lane or `/fix` for plugin work. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the lean SDLC design](../../docs/lean-sdlc/design.md).
 - Shared roles live in `agents/`; workflows and output contracts live in `skills/`. Keep callers and producers consistent when changing handoffs or verdicts.
-- `agents/` also holds two session agents that are not `run.sh` roles, the `conductor` and the `messenger`. `scripts/check.py` excludes both from the run.sh agreement check and checks the messenger's file and Codex mapping.
+- `agents/` also holds three session agents that are not `run.sh` roles, the `conductor`, the `messenger`, and `solo`. `scripts/check.py` excludes all three from the run.sh agreement check and checks the messenger's and solo's files and Codex mappings.
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
 - `scripts/results.py` owns each role's result schema (key section, allowed first values, header, declared section order). `run.sh` and `steps.py` call it, `scripts/check.py` checks agent bodies against it, and no other file copies it.
 - Claude uses headless role processes. Codex supports standalone exec and native subagent exchange; read [Codex execution](../../docs/codex-role-execution.md) before changing that adapter.
