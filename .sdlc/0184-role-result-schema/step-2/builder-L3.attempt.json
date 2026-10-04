@@ -1,0 +1,20 @@
+{
+  "attempt_id": "9a859f6b692441f192e88eebf3f38996",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "0184-role-result-schema: build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T20:56:33.223070+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184/.sdlc/0184-role-result-schema/step-2/handoff.md",
+  "owner_pid": 26415,
+  "process_pid": 26461,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T21:00:38.211859+00:00"
+}

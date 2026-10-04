@@ -7,6 +7,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 - Shared roles live in `agents/`; workflows and output contracts live in `skills/`. Keep callers and producers consistent when changing handoffs or verdicts.
 - `agents/` also holds two session agents that are not `run.sh` roles, the `conductor` and the `messenger`. `scripts/check.py` excludes both from the run.sh agreement check and checks the messenger's file and Codex mapping.
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
+- `scripts/results.py` owns each role's result schema (key section, allowed first values, header, declared section order). `run.sh` and `steps.py` call it, `scripts/check.py` checks agent bodies against it, and no other file copies it.
 - Claude uses headless role processes. Codex supports standalone exec and native subagent exchange; read [Codex execution](../../docs/codex-role-execution.md) before changing that adapter.
 - Claude models and efforts live in `scripts/run.sh`, with the consumer explanation in `skills/level-rubric/SKILL.md`. `scripts/check.py` checks their agreement. Codex defaults live in `adapters/codex/models.json`.
 - After changing shared role bodies, preloaded skill bodies, Codex mappings, or the Codex prelude, run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate`. Preserve managed-agent install ownership checks.

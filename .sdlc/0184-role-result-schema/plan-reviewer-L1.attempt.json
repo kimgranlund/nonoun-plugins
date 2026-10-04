@@ -1,0 +1,20 @@
+{
+  "attempt_id": "641c98b6019a45be8a4c928a884ea289",
+  "name": "plan-reviewer-L1",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "0184-role-result-schema: plan review required",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T20:16:54.468242+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184/.sdlc/0184-role-result-schema/handoff.md",
+  "owner_pid": 45629,
+  "process_pid": 45803,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T20:20:22.660705+00:00"
+}
