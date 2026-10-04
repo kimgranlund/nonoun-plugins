@@ -9,7 +9,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
 - `scripts/results.py` owns each role's result schema (key section, allowed first values, header, declared section order). `run.sh` and `steps.py` call it, `scripts/check.py` checks agent bodies against it, and no other file copies it.
 - Claude uses headless role processes. Codex supports standalone exec and native subagent exchange; read [Codex execution](../../docs/codex-role-execution.md) before changing that adapter.
-- Claude models and efforts live in `scripts/run.sh`, with the consumer explanation in `skills/level-rubric/SKILL.md`. `scripts/check.py` checks their agreement. Codex defaults live in `adapters/codex/models.json`.
+- Claude models and efforts live in `scripts/run.sh`, with the consumer explanation in `skills/level-rubric/SKILL.md`. `scripts/check.py` checks their agreement. Codex defaults live in `adapters/codex/models.json`. A change to either table needs a new eval in `.sdlc/evals/` and `scripts/evals.py lock`, else `scripts/check.py` fails; read [the evals entry file](../../.sdlc/evals/AGENTS.md) first.
 - After changing shared role bodies, preloaded skill bodies, Codex mappings, or the Codex prelude, run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate`. Preserve managed-agent install ownership checks.
 - For runner, ticket, board, step, or fanout internals, read only the relevant entry in [the implementation reference](../../docs/maintenance/sdlc-internals.md).
 - For Claude hook registration, permissions, and background execution rules, read [hook maintenance](../../docs/maintenance/claude-hooks.md). Do not apply Claude flags or permission bypasses to Codex.
@@ -32,6 +32,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Generated agents: `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`.
 - Codex adapter: `python3 plugins/sdlc-lite/scripts/codex-selftest.py`.
 - Tickets, board, steps, ordering, fanout: the affected `plugins/sdlc-lite/scripts/<name>.py selftest`.
+- Evals and the model-table lock: `python3 plugins/sdlc-lite/scripts/evals.py check` (and `selftest`).
 - Runner: `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
 - Full regression suite: `bash plugins/sdlc-lite/scripts/check.sh`.

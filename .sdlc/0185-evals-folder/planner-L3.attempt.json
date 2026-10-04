@@ -1,0 +1,20 @@
+{
+  "attempt_id": "40855aa8aefb4768866a6ed21498b4e0",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "0185-evals-folder: task plan at L3 per ticket size",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T14:52:53.016195+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185/.sdlc/0185-evals-folder/handoff.md",
+  "owner_pid": 47168,
+  "process_pid": 47265,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T15:29:55.183339+00:00"
+}
