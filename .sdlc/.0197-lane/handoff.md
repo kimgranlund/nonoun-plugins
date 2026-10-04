@@ -2,7 +2,7 @@
 id: T-0197
 title: "steps.py lane, review_required(), and skips.md"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0194]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
