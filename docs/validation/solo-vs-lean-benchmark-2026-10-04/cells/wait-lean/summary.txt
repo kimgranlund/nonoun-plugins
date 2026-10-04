@@ -1,0 +1,2 @@
+wait lean wall=407s hidden_rc=1 check_sh_rc=0
+wait lean-resume wall=1762s hidden_rc=0 check_sh_rc=0

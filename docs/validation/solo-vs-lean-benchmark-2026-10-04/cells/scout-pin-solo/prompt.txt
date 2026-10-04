@@ -1,0 +1,15 @@
+## Goal
+On Claude Code 2.1.285 with a Max login, the model alias `haiku` resolves to Sonnet 5.5, so the sdlc-lite scout role never runs on a real Haiku. Pin the real model id for the scout at level L1 and keep the repository consistent:
+
+- In `plugins/sdlc-lite/scripts/run.sh`, the `scout:L1)` row of the role table must read `model=claude-haiku-4-5; effort=low` (spacing around the semicolon may stay as it is).
+- In `plugins/sdlc-lite/skills/level-rubric/SKILL.md`, the scout row of the level table must read exactly `| scout | L1 | Haiku 4.5 low |`, and the prose near it must say that the alias `haiku` resolves to Sonnet 5.5 on this login.
+- `python3 plugins/sdlc-lite/scripts/check.py` must still exit 0. It parses the run.sh table and the rubric, so it needs to accept the pinned id.
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` must exit 0. Changing a skill body that generated Codex agents preload means running `python3 plugins/sdlc-lite/scripts/codex_roles.py generate`.
+
+## Context
+Size S. Do not change any other role's model or effort. Do not commit, push, or publish.
+
+## Constraints
+Follow the repository guidance in AGENTS.md and plugins/sdlc-lite/AGENTS.md.
+
+Work in this repository checkout (your current directory). Read the repository guidance first, implement the change, run the checks you think appropriate, and stop when it is done. Do not commit, push, or use the network.
