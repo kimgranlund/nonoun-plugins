@@ -60,6 +60,9 @@
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
+17. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
+   in scripts/run.sh; and `budget.py` in scripts/board.py. Each pair has a negative control (the phrase removed
+   must be flagged).
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -419,6 +422,18 @@ for phrase, rels in CARRY_FORWARD.items():
         if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
         elif not carry_forward_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: carry-forward negative control not flagged')
+# Ticket budget (docstring item 17): filing sets it, run.sh gates on it (exit 4), board.py renders it.
+TICKET_BUDGET = {'budget.py set': ('skills/ticket/SKILL.md',),
+                 'budget.py': ('scripts/run.sh', 'scripts/board.py'),
+                 '4 ticket budget': ('scripts/run.sh',)}
+def ticket_budget_missing(text, phrase): return phrase not in text
+for phrase, rels in TICKET_BUDGET.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if ticket_budget_missing(text, phrase): errors.append(f'{rel}: ticket-budget text missing "{phrase}"')
+        elif not ticket_budget_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: ticket-budget negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):

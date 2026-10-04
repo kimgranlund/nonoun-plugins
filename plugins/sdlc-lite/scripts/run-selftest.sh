@@ -766,4 +766,43 @@ nrc=0
 grep -qxF "$(nline 2 planner)" "$tmp/n4e" || fail "notice: real run notice line is wrong: $(cat "$tmp/n4e")"
 ! grep -qF notice-body "$tmp/n4o" "$tmp/n4e" || fail "notice: real run printed a message body"
 
+# Budget gate: a ticket at 85 percent of budget_usd 10 with no ack exits 4 before any model call;
+# an ack raising the ceiling launches; a ticket with no budget_usd launches unchanged. Each case runs
+# planner L3 at a step-1/handoff.md with no front matter, so budget.py walks up to the ticket.
+bt="$repo/.sdlc/bt"
+mkdir -p "$bt/step-1"
+printf -- '---\nid: T-0900\ntitle: x\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-10-04\nbudget_usd: 10\n---\n' >"$bt/handoff.md"
+printf '{"role":"builder","cost_usd":8.5,"attempt_id":"seed"}\n' >"$bt/runs.jsonl"
+echo '## Goal' >"$bt/step-1/handoff.md"
+bcount() { cat "$tmp/count" 2>/dev/null || echo 0; }
+blines() { { cat "$bt"/runs.jsonl "$bt"/step-1/runs.jsonl 2>/dev/null || true; } | wc -l | tr -d ' '; }
+label="budget gate: a warn ticket with no ack exits 4 before any model call"
+n0=$(bcount); l0=$(blines); brc=0
+(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/bt/step-1/handoff.md >/dev/null 2>"$tmp/berr") || brc=$?
+[[ "$brc" == 4 ]] || fail "$label: run.sh exited $brc, want 4 ($(cat "$tmp/berr"))"
+grep -qxF "run.sh: budget 85%: ask the user; budget.py ack" "$tmp/berr" || fail "$label: stderr is '$(cat "$tmp/berr")'"
+[[ "$(bcount)" == "$n0" ]] || fail "$label: the stub claude was called"
+[[ "$(blines)" == "$l0" ]] || fail "$label: runs.jsonl gained a line"
+left=$(find "$bt" \( -name '*.running' -o -name '*.attempt.json' -o -name 'planner-*' \) -print)
+[[ -z "$left" ]] || fail "$label: the refused run left files: $(tr '\n' ' ' <<<"$left")"
+label="budget gate: an ack raising the ceiling launches"
+python3 "$here/budget.py" ack "$bt" --usd 20 --reason "selftest" >/dev/null || fail "$label: budget.py ack failed"
+n0=$(bcount); brc=0
+(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/bt/step-1/handoff.md >/dev/null 2>"$tmp/berr") || brc=$?
+[[ "$brc" == 0 ]] || fail "$label: run.sh exited $brc, want 0 ($(cat "$tmp/berr"))"
+[[ "$(bcount)" == "$((n0 + 1))" ]] || fail "$label: the stub claude was not called once"
+! grep -qF "run.sh: budget" "$tmp/berr" || fail "$label: stderr has a budget line: $(cat "$tmp/berr")"
+label="budget gate: a ticket with no budget launches unchanged"
+nb="$repo/.sdlc/nb"
+mkdir -p "$nb/step-1"
+printf -- '---\nid: T-0901\ntitle: x\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-10-04\n---\n' >"$nb/handoff.md"
+printf '{"role":"builder","cost_usd":500,"attempt_id":"seed"}\n' >"$nb/runs.jsonl"
+echo '## Goal' >"$nb/step-1/handoff.md"
+n0=$(bcount); brc=0
+(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/nb/step-1/handoff.md >/dev/null 2>"$tmp/berr") || brc=$?
+[[ "$brc" == 0 ]] || fail "$label: run.sh exited $brc, want 0 ($(cat "$tmp/berr"))"
+[[ "$(bcount)" == "$((n0 + 1))" ]] || fail "$label: the stub claude was not called once"
+[[ ! -s "$tmp/berr" ]] || fail "$label: stderr is not empty: $(cat "$tmp/berr")"
+[[ ! -e "$nb/budget-ack.md" ]] || fail "$label: a budget-ack.md was written"
+
 echo "run selftest: PASS"
