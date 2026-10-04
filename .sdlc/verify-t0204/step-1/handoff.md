@@ -5,7 +5,7 @@ Independently verify branch t0204 (T-0204) against main before it merges. The ti
 level: L3
 
 ### Do
-Read-only verification, proportionate. Run every criterion and python3 plugins/sdlc-lite/scripts/fanout.py selftest. Read the ticket Intent. In a throwaway copy under $SDLC_TMP_WORKTREES inject defects and show each is caught: break the resolver the ticket adds in fanout.py (return the wrong ticket dir, ignore the configured root, hardcode .sdlc). Confirm existing fanout behavior is unchanged (selftest). Fail only on a real defect or an unsupported claim.
+Read-only verification, proportionate. A previous branch verification failed because the branch was cut before T-0203 merged; main has since been merged in and a step 2 was built to route planned_scope through the ticket root. Run every criterion plus python3 plugins/sdlc-lite/scripts/fanout.py selftest. Confirm: planned_scope reads the configured ticket root, the ticket_root lane selftest has two lanes with planned step-1 scopes sharing a file and asserts the pair line, and the internals sentence covers the planned-scope check. In a throwaway copy under $SDLC_TMP_WORKTREES inject defects and show each is caught: (a) hardcode .sdlc in planned_scope, (b) drop the planned-scope pair line, (c) make the resolver ignore ticket_root. Fail only on a real defect or unsupported claim.
 
 ### Acceptance criteria
 - `bash plugins/sdlc-lite/scripts/check.sh`
