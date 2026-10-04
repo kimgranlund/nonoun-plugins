@@ -28,6 +28,7 @@
 - [Haiku alias probe](validation/haiku-alias-2026-09-30.md): dated probe showing the `haiku` alias resolves to Sonnet 5.5 on a Max login, and the pinned `claude-haiku-4-5` id.
 - [Messages idle-host limit](validation/messages-idle-host-limit-2026-10-01.md): dated correction stating that the messenger cannot wake an idle host, the evidence, and the workaround.
 - [Handoff freeze live run](validation/handoff-freeze-live-run.md): dated live run for T-0212 (warn mode) showing the hook allows and logs an edit of a running handoff on Claude and blocks it in deny mode, plus the runner's stale_input flag and known limits.
+- [Release 0.20.4](validation/release-0.20.4.md): the supervisor, evals lock, proposals, lane script, spec gate, runner family rule, and the solo operator agent, how they were verified, upgrade notes, and known limits..
 - [Release 0.20.3](validation/release-0.20.3.md): `messages.py wait`, the role-result schema, `footprint.py`, the lean lane text, and the idle-host limit, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.2](validation/release-0.20.2.md): the ticket root and router, mailbox, and messenger agent, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.1](validation/release-0.20.1.md): the scout pin and planner L3 on Opus, how they were verified, and known limits.
