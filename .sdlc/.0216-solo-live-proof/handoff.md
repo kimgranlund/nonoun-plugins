@@ -2,7 +2,7 @@
 id: T-0216
 title: "Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0215]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ T-0215 shipped with "no live run" as a known limit. This closes it and is the ev
 
 ## Constraints
 Keep it small. Bind evidence to the commit and models actually used. No em dashes.
+
+## Closed
+
+2026-10-04: Two steps, each verified L2 pass: step 1 recorded solo on Claude Code and Codex (hidden check 20/20 both, direct launch); step 2 recorded a conductor session starting solo through the documented path (T-0217). No planner, no filer under burn-down.
