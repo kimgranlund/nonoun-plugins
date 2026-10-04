@@ -23,9 +23,9 @@ Example, `replan-1a2b3c4d/proposal.md`:
 ```
 ---
 id: P-0001
-title: Repeated planner runs in .sdlc/0183-supervisor-script
+title: Repeated planner runs in .sdlc/.0183-supervisor-script
 status: candidate
-pattern: replan .sdlc/0183-supervisor-script
+pattern: replan .sdlc/.0183-supervisor-script
 occurrences: 2
 created: 2026-10-04
 eval:
@@ -33,8 +33,8 @@ eval:
 
 ## Evidence
 
-- .sdlc/0183-supervisor-script/runs.jsonl:1 (run) "role=planner level=L3 file=planner-L3.md"
-- .sdlc/0183-supervisor-script/runs.jsonl:9 (run) "role=planner level=L3 file=planner-L3-2.md"
+- .sdlc/.0183-supervisor-script/runs.jsonl:1 (run) "role=planner level=L3 file=planner-L3.md"
+- .sdlc/.0183-supervisor-script/runs.jsonl:9 (run) "role=planner level=L3 file=planner-L3-2.md"
 
 ## Proposed change
 
