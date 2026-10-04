@@ -20,7 +20,8 @@ user-invocable: false
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
                         and, under ## Skipped, one entry per full-chain role (planner, verifier
-                        per step, filer) a lean or fix lane skipped, in the form
+                        per step, filer) a solo, lean, or fix lane skipped (a full lane
+                        needs the results instead), in the form
                         "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
                         (reason and decided non-empty); tickets.py check and close enforce it
   step-1/
