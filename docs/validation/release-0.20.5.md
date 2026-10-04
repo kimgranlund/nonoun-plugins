@@ -17,7 +17,7 @@ This release makes the lane choice reach the agent files and adds two runner saf
 | Solo live proof | A dated record, `docs/validation/solo-live-run.md` with raw evidence beside it. It is evidence only and changes no behavior. See Known limits for exactly what it does and does not show | T-0216 |
 | Design and reference docs | `docs/maintenance/claude-hooks.md` and `docs/maintenance/sdlc-internals.md` describe the hook and `budget.py`; `docs/validation/handoff-freeze-live-run.md` is the freeze record; one line in `docs/lean-sdlc/cost-control.md` changed (in the T-0199 close commit); `docs/README.md` links the records. The freeze selftests live in `scripts/hook-selftest.sh` (the hook) and `scripts/run-selftest.sh` (stale input), the budget gate and exit 4 in `scripts/run-selftest.sh`, and the budget meter's own test is `budget.py selftest` | T-0199, T-0212, T-0214, T-0216 |
 
-T-0199, T-0214, T-0216 and T-0217 were built by a builder role under `scripts/run.sh` and checked by a verifier role. T-0212 was built directly as one handwritten step with no builder role and checked by a verifier role. The whole-branch L3 verifier that passed with injected defects is T-0214's (`.sdlc/verify-t0214`). T-0212's step verifier returned fail on a real defect and the fix was made afterwards (see Known limits). T-0199, T-0216 and T-0217 have per-step L2 verifiers only. The version bump and this record were made by hand and fact-checked by an independent reviewer: [[PENDING fact-check summary]].
+T-0199, T-0214, T-0216 and T-0217 were built by a builder role under `scripts/run.sh` and checked by a verifier role. T-0212 was built directly as one handwritten step with no builder role and checked by a verifier role. The whole-branch L3 verifier that passed with injected defects is T-0214's (`.sdlc/verify-t0214`). T-0212's step verifier returned fail on a real defect and the fix was made afterwards (see Known limits). T-0199, T-0216 and T-0217 have per-step L2 verifiers only. The version bump and this record were made by hand and fact-checked by an independent reviewer (see the end of this record).
 
 ## Upgrade notes
 
@@ -56,4 +56,4 @@ Run from the release worktree on branch `release-0.20.5` (cut directly from main
 - `git diff --check`
 - Version parity: both SDLC Lite manifests read 0.20.5; both Progressive Context manifests read 0.1.2.
 
-[[PENDING fact-check summary]]
+An independent Opus reviewer fact-checked this record against the repository in two read-only passes on 2026-10-04. The first listed 7 factual problems and 12 wording nits, all fixed. The second passed with 5 wording nits and one inconsistent sentence in `docs/validation/solo-live-run.md`, all fixed, and no third pass was run. The review text is not committed.
