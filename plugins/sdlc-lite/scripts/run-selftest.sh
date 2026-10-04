@@ -75,6 +75,12 @@
 # runs.jsonl or *.running exists; the same plan with a "guard timeout:" line dry-runs to exit 0; with
 # SDLC_SPECGATE=off a real run exits 0 and its runs.jsonl line has "specgate":"off". The no-planner
 # and header-only plan-reviewer cases above keep exit 0. Its failures read "spec gate: <reason>".
+# Stale input (handoff freeze, warn mode): a real planner run whose stub claude edits handoff.md before
+# printing its result exits 0, writes a runs.jsonl line with stale_input true and a handoff_sha256 of the
+# launch-time bytes, and prints "run.sh: stale input: <handoff> changed while planner ran" once; the same
+# run with no edit, an edit of a sibling file, and a stub that never reads the handoff but whose handoff
+# changed (the hash decides) behave as stated: no edit and sibling edit give stale_input false and no
+# stderr line, the never-reads stub is still flagged. Its failures read "stale input: <reason>".
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -822,5 +828,47 @@ res $'## Goal\nx'
   "$here/run.sh" planner L1 .sdlc/t/handoff.md >/dev/null 2>&1) || fail "spec gate: planner run with SDLC_SPECGATE=off failed"
 ! tail -n 1 "$sgd/runs.jsonl" | jq -e 'has("specgate")' >/dev/null 2>&1 \
   || fail "spec gate: a planner run line carries a specgate key: $(tail -n 1 "$sgd/runs.jsonl")"
+# Stale input: lifecycle records the launch hash; run.sh flags a handoff that changed during the run.
+srepo="$tmp/srepo"
+mkdir -p "$srepo/.sdlc/s" "$tmp/sbin"
+echo '## Goal' >"$srepo/.sdlc/s/handoff.md"
+git -C "$srepo" init -q
+git -C "$srepo" add -A
+git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+cat >"$tmp/sbin/claude" <<'SEOF'
+#!/usr/bin/env bash
+case "${STUB_STALE:-none}" in
+  edit) echo "scope grew" >>"$STUB_HANDOFF" ;;
+  sibling) echo "other" >>"$(dirname "$STUB_HANDOFF")/notes.md" ;;
+  noread) echo "edited without reading" >>"$STUB_HANDOFF" ;;
+esac
+printf '{"type":"result","is_error":false,"result":"## Goal\\nstale probe","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n'
+SEOF
+chmod +x "$tmp/sbin/claude"
+stale_run() {
+  rm -f "$srepo/.sdlc/s"/planner-L*.md "$srepo/.sdlc/s"/*.log "$srepo/.sdlc/s"/*.attempt.json "$srepo/.sdlc/s/runs.jsonl" "$srepo/.sdlc/s/notes.md"
+  echo '## Goal' >"$srepo/.sdlc/s/handoff.md"
+  launch_sha=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$srepo/.sdlc/s/handoff.md")
+  src=0
+  (cd "$srepo" && STUB_STALE="$1" STUB_HANDOFF="$srepo/.sdlc/s/handoff.md" PATH="$tmp/sbin:$PATH" \
+    "$here/run.sh" planner L2 .sdlc/s/handoff.md >"$tmp/s_o" 2>"$tmp/s_e") || src=$?
+  [[ $src == 0 ]] || fail "stale input: $1: run.sh exited $src: $(cat "$tmp/s_e")"
+  got_stale=$(jq -r '.stale_input' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
+  got_sha=$(jq -r '.handoff_sha256' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
+  nlines=$(grep -c "run.sh: stale input:" "$tmp/s_e" || true)
+}
+stale_run none
+[[ "$got_stale" == false ]] || fail "stale input: no edit: stale_input is $got_stale, want false"
+[[ "$nlines" == 0 ]] || fail "stale input: no edit printed a stale line"
+[[ "$got_sha" == "$launch_sha" ]] || fail "stale input: no edit: handoff_sha256 '$got_sha' is not the launch hash"
+stale_run sibling
+[[ "$got_stale" == false && "$nlines" == 0 ]] || fail "stale input: a sibling-file edit was flagged"
+stale_run edit
+[[ "$got_stale" == true ]] || fail "stale input: edited handoff: stale_input is $got_stale, want true"
+[[ "$nlines" == 1 ]] || fail "stale input: edited handoff: stale line printed $nlines times, want 1"
+[[ "$got_sha" == "$launch_sha" ]] || fail "stale input: edited handoff: handoff_sha256 is not the launch hash"
+stale_run noread
+[[ "$got_stale" == true && "$nlines" == 1 ]] || fail "stale input: a role that never read the handoff was not flagged"
 
 echo "run selftest: PASS"

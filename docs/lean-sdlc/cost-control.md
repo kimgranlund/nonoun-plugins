@@ -31,7 +31,7 @@ So a mechanical gate removes about a quarter of replans and 30 percent of findin
 
 ## Conductor text is T-0199's
 
-T-0199 (`.sdlc/0199-conductor-rules`, commit 36875d4 on main) owns `agents/conductor.md` and the conductor's objective, lane-first routing, the `Lane: <lane> because <reason>` line, and the stop rules, including that a second replan verdict, or a ticket past its budget once the budget ticket lands, is a hard stop that comes to the user. Nothing below restates that text. Each item names only the machinery T-0199's text calls (a script, an exit code, a file), and where an item needs one more conductor sentence, it lands as a change to T-0199's text after T-0199 merges, never as a parallel edit. T-0209 (maintainer lean default, filed on main) is the maintainer-side line and is also not repeated here.
+T-0199 (`.sdlc/.0199-conductor-rules`, commit 36875d4 on main) owns `agents/conductor.md` and the conductor's objective, lane-first routing, the `Lane: <lane> because <reason>` line, and the stop rules, including that a second replan verdict, or a ticket past its budget once the budget ticket lands, is a hard stop that comes to the user. Nothing below restates that text. Each item names only the machinery T-0199's text calls (a script, an exit code, a file), and where an item needs one more conductor sentence, it lands as a change to T-0199's text after T-0199 merges, never as a parallel edit. T-0209 (maintainer lean default, filed on main) is the maintainer-side line and is also not repeated here.
 
 ## What already exists
 

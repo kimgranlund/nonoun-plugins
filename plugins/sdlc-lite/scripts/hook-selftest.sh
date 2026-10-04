@@ -26,6 +26,11 @@
 # SDLC_ROLE=conductor), denies an Agent spawn of an sdlc-lite: agent or another plugin's builder,
 # verifier, reviewer, planner, or checker agent with a stderr naming run.sh, and allows Explore,
 # general-purpose, harness:fact-finder, non-conductor sessions, and non-Agent tools.
+# warn-handoff-edit.sh, for an Edit, Write, or NotebookEdit whose file is named handoff.md with a
+# <role>-<level>.running file beside it, allows the edit (exit 0), prints a freeze warning, and
+# appends one line to stale-edits.log beside the handoff; with SDLC_HANDOFF_EDIT_MODE=deny the same
+# case exits 2 with the same message. No .running file, another file name, and a .running file in a
+# different directory pass silently with no log line.
 # Publish phrases, kill-pattern words, and root-search phrases are built with printf so this
 # file never holds one as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
@@ -40,6 +45,7 @@ sw="$hooks/block-stray-worktree.sh"
 rf="$hooks/block-repo-format.sh"
 ds="$hooks/block-disk-scan.sh"
 rs="$hooks/block-role-spawn.sh"
+wh="$hooks/warn-handoff-edit.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -377,5 +383,36 @@ probecond|sdlc-lite:builder||0
 CASES
 run "$rs" "$(rsj sdlc-lite:conductor sdlc-lite:builder Bash)" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "role-spawn tool Bash + conductor: exit $rc, want 0"
+
+# warn-handoff-edit.sh: warn mode allows and logs; deny mode blocks; everything else passes silently.
+wtmp=$(mktemp -d); trap 'rm -rf "$wtmp"' EXIT
+mkdir -p "$wtmp/live" "$wtmp/idle" "$wtmp/other"
+: >"$wtmp/live/handoff.md"; : >"$wtmp/idle/handoff.md"; : >"$wtmp/live/notes.md"; : >"$wtmp/other/handoff.md"
+: >"$wtmp/live/planner-L3.running"; : >"$wtmp/other/builder-L1.running"; mkdir -p "$wtmp/sep" && : >"$wtmp/sep/builder-L1.running"
+wj() { printf '{"tool_name":"%s","tool_input":{"%s":"%s"}}' "${3:-Edit}" "${4:-file_path}" "$1"; }
+out=$(run "$wh" "$(wj "$wtmp/live/handoff.md")"); rc=$?
+[[ $rc -eq 0 ]] || fail "handoff-edit warn: exit $rc, want 0"
+grep -q "handoff freeze" <<<"$out" || fail "handoff-edit warn: stderr lacks the freeze warning"
+grep -q "planner-L3" <<<"$out" || fail "handoff-edit warn: stderr does not name the running role"
+[[ "$(grep -c "edited while planner-L3 ran" "$wtmp/live/stale-edits.log")" == 1 ]] || fail "handoff-edit warn: log line missing or repeated"
+run "$wh" "$(wj "$wtmp/live/handoff.md" x Write)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "handoff-edit warn via Write: exit $rc, want 0"
+run "$wh" "$(wj "$wtmp/live/handoff.md" x NotebookEdit notebook_path)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "handoff-edit warn via NotebookEdit: exit $rc, want 0"
+[[ "$(wc -l <"$wtmp/live/stale-edits.log" | tr -d ' ')" == 3 ]] || fail "handoff-edit: three warned edits did not log three lines"
+out=$(run "$wh" "$(wj "$wtmp/live/handoff.md")" SDLC_HANDOFF_EDIT_MODE=deny); rc=$?
+[[ $rc -eq 2 ]] || fail "handoff-edit deny: exit $rc, want 2 (negative control: deny turns the same case into a denial)"
+grep -q "handoff freeze" <<<"$out" || fail "handoff-edit deny: stderr lacks the freeze message"
+out=$(run "$wh" "$(wj "$wtmp/idle/handoff.md")"); rc=$?
+[[ $rc -eq 0 && -z "$out" && ! -e "$wtmp/idle/stale-edits.log" ]] || fail "handoff-edit: no .running beside the handoff warned or logged (rc=$rc)"
+before=$(wc -l <"$wtmp/live/stale-edits.log" | tr -d ' ')
+[[ "$before" == 4 ]] || fail "handoff-edit: the denied attempt was not logged (log has $before lines, want 4)"
+out=$(run "$wh" "$(wj "$wtmp/live/notes.md")"); rc=$?
+[[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: another file name warned (rc=$rc)"
+[[ "$(wc -l <"$wtmp/live/stale-edits.log" | tr -d ' ')" == "$before" ]] || fail "handoff-edit: another file name changed the log"
+out=$(run "$wh" "$(wj "$wtmp/other/handoff.md")" ); rc=$?
+[[ $rc -eq 0 && "$out" == *builder-L1* ]] || fail "handoff-edit: a different handoff's own .running was not used (rc=$rc)"
+out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
+[[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: missing file_path was not a silent pass (rc=$rc)"
 
 echo "hook selftest: PASS"

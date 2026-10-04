@@ -23,6 +23,13 @@ The launcher picks the tier from the ticket size and starts this session at that
 | M | M | Sonnet xhigh | `sdlc-solo-l2` (gpt-6.1-sol high) |
 | L | L | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
 
+## Start
+In Claude Code, `hooks/block-role-spawn.sh` denies a conductor's Agent-tool spawn of any `sdlc-lite:` agent, so a conductor starts solo as a headless session from Bash at the project root, with the tier's model and effort from the table, under the interactive vs headless rule in agents/conductor.md; `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work):
+
+`SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`
+
+On Codex the conductor starts `sdlc-solo-l1`, `sdlc-solo-l2`, or `sdlc-solo-l3` for tier S, M, or L through the existing Codex role path.
+
 ## Verification
 - Tier S: none beyond your checks, as /fix today.
 - Tiers M and L: once all checks pass, write the task handoff's `## Acceptance criteria` if it has none, then run one batched independent verifier over the whole ticket: `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier <level> <task dir>/handoff.md`, under the interactive vs headless rule in agents/conductor.md. Pick the level so the verifier is a different model family from yours, because solo writes no builder result for run.sh's family rule to read: tier M (Sonnet) uses `verifier L3` (Fable); tier L (Opus) uses `verifier L2` (Sonnet). On Codex the verifier is `sdlc-verifier-l3`.

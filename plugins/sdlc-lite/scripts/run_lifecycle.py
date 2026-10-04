@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timezone
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -88,11 +89,13 @@ def run(role, level, handoff, backend, model, effort):
                     transport=transport, model=model, effort=effort,
                     routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
                     reason_source='caller' if reason else 'fallback', status='running', started_at=now(),
-                    project=str(Path.cwd()), handoff=str(handoff.resolve()), owner_pid=os.getpid())
+                    project=str(Path.cwd()), handoff=str(handoff.resolve()), owner_pid=os.getpid(),
+                    handoff_sha256=hashlib.sha256(handoff.read_bytes()).hexdigest())
         path = directory / (name + '.attempt.json')
         write(path, data)
         env = dict(os.environ, SDLC_ATTEMPT_ID=attempt, SDLC_ATTEMPT_NAME=name,
-                   SDLC_ROUTING_REASON=data['routing_reason'], SDLC_LIFECYCLE_CHILD='1')
+                   SDLC_ROUTING_REASON=data['routing_reason'], SDLC_LIFECYCLE_CHILD='1',
+                   SDLC_HANDOFF_SHA256=data['handoff_sha256'])
         process = None
         interrupted = []
         def stop(sig, _):

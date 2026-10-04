@@ -1,0 +1,8 @@
+{
+  "result": "A hook is blocking the edit. The handoff file is currently being read by planner-L3, and the safety check prevents edits that would invalidate that result. The hook says scope changes belong in a new ticket.",
+  "total_cost_usd": 0.0148542,
+  "num_turns": 3,
+  "modelUsage": [
+    "claude-haiku-4-5"
+  ]
+}

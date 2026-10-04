@@ -69,8 +69,20 @@
    `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; and the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist. Negative controls:
    each phrase removed, no `solo` key, a changed `solo` entry, and one TOML missing must be flagged.
+18. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
+   still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
+   dispatch line `Lane: <lane> because <reason>`, (3) the stop rules `hard stop that comes to the user`, and (4) the
+   thin-conductor rule `take back conclusions, not file contents or logs`. Each has a negative control (the phrase
+   removed must be flagged).
+18. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
+   names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
+   adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
+   it. Each has a negative control (the phrase, file, or registration removed must be flagged).
+19. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
+   S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
+   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
 """
-import re, sys, json, pathlib, subprocess, tempfile, shutil
+import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent.parent)
 errors = []
@@ -490,6 +502,19 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
+# Conductor rules (docstring item 18): philosophy and objective, lane first, stop rules, thin conductor.
+CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
+                   'context and instruction.',
+                   'cheapest path that still passes independent verification',
+                   'Lane first: run `steps.py lane',
+                   'Lane: <lane> because <reason>',
+                   'hard stop that comes to the user',
+                   'take back conclusions, not file contents or logs')
+def conductor_rule_missing(text, phrase): return phrase not in text
+for phrase in CONDUCTOR_RULES:
+    if conductor_rule_missing(ct, phrase): errors.append(f'{CONDUCTOR}: conductor rules missing "{phrase}"')
+    elif not conductor_rule_missing(ct.replace(phrase, ''), phrase):
+        errors.append(f'check.py: conductor rules negative control not flagged for "{phrase}"')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
@@ -536,6 +561,39 @@ if sdlc.is_dir():
                 errors.append('check.py: evals lock guard negative control not flagged')
 else:
     print(f'skip: evals lock guard (no {sdlc})')
+# Handoff freeze (docstring item 18): runner, lifecycle, hook file, registration, and the hooks doc agree.
+FREEZE_RUN = ('SDLC_HANDOFF_SHA256', 'stale_input', 'stale input:')
+FREEZE_LIFE = ('SDLC_HANDOFF_SHA256', 'handoff_sha256')
+def freeze_missing(run_text, life_text, hook_ok, hooks_json, docs_text):
+    out = [f'handoff freeze: scripts/run.sh missing "{w}"' for w in FREEZE_RUN if w not in run_text]
+    out += [f'handoff freeze: scripts/run_lifecycle.py missing "{w}"' for w in FREEZE_LIFE if w not in life_text]
+    if not hook_ok: out.append('handoff freeze: hooks/warn-handoff-edit.sh missing or not executable')
+    if not re.search(r'"matcher":\s*"Edit\|Write\|NotebookEdit"[^]]*warn-handoff-edit\.sh', hooks_json):
+        out.append('handoff freeze: adapters/claude/hooks.json does not register warn-handoff-edit.sh under Edit|Write|NotebookEdit')
+    if 'warn-handoff-edit.sh' not in docs_text: out.append('handoff freeze: docs/maintenance/claude-hooks.md does not name warn-handoff-edit.sh')
+    return out
+def _rd(path): return path.read_text() if path.is_file() else ''
+_hook = root/'hooks/warn-handoff-edit.sh'
+_hook_ok = _hook.is_file() and os.access(_hook, os.X_OK)
+_fr = (_rd(root/'scripts/run.sh'), _rd(root/'scripts/run_lifecycle.py'), _hook_ok, _rd(root/'adapters/claude/hooks.json'),
+       _rd(root.resolve().parent.parent/'docs/maintenance/claude-hooks.md'))
+errors.extend(freeze_missing(*_fr))
+for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.sh'), (3, 'warn-handoff-edit.sh')):
+    _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
+    if not freeze_missing(*_args): errors.append(f'check.py: handoff freeze guard negative control not flagged for "{_w}"')
+if not freeze_missing(_fr[0], _fr[1], False, _fr[3], _fr[4]): errors.append('check.py: handoff freeze guard negative control not flagged for the hook file')
+# Solo start path (docstring item 19): solo.md holds the start command; every routing text sends S and M to solo.
+SOLO_ROUTE = (('agents/solo.md', '--agent sdlc-lite:solo'),
+              (CONDUCTOR, 'Size S and M go to `solo` by default'),
+              ('skills/fix/SKILL.md', 'size S and M go to `solo`'),
+              ('AGENTS.md', 'Size S and M plugin work goes to `solo` by default'),
+              ('.claude/agents/sdlc-lite-author.md', '`solo` for size S and M by default'))
+def solo_route_missing(text, phrase): return phrase not in text
+for rel, phrase in SOLO_ROUTE:
+    srt = _rd(root.resolve().parent.parent/rel) if rel.startswith('.claude/') else _rd(root/rel)
+    if solo_route_missing(srt, phrase): errors.append(f'{rel}: solo start path missing "{phrase}"')
+    elif not solo_route_missing(srt.replace(phrase, ''), phrase):
+        errors.append(f'check.py: solo start path negative control not flagged for "{phrase}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
