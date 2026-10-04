@@ -193,3 +193,23 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0186 | [0186-proposals-folder](0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🔵 ready |
 | T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | 🔵 ready |
 | T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | 🟢 done |
+| T-0189 | [.0189-lean-chain](.0189-lean-chain/handoff.md) | Lean chain: fewer, coarser planner builder verifier steps for size M work | chore | M | P2 | none | 🟢 done |
+| T-0190 | [.0190-sdlc-topic-subfolders](.0190-sdlc-topic-subfolders/handoff.md) | Organize every .sdlc/ content type into topic sub-folders | chore | M | P2 | none | 🟢 done |
+| T-0191 | [.0191-single-plan-record](.0191-single-plan-record/handoff.md) | One plan record per ticket; later roles do not repeat research or planning | chore | M | P2 | none | 🟢 done |
+| T-0192 | [.0192-conductor-batching](.0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | M | P2 | none | 🟢 done |
+| T-0193 | [0193-footprint](0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | ⏳ proposed |
+| T-0194 | [0194-lean-lane-text](0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | M | P2 | none | ⏳ proposed |
+| T-0195 | [0195-runner-family-task-dir](0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | ⏳ proposed |
+| T-0196 | [0196-batch-state](0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | ⏳ proposed |
+| T-0197 | [0197-lane](0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L | P2 | T-0194 | ⏳ proposed |
+| T-0198 | [0198-skips-guard](0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | ⏳ proposed |
+| T-0199 | [0199-conductor-rules](0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | M | P2 | T-0196, T-0198 | ⏳ proposed |
+| T-0200 | [0200-plan-merge](0200-plan-merge/handoff.md) | Replan by delta: merged plan view and steps.py resolve | feature | L | P2 | T-0197 | ⏳ proposed |
+| T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | M | P2 | T-0200 | ⏳ proposed |
+| T-0202 | [0202-carry-forward](0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | ⏳ proposed |
+| T-0203 | [0203-fanout-overlap](0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | M | P2 | none | ⏳ proposed |
+| T-0204 | [0204-fanout-resolver](0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | ⏳ proposed |
+| T-0205 | [0205-layout-resolver](0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | ⏳ proposed |
+| T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | ⏳ proposed |
+| T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | ⏳ proposed |
+| T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | M | P2 | T-0199, T-0201, T-0207 | ⏳ proposed |
