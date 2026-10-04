@@ -35,3 +35,7 @@ Evidence: [warn](handoff-freeze-live-run/claude-warn.json), [deny](handoff-freez
 - No Codex arm. Codex has no hooks. The runner flag works on both backends because `run_lifecycle.py` wraps both, but the selftest used the Claude stub; a real Codex run with a mid-run edit was not made.
 - The hook warns on stderr and the log; with exit 0 the model may not see the warning text on every host version. The deny arm shows the model does see a denial.
 - The ticket's live criterion "a planner run ends in rerun" is not met, because the rerun action is not built.
+
+## Verification
+
+An independent L3 verifier (Fable, via `run.sh` from a frozen runner checkout, `.sdlc/0212-handoff-freeze/step-1/verifier-L3.md`) ran every criterion and found one defect: `scripts/check-packaging.py` pinned the PreToolUse route count at 3, and the new matcher made it 4. It was fixed (the pin is now 4 plus a check that the `Edit|Write|NotebookEdit` route names the hook; observed: removing the route makes it fail) and was not re-verified by a second role run, in line with the burn-down rules. All other criteria passed, including both negative controls and the real hook probe. The verifier also noted the record's JSON evidence files hold only result, cost, turns and model, so the live-run table rests on those fields and on the stale-edits.log lines shown above. After merging main in, `bash plugins/sdlc-lite/scripts/check.sh`, `check-packaging.py`, `codex_roles.py generate --check`, `tickets.py check`, `run-selftest.sh` and `hook-selftest.sh` pass.
