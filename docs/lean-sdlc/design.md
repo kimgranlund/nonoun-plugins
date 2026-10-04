@@ -1,8 +1,8 @@
 # Lean SDLC design
 
-Version 0.2, 2026-10-03. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
+Version 0.3, 2026-10-04. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
 
-v0.2 applies the independent review (`../validation/lean-sdlc-design-review.md`, verdict not ready at v0.1): the plan record keeps the existing planner result names, batched verification needs a runner change first, the layout move is re-scoped around a path resolver, and the build order is re-cut so each file has one writer.
+v0.3 records the user's decisions (see Resolved decisions) and applies the second independent review (`../validation/lean-sdlc-design-review-2.md`). v0.2 applied the first independent review (`../validation/lean-sdlc-design-review.md`, verdict not ready at v0.1): the plan record keeps the existing planner result names, batched verification needs a runner change first, the layout move is re-scoped around a path resolver, and the build order is re-cut so each file has one writer.
 
 ## Problem
 
@@ -36,6 +36,20 @@ What the numbers say:
 - Contract text alone is 70,671 bytes across the conductor, planner, filer, builder, verifier, plan-reviewer, chain, fix, and handoff-format files, which every role start pays in part.
 
 `footprint.py` (step A0 below) makes this measurement repeatable. These figures are the "before" for every target in this document.
+
+## Resolved decisions
+
+Made by the user on 2026-10-04.
+
+1. Batched verification waits for the runner change. `run.sh` and `codex_roles.resolve` are fixed so the verifier family rule fires for a verifier launched at the task directory; after that, batching is allowed at any builder level (not pinned to verifier L3).
+2. The lean lane always runs the filer. No new `close` gate.
+3. `roadmap.md` and `notes.md` move out of the `.sdlc/` root into topic folders (`tickets/roadmap.md`, `notes/notes.md`), with a migration.
+
+Defaults chosen by the author for the remaining questions, because the user asked for the safest option. Each is a default the user may change:
+
+4. Lean thresholds: at most two steps and 12 criteria per step (the stricter end; raise only after `footprint.py` measures a fixture).
+5. Migration: opt-in. Existing repos keep `layout: flat` and get a `check` warning that names `migrate-layout`; no release flips the default for them. New repos get `layout: topics`.
+6. Skips: the conductor may record only a skip that `steps.py lane` permits for the current lane. Any other skip needs the user's approval through AskUserQuestion before it is recorded, at every size.
 
 ## Principles
 
@@ -178,7 +192,7 @@ Before any work, the conductor runs `steps.py lane` and follows it. After that, 
 ### Batch
 
 - **Plan reviews:** reviews required for several tickets in one fanout run are queued and run back to back on one model family. A later phase may let one reviewer run name several plans and return one verdict per plan; that changes the role contract, so it needs its own design and is not part of the first build.
-- **Verification:** when several steps of one ticket are each at builder L1 to L3, are independent, and are all checkable on the final tree, one whole-ticket verifier replaces per-step verifiers. Per-step verification stays for any step at L4 or L5, any merge step, and the `gates green` step. **This needs a runner change first.** The family rule reads the newest builder in the verifier's own handoff dir (`run.sh:198-207`; `codex_roles.resolve` has the same shape, `codex_roles.py:100-120`). A verifier launched at the task dir finds no builder there, so the rule never fires. The branch verifier this design cites as its model ran in `.sdlc/verify-ticket-stages/step-1/` with no builder result, so its family was not enforced by the runner. Verifier L1 and L2 are Sonnet and builder L1 is Sonnet (`run.sh:102, 111-112`), so a batched verifier of L1 builds would share the family. The runner change, a leaf in the build order, makes the family rule read the newest builder of every `step-*/` when the handoff dir holds none. Until it ships, batched verification is pinned to verifier L3 (Fable), which is independent of every builder level by the current table alone. Decision for the user (open question 2).
+- **Verification:** when several steps of one ticket are each at builder L1 to L3, are independent, and are all checkable on the final tree, one whole-ticket verifier replaces per-step verifiers. Per-step verification stays for any step at L4 or L5, any merge step, and the `gates green` step. **This needs a runner change first.** The family rule reads the newest builder in the verifier's own handoff dir (`run.sh:198-207`; `codex_roles.resolve` has the same shape, `codex_roles.py:100-120`). A verifier launched at the task dir finds no builder there, so the rule never fires. The branch verifier this design cites as its model ran in `.sdlc/verify-ticket-stages/step-1/` with no builder result, so its family was not enforced by the runner. Verifier L1 and L2 are Sonnet and builder L1 is Sonnet (`run.sh:102, 111-112`), so a batched verifier of L1 builds would share the family. The runner change, a leaf in the build order, makes the family rule read the newest builder of every `step-*/` when the handoff dir holds none. Until it ships, batched verification is not used (resolved decision 1); once it ships it is allowed at any builder level.
 - **Close-outs:** one `/open-questions` round per ticket set, not per ticket.
 
 ### Parallelize
@@ -206,12 +220,12 @@ Each ticket is sized to plan at L2 where possible. L3 appears only where a ticke
 | Order | Ticket | Work (one owning file group per row) | Plan level |
 | --- | --- | --- | --- |
 | A0 | new | `scripts/footprint.py`: files, bytes, and role runs per ticket, with a selftest. Gives every later target a measurement | L2 |
-| A1 | T-0192 | `steps.py lane` (calls the `review` decision function), `skips.md`, the `check.py` guard, conductor rule text, Codex host skill change | L3 (`steps.py` decision core and a Codex skill) |
+| V | T-0192 | `run.sh` and `codex_roles.resolve`: family rule reads the newest builder of every `step-*/` when the handoff dir has none; `run-selftest.sh` and `codex-selftest.py` cases with negative controls. Enables batched verification at any level | L3 (runner) |
+| A1 | T-0192 | `steps.py lane` (calls the `review` decision function), `skips.md`, the `check.py` guard, conductor rule text including the batching rules (depends on row V), Codex host skill change | L3 (`steps.py` decision core and a Codex skill) |
 | B | T-0189 | Lean lane text in chain and planner, coarse-step rule, `steps.py lint` warning | L2 |
 | C1 | T-0191 | `steps.py`: `revises:` deltas in `split`, `resolve`, `plan defect` refusal; plan-reviewer read rule. One writer on `steps.py` | L3 |
 | C2 | T-0191 | Planner rule and `steps.py lint` anchor check (`plan: <file>#<anchor>`). After C1, same file | L2 |
 | C3 | T-0191 | `## Carry forward` in four role contracts, reader rule in planner and builder, `codex_roles.py generate`, focused live run. Full chain by this design's own list | L3 |
-| V | T-0192 | `run.sh` and `codex_roles.resolve`: family rule reads every `step-*/` builder when the handoff dir has none; `run-selftest.sh` case with a negative control. Enables batched verification | L3 (runner) |
 | D0 | T-0190 | `fanout.py` through `tickets.ticket_dir` (prerequisite) | L2 |
 | D1 | T-0190 | `tickets.py`: `layout` key and the one path resolver (ticket dir, roadmap, notes), `check` guards, `onboard.py` for new repos. One writer on the ticket-root code | L3 |
 | D2 | T-0190 | `migrate-layout` with the citing-file scan, after D1 (same file) | L3 |
@@ -241,12 +255,7 @@ Why this order: A and B change only decisions and guidance and pay back at once.
 
 ## Open questions
 
-1. Lean thresholds: at most two steps and 12 criteria per step. Are these right for your repos?
-2. Batched verification: ship it only after the runner change (row V), or ship it earlier pinned to verifier L3? Is whole-ticket batching acceptable for L3 builds at all?
-3. Do `roadmap.md` and `notes.md` leave the `.sdlc/` root? Moving them meets the "root holds only entry files" rule and costs the changes listed under Target layout (ten outside cites, a managed template bump). Leaving them is smaller. The review recommends the user decide.
-4. Migration: opt-in forever, or flip the default for existing repos after one release with a warning?
-5. Who may record a skip: the conductor alone, or only after a user prompt for anything above size S?
-6. Lean close-out: always run the filer (recommended), or add a `close` gate that reads the verifier's follow-ups?
+None blocking. Questions 1, 4, and 5 of v0.2 are settled by the defaults under Resolved decisions, which the user may change. Questions 2, 3, and 6 are resolved decisions.
 
 ## Validation plan
 
