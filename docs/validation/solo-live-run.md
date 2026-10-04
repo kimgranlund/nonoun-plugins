@@ -4,7 +4,7 @@ Recorded: 2026-10-04
 
 Live run for ticket T-0216. One size-M ticket in a throwaway Python project went through `steps.py lane`, which printed `solo`. The `solo` agent, started directly with a typed brief, then delivered it at tier M on Claude Code (Sonnet, xhigh) and on Codex (`sdlc-solo-l2`, gpt-6.1-sol high), and one independent batched verifier checked the whole ticket on a different model family. Both arms passed a hidden check the delivering agent never saw, and both verifiers returned pass. On Claude Code the solo launched its own verifier. On Codex it did not, so the verifier was launched from outside the session (see Limits). One trial per arm. Raw evidence is in [solo-live-run/](solo-live-run/).
 
-Those two arms were direct launches: the run itself started each solo session with a typed brief. The section [Claude Code through a conductor](#claude-code-through-a-conductor) is the conductor start, recorded after T-0217 merged: a headless `sdlc-lite:conductor` session ran the lane, then started solo from Bash with the command in `agents/solo.md`.
+Those two arms were direct launches: the run itself started each solo session with a typed brief. The section [Claude Code through a conductor](#claude-code-through-a-conductor) is the conductor start, recorded after T-0217 merged: a headless `sdlc-lite:conductor` session ran the lane, then started solo from Bash with a command based on the one in `agents/solo.md` (it used the literal plugin path and added `CLAUDE_PLUGIN_ROOT=$P`, see the defects below).
 
 ## Environment
 
