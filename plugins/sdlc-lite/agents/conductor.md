@@ -16,7 +16,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Scoped but large or cross-cutting → `/sdlc-lite:decompose`, then `/sdlc-lite:plan`.
 - A question about where code is → `/sdlc-lite:scout`; why it is that way → `/sdlc-lite:dig`; outside facts → `/sdlc-lite:research`.
 - Several ready tickets to run in parallel lanes → `/sdlc-lite:fanout`.
-- Size S (a doc line, a lint tweak, one test, a one-file fix) → `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets.
+- Size S and M go to `solo` by default (start it as agents/solo.md says). `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets, runs only when the user asks for it or the lane script prints `fix`.
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket
