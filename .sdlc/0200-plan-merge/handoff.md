@@ -2,7 +2,7 @@
 id: T-0200
 title: "Replan by delta: merged plan view and steps.py resolve"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: blocked     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0197]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,6 @@ Part of the lean SDLC design, `docs/lean-sdlc/design.md` (v0.4, build row L8), r
 
 ## Constraints
 Result names, order.py newest ordering, and steps.py next unchanged. Regression set: selftest `(r)` (near 2647) and the closed tickets in `.sdlc/` that hold two planner files. Negative controls: a delta naming a missing step is refused; `lint` on a delta sees the base steps; `review` sees a base `unresolved:` assumption and a base step at L4. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
+
+## Deferred
+Parked 2026-10-04 by user decision (course correction): the solo-vs-lean evidence showed the default lane is the problem, so tuning the orchestrated chain is frozen until solo has run on real tickets. Revisit with that data. Status blocked, not dropped; handoff otherwise unchanged.

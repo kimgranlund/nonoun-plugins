@@ -1,0 +1,20 @@
+{
+  "attempt_id": "efbf42930c2941e3bcf695b23dc99255",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "whole-branch verification before local merge",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:17:54.454988+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0204",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0204/.sdlc/verify-t0204/step-1/handoff.md",
+  "owner_pid": 4715,
+  "process_pid": 4976,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:42:50.067475+00:00"
+}

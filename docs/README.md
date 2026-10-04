@@ -13,6 +13,8 @@
 
 - [Lean SDLC design review, second round](validation/lean-sdlc-design-review-2.md): dated second architect review of the lean SDLC design at v0.3, ready after fixes, and what v0.4 changed.
 - [Lean SDLC design review](validation/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
+- [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [Lean SDLC cost control review](validation/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
 - [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
@@ -40,4 +42,5 @@
 - [Messages live run](validation/messages-live-run.md): dated live run for T-0179 showing that a fresh Claude Code role and a fresh Codex role, given only a message path and no skill, read, reply, and ack from the entry files alone, with the messenger on both hosts and a negative control.
 - [Messages wait live run](validation/messages-wait-live-run.md): dated live run for T-0181 in which a fresh Claude Code host and a fresh Codex host were each told to make one `messages.py wait` call, then read, reply, and ack; Claude Code pass, Codex pass.
 - [Runner family task dir live run](validation/runner-family-task-dir-live-run.md): dated live run for T-0195 showing that a Claude Code verifier launched at the task dir runs on Opus after a Sonnet build in step-1/, where the pre-fix run.sh kept Sonnet.
+- [Carry forward live run](validation/carry-forward-live-run.md): dated live run for T-0202 in which a planner given a scout result with a Carry forward section cited its path and did not repeat the scout's search, while a planner given no scout result ran that search; the first planner read the result through a glob (`.sdlc/cf/*.md`), so the specified read_scout_result metric, which looks for the file name in tool inputs, recorded no.
 - [Dual-host readiness and recovery validation](readiness-recovery-validation.md): dated live trials, oracle outcomes, routing history, and scope limits.
