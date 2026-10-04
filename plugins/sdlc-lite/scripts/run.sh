@@ -14,11 +14,13 @@
 # (20, v20.11) matches whole components and takes the highest installed. A match prepends its bin
 # dir to PATH, so the role run inherits it; no match or an alias (lts/*, node) leaves PATH alone.
 # Each outcome prints one "run.sh: .nvmrc ..." line on stderr; none changes the exit code.
-# Result check: after the result and its runs.jsonl line are written (both kept), the result must
-# hold the role's required section (a line exactly "## <Name>"): builder ## Status (done|blocked|inherited red: <tests>),
-# verifier ## Verdict (pass|fail|inherited red: <tests>), plan-reviewer ## Verdict (pass|replan|blocked),
-# planner ## Goal, researcher ## Answer, scout ## Map, archaeologist ## Summary, architect ## Approach,
-# filer ## Warnings. Otherwise one stderr line, exit 3.
+# Result check: after the result and its runs.jsonl line are written (both kept), the result must pass
+# scripts/results.py validate --role <role> against the table that results.py schema prints: the header line
+# run.sh writes, the role's key section (a line exactly "## <Name>") with an allowed first value where the
+# role has one (builder ## Status done|blocked|inherited red: <tests>,
+# verifier ## Verdict pass|fail|inherited red: <tests>, plan-reviewer ## Verdict pass|replan|blocked),
+# and the declared sections present in declared order. Otherwise one stderr line
+# "run.sh: <role> result <reason>; see <file>", exit 3. The result-pick heading comes from results.py key.
 # Family rules (Claude backend only; each reads the model= token of the newest result by
 # scripts/order.py): a verifier never runs on the newest build's family (a Fable or Sonnet build
 # moves it to Opus, same effort), and a plan-reviewer never runs on the newest planner result's
@@ -56,7 +58,7 @@
 # concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
 # it never removes or deletes anything and never changes the exit code.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
-# saved result into 1), 2 usage or preflight, 3 result lacks its section.
+# saved result into 1), 2 usage or preflight, 3 result fails the result check.
 # Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
 # session's last result, and a background task notification arriving after the report ends the session
 # with its own result ("origin":{"kind":"task-notification"}), losing the report. The log is parsed
@@ -123,18 +125,6 @@ case "$role:$level" in
   filer:L1)         model=sonnet; effort=medium ;;
   plan-reviewer:L1) model=opus; effort=high ;;
   *) usage ;;
-esac
-# Required section per role; builder, verifier, and plan-reviewer also need an allowed first value under it.
-case "$role" in
-  builder) sect=Status; allowed='done|blocked|inherited red: .+' ;;
-  verifier) sect=Verdict; allowed='pass|fail|inherited red: .+' ;;
-  plan-reviewer) sect=Verdict; allowed='pass|replan|blocked' ;;
-  planner) sect=Goal; allowed='' ;;
-  researcher) sect=Answer; allowed='' ;;
-  scout) sect=Map; allowed='' ;;
-  archaeologist) sect=Summary; allowed='' ;;
-  architect) sect=Approach; allowed='' ;;
-  filer) sect=Warnings; allowed='' ;;
 esac
 [[ -f "$handoff" ]] || { echo "handoff not found: $handoff" >&2; exit 2; }
 # Git preflight: roles need a repo with a commit (diffs, worktrees). Never init git here.
@@ -466,6 +456,7 @@ wait "$role_pid" || role_rc=$?
 role_pid=""
 (( role_rc == 0 )) || { echo "$role exited non-zero; see $log" >&2; exit 1; }
 # Result pick (see the header): result events only, non-JSON lines skipped.
+sect=$(python3 "$plugin_root/scripts/results.py" key "$role")
 events=$(jq -R -c 'fromjson? // empty | select(type == "object" and .type == "result")' "$log" 2>/dev/null || true)
 pick=$(jq -s -c --arg h "## $sect" '
   def has_head: (.result | strings | split("\n") | map(sub("[ \t\r]+$"; "")) | any(. == $h)) // false;
@@ -488,19 +479,10 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
     attempt_id: $attempt_id, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
 
-# Prints "missing", or the first non-blank line under the section (empty if none).
-val=$(awk -v h="## $sect" '
-  !f { l=$0; sub(/[ \t\r]+$/, "", l); if (l == h) { f=1 }; next }
-  { l=$0; gsub(/^[ \t]+|[ \t\r]+$/, "", l); if (l != "") { print l; found=1; exit } }
-  END { if (!f) print "missing"; else if (!found) print "" }' "$result")
-bad=0
-if [[ "$val" == missing && -z "$allowed" ]]; then bad=1
-elif [[ -n "$allowed" ]]; then
-  lc=$(printf '%s' "$val" | tr '[:upper:]' '[:lower:]')
-  [[ "$lc" =~ ^($allowed)$ ]] || bad=1
-fi
-if (( bad )); then
-  echo "run.sh: $role result lacks ## $sect${allowed:+ ($allowed)}; see $result" >&2
+# Result check (see the header): results.py prints one "results.py: <file>: <reason>" line on failure.
+if ! chk=$(python3 "$plugin_root/scripts/results.py" validate "$result" --role "$role" 2>&1); then
+  reason=${chk#"results.py: $result: "}
+  echo "run.sh: $role result ${reason:-failed the result check}; see $result" >&2
   exit 3
 fi
 echo "$result"

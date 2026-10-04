@@ -1063,7 +1063,8 @@ def selftest():
         def inherited_stub(status):
             return ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
                     'mkdir -p "$FANOUT_ROOT/$FANOUT_SLUG/step-1"; '
-                    f'printf "## Status\\n{status}\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/step-1/builder-L2.md"; fi; '
+                    f'printf "<!-- role=builder level=L2 model=opus effort=low -->\\n## Status\\n{status}\\n" '
+                    '> "$FANOUT_ROOT/$FANOUT_SLUG/step-1/builder-L2.md"; fi; '
                     'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
                     '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')
 
@@ -1145,8 +1146,10 @@ def selftest():
         # `inherited red: test_v`; the outcome names the verifier's tests, not `done`.
         vstub = ('if [ "$FANOUT_TICKET" = T-0001 ]; then '
                  's="$FANOUT_ROOT/$FANOUT_SLUG/step-1"; mkdir -p "$s"; '
-                 'printf "## Status\\ndone\\n" > "$s/builder-L2.md"; '
-                 'printf "## Verdict\\ninherited red: test_v\\n" > "$s/verifier-L1.md"; '
+                 'printf "<!-- role=builder level=L2 model=opus effort=low -->\\n## Status\\ndone\\n" '
+                 '> "$s/builder-L2.md"; '
+                 'printf "<!-- role=verifier level=L1 model=sonnet effort=medium -->\\n'
+                 '## Verdict\\ninherited red: test_v\\n" > "$s/verifier-L1.md"; '
                  'printf \'{"file": "builder-L2.md"}\\n{"file": "verifier-L1.md"}\\n\' > "$s/runs.jsonl"; fi; '
                  'printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" '
                  '> "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; echo "$FANOUT_TICKET" > "work-$FANOUT_TICKET.txt"')

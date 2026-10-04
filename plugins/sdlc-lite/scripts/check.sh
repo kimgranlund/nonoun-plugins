@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Plugin checks: level-table and agent consistency, the coverage_check, tickets.py, board.py,
-# steps.py, order.py, fanout.py, onboard.py, traces.py, and messages.py selftests (fanout: throwaway repos and a stub driver, no model
+# results.py, evals.py, steps.py, order.py, fanout.py, onboard.py, traces.py, messages.py, and footprint.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
 # (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, and block-role-spawn.sh on fixture JSON), the
 # hook live probe selftest
@@ -16,12 +16,15 @@ python3 "$root/scripts/check.py" "$root" || fail=1
 python3 "$root/skills/decompose/scripts/coverage_check.py" selftest || fail=1
 python3 "$root/scripts/tickets.py" selftest || fail=1
 python3 "$root/scripts/board.py" selftest || fail=1
+python3 "$root/scripts/results.py" selftest || fail=1
+python3 "$root/scripts/evals.py" selftest || fail=1
 python3 "$root/scripts/steps.py" selftest || fail=1
 python3 "$root/scripts/order.py" selftest || fail=1
 python3 "$root/scripts/fanout.py" selftest || fail=1
 python3 "$root/scripts/onboard.py" selftest || fail=1
 python3 "$root/scripts/traces.py" selftest || fail=1
 python3 "$root/scripts/messages.py" selftest || fail=1
+python3 "$root/scripts/footprint.py" selftest || fail=1
 bash "$root/scripts/run-selftest.sh" || fail=1
 bash "$root/scripts/hook-selftest.sh" || fail=1
 bash "$root/scripts/hook-live-probe.sh" --selftest || fail=1

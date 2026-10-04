@@ -44,6 +44,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             "steps: <plan>: the newest plan review <file> says <verdict>; a rejected plan is never
             split" and a last line "plan defect: plan review: <verdict>; run steps.py review
             (/chain 3)", with or without --only, for a file or a dir target.
+            Refuses an invalid result first: when the chosen plan, or the newest plan-reviewer-*.md
+            that counts after it, fails results.structure_error (role planner, plan-reviewer), it
+            prints "invalid result: <path>: <reason>" before the review check and the goal read.
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
@@ -91,12 +94,25 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             with the plan defect last line. A step with no ### Read first stays valid.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
+            After a clean lint it also prints coarse-step warnings on stderr (stdout and exit 0
+            unchanged; split, swap, and widen print none) when the plan meets the lean plan
+            conditions: the plan file name level is L1 or L2 (a name with no level, such as
+            handoff.md, is not eligible), no ## Assumptions item starts with "unresolved:",
+            every step level is L1 to L3, no step title starts with "Merge ", the task dir
+            holds fewer than two planner results (no replan), and handoff.md holds no
+            "## Plan review" line. One line per finding:
+              steps lint: warning: <plan>: <k> steps; the coarse-step rule allows at most 2 ...
+                (more than two steps)
+              steps lint: warning: <plan> step <n>: one acceptance criterion; the coarse-step
+                rule merges it into a neighboring step ... (exactly one top-level - or * item)
   review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
             a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
             or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
             exit 0. Rules, in order:
               no planner-*.md                            -> one "steps review: " line on stderr,
                 nothing on stdout, exit 1
+              the newest plan fails results.structure_error(plan, 'planner') (empty file, no
+                header, header role, section order, no ## Goal) -> invalid result (see below)
               the plan's ## Assumptions section (lines up to the next ## heading) holds a list item
                 whose text after "- " or "* " starts with "unresolved:" -> stop (the reason quotes
                 the item; the user decides)
@@ -105,6 +121,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 results (a replan), or handoff.md holds a line "## Plan review"
               not required                               -> split
               no plan-reviewer-*.md counts after the plan (order.counts_after) -> review L1
+              the newest such result fails results.structure_error(r, 'plan-reviewer') -> invalid
+                result (a missing or disallowed Verdict is not a structure error; it stays below)
               newest such result's Verdict (first non-blank line under ## Verdict, lowercased):
                 pass                                     -> split
                 replan                                   -> replan, but stop when the task dir holds
@@ -112,6 +130,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 blocked                                  -> stop (ask its ## Missing decisions)
                 anything else                            -> review L1 (a rerun, never a replan), but
                   two consecutive verdict-less reviews after the plan -> stop
+            An invalid result prints "invalid result: <path>: <reason>", then "reason: the newest
+            result does not match its results.py schema; stop and ask the user", then the read:
+            lines; exit 0. next and resume print it the same way.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
             builder-*.md and verifier-*.md by order.py (ordered, newest, counts_after; never file
             times). Writes nothing. Stdout: "<action>" or "<action> L<n>", then "reason: <text>",
@@ -119,6 +140,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               build level = level of the newest builder result, else the handoff's level: line;
               verifier level: build L1/L2 -> L1, L3 -> L2, L4/L5 -> L3.
               no builder result                          -> build L<handoff level>
+              newest builder fails results.structure_error(b, 'builder') (empty file, no header,
+                header role, section order)              -> invalid result (printed as review
+                prints it); a missing or disallowed Status is not a structure error
               newest builder has no done/blocked Status  -> rebuild L<level of that result>,
                 but 2+ consecutive statusless builders (newest first) -> stop
               newest builder Status inherited red: <tests> -> inherited (a gate already red at
@@ -126,6 +150,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
               newest builder Status blocked              -> replan (whatever its Notes say)
               no verifier result counts after the build  -> verify L<verifier level>
+              newest verifier fails results.structure_error(v, 'verifier') -> invalid result
+                (read: the build and that verifier); a missing or disallowed Verdict is not one
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
                 but 2+ consecutive no-verdict verifiers after the build -> stop
               newest verifier Verdict inherited red: <tests> -> inherited (a gate already red at
@@ -147,10 +173,11 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
   resume    pick the step a resumed /chain continues from (/chain step 4). Candidates are the task
             dir's direct children named exactly step-<n> (step-<n>.superseded-<k>/ left out),
             sorted by the integer n (step-2 before step-10). For each in order it runs the next
-            rules above; the first whose action is not done wins. Stdout: that step dir as
-            <task dir as given>/step-<n>, then exactly what next prints for it; exit 0. When every
-            candidate is done: "done", then "reason: every step-<n>/ passed"; exit 0. It never
-            picks the newest or highest step dir. Writes nothing and never reads file times.
+            rules above; the first whose action is not done wins (invalid result included). Stdout:
+            that step dir as <task dir as given>/step-<n>, then exactly what next prints for it;
+            exit 0. When every candidate is done: "done", then "reason: every step-<n>/ passed";
+            exit 0. It never picks the newest or highest step dir. Writes nothing and never reads
+            file times.
             A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
             a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
@@ -218,6 +245,7 @@ import tempfile
 import time
 
 import order
+import results
 
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
@@ -864,6 +892,14 @@ def split(target, only=None, guard_timeout=300):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write."""
     plan, task_dir = find_plan(target)
+    err = results.structure_error(plan, 'planner')
+    if err is not None:
+        raise Fail(f'invalid result: {plan}: {err}')
+    after = [r for r in order.ordered(task_dir, 'plan-reviewer') if order.counts_after(r, plan)]
+    if after:
+        err = results.structure_error(after[-1], 'plan-reviewer')
+        if err is not None:
+            raise Fail(f'invalid result: {after[-1]}: {err}')
     rejected = rejected_by_review(plan, task_dir)
     if rejected:
         r, v = rejected
@@ -910,14 +946,45 @@ def cmd_split(target, only, guard_timeout=300):
     return 0
 
 
+def lean_warnings(plan, task_dir, steps):
+    """Coarse-step warning lines for a plan that meets the lean plan conditions, else []."""
+    try:
+        if result_level(plan) not in (1, 2):
+            return []
+    except Fail:
+        return []
+    unresolved, levels, titles = plan_facts(plan)
+    if unresolved or any(n not in (1, 2, 3) for n in levels) or any(x.startswith('Merge ') for x in titles):
+        return []
+    if len(order.ordered(task_dir, 'planner')) >= 2:
+        return []
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(line.rstrip() == '## Plan review'
+                           for line in h.read_text(encoding='utf-8').splitlines()):
+        return []
+    rule = '(agents/planner.md, Coarse steps)'
+    out = []
+    if len(steps) > 2:
+        out.append(f'steps lint: warning: {plan}: {len(steps)} steps; the coarse-step rule allows at most 2 '
+                   f'in a plan that meets the lean plan conditions {rule}')
+    for n, block in steps.items():
+        if sum(1 for line in criteria_lines(block) if re.match(r'^[-*] ', line)) == 1:
+            out.append(f'steps lint: warning: {plan} step {n}: one acceptance criterion; '
+                       f'the coarse-step rule merges it into a neighboring step {rule}')
+    return out
+
+
 def cmd_lint(target):
     try:
-        plan, _ = find_plan(target)
-        lint_or_fail(plan, parse_steps(plan))
+        plan, task_dir = find_plan(target)
+        steps = parse_steps(plan)
+        lint_or_fail(plan, steps)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
     print('steps lint: ok')
+    for w in lean_warnings(plan, task_dir, steps):
+        print(w, file=sys.stderr)
     return 0
 
 
@@ -953,47 +1020,34 @@ def section(path, heading):
     return None
 
 
-def first_word(path, heading, allowed, kind):
-    """The first non-blank line under ## <heading>, which must be one of allowed."""
-    body = section(path, heading)
-    first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
-    if first.lower() not in allowed:
-        raise Fail(f'steps next: {path} has no {kind} ({"/".join(allowed)}) under ## {heading}')
-    return first.lower()
-
-
 def build_status(path):
-    return first_word(path, 'Status', ('done', 'blocked'), 'builder status')
+    """'done' or 'blocked' from the builder's ## Status (results.py), else Fail."""
+    s = build_status_or_none(path)
+    if s not in ('done', 'blocked'):
+        raise Fail(f'steps next: {path} has no builder status (done/blocked) under ## Status')
+    return s
 
 
 def verdict(path):
-    return first_word(path, 'Verdict', ('pass', 'fail'), 'verifier verdict')
+    """'pass' or 'fail' from the verifier's ## Verdict (results.py), else Fail."""
+    v = verdict_or_none(path)
+    if v not in ('pass', 'fail'):
+        raise Fail(f'steps next: {path} has no verifier verdict (pass/fail) under ## Verdict')
+    return v
 
 
 def build_status_or_none(path):
-    """'done', 'blocked', or 'inherited' (a first line starting 'inherited red:', any case) from the
-    first non-blank line under ## Status, else None. Never raises."""
-    try:
-        body = section(path, 'Status')
-        first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
-        if first.lower().startswith('inherited red:'):
-            return 'inherited'
-        return build_status(path)
-    except Exception:
-        return None
+    """'done', 'blocked', or 'inherited' (inherited red: <tests>) from the first non-blank line under
+    ## Status, read by results.key_value against the builder schema, else None. Ignores the header;
+    never raises."""
+    return results.key_value(path, 'builder')
 
 
 def verdict_or_none(path):
-    """'pass', 'fail', or 'inherited' (a first line starting 'inherited red:', any case) from the
-    first non-blank line under ## Verdict, else None. Never raises."""
-    try:
-        body = section(path, 'Verdict')
-        first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
-        if first.lower().startswith('inherited red:'):
-            return 'inherited'
-        return verdict(path)
-    except Exception:
-        return None
+    """'pass', 'fail', or 'inherited' (inherited red: <tests>) from the first non-blank line under
+    ## Verdict, read by results.key_value against the verifier schema, else None. Ignores the header;
+    never raises."""
+    return results.key_value(path, 'verifier')
 
 
 def is_plan_defect(path):
@@ -1024,6 +1078,9 @@ def next_action(step_dir):
     if b is None:
         n = handoff_level(d)
         return 'build', n, f'no builder result; handoff level L{n}', []
+    err = results.structure_error(b, 'builder')
+    if err is not None:
+        return 'invalid result', None, f'{b}: {err}', [b]
     level = result_level(b)
     read = [b]
     if build_status_or_none(b) is None:
@@ -1052,6 +1109,9 @@ def next_action(step_dir):
         return ('verify', verifier_level(level),
                 f'{why}; build L{level} -> verifier L{verifier_level(level)}', read)
     read.append(v)
+    err = results.structure_error(v, 'verifier')
+    if err is not None:
+        return 'invalid result', None, f'{v}: {err}', read
     if verdict_or_none(v) is None:
         runs = 0
         for w in reversed(order.ordered(d, 'verifier')):
@@ -1102,16 +1162,29 @@ def next_action(step_dir):
     return 'stop', None, f'{count} counted fails at build L5; there is no L6, ask the user', read
 
 
+INVALID_REASON = 'the newest result does not match its results.py schema; stop and ask the user'
+
+
+def print_action(action, level, reason, read):
+    """The stdout of next, resume (after its step dir line), and review. An invalid result prints
+    "invalid result: <path>: <why>", then the fixed reason line, then the read: lines."""
+    if action == 'invalid result':
+        print(f'invalid result: {reason}')
+        print(f'reason: {INVALID_REASON}')
+    else:
+        print(action if level is None else f'{action} L{level}')
+        print(f'reason: {reason}')
+    for p in read:
+        print(f'read: {p}')
+
+
 def cmd_next(step_dir):
     try:
         action, level, reason, read = next_action(step_dir)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
-    print(action if level is None else f'{action} L{level}')
-    print(f'reason: {reason}')
-    for p in read:
-        print(f'read: {p}')
+    print_action(action, level, reason, read)
     return 0
 
 
@@ -1153,27 +1226,16 @@ def cmd_resume(task):
         return 1
     if d is not None:
         print(d)
-    print(action if level is None else f'{action} L{level}')
-    print(f'reason: {reason}')
-    for p in read:
-        print(f'read: {p}')
+    print_action(action, level, reason, read)
     return 0
 
 
 # --- review -----------------------------------------------------------------
 
-REVIEW_VERDICTS = ('pass', 'replan', 'blocked')
-
-
 def review_verdict(path):
-    """'pass', 'replan', or 'blocked' from the first non-blank line under ## Verdict (lowercased), else
-    None. Never raises."""
-    try:
-        body = section(path, 'Verdict')
-    except Exception:
-        return None
-    first = next((line.strip() for line in body if line.strip()), '') if body is not None else ''
-    return first.lower() if first.lower() in REVIEW_VERDICTS else None
+    """'pass', 'replan', or 'blocked' from the first non-blank line under ## Verdict, read by
+    results.key_value against the plan-reviewer schema, else None. Ignores the header; never raises."""
+    return results.key_value(path, 'plan-reviewer')
 
 
 def plan_facts(plan):
@@ -1221,6 +1283,9 @@ def review_action(task):
     if not plans:
         raise Fail(f'steps review: no planner-*.md in {t}; run the planner first (/chain 3)')
     plan = plans[-1]
+    err = results.structure_error(plan, 'planner')
+    if err is not None:
+        return 'invalid result', None, f'{plan}: {err}', [plan]
     pname = os.path.basename(plan)
     read = [plan]
     unresolved, levels, titles = plan_facts(plan)
@@ -1250,6 +1315,9 @@ def review_action(task):
     r = after[-1]
     rname = os.path.basename(r)
     read.append(r)
+    err = results.structure_error(r, 'plan-reviewer')
+    if err is not None:
+        return 'invalid result', None, f'{r}: {err}', read
     v = review_verdict(r)
     if v == 'pass':
         return 'split', None, f'the newest plan review {rname} passed {pname}', read
@@ -1285,10 +1353,7 @@ def cmd_review(task):
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
-    print(action if level is None else f'{action} L{level}')
-    print(f'reason: {reason}')
-    for p in read:
-        print(f'read: {p}')
+    print_action(action, level, reason, read)
     return 0
 
 
@@ -1667,6 +1732,18 @@ def snapshot(root):
     return snap
 
 
+HDR_NAME_RE = re.compile(r'^([a-z][a-z-]*)-L([1-5])')
+
+
+def hdr(name, text):
+    """A role-result fixture as run.sh writes it: the header line, role and level parsed from the file
+    name, then text. Text that already starts with <!-- is returned as is."""
+    if text.startswith('<!--'):
+        return text
+    m = HDR_NAME_RE.match(os.path.basename(str(name)))
+    return f'<!-- role={m.group(1)} level=L{m.group(2)} model=opus effort=low -->\n{text}'
+
+
 def run_main(argv):
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -1694,7 +1771,7 @@ def selftest():
             if handoff is not None:
                 (d / 'handoff.md').write_text(handoff, encoding='utf-8')
             if plan is not None:
-                (d / plan_name).write_text(plan, encoding='utf-8')
+                (d / plan_name).write_text(hdr(plan_name, plan), encoding='utf-8')
             return d
 
         def refused(name, argv, root, needle=None, needles=()):
@@ -1729,7 +1806,8 @@ def selftest():
         # (c) task dir input picks the newest planner-*.md by recorded run order, never by file time
         def c_case(times, runs):
             d = task(plan=PLAN.replace('Do one.', 'L3 PLAN'), plan_name='planner-L3.md')
-            (d / 'planner-L2.md').write_text(PLAN.replace('Do one.', 'L2 PLAN'), encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace('Do one.', 'L2 PLAN')),
+                                             encoding='utf-8')
             for name, t in times.items():
                 os.utime(d / name, (t, t))
             if runs is not None:
@@ -1767,14 +1845,14 @@ def selftest():
         d = task()
         (d / 'step-1').mkdir()
         (d / 'step-1' / 'handoff.md').write_text('old step 1\n', encoding='utf-8')
-        (d / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n', encoding='utf-8')
+        (d / 'step-1' / 'builder-L2.md').write_text(hdr('builder-L2.md', '## Status\ndone\n'), encoding='utf-8')
         (d / 'step-2').mkdir()
         (d / 'step-2' / 'handoff.md').write_text('old step 2\n', encoding='utf-8')
         refused('(g) step-1 with builder-L2.md refuses, names superseded, changes nothing',
                 ['split', str(d)], d, needle='superseded')
         d = task()
         (d / 'step-2').mkdir()
-        (d / 'step-2' / 'verifier-L1.md').write_text('pass\n', encoding='utf-8')
+        (d / 'step-2' / 'verifier-L1.md').write_text(hdr('verifier-L1.md', 'pass\n'), encoding='utf-8')
         refused('(g) verifier-*.md output also refuses', ['split', str(d)], d, needle='superseded')
 
         # (h) handoff with no Goal section, and no handoff at all
@@ -1795,7 +1873,7 @@ def selftest():
         d = tmp / '.0003-x'
         d.mkdir()
         (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
-        (d / 'planner-L2.md').write_text(PLAN, encoding='utf-8')
+        (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN), encoding='utf-8')
         rc, _, _ = run_main(['split', str(d)])
         h1 = d / 'step-1' / 'handoff.md'
         check('(i) split on .0003-x writes .0003-x/step-1/handoff.md',
@@ -1810,8 +1888,8 @@ def selftest():
 
         def j_dir(broken_name, clean_name):
             d = task(plan=None)
-            (d / broken_name).write_text(BROKEN_PLAN, encoding='utf-8')
-            (d / clean_name).write_text(PLAN, encoding='utf-8')
+            (d / broken_name).write_text(hdr(broken_name, BROKEN_PLAN), encoding='utf-8')
+            (d / clean_name).write_text(hdr(clean_name, PLAN), encoding='utf-8')
             (d / 'runs.jsonl').write_text(''.join(
                 f'{{"role": "planner", "level": "{n[8:10]}", "file": "{n}"}}\n'
                 for n in ('planner-L3.md', 'planner-L2.md')), encoding='utf-8')
@@ -1825,6 +1903,40 @@ def selftest():
         rc2, _, _ = run_main(['split', str(d)])
         check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
               rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
+
+        # (lean) coarse-step warnings after a clean lint
+        def lean_plan(levels, n_crit=2, title='Thing', assume=''):
+            blocks = [f'## Step {i}: {title} {i}\nlevel: L{lv}\n### Do\nd\n### Acceptance criteria\n'
+                      + '\n'.join(f'- c{j}' for j in range(n_crit)) for i, lv in enumerate(levels, 1)]
+            return f'# Plan\n{assume}' + '\n\n'.join(blocks) + '\n'
+
+        d = task(plan=lean_plan([1, 2, 3]))
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) lint warns on a lean-eligible plan with 3 steps',
+              rc == 0 and out == 'steps lint: ok\n' and 'steps lint: warning:' in err and '3 steps' in err)
+        d = task()
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) lint warns on a one-criterion step',
+              rc == 0 and out == 'steps lint: ok\n' and ' step 1: one acceptance criterion' in err
+              and ' step 2: one acceptance criterion' in err)
+        three = lean_plan([1, 2, 3], n_crit=1)
+        quiet = [task(plan=three, plan_name='planner-L3.md'),
+                 task(plan=lean_plan([1, 4, 2], n_crit=1)),
+                 task(plan=lean_plan([1, 2], n_crit=1) + '\n## Step 3: Merge lane\nlevel: L2\n'
+                      '### Acceptance criteria\n- m\n'),
+                 task(plan=three, plan_name='planner-L1.md'),
+                 task(plan=three, handoff=HANDOFF + '\n## Plan review\nrequired\n'),
+                 task(plan=lean_plan([1, 2, 3], n_crit=1,
+                                     assume='## Assumptions\n- unresolved: which db\n\n'))]
+        (quiet[3] / 'planner-L2.md').write_text(three, encoding='utf-8')
+        res = [run_main(['lint', str(q)]) for q in quiet]
+        check('(lean) no warning for a planner L3 plan, a step at L4, a merge step, a replan, '
+              'a ## Plan review line, or an unresolved: assumption',
+              all(r[0] == 0 and r[2] == '' for r in res))
+        d = task(plan=lean_plan([2, 3]))
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) no warning for a two-step plan with two criteria per step',
+              rc == 0 and out == 'steps lint: ok\n' and err == '')
 
         # (k) command spans that parse, and non-command spans, pass
         k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
@@ -1997,7 +2109,7 @@ def selftest():
         # (n) split --only runs the step's (guard) criteria; full split and lint never do.
         # Every guard uses absolute tmp paths, so none touches the repo.
         def guard_plan(*criteria):
-            return ('## Step 1: x\nlevel: L1\n### Do\nd\n### Acceptance criteria\n'
+            return ('## Goal\ng\n\n## Step 1: x\nlevel: L1\n### Do\nd\n### Acceptance criteria\n'
                     + ''.join(f'- {c}\n' for c in criteria))
 
         red_span = f'test -e {tmp}/nonexistent-sdlc-guard'
@@ -2067,7 +2179,7 @@ def selftest():
             d = r / '.sdlc' / 'x'
             d.mkdir(parents=True)
             (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
-            (d / 'planner-L2.md').write_text(guard_plan(*criteria), encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', guard_plan(*criteria)), encoding='utf-8')
             return d
 
         def o_refused(name, d, path):
@@ -2114,7 +2226,7 @@ def selftest():
         d = r / '.sdlc' / 'r-ok'
         d.mkdir(parents=True)
         (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
-        (d / 'planner-L2.md').write_text(PLAN.replace(STEP1, rf_ok), encoding='utf-8')
+        (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace(STEP1, rf_ok)), encoding='utf-8')
         rc, out, err = run_main(['lint', str(d)])
         check('(r) lint accepts a ### Read first path that exists', rc == 0 and 'steps lint: ok' in out)
         rc, out, _ = run_main(['split', str(d)])
@@ -2124,7 +2236,8 @@ def selftest():
         d = r / '.sdlc' / 'r-bad'
         d.mkdir(parents=True)
         (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
-        (d / 'planner-L2.md').write_text(PLAN.replace(STEP1, rf_ok.replace('sub/AGENTS', 'gone/AGENTS')),
+        (d / 'planner-L2.md').write_text(hdr('planner-L2.md', PLAN.replace(STEP1, rf_ok.replace('sub/AGENTS',
+                                                                                                'gone/AGENTS'))),
                                           encoding='utf-8')
         rc, out, err = run_main(['lint', str(d)])
         rc2, out2, err2 = run_main(['split', str(d)])
@@ -2148,7 +2261,7 @@ def selftest():
                 (d / 'handoff.md').write_text(f'## Task goal\ng\n\n## Step 1: x\nlevel: L{level}\n',
                                               encoding='utf-8')
             for name, text in files:
-                (d / name).write_text(text, encoding='utf-8')
+                (d / name).write_text(hdr(name, text), encoding='utf-8')
             if files:
                 (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files),
                                               encoding='utf-8')
@@ -2294,7 +2407,7 @@ def selftest():
                 d.mkdir()
                 (d / 'handoff.md').write_text('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n', encoding='utf-8')
                 for fname, text in files:
-                    (d / fname).write_text(text, encoding='utf-8')
+                    (d / fname).write_text(hdr(fname, text), encoding='utf-8')
                 if files:
                     (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files),
                                                   encoding='utf-8')
@@ -2413,7 +2526,7 @@ def selftest():
         (r / 'sdlc').mkdir()
         d = s_step([], where=r / 'sdlc')
         for name, text in pair + [('verifier-L1.md', swap_v(new='`touch s-made && test -f s-made`'))]:
-            (d / name).write_text(text, encoding='utf-8')
+            (d / name).write_text(hdr(name, text), encoding='utf-8')
         swap_refused('(c) new span that changes the work tree (a throwaway git repo)', d,
                      'changed the work tree: s-made')
         # a swap span sees SDLC_BASE_SHA from <step dir>/base-sha, not HEAD
@@ -2430,7 +2543,7 @@ def selftest():
         (d / 'base-sha').write_text(first + '\n', encoding='utf-8')
         new = '`test "$SDLC_BASE_SHA" = "$(head -n 1 sdlc/base-sha)" && test "$SDLC_BASE_SHA" != "$(git rev-parse HEAD)"`'
         for name, text in pair + [('verifier-L1.md', swap_v(new=new))]:
-            (d / name).write_text(text, encoding='utf-8')
+            (d / name).write_text(hdr(name, text), encoding='utf-8')
         rc, out, err = run_main(['swap', str(d)])
         check('swap: a new span sees SDLC_BASE_SHA from the stored base-sha, not HEAD',
               rc == 0 and 'base-sha' in (d / 'handoff.md').read_text(encoding='utf-8'))
@@ -2579,8 +2692,8 @@ def selftest():
         # (r) review: whether a plan needs a plan review, and the verdict routing; each rule with its
         # negative form. Plan files hold STEP-shaped blocks; runs.jsonl orders results when given.
         def r_plan(level='L1', title='a', tail=''):
-            return (f'## Step 1: {title}\nlevel: {level}\n### Do\nx\n### Acceptance criteria\n- one works\n'
-                    f'{tail}')
+            return (f'## Goal\ng\n\n## Step 1: {title}\nlevel: {level}\n### Do\nx\n### Acceptance criteria\n'
+                    f'- one works\n{tail}')
 
         def r_review(v):
             return f'## Verdict\n{v}\n\n## Findings\n- step 1: x\n\n## Missing decisions\nNone\n'
@@ -2592,7 +2705,7 @@ def selftest():
             if handoff is not None:
                 (d / 'handoff.md').write_text(handoff, encoding='utf-8')
             for name, text in files.items():
-                (d / name).write_text(text, encoding='utf-8')
+                (d / name).write_text(hdr(name, text), encoding='utf-8')
             if runs is not None:
                 (d / 'runs.jsonl').write_text(''.join(json.dumps(
                     {'role': n.rsplit('-L', 1)[0], 'level': 'L' + n.rsplit('-L', 1)[1][0], 'file': n}) + '\n'
@@ -2719,7 +2832,13 @@ def selftest():
 
 
 def main(argv):
-    ap = argparse.ArgumentParser(prog='steps.py', description=__doc__.split('\n')[0])
+    ap = argparse.ArgumentParser(
+        prog='steps.py', description=__doc__.split('\n')[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='lint: after a clean lint, a plan that meets the lean plan conditions (planner L1 or L2,\n'
+               'no unresolved: assumption, steps at L1 to L3, no Merge step, no replan, no ## Plan review\n'
+               'line in handoff.md) gets one stderr line per finding, "steps lint: warning: ...", for more\n'
+               'than two steps or a step with one acceptance criterion; stdout and exit 0 stay unchanged.')
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')

@@ -326,6 +326,8 @@ want_rc 0 plan-reviewer L1 $'## Verdict\nblocked'
 want_rc 3 plan-reviewer L1 $'## Verdict\nmaybe'
 grep -q '## Verdict' "$tmp/rerr" || fail "plan-reviewer maybe: stderr does not name ## Verdict"
 want_rc 3 plan-reviewer L1 $'## Findings\nNone'
+want_rc 3 verifier L1 $'## Criteria\n1. ok\n\n## Verdict\npass'
+grep -q 'comes before' "$tmp/rerr" || fail "verifier Criteria before Verdict: stderr does not name the order: $(cat "$tmp/rerr")"
 
 # Result pick: a trailing task-notification result must not replace the report. The stub output
 # holds a system event and a non-JSON line (from the stub's stderr), then two result events.
