@@ -1,0 +1,8 @@
+ M plugins/sdlc-lite/adapters/codex/agents/sdlc-plan-reviewer-l1-alternate.toml
+ M plugins/sdlc-lite/adapters/codex/agents/sdlc-plan-reviewer-l1.toml
+ M plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l1.toml
+ M plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml
+ M plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l3.toml
+ M plugins/sdlc-lite/scripts/check.py
+ M plugins/sdlc-lite/scripts/run.sh
+ M plugins/sdlc-lite/skills/level-rubric/SKILL.md

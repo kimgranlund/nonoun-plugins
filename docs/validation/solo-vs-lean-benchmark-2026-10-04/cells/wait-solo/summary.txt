@@ -1,0 +1,1 @@
+wait solo wall=367s hidden_rc=0 check_sh_rc=0

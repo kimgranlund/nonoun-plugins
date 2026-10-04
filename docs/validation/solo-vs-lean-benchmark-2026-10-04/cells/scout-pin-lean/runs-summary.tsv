@@ -1,0 +1,6 @@
+ts	role	level	model	effort	cost_usd	duration_s	turns
+2026-10-04T17:56:36Z	planner	L2	opus	medium	0.72	297	12
+2026-10-04T18:13:33Z	planner	L3	opus	xhigh	3.29	753	24
+2026-10-04T18:21:23Z	plan-reviewer	L1	fable	high	3.39	460	15
+2026-10-04T18:24:52Z	builder	L2	opus	low	0.35	203	5
+2026-10-04T18:31:16Z	verifier	L1	sonnet	medium	0.20	380	6

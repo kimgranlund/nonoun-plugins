@@ -32,6 +32,7 @@
 - [Release 0.20.4](validation/release-0.20.4.md): the supervisor, evals lock, proposals, lane script, spec gate, runner family rule, and the solo operator agent, how they were verified, upgrade notes, and known limits..
 - [Release 0.20.3](validation/release-0.20.3.md): `messages.py wait`, the role-result schema, `footprint.py`, the lean lane text, and the idle-host limit, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.2](validation/release-0.20.2.md): the ticket root and router, mailbox, and messenger agent, how they were verified, upgrade notes, and known limits.
+- [Solo vs lean benchmark](validation/solo-vs-lean-benchmark-2026-10-04.md): dated head-to-head of a single-session solo agent and the orchestrated chain on three real tickets, with cost, time, replans, caveats and the default-lane implication.
 - [Release 0.20.1](validation/release-0.20.1.md): the scout pin and planner L3 on Opus, how they were verified, and known limits.
 - [Release 0.20.0](validation/release-0.20.0.md): what shipped since 0.19.0, how it was verified, upgrade notes, and known limits.
 - [Release 0.19.0](validation/release-0.19.0.md): what shipped, how each change was verified, and known limits.

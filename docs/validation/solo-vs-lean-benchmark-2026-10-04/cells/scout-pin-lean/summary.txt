@@ -1,0 +1,2 @@
+scout-pin lean wall=302s hidden_rc=1 check_sh_rc=0
+scout-pin lean-resume wall=1058s hidden_rc=0 check_sh_rc=0

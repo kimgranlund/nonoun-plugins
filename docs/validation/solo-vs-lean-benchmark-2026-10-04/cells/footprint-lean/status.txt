@@ -1,0 +1,3 @@
+ M docs/maintenance/sdlc-internals.md
+ M plugins/sdlc-lite/scripts/check.sh
+?? plugins/sdlc-lite/scripts/footprint.py
