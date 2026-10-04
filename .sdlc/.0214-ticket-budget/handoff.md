@@ -2,7 +2,7 @@
 id: T-0214
 title: "Per-ticket cost budget: budget.py, run.sh exit 4, board column"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L
 priority: P2         # P1 | P2 | P3
 depends: [T-0187, T-0199, T-0212]
@@ -26,3 +26,7 @@ Follow the root and plugin AGENTS.md invariants: independent verification, model
 
 ## Update
 Un-parked 2026-10-04 for the 0.20.5 release scope (user decision). Build as one handwritten step under the burn-down rules: no planner, one verifier. Pull main first; T-0212 and T-0214 share files, so build T-0214 first, then T-0212.
+
+## Closed
+
+2026-10-04: Built and verified: budget.py, run.sh exit 4 gate, board Budget column, ticket skill line, check.py item 20. Branch L3 verifier passed (injected defects caught); check.sh, check-packaging, generate --check, tickets check, budget and board selftests pass on the merged tree. Known limits: the live seeded-85-percent run is not done (selftest covers it with a stub claude); spend covers Claude run.sh roles only; shellcheck not installed.

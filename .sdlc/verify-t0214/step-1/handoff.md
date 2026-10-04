@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify branch t0214 (T-0214, per-ticket cost budget) against main before it merges. The ticket is .sdlc/0214-ticket-budget/handoff.md; the design is docs/lean-sdlc/cost-control.md section D. Main has already been merged into the branch (conflicts in check.py, check.sh, run.sh and run-selftest.sh were resolved by keeping both sides: the spec gate and the budget gate in run.sh, check.py docstring item 19 for the budget guard).
+Independently verify branch t0214 (T-0214, per-ticket cost budget) against main before it merges. The ticket is .sdlc/.0214-ticket-budget/handoff.md; the design is docs/lean-sdlc/cost-control.md section D. Main has already been merged into the branch (conflicts in check.py, check.sh, run.sh and run-selftest.sh were resolved by keeping both sides: the spec gate and the budget gate in run.sh, check.py docstring item 19 for the budget guard).
 
 ## Step 1: Verify the branch
 level: L3
