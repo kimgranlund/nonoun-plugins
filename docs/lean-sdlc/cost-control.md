@@ -27,6 +27,10 @@ Why it is high, from this week's evidence:
 
 So a mechanical gate removes about a quarter of replans and 30 percent of findings. It is worth building because it costs nothing per run, but it is not the main lever. The judgment findings need a better-informed planner and a cheaper way to re-review, which is items C and D.
 
+## Conductor text is T-0199's
+
+T-0199 (`.sdlc/0199-conductor-rules`, commit 36875d4 on main) owns `agents/conductor.md` and the conductor's objective, lane-first routing, the `Lane: <lane> because <reason>` line, and the stop rules, including that a second replan verdict, or a ticket past its budget once the budget ticket lands, is a hard stop that comes to the user. Nothing below restates that text. Each item names only the machinery T-0199's text calls (a script, an exit code, a file), and where an item needs one more conductor sentence, it lands as a change to T-0199's text after T-0199 merges, never as a parallel edit. T-0209 (maintainer lean default, filed on main) is the maintainer-side line and is also not repeated here.
+
 ## What already exists
 
 Do not rebuild these. The addendum extends them.
@@ -97,11 +101,11 @@ Nothing detects that a handoff changed while a role read it. The role finishes, 
 
 ### Files
 
-Edited: `scripts/run_lifecycle.py`, `scripts/run.sh` (stderr line only if the lifecycle script does not print it), `scripts/steps.py` (next, resume, review treat stale input), `hooks/hooks.json`, new `hooks/block-handoff-edit.sh`, `scripts/hook-selftest.sh`, `docs/maintenance/claude-hooks.md`, `agents/conductor.md` and `skills/chain/SKILL.md` (the change request rule), `scripts/check.py`.
+Edited: `scripts/run_lifecycle.py`, `scripts/run.sh` (stderr line only if the lifecycle script does not print it), `scripts/steps.py` (next, resume, review treat stale input), `hooks/hooks.json`, new `hooks/block-handoff-edit.sh`, `scripts/hook-selftest.sh`, `docs/maintenance/claude-hooks.md`, `skills/chain/SKILL.md` (the change request rule, one sentence referencing T-0199's batching text), `scripts/check.py`. `agents/conductor.md` is T-0199's file: B adds no conductor text beyond a pointer line, and only after T-0199 merges.
 
 ### Ordering
 
-After T-0195 (`run.sh`), T-0196 (`steps.py next` and `resume`) and item A (`run.sh`, `steps.py`), because it edits the same functions. Plan level L3.
+After T-0195 (`run.sh`, merged), T-0196 (`steps.py next` and `resume`), T-0199 (`conductor.md`) and item A (`run.sh`, `steps.py`), because it edits the same functions and files. Plan level L3.
 
 ### Risks
 
@@ -127,7 +131,7 @@ A replan today is a new planning run that rereads the repository. The seven judg
 1. Replan input. `steps.py replan-handoff <task dir>` writes a handoff for the replan that names the previous plan, the reviewer's findings by step, and the instruction to change only the affected steps and return a delta file with `revises:` (the format owned by T-0200). The planner then reads one plan and one findings list instead of rescouting. T-0202 carry-forward sections supply the research so it is not repeated.
 2. Planner checklist, derived from the findings corpus. `agents/planner.md` gains a short pre-submission list built from the finding classes in the problem section: every design row or goal clause has a criterion; every untagged criterion fails at the start of its step; every function the step calls is named with its failure input (no front matter, empty file); every new file is listed in the layout record that enumerates files; guard commands fit the timeout. One line each, no prose.
 3. Scoped review. `agents/plan-reviewer.md` gains a rule: after `specgate.py check` passes, review only the judgment items (goal coverage, interfaces, hidden dependents) and do not re-verify what the gate checked. A re-review after a delta reads the delta and the findings it answers, not the whole plan.
-4. Cap and measure. The existing stop after two `replan` verdicts stays. `footprint.py` gains `replans` (the count of planner results beyond the first, and plan-reviewer `replan` verdicts), so the target below is a gate and not a story.
+4. Cap and measure. The existing stop after two `replan` verdicts stays, and the conductor's hard stop on a second replan is T-0199 text (d); this item adds no conductor wording. `footprint.py` gains `replans` (the count of planner results beyond the first, and plan-reviewer `replan` verdicts), so the target below is a gate and not a story.
 
 The option to run delta re-reviews at a lower effort is a model and effort decision and is left to the user (open question 1). Nothing here changes `run.sh` models or `models.json`.
 
@@ -161,14 +165,14 @@ Nothing meters spend. `board.py` sums cost per task for display, but no limit ex
 
 - Front matter `budget_usd: <number>` on a ticket, optional, set at filing. Tier defaults from this week's medians: size S $5, M $30, L $60, XL none (ask). These are defaults the user may change (open question 2).
 - New `scripts/budget.py`: `budget.py status <ticket dir>` prints `spend`, `budget`, `percent`, and `state` (`ok`, `warn` at 80 percent, `over` at 100); exit 0 ok, 3 warn or over, 2 no budget set. Spend is `cost_usd` summed from every `runs.jsonl` under the ticket folder and its step and superseded dirs, deduplicated by `attempt_id`. `budget.py set <ticket> --tier S|M|L` writes the field. `budget.py ack <ticket dir> --usd N --reason TEXT` writes `budget-ack.md` raising the ceiling once.
-- `run.sh` pre-launch (after item B's edits): when the handoff dir's ticket has a budget and `budget.py status` is `warn` or `over` with no later `budget-ack.md`, exit 3 with `run.sh: budget <pct>%: ask the user; budget.py ack`. The conductor turns this into one AskUserQuestion. A ticket with no budget is unmetered, so existing repos see no change.
+- `run.sh` pre-launch (after item B's edits): when the handoff dir's ticket has a budget and `budget.py status` is `warn` or `over` with no later `budget-ack.md`, exit 3 with `run.sh: budget <pct>%: ask the user; budget.py ack`. T-0199's stop rule (d) turns this into one question to the user. A ticket with no budget is unmetered, so existing repos see no change.
 - `board.py` shows `$spend/$budget` per ticket and marks 🟡 at 80 percent and 🔴 over.
 
 Limit: spend covers `run.sh` roles only. Conductor and background agent sessions are not in `runs.jsonl`, so the budget bounds the pipeline, not the session. State this in the entry file.
 
 ### Files
 
-New: `scripts/budget.py`. Edited: `scripts/run.sh` (gate), `scripts/board.py` (column), `agents/conductor.md` (ask on exit 3), `skills/ticket/SKILL.md` (set at filing), `scripts/check.sh`, `scripts/check.py`, `docs/maintenance/sdlc-internals.md`. `tickets.py` is not edited: it does not validate `budget_usd`, like `claimed_by`, and `budget.py` parses and validates its own field.
+New: `scripts/budget.py`. Edited: `scripts/run.sh` (gate), `scripts/board.py` (column), `skills/ticket/SKILL.md` (set at filing). The conductor's stop on a ticket past its budget is T-0199 text (d); `run.sh` exit 3 is the machinery it calls, so `agents/conductor.md` is not edited here, `scripts/check.sh`, `scripts/check.py`, `docs/maintenance/sdlc-internals.md`. `tickets.py` is not edited: it does not validate `budget_usd`, like `claimed_by`, and `budget.py` parses and validates its own field.
 
 ### Ordering
 
@@ -190,9 +194,9 @@ After T-0187 (`board.py` overview) and item B (`run.sh`). Plan level L2.
 | Order | Item | Needs first | Owns (one writer) |
 | --- | --- | --- | --- |
 | 1 | A spec gate | T-0195, T-0201 | `specgate.py`, `run.sh` plan-reviewer gate, `steps.py` split and review |
-| 2 | B handoff freeze | T-0196, A | `run_lifecycle.py`, `steps.py` next, resume, review (stale input), hook |
-| 3 | C replan delta and checklist | T-0200, T-0201, T-0202, A | `steps.py replan-handoff`, `planner.md`, `plan-reviewer.md`, `footprint.py` |
-| 4 | D budget | T-0187, B | `budget.py`, `run.sh` budget gate, `board.py` column |
+| 2 | B handoff freeze | T-0196, T-0199, A | `run_lifecycle.py`, `steps.py` next, resume, review (stale input), hook |
+| 3 | C replan delta and checklist | T-0199, T-0200, T-0201, T-0202, A | `steps.py replan-handoff`, `planner.md`, `plan-reviewer.md`, `footprint.py` |
+| 4 | D budget | T-0187, T-0199, B | `budget.py`, `run.sh` budget gate, `board.py` column |
 
 `scripts/check.py` and `scripts/check.sh` are appended to by every ticket, including T-0183 to T-0187. Each build merges main in before its local merge and keeps both sides, as T-0185 did.
 
