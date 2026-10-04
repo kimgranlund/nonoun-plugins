@@ -23,3 +23,13 @@ User decision 2026-10-05: fanout should follow the same solo-first default as th
 
 ## Constraints
 Keep `--driver CMD` overriding everything for selftests. Do not touch the limits agent's worktree. No em dashes.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and prints `fanout selftest: PASS`; case 15 (solo first) holds a positive case and a negative control for the solo versus chain choice, the lane cap, the stagger, the over-16 refusal, and the planned-scope overlap refusal.
+2. `bash plugins/sdlc-lite/scripts/check.sh` exits 0, and `python3 plugins/sdlc-lite/scripts/check.py` prints `ok:`; its item 24 guard names the SOLO_TIERS agreement with agents/solo.md and flags a changed tier.
+3. `python3 plugins/sdlc-lite/scripts/fanout.py run a=T-0001 --dry-run` in a throwaway repo with a size S ticket prints `lane: solo, tier S: sonnet low`; with a size L ticket it prints `lane: full`; `--lane full` forces `full` for the size S ticket; `--driver true` skips the lane call.
+4. `fanout.py run` with five single-ticket lanes and no `--max-lanes` exits 2 naming `--max-lanes 4`; `--max-lanes 17` without `--yes-many` exits 2 naming `--yes-many`.
+5. `solo_command` builds `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` with `--model sonnet --effort low` for S, `--model sonnet --effort xhigh` for M, and `--model opus --effort xhigh` for L, matching the tiers in agents/solo.md; the Codex form runs `codex_exec.py solo L1|L2|L3`. No model or effort default in run.sh or adapters/codex/models.json changed (`git diff main -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json` is empty).
+6. A size M or L solo ticket does not merge without a new passing task-dir verifier result (read the run_ticket code path and the selftest), and a solo ticket closes with `tickets.py close --reason`, not a filer file.
+7. docs/validation/fanout-solo-live-run.md records four lanes merged with a hidden check of 24/24 and names the models from the session transcripts; every number in it can be checked against docs/validation/fanout-solo-live-run/.
+8. `git diff --check` is clean, and no em dash appears in the changed text files.
