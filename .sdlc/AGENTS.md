@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-<!-- sdlc-lite:managed:start v1 sha256:0832d23e30e9 -->
-=======
-<!-- sdlc-lite:managed:start v1 sha256:e8708de23182 -->
->>>>>>> t0197
+<!-- sdlc-lite:managed:start v1 sha256:0d3dc3736b9e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -13,11 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-<<<<<<< HEAD
-- proposed: 18
-=======
-- proposed: 12
->>>>>>> t0197
+- proposed: 17
   - T-0196 Step state for a whole-ticket (batched) verifier result (0196-batch-state)
   - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
   - T-0199 Conductor batching and skip rules (0199-conductor-rules)
@@ -62,3 +54,7 @@ Close a ticket:
 3. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder>`. To file the one `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to `notes.md`; `fix-now:` items are finished before the close.
 4. Work already done by another ticket: `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --reason "<why>"`.
 <!-- sdlc-lite:managed:end -->
+
+## Other records
+
+- Evals: `evals/` holds the dated model and effort experiments and `table-lock.json`; read `evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
