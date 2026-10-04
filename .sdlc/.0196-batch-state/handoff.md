@@ -2,7 +2,7 @@
 id: T-0196
 title: "Step state for a whole-ticket (batched) verifier result"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0195]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
