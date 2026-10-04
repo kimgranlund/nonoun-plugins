@@ -1,0 +1,20 @@
+{
+  "attempt_id": "6ae3e45f852c4851a440c2e03c2a210f",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "step-1: verify L1",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T17:55:38.990260+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0209",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0209/.sdlc/0209-maintainer-lean-default/step-1/handoff.md",
+  "owner_pid": 32710,
+  "process_pid": 32880,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:05:01.794471+00:00"
+}

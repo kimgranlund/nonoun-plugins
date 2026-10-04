@@ -13,6 +13,8 @@
 
 - [Lean SDLC design review, second round](validation/lean-sdlc-design-review-2.md): dated second architect review of the lean SDLC design at v0.3, ready after fixes, and what v0.4 changed.
 - [Lean SDLC design review](validation/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
+- [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [Lean SDLC cost control review](validation/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
 - [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
