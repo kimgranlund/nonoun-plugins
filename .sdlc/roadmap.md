@@ -187,7 +187,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0180 | [.0180-idle-host-limit-docs](.0180-idle-host-limit-docs/handoff.md) | Document that the messenger reaches only an active parent host | chore | S | P2 | none | 🟢 done |
 | T-0181 | [.0181-messages-wait](.0181-messages-wait/handoff.md) | messages.py wait: one blocking call that returns when a message arrives | feature | M | P2 | T-0180 | 🟢 done |
 | T-0182 | [.0182-idle-host-watcher-design](.0182-idle-host-watcher-design/handoff.md) | Design an external watcher that resumes an idle host when a message arrives | spike | M | P2 | none | 🟢 done |
-| T-0183 | [0183-supervisor-script](0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L | P2 | T-0181, T-0182 | 🔵 ready |
+| T-0183 | [.0183-supervisor-script](.0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L | P2 | T-0181, T-0182 | 🟢 done |
 | T-0184 | [.0184-role-result-schema](.0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | M | P2 | none | 🟢 done |
 | T-0185 | [.0185-evals-folder](.0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🟢 done |
 | T-0186 | [.0186-proposals-folder](.0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🟢 done |
@@ -208,7 +208,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | M | P2 | T-0200 | 🔴 blocked |
 | T-0202 | [.0202-carry-forward](.0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | 🟢 done |
 | T-0203 | [.0203-fanout-overlap](.0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | M | P2 | none | 🟢 done |
-| T-0204 | [0204-fanout-resolver](0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | ⏳ proposed |
+| T-0204 | [.0204-fanout-resolver](.0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | 🟢 done |
 | T-0205 | [0205-layout-resolver](0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | 🔴 blocked |
 | T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | 🔴 blocked |
 | T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | 🔴 blocked |
@@ -216,7 +216,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0209 | [.0209-maintainer-lean-default](.0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | S | P2 | T-0194 | 🟢 done |
 | T-0210 | [.0210-spec-gate-check](.0210-spec-gate-check/handoff.md) | Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line | chore | M | P2 | none | 🟢 done |
 | T-0211 | [0211-spec-gate-red](0211-spec-gate-red/handoff.md) | Spec gate A2: specgate.py red, (red) tag, split and review wiring | chore | L | P2 | T-0197, T-0201, T-0202, T-0210 | 🔴 blocked |
-| T-0212 | [0212-handoff-freeze](0212-handoff-freeze/handoff.md) | Handoff freeze: stale_input flag, rerun action, handoff edit hook | chore | L | P2 | T-0196, T-0197, T-0199, T-0211, T-0183 | 🔴 blocked |
+| T-0212 | [0212-handoff-freeze](0212-handoff-freeze/handoff.md) | Handoff freeze: stale_input flag, rerun action, handoff edit hook | chore | L | P2 | T-0196, T-0197, T-0199, T-0211, T-0183 | 🔵 ready |
 | T-0213 | [0213-replan-delta-checklist](0213-replan-delta-checklist/handoff.md) | Replan handoff, planner checklist, scoped plan review, replans metric | chore | L | P2 | T-0199, T-0200, T-0201, T-0202, T-0211 | 🔴 blocked |
-| T-0214 | [0214-ticket-budget](0214-ticket-budget/handoff.md) | Per-ticket cost budget: budget.py, run.sh exit 4, board column | chore | L | P2 | T-0187, T-0199, T-0212 | 🔴 blocked |
+| T-0214 | [0214-ticket-budget](0214-ticket-budget/handoff.md) | Per-ticket cost budget: budget.py, run.sh exit 4, board column | chore | L | P2 | T-0187, T-0199, T-0212 | 🔵 ready |
 | T-0215 | [0215-solo-operator-tiers](0215-solo-operator-tiers/handoff.md) | Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets | feature | M | P1 | none | 🔵 ready |
+| T-0216 | [0216-solo-live-proof](0216-solo-live-proof/handoff.md) | Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex | chore | S | P2 | T-0215 | ⏳ proposed |

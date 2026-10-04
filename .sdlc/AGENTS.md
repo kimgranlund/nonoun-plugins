@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2f158956bc5a -->
+<!-- sdlc-lite:managed:start v1 sha256:0ed6dd32cdae -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -11,11 +11,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 - proposed: 2
   - T-0199 Conductor batching and skip rules (0199-conductor-rules)
-  - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
-- ready: 2
-  - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
+  - T-0216 Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex (0216-solo-live-proof)
+- ready: 3
+  - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
+  - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
   - T-0215 Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets (0215-solo-operator-tiers)
-- blocked: 11
+- blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
   - T-0201 Anchor rule for step blocks and its lint check (0201-anchor)
@@ -24,10 +25,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
-  - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-  - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
-- done: 181
+- done: 183
 - dropped: 19
 
 ## Procedures

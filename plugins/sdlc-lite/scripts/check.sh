@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Plugin checks: level-table and agent consistency, the coverage_check, tickets.py, board.py,
-# results.py, evals.py, proposals.py, steps.py, order.py, fanout.py, onboard.py, traces.py, messages.py, footprint.py, and specgate.py selftests (fanout: throwaway repos and a stub driver, no model
+# results.py, evals.py, proposals.py, steps.py, order.py, fanout.py, onboard.py, traces.py, messages.py, footprint.py, and specgate.py, and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
 # (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, and block-role-spawn.sh on fixture JSON), the
 # hook live probe selftest
@@ -27,6 +27,7 @@ python3 "$root/scripts/traces.py" selftest || fail=1
 python3 "$root/scripts/messages.py" selftest || fail=1
 python3 "$root/scripts/footprint.py" selftest || fail=1
 python3 "$root/scripts/specgate.py" selftest || fail=1
+python3 "$root/scripts/supervisor.py" selftest || fail=1
 bash "$root/scripts/run-selftest.sh" || fail=1
 bash "$root/scripts/hook-selftest.sh" || fail=1
 bash "$root/scripts/hook-live-probe.sh" --selftest || fail=1

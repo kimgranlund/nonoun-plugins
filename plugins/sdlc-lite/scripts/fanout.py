@@ -18,9 +18,11 @@ run
   (`alpha@x`) refuses with the usage text.
   Preflight (every refusal prints on stderr, exits 2, and creates nothing): the cwd is in a git
   work tree with a commit; --root (default .sdlc, relative to the cwd) lies inside the toplevel,
-  and its path relative to the toplevel (rel) is the ticket root in every worktree; lane names
+  and its path relative to the toplevel (rel) is the ticket root in every worktree (handoff, step,
+  and filer paths in each worktree use tickets.ticket_dir(root): <root>/tickets under
+  `ticket_root: tickets`, else <root>); lane names
   match ^[a-z0-9]+(-[a-z0-9]+)*$ (not `integration` or `logs`, which name the lanes dir's own
-  entries); each id is T-NNNN, resolves through tickets.load(root) to exactly one folder whose
+  entries); each id is T-NNNN, resolves through tickets.load(tickets.ticket_dir(root)) to exactly one folder whose
   status is not done or dropped, has its handoff committed at the start commit, and appears once
   across all lanes. An external lane's branch must be registered in <root>/config (else the
   refusal names the `external_branch: <branch>` line and that file), refs/heads/<branch> must
@@ -63,7 +65,7 @@ run
        whose gates are still running.
     2. driver, outside the lock: `bash -c <driver>`, cwd the lane worktree, stdin /dev/null,
        output to <lanes-dir>/logs/<lane>-<id>.log, env FANOUT_LANE, FANOUT_TICKET, FANOUT_SLUG,
-       FANOUT_HANDOFF (absolute), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
+       FANOUT_HANDOFF (absolute, in the ticket folder), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
        FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies Bash and Agent run_in_background),
        SDLC_ROLE=conductor (hooks/block-publish.sh blocks git push, gh writes, and package publishing
        in the Claude sessions the driver launches),
@@ -322,9 +324,13 @@ def preflight(a):
         raise Refuse(f'--root {a.root}: {root} is not a dir')
 
     try:
-        ts = tickets.load(root)
+        tdir = tickets.ticket_dir(root)
+        ts = tickets.load(tdir)
+    except tickets.Fail as e:
+        raise Refuse(str(e))
     except (OSError, UnicodeDecodeError) as e:
         raise Refuse(f'{root}: cannot read tickets: {e}')
+    trel = tdir.relative_to(top)
     registered = tickets.external_branches(root)
     lanes, seen, errs = [], {}, []
     for spec in a.lanes:
@@ -372,7 +378,7 @@ def preflight(a):
             hits = [(s, m) for s, m in pool if m.get('id') == tid]
             if not hits:
                 errs.append(f'{tid}: no ticket on branch {ext} has this id' if lane.external
-                            else f'{tid}: no ticket under {root} has this id')
+                            else f'{tid}: no ticket under {tdir} has this id')
             elif len(hits) > 1:
                 errs.append(f'{tid}: {len(hits)} folders share this id ({", ".join(s for s, _ in hits)})')
             elif hits[0][1].get('status') in ('done', 'dropped'):
@@ -448,7 +454,7 @@ def preflight(a):
         if lane.dir.exists():
             raise Refuse(f'{lane.dir} already exists')
 
-    relp = rel.as_posix()
+    relp = trel.as_posix()
     missing = []
     for lane in lanes:
         if lane.external:  # its handoffs were read from the branch itself
@@ -461,7 +467,7 @@ def preflight(a):
         raise Refuse(f'not committed at {start[:12]}: {", ".join(missing)}; lanes see only committed '
                      f'files, so commit the .sdlc/ trail first')
 
-    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'lanes': lanes, 'integration': integration,
+    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
@@ -471,14 +477,14 @@ def preflight(a):
 def driver_for(ctx, t):
     if ctx['driver']:
         return ctx['driver']
-    return default_driver((ctx['rel'] / t.slug / 'handoff.md').as_posix())
+    return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix())
 
 
 def planned_scope(root, slug):
-    """The paths allow-listed by the scope criteria of root/<slug>/step-<n>/handoff.md, or None
-    when no step handoff yields an entry (the ticket is not planned)."""
+    """The paths allow-listed by the scope criteria of <ticket dir>/<slug>/step-<n>/handoff.md, where the
+    ticket dir is tickets.ticket_dir(root), or None when no step handoff yields an entry (the ticket is not planned)."""
     found, any_entry = set(), False
-    tdir = pathlib.Path(root) / slug
+    tdir = tickets.ticket_dir(pathlib.Path(root)) / slug
     steps_dirs = sorted(d for d in tdir.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)) \
         if tdir.is_dir() else []
     for d in steps_dirs:
@@ -532,6 +538,8 @@ def print_plan(ctx):
         out.append(f"integration branch: {ctx['integration']} (new, at the base)")
     out.append(f"integration worktree: {ctx['integ_dir']}")
     out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
+    if ctx['trel'] != ctx['rel']:
+        out.append(f"ticket folders in each worktree: {ctx['trel'].as_posix()}")
     for lane in ctx['lanes']:
         if lane.external:
             out.append(f'lane {lane.name}: external branch {lane.branch} (registered; no worktree, no driver)')
@@ -597,9 +605,9 @@ def setup(ctx):
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
-        missing = [str(lane.dir / ctx['rel'] / t.slug / 'handoff.md')
+        missing = [str(lane.dir / ctx['trel'] / t.slug / 'handoff.md')
                    for lane in regular for t in lane.tickets
-                   if not (lane.dir / ctx['rel'] / t.slug / 'handoff.md').is_file()]
+                   if not (lane.dir / ctx['trel'] / t.slug / 'handoff.md').is_file()]
         if missing:
             raise Refuse(f'missing in the lane worktrees: {", ".join(missing)}; the .sdlc/ trail must be '
                          f'committed; removed what this run created')
@@ -757,7 +765,7 @@ def run_ticket(ctx, lane, t, lock):
             return f'sync failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', ''
 
     env = dict(ENV, FANOUT_LANE=lane.name, FANOUT_TICKET=t.id, FANOUT_SLUG=t.slug,
-               FANOUT_HANDOFF=str(wt / rel / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
+               FANOUT_HANDOFF=str(wt / ctx['trel'] / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
                FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1', SDLC_ROLE='conductor',
                BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS, FANOUT_RUN_ID=ctx['run_id'])
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
@@ -767,7 +775,7 @@ def run_ticket(ctx, lane, t, lock):
     # before any lane commit. Only dead-owner prefixes go; the exit code is ignored.
     subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), str(wt)], stdin=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
-    inherited = inherited_red(wt / rel / t.slug)
+    inherited = inherited_red(wt / ctx['trel'] / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
@@ -849,7 +857,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
     unchanged: an external branch already merged, as for its second ticket or a resume), close the
     ticket, and commit `close <id>`. cell is the Commit cell for an outcome before the merge stands (the
     lane commit, or an external branch's tip). Returns (outcome, commit)."""
-    integ, rel = ctx['integ_dir'], ctx['rel']
+    integ, rel, trel = ctx['integ_dir'], ctx['rel'], ctx['trel']
     wait_for_overlap(ctx, lane, t, ref)
     with lock:
         # uncommitted tracked edits in the integration tree: refuse before the merge, so neither
@@ -886,7 +894,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 git_out(integ, 'reset', '-q', '--hard', before)
                 return f'red: {gate} rc={rc}', cell
         if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
-            src, dst = lane.dir / rel / t.slug, integ / rel / t.slug
+            src, dst = lane.dir / trel / t.slug, integ / trel / t.slug
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
                 shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
@@ -896,7 +904,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         p = subprocess.run(argv, cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
         if p.returncode:
             # the close wrote nothing; drop any copied files so a later close commit cannot sweep them in
-            git(integ, 'clean', '-fdq', '--', (rel / t.slug).as_posix())
+            git(integ, 'clean', '-fdq', '--', (trel / t.slug).as_posix())
             why = f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}'
             if not ctx['rewrite_refs'] and '--rewrite-refs' in (p.stderr or '') + (p.stdout or ''):
                 why += '; fanout.py run --rewrite-refs rewrites them'
@@ -1684,6 +1692,51 @@ def selftest():
                em0 and sh(er, 'rev-parse', 'fanout/ext-red').stdout.strip() == em0)
         expect('external red gate: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
 
+        # A regular lane under `ticket_root: tickets`: ids, handoff, filer, and close use <root>/tickets.
+        tr, trl = tmp / 'troot', tmp / 'trlanes'
+        (tr / '.sdlc' / 'tickets' / 'x').mkdir(parents=True)
+        (tr / '.sdlc' / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+        (tr / '.sdlc' / 'tickets' / 'x' / 'handoff.md').write_text(
+            '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+            'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for slug, tid, grep in (('y', 'T-0002', 'grep -vxF -e shared.txt -e y.txt'),
+                                ('z', 'T-0003', 'grep -vxF -e shared.txt -e z.txt')):
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1').mkdir(parents=True)
+            (tr / '.sdlc' / 'tickets' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1' / 'handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n'
+                f'- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | {grep})"`\n', encoding='utf-8')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(tr, *args)
+            expect(f'ticket_root lane: fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}',
+                   p.returncode == 0)
+        tdrv = ('printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$(dirname "$FANOUT_HANDOFF")/filer-L1.md"; '
+                'echo x > x.txt')
+        proc = fanout(tr, '--dry-run', '--integration', 'fanout/tr', '--lanes-dir', str(trl), 'a=T-0001')
+        expect(f'ticket_root lane: dry run exits 0 naming the ticket folders, got {proc.returncode} '
+               f'stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'ticket folders in each worktree: .sdlc/tickets' in proc.stdout)
+        proc = fanout(tr, '--dry-run', '--integration', 'fanout/tr', '--lanes-dir', str(trl), 'a=T-0002', 'b=T-0003')
+        lines = proc.stdout.splitlines()
+        expect(f'ticket_root lane: planned scopes under .sdlc/tickets print the a/b shared.txt pair line, '
+               f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'overlap (planned scope): a T-0002 and b T-0003: shared.txt' in lines
+               and not any('not planned' in x for x in lines))
+        proc = fanout(tr, '--integration', 'fanout/tr', '--lanes-dir', str(trl), '--driver', tdrv, 'a=T-0001')
+        got = report_rows(trl)
+        expect(f'ticket_root lane: run exits 0 merged, got {proc.returncode} {got} stderr={proc.stderr!r}',
+               proc.returncode == 0 and got.get('T-0001') == 'merged')
+        shown = sh(tr, 'show', 'fanout/tr:.sdlc/tickets/x/handoff.md')
+        expect(f'ticket_root lane: the integration handoff says status: done, got {shown.stdout[:160]!r}',
+               shown.returncode == 0 and re.search(r'^status: done\b', shown.stdout, re.M))
+        subj = sh(tr, 'log', '-1', '--format=%s', 'fanout/tr').stdout.strip()
+        expect(f'ticket_root lane: the integration tip is close T-0001, got {subj!r}', subj == 'close T-0001')
+        expect('ticket_root lane: no .sdlc/x folder on the integration branch',
+               sh(tr, 'cat-file', '-e', 'fanout/tr:.sdlc/x').returncode != 0)
         # 13. Overlap: alpha and beta both edit shared.txt (line 1 and the last line). Beta reaches its merge
         # while alpha's driver still runs, waits for alpha (the earlier lane), and merges after it; without
         # the wait, alpha's driver times out. Negative control: disjoint lanes report none and never wait.

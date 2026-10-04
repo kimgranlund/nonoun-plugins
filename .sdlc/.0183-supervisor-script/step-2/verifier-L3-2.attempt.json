@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d9e1318524cc4ed4ab1db1bd8deba048",
+  "name": "verifier-L3-2",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "0183-supervisor-script: verify L3",
+  "reason_source": "caller",
+  "status": "failed",
+  "started_at": "2026-10-01T22:08:02.864469+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183/.sdlc/0183-supervisor-script/step-2/handoff.md",
+  "owner_pid": 70366,
+  "process_pid": 70421,
+  "exit_code": 1,
+  "finished_at": "2026-10-01T22:08:05.780204+00:00"
+}

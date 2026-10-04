@@ -76,7 +76,7 @@ The decomposition is in `review/decompose/manifest-v1.json` and `report.md`; `co
 
 ## Interfaces
 
-- `codex exec resume ... --sandbox workspace-write` (design lines 61, 86; repeated in `.sdlc/0183-supervisor-script/handoff.md`): wrong. `codex exec resume --sandbox workspace-write --last hi` exits 2. Use `-c sandbox_mode="workspace-write"`, and pass `-c sandbox_workspace_write.network_access=false` so user config cannot widen it.
+- `codex exec resume ... --sandbox workspace-write` (design lines 61, 86; repeated in `.sdlc/.0183-supervisor-script/handoff.md`): wrong. `codex exec resume --sandbox workspace-write --last hi` exits 2. Use `-c sandbox_mode="workspace-write"`, and pass `-c sandbox_workspace_write.network_access=false` so user config cannot widen it.
 - Codex "approval policy `never`" (line 61): no such flag exists on `exec` or `resume`. The repository uses `-c approval_policy="never"` (`codex_exec.py:49`). The design should name that form.
 - `codex exec resume --last` (line 25): real, but help says "most recent recorded session", filtered by working directory. It is not "the session it started" (line 32). The owned session must store the `thread_id` from the `thread.started` event of `--json`.
 - `codex exec resume <session-id-or-thread-name>` (line 26): the id form is now checked and works. The thread-name form is unchecked.

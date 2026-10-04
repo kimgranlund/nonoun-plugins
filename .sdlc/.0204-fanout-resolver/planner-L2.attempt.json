@@ -1,0 +1,20 @@
+{
+  "attempt_id": "99f09bab56304936b71aba9bbc27e3cb",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "T-0204 planner L2, burn-down default",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T17:46:46.173332+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0204",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0204/.sdlc/0204-fanout-resolver/handoff.md",
+  "owner_pid": 96850,
+  "process_pid": 96964,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:00:06.001532+00:00"
+}
