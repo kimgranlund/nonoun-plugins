@@ -22,6 +22,7 @@ Read [repository guidance](../../AGENTS.md) first. Paths below are relative to t
 - Ticket changes must preserve cross-worktree ID uniqueness, reference-safe closure, and explicit follow-up selection. Read the ticket/file skills and associated tests before editing these behaviors.
 - Preserve in-scope loose-end handling and the one-ticket follow-up cap; a new task is for work that is out of scope, large, or needs user input.
 - Runner-created temporary worktrees use `SDLC_TMP_WORKTREES`; preserve owned cleanup and stray-worktree reporting. Fanout worktrees require project watcher/test exclusions as well as Git ignores.
+- `scripts/supervisor.py` never claims, moves, or reads a message body; a wake it starts follows unattended-run rules (`SDLC_HEADLESS=1`, never push or publish).
 
 ## Verification
 
