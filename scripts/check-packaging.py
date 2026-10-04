@@ -44,7 +44,10 @@ def check(root):
     hooks = sdlc / manifest['hooks']
     require(hooks.is_file(), 'Claude hook configuration missing')
     hook_data = json.loads(hooks.read_text())
-    require(len(hook_data['hooks']['PreToolUse']) == 3, 'Claude hook routes lost')
+    pre = hook_data['hooks']['PreToolUse']
+    require(len(pre) == 4, 'Claude hook routes lost')
+    require(any(r.get('matcher') == 'Edit|Write|NotebookEdit' and 'warn-handoff-edit.sh' in json.dumps(r) for r in pre),
+            'Claude handoff-freeze hook route lost')
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
         if skill.parent.name != 'sdlc-lite':
             require('../sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
