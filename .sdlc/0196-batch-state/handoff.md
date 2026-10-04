@@ -23,3 +23,6 @@ Part of the lean SDLC design, `docs/lean-sdlc/design.md` (v0.4, build row L4), r
 
 ## Constraints
 Per-step verification stays mandatory for any step at L4 or L5, any merge step, and the gates green step. Preserve the one-criterion verifier swap rules and the missing-verdict versus plan-defect distinction. Depends on the runner family rule so batched verification is independent. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
+
+## Burn-down brief
+Standing frame: done is better than perfect; trust capable models given useful context. Make the smallest change that meets the Intent. One or two steps, builder L3 at most unless a step truly needs L4. No per-ticket live run: rely on selftests, checks and the branch verifier, and record a flaky or missing live arm as a known limit. Scope is frozen: a new requirement becomes a new ticket. Report blocked instead of looping.
