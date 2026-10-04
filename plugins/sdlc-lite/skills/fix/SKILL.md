@@ -1,6 +1,6 @@
 ---
 name: fix
-description: "Fast lane for a size-S item (a doc line, a lint tweak, one test, a one-file fix). The conductor writes the step handoff itself, runs builder L1 or L2 and verifier L1, and closes the ticket inline with `tickets.py close --reason`; no planner, no filer, no follow-up tickets. Use for \"quick fix\", \"small fix\", or a size-S ticket. NOT for work touching more than one file's behavior or needing a plan, which is /chain."
+description: "Fast lane for a size-S item (a doc line, a lint tweak, one test, a one-file fix), run only when the user asks for /fix or the lane script prints `fix`; size S and M go to the `solo` agent by default. The conductor writes the step handoff itself, runs builder L1 or L2 and verifier L1, and closes the ticket inline with `tickets.py close --reason`; no planner, no filer, no follow-up tickets. Use for \"/fix\" by name. NOT for a size S or M ticket by default, which goes to solo; NOT for work touching more than one file's behavior or needing a plan, which is /chain."
 argument-hint: "<ticket slug | one-line ask>"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Read, Write, Grep, Glob, AskUserQuestion
 ---
@@ -11,7 +11,7 @@ For every role launch, set `SDLC_ROUTING_REASON` to the selected role/level rati
 
 Arguments: `$ARGUMENTS`
 
-The fast lane: one step, no planner, no filer, no follow-up tickets. Layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`; levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`.
+The fast lane: one step, no planner, no filer, no follow-up tickets. It runs only when the user asks for it or the lane script prints `fix`; otherwise size S and M go to `solo` (agents/solo.md). Layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`; levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`.
 
 Long runs: every role runs through `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh` from the project root. Headless (`claude -p`): run every call in the foreground with the Bash tool's `timeout` set to 600000 or more, do not use `run_in_background` there, and never end your turn while a role is running, because ending the turn ends the session and abandons the run; headless launchers set `SDLC_HEADLESS=1`, and `hooks/block-background.sh` denies background calls then. In an interactive session: run `run.sh` with `run_in_background: true`, then wait for the completion notification. Never poll with `sleep`. Once notified, read the result from `<role>-<level>.md`.
 
