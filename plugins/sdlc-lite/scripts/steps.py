@@ -94,6 +94,17 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             with the plan defect last line. A step with no ### Read first stays valid.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
+            After a clean lint it also prints coarse-step warnings on stderr (stdout and exit 0
+            unchanged; split, swap, and widen print none) when the plan meets the lean plan
+            conditions: the plan file name level is L1 or L2 (a name with no level, such as
+            handoff.md, is not eligible), no ## Assumptions item starts with "unresolved:",
+            every step level is L1 to L3, no step title starts with "Merge ", the task dir
+            holds fewer than two planner results (no replan), and handoff.md holds no
+            "## Plan review" line. One line per finding:
+              steps lint: warning: <plan>: <k> steps; the coarse-step rule allows at most 2 ...
+                (more than two steps)
+              steps lint: warning: <plan> step <n>: one acceptance criterion; the coarse-step
+                rule merges it into a neighboring step ... (exactly one top-level - or * item)
   review    review <task dir>: decide whether the task dir's newest planner-*.md (by order.py) needs
             a plan review before split (/chain 3). Reads only; never file times. Stdout: "<action>"
             or "review L1", then "reason: <text>", then one "read: <path>" per result file consulted;
@@ -935,14 +946,45 @@ def cmd_split(target, only, guard_timeout=300):
     return 0
 
 
+def lean_warnings(plan, task_dir, steps):
+    """Coarse-step warning lines for a plan that meets the lean plan conditions, else []."""
+    try:
+        if result_level(plan) not in (1, 2):
+            return []
+    except Fail:
+        return []
+    unresolved, levels, titles = plan_facts(plan)
+    if unresolved or any(n not in (1, 2, 3) for n in levels) or any(x.startswith('Merge ') for x in titles):
+        return []
+    if len(order.ordered(task_dir, 'planner')) >= 2:
+        return []
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(line.rstrip() == '## Plan review'
+                           for line in h.read_text(encoding='utf-8').splitlines()):
+        return []
+    rule = '(agents/planner.md, Coarse steps)'
+    out = []
+    if len(steps) > 2:
+        out.append(f'steps lint: warning: {plan}: {len(steps)} steps; the coarse-step rule allows at most 2 '
+                   f'in a plan that meets the lean plan conditions {rule}')
+    for n, block in steps.items():
+        if sum(1 for line in criteria_lines(block) if re.match(r'^[-*] ', line)) == 1:
+            out.append(f'steps lint: warning: {plan} step {n}: one acceptance criterion; '
+                       f'the coarse-step rule merges it into a neighboring step {rule}')
+    return out
+
+
 def cmd_lint(target):
     try:
-        plan, _ = find_plan(target)
-        lint_or_fail(plan, parse_steps(plan))
+        plan, task_dir = find_plan(target)
+        steps = parse_steps(plan)
+        lint_or_fail(plan, steps)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
     print('steps lint: ok')
+    for w in lean_warnings(plan, task_dir, steps):
+        print(w, file=sys.stderr)
     return 0
 
 
@@ -1862,6 +1904,40 @@ def selftest():
         check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
               rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
 
+        # (lean) coarse-step warnings after a clean lint
+        def lean_plan(levels, n_crit=2, title='Thing', assume=''):
+            blocks = [f'## Step {i}: {title} {i}\nlevel: L{lv}\n### Do\nd\n### Acceptance criteria\n'
+                      + '\n'.join(f'- c{j}' for j in range(n_crit)) for i, lv in enumerate(levels, 1)]
+            return f'# Plan\n{assume}' + '\n\n'.join(blocks) + '\n'
+
+        d = task(plan=lean_plan([1, 2, 3]))
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) lint warns on a lean-eligible plan with 3 steps',
+              rc == 0 and out == 'steps lint: ok\n' and 'steps lint: warning:' in err and '3 steps' in err)
+        d = task()
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) lint warns on a one-criterion step',
+              rc == 0 and out == 'steps lint: ok\n' and ' step 1: one acceptance criterion' in err
+              and ' step 2: one acceptance criterion' in err)
+        three = lean_plan([1, 2, 3], n_crit=1)
+        quiet = [task(plan=three, plan_name='planner-L3.md'),
+                 task(plan=lean_plan([1, 4, 2], n_crit=1)),
+                 task(plan=lean_plan([1, 2], n_crit=1) + '\n## Step 3: Merge lane\nlevel: L2\n'
+                      '### Acceptance criteria\n- m\n'),
+                 task(plan=three, plan_name='planner-L1.md'),
+                 task(plan=three, handoff=HANDOFF + '\n## Plan review\nrequired\n'),
+                 task(plan=lean_plan([1, 2, 3], n_crit=1,
+                                     assume='## Assumptions\n- unresolved: which db\n\n'))]
+        (quiet[3] / 'planner-L2.md').write_text(three, encoding='utf-8')
+        res = [run_main(['lint', str(q)]) for q in quiet]
+        check('(lean) no warning for a planner L3 plan, a step at L4, a merge step, a replan, '
+              'a ## Plan review line, or an unresolved: assumption',
+              all(r[0] == 0 and r[2] == '' for r in res))
+        d = task(plan=lean_plan([2, 3]))
+        rc, out, err = run_main(['lint', str(d)])
+        check('(lean) no warning for a two-step plan with two criteria per step',
+              rc == 0 and out == 'steps lint: ok\n' and err == '')
+
         # (k) command spans that parse, and non-command spans, pass
         k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
                    'python3 scripts/board.py --root <tmp>', 'SDLC_DRY_RUN=1 scripts/run.sh builder L3 x.md',
@@ -2756,7 +2832,13 @@ def selftest():
 
 
 def main(argv):
-    ap = argparse.ArgumentParser(prog='steps.py', description=__doc__.split('\n')[0])
+    ap = argparse.ArgumentParser(
+        prog='steps.py', description=__doc__.split('\n')[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='lint: after a clean lint, a plan that meets the lean plan conditions (planner L1 or L2,\n'
+               'no unresolved: assumption, steps at L1 to L3, no Merge step, no replan, no ## Plan review\n'
+               'line in handoff.md) gets one stderr line per finding, "steps lint: warning: ...", for more\n'
+               'than two steps or a step with one acceptance criterion; stdout and exit 0 stay unchanged.')
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('split', help='write step-<n>/handoff.md for each step of a plan')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')

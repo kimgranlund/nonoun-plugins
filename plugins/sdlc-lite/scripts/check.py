@@ -47,7 +47,10 @@
 13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
    line, first occurrences in declared order; scripts/run.sh and scripts/steps.py hold no copy of the schema table.
    Negative controls: builder body with `## Changes` and `## Checks` swapped; run.sh with an `allowed='x'` line.
-14. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
+14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
+   `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
+   agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
+15. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
    and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
    `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
    `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
@@ -383,6 +386,19 @@ for rel in READ_FIRST_FILES:
     if read_first_missing(text): errors.append(f'{rel}: read-first route missing "{READ_FIRST}"')
     elif not read_first_missing(text.replace(READ_FIRST, '')):
         errors.append(f'{rel}: read-first negative control not flagged')
+# Lean lane text (docstring item 13): the lean chain section and the coarse-step rule name their phrases.
+LEAN_LANE = {'## Lean chain': ('skills/chain/SKILL.md',),
+             'always runs the filer': ('skills/chain/SKILL.md',),
+             'independently verifiable outcome': ('agents/planner.md',),
+             'steps lint: warning:': ('agents/planner.md', 'scripts/steps.py')}
+def lean_missing(text, phrase): return phrase not in text
+for phrase, rels in LEAN_LANE.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
+        elif not lean_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: lean-lane negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):
