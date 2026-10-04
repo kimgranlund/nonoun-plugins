@@ -1,16 +1,38 @@
 #!/usr/bin/env bash
 # Live run for T-0202: does a planner given a scout result with a "## Carry forward" section
 # read it, cite its path, and skip the scout's search, compared with a planner given no scout
-# result? Run from the repository root: bash docs/validation/carry-forward-live-run/probe.sh
-# Writes scout.txt, with.txt, and without.txt next to this script. One trial per arm.
+# result? Run from the repository root.
+#
+# Full run: builds the fixture in a new temp dir, runs the three arms (one trial each), and
+# writes scout.txt, with.txt, and without.txt next to this script:
+#   bash docs/validation/carry-forward-live-run/probe.sh
+# Evidence only: runs no role and builds nothing; recomputes the three arms' evidence from the
+# logs and results already in <project dir>/with and <project dir>/without, and writes
+# scout.txt, with.txt, and without.txt to <out dir>:
+#   bash docs/validation/carry-forward-live-run/probe.sh --evidence-only <project dir> <out dir>
 set -uo pipefail
 
 R=$(git rev-parse --show-toplevel)
 RUN=$R/plugins/sdlc-lite/scripts/run.sh
 OUT=$R/docs/validation/carry-forward-live-run
 
-P=$(mktemp -d -t carry-forward-probe)
-echo "project dir: $P (kept after the run)"
+EVIDENCE_ONLY=no
+if (( $# > 0 )); then
+  if [[ $1 == --evidence-only && $# -eq 3 ]]; then
+    EVIDENCE_ONLY=yes
+    P=$2
+    OUT=$3
+    mkdir -p "$OUT" || exit 1
+  else
+    echo "usage: probe.sh [--evidence-only <project dir> <out dir>]" >&2
+    exit 2
+  fi
+fi
+
+if [[ $EVIDENCE_ONLY == no ]]; then
+  P=$(mktemp -d -t carry-forward-probe)
+  echo "project dir: $P (kept after the run)"
+fi
 
 make_project() {
   local d=$1
@@ -82,25 +104,32 @@ cf_body() {
   awk '/^#+ / { if (in_cf) exit; if ($0 == "## Carry forward") { in_cf = 1; next } } in_cf' "$1" 2>/dev/null
 }
 
+# One line per tool call, in log order, with the full compact JSON input.
 tool_lines() {
   jq -R -r 'fromjson? // empty | select(.type=="assistant") | .message.content[]? | select(.type=="tool_use")
-    | "tool=\(.name) input=\(.input | tojson | .[0:200] | sub("\\s+$"; ""))"' "$1" 2>/dev/null
+    | "tool=\(.name) input=\(.input | tojson | sub("\\s+$"; ""))"' "$1" 2>/dev/null
 }
 
+# Search lines, read from the log in log order. A Grep or Glob call counts whole. A Bash call's
+# full .input.command (never .input.description) is split into command-list elements on newline,
+# ;, &&, and ||, a pipeline staying whole, and each trimmed element matching the ERE counts.
 search_lines() {
-  grep -E '^tool=(Grep|Glob) ' "$1"
-  grep -E '^tool=Bash ' "$1" | grep -E 'git grep|grep -[A-Za-z]*[rR]|rg |find '
+  jq -R -r 'fromjson? // empty | select(.type=="assistant") | .message.content[]? | select(.type=="tool_use")
+    | if .name=="Grep" or .name=="Glob" then "search=\(.name) \(.input|tojson)"
+      elif .name=="Bash" then ((.input.command // "") | [splits("\n|;|&&|\\|\\|")] | .[]
+        | sub("^\\s+"; "") | sub("\\s+$"; "")
+        | select(test("git grep|grep -[A-Za-z]*[rR]|rg |find ")) | "search=Bash \(tojson)")
+      else empty end' "$1" 2>/dev/null
 }
 
 evidence() {
   local arm=$1 proj=$2 name=$3 out=$OUT/$1.txt
   local log=$proj/.sdlc/cf/$name.log res=$proj/.sdlc/cf/$name.md
-  local tl
+  local tl sl
   tl=$(mktemp)
+  sl=$(mktemp)
   tool_lines "$log" >"$tl"
-  # Untruncated tool inputs, kept in the project dir for rereading; not part of the metrics.
-  jq -R -r 'fromjson? // empty | select(.type=="assistant") | .message.content[]? | select(.type=="tool_use")
-    | "tool=\(.name) input=\(.input | tojson)"' "$log" >"$P/$arm-tools-full.txt" 2>/dev/null
+  search_lines "$log" >"$sl"
   {
     echo "arm=$arm"
     echo "project=$proj"
@@ -109,9 +138,10 @@ evidence() {
     echo "header=$(head -n 1 "$res" 2>/dev/null)"
     echo "model=$(jq -R -r 'fromjson? // empty | .message.model? // empty' "$log" 2>/dev/null | awk 'NF && !seen[$0]++' | paste -sd, -)"
     cat "$tl"
+    cat "$sl"
     echo "tool_calls=$(grep -c '^tool=' "$tl")"
-    echo "tree_searches=$(search_lines "$tl" | grep -c .)"
-    echo "symbol_searches=$(search_lines "$tl" | grep -c 'pad_cell')"
+    echo "tree_searches=$(grep -c '^search=' "$sl")"
+    echo "symbol_searches=$(grep '^search=' "$sl" | grep -c 'pad_cell')"
     if [[ $arm == scout ]]; then
       if grep -qx '## Carry forward' "$res" 2>/dev/null; then echo "carry_forward_section=yes"; else echo "carry_forward_section=no"; fi
       echo "carry_forward_lines=$(cf_body "$res" | grep -c '[^[:space:]]')"
@@ -128,17 +158,20 @@ evidence() {
       echo "copies_section=$copies"
     fi
   } >"$out"
-  rm -f "$tl"
+  rm -f "$tl" "$sl"
   echo "wrote $out"
 }
 
-(make_project "$P/with")
-(make_project "$P/without")
+if [[ $EVIDENCE_ONLY == no ]]; then
+  (make_project "$P/with")
+  (make_project "$P/without")
 
-role_run "$P/with" scout L1
-role_run "$P/with" planner L2
-role_run "$P/without" planner L2
+  role_run "$P/with" scout L1
+  role_run "$P/with" planner L2
+  role_run "$P/without" planner L2
+fi
 
 evidence scout "$P/with" scout-L1
 evidence with "$P/with" planner-L2
 evidence without "$P/without" planner-L2
+exit 0
