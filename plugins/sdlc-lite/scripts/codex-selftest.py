@@ -262,6 +262,36 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             self.assertEqual(codex_roles.resolve('verifier','L1',self.step),('gpt-6-luna','low',False))
             self.assertFalse(any(name.endswith('-alternate') for name,_ in codex_roles.definitions()))
 
+    def test_verifier_task_dir_reads_newest_live_step_builder(self):
+        from unittest import mock
+        alts={'gpt-6-luna':'fixture-alt','gpt-6-astra':'fixture-alt'}
+        def build(name,files):
+            d=self.repo/name
+            for rel,model in files.items():
+                (d/rel).parent.mkdir(parents=True,exist_ok=True)
+                text='## Step\n' if model is None else f'<!-- role=builder level=L1 model={model} effort=low -->\n## Status\ndone\n'
+                (d/rel).write_text(text)
+            return d
+        with mock.patch.object(codex_roles,'verifier_alternates',return_value=alts):
+            d=build('td1',{'step-1/builder-L1.md':'gpt-6-luna'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('fixture-alt','low',False))
+            with mock.patch.object(codex_roles,'verifier_alternates',return_value={}):
+                self.assertEqual(codex_roles.resolve('verifier','L1',d),('gpt-6-luna','low',True))
+            d=build('td2a',{'step-1/builder-L1.md':'gpt-6-luna','step-2/handoff.md':None,
+                            'step-2.superseded-1/builder-L1.md':'other-model'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('fixture-alt','low',False))
+            d=build('td2b',{'step-1/builder-L1.md':'other-model','step-2.superseded-1/builder-L1.md':'gpt-6-luna'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('gpt-6-luna','low',False))
+            d=build('td3a',{'step-2/builder-L1.md':'other-model','step-10/builder-L1.md':'gpt-6-luna'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('fixture-alt','low',False))
+            d=build('td3b',{'step-2/builder-L1.md':'gpt-6-luna','step-10/builder-L1.md':'other-model'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('gpt-6-luna','low',False))
+            d=build('td4',{'builder-L3.md':'other-model','step-1/builder-L1.md':'gpt-6-luna'})
+            self.assertEqual(codex_roles.resolve('verifier','L1',d),('gpt-6-luna','low',False))
+            d=self.repo/'td5';(d/'step-1').mkdir(parents=True)
+            (d/'step-1'/'planner-L3.md').write_text('<!-- role=planner level=L3 model=gpt-6-astra effort=high -->\n## Steps\n')
+            self.assertEqual(codex_roles.resolve('plan-reviewer','L1',d),('gpt-6-astra','high',False))
+
     def test_verifier_alternate_comes_from_config(self):
         from unittest import mock
         (self.step/'builder-L1.md').write_text('<!-- role=builder level=L1 model=gpt-6-luna effort=low -->\n## Status\ndone\n')

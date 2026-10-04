@@ -199,7 +199,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0192 | [.0192-conductor-batching](.0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | M | P2 | none | 🟢 done |
 | T-0193 | [.0193-footprint](.0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | 🟢 done |
 | T-0194 | [.0194-lean-lane-text](.0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | M | P2 | none | 🟢 done |
-| T-0195 | [0195-runner-family-task-dir](0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | ⏳ proposed |
+| T-0195 | [.0195-runner-family-task-dir](.0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | 🟢 done |
 | T-0196 | [0196-batch-state](0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | ⏳ proposed |
 | T-0197 | [0197-lane](0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L | P2 | T-0194 | ⏳ proposed |
 | T-0198 | [0198-skips-guard](0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | ⏳ proposed |
@@ -213,3 +213,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | ⏳ proposed |
 | T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | ⏳ proposed |
 | T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | M | P2 | T-0199, T-0201, T-0207 | ⏳ proposed |
+| T-0209 | [0209-maintainer-lean-default](0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | S | P2 | T-0194 | ⏳ proposed |
