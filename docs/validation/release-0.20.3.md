@@ -18,7 +18,7 @@ Every code change above was built by a builder role and checked by an independen
 ## Upgrade notes
 
 - Codex projects that installed generated agents should run `python3 plugins/sdlc-lite/scripts/codex_roles.py install <project>` for each project to receive the regenerated `sdlc-messenger-l1` and planner agents.
-- Role results already carry the header line `run.sh` has always written, so existing results validate. A check of every `<role>-L<n>.md` result under `.sdlc/` in this repository found one refusal, the hand-recovered closed result `.0163`, which has an extra token on its header line; closed tickets are not read by the pipeline and the T-0184 branch verifier accepted it.
+- Role results already carry the header line `run.sh` has always written, so existing results validate. A check of every `<role>-L<n>.md` result under `.sdlc/` in this repository found one refusal, the hand-recovered closed result `.0163`, whose header line carries a trailing recovery note that the header pattern does not accept; closed tickets are not read by the pipeline and the T-0184 branch verifier accepted it.
 - The `check.sh` suite now also runs the `results.py` and `footprint.py` selftests.
 - No migration command is needed. Layout is unchanged.
 
