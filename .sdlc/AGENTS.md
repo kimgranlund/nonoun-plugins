@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f297255ab915 -->
+<!-- sdlc-lite:managed:start v1 sha256:223f67df0cd4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -10,7 +10,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 ## Stages
 
 - proposed: 13
-  - T-0195 Runner: verifier family rule for a task-dir verifier (0195-runner-family-task-dir)
   - T-0196 Step state for a whole-ticket (batched) verifier result (0196-batch-state)
   - T-0197 steps.py lane, review_required(), and skips.md (0197-lane)
   - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
@@ -23,6 +22,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
+  - T-0209 Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more (0209-maintainer-lean-default)
 - ready: 5
   - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
   - T-0184 One declared result schema per role, validated before the next role reads it (0184-role-result-schema)
@@ -30,7 +30,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
 - blocked: 0
-- done: 171
+- done: 172
 - dropped: 19
 
 ## Procedures
