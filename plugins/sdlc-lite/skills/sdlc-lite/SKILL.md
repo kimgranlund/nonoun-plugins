@@ -39,6 +39,10 @@ Read referenced rubric, handoff format, templates, or scripts only as required. 
 - Ignore Claude-specific background/Monitor instructions for the outer Codex session. Start shell processes with Codex's execution tool and await completion using its returned session ID. If the tool yields, resume/poll that session. Do not end the turn with a required run still active. Do not use `run_in_background` or a fictional notification mechanism.
 - Native Claude agent frontmatter, output styles, and statusline installation are not Codex features. Do not invoke root agent files as Codex subagents.
 
+## Lane per ticket
+
+Before work on a ticket, run `python3 "<plugin-root>/scripts/steps.py" lane <ticket dir>` and follow its first line: `fix` means the fix workflow, `lean` the lean chain in the chain workflow, and `full` the chain workflow. Run it again after the planner result and after every append to the ticket handoff's `## Plan review` section; a lean ticket that meets a mandatory condition prints `full` from then on. Each run appends its result to `<ticket dir>/skips.md`, and its `reason:` lines name the facts that decided it.
+
 ## Native execution
 
 Read [shared run operations](../handoff-format/run-operations.md) for readiness, routing rationale, and safe recovery. Set `SDLC_ROUTING_REASON` when launching a role; do not invent a task-specific rationale when none was supplied.

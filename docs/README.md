@@ -13,6 +13,8 @@
 
 - [Lean SDLC design review, second round](validation/lean-sdlc-design-review-2.md): dated second architect review of the lean SDLC design at v0.3, ready after fixes, and what v0.4 changed.
 - [Lean SDLC design review](validation/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
+- [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [Lean SDLC cost control review](validation/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
 - [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
@@ -25,6 +27,7 @@
 - [Planner L3 on Opus xhigh](validation/planner-l3-opus-2026-09-30.md): dated decision moving Claude planner L3 from Fable to Opus xhigh, with recorded-cost basis, reviewer consequence, and limits.
 - [Haiku alias probe](validation/haiku-alias-2026-09-30.md): dated probe showing the `haiku` alias resolves to Sonnet 5.5 on a Max login, and the pinned `claude-haiku-4-5` id.
 - [Messages idle-host limit](validation/messages-idle-host-limit-2026-10-01.md): dated correction stating that the messenger cannot wake an idle host, the evidence, and the workaround.
+- [Release 0.20.3](validation/release-0.20.3.md): `messages.py wait`, the role-result schema, `footprint.py`, the lean lane text, and the idle-host limit, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.2](validation/release-0.20.2.md): the ticket root and router, mailbox, and messenger agent, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.1](validation/release-0.20.1.md): the scout pin and planner L3 on Opus, how they were verified, and known limits.
 - [Release 0.20.0](validation/release-0.20.0.md): what shipped since 0.19.0, how it was verified, upgrade notes, and known limits.
@@ -38,4 +41,6 @@
 - [Ticket root and router live run](validation/ticket-root-router-live-run.md): dated live run for T-0175 showing the router block change as a ticket moves proposed to ready to done under `ticket_root: tickets`, and a fresh-role claim and close run recorded as unverified (the role reached `tickets/AGENTS.md` through nested-memory loading).
 - [Messages live run](validation/messages-live-run.md): dated live run for T-0179 showing that a fresh Claude Code role and a fresh Codex role, given only a message path and no skill, read, reply, and ack from the entry files alone, with the messenger on both hosts and a negative control.
 - [Messages wait live run](validation/messages-wait-live-run.md): dated live run for T-0181 in which a fresh Claude Code host and a fresh Codex host were each told to make one `messages.py wait` call, then read, reply, and ack; Claude Code pass, Codex pass.
+- [Runner family task dir live run](validation/runner-family-task-dir-live-run.md): dated live run for T-0195 showing that a Claude Code verifier launched at the task dir runs on Opus after a Sonnet build in step-1/, where the pre-fix run.sh kept Sonnet.
+- [Carry forward live run](validation/carry-forward-live-run.md): dated live run for T-0202 in which a planner given a scout result with a Carry forward section cited its path and did not repeat the scout's search, while a planner given no scout result ran that search; the first planner read the result through a glob (`.sdlc/cf/*.md`), so the specified read_scout_result metric, which looks for the file name in tool inputs, recorded no.
 - [Dual-host readiness and recovery validation](readiness-recovery-validation.md): dated live trials, oracle outcomes, routing history, and scope limits.

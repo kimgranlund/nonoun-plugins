@@ -1,9 +1,12 @@
 # SDLC Lite maintenance
 
+Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction.
+
 Read [repository guidance](../../AGENTS.md) first. Paths below are relative to this plugin unless a command starts with `plugins/`; those commands run from the repository root.
 
 ## Contracts and routing
 
+- Prefer the lean lane or `/fix` for plugin work. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the lean SDLC design](../../docs/lean-sdlc/design.md).
 - Shared roles live in `agents/`; workflows and output contracts live in `skills/`. Keep callers and producers consistent when changing handoffs or verdicts.
 - `agents/` also holds two session agents that are not `run.sh` roles, the `conductor` and the `messenger`. `scripts/check.py` excludes both from the run.sh agreement check and checks the messenger's file and Codex mapping.
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
