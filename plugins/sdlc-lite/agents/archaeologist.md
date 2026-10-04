@@ -19,3 +19,6 @@ Things that look wrong but are deliberate, or that break when touched. "None" if
 
 ## Inferred
 Claims with no direct evidence. "None" if none.
+
+## Carry forward
+The facts and paths later roles must not re-derive: at most 15 lines, one fact per line, each with its path:line or source. For a complete list, such as every caller of a symbol, also name the search that produced it and its scope. "None" if nothing.

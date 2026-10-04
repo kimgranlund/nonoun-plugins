@@ -24,7 +24,7 @@ Every code change above was built by a builder role and checked by an independen
 
 ## Known limits
 
-- The T-0184 ticket (`.sdlc/0184-role-result-schema`) is still `ready` in this commit even though its code is merged and verified and is not closed in this commit.
+- The T-0184 ticket (`.sdlc/.0184-role-result-schema`) is still `ready` in this commit even though its code is merged and verified and is not closed in this commit.
 - The Codex backend arm of the T-0184 live run was not made: no `SDLC_BACKEND=codex` run showed the result check after a Codex role run (`docs/validation/role-result-schema-live-run.md`).
 - `wait` cannot wake an idle host, and the external watcher that would is a design only (`docs/ticket-stages/watcher-design.md`, reviewed as ready after fixes). The supervisor (T-0183), `evals/` (T-0185), `proposals/` (T-0186) and the board overview (T-0187) are not built.
 - The `wait` live runs (`docs/validation/messages-wait-live-run.md`) ran once per host on one machine, on plugin commit bc21b53 with three uncommitted files that were later committed. The whole-branch verifier result for T-0181 is not committed.
