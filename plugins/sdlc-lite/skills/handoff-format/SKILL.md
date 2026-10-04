@@ -167,6 +167,17 @@ The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so
 
 `## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to. A swapped plan defect (a `plan defect:` fail whose criterion `steps.py swap` replaced) rebuilds at the same level without `## Previous attempt`.
 
+## Batched verifier result (task dir)
+
+A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir, not in a step dir. After `## For the next attempt` it adds a `## Verified` section with one item per builder result it verified, the path relative to the task dir, bare or in a code span:
+
+```
+## Verified
+- step-<n>/builder-L<k>[-j].md
+```
+
+`steps.py next` and `resume` treat a listed step as verified while the listed path is still that step's newest builder result by `order.py` (a rebuild after the batch is not listed, so the step goes back to `verify`), and `board.py` renders it. The newest task-dir verifier result (by `order.py`) that lists the build decides: it counts only with Verdict `pass` and no `results.structure_error`, so a later `fail` on the same build overrides an earlier `pass`, and two batches over disjoint steps both stay valid. A step-dir verifier result that counts after the build still decides first. A step is never batch-verified when its newest builder Status is not `done`, its build is L4 or L5, its title starts with `Merge ` or holds `gates green` (any case), it is the highest-numbered live `step-<n>/` in the task dir, or a `step-<n>.superseded-<k>/` sibling exists; those steps take a per-step verifier. `## Verified` is not a declared verifier section, which is fine: `results.structure_error` ignores undeclared headings.
+
 ## Free-text arguments
 
 When a launcher skill gets text instead of a handoff path, create `.sdlc/<slug>/handoff.md` (slug: 2 to 5 lowercase words from the text, hyphenated; add `-2` etc. if taken) from the template, put the text in Goal (or Question for question roles), fill Context from what the current conversation established, and show the user the path.
