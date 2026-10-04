@@ -153,6 +153,11 @@
 - note: The Claude path-only live arm ran in safe mode, so nested `CLAUDE.md` loading of the mailbox files was not exercised there.
 - note: The negative control and every arm ran one trial each on one machine, and the negative control ran on Claude Code only.
 
+## T-0194: Lean lane text and coarse-step rule in chain and planner (2026-10-04)
+
+- note: Lean eligibility in `steps.py lint` covers only plan-time facts, because ticket size and the nearest-AGENTS.md-owner condition cannot be computed there; T-0197 owns `steps.py lane`.
+- note: `steps.py -h` now uses `RawDescriptionHelpFormatter` with an epilog, added so the warning literal appears in help; subcommand help was reported unchanged.
+- note: `shellcheck` is not installed on the build host, so that part of `check.sh` was skipped in this run.
 ## T-0193: footprint.py: measure and gate a ticket's footprint (2026-10-04)
 
 - note: Step 2 builder did not run the three `grep -qF` criteria itself; the step 2 verifier ran them and they passed, so nothing is open.

@@ -13,6 +13,19 @@ Arguments: `$ARGUMENTS`
 
 Every role runs through `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>` from the project root. Levels follow `${CLAUDE_PLUGIN_ROOT}/skills/level-rubric/SKILL.md`; layout follows `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`. You orchestrate; you never do a role's work yourself. How to run `run.sh` depends on the session. Headless (`claude -p`, including `scripts/bench.sh`, which raises `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS`): run every call in the foreground with the Bash tool's `timeout` set to 600000 or more, do not use `run_in_background` there, and never end your turn while a role is running, because ending the turn ends the session and abandons the run. `hooks/block-background.sh` denies Bash `run_in_background` calls and denies any Agent call unless `run_in_background` is explicitly `false` (Agent runs in the background by default, so a missing field counts as background) and every Monitor call whenever `SDLC_ROLE` is set or `SDLC_HEADLESS=1`; bench.sh and fanout set `SDLC_HEADLESS=1`, and any other headless launcher (a dogfood script) must set `SDLC_HEADLESS=1` itself. In an interactive session: a role, or a bench task's full /chain, can take 15 to 30 minutes, past the Bash tool's 10-minute cap. Run `run.sh` with `run_in_background: true`, then wait for the completion notification. Never poll with `sleep`. Once notified, read the result from `<role>-<level>.md`. Ending the turn is safe here because the notification re-invokes the session.
 
+## Lean chain
+A size S or M ticket can run as a lean chain: the same roles with one or two coarse steps.
+
+Lean conditions (all hold): a size S or M ticket; planner L1 or L2; at most two steps, each at builder L1 to L3; no merge step; no replan; and the change stays within one nearest `AGENTS.md` owner, or one script and its tests, with no change to a contract other roles parse (role output sections, `run.sh` tables, `steps.py`, `tickets.py` invariants, hooks).
+
+The full chain is mandatory when any of these holds: planner L3; any step at L4 or L5; any merge step; any replan; a `## Plan review` line in the task handoff; an `unresolved:` assumption; the ticket changes role behavior, a runner invariant, a hook, or a check (its focused live run is still required); or a step touches shared generated state (roadmap, router, generated Codex agents) alongside other tickets in flight. A lean task that meets any of these is on the full chain from that point. Work already done stays valid.
+
+What lean means: the planner follows the Coarse steps rule in [agents/planner.md](../../agents/planner.md). Plan review still follows `steps.py review`, because a lean plan is a routine plan. Each step gets one verifier, and lean never skips a role that `steps.py review` or `steps.py next` asks for.
+
+Close-out: the lean lane always runs the filer. Sections 5 and 6 apply unchanged, with no new `close` gate.
+
+What the code computes today: no script computes the lane yet. The conductor reads these conditions, and `steps.py lint` only warns on step and criterion counts.
+
 ## 1. Brief
 Get or create `.sdlc/<task>/handoff.md`. If it lacks context a clean agent would need, ask the user before running anything.
 
