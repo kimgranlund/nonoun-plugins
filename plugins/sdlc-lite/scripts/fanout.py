@@ -100,7 +100,8 @@ run
        remains the ticket waits, rechecking on each ticket outcome, each lane finishing, or every
        2 s, and prints `waiting for lane <other> (overlap: <paths, sorted>)` each time the lane or
        path set changes. A lane waits only for an earlier lane, so no wait cycle can form, and an
-       overlapping lane merges after the lane it overlaps. Then
+       overlapping lane merges after the lane it overlaps. Limit: an overlap first visible after
+       the later lane has started its merge is not reordered. Then
        under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
        uncommitted tracked changes there refuse the ticket first (`integration dirty: <first path>`;
        no merge, reset, or gate runs, so the edit survives); else the paths of
