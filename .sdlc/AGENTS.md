@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:223f67df0cd4 -->
+<!-- sdlc-lite:managed:start v1 sha256:0832d23e30e9 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 13
+- proposed: 18
   - T-0196 Step state for a whole-ticket (batched) verifier result (0196-batch-state)
   - T-0197 steps.py lane, review_required(), and skips.md (0197-lane)
   - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
@@ -23,6 +23,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0209 Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more (0209-maintainer-lean-default)
+  - T-0210 Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (0210-spec-gate-check)
+  - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
+  - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
+  - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
+  - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
 - ready: 5
   - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
   - T-0184 One declared result schema per role, validated before the next role reads it (0184-role-result-schema)

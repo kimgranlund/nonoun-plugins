@@ -202,6 +202,10 @@ After T-0187 (`board.py`), T-0199 (conductor text) and B (`run.sh`, `run_lifecyc
 
 `scripts/check.py` and `scripts/check.sh` are appended to by every ticket, including T-0183 to T-0187. Each build merges main in before its local merge and keeps both sides, as T-0185 did.
 
+## Filed tickets
+
+Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
+
 ## Targets
 
 Measured from `runs.jsonl` and `footprint.py`, tentative until ten tickets have run on the new process.
