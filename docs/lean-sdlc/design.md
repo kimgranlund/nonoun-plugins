@@ -65,7 +65,7 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 ### Lane selection
 
-`steps.py lane <ticket dir>` (new) prints `fix`, `lean`, or `full` and the reasons, from facts the files already hold: ticket size (front matter has `size` and no owner or subsystem field, `tickets.py:185-190`), planner level, step levels, merge steps, and, after planning, the files in each step's scope allow-list (parsed with the forms `widen` already recognizes, `steps.py:1460-1485`). A.1 extracts a `review_required()` function from `review_action` (which inlines its reasons at `1230-1242`) and `lane` calls it; selftest `(r)` stays green. The conductor runs it and follows the first line, the way it follows `steps.py next`.
+`steps.py lane <ticket dir>` (new) prints `solo`, `lean`, or `full` and the reasons, from facts the files already hold: ticket size (front matter has `size` and no owner or subsystem field, `tickets.py:185-190`), planner level, step levels, merge steps, and, after planning, the files in each step's scope allow-list (parsed with the forms `widen` already recognizes, `steps.py:1460-1485`). A.1 extracts a `review_required()` function from `review_action` (which inlines its reasons at `1230-1242`) and `lane` calls it; selftest `(r)` stays green. The conductor runs it and follows the first line, the way it follows `steps.py next`.
 
 | Lane | Use when | Roles |
 | --- | --- | --- |
@@ -280,7 +280,7 @@ Every guard below has a positive case and a negative control.
 
 | Behavior | Positive | Negative control |
 | --- | --- | --- |
-| `steps.py lane` | A size-S fixture gives `fix`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`; a lean ticket whose handoff gains a `## Plan review` line flips to `full` on the next call |
+| `steps.py lane` | A size-S fixture gives `solo`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`; a lean ticket whose handoff gains a `## Plan review` line flips to `full` on the next call |
 | Skip record | A lean ticket with `skips.md` entries closes | A lean ticket missing an entry fails `check` |
 | Batched verification independence | A task-dir verifier of Sonnet builds runs on a non-Sonnet family and the run record names it (after row V) | The pre-fix run: `run-selftest.sh` dry-runs the family rule on a task-dir fixture (cf. `run-selftest.sh:132-147`) and prints `--model sonnet` before the fix; `codex-selftest.py` resolve cases (cf. `256-262`) show `shared` false with no builder. `run.sh` remaps silently and has no refusal path, so the control asserts the remap |
 | Batched step state | A task-dir verifier result listing the builder results makes `next` and `resume` treat those steps as verified, and `board.py` renders it | A step whose builder result is newer than the listing, or one not listed, still resumes at `verify` |

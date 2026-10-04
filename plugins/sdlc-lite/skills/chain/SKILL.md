@@ -24,7 +24,7 @@ What lean means: the planner follows the Coarse steps rule in [agents/planner.md
 
 Close-out: the lean lane always runs the filer. Sections 5 and 6 apply unchanged, with no new `close` gate.
 
-What the code computes: `steps.py lane <task dir>` prints `fix`, `lean`, or `full` from these conditions, one `reason:` line per deciding fact, and appends each result to the task's `skips.md`; `steps.py lint` warns on step and criterion counts.
+What the code computes: `steps.py lane <task dir>` prints `solo`, `lean`, or `full` from these conditions, one `reason:` line per deciding fact, and appends each result to the task's `skips.md`; `steps.py lint` warns on step and criterion counts.
 
 ## 1. Brief
 Get or create `.sdlc/<task>/handoff.md`. If it lacks context a clean agent would need, ask the user before running anything.
