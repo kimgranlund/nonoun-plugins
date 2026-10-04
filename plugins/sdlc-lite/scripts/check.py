@@ -405,7 +405,7 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
-# Carry forward (docstring item 15): producer contracts end with the section; planner and builder read it first.
+# Carry forward (docstring item 16): producer contracts end with the section; planner and builder read it first.
 CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
 CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
                  'at most 15 lines': CF_PRODUCERS,
