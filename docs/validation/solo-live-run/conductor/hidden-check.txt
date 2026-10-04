@@ -1,0 +1,21 @@
+PASS default unchanged
+PASS max_length None unchanged
+PASS fits exactly
+PASS cut at boundary 11
+PASS cut at boundary 12
+PASS cut mid word 6
+PASS long limit
+PASS first word too long
+PASS limit 1
+PASS custom sep
+PASS empty text
+PASS zero raises
+PASS negative raises
+PASS zero raises on empty text
+PASS helper exported
+PASS helper boundary
+PASS helper unchanged
+PASS helper hard cut
+PASS helper raises
+PASS project tests (OK)
+hidden_check: 20/20 passed
