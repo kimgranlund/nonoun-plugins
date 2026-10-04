@@ -2,7 +2,7 @@
 id: T-0199
 title: "Conductor batching and skip rules"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0196, T-0198]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Part of the lean SDLC design, `docs/lean-sdlc/design.md` (v0.4, build row L7), r
 
 ## Constraints
 Do not edit the repository and plugin AGENTS.md invariants. check.py guards with negative controls for the new text. `codex_roles.py generate --check` passes. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
+
+## Closed
+
+2026-10-04: Built via one handwritten L3 step; verifier L2 pass; gates green. Burn-down: no planner, no filer, one verifier.
