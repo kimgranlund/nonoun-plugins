@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2e2a0fa0c190 -->
+<!-- sdlc-lite:managed:start v1 sha256:223f67df0cd4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 14
+- proposed: 13
   - T-0196 Step state for a whole-ticket (batched) verifier result (0196-batch-state)
   - T-0197 steps.py lane, review_required(), and skips.md (0197-lane)
   - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
@@ -17,7 +17,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
   - T-0201 Anchor rule for step blocks and its lint check (0201-anchor)
   - T-0202 Carry forward section in scout, researcher, architect, archaeologist (0202-carry-forward)
-  - T-0203 fanout.py merge-time file-overlap check (0203-fanout-overlap)
   - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
@@ -31,7 +30,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
 - blocked: 0
-- done: 171
+- done: 172
 - dropped: 19
 
 ## Procedures
