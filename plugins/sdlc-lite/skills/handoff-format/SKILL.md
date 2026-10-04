@@ -18,6 +18,7 @@ user-invocable: false
   planner-L3-2.md       a replan; the latest runs.jsonl record is current
   plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
+  skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
@@ -34,6 +35,8 @@ user-invocable: false
 .sdlc/tickets/          the ticket folders when config has ticket_root: tickets, with its own AGENTS.md and CLAUDE.md; roadmap.md, notes.md, config, and _templates/ stay in .sdlc/
 .sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
+.sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
+.sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
 .sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 

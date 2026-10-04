@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4cb4376c9f6f -->
+<!-- sdlc-lite:managed:start v1 sha256:5c9ccb8f61c1 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,15 +9,28 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 0
-- ready: 5
+- proposed: 5
+  - T-0196 Step state for a whole-ticket (batched) verifier result (0196-batch-state)
+  - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
+  - T-0199 Conductor batching and skip rules (0199-conductor-rules)
+  - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
+  - T-0210 Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (0210-spec-gate-check)
+- ready: 2
   - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
-  - T-0184 One declared result schema per role, validated before the next role reads it (0184-role-result-schema)
-  - T-0185 evals/ folder, evals.py, and a model-table change must cite an eval (0185-evals-folder)
-  - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
+  - T-0215 Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets (0215-solo-operator-tiers)
+- blocked: 11
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
-- blocked: 0
-- done: 164
+  - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
+  - T-0201 Anchor rule for step blocks and its lint check (0201-anchor)
+  - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
+  - T-0206 tickets.py migrate-layout (0206-migrate-layout)
+  - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
+  - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
+  - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
+  - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
+  - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
+  - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
+- done: 178
 - dropped: 19
 
 ## Procedures
@@ -37,3 +50,8 @@ Close a ticket:
 3. Run `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder>`. To file the one `decide:` follow-up worth a ticket, add `--ticket <i> --expect <digest>`. `note:` items and the other `decide:` items go to `notes.md`; `fix-now:` items are finished before the close.
 4. Work already done by another ticket: `python3 <plugin-root>/scripts/tickets.py --root .sdlc close <folder> --reason "<why>"`.
 <!-- sdlc-lite:managed:end -->
+
+## Other records
+
+- Evals: `evals/` holds the dated model and effort experiments and `table-lock.json`; read `evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
+- Proposals: `proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
