@@ -1,0 +1,36 @@
+# Trimmed from the Codex rollout files (~/.codex/sessions/2026/10/04/) and the codex exec --json stream.
+## rollout rollout-2026-10-04T13-36-50-01a108a2-30ec-7d83-8196-87c44e0eb51a.jsonl
+{"id":"01a108a2-30ec-7d83-8196-87c44e0eb51a","agent_role":null,"parent_thread_id":"exec","cli_version":"0.160.0","originator":"codex_exec"}
+{"model":"gpt-6.1-sol","effort":"medium","approval_policy":"never","sandbox":"workspace-write","network_access":false}
+function calls (name, first 160 chars of arguments; message bodies are encrypted):
+  spawn_agent {"task_name":"solo","agent_type":"sdlc-solo-l2","fork_turns":"none","message":"gAAAAABqwrjqTMDC_B36xPiNCt9eL08dO-fpJYlIOTkiY3IZNtGa1Rn4je-6z2ryFUHWIP40vrlSallxL
+  wait_agent {"timeout_ms":60000}
+  wait_agent {"timeout_ms":60000}
+  send_message {"target":"solo","message":"gAAAAABqwrlKllFs9f-MSHg8hJzXDL6MZ_GQdYB9rdWY1ceZ_x1gvjIVve7GaPJyPihRb-SmgxvczRfgFNwt5iL3MCo1f3v7spVlbPvc0oJGw93t8_gcMvWHidI5oMR-oGfT
+  wait_agent {"timeout_ms":60000}
+total token usage:
+{"input_tokens":138930,"cached_input_tokens":121600,"cache_write_input_tokens":0,"output_tokens":497,"reasoning_output_tokens":47,"total_tokens":139427}
+## rollout rollout-2026-10-04T13-36-58-01a108a2-54ef-77d0-8f33-9beeb1333a74.jsonl
+{"id":"01a108a2-54ef-77d0-8f33-9beeb1333a74","agent_role":"sdlc-solo-l2","parent_thread_id":"01a108a2-30ec-7d83-8196-87c44e0eb51a","cli_version":"0.160.0","originator":"codex_exec"}
+{"model":"gpt-6.1-sol","effort":"high","approval_policy":"never","sandbox":"workspace-write","network_access":false}
+function calls (name, first 160 chars of arguments; message bodies are encrypted):
+  exec text(await tools.exec_command({cmd:"cat .sdlc/slug-max-length/handoff.md strkit/__init__.py strkit/words.py strkit/slug.py tests/test_slug.py README.md",max_out
+  exec text(await tools.apply_patch("*** Begin Patch\n*** Update File: strkit/words.py\n@@\n def split_words(text):\n     \"\"\"Return the alphanumeric words of text,
+  send_message {"target":"/root","message":"gAAAAABqwrlERnZ4cD0pyfHPuUSS6iKcXsmZgRMAJC9rJhEWJNR9chJMicXwlgaRwdvXU0kcC1DUasejhzXKtR1UwW038D1Q5ZL2TeOT76tnlGMpbBVMUvm8AYIx35r4jU7
+total token usage:
+{"input_tokens":104330,"cached_input_tokens":83072,"cache_write_input_tokens":0,"output_tokens":2859,"reasoning_output_tokens":491,"total_tokens":107189}
+## solo (sub-agent) assistant messages
+I’ll read the ticket and named files, implement the slug limit, and run the required tests.
+The slug limit is implemented, and all eight tests pass. The tests cover exact boundaries, long first words, custom separators, empty input, and invalid limits. I’ve also documented both APIs and added acceptance criteria for the independent review.
+Implemented `slugify(max_length=None)` and exported `truncate_at_boundary`. Added boundary and validation tests, updated README documentation, and added ticket acceptance criteria.
+
+Files changed: `strkit/__init__.py`, `strkit/words.py`, `strkit/slug.py`, `tests/test_slug.py`, `README.md`, and `.sdlc/slug-max-length/handoff.md`.
+
+Check: `python3 -m unittest discover -s tests` — passed, 8 tests.
+
+Remaining limitation: the required independent Tier M verifier was not run because the user prohibits spawning another agent. No commits were made.
+## codex exec stream: final agent message
+Remaining limitation: the required independent Tier M verifier was not run because the user prohibits spawning another agent. No commits were made.
+## wall time (UTC, from date before and after each command)
+solo: 2026-10-04T20:36:49Z to 2026-10-04T20:38:49Z
+verifier (run.sh): 2026-10-04T20:39:18Z to 2026-10-04T20:41:53Z

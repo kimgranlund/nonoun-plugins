@@ -1,0 +1,21 @@
+PASS default unchanged
+FAIL max_length None unchanged (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL fits exactly (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL cut at boundary 11 (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL cut at boundary 12 (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL cut mid word 6 (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL long limit (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL first word too long (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL limit 1 (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL custom sep (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL empty text (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL zero raises (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL negative raises (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL zero raises on empty text (TypeError: slugify() got an unexpected keyword argument 'max_length')
+FAIL helper exported
+FAIL helper boundary (AttributeError: module 'strkit' has no attribute 'truncate_at_boundary')
+FAIL helper unchanged (AttributeError: module 'strkit' has no attribute 'truncate_at_boundary')
+FAIL helper hard cut (AttributeError: module 'strkit' has no attribute 'truncate_at_boundary')
+FAIL helper raises (AttributeError: module 'strkit' has no attribute 'truncate_at_boundary')
+PASS project tests (OK)
+hidden_check: 2/20 passed

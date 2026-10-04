@@ -7,7 +7,7 @@ level: L3
 ### Read first
 - plugins/sdlc-lite/agents/solo.md
 - docs/validation/messages-live-run.md (an earlier live run: copy its structure and evidence style)
-- plugins/sdlc-lite/scripts/steps.py (the lane section: how `steps.py lane` prints its lane)
+- plugins/sdlc-lite/scripts/steps.py (the lane section: how lane prints its result)
 
 ### Do
 Make the smallest change that meets the criteria. This step adds only files under docs/validation/ and one line in docs/README.md. Do not change any agent, table or lane logic (report defects as notes). Report blocked instead of looping. Budget about $15; run each arm once and record a failure honestly as a limit.

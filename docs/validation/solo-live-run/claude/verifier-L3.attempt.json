@@ -1,0 +1,20 @@
+{
+  "attempt_id": "0e548977ad81443d8b99b6a927c126e5",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-04T20:28:01.524889+00:00",
+  "project": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-live.WxYaOaJq96/claude",
+  "handoff": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-live.WxYaOaJq96/claude/.sdlc/slug-max-length/handoff.md",
+  "owner_pid": 88847,
+  "process_pid": 88960,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T20:35:53.916119+00:00"
+}
