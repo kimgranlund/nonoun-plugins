@@ -481,10 +481,10 @@ def driver_for(ctx, t):
 
 
 def planned_scope(root, slug):
-    """The paths allow-listed by the scope criteria of root/<slug>/step-<n>/handoff.md, or None
-    when no step handoff yields an entry (the ticket is not planned)."""
+    """The paths allow-listed by the scope criteria of <ticket dir>/<slug>/step-<n>/handoff.md, where the
+    ticket dir is tickets.ticket_dir(root), or None when no step handoff yields an entry (the ticket is not planned)."""
     found, any_entry = set(), False
-    tdir = pathlib.Path(root) / slug
+    tdir = tickets.ticket_dir(pathlib.Path(root)) / slug
     steps_dirs = sorted(d for d in tdir.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)) \
         if tdir.is_dir() else []
     for d in steps_dirs:
@@ -1699,6 +1699,15 @@ def selftest():
         (tr / '.sdlc' / 'tickets' / 'x' / 'handoff.md').write_text(
             '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
             'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for slug, tid, grep in (('y', 'T-0002', 'grep -vxF -e shared.txt -e y.txt'),
+                                ('z', 'T-0003', 'grep -vxF -e shared.txt -e z.txt')):
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1').mkdir(parents=True)
+            (tr / '.sdlc' / 'tickets' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1' / 'handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n'
+                f'- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | {grep})"`\n', encoding='utf-8')
         for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
                      ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
                      ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
@@ -1711,6 +1720,12 @@ def selftest():
         expect(f'ticket_root lane: dry run exits 0 naming the ticket folders, got {proc.returncode} '
                f'stdout={proc.stdout!r} stderr={proc.stderr!r}',
                proc.returncode == 0 and 'ticket folders in each worktree: .sdlc/tickets' in proc.stdout)
+        proc = fanout(tr, '--dry-run', '--integration', 'fanout/tr', '--lanes-dir', str(trl), 'a=T-0002', 'b=T-0003')
+        lines = proc.stdout.splitlines()
+        expect(f'ticket_root lane: planned scopes under .sdlc/tickets print the a/b shared.txt pair line, '
+               f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'overlap (planned scope): a T-0002 and b T-0003: shared.txt' in lines
+               and not any('not planned' in x for x in lines))
         proc = fanout(tr, '--integration', 'fanout/tr', '--lanes-dir', str(trl), '--driver', tdrv, 'a=T-0001')
         got = report_rows(trl)
         expect(f'ticket_root lane: run exits 0 merged, got {proc.returncode} {got} stderr={proc.stderr!r}',
