@@ -197,3 +197,9 @@
 - note: Gates and last-step exclusion is heuristic (title contains `gates green`, or highest step number). A non-last gates step with another title could be batch-verified, and a stricter marker would be a planner contract change.
 - note: A step handoff with no `## Step <n>:` line counts as an empty title, so it is not excluded and can be batch-verified. The handoff does not cover this case.
 - note: A conductor that reruns a batch after a partial fail must re-list the passing steps, or they fall back to per-step `verify`. This costs one extra verify and is deliberate.
+
+## T-0210: Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (2026-10-04)
+
+- fix-now: `check.py` order check uses the first `specgate.py check` line in `run.sh`, which is the header comment at run.sh:63, not the command at line 265; point it at the command line so it can't pass on the comment.
+- note: On macOS, where `timeout` is not on PATH, `steps.py` does not treat a span starting with the bare word `timeout` as a command, so `specgate.py` does not see it either. The `timeout N` prefix only counts inside a span that already counts as a command, for example `cd . && timeout 900 bash scripts/check.sh`.
+- note: A plan with more than one `guard timeout:` line outside its step blocks uses the first positive value, and 0 or less is skipped.

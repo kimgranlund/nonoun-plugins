@@ -205,7 +205,7 @@ After T-0187 (`board.py`), T-0199 (conductor text) and B (`run.sh`, `run_lifecyc
 
 ## Filed tickets
 
-Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
+Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/.0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
 
 ## Targets
 

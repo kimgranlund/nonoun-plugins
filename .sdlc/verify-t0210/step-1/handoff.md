@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify branch t0210 (T-0210) against main before it merges. The ticket is .sdlc/0210-spec-gate-check/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
+Independently verify branch t0210 (T-0210) against main before it merges. The ticket is .sdlc/.0210-spec-gate-check/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
 
 ## Step 1: Verify the branch
 level: L3
