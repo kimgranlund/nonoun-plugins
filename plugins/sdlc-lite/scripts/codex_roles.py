@@ -89,7 +89,7 @@ def definitions():
             name = 'sdlc-' + role + '-' + level.lower()
             data = dict(name=name, description=f'SDLC {role} {level}. Read the handoff; follow the shared role contract.', model=model,
                             model_reasoning_effort=effort,
-                            sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger') else 'read-only',
+                            sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger', 'solo') else 'read-only',
                             developer_instructions=instructions(role))
             yield name, data
             if role in PAIRED and model in alternates:
@@ -109,6 +109,18 @@ def resolve(role, level, directory=None):
     if role in PAIRED and directory:
         import order
         produced = order.newest(Path(directory), PAIRED[role])
+        if not produced and role == 'verifier':
+            # A verifier launched at the task dir reads the highest-numbered live step-<n>/ that
+            # holds a builder result; the Claude twin is run.sh's verifier family rule.
+            steps = []
+            for child in Path(directory).iterdir():
+                found = re.fullmatch(r'step-(\d+)', child.name)
+                if found and child.is_dir():
+                    newest = order.newest(child, 'builder')
+                    if newest:
+                        steps.append((int(found[1]), newest))
+            if steps:
+                produced = max(steps, key=lambda s: s[0])[1]
         if produced:
             match = re.search(r'\bmodel=([^\s>]+)', Path(produced).read_text())
             if match and match[1] == model:

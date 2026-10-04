@@ -1,0 +1,20 @@
+{
+  "attempt_id": "668e433dbe22460192668c7b26a1e80e",
+  "name": "plan-reviewer-L1",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "plan review required: a step is at builder L4 or L5",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T16:28:03.062855+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0203",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0203/.sdlc/0203-fanout-overlap/handoff.md",
+  "owner_pid": 59057,
+  "process_pid": 59435,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T16:39:15.759633+00:00"
+}

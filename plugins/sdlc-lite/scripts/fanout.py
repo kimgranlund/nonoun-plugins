@@ -18,9 +18,11 @@ run
   (`alpha@x`) refuses with the usage text.
   Preflight (every refusal prints on stderr, exits 2, and creates nothing): the cwd is in a git
   work tree with a commit; --root (default .sdlc, relative to the cwd) lies inside the toplevel,
-  and its path relative to the toplevel (rel) is the ticket root in every worktree; lane names
+  and its path relative to the toplevel (rel) is the ticket root in every worktree (handoff, step,
+  and filer paths in each worktree use tickets.ticket_dir(root): <root>/tickets under
+  `ticket_root: tickets`, else <root>); lane names
   match ^[a-z0-9]+(-[a-z0-9]+)*$ (not `integration` or `logs`, which name the lanes dir's own
-  entries); each id is T-NNNN, resolves through tickets.load(root) to exactly one folder whose
+  entries); each id is T-NNNN, resolves through tickets.load(tickets.ticket_dir(root)) to exactly one folder whose
   status is not done or dropped, has its handoff committed at the start commit, and appears once
   across all lanes. An external lane's branch must be registered in <root>/config (else the
   refusal names the `external_branch: <branch>` line and that file), refs/heads/<branch> must
@@ -44,6 +46,12 @@ run
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
   tickets, the gates, the driver, the close command) and exits 0, creating nothing; an external
   lane prints `lane <name>: external branch <branch> (registered; no worktree, no driver)`.
+  After the lanes it prints the planned-scope overlap: the allow-list paths of each ticket's
+  step-<n>/handoff.md scope criteria (the grep -vxF/-vxE/-vE forms `steps.py widen` reads), one
+  `overlap (planned scope): <laneA> <idA> and <laneB> <idB>: <paths>` line per intersecting pair
+  of tickets in different lanes, else `overlap (planned scope): none`, and one
+  `overlap (planned scope): not planned, checked at merge time: <ids>` line for tickets with no
+  such scope (unplanned, or in an external lane).
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
   (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
   per regular lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>` (an
@@ -57,7 +65,7 @@ run
        whose gates are still running.
     2. driver, outside the lock: `bash -c <driver>`, cwd the lane worktree, stdin /dev/null,
        output to <lanes-dir>/logs/<lane>-<id>.log, env FANOUT_LANE, FANOUT_TICKET, FANOUT_SLUG,
-       FANOUT_HANDOFF (absolute), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
+       FANOUT_HANDOFF (absolute, in the ticket folder), FANOUT_ROOT (absolute lane root), FANOUT_INTEGRATION,
        FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies Bash and Agent run_in_background),
        SDLC_ROLE=conductor (hooks/block-publish.sh blocks git push, gh writes, and package publishing
        in the Claude sessions the driver launches),
@@ -84,9 +92,23 @@ run
        the lane tree is WIP-committed on the lane branch and kept there for inspection.
     4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
-    5. under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
+    5. first, outside the lock, the overlap wait: lanes rank by their position in the spec list,
+       and the ticket's paths (`git diff --name-only <integration>...<ref>`, ref the lane branch,
+       or refs/heads/<branch> for an external lane) are compared with the pending paths of each
+       earlier lane that has not finished: a regular lane's working tree against its merge base
+       with the integration branch plus its untracked files, an external lane's
+       `<integration>...refs/heads/<branch>` (every such read passes --no-optional-locks, so it
+       never takes that lane's index.lock; a failed read counts as no paths). While any overlap
+       remains the ticket waits, rechecking on each ticket outcome, each lane finishing, or every
+       2 s, and prints `waiting for lane <other> (overlap: <paths, sorted>)` each time the lane or
+       path set changes. A lane waits only for an earlier lane, so no wait cycle can form, and an
+       overlapping lane merges after the lane it overlaps. Limit: an overlap first visible after
+       the later lane has started its merge is not reordered. Then
+       under an exclusive fcntl.flock on <lanes-dir>/merge.lock, in the integration worktree:
        uncommitted tracked changes there refuse the ticket first (`integration dirty: <first path>`;
-       no merge, reset, or gate runs, so the edit survives); else
+       no merge, reset, or gate runs, so the edit survives); else the paths of
+       `git diff --name-only HEAD...<ref>` join the lane's merged paths (the report's Overlap
+       lines), then
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, output to
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
@@ -100,8 +122,9 @@ run
        refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
        naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
   Per ticket of an external lane: no pre-sync wip, no sync, no driver (so no driver log), and no
-  lane commit; straight to step 5 under the lock, sharing its code: the integration-dirty
-  refusal, then `git merge --no-ff --no-edit -m "Merge <branch>: <id>" refs/heads/<branch>` (a
+  lane commit; straight to step 5, sharing its code: the overlap wait, then under the lock the
+  integration-dirty refusal and the merged-paths record, then
+  `git merge --no-ff --no-edit -m "Merge <branch>: <id>" refs/heads/<branch>` (a
   conflict is aborted: `merge conflict`, and the outside agent merges the integration branch on
   their side before a rerun). When HEAD is unchanged after the merge (the branch was already
   merged, as for the second ticket on one branch or a resume) the gates are skipped; else they run
@@ -120,7 +143,10 @@ run
   FANOUT_RUN_ID=<run_id>. Writes <lanes-dir>/report.md
   (| Lane | Ticket | Outcome | Commit |, a `- Run: <run_id>` line, the integration branch and its tip, the worktree paths,
   an external lane's `- Lane <name>: external branch <branch> at <sha>` line (each value in
-  backticks, the full sha of the branch tip), the gates or that none were given) and prints it.
+  backticks, the full sha of the branch tip), the gates or that none were given, the `- Logs:`
+  line, then one ``- Overlap: `<a>` and `<b>`: `<f1>`, `<f2>` `` line per lane pair a before b in
+  spec order whose merged paths (step 5) intersect, the shared paths sorted, or the single line
+  `- Overlap: none`) and prints it.
   An external lane's Commit cell is the merge commit when the merge made one, the integration HEAD (the previous `close` commit) when it merged nothing new, else the branch tip's sha7.
   Exit 0 only when every ticket is `merged`, else 1; 2 for a refusal. checkout, switch, reset and
   commit run only inside the lanes dir;
@@ -176,6 +202,22 @@ selftest
   no local ref, one branch in two lanes, an id absent on the branch, and the branch as the
   integration branch. A `--gate false` run reports `red: false rc=1` and leaves the integration
   branch at its base and ext unchanged.
+  An overlap case (case 13), a repo with a root shared.txt (`top`, 20 `mid <n>` lines, `bottom`)
+  and a stub driver per ticket: alpha (T-0001) rewrites line 1 to `top alpha` and holds until
+  fanout.log shows `[beta] T-0002 waiting for lane alpha (overlap: shared.txt)`; beta (T-0002)
+  holds until alpha's shared.txt starts with `top alpha`, then rewrites the last line to
+  `bottom beta`. The run `alpha=T-0001 beta=T-0002` exits 0 with both merged, alpha's merge
+  before beta's on the integration branch, the waiting line in fanout.log, the report line
+  ``- Overlap: `alpha` and `beta`: `shared.txt` ``, and both edits in the merged shared.txt.
+  Without the wait alpha's driver times out and the case is red. Negative control: the same
+  shape with the stub driver (disjoint lanes) merges both, reports `- Overlap: none`, and logs
+  no `waiting for lane` line.
+  A planned-scope case (case 14): tickets a T-0001 (step-1 scope `grep -vxF -e shared.txt -e a.txt`),
+  b T-0002 (`grep -vxE "shared\\.txt|b\\.txt"`), c T-0003 (no step dir) and d T-0004
+  (`grep -vxF -e b.txt`). `--dry-run alpha=T-0001 beta=T-0002,T-0003` prints the alpha/beta
+  shared.txt pair line and the not-planned line for T-0003; negative control
+  `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
+  Neither creates a branch, worktree or lanes dir.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
 
@@ -251,6 +293,8 @@ class Lane:
         self.external, self.tip = external, None  # tip: the external branch's commit at preflight
         self.branch = self.dir = None
         self.results = []  # (ticket id, outcome, commit)
+        self.files = set()  # every path this lane brought to a merge (report.md's Overlap lines)
+        self.done = False  # set when run_lane returns, under ctx['cond']; a later lane stops waiting on it
 
 
 def branch_clash(name, refs):
@@ -280,9 +324,13 @@ def preflight(a):
         raise Refuse(f'--root {a.root}: {root} is not a dir')
 
     try:
-        ts = tickets.load(root)
+        tdir = tickets.ticket_dir(root)
+        ts = tickets.load(tdir)
+    except tickets.Fail as e:
+        raise Refuse(str(e))
     except (OSError, UnicodeDecodeError) as e:
         raise Refuse(f'{root}: cannot read tickets: {e}')
+    trel = tdir.relative_to(top)
     registered = tickets.external_branches(root)
     lanes, seen, errs = [], {}, []
     for spec in a.lanes:
@@ -330,7 +378,7 @@ def preflight(a):
             hits = [(s, m) for s, m in pool if m.get('id') == tid]
             if not hits:
                 errs.append(f'{tid}: no ticket on branch {ext} has this id' if lane.external
-                            else f'{tid}: no ticket under {root} has this id')
+                            else f'{tid}: no ticket under {tdir} has this id')
             elif len(hits) > 1:
                 errs.append(f'{tid}: {len(hits)} folders share this id ({", ".join(s for s, _ in hits)})')
             elif hits[0][1].get('status') in ('done', 'dropped'):
@@ -406,7 +454,7 @@ def preflight(a):
         if lane.dir.exists():
             raise Refuse(f'{lane.dir} already exists')
 
-    relp = rel.as_posix()
+    relp = trel.as_posix()
     missing = []
     for lane in lanes:
         if lane.external:  # its handoffs were read from the branch itself
@@ -419,7 +467,7 @@ def preflight(a):
         raise Refuse(f'not committed at {start[:12]}: {", ".join(missing)}; lanes see only committed '
                      f'files, so commit the .sdlc/ trail first')
 
-    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'lanes': lanes, 'integration': integration,
+    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
@@ -429,7 +477,56 @@ def preflight(a):
 def driver_for(ctx, t):
     if ctx['driver']:
         return ctx['driver']
-    return default_driver((ctx['rel'] / t.slug / 'handoff.md').as_posix())
+    return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix())
+
+
+def planned_scope(root, slug):
+    """The paths allow-listed by the scope criteria of <ticket dir>/<slug>/step-<n>/handoff.md, where the
+    ticket dir is tickets.ticket_dir(root), or None when no step handoff yields an entry (the ticket is not planned)."""
+    found, any_entry = set(), False
+    tdir = tickets.ticket_dir(pathlib.Path(root)) / slug
+    steps_dirs = sorted(d for d in tdir.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)) \
+        if tdir.is_dir() else []
+    for d in steps_dirs:
+        h = d / 'handoff.md'
+        if not h.is_file():
+            continue
+        for _, line in steps.criteria_indexed(h.read_text(encoding='utf-8').splitlines()):
+            if not steps.list_item(line):
+                continue
+            for span in steps.line_spans(line):
+                if 'git diff --name-only' not in span or not steps.INVERT_GREP_RE.search(span):
+                    continue
+                for form, m in steps.widen_forms(span):
+                    for e in steps.widen_listed(form, m):
+                        if form != 'F':
+                            e = re.sub(r'\\(.)', r'\1', e)
+                        found.add(e)
+                        any_entry = True
+    return found if any_entry else None
+
+
+def plan_overlap(ctx):
+    """The dry run's planned-scope overlap lines."""
+    scoped, unplanned = [], []
+    for lane in ctx['lanes']:
+        for t in lane.tickets:
+            sc = None if lane.external else planned_scope(ctx['root'], t.slug)
+            if sc is None:
+                unplanned.append(t.id)
+            else:
+                scoped.append((lane, t, sc))
+    out = []
+    for i, (la, ta, sa) in enumerate(scoped):
+        for lb, tb, sb in scoped[i + 1:]:
+            if la is not lb and sa & sb:
+                out.append(f"overlap (planned scope): {la.name} {ta.id} and {lb.name} {tb.id}: "
+                           f"{', '.join(sorted(sa & sb))}")
+    if not out:
+        out.append('overlap (planned scope): none')
+    if unplanned:
+        out.append(f"overlap (planned scope): not planned, checked at merge time: {', '.join(unplanned)}")
+    return out
 
 
 def print_plan(ctx):
@@ -441,6 +538,8 @@ def print_plan(ctx):
         out.append(f"integration branch: {ctx['integration']} (new, at the base)")
     out.append(f"integration worktree: {ctx['integ_dir']}")
     out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
+    if ctx['trel'] != ctx['rel']:
+        out.append(f"ticket folders in each worktree: {ctx['trel'].as_posix()}")
     for lane in ctx['lanes']:
         if lane.external:
             out.append(f'lane {lane.name}: external branch {lane.branch} (registered; no worktree, no driver)')
@@ -448,6 +547,7 @@ def print_plan(ctx):
             out.append(f'lane {lane.name}: branch {lane.branch}, worktree {lane.dir}')
         for t in lane.tickets:
             out.append(f'  {t.id} {t.slug}: {t.title}')
+    out += plan_overlap(ctx)
     if ctx['gates']:
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
     else:
@@ -505,9 +605,9 @@ def setup(ctx):
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
-        missing = [str(lane.dir / ctx['rel'] / t.slug / 'handoff.md')
+        missing = [str(lane.dir / ctx['trel'] / t.slug / 'handoff.md')
                    for lane in regular for t in lane.tickets
-                   if not (lane.dir / ctx['rel'] / t.slug / 'handoff.md').is_file()]
+                   if not (lane.dir / ctx['trel'] / t.slug / 'handoff.md').is_file()]
         if missing:
             raise Refuse(f'missing in the lane worktrees: {", ".join(missing)}; the .sdlc/ trail must be '
                          f'committed; removed what this run created')
@@ -665,7 +765,7 @@ def run_ticket(ctx, lane, t, lock):
             return f'sync failed: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}', ''
 
     env = dict(ENV, FANOUT_LANE=lane.name, FANOUT_TICKET=t.id, FANOUT_SLUG=t.slug,
-               FANOUT_HANDOFF=str(wt / rel / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
+               FANOUT_HANDOFF=str(wt / ctx['trel'] / t.slug / 'handoff.md'), FANOUT_ROOT=str(wt / rel),
                FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1', SDLC_ROLE='conductor',
                BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS, FANOUT_RUN_ID=ctx['run_id'])
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
@@ -675,7 +775,7 @@ def run_ticket(ctx, lane, t, lock):
     # before any lane commit. Only dead-owner prefixes go; the exit code is ignored.
     subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), str(wt)], stdin=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
-    inherited = inherited_red(wt / rel / t.slug)
+    inherited = inherited_red(wt / ctx['trel'] / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
@@ -694,13 +794,71 @@ def run_ticket(ctx, lane, t, lock):
     return merge_gate_close(ctx, lane, t, lock, lane.branch, lane_sha[:7])
 
 
+def lane_pending(ctx, lane):
+    """The set of paths lane may still merge: for a regular lane, its working tree against the merge base
+    with the integration branch (committed and uncommitted edits) plus its untracked files; for an external
+    lane, `<integration>...refs/heads/<branch>`. Every git call passes --no-optional-locks first, so a read
+    never takes index.lock while that lane's driver runs git. Any git failure gives an empty set, so a
+    failed read never blocks a waiting lane."""
+    def names(cwd, *args):
+        p = git(cwd, '--no-optional-locks', *args)
+        if p.returncode:
+            raise Refuse(p.stderr.strip() or f'rc={p.returncode}')
+        return {ln for ln in p.stdout.splitlines() if ln}
+
+    integration = ctx['integration']
+    try:
+        if lane.dir is None:
+            return names(ctx['cwd'], 'diff', '--name-only', f'{integration}...refs/heads/{lane.branch}')
+        base = names(lane.dir, 'merge-base', integration, 'HEAD')
+        if len(base) != 1:
+            return set()
+        return (names(lane.dir, 'diff', '--name-only', base.pop())
+                | names(lane.dir, 'ls-files', '--others', '--exclude-standard'))
+    except Exception:
+        return set()
+
+
+def wait_for_overlap(ctx, lane, t, ref):
+    """Before the merge lock: while an earlier lane (spec order) that has not finished may still merge a
+    path this ticket brings (`git diff --name-only <integration>...<ref>`), wait for it, so the lane it
+    overlaps merges first. A lane waits only for an earlier lane, never a later one, so no wait cycle can
+    form. Prints `waiting for lane <other> (overlap: <paths>)` once per distinct lane and path set;
+    rechecks on each notify of ctx['cond'] (a ticket outcome or a lane finishing) or every 2 s."""
+    p = git(ctx['integ_dir'], '--no-optional-locks', 'diff', '--name-only', f"{ctx['integration']}...{ref}")
+    mine = {ln for ln in p.stdout.splitlines() if ln} if p.returncode == 0 else set()
+    if not mine:
+        return
+    lanes, cond, shown = ctx['lanes'], ctx['cond'], None
+    earlier = lanes[:next(k for k, x in enumerate(lanes) if x is lane)]
+    with cond:
+        while True:
+            hit = None
+            for other in earlier:
+                if other.done:
+                    continue
+                files = mine & lane_pending(ctx, other)
+                if files:
+                    hit = (other, files)
+                    break
+            if hit is None:
+                return
+            other, files = hit
+            if (other.name, frozenset(files)) != shown:
+                shown = (other.name, frozenset(files))
+                say(ctx, lane, t.id, f'waiting for lane {other.name} (overlap: {", ".join(sorted(files))})')
+            cond.wait(2)
+
+
 def merge_gate_close(ctx, lane, t, lock, ref, cell):
-    """Step 5 for both lane kinds, under the merge lock in the integration worktree: refuse a dirty tree,
-    merge ref --no-ff as `Merge <lane branch>: <id>`, run the gates (skipped when the merge left HEAD
+    """Step 5 for both lane kinds: first, outside the lock, wait_for_overlap; then under the merge lock in
+    the integration worktree: refuse a dirty tree, record the paths ref brings in lane.files, merge ref
+    --no-ff as `Merge <lane branch>: <id>`, run the gates (skipped when the merge left HEAD
     unchanged: an external branch already merged, as for its second ticket or a resume), close the
     ticket, and commit `close <id>`. cell is the Commit cell for an outcome before the merge stands (the
     lane commit, or an external branch's tip). Returns (outcome, commit)."""
-    integ, rel = ctx['integ_dir'], ctx['rel']
+    integ, rel, trel = ctx['integ_dir'], ctx['rel'], ctx['trel']
+    wait_for_overlap(ctx, lane, t, ref)
     with lock:
         # uncommitted tracked edits in the integration tree: refuse before the merge, so neither
         # `reset --hard <before>` below can discard them (untracked files survive a reset)
@@ -709,6 +867,9 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             return f'integration status failed: {first_line(p.stderr, f"rc={p.returncode}")}', cell
         if p.stdout.strip():
             return f'integration dirty: {p.stdout.splitlines()[0][3:]}', cell
+        p = git(integ, 'diff', '--name-only', f'HEAD...{ref}')
+        if p.returncode == 0:
+            lane.files.update(ln for ln in p.stdout.splitlines() if ln)
         before = git_out(integ, 'rev-parse', 'HEAD')
         p = git(integ, 'merge', '--no-ff', '--no-edit', '-m', f'Merge {lane.branch}: {t.id}', ref)
         if p.returncode:
@@ -733,7 +894,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 git_out(integ, 'reset', '-q', '--hard', before)
                 return f'red: {gate} rc={rc}', cell
         if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
-            src, dst = lane.dir / rel / t.slug, integ / rel / t.slug
+            src, dst = lane.dir / trel / t.slug, integ / trel / t.slug
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
                 shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
@@ -743,7 +904,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         p = subprocess.run(argv, cwd=str(integ), stdin=subprocess.DEVNULL, env=ENV, capture_output=True, text=True)
         if p.returncode:
             # the close wrote nothing; drop any copied files so a later close commit cannot sweep them in
-            git(integ, 'clean', '-fdq', '--', (rel / t.slug).as_posix())
+            git(integ, 'clean', '-fdq', '--', (trel / t.slug).as_posix())
             why = f'merged, close refused: {first_line(p.stderr or p.stdout, f"rc={p.returncode}")}'
             if not ctx['rewrite_refs'] and '--rewrite-refs' in (p.stderr or '') + (p.stdout or ''):
                 why += '; fanout.py run --rewrite-refs rewrites them'
@@ -759,24 +920,32 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
 
 
 def run_lane(ctx, lane, lock):
-    stopped = False
-    for t in lane.tickets:
-        if stopped:
-            outcome, commit = 'skipped', ''
-        else:
-            try:
-                outcome, commit = run_ticket(ctx, lane, t, lock)
-            except Exception as e:  # a git or IO failure mid-ticket: record it, stop the lane
-                outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
-            stopped = outcome != 'merged'
-            if stopped and lane.dir is not None:  # an external lane has no tree here and its branch is not ours
-                # a stopped ticket's work stays on the lane branch as a wip commit, never merged
-                sha = wip_commit(lane.dir, t.id, outcome)
-                if sha:
-                    say(ctx, lane, t.id, f'wip {sha} on {lane.branch}')
-                    commit = commit or f'wip {sha}'
-        lane.results.append((t.id, outcome, commit))
-        say(ctx, lane, t.id, outcome)
+    cond = ctx['cond']
+    try:
+        stopped = False
+        for t in lane.tickets:
+            if stopped:
+                outcome, commit = 'skipped', ''
+            else:
+                try:
+                    outcome, commit = run_ticket(ctx, lane, t, lock)
+                except Exception as e:  # a git or IO failure mid-ticket: record it, stop the lane
+                    outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
+                stopped = outcome != 'merged'
+                if stopped and lane.dir is not None:  # an external lane has no tree here and its branch is not ours
+                    # a stopped ticket's work stays on the lane branch as a wip commit, never merged
+                    sha = wip_commit(lane.dir, t.id, outcome)
+                    if sha:
+                        say(ctx, lane, t.id, f'wip {sha} on {lane.branch}')
+                        commit = commit or f'wip {sha}'
+            lane.results.append((t.id, outcome, commit))
+            with cond:  # a later lane waiting on this one rechecks its overlap now
+                cond.notify_all()
+            say(ctx, lane, t.id, outcome)
+    finally:
+        with cond:
+            lane.done = True
+            cond.notify_all()
 
 
 def report(ctx):
@@ -797,6 +966,10 @@ def report(ctx):
     else:
         out.append('- No gates given: merges were not gated.')
     out.append(f"- Logs: `{ctx['logs']}`")
+    lanes = ctx['lanes']
+    overlap = [f'- Overlap: `{x.name}` and `{y.name}`: ' + ', '.join(f'`{f}`' for f in sorted(x.files & y.files))
+               for k, x in enumerate(lanes) for y in lanes[k + 1:] if x.files & y.files]
+    out += overlap or ['- Overlap: none']
     out += ['', '| Lane | Ticket | Outcome | Commit |', '|---|---|---|---|']
     for lane in ctx['lanes']:
         for tid, outcome, commit in lane.results:
@@ -819,6 +992,7 @@ def cmd_run(a):
         print(f'fanout: {e}', file=sys.stderr)
         return 2
     lock = MergeLock(ctx['lanes_dir'] / 'merge.lock')
+    ctx['cond'] = threading.Condition()  # wait_for_overlap waits on it; run_lane notifies it
     threads = [threading.Thread(target=run_lane, args=(ctx, lane, lock), name=lane.name, daemon=True)
                for lane in ctx['lanes']]
     for th in threads:
@@ -861,6 +1035,34 @@ set -eu
 git worktree add -q --detach "$PWD/.worktrees/tmp/builder-$DEADPID/w" HEAD
 echo "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"
 printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"
+'''
+
+# Case 13: alpha (T-0001) and beta (T-0002) edit far-apart lines of one root file. Alpha's driver holds
+# until beta logs its wait on alpha, so the run only merges both when fanout makes beta wait for alpha.
+# Files are rewritten through a temp file and mv, never sed -i (macOS and GNU sed differ).
+OVERLAP_STUB = r'''#!/usr/bin/env bash
+set -eu
+printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"
+if [ "$FANOUT_TICKET" = T-0001 ]; then
+  { echo 'top alpha'; tail -n +2 shared.txt; } >shared.txt.tmp
+  mv shared.txt.tmp shared.txt
+  i=0
+  until grep -qF '[beta] T-0002 waiting for lane alpha (overlap: shared.txt)' ../logs/fanout.log 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -le 600 ] || { echo "timed out waiting for beta to log its wait on alpha" >&2; exit 1; }
+    sleep 0.1
+  done
+fi
+if [ "$FANOUT_TICKET" = T-0002 ]; then
+  i=0
+  until [ "$(head -n 1 ../alpha/shared.txt 2>/dev/null)" = 'top alpha' ]; do
+    i=$((i + 1))
+    [ "$i" -le 600 ] || { echo "timed out waiting for top alpha in ../alpha/shared.txt" >&2; exit 1; }
+    sleep 0.1
+  done
+  { sed '$d' shared.txt; echo 'bottom beta'; } >shared.txt.tmp
+  mv shared.txt.tmp shared.txt
+fi
 '''
 
 
@@ -1489,6 +1691,141 @@ def selftest():
         expect('external red gate: the integration branch stays at its base',
                em0 and sh(er, 'rev-parse', 'fanout/ext-red').stdout.strip() == em0)
         expect('external red gate: the ext tip is unchanged', e0 and sh(er, 'rev-parse', 'ext').stdout.strip() == e0)
+
+        # A regular lane under `ticket_root: tickets`: ids, handoff, filer, and close use <root>/tickets.
+        tr, trl = tmp / 'troot', tmp / 'trlanes'
+        (tr / '.sdlc' / 'tickets' / 'x').mkdir(parents=True)
+        (tr / '.sdlc' / 'config').write_text('ticket_root: tickets\n', encoding='utf-8')
+        (tr / '.sdlc' / 'tickets' / 'x' / 'handoff.md').write_text(
+            '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+            'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for slug, tid, grep in (('y', 'T-0002', 'grep -vxF -e shared.txt -e y.txt'),
+                                ('z', 'T-0003', 'grep -vxF -e shared.txt -e z.txt')):
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1').mkdir(parents=True)
+            (tr / '.sdlc' / 'tickets' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+                f'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+            (tr / '.sdlc' / 'tickets' / slug / 'step-1' / 'handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n'
+                f'- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | {grep})"`\n', encoding='utf-8')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(tr, *args)
+            expect(f'ticket_root lane: fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}',
+                   p.returncode == 0)
+        tdrv = ('printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$(dirname "$FANOUT_HANDOFF")/filer-L1.md"; '
+                'echo x > x.txt')
+        proc = fanout(tr, '--dry-run', '--integration', 'fanout/tr', '--lanes-dir', str(trl), 'a=T-0001')
+        expect(f'ticket_root lane: dry run exits 0 naming the ticket folders, got {proc.returncode} '
+               f'stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'ticket folders in each worktree: .sdlc/tickets' in proc.stdout)
+        proc = fanout(tr, '--dry-run', '--integration', 'fanout/tr', '--lanes-dir', str(trl), 'a=T-0002', 'b=T-0003')
+        lines = proc.stdout.splitlines()
+        expect(f'ticket_root lane: planned scopes under .sdlc/tickets print the a/b shared.txt pair line, '
+               f'got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'overlap (planned scope): a T-0002 and b T-0003: shared.txt' in lines
+               and not any('not planned' in x for x in lines))
+        proc = fanout(tr, '--integration', 'fanout/tr', '--lanes-dir', str(trl), '--driver', tdrv, 'a=T-0001')
+        got = report_rows(trl)
+        expect(f'ticket_root lane: run exits 0 merged, got {proc.returncode} {got} stderr={proc.stderr!r}',
+               proc.returncode == 0 and got.get('T-0001') == 'merged')
+        shown = sh(tr, 'show', 'fanout/tr:.sdlc/tickets/x/handoff.md')
+        expect(f'ticket_root lane: the integration handoff says status: done, got {shown.stdout[:160]!r}',
+               shown.returncode == 0 and re.search(r'^status: done\b', shown.stdout, re.M))
+        subj = sh(tr, 'log', '-1', '--format=%s', 'fanout/tr').stdout.strip()
+        expect(f'ticket_root lane: the integration tip is close T-0001, got {subj!r}', subj == 'close T-0001')
+        expect('ticket_root lane: no .sdlc/x folder on the integration branch',
+               sh(tr, 'cat-file', '-e', 'fanout/tr:.sdlc/x').returncode != 0)
+        # 13. Overlap: alpha and beta both edit shared.txt (line 1 and the last line). Beta reaches its merge
+        # while alpha's driver still runs, waits for alpha (the earlier lane), and merges after it; without
+        # the wait, alpha's driver times out. Negative control: disjoint lanes report none and never wait.
+        shared = 'top\n' + ''.join(f'mid {n}\n' for n in range(1, 21)) + 'bottom\n'
+        ostub = tmp / 'overlap-stub.sh'
+        ostub.write_text(OVERLAP_STUB)
+        ostub.chmod(0o755)
+        ovr, ovl = tmp / 'overlap', tmp / 'ovlanes'
+        make_repo(ovr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'shared.txt': shared})
+        proc = fanout(ovr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/ov', '--lanes-dir', str(ovl),
+                      '--driver', shlex.quote(str(ostub)))
+        got = report_rows(ovl)
+        expect(f'overlap: exit 0, both rows merged, got {proc.returncode} {got} stdout={proc.stdout!r} '
+               f'stderr={proc.stderr!r}',
+               proc.returncode == 0 and got == {'T-0001': 'merged', 'T-0002': 'merged'})
+        order = sh(ovr, 'log', '--first-parent', '--merges', '--format=%s', 'fanout/ov').stdout.splitlines()[::-1]
+        expect(f'overlap order: alpha merges before beta, got {order!r}',
+               order == ['Merge fanout/ov-alpha: T-0001', 'Merge fanout/ov-beta: T-0002'])
+        olog = ovl / 'logs' / 'fanout.log'
+        otext = olog.read_text() if olog.is_file() else ''
+        expect(f'overlap: fanout.log contains waiting for lane alpha (overlap: shared.txt), got {otext!r}',
+               'waiting for lane alpha (overlap: shared.txt)' in otext)
+        rep = ovl / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'overlap: report.md has the line - Overlap: `alpha` and `beta`: `shared.txt`, got {text!r}',
+               '- Overlap: `alpha` and `beta`: `shared.txt`' in text.splitlines())
+        merged = sh(ovr, 'show', 'fanout/ov:shared.txt').stdout.splitlines()
+        expect(f'overlap: the integration shared.txt holds both top alpha and bottom beta, got {merged!r}',
+               'top alpha' in merged and 'bottom beta' in merged)
+
+        jr, jl = tmp / 'disjoint', tmp / 'jlanes'
+        make_repo(jr, [('a', 'T-0001', 'ready'), ('b', 'T-0002', 'ready')], {'shared.txt': shared})
+        proc = fanout(jr, 'alpha=T-0001', 'beta=T-0002', '--integration', 'fanout/dj', '--lanes-dir', str(jl),
+                      '--driver', shlex.quote(str(stub)))
+        got = report_rows(jl)
+        expect(f'disjoint lanes (negative control): exit 0, both rows merged, got {proc.returncode} {got} '
+               f'stderr={proc.stderr!r}', proc.returncode == 0 and got == {'T-0001': 'merged', 'T-0002': 'merged'})
+        rep = jl / 'report.md'
+        text = rep.read_text() if rep.is_file() else ''
+        expect(f'disjoint lanes (negative control): report.md holds - Overlap: none, got {text!r}',
+               '- Overlap: none' in text.splitlines())
+        jlog = jl / 'logs' / 'fanout.log'
+        jtext = jlog.read_text() if jlog.is_file() else ''
+        expect(f'disjoint lanes (negative control): fanout.log holds both merged lines and no waiting for lane, '
+               f'got {jtext!r}',
+               '[alpha] T-0001 merged' in jtext and '[beta] T-0002 merged' in jtext and 'waiting for lane' not in jtext)
+
+        # 14. Planned-scope overlap in the dry run, read from step handoffs' scope criteria.
+        pr = tmp / 'planned'
+        def scope_step(slug, grep):
+            d = pr / '.sdlc' / slug / 'step-1'
+            d.mkdir(parents=True)
+            d.joinpath('handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n'
+                f'- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | {grep})"`\n', encoding='utf-8')
+        pr.mkdir()
+        (pr / '.sdlc').mkdir()
+        pspecs = [('a', 'T-0001'), ('b', 'T-0002'), ('c', 'T-0003'), ('d', 'T-0004')]
+        for slug, tid in pspecs:
+            (pr / '.sdlc' / slug).mkdir()
+            (pr / '.sdlc' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: S\n'
+                f'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+        scope_step('a', 'grep -vxF -e shared.txt -e a.txt')
+        scope_step('b', 'grep -vxE "shared\\.txt|b\\.txt"')
+        scope_step('d', 'grep -vxF -e b.txt')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(pr, *args)
+            expect(f'planned fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+        pl = tmp / 'pllanes'
+        proc = fanout(pr, '--dry-run', '--lanes-dir', str(pl), 'alpha=T-0001', 'beta=T-0002,T-0003')
+        lines = proc.stdout.splitlines()
+        expect(f'case 14 planned scope: dry run exits 0 with the alpha/beta shared.txt pair line and T-0003 not '
+               f'planned, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0
+               and 'overlap (planned scope): alpha T-0001 and beta T-0002: shared.txt' in lines
+               and 'overlap (planned scope): not planned, checked at merge time: T-0003' in lines
+               and 'overlap (planned scope): none' not in lines)
+        proc = fanout(pr, '--dry-run', '--lanes-dir', str(pl), 'alpha=T-0001', 'beta=T-0004')
+        lines = proc.stdout.splitlines()
+        expect(f'case 14 planned scope negative control: disjoint scopes print none and no pair line, '
+               f'got {proc.returncode} stdout={proc.stdout!r}',
+               proc.returncode == 0 and 'overlap (planned scope): none' in lines
+               and not any(' and beta ' in x for x in lines if x.startswith('overlap (planned scope):')))
+        expect('case 14 planned scope: dry runs create no fanout/* branch, worktree or lanes dir',
+               sh(pr, 'branch', '--list', 'fanout/*').stdout.strip() == ''
+               and len(sh(pr, 'worktree', 'list').stdout.splitlines()) == 1 and not pl.exists())
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

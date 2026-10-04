@@ -2,7 +2,8 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | review <task dir> | next <step dir> | resume <task dir> |
+                 lint <planner.md | task dir> | review <task dir> | lane <task dir> | next <step dir> |
+                 resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
@@ -24,10 +25,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             verbatim with the rest of the step block.
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
-            bash -c, from the git toplevel of the task dir (else the task dir), under
-            --guard-timeout SECONDS (default 300), with SDLC_BASE_SHA set to git rev-parse HEAD
-            at the toplevel (no build has started, so HEAD is the base; unset outside git, never
-            inherited from the caller). A span that references HEAD^1 or holds a
+            bash -c, from the git toplevel of the task dir (else the task dir), under a per-step
+            timeout: an explicit --guard-timeout SECONDS wins; otherwise the step block's own
+            "guard timeout: <seconds>" line, else such a line outside every ## Step block (for
+            example in ## Goal), else 300; a value of 0 or less counts as no line. Spans run with
+            SDLC_BASE_SHA set to git rev-parse HEAD at the toplevel (no build has started, so HEAD
+            is the base; unset outside git, never inherited from the caller). A span that references HEAD^1 or holds a
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
@@ -133,6 +136,55 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             An invalid result prints "invalid result: <path>: <reason>", then "reason: the newest
             result does not match its results.py schema; stop and ask the user", then the read:
             lines; exit 0. next and resume print it the same way.
+  lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md.
+            Stdout: the lane, then one "reason: <text>" line per reason, then one "read: <path>" line per
+            file read (<task dir>/handoff.md when it exists, the newest planner-*.md by order.py when
+            there is one, <task dir>/skips.md when it existed before this call); exit 0.
+            Facts: the size is the handoff.md front matter field size (tickets.parse), valid only when it
+            is S, M, L, or XL; a handoff with no front matter block has no size. The point is "before
+            planning" with no planner result, "after plan review" when there is one and handoff.md has a
+            line "## Plan review", else "after planning". The plan is read leniently, like review's
+            plan facts: no results.structure_error check, since split, lint, and review refuse a bad plan.
+            Rules, reasons collected in this order:
+              skips.md has a line starting "- lane: full;" in its ## Lane section -> "skips.md already
+                records full, and a lane never returns from full" (a lane never returns from full)
+              no valid size -> "handoff.md front matter has no size of S, M, L, or XL"
+            Before planning, size alone decides: with either reason above the lane is full and only those
+            print; else S or M -> solo, L or XL -> full, with the one reason "size <v> decides before
+            planning (no planner result yet)". After planning, more reasons follow, in order:
+              size L or XL -> "size <v> is above M, and lean takes only size S or M"
+              an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
+                an unresolved assumption: "<first item>""
+              every reason review_required() returns, verbatim (planner L3, a step at L4 or L5, a merge
+                step, a replan, a ## Plan review line)
+              steps that do not parse -> "<plan> has steps that do not parse (steps.py lint names why)",
+                and the step rules below are skipped
+              more than 2 steps -> "<k> steps, and lean allows at most 2"
+              a step with more than 12 top-level acceptance criteria -> "step <n> has <k> acceptance
+                criteria, and lean allows at most 12"
+              a step with no scope allow-list (a list-item criterion span with git diff --name-only and a
+                grep -v allow-list in a form widen recognizes, F, E, or A) -> "step <n> has no scope
+                allow-list in a form steps.py widen recognizes, so its files are unknown"
+              an allow-list entry that is not a repo-relative path (widen's path rule; an E or A
+                alternative is unescaped, or kept raw when it holds a pattern character) -> "step <n>
+                scope entry is not a repo-relative path: <entry>"
+              a path in LANE_CONTRACTS (files other roles parse: agents/, skills/, hooks/, the codex
+                adapter, run.sh, steps.py, tickets.py, results.py, and the other runner and check
+                scripts) -> "step <n> scope names a contract other roles parse: <path>"
+              scoped paths whose nearest AGENTS.md dirs (from the path's dir up to the git toplevel, else
+                the task dir; none means the root) differ -> "scoped files span <k> AGENTS.md owners:
+                <owners>"
+            No reason after planning -> lean, with the one reason "every lean condition holds: size <v>,
+            planner L<n>, <k> steps at L1 to L3, one AGENTS.md owner (<owner>)"; any reason -> full.
+            After planning the lane is never solo.
+            skips.md: each call appends one line "- lane: <lane>; point: <point>; reasons: <reasons
+            joined by "; ">" to the ## Lane section, after its last non-blank line; with no ## Lane
+            section, a new one goes before the first ## line, or at the end; a missing file is written
+            as "# Skips", a blank line, "## Lane", and the line. Every other line is kept byte for byte,
+            and duplicates are appended too. Lane owns only its ## Lane section.
+            A missing task dir prints one "steps lane: no such directory: <task dir>" line on stderr, and
+            an OSError writing skips.md one "steps lane: cannot write <path>: <error>" line; either way
+            nothing goes to stdout and it exits 1.
   next      print the next escalation action for a step dir (/chain step 4), from its newest
             builder-*.md and verifier-*.md by order.py (ordered, newest, counts_after; never file
             times). Writes nothing. Stdout: "<action>" or "<action> L<n>", then "reason: <text>",
@@ -149,7 +201,16 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
               newest builder Status blocked              -> replan (whatever its Notes say)
-              no verifier result counts after the build  -> verify L<verifier level>
+              no verifier result counts after the build  -> verify L<verifier level>,
+                but done when batch_verified(step dir) names a task-dir verifier result: the
+                newest task-dir verifier-*.md (order.py) whose ## Verified section lists
+                step-<n>/<newest builder file name> (bare or in a code span) decides, and it
+                counts only when it passes results.structure_error and its Verdict is pass (a
+                later listing of the same build overrides an earlier one; never file times).
+                Never batch-verified: the newest builder Status is not done, the build is L4 or
+                L5, the step title starts with "Merge " or holds "gates green" (any case), the
+                step is the highest-numbered live step-<n>/ in the task dir, or a sibling
+                step-<n>.superseded-<k>/ exists.
               newest verifier fails results.structure_error(v, 'verifier') -> invalid result
                 (read: the build and that verifier); a missing or disallowed Verdict is not one
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
@@ -177,7 +238,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             that step dir as <task dir as given>/step-<n>, then exactly what next prints for it;
             exit 0. When every candidate is done: "done", then "reason: every step-<n>/ passed";
             exit 0. It never picks the newest or highest step dir. Writes nothing and never reads
-            file times.
+            file times. A step that next calls done through a batch-verified task-dir verifier
+            result (## Verified, above) counts as done.
             A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
             a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
@@ -249,6 +311,8 @@ import results
 
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
+GUARD_TIMEOUT_RE = re.compile(r'^guard timeout:\s*(\d+(?:\.\d+)?)\s*$')
+DEFAULT_GUARD_TIMEOUT = 300
 SPAN_RE = re.compile(r'(`+)(.+?)\1')
 ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
 PLACEHOLDER_RE = re.compile(r'<[^<>\s][^<>]*>')
@@ -328,6 +392,36 @@ def parse_steps(plan):
             raise Fail(f'steps: step {n} in {plan} has no "level: L1".."level: L5" line')
         out[n] = '\n'.join(block)
     return out
+
+
+def guard_timeout_in(lines):
+    """The first "guard timeout: <seconds>" value above 0 (and finite) among lines, else None."""
+    for line in lines:
+        m = GUARD_TIMEOUT_RE.match(line)
+        if m:
+            v = float(m.group(1))
+            if 0 < v < float('inf'):
+                return v
+    return None
+
+
+def plan_guard_timeout(plan):
+    """The plan-level guard timeout: a "guard timeout: <seconds>" line outside every ## Step block
+    (a block runs from its ## Step line to the next ## line), else None. 0 or less counts as no line."""
+    outside, in_step = [], False
+    for line in plan.read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            in_step = STEP_RE.match(line) is not None
+            continue
+        if not in_step:
+            outside.append(line)
+    return guard_timeout_in(outside)
+
+
+def step_guard_timeout(block):
+    """The step-level guard timeout: a "guard timeout: <seconds>" line inside one step block, else
+    None. 0 or less counts as no line."""
+    return guard_timeout_in(block.splitlines())
 
 
 def criteria_indexed(lines):
@@ -530,9 +624,9 @@ def run_guard(text, cwd, timeout, base=None):
     return rc, tail[-5:]
 
 
-def run_guards(plan, steps, chosen, task_dir, timeout):
-    """Run the runnable (guard) spans of each chosen step; raise Fail naming every red one.
-    Called only by split --only; a full split and lint never execute a span."""
+def run_guards(plan, steps, chosen, task_dir, timeouts):
+    """Run the runnable (guard) spans of each chosen step, each under timeouts[n] seconds; raise
+    Fail naming every red one. Called only by split --only; a full split and lint never execute a span."""
     top = git_toplevel(task_dir)
     cwd = top or str(task_dir)
     base = base_sha(top)
@@ -544,6 +638,7 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
             if top and not ran:
                 before = tree_state(top)
             ran = True
+            timeout = timeouts[n]
             rc, tail = run_guard(text, cwd, timeout, base)
             if rc == 0:
                 continue
@@ -888,9 +983,10 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=300):
+def split(target, only=None, guard_timeout=None):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
-    runnable (guard) spans run before any write."""
+    runnable (guard) spans run before any write, each step under guard_timeout when given, else
+    its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT."""
     plan, task_dir = find_plan(target)
     err = results.structure_error(plan, 'planner')
     if err is not None:
@@ -924,7 +1020,11 @@ def split(target, only=None, guard_timeout=300):
             raise Fail(f'steps: {d} already holds role output ({", ".join(done)}). Per /chain 4.2, rename it '
                        f'to step-{n}.superseded-<k>/ (next free k) first, then split again. Nothing was written.')
     if only:
-        run_guards(plan, steps, chosen, task_dir, guard_timeout)
+        plan_timeout = plan_guard_timeout(plan)
+        timeouts = {n: guard_timeout if guard_timeout is not None
+                    else step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT
+                    for n in chosen}
+        run_guards(plan, steps, chosen, task_dir, timeouts)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -935,7 +1035,7 @@ def split(target, only=None, guard_timeout=300):
     return written
 
 
-def cmd_split(target, only, guard_timeout=300):
+def cmd_split(target, only, guard_timeout=None):
     try:
         written = split(target, only, guard_timeout)
     except Fail as e:
@@ -946,6 +1046,12 @@ def cmd_split(target, only, guard_timeout=300):
     return 0
 
 
+def criteria_count(block):
+    """The number of top-level acceptance criteria of a step block: criteria_lines lines that start with
+    '- ' or '* '. The one count lean_warnings and lane read."""
+    return sum(1 for line in criteria_lines(block) if re.match(r'^[-*] ', line))
+
+
 def lean_warnings(plan, task_dir, steps):
     """Coarse-step warning lines for a plan that meets the lean plan conditions, else []."""
     try:
@@ -953,14 +1059,8 @@ def lean_warnings(plan, task_dir, steps):
             return []
     except Fail:
         return []
-    unresolved, levels, titles = plan_facts(plan)
-    if unresolved or any(n not in (1, 2, 3) for n in levels) or any(x.startswith('Merge ') for x in titles):
-        return []
-    if len(order.ordered(task_dir, 'planner')) >= 2:
-        return []
-    h = pathlib.Path(task_dir) / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
+    unresolved, why = review_required(plan, task_dir)
+    if unresolved or why:
         return []
     rule = '(agents/planner.md, Coarse steps)'
     out = []
@@ -968,7 +1068,7 @@ def lean_warnings(plan, task_dir, steps):
         out.append(f'steps lint: warning: {plan}: {len(steps)} steps; the coarse-step rule allows at most 2 '
                    f'in a plan that meets the lean plan conditions {rule}')
     for n, block in steps.items():
-        if sum(1 for line in criteria_lines(block) if re.match(r'^[-*] ', line)) == 1:
+        if criteria_count(block) == 1:
             out.append(f'steps lint: warning: {plan} step {n}: one acceptance criterion; '
                        f'the coarse-step rule merges it into a neighboring step {rule}')
     return out
@@ -1067,6 +1167,55 @@ def handoff_level(d):
     raise Fail(f'steps next: no builder result and {h} has no "level: L1".."level: L5" line')
 
 
+BATCH_PATH_RE = re.compile(r'(?<![\w./-])step-\d+/builder-L\d+(?:-\d+)?\.md(?![\w.-])')
+
+
+def batch_verified(step_dir):
+    """Path of the task-dir verifier result that verified this step's newest build in a batch, else
+    None. The only copy of the rule (board.py imports it). Reads only; never file times.
+    None when: the dir name is not step-<n>; no newest builder, or its Status is not done; the build
+    is L4 or L5; the handoff's step title starts with "Merge " or holds "gates green" (any case);
+    the step is the highest-numbered live step-<n>/ of the task dir; a step-<n>.superseded-<k>/
+    sibling exists. Otherwise the newest task-dir verifier result (order.py) whose ## Verified
+    section lists step-<n>/<newest builder name> decides: its path when it is structurally valid
+    with Verdict pass, else None."""
+    d = pathlib.Path(step_dir)
+    if not STEP_DIR_RE.fullmatch(d.name):
+        d = d.resolve()
+    m = STEP_DIR_RE.fullmatch(d.name)
+    if not m:
+        return None
+    n, task_dir = int(m.group(1)), d.parent
+    b = order.newest(d, 'builder')
+    if b is None or build_status_or_none(b) != 'done' or result_level(b) >= 4:
+        return None
+    title = ''
+    h = d / 'handoff.md'
+    if h.is_file():
+        for line in h.read_text(encoding='utf-8').splitlines():
+            t = STEP_RE.match(line)
+            if t:
+                title = t.group(2).strip()
+                break
+    if title.startswith('Merge ') or 'gates green' in title.lower():
+        return None
+    live = [int(x.group(1)) for c in task_dir.iterdir()
+            if c.is_dir() and (x := STEP_DIR_RE.fullmatch(c.name))]
+    if n >= max(live, default=n):
+        return None
+    if any(c.is_dir() and re.fullmatch(rf'step-{n}\.superseded-\d+', c.name) for c in task_dir.iterdir()):
+        return None
+    want = f'step-{n}/{os.path.basename(b)}'
+    for w in reversed(order.ordered(task_dir, 'verifier')):
+        listed = {p for line in (section(w, 'Verified') or []) for p in BATCH_PATH_RE.findall(line)}
+        if want not in listed:
+            continue
+        if results.structure_error(w, 'verifier') is None and verdict_or_none(w) == 'pass':
+            return w
+        return None
+    return None
+
+
 def next_action(step_dir):
     """Return (action, level or None, reason, [result paths read]). Reads only; never file times.
     Ordering comes from order.py alone (ordered, newest, counts_after)."""
@@ -1105,7 +1254,12 @@ def next_action(step_dir):
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
     if v is None or not order.counts_after(v, b):
-        why = 'no verifier result' if v is None else f'verifier {os.path.basename(v)} is older than the build'
+        batch = batch_verified(d)
+        if batch is not None:
+            want = f'{d.resolve().name}/{os.path.basename(b)}'
+            return ('done', None,
+                    f'batch verifier {os.path.basename(batch)} lists {want} with Verdict pass', read + [batch])
+        why ='no verifier result' if v is None else f'verifier {os.path.basename(v)} is older than the build'
         return ('verify', verifier_level(level),
                 f'{why}; build L{level} -> verifier L{verifier_level(level)}', read)
     read.append(v)
@@ -1262,6 +1416,28 @@ def plan_facts(plan):
     return unresolved, levels, titles
 
 
+def review_required(plan, task_dir):
+    """(unresolved assumption items, reasons a plan review is required) for plan in task_dir. The one
+    rule that review, lane, and lint's lean warnings read. result_level's Fail propagates."""
+    unresolved, levels, titles = plan_facts(plan)
+    pname = os.path.basename(plan)
+    why = []
+    if result_level(plan) == 3:
+        why.append(f'{pname} is a planner L3 plan')
+    if any(n in (4, 5) for n in levels):
+        why.append('a step is at builder L4 or L5')
+    if any(x.startswith('Merge ') for x in titles):
+        why.append('the plan has a merge step')
+    n = len(order.ordered(task_dir, 'planner'))
+    if n >= 2:
+        why.append(f'{n} planner results (a replan)')
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(line.rstrip() == '## Plan review'
+                           for line in h.read_text(encoding='utf-8').splitlines()):
+        why.append('handoff.md holds ## Plan review')
+    return unresolved, why
+
+
 def rejected_by_review(plan, task_dir):
     """(plan-reviewer result, verdict) when the newest plan-reviewer result that counts after plan
     says replan or blocked, else None."""
@@ -1288,23 +1464,10 @@ def review_action(task):
         return 'invalid result', None, f'{plan}: {err}', [plan]
     pname = os.path.basename(plan)
     read = [plan]
-    unresolved, levels, titles = plan_facts(plan)
+    unresolved, why = review_required(plan, t)
     if unresolved:
         return ('stop', None, f'{pname} lists an unresolved assumption: "{unresolved[0]}"; the user decides',
                 read)
-    why = []
-    if result_level(plan) == 3:
-        why.append(f'{pname} is a planner L3 plan')
-    if any(n in (4, 5) for n in levels):
-        why.append('a step is at builder L4 or L5')
-    if any(x.startswith('Merge ') for x in titles):
-        why.append('the plan has a merge step')
-    if len(plans) >= 2:
-        why.append(f'{len(plans)} planner results (a replan)')
-    h = t / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
-        why.append('handoff.md holds ## Plan review')
     if not why:
         return 'split', None, f'{pname} is a routine plan; no plan review is required', read
     need = '; '.join(why)
@@ -1354,6 +1517,223 @@ def cmd_review(task):
         print(e, file=sys.stderr)
         return 1
     print_action(action, level, reason, read)
+    return 0
+
+
+# --- lane -------------------------------------------------------------------
+
+LANE_MAX_STEPS = 2
+LANE_MAX_CRITERIA = 12
+LANE_CONTRACTS = (
+    'plugins/sdlc-lite/agents/',
+    'plugins/sdlc-lite/skills/',
+    'plugins/sdlc-lite/hooks/',
+    'plugins/sdlc-lite/adapters/codex/',
+    'plugins/sdlc-lite/scripts/run.sh',
+    'plugins/sdlc-lite/scripts/run_lifecycle.py',
+    'plugins/sdlc-lite/scripts/readiness.py',
+    'plugins/sdlc-lite/scripts/codex_roles.py',
+    'plugins/sdlc-lite/scripts/steps.py',
+    'plugins/sdlc-lite/scripts/tickets.py',
+    'plugins/sdlc-lite/scripts/results.py',
+    'plugins/sdlc-lite/scripts/order.py',
+    'plugins/sdlc-lite/scripts/check.py',
+    'plugins/sdlc-lite/scripts/check.sh',
+    'scripts/check-packaging.py',
+)
+LANE_STICKY = 'skips.md already records full, and a lane never returns from full'
+LANE_NO_SIZE = 'handoff.md front matter has no size of S, M, L, or XL'
+ERE_PATTERN_CHARS = set('^$*+?()[]{}')
+
+
+def is_lane_contract(p):
+    """True when path p is in LANE_CONTRACTS: by prefix for an entry ending in /, else exactly."""
+    return any(p.startswith(c) if c.endswith('/') else p == c for c in LANE_CONTRACTS)
+
+
+def scope_entry(alt):
+    """One E or A alternative as a path: backslash escapes removed, or the alternative kept raw when it
+    is a pattern (a ^$*+?()[]{} left after deleting each backslash pair). An unescaped . is a dot."""
+    if set(re.sub(r'\\.', '', alt)) & ERE_PATTERN_CHARS:
+        return alt
+    return re.sub(r'\\(.)', r'\1', alt)
+
+
+def scope_entries(block):
+    """Every allow-list entry of a step block's scope spans (list-item criterion lines, a span with
+    git diff --name-only and a grep -v allow-list in a form widen recognizes), or None when there is
+    no such span. F words come quotes stripped; E and A alternatives come through scope_entry."""
+    spans = [s for line in criteria_lines(block) if list_item(line)
+             for s in line_spans(line) if is_scope_span(s) and widen_forms(s)]
+    if not spans:
+        return None
+    out = []
+    for s in spans:
+        for form, m in widen_forms(s):
+            listed = widen_listed(form, m)
+            out += listed if form == 'F' else [scope_entry(a) for a in listed]
+    return out
+
+
+def agents_owner(root, p):
+    """The label of the nearest dir from (root/p).parent up to root holding AGENTS.md, relative to
+    root in posix form ('.' for root); root when none holds one."""
+    cur = (root / p).parent
+    while True:
+        if (cur / 'AGENTS.md').is_file():
+            return cur.relative_to(root).as_posix()
+        if cur == root or root not in cur.parents:
+            return '.'
+        cur = cur.parent
+
+
+def lane_sticky(skips):
+    """True when skips.md, inside a ## Lane section, has a line starting '- lane: full;'."""
+    if not skips.is_file():
+        return False
+    inside = False
+    for line in skips.read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Lane'
+        elif inside and line.startswith('- lane: full;'):
+            return True
+    return False
+
+
+def lane_action(task):
+    """Return (lane, point, reasons, [files read]) for a task dir: solo, lean, or full. Writes nothing.
+    The plan is read leniently, like plan_facts: split, lint, and review refuse a bad plan."""
+    # Imported here, not at the top: results.py's selftest copies steps.py beside only order.py and
+    # results.py and runs steps.py next, so a top-level import would fail there.
+    import tickets
+    t = pathlib.Path(task)
+    if not t.is_dir():
+        raise Fail(f'steps lane: no such directory: {t}')
+    h, skips = t / 'handoff.md', t / 'skips.md'
+    read = []
+    size, review_line = None, False
+    if h.is_file():
+        read.append(str(h))
+        text = h.read_text(encoding='utf-8')
+        size = (tickets.parse(text) or {}).get('size')
+        review_line = any(line.rstrip() == '## Plan review' for line in text.splitlines())
+    if size not in tickets.ENUMS['size']:
+        size = None
+    plan = order.newest(t, 'planner')
+    if plan:
+        read.append(plan)
+    if skips.is_file():
+        read.append(str(skips))
+    point = ('before planning' if not plan else 'after plan review' if review_line else 'after planning')
+    reasons = []
+    if lane_sticky(skips):
+        reasons.append(LANE_STICKY)
+    if size is None:
+        reasons.append(LANE_NO_SIZE)
+    if not plan:
+        if reasons:
+            return 'full', point, reasons, read
+        lane = {'S': 'solo', 'M': 'solo'}.get(size, 'full')
+        return lane, point, [f'size {size} decides before planning (no planner result yet)'], read
+
+    pname = os.path.basename(plan)
+    if size in ('L', 'XL'):
+        reasons.append(f'size {size} is above M, and lean takes only size S or M')
+    unresolved, why = review_required(plan, t)
+    if unresolved:
+        reasons.append(f'{pname} lists an unresolved assumption: "{unresolved[0]}"')
+    reasons += why
+    try:
+        steps = parse_steps(pathlib.Path(plan))
+    except Fail:
+        reasons.append(f'{pname} has steps that do not parse (steps.py lint names why)')
+        return 'full', point, reasons, read
+    if len(steps) > LANE_MAX_STEPS:
+        reasons.append(f'{len(steps)} steps, and lean allows at most {LANE_MAX_STEPS}')
+    for n, block in steps.items():
+        k = criteria_count(block)
+        if k > LANE_MAX_CRITERIA:
+            reasons.append(f'step {n} has {k} acceptance criteria, and lean allows at most {LANE_MAX_CRITERIA}')
+    entries = {n: scope_entries(block) for n, block in steps.items()}
+    for n, got in entries.items():
+        if got is None:
+            reasons.append(f'step {n} has no scope allow-list in a form steps.py widen recognizes, '
+                           'so its files are unknown')
+    for n, got in entries.items():
+        for e in dict.fromkeys(got or []):
+            if not repo_path_ok(e):
+                reasons.append(f'step {n} scope entry is not a repo-relative path: {e}')
+    paths = {n: [e for e in dict.fromkeys(got or []) if repo_path_ok(e)] for n, got in entries.items()}
+    for n, got in paths.items():
+        for p in got:
+            if is_lane_contract(p):
+                reasons.append(f'step {n} scope names a contract other roles parse: {p}')
+    root = pathlib.Path(guard_cwd(t))
+    owners = sorted({agents_owner(root, p) for got in paths.values() for p in got})
+    if len(owners) > 1:
+        reasons.append(f'scoped files span {len(owners)} AGENTS.md owners: {", ".join(owners)}')
+    if reasons:
+        return 'full', point, reasons, read
+    level = result_level(plan)
+    owner = owners[0] if owners else '.'
+    return ('lean', point, [f'every lean condition holds: size {size}, planner L{level}, {len(steps)} steps '
+                            f'at L1 to L3, one AGENTS.md owner ({owner})'], read)
+
+
+def lane_record(lane, point, reasons):
+    """The one skips.md line a lane call appends."""
+    return f'- lane: {lane}; point: {point}; reasons: {"; ".join(reasons)}'
+
+
+def lane_text(old, record):
+    """skips.md text with record appended to its ## Lane section: after that section's last non-blank
+    line; else a new ## Lane section before the first ## line, or at the end. old None is a missing
+    file. Every other line is kept byte for byte."""
+    if old is None:
+        return f'# Skips\n\n## Lane\n{record}\n'
+    lines = old.splitlines(keepends=True)
+    if lines and not lines[-1].endswith(('\n', '\r')):
+        lines[-1] += '\n'
+    bare = [x.rstrip('\r\n') for x in lines]
+    start = next((i for i, x in enumerate(bare) if x.rstrip() == '## Lane'), None)
+    if start is not None:
+        end = next((j for j in range(start + 1, len(bare)) if bare[j].startswith('## ')), len(bare))
+        last = end
+        while last > start + 1 and not bare[last - 1].strip():
+            last -= 1
+        return ''.join(lines[:last] + [record + '\n'] + lines[last:])
+    first = next((i for i, x in enumerate(bare) if x.startswith('## ')), None)
+    if first is None:
+        return ''.join(lines) + f'\n## Lane\n{record}\n'
+    return ''.join(lines[:first] + ['## Lane\n', record + '\n', '\n'] + lines[first:])
+
+
+def record_lane(task, lane, point, reasons):
+    """Append the lane record to <task>/skips.md. An OSError is a Fail naming the path."""
+    p = pathlib.Path(task) / 'skips.md'
+    try:
+        old = None
+        if p.is_file():
+            with open(p, encoding='utf-8', newline='') as f:
+                old = f.read()
+        with open(p, 'w', encoding='utf-8', newline='') as f:
+            f.write(lane_text(old, lane_record(lane, point, reasons)))
+    except OSError as e:
+        raise Fail(f'steps lane: cannot write {p}: {e}')
+
+
+def cmd_lane(task):
+    try:
+        lane, point, reasons, read = lane_action(task)
+        record_lane(task, lane, point, reasons)
+    except Fail as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(lane)
+    for r in reasons:
+        print(f'reason: {r}')
+    for p in read:
+        print(f'read: {p}')
     return 0
 
 
@@ -1512,6 +1892,18 @@ WIDEN_A_RE = re.compile(r'(?<![\w-])grep\s+(?:-vE|-E\s+-v)\s+'
                         r'(?:"\^\(((?:\\.|[^"\\])*)\)\$"|\'\^\(([^\']*)\)\$\')')
 
 
+def is_scope_span(span):
+    """True when a code span is a scope check: git diff --name-only with a grep -v allow-list."""
+    return 'git diff --name-only' in span and INVERT_GREP_RE.search(span) is not None
+
+
+def repo_path_ok(p):
+    """True when p is a repo-relative path of [A-Za-z0-9._/@+-] with no leading - or / and no ..
+    component: the path rule widen and lane share."""
+    return (WIDEN_PATH_RE.match(p) is not None and not p.startswith('-') and not p.startswith('/')
+            and '..' not in p.split('/'))
+
+
 def ere_escape(path):
     """The path with a backslash before each ERE special character."""
     return ''.join('\\' + c if c in ERE_SPECIAL else c for c in path)
@@ -1592,8 +1984,7 @@ def widen(step_dir, paths, timeout=300):
     if not paths:
         refuse('no path given')
     for p in paths:
-        if (not WIDEN_PATH_RE.match(p) or p.startswith('-') or p.startswith('/')
-                or '..' in p.split('/')):
+        if not repo_path_ok(p):
             refuse(f'not a repo-relative path of [A-Za-z0-9._/@+-] with no leading - or / and no .. '
                    f'component: {p}')
     paths = list(dict.fromkeys(paths))
@@ -1602,7 +1993,7 @@ def widen(step_dir, paths, timeout=300):
     lines = text.splitlines(keepends=True)
     items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines]) if list_item(line)]
     scope = [(i, line, s) for i, line in items for s in line_spans(line)
-             if 'git diff --name-only' in s and INVERT_GREP_RE.search(s)]
+             if is_scope_span(s)]
     rows = sorted(set(i for i, _, _ in scope))
     if not rows:
         refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list')
@@ -2147,6 +2538,42 @@ def selftest():
               rc == 1 and out == '' and snapshot(d) == before and took < 15
               and 'timed out after 1s' in err and last.startswith('plan defect:') and 'sleep 30' in last)
 
+        # (guard timeout) a "guard timeout: <seconds>" line sets the split --only default; a step line
+        # beats the plan line, an explicit --guard-timeout beats both, and 0 counts as no line.
+        def gt_plan(plan_line, step_line, span):
+            return (f'## Goal\ng\n{plan_line}\n\n## Step 1: x\nlevel: L1\n{step_line}\n### Do\nd\n'
+                    f'### Acceptance criteria\n- (guard) `{span}`\n\n## Risks\nguard timeout: 99\n')
+
+        def gt_refused(plan_text, argv_extra=()):
+            d = task(plan=plan_text)
+            before = snapshot(d)
+            t0 = time.monotonic()
+            rc, out, err = run_main(['split', str(d), '--only', '1', *argv_extra])
+            took = time.monotonic() - t0
+            return rc, out, err, took, snapshot(d) == before and not (d / 'step-1').exists()
+
+        rc, out, err, took, untouched = gt_refused(gt_plan('guard timeout: 1', '', 'sleep 3'))
+        rc2, _, err2, took2, untouched2 = gt_refused(gt_plan('guard timeout: 1', 'guard timeout: 0', 'sleep 3'))
+        check('(guard timeout) a plan guard timeout line sets the split --only default',
+              rc == 1 and out == '' and untouched and took < 15 and 'timed out after 1s' in err
+              and rc2 == 1 and untouched2 and took2 < 15 and 'timed out after 1s' in err2
+              and plan_guard_timeout(task(plan=gt_plan('guard timeout: 1', 'guard timeout: 7', 'x y')) / 'planner-L2.md') == 1
+              and plan_guard_timeout(task(plan=gt_plan('guard timeout: 0', 'guard timeout: 7', 'x y')) / 'planner-L2.md') == 99)
+
+        rc, out, err, took, untouched = gt_refused(gt_plan('guard timeout: 10', 'guard timeout: 1', 'sleep 3'))
+        check('(guard timeout) a step guard timeout line overrides the plan line',
+              rc == 1 and out == '' and untouched and took < 15 and 'timed out after 1s' in err
+              and step_guard_timeout('## Step 1: x\nlevel: L1\nguard timeout: 2.5') == 2.5
+              and step_guard_timeout('## Step 1: x\nlevel: L1\nguard timeout: 0') is None)
+
+        d = task(plan=gt_plan('guard timeout: 1', 'guard timeout: 1', 'sleep 2'))
+        rc, _, err = run_main(['split', str(d), '--only', '1', '--guard-timeout', '10'])
+        rc2, out2, err2, _, untouched2 = gt_refused(gt_plan('guard timeout: 10', 'guard timeout: 10', 'sleep 3'),
+                                                    ('--guard-timeout', '1'))
+        check('(guard timeout) --guard-timeout overrides both lines',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file()
+              and rc2 == 1 and out2 == '' and untouched2 and 'timed out after 1s' in err2)
+
         marker = tmp / 'n-full-ran'
         d = task(plan=guard_plan(f'(guard) `touch {marker}`', f'(guard) `{red_span}`'))
         rc, _, _ = run_main(['split', str(d)])
@@ -2453,6 +2880,102 @@ def selftest():
         check('resume error: a next error on a candidate exits 1 with one "steps resume:" line',
               rc == 1 and lines == [] and err.startswith('steps resume: ') and 'step-2' in err
               and len(err.strip().splitlines()) == 1 and same)
+
+        # next batch: a task-dir verifier result whose ## Verified section lists a step's newest build
+        def b_task(steps=None, task_files=(), superseded=()):
+            """steps: {dir name: (title, [(name, text)] in run order)}; task_files: task-dir results in
+            run order, recorded in the task dir's runs.jsonl."""
+            count[0] += 1
+            t = tmp / f'batch{count[0]}'
+            t.mkdir()
+            if steps is None:
+                steps = {'step-1': ('a', [('builder-L2.md', DONE)]),
+                         'step-2': ('b', [('builder-L2.md', DONE)]),
+                         'step-3': ('c', [('builder-L2.md', DONE), ('verifier-L1.md', PASS)])}
+            for name, (title, files) in steps.items():
+                d = t / name
+                d.mkdir()
+                n = name.split('-')[1]
+                (d / 'handoff.md').write_text(f'## Task goal\ng\n\n## Step {n}: {title}\nlevel: L2\n',
+                                              encoding='utf-8')
+                for fname, text in files:
+                    (d / fname).write_text(hdr(fname, text), encoding='utf-8')
+                if files:
+                    (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{f}"}}\n' for f, _ in files),
+                                                  encoding='utf-8')
+            for name in superseded:
+                (t / name).mkdir()
+            for fname, text in task_files:
+                (t / fname).write_text(hdr(fname, text), encoding='utf-8')
+            if task_files:
+                (t / 'runs.jsonl').write_text(''.join(f'{{"file": "{f}"}}\n' for f, _ in task_files),
+                                              encoding='utf-8')
+            return t
+
+        def listing(paths, verdict='pass'):
+            items = ''.join(f'- `{p}`\n' if i % 2 else f'- {p}\n' for i, p in enumerate(paths))
+            return f'## Verdict\n{verdict}\n\n## For the next attempt\nNone\n\n## Verified\n{items}'
+
+        BOTH = listing(['step-1/builder-L2.md', 'step-2/builder-L2.md'])
+        t = b_task(task_files=[('verifier-L3.md', BOTH)])
+        rc, out, err = run_main(['next', str(t / 'step-2')])
+        lines = out.splitlines()
+        rc2, lines2, err2, same = rsm(t)
+        check('next batch: a listed unchanged step is done, and resume prints done',
+              rc == 0 and err == '' and lines[:1] == ['done']
+              and lines[1:2] == ['reason: batch verifier verifier-L3.md lists step-2/builder-L2.md with Verdict pass']
+              and lines[2:] == [f'read: {t / "step-2" / "builder-L2.md"}', f'read: {t / "verifier-L3.md"}']
+              and nxt(t / 'step-1', 'done') and rc2 == 0 and same
+              and lines2 == ['done', 'reason: every step-<n>/ passed'])
+        newer = [('builder-L2-2.md', DONE), ('builder-L2.md', DONE)]
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', newer), 'step-3': ('c', [])},
+                   [('verifier-L3.md', listing(['step-2/builder-L2-2.md']))])
+        check('next batch: a listing of an older build (order.py, not the -2 name) -> verify',
+              nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', newer), 'step-3': ('c', [])},
+                   [('verifier-L3.md', listing(['step-2/builder-L2.md']))])
+        check('next batch: a listing of the newest build by order.py -> done',
+              nxt(t / 'step-2', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-1/builder-L2.md']))])
+        check('next batch: an unlisted step -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        for lv in (4, 5):
+            t = b_task({'step-1': ('a', []), 'step-2': ('b', [(f'builder-L{lv}.md', DONE)]), 'step-3': ('c', [])},
+                       [('verifier-L3.md', listing([f'step-2/builder-L{lv}.md']))])
+            check(f'next batch: an L{lv} build is never batch-verified -> verify L3',
+                  nxt(t / 'step-2', 'verify L3'))
+        for title in ('Merge lane-a', 'Docs and Gates Green'):
+            t = b_task({'step-1': ('a', []), 'step-2': (title, [('builder-L2.md', DONE)]), 'step-3': ('c', [])},
+                       [('verifier-L3.md', BOTH)])
+            check(f'next batch: a step titled "{title}" -> verify', nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', [('builder-L2.md', DONE)])},
+                   [('verifier-L3.md', BOTH)])
+        check('next batch: the highest-numbered live step -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', BOTH)], superseded=['step-2.superseded-1'])
+        check('next batch: a step with a superseded sibling -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-2/builder-L2.md'], 'fail'))])
+        check('next batch: a listing with Verdict fail -> verify', nxt(t / 'step-2', 'verify L1'))
+        FAIL_LIST = listing(['step-2/builder-L2.md'], 'fail')
+        t = b_task(task_files=[('verifier-L3-2.md', BOTH), ('verifier-L3.md', FAIL_LIST)])
+        check('next batch: a newer fail listing (order.py) overrides an older pass listing -> verify',
+              nxt(t / 'step-2', 'verify L1') and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3-2.md', FAIL_LIST), ('verifier-L3.md', BOTH)])
+        check('next batch: a newer pass listing overrides an older fail listing -> done',
+              nxt(t / 'step-2', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-1/builder-L2.md'])),
+                               ('verifier-L3-2.md', listing(['step-2/builder-L2.md']))])
+        check('next batch: two batches over disjoint steps both count', nxt(t / 'step-1', 'done')
+              and nxt(t / 'step-2', 'done'))
+        bad = '<!-- role=builder level=L3 model=opus effort=low -->\n' + BOTH
+        t = b_task(task_files=[('verifier-L3.md', bad)])
+        check('next batch: a structurally invalid task verifier result -> verify',
+              nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', []), 'step-2': ('b', [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)]),
+                    'step-3': ('c', [])}, [('verifier-L3.md', BOTH)])
+        check('next batch: a per-step fail counting after the build wins over a pass listing -> rebuild',
+              nxt(t / 'step-2', 'rebuild L2'))
 
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).
@@ -2799,6 +3322,20 @@ def selftest():
                               'plan-reviewer-L1-2.md': r_review('maybe')},
                              ['plan-reviewer-L1.md', 'planner-L3.md', 'plan-reviewer-L1-2.md'])) == 'review L1')
 
+        d = r_task({'planner-L3.md': r_plan(), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
+                   runs=['planner-L3.md', 'planner-L3-2.md'], handoff='## Goal\ng\n\n## Plan review\nx\n')
+        rr_why = ['planner-L3-2.md is a planner L3 plan', 'a step is at builder L4 or L5',
+                  'the plan has a merge step', '2 planner results (a replan)', 'handoff.md holds ## Plan review']
+        rr_out = run_main(['review', str(d)])[1].splitlines()
+        d2 = r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: which db\n')})
+        check('(r) review_required returns the unresolved items and every reason review prints, in order',
+              review_required(d / 'planner-L3-2.md', d) == ([], rr_why)
+              and len(rr_out) >= 2
+              and rr_out[1] == 'reason: a plan review is required (planner-L3-2.md is a planner L3 plan; a step is '
+              'at builder L4 or L5; the plan has a merge step; 2 planner results (a replan); handoff.md holds '
+              '## Plan review) and none counts after planner-L3-2.md'
+              and review_required(d2 / 'planner-L2.md', d2) == (['unresolved: which db'], []))
+
         # (r) split refuses a plan whose newest counting review says replan or blocked, before any write
         for v in ('replan', 'blocked'):
             for how, argv in (('a dir target', lambda d: ['split', str(d)]),
@@ -2821,6 +3358,177 @@ def selftest():
         rc, _, _ = run_main(['split', str(d)])
         check('(r) negative: split writes a replan whose rejecting review ran before it',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+        # (lane) the lane of a ticket, and its record in skips.md
+        def l_handoff(size='M', tail=''):
+            front = f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n' if size is not None else ''
+            return f'{front}## Goal\ng\n{tail}'
+
+        def l_scope(form):
+            return f'- (guard) `git diff --name-only "$SDLC_BASE_SHA" | {form} | grep -q . && exit 1 || exit 0`'
+
+        L_F1 = 'grep -vxF -e docs/a.md -e docs/b.md'
+        L_F2 = 'grep -vxF -e docs/c.md'
+
+        def l_step(n, level, crit=2, scope=None):
+            items = [f'- c{n}.{j} holds' for j in range(crit - (1 if scope else 0))]
+            if scope:
+                items.append(l_scope(scope))
+            return f'## Step {n}: Thing {n}\nlevel: L{level}\n### Do\nd\n### Acceptance criteria\n' + '\n'.join(items)
+
+        def l_plan(levels=(2, 3), crits=(12, 2), scopes=(L_F1, L_F2), title1='Thing 1', assume='- a'):
+            blocks = [l_step(i, lv, c, sc) for i, (lv, c, sc) in enumerate(zip(levels, crits, scopes), 1)]
+            blocks[0] = blocks[0].replace('## Step 1: Thing 1', f'## Step 1: {title1}', 1)
+            return '## Goal\ng\n\n' + '\n\n'.join(blocks) + f'\n\n## Assumptions\n{assume}\n\n## Risks\n- r\n'
+
+        def l_task(handoff, plans=None, files=None):
+            count[0] += 1
+            r = tmp / f'lane{count[0]}'
+            subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+            d = r / '.sdlc' / '0001-x'
+            d.mkdir(parents=True)
+            if handoff is not None:
+                (d / 'handoff.md').write_text(handoff, encoding='utf-8')
+            for name, text in (plans or {}).items():
+                (d / name).write_text(hdr(name, text), encoding='utf-8')
+            for name, text in (files or {}).items():
+                (r / name).parent.mkdir(parents=True, exist_ok=True)
+                (r / name).write_text(text, encoding='utf-8')
+            return d
+
+        def l_run(d):
+            rc, out, err = run_main(['lane', str(d)])
+            lines = out.splitlines()
+            reasons = [x[len('reason: '):] for x in lines if x.startswith('reason: ')]
+            reads = [x[len('read: '):] for x in lines if x.startswith('read: ')]
+            skips = d / 'skips.md'
+            recs = [x for x in skips.read_text(encoding='utf-8').splitlines() if x.startswith('- lane: ')] \
+                if skips.is_file() else []
+            return (lines[0] if rc == 0 and lines and err == '' else f'rc={rc} err={err.strip()}'), reasons, reads, recs
+
+        lean_ok = 'every lean condition holds: size M, planner L2, 2 steps at L1 to L3, one AGENTS.md owner (.)'
+        ok = True
+        for size, want in (('S', 'solo'), ('M', 'solo'), ('L', 'full'), ('XL', 'full')):
+            lane, reasons, _, recs = l_run(l_task(l_handoff(size)))
+            why = f'size {size} decides before planning (no planner result yet)'
+            ok = ok and lane == want and reasons == [why] \
+                and recs == [f'- lane: {want}; point: before planning; reasons: {why}']
+        lane, reasons, _, recs = l_run(l_task(l_handoff(None)))
+        check('(lane) before planning, size alone decides: S and M solo, L and XL full, no size full',
+              ok and lane == 'full' and reasons == [LANE_NO_SIZE]
+              and recs == [f'- lane: full; point: before planning; reasons: {LANE_NO_SIZE}'])
+
+        ok = True
+        for form in (L_F2, 'grep -vxE "docs/c\\.md"', 'grep -vE "^(docs/c\\.md)$"'):
+            d = l_task(l_handoff(), {'planner-L2.md': l_plan(scopes=(L_F1, form))})
+            lane, reasons, reads, recs = l_run(d)
+            ok = ok and lane == 'lean' and reasons == [lean_ok] \
+                and recs == [f'- lane: lean; point: after planning; reasons: {lean_ok}'] \
+                and reads == [str(d / 'handoff.md'), str(d / 'planner-L2.md')]
+        check('(lane) a two-step size M plan at L1 to L3 inside one AGENTS.md owner is lean, for scope forms F, E, '
+              'and A', ok)
+
+        lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 4))}))
+        check('(lane) negative: the same two-step plan with one step at L4 is full',
+              lane == 'full' and reasons == ['a step is at builder L4 or L5'])
+
+        d = l_task(l_handoff(), {'planner-L2.md': l_plan()})
+        first = l_run(d)[0]
+        with open(d / 'handoff.md', 'a', encoding='utf-8') as f:
+            f.write('\n## Plan review\nrequired\n')
+        lane, reasons, _, recs = l_run(d)
+        check('(lane) negative: a lean ticket whose handoff gains a ## Plan review line is full on the next call',
+              first == 'lean' and lane == 'full' and reasons == ['handoff.md holds ## Plan review']
+              and len(recs) == 2 and recs[1].startswith('- lane: full; point: after plan review; '))
+
+        rr_cases = [
+            l_task(l_handoff(), {'planner-L3.md': l_plan()}),
+            l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(4, 3))}),
+            l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 5))}),
+            l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge x')}),
+            l_task(l_handoff(), {'planner-L2.md': l_plan(), 'planner-L2-2.md': l_plan()}),
+            l_task(l_handoff(tail='\n## Plan review\nrequired\n'), {'planner-L2.md': l_plan()}),
+            l_task(l_handoff(), {'planner-L2.md': l_plan(assume='- unresolved: which db')}),
+        ]
+        ok = True
+        for d in rr_cases:
+            plan = order.newest(d, 'planner')
+            unresolved, why = review_required(plan, d)
+            rc, out, _ = run_main(['review', str(d)])
+            lane, reasons, _, _ = l_run(d)
+            want = [f'{os.path.basename(plan)} lists an unresolved assumption: "{x}"' for x in unresolved[:1]] + why
+            ok = ok and rc == 0 and out.splitlines()[0] in ('review L1', 'stop') and lane == 'full' \
+                and (unresolved or why) and all(w in reasons for w in want)
+        unresolved_reasons = l_run(rr_cases[-1])[1]
+        check('(lane) every plan steps.py review requires a review or a stop for is full, with each review_required '
+              'reason',
+              ok and 'planner-L2.md lists an unresolved assumption: "unresolved: which db"' in unresolved_reasons)
+
+        full_cases = [
+            (l_task(l_handoff('L'), {'planner-L2.md': l_plan()}), 'size L is above M, and lean takes only size S or M'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 3, 1), crits=(12, 2, 2),
+                                                          scopes=(L_F1, L_F2, 'grep -vxF -e docs/d.md'))}),
+             '3 steps, and lean allows at most 2'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(crits=(13, 2))}),
+             'step 1 has 13 acceptance criteria, and lean allows at most 12'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(scopes=(L_F1, None))}),
+             'step 2 has no scope allow-list in a form steps.py widen recognizes, so its files are unknown'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(scopes=(L_F1, 'grep -vxE "docs/.*"'))}),
+             'step 2 scope entry is not a repo-relative path: docs/.*'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(
+                scopes=(L_F1, 'grep -vxF -e plugins/sdlc-lite/scripts/steps.py'))}),
+             'step 2 scope names a contract other roles parse: plugins/sdlc-lite/scripts/steps.py'),
+            (l_task(l_handoff(), {'planner-L2.md': l_plan(scopes=(L_F1, 'grep -vE "^(docs/a\\.md|pkg/x\\.py)$"'))},
+                    {'pkg/AGENTS.md': '# pkg\n'}),
+             'scoped files span 2 AGENTS.md owners: ., pkg'),
+        ]
+        res = [(l_run(d), want) for d, want in full_cases]
+        check('(lane) full after planning: size L, three steps, a 13-criterion step, no recognized scope allow-list, '
+              'a non-path scope entry, a contract path, or two AGENTS.md owners',
+              all(r[0] == 'full' and r[1] == [want] for r, want in res))
+
+        rec_m = '- lane: solo; point: before planning; reasons: size M decides before planning (no planner result yet)'
+        d = l_task(l_handoff())
+        _, _, reads1, _ = l_run(d)
+        made = (d / 'skips.md').read_text(encoding='utf-8')
+        _, _, reads2, _ = l_run(d)
+        twice = (d / 'skips.md').read_text(encoding='utf-8')
+        d2 = l_task(l_handoff())
+        (d2 / 'skips.md').write_text('# Skips\n\n## Lane\n- lane: lean; point: x; reasons: old\n\n## Skipped\n- x\n',
+                                     encoding='utf-8')
+        _, _, reads3, _ = l_run(d2)
+        d3 = l_task(l_handoff())
+        (d3 / 'skips.md').write_text('## Skipped\n- x\n', encoding='utf-8')
+        _, _, reads4, _ = l_run(d3)
+        d4 = l_task(l_handoff())
+        (d4 / 'skips.md').write_text('note\n', encoding='utf-8')
+        l_run(d4)
+        check('(lane) skips.md: each call appends one - lane: line to ## Lane and keeps every other line',
+              made == f'# Skips\n\n## Lane\n{rec_m}\n'
+              and twice == f'# Skips\n\n## Lane\n{rec_m}\n{rec_m}\n'
+              and str(d / 'skips.md') not in reads1 and str(d / 'skips.md') in reads2
+              and (d2 / 'skips.md').read_text(encoding='utf-8')
+              == f'# Skips\n\n## Lane\n- lane: lean; point: x; reasons: old\n{rec_m}\n\n## Skipped\n- x\n'
+              and str(d2 / 'skips.md') in reads3
+              and (d3 / 'skips.md').read_text(encoding='utf-8') == f'## Lane\n{rec_m}\n\n## Skipped\n- x\n'
+              and str(d3 / 'skips.md') in reads4
+              and (d4 / 'skips.md').read_text(encoding='utf-8') == f'note\n\n## Lane\n{rec_m}\n')
+
+        d = l_task(l_handoff(), {'planner-L2.md': l_plan()},
+                   {'.sdlc/0001-x/skips.md': '# Skips\n\n## Lane\n- lane: full; point: before planning; reasons: x\n'})
+        lane, reasons, _, recs = l_run(d)
+        d2 = l_task(l_handoff(), {'planner-L2.md': l_plan()},
+                    {'.sdlc/0001-x/skips.md': '# Skips\n\n## Other\n- lane: full; point: x; reasons: x\n'})
+        check('(lane) a recorded full stays full when the facts give lean',
+              lane == 'full' and reasons[:1] == [LANE_STICKY] and len(recs) == 2
+              and recs[1].startswith(f'- lane: full; point: after planning; reasons: {LANE_STICKY}')
+              and l_run(d2)[0] == 'lean')
+
+        before = snapshot(tmp)
+        missing = tmp / 'lane-missing'
+        rc, out, err = run_main(['lane', str(missing)])
+        check('(lane) a missing dir: one steps lane: line on stderr, nothing on stdout, exit 1, nothing written',
+              rc == 1 and out == '' and err.startswith('steps lane: ') and len(err.strip().splitlines()) == 1
+              and not missing.exists() and snapshot(tmp) == before)
 
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
@@ -2844,8 +3552,10 @@ def main(argv):
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--only', type=int, action='append', metavar='N',
                    help='write only step N (repeatable); runs its (guard) criteria first, with SDLC_BASE_SHA=HEAD')
-    p.add_argument('--guard-timeout', type=float, default=300, metavar='SECONDS',
-                   help='per-guard timeout for --only (default 300); a timeout is a red guard')
+    p.add_argument('--guard-timeout', type=float, default=None, metavar='SECONDS',
+                   help='per-guard timeout for --only; it overrides any "guard timeout: <seconds>" line '
+                        '(default: the step block\'s line, else the plan\'s line outside every step, else 300); '
+                        'a timeout is a red guard')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
@@ -2854,6 +3564,8 @@ def main(argv):
     p.add_argument('task', help='a task dir holding step-<n>/ dirs')
     p = sub.add_parser('review', help='print whether a task dir\'s newest plan needs a plan review, and the next action')
     p.add_argument('task', help='a task dir holding planner-*.md and any plan-reviewer-*.md results')
+    p = sub.add_parser('lane', help='print a task dir\'s lane (solo, lean, or full) and append it to its skips.md')
+    p.add_argument('task', help='a task dir holding handoff.md and any planner-*.md results')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -2883,6 +3595,8 @@ def main(argv):
         return cmd_resume(a.task)
     if a.cmd == 'review':
         return cmd_review(a.task)
+    if a.cmd == 'lane':
+        return cmd_lane(a.task)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
@@ -2890,7 +3604,7 @@ def main(argv):
         return cmd_swap(a.step_dir, a.timeout)
     if a.cmd == 'lint':
         return cmd_lint(a.target)
-    if not 0 < a.guard_timeout < float('inf'):
+    if a.guard_timeout is not None and not 0 < a.guard_timeout < float('inf'):
         print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
         return 1
     return cmd_split(a.target, a.only, a.guard_timeout)

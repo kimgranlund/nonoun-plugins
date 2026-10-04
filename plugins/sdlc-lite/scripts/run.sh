@@ -25,7 +25,10 @@
 # scripts/order.py): a verifier never runs on the newest build's family (a Fable or Sonnet build
 # moves it to Opus, same effort), and a plan-reviewer never runs on the newest planner result's
 # family (an Opus planner moves it to Fable, same effort; a Fable or Sonnet planner, or no planner
-# result, keeps Opus high).
+# result, keeps Opus high). A verifier whose handoff dir holds no builder result (a verifier
+# launched at the task dir) reads instead the newest builder result, by scripts/order.py, of the
+# highest-numbered step-<n>/ under it that holds one. step-<n>.superseded-<k>/ dirs are left out.
+# scripts/codex_roles.py resolve applies the same rule on Codex.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
 # does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
@@ -55,7 +58,12 @@
 # concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
 # it never removes or deletes anything and never changes the exit code.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
-# saved result into 1), 2 usage or preflight, 3 result fails the result check.
+# saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check.
+# Spec gate: before a plan-reviewer run (dry runs too, never in the run_lifecycle.py child, either
+# backend), run.sh runs scripts/specgate.py check on the handoff dir. A refusal prints specgate's
+# lines and "run.sh: specgate.py check refused the plan in <dir>; replan, or set SDLC_SPECGATE=off"
+# on stderr and exits 2 before the lifecycle starts, so no attempt record, .running file, or
+# runs.jsonl line exists. A pass or a skip prints nothing.
 # Result pick: the run uses --output-format stream-json --verbose, because plain json keeps only the
 # session's last result, and a background task notification arriving after the report ends the session
 # with its own result ("origin":{"kind":"task-notification"}), losing the report. The log is parsed
@@ -66,6 +74,8 @@
 # the result file. The runs.jsonl cost, duration, and turns come from the last result event, which
 # holds the session totals.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
+# SDLC_SPECGATE=off skips the spec gate with one stderr line "run.sh: SDLC_SPECGATE=off: spec gate
+# skipped", and the plan-reviewer run's runs.jsonl line gets "specgate":"off".
 # Bash timeouts: a real run passes BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS of 3600000 (as
 # bench.sh does), keeping an inherited value only when it is a plain integer of at least 3600000.
 # Claude Code moves a foreground Bash call to the background once it passes its timeout, and no
@@ -187,6 +197,22 @@ log="$dir/$name.log"
 # Fable or Sonnet build -> Opus at the same effort.
 if [[ "$backend" == claude && "$role" == verifier ]]; then
   built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
+  # No build in the handoff dir (a verifier launched at the task dir): take the newest build of the
+  # highest-numbered live step-<n>/ under it that holds one; step-<n>.superseded-<k>/ never matches.
+  # scripts/codex_roles.py resolve is the Codex twin of this rule.
+  if [[ -z "$built" ]]; then
+    best_n=-1
+    for sd in "$dir"/step-*; do
+      [[ -d "$sd" ]] || continue
+      sn="${sd##*/}"
+      [[ "$sn" =~ ^step-[0-9]+$ ]] || continue
+      sn="${sn#step-}"
+      (( 10#$sn > best_n )) || continue
+      sb=$(python3 "$plugin_root/scripts/order.py" newest "$sd" builder 2>/dev/null || true)
+      [[ -n "$sb" ]] || continue
+      best_n=$((10#$sn)); built="$sb"
+    done
+  fi
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
     if [[ "$model" == "$bmodel" ]]; then
@@ -229,6 +255,17 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
   done
   if (( msg_total > 0 )); then
     echo "run.sh: $msg_total new message(s) for $role; read with messages.py" >&2
+  fi
+fi
+
+# Spec gate (see the header): plan-reviewer only, parent process only, dry runs too.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && "$role" == plan-reviewer ]]; then
+  if [[ "${SDLC_SPECGATE:-}" == off ]]; then
+    echo "run.sh: SDLC_SPECGATE=off: spec gate skipped" >&2
+  elif ! specgate_out=$(python3 "$plugin_root/scripts/specgate.py" check "$dir" 2>&1); then
+    [[ -z "$specgate_out" ]] || printf '%s\n' "$specgate_out" >&2
+    echo "run.sh: specgate.py check refused the plan in $dir; replan, or set SDLC_SPECGATE=off" >&2
+    exit 2
   fi
 fi
 
@@ -452,13 +489,16 @@ fi
 detect_strays || :
 stray_wt_json=$(json_array ${stray_wt[@]+"${stray_wt[@]}"}) || stray_wt_json='[]'
 stray_br_json=$(json_array ${stray_br[@]+"${stray_br[@]}"}) || stray_br_json='[]'
+specgate_flag=""
+if [[ "$role" == plan-reviewer && "${SDLC_SPECGATE:-}" == off ]]; then specgate_flag=off; fi
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
   --arg attempt_id "${SDLC_ATTEMPT_ID:-}" --arg routing_reason "${SDLC_ROUTING_REASON:-}" \
   --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
-  --argjson shared_with_builder "$shared_with_builder" \
+  --argjson shared_with_builder "$shared_with_builder" --arg specgate "$specgate_flag" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file, shared_with_builder: $shared_with_builder,
     attempt_id: $attempt_id, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
-    stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
+    stray_worktrees: $stray_wt, stray_branches: $stray_br}
+    + (if $specgate == "" then {} else {specgate: $specgate} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
 
 # Result check (see the header): results.py prints one "results.py: <file>: <reason>" line on failure.
 if ! chk=$(python3 "$plugin_root/scripts/results.py" validate "$result" --role "$role" 2>&1); then

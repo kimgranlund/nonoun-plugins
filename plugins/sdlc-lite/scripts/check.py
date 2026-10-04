@@ -50,6 +50,25 @@
 14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
+15. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
+   and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
+   `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
+   `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
+17. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
+   and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
+   agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
+   `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
+   two run.sh lines swapped, must be flagged.
+16. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
+   agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
+   contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
+   agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
+   negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
+   four producing roles, so item 13 also requires the `## Carry forward` heading line there.
+17. Solo agent: agents/solo.md exists and names tiers S, M, and L with `Sonnet low`, `Sonnet xhigh`, and
+   `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
+   L3 gpt-6.1-sol xhigh; and the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist. Negative controls:
+   each phrase removed, no `solo` key, a changed `solo` entry, and one TOML missing must be flagged.
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -98,7 +117,7 @@ if cap('claude-haiku-4-5') != 'Haiku 4.5' or cap('sonnet') != 'Sonnet':
 if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku-9-9', _rs), _rb):
     errors.append('check.py: scout pin guard negative control not flagged')
 
-SESSION_AGENTS = {'conductor', 'messenger'}  # both run as session agents (main session or its sub-agent), not through run.sh
+SESSION_AGENTS = {'conductor', 'messenger', 'solo'}  # all run as session agents (main session or its sub-agent), not through run.sh
 agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS
 roles = {r for r, _ in run}
 for r in sorted(agents - roles): errors.append(f'agents/{r}.md has no run.sh case')
@@ -395,6 +414,44 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
+# Spec gate text (docstring item 17): the guard timeout line and the run.sh gate are named where they route.
+SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
+             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
+def spec_gate_missing(text, phrase): return phrase not in text
+for phrase, rels in SPEC_GATE.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if spec_gate_missing(text, phrase): errors.append(f'{rel}: spec gate text missing "{phrase}"')
+        elif not spec_gate_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'check.py: spec gate text negative control not flagged for {rel}')
+SPEC_GATE_EXEC = 'exec python3 "$plugin_root/scripts/run_lifecycle.py"'
+def spec_gate_order_bad(lines):
+    gate = next((i for i, l in enumerate(lines) if 'specgate.py check' in l), None)
+    run = next((i for i, l in enumerate(lines) if SPEC_GATE_EXEC in l), None)
+    return gate is None or run is None or gate > run
+rs_lines = (root/'scripts/run.sh').read_text().split('\n') if (root/'scripts/run.sh').is_file() else []
+if spec_gate_order_bad(rs_lines):
+    errors.append('scripts/run.sh: specgate.py check does not come before exec run_lifecycle.py')
+else:
+    gi = next(i for i, l in enumerate(rs_lines) if 'specgate.py check' in l)
+    ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
+    swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
+    if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
+# Carry forward (docstring item 16): producer contracts end with the section; planner and builder read it first.
+CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
+CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
+                 'at most 15 lines': CF_PRODUCERS,
+                 'search only what it does not answer': ('agents/planner.md', 'agents/builder.md'),
+                 'cite the result path': ('agents/planner.md',)}
+def carry_forward_missing(text, phrase): return phrase not in text
+for phrase, rels in CARRY_FORWARD.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
+        elif not carry_forward_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: carry-forward negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):
@@ -412,6 +469,27 @@ errors.extend(messenger_missing(mt, mc, mtoml))
 if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
         or not messenger_missing(mt, mc, False)):
     errors.append('check.py: messenger guard negative control not flagged')
+# Solo agent (docstring item 17): a session agent with tiers S, M, L, a Codex mapping, and three generated TOMLs.
+SOLO_WORDS = ('| S |', '| M |', '| L |', 'Sonnet low', 'Sonnet xhigh', 'Opus xhigh')
+SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
+def solo_missing(agent_text, codex_models, tomls):
+    out = []
+    if not agent_text.strip(): out.append('solo: agents/solo.md missing or empty')
+    else: out += [f'solo: agents/solo.md missing "{w}"' for w in SOLO_WORDS if w not in agent_text]
+    if codex_models.get('solo') != SOLO_CODEX: out.append(f'solo: adapters/codex/models.json solo entry is not {SOLO_CODEX}')
+    out += [f'solo: adapters/codex/agents/sdlc-solo-{l}.toml missing' for l in ('l1', 'l2', 'l3') if l not in tomls]
+    return out
+sf = root/'agents/solo.md'
+st = sf.read_text() if sf.is_file() else ''
+stomls = {l for l in ('l1', 'l2', 'l3') if (root/f'adapters/codex/agents/sdlc-solo-{l}.toml').is_file()}
+errors.extend(solo_missing(st, mc, stomls))
+if not solo_missing(st, mc, stomls) and (
+        any(not solo_missing(st.replace(w, ''), mc, stomls) for w in SOLO_WORDS)
+        or not solo_missing('', mc, stomls)
+        or not solo_missing(st, {k: v for k, v in mc.items() if k != 'solo'}, stomls)
+        or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
+        or not solo_missing(st, mc, stomls - {'l3'})):
+    errors.append('check.py: solo guard negative control not flagged')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
@@ -438,6 +516,26 @@ for rel, rx in SCHEMA_COPY.items():
     if f.is_file() and re.search(rx, f.read_text()): errors.append(f'{rel}: holds a copy of the result schema')
 if not re.search(SCHEMA_COPY['scripts/run.sh'], rt + "\nallowed='x'\n"):
     errors.append('check.py: result-schema copy guard negative control not flagged')
+sdlc = root.resolve().parent.parent / '.sdlc'
+if sdlc.is_dir():
+    def _evals(plugin):
+        return subprocess.run([sys.executable, str(root/'scripts/evals.py'), '--root', str(sdlc), '--plugin', str(plugin), 'check'],
+                              capture_output=True, text=True)
+    _r = _evals(root)
+    if _r.returncode != 0:
+        _lines = [l for l in (_r.stdout + '\n' + _r.stderr).splitlines() if l.strip() and not l.startswith('evals check:')]
+        errors.extend(f'evals: {l}' for l in _lines) if _lines else errors.append(f'evals: evals.py check exited {_r.returncode}')
+    else:
+        with tempfile.TemporaryDirectory() as _td:
+            _tp = pathlib.Path(_td)
+            (_tp/'scripts').mkdir(); (_tp/'adapters/codex').mkdir(parents=True)
+            (_tp/'scripts/run.sh').write_text(re.sub(r'(builder:L1\)\s*model=)[\w-]+', r'\g<1>evals-negative-control', rt))
+            shutil.copy(root/'adapters/codex/models.json', _tp/'adapters/codex/models.json')
+            _n = _evals(_tp)
+            if 'model table changed' not in _n.stdout + _n.stderr:
+                errors.append('check.py: evals lock guard negative control not flagged')
+else:
+    print(f'skip: evals lock guard (no {sdlc})')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

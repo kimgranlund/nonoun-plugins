@@ -1,0 +1,20 @@
+{
+  "attempt_id": "ef895690160b4c5eb98f87eb16ab6fe6",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-2: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:09:48.363182+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0196",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0196/.sdlc/0196-batch-state/step-2/handoff.md",
+  "owner_pid": 5007,
+  "process_pid": 5132,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:14:42.317076+00:00"
+}

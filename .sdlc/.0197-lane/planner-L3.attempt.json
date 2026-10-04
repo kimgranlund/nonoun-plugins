@@ -1,0 +1,20 @@
+{
+  "attempt_id": "7139617a854d4fd684ae0ada7a372b7b",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "T-0197 planner L3 per ticket plan level",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T16:10:30.200895+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0197",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0197/.sdlc/0197-lane/handoff.md",
+  "owner_pid": 30663,
+  "process_pid": 31629,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T16:38:49.681416+00:00"
+}

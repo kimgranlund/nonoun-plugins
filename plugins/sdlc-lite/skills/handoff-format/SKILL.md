@@ -18,6 +18,11 @@ user-invocable: false
   planner-L3-2.md       a replan; the latest runs.jsonl record is current
   plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
+  skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
+                        and, under ## Skipped, one entry per full-chain role (planner, verifier
+                        per step, filer) a lean or fix lane skipped, in the form
+                        "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
+                        (reason and decided non-empty); tickets.py check and close enforce it
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
@@ -34,6 +39,9 @@ user-invocable: false
 .sdlc/tickets/          the ticket folders when config has ticket_root: tickets, with its own AGENTS.md and CLAUDE.md; roadmap.md, notes.md, config, and _templates/ stay in .sdlc/
 .sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
+.sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
+.sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
+.sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
@@ -48,6 +56,12 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 .sdlc/**/.run.lock
 .sdlc/runtime/
 .sdlc/messages/
+.sdlc/supervisor/hosts.local.json
+.sdlc/supervisor/status.json
+.sdlc/supervisor/state.json
+.sdlc/supervisor/lock
+.sdlc/supervisor/STOP
+.sdlc/supervisor/wakes/
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
@@ -116,6 +130,8 @@ Optional. Written by /chain or the conductor, never by a role: a plan defect fou
 
 `scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand. `steps.py widen` widens the scope criterion with conductor-allowed paths (/chain 4.9) and appends one item per path to a `## Scope widened` section at the end of the step handoff: ``- `<path>`: allowed by a conductor scope decision (steps.py widen)``.
 
+A plan may hold a `guard timeout: <seconds>` line (in `## Goal` for the whole plan, or right after a step's `level:` line for that step); `steps.py split --only` uses it as the `--guard-timeout` default, an explicit `--guard-timeout` wins, and `specgate.py check` refuses a `(guard)` that runs `check.sh` without one.
+
 Copied from the plan's step block, plus the task goal for orientation:
 
 ```
@@ -156,6 +172,17 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
 
 `## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to. A swapped plan defect (a `plan defect:` fail whose criterion `steps.py swap` replaced) rebuilds at the same level without `## Previous attempt`.
+
+## Batched verifier result (task dir)
+
+A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir, not in a step dir. After `## For the next attempt` it adds a `## Verified` section with one item per builder result it verified, the path relative to the task dir, bare or in a code span:
+
+```
+## Verified
+- step-<n>/builder-L<k>[-j].md
+```
+
+`steps.py next` and `resume` treat a listed step as verified while the listed path is still that step's newest builder result by `order.py` (a rebuild after the batch is not listed, so the step goes back to `verify`), and `board.py` renders it. The newest task-dir verifier result (by `order.py`) that lists the build decides: it counts only with Verdict `pass` and no `results.structure_error`, so a later `fail` on the same build overrides an earlier `pass`, and two batches over disjoint steps both stay valid. A step-dir verifier result that counts after the build still decides first. A step is never batch-verified when its newest builder Status is not `done`, its build is L4 or L5, its title starts with `Merge ` or holds `gates green` (any case), it is the highest-numbered live `step-<n>/` in the task dir, or a `step-<n>.superseded-<k>/` sibling exists; those steps take a per-step verifier. `## Verified` is not a declared verifier section, which is fine: `results.structure_error` ignores undeclared headings.
 
 ## Free-text arguments
 

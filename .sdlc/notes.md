@@ -163,3 +163,47 @@
 - note: Step 2 builder did not run the three `grep -qF` criteria itself; the step 2 verifier ran them and they passed, so nothing is open.
 - note: The planner run reported a stray worktree and branch `t0185` (`.worktrees/t0185`); clean it up if it is no longer needed.
 - note: The exact-count criteria for the four closed dot folders go red if any of those folders is edited on main, for example by the T-0190 layout migration. Re-baseline them if that happens.
+
+## T-0197: steps.py lane, review_required(), and skips.md (2026-10-04)
+
+- note: no artifact shows `steps.py lane` run on a real ticket dir or a live Codex host; all evidence is selftests, temp dirs and static checks, so live evidence is left to T-0208.
+- note: a repeated `lane` call appends a duplicate record line to `skips.md` (step 2 builder smoke run); T-0198's guard should expect this.
+## T-0203: fanout.py merge-time file-overlap check (2026-10-04)
+
+- note: An overlap first visible after a later lane has started its merge is not reordered. The docstring and `sdlc-internals.md` state this limit.
+- note: `check.sh` skipped `shellcheck` (not installed), so shell lint did not run for this change.
+- note: Planned-scope overlap in `--dry-run` always lists an external lane's tickets as not planned, because their step folders live on the external branch.
+## T-0195: Runner: verifier family rule for a task-dir verifier (2026-10-04)
+
+- decide: `steps.py split --only` has a 300 s default guard timeout, but `check.sh` took 417 s on this host. Nothing in the chain skill or the agents says to pass `--guard-timeout` (grep of `plugins/sdlc-lite/skills` and `plugins/sdlc-lite/agents` for `guard-timeout` printed nothing). Plans with a `check.sh` guard criterion hit the plan-defect refusal. The plan reviewer's step-4 finding in this task was this case.
+- note: shellcheck is not installed on this host, so the shellcheck pass in `check.sh` was skipped and `run.sh` and `run-selftest.sh` were not shellchecked.
+- note: the first step-3 attempt's throwaway temp dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/tmp.PDQbvWuqBm` still exists outside the repo. The builder's cleanup was denied by permissions.
+
+## T-0202: Carry forward section in scout, researcher, architect, archaeologist (2026-10-04)
+
+- decide: Step 2's live run never passed its own metric (criteria 2 and 9). Choose whether T-0208's live evidence re-proves the planner-reads-scout behavior with a probe that detects reads through a glob.
+- fix-now: The scout result in run 1 listed both call sites without naming the search or scope that produced the list, which the scout contract asks for on a complete list. Check the contract wording for that clause.
+- note: The branch verification at `.sdlc/verify-t0202/step-1` (verifier-L3) has no verdict, so no independent branch-level verdict exists beyond the step 1 L2 pass.
+- note: A role's own em dash cannot be reproduced in a report that forbids the character. The report writes it as `--`.
+
+## T-0198: skips.md guard in tickets.py check and close (2026-10-04)
+
+- note: Post-feature lean or fix tickets whose conductor never ran `steps.py lane` have no lane record and stay unguarded until T-0199 adds the conductor rule that runs `lane` first.
+- note: Once T-0199 makes `/fix` run `lane`, every `/fix` close needs planner and filer `## Skipped` entries or `close --reason` refuses, so T-0199 must write them.
+- note: The exemption reads "closed before the guard's introduction marker" as "has no lane record". If a date or version marker was meant, the step 1 exemption rule changes.
+## T-0196: Step state for a whole-ticket (batched) verifier result (2026-10-04)
+
+- note: Nothing instructs a task-dir verifier to write `## Verified` yet, so batching is inert until the conductor, chain and verifier text change (T-0199).
+- note: Gates and last-step exclusion is heuristic (title contains `gates green`, or highest step number). A non-last gates step with another title could be batch-verified, and a stricter marker would be a planner contract change.
+- note: A step handoff with no `## Step <n>:` line counts as an empty title, so it is not excluded and can be batch-verified. The handoff does not cover this case.
+- note: A conductor that reruns a batch after a partial fail must re-list the passing steps, or they fall back to per-step `verify`. This costs one extra verify and is deliberate.
+
+## T-0210: Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (2026-10-04)
+
+- fix-now: `check.py` order check uses the first `specgate.py check` line in `run.sh`, which is the header comment at run.sh:63, not the command at line 265; point it at the command line so it can't pass on the comment.
+- note: On macOS, where `timeout` is not on PATH, `steps.py` does not treat a span starting with the bare word `timeout` as a command, so `specgate.py` does not see it either. The `timeout N` prefix only counts inside a span that already counts as a command, for example `cd . && timeout 900 bash scripts/check.sh`.
+- note: A plan with more than one `guard timeout:` line outside its step blocks uses the first positive value, and 0 or less is skipped.
+## T-0204: fanout.py resolves lane tickets through ticket_dir (2026-10-04)
+
+- note: The `ticket_root` lane selftest fixture relies on `tickets.py close` succeeding in a fresh repo with no router files, so a later change to close's router handling could turn it red for a reason outside `fanout.py`.
+- note: shellcheck is not installed on the build host, so the shell lint leg of `check.sh` was never exercised for this change.
