@@ -953,14 +953,8 @@ def lean_warnings(plan, task_dir, steps):
             return []
     except Fail:
         return []
-    unresolved, levels, titles = plan_facts(plan)
-    if unresolved or any(n not in (1, 2, 3) for n in levels) or any(x.startswith('Merge ') for x in titles):
-        return []
-    if len(order.ordered(task_dir, 'planner')) >= 2:
-        return []
-    h = pathlib.Path(task_dir) / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
+    unresolved, why = review_required(plan, task_dir)
+    if unresolved or why:
         return []
     rule = '(agents/planner.md, Coarse steps)'
     out = []
@@ -1262,6 +1256,28 @@ def plan_facts(plan):
     return unresolved, levels, titles
 
 
+def review_required(plan, task_dir):
+    """(unresolved assumption items, reasons a plan review is required) for plan in task_dir. The one
+    rule that review, lane, and lint's lean warnings read. result_level's Fail propagates."""
+    unresolved, levels, titles = plan_facts(plan)
+    pname = os.path.basename(plan)
+    why = []
+    if result_level(plan) == 3:
+        why.append(f'{pname} is a planner L3 plan')
+    if any(n in (4, 5) for n in levels):
+        why.append('a step is at builder L4 or L5')
+    if any(x.startswith('Merge ') for x in titles):
+        why.append('the plan has a merge step')
+    n = len(order.ordered(task_dir, 'planner'))
+    if n >= 2:
+        why.append(f'{n} planner results (a replan)')
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(line.rstrip() == '## Plan review'
+                           for line in h.read_text(encoding='utf-8').splitlines()):
+        why.append('handoff.md holds ## Plan review')
+    return unresolved, why
+
+
 def rejected_by_review(plan, task_dir):
     """(plan-reviewer result, verdict) when the newest plan-reviewer result that counts after plan
     says replan or blocked, else None."""
@@ -1288,23 +1304,10 @@ def review_action(task):
         return 'invalid result', None, f'{plan}: {err}', [plan]
     pname = os.path.basename(plan)
     read = [plan]
-    unresolved, levels, titles = plan_facts(plan)
+    unresolved, why = review_required(plan, t)
     if unresolved:
         return ('stop', None, f'{pname} lists an unresolved assumption: "{unresolved[0]}"; the user decides',
                 read)
-    why = []
-    if result_level(plan) == 3:
-        why.append(f'{pname} is a planner L3 plan')
-    if any(n in (4, 5) for n in levels):
-        why.append('a step is at builder L4 or L5')
-    if any(x.startswith('Merge ') for x in titles):
-        why.append('the plan has a merge step')
-    if len(plans) >= 2:
-        why.append(f'{len(plans)} planner results (a replan)')
-    h = t / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
-        why.append('handoff.md holds ## Plan review')
     if not why:
         return 'split', None, f'{pname} is a routine plan; no plan review is required', read
     need = '; '.join(why)
@@ -2798,6 +2801,20 @@ def selftest():
               r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan(),
                               'plan-reviewer-L1-2.md': r_review('maybe')},
                              ['plan-reviewer-L1.md', 'planner-L3.md', 'plan-reviewer-L1-2.md'])) == 'review L1')
+
+        d = r_task({'planner-L3.md': r_plan(), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
+                   runs=['planner-L3.md', 'planner-L3-2.md'], handoff='## Goal\ng\n\n## Plan review\nx\n')
+        rr_why = ['planner-L3-2.md is a planner L3 plan', 'a step is at builder L4 or L5',
+                  'the plan has a merge step', '2 planner results (a replan)', 'handoff.md holds ## Plan review']
+        rr_out = run_main(['review', str(d)])[1].splitlines()
+        d2 = r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: which db\n')})
+        check('(r) review_required returns the unresolved items and every reason review prints, in order',
+              review_required(d / 'planner-L3-2.md', d) == ([], rr_why)
+              and len(rr_out) >= 2
+              and rr_out[1] == 'reason: a plan review is required (planner-L3-2.md is a planner L3 plan; a step is '
+              'at builder L4 or L5; the plan has a merge step; 2 planner results (a replan); handoff.md holds '
+              '## Plan review) and none counts after planner-L3-2.md'
+              and review_required(d2 / 'planner-L2.md', d2) == (['unresolved: which db'], []))
 
         # (r) split refuses a plan whose newest counting review says replan or blocked, before any write
         for v in ('replan', 'blocked'):
