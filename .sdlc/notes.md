@@ -178,3 +178,22 @@
 - decide: `steps.py split --only` has a 300 s default guard timeout, but `check.sh` took 417 s on this host. Nothing in the chain skill or the agents says to pass `--guard-timeout` (grep of `plugins/sdlc-lite/skills` and `plugins/sdlc-lite/agents` for `guard-timeout` printed nothing). Plans with a `check.sh` guard criterion hit the plan-defect refusal. The plan reviewer's step-4 finding in this task was this case.
 - note: shellcheck is not installed on this host, so the shellcheck pass in `check.sh` was skipped and `run.sh` and `run-selftest.sh` were not shellchecked.
 - note: the first step-3 attempt's throwaway temp dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/tmp.PDQbvWuqBm` still exists outside the repo. The builder's cleanup was denied by permissions.
+
+## T-0202: Carry forward section in scout, researcher, architect, archaeologist (2026-10-04)
+
+- decide: Step 2's live run never passed its own metric (criteria 2 and 9). Choose whether T-0208's live evidence re-proves the planner-reads-scout behavior with a probe that detects reads through a glob.
+- fix-now: The scout result in run 1 listed both call sites without naming the search or scope that produced the list, which the scout contract asks for on a complete list. Check the contract wording for that clause.
+- note: The branch verification at `.sdlc/verify-t0202/step-1` (verifier-L3) has no verdict, so no independent branch-level verdict exists beyond the step 1 L2 pass.
+- note: A role's own em dash cannot be reproduced in a report that forbids the character. The report writes it as `--`.
+
+## T-0198: skips.md guard in tickets.py check and close (2026-10-04)
+
+- note: Post-feature lean or fix tickets whose conductor never ran `steps.py lane` have no lane record and stay unguarded until T-0199 adds the conductor rule that runs `lane` first.
+- note: Once T-0199 makes `/fix` run `lane`, every `/fix` close needs planner and filer `## Skipped` entries or `close --reason` refuses, so T-0199 must write them.
+- note: The exemption reads "closed before the guard's introduction marker" as "has no lane record". If a date or version marker was meant, the step 1 exemption rule changes.
+## T-0196: Step state for a whole-ticket (batched) verifier result (2026-10-04)
+
+- note: Nothing instructs a task-dir verifier to write `## Verified` yet, so batching is inert until the conductor, chain and verifier text change (T-0199).
+- note: Gates and last-step exclusion is heuristic (title contains `gates green`, or highest step number). A non-last gates step with another title could be batch-verified, and a stricter marker would be a planner contract change.
+- note: A step handoff with no `## Step <n>:` line counts as an empty title, so it is not excluded and can be batch-verified. The handoff does not cover this case.
+- note: A conductor that reruns a batch after a partial fail must re-list the passing steps, or they fall back to per-step `verify`. This costs one extra verify and is deliberate.

@@ -54,11 +54,17 @@
    and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
    `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
    `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
-16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
+17. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
    and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
    agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
    `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
    two run.sh lines swapped, must be flagged.
+16. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
+   agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
+   contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
+   agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
+   negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
+   four producing roles, so item 13 also requires the `## Carry forward` heading line there.
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -404,7 +410,7 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
-# Spec gate text (docstring item 16): the guard timeout line and the run.sh gate are named where they route.
+# Spec gate text (docstring item 17): the guard timeout line and the run.sh gate are named where they route.
 SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
              'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
 def spec_gate_missing(text, phrase): return phrase not in text
@@ -428,6 +434,20 @@ else:
     ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
     swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
     if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
+# Carry forward (docstring item 16): producer contracts end with the section; planner and builder read it first.
+CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
+CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
+                 'at most 15 lines': CF_PRODUCERS,
+                 'search only what it does not answer': ('agents/planner.md', 'agents/builder.md'),
+                 'cite the result path': ('agents/planner.md',)}
+def carry_forward_missing(text, phrase): return phrase not in text
+for phrase, rels in CARRY_FORWARD.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
+        elif not carry_forward_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: carry-forward negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):

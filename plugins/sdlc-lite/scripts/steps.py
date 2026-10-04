@@ -201,7 +201,16 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
               newest builder Status blocked              -> replan (whatever its Notes say)
-              no verifier result counts after the build  -> verify L<verifier level>
+              no verifier result counts after the build  -> verify L<verifier level>,
+                but done when batch_verified(step dir) names a task-dir verifier result: the
+                newest task-dir verifier-*.md (order.py) whose ## Verified section lists
+                step-<n>/<newest builder file name> (bare or in a code span) decides, and it
+                counts only when it passes results.structure_error and its Verdict is pass (a
+                later listing of the same build overrides an earlier one; never file times).
+                Never batch-verified: the newest builder Status is not done, the build is L4 or
+                L5, the step title starts with "Merge " or holds "gates green" (any case), the
+                step is the highest-numbered live step-<n>/ in the task dir, or a sibling
+                step-<n>.superseded-<k>/ exists.
               newest verifier fails results.structure_error(v, 'verifier') -> invalid result
                 (read: the build and that verifier); a missing or disallowed Verdict is not one
               newest verifier has no pass/fail Verdict   -> reverify L<level of that verifier>,
@@ -229,7 +238,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             that step dir as <task dir as given>/step-<n>, then exactly what next prints for it;
             exit 0. When every candidate is done: "done", then "reason: every step-<n>/ passed";
             exit 0. It never picks the newest or highest step dir. Writes nothing and never reads
-            file times.
+            file times. A step that next calls done through a batch-verified task-dir verifier
+            result (## Verified, above) counts as done.
             A missing task dir, a task dir with no step-<n>/ (run split first), or a next error on
             a candidate prints one "steps resume: " line on stderr, nothing on stdout, and exits 1.
   swap      apply the newest verifier's one criterion swap to <step dir>/handoff.md (/chain 4.2
@@ -1157,6 +1167,55 @@ def handoff_level(d):
     raise Fail(f'steps next: no builder result and {h} has no "level: L1".."level: L5" line')
 
 
+BATCH_PATH_RE = re.compile(r'(?<![\w./-])step-\d+/builder-L\d+(?:-\d+)?\.md(?![\w.-])')
+
+
+def batch_verified(step_dir):
+    """Path of the task-dir verifier result that verified this step's newest build in a batch, else
+    None. The only copy of the rule (board.py imports it). Reads only; never file times.
+    None when: the dir name is not step-<n>; no newest builder, or its Status is not done; the build
+    is L4 or L5; the handoff's step title starts with "Merge " or holds "gates green" (any case);
+    the step is the highest-numbered live step-<n>/ of the task dir; a step-<n>.superseded-<k>/
+    sibling exists. Otherwise the newest task-dir verifier result (order.py) whose ## Verified
+    section lists step-<n>/<newest builder name> decides: its path when it is structurally valid
+    with Verdict pass, else None."""
+    d = pathlib.Path(step_dir)
+    if not STEP_DIR_RE.fullmatch(d.name):
+        d = d.resolve()
+    m = STEP_DIR_RE.fullmatch(d.name)
+    if not m:
+        return None
+    n, task_dir = int(m.group(1)), d.parent
+    b = order.newest(d, 'builder')
+    if b is None or build_status_or_none(b) != 'done' or result_level(b) >= 4:
+        return None
+    title = ''
+    h = d / 'handoff.md'
+    if h.is_file():
+        for line in h.read_text(encoding='utf-8').splitlines():
+            t = STEP_RE.match(line)
+            if t:
+                title = t.group(2).strip()
+                break
+    if title.startswith('Merge ') or 'gates green' in title.lower():
+        return None
+    live = [int(x.group(1)) for c in task_dir.iterdir()
+            if c.is_dir() and (x := STEP_DIR_RE.fullmatch(c.name))]
+    if n >= max(live, default=n):
+        return None
+    if any(c.is_dir() and re.fullmatch(rf'step-{n}\.superseded-\d+', c.name) for c in task_dir.iterdir()):
+        return None
+    want = f'step-{n}/{os.path.basename(b)}'
+    for w in reversed(order.ordered(task_dir, 'verifier')):
+        listed = {p for line in (section(w, 'Verified') or []) for p in BATCH_PATH_RE.findall(line)}
+        if want not in listed:
+            continue
+        if results.structure_error(w, 'verifier') is None and verdict_or_none(w) == 'pass':
+            return w
+        return None
+    return None
+
+
 def next_action(step_dir):
     """Return (action, level or None, reason, [result paths read]). Reads only; never file times.
     Ordering comes from order.py alone (ordered, newest, counts_after)."""
@@ -1195,7 +1254,12 @@ def next_action(step_dir):
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
     if v is None or not order.counts_after(v, b):
-        why = 'no verifier result' if v is None else f'verifier {os.path.basename(v)} is older than the build'
+        batch = batch_verified(d)
+        if batch is not None:
+            want = f'{d.resolve().name}/{os.path.basename(b)}'
+            return ('done', None,
+                    f'batch verifier {os.path.basename(batch)} lists {want} with Verdict pass', read + [batch])
+        why ='no verifier result' if v is None else f'verifier {os.path.basename(v)} is older than the build'
         return ('verify', verifier_level(level),
                 f'{why}; build L{level} -> verifier L{verifier_level(level)}', read)
     read.append(v)
@@ -2816,6 +2880,102 @@ def selftest():
         check('resume error: a next error on a candidate exits 1 with one "steps resume:" line',
               rc == 1 and lines == [] and err.startswith('steps resume: ') and 'step-2' in err
               and len(err.strip().splitlines()) == 1 and same)
+
+        # next batch: a task-dir verifier result whose ## Verified section lists a step's newest build
+        def b_task(steps=None, task_files=(), superseded=()):
+            """steps: {dir name: (title, [(name, text)] in run order)}; task_files: task-dir results in
+            run order, recorded in the task dir's runs.jsonl."""
+            count[0] += 1
+            t = tmp / f'batch{count[0]}'
+            t.mkdir()
+            if steps is None:
+                steps = {'step-1': ('a', [('builder-L2.md', DONE)]),
+                         'step-2': ('b', [('builder-L2.md', DONE)]),
+                         'step-3': ('c', [('builder-L2.md', DONE), ('verifier-L1.md', PASS)])}
+            for name, (title, files) in steps.items():
+                d = t / name
+                d.mkdir()
+                n = name.split('-')[1]
+                (d / 'handoff.md').write_text(f'## Task goal\ng\n\n## Step {n}: {title}\nlevel: L2\n',
+                                              encoding='utf-8')
+                for fname, text in files:
+                    (d / fname).write_text(hdr(fname, text), encoding='utf-8')
+                if files:
+                    (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{f}"}}\n' for f, _ in files),
+                                                  encoding='utf-8')
+            for name in superseded:
+                (t / name).mkdir()
+            for fname, text in task_files:
+                (t / fname).write_text(hdr(fname, text), encoding='utf-8')
+            if task_files:
+                (t / 'runs.jsonl').write_text(''.join(f'{{"file": "{f}"}}\n' for f, _ in task_files),
+                                              encoding='utf-8')
+            return t
+
+        def listing(paths, verdict='pass'):
+            items = ''.join(f'- `{p}`\n' if i % 2 else f'- {p}\n' for i, p in enumerate(paths))
+            return f'## Verdict\n{verdict}\n\n## For the next attempt\nNone\n\n## Verified\n{items}'
+
+        BOTH = listing(['step-1/builder-L2.md', 'step-2/builder-L2.md'])
+        t = b_task(task_files=[('verifier-L3.md', BOTH)])
+        rc, out, err = run_main(['next', str(t / 'step-2')])
+        lines = out.splitlines()
+        rc2, lines2, err2, same = rsm(t)
+        check('next batch: a listed unchanged step is done, and resume prints done',
+              rc == 0 and err == '' and lines[:1] == ['done']
+              and lines[1:2] == ['reason: batch verifier verifier-L3.md lists step-2/builder-L2.md with Verdict pass']
+              and lines[2:] == [f'read: {t / "step-2" / "builder-L2.md"}', f'read: {t / "verifier-L3.md"}']
+              and nxt(t / 'step-1', 'done') and rc2 == 0 and same
+              and lines2 == ['done', 'reason: every step-<n>/ passed'])
+        newer = [('builder-L2-2.md', DONE), ('builder-L2.md', DONE)]
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', newer), 'step-3': ('c', [])},
+                   [('verifier-L3.md', listing(['step-2/builder-L2-2.md']))])
+        check('next batch: a listing of an older build (order.py, not the -2 name) -> verify',
+              nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', newer), 'step-3': ('c', [])},
+                   [('verifier-L3.md', listing(['step-2/builder-L2.md']))])
+        check('next batch: a listing of the newest build by order.py -> done',
+              nxt(t / 'step-2', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-1/builder-L2.md']))])
+        check('next batch: an unlisted step -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        for lv in (4, 5):
+            t = b_task({'step-1': ('a', []), 'step-2': ('b', [(f'builder-L{lv}.md', DONE)]), 'step-3': ('c', [])},
+                       [('verifier-L3.md', listing([f'step-2/builder-L{lv}.md']))])
+            check(f'next batch: an L{lv} build is never batch-verified -> verify L3',
+                  nxt(t / 'step-2', 'verify L3'))
+        for title in ('Merge lane-a', 'Docs and Gates Green'):
+            t = b_task({'step-1': ('a', []), 'step-2': (title, [('builder-L2.md', DONE)]), 'step-3': ('c', [])},
+                       [('verifier-L3.md', BOTH)])
+            check(f'next batch: a step titled "{title}" -> verify', nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', [('builder-L2.md', DONE)]), 'step-2': ('b', [('builder-L2.md', DONE)])},
+                   [('verifier-L3.md', BOTH)])
+        check('next batch: the highest-numbered live step -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', BOTH)], superseded=['step-2.superseded-1'])
+        check('next batch: a step with a superseded sibling -> verify', nxt(t / 'step-2', 'verify L1')
+              and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-2/builder-L2.md'], 'fail'))])
+        check('next batch: a listing with Verdict fail -> verify', nxt(t / 'step-2', 'verify L1'))
+        FAIL_LIST = listing(['step-2/builder-L2.md'], 'fail')
+        t = b_task(task_files=[('verifier-L3-2.md', BOTH), ('verifier-L3.md', FAIL_LIST)])
+        check('next batch: a newer fail listing (order.py) overrides an older pass listing -> verify',
+              nxt(t / 'step-2', 'verify L1') and nxt(t / 'step-1', 'done'))
+        t = b_task(task_files=[('verifier-L3-2.md', FAIL_LIST), ('verifier-L3.md', BOTH)])
+        check('next batch: a newer pass listing overrides an older fail listing -> done',
+              nxt(t / 'step-2', 'done'))
+        t = b_task(task_files=[('verifier-L3.md', listing(['step-1/builder-L2.md'])),
+                               ('verifier-L3-2.md', listing(['step-2/builder-L2.md']))])
+        check('next batch: two batches over disjoint steps both count', nxt(t / 'step-1', 'done')
+              and nxt(t / 'step-2', 'done'))
+        bad = '<!-- role=builder level=L3 model=opus effort=low -->\n' + BOTH
+        t = b_task(task_files=[('verifier-L3.md', bad)])
+        check('next batch: a structurally invalid task verifier result -> verify',
+              nxt(t / 'step-2', 'verify L1'))
+        t = b_task({'step-1': ('a', []), 'step-2': ('b', [('builder-L2.md', DONE), ('verifier-L1.md', FAIL)]),
+                    'step-3': ('c', [])}, [('verifier-L3.md', BOTH)])
+        check('next batch: a per-step fail counting after the build wins over a pass listing -> rebuild',
+              nxt(t / 'step-2', 'rebuild L2'))
 
         # swap: a verifier's plan-defect fail proposes one criterion swap; steps.py swap applies it
         # after every check, next routes to it. Spans run from the step dir (tmp is outside git).

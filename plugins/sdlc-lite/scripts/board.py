@@ -35,6 +35,9 @@ A builder whose Status starts with "inherited red" (a gate main already made red
 A newest verifier after the build whose Verdict starts with "inherited red:" renders as
 🔴 inherited red · builder <level> · verifier <level>, ask the user; it counts as a verdict, so it
 breaks a no-verdict run.
+A step whose newest build a task-dir verifier lists under ## Verified with Verdict pass
+(steps.batch_verified, the same rule steps.py next uses) renders as
+🟢 pass · builder <level> · batch verifier <level>.
 
 Ticket columns: when at least one rendered task's handoff.md has ticket front matter (read with
 tickets.py's parser, for display only), the table becomes | ID | Task | Ticket | Step | Status | % |,
@@ -52,6 +55,7 @@ import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 import order  # same scripts/ dir: recorded run order for result files
+import steps  # same scripts/ dir: the batch verification rule (steps.batch_verified)
 
 LADDER = {'queued': 0, 'building': 10, 'built': 50, 'verifying': 70, 'verified': 100}
 
@@ -135,6 +139,9 @@ def step_row(step: pathlib.Path, title: str, planned_level: str):
         if n >= 2:
             return '🟡', f'stop · no verdict x{n} · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, ask the user{tries}', LADDER['built']
         return '🟡', f'no verdict · builder {level_of(last_build)} · verifier {level_of(verifies[-1])}, rerun verify{tries}', LADDER['built']
+    bv = steps.batch_verified(step)
+    if bv:
+        return '🟢', f'pass · builder {level_of(last_build)} · batch verifier {level_of(pathlib.Path(bv))}{tries}', LADDER['verified']
     return '🟡', f'built · builder {level_of(last_build)}, awaiting verify{tries}', LADDER['built']
 
 
@@ -824,6 +831,27 @@ def selftest() -> int:
         got = step_row(step_fixture('verifier-inherited-red', vinh), 'x', 'L2')[:2]
         expect(f'an inherited red verifier renders as 🔴 inherited red · builder · verifier, got {got}',
                got == ('🔴', 'inherited red · builder L2 · verifier L1, ask the user'))
+        def batch_fixture(name, rebuilt):
+            t = otmp / name
+            for n in (1, 2):
+                d = t / f'step-{n}'
+                d.mkdir(parents=True)
+                (d / 'handoff.md').write_text(f'## Step {n}: s{n}\nlevel: L2\n')
+                (d / 'builder-L2.md').write_text('<!-- role=builder level=L2 model=opus effort=low -->\n' + built)
+            if rebuilt:
+                (t / 'step-1' / 'builder-L2-2.md').write_text('<!-- role=builder level=L2 model=opus effort=low -->\n' + built)
+            (t / 'handoff.md').write_text('## Goal\ng\n')
+            (t / 'verifier-L3.md').write_text('<!-- role=verifier level=L3 model=fable effort=xhigh -->\n'
+                                              '## Verdict\npass\n\n## Verified\n- step-1/builder-L2.md\n')
+            return t / 'step-1'
+        got = step_row(batch_fixture('batch-pass', False), 'x', 'L2')[:2]
+        expect(f'a batch-verified step renders as 🟢 pass · batch verifier, got {got}',
+               got == ('🟢', 'pass · builder L2 · batch verifier L3'))
+        print(f'ok: batch: listed newest build renders {got[1]}')
+        got = step_row(batch_fixture('batch-rebuilt', True), 'x', 'L2')[:2]
+        expect(f'a step rebuilt after the batch renders awaiting verify, got {got}',
+               got[0] == '🟡' and got[1].startswith('built · builder L2, awaiting verify'))
+        print(f'ok: batch: rebuilt after the batch renders {got[1]}')
 
     # 8. --lanes: one row per git worktree, each Board cell read from that worktree's own root.
     with tempfile.TemporaryDirectory() as ltmp:

@@ -1,0 +1,20 @@
+{
+  "attempt_id": "dea0eb81b609428abaf96bf971204aaf",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-1: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:33:08.800974+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0198",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0198/.sdlc/0198-skips-guard/step-1/handoff.md",
+  "owner_pid": 27139,
+  "process_pid": 27269,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:35:27.112688+00:00"
+}

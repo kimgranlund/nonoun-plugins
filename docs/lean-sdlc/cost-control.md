@@ -1,6 +1,6 @@
 # Lean SDLC cost control
 
-Version 0.2, 2026-10-04. Proposal addendum to [the lean design](design.md). A1 (T-0210) is built; nothing else here is. It adds four items the lean tickets T-0193 to T-0208 do not cover. It changes no model or effort default.
+Version 0.3, 2026-10-04. Proposal addendum to [the lean design](design.md). A1 (T-0210) is built; nothing else here is. It adds four items the lean tickets T-0193 to T-0208 do not cover. It changes no model or effort default.
 
 ## Problem
 
@@ -17,7 +17,7 @@ Role runs on 2026-10-04 cost about $190 over 78 runs (recounted from every `runs
 
 Counted 2026-10-04 00:00 to 17:32 UTC. Per ticket (build tickets only): T-0203 $14.5, T-0185 $16.7, T-0202 $25.3, T-0197 $23.5, T-0195 $27.6, T-0183 $36.5 (still open). Median about $24.
 
-Verifier L3 is the second line ($43) and no item below touches it; naming the lever is in scope, and the model and effort choice is the user's (open question 1 covers reviewers, not verifiers).
+Verifier L3 is the second line ($43) and no item below touches it; naming the lever is in scope, and the model and effort choice is the user's (the authorized reviewer-effort change covers delta re-reviews only, not verifiers).
 
 The runs record only `run.sh` roles. The conductor and background agent sessions are not in `runs.jsonl`, so the true spend is higher.
 
@@ -94,12 +94,12 @@ Nothing detects that a handoff changed while a role read it. The role finishes, 
 - `run.sh` rehashes `handoff.md` before its `jq` append and writes `handoff_sha256` and `stale_input: true|false` on the run line, with a stderr line `run.sh: stale input: <handoff> changed while <role> ran`. The role's exit code is unchanged.
 - New action class `rerun`. `steps.py next`, `resume` and `review` return `rerun <level> stale input` when the newest result's run line (read through `order.records`) has `stale_input: true`. This is not `invalid result`: that path stops and asks the user, while `rerun` continues automatically with the same role and level and no `## Previous attempt`. `skills/chain/SKILL.md` and the conductor text (T-0199's file, a pointer line only, after T-0199 merges) route it.
 - A rerun writes `planner-L3-2.md`, which `review_action`, `lean_warnings` and the footprint `replans` count would read as a replan. Those readers and `footprint.py` exclude a planner result whose run line carries `stale_input: true`. Four copies of one rule: they share one helper in `steps.py`, and `footprint.py` imports it.
-- Claude-only hook `hooks/block-handoff-edit.sh`, registered as a new matcher entry `Edit|Write|NotebookEdit` in `adapters/claude/hooks.json` (the registration file; matchers today are Bash, Agent and Monitor, and `run.sh` already disallows `Edit Write NotebookEdit`). It acts in any session, not only role runs, because the conductor's session has no `SDLC_ROLE`. It reads `tool_input.file_path` and denies when the basename is `handoff.md` and a `*.running` file sits beside it, with a message naming the escape. The Edit payload shape is not covered by `hook-live-probe.sh` and gets a live probe. Codex has no hook, so the stale flag is the only cross-host control.
+- Claude-only hook `hooks/warn-handoff-edit.sh` (warn mode first, user decision 2026-10-04), registered as a new matcher entry `Edit|Write|NotebookEdit` in `adapters/claude/hooks.json` (the registration file; matchers today are Bash, Agent and Monitor, and `run.sh` already disallows `Edit Write NotebookEdit`). It acts in any session, not only role runs, because the conductor's session has no `SDLC_ROLE`. It reads `tool_input.file_path`; when the basename is `handoff.md` and a `*.running` file sits beside it, it allows the edit, prints a warning naming `change.md` as the escape, and appends one line to `<task dir>/stale-edits.log` (timestamp, path, running role). The stale flag still fires at completion, so a warned edit is detected. A later switch, `SDLC_HANDOFF_EDIT=deny` or a `handoff_edit: deny` line in `<root>/config`, turns the warning into a denial once the log shows the data supports it; the default stays warn. The Edit payload shape is not covered by `hook-live-probe.sh` and gets a live probe. Codex has no hook, so the stale flag is the only cross-host control.
 - A change request is a single `change.md` appended in the task dir by the conductor between runs, and the next handoff cites it. The conductor rule is T-0199's text.
 
 ### Files
 
-Edited: `scripts/run_lifecycle.py`, `scripts/run.sh`, `scripts/steps.py`, `scripts/footprint.py`, `adapters/claude/hooks.json`, new `hooks/block-handoff-edit.sh`, `scripts/hook-selftest.sh`, `scripts/hook-live-probe.sh`, `docs/maintenance/claude-hooks.md`, `skills/chain/SKILL.md`, `scripts/check.py`, a dated `docs/validation/handoff-freeze-live-run.md`.
+Edited: `scripts/run_lifecycle.py`, `scripts/run.sh`, `scripts/steps.py`, `scripts/footprint.py`, `adapters/claude/hooks.json`, new `hooks/warn-handoff-edit.sh`, `scripts/hook-selftest.sh`, `scripts/hook-live-probe.sh`, `docs/maintenance/claude-hooks.md`, `skills/chain/SKILL.md`, `scripts/check.py`, a dated `docs/validation/handoff-freeze-live-run.md`.
 
 ### Ordering
 
@@ -107,14 +107,14 @@ After T-0196 (`steps.py next` and `resume`), T-0199 (`conductor.md`, `chain/SKIL
 
 ### Risks
 
-- A legitimate edit during a run. The hook message names `change.md` and the stop-and-wait escape. A `.running` file left by a SIGKILLed run keeps denying until `run_lifecycle.py recover` removes it.
+- A legitimate edit during a run is allowed in warn mode, and the log records it. Moving to deny later is a switch, decided from the log. A `.running` file left by a SIGKILLed run keeps warning until `run_lifecycle.py recover` removes it.
 - The stale-exclusion rule has four readers; a missed one makes one stale rerun force a plan review or flip a lean ticket to full. A selftest covers each reader.
 
 ### Validation
 
 - A selftest edits `handoff.md` between launch and completion with a stub role: the run line has `stale_input: true` and `steps.py next` returns `rerun`.
 - Negative controls: no edit is not flagged; a role that never reads the handoff but whose handoff changed is still flagged (the hash decides); an edit to a sibling file is not flagged; a stale planner rerun does not make `review_action` require a plan review.
-- Hook: deny with a `.running` file beside `handoff.md`, allow without it, allow for another file name, and a live probe of the Edit payload.
+- Hook: with a `.running` file beside `handoff.md` the edit is allowed, a warning is printed and a `stale-edits.log` line is written; without it nothing is logged; another file name is not logged; the deny switch turns the same case into a denial (negative control); and a live probe of the Edit payload.
 - Live: one real planner run on Claude and one on Codex with an edit made mid-run ends in `rerun`.
 
 ## C. Replan as a delta, and a planner checklist
@@ -128,9 +128,10 @@ A replan today is a new planning run that rereads the repository. The seven judg
 1. Replan input. `steps.py replan-handoff <task dir>` is the scripted form of the append the chain already does by hand (`chain/SKILL.md:48`, a `plan review: replan: <finding>` line in `handoff.md`). It writes into `handoff.md`, not a second file, because `read_goal` and the `## Plan review` detection read `handoff.md` only. It refuses when no `replan` verdict counts after the newest plan. The planner already fixes only named steps (planner rule 9); the delta format is T-0200's, and T-0202's carry-forward sections supply research so it is not repeated.
 2. Planner checklist, derived from the findings corpus, in `agents/planner.md`: every design row or goal clause has a criterion; every untagged criterion is red at the start of its step; every function the step calls is named with its failure input (no front matter, empty file); every new file is listed in the layout record that enumerates files; a slow guard has a `guard timeout:` line. One line each, each citing a dated finding.
 3. Scoped review. `agents/plan-reviewer.md` gains a rule: after `specgate.py check` passes, review only the judgment items (goal coverage, interfaces, hidden dependents) and do not re-verify what the gate checked. A re-review after a delta reads the merged plan view (T-0200's `steps.py resolve`) and the findings it answers.
-4. Cap and measure. The existing stop after two `replan` verdicts stays, and the conductor's hard stop on a second replan is T-0199 text (d); this item adds no conductor wording. `footprint.py` gains `replans` (non-stale planner results beyond the first, plus `replan` verdicts), so the target is a gate and not a story.
+4. Delta re-review effort (authorized). A plan-reviewer run is a delta re-review when the task dir holds an earlier `plan-reviewer-*.md` with Verdict `replan` and the plan under review is a replan of it; `run.sh` selects effort `medium` for it. A first review, a review of a plan with no earlier `replan` verdict, and every other role keep their current effort. The family rule is unchanged.
+5. Cap and measure. The existing stop after two `replan` verdicts stays, and the conductor's hard stop on a second replan is T-0199 text (d); this item adds no conductor wording. `footprint.py` gains `replans` (non-stale planner results beyond the first, plus `replan` verdicts), so the target is a gate and not a story.
 
-Running delta re-reviews at a lower effort is a model and effort decision and is left to the user (open question 1). Nothing here changes `run.sh` models or `models.json`.
+Delta re-reviews run one effort level lower than the plan-reviewer's current effort for that case (user decision 2026-10-04: a delta re-review checks only the findings, not the whole plan). Today `plan-reviewer:L1` is `opus high` and the family rule swaps it to Fable at the same effort, so a delta re-review runs at `medium` on whichever family the rule picks. This is the one explicitly authorized change to a model and effort default. It is implemented by T-0213 in `run.sh` and `skills/level-rubric/SKILL.md`, `scripts/check.py` keeps checking their agreement, and, under the T-0185 rule, the change needs a new eval file under `.sdlc/evals/` and a `scripts/evals.py lock` update. The eval records only what it measured (see T-0213's handoff); no other model or effort changes.
 
 ### Files
 
@@ -159,10 +160,10 @@ Nothing meters spend. `board.py` sums cost per task for display, but no limit ex
 
 ### Design
 
-- Front matter `budget_usd: <number>` on a ticket, optional, set at filing. Tier defaults from this week's medians: size S $5, M $30, L $60, XL none (ask). They are defaults the user may change (open question 2).
+- Front matter `budget_usd: <number>` on a ticket, optional, set at filing. Tier defaults from this week's medians: size S $5, M $30, L $60, XL none (ask). The user confirmed them on 2026-10-04 (stop and ask at 80 percent) and each is editable per ticket with `budget.py set <ticket> --usd N`.
 - New `scripts/budget.py`:
   - `status <ticket dir>` prints `spend`, `budget`, `percent`, `state` (`ok`, `warn` at 80 percent, `over` at 100), and `unmetered_runs: N`. Exit 0 ok, 3 warn or over, 2 no budget set. These exit codes are internal to `budget.py`.
-  - `set <ticket> --tier S|M|L` writes the field. `ack <ticket dir> --usd N --reason TEXT` writes `budget-ack.md` raising the ceiling once.
+  - `set <ticket> --tier S|M|L` or `--usd N` writes the field. `ack <ticket dir> --usd N --reason TEXT` writes `budget-ack.md` raising the ceiling once.
   - `ticket_of(handoff dir)` walks up from a step dir, including `step-<n>.superseded-<k>/step-<n>/`, to the nearest `handoff.md` with front matter, bounded by the `.sdlc` root.
   - Spend is `cost_usd` summed from every `runs.jsonl` under the ticket folder, recursively, deduplicated by `attempt_id`. A null `cost_usd` counts 0 and is reported as unmetered. Codex runs record no cost (`codex_exec.py`), so the meter covers Claude roles only; the entry file says so.
 - `run.sh` pre-launch, before `exec run_lifecycle.py`: when the ticket has a budget and `budget.py status` is warn or over with no later `budget-ack.md`, `run.sh` exits 4 with `run.sh: budget <pct>%: ask the user; budget.py ack`. Exit 3 already means "result failed validation" to the conductor, so 4 is used. T-0199's stop rule (d) turns exit 4 into one question to the user. A ticket with no budget is unmetered, so existing repos see no change.
@@ -220,11 +221,13 @@ Measured from `runs.jsonl` and `footprint.py`, tentative until ten tickets have 
 
 A target is a hypothesis. If the replay in item C shows the checklist catches fewer than half the judgment classes, the delta and checklist change is not worth its text and is removed.
 
-## Open questions for the user
+## Resolved decisions (user, 2026-10-04)
 
-1. Should delta re-reviews run at a lower reviewer effort than a first review? This changes a model or effort default, so it needs your decision. Default: no change.
-2. Budget tier defaults: S $5, M $30, L $60. Default as listed; change them if the medians look wrong to you.
-3. Should the handoff-edit hook deny the edit or warn? Default: deny, with a message naming the escape.
+None open. Resolved by the user on 2026-10-04:
+
+1. Handoff-edit hook: warn first (flag stale input, log it, allow the edit); deny is a later switch once the log supports it.
+2. Budget tiers: S $5, M $30, L $60, stop and ask at 80 percent, editable per ticket through `budget.py set --usd N`.
+3. Lower reviewer effort for delta re-reviews after a replan, one level below the plan-reviewer's current effort (high to medium), with an eval file and lock under the T-0185 rule.
 
 ## Validation of this addendum
 
