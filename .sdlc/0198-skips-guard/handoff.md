@@ -23,3 +23,6 @@ Part of the lean SDLC design, `docs/lean-sdlc/design.md` (v0.4, build row L6), r
 
 ## Constraints
 Preserve cross-worktree id uniqueness, reference-safe closure, and the explicit follow-up selection. Do not change `close`'s existing refusal rules. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
+
+## Burn-down brief
+Standing frame: done is better than perfect; trust capable models given useful context. Make the smallest change that meets the Intent. One or two steps, builder L3 at most unless a step truly needs L4. No per-ticket live run: rely on selftests, checks and the branch verifier, and record a flaky or missing live arm as a known limit. Scope is frozen: a new requirement becomes a new ticket. Report blocked instead of looping.
