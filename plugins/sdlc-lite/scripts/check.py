@@ -54,6 +54,11 @@
    and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
    `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
    `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
+16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
+   and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
+   agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
+   `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
+   two run.sh lines swapped, must be flagged.
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -399,6 +404,30 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
+# Spec gate text (docstring item 16): the guard timeout line and the run.sh gate are named where they route.
+SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
+             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
+def spec_gate_missing(text, phrase): return phrase not in text
+for phrase, rels in SPEC_GATE.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if spec_gate_missing(text, phrase): errors.append(f'{rel}: spec gate text missing "{phrase}"')
+        elif not spec_gate_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'check.py: spec gate text negative control not flagged for {rel}')
+SPEC_GATE_EXEC = 'exec python3 "$plugin_root/scripts/run_lifecycle.py"'
+def spec_gate_order_bad(lines):
+    gate = next((i for i, l in enumerate(lines) if 'specgate.py check' in l), None)
+    run = next((i for i, l in enumerate(lines) if SPEC_GATE_EXEC in l), None)
+    return gate is None or run is None or gate > run
+rs_lines = (root/'scripts/run.sh').read_text().split('\n') if (root/'scripts/run.sh').is_file() else []
+if spec_gate_order_bad(rs_lines):
+    errors.append('scripts/run.sh: specgate.py check does not come before exec run_lifecycle.py')
+else:
+    gi = next(i for i, l in enumerate(rs_lines) if 'specgate.py check' in l)
+    ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
+    swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
+    if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):
