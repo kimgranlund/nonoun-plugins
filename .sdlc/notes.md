@@ -164,6 +164,11 @@
 - note: The planner run reported a stray worktree and branch `t0185` (`.worktrees/t0185`); clean it up if it is no longer needed.
 - note: The exact-count criteria for the four closed dot folders go red if any of those folders is edited on main, for example by the T-0190 layout migration. Re-baseline them if that happens.
 
+## T-0203: fanout.py merge-time file-overlap check (2026-10-04)
+
+- note: An overlap first visible after a later lane has started its merge is not reordered. The docstring and `sdlc-internals.md` state this limit.
+- note: `check.sh` skipped `shellcheck` (not installed), so shell lint did not run for this change.
+- note: Planned-scope overlap in `--dry-run` always lists an external lane's tickets as not planned, because their step folders live on the external branch.
 ## T-0195: Runner: verifier family rule for a task-dir verifier (2026-10-04)
 
 - decide: `steps.py split --only` has a 300 s default guard timeout, but `check.sh` took 417 s on this host. Nothing in the chain skill or the agents says to pass `--guard-timeout` (grep of `plugins/sdlc-lite/skills` and `plugins/sdlc-lite/agents` for `guard-timeout` printed nothing). Plans with a `check.sh` guard criterion hit the plan-defect refusal. The plan reviewer's step-4 finding in this task was this case.

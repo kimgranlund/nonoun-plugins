@@ -1,0 +1,20 @@
+{
+  "attempt_id": "74c9a64283ef42ffa148677ea650b65c",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-3: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T16:59:20.770226+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0203",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0203/.sdlc/0203-fanout-overlap/step-3/handoff.md",
+  "owner_pid": 17905,
+  "process_pid": 18471,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T17:04:26.179389+00:00"
+}
