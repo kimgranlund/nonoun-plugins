@@ -1,0 +1,32 @@
+## Task goal
+Finish T-0183 under the user's burn-down decision: the Codex wake prompt carries the absolute `messages.py` path and the allowed commands, the README status cannot read `Codex pass` unless every Codex arm passed, the Codex wake arm is rerun at most three times with its pass count reported, and a flaky arm is recorded as a known limit.
+
+## Step 10: Codex wake prompt, status formula, bounded Codex reruns
+level: L3
+
+### Read first
+- `plugins/sdlc-lite/AGENTS.md`
+- `docs/validation/supervisor-live-run/AGENTS.md`
+
+### Do
+Scope is frozen. Edit only `plugins/sdlc-lite/scripts/supervisor.py`, `docs/validation/supervisor-live-run.md`, `docs/validation/supervisor-live-run/` (new evidence files and, if needed, its `AGENTS.md`), and the T-0183 line in `docs/README.md`. Do not edit `probe.py`, any existing evidence file, `messages.py`, or any other file.
+
+1. Wake prompt. In `supervisor.py`, extend the fixed text built by `wake_prompt(receiver, n)` with one sentence that names the absolute path `<scripts_dir()>/messages.py` as the only script to run and lists the commands the host may run: `count`, `list`, `read`, `reply`, `ack`, each as `python3 <that path> <command> ...`, and says not to search for the script. It still carries only the receiver, the count, and the new sentence: never a message id, topic, or body. Both hosts get the same prompt. Update the selftest's independent expected prompt (`st_prompt`) and every selftest case that compares prompts so they stay green, and add one labelled selftest case `codex prompt names the absolute script path and no message text` that builds the Codex stdin through the same path the watcher uses, asserts it contains the absolute `messages.py` path and each of the five command names, and asserts a planted marker in the message topic and body never appears. Add a negative control inside that case: a patched copy of the prompt builder without the path must make the assertion fail (build the patched copy in a temp dir, as the existing negative controls in this selftest do).
+2. Codex reruns. Run `python3 plugins/sdlc-lite/scripts/supervisor.py selftest` and `python3 docs/validation/supervisor-live-run/probe.py selftest`; if either fails, stop with Status blocked. Then run the `codex` arm exactly three times, each as its own foreground Bash call with the Bash timeout at 1800000: `set -o pipefail; python3 docs/validation/supervisor-live-run/probe.py codex | tee docs/validation/supervisor-live-run/codex-rerun-<N>.txt` for N = 1, 2, 3. Never edit an evidence file by hand, never use a fixture, never run an arm a fourth time, never run `supervisor.py watch --run` from this repository, and never push to this repository's remote. The existing `codex.txt` is the pre-fix run and stays untouched. Count k, the number of rerun files whose last line is `result=pass`. An arm that ends `unverified reason=host cannot run` counts as not passed.
+3. Record. In `docs/validation/supervisor-live-run.md` add a section `## Codex wake arm after the prompt fix` stating: the pre-fix result (`codex.txt`, fail, the host searched for `.sdlc/messages.py` and never ran a command), the three rerun files, and the exact sentence `Codex wake arm after the fix: <k> of 3 passed.` with the real k. When k is less than 3, add a line starting `Known limit: the Codex wake arm` that says it is flaky, names k, and says the cause is not proven. Do not rewrite the existing sections except where they now misstate the status.
+4. Status formula in `docs/README.md`. Edit only the T-0183 line. Its Claude Code word is `pass` only when `Result dry-run`, `Result claude`, `Result claude-attached`, and `Result claude-push` in the record all say pass, else `fail`. Its Codex part is `Codex pass` only when `Result codex-attached` and `Result codex-push` say pass and k is 3, `Codex flaky (k of 3 after the fix)` when k is 1 or 2, and `Codex fail` when k is 0. The line must contain the exact sentence `Codex wake arm after the fix: <k> of 3 passed.` and, when k is less than 3, the words `known limit`. No other README line changes.
+5. No em dash anywhere in text you write.
+
+### Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/supervisor.py selftest 2>&1 | grep -q 'ok: codex prompt names the absolute script path'`
+- `python3 -c "import os, sys; sys.path.insert(0, 'plugins/sdlc-lite/scripts'); import supervisor; p = supervisor.wake_prompt('bob', 1); assert os.path.join(supervisor.scripts_dir(), 'messages.py') in p and 'count' in p and 'ack' in p"`
+- `tail -n1 docs/validation/supervisor-live-run/codex-rerun-1.txt | grep -qE '^result=(pass|fail|unverified)'`
+- `tail -n1 docs/validation/supervisor-live-run/codex-rerun-2.txt | grep -qE '^result=(pass|fail|unverified)'`
+- `tail -n1 docs/validation/supervisor-live-run/codex-rerun-3.txt | grep -qE '^result=(pass|fail|unverified)'`
+- `k=$(tail -qn1 docs/validation/supervisor-live-run/codex-rerun-1.txt docs/validation/supervisor-live-run/codex-rerun-2.txt docs/validation/supervisor-live-run/codex-rerun-3.txt | grep -c '^result=pass'); grep -q "Codex wake arm after the fix: $k of 3 passed." docs/validation/supervisor-live-run.md && grep -q "Codex wake arm after the fix: $k of 3 passed." docs/README.md`
+- `if tail -qn1 docs/validation/supervisor-live-run/codex-rerun-1.txt docs/validation/supervisor-live-run/codex-rerun-2.txt docs/validation/supervisor-live-run/codex-rerun-3.txt | grep -qv '^result=pass'; then grep -qi 'known limit' docs/README.md && grep -q 'Known limit: the Codex wake arm' docs/validation/supervisor-live-run.md; fi`
+- `if tail -qn1 docs/validation/supervisor-live-run/codex-rerun-1.txt docs/validation/supervisor-live-run/codex-rerun-2.txt docs/validation/supervisor-live-run/codex-rerun-3.txt | grep -qv '^result=pass'; then ! grep -q 'Codex pass' docs/README.md; fi`
+- (guard) `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`
+- (guard) `python3 docs/validation/supervisor-live-run/probe.py selftest`
+- (guard) `! grep -q "$(printf '\342\200\224')" plugins/sdlc-lite/scripts/supervisor.py docs/validation/supervisor-live-run.md docs/README.md`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(plugins/sdlc-lite/scripts/supervisor.py|docs/validation/supervisor-live-run.md|docs/README.md|docs/validation/supervisor-live-run/codex-rerun-[123].txt|docs/validation/supervisor-live-run/AGENTS.md)$" | { ! grep -q .; }`

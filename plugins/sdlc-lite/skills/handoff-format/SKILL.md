@@ -41,6 +41,7 @@ user-invocable: false
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
 .sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
 .sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
+.sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
@@ -55,6 +56,12 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 .sdlc/**/.run.lock
 .sdlc/runtime/
 .sdlc/messages/
+.sdlc/supervisor/hosts.local.json
+.sdlc/supervisor/status.json
+.sdlc/supervisor/state.json
+.sdlc/supervisor/lock
+.sdlc/supervisor/STOP
+.sdlc/supervisor/wakes/
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.

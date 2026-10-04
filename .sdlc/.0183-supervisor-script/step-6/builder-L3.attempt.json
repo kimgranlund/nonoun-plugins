@@ -1,0 +1,20 @@
+{
+  "attempt_id": "30a2baef3c914d59bf0dee1b76cb4a92",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "0183-supervisor-script: build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T15:53:07.664643+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183/.sdlc/0183-supervisor-script/step-6/handoff.md",
+  "owner_pid": 58541,
+  "process_pid": 59032,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T15:57:36.615377+00:00"
+}

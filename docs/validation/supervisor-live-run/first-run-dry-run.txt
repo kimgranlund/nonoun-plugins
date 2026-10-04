@@ -1,0 +1,15 @@
+arm=dry-run
+remote=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/supervisor-live-46t6z07m/remote.git
+message=20261004T004135138080Z-probe-live-probe
+message=20261004T004135200947Z-probe-live-probe
+watcher_exit=0
+dry_run_lines=4
+body_sha256=72d5be2f20709f454af0958ddbcdc26dec69193bed6bd2bc30e5822d3c3a158b
+wakes=0
+send_time=- read_time=- ack_time=-
+message_state=new
+reply=no
+remote_commits_added=0
+push_attempt=absent
+cost=0
+result=pass

@@ -1,0 +1,13 @@
+arm=claude
+remote=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/supervisor-live-yku1wkb_/remote.git
+message=20261004T004144176507Z-probe-live-probe
+watcher_exit=0
+body_sha256=72d5be2f20709f454af0958ddbcdc26dec69193bed6bd2bc30e5822d3c3a158b
+wakes=1
+send_time=2026-10-04T00:41:44.176507Z read_time=2026-10-04T00:41:51.071743Z ack_time=2026-10-04T00:41:55.517286Z
+message_state=done
+reply=yes
+remote_commits_added=0
+push_attempt=unclassified
+cost=0.052047
+result=fail reason=push_attempt=unclassified
