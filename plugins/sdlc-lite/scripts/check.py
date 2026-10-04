@@ -50,7 +50,11 @@
 14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
-15. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
+15. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
+   and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
+   `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
+   `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
+16. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
    agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
    contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
@@ -458,6 +462,26 @@ for rel, rx in SCHEMA_COPY.items():
     if f.is_file() and re.search(rx, f.read_text()): errors.append(f'{rel}: holds a copy of the result schema')
 if not re.search(SCHEMA_COPY['scripts/run.sh'], rt + "\nallowed='x'\n"):
     errors.append('check.py: result-schema copy guard negative control not flagged')
+sdlc = root.resolve().parent.parent / '.sdlc'
+if sdlc.is_dir():
+    def _evals(plugin):
+        return subprocess.run([sys.executable, str(root/'scripts/evals.py'), '--root', str(sdlc), '--plugin', str(plugin), 'check'],
+                              capture_output=True, text=True)
+    _r = _evals(root)
+    if _r.returncode != 0:
+        _lines = [l for l in (_r.stdout + '\n' + _r.stderr).splitlines() if l.strip() and not l.startswith('evals check:')]
+        errors.extend(f'evals: {l}' for l in _lines) if _lines else errors.append(f'evals: evals.py check exited {_r.returncode}')
+    else:
+        with tempfile.TemporaryDirectory() as _td:
+            _tp = pathlib.Path(_td)
+            (_tp/'scripts').mkdir(); (_tp/'adapters/codex').mkdir(parents=True)
+            (_tp/'scripts/run.sh').write_text(re.sub(r'(builder:L1\)\s*model=)[\w-]+', r'\g<1>evals-negative-control', rt))
+            shutil.copy(root/'adapters/codex/models.json', _tp/'adapters/codex/models.json')
+            _n = _evals(_tp)
+            if 'model table changed' not in _n.stdout + _n.stderr:
+                errors.append('check.py: evals lock guard negative control not flagged')
+else:
+    print(f'skip: evals lock guard (no {sdlc})')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

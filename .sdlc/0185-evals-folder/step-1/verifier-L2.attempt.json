@@ -1,0 +1,20 @@
+{
+  "attempt_id": "836e9fd9e82840a797c9dadc0b4eb2ce",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "high",
+  "routing_reason": "0185-evals-folder: verify L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T15:46:11.524467+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185/.sdlc/0185-evals-folder/step-1/handoff.md",
+  "owner_pid": 37224,
+  "process_pid": 37730,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T15:54:16.544868+00:00"
+}

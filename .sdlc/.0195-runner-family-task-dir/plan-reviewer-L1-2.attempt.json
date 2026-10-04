@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d5c56c929f334d5389fdac191dc5655b",
+  "name": "plan-reviewer-L1-2",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "replans are always reviewed",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T16:18:05.744208+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0195",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0195/.sdlc/0195-runner-family-task-dir/handoff.md",
+  "owner_pid": 73019,
+  "process_pid": 73157,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T16:30:36.462922+00:00"
+}

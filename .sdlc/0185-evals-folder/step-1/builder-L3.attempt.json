@@ -1,0 +1,20 @@
+{
+  "attempt_id": "51954ff31e1e48a4b97e9e6124a5dc05",
+  "name": "builder-L3",
+  "role": "builder",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "0185-evals-folder: build L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T15:34:45.158130+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0185/.sdlc/0185-evals-folder/step-1/handoff.md",
+  "owner_pid": 29312,
+  "process_pid": 29865,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T15:46:10.904624+00:00"
+}
