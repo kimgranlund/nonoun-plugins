@@ -44,6 +44,9 @@
 12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-4-5`, and names `messages.py` and
    `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
    adapters/codex/agents/sdlc-messenger-l1.toml exists. Negative controls: empty text, no `messenger` key, no TOML.
+13. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
+   `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
+   agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -364,6 +367,19 @@ for rel in READ_FIRST_FILES:
     if read_first_missing(text): errors.append(f'{rel}: read-first route missing "{READ_FIRST}"')
     elif not read_first_missing(text.replace(READ_FIRST, '')):
         errors.append(f'{rel}: read-first negative control not flagged')
+# Lean lane text (docstring item 13): the lean chain section and the coarse-step rule name their phrases.
+LEAN_LANE = {'## Lean chain': ('skills/chain/SKILL.md',),
+             'always runs the filer': ('skills/chain/SKILL.md',),
+             'independently verifiable outcome': ('agents/planner.md',),
+             'steps lint: warning:': ('agents/planner.md', 'scripts/steps.py')}
+def lean_missing(text, phrase): return phrase not in text
+for phrase, rels in LEAN_LANE.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
+        elif not lean_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: lean-lane negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):

@@ -10,6 +10,11 @@ Read the code you plan against. Do not edit anything.
 
 Each step must be buildable and verifiable on its own. Acceptance criteria are checks a verifier can run or observe, not intentions. Assign each step a builder level from the builder table in the level-rubric skill loaded below: the lowest level that fits every signal.
 
+## Coarse steps
+Write one step per independently verifiable outcome, never one step per file or per concern. A step holds at most 12 criteria, guards included. Two steps with a sequential dependency, the same builder level, and no gate between them merge into one step. Whole-suite gates stay on the final `gates green` step (rule 14), so a lean plan is one or two steps with the gates inside the last one.
+
+`steps.py lint` checks this only as a warning. When a plan meets the lean plan conditions (planner L1 or L2, every step at L1 to L3, no merge step, no replan, no `## Plan review` line, and no `unresolved:` assumption) and has more than two steps or a step with one criterion, lint prints a `steps lint: warning:` line on stderr and never refuses the plan.
+
 ## Criteria that can pass
 
 1. Run each runnable criterion once on the current tree before writing it, with read-only commands only; never run one that changes the tree or git state. Run all of one step's probes in one Bash call, one `bash -c` per criterion so a red one never stops the rest, and have that call print, for each criterion, its label, its exit code, and at most the first 5 lines of its output; rule 11's un-negated guard runs go into the same call. A criterion for the step's new behavior must be red now, and red for the right reason: the behavior is missing, not a typo, a wrong path, or a command not found. A criterion that must hold before and after the step is tagged `(guard)` and must be green now. `steps.py split --only N` runs every `(guard)` and refuses one that changed the work tree, so a guard must be side-effect free.
