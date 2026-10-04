@@ -1,0 +1,8 @@
+{
+  "result": "Done. The file has been updated with 'old' replaced by 'new'.",
+  "total_cost_usd": 0.0430792,
+  "num_turns": 3,
+  "modelUsage": [
+    "claude-haiku-4-5"
+  ]
+}
