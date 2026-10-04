@@ -33,6 +33,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Codex adapter: `python3 plugins/sdlc-lite/scripts/codex-selftest.py`.
 - Tickets, board, steps, ordering, fanout: the affected `plugins/sdlc-lite/scripts/<name>.py selftest`.
 - Evals and the model-table lock: `python3 plugins/sdlc-lite/scripts/evals.py check` (and `selftest`).
+- Proposals mined from runs: `python3 plugins/sdlc-lite/scripts/proposals.py selftest`; read [the proposals entry file](../../.sdlc/proposals/AGENTS.md) before scan, accept, reject, or promote.
 - Runner: `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
 - Full regression suite: `bash plugins/sdlc-lite/scripts/check.sh`.
