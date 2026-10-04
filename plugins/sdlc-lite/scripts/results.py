@@ -40,12 +40,17 @@ SCHEMA = {
         'sections': ('Verdict', 'Findings', 'Missing decisions'),
     },
     'planner': {'key': 'Goal', 'allowed': (), 'sections': ('Goal', 'Assumptions', 'Risks')},
-    'researcher': {'key': 'Answer', 'allowed': (), 'sections': ('Answer', 'Findings', 'Conflicts and gaps')},
-    'scout': {'key': 'Map', 'allowed': (), 'sections': ('Map', 'Entry points', 'Not found')},
-    'archaeologist': {'key': 'Summary', 'allowed': (), 'sections': ('Summary', 'Decisions', 'Landmines', 'Inferred')},
+    'researcher': {'key': 'Answer', 'allowed': (), 'sections': ('Answer', 'Findings', 'Conflicts and gaps', 'Carry forward')},
+    'scout': {'key': 'Map', 'allowed': (), 'sections': ('Map', 'Entry points', 'Not found', 'Carry forward')},
+    'archaeologist': {
+        'key': 'Summary', 'allowed': (),
+        'sections': ('Summary', 'Decisions', 'Landmines', 'Inferred', 'Carry forward'),
+    },
     'architect': {
         'key': 'Approach', 'allowed': (),
-        'sections': ('Approach', 'Interfaces', 'Constraints and assumptions', 'Rejected alternatives', 'Risks'),
+        'sections': (
+            'Approach', 'Interfaces', 'Constraints and assumptions', 'Rejected alternatives', 'Risks', 'Carry forward',
+        ),
     },
     'filer': {
         'key': 'Warnings', 'allowed': (),
@@ -227,11 +232,11 @@ def selftest():
         'verifier': '## Verdict\npass\n\n## Criteria\n1. ok\n\n## Out of scope changes\nNone\n\n## For the next attempt\nNone\n',
         'plan-reviewer': '## Verdict\nreplan\n\n## Findings\n- x\n\n## Missing decisions\nNone\n',
         'planner': '## Goal\ng\n\n## Step 1: a\ndo\n\n## Step 2: b\ndo\n\n## Assumptions\n- a\n\n## Risks\n- r\n',
-        'researcher': '## Answer\na\n\n## Findings\nf\n\n## Conflicts and gaps\nNone\n',
-        'scout': '## Map\nm\n\n## Entry points\ne\n\n## Not found\nNone\n',
-        'archaeologist': '## Summary\ns\n\n## Decisions\nd\n\n## Landmines\nl\n\n## Inferred\ni\n',
+        'researcher': '## Answer\na\n\n## Findings\nf\n\n## Conflicts and gaps\nNone\n\n## Carry forward\n- x\n',
+        'scout': '## Map\nm\n\n## Entry points\ne\n\n## Not found\nNone\n\n## Carry forward\n- x\n',
+        'archaeologist': '## Summary\ns\n\n## Decisions\nd\n\n## Landmines\nl\n\n## Inferred\ni\n\n## Carry forward\n- x\n',
         'architect': '## Approach\na\n\n## Interfaces\ni\n\n## Constraints and assumptions\nc\n\n'
-                     '## Rejected alternatives\nr\n\n## Risks\nr\n',
+                     '## Rejected alternatives\nr\n\n## Risks\nr\n\n## Carry forward\n- x\n',
         'filer': '## Warnings\nNone\n\n## PR title\nt\n\n## PR body\nb\n\n## Changelog entry\nc\n\n## Follow-ups\nNone\n',
     }
     case('the schema covers the nine roles', set(bodies), set(ROLES))
@@ -292,7 +297,13 @@ def selftest():
     case('key_value returns None for an unknown role', key_value(write('kv-u.md', '## Status\ndone\n'), 'poet'), None)
     case('schema prints the plan-reviewer line',
          schema_lines('plan-reviewer'), ['plan-reviewer\tVerdict\tpass|replan|blocked\tVerdict|Findings|Missing decisions'])
-    case('schema prints - for a role with no allowed set', schema_lines('scout'), ['scout\tMap\t-\tMap|Entry points|Not found'])
+    case('schema prints - for a role with no allowed set', schema_lines('scout'),
+         ['scout\tMap\t-\tMap|Entry points|Not found|Carry forward'])
+    case('a scout result without ## Carry forward passes',
+         validate(write('cf-none.md', head('scout') + '## Map\nm\n\n## Entry points\ne\n\n## Not found\nNone\n')), None)
+    case('a scout result with ## Carry forward before ## Map fails',
+         validate(write('cf-order.md', head('scout') + '## Carry forward\n- x\n\n## Map\nm\n')),
+         '## Carry forward comes before ## Map')
 
     for name in os.listdir(tmp):
         os.remove(os.path.join(tmp, name))
