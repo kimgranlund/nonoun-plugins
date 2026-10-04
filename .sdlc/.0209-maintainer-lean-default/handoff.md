@@ -2,7 +2,7 @@
 id: T-0209
 title: "Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0194]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Split out of T-0199 because that ticket may not edit AGENTS.md invariants. User 
 
 ## Constraints
 Keep the file short. One authoritative location for the rule; link to docs/lean-sdlc/design.md instead of copying it.
+
+## Closed
+
+2026-10-04: Built and verified through /fix lane: philosophy line and lane rule in plugin AGENTS.md, builder completion line, Codex builder agents regenerated; verifier L1 pass.
