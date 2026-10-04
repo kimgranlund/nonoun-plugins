@@ -44,7 +44,10 @@
 12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-4-5`, and names `messages.py` and
    `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
    adapters/codex/agents/sdlc-messenger-l1.toml exists. Negative controls: empty text, no `messenger` key, no TOML.
-13. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
+13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
+   line, first occurrences in declared order; scripts/run.sh and scripts/steps.py hold no copy of the schema table.
+   Negative controls: builder body with `## Changes` and `## Checks` swapped; run.sh with an `allowed='x'` line.
+14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
 """
@@ -344,18 +347,30 @@ def subst_missing(text): return SUBST_PHRASE not in text
 ct = (root/CONDUCTOR).read_text() if (root/CONDUCTOR).is_file() else ''
 if subst_missing(ct): errors.append(f'{CONDUCTOR}: run.sh-only rule missing "{SUBST_PHRASE}"')
 if not subst_missing(ct.replace(SUBST_PHRASE, '')): errors.append('check.py: substitute-agent guard negative control not flagged')
-# Plan-reviewer role: run.sh holds its L1 row and its Verdict section line with the allowed values.
-PR_SECT = "plan-reviewer) sect=Verdict; allowed='pass|replan|blocked' ;;"
-def plan_reviewer_missing(runs, text):
+# Plan-reviewer role: run.sh holds its L1 row and validates every result through results.py, whose schema gives
+# plan-reviewer the key section Verdict with the allowed values pass, replan, blocked.
+sys.path.insert(0, str(root/'scripts'))
+import results
+PR_VALIDATE = 'results.py" validate'
+def plan_reviewer_missing(runs, text, schema):
     out = []
     if ('plan-reviewer', 'L1') not in runs: out.append('no plan-reviewer:L1 row')
-    if not any(l.strip() == PR_SECT for l in text.splitlines()): out.append(f'no section line "{PR_SECT}"')
+    spec = schema.get('plan-reviewer', {})
+    if spec.get('key') != 'Verdict' or [a[0] for a in spec.get('allowed', ())] != ['pass', 'replan', 'blocked']:
+        out.append('results.py SCHEMA plan-reviewer is not key Verdict with allowed pass, replan, blocked')
+    if PR_VALIDATE not in text: out.append(f'no result check "{PR_VALIDATE}"')
     return out
 rt = (root/'scripts/run.sh').read_text()
-for e in plan_reviewer_missing(run, rt): errors.append(f'scripts/run.sh: plan-reviewer role: {e}')
-if len(plan_reviewer_missing({k: v for k, v in run.items() if k[0] != 'plan-reviewer'},
-                             rt.replace("'pass|replan|blocked'", "'pass|fail'"))) != 2:
-    errors.append('check.py: plan-reviewer run.sh guard negative control not flagged')
+for e in plan_reviewer_missing(run, rt, results.SCHEMA): errors.append(f'scripts/run.sh: plan-reviewer role: {e}')
+bad_schema = dict(results.SCHEMA)
+bad_schema['plan-reviewer'] = dict(bad_schema['plan-reviewer'], allowed=(('pass', r'pass', 'pass'), ('fail', r'fail', 'fail')))
+no_pr_row = {k: v for k, v in run.items() if k[0] != 'plan-reviewer'}
+for name, args, want in (('L1 row', (no_pr_row, rt, results.SCHEMA), 'no plan-reviewer:L1 row'),
+                         ('schema', (run, rt, bad_schema), 'results.py SCHEMA'),
+                         ('validate call', (run, rt.replace(PR_VALIDATE, 'results.py" schema'), results.SCHEMA),
+                          'no result check')):
+    if not any(e.startswith(want) for e in plan_reviewer_missing(*args)):
+        errors.append(f'check.py: plan-reviewer run.sh guard negative control ({name}) not flagged')
 # Read-first route: every role and doc that carries step entry files names `Read first`.
 READ_FIRST = 'Read first'
 READ_FIRST_FILES = ('agents/planner.md', 'agents/builder.md', 'agents/verifier.md', 'skills/fix/SKILL.md',
@@ -397,6 +412,32 @@ errors.extend(messenger_missing(mt, mc, mtoml))
 if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
         or not messenger_missing(mt, mc, False)):
     errors.append('check.py: messenger guard negative control not flagged')
+# Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
+def schema_section_errors(text, sections):
+    lines = [l.rstrip() for l in text.splitlines()]
+    out, pos = [], []
+    for sec in sections:
+        h = f'## {sec}'
+        if h not in lines: out.append(f'missing {h}')
+        else: pos.append((lines.index(h), sec))
+    for (a, x), (b, y) in zip(pos, pos[1:]):
+        if b < a: out.append(f'## {y} before ## {x}')
+    return out
+for role, spec in results.SCHEMA.items():
+    af = root/f'agents/{role}.md'
+    for e in schema_section_errors(af.read_text() if af.is_file() else '', spec['sections']):
+        errors.append(f'agents/{role}.md: result schema: {e}')
+_bt = (root/'agents/builder.md').read_text() if (root/'agents/builder.md').is_file() else ''
+_swapped = _bt.replace('## Changes', '## TMPX').replace('## Checks', '## Changes').replace('## TMPX', '## Checks')
+if not schema_section_errors(_swapped, results.SCHEMA['builder']['sections']):
+    errors.append('check.py: result-schema agent guard negative control not flagged')
+SCHEMA_COPY = {'scripts/run.sh': r"allowed='|sect=[A-Z]",
+               'scripts/steps.py': r"REVIEW_VERDICTS|startswith\('inherited red:'\)|first_word\(path, '(Status|Verdict)'"}
+for rel, rx in SCHEMA_COPY.items():
+    f = root/rel
+    if f.is_file() and re.search(rx, f.read_text()): errors.append(f'{rel}: holds a copy of the result schema')
+if not re.search(SCHEMA_COPY['scripts/run.sh'], rt + "\nallowed='x'\n"):
+    errors.append('check.py: result-schema copy guard negative control not flagged')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

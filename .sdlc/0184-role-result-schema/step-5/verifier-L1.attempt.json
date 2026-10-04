@@ -1,0 +1,20 @@
+{
+  "attempt_id": "b761db39dbcf409c8548bd4585b9dd10",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "0184-role-result-schema: verify L1",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T21:28:43.644261+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184/.sdlc/0184-role-result-schema/step-5/handoff.md",
+  "owner_pid": 96086,
+  "process_pid": 96783,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T21:29:08.142193+00:00"
+}

@@ -337,7 +337,7 @@ _VERDICTS = {'pass': 'pass', 'fail': 'fail', None: None}
 
 
 def _builder_text(status):
-    head = '<!-- role=builder model=opus effort=high -->\n'
+    head = '<!-- role=builder level=L2 model=opus effort=high -->\n'
     body = f'{_hd("Status")}\n{status}\n\n' if status else 'no status here\n'
     return (head + body + f'{_hd("Changes")}\n- `a/b.py`: edit\n- `c.md` and `d.txt`\n\n'
             f'{_hd("Checks")}\nran\n\n{_hd("Notes")}\n\nfirst note\nsecond\n')
@@ -382,6 +382,9 @@ def _results_read():
         assert r['next_note'] == 'plan defect: x is wrong', r
 
 
+_VERIFIER_HEAD = '<!-- role=verifier level=L1 model=sonnet effort=medium -->\n'
+
+
 @case('results: on the same fixtures as step dirs, steps.next_action agrees')
 def _results_next():
     import steps
@@ -403,11 +406,16 @@ def _results_next():
             d = os.path.join(repo, f'step-v{i}')
             _write(d, 'handoff.md', 'level: L2\n')
             _write(d, 'builder-L2.md', _builder_text('done'))
-            _write(d, 'verifier-L1.md', text)
+            _write(d, 'verifier-L1.md', _VERIFIER_HEAD + text)
             v = [r for r in results.read(d)[0] if r['role'] == 'verifier'][0]
             assert (v['verdict'], v['plan_defect']) == (verdict, pd), (tag, v)
             got = steps.next_action(d)[0]
             assert got == act, (tag, got)
+        d = os.path.join(repo, 'step-nohead')
+        _write(d, 'handoff.md', 'level: L2\n')
+        _write(d, 'builder-L2.md', _builder_text('done').split('\n', 1)[1])
+        got = steps.next_action(d)[0]
+        assert got == 'invalid result', got
 
 
 # --- transcripts --------------------------------------------------------------------------------
