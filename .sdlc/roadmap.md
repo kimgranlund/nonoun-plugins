@@ -190,7 +190,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0183 | [0183-supervisor-script](0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L | P2 | T-0181, T-0182 | 🔵 ready |
 | T-0184 | [.0184-role-result-schema](.0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | M | P2 | none | 🟢 done |
 | T-0185 | [.0185-evals-folder](.0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🟢 done |
-| T-0186 | [0186-proposals-folder](0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🔵 ready |
+| T-0186 | [.0186-proposals-folder](.0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🟢 done |
 | T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | 🔴 blocked |
 | T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | 🟢 done |
 | T-0189 | [.0189-lean-chain](.0189-lean-chain/handoff.md) | Lean chain: fewer, coarser planner builder verifier steps for size M work | chore | M | P2 | none | 🟢 done |
@@ -200,7 +200,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0193 | [.0193-footprint](.0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | 🟢 done |
 | T-0194 | [.0194-lean-lane-text](.0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | M | P2 | none | 🟢 done |
 | T-0195 | [.0195-runner-family-task-dir](.0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | 🟢 done |
-| T-0196 | [0196-batch-state](0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | ⏳ proposed |
+| T-0196 | [.0196-batch-state](.0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | 🟢 done |
 | T-0197 | [.0197-lane](.0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L | P2 | T-0194 | 🟢 done |
 | T-0198 | [0198-skips-guard](0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | ⏳ proposed |
 | T-0199 | [0199-conductor-rules](0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | M | P2 | T-0196, T-0198 | ⏳ proposed |

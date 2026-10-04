@@ -36,6 +36,7 @@ user-invocable: false
 .sdlc/runtime/          traces analysis outputs and cursor written by `traces.py` (runtime/traces/<repo-key>/); never committed
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
 .sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
+.sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
@@ -158,6 +159,17 @@ Run `git merge --no-ff <branch>` on a tree with no uncommitted tracked changes. 
 The conflict-marker guard flags only `++` lines of `git diff-tree --cc HEAD`, so a kept marker line textually identical to a parent line that aligns with it (shown as `+ ` or ` +`) passes. This is accepted, because no one-line guard separates it from a legit lane line in a file both sides changed. The builder must still resolve every conflict, and the check.py probe pins the miss.
 
 `## Previous attempt` is appended by /chain 4.4 only after a verifier fail that is not a plan defect (its For the next attempt does not start with `plan defect:`). A blocked builder or a `plan defect:` fail goes to a replan instead, and the step handoff is rewritten by `steps.py split`, not appended to. A swapped plan defect (a `plan defect:` fail whose criterion `steps.py swap` replaced) rebuilds at the same level without `## Previous attempt`.
+
+## Batched verifier result (task dir)
+
+A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir, not in a step dir. After `## For the next attempt` it adds a `## Verified` section with one item per builder result it verified, the path relative to the task dir, bare or in a code span:
+
+```
+## Verified
+- step-<n>/builder-L<k>[-j].md
+```
+
+`steps.py next` and `resume` treat a listed step as verified while the listed path is still that step's newest builder result by `order.py` (a rebuild after the batch is not listed, so the step goes back to `verify`), and `board.py` renders it. The newest task-dir verifier result (by `order.py`) that lists the build decides: it counts only with Verdict `pass` and no `results.structure_error`, so a later `fail` on the same build overrides an earlier `pass`, and two batches over disjoint steps both stay valid. A step-dir verifier result that counts after the build still decides first. A step is never batch-verified when its newest builder Status is not `done`, its build is L4 or L5, its title starts with `Merge ` or holds `gates green` (any case), it is the highest-numbered live `step-<n>/` in the task dir, or a `step-<n>.superseded-<k>/` sibling exists; those steps take a per-step verifier. `## Verified` is not a declared verifier section, which is fine: `results.structure_error` ignores undeclared headings.
 
 ## Free-text arguments
 
