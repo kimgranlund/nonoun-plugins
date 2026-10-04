@@ -50,6 +50,12 @@
 14. Lean lane text: `## Lean chain` and `always runs the filer` appear in skills/chain/SKILL.md;
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
+15. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
+   agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
+   contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
+   agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
+   negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
+   four producing roles, so item 13 also requires the `## Carry forward` heading line there.
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -395,6 +401,20 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
+# Carry forward (docstring item 15): producer contracts end with the section; planner and builder read it first.
+CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
+CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
+                 'at most 15 lines': CF_PRODUCERS,
+                 'search only what it does not answer': ('agents/planner.md', 'agents/builder.md'),
+                 'cite the result path': ('agents/planner.md',)}
+def carry_forward_missing(text, phrase): return phrase not in text
+for phrase, rels in CARRY_FORWARD.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
+        elif not carry_forward_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'{rel}: carry-forward negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):
