@@ -44,6 +44,12 @@ run
   --dry-run prints the plan (base sha, integration branch, per lane its branch, worktree and
   tickets, the gates, the driver, the close command) and exits 0, creating nothing; an external
   lane prints `lane <name>: external branch <branch> (registered; no worktree, no driver)`.
+  After the lanes it prints the planned-scope overlap: the allow-list paths of each ticket's
+  step-<n>/handoff.md scope criteria (the grep -vxF/-vxE/-vE forms `steps.py widen` reads), one
+  `overlap (planned scope): <laneA> <idA> and <laneB> <idB>: <paths>` line per intersecting pair
+  of tickets in different lanes, else `overlap (planned scope): none`, and one
+  `overlap (planned scope): not planned, checked at merge time: <ids>` line for tickets with no
+  such scope (unplanned, or in an external lane).
   Setup, sequential: create the integration branch at --base (default HEAD) unless it exists
   (then reuse it; --base is ignored); `git worktree add <lanes-dir>/integration <integration>`;
   per regular lane `git worktree add -b <lane branch> <lanes-dir>/<lane> <integration>` (an
@@ -203,6 +209,12 @@ selftest
   Without the wait alpha's driver times out and the case is red. Negative control: the same
   shape with the stub driver (disjoint lanes) merges both, reports `- Overlap: none`, and logs
   no `waiting for lane` line.
+  A planned-scope case (case 14): tickets a T-0001 (step-1 scope `grep -vxF -e shared.txt -e a.txt`),
+  b T-0002 (`grep -vxE "shared\\.txt|b\\.txt"`), c T-0003 (no step dir) and d T-0004
+  (`grep -vxF -e b.txt`). `--dry-run alpha=T-0001 beta=T-0002,T-0003` prints the alpha/beta
+  shared.txt pair line and the not-planned line for T-0003; negative control
+  `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
+  Neither creates a branch, worktree or lanes dir.
 """
 import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
 
@@ -461,6 +473,55 @@ def driver_for(ctx, t):
     return default_driver((ctx['rel'] / t.slug / 'handoff.md').as_posix())
 
 
+def planned_scope(root, slug):
+    """The paths allow-listed by the scope criteria of root/<slug>/step-<n>/handoff.md, or None
+    when no step handoff yields an entry (the ticket is not planned)."""
+    found, any_entry = set(), False
+    tdir = pathlib.Path(root) / slug
+    steps_dirs = sorted(d for d in tdir.iterdir() if d.is_dir() and re.fullmatch(r'step-\d+', d.name)) \
+        if tdir.is_dir() else []
+    for d in steps_dirs:
+        h = d / 'handoff.md'
+        if not h.is_file():
+            continue
+        for _, line in steps.criteria_indexed(h.read_text(encoding='utf-8').splitlines()):
+            if not steps.list_item(line):
+                continue
+            for span in steps.line_spans(line):
+                if 'git diff --name-only' not in span or not steps.INVERT_GREP_RE.search(span):
+                    continue
+                for form, m in steps.widen_forms(span):
+                    for e in steps.widen_listed(form, m):
+                        if form != 'F':
+                            e = re.sub(r'\\(.)', r'\1', e)
+                        found.add(e)
+                        any_entry = True
+    return found if any_entry else None
+
+
+def plan_overlap(ctx):
+    """The dry run's planned-scope overlap lines."""
+    scoped, unplanned = [], []
+    for lane in ctx['lanes']:
+        for t in lane.tickets:
+            sc = None if lane.external else planned_scope(ctx['root'], t.slug)
+            if sc is None:
+                unplanned.append(t.id)
+            else:
+                scoped.append((lane, t, sc))
+    out = []
+    for i, (la, ta, sa) in enumerate(scoped):
+        for lb, tb, sb in scoped[i + 1:]:
+            if la is not lb and sa & sb:
+                out.append(f"overlap (planned scope): {la.name} {ta.id} and {lb.name} {tb.id}: "
+                           f"{', '.join(sorted(sa & sb))}")
+    if not out:
+        out.append('overlap (planned scope): none')
+    if unplanned:
+        out.append(f"overlap (planned scope): not planned, checked at merge time: {', '.join(unplanned)}")
+    return out
+
+
 def print_plan(ctx):
     out = ['fanout plan (dry run: nothing created)']
     if ctx['reuse']:
@@ -477,6 +538,7 @@ def print_plan(ctx):
             out.append(f'lane {lane.name}: branch {lane.branch}, worktree {lane.dir}')
         for t in lane.tickets:
             out.append(f'  {t.id} {t.slug}: {t.title}')
+    out += plan_overlap(ctx)
     if ctx['gates']:
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
     else:
@@ -1667,6 +1729,49 @@ def selftest():
         expect(f'disjoint lanes (negative control): fanout.log holds both merged lines and no waiting for lane, '
                f'got {jtext!r}',
                '[alpha] T-0001 merged' in jtext and '[beta] T-0002 merged' in jtext and 'waiting for lane' not in jtext)
+
+        # 14. Planned-scope overlap in the dry run, read from step handoffs' scope criteria.
+        pr = tmp / 'planned'
+        def scope_step(slug, grep):
+            d = pr / '.sdlc' / slug / 'step-1'
+            d.mkdir(parents=True)
+            d.joinpath('handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n'
+                f'- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | {grep})"`\n', encoding='utf-8')
+        pr.mkdir()
+        (pr / '.sdlc').mkdir()
+        pspecs = [('a', 'T-0001'), ('b', 'T-0002'), ('c', 'T-0003'), ('d', 'T-0004')]
+        for slug, tid in pspecs:
+            (pr / '.sdlc' / slug).mkdir()
+            (pr / '.sdlc' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: S\n'
+                f'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+        scope_step('a', 'grep -vxF -e shared.txt -e a.txt')
+        scope_step('b', 'grep -vxE "shared\\.txt|b\\.txt"')
+        scope_step('d', 'grep -vxF -e b.txt')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(pr, *args)
+            expect(f'planned fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+        pl = tmp / 'pllanes'
+        proc = fanout(pr, '--dry-run', '--lanes-dir', str(pl), 'alpha=T-0001', 'beta=T-0002,T-0003')
+        lines = proc.stdout.splitlines()
+        expect(f'case 14 planned scope: dry run exits 0 with the alpha/beta shared.txt pair line and T-0003 not '
+               f'planned, got {proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0
+               and 'overlap (planned scope): alpha T-0001 and beta T-0002: shared.txt' in lines
+               and 'overlap (planned scope): not planned, checked at merge time: T-0003' in lines
+               and 'overlap (planned scope): none' not in lines)
+        proc = fanout(pr, '--dry-run', '--lanes-dir', str(pl), 'alpha=T-0001', 'beta=T-0004')
+        lines = proc.stdout.splitlines()
+        expect(f'case 14 planned scope negative control: disjoint scopes print none and no pair line, '
+               f'got {proc.returncode} stdout={proc.stdout!r}',
+               proc.returncode == 0 and 'overlap (planned scope): none' in lines
+               and not any(' and beta ' in x for x in lines if x.startswith('overlap (planned scope):')))
+        expect('case 14 planned scope: dry runs create no fanout/* branch, worktree or lanes dir',
+               sh(pr, 'branch', '--list', 'fanout/*').stdout.strip() == ''
+               and len(sh(pr, 'worktree', 'list').stdout.splitlines()) == 1 and not pl.exists())
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
