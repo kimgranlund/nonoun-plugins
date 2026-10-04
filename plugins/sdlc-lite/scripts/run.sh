@@ -23,7 +23,10 @@
 # scripts/order.py): a verifier never runs on the newest build's family (a Fable or Sonnet build
 # moves it to Opus, same effort), and a plan-reviewer never runs on the newest planner result's
 # family (an Opus planner moves it to Fable, same effort; a Fable or Sonnet planner, or no planner
-# result, keeps Opus high).
+# result, keeps Opus high). A verifier whose handoff dir holds no builder result (a verifier
+# launched at the task dir) reads instead the newest builder result, by scripts/order.py, of the
+# highest-numbered step-<n>/ under it that holds one. step-<n>.superseded-<k>/ dirs are left out.
+# scripts/codex_roles.py resolve applies the same rule on Codex.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
 # does not create it; a role makes worktrees only under it (git worktree add --detach "$SDLC_TMP_WORKTREES/<name>"
@@ -197,6 +200,22 @@ log="$dir/$name.log"
 # Fable or Sonnet build -> Opus at the same effort.
 if [[ "$backend" == claude && "$role" == verifier ]]; then
   built=$(python3 "$plugin_root/scripts/order.py" newest "$dir" builder 2>/dev/null || true)
+  # No build in the handoff dir (a verifier launched at the task dir): take the newest build of the
+  # highest-numbered live step-<n>/ under it that holds one; step-<n>.superseded-<k>/ never matches.
+  # scripts/codex_roles.py resolve is the Codex twin of this rule.
+  if [[ -z "$built" ]]; then
+    best_n=-1
+    for sd in "$dir"/step-*; do
+      [[ -d "$sd" ]] || continue
+      sn="${sd##*/}"
+      [[ "$sn" =~ ^step-[0-9]+$ ]] || continue
+      sn="${sn#step-}"
+      (( 10#$sn > best_n )) || continue
+      sb=$(python3 "$plugin_root/scripts/order.py" newest "$sd" builder 2>/dev/null || true)
+      [[ -n "$sb" ]] || continue
+      best_n=$((10#$sn)); built="$sb"
+    done
+  fi
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
     if [[ "$model" == "$bmodel" ]]; then

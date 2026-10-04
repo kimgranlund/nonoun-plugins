@@ -13,6 +13,14 @@
 # must be skipped). A log holding a "## Verdict" result and then a trailing task-notification result
 # ("stale monitor") saves the Verdict and exits 0; when neither holds the heading, the
 # non-notification one is saved and run.sh exits 3. runs.jsonl takes cost from the last event.
+# Task dir: dry runs of run.sh verifier <level> .sdlc/td/handoff.md, a task dir holding no builder
+# result, read the newest build of the highest-numbered live step-<n>/ under it: a sonnet step-1
+# build moves verifier L1 and L2 to opus (medium, high); a fable build moves verifier L3 to opus
+# xhigh; step-<n>.superseded-<k>/ dirs are ignored either way; step-10 outranks step-2 (numeric
+# order); inside one step runs.jsonl order picks the build; a builder result in the task dir itself
+# wins over its step dirs; no build anywhere keeps sonnet medium (L1) and fable xhigh (L3); and a
+# verifier at a live step-3/ with no build ignores a sonnet step-1/. Its failures read
+# "task dir: <reason>".
 # Throwaway worktrees: with a stub that adds a worktree under $SDLC_TMP_WORKTREES, a successful run,
 # a failing run (stub exits 1), and a run whose result lacks its section (exit 3) each leave only the
 # main tree in `git worktree list` and no .worktrees/tmp, and the stub saw a non-empty
@@ -150,6 +158,50 @@ out=$(dry L1) || fail "dry run verifier L1 exited non-zero"
 sf=$(awk '{for (i = 1; i < NF; i++) if ($i == "--append-system-prompt-file") print $(i + 1)}' <<<"$out")
 [[ -n "$sf" ]] || fail "dry run verifier L1 printed no --append-system-prompt-file: $out"
 [[ ! -e "$sf" ]] || fail "dry run left its skill file behind: $sf"
+
+# Task dir: a verifier whose handoff dir holds no builder result reads the newest build of the
+# highest-numbered live step-<n>/ under it (dry run). Fixtures live under .sdlc/td.
+td="$repo/.sdlc/td"
+tdreset() { rm -rf "$td"; mkdir -p "$td"; echo '## Goal' >"$td/handoff.md"; }
+tdbuild() { mkdir -p "$td/$1"; echo "<!-- role=builder level=$2 model=$3 effort=x -->" >"$td/$1/builder-$2.md"; }
+tddry() { (cd "$repo" && SDLC_DRY_RUN=1 PATH="$tmp/bin:$PATH" "$here/run.sh" verifier "$1" "${2:-.sdlc/td/handoff.md}") \
+  || fail "task dir: dry run verifier $1 exited non-zero"; }
+tdwant() { [[ "$3" == *"--agent sdlc-lite:verifier --model $2"* ]] || fail "task dir: $1: want '--model $2', got: $3"; }
+# 1. No build in the task dir; step-1 holds a sonnet build.
+tdreset; tdbuild step-1 L1 sonnet
+tdwant "sonnet step build, verifier L1" "opus --effort medium" "$(tddry L1)"
+tdwant "sonnet step build, verifier L2" "opus --effort high" "$(tddry L2)"
+# 2. Newest live build is fable.
+tdreset; tdbuild step-1 L5 fable
+tdwant "fable step build, verifier L3" "opus --effort xhigh" "$(tddry L3)"
+# 3. Superseded step dirs are ignored.
+tdreset; tdbuild step-1 L1 sonnet; mkdir -p "$td/step-2"; echo '## Step 2' >"$td/step-2/handoff.md"
+tdbuild step-2.superseded-1 L3 opus
+tdwant "superseded opus ignored" "opus --effort medium" "$(tddry L1)"
+tdreset; tdbuild step-1 L3 opus; tdbuild step-2.superseded-1 L1 sonnet
+tdwant "superseded sonnet ignored" "sonnet --effort medium" "$(tddry L1)"
+# 4. Step order is numeric, not lexical.
+tdreset; tdbuild step-2 L3 opus; tdbuild step-10 L1 sonnet
+tdwant "step-10 sonnet beats step-2 opus" "opus" "$(tddry L1)"
+tdreset; tdbuild step-2 L1 sonnet; tdbuild step-10 L3 opus
+tdwant "step-10 opus beats step-2 sonnet" "sonnet" "$(tddry L1)"
+# 5. Within one step the newest build comes from order.py (runs.jsonl order).
+tdreset; tdbuild step-1 L5 fable; tdbuild step-1 L1 sonnet
+touch -t 202601010000 "$td/step-1/builder-L5.md" "$td/step-1/builder-L1.md"
+printf '%s\n' '{"role":"builder","level":"L5","file":"builder-L5.md"}' \
+  '{"role":"builder","level":"L1","file":"builder-L1.md"}' >"$td/step-1/runs.jsonl"
+tdwant "runs.jsonl newest sonnet" "opus" "$(tddry L1)"
+# 6. The handoff dir's own build wins over its step dirs.
+tdreset; echo '<!-- role=builder level=L3 model=opus effort=high -->' >"$td/builder-L3.md"; tdbuild step-1 L1 sonnet
+tdwant "task dir opus build wins" "sonnet --effort medium" "$(tddry L1)"
+# 7. No builder result anywhere.
+tdreset; mkdir -p "$td/step-1"; echo '## Step 1' >"$td/step-1/handoff.md"
+tdwant "no build, verifier L1" "sonnet --effort medium" "$(tddry L1)"
+tdwant "no build, verifier L3" "fable --effort xhigh" "$(tddry L3)"
+# 8. A live step with no build reads only under itself, not its siblings.
+tdreset; tdbuild step-1 L1 sonnet; mkdir -p "$td/step-3"; echo '## Step 3' >"$td/step-3/handoff.md"
+tdwant "step-3 verifier ignores step-1" "sonnet --effort medium" "$(tddry L1 .sdlc/td/step-3/handoff.md)"
+rm -rf "$td"
 
 # Plan-reviewer family rule reads the newest planner result by runs.jsonl order (dry run).
 pr="$repo/.sdlc/t/review"
