@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:110d9085f7be -->
+<!-- sdlc-lite:managed:start v1 sha256:b15b13852021 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,28 +9,27 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 15
+- proposed: 4
   - T-0198 skips.md guard in tickets.py check and close (0198-skips-guard)
   - T-0199 Conductor batching and skip rules (0199-conductor-rules)
+  - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
+  - T-0210 Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (0210-spec-gate-check)
+- ready: 2
+  - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
+  - T-0215 Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets (0215-solo-operator-tiers)
+- blocked: 11
+  - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
   - T-0201 Anchor rule for step blocks and its lint check (0201-anchor)
-  - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
-  - T-0210 Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (0210-spec-gate-check)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
   - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
-  - T-0215 Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets (0215-solo-operator-tiers)
-- ready: 3
-  - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
-  - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
-  - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
-- blocked: 0
-- done: 178
+- done: 179
 - dropped: 19
 
 ## Procedures
