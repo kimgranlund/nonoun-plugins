@@ -581,6 +581,16 @@ def driver_for(ctx, t, kind='full'):
     return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
 
 
+def close_reason(ctx, t):
+    """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
+    file, which close needs otherwise), or None for every other lane."""
+    kind, tier = ctx['kinds'].get(t.id, ('', None))
+    if kind != 'solo':
+        return None
+    return (f'delivered by the solo agent (tier {tier}); one independent batched verifier passed before the merge'
+            if tier in ('M', 'L') else f'delivered by the solo agent (tier {tier}); the ticket\'s own checks and the fanout gates passed')
+
+
 def verifier_files(taskdir):
     """The task dir's verifier result file names now (the batched-verification baseline)."""
     try:
@@ -1058,6 +1068,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
                 shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
+        if close_reason(ctx, t):
+            argv += ['--reason', close_reason(ctx, t)]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -2051,6 +2063,13 @@ def selftest():
             expect('case 15: a size XL ticket has no solo tier (Refuse)', False)
         except Refuse:
             pass
+        fake = {'kinds': {'T-1': ('solo', 'M'), 'T-2': ('solo', 'S'), 'T-3': ('full', None), 'T-4': ('driver', None)}}
+        expect('case 15 close: a solo M ticket closes with a reason naming the verifier',
+               'verifier passed' in (close_reason(fake, Ticket('T-1', 'x', 't')) or ''))
+        expect('case 15 close: a solo S ticket closes with a reason naming the checks',
+               'solo agent (tier S)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
+        expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
+               close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
         # the solo verifier gate reads only a result that is new since the driver started
         vd = tmp / 'verdict-task'
         vd.mkdir()
