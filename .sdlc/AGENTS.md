@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ae54050e6e52 -->
+<!-- sdlc-lite:managed:start v1 sha256:15a36e16d9c2 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,10 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 3
-  - T-0218 Renumber check.py guards uniquely and guard it (0218-guard-numbers)
-  - T-0219 Skips guard covers lane solo and full (0219-skips-solo-full)
-  - T-0220 Re-verify T-0212's check-packaging fix (0220-t0212-reverify)
+- proposed: 0
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
@@ -24,7 +21,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 189
+- done: 192
 - dropped: 19
 
 ## Procedures
