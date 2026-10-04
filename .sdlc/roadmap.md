@@ -213,3 +213,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | ⏳ proposed |
 | T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | ⏳ proposed |
 | T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | M | P2 | T-0199, T-0201, T-0207 | ⏳ proposed |
+| T-0209 | [0209-maintainer-lean-default](0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | S | P2 | T-0194 | ⏳ proposed |
