@@ -188,8 +188,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0181 | [.0181-messages-wait](.0181-messages-wait/handoff.md) | messages.py wait: one blocking call that returns when a message arrives | feature | M | P2 | T-0180 | 🟢 done |
 | T-0182 | [.0182-idle-host-watcher-design](.0182-idle-host-watcher-design/handoff.md) | Design an external watcher that resumes an idle host when a message arrives | spike | M | P2 | none | 🟢 done |
 | T-0183 | [0183-supervisor-script](0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L | P2 | T-0181, T-0182 | 🔵 ready |
-| T-0184 | [0184-role-result-schema](0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | M | P2 | none | 🔵 ready |
-| T-0185 | [0185-evals-folder](0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🔵 ready |
+| T-0184 | [.0184-role-result-schema](.0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | M | P2 | none | 🟢 done |
+| T-0185 | [.0185-evals-folder](.0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🟢 done |
 | T-0186 | [0186-proposals-folder](0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🔵 ready |
 | T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | 🔵 ready |
 | T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | 🟢 done |
