@@ -60,8 +60,12 @@
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
+18. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
+   names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
+   adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
+   it. Each has a negative control (the phrase, file, or registration removed must be flagged).
 """
-import re, sys, json, pathlib, subprocess, tempfile, shutil
+import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
 root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent.parent)
 errors = []
@@ -482,6 +486,27 @@ if sdlc.is_dir():
                 errors.append('check.py: evals lock guard negative control not flagged')
 else:
     print(f'skip: evals lock guard (no {sdlc})')
+# Handoff freeze (docstring item 18): runner, lifecycle, hook file, registration, and the hooks doc agree.
+FREEZE_RUN = ('SDLC_HANDOFF_SHA256', 'stale_input', 'stale input:')
+FREEZE_LIFE = ('SDLC_HANDOFF_SHA256', 'handoff_sha256')
+def freeze_missing(run_text, life_text, hook_ok, hooks_json, docs_text):
+    out = [f'handoff freeze: scripts/run.sh missing "{w}"' for w in FREEZE_RUN if w not in run_text]
+    out += [f'handoff freeze: scripts/run_lifecycle.py missing "{w}"' for w in FREEZE_LIFE if w not in life_text]
+    if not hook_ok: out.append('handoff freeze: hooks/warn-handoff-edit.sh missing or not executable')
+    if not re.search(r'"matcher":\s*"Edit\|Write\|NotebookEdit"[^]]*warn-handoff-edit\.sh', hooks_json):
+        out.append('handoff freeze: adapters/claude/hooks.json does not register warn-handoff-edit.sh under Edit|Write|NotebookEdit')
+    if 'warn-handoff-edit.sh' not in docs_text: out.append('handoff freeze: docs/maintenance/claude-hooks.md does not name warn-handoff-edit.sh')
+    return out
+def _rd(path): return path.read_text() if path.is_file() else ''
+_hook = root/'hooks/warn-handoff-edit.sh'
+_hook_ok = _hook.is_file() and os.access(_hook, os.X_OK)
+_fr = (_rd(root/'scripts/run.sh'), _rd(root/'scripts/run_lifecycle.py'), _hook_ok, _rd(root/'adapters/claude/hooks.json'),
+       _rd(root.resolve().parent.parent/'docs/maintenance/claude-hooks.md'))
+errors.extend(freeze_missing(*_fr))
+for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.sh'), (3, 'warn-handoff-edit.sh')):
+    _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
+    if not freeze_missing(*_args): errors.append(f'check.py: handoff freeze guard negative control not flagged for "{_w}"')
+if not freeze_missing(_fr[0], _fr[1], False, _fr[3], _fr[4]): errors.append('check.py: handoff freeze guard negative control not flagged for the hook file')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

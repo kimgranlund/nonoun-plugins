@@ -471,13 +471,26 @@ fi
 detect_strays || :
 stray_wt_json=$(json_array ${stray_wt[@]+"${stray_wt[@]}"}) || stray_wt_json='[]'
 stray_br_json=$(json_array ${stray_br[@]+"${stray_br[@]}"}) || stray_br_json='[]'
+# Handoff freeze (warn mode): the lifecycle owner records the handoff's sha256 at launch in
+# SDLC_HANDOFF_SHA256; a different hash now means the handoff changed while this role ran.
+handoff_start_sha="${SDLC_HANDOFF_SHA256:-}"
+stale_input=false
+if [[ -n "$handoff_start_sha" ]]; then
+  handoff_now_sha=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$handoff" 2>/dev/null || true)
+  [[ -n "$handoff_now_sha" && "$handoff_now_sha" != "$handoff_start_sha" ]] && stale_input=true
+fi
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
+  --arg handoff_sha256 "$handoff_start_sha" --argjson stale_input "$stale_input" \
   --arg attempt_id "${SDLC_ATTEMPT_ID:-}" --arg routing_reason "${SDLC_ROUTING_REASON:-}" \
   --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
   --argjson shared_with_builder "$shared_with_builder" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file, shared_with_builder: $shared_with_builder,
-    attempt_id: $attempt_id, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
+    attempt_id: $attempt_id, handoff_sha256: $handoff_sha256, stale_input: $stale_input, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br}' <<<"$last_ev" >>"$dir/runs.jsonl"
+
+if [[ "$stale_input" == true ]]; then
+  echo "run.sh: stale input: $handoff changed while $role ran" >&2
+fi
 
 # Result check (see the header): results.py prints one "results.py: <file>: <reason>" line on failure.
 if ! chk=$(python3 "$plugin_root/scripts/results.py" validate "$result" --role "$role" 2>&1); then
