@@ -1,0 +1,20 @@
+{
+  "attempt_id": "375de7916f8a488fa44a1a433907db04",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "0184-role-result-schema: verify L3",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-01T21:15:56.110770+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0184/.sdlc/0184-role-result-schema/step-3/handoff.md",
+  "owner_pid": 62680,
+  "process_pid": 63161,
+  "exit_code": 0,
+  "finished_at": "2026-10-01T21:26:36.623945+00:00"
+}
