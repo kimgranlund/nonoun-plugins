@@ -23,3 +23,6 @@ Part of the lean SDLC design, `docs/lean-sdlc/design.md` (v0.4, build row L10), 
 
 ## Constraints
 A role without the section is not a failure of required-section checks for existing results. check.py guards with negative controls. `codex_roles.py generate --check` and the Codex selftest pass. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
+
+## Plan review
+plan defect: step 2 blocked (step-2/builder-L3.md): acceptance criterion AC3 (`symbol_searches>=1` in without.txt) cannot pass, because probe.sh's metric reads only the first 200 characters of each tool input, and the without planner's `git grep -n pad_cell` sits past that point. Over untruncated inputs the behavior under test held (scout 4 and 1, with 2 and 0, without 1 and 1 tree and pad_cell searches). Replan step 2 only: count over the full tool input (or raise the cut well past the longest input) in the metric, reuse the already-built probe.sh, rerun the arms, and keep the report and README line. Step 1 is committed and verified. Do not weaken the criterion's threshold, only fix what it measures.
