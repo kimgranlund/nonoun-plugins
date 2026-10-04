@@ -1,0 +1,7 @@
+Spawn the sdlc-solo-l2 agent and give it exactly the brief below as its prompt. Wait for its report, then print the report verbatim. Do not edit files, run checks, or spawn any other agent yourself.
+
+Brief (tier M).
+Ticket: .sdlc/slug-max-length/handoff.md (size M).
+Files to read: strkit/__init__.py, strkit/words.py, strkit/slug.py, tests/test_slug.py, README.md.
+Check commands: python3 -m unittest discover -s tests
+Done criterion: the behavior in the ticket's Intent holds and python3 -m unittest discover -s tests passes.

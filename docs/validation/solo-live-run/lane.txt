@@ -1,0 +1,13 @@
+# steps.py lane on the pristine project (a copy), then on each arm's copy before delivery
+## pristine
+solo
+reason: size M decides before planning (no planner result yet)
+read: .sdlc/slug-max-length/handoff.md
+## claude copy
+solo
+reason: size M decides before planning (no planner result yet)
+read: .sdlc/slug-max-length/handoff.md
+## codex copy
+solo
+reason: size M decides before planning (no planner result yet)
+read: .sdlc/slug-max-length/handoff.md

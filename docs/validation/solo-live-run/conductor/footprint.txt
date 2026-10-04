@@ -1,0 +1,27 @@
+# footprint.py <task dir> --session <transcript>, run after the session
+## conductor session 517bc1f2-703f-47b7-ae32-23b215ccb242
+ticket: slug-max-length
+files: 8
+bytes: 226273
+md_bytes: 9270
+steps: 0
+planner_bytes: 0
+role_runs: 1
+role_runs verifier L3: 1
+role_cost_usd: 3.852442
+session_input: 43882
+session_cache_read: 193108
+session_output: 1918
+## solo session 35e76881-4562-4fde-83e3-6583840cbfeb
+ticket: slug-max-length
+files: 8
+bytes: 226273
+md_bytes: 9270
+steps: 0
+planner_bytes: 0
+role_runs: 1
+role_runs verifier L3: 1
+role_cost_usd: 3.852442
+session_input: 39077
+session_cache_read: 387236
+session_output: 10054

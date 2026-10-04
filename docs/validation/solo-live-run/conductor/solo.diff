@@ -1,0 +1,264 @@
+diff --git a/.sdlc/slug-max-length/handoff.md b/.sdlc/slug-max-length/handoff.md
+index 9f5387c..a587d87 100644
+--- a/.sdlc/slug-max-length/handoff.md
++++ b/.sdlc/slug-max-length/handoff.md
+@@ -24,5 +24,16 @@ created: 2026-10-04
+ - Non-goals: any other change to `slugify` or `split_words`; new dependencies.
+ - Done when: the behavior above holds and `python3 -m unittest discover -s tests` passes.
+
++## Acceptance criteria
++- `truncate_at_boundary(slug, max_length, sep)` exists in `strkit/words.py` and is importable from `strkit` and listed in `__all__`.
++- `len(slug) <= max_length` returns `slug` unchanged (shorter and equal length).
++- A longer slug returns the longest prefix of whole `sep`-separated words that fits, with no trailing `sep`; a prefix of exactly `max_length` is kept (`'hello-world-again'`, 11 gives `'hello-world'`).
++- When the first word is longer than `max_length`, the result is the first `max_length` characters of `slug`.
++- `max_length` below 1 raises `ValueError` from the helper and from `slugify`, including for empty text.
++- `slugify(text, sep='-', max_length=None)`: `None` returns today's slug; any other value applies the helper with the same `sep`; a custom `sep` is respected.
++- `slugify('Hello World Again', max_length=12)` is `'hello-world'` and `slugify('Supercalifragilistic word', max_length=5)` is `'super'`.
++- `tests/test_slug.py` covers each case above and `README.md` documents `max_length` and `truncate_at_boundary`.
++- `python3 -m unittest discover -s tests` passes.
++
+ ## Context
+ Example: `slugify('Hello World Again', max_length=12)` is `'hello-world'`, and `slugify('Supercalifragilistic word', max_length=5)` is `'super'`.
+diff --git a/README.md b/README.md
+index b8c2d2f..ef33885 100644
+--- a/README.md
++++ b/README.md
+@@ -4,7 +4,7 @@ Small string helpers.
+
+ ## slugify
+
+-`slugify(text, sep='-')` lowercases the words of `text` and joins them with `sep`.
++`slugify(text, sep='-', max_length=None)` lowercases the words of `text` and joins them with `sep`.
+
+ ```python
+ >>> from strkit import slugify
+@@ -12,6 +12,25 @@ Small string helpers.
+ 'hello-world'
+ ```
+
++With `max_length`, the slug is never longer than `max_length`. It is cut at a word boundary, so a word is never split unless the first word alone is too long, in which case the slug is cut to its first `max_length` characters. `max_length=None` (the default) leaves the slug as is. A `max_length` below 1 raises `ValueError`, even for empty `text`.
++
++```python
++>>> slugify('Hello World Again', max_length=12)
++'hello-world'
++>>> slugify('Supercalifragilistic word', max_length=5)
++'super'
++```
++
++## truncate_at_boundary
++
++`truncate_at_boundary(slug, max_length, sep)` is the helper behind `max_length`. It returns `slug` unchanged if `len(slug) <= max_length`. Otherwise it returns the longest prefix of whole `sep`-separated words that fits in `max_length`, with no trailing `sep`. If even the first word is longer than `max_length`, it returns the first `max_length` characters of `slug`. A `max_length` below 1 raises `ValueError`.
++
++```python
++>>> from strkit import truncate_at_boundary
++>>> truncate_at_boundary('hello-world-again', 12, '-')
++'hello-world'
++```
++
+ ## split_words
+
+ `split_words(text)` returns the alphanumeric words of `text`.
+diff --git a/strkit/__init__.py b/strkit/__init__.py
+index 084a7d4..3fc05e3 100644
+--- a/strkit/__init__.py
++++ b/strkit/__init__.py
+@@ -1,5 +1,5 @@
+ """Small string helpers."""
+ from .slug import slugify
+-from .words import split_words
++from .words import split_words, truncate_at_boundary
+
+-__all__ = ['slugify', 'split_words']
++__all__ = ['slugify', 'split_words', 'truncate_at_boundary']
+diff --git a/strkit/slug.py b/strkit/slug.py
+index a833d89..ff6bef7 100644
+--- a/strkit/slug.py
++++ b/strkit/slug.py
+@@ -1,11 +1,19 @@
+ """URL slugs."""
+-from .words import split_words
++from .words import split_words, truncate_at_boundary
+
+
+-def slugify(text, sep='-'):
++def slugify(text, sep='-', max_length=None):
+     """Lowercase the words of text and join them with sep.
+
++    With max_length, the slug is cut at a word boundary so it is never
++    longer than max_length. max_length below 1 raises ValueError.
++
+     >>> slugify('  Hello,  World! ')
+     'hello-world'
++    >>> slugify('Hello World Again', max_length=12)
++    'hello-world'
+     """
+-    return sep.join(w.lower() for w in split_words(text))
++    slug = sep.join(w.lower() for w in split_words(text))
++    if max_length is None:
++        return slug
++    return truncate_at_boundary(slug, max_length, sep)
+diff --git a/strkit/words.py b/strkit/words.py
+index 9060c97..7687296 100644
+--- a/strkit/words.py
++++ b/strkit/words.py
+@@ -7,3 +7,33 @@ _WORD = re.compile(r'[A-Za-z0-9]+')
+ def split_words(text):
+     """Return the alphanumeric words of text, in order."""
+     return _WORD.findall(text or '')
++
++
++def truncate_at_boundary(slug, max_length, sep):
++    """Cut slug to at most max_length characters, at a word boundary.
++
++    A slug no longer than max_length is returned unchanged. Otherwise the
++    longest prefix of whole sep-separated words that fits is returned, with
++    no trailing sep. If even the first word is too long, the first
++    max_length characters of slug are returned. max_length below 1 raises
++    ValueError.
++
++    >>> truncate_at_boundary('hello-world-again', 12, '-')
++    'hello-world'
++    >>> truncate_at_boundary('supercalifragilistic-word', 5, '-')
++    'super'
++    """
++    if max_length < 1:
++        raise ValueError('max_length must be at least 1, got %r' % (max_length,))
++    if len(slug) <= max_length:
++        return slug
++    words = slug.split(sep) if sep else [slug]
++    kept = words[0]
++    if len(kept) > max_length:
++        return slug[:max_length]
++    for word in words[1:]:
++        candidate = kept + sep + word
++        if len(candidate) > max_length:
++            break
++        kept = candidate
++    return kept
+diff --git a/tests/test_slug.py b/tests/test_slug.py
+index e0382ab..583e2ca 100644
+--- a/tests/test_slug.py
++++ b/tests/test_slug.py
+@@ -1,6 +1,6 @@
+ import unittest
+
+-from strkit import slugify, split_words
++from strkit import slugify, split_words, truncate_at_boundary
+
+
+ class SlugTest(unittest.TestCase):
+@@ -17,5 +17,114 @@ class SlugTest(unittest.TestCase):
+         self.assertEqual(split_words('a-b c'), ['a', 'b', 'c'])
+
+
++class SlugifyMaxLengthTest(unittest.TestCase):
++    def test_example_cuts_at_boundary(self):
++        self.assertEqual(slugify('Hello World Again', max_length=12), 'hello-world')
++
++    def test_example_first_word_too_long(self):
++        self.assertEqual(slugify('Supercalifragilistic word', max_length=5), 'super')
++
++    def test_none_unchanged(self):
++        text = 'Hello World Again'
++        self.assertEqual(slugify(text, max_length=None), slugify(text))
++        self.assertEqual(slugify(text, max_length=None), 'hello-world-again')
++
++    def test_shorter_than_max_unchanged(self):
++        self.assertEqual(slugify('Hello World', max_length=50), 'hello-world')
++
++    def test_equal_to_max_unchanged(self):
++        self.assertEqual(slugify('Hello World', max_length=11), 'hello-world')
++
++    def test_prefix_exactly_max_length_is_kept(self):
++        self.assertEqual(slugify('Hello World Again', max_length=11), 'hello-world')
++
++    def test_one_over_boundary_drops_last_word(self):
++        self.assertEqual(slugify('Hello World', max_length=10), 'hello')
++
++    def test_cut_lands_on_separator_has_no_trailing_sep(self):
++        # 'hello-' fits in 6 characters, but the result must not end in sep.
++        self.assertEqual(slugify('Hello World', max_length=6), 'hello')
++
++    def test_cut_lands_right_after_word(self):
++        self.assertEqual(slugify('Hello World', max_length=5), 'hello')
++
++    def test_result_never_longer_than_max(self):
++        text = 'The quick brown fox jumps over the lazy dog'
++        for n in range(1, len(slugify(text)) + 3):
++            with self.subTest(max_length=n):
++                self.assertLessEqual(len(slugify(text, max_length=n)), n)
++
++    def test_max_length_one(self):
++        self.assertEqual(slugify('a bc', max_length=1), 'a')
++        self.assertEqual(slugify('bc a', max_length=1), 'b')
++
++    def test_custom_sep(self):
++        self.assertEqual(slugify('Hello World Again', sep='_', max_length=12), 'hello_world')
++
++    def test_custom_sep_first_word_too_long(self):
++        self.assertEqual(slugify('Supercalifragilistic word', sep='_', max_length=5), 'super')
++
++    def test_multichar_sep(self):
++        self.assertEqual(slugify('Hello World Again', sep='--', max_length=13), 'hello--world')
++
++    def test_empty_sep_hard_cuts(self):
++        self.assertEqual(slugify('Hello World', sep='', max_length=7), 'helloworld'[:7])
++
++    def test_empty_text_with_valid_max(self):
++        self.assertEqual(slugify('', max_length=5), '')
++
++    def test_max_length_zero_raises(self):
++        with self.assertRaises(ValueError):
++            slugify('Hello World', max_length=0)
++
++    def test_max_length_negative_raises(self):
++        with self.assertRaises(ValueError):
++            slugify('Hello World', max_length=-3)
++
++    def test_max_length_below_one_raises_for_empty_text(self):
++        with self.assertRaises(ValueError):
++            slugify('', max_length=0)
++        with self.assertRaises(ValueError):
++            slugify('', max_length=-1)
++
++
++class TruncateAtBoundaryTest(unittest.TestCase):
++    def test_shorter_unchanged(self):
++        self.assertEqual(truncate_at_boundary('a-b', 10, '-'), 'a-b')
++
++    def test_equal_unchanged(self):
++        self.assertEqual(truncate_at_boundary('a-bc', 4, '-'), 'a-bc')
++
++    def test_boundary_cut(self):
++        self.assertEqual(truncate_at_boundary('hello-world-again', 12, '-'), 'hello-world')
++        # the kept prefix may be exactly max_length long
++        self.assertEqual(truncate_at_boundary('hello-world-again', 11, '-'), 'hello-world')
++        self.assertEqual(truncate_at_boundary('hello-world-again', 10, '-'), 'hello')
++        self.assertEqual(truncate_at_boundary('hello-world-again', 16, '-'), 'hello-world')
++        self.assertEqual(truncate_at_boundary('hello-world-again', 17, '-'), 'hello-world-again')
++
++    def test_first_word_too_long(self):
++        self.assertEqual(truncate_at_boundary('supercalifragilistic-word', 5, '-'), 'super')
++
++    def test_first_word_exactly_max(self):
++        self.assertEqual(truncate_at_boundary('hello-world', 5, '-'), 'hello')
++
++    def test_custom_sep(self):
++        self.assertEqual(truncate_at_boundary('hello_world_again', 12, '_'), 'hello_world')
++
++    def test_sep_absent_from_slug_hard_cuts(self):
++        self.assertEqual(truncate_at_boundary('hello-world', 8, '_'), 'hello-wo')
++
++    def test_below_one_raises(self):
++        for n in (0, -1):
++            with self.subTest(max_length=n):
++                with self.assertRaises(ValueError):
++                    truncate_at_boundary('hello', n, '-')
++
++    def test_below_one_raises_for_empty_slug(self):
++        with self.assertRaises(ValueError):
++            truncate_at_boundary('', 0, '-')
++
++
+ if __name__ == '__main__':
+     unittest.main()

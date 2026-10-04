@@ -1,0 +1,198 @@
+diff --git a/.sdlc/slug-max-length/handoff.md b/.sdlc/slug-max-length/handoff.md
+index 9f5387c..4616c2d 100644
+--- a/.sdlc/slug-max-length/handoff.md
++++ b/.sdlc/slug-max-length/handoff.md
+@@ -26,3 +26,11 @@ created: 2026-10-04
+
+ ## Context
+ Example: `slugify('Hello World Again', max_length=12)` is `'hello-world'`, and `slugify('Supercalifragilistic word', max_length=5)` is `'super'`.
++
++## Acceptance criteria
++- `truncate_at_boundary(slug, max_length, sep)` is exported from `strkit` and listed in `__all__`.
++- Slugs within the limit are unchanged; longer slugs retain the longest prefix of whole separator-delimited words that fits without a trailing separator, slicing the first word only when it exceeds the limit.
++- `slugify` accepts `max_length=None`, preserving existing behavior, and otherwise applies the helper with the supplied separator.
++- Limits below 1 raise `ValueError` for both functions, including empty inputs.
++- Tests cover boundaries, first-word slicing, unchanged and empty inputs, custom separators, and invalid limits; README documents both APIs.
++- `python3 -m unittest discover -s tests` passes.
+diff --git a/README.md b/README.md
+index b8c2d2f..8cdaa2c 100644
+--- a/README.md
++++ b/README.md
+@@ -4,14 +4,37 @@ Small string helpers.
+
+ ## slugify
+
+-`slugify(text, sep='-')` lowercases the words of `text` and joins them with `sep`.
++`slugify(text, sep='-', max_length=None)` lowercases the words of `text` and joins
++them with `sep`. Set `max_length` to limit the result to the longest prefix of
++whole words that fits, without a trailing separator. If the first word is too
++long, it is cut to `max_length` characters. `None` leaves the length unlimited.
++Values below 1 raise `ValueError`, including for empty text.
+
+ ```python
+ >>> from strkit import slugify
+ >>> slugify('Hello, World!')
+ 'hello-world'
++>>> slugify('Hello World Again', max_length=12)
++'hello-world'
++>>> slugify('Supercalifragilistic word', max_length=5)
++'super'
+ ```
+
+ ## split_words
+
+ `split_words(text)` returns the alphanumeric words of `text`.
++
++## truncate_at_boundary
++
++`truncate_at_boundary(slug, max_length, sep)` applies the same length limit to
++an existing slug. A slug that already fits is returned unchanged. Otherwise it
++keeps the longest prefix of whole `sep`-separated words that fits, with no
++trailing separator, or cuts the first word if necessary. Values below 1 raise
++`ValueError`. An empty separator provides no word boundaries, so an overlong
++slug is cut to `max_length` characters.
++
++```python
++>>> from strkit import truncate_at_boundary
++>>> truncate_at_boundary('hello::world::again', 12, '::')
++'hello::world'
++```
+diff --git a/strkit/__init__.py b/strkit/__init__.py
+index 084a7d4..3fc05e3 100644
+--- a/strkit/__init__.py
++++ b/strkit/__init__.py
+@@ -1,5 +1,5 @@
+ """Small string helpers."""
+ from .slug import slugify
+-from .words import split_words
++from .words import split_words, truncate_at_boundary
+
+-__all__ = ['slugify', 'split_words']
++__all__ = ['slugify', 'split_words', 'truncate_at_boundary']
+diff --git a/strkit/slug.py b/strkit/slug.py
+index a833d89..734d197 100644
+--- a/strkit/slug.py
++++ b/strkit/slug.py
+@@ -1,11 +1,14 @@
+ """URL slugs."""
+-from .words import split_words
++from .words import split_words, truncate_at_boundary
+
+
+-def slugify(text, sep='-'):
+-    """Lowercase the words of text and join them with sep.
++def slugify(text, sep='-', max_length=None):
++    """Lowercase and join words, optionally limiting length at a word boundary.
+
+     >>> slugify('  Hello,  World! ')
+     'hello-world'
+     """
+-    return sep.join(w.lower() for w in split_words(text))
++    slug = sep.join(w.lower() for w in split_words(text))
++    if max_length is not None:
++        return truncate_at_boundary(slug, max_length, sep)
++    return slug
+diff --git a/strkit/words.py b/strkit/words.py
+index 9060c97..8f060c8 100644
+--- a/strkit/words.py
++++ b/strkit/words.py
+@@ -7,3 +7,27 @@ _WORD = re.compile(r'[A-Za-z0-9]+')
+ def split_words(text):
+     """Return the alphanumeric words of text, in order."""
+     return _WORD.findall(text or '')
++
++
++def truncate_at_boundary(slug, max_length, sep):
++    """Limit a slug to whole words, slicing only if its first word is too long."""
++    if max_length < 1:
++        raise ValueError('max_length must be at least 1')
++    if len(slug) <= max_length:
++        return slug
++    if not sep:
++        return slug[:max_length]
++
++    words = slug.split(sep)
++    if len(words[0]) > max_length:
++        return slug[:max_length]
++
++    prefix = words[0]
++    for word in words[1:]:
++        candidate = prefix + sep + word
++        if len(candidate) > max_length:
++            break
++        prefix = candidate
++    while prefix.endswith(sep):
++        prefix = prefix[:-len(sep)]
++    return prefix
+diff --git a/tests/test_slug.py b/tests/test_slug.py
+index e0382ab..b06c275 100644
+--- a/tests/test_slug.py
++++ b/tests/test_slug.py
+@@ -1,6 +1,6 @@
+ import unittest
+
+-from strkit import slugify, split_words
++from strkit import slugify, split_words, truncate_at_boundary
+
+
+ class SlugTest(unittest.TestCase):
+@@ -16,6 +16,59 @@ class SlugTest(unittest.TestCase):
+     def test_split_words(self):
+         self.assertEqual(split_words('a-b c'), ['a', 'b', 'c'])
+
++    def test_max_length(self):
++        cases = [
++            ('Hello World Again', '-', 12, 'hello-world'),
++            ('Hello World Again', '-', 11, 'hello-world'),
++            ('Hello World Again', '-', 10, 'hello'),
++            ('Hello World Again', '-', 6, 'hello'),
++            ('Supercalifragilistic word', '-', 5, 'super'),
++            ('Hello World', '_', 8, 'hello'),
++            ('Hello World Again', '--', 12, 'hello--world'),
++            ('Hello World Again', '--', 11, 'hello'),
++            ('Hello World Again', '--', 6, 'hello'),
++            ('Hello World', '', 7, 'hellowo'),
++            ('Hello', '-', 5, 'hello'),
++            ('Hello', '-', 20, 'hello'),
++            ('Hello World', '-', 1, 'h'),
++            ('', '-', 1, ''),
++        ]
++        for text, sep, limit, expected in cases:
++            with self.subTest(text=text, sep=sep, limit=limit):
++                self.assertEqual(slugify(text, sep=sep, max_length=limit), expected)
++
++    def test_none_max_length(self):
++        self.assertEqual(slugify('Hello World Again', max_length=None),
++                         'hello-world-again')
++
++    def test_truncate_at_boundary(self):
++        cases = [
++            ('one-two-three', 8, '-', 'one-two'),
++            ('one-two-three', 7, '-', 'one-two'),
++            ('one-two-three', 6, '-', 'one'),
++            ('one-two-three', 4, '-', 'one'),
++            ('longword-next', 3, '-', 'lon'),
++            ('one::two::three', 8, '::', 'one::two'),
++            ('one::two::three', 7, '::', 'one'),
++            ('one::two::three', 4, '::', 'one'),
++            ('one-two', 7, '-', 'one-two'),
++            ('one-two', 20, '-', 'one-two'),
++            ('onetwo', 4, '', 'onet'),
++            ('', 1, '-', ''),
++        ]
++        for slug, limit, sep, expected in cases:
++            with self.subTest(slug=slug, limit=limit, sep=sep):
++                self.assertEqual(truncate_at_boundary(slug, limit, sep), expected)
++
++    def test_invalid_max_length(self):
++        for limit in (0, -1):
++            for text in ('', 'Hello World'):
++                with self.subTest(text=text, limit=limit):
++                    with self.assertRaises(ValueError):
++                        slugify(text, max_length=limit)
++                    with self.assertRaises(ValueError):
++                        truncate_at_boundary(text, limit, '-')
++
+
+ if __name__ == '__main__':
+     unittest.main()
