@@ -89,7 +89,7 @@ def definitions():
             name = 'sdlc-' + role + '-' + level.lower()
             data = dict(name=name, description=f'SDLC {role} {level}. Read the handoff; follow the shared role contract.', model=model,
                             model_reasoning_effort=effort,
-                            sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger') else 'read-only',
+                            sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger', 'solo') else 'read-only',
                             developer_instructions=instructions(role))
             yield name, data
             if role in PAIRED and model in alternates:

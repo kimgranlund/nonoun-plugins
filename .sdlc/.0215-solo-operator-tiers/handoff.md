@@ -2,7 +2,7 @@
 id: T-0215
 title: "Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ User decision 2026-10-04 after "if an orchestration-based system cannot compete 
 
 ## Constraints
 Keep it small and one authoritative location per fact. Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." The solo agent file stays short.
+
+## Closed
+
+2026-10-04: Built via one handwritten L3 step plus one L2 docs fix step; L3 branch verifier found stale lane docs, narrow L2 verifier then passed; no live run (T-0216 is the solo live proof); no filer under burn-down.
