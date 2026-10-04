@@ -21,7 +21,7 @@ Run 2:
 Run 1:
 
 - Same host, `claude --version`, and models as run 2.
-- Repo commit: `8433d80deca3e558c440e78249bba71c81ac87f2` (`.sdlc/0202-carry-forward step-1: built and verified`), with the step 1 contracts committed in it.
+- Repo commit: `8433d80deca3e558c440e78249bba71c81ac87f2` (`.sdlc/.0202-carry-forward step-1: built and verified`), with the step 1 contracts committed in it.
 - Throwaway project: `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/carry-forward-probe.7n2YHsjnKS`.
 
 ## Method

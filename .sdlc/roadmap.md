@@ -206,7 +206,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0199 | [0199-conductor-rules](0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | M | P2 | T-0196, T-0198 | ⏳ proposed |
 | T-0200 | [0200-plan-merge](0200-plan-merge/handoff.md) | Replan by delta: merged plan view and steps.py resolve | feature | L | P2 | T-0197 | ⏳ proposed |
 | T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | M | P2 | T-0200 | ⏳ proposed |
-| T-0202 | [0202-carry-forward](0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | ⏳ proposed |
+| T-0202 | [.0202-carry-forward](.0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | 🟢 done |
 | T-0203 | [.0203-fanout-overlap](.0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | M | P2 | none | 🟢 done |
 | T-0204 | [0204-fanout-resolver](0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | ⏳ proposed |
 | T-0205 | [0205-layout-resolver](0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | ⏳ proposed |

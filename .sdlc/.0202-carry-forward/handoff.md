@@ -2,7 +2,7 @@
 id: T-0202
 title: "Carry forward section in scout, researcher, architect, archaeologist"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,13 @@ plan defect: step 2 blocked (step-2/builder-L3.md): acceptance criterion AC3 (`s
 
 ## Known limits (burn-down, 2026-10-04)
 Step 2 (focused live run) was built twice and blocked twice on the probe's own metric, not on behavior: first the 200-character cut, then `read_scout_result` looking only for the literal `scout-L1.md` in tool inputs while the planner read it through a glob. In run 2 the planner given the scout result read it and cited its path, ran no symbol search, and the planner without it did search, so the behavior under test held. Per the burn-down rules (replan cap of one, live proof is T-0208's, record a flaky live arm as a limit) there is no third cycle. The report docs/validation/carry-forward-live-run.md states the actual outcome and this limit. An em dash in a role's own output cannot be avoided by the report, which writes it as `--`.
+
+## Closed
+
+2026-10-04: warnings acknowledged: Burn-down: step 2 live run is a recorded known limit (probe metric miss, behavior held, no third cycle); the branch verifier L3 has since passed (verify-t0202/step-1/verifier-L3.md), so the filer's no-verdict warning is stale.
+
+> - Step 2 (focused live run) is blocked, and no verifier ran on it. There is no `step-2/verifier-*.md`. The builder reported criteria 2 and 9 as FAIL (`read_scout_result=no` and the README line). The ticket's own "Known limits" section states there was no third cycle.
+> - Step 2 was built twice and blocked twice on the probe's own metric, not on behavior. First the metric cut each tool input at 200 characters. Then it looked only for the literal `scout-L1.md`, but the planner read the file through a glob.
+> - The step 1 verifier (L2) passed. Its output lists AC1 to AC12 as pass.
+> - A separate branch verification under `.sdlc/verify-t0202/step-1` (verifier-L3) has only a log, a `.running` marker and an attempt file. No verdict file exists, so it is unfinished.
+> - The "Done when" items "an independent verifier passed each step" and the live-run proof are therefore not met.
