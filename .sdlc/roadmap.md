@@ -197,7 +197,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0190 | [.0190-sdlc-topic-subfolders](.0190-sdlc-topic-subfolders/handoff.md) | Organize every .sdlc/ content type into topic sub-folders | chore | M | P2 | none | 🟢 done |
 | T-0191 | [.0191-single-plan-record](.0191-single-plan-record/handoff.md) | One plan record per ticket; later roles do not repeat research or planning | chore | M | P2 | none | 🟢 done |
 | T-0192 | [.0192-conductor-batching](.0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | M | P2 | none | 🟢 done |
-| T-0193 | [0193-footprint](0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | ⏳ proposed |
+| T-0193 | [.0193-footprint](.0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | 🟢 done |
 | T-0194 | [0194-lean-lane-text](0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | M | P2 | none | ⏳ proposed |
 | T-0195 | [0195-runner-family-task-dir](0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | ⏳ proposed |
 | T-0196 | [0196-batch-state](0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | ⏳ proposed |
