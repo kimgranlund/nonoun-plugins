@@ -1,0 +1,20 @@
+{
+  "attempt_id": "efe876e8c01041d39302fc2ce337dff9",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "high",
+  "routing_reason": "step-1: verify L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:56:15.796463+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0215",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0215/.sdlc/0215-solo-operator-tiers/step-1/handoff.md",
+  "owner_pid": 71360,
+  "process_pid": 71468,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T19:02:10.848925+00:00"
+}

@@ -70,6 +70,17 @@
 # .sdlc; after one message to planner the dry run's stderr is exactly "run.sh: 1 new message(s) for
 # planner; read with messages.py"; after one more to claude it says 2, and a builder dry run says 1;
 # a real planner run prints the line exactly once and no message body. Its failures read "notice: <reason>".
+# Spec gate: a plan-reviewer dry run on a plan whose (guard) runs check.sh with no "guard timeout:"
+# line exits 2 and prints "slow guard"; a real run on it exits 2, the stub is never called, and no
+# runs.jsonl or *.running exists; the same plan with a "guard timeout:" line dry-runs to exit 0; with
+# SDLC_SPECGATE=off a real run exits 0 and its runs.jsonl line has "specgate":"off". The no-planner
+# and header-only plan-reviewer cases above keep exit 0. Its failures read "spec gate: <reason>".
+# Stale input (handoff freeze, warn mode): a real planner run whose stub claude edits handoff.md before
+# printing its result exits 0, writes a runs.jsonl line with stale_input true and a handoff_sha256 of the
+# launch-time bytes, and prints "run.sh: stale input: <handoff> changed while planner ran" once; the same
+# run with no edit, an edit of a sibling file, and a stub that never reads the handoff but whose handoff
+# changed (the hash decides) behave as stated: no edit and sibling edit give stale_input false and no
+# stderr line, the never-reads stub is still flagged. Its failures read "stale input: <reason>".
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -765,6 +776,100 @@ nrc=0
 [[ "$(grep -cF "new message(s)" "$tmp/n4e")" == 1 ]] || fail "notice: real run did not print the notice exactly once: $(cat "$tmp/n4e")"
 grep -qxF "$(nline 2 planner)" "$tmp/n4e" || fail "notice: real run notice line is wrong: $(cat "$tmp/n4e")"
 ! grep -qF notice-body "$tmp/n4o" "$tmp/n4e" || fail "notice: real run printed a message body"
+
+# Spec gate (see the header).
+sgrepo="$tmp/sgrepo"
+mkdir -p "$sgrepo/.sdlc/t"
+echo '## Goal' >"$sgrepo/.sdlc/t/handoff.md"
+git -C "$sgrepo" init -q
+git -C "$sgrepo" add -A
+git -C "$sgrepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+sgd="$sgrepo/.sdlc/t"
+sgplan() { # sgplan <goal extra line>: a planner result whose step 1 guard runs check.sh
+  printf '%s\n' '<!-- role=planner level=L1 model=sonnet effort=medium -->' '## Goal' x "$1" '' \
+    '## Step 1: Gates' 'level: L1' '### Do' x '### Acceptance criteria' \
+    '- (guard) `bash plugins/sdlc-lite/scripts/check.sh`' '' '## Assumptions' None '' '## Risks' None >"$sgd/planner-L1.md"
+}
+# sgrun <out file> [env assignments...]: plan-reviewer run in sgrepo; prints the exit code.
+sgrun() {
+  local o="$1" rc=0; shift
+  (cd "$sgrepo" && env -u SDLC_SPECGATE -u SDLC_DRY_RUN "$@" STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" \
+    "$here/run.sh" plan-reviewer L1 .sdlc/t/handoff.md >"$o" 2>&1) || rc=$?
+  echo "$rc"
+}
+res $'## Verdict\npass'
+sgplan ''
+rm -f "$tmp/count"
+rc=$(sgrun "$tmp/sg1" SDLC_DRY_RUN=1)
+[[ "$rc" == 2 ]] || fail "spec gate: dry run on a check.sh guard with no guard timeout line exited $rc, want 2: $(cat "$tmp/sg1")"
+grep -qF "step 1: slow guard:" "$tmp/sg1" || fail "spec gate: dry run did not print slow guard: $(cat "$tmp/sg1")"
+grep -qF "run.sh: specgate.py check refused the plan in $sgd; replan, or set SDLC_SPECGATE=off" "$tmp/sg1" \
+  || fail "spec gate: dry run did not print the run.sh refusal line: $(cat "$tmp/sg1")"
+rc=$(sgrun "$tmp/sg2")
+[[ "$rc" == 2 ]] || fail "spec gate: real run on a refused plan exited $rc, want 2: $(cat "$tmp/sg2")"
+[[ ! -e "$tmp/count" ]] || fail "spec gate: real run on a refused plan called the stub claude"
+[[ ! -e "$sgd/runs.jsonl" ]] || fail "spec gate: real run on a refused plan wrote runs.jsonl"
+[[ -z "$(find "$sgd" -name '*.running')" ]] || fail "spec gate: real run on a refused plan left a .running file"
+[[ -z "$(find "$sgd" -name '*.attempt.json')" ]] || fail "spec gate: real run on a refused plan left an attempt record"
+sgplan 'guard timeout: 900'
+rc=$(sgrun "$tmp/sg3" SDLC_DRY_RUN=1)
+[[ "$rc" == 0 ]] || fail "spec gate: dry run on a plan with a guard timeout line exited $rc, want 0: $(cat "$tmp/sg3")"
+! grep -qF specgate "$tmp/sg3" || fail "spec gate: a passing gate printed a line: $(cat "$tmp/sg3")"
+sgplan ''
+rc=$(sgrun "$tmp/sg4" SDLC_SPECGATE=off)
+[[ "$rc" == 0 ]] || fail "spec gate: SDLC_SPECGATE=off real run exited $rc, want 0: $(cat "$tmp/sg4")"
+grep -qxF "run.sh: SDLC_SPECGATE=off: spec gate skipped" "$tmp/sg4" || fail "spec gate: off did not print its skip line: $(cat "$tmp/sg4")"
+[[ -e "$tmp/count" ]] || fail "spec gate: SDLC_SPECGATE=off real run never called the stub claude"
+tail -n 1 "$sgd/runs.jsonl" | jq -e '.specgate == "off"' >/dev/null 2>&1 \
+  || fail "spec gate: SDLC_SPECGATE=off run line lacks \"specgate\":\"off\": $(tail -n 1 "$sgd/runs.jsonl" 2>/dev/null)"
+res $'## Goal\nx'
+(cd "$sgrepo" && env -u SDLC_SPECGATE SDLC_SPECGATE=off STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" \
+  "$here/run.sh" planner L1 .sdlc/t/handoff.md >/dev/null 2>&1) || fail "spec gate: planner run with SDLC_SPECGATE=off failed"
+! tail -n 1 "$sgd/runs.jsonl" | jq -e 'has("specgate")' >/dev/null 2>&1 \
+  || fail "spec gate: a planner run line carries a specgate key: $(tail -n 1 "$sgd/runs.jsonl")"
+# Stale input: lifecycle records the launch hash; run.sh flags a handoff that changed during the run.
+srepo="$tmp/srepo"
+mkdir -p "$srepo/.sdlc/s" "$tmp/sbin"
+echo '## Goal' >"$srepo/.sdlc/s/handoff.md"
+git -C "$srepo" init -q
+git -C "$srepo" add -A
+git -C "$srepo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
+  commit -q -m init
+cat >"$tmp/sbin/claude" <<'SEOF'
+#!/usr/bin/env bash
+case "${STUB_STALE:-none}" in
+  edit) echo "scope grew" >>"$STUB_HANDOFF" ;;
+  sibling) echo "other" >>"$(dirname "$STUB_HANDOFF")/notes.md" ;;
+  noread) echo "edited without reading" >>"$STUB_HANDOFF" ;;
+esac
+printf '{"type":"result","is_error":false,"result":"## Goal\\nstale probe","total_cost_usd":0,"duration_ms":1,"num_turns":1}\n'
+SEOF
+chmod +x "$tmp/sbin/claude"
+stale_run() {
+  rm -f "$srepo/.sdlc/s"/planner-L*.md "$srepo/.sdlc/s"/*.log "$srepo/.sdlc/s"/*.attempt.json "$srepo/.sdlc/s/runs.jsonl" "$srepo/.sdlc/s/notes.md"
+  echo '## Goal' >"$srepo/.sdlc/s/handoff.md"
+  launch_sha=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$srepo/.sdlc/s/handoff.md")
+  src=0
+  (cd "$srepo" && STUB_STALE="$1" STUB_HANDOFF="$srepo/.sdlc/s/handoff.md" PATH="$tmp/sbin:$PATH" \
+    "$here/run.sh" planner L2 .sdlc/s/handoff.md >"$tmp/s_o" 2>"$tmp/s_e") || src=$?
+  [[ $src == 0 ]] || fail "stale input: $1: run.sh exited $src: $(cat "$tmp/s_e")"
+  got_stale=$(jq -r '.stale_input' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
+  got_sha=$(jq -r '.handoff_sha256' "$srepo/.sdlc/s/runs.jsonl" | tail -1)
+  nlines=$(grep -c "run.sh: stale input:" "$tmp/s_e" || true)
+}
+stale_run none
+[[ "$got_stale" == false ]] || fail "stale input: no edit: stale_input is $got_stale, want false"
+[[ "$nlines" == 0 ]] || fail "stale input: no edit printed a stale line"
+[[ "$got_sha" == "$launch_sha" ]] || fail "stale input: no edit: handoff_sha256 '$got_sha' is not the launch hash"
+stale_run sibling
+[[ "$got_stale" == false && "$nlines" == 0 ]] || fail "stale input: a sibling-file edit was flagged"
+stale_run edit
+[[ "$got_stale" == true ]] || fail "stale input: edited handoff: stale_input is $got_stale, want true"
+[[ "$nlines" == 1 ]] || fail "stale input: edited handoff: stale line printed $nlines times, want 1"
+[[ "$got_sha" == "$launch_sha" ]] || fail "stale input: edited handoff: handoff_sha256 is not the launch hash"
+stale_run noread
+[[ "$got_stale" == true && "$nlines" == 1 ]] || fail "stale input: a role that never read the handoff was not flagged"
 
 # Budget gate: a ticket at 85 percent of budget_usd 10 with no ack exits 4 before any model call;
 # an ack raising the ceiling launches; a ticket with no budget_usd launches unchanged. Each case runs
