@@ -77,11 +77,10 @@
 18. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
    names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
    adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
-   it. Each has a negative control (the phrase, file, or registration reeze (warn mode): scripts/run_lifecycle.py naroot)
-   .claudes `SDLC_HANDOFF_SHA256` and `handoff_sha256`; sc/aipts/run.sh
-   names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stalents/sdlc-lite-author.md. input:`; hooks/warn-handoff-edit.sh exists and is executaNegative contle;
-   adapterol: es/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenace/claude-hooks.md names
-   it. Each phrase removed must be flagged.
+   it. Each has a negative control (the phrase, file, or registration removed must be flagged).
+19. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
+   S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
+   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
