@@ -25,10 +25,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             verbatim with the rest of the step block.
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
-            bash -c, from the git toplevel of the task dir (else the task dir), under
-            --guard-timeout SECONDS (default 300), with SDLC_BASE_SHA set to git rev-parse HEAD
-            at the toplevel (no build has started, so HEAD is the base; unset outside git, never
-            inherited from the caller). A span that references HEAD^1 or holds a
+            bash -c, from the git toplevel of the task dir (else the task dir), under a per-step
+            timeout: an explicit --guard-timeout SECONDS wins; otherwise the step block's own
+            "guard timeout: <seconds>" line, else such a line outside every ## Step block (for
+            example in ## Goal), else 300; a value of 0 or less counts as no line. Spans run with
+            SDLC_BASE_SHA set to git rev-parse HEAD at the toplevel (no build has started, so HEAD
+            is the base; unset outside git, never inherited from the caller). A span that references HEAD^1 or holds a
             <placeholder> is skipped, never run. A red guard (nonzero exit) or a timeout refuses:
             one line per red guard with its exit code or timeout and its output tail, then a last
             line "plan defect: step <n> red guard: <span>; replan this step (/chain 3)".
@@ -299,6 +301,8 @@ import results
 
 STEP_RE = re.compile(r'^## Step (\d+): (.+)$')
 LEVEL_RE = re.compile(r'^level: L[1-5]\s*$')
+GUARD_TIMEOUT_RE = re.compile(r'^guard timeout:\s*(\d+(?:\.\d+)?)\s*$')
+DEFAULT_GUARD_TIMEOUT = 300
 SPAN_RE = re.compile(r'(`+)(.+?)\1')
 ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
 PLACEHOLDER_RE = re.compile(r'<[^<>\s][^<>]*>')
@@ -378,6 +382,36 @@ def parse_steps(plan):
             raise Fail(f'steps: step {n} in {plan} has no "level: L1".."level: L5" line')
         out[n] = '\n'.join(block)
     return out
+
+
+def guard_timeout_in(lines):
+    """The first "guard timeout: <seconds>" value above 0 (and finite) among lines, else None."""
+    for line in lines:
+        m = GUARD_TIMEOUT_RE.match(line)
+        if m:
+            v = float(m.group(1))
+            if 0 < v < float('inf'):
+                return v
+    return None
+
+
+def plan_guard_timeout(plan):
+    """The plan-level guard timeout: a "guard timeout: <seconds>" line outside every ## Step block
+    (a block runs from its ## Step line to the next ## line), else None. 0 or less counts as no line."""
+    outside, in_step = [], False
+    for line in plan.read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            in_step = STEP_RE.match(line) is not None
+            continue
+        if not in_step:
+            outside.append(line)
+    return guard_timeout_in(outside)
+
+
+def step_guard_timeout(block):
+    """The step-level guard timeout: a "guard timeout: <seconds>" line inside one step block, else
+    None. 0 or less counts as no line."""
+    return guard_timeout_in(block.splitlines())
 
 
 def criteria_indexed(lines):
@@ -580,9 +614,9 @@ def run_guard(text, cwd, timeout, base=None):
     return rc, tail[-5:]
 
 
-def run_guards(plan, steps, chosen, task_dir, timeout):
-    """Run the runnable (guard) spans of each chosen step; raise Fail naming every red one.
-    Called only by split --only; a full split and lint never execute a span."""
+def run_guards(plan, steps, chosen, task_dir, timeouts):
+    """Run the runnable (guard) spans of each chosen step, each under timeouts[n] seconds; raise
+    Fail naming every red one. Called only by split --only; a full split and lint never execute a span."""
     top = git_toplevel(task_dir)
     cwd = top or str(task_dir)
     base = base_sha(top)
@@ -594,6 +628,7 @@ def run_guards(plan, steps, chosen, task_dir, timeout):
             if top and not ran:
                 before = tree_state(top)
             ran = True
+            timeout = timeouts[n]
             rc, tail = run_guard(text, cwd, timeout, base)
             if rc == 0:
                 continue
@@ -938,9 +973,10 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=300):
+def split(target, only=None, guard_timeout=None):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
-    runnable (guard) spans run before any write."""
+    runnable (guard) spans run before any write, each step under guard_timeout when given, else
+    its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT."""
     plan, task_dir = find_plan(target)
     err = results.structure_error(plan, 'planner')
     if err is not None:
@@ -974,7 +1010,11 @@ def split(target, only=None, guard_timeout=300):
             raise Fail(f'steps: {d} already holds role output ({", ".join(done)}). Per /chain 4.2, rename it '
                        f'to step-{n}.superseded-<k>/ (next free k) first, then split again. Nothing was written.')
     if only:
-        run_guards(plan, steps, chosen, task_dir, guard_timeout)
+        plan_timeout = plan_guard_timeout(plan)
+        timeouts = {n: guard_timeout if guard_timeout is not None
+                    else step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT
+                    for n in chosen}
+        run_guards(plan, steps, chosen, task_dir, timeouts)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -985,7 +1025,7 @@ def split(target, only=None, guard_timeout=300):
     return written
 
 
-def cmd_split(target, only, guard_timeout=300):
+def cmd_split(target, only, guard_timeout=None):
     try:
         written = split(target, only, guard_timeout)
     except Fail as e:
@@ -2434,6 +2474,42 @@ def selftest():
               rc == 1 and out == '' and snapshot(d) == before and took < 15
               and 'timed out after 1s' in err and last.startswith('plan defect:') and 'sleep 30' in last)
 
+        # (guard timeout) a "guard timeout: <seconds>" line sets the split --only default; a step line
+        # beats the plan line, an explicit --guard-timeout beats both, and 0 counts as no line.
+        def gt_plan(plan_line, step_line, span):
+            return (f'## Goal\ng\n{plan_line}\n\n## Step 1: x\nlevel: L1\n{step_line}\n### Do\nd\n'
+                    f'### Acceptance criteria\n- (guard) `{span}`\n\n## Risks\nguard timeout: 99\n')
+
+        def gt_refused(plan_text, argv_extra=()):
+            d = task(plan=plan_text)
+            before = snapshot(d)
+            t0 = time.monotonic()
+            rc, out, err = run_main(['split', str(d), '--only', '1', *argv_extra])
+            took = time.monotonic() - t0
+            return rc, out, err, took, snapshot(d) == before and not (d / 'step-1').exists()
+
+        rc, out, err, took, untouched = gt_refused(gt_plan('guard timeout: 1', '', 'sleep 3'))
+        rc2, _, err2, took2, untouched2 = gt_refused(gt_plan('guard timeout: 1', 'guard timeout: 0', 'sleep 3'))
+        check('(guard timeout) a plan guard timeout line sets the split --only default',
+              rc == 1 and out == '' and untouched and took < 15 and 'timed out after 1s' in err
+              and rc2 == 1 and untouched2 and took2 < 15 and 'timed out after 1s' in err2
+              and plan_guard_timeout(task(plan=gt_plan('guard timeout: 1', 'guard timeout: 7', 'x y')) / 'planner-L2.md') == 1
+              and plan_guard_timeout(task(plan=gt_plan('guard timeout: 0', 'guard timeout: 7', 'x y')) / 'planner-L2.md') == 99)
+
+        rc, out, err, took, untouched = gt_refused(gt_plan('guard timeout: 10', 'guard timeout: 1', 'sleep 3'))
+        check('(guard timeout) a step guard timeout line overrides the plan line',
+              rc == 1 and out == '' and untouched and took < 15 and 'timed out after 1s' in err
+              and step_guard_timeout('## Step 1: x\nlevel: L1\nguard timeout: 2.5') == 2.5
+              and step_guard_timeout('## Step 1: x\nlevel: L1\nguard timeout: 0') is None)
+
+        d = task(plan=gt_plan('guard timeout: 1', 'guard timeout: 1', 'sleep 2'))
+        rc, _, err = run_main(['split', str(d), '--only', '1', '--guard-timeout', '10'])
+        rc2, out2, err2, _, untouched2 = gt_refused(gt_plan('guard timeout: 10', 'guard timeout: 10', 'sleep 3'),
+                                                    ('--guard-timeout', '1'))
+        check('(guard timeout) --guard-timeout overrides both lines',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file()
+              and rc2 == 1 and out2 == '' and untouched2 and 'timed out after 1s' in err2)
+
         marker = tmp / 'n-full-ran'
         d = task(plan=guard_plan(f'(guard) `touch {marker}`', f'(guard) `{red_span}`'))
         rc, _, _ = run_main(['split', str(d)])
@@ -3316,8 +3392,10 @@ def main(argv):
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p.add_argument('--only', type=int, action='append', metavar='N',
                    help='write only step N (repeatable); runs its (guard) criteria first, with SDLC_BASE_SHA=HEAD')
-    p.add_argument('--guard-timeout', type=float, default=300, metavar='SECONDS',
-                   help='per-guard timeout for --only (default 300); a timeout is a red guard')
+    p.add_argument('--guard-timeout', type=float, default=None, metavar='SECONDS',
+                   help='per-guard timeout for --only; it overrides any "guard timeout: <seconds>" line '
+                        '(default: the step block\'s line, else the plan\'s line outside every step, else 300); '
+                        'a timeout is a red guard')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
@@ -3366,7 +3444,7 @@ def main(argv):
         return cmd_swap(a.step_dir, a.timeout)
     if a.cmd == 'lint':
         return cmd_lint(a.target)
-    if not 0 < a.guard_timeout < float('inf'):
+    if a.guard_timeout is not None and not 0 < a.guard_timeout < float('inf'):
         print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
         return 1
     return cmd_split(a.target, a.only, a.guard_timeout)
