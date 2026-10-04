@@ -2,7 +2,7 @@
 id: T-0217
 title: "Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Found by the 0.20.4 release fact-check, recorded as limits in docs/validation/re
 
 ## Constraints
 One authoritative location per fact. No em dashes.
+
+## Closed
+
+2026-10-04: Built via one handwritten L3 step; verifier L2 pass; gates green. Start path: headless launch from Bash documented in solo.md; routing texts agree; check.py guard added. Burn-down: no planner, no filer; the conductor-start live proof is T-0216 step 2.

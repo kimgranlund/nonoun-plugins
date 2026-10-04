@@ -78,6 +78,9 @@
    names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
    adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
+19. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
+   S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
+   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -579,6 +582,18 @@ for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.s
     _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
     if not freeze_missing(*_args): errors.append(f'check.py: handoff freeze guard negative control not flagged for "{_w}"')
 if not freeze_missing(_fr[0], _fr[1], False, _fr[3], _fr[4]): errors.append('check.py: handoff freeze guard negative control not flagged for the hook file')
+# Solo start path (docstring item 19): solo.md holds the start command; every routing text sends S and M to solo.
+SOLO_ROUTE = (('agents/solo.md', '--agent sdlc-lite:solo'),
+              (CONDUCTOR, 'Size S and M go to `solo` by default'),
+              ('skills/fix/SKILL.md', 'size S and M go to `solo`'),
+              ('AGENTS.md', 'Size S and M plugin work goes to `solo` by default'),
+              ('.claude/agents/sdlc-lite-author.md', '`solo` for size S and M by default'))
+def solo_route_missing(text, phrase): return phrase not in text
+for rel, phrase in SOLO_ROUTE:
+    srt = _rd(root.resolve().parent.parent/rel) if rel.startswith('.claude/') else _rd(root/rel)
+    if solo_route_missing(srt, phrase): errors.append(f'{rel}: solo start path missing "{phrase}"')
+    elif not solo_route_missing(srt.replace(phrase, ''), phrase):
+        errors.append(f'check.py: solo start path negative control not flagged for "{phrase}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
