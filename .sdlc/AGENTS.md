@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4797a61c4b4a -->
+<!-- sdlc-lite:managed:start v1 sha256:5c9ccb8f61c1 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,9 +15,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0199 Conductor batching and skip rules (0199-conductor-rules)
   - T-0204 fanout.py resolves lane tickets through ticket_dir (0204-fanout-resolver)
   - T-0210 Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (0210-spec-gate-check)
-- ready: 3
+- ready: 2
   - T-0183 supervisor.py: deterministic watcher that resumes an idle host on new mail (0183-supervisor-script)
-  - T-0186 proposals/ folder and proposals.py mining runs and notes for candidate changes (0186-proposals-folder)
   - T-0215 Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets (0215-solo-operator-tiers)
 - blocked: 11
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
@@ -31,7 +30,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0212 Handoff freeze: stale_input flag, rerun action, handoff edit hook (0212-handoff-freeze)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
   - T-0214 Per-ticket cost budget: budget.py, run.sh exit 4, board column (0214-ticket-budget)
-- done: 177
+- done: 178
 - dropped: 19
 
 ## Procedures
