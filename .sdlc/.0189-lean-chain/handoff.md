@@ -2,7 +2,7 @@
 id: T-0189
 title: "Lean chain: fewer, coarser planner builder verifier steps for size M work"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Feedback from another repo using SDLC Lite (2026-10-03, pasted by the maintainer
 
 ## Constraints
 Design first (docs), independent review, then build. Related: T-0191, T-0192.
+
+## Closed
+
+2026-10-04: Superseded by build tickets T-0194, T-0193, T-0208 from the lean SDLC design (docs/lean-sdlc/design.md v0.4), reviewed twice. No work was built under this ticket.
