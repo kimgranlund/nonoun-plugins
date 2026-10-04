@@ -1,0 +1,20 @@
+{
+  "attempt_id": "d7948afadb4e421884bac9c832e3887d",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "filer for close",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T17:46:50.173512+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0197",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0197/.sdlc/0197-lane/handoff.md",
+  "owner_pid": 97184,
+  "process_pid": 97239,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T17:47:15.422982+00:00"
+}
