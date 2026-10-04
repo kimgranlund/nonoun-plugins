@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure a ticket folder's footprint (files, bytes, steps, role runs) and gate on it.
 
-Usage: footprint.py <ticket dir>                                     print the footprint
+Usage: footprint.py <ticket dir> [--session <transcript.jsonl>]      print the footprint
        footprint.py check <ticket dir> [--max-files N] [--max-bytes N]   exit 1 if a limit is exceeded
        footprint.py selftest                                         prove the counts on temp fixtures
 
@@ -13,13 +13,18 @@ steps counts immediate subdirs named exactly step-<n>; superseded dirs do not co
 planner_bytes sums top-level planner-L<n>[-<k>].md files.
 role_runs counts non-blank lines across every runs.jsonl; a line that is not a JSON object with
 string role and level counts in group `unknown ?`.
+With --session, four lines follow: role_cost_usd (sum of runs.jsonl cost_usd, `none` when no record
+has one), then the conductor session's session_input (input_tokens plus cache_creation_input_tokens),
+session_cache_read (cache_read_input_tokens), and session_output (output_tokens), summed over the
+transcript's message.usage objects; lines repeating a message.id count once. A transcript with no usage
+object prints `none` for all three, never 0.
 Read-only: nothing under the measured dir is written. Exit codes: 0 ok, 1 limit exceeded, 2 usage.
 """
 import json, os, re, shutil, subprocess, sys, tempfile
 
 STEP = re.compile(r'^step-\d+$')
 PLANNER = re.compile(r'^planner-L\d+(-\d+)?\.md$')
-USAGE = ('usage: footprint.py <ticket dir>\n'
+USAGE = ('usage: footprint.py <ticket dir> [--session <transcript.jsonl>]\n'
          '       footprint.py check <ticket dir> [--max-files N] [--max-bytes N]\n'
          '       footprint.py selftest')
 
@@ -64,6 +69,58 @@ def measure(d):
            ('md_bytes', md), ('steps', steps), ('planner_bytes', planner), ('role_runs', runs)]
     for (role, level) in sorted(groups):
         out.append((f'role_runs {role} {level}', groups[(role, level)]))
+    return out
+
+
+def role_cost(d):
+    """Sum of cost_usd over every runs.jsonl record under d, or None when no record has one."""
+    total = None
+    for root, _dirs, names in os.walk(str(d), followlinks=False):
+        if 'runs.jsonl' not in names:
+            continue
+        with open(os.path.join(root, 'runs.jsonl'), encoding='utf-8', errors='replace') as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                c = rec.get('cost_usd') if isinstance(rec, dict) else None
+                if isinstance(c, (int, float)) and not isinstance(c, bool):
+                    total = (total or 0) + c
+    return total
+
+
+def session_usage(path):
+    """(input, cache_read, output) token sums from a transcript, or None when it has no usage object."""
+    seen = {}
+    with open(path, encoding='utf-8', errors='replace') as f:
+        for i, line in enumerate(f):
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            msg = rec.get('message') if isinstance(rec, dict) else None
+            u = msg.get('usage') if isinstance(msg, dict) else None
+            if not isinstance(u, dict):
+                continue
+            mid = msg.get('id')
+            seen[mid if isinstance(mid, str) else i] = u
+    if not seen:
+        return None
+
+    def tok(u, k):
+        v = u.get(k)
+        return v if isinstance(v, int) and not isinstance(v, bool) else 0
+    return (sum(tok(u, 'input_tokens') + tok(u, 'cache_creation_input_tokens') for u in seen.values()),
+            sum(tok(u, 'cache_read_input_tokens') for u in seen.values()),
+            sum(tok(u, 'output_tokens') for u in seen.values()))
+
+
+def session_lines(d, transcript):
+    cost, use = role_cost(d), session_usage(transcript)
+    out = [('role_cost_usd', 'none' if cost is None else round(cost, 6))]
+    for i, k in enumerate(('session_input', 'session_cache_read', 'session_output')):
+        out.append((k, 'none' if use is None else use[i]))
     return out
 
 
@@ -215,6 +272,34 @@ def selftest():
         rc, _, _ = run('check', os.path.join(tmp, 'missing'), '--max-files', '8')
         ok('check on missing dir exits 2', rc == 2)
 
+        # --session: conductor transcript usage next to role costs
+        tr = os.path.join(tmp, 'session.jsonl')
+        u1 = '{"input_tokens": 2, "cache_creation_input_tokens": 100, "cache_read_input_tokens": 1000, "output_tokens": 30}'
+        u2 = '{"input_tokens": 5, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000, "output_tokens": 70}'
+        write(tr, '{"type": "user", "message": {"role": "user"}}\nnot json\n'
+                  '{"type": "assistant", "message": {"id": "m1", "usage": ' + u1 + '}}\n'
+                  '{"type": "assistant", "message": {"id": "m1", "usage": ' + u1 + '}}\n'
+                  '{"type": "assistant", "message": {"id": "m2", "usage": ' + u2 + '}}\n')
+        ok('session sums usage, a repeated message id once', session_usage(tr) == (107, 3000, 100))
+        costed = os.path.join(tmp, 'costed')
+        write(os.path.join(costed, 'step-1', 'runs.jsonl'), '{"role": "builder", "level": "L1", "cost_usd": 0.5}\n'
+              '{"role": "verifier", "level": "L1", "cost_usd": 0.25}\n')
+        rc, out, _ = run(costed, '--session', tr)
+        ok('cli --session prints role cost and session tokens', rc == 0 and out.startswith('ticket: costed\n')
+           and out.endswith('role_cost_usd: 0.75\nsession_input: 107\nsession_cache_read: 3000\n'
+                            'session_output: 100\n'))
+        bare = os.path.join(tmp, 'bare.jsonl')
+        write(bare, '{"type": "user", "message": {"role": "user", "content": "hi"}}\n')
+        rc, out, _ = run(fix, '--session', bare)
+        ok('negative control: no usage lines and no cost report none, not zero', rc == 0
+           and out.endswith('role_cost_usd: none\nsession_input: none\nsession_cache_read: none\n'
+                            'session_output: none\n'))
+        zero = os.path.join(tmp, 'zero.jsonl')
+        write(zero, '{"message": {"id": "z", "usage": {"input_tokens": 0, "output_tokens": 0}}}\n')
+        ok('zero usage reports 0, not none', session_usage(zero) == (0, 0, 0))
+        rc, _, err = run(fix, '--session', os.path.join(tmp, 'missing.jsonl'))
+        ok('missing transcript exits 2', rc == 2 and 'usage' in err)
+
         ok('measuring writes nothing', snap(fix) == before_fix and snap(ch) == before_ch)
 
     if misses:
@@ -231,10 +316,18 @@ def main(argv):
         return selftest()
     if argv and argv[0] == 'check':
         return check(argv[1:])
-    if len(argv) != 1 or not os.path.isdir(argv[0]):
+    transcript = None
+    if len(argv) == 3 and argv[1] == '--session':
+        transcript = argv[2]
+        argv = argv[:1]
+    if (len(argv) != 1 or not os.path.isdir(argv[0])
+            or (transcript is not None and not os.path.isfile(transcript))):
         print(USAGE, file=sys.stderr)
         return 2
-    sys.stdout.write(render(measure(argv[0])))
+    m = measure(argv[0])
+    if transcript is not None:
+        m += session_lines(argv[0], transcript)
+    sys.stdout.write(render(m))
     return 0
 
 

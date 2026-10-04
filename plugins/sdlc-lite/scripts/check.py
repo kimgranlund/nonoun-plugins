@@ -69,6 +69,11 @@
    `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; and the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist. Negative controls:
    each phrase removed, no `solo` key, a changed `solo` entry, and one TOML missing must be flagged.
+18. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
+   still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
+   dispatch line `Lane: <lane> because <reason>`, (3) the stop rules `hard stop that comes to the user`, and (4) the
+   thin-conductor rule `take back conclusions, not file contents or logs`. Each has a negative control (the phrase
+   removed must be flagged).
 """
 import re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -490,6 +495,19 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
+# Conductor rules (docstring item 18): philosophy and objective, lane first, stop rules, thin conductor.
+CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
+                   'context and instruction.',
+                   'cheapest path that still passes independent verification',
+                   'Lane first: run `steps.py lane',
+                   'Lane: <lane> because <reason>',
+                   'hard stop that comes to the user',
+                   'take back conclusions, not file contents or logs')
+def conductor_rule_missing(text, phrase): return phrase not in text
+for phrase in CONDUCTOR_RULES:
+    if conductor_rule_missing(ct, phrase): errors.append(f'{CONDUCTOR}: conductor rules missing "{phrase}"')
+    elif not conductor_rule_missing(ct.replace(phrase, ''), phrase):
+        errors.append(f'check.py: conductor rules negative control not flagged for "{phrase}"')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
