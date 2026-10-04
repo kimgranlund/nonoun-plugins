@@ -1,6 +1,6 @@
 # Lean SDLC cost control
 
-Version 0.3, 2026-10-04. Proposal addendum to [the lean design](design.md). Nothing here is built. It adds four items the lean tickets T-0193 to T-0208 do not cover. It changes no model or effort default.
+Version 0.3, 2026-10-04. Proposal addendum to [the lean design](design.md). A1 (T-0210) is built; nothing else here is. It adds four items the lean tickets T-0193 to T-0208 do not cover. It changes no model or effort default.
 
 ## Problem
 
@@ -205,7 +205,7 @@ After T-0187 (`board.py`), T-0199 (conductor text) and B (`run.sh`, `run_lifecyc
 
 ## Filed tickets
 
-Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
+Filed 2026-10-04 as proposed, with `depends` set from the build order: A1 T-0210 (`.sdlc/.0210-spec-gate-check`), A2 T-0211, B T-0212, C T-0213, D T-0214. T-0209 (maintainer lean default) is separate and not part of this addendum.
 
 ## Targets
 

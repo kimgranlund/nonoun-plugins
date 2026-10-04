@@ -186,9 +186,24 @@
 - note: The branch verification at `.sdlc/verify-t0202/step-1` (verifier-L3) has no verdict, so no independent branch-level verdict exists beyond the step 1 L2 pass.
 - note: A role's own em dash cannot be reproduced in a report that forbids the character. The report writes it as `--`.
 
+## T-0198: skips.md guard in tickets.py check and close (2026-10-04)
+
+- note: Post-feature lean or fix tickets whose conductor never ran `steps.py lane` have no lane record and stay unguarded until T-0199 adds the conductor rule that runs `lane` first.
+- note: Once T-0199 makes `/fix` run `lane`, every `/fix` close needs planner and filer `## Skipped` entries or `close --reason` refuses, so T-0199 must write them.
+- note: The exemption reads "closed before the guard's introduction marker" as "has no lane record". If a date or version marker was meant, the step 1 exemption rule changes.
 ## T-0196: Step state for a whole-ticket (batched) verifier result (2026-10-04)
 
 - note: Nothing instructs a task-dir verifier to write `## Verified` yet, so batching is inert until the conductor, chain and verifier text change (T-0199).
 - note: Gates and last-step exclusion is heuristic (title contains `gates green`, or highest step number). A non-last gates step with another title could be batch-verified, and a stricter marker would be a planner contract change.
 - note: A step handoff with no `## Step <n>:` line counts as an empty title, so it is not excluded and can be batch-verified. The handoff does not cover this case.
 - note: A conductor that reruns a batch after a partial fail must re-list the passing steps, or they fall back to per-step `verify`. This costs one extra verify and is deliberate.
+
+## T-0210: Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line (2026-10-04)
+
+- fix-now: `check.py` order check uses the first `specgate.py check` line in `run.sh`, which is the header comment at run.sh:63, not the command at line 265; point it at the command line so it can't pass on the comment.
+- note: On macOS, where `timeout` is not on PATH, `steps.py` does not treat a span starting with the bare word `timeout` as a command, so `specgate.py` does not see it either. The `timeout N` prefix only counts inside a span that already counts as a command, for example `cd . && timeout 900 bash scripts/check.sh`.
+- note: A plan with more than one `guard timeout:` line outside its step blocks uses the first positive value, and 0 or less is skipped.
+## T-0204: fanout.py resolves lane tickets through ticket_dir (2026-10-04)
+
+- note: The `ticket_root` lane selftest fixture relies on `tickets.py close` succeeding in a fresh repo with no router files, so a later change to close's router handling could turn it red for a reason outside `fanout.py`.
+- note: shellcheck is not installed on the build host, so the shell lint leg of `check.sh` was never exercised for this change.

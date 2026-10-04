@@ -19,6 +19,10 @@ user-invocable: false
   plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
+                        and, under ## Skipped, one entry per full-chain role (planner, verifier
+                        per step, filer) a lean or fix lane skipped, in the form
+                        "- skip: <role>; step: <n or all>; reason: <why>; decided: <who>"
+                        (reason and decided non-empty); tickets.py check and close enforce it
   step-1/
     handoff.md          one plan step: level, do, acceptance criteria
     builder-L2.md
@@ -37,6 +41,7 @@ user-invocable: false
 .sdlc/messages/         git-ignored mailbox written by scripts/messages.py: new/, read/, done/ per receiver, shared by worktrees; never committed; its AGENTS.md (the procedures) and CLAUDE.md at the root and in each stage folder are written by messages.py send and tickets.py roadmap
 .sdlc/evals/            the plugin repository's dated model and effort evals (NNNN-<slug>.md) and table-lock.json, written by scripts/evals.py add and lock; check.py fails a model-table change that cites no newer eval; its AGENTS.md documents the format
 .sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
+.sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 
 `scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
@@ -51,6 +56,12 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 .sdlc/**/.run.lock
 .sdlc/runtime/
 .sdlc/messages/
+.sdlc/supervisor/hosts.local.json
+.sdlc/supervisor/status.json
+.sdlc/supervisor/state.json
+.sdlc/supervisor/lock
+.sdlc/supervisor/STOP
+.sdlc/supervisor/wakes/
 ```
 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
@@ -118,6 +129,8 @@ Optional. Written by /chain or the conductor, never by a role: a plan defect fou
 ## Step handoff (`.sdlc/<task>/step-<n>/handoff.md`)
 
 `scripts/steps.py split` writes these files from the newest planner file. /chain 5 writes the `Loose ends` step handoff (`step-<n+1>/`) by hand from the same template and lints it with `steps.py lint`, and so does `/fix` for its single `step-1/`. `steps.py swap` is the one other writer: it rewrites one criterion line from the verifier's `swap old:`/`swap new:` pair after a `plan defect:` fail (/chain 4.8), never by hand. `steps.py widen` widens the scope criterion with conductor-allowed paths (/chain 4.9) and appends one item per path to a `## Scope widened` section at the end of the step handoff: ``- `<path>`: allowed by a conductor scope decision (steps.py widen)``.
+
+A plan may hold a `guard timeout: <seconds>` line (in `## Goal` for the whole plan, or right after a step's `level:` line for that step); `steps.py split --only` uses it as the `--guard-timeout` default, an explicit `--guard-timeout` wins, and `specgate.py check` refuses a `(guard)` that runs `check.sh` without one.
 
 Copied from the plan's step block, plus the task goal for orientation:
 

@@ -33,3 +33,7 @@ Finding 4, decided 2026-10-01: the default for an idle host is a fresh ephemeral
 ## What this review does not cover
 
 It did not re-run `claude -p --continue` or `codex exec resume --last`. A different permission configuration changes the Claude results (this user's `defaultMode` is `plan`). Every probe was a single trial.
+
+## Applied
+
+T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/ticket-stages/watcher-design.md`). Its "Review findings applied" table maps each finding to the decisions, tagged D1 to D21, that apply it; finding 18 needed no design change. The findings above stay unchanged as the record of the review.

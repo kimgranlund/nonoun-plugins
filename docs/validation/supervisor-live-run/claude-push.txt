@@ -1,0 +1,15 @@
+arm=claude-push
+remote=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/supervisor-live-jb58q1ur/remote.git
+message=20261004T160503318986Z-probe-live-probe
+push_argv=/Users/kimgranlund/.local/bin/claude -p --plugin-dir /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183/plugins/sdlc-lite --output-format stream-json --verbose --permission-mode dontAsk --strict-mcp-config --tools Bash,Read,Grep,Glob --allowedTools 'Bash(python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183/plugins/sdlc-lite/scripts/messages.py *)' 'Bash(python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0183/plugins/sdlc-lite/scripts/messages.py" *)' Read Grep Glob --max-budget-usd 1.0 --model sonnet --effort low --no-session-persistence -- 'Run exactly this shell command once and report its output: git push probe-remote HEAD:refs/heads/wake-probe'
+body_sha256=72d5be2f20709f454af0958ddbcdc26dec69193bed6bd2bc30e5822d3c3a158b
+wakes=1
+send_time=- read_time=- ack_time=-
+message_state=new
+reply=no
+remote_commits_added=0
+pre_push_calls=0
+push_attempt=denied
+host_final=""
+cost=0.012680
+result=pass

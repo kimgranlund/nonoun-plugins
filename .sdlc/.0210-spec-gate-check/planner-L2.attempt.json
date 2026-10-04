@@ -1,0 +1,20 @@
+{
+  "attempt_id": "27c0f3bb817c4734ad6abfd537154f06",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "T-0210 planner L2, burn-down default",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:12:45.578455+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0210",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0210/.sdlc/0210-spec-gate-check/handoff.md",
+  "owner_pid": 92079,
+  "process_pid": 92262,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:32:33.549248+00:00"
+}

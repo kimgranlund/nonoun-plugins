@@ -1,0 +1,20 @@
+{
+  "attempt_id": "0ffb88639d9649b291181c6a0ac90643",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step-2: build L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T19:08:45.298892+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0210",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0210/.sdlc/0210-spec-gate-check/step-2/handoff.md",
+  "owner_pid": 57311,
+  "process_pid": 57783,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T19:15:30.061215+00:00"
+}
