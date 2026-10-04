@@ -16,7 +16,7 @@ Do-item checks (observed, not criteria):
 - Builder claim "check.py ... 19 role levels, 9 agents" and "evals check ok (2 evals...)": confirmed by my own runs above, not from the summary.
 
 ## Out of scope changes
-- Untracked `.sdlc/0215-solo-operator-tiers/filer-L1.{md,attempt.json}`, `runs.jsonl`, `.sdlc/verify-t0215/step-1/{base-sha,verifier-L3.attempt.json}`: run artifacts, not in `main..HEAD` (`git status --short`). Dismissed.
+- Untracked `.sdlc/.0215-solo-operator-tiers/filer-L1.{md,attempt.json}`, `runs.jsonl`, `.sdlc/verify-t0215/step-1/{base-sha,verifier-L3.attempt.json}`: run artifacts, not in `main..HEAD` (`git status --short`). Dismissed.
 - `adapters/codex/agents/sdlc-conductor-l1.toml`: regeneration forced by the one-line conductor.md edit; `generate --check` rc=0. Dismissed.
 - conductor.md now carries both "Size S → /sdlc-lite:fix" and "Lane choice: ... solo ... for size S and M": the ticket Intent and Context say "reconcile with T-0199 ... do not block on it", and the builder disclosed it. Dismissed on that citation.
 - `skills/level-rubric/SKILL.md:93` still says "The `conductor` and the `messenger` are session agents" and names only the messenger's models.json mapping. Incomplete, not false; the rubric's Codex tables live in models.json (rubric:9). Noted, not failed.

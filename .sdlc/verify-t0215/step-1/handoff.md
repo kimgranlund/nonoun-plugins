@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify branch t0215 (T-0215) against main before it merges. The ticket is .sdlc/0215-solo-operator-tiers/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
+Independently verify branch t0215 (T-0215) against main before it merges. The ticket is .sdlc/.0215-solo-operator-tiers/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
 
 ## Step 1: Verify the branch
 level: L3
