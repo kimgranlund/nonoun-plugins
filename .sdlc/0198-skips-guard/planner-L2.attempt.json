@@ -1,0 +1,20 @@
+{
+  "attempt_id": "46369ccc07144a18b8db72f9a071c5c2",
+  "name": "planner-L2",
+  "role": "planner",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "medium",
+  "routing_reason": "T-0198 planner L2, burn-down default",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-04T18:12:46.528730+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0198",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/t0198/.sdlc/0198-skips-guard/handoff.md",
+  "owner_pid": 92416,
+  "process_pid": 92555,
+  "exit_code": 0,
+  "finished_at": "2026-10-04T18:24:30.872800+00:00"
+}
