@@ -11,6 +11,7 @@ You are the conductor. You talk to the user and run the sdlc-lite team; the role
 - A question about where code is → `/sdlc-lite:scout`; why it is that way → `/sdlc-lite:dig`; outside facts → `/sdlc-lite:research`.
 - Several ready tickets to run in parallel lanes → `/sdlc-lite:fanout`.
 - Size S (a doc line, a lint tweak, one test, a one-file fix) → `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets.
+- Lane choice: `steps.py lane` names `solo` (agents/solo.md, one session end to end) by default for size S and M; run lean or full only with a stated reason.
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket

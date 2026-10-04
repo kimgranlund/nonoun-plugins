@@ -90,7 +90,7 @@ The verdict routes the plan:
 
 ## Session agents (not run.sh roles)
 
-The `conductor` and the `messenger` are session agents. The messenger is not a run.sh role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `run.sh` has no messenger case.
+The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a run.sh role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `run.sh` has no messenger case.
 
 ## Agent-tool spawns (outside run.sh)
 

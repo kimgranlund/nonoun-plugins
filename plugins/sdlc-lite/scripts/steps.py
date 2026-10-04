@@ -136,7 +136,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             An invalid result prints "invalid result: <path>: <reason>", then "reason: the newest
             result does not match its results.py schema; stop and ask the user", then the read:
             lines; exit 0. next and resume print it the same way.
-  lane      lane <task dir>: pick the task's lane, fix, lean, or full, and append it to <task dir>/skips.md.
+  lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md.
             Stdout: the lane, then one "reason: <text>" line per reason, then one "read: <path>" line per
             file read (<task dir>/handoff.md when it exists, the newest planner-*.md by order.py when
             there is one, <task dir>/skips.md when it existed before this call); exit 0.
@@ -150,7 +150,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 records full, and a lane never returns from full" (a lane never returns from full)
               no valid size -> "handoff.md front matter has no size of S, M, L, or XL"
             Before planning, size alone decides: with either reason above the lane is full and only those
-            print; else S -> fix, M -> lean, L or XL -> full, with the one reason "size <v> decides before
+            print; else S or M -> solo, L or XL -> full, with the one reason "size <v> decides before
             planning (no planner result yet)". After planning, more reasons follow, in order:
               size L or XL -> "size <v> is above M, and lean takes only size S or M"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
@@ -176,7 +176,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 <owners>"
             No reason after planning -> lean, with the one reason "every lean condition holds: size <v>,
             planner L<n>, <k> steps at L1 to L3, one AGENTS.md owner (<owner>)"; any reason -> full.
-            After planning the lane is never fix.
+            After planning the lane is never solo.
             skips.md: each call appends one line "- lane: <lane>; point: <point>; reasons: <reasons
             joined by "; ">" to the ## Lane section, after its last non-blank line; with no ## Lane
             section, a new one goes before the first ## line, or at the end; a missing file is written
@@ -1601,7 +1601,7 @@ def lane_sticky(skips):
 
 
 def lane_action(task):
-    """Return (lane, point, reasons, [files read]) for a task dir: fix, lean, or full. Writes nothing.
+    """Return (lane, point, reasons, [files read]) for a task dir: solo, lean, or full. Writes nothing.
     The plan is read leniently, like plan_facts: split, lint, and review refuse a bad plan."""
     # Imported here, not at the top: results.py's selftest copies steps.py beside only order.py and
     # results.py and runs steps.py next, so a top-level import would fail there.
@@ -1633,7 +1633,7 @@ def lane_action(task):
     if not plan:
         if reasons:
             return 'full', point, reasons, read
-        lane = {'S': 'fix', 'M': 'lean'}.get(size, 'full')
+        lane = {'S': 'solo', 'M': 'solo'}.get(size, 'full')
         return lane, point, [f'size {size} decides before planning (no planner result yet)'], read
 
     pname = os.path.basename(plan)
@@ -3407,13 +3407,13 @@ def selftest():
 
         lean_ok = 'every lean condition holds: size M, planner L2, 2 steps at L1 to L3, one AGENTS.md owner (.)'
         ok = True
-        for size, want in (('S', 'fix'), ('M', 'lean'), ('L', 'full'), ('XL', 'full')):
+        for size, want in (('S', 'solo'), ('M', 'solo'), ('L', 'full'), ('XL', 'full')):
             lane, reasons, _, recs = l_run(l_task(l_handoff(size)))
             why = f'size {size} decides before planning (no planner result yet)'
             ok = ok and lane == want and reasons == [why] \
                 and recs == [f'- lane: {want}; point: before planning; reasons: {why}']
         lane, reasons, _, recs = l_run(l_task(l_handoff(None)))
-        check('(lane) before planning, size alone decides: S fix, M lean, L and XL full, no size full',
+        check('(lane) before planning, size alone decides: S and M solo, L and XL full, no size full',
               ok and lane == 'full' and reasons == [LANE_NO_SIZE]
               and recs == [f'- lane: full; point: before planning; reasons: {LANE_NO_SIZE}'])
 
@@ -3486,7 +3486,7 @@ def selftest():
               'a non-path scope entry, a contract path, or two AGENTS.md owners',
               all(r[0] == 'full' and r[1] == [want] for r, want in res))
 
-        rec_m = '- lane: lean; point: before planning; reasons: size M decides before planning (no planner result yet)'
+        rec_m = '- lane: solo; point: before planning; reasons: size M decides before planning (no planner result yet)'
         d = l_task(l_handoff())
         _, _, reads1, _ = l_run(d)
         made = (d / 'skips.md').read_text(encoding='utf-8')
@@ -3564,7 +3564,7 @@ def main(argv):
     p.add_argument('task', help='a task dir holding step-<n>/ dirs')
     p = sub.add_parser('review', help='print whether a task dir\'s newest plan needs a plan review, and the next action')
     p.add_argument('task', help='a task dir holding planner-*.md and any plan-reviewer-*.md results')
-    p = sub.add_parser('lane', help='print a task dir\'s lane (fix, lean, or full) and append it to its skips.md')
+    p = sub.add_parser('lane', help='print a task dir\'s lane (solo, lean, or full) and append it to its skips.md')
     p.add_argument('task', help='a task dir holding handoff.md and any planner-*.md results')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
