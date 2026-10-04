@@ -163,3 +163,9 @@
 - note: Step 2 builder did not run the three `grep -qF` criteria itself; the step 2 verifier ran them and they passed, so nothing is open.
 - note: The planner run reported a stray worktree and branch `t0185` (`.worktrees/t0185`); clean it up if it is no longer needed.
 - note: The exact-count criteria for the four closed dot folders go red if any of those folders is edited on main, for example by the T-0190 layout migration. Re-baseline them if that happens.
+
+## T-0203: fanout.py merge-time file-overlap check (2026-10-04)
+
+- note: An overlap first visible after a later lane has started its merge is not reordered. The docstring and `sdlc-internals.md` state this limit.
+- note: `check.sh` skipped `shellcheck` (not installed), so shell lint did not run for this change.
+- note: Planned-scope overlap in `--dry-run` always lists an external lane's tickets as not planned, because their step folders live on the external branch.

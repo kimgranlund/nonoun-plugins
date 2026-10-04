@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify branch t0203 (T-0203) against main before it merges. The ticket is .sdlc/0203-fanout-overlap/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
+Independently verify branch t0203 (T-0203) against main before it merges. The ticket is .sdlc/.0203-fanout-overlap/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
 
 ## Step 1: Verify the branch
 level: L3
