@@ -84,6 +84,10 @@
 20. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
    in scripts/run.sh; and `budget.py` in scripts/board.py. Each pair has a negative control (the phrase removed
    must be flagged).
+24. Fanout solo first: scripts/fanout.py names `sdlc-lite:solo`, `solo_command(`, `SOLO_VERIFIER`, `--max-lanes`,
+   `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
+   low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
+   `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -609,6 +613,23 @@ for rel, phrase in SOLO_ROUTE:
     if solo_route_missing(srt, phrase): errors.append(f'{rel}: solo start path missing "{phrase}"')
     elif not solo_route_missing(srt.replace(phrase, ''), phrase):
         errors.append(f'check.py: solo start path negative control not flagged for "{phrase}"')
+# Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md tiers.
+FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap')
+FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger')
+def fanout_solo_bad(fan, solo, skill):
+    bad = [f'fanout.py missing "{ph}"' for ph in FANOUT_PHRASES if ph not in fan]
+    bad += [f'skills/fanout/SKILL.md missing "{ph}"' for ph in FANOUT_SKILL_PHRASES if ph not in skill]
+    tiers = re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", fan)
+    if sorted(t[0] for t in tiers) != ['L', 'M', 'S']: bad.append('fanout.py SOLO_TIERS does not list S, M, and L')
+    for tier, model, effort, level in tiers:
+        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'SOLO_TIERS {tier} {model} {effort} is not the tier {tier} row of agents/solo.md')
+        if level != {'S': 'L1', 'M': 'L2', 'L': 'L3'}[tier]: bad.append(f'SOLO_TIERS {tier} has Codex level {level}')
+    return bad
+_ff, _fs, _fk = _rd(root/'scripts/fanout.py'), _rd(root/'agents/solo.md'), _rd(root/'skills/fanout/SKILL.md')
+errors.extend(fanout_solo_bad(_ff, _fs, _fk))
+for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
+    if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
+if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
