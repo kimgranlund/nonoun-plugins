@@ -202,7 +202,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0195 | [.0195-runner-family-task-dir](.0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | 🟢 done |
 | T-0196 | [0196-batch-state](0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | ⏳ proposed |
 | T-0197 | [.0197-lane](.0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L | P2 | T-0194 | 🟢 done |
-| T-0198 | [0198-skips-guard](0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | ⏳ proposed |
+| T-0198 | [.0198-skips-guard](.0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | 🟢 done |
 | T-0199 | [0199-conductor-rules](0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | M | P2 | T-0196, T-0198 | ⏳ proposed |
 | T-0200 | [0200-plan-merge](0200-plan-merge/handoff.md) | Replan by delta: merged plan view and steps.py resolve | feature | L | P2 | T-0197 | 🔴 blocked |
 | T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | M | P2 | T-0200 | 🔴 blocked |

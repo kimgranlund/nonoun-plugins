@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify branch t0198 (T-0198) against main before it merges. The ticket is .sdlc/0198-skips-guard/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
+Independently verify branch t0198 (T-0198) against main before it merges. The ticket is .sdlc/.0198-skips-guard/handoff.md: read its Intent and Constraints and the design docs/lean-sdlc/design.md section it cites.
 
 ## Step 1: Verify the branch
 level: L3
