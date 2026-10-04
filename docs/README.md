@@ -25,6 +25,7 @@
 - [Planner L3 on Opus xhigh](validation/planner-l3-opus-2026-09-30.md): dated decision moving Claude planner L3 from Fable to Opus xhigh, with recorded-cost basis, reviewer consequence, and limits.
 - [Haiku alias probe](validation/haiku-alias-2026-09-30.md): dated probe showing the `haiku` alias resolves to Sonnet 5.5 on a Max login, and the pinned `claude-haiku-4-5` id.
 - [Messages idle-host limit](validation/messages-idle-host-limit-2026-10-01.md): dated correction stating that the messenger cannot wake an idle host, the evidence, and the workaround.
+- [Release 0.20.3](validation/release-0.20.3.md): `messages.py wait`, the role-result schema, `footprint.py`, the lean lane text, and the idle-host limit, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.2](validation/release-0.20.2.md): the ticket root and router, mailbox, and messenger agent, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.1](validation/release-0.20.1.md): the scout pin and planner L3 on Opus, how they were verified, and known limits.
 - [Release 0.20.0](validation/release-0.20.0.md): what shipped since 0.19.0, how it was verified, upgrade notes, and known limits.
