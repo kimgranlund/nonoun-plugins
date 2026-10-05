@@ -19,7 +19,7 @@ This repository's docs/ is migrated to the schema through the reorganization too
 - Done when: docs_check.py passes on this repository, no link or code reference to a moved path is broken (check.sh and check-packaging.py pass), the plan and each batch are recorded in a validation doc with committed evidence, and an independent verifier passed.
 
 ## Context
-Part of the docs schema design (docs/docs-schema/design.md v0.3 with the user's decisions of 2026-10-05 under Resolved decisions, ticket T-0240), reviewed once (v0.1) by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
+Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's decisions of 2026-10-05 under Resolved decisions, ticket T-0240), reviewed once (v0.1) by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
 
 ## Constraints
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.

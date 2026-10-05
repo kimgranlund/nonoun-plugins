@@ -107,6 +107,9 @@
    `Nothing open.`, `AskUserQuestion`, the sweep searches (blocked tickets and `## Verdict` results), and the plain-text fallback
    `If AskUserQuestion is unavailable`, and holds no `harness:` reference; skills/sdlc-lite/SKILL.md and agents/conductor.md route to
    `ask`. Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
+30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
+   `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
+   docs/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -727,6 +730,17 @@ for _ph in ASK_NEEDS:
 if not ask_bad(_ask + ' see harness:find-open-questions', _entry, _cond): errors.append('check.py: ask skill negative control not flagged for a harness reference')
 if not ask_bad(_ask, _entry.replace('/ ask |', '|'), _cond): errors.append('check.py: ask skill negative control not flagged for a missing entry route')
 if not ask_bad(_ask, _entry, _cond.replace('/sdlc-lite:ask', '')): errors.append('check.py: ask skill negative control not flagged for a missing conductor route')
+# Document inventory (docstring item 30): the read-only inventory script, its selftest wiring, and the plan procedure.
+INVENTORY_NEEDS = (('inventory.py', ('orphan', 'stale', 'duplicate', 'oversized', 'misplaced', 'broken_links', '--include-sdlc', '--out', 'refusing to write inside the repository')),
+                   ('check.sh', ('inventory.py" selftest',)), ('procedure', ('inventory.py',)))
+def inventory_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in INVENTORY_NEEDS for ph in phrases if ph not in texts[name]]
+_inv_texts = {'inventory.py': _rd(root/'scripts/inventory.py'), 'check.sh': _rd(root/'scripts/check.sh'),
+              'procedure': _rd(root/'../../docs/repo-onboarding/reorganization-plan-procedure.md')}
+errors.extend(f'check.py: document inventory: {m}' for m in inventory_bad(_inv_texts))
+for _name, _phrases in INVENTORY_NEEDS:
+    for _ph in _phrases:
+        if not inventory_bad(dict(_inv_texts, **{_name: _inv_texts[_name].replace(_ph, '')})): errors.append(f'check.py: document inventory negative control not flagged for {_name} without {_ph}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

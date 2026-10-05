@@ -10,7 +10,7 @@ The user decided these on 2026-10-05. They override any older sentence below tha
 
 1. **Planning and specs stay two homes,** split by purpose (what is not built versus what is built or accepted). A superseded plan moves to `archive/`.
 2. **Names are plural,** and `guides/` replaces `maintenance/`. This repository's and maison's `maintenance/` content maps to `guides/` or `references/` by what it is (see Mappings).
-3. **`docs/validation/` is renamed to `docs/reports/` now.** The user chose this against the earlier default (a legacy home bound to `reports`). There is no legacy home for validation any more. The move is its own ticket, T-0246, which runs after the `reorg-inventory` branch is merged and amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. The `## Legacy` mechanism stays, only for files that are really grandfathered, such as existing report names that do not follow the date rule.
+3. **`docs/validation/` is renamed to `docs/reports/` now.** The user chose this against the earlier default (a legacy home bound to `reports`). There is no legacy home for validation any more. The move is its own ticket, T-0246, which waited for the `reorg-inventory` merge (landed as 24fdd8c) and amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. The `## Legacy` mechanism stays, only for files that are really grandfathered, such as existing report names that do not follow the date rule.
 4. **Setup writes entry files under every home** (`AGENTS.md` plus a `CLAUDE.md` import), after a dry-run diff and one question before it writes. That changes `docs/AGENTS.md` for every adopter, maison included. The setup-model change is in T-0242.
 
 ## Problem
@@ -151,7 +151,7 @@ Progressive Context says to "add no registry ... without an actual need" (`plugi
 | Codex loads `AGENTS.md` files from the root down to the working directory, not a nested entry when a file there is only read, not a sibling folder's, and not `CLAUDE.md` | observed here | same file, Codex CLI 0.154.0 |
 | A fresh Claude Code role and a fresh Codex role, given only a path and no skill, followed the folder's `AGENTS.md` procedures and acted correctly; a wrong injected `AGENTS.md` was followed and the run failed | observed here | `docs/validation/messages-live-run.md` (T-0179), one trial per arm |
 | A role on a plan step reads the entry files that govern the files it changes, when the handoff lists them | observed here | `docs/validation/entry-files-live-run.md` (T-0162), one trial per arm |
-| A generated managed block keeps user text byte-identical, and a block that differs from its template reads `stale` or `edited` | observed here | `docs/validation/onboard-live-run.md` (T-0160) and `onboard.py check` |
+| A generated managed block keeps user text byte-identical, and a block that differs from its template reads `stale` or `edited` | observed here | `onboard.py check` and `onboard.py selftest` run on 2026-10-05; the record `docs/validation/onboard-live-run.md` shows only that the block reaches the model |
 | The parser in `onboard.py` ignores a `## Kinds` table and a `## Decide` list and returns the same homes and frozen paths | observed here | run on 2026-10-05 with `onboard._parse_layout_text` on a layout holding both sections |
 | Authored fields are separate from computed ones, a projection is generated or verified against its source and records its source revision, and shared generation detects defined classes of drift without proving behavior | observed here (as stated design) | `docs/generative-constructs/progressive-context-plugin.md`, "Manifest ownership and projections" |
 | Instructions in retrieved documents are data and cannot change harness policy; entry files are harness-loaded context | observed here (as stated design) | `docs/generative-constructs/04-context-and-harness.md`, "Trust and authority" |
@@ -183,7 +183,11 @@ Diataxis mapping, where it fits: `guides/` is how-to, `references/` is reference
 | `read` | read when |
 | `owner` | the command or check that owns it |
 
+Required and optional in the `## Kinds` table of a layout file: the header must name all eleven columns in this order. `id`, `kind`, `holds`, `not`, `why`, `form` and `read` are required in every row. `writer`, `life`, `entry` and `owner` are optional and may be `-` (shown as blank on the card), except that `entry` is required where the home has an entry file and `owner` is required for `other/`. A row for a home missing from `## Homes`, an unknown `kind` for docs, or a duplicate `id` is `malformed`. The parser change is T-0241.
+
 **Two projections of one row.** The `row` projection (fields `id`, `holds`, `not`, `why`, `form`, `read`) is a table line in the parent entry. The `card` projection (all eleven fields) is the first block of the folder's own `AGENTS.md`, followed by user-owned local rules. A cell is one short phrase; the check reports a cell over 70 characters. Detail lives in this design, linked, and not in the entry.
+
+**The root registry is unconditional.** The topic rule (a folder gets its own entry file at two or more documents) does not apply to the root registry: `docs/AGENTS.md` and `.sdlc/AGENTS.md` list every home and every record kind from the layout regardless of how many documents each holds, so a session can place a first document in an empty home. Only the per-home card follows the two-document rule.
 
 **One entry-file layout.** `AGENTS.md` holds one managed block and then user text. The block of a parent entry holds, in this order: what this system is (one sentence), how to use it (read the registry, pick one home, read one file), the `row` table, the `## Decide` list, and the add-a-document checklist. A home entry holds the `card`. `CLAUDE.md` is one line, `@AGENTS.md`. This is the layout `onboard.py` already writes for entry files, with the block content defined here.
 
@@ -191,7 +195,7 @@ Diataxis mapping, where it fits: `guides/` is how-to, `references/` is reference
 
 **One render mechanism.** A single function, `render_registry(layout, projection)`, in the shared module that `onboard.py` and `tickets.py` already share (`TEMPLATE_VERSION` is shared today), produces the block text, the `row` table, the `## Decide` list and the `card`. Two callers: `onboard.py setup` renders the docs entries and the `.sdlc` entries; `tickets.py roadmap` (also run by `new` and `close`) re-renders the `.sdlc/AGENTS.md` block it already regenerates, with the registry as one more section of that block. This is the smaller choice against a second managed block, which would need a name in the marker and a parser change. Authored fields are only in `layout.md`; the entries are projections that carry the layout's digest, as the generative-constructs material describes.
 
-**One drift check.** `onboard.py check` recomputes each registry block and card from the layout and compares it with the file: a mismatch reads `stale`, the existing word, and `setup` fixes it. It reports a malformed row (missing field, unknown kind, over-long cell, a `not` with no target) as `malformed`. The same code runs on both layouts, so the checks R-1 (drift) and R-2 (row shape) apply identically to `docs/` and `.sdlc/`.
+**One drift check, the existing one.** This extends the check `onboard.py check` already runs (it labels each entry file and reads `docs/layout.md`); it is not a second mechanism and `docs_check.py` does not repeat it. `onboard.py check` recomputes each registry block and card from the layout and compares it with the file: a mismatch reads `stale`, the existing word, and `setup` fixes it. It reports a malformed row (missing field, unknown kind, over-long cell, a `not` with no target) as `malformed`. The same code runs on both layouts and also reads `## Legacy` (a glob that no longer matches any path reports `stale`), so the checks R-1 (drift) and R-2 (row shape) apply identically to `docs/` and `.sdlc/`.
 
 **Size.** `onboard.py`'s target is 60 lines per entry (`ROOT_SIZE_TARGET`). Eleven rows and the three lists fit when cells stay short: about 13 lines of table, 8 of decision list, 6 of checklist and 6 of how-to. The `.sdlc/AGENTS.md` block already lists tickets by stage and is near the target, so T-0243 collapses a stage's ticket list to a count above a small number of entries; that is a generator change in `tickets.py` and is the main size risk.
 
@@ -269,6 +273,8 @@ The docs `## Decide` list, ordered:
 
 The two columns are one layout; only the data differs. The labels in this design apply to these examples: the rows are our convention and carry no evidence until T-0248 passes. The managed block of `docs/AGENTS.md` and `.sdlc/AGENTS.md` must say so in one line while that holds: "placement effect unproven; see docs-schema design".
 
+Cross-references, built separately and not part of this design: T-0252 (records which context a run loaded, which is the measurement a later placement study would use), T-0253 (an entry-file resolver in `onboard.py check`, which R-1 should reuse once it exists), T-0254 (lints and a citation resolver, for D-10), T-0255 (one capability contract) and T-0256 (spec vocabulary). They do not change the registry schema; if T-0253 lands first, the render and drift code use its resolver.
+
 ### Placement proof (T-0248)
 
 The test that decides whether the pattern is "proven":
@@ -326,7 +332,7 @@ A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `pars
 | B-1a | A path under `docs/` that matches a generated-file name: `runs.jsonl`, `skips.md`, `<role>-L<n>.md` and retries `<role>-L<n>-<k>.md`, `budget-ack.md`, `*.attempt.json`, `*.request.json`, `*.running`, `*.log` | error |
 | B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
 | B-3a | A `docs/` file that links to a path under `.sdlc/` | warning |
-| R-1 | A registry block or card in an entry file that differs from the one rendered from `## Kinds` of the layout (`stale`); same code for `docs/layout.md` and `.sdlc/layout.md` | error |
+| R-1 | (run by `onboard.py check`, not `docs_check.py`) A registry block or card in an entry file that differs from the one rendered from `## Kinds` of the layout (`stale`); same code for `docs/layout.md` and `.sdlc/layout.md` | error |
 | R-2 | A registry row with a missing field, an unknown kind, a cell over 70 characters, or a `not` with no target (`malformed`) | error |
 
 The role-result file-name patterns in B-1a come from `run.sh` and `steps.py`, which write `<role>-L<n>.md`, retries as `<role>-L<n>-<k>.md` (49 tracked files in this repository), and `runs.jsonl`. The review reported that 101 files in `docs/validation/` cite `.sdlc/` paths, so B-3a depends on a `## Legacy` glob covering those existing records once they sit in `reports/` (new reports are fully checked). B-2a cannot tell a design review from a role result by name, so it reports the candidates and does not block. That is a limit of a deterministic check: it finds where a file is, not what it is for.
@@ -350,7 +356,7 @@ These come from folder and file names only. The inventory and a person decide an
 
 | Today | Becomes | Note |
 | --- | --- | --- |
-| `docs/validation/` (385 tracked files on 2026-10-05, 327 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, run after the `reorg-inventory` merge; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
+| `docs/validation/` (385 tracked files on 2026-10-05, about 325 to 329 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, waited for the `reorg-inventory` merge, which has landed; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
 | `docs/lean-sdlc/` | `specs/lean-sdlc/` | The lane design and cost-control addendum describe shipped behavior. |
 | `docs/ticket-stages/` | `specs/ticket-stages/` | Router, messages and watcher designs describe built features. |
 | `docs/repo-onboarding/design.md` | `specs/repo-onboarding/` | Built (T-0160). |
@@ -391,7 +397,7 @@ These come from folder and file names only. The inventory and a person decide an
 - The `## Legacy` list can go stale if a migration renames files without updating it. The apply step rewrites it like any other citer.
 - Extending setup to homes and nested topics changes the `docs/AGENTS.md` output for every adopter, maison included. Row 6 of the upsert table replaces their managed blocks on the next setup.
 - If the user keeps `planning/` and the principle sentence is not amended, two live documents contradict each other, and a later role follows whichever it read first. Ticket 2 owns the amendment.
-- The validation rename touches 385 files and rewrites citations in 327 others, including dated release records. The path-token-aware rewrite, the commit per batch and the stale-reference check with its negative control are the mitigation; the accepted cost is that published release pages and tags keep the old paths.
+- The validation rename touches 385 files and rewrites citations in about 325 to 329 others, including dated release records. The path-token-aware rewrite, the commit per batch and the stale-reference check with its negative control are the mitigation; the accepted cost is that published release pages and tags keep the old paths.
 - B-2a will misclassify some `.sdlc/` files. It is a warning for that reason.
 - D-9 would still reject an evidence file with no named report. The mapping row for each such folder must name its report.
 

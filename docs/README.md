@@ -2,10 +2,12 @@
 
 - [Progressive Context specifications](generative-constructs/README.md): lifecycle, context architecture and browser/A2UI proposals.
 - [Progressive Context plugin specification](generative-constructs/progressive-context-plugin.md): scope and packaging decisions.
+- [Progressive Context gap analysis](generative-constructs/progressive-context-gap-analysis.md): tier-by-tier gaps, ranked improvements, what not to build, and how the pattern applies to `docs/` and `.sdlc/`.
 - [Plugin compatibility and validation](plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
 
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
+- [Reorganization inventory live run](validation/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
 - [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
 - [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
@@ -22,6 +24,7 @@
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](validation/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
+- [Progressive Context gap analysis review](validation/progressive-context-gap-analysis-review.md): dated independent architect review of the gap analysis, three blockers and eleven minor findings, and how each was applied.
 - [Docs schema design review](validation/docs-schema-design-review.md): dated independent architect review of the docs schema design, with 15 findings and how each was applied.
 - [Repository onboarding design review](validation/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](validation/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.

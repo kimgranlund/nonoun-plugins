@@ -1,0 +1,21 @@
+{
+  "attempt_id": "6af77bf5c19d4a4bad43b9c861d438c6",
+  "name": "architect-L1",
+  "role": "architect",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-05T14:54:58.546431+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/pc-gap",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/pc-gap/.sdlc/0247-pc-gap-analysis/review/handoff.md",
+  "owner_pid": 73128,
+  "handoff_sha256": "ec24637a793ec53c9ae9f76633675c9ba34aeac26935061c829815cc1b82250f",
+  "process_pid": 73189,
+  "exit_code": 0,
+  "finished_at": "2026-10-05T15:08:08.689337+00:00"
+}
