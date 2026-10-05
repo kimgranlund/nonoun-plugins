@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4a653a97c478 -->
+<!-- sdlc-lite:managed:start v1 sha256:81fe2b21f69f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 0
+- proposed: 1
+  - T-0226 Fanout solo lanes start the raw command, so their cost is not recorded (0226-fanout-solo-metering)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
