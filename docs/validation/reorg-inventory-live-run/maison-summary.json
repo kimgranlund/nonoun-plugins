@@ -1,0 +1,40 @@
+{
+ "root": "/Users/kimgranlund/Projects/maison/ui-kit-maison",
+ "head": "01951d4e",
+ "summary": {
+  "documents": 230,
+  "skipped": 10,
+  "flag_counts": {
+   "broken_links": 5,
+   "duplicate": 42,
+   "misplaced": 10,
+   "orphan": 2
+  },
+  "folders_without_entry": 2,
+  "thresholds": {
+   "include_sdlc": false,
+   "stale_days": 180,
+   "max_lines": 500,
+   "many_docs": 8,
+   "duplicate": 0.6
+  }
+ },
+ "folders_without_entry": [
+  {
+   "folder": "docs/reference",
+   "documents": 10,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reference/gen-ui-system/specs",
+   "documents": 11,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  }
+ ]
+}
