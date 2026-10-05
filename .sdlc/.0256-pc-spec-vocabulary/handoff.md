@@ -2,7 +2,7 @@
 id: T-0256
 title: "Reconcile construct and capability vocabulary in the specs"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Gap analysis R8: the specs say construct, revision, instance (02-construct-model
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes. Preserve other agents' worktrees.
+
+## Closed
+
+2026-10-05: Banner added to docs/generative-constructs 01 to 06 and a vocabulary table in the README mapping construct, contract, criterion/evidence/assessment, revision, release, qualification, run and instance to the shipped terms (instance has no shipped counterpart); git diff --check, tickets.py check and link checks clean; the batched L3 verifier at the end of wave-b reads the diff.
