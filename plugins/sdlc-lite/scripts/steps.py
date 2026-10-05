@@ -205,7 +205,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest builder Status inherited red: <tests> -> inherited (a gate already red at
                 the pre-build HEAD; ask the conductor). Never counted as a fail, a bump, a
                 rebuild, or a replan; a bare "inherited red" with no colon is statusless.
-              newest builder Status blocked              -> replan (whatever its Notes say)
+              newest builder Status blocked              -> replan (whatever its Notes say), except Notes whose
+                first line starts "stale lane:" (missing merged prerequisites, not a plan defect) -> resplit:
+                rebase the lane, move the step dir to step-<n>.superseded-<k>, steps.py split --only <n>
               no verifier result counts after the build  -> verify L<verifier level>,
                 but done when batch_verified(step dir) names a task-dir verifier result: the
                 newest task-dir verifier-*.md (order.py) whose ## Verified section lists
@@ -1267,6 +1269,14 @@ def next_action(step_dir):
                 'ask the conductor, not a fail, rebuild, bump, or replan', read)
     builders = [x for x in builders if build_status_or_none(x) in ('done', 'blocked')]
     if build_status(b) == 'blocked':
+        notes = section(b, 'Notes') or []
+        first = next((line.strip() for line in notes if line.strip()), '')
+        if first.startswith('stale lane:'):
+            n = re.sub(r'^step-(\d+)$', r'\1', d.name)
+            return ('resplit', None,
+                    f'newest builder {os.path.basename(b)} is blocked by a stale lane, not a plan defect ({first}); '
+                    f'rebase the lane onto the merged prerequisites, move {d.name} to {d.name}.superseded-<k> '
+                    f'(next free k), then steps.py split --only {n} <task dir>; never a replan', read)
         return 'replan', None, f'newest builder {os.path.basename(b)} is blocked (a blocked build replans)', read
     v = order.newest(d, 'verifier')
     if v is None or not order.counts_after(v, b):
@@ -2780,6 +2790,11 @@ def selftest():
               nxt(step(3, [('builder-L3.md', DONE)]), 'verify L2'))
         check('next replan: a blocked builder replans, whatever its Notes say',
               nxt(step(2, [('builder-L2.md', BLOCKED)]), 'replan'))
+        STALE = '## Status\nblocked\n\n## Notes\nstale lane: T-0042 is not merged into this lane\n'
+        rc, out, err = run_main(['next', str(step(2, [('builder-L2.md', STALE)]))])
+        check('next resplit: a blocked builder whose Notes start "stale lane:" routes to resplit, not replan, '
+              'naming .superseded and split --only',
+              rc == 0 and out.splitlines()[:1] == ['resplit'] and '.superseded-' in out and 'split --only' in out)
         check('next replan: a fail whose next-attempt note starts "plan defect:" replans',
               nxt(step(2, [('builder-L2.md', DONE), ('verifier-L1.md', DEFECT)]), 'replan'))
         check('next done: the newest verifier passed',
