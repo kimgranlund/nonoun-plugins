@@ -255,3 +255,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |
 | T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | 🟢 done |
 | T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | 🟢 done |
+| T-0257 | [0257-broken-links-cleanup](0257-broken-links-cleanup/handoff.md) | Fix moved-target Markdown links, exclude code from the link counter, guard the baseline | chore | M | P2 | none | ⏳ proposed |

@@ -8,6 +8,7 @@
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
 - [Rename to reports](reports/rename-validation-to-reports.md): dated record of renaming the evidence folder to `docs/reports/` (T-0246), with before and after counts, the rewrite rules, the allowlist, and the limits.
+- [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the eight allowlisted links, and the check.py baseline guard.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
 - [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 

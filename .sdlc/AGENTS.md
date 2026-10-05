@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:fca93c4fa924 -->
+<!-- sdlc-lite:managed:start v1 sha256:29cfd69dee98 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 9
+- proposed: 10
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0242 docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template (0242-docs-check-script)
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
@@ -19,6 +19,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
   - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
+  - T-0257 Fix moved-target Markdown links, exclude code from the link counter, guard the baseline (0257-broken-links-cleanup)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)

@@ -2,7 +2,7 @@
 """Rename a tracked folder's references safely: scan, apply, check, and link-count.
 
 Usage (run from the repository root; reads only git-tracked files):
-  rename_refs.py links                       count broken relative Markdown links (tracked .md files)
+  rename_refs.py links                       count broken relative Markdown links (tracked .md files; links in code fences or inline code are examples and not counted)
   rename_refs.py plan  OLD NEW [--map O=N]   list files and occurrences a rewrite would change
   rename_refs.py apply OLD NEW [--map O=N] [--only GLOB]...   rewrite them in place (no git commands)
   rename_refs.py check OLD [--allow GLOB]... exit 1 when a path token OLD remains outside the allowlist
@@ -144,6 +144,16 @@ def plan_or_apply(root, maps, only, apply):
     return changed, total
 
 
+FENCE = re.compile(r'^(```|~~~).*?^\1[^\n]*$', re.M | re.S)
+INLINE = re.compile(r'`[^`\n]*`')
+
+
+def strip_code(text):
+    """Blank fenced blocks and inline code spans: a link-shaped string in code is an example, not a link."""
+    text = FENCE.sub(lambda m: '\n' * m.group(0).count('\n'), text)
+    return INLINE.sub('', text)
+
+
 def link_report(root):
     files = tracked(root)
     have = set(files)
@@ -160,7 +170,7 @@ def link_report(root):
         text = read(root, rel)
         if text is None:
             continue
-        for m in LINK.finditer(text):
+        for m in LINK.finditer(strip_code(text)):
             target = m.group(2) or m.group(5)
             if re.match(r'^[A-Za-z][A-Za-z0-9+.\-]*:', target) or target.startswith('#'):
                 continue
