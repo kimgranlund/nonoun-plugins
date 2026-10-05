@@ -47,6 +47,16 @@ T-0224 was built as a handwritten step on branch `solo-skips`, T-0223 on `agent-
 
 ## Checks run for the release
 
-Run from the release worktree on branch `release-0.20.7` (main's 6c94302 merged in, plus the version bump and this record), 2026-10-05, all exit 0: [[PENDING: fill after the checks run]]
+Run from the release worktree on branch `release-0.20.7` (main's 6c94302 merged in, plus the version bump and this record), 2026-10-05, all exit 0:
+
+- `bash plugins/sdlc-lite/scripts/check.sh` (shellcheck skipped, not installed; the full script, run once on the release branch)
+- `python3 scripts/check-packaging.py`
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` (227 tickets, roadmap current)
+- `python3 plugins/sdlc-lite/scripts/<name>.py selftest` for `messages`, `results`, `evals`, `proposals`, `supervisor`, `specgate`, `footprint`, `budget`, `board`, `fanout`, `steps`, `tickets` and `solo_run`
+- `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`
+- `python3 plugins/sdlc-lite/scripts/codex-selftest.py`
+- `git diff --check`
+- Version parity: both SDLC Lite manifests read 0.20.7; both Progressive Context manifests read 0.1.2.
 
 [[PENDING: one paragraph on the independent Opus fact-check passes: how many ran, what each found, that all findings are fixed, and whether a further pass was run. The review text is not committed.]]
