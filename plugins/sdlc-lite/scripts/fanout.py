@@ -793,6 +793,14 @@ def setup(ctx):
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
+        # .sdlc/config is often untracked (the trail is gitignored): without it a fresh worktree reads the
+        # default ticket root and numbering, so tickets.py close would look for <root>/<slug>, not <root>/tickets/<slug>
+        src_cfg = ctx['root'] / 'config'
+        if src_cfg.is_file():
+            for wt in [ctx['integ_dir']] + [lane.dir for lane in regular]:
+                dst_cfg = wt / ctx['rel'] / 'config'
+                if not dst_cfg.exists() and dst_cfg.parent.is_dir():
+                    shutil.copyfile(str(src_cfg), str(dst_cfg))
         missing = [str(lane.dir / ctx['trel'] / t.slug / 'handoff.md')
                    for lane in regular for t in lane.tickets
                    if not (lane.dir / ctx['trel'] / t.slug / 'handoff.md').is_file()]
@@ -1979,6 +1987,29 @@ def selftest():
         expect(f'ticket_root lane: the integration tip is close T-0001, got {subj!r}', subj == 'close T-0001')
         expect('ticket_root lane: no .sdlc/x folder on the integration branch',
                sh(tr, 'cat-file', '-e', 'fanout/tr:.sdlc/x').returncode != 0)
+        # T-0258: numbered folders under `ticket_root: tickets` with .sdlc/config untracked (gitignored): the
+        # integration worktree has no config, so the close must still resolve the ticket through ticket_root.
+        nt, ntl = tmp / 'ntroot', tmp / 'ntlanes'
+        (nt / '.sdlc' / 'tickets' / '0001-x').mkdir(parents=True)
+        (nt / '.sdlc' / 'config').write_text('ticket_folders: numbered\nticket_root: tickets\n', encoding='utf-8')
+        (nt / '.gitignore').write_text('.sdlc/config\n.worktrees/\n', encoding='utf-8')
+        (nt / '.sdlc' / 'tickets' / '0001-x' / 'handoff.md').write_text(
+            '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+            'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(nt, *args)
+            expect(f'untracked config lane: fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}',
+                   p.returncode == 0)
+        proc = fanout(nt, '--integration', 'fanout/nt', '--lanes-dir', str(ntl), '--driver', tdrv, 'a=T-0001')
+        got = report_rows(ntl)
+        expect(f'untracked config lane: run exits 0 merged and closed, got {proc.returncode} {got} '
+               f'stderr={proc.stderr!r}', proc.returncode == 0 and got.get('T-0001') == 'merged')
+        expect('untracked config lane: the ticket folder is archived under .sdlc/tickets on the branch',
+               sh(nt, 'cat-file', '-e', 'fanout/nt:.sdlc/tickets/.0001-x/handoff.md').returncode == 0)
+        expect('untracked config lane: no .sdlc/0001-x folder on the branch',
+               sh(nt, 'cat-file', '-e', 'fanout/nt:.sdlc/0001-x').returncode != 0)
         # 13. Overlap: alpha and beta both edit shared.txt (line 1 and the last line). Beta reaches its merge
         # while alpha's driver still runs, waits for alpha (the earlier lane), and merges after it; without
         # the wait, alpha's driver times out. Negative control: disjoint lanes report none and never wait.
