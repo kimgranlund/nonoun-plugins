@@ -1,14 +1,3 @@
----
-id: T-WB
-title: "Verify wave-b diff (T-0255, T-0256, T-0230)"
-type: chore
-status: ready
-size: M
-priority: P2
-depends: []
-created: 2026-10-05
----
-
 ## Goal
 Independently verify the wave-b diff: `git diff 27875a3..HEAD` in this worktree.
 
