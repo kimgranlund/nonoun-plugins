@@ -2,7 +2,7 @@
 id: T-0226
 title: "Fanout solo lanes start the raw command, so their cost is not recorded"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Keep it small. No em dashes. One authoritative location per fact.
 
 ## Verification
 Independent L3 verifier (Fable, `.sdlc/verify-0226/verifier-L3.md`): pass on all six criteria. It ran the fanout selftest with and without the role env vars, showed case 17 fails when the lane starts the raw command (a disk mutant), observed two budgeted size S tickets through `fanout.py run` with a stub `claude` each get a `role solo` record at the stub cost and close with the skips guard live, confirmed `solo_command`'s contract and the three-file scope, and ran `check.sh` once (exit 0). Not exercised: a live fanout run with a real model (recorded as a limit by decision) and a Codex lane (null cost by design).
+
+## Closed
+
+2026-10-04: Built and merged. fanout.py solo lanes start through solo_run.py (T-0225's wrapper), so each lane writes a role solo record with its cost to the ticket's runs.jsonl; budget.py and the board meter the parallel default path. Selftest case 17 with a negative control (a stub claude result with total_cost_usd 2.5 lands per lane; with the wrapper bypassed none). Independent L3 verifier (Fable) passed all six criteria, including a disk mutant that fails case 17 and an observed stub run with the skips guard live. Limits: no live fanout run with a real model (decision), Codex lanes record null cost, selftest-only escape SDLC_SELFTEST_RAW_SOLO.

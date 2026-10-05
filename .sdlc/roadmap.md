@@ -230,4 +230,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0223 | [.0223-agent-command](.0223-agent-command/handoff.md) | /agent command: launch an SDLC Lite agent by name on instructions | feature | M | P2 | none | 🟢 done |
 | T-0224 | [.0224-solo-lane-skipped](.0224-solo-lane-skipped/handoff.md) | steps.py lane writes the planner and filer ## Skipped entries for lane solo, so any caller can close by reason | bug | S | P2 | none | 🟢 done |
 | T-0225 | [.0225-solo-cost-capture](.0225-solo-cost-capture/handoff.md) | Solo sessions write no cost record, so the budget gate cannot see the default lane | bug | S | P1 | none | 🟢 done |
-| T-0226 | [0226-fanout-solo-metering](0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | S | P1 | none | ⏳ proposed |
+| T-0226 | [.0226-fanout-solo-metering](.0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | S | P1 | none | 🟢 done |
