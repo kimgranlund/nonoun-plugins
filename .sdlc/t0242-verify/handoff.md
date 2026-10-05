@@ -1,0 +1,12 @@
+## Goal
+Independently verify T-0242: branch dcheck (diff vs main) adds plugins/sdlc-lite/scripts/docs_check.py (checks D-1 to D-12), changes onboard.py setup (entry files for homes and for topic folders under a home with 2+ documents; new default docs/layout.md template with nine homes, ## Kinds, ## Decide, empty ## Legacy; new docs/AGENTS.md block text; 60-line size target for docs/AGENTS.md), wires selftest into check.sh, adds check.py guard 32. Spec: .sdlc/.0242-docs-check-script/handoff.md (or .sdlc/0242-docs-check-script/handoff.md) and docs/docs-schema/design.md "Enforcement" table.
+
+## Acceptance criteria
+1. Each of D-1 to D-12 behaves exactly as the design's Enforcement table says. Write your own throwaway fixtures (not the builder's) for at least 8 rules, each with a positive finding and a clean negative, and check the Legacy rule: a Legacy glob exempts D-1,2,3,4,9,10,11,12 but never D-5, D-6 (and B-rules are out of scope). Also check exit code 1 on any error, 0 with only warnings, `--root`, `--only`, and that a run writes nothing (compare file mtimes/`git status`).
+2. `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` and `onboard.py selftest` pass; show one extra negative control of your own per script (break a rule temporarily, see a gate fail, revert).
+3. onboard.py: in a throwaway git repo with docs/guides/{a,b}.md, docs/guides/setup/{c,d}.md, docs/specs/one.md run `setup`: entries exist for guides/ and guides/setup/ but not specs/; second `setup` is idempotent; `check` is clean afterwards; a hand-edited block is preserved/reported as before. `onboard.py check` on this repo does not crash. Confirm existing docs/layout.md files (e.g. one with homes maintenance/ and reference/) are untouched by setup.
+4. The statement in docs/reports/2026-10-05-docs-check-run.md matches reality: run docs_check.py on this repo and on /Users/kimgranlund/Projects/maison/ui-kit-maison read-only (confirm `git status --short` there is unchanged by your run) and compare the rule counts it lists; the stated adopter change is true.
+5. `bash plugins/sdlc-lite/scripts/check.sh` passes, `python3 scripts/check-packaging.py`, `git diff --check main`, no em dashes in added lines, check.py guard 32 has an observed negative control, guard numbers unique.
+
+## Constraints
+Read-only except throwaway experiments you revert. No push or publish. Do not modify files under /Users/kimgranlund/Projects/maison.
