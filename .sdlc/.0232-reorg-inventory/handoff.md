@@ -2,7 +2,7 @@
 id: T-0232
 title: "inventory.py: read-only document inventory and reorganization plan procedure"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Reorganization was a draft (docs/repo-onboarding/reorganization.md, v0.6, "not r
 
 ## Constraints
 Read-only: the script writes nothing into the target repository. No model calls and no network in the script. No em dashes.
+
+## Closed
+
+2026-10-05: Built and merged: inventory.py (read-only, selftest with negative controls), reorganization-plan-procedure.md, live run on two repositories with one model-written plan and a six-claim spot check, check.py guard 30. First L3 verifier passed 5 of 6 and its two findings were fixed; a narrow L3 passed 2 of 3 and its finding was fixed and confirmed by script; no verifier result says pass overall for the final text (recorded in docs/validation/reorg-inventory-live-run.md). Apply step is T-0233.
