@@ -247,9 +247,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | ⏳ proposed |
 | T-0247 | [.0247-pc-gap-analysis](.0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | M | P2 | none | 🟢 done |
 | T-0248 | [0248-placement-proof](0248-placement-proof/handoff.md) | Placement proof for the context registry | chore | M | P2 | none | ⏳ proposed |
-| T-0249 | [0249-plan-goal](0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | ⏳ proposed |
-| T-0250 | [0250-plan-loop](0250-plan-loop/handoff.md) | plan-loop skill | feature | S | P2 | none | ⏳ proposed |
-| T-0251 | [0251-plan-fanout](0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | ⏳ proposed |
+| T-0249 | [.0249-plan-goal](.0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | 🟢 done |
+| T-0250 | [.0250-plan-loop](.0250-plan-loop/handoff.md) | plan-loop skill | feature | S | P2 | none | 🟢 done |
+| T-0251 | [.0251-plan-fanout](.0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | 🟢 done |
 | T-0252 | [0252-pc-run-context-trace](0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | M | P2 | none | ⏳ proposed |
 | T-0253 | [0253-pc-entry-file-resolver](0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | S | P2 | none | ⏳ proposed |
 | T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |

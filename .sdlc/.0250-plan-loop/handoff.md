@@ -2,7 +2,7 @@
 id: T-0250
 title: "plan-loop skill"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ User request: 'plan and create skills for planning fanout, goal, and loop sessio
 
 ## Constraints
 No harness: references; Codex adapter line; one authoritative place per fact. No em dashes.
+
+## Closed
+
+2026-10-05: built on branch plan-skills; verified by one L3 Fable verifier; see docs/validation/plan-skills-live-run.md
