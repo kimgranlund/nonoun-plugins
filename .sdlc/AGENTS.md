@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:c162f7f02ee6 -->
+<!-- sdlc-lite:managed:start v1 sha256:79b643cceb3b -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 2
+- proposed: 3
   - T-0228 onboard.py's root entry block still routes work to chain and fix, not solo (0228-onboard-lane-text)
   - T-0229 Solo start has no budget gate, and /agent solo without a ticket is unmetered (0229-solo-budget-gate)
+  - T-0230 fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests (0230-fanout-codex-report-and-gate)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
