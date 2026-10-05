@@ -90,6 +90,10 @@
    `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
    `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
+25. Agent command: skills/agent/SKILL.md names every agents/*.md stem in backticks, its start table names only
+   agents that exist and have a Codex entry in adapters/codex/models.json, and it names `block-role-spawn.sh`.
+   Negative controls: a stem removed from the skill, a table row for a name with no agent file, and a table row
+   with no Codex entry must each be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -644,6 +648,21 @@ errors.extend(fanout_solo_bad(_ff, _fs, _fk))
 for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
+# Agent command (docstring item 25): the /agent skill's names agree with agents/*.md and the Codex mapping.
+def agent_cmd_bad(skill, stems, codex_keys):
+    if not skill.strip(): return ['skills/agent/SKILL.md missing or empty']
+    bad = [f'skills/agent/SKILL.md does not name `{n}`' for n in sorted(stems) if f'`{n}`' not in skill]
+    rows = re.findall(r'(?m)^\| `([a-z][\w-]*)` \|', skill)
+    bad += [f'skills/agent/SKILL.md table row `{n}` has no agents/{n}.md' for n in rows if n not in stems]
+    bad += [f'skills/agent/SKILL.md table row `{n}` has no Codex entry in models.json' for n in rows if n in stems and n not in codex_keys]
+    if 'block-role-spawn.sh' not in skill: bad.append('skills/agent/SKILL.md does not name block-role-spawn.sh')
+    return bad
+_ak = _rd(root/'skills/agent/SKILL.md')
+_as = {p.stem for p in (root/'agents').glob('*.md')}
+errors.extend(agent_cmd_bad(_ak, _as, set(mc)))
+if not agent_cmd_bad(_ak.replace('`archaeologist`', 'archaeologist'), _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a removed stem')
+if not agent_cmd_bad(_ak + '\n| `ghost` | x | x |\n', _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a row with no agent file')
+if not agent_cmd_bad(_ak, _as, set(mc) - {'scout'}): errors.append('check.py: agent command negative control not flagged for a row with no Codex entry')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
