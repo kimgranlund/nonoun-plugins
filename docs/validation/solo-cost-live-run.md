@@ -6,7 +6,7 @@ Recorded: 2026-10-05. Live run for ticket T-0225: a real headless solo session, 
 
 - `claude --version`: `2.1.289 (Claude Code)` ([`claude-version.txt`](solo-cost-live-run/claude-version.txt)).
 - Model, from the result event's `modelUsage` ([`raw-result.json`](solo-cost-live-run/raw-result.json)): `claude-sonnet-5-5`. Effort `low` comes from the launch flag the wrapper passes for tier S, and the record says the same (`"effort":"low"`).
-- Plugin: this worktree's `plugins/sdlc-lite` at the T-0225 step commit (`b6cf1a5` plus the `--raw-out` option added after it, which the run used). Not a released version.
+- Plugin: this worktree's `plugins/sdlc-lite` at the T-0225 step commit `b6cf1a5`, which already has the `--raw-out` option the run used. Not a released version.
 - macOS, one throwaway Git project from `mktemp -d` outside this repository. The run's start and end times are in [`start.txt`](solo-cost-live-run/start.txt) and [`end.txt`](solo-cost-live-run/end.txt): 18 seconds.
 - Nested-session variables (`CLAUDECODE`, `CLAUDE_CODE_*`, `CLAUDE_PLUGIN_ROOT`, and the other session ids) were removed with `env -u` before the launch, because this run was itself started from a Claude Code session. `SDLC_HEADLESS=1` and the 3600000 ms Bash timeouts were set, as `fanout.py` and the bench set them.
 

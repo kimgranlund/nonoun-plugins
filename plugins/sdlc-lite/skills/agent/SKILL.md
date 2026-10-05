@@ -13,7 +13,7 @@ The first word is the agent name. Everything after the optional `--tier` or `--l
 
 | Name | Start path | Default |
 |---|---|---|
-| `solo` | The `## Start` section of `${CLAUDE_PLUGIN_ROOT}/agents/solo.md`: a headless Bash session on Claude Code, `sdlc-solo-l1` to `l3` on Codex | tier M, or the tier `steps.py lane` gives when the instructions name a ticket |
+| `solo` | The `## Start` section of `${CLAUDE_PLUGIN_ROOT}/agents/solo.md`: a headless Bash session on Claude Code, `sdlc-solo-l1` to `l3` on Codex | tier M, or the tier of the named ticket's size (S, M, L) when the instructions name a ticket |
 | `scout` | `scripts/run.sh scout L1 <handoff>` | L1 |
 | `researcher` | `scripts/run.sh researcher <level> <handoff>`, level per the `researcher` section of the level-rubric skill | per the rubric |
 | `architect` | `scripts/run.sh architect L1 <handoff>` | L1 |
