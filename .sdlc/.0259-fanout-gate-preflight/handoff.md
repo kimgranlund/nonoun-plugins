@@ -2,7 +2,7 @@
 id: T-0259
 title: "fanout needs committed handoffs and node_modules in the gate worktree"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -19,3 +19,7 @@ Scope: docs or a preflight message only. No fix of the gate itself.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-05: fanout preflight names the force-add and npm ci; fanout selftest case 20; verifier L3 pass in verify-defect-fixes-0.20.10

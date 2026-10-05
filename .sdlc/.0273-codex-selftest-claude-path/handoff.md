@@ -2,7 +2,7 @@
 id: T-0273
 title: "codex-selftest fanout test fails when repo path contains claude"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ codex-selftest.py `test_fanout_uses_codex`. Cause: a substring check on the comm
 
 ## Constraints
 The failing test lands with the fix. No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-05: codex-selftest checks argv, not a claude substring; verifier L3 pass in verify-defect-fixes-0.20.10

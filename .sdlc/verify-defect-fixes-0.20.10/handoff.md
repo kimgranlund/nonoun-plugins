@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify four small defect fixes in one commit, 65c37f2 (pre-build base 2c839cf). Tickets: .sdlc/0259-fanout-gate-preflight, .sdlc/0260-solo-session-limit-resume, .sdlc/0262-close-citation-scan-gaps, .sdlc/0273-codex-selftest-claude-path (read each handoff.md). Each regression test must fail without its fix and pass with it.
+Independently verify four small defect fixes in one commit, 65c37f2 (pre-build base 2c839cf). Tickets: .sdlc/.0259-fanout-gate-preflight, .sdlc/.0260-solo-session-limit-resume, .sdlc/.0262-close-citation-scan-gaps, .sdlc/.0273-codex-selftest-claude-path (read each handoff.md). Each regression test must fail without its fix and pass with it.
 
 ## Step 1: Verify the four fixes
 level: L3

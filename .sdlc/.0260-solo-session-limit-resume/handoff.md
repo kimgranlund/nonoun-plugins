@@ -2,7 +2,7 @@
 id: T-0260
 title: "Solo long commands capped at 30 min and session-limit stops leave no resume"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -19,3 +19,7 @@ Scope: file and design the marker and the guidance. No fix in this ticket's fili
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-05: run.sh and solo_run.py leave a resume marker and hint on a session limit; selftests added; verifier L3 pass in verify-defect-fixes-0.20.10

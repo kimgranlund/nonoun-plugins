@@ -2,7 +2,7 @@
 id: T-0262
 title: "tickets.py close needs --force on tracked citations and cannot see .sdlc citations"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -19,3 +19,7 @@ Read the ticket skill's close and `--rewrite-refs` text before editing.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-05: close scans gitignored .sdlc citations and prints left refs; tickets selftest cases; verifier L3 pass in verify-defect-fixes-0.20.10

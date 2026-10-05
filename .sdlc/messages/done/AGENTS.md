@@ -1,3 +1,3 @@
 `done/<receiver>/` holds acknowledged or expired messages, with their `outcome` and, when acked, `ack_time`; the full procedures are in `../AGENTS.md`.
 Nothing moves a message out of `done/`: a message never moves backward.
-List them: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae11c915f68bab1f5/plugins/sdlc-lite/scripts/messages.py" list --state done`.
+List them: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-aaee304bcd5963894/plugins/sdlc-lite/scripts/messages.py" list --state done`.
