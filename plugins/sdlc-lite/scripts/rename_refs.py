@@ -270,8 +270,6 @@ def selftest():
         left = stale(tmp, 'docs/validation', [])
         files_left = {h[0] for h in left}
         expect('only url-free, tag-free refs removed', files_left == {'docs/reports/b.md'} or files_left == set() or files_left <= {'docs/reports/b.md', 'docs/README.md'})
-        expect('negative control: a reintroduced stale ref is caught',
-               bool(stale(tmp, 'docs/validation', [])) is False or True)
         with open(os.path.join(tmp, 'docs/other.md'), 'a') as fh:
             fh.write('use docs/validation/new.md here\n')
         run('add', '-A')

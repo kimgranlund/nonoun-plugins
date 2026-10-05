@@ -16,7 +16,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
-  - T-0246 Rename docs/reports to docs/reports and rewrite references (0246-rename-validation-to-reports)
+  - T-0246 Rename docs/validation to docs/reports and rewrite references (0246-rename-validation-to-reports)
   - T-0248 Placement proof for the context registry (0248-placement-proof)
   - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
   - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)

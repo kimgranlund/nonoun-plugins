@@ -10,7 +10,7 @@ The user decided these on 2026-10-05. They override any older sentence below tha
 
 1. **Planning and specs stay two homes,** split by purpose (what is not built versus what is built or accepted). A superseded plan moves to `archive/`.
 2. **Names are plural,** and `guides/` replaces `maintenance/`. This repository's and maison's `maintenance/` content maps to `guides/` or `references/` by what it is (see Mappings).
-3. **`docs/reports/` is renamed to `docs/reports/` now.** The user chose this against the earlier default (a legacy home bound to `reports`). There is no legacy home for validation any more. The move is its own ticket, T-0246, which waited for the `reorg-inventory` merge (landed as 24fdd8c) and amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. The `## Legacy` mechanism stays, only for files that are really grandfathered, such as existing report names that do not follow the date rule.
+3. **`docs/validation/` is renamed to `docs/reports/` now.** The user chose this against the earlier default (a legacy home bound to `reports`). There is no legacy home for validation any more. The move is its own ticket, T-0246, which waited for the `reorg-inventory` merge (landed as 24fdd8c) and amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. The `## Legacy` mechanism stays, only for files that are really grandfathered, such as existing report names that do not follow the date rule.
 4. **Setup writes entry files under every home** (`AGENTS.md` plus a `CLAUDE.md` import), after a dry-run diff and one question before it writes. That changes `docs/AGENTS.md` for every adopter, maison included. The setup-model change is in T-0242.
 
 ## Problem
@@ -107,7 +107,7 @@ Tie-breaks: a document that is both a guide and a reference is split into two, o
 ### Naming, depth, size, links
 
 - Folder and file names: lowercase, kebab-case, `.md`, no spaces and no version suffix. Exceptions: `AGENTS.md`, `CLAUDE.md`, `README.md`, and the `NN-` prefix the existing design allows for a real reading order.
-- `reports/` new files: `YYYY-MM-DD-slug.md`. A report may have a sibling evidence folder of the same stem, `YYYY-MM-DD-slug/`, for small text evidence files (the repository's `docs/reports/`, `docs/reports/` after T-0246, already pairs `<name>.md` with `<name>/`). Evidence files are capped at 200 KB each by default. **(user may change)**
+- `reports/` new files: `YYYY-MM-DD-slug.md`. A report may have a sibling evidence folder of the same stem, `YYYY-MM-DD-slug/`, for small text evidence files (the repository's `docs/validation/`, `docs/reports/` after T-0246, already pairs `<name>.md` with `<name>/`). Evidence files are capped at 200 KB each by default. **(user may change)**
 - `decisions/` files: `NNNN-slug.md`, four digits, never reused.
 - Depth: `docs/<home>/<topic>/<file>`. A topic folder is optional and only in `specs/`, `planning/`, `references/`, `guides/` and `decisions/`. Nothing deeper except a report's evidence folder.
 - Size: an entry file has a 60-line target, the one `onboard.py check` already reports (`size AGENTS.md: 78 lines, over the 60-line target` for this repository's root file, which it does not trim). Other documents have a soft limit of 400 lines that produces a warning. **(user may change)**
@@ -356,7 +356,7 @@ These come from folder and file names only. The inventory and a person decide an
 
 | Today | Becomes | Note |
 | --- | --- | --- |
-| `docs/reports/` (385 tracked files on 2026-10-05, about 325 to 329 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, waited for the `reorg-inventory` merge, which has landed; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
+| `docs/validation/` (385 tracked files on 2026-10-05, about 325 to 329 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, waited for the `reorg-inventory` merge, which has landed; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
 | `docs/lean-sdlc/` | `specs/lean-sdlc/` | The lane design and cost-control addendum describe shipped behavior. |
 | `docs/ticket-stages/` | `specs/ticket-stages/` | Router, messages and watcher designs describe built features. |
 | `docs/repo-onboarding/design.md` | `specs/repo-onboarding/` | Built (T-0160). |
@@ -365,7 +365,7 @@ These come from folder and file names only. The inventory and a person decide an
 | `docs/generative-constructs/` | `specs/generative-constructs/` | `docs/README.md` describes the folder as including browser and A2UI proposals, so files 05 and 06 are candidates for `planning/`; the inventory decides. The numbered reading order stays. |
 | `docs/maintenance/sdlc-internals.md`, `claude-hooks.md` | `references/` | Implementation references, not steps. The name `maintenance/` is retired; step-by-step procedures from it, if any, go to `guides/`. |
 | `docs/codex-role-execution.md`, `plugin-compatibility.md` | `references/` | Loose files in `docs/`. |
-| `docs/reports/readiness-recovery-validation.md` | `reports/readiness-recovery-validation.md` | It was frozen only because it travelled with `docs/reports/`. Moved by T-0246 with its name kept. |
+| `docs/readiness-recovery-validation.md` | `reports/readiness-recovery-validation.md` | It was frozen only because it travelled with `docs/validation/`. Moved by T-0246 with its name kept. |
 | `docs/claude-handoff.md`, `claude-response.md` | `other/` | Loose notes between sessions; owner and review-by needed. |
 | `docs/other/orchestration-optimization-question.md` | `other/` | Needs `owner:` and `review-by:`. |
 | `docs/docs-schema/` (this design) | `planning/docs-schema/` | Status `proposed`; until it moves it is a tenth top-level folder and fails D-1, so it is listed in `## Legacy`. |
@@ -385,8 +385,8 @@ These come from folder and file names only. The inventory and a person decide an
 - **Opt-in and never automatic.** A repository with an existing coherent layout keeps it. Adopting means binding its non-default homes in `## Kinds` and listing the paths it will not touch in `## Legacy`. New files are fully checked from that point.
 - **Order:** inventory (read-only), then a plan, then a gated apply that moves in batches with a citing-file scan, one commit per batch and undo by `git revert`. The apply gate is the follow-up ticket from the reorganization project and is not part of this design.
 - **The citing scan covers code and entry files, not only Markdown.** `check.py` reads `docs/maintenance/claude-hooks.md` by path at run time, and root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and the two `HARNESS-NOTES.md` files cite moving paths. The rewriter in the reorganization draft covers tracked Markdown, so ticket 4 widens it.
-- **The validation move is separate and earlier.** The user decided to rename `docs/reports/` to `docs/reports/` now. T-0246 does it as a one-off mechanical rename with the apply step's safety properties (dry-run list, citing scan, one commit per batch, undo by `git revert`), because the gated apply tool does not exist yet. It amends the reorganization draft's frozen list. T-0244 covers the rest of this repository's moves and no longer includes validation.
-- **Published artifacts keep old paths.** Tags and already-published GitHub release pages cite `docs/reports/...`; they cannot change, and the next release record says so in one sentence.
+- **The validation move is separate and earlier.** The user decided to rename `docs/validation/` to `docs/reports/` now. T-0246 does it as a one-off mechanical rename with the apply step's safety properties (dry-run list, citing scan, one commit per batch, undo by `git revert`), because the gated apply tool does not exist yet. It amends the reorganization draft's frozen list. T-0244 covers the rest of this repository's moves and no longer includes validation.
+- **Published artifacts keep old paths.** Tags and already-published GitHub release pages cite `docs/validation/...`; they cannot change, and the next release record says so in one sentence.
 - **This repository goes last.** It is the test of the tooling, so its migration depends on the apply ticket.
 - **No stubs.** A moved file leaves no stub. The apply step rewrites links.
 
@@ -431,6 +431,6 @@ Each is size S or M and fits one solo step. They are filed as `proposed`.
 2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7) written by setup only after a dry-run diff and one question (decision 4), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Also the shared `render_registry` function and R-1 and R-2. Depends on 1.
 3. **The `.sdlc` boundary checks and registry (T-0243):** B-1a, B-2a and B-3a in `docs_check.py` with `check.sh` wiring, the new `.sdlc/layout.md` record-type registry rendered into `.sdlc/AGENTS.md` by `tickets.py roadmap` through the same render function, and the ticket-list size handling. Depends on 2.
 4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, except the validation move, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
-6. **Rename `docs/reports/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
+6. **Rename `docs/validation/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
 5. **Promotion helper (T-0245):** a small script that copies a `.sdlc` artifact to a `docs/` home with the `source:` front matter. Depends on 1.
 7. **Placement proof (T-0248, proposed, size M, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The T-0241 parser and the other checks do not wait.
