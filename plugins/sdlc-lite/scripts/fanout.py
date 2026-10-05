@@ -591,6 +591,33 @@ def close_reason(ctx, t):
             if tier in ('M', 'L') else f'delivered by the solo agent (tier {tier}); the ticket\'s own checks and the fanout gates passed')
 
 
+def write_solo_skips(taskdir, tier):
+    """Record the planner and filer a solo lane skips under ## Skipped in the task's skips.md, in the form
+    tickets.py's skips guard counts (`- skip: <role>; step: all; reason: ...; decided: lane`), so the close by
+    reason is not refused. Only when skips.md already records a `- lane:` line (steps.py lane wrote it): a forced
+    --lane solo leaves no lane record and the guard does not apply. Idempotent. Returns True when it wrote.
+    FANOUT_SELFTEST_NO_SKIPPED=1 turns it off (the selftest's negative control)."""
+    if os.environ.get('FANOUT_SELFTEST_NO_SKIPPED') == '1':
+        return False
+    f = pathlib.Path(taskdir) / 'skips.md'
+    if not f.is_file():
+        return False
+    text = f.read_text(encoding='utf-8')
+    if not re.search(r'(?m)^- lane: ', text):
+        return False
+    why = f'solo lane: size {tier} runs end to end in one session'
+    lines = ''.join(f'- skip: {role}; step: all; reason: {why}; decided: lane\n' for role in ('planner', 'filer')
+                    if not re.search(rf'(?m)^- skip: {role};', text))
+    if not lines:
+        return False
+    if re.search(r'(?m)^## Skipped\s*$', text):
+        text = re.sub(r'(?m)^(## Skipped[ \t]*\n)', lambda m: m.group(1) + lines, text, count=1)
+    else:
+        text = text.rstrip('\n') + '\n\n## Skipped\n' + lines
+    f.write_text(text, encoding='utf-8')
+    return True
+
+
 def verifier_files(taskdir):
     """The task dir's verifier result file names now (the batched-verification baseline)."""
     try:
@@ -926,6 +953,8 @@ def run_ticket(ctx, lane, t, lock):
     env['FANOUT_LANE_KIND'] = kind
     say(ctx, lane, t.id, f'lane {kind}' + (f' tier {tier}' if tier else '') + f' ({why})')
     taskdir = wt / ctx['trel'] / t.slug
+    if kind == 'solo' and tier:
+        write_solo_skips(taskdir, tier)
     before = verifier_files(taskdir)
     say(ctx, lane, t.id, f'driver started (log {log})')
     rc = run_logged(['bash', '-c', driver_for(ctx, t, kind)], str(wt), env, log, ctx['run_id'])
@@ -2142,6 +2171,49 @@ def selftest():
                       'alpha=T-0001', 'beta=T-0004')
         expect(f'case 15 overlap negative control: disjoint planned scopes are not refused, got '
                f'{proc.returncode} stderr={proc.stderr!r}', 'plan to change the same files' not in proc.stderr)
+
+        # 16. A solo lane closes through the real lane decision and the real tickets.py close (T-0222): a
+        # `claude` shim on PATH stands in only for the model session; nothing bypasses steps.py lane, the
+        # driver choice, the skips.md write, or the skips guard. Negative control: with the Skipped write off,
+        # the close is refused and the second ticket never runs.
+        shim = tmp / 'shim'
+        shim.mkdir()
+        (shim / 'claude').write_text('#!/usr/bin/env bash\nset -eu\necho "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n')
+        (shim / 'claude').chmod(0o755)
+        shim_env = dict(ENV, PATH=f'{shim}:{ENV.get("PATH", "")}')
+
+        def real_lane(name, disable):
+            rr_, ll_ = tmp / f'real-{name}', tmp / f'real-{name}-lanes'
+            make_repo(rr_, [('one', 'T-0001', 'ready'), ('two', 'T-0002', 'ready')])
+            env_ = dict(shim_env, FANOUT_SELFTEST_NO_SKIPPED='1') if disable else shim_env
+            proc_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', 'x=T-0001,T-0002',
+                                    '--base', 'main', '--integration', 'fanout/real', '--lanes-dir', str(ll_),
+                                    '--stagger', '0'], cwd=str(rr_), env=env_, capture_output=True, text=True, timeout=300)
+            return rr_, ll_, proc_
+
+        rr1, ll1, pr1 = real_lane('on', False)
+        st1 = {t_: sh(rr1, 'show', f'fanout/real:.sdlc/{s_}/handoff.md').stdout for t_, s_ in (('T-0001', 'one'), ('T-0002', 'two'))}
+        done1 = [t_ for t_, body in st1.items() if re.search(r'^status: done\b', body, re.M)]
+        expect(f'case 16 real lane: both solo tickets merge and close with the skips guard live, got rc={pr1.returncode} '
+               f'done={done1} out={pr1.stdout[-400:]!r} err={pr1.stderr[-300:]!r}',
+               pr1.returncode == 0 and done1 == ['T-0001', 'T-0002'])
+        sk = sh(rr1, 'show', 'fanout/real:.sdlc/.0001-one/skips.md').stdout or sh(rr1, 'show', 'fanout/real:.sdlc/one/skips.md').stdout
+        expect(f'case 16 real lane: skips.md records lane solo and a ## Skipped entry for planner and filer, got {sk!r}',
+               '- lane: solo' in sk and '- skip: planner; step: all;' in sk and '- skip: filer; step: all;' in sk
+               and 'decided: lane' in sk)
+        rr0, ll0, pr0 = real_lane('off', True)
+        expect(f'case 16 negative control: with the Skipped write off the close is refused, got rc={pr0.returncode} '
+               f'out={pr0.stdout[-300:]!r}', pr0.returncode == 1 and 'close refused' in pr0.stdout
+               and 'no ## Skipped entry' in pr0.stdout)
+        # write_solo_skips directly: idempotent, and a forced --lane solo (no lane record) writes nothing
+        tdir_ = tmp / 'skiptask'
+        tdir_.mkdir()
+        (tdir_ / 'skips.md').write_text('# Skips\n\n## Lane\n- lane: solo; point: p; reasons: r\n', encoding='utf-8')
+        expect('case 16 write_solo_skips: writes once', write_solo_skips(tdir_, 'S') is True)
+        expect('case 16 write_solo_skips: a second call is a no-op', write_solo_skips(tdir_, 'S') is False)
+        (tdir_ / 'skips.md').write_text('# Skips\n', encoding='utf-8')
+        expect('case 16 write_solo_skips negative control: no lane record writes nothing',
+               write_solo_skips(tdir_, 'S') is False and 'skip:' not in (tdir_ / 'skips.md').read_text())
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

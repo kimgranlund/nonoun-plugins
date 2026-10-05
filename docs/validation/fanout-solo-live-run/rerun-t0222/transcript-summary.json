@@ -1,0 +1,42 @@
+[
+ {
+  "lane_dir": "a",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 753
+ },
+ {
+  "lane_dir": "b",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 771
+ },
+ {
+  "lane_dir": "c",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 898
+ },
+ {
+  "lane_dir": "d",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 10
+  },
+  "output_tokens": 6153
+ },
+ {
+  "lane_dir": "d",
+  "agentSetting": "sdlc-lite:verifier",
+  "models": {
+   "claude-fable-5-1": 17
+  },
+  "output_tokens": 35117
+ }
+]
