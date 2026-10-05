@@ -47,7 +47,7 @@ Each ticket below has a verifier or review record in its closed folder under `.s
 
 ## Checks run for the release
 
-Run from the release worktree on branch `worktree-agent-aaf7cd0fac455cb08` at the commit that adds the manifest bump, this record and its docs index entry, 2026-10-05:
+Run from a detached worktree under `/tmp` at commit 870824e (the manifest bump, this record and its docs index entry), 2026-10-05, all exit 0. A first `check.sh` run from a worktree whose path contains `.claude/` exited 1 on one assertion, `test_fanout_uses_codex`, which fails when the substring `claude` appears in the launched command and the path itself contained it; the same tree under `/tmp` passes:
 
 - `bash plugins/sdlc-lite/scripts/check.sh`
 - `python3 scripts/check-packaging.py`
@@ -55,4 +55,4 @@ Run from the release worktree on branch `worktree-agent-aaf7cd0fac455cb08` at th
 - `git diff --check`
 - Version parity: both sdlc-lite manifests read 0.20.9, both Progressive Context manifests read 0.1.2.
 
-Results are in the release summary given with the publish; an independent read-only Opus pass over this record ran before publication and its review text is not committed.
+An independent read-only Opus pass over this record ran before publication and its review text is not committed.
