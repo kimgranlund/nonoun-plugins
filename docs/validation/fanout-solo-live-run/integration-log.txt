@@ -1,0 +1,13 @@
+18b16a9 close T-0004
+f3acfe5 Merge fanout/live-d: T-0004
+c07f183 T-0004: kit.d: add parse_duration
+073b07a close T-0002
+6191125 Merge fanout/live-b: T-0002
+7f68e39 T-0002: kit.b: add chunk
+eb16b4f close T-0003
+ed79a2f Merge fanout/live-c: T-0003
+188d425 T-0003: kit.c: add title_case
+506bea7 close T-0001
+f1c53b6 Merge fanout/live-a: T-0001
+a6dd507 T-0001: kit.a: add clamp
+82878de fixture
