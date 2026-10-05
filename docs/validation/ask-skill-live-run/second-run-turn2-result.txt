@@ -1,0 +1,19 @@
+Plain-text round, since AskUserQuestion isn't available in this session. Four items are open. The sweep found T-0002 and T-0003 in `.sdlc/tickets`.
+
+1. **CSV delimiter default** (your question from earlier, still unanswered; T-0002)
+   - a) Comma: the RFC 4180 standard and what most tools and parsers expect. Locales that use a decimal comma will have to change the setting in Excel.
+   - b) Semicolon: opens cleanly in Excel for decimal-comma locales. It breaks tools that assume a comma.
+   - No evidence in the repo favors either, so I'm not recommending one.
+
+2. **Retry limit scope** (T-0003, verifier L1 failed: `test_retry_limit` expected 3 attempts and saw 5; the handoff doesn't say which scope is meant)
+   - a) Per upload: each upload gets the full limit. This is a small fix, the counter just needs resetting between uploads.
+   - b) Per job: one shared budget for the whole run. This is a larger change and caps total retries.
+
+3. **Column spec for the CSV export** (T-0002 is blocked on it since 2026-10-04; the product owner has to supply the fields, order and header names)
+   - a) Write it in chat now: it's long, so reply in full and I'll record it.
+   - b) I create a small file under `docs/` for you to edit, then wait.
+   - c) Leave T-0002 blocked until the product owner delivers it.
+
+4. **429 weekly limit on the upload API** (resets Thursday)
+   - a) Wait for the reset and rerun the sync then. It costs nothing and the sync stays down until Thursday.
+   - b) Make the sync skip uploads while the API is rate limited, instead of failing the whole job. It needs code, and the answer to item 2 comes first.

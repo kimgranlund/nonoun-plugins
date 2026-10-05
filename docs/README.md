@@ -7,6 +7,7 @@
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
 - [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
 - [Reorganization inventory live run](validation/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
+- [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
 - [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
 - [Idle-host watcher design](ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
@@ -22,6 +23,7 @@
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](validation/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
+- [Docs schema design review](validation/docs-schema-design-review.md): dated independent architect review of the docs schema design, with 15 findings and how each was applied.
 - [Repository onboarding design review](validation/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](validation/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.
 - [Repository onboarding design review, third round](validation/repo-onboarding-design-review-3.md): dated independent review of the onboarding design at v0.5.
@@ -30,6 +32,7 @@
 - [Haiku alias probe](validation/haiku-alias-2026-09-30.md): dated probe showing the `haiku` alias resolves to Sonnet 5.5 on a Max login, and the pinned `claude-haiku-4-5` id.
 - [Messages idle-host limit](validation/messages-idle-host-limit-2026-10-01.md): dated correction stating that the messenger cannot wake an idle host, the evidence, and the workaround.
 - [Handoff freeze live run](validation/handoff-freeze-live-run.md): dated live run for T-0212 (warn mode) showing the hook allows and logs an edit of a running handoff on Claude and blocks it in deny mode, plus the runner's stale_input flag and known limits.
+- [Ask skill live run](validation/ask-skill-live-run.md): dated live run for T-0231 of `/sdlc-lite:ask`: what the sweep found before and after the fix, the plain-text fallback in headless runs, and what was not exercised.
 - [Release 0.20.8](validation/release-0.20.8.md): the solo budget gate, the onboard lane text, the orientation files and two Codex live runs, with the verifier results and known limits.
 - [Release 0.20.7](validation/release-0.20.7.md): a conductor-started solo ticket closes under the skips guard, solo sessions started through `solo_run.py` (Claude fanout solo lanes, and the conductor when it uses the wrapper) write their cost to the run records, and `/sdlc-lite:agent` launches an SDLC Lite agent by name, with three live-run records.
 - [Solo cost capture live run](validation/solo-cost-live-run.md): dated live run for T-0225 showing a real headless solo session started through `solo_run.py` writes a `role solo` record whose cost matches the session's result event, and that `budget.py` and the board count it.

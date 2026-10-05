@@ -49,3 +49,5 @@ Headless (`SDLC_HEADLESS=1`, `SDLC_ROLE` set) or no person present: never call A
 Good: one call, two questions. "Retry budget for the fetch step?" with options `3 (recommended, the gap default)` and `5`; "Keep the legacy flag?" with `Keep` and `Drop`, unranked because nobody stated a lean.
 
 Bad: asking "Anything else you want changed?" (not grounded in a raised item), marking an option recommended with no stated default, or asking again a question the user declined earlier.
+
+For a sweep that also covers blockers and reasons its options, use `/sdlc-lite:ask`.

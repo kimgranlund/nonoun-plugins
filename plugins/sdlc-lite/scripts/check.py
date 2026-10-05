@@ -103,7 +103,11 @@
 28. Solo budget gate: scripts/solo_run.py names `budget_hold`, `budget.py ack`, `--new-task`, and returns 4 when it holds;
    scripts/fanout.py names `budget gate: budget.py ack`; agents/solo.md, skills/agent/SKILL.md, and skills/fanout/SKILL.md name
    the gate and `--new-task` where they start solo. Negative controls: each phrase removed from each file must be flagged.
-29. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
+29. Ask skill: skills/ask/SKILL.md names `## 1. Sweep`, `## 2. Reason the options`, `## 3. Ask once`, `## 4. Take prose`, `Write it in chat`,
+   `Nothing open.`, `AskUserQuestion`, the sweep searches (blocked tickets and `## Verdict` results), and the plain-text fallback
+   `If AskUserQuestion is unavailable`, and holds no `harness:` reference; skills/sdlc-lite/SKILL.md and agents/conductor.md route to
+   `ask`. Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
+30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
    `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
    docs/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
 """
@@ -711,7 +715,22 @@ errors.extend(f'check.py: solo budget gate: {m}' for m in solo_gate_bad(_gate_te
 for _name, _phrases in SOLO_GATE_NEEDS:
     for _ph in _phrases:
         if not solo_gate_bad(dict(_gate_texts, **{_name: _gate_texts[_name].replace(_ph, '')})): errors.append(f'check.py: solo budget gate negative control not flagged for {_name} without "{_ph}"')
-# Document inventory (docstring item 29): the read-only inventory script, its selftest wiring, and the plan procedure.
+# Ask skill (docstring item 29): self-contained sweep, reasoned options, one round, a prose path, routed from the entry skill and the conductor.
+_ask, _entry, _cond = _rd(root/'skills/ask/SKILL.md'), _rd(root/'skills/sdlc-lite/SKILL.md'), _rd(root/'agents/conductor.md')
+ASK_NEEDS = ('## 1. Sweep', '## 2. Reason the options', '## 3. Ask once', '## 4. Take prose', 'Write it in chat', 'Nothing open.', 'AskUserQuestion', "grep -rl '^status: blocked'", '## Verdict', 'If AskUserQuestion is unavailable')
+def ask_bad(ask, entry, cond):
+    out = [f'ask SKILL.md missing "{ph}"' for ph in ASK_NEEDS if ph not in ask]
+    if re.search(r'harness:', ask): out.append('ask SKILL.md references harness:')
+    if '/ ask |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to ask')
+    if '/sdlc-lite:ask' not in cond: out.append('agents/conductor.md does not route to /sdlc-lite:ask')
+    return out
+errors.extend(f'check.py: ask skill: {m}' for m in ask_bad(_ask, _entry, _cond))
+for _ph in ASK_NEEDS:
+    if not ask_bad(_ask.replace(_ph, ''), _entry, _cond): errors.append(f'check.py: ask skill negative control not flagged for "{_ph}"')
+if not ask_bad(_ask + ' see harness:find-open-questions', _entry, _cond): errors.append('check.py: ask skill negative control not flagged for a harness reference')
+if not ask_bad(_ask, _entry.replace('/ ask |', '|'), _cond): errors.append('check.py: ask skill negative control not flagged for a missing entry route')
+if not ask_bad(_ask, _entry, _cond.replace('/sdlc-lite:ask', '')): errors.append('check.py: ask skill negative control not flagged for a missing conductor route')
+# Document inventory (docstring item 30): the read-only inventory script, its selftest wiring, and the plan procedure.
 INVENTORY_NEEDS = (('inventory.py', ('orphan', 'stale', 'duplicate', 'oversized', 'misplaced', 'broken_links', '--include-sdlc', '--out', 'refusing to write inside the repository')),
                    ('check.sh', ('inventory.py" selftest',)), ('procedure', ('inventory.py',)))
 def inventory_bad(texts):

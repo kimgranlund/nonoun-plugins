@@ -1,0 +1,21 @@
+{
+  "attempt_id": "02b695b7fae14eea8c5a5def85424ce2",
+  "name": "architect-L1",
+  "role": "architect",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-05T14:22:10.085441+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/docs-schema",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/docs-schema/.sdlc/0233-docs-schema-design/review/handoff.md",
+  "owner_pid": 7963,
+  "handoff_sha256": "22b464b3a73d6fa65d2de45c84afad3912a35671689b1ab4d67907e62e30c669",
+  "process_pid": 8005,
+  "exit_code": 0,
+  "finished_at": "2026-10-05T14:35:26.783543+00:00"
+}
