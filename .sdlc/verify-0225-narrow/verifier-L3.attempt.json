@@ -1,0 +1,21 @@
+{
+  "attempt_id": "e50a18de9050483a9ca7d026cb21adea",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "narrow re-verification of the two first-pass failures, L3 (Fable) on a Sonnet builder's fix",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-05T02:57:53.600405+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-cost",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-cost/.sdlc/verify-0225-narrow/handoff.md",
+  "owner_pid": 64589,
+  "handoff_sha256": "92d04dadea438fd8df57c67d8045db88d874ce8fa57a3d1fc0708610f9e0fd4f",
+  "process_pid": 64614,
+  "exit_code": 0,
+  "finished_at": "2026-10-05T03:10:35.676663+00:00"
+}
