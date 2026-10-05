@@ -2,7 +2,7 @@
 id: T-0223
 title: "/agent command: launch an SDLC Lite agent by name on instructions"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ User request 2026-10-05: "add command for creating sub-agents /agent {agent-name
 
 ## Constraints
 Keep the skill short. One authoritative location per fact: the start paths live in agents/solo.md and the role skills; the new skill points to them. No em dashes.
+
+## Closed
+
+2026-10-04: Built and merged: skills/agent/SKILL.md, check.py item 25, listings. Independent L3 verifier (fable xhigh) passed all criteria with injected-defect checks; live run on Claude Code in docs/validation/agent-command-live-run.md. Codex and conductor-session runs are recorded limits.
