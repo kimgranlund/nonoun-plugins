@@ -2,7 +2,7 @@
 id: T-0228
 title: "onboard.py's root entry block still routes work to chain and fix, not solo"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Found while building T-0227 (root AGENTS.md orientation): the consumer block con
 
 ## Constraints
 One authoritative wording for the lane rule: link or mirror the root AGENTS.md section, do not invent new text. No em dashes.
+
+## Closed
+
+2026-10-04: Built on branch onboard-lane (3264439, validation note docs/validation/onboard-lane-text.md): the root entry block routes by steps.py lane, solo default for S and M; no template version bump (TEMPLATE_VERSION is shared with the router blocks, text difference already makes a block stale); lane-text gate with negative controls; independent L3 Fable verifier passed 5 of 5; full check.sh rc=0; maison read-only check reports AGENTS.md stale.
