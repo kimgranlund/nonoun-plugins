@@ -1,0 +1,3 @@
+Bash {"command": "ls -a; grep -rl '^status: blocked' .sdlc/tickets 2>/dev/null; grep -rl '^## Deferred' .sdlc/tickets 2>/dev/null; grep -rn 'gap:' .sdlc 2>/dev/null; cat .sdlc/notes.md 2>/dev/null", "description": "Sweep repo for open items"}
+Bash {"command": "cat .sdlc/tickets/0002-csv-export/handoff.md; find .sdlc -type f", "description": "Read blocked ticket handoff"}
+Bash {"command": "cat .sdlc/tickets/0003-sync-job/handoff.md .sdlc/tickets/0003-sync-job/step-1/verifier-L1.md", "description": "Read sync job ticket and verifier result"}
