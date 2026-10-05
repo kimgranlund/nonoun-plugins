@@ -552,7 +552,7 @@ def preflight(a):
                 missing.append(path)
     if missing:
         raise Refuse(f'not committed at {start[:12]}: {", ".join(missing)}; lanes see only committed '
-                     f'files, so commit the .sdlc/ trail first')
+                     f'files, so commit the .sdlc/ trail first (it is usually gitignored: `git add -f <path>` then commit)')
 
     max_lanes = getattr(a, 'max_lanes', MAX_LANES_DEFAULT)
     if max_lanes < 1:
@@ -707,6 +707,20 @@ def plan_overlap(ctx):
     return out
 
 
+INSTALL_WORDS = re.compile(r'\b(npm (ci|install|i)|pnpm (i|install)|yarn( install)?|bun install)\b')
+
+
+def deps_note(ctx):
+    """A preflight note when the gates run in a fresh worktree that will lack node_modules: package.json is
+    tracked at the start commit and no gate installs. A node_modules symlink is no fix (drift checks fail)."""
+    if not ctx['gates'] or any(INSTALL_WORDS.search(g) for g in ctx['gates']):
+        return ''
+    if git(ctx['top'], 'cat-file', '-e', f"{ctx['start']}:package.json").returncode:
+        return ''
+    return ('note: gates run in a fresh worktree with no node_modules; start the gate with `npm ci && ...` '
+            '(a node_modules symlink makes drift checks such as build-editor-demo --check fail)')
+
+
 def print_plan(ctx):
     out = ['fanout plan (dry run: nothing created)']
     if ctx['reuse']:
@@ -738,6 +752,8 @@ def print_plan(ctx):
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
     else:
         out.append('gates: none given (merges will not be gated)')
+    if deps_note(ctx):
+        out.append(deps_note(ctx))
     if ctx['driver']:
         out.append(f"driver: {ctx['driver']}")
     else:
@@ -793,6 +809,14 @@ def setup(ctx):
         for lane in ctx['lanes']:
             if lane.external:
                 print(f'external {lane.name}: branch {lane.branch} (no worktree, no driver)', flush=True)
+        # .sdlc/config is often untracked (the trail is gitignored): without it a fresh worktree reads the
+        # default ticket root and numbering, so tickets.py close would look for <root>/<slug>, not <root>/tickets/<slug>
+        src_cfg = ctx['root'] / 'config'
+        if src_cfg.is_file():
+            for wt in [ctx['integ_dir']] + [lane.dir for lane in regular]:
+                dst_cfg = wt / ctx['rel'] / 'config'
+                if not dst_cfg.exists() and dst_cfg.parent.is_dir():
+                    shutil.copyfile(str(src_cfg), str(dst_cfg))
         missing = [str(lane.dir / ctx['trel'] / t.slug / 'handoff.md')
                    for lane in regular for t in lane.tickets
                    if not (lane.dir / ctx['trel'] / t.slug / 'handoff.md').is_file()]
@@ -1116,7 +1140,10 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
                 say(ctx, lane, t.id, f'gate vacuous accepted (--allow-empty-gate): {gate}')
             elif rc:
                 git_out(integ, 'reset', '-q', '--hard', before)
-                return f'red: {gate} rc={rc}', cell
+                hint = ''
+                if (integ / 'package.json').is_file() and not (integ / 'node_modules').exists():
+                    hint = ' (no node_modules in the gate worktree: start the gate with `npm ci && ...`)'
+                return f'red: {gate} rc={rc}{hint}', cell
         if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
             src, dst = lane.dir / trel / t.slug, integ / trel / t.slug
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
@@ -1979,6 +2006,29 @@ def selftest():
         expect(f'ticket_root lane: the integration tip is close T-0001, got {subj!r}', subj == 'close T-0001')
         expect('ticket_root lane: no .sdlc/x folder on the integration branch',
                sh(tr, 'cat-file', '-e', 'fanout/tr:.sdlc/x').returncode != 0)
+        # T-0258: numbered folders under `ticket_root: tickets` with .sdlc/config untracked (gitignored): the
+        # integration worktree has no config, so the close must still resolve the ticket through ticket_root.
+        nt, ntl = tmp / 'ntroot', tmp / 'ntlanes'
+        (nt / '.sdlc' / 'tickets' / '0001-x').mkdir(parents=True)
+        (nt / '.sdlc' / 'config').write_text('ticket_folders: numbered\nticket_root: tickets\n', encoding='utf-8')
+        (nt / '.gitignore').write_text('.sdlc/config\n.worktrees/\n', encoding='utf-8')
+        (nt / '.sdlc' / 'tickets' / '0001-x' / 'handoff.md').write_text(
+            '---\nid: T-0001\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\n'
+            'depends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(nt, *args)
+            expect(f'untracked config lane: fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}',
+                   p.returncode == 0)
+        proc = fanout(nt, '--integration', 'fanout/nt', '--lanes-dir', str(ntl), '--driver', tdrv, 'a=T-0001')
+        got = report_rows(ntl)
+        expect(f'untracked config lane: run exits 0 merged and closed, got {proc.returncode} {got} '
+               f'stderr={proc.stderr!r}', proc.returncode == 0 and got.get('T-0001') == 'merged')
+        expect('untracked config lane: the ticket folder is archived under .sdlc/tickets on the branch',
+               sh(nt, 'cat-file', '-e', 'fanout/nt:.sdlc/tickets/.0001-x/handoff.md').returncode == 0)
+        expect('untracked config lane: no .sdlc/0001-x folder on the branch',
+               sh(nt, 'cat-file', '-e', 'fanout/nt:.sdlc/0001-x').returncode != 0)
         # 13. Overlap: alpha and beta both edit shared.txt (line 1 and the last line). Beta reaches its merge
         # while alpha's driver still runs, waits for alpha (the earlier lane), and merges after it; without
         # the wait, alpha's driver times out. Negative control: disjoint lanes report none and never wait.
@@ -2351,6 +2401,33 @@ def selftest():
         pn = vac_run('real', 'echo "Ran 3 tests in 0.1s"')
         expect(f'case 19 control: a gate that ran tests merges, got rc={pn.returncode} out={pn.stdout[-300:]!r}',
                pn.returncode == 0)
+
+        # case 20 (T-0259): preflight messages for an uncommitted handoff and a gate worktree without node_modules
+        pj = tmp / 'deps-pkg'
+        make_repo(pj, [('a', 'T-0001', 'ready')], {'package.json': '{}\n'})
+        npj = tmp / 'deps-nopkg'
+        make_repo(npj, [('a', 'T-0001', 'ready')])
+        for label, repo_, gate, want in (('package.json and a bare gate', pj, 'true', True),
+                                         ('gate installs first', pj, 'npm ci && true', False),
+                                         ('no package.json', npj, 'true', False)):
+            dp = fanout(repo_, '--dry-run', '--lanes-dir', str(tmp / 'dl'), '--integration', 'fanout/d', 'alpha=T-0001',
+                        '--gate', gate)
+            has = 'npm ci' in dp.stdout and 'note: gates run in a fresh worktree' in dp.stdout
+            expect(f'case 20 deps note ({label}): note present is {want}, got rc={dp.returncode} out={dp.stdout!r}',
+                   dp.returncode == 0 and has == want)
+        for label, repo_, want in (('package.json', pj, True), ('no package.json', npj, False)):
+            rp = fanout(repo_, 'alpha=T-0001', '--integration', f'fanout/r{want}', '--lanes-dir', str(tmp / f'rl-{want}'),
+                        '--driver', vdrv, '--gate', 'false')
+            has = 'no node_modules in the gate worktree' in rp.stdout
+            expect(f'case 20 red gate hint ({label}): hint present is {want}, got rc={rp.returncode} out={rp.stdout[-300:]!r}',
+                   rp.returncode != 0 and 'red: false rc=1' in rp.stdout and has == want)
+        (pj / '.sdlc' / 'b').mkdir()
+        (pj / '.sdlc' / 'b' / 'handoff.md').write_text(
+            '---\nid: T-0002\ntitle: "Ticket b"\ntype: chore\nstatus: ready\nsize: S\n'
+            'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\nb\n', encoding='utf-8')
+        up = fanout(pj, '--dry-run', '--lanes-dir', str(tmp / 'ul'), '--integration', 'fanout/u', 'alpha=T-0002')
+        expect(f'case 20 uncommitted handoff: refused naming git add -f, got rc={up.returncode} err={up.stderr!r}',
+               up.returncode == 2 and 'not committed' in up.stderr and 'git add -f' in up.stderr)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

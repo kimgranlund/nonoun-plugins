@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import tempfile
 import time
@@ -476,8 +477,10 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
         try:
             os.environ['SDLC_BACKEND']='codex'
             command=fanout.default_driver('work/handoff.md')
-            self.assertIn('codex_exec.py',command)
-            self.assertNotIn('claude',command)
+            argv=shlex.split(command)
+            self.assertEqual(os.path.basename(argv[1]),'codex_exec.py')
+            self.assertNotEqual(os.path.basename(argv[0]),'claude')
+            self.assertNotIn('--agent',argv)
             os.environ['SDLC_BACKEND']='wrong'
             with self.assertRaises(fanout.Refuse):fanout.default_driver('work/handoff.md')
         finally:
