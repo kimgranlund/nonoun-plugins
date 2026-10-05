@@ -24,11 +24,11 @@ A throwaway Git project (`kit` package, one size M ticket `duration`: add `parse
 
 ## Models and cost, from the session transcripts
 
-[`transcript-summary.json`](solo-close-live-run/transcript-summary.json): conductor `sdlc-lite:conductor` on `claude-sonnet-5-5` (5,068 output tokens), solo `sdlc-lite:solo` on `claude-sonnet-5-5` (13,594), verifier `sdlc-lite:verifier` on `claude-fable-5-1` (55,798). Effort is a launch flag (conductor `high`, solo started by the conductor at its own choice of flags; the stream does not record the solo's effort). Cost: the conductor session $0.20 (the result event's `total_cost_usd`, [`session-trace.txt`](solo-close-live-run/session-trace.txt)), the verifier $3.09 ([`runs.jsonl`](solo-close-live-run/runs.jsonl)); the solo session's cost was not captured.
+[`transcript-summary.json`](solo-close-live-run/transcript-summary.json): conductor `sdlc-lite:conductor` on `claude-sonnet-5-5` (5,068 output tokens), solo `sdlc-lite:solo` on `claude-sonnet-5-5` (13,594), verifier `sdlc-lite:verifier` on `claude-fable-5-1` (55,798). Effort is a launch flag: conductor `high`; the conductor started the solo with `--model sonnet --effort xhigh` (tier M of `agents/solo.md`, call 6), which the stream does not otherwise record. Cost: the conductor session $0.20 (the result event's `total_cost_usd`, [`session-trace.txt`](solo-close-live-run/session-trace.txt)), the verifier $3.09 ([`runs.jsonl`](solo-close-live-run/runs.jsonl)); the solo session's cost was not captured.
 
 ## Limits
 
 - One run on one machine, one tiny size M ticket, Claude Code only (no Codex conductor start).
-- The conductor started the solo with its own flag choices (model and effort from `agents/solo.md`'s table, read in call 4), not through a script; this run does not check which effort it picked.
+- The conductor started the solo from Bash itself with the tier M flags it read in `agents/solo.md` (call 4), not through a script.
 - The run shows the close is no longer refused on the default path; the selftest negative control (steps selftest, `(lane solo close)`) is what shows the guard still refuses without the entries.
 - The evidence was copied from the run directory and trimmed to text files; the transcripts stay in `~/.claude/projects`.
