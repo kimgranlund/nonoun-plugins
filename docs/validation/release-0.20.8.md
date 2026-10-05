@@ -49,4 +49,13 @@ Three Codex agent files changed: `sdlc-solo-l1.toml`, `sdlc-solo-l2.toml`, `sdlc
 
 ## Checks run for the release
 
-(filled in after the checks run)
+Run from the release worktree on branch `release-0.20.8` at the commit that adds this record's manifest bump (87ebde0), 2026-10-05, all exit 0:
+
+- `bash plugins/sdlc-lite/scripts/check.sh` (the full run; it prints `skip: shellcheck not installed`)
+- `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` (230 tickets, roadmap current)
+- `git diff --check v0.20.7^{commit} HEAD`
+- selftests: `messages`, `results`, `evals`, `supervisor`, `budget`, `board`, `fanout`, `steps`, `tickets`, `solo_run`, `onboard`, `lifecycle-selftest.py`, `codex-selftest.py`
+- Version parity: both sdlc-lite manifests read 0.20.8, both Progressive Context manifests read 0.1.2.
+
+Edits made to this record after that run are documentation only. The independent fact-check of this record is described in the commit history; its review text is not committed.
