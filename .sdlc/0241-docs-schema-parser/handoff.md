@@ -19,7 +19,7 @@ The docs/layout.md parser in plugins/sdlc-lite/scripts/onboard.py reads two new 
 - Done when: selftest passes with the new cases, `python3 plugins/sdlc-lite/scripts/onboard.py check` output on this repository is unchanged, the full check.sh passes, and an independent verifier passed.
 
 ## Context
-Part of the docs schema design (docs/docs-schema/design.md v0.2, ticket T-0240), reviewed once by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
+Part of the docs schema design (docs/docs-schema/design.md v0.3 with the user's decisions of 2026-10-05 under Resolved decisions, ticket T-0240), reviewed once (v0.1) by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
 
 ## Constraints
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.

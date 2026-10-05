@@ -1,8 +1,17 @@
 # Docs schema and the docs/.sdlc boundary
 
-Status: draft v0.2, recorded 2026-10-05, after one independent architect review ([record](../validation/docs-schema-design-review.md)). Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
+Status: draft v0.3, recorded 2026-10-05, after one independent architect review of v0.1 ([record](../validation/docs-schema-design-review.md)). v0.2 and v0.3 were not reviewed again. Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
 
 Every choice marked **(user may change)** is a default I picked and justified. The rest follows from the repository's own files.
+
+## Resolved decisions
+
+The user decided these on 2026-10-05. They override any older sentence below that says otherwise.
+
+1. **Planning and specs stay two homes,** split by purpose (what is not built versus what is built or accepted). A superseded plan moves to `archive/`.
+2. **Names are plural,** and `guides/` replaces `maintenance/`. This repository's and maison's `maintenance/` content maps to `guides/` or `references/` by what it is (see Mappings).
+3. **`docs/validation/` is renamed to `docs/reports/` now.** The user chose this against the earlier default (a legacy home bound to `reports`). There is no legacy home for validation any more. The move is its own ticket, T-0246, which runs after the `reorg-inventory` branch is merged and amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. The `## Legacy` mechanism stays, only for files that are really grandfathered, such as existing report names that do not follow the date rule.
+4. **Setup writes entry files under every home** (`AGENTS.md` plus a `CLAUDE.md` import), after a dry-run diff and one question before it writes. That changes `docs/AGENTS.md` for every adopter, maison included. The setup-model change is in T-0242.
 
 ## Problem
 
@@ -98,7 +107,7 @@ Tie-breaks: a document that is both a guide and a reference is split into two, o
 ### Naming, depth, size, links
 
 - Folder and file names: lowercase, kebab-case, `.md`, no spaces and no version suffix. Exceptions: `AGENTS.md`, `CLAUDE.md`, `README.md`, and the `NN-` prefix the existing design allows for a real reading order.
-- `reports/` new files: `YYYY-MM-DD-slug.md`. A report may have a sibling evidence folder of the same stem, `YYYY-MM-DD-slug/`, for small text evidence files (the repository's `docs/validation/` already pairs `<name>.md` with `<name>/`). Evidence files are capped at 200 KB each by default. **(user may change)**
+- `reports/` new files: `YYYY-MM-DD-slug.md`. A report may have a sibling evidence folder of the same stem, `YYYY-MM-DD-slug/`, for small text evidence files (the repository's `docs/validation/`, `docs/reports/` after T-0246, already pairs `<name>.md` with `<name>/`). Evidence files are capped at 200 KB each by default. **(user may change)**
 - `decisions/` files: `NNNN-slug.md`, four digits, never reused.
 - Depth: `docs/<home>/<topic>/<file>`. A topic folder is optional and only in `specs/`, `planning/`, `references/`, `guides/` and `decisions/`. Nothing deeper except a report's evidence folder.
 - Size: an entry file has a 60-line target, the one `onboard.py check` already reports (`size AGENTS.md: 78 lines, over the 60-line target` for this repository's root file, which it does not trim). Other documents have a soft limit of 400 lines that produces a warning. **(user may change)**
@@ -136,13 +145,15 @@ The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) read
 
 ```text
 ## Kinds
-- `validation/` is `reports`
 - `design-system/` is `specs`
+- `runbooks/` is `guides`
 
 ## Legacy
-- `validation/**`
-- `readiness-recovery-validation.md`
+- `reports/old-notes/**`
+- `imported-wiki/**`
 ```
+
+The lines above are an example of the forms, not this repository's file.
 
 - `## Kinds` binds a home to one of the nine fixed kinds. A home that uses a default name needs no line. A home with a non-default name needs one, and the check reports it as an informational line, so an exception is visible and not forbidden. There is no second mechanism for custom homes.
 - `## Legacy` lists globs of existing paths that are exempt from most checks (see Enforcement), in the same backticked form as `## Frozen paths`. It replaces a global warn-only mode and a date cutoff. A path that is not listed, or is not tracked yet, is new and fully checked. The migration shrinks the list and never grows it silently: the apply step rewrites it like any other citer.
@@ -172,7 +183,7 @@ A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `pars
 | B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
 | B-3a | A `docs/` file that links to a path under `.sdlc/` | warning |
 
-The role-result file-name patterns in B-1a come from `run.sh` and `steps.py`, which write `<role>-L<n>.md`, retries as `<role>-L<n>-<k>.md` (49 tracked files in this repository), and `runs.jsonl`. The review reported that 101 files in `docs/validation/` cite `.sdlc/` paths, so B-3a depends on the legacy list covering them. B-2a cannot tell a design review from a role result by name, so it reports the candidates and does not block. That is a limit of a deterministic check: it finds where a file is, not what it is for.
+The role-result file-name patterns in B-1a come from `run.sh` and `steps.py`, which write `<role>-L<n>.md`, retries as `<role>-L<n>-<k>.md` (49 tracked files in this repository), and `runs.jsonl`. The review reported that 101 files in `docs/validation/` cite `.sdlc/` paths, so B-3a depends on a `## Legacy` glob covering those existing records once they sit in `reports/` (new reports are fully checked). B-2a cannot tell a design review from a role result by name, so it reports the candidates and does not block. That is a limit of a deterministic check: it finds where a file is, not what it is for.
 
 `check.sh` would run `docs_check.py` on this repository once this repository has migrated, with a selftest in the same step. A check that only runs on a fixture would not catch drift here.
 
@@ -193,19 +204,19 @@ These come from folder and file names only. The inventory and a person decide an
 
 | Today | Becomes | Note |
 | --- | --- | --- |
-| `docs/validation/` (69 entries) | Stays, as a `## Legacy` home bound to `reports` | `docs/repo-onboarding/reorganization.md` already freezes it ("They are to be listed as frozen and stay where they are"), 8 of 69 names contain a date, 101 files cite `.sdlc/` paths, and 49 retry files sit in `.sdlc/`. New reports go to `reports/`. A full move is an option for the last migration step (open question 4). |
+| `docs/validation/` (385 tracked files on 2026-10-05, 327 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, run after the `reorg-inventory` merge; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
 | `docs/lean-sdlc/` | `specs/lean-sdlc/` | The lane design and cost-control addendum describe shipped behavior. |
 | `docs/ticket-stages/` | `specs/ticket-stages/` | Router, messages and watcher designs describe built features. |
 | `docs/repo-onboarding/design.md` | `specs/repo-onboarding/` | Built (T-0160). |
 | `docs/repo-onboarding/reorganization.md` | `planning/repo-onboarding/` | A draft with `Nothing in this document is implemented`; status `proposed`. |
 | `docs/repo-onboarding/layered-context-pattern.md` | `references/` | A reference on how hosts load nested entry files. |
 | `docs/generative-constructs/` | `specs/generative-constructs/` | `docs/README.md` describes the folder as including browser and A2UI proposals, so files 05 and 06 are candidates for `planning/`; the inventory decides. The numbered reading order stays. |
-| `docs/maintenance/sdlc-internals.md`, `claude-hooks.md` | `references/` | Implementation references, not steps. The name `maintenance/` is retired. |
+| `docs/maintenance/sdlc-internals.md`, `claude-hooks.md` | `references/` | Implementation references, not steps. The name `maintenance/` is retired; step-by-step procedures from it, if any, go to `guides/`. |
 | `docs/codex-role-execution.md`, `plugin-compatibility.md` | `references/` | Loose files in `docs/`. |
-| `docs/readiness-recovery-validation.md` | Stays (legacy) | Frozen by the reorganization draft with `docs/validation/`. |
+| `docs/readiness-recovery-validation.md` | `reports/readiness-recovery-validation.md` | It was frozen only because it travelled with `docs/validation/`. Moved by T-0246 with its name kept. |
 | `docs/claude-handoff.md`, `claude-response.md` | `other/` | Loose notes between sessions; owner and review-by needed. |
 | `docs/other/orchestration-optimization-question.md` | `other/` | Needs `owner:` and `review-by:`. |
-| `docs/docs-schema/` (this design) | `planning/docs-schema/` | Status `proposed`; until it moves it is a tenth top-level folder and fails D-1, so it sits in `## Legacy`. |
+| `docs/docs-schema/` (this design) | `planning/docs-schema/` | Status `proposed`; until it moves it is a tenth top-level folder and fails D-1, so it is listed in `## Legacy`. |
 
 ### maison
 
@@ -222,7 +233,8 @@ These come from folder and file names only. The inventory and a person decide an
 - **Opt-in and never automatic.** A repository with an existing coherent layout keeps it. Adopting means binding its non-default homes in `## Kinds` and listing the paths it will not touch in `## Legacy`. New files are fully checked from that point.
 - **Order:** inventory (read-only), then a plan, then a gated apply that moves in batches with a citing-file scan, one commit per batch and undo by `git revert`. The apply gate is the follow-up ticket from the reorganization project and is not part of this design.
 - **The citing scan covers code and entry files, not only Markdown.** `check.py` reads `docs/maintenance/claude-hooks.md` by path at run time, and root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and the two `HARNESS-NOTES.md` files cite moving paths. The rewriter in the reorganization draft covers tracked Markdown, so ticket 4 widens it.
-- **Frozen material stays.** The reorganization draft freezes `docs/validation/` and `docs/readiness-recovery-validation.md`, and this design keeps that. If the user later wants them moved, ticket 4 amends the draft's frozen list.
+- **The validation move is separate and earlier.** The user decided to rename `docs/validation/` to `docs/reports/` now. T-0246 does it as a one-off mechanical rename with the apply step's safety properties (dry-run list, citing scan, one commit per batch, undo by `git revert`), because the gated apply tool does not exist yet. It amends the reorganization draft's frozen list. T-0244 covers the rest of this repository's moves and no longer includes validation.
+- **Published artifacts keep old paths.** Tags and already-published GitHub release pages cite `docs/validation/...`; they cannot change, and the next release record says so in one sentence.
 - **This repository goes last.** It is the test of the tooling, so its migration depends on the apply ticket.
 - **No stubs.** A moved file leaves no stub. The apply step rewrites links.
 
@@ -233,15 +245,14 @@ These come from folder and file names only. The inventory and a person decide an
 - The `## Legacy` list can go stale if a migration renames files without updating it. The apply step rewrites it like any other citer.
 - Extending setup to homes and nested topics changes the `docs/AGENTS.md` output for every adopter, maison included. Row 6 of the upsert table replaces their managed blocks on the next setup.
 - If the user keeps `planning/` and the principle sentence is not amended, two live documents contradict each other, and a later role follows whichever it read first. Ticket 2 owns the amendment.
+- The validation rename touches 385 files and rewrites citations in 327 others, including dated release records. The path-token-aware rewrite, the commit per batch and the stale-reference check with its negative control are the mitigation; the accepted cost is that published release pages and tags keep the old paths.
 - B-2a will misclassify some `.sdlc/` files. It is a warning for that reason.
 - D-9 would still reject an evidence file with no named report. The mapping row for each such folder must name its report.
 
 ## Open questions, with safe defaults
 
-1. Singular or plural? Default plural. **(user may change)**
-2. Are `planning/` and `specs/` separate homes? Default yes, split by purpose, with D-8 as the guard and the principle amended in ticket 2. The reviewer's alternative is one home with `status:`.
-3. Is `guides/` the name for operating procedures, replacing `maintenance/`? Default yes.
-4. Does this repository's `validation/` get renamed to `reports/`? Default no: it stays as a legacy home bound to `reports`, and new reports go to `reports/`.
+Questions 1 to 4 of the earlier draft are resolved (see Resolved decisions). Still open:
+
 5. Is the 90-day `review-by` horizon right? Default 90 days.
 6. Should `README.md` stay optional? Default optional.
 
@@ -261,7 +272,8 @@ Each check gets a fixture repository with a positive case and a negative control
 Each is size S or M and fits one solo step. They are filed as `proposed`.
 
 1. **Schema format and parser (T-0241):** `## Kinds` and `## Legacy` in `onboard.py`'s `parse_layout`, `Layout` gains `kinds` and `legacy`, with the selftest. Depends on nothing.
-2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Depends on 1.
+2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7) written by setup only after a dry-run diff and one question (decision 4), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Depends on 1.
 3. **The `.sdlc` boundary checks (T-0243):** B-1a, B-2a and B-3a in `docs_check.py` with `check.sh` wiring. Depends on 2.
-4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
+4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, except the validation move, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
+6. **Rename `docs/validation/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
 5. **Promotion helper (T-0245):** a small script that copies a `.sdlc` artifact to a `docs/` home with the `source:` front matter. Depends on 1.
