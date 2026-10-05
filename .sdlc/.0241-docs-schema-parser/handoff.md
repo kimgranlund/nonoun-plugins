@@ -2,7 +2,7 @@
 id: T-0241
 title: "Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2
 depends: []   # T-NNNN, file:<path>, cap:<name>
@@ -24,3 +24,7 @@ Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's 
 ## Constraints
 The parser only: no `render_registry`, no drift check (they wait for the placement proof T-0248). The existing parser must still ignore the new sections when unchanged callers read a file with them.
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.
+
+## Closed
+
+2026-10-05: Layout parser reads Kinds, Decide, Legacy; selftest gates with negative controls; verifier L3 pass
