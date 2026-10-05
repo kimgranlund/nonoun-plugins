@@ -41,4 +41,12 @@ Details and red-before-green evidence for the four fixes are in `docs/reports/de
 
 ## Checks run for the release
 
-CHECKS_PLACEHOLDER
+`check.sh` ran from a detached worktree at `/tmp/rel01010` (path without `claude`) at commit 03caa7d (the manifest bump, this record and its index entry), 2026-10-05, exit 0 (its log ends `skip: shellcheck not installed`, `ok: plugin validate`). The other checks ran from the release worktree at the same tree, all exit 0:
+
+- `bash plugins/sdlc-lite/scripts/check.sh`
+- `python3 scripts/check-packaging.py`
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+- `git diff --check HEAD~1`
+- Version parity: both sdlc-lite manifests read 0.20.10; Progressive Context is unchanged.
+
+An independent read-only Opus pass over this record ran before publication and its review text is not committed.
