@@ -353,11 +353,40 @@ DOCS_AGENTS_TEMPLATE = """\
 <!-- sdlc-lite:managed:start v<N> sha256:<H> -->
 # Documents
 
+Pick one home from the table, then read one file. Placement effect unproven; see the docs-schema design.
+
+| Home | Holds | Never holds |
+|---|---|---|
+| `specs/` | What the system is and must do; edited in place | Proposals, dated evidence, steps |
+| `planning/` | Proposals, roadmaps, plans under review (`status:`) | What exists today |
+| `decisions/` | One numbered decision per file, immutable once accepted | Narrative design |
+| `references/` | Lookup tables, listings, glossaries | Procedures, opinions |
+| `guides/` | How-to and operating procedures | Lookup tables, design |
+| `reports/` | Dated evidence: runs, reviews, audits, releases | Instructions, living specs |
+| `assets/` | Non-Markdown files cited by a document | Markdown |
+| `archive/` | Superseded or retired documents | Live documents |
+| `other/` | Unsorted inbox with `owner:` and `review-by:` | Anything with a clear home |
+
+## Which home
+
+The first line that matches wins.
+
+1. Picture, diagram source or data file: `assets/`.
+2. Evidence of something that happened on a date: `reports/`.
+3. One choice with its reasons: `decisions/`.
+4. A proposal, roadmap or plan under review: `planning/`.
+5. Steps a person follows: `guides/`.
+6. A table, listing or glossary you look things up in: `references/`.
+7. What the system is or must do: `specs/`.
+8. Retired or superseded: `archive/`.
+9. None of the above, or unsure: `other/`.
+
 ## Adding a document
 
-1. Pick the home from [the layout](layout.md).
-2. Run the onboard setup again to refresh the links below.
-3. Put dated evidence in its own file. Do not add it to an entry file.
+1. Pick the home above; [the layout](layout.md) lists any extra homes.
+2. Name it lowercase kebab-case; reports lead with `YYYY-MM-DD-`.
+3. Run the onboard setup again to refresh the links below.
+4. Put dated evidence in its own file under `reports/`. Do not add it to an entry file.
 
 ## Contents
 
@@ -375,13 +404,47 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 
 ## Homes
 
-- `maintenance/`
-- `reference/`
+- `specs/`
+- `planning/`
+- `decisions/`
+- `references/`
+- `guides/`
 - `reports/`
+- `assets/`
+- `archive/`
+- `other/`
+
+## Kinds
+
+| id | kind | holds | not | why | writer | form | life | entry | read | owner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
+| `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
+| `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
+| `references/` | references | lookup tables and listings | steps -> `guides/` | fast lookup | people | kebab-case | edit in place | - | looking something up | `docs_check.py` |
+| `guides/` | guides | procedures a person follows | tables -> `references/` | do, not explain | people | kebab-case | edit in place | - | doing a task | `docs_check.py` |
+| `reports/` | reports | dated evidence | steps -> `guides/` | evidence stays fixed | people | `YYYY-MM-DD-slug.md` | immutable | - | checking what was verified | `docs_check.py` |
+| `assets/` | assets | non-Markdown files cited by a document | Markdown -> its home | keep prose clean | people | kebab-case | with its citer | - | opening a cited file | `docs_check.py` |
+| `archive/` | archive | superseded or retired documents | live documents -> their home | history without noise | people | `status:`, `superseded-by:` | keep | - | researching history | `docs_check.py` |
+| `other/` | other | unsorted documents | anything with a home -> that home | a visible backlog | anyone | `owner:`, `review-by:` | review-by date | - | sorting the inbox | `docs_check.py` |
+
+## Decide
+
+1. Is it a picture, diagram source or data file? yes -> `assets/`
+2. Is it evidence of something that happened on a date? yes -> `reports/`
+3. Is it one choice with its reasons and alternatives? yes -> `decisions/`
+4. Is it a proposal, roadmap or plan under review? yes -> `planning/`
+5. Is it steps a person follows? yes -> `guides/`
+6. Is it a table, listing or glossary you look things up in? yes -> `references/`
+7. Does it describe what the system is or must do? yes -> `specs/`
+8. Is it retired or superseded? yes -> `archive/`
+otherwise -> `other/`
 
 ## Frozen paths
 
 - `docs/reports/`
+
+## Legacy
 """
 
 TOPIC_AGENTS_TEMPLATE = """\
@@ -412,12 +475,14 @@ NESTED_SIZE_TARGET = 30
 Template = collections.namedtuple('Template', 'before block after')
 Template.__doc__ = 'One entry file: starter text before the block, the block text, starter text after it.'
 
-Model = collections.namedtuple('Model', 'name topics homes loose readme')
+Model = collections.namedtuple('Model', 'name topics homes loose readme nested', defaults=((),))
 Model.__doc__ = ('name: repository folder name. topics: list of Topic with one or more documents. '
                  'homes: list of Home that exist. loose: documents directly in docs/. '
-                 'readme: docs/README.md exists.')
+                 'readme: docs/README.md exists. nested: list of Topic for a home, or a topic folder '
+                 'under a home, that holds two or more documents (name is the path under docs/).')
 Topic = collections.namedtuple('Topic', 'name docs readme')
-Home = collections.namedtuple('Home', 'path readme')
+Home = collections.namedtuple('Home', 'path readme entry', defaults=(False,))
+NESTED_LINK_CAP = 20
 
 
 def _split_keep(text):
@@ -480,6 +545,8 @@ def render_templates(model):
     for home in model.homes:
         if home.readme:
             home_lines.append(_link(home.path, home.path + 'README.md'))
+        elif home.entry:
+            home_lines.append(_link(home.path, home.path + 'AGENTS.md'))
         else:
             home_lines.append('- `%s`' % home.path)
     for doc in model.loose:
@@ -497,6 +564,22 @@ def render_templates(model):
         links.extend(_link(doc, doc) for doc in topic.docs)
         base = 'docs/%s/' % topic.name
         out[base + 'AGENTS.md'] = Template(t.before.replace('<topic folder name>', topic.name),
+                                           _substitute(t.block, {PH_TOPIC_DOCS: links}), t.after)
+        out[base + 'CLAUDE.md'] = stub
+    entries = {t.name for t in model.nested}
+    for topic in model.nested:
+        links = [_link('README.md', 'README.md')] if topic.readme else []
+        direct = [d for d in topic.docs if '/' not in d]
+        subs = sorted({d.split('/', 1)[0] for d in topic.docs if '/' in d})
+        links.extend(_link(sub + '/', sub + '/AGENTS.md') for sub in subs if topic.name + '/' + sub in entries)
+        loose_subs = [d for d in topic.docs if '/' in d and topic.name + '/' + d.split('/', 1)[0] not in entries]
+        shown = (direct + loose_subs)[:NESTED_LINK_CAP]
+        links.extend(_link(doc, doc) for doc in shown)
+        more = len(direct) + len(loose_subs) - len(shown)
+        if more > 0:
+            links.append('- and %d more documents in this folder' % more)
+        base = 'docs/%s/' % topic.name
+        out[base + 'AGENTS.md'] = Template(t.before.replace('<topic folder name>', topic.name.rsplit('/', 1)[-1]),
                                            _substitute(t.block, {PH_TOPIC_DOCS: links}), t.after)
         out[base + 'CLAUDE.md'] = stub
     return out
@@ -556,11 +639,39 @@ def build_model(root, layout, documents):
     topic_list = [Topic(name, sorted(topics[name]),
                         os.path.isfile(os.path.join(root, 'docs', name, 'README.md')))
                   for name in sorted(topics)]
-    home_list = [Home(h, os.path.isfile(os.path.join(root, 'docs', h, 'README.md')))
+    nested = _nested_topics(root, layout, documents)
+    entries = {t.name + '/' for t in nested}
+    home_list = [Home(h, os.path.isfile(os.path.join(root, 'docs', h, 'README.md')), h in entries)
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
     return Model(name, topic_list, home_list, sorted(loose),
-                 os.path.isfile(os.path.join(root, 'docs', 'README.md')))
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested)
+
+
+def _nested_topics(root, layout, documents):
+    """Homes, and topic folders directly under a home, that hold ENTRY_THRESHOLD or more documents.
+
+    Subfolders get an entry only under a home whose kind allows topics (specs, planning, references,
+    guides, decisions); a report's evidence folder never does."""
+    topic_kinds = ('specs', 'planning', 'references', 'guides', 'decisions')
+    found = collections.OrderedDict()
+    for home in layout.homes:
+        key = home.rstrip('/')
+        kind = layout.kinds[home]['kind'] if home in layout.kinds else (key if key in DOC_KINDS else None)
+        prefix = 'docs/' + home
+        inside = [d[len(prefix):] for d in documents if d.startswith(prefix)]
+        if len(inside) >= ENTRY_THRESHOLD:
+            found[key] = list(inside)
+        if kind in topic_kinds:
+            subs = {}
+            for rel in inside:
+                if '/' in rel:
+                    subs.setdefault(rel.split('/', 1)[0], []).append(rel.split('/', 1)[1])
+            for sub, docs in subs.items():
+                if len(docs) >= ENTRY_THRESHOLD:
+                    found[key + '/' + sub] = docs
+    return [Topic(name, sorted(docs), os.path.isfile(os.path.join(root, 'docs', name, 'README.md')))
+            for name, docs in found.items()]
 
 
 # ---------------------------------------------------------------- managed blocks
@@ -740,7 +851,7 @@ def _size_note(c, text):
         return None
     path = c.path
     lines = text.count('\n') + (1 if text and not text.endswith('\n') else 0)
-    target = ROOT_SIZE_TARGET if '/' not in path else NESTED_SIZE_TARGET
+    target = ROOT_SIZE_TARGET if '/' not in path or path == 'docs/AGENTS.md' else NESTED_SIZE_TARGET
     if lines > target:
         return 'size %s: %d lines, over the %d-line target; not trimmed' % (path, lines, target)
     return None
@@ -1054,11 +1165,11 @@ RICH_DOCS = {
     'docs/README.md': '# Docs\n',
     'docs/beta/only.md': '# Only\n',
     'docs/loose.md': '# Loose\n',
-    'docs/maintenance/README.md': '# Operating\n',
+    'docs/guides/README.md': '# Operating\n',
     'docs/reports/2026-09-29.md': '# Report\n',
 }
 RICH_CONTENTS = ('- [README.md](README.md)\n- [alpha/](alpha/AGENTS.md)\n- [beta/only.md](beta/only.md)\n'
-                 '- [maintenance/](maintenance/README.md)\n- `reports/`\n- [loose.md](loose.md)\n')
+                 '- [guides/](guides/README.md)\n- `reports/`\n- [loose.md](loose.md)\n')
 
 
 def _git(root, *args):
@@ -1153,14 +1264,20 @@ def gate_create(impl):
         before, block, after = _parts(_text(root, 'docs/AGENTS.md'), 'docs/AGENTS.md')
         expect(before == '' and after == '', 'docs/AGENTS.md: starter text %r %r' % (before, after))
         _expect_hash(block, 'docs/AGENTS.md')
-        expect(block.text.startswith('# Documents\n\n## Adding a document\n\n1. Pick the home from [the layout]'
-                                     '(layout.md).\n'), 'docs/AGENTS.md: block starts %r' % block.text[:60])
+        expect(block.text.startswith('# Documents\n\nPick one home from the table, then read one file.'),
+               'docs/AGENTS.md: block starts %r' % block.text[:60])
+        for home in ('specs', 'planning', 'decisions', 'references', 'guides', 'reports', 'assets', 'archive', 'other'):
+            expect('| `%s/` |' % home in block.text, 'docs/AGENTS.md: the table lacks the home %s/' % home)
+        expect('otherwise' not in block.text and '9. None of the above, or unsure: `other/`.' in block.text,
+               'docs/AGENTS.md: the decision list is missing or malformed')
         expect(block.text.endswith('## Contents\n\n'), 'docs/AGENTS.md: contents in an empty fixture: %r'
                % block.text[-80:])
         expect(_text(root, LAYOUT_PATH) == LAYOUT_TEMPLATE, 'docs/layout.md is not the default layout')
         layout = parse_layout(os.path.join(root, 'docs', 'layout.md'))
-        expect(list(layout.homes) == ['maintenance/', 'reference/', 'reports/'] and layout.frozen == ['docs/reports/'],
+        expect(list(layout.homes) == [h + '/' for h in DOC_KINDS] and layout.frozen == ['docs/reports/'],
                'default layout parsed as %r' % (layout,))
+        expect(list(layout.kinds) == [h + '/' for h in DOC_KINDS] and layout.decide[-1] == ('otherwise', 'other/'),
+               'default layout kinds or decide parsed as %r' % (layout,))
     untracked = dict(RICH_DOCS, **{'docs/alpha/draft.md': '# Not tracked\n'})
     with _fixture(untracked, track=sorted(RICH_DOCS)) as root:
         rc, out, err = _call(run_setup, root, impl)
@@ -1182,6 +1299,44 @@ def gate_create(impl):
         expect(rc != 0, 'docs is a regular file: setup exited 0')
         expect(_snapshot(root) == snap, 'docs is a regular file: the fixture changed')
         expect('docs' in err, 'docs is a regular file: stderr does not name docs: %r' % err)
+
+
+NESTED_DOCS = {
+    'docs/guides/release.md': '# Release\n',
+    'docs/guides/setup/one.md': '# One\n',
+    'docs/guides/setup/two.md': '# Two\n',
+    'docs/specs/api.md': '# API\n',
+    'docs/reports/2026-10-05-a.md': '# A\n',
+    'docs/reports/2026-10-05-b.md': '# B\n',
+}
+
+
+def _render_without_nested(model):
+    return render_templates(model._replace(nested=()))
+
+
+def _render_nested_for_every_home(model):
+    extra = [Topic(h.path.rstrip('/'), ['x.md'], False) for h in model.homes]
+    return render_templates(model._replace(nested=list(model.nested) + extra))
+
+
+def gate_nested_entries(impl):
+    with _fixture(NESTED_DOCS, track=sorted(NESTED_DOCS)) as root:
+        rc, out, err = _call(run_setup, root, impl)
+        expect(rc == 0, 'nested fixture: setup exited %d: %s' % (rc, err.strip()))
+        files = _files(root)
+        for want in ('docs/guides/AGENTS.md', 'docs/guides/CLAUDE.md', 'docs/guides/setup/AGENTS.md',
+                     'docs/guides/setup/CLAUDE.md'):
+            expect(want in files, 'nested fixture: %s was not created' % want)
+        for gone in ('docs/specs/AGENTS.md', 'docs/reports/AGENTS.md'):
+            expect(gone not in files, 'nested fixture: %s was created (one document, or a frozen home)' % gone)
+        _, block, _ = _parts(_text(root, 'docs/guides/AGENTS.md'), 'docs/guides/AGENTS.md')
+        expect('- [setup/](setup/AGENTS.md)' in block.text and '- [release.md](release.md)' in block.text,
+               'nested fixture: the home entry block is %r' % block.text)
+        _, block, _ = _parts(_text(root, 'docs/AGENTS.md'), 'docs/AGENTS.md')
+        expect('- [guides/](guides/AGENTS.md)' in block.text, 'nested fixture: docs/AGENTS.md does not link the home entry')
+        rc, out, err = _call(run_check, root, impl)
+        expect(rc == 0, 'nested fixture: check after setup exited %d: %s %s' % (rc, out.strip(), err.strip()))
 
 
 def gate_preserve(impl):
@@ -1432,6 +1587,10 @@ GATES = [
     ('create', gate_create, REAL, [
         ('writes before checking every path', REAL._replace(preflight=False)),
         ('creates files without starter text', REAL._replace(render=_render_without_starter)),
+    ]),
+    ('nested-entries', gate_nested_entries, REAL, [
+        ('creates no entry for a home or a topic under a home', REAL._replace(render=_render_without_nested)),
+        ('creates an entry for a home with one document', REAL._replace(render=_render_nested_for_every_home)),
     ]),
     ('preserve', gate_preserve, REAL, [
         ('template variant writes outside the markers', REAL._replace(wrap=_wrap_writing_outside)),

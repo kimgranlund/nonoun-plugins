@@ -55,7 +55,7 @@ The template text is in [Templates](#templates).
 - A loose document is a document directly in `docs/`.
 - A topic's documents are counted through all its subfolders. A topic gets an entry file and a stub once it holds two or more documents. A topic with one document is linked from `docs/AGENTS.md` directly.
 - When a topic has a `README.md`, the topic entry links to it first.
-- A home gets no entry file in version 1. `docs/AGENTS.md` links to the home's `README.md` when it exists and names the folder otherwise.
+- A home, and a topic folder directly under a home, gets an entry file and a stub once it holds two or more documents (T-0242; the homes are the nine of [the docs schema](../docs-schema/design.md)). `docs/AGENTS.md` links to the home's `README.md` when it exists, to its entry when it has one, and names the folder otherwise. A report's evidence folder never gets one. A home entry lists at most 20 documents and then counts the rest.
 - Setup writes nothing inside a folder that a frozen path matches.
 - Setup never deletes a file. An entry stays when its topic later falls to one document.
 - Setup creates no empty folders.
@@ -186,7 +186,7 @@ An `NN-` prefix is optional and expresses order only. It may be used for:
 - Documents in a topic that have a real reading order, as in `docs/generative-constructs/`.
 - Stage folders in a reusable workflow definition, following the optional [workflow stage guidance](../../plugins/progressive-context/skills/progressive-context/references/workflow-stages.md).
 
-A number never expresses maturity or status. Whether a capability is intended, implemented, or accepted is derived from its contract and evidence, and a folder name that stored that claim would go stale when the code or criteria change. A document does not move between numbered folders as its state changes.
+A number never expresses maturity or status. Whether a capability is intended, implemented, or accepted is derived from its contract and evidence, and a folder name that stored that claim would go stale when the code or criteria change. A document does not move between numbered folders as its state changes. The one status-triggered move the docs schema allows is a planning document that has been superseded, which moves to `archive/` ([docs schema](../docs-schema/design.md), Planning versus specs).
 
 Inserting an item into a numbered sequence renames the items after it. That is a move, so it follows [document reorganization](reorganization.md).
 
