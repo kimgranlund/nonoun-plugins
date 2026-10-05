@@ -1,18 +1,18 @@
 # Broken Markdown links cleanup (T-0257)
 
-Measured with `python3 plugins/sdlc-lite/scripts/rename_refs.py links` from the repository root, before and after.
+Measured with `python3 plugins/sdlc-lite/scripts/rename_refs.py links` from the repository root.
 
 | Measure | Before | After |
 |---|---|---|
-| Links checked | 829 | 753 (after this record and the allowlist were added) |
-| Reported broken | 96 | 8 |
+| Links checked | 829 | 747 |
+| Reported broken | 96 | 12 |
 
 What changed:
 
-- The counter treated link-shaped text inside code fences and inline code as links. The analysis flagged 81 of the 96 as inside code (`slug/handoff.md`, `./0001-x/handoff.md`). The counter now blanks code first, which dropped about 79 from the checked total and the broken list (87 to 8 after the nine fixes).
-- Nine real links pointed at moved or mis-deepened targets (`validation/` before the rename to `reports/`, and `../.sdlc/...` at the wrong depth). Their path text was corrected; the rest of those dated records is untouched.
-- Eight links stay, listed with reasons in [the allowlist](broken-links-allowlist.md): two quoted README lines in frozen handoffs, two bare names relative to the ticket they described, two links to a sibling repository, and two to files of a throwaway project.
+- The counter treated link-shaped text inside code as links. It now blanks fenced blocks (indented up to three spaces, backtick or tilde) and inline code spans (any backtick count, one line) first. That removed 84 broken reports.
+- No dated record was edited. A first attempt rewrote nine targets; an independent verifier showed they were quoted text addressed to other files, one rewrite made a recorded command false, and the attempt was reverted.
+- The 12 that remain are listed with reasons in [the allowlist](broken-links-allowlist.md): quoted text addressed to another file, frozen records of pre-rename commands, bare names relative to the ticket they described, a sibling repository, and files of a throwaway project.
 
-Guard: `scripts/check.py` item 32 compares the live broken set with the allowlist rows. An unlisted broken link fails, and so does an allowlist row that no longer matches. Both negative controls run in the check.
+Guard: `scripts/check.py` item 32 compares the live broken set with the allowlist rows. An unlisted broken link fails, and so does a row that no longer matches. Both negative controls run in the check.
 
-Limits: the guard runs only where the repository root is a git work tree. Anchor-only links were not checked. A link inside an inline code span that a person meant as a real link is not counted.
+Limits: the guard runs only where the repository root is a git work tree. Anchor-only links are not checked. Unbalanced backticks, or a code span split across lines, can still leak a link into the count.

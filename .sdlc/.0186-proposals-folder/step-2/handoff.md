@@ -52,7 +52,7 @@ Depends on: step 1. Run from the repository root and use no em dashes. Each fact
    .sdlc/proposals/        candidate changes mined from past runs (<kind>-<hash>/proposal.md, P-NNNN), written by scripts/proposals.py scan; accept needs an eval in .sdlc/evals/, promote files an idea ticket; its AGENTS.md documents the format
    ```
 
-6. In `plugins/sdlc-lite/AGENTS.md`, add to the Verification list after the evals line: ``- Proposals mined from runs: `python3 plugins/sdlc-lite/scripts/proposals.py selftest`; read [the proposals entry file](../../proposals/AGENTS.md) before scan, accept, reject, or promote.``
+6. In `plugins/sdlc-lite/AGENTS.md`, add to the Verification list after the evals line: ``- Proposals mined from runs: `python3 plugins/sdlc-lite/scripts/proposals.py selftest`; read [the proposals entry file](../../.sdlc/proposals/AGENTS.md) before scan, accept, reject, or promote.``
 7. Run the live proof and record it in `docs/reports/proposals-live-run.md`, in the shape of `docs/reports/evals-live-run.md`. No model call is needed.
    - Setup, from the repository root:
 

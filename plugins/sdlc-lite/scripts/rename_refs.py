@@ -144,8 +144,8 @@ def plan_or_apply(root, maps, only, apply):
     return changed, total
 
 
-FENCE = re.compile(r'^(```|~~~).*?^\1[^\n]*$', re.M | re.S)
-INLINE = re.compile(r'`[^`\n]*`')
+FENCE = re.compile(r'^ {0,3}(```|~~~).*?^ {0,3}\1[^\n]*$', re.M | re.S)
+INLINE = re.compile(r'(?<!`)(`+)(?!`)[^\n]*?(?<!`)\1(?!`)')
 
 
 def strip_code(text):

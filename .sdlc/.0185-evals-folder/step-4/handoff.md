@@ -26,10 +26,10 @@ Depends on: steps 1 to 3. Use no em dashes. Each fact has one authoritative plac
 handoff-format is not a preloaded skill (the agents preload only level-rubric), so the Codex TOML does not change.
 
 `plugins/sdlc-lite/AGENTS.md`:
-- Extend the Contracts bullet that starts "Claude models and efforts live in `scripts/run.sh`". A change to either table needs a new eval in `.sdlc/evals/` and `scripts/evals.py lock`, else `scripts/check.py` fails; read [the evals entry file](../../evals/AGENTS.md) first.
+- Extend the Contracts bullet that starts "Claude models and efforts live in `scripts/run.sh`". A change to either table needs a new eval in `.sdlc/evals/` and `scripts/evals.py lock`, else `scripts/check.py` fails; read [the evals entry file](../../.sdlc/evals/AGENTS.md) first.
 - Add to the Verification list: `- Evals and the model-table lock: python3 plugins/sdlc-lite/scripts/evals.py check (and selftest).`
 
-`docs/codex-role-execution.md`: after "Regenerate the agent files after changes." (line 46), add "A change also needs a new eval in `.sdlc/evals/` and `evals.py lock`, or `check.py` fails; see [the evals entry file](../../evals/AGENTS.md)."
+`docs/codex-role-execution.md`: after "Regenerate the agent files after changes." (line 46), add "A change also needs a new eval in `.sdlc/evals/` and `evals.py lock`, or `check.py` fails; see [the evals entry file](../.sdlc/evals/AGENTS.md)."
 
 Left untouched on purpose:
 - `skills/level-rubric/SKILL.md`: the planner and plan-reviewer preload it, so an edit would regenerate the Codex TOML. It is consumer guidance, and the lock is a maintainer gate.
