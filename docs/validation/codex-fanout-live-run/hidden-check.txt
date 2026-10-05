@@ -1,0 +1,2 @@
+hidden_check: 8/8 passed
+rc=0

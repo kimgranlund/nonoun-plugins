@@ -231,5 +231,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0224 | [.0224-solo-lane-skipped](.0224-solo-lane-skipped/handoff.md) | steps.py lane writes the planner and filer ## Skipped entries for lane solo, so any caller can close by reason | bug | S | P2 | none | 🟢 done |
 | T-0225 | [.0225-solo-cost-capture](.0225-solo-cost-capture/handoff.md) | Solo sessions write no cost record, so the budget gate cannot see the default lane | bug | S | P1 | none | 🟢 done |
 | T-0226 | [.0226-fanout-solo-metering](.0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | S | P1 | none | 🟢 done |
-| T-0228 | [0228-onboard-lane-text](0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | ⏳ proposed |
+| T-0227 | [.0227-orient-entry-files](.0227-orient-entry-files/handoff.md) | Orient a harness: root AGENTS.md work section, tree map, docs entry | chore | S | P2 | none | 🟢 done |
+| T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | 🟢 done |
 | T-0229 | [0229-solo-budget-gate](0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | ⏳ proposed |
+| T-0230 | [0230-fanout-codex-report-and-gate](0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | ⏳ proposed |
