@@ -10,7 +10,7 @@ This record states only what a committed file or a command run for it shows. Whe
 | --- | --- | --- |
 | `/sdlc-lite:ask` sweeps the thread, task folder, tickets and notes for open questions and blockers and asks them in one `AskUserQuestion` round with reasoned options; `check.py` guard 29 | `skills/ask/SKILL.md`; `docs/reports/ask-skill-live-run.md` | T-0231 |
 | `scripts/inventory.py` is a read-only document inventory (flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, `broken_links`) with a procedure doc for turning it into a reorganization plan; nothing is moved; guard 30 | `scripts/inventory.py`; `docs/repo-onboarding/reorganization-plan-procedure.md` | T-0232 |
-| `scripts/docs_check.py` runs deterministic checks D-1 to D-12 against a repository's `docs/`; `onboard.py` reads the optional `## Kinds`, `## Decide` and `## Legacy` sections of `docs/layout.md`; guard 33 and a selftest in `check.sh` | `scripts/docs_check.py`; `docs/docs-schema/design.md`; `docs/reports/2026-10-05-docs-check-run.md` | T-0240, T-0241, T-0242 |
+| `scripts/docs_check.py` runs deterministic checks D-1 to D-12 against a repository's `docs/`; `onboard.py` reads the optional `## Kinds`, `## Decide` and `## Legacy` sections of `docs/layout.md`; guard 33 and a selftest in `check.sh` | `scripts/docs_check.py`; `docs/docs-schema/design.md`; `docs/reports/2026-10-05-docs-check-run.md` | T-0240 (design), T-0241, T-0242 |
 | `/sdlc-lite:plan-goal`, `/sdlc-lite:plan-loop` and `/sdlc-lite:plan-fanout` each return one runnable block (`/goal`, `/loop`, the `fanout.py run` command with a dry run first), checked by the new `scripts/plan_check.py`; guard 31 | the three skill folders; `docs/reports/plan-skills-live-run.md` | T-0249, T-0250, T-0251 |
 | The fanout report names the real solo model per backend, and a lane gate that runs zero tests stops the merge unless `--allow-empty-gate` is passed | `scripts/fanout.py`; fanout selftest case 19 | T-0230 |
 | `fanout.py` copies an untracked `.sdlc/config` into its worktrees, so a numbered close resolves `ticket_root` and the lane continues | `scripts/fanout.py`; `docs/reports/defect-fixes-0.20.9.md` | T-0258 |
@@ -30,11 +30,14 @@ Eleven Codex agent files changed, all regenerated from the role bodies: `sdlc-bu
 
 ## Verification
 
-Each ticket below has a verifier or review record in its closed folder under `.sdlc/` (closed folders are not read for this record beyond the files named here).
+Verifier records are in `.sdlc/verify-*`, `.sdlc/wave-b-verify` or the ticket's own folder. Outcomes per ticket:
 
 - T-0258, T-0261, T-0263: one L3 verifier, pass; it reverted each fix in a throwaway worktree and saw each regression test fail (`docs/reports/defect-fixes-0.20.9.md`). Its note that `conductor.md` and the level rubric still said "blocked -> replan" is repaired in c6f091e.
-- T-0231, T-0232, T-0241, T-0242, T-0246, T-0257: each has a closed ticket folder with verifier or verification records; T-0257 and T-0231 passed after a rework.
-- T-0230, T-0249 to T-0251: the wave-b verifier results are in the commits `f550b8d` and `8dbb2b6`.
+- T-0231, T-0241: L3 verifier pass on the first run.
+- T-0230, T-0255, T-0256: wave-b L3 verifier pass (f550b8d).
+- T-0242, T-0246, T-0249 to T-0251: the L3 verifier failed once; the findings were applied (7f8eb83, 01101ff, 8dbb2b6) and no re-verify is recorded.
+- T-0232: two L3 verifier fails; the last finding was fixed in e2ff040 and no verifier passed the final text.
+- T-0257: the L3 verifier failed twice; the second finding (the index line count) was fixed in 087c3a8 and not re-verified.
 - Live runs recorded as evidence: `ask-skill-live-run.md`, `plan-skills-live-run.md`, `2026-10-05-docs-check-run.md`.
 
 ## Known limits
