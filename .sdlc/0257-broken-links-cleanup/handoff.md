@@ -11,15 +11,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-One or two sentences: the outcome, not the method.
+The Markdown link counter reports real broken links only, and a baseline guard keeps the remainder explicit.
 
 ## Intent
-- Do:
-- Non-goals:
-- Done when:
+- Do: exclude code from the counter, allowlist what remains, add check.py item 32.
+- Non-goals: editing dated records.
+- Done when: `rename_refs.py links` equals the allowlist and the guard's negative controls fire.
 
 ## Context
-Decisions made, paths, links. Everything a clean-context agent needs; it sees nothing else.
+See docs/reports/broken-links-cleanup.md. Counter before: 829 checked, 96 broken.
 
 ## Constraints
 What must not change. "None" if none.
