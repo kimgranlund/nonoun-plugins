@@ -11,6 +11,14 @@ All paths and shell commands in this file are relative to the repository root.
 - Integrate through links to authoritative records. Keep execution status and capability qualification distinct.
 - Repository maintenance instructions are not automatically shipped as consumer skill context.
 
+## Map and how work is done here
+
+- `plugins/` holds the two plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
+- Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/validation/` evidence, and `docs/other/`.
+- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support.
+- Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for size S and M, `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
+- A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
+
 ## Read for the task
 
 | Task | Read next |
