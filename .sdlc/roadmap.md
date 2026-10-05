@@ -222,4 +222,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0215 | [.0215-solo-operator-tiers](.0215-solo-operator-tiers/handoff.md) | Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets | feature | M | P1 | none | 🟢 done |
 | T-0216 | [.0216-solo-live-proof](.0216-solo-live-proof/handoff.md) | Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex | chore | S | P2 | T-0215 | 🟢 done |
 | T-0217 | [.0217-solo-start-path](.0217-solo-start-path/handoff.md) | Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix | bug | S | P1 | none | 🟢 done |
-| T-0221 | [0221-fanout-solo-first](0221-fanout-solo-first/handoff.md) | fanout.py runs each lane by steps.py lane: solo for S and M, chain for full, with a lane cap and stagger | feature | M | P2 | none | ⏳ proposed |
+| T-0218 | [.0218-guard-numbers](.0218-guard-numbers/handoff.md) | Renumber check.py guards uniquely and guard it | chore | M | P2 | none | 🟢 done |
+| T-0219 | [.0219-skips-solo-full](.0219-skips-solo-full/handoff.md) | Skips guard covers lane solo and full | chore | M | P2 | none | 🟢 done |
+| T-0220 | [.0220-t0212-reverify](.0220-t0212-reverify/handoff.md) | Re-verify T-0212's check-packaging fix | chore | M | P2 | none | 🟢 done |

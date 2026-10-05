@@ -93,7 +93,7 @@ one per role; each defines its output format as its final message, which the run
 
 ## `agents/solo.md`
 
-A session agent, not a `run.sh` role: it delivers one ticket end to end in one session from a typed brief (ticket, files, check commands, done criterion), and is the default lane `steps.py lane` names for size S and M. Its tier table (S Sonnet low, M Sonnet xhigh, L Opus xhigh) lives in its body, since effort is a launch parameter; the Codex tiers are `solo` L1 to L3 in `adapters/codex/models.json`. Tiers M and L end with one batched `run.sh verifier` at the task dir on another model family; `scripts/check.py` item 17 guards the file, the mapping, and the generated TOMLs.
+A session agent, not a `run.sh` role: it delivers one ticket end to end in one session from a typed brief (ticket, files, check commands, done criterion), and is the default lane `steps.py lane` names for size S and M. Its tier table (S Sonnet low, M Sonnet xhigh, L Opus xhigh) lives in its body, since effort is a launch parameter; the Codex tiers are `solo` L1 to L3 in `adapters/codex/models.json`. Tiers M and L end with one batched `run.sh verifier` at the task dir on another model family; `scripts/check.py` item 18 guards the file, the mapping, and the generated TOMLs.
 
 ## `skills/level-rubric`, `skills/handoff-format`
 

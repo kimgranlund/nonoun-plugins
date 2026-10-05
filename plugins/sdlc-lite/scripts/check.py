@@ -54,36 +54,38 @@
    and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
    `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
    `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
-17. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
+16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
    and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
    agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
    `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
    two run.sh lines swapped, must be flagged.
-16. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
+17. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
    agents/archaeologist.md, agents/planner.md, and agents/builder.md; `at most 15 lines` in the four producing
    contracts (scout, researcher, architect, archaeologist); `search only what it does not answer` in
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
-17. Solo agent: agents/solo.md exists and names tiers S, M, and L with `Sonnet low`, `Sonnet xhigh`, and
+18. Solo agent: agents/solo.md exists and names tiers S, M, and L with `Sonnet low`, `Sonnet xhigh`, and
    `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; and the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist. Negative controls:
    each phrase removed, no `solo` key, a changed `solo` entry, and one TOML missing must be flagged.
-18. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
+19. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
    still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
    dispatch line `Lane: <lane> because <reason>`, (3) the stop rules `hard stop that comes to the user`, and (4) the
    thin-conductor rule `take back conclusions, not file contents or logs`. Each has a negative control (the phrase
    removed must be flagged).
-18. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
+20. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
    names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
    adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
-19. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
+21. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
    S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
    .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
-20. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
+22. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
    in scripts/run.sh; and `budget.py` in scripts/board.py. Each pair has a negative control (the phrase removed
    must be flagged).
+23. Guard numbers: the docstring's numbered guards run 1..N once each, and every `docstring item N` comment names an
+   existing one. Negative controls: a duplicated number, and a comment citing a missing item, must be flagged.
 24. Fanout solo first: scripts/fanout.py names `sdlc-lite:solo`, `solo_command(`, `SOLO_VERIFIER`, `--max-lanes`,
    `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
@@ -420,7 +422,7 @@ for rel in READ_FIRST_FILES:
     if read_first_missing(text): errors.append(f'{rel}: read-first route missing "{READ_FIRST}"')
     elif not read_first_missing(text.replace(READ_FIRST, '')):
         errors.append(f'{rel}: read-first negative control not flagged')
-# Lean lane text (docstring item 13): the lean chain section and the coarse-step rule name their phrases.
+# Lean lane text (docstring item 14): the lean chain section and the coarse-step rule name their phrases.
 LEAN_LANE = {'## Lean chain': ('skills/chain/SKILL.md',),
              'always runs the filer': ('skills/chain/SKILL.md',),
              'independently verifiable outcome': ('agents/planner.md',),
@@ -433,7 +435,7 @@ for phrase, rels in LEAN_LANE.items():
         if lean_missing(text, phrase): errors.append(f'{rel}: lean lane text missing "{phrase}"')
         elif not lean_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: lean-lane negative control not flagged')
-# Spec gate text (docstring item 17): the guard timeout line and the run.sh gate are named where they route.
+# Spec gate text (docstring item 16): the guard timeout line and the run.sh gate are named where they route.
 SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
              'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
 def spec_gate_missing(text, phrase): return phrase not in text
@@ -457,7 +459,7 @@ else:
     ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
     swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
     if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
-# Carry forward (docstring item 16): producer contracts end with the section; planner and builder read it first.
+# Carry forward (docstring item 17): producer contracts end with the section; planner and builder read it first.
 CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
 CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
                  'at most 15 lines': CF_PRODUCERS,
@@ -471,7 +473,7 @@ for phrase, rels in CARRY_FORWARD.items():
         if carry_forward_missing(text, phrase): errors.append(f'{rel}: carry-forward text missing "{phrase}"')
         elif not carry_forward_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: carry-forward negative control not flagged')
-# Ticket budget (docstring item 17): filing sets it, run.sh gates on it (exit 4), board.py renders it.
+# Ticket budget (docstring item 22): filing sets it, run.sh gates on it (exit 4), board.py renders it.
 TICKET_BUDGET = {'budget.py set': ('skills/ticket/SKILL.md',),
                  'budget.py': ('scripts/run.sh', 'scripts/board.py'),
                  '4 ticket budget': ('scripts/run.sh',)}
@@ -500,7 +502,7 @@ errors.extend(messenger_missing(mt, mc, mtoml))
 if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
         or not messenger_missing(mt, mc, False)):
     errors.append('check.py: messenger guard negative control not flagged')
-# Solo agent (docstring item 17): a session agent with tiers S, M, L, a Codex mapping, and three generated TOMLs.
+# Solo agent (docstring item 18): a session agent with tiers S, M, L, a Codex mapping, and three generated TOMLs.
 SOLO_WORDS = ('| S |', '| M |', '| L |', 'Sonnet low', 'Sonnet xhigh', 'Opus xhigh')
 SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
 def solo_missing(agent_text, codex_models, tomls):
@@ -521,7 +523,7 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
-# Conductor rules (docstring item 18): philosophy and objective, lane first, stop rules, thin conductor.
+# Conductor rules (docstring item 19): philosophy and objective, lane first, stop rules, thin conductor.
 CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
                    'context and instruction.',
                    'cheapest path that still passes independent verification',
@@ -580,7 +582,7 @@ if sdlc.is_dir():
                 errors.append('check.py: evals lock guard negative control not flagged')
 else:
     print(f'skip: evals lock guard (no {sdlc})')
-# Handoff freeze (docstring item 18): runner, lifecycle, hook file, registration, and the hooks doc agree.
+# Handoff freeze (docstring item 20): runner, lifecycle, hook file, registration, and the hooks doc agree.
 FREEZE_RUN = ('SDLC_HANDOFF_SHA256', 'stale_input', 'stale input:')
 FREEZE_LIFE = ('SDLC_HANDOFF_SHA256', 'handoff_sha256')
 def freeze_missing(run_text, life_text, hook_ok, hooks_json, docs_text):
@@ -601,7 +603,7 @@ for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.s
     _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
     if not freeze_missing(*_args): errors.append(f'check.py: handoff freeze guard negative control not flagged for "{_w}"')
 if not freeze_missing(_fr[0], _fr[1], False, _fr[3], _fr[4]): errors.append('check.py: handoff freeze guard negative control not flagged for the hook file')
-# Solo start path (docstring item 19): solo.md holds the start command; every routing text sends S and M to solo.
+# Solo start path (docstring item 21): solo.md holds the start command; every routing text sends S and M to solo.
 SOLO_ROUTE = (('agents/solo.md', '--agent sdlc-lite:solo'),
               (CONDUCTOR, 'Size S and M go to `solo` by default'),
               ('skills/fix/SKILL.md', 'size S and M go to `solo`'),
@@ -613,6 +615,18 @@ for rel, phrase in SOLO_ROUTE:
     if solo_route_missing(srt, phrase): errors.append(f'{rel}: solo start path missing "{phrase}"')
     elif not solo_route_missing(srt.replace(phrase, ''), phrase):
         errors.append(f'check.py: solo start path negative control not flagged for "{phrase}"')
+# Guard numbers (docstring item 23): the docstring's numbered guards run 1..N once each, and every "docstring item N" comment names one.
+def guard_numbers_bad(doc, src):
+    nums = [int(n) for n in re.findall(r'(?m)^(\d+)\. ', doc)]
+    bad = []
+    if nums != list(range(1, len(nums) + 1)): bad.append(f'docstring guard numbers are not 1..{len(nums)} once each: {nums}')
+    bad += [f'comment cites docstring item {n}, which does not exist' for n in sorted({int(n) for n in re.findall(r'docstring item (\d+)', src)} - set(nums))]
+    return bad
+_src = pathlib.Path(__file__).read_text()
+for _b in guard_numbers_bad(__doc__, _src): errors.append(f'check.py: {_b}')
+_dup = __doc__.replace('\n19. Conductor rules', '\n18. Conductor rules', 1)
+if not guard_numbers_bad(_dup, _src): errors.append('check.py: guard numbers negative control not flagged for a duplicated number')
+if not guard_numbers_bad(__doc__, _src + '\n# x (docstring ' + 'item 99)'): errors.append('check.py: guard numbers negative control not flagged for a missing item')
 # Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md tiers.
 FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap')
 FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger')
