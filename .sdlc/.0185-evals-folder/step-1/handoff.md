@@ -33,7 +33,7 @@ Eval file:
 - `role`: regex `[a-z][a-z-]*`. It is syntactic, so renaming a role never invalidates an old record.
 - `level`: `L1` to `L5`, or `all`.
 - `model`: regex `[A-Za-z0-9][A-Za-z0-9._-]*`. Any model id passes, including one not in the table, and `all` matches.
-- `effort`: regex `[a-z]+`. There is no fixed list, because Codex advertises `max` and `ultra` (`docs/validation/codex-account-models-2026-09-30.md`).
+- `effort`: regex `[a-z]+`. There is no fixed list, because Codex advertises `max` and `ultra` (`docs/reports/codex-account-models-2026-09-30.md`).
 - `host`: `claude`, `codex`, or `all`.
 - `task_set`: any non-empty one-line text, a short name or a path, never checked for existence.
 - `pass_rate`: `<passed>/<total>`, both non-negative integers, with passed <= total. `0/0` is allowed.

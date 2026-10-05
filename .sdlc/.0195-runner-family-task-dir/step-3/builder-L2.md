@@ -3,9 +3,9 @@
 done
 
 ## Changes
-- docs/validation/runner-family-task-dir-live-run/dry-run-base.txt: rewritten by shell redirection from the pre-fix run.sh at 171e13b. It now shows `--model sonnet`.
-- docs/validation/runner-family-task-dir-live-run/dry-run-fixed.txt: rewritten by shell redirection from the current run.sh. It shows `--model opus`.
-- docs/validation/runner-family-task-dir-live-run.md: new report.
+- docs/reports/runner-family-task-dir-live-run/dry-run-base.txt: rewritten by shell redirection from the pre-fix run.sh at 171e13b. It now shows `--model sonnet`.
+- docs/reports/runner-family-task-dir-live-run/dry-run-fixed.txt: rewritten by shell redirection from the current run.sh. It shows `--model opus`.
+- docs/reports/runner-family-task-dir-live-run.md: new report.
 - docs/README.md: added one index line after the Messages wait live run line.
 
 ## Checks

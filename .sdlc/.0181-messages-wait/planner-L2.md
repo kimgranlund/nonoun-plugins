@@ -113,7 +113,7 @@ level: L3
 ### Do
 Depends on: steps 1 and 2.
 
-1. Create the probe `docs/validation/messages-wait-live-run/probe.py`, modelled on `docs/validation/messages-live-run/probe.py`. Reuse its setup and the same isolation:
+1. Create the probe `docs/reports/messages-wait-live-run/probe.py`, modelled on `docs/reports/messages-live-run/probe.py`. Reuse its setup and the same isolation:
    - setup: temp project, `git init`, empty commit, `tickets.py --root .sdlc roadmap`;
    - environment stripped of `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_CODE_*`, and `SDLC_*`;
    - Claude `--safe-mode --disable-slash-commands`;
@@ -136,8 +136,8 @@ Depends on: steps 1 and 2.
    - two wait calls give fail;
    - a `count` call gives fail;
    - no wait call gives fail.
-5. Run each arm once and save its stdout with `| tee` as `docs/validation/messages-wait-live-run/claude.txt` and `codex.txt`. If a host cannot run, the arm's file holds `result=unverified` and the reason. Never use a fixture.
-6. Write `docs/validation/messages-wait-live-run.md` with:
+5. Run each arm once and save its stdout with `| tee` as `docs/reports/messages-wait-live-run/claude.txt` and `codex.txt`. If a host cannot run, the arm's file holds `result=unverified` and the reason. Never use a fixture.
+6. Write `docs/reports/messages-wait-live-run.md` with:
    - a `Recorded: <date>` line;
    - `## Environment`: host versions, models from the hosts' own records, the plugin commit (`git rev-parse --short HEAD`), and a statement that steps 1 and 2 were uncommitted working-tree changes when the arms ran (show `git status --porcelain -- plugins/`);
    - `## Method`: exact commands and prompts;
@@ -145,13 +145,13 @@ Depends on: steps 1 and 2.
    - `## Limits`: a single run per arm, one machine, an active parent only, no idle-host wake.
 7. Add one line for it to the validation list in `docs/README.md`, next to the Messages live run line.
 ### Acceptance criteria
-- `python3 docs/validation/messages-wait-live-run/probe.py selftest | grep -qxF "probe selftest: PASS"`
-- `for a in claude codex; do grep -qxE "result=(pass|fail|unverified)" docs/validation/messages-wait-live-run/$a.txt || exit 1; done`
-- `for a in claude codex; do f=docs/validation/messages-wait-live-run/$a.txt; if grep -qx "result=pass" "$f"; then grep -qx "wait_calls=1 poll_calls=0" "$f" || exit 1; grep -qE "^send_time=[^ ]+ read_time=[^ ]+ ack_time=" "$f" || exit 1; fi; done`
-- `f=docs/validation/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
+- `python3 docs/reports/messages-wait-live-run/probe.py selftest | grep -qxF "probe selftest: PASS"`
+- `for a in claude codex; do grep -qxE "result=(pass|fail|unverified)" docs/reports/messages-wait-live-run/$a.txt || exit 1; done`
+- `for a in claude codex; do f=docs/reports/messages-wait-live-run/$a.txt; if grep -qx "result=pass" "$f"; then grep -qx "wait_calls=1 poll_calls=0" "$f" || exit 1; grep -qE "^send_time=[^ ]+ read_time=[^ ]+ ack_time=" "$f" || exit 1; fi; done`
+- `f=docs/reports/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
 - `grep -qF "validation/messages-wait-live-run.md" docs/README.md`
-- `! grep -rqF "—" docs/validation/messages-wait-live-run.md docs/validation/messages-wait-live-run/probe.py`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/messages-wait-live-run(\.md|/)")"`
+- `! grep -rqF "—" docs/reports/messages-wait-live-run.md docs/reports/messages-wait-live-run/probe.py`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Step 4: Gates green
 level: L2
@@ -177,7 +177,7 @@ Depends on: steps 1, 2, and 3.
 - Builders never commit, so every step shares the same `SDLC_BASE_SHA` and the scope criteria grow step by step. Verified by the planner rules and the run.sh base-sha description in docs/maintenance/sdlc-internals.md:11.
 - `case_entry_parses` pins the set of entry-file subcommands, so adding a `wait` span to `ENTRY_TEMPLATE` requires adding `'wait'` to `want`. Verified at messages.py:1729-1731. `ST_HEADINGS` is unaffected because no heading is added (messages.py:1629).
 - The tickets.py selftest does not pin entry-file text, only presence and restore. Verified at tickets.py:3594-3623.
-- The Codex path-only model is `gpt-6.1-sol` at effort `medium`. Verified in docs/validation/messages-live-run.md (Environment and Host commands).
+- The Codex path-only model is `gpt-6.1-sol` at effort `medium`. Verified in docs/reports/messages-live-run.md (Environment and Host commands).
 - Both host CLIs are installed: `claude --version` printed 2.1.286 and `codex --version` printed 0.159.2.
 - The current gates are green and side-effect free: `bash plugins/sdlc-lite/scripts/check.sh` exited 0 and left `git status --porcelain` unchanged, and `check-packaging.py`, `codex_roles.py generate --check`, `check.py`, and `git diff --check` all exited 0.
 - Every step-1 to step-3 new-behavior criterion is red now for the right reason: `wait` is an invalid argparse choice, and the docs, template, and probe files lack the text.

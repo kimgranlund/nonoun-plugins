@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- docs/validation/evals-live-run.md: new live-run record with Environment, Commands, Evidence and Limits sections.
+- docs/reports/evals-live-run.md: new live-run record with Environment, Commands, Evidence and Limits sections.
 
 ## Checks
 I ran all six arms in a `mktemp -d` copy made by rsync, then ran them again in a fresh copy. The results below are from the second run.

@@ -27,7 +27,7 @@ All six steps passed their verifiers. Step 6's first builder attempt was killed 
   - `split` refuses a plan whose review said `replan`.
   - `/chain`, the conductor, `/plan`, `handoff-format`, `docs/maintenance/sdlc-internals.md`, and `check.py` are updated to match.
 - **Codex (step 4):** `models.json` gets `plan-reviewer` L1 at `gpt-6-astra` high. The alternate follows the newest planner's recorded model, so `gpt-6.1-sol` high reviews Astra plans. Regenerated TOML profiles, `codex_roles.py`, `codex_exchange.py`, `instructions.md`, and `docs/codex-role-execution.md` are updated, with new selftests. The base and alternate profiles now number 24 project agent definitions.
-- **Live validation doc (step 5):** `docs/validation/plan-reviewer-live-run.md`, its copied evidence, and one `docs/README.md` entry.
+- **Live validation doc (step 5):** `docs/reports/plan-reviewer-live-run.md`, its copied evidence, and one `docs/README.md` entry.
 - **Gates (step 6):** no fixes were needed.
 
 ### How each step was verified
@@ -48,7 +48,7 @@ Each step was checked by an independent verifier against its acceptance criteria
   - `codex_roles.py generate --check` and the full `codex-selftest.py` (22 tests) passed.
   - `check-packaging.py` printed PASS.
 - **Step 5 (verifier L2, pass):**
-  - The live run in a throwaway project is documented in `docs/validation/plan-reviewer-live-run.md`.
+  - The live run in a throwaway project is documented in `docs/reports/plan-reviewer-live-run.md`.
   - On Claude, the reviewer returned `replan` on the hand-written defective plan. `runs.jsonl` records it at `opus`/`high`.
   - On Codex, the reviewer returned a rejecting verdict (`replan` or `blocked`) on the defective plan. The result header shows `model=gpt-6.1-sol`.
   - The sound plan passed on the first review. It went through split, builder L1, and verifier L1 with a `pass` verdict.

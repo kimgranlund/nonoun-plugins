@@ -31,7 +31,7 @@ done
 - No em dashes in the new text (grep count 0).
 
 ## Notes
-- This step changed only the four files listed in `git status --short`. `git diff main --stat` lists 25 files because main moved past this branch's base e751dd7 (the 0212 handoff-freeze merge and others). The deletions under `hooks/`, `docs/validation/` and elsewhere in that output are not from this step.
+- This step changed only the four files listed in `git status --short`. `git diff main --stat` lists 25 files because main moved past this branch's base e751dd7 (the 0212 handoff-freeze merge and others). The deletions under `hooks/`, `docs/reports/` and elsewhere in that output are not from this step.
 - `role_cost_usd` is the sum of `cost_usd` across `runs.jsonl`, or `none` when no record has one. I added it because item 7 asks for session usage "next to the task's role costs", and footprint printed no cost before. It appears only with `--session`, so the plain measure output and its `len(m) == 9` selftest are unchanged.
 - `session_input` is `input_tokens` plus `cache_creation_input_tokens`, which folds cache writes into input. `session_cache_read` is `cache_read_input_tokens` and `session_output` is `output_tokens`. Claude Code transcripts repeat the same `message.id` with identical usage on several lines (seen in a real transcript), so repeats count once; the positive selftest fixture includes such a repeat.
 - The `Size S → /sdlc-lite:fix ... fast lane` bullet stays below the new lane-first bullet because check.py already requires `sdlc-lite:fix` and `fast lane` in conductor.md. The lane-first bullet above it decides the route.

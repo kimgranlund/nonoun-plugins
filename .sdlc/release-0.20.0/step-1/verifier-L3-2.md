@@ -27,7 +27,7 @@ Release-record claims checked per the Do (my own checks, not the first pass's):
 - Known limits: `steps.py split` checks only `rejected_by_review` (steps.py:866-872), and the unreviewed split above shows the skip is uncaught; `/chain` SKILL.md:49 item 2 replans through planner L3 then `steps.py split` with no `steps.py review`; `role-routing-probe.md:40` matches the non-reproduction sentence.
 
 ## Out of scope changes
-None. `git status` shows only this run's own `verifier-L3-2.attempt.json`. Commits since the first pass (9494b07..HEAD): `docs/validation/release-0.20.0.md` Upgrading bullets rewritten (checked above) and the first pass's artifacts committed. `main..HEAD` outside `.sdlc`: `docs/README.md` (one index line, present at :17), the release record, and the two sdlc-lite manifests. `.worktrees/model-fit` is a pre-existing branch worktree, not a tmp leftover.
+None. `git status` shows only this run's own `verifier-L3-2.attempt.json`. Commits since the first pass (9494b07..HEAD): `docs/reports/release-0.20.0.md` Upgrading bullets rewritten (checked above) and the first pass's artifacts committed. `main..HEAD` outside `.sdlc`: `docs/README.md` (one index line, present at :17), the release record, and the two sdlc-lite manifests. `.worktrees/model-fit` is a pre-existing branch worktree, not a tmp leftover.
 
 ## For the next attempt
 None. Optional before tagging: change the parenthetical in the second Upgrading bullet from `install <project> --check` to `install <project>` (or "check with `--check`, then `install`"), and file a ticket for the `block-disk-scan.sh` false positive on a quoted mention inside a compound command.

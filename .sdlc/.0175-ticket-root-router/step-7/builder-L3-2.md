@@ -3,11 +3,11 @@
 done
 
 ## Changes
-- docs/validation/ticket-root-router-live-run.md: in the Fresh role section, the `Result:` line now reads `Result: unverified: <two reasons>` instead of `Result: verified`. The "Router read" observation now opens with "not through the `router:` line" instead of "yes".
+- docs/reports/ticket-root-router-live-run.md: in the Fresh role section, the `Result:` line now reads `Result: unverified: <two reasons>` instead of `Result: verified`. The "Router read" observation now opens with "not through the `router:` line" instead of "yes".
 - docs/README.md: unchanged in this attempt. The previous attempt's list item stays.
 
 ## Checks
-- `test -f docs/validation/ticket-root-router-live-run.md && grep -qE '^Recorded: [0-9]{4}-[0-9]{2}-[0-9]{2}\.' ...`: exit 0
+- `test -f docs/reports/ticket-root-router-live-run.md && grep -qE '^Recorded: [0-9]{4}-[0-9]{2}-[0-9]{2}\.' ...`: exit 0
 - `grep -qF '(validation/ticket-root-router-live-run.md)' docs/README.md`: exit 0
 - Scripted run grep chain (`## Scripted run`, `- proposed: 1`, `- ready: 1`, `- done: 1`, `ticket_root: tickets`): exit 0
 - Fresh role grep chain (`## Fresh role`, `^Result: (verified|unverified: .+)$`, `## Limits`): exit 0

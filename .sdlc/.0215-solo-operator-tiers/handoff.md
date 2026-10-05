@@ -19,7 +19,7 @@ A declared session agent, `solo`, delivers one ticket end to end in a single ses
 - Done when: the agent file, mapping, lane output and check exist, an independent verifier passed, one live run per host shows a size-M ticket delivered by solo with a batched verifier, and the lane output is recorded.
 
 ## Context
-User decision 2026-10-04 after "if an orchestration-based system cannot compete with a basic single-session agent ... we have some really big problems". Evidence to read first: docs/validation/solo-vs-lean-benchmark-2026-10-04.md (in progress) and docs/other/orchestration-optimization-question.md. User decision 2026-10-04 (course correction): build NOW, do not wait for the benchmark to finish; solo becomes the default lane for S and M. Priority P1. Depends on T-0197 (merged); reconcile conductor text with T-0199 when it lands, do not block on it.
+User decision 2026-10-04 after "if an orchestration-based system cannot compete with a basic single-session agent ... we have some really big problems". Evidence to read first: docs/reports/solo-vs-lean-benchmark-2026-10-04.md (in progress) and docs/other/orchestration-optimization-question.md. User decision 2026-10-04 (course correction): build NOW, do not wait for the benchmark to finish; solo becomes the default lane for S and M. Priority P1. Depends on T-0197 (merged); reconcile conductor text with T-0199 when it lands, do not block on it.
 
 ## Constraints
 Keep it small and one authoritative location per fact. Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." The solo agent file stays short.

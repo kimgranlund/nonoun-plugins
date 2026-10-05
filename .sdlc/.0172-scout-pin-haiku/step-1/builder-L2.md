@@ -7,7 +7,7 @@ done
 - plugins/sdlc-lite/scripts/check.py: run.sh model pattern is now `[\w-]+`. `cap()` maps `claude-<family>-<major>-<minor>` to `<Family> <major>.<minor>` and keeps aliases as before. Both rubric cell patterns now accept an optional ` N.N` version. Added a scout pin guard (`scout_mismatch`) with a `cap()` self-check and a built-in negative control.
 - plugins/sdlc-lite/skills/level-rubric/SKILL.md: scout row is now `Haiku 4.5 low`. Added the alias sentence after the `haiku` Agent-tool seat line.
 - plugins/sdlc-lite/adapters/codex/agents/{sdlc-planner-l1,l2,l3, sdlc-plan-reviewer-l1, sdlc-plan-reviewer-l1-alternate}.toml: regenerated with `codex_roles.py generate`. Each file changed by one line.
-- docs/validation/haiku-alias-2026-09-30.md: new dated probe note.
+- docs/reports/haiku-alias-2026-09-30.md: new dated probe note.
 - docs/README.md: link to the new note, placed after the Codex tier mirror entry.
 
 ## Checks

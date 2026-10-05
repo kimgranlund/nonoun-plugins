@@ -16,9 +16,9 @@ The two criteria hold, but the new note carries a false evidence pointer (see ne
 None. The `sdlc-messenger-l1.toml` change is the required regeneration.
 
 ## For the next attempt
-The note `docs/validation/messages-idle-host-limit-2026-10-01.md`, in its "Evidence it was not tested" section, cites `spawn_agent` and `wait_agent` tool calls with "raw evidence in `messages-live-run/codex-messenger.txt`". That claim is false.
-- `grep -c 'wait_agent' docs/validation/messages-live-run/codex-messenger.txt` gives 0.
-- `grep -c 'spawn_agent' docs/validation/messages-live-run/codex-messenger.txt` gives 0.
-- The only source is `docs/validation/messages-live-run.md` line 156, which quotes the rollout files for the Codex parent: `spawn_agent`, `wait_agent`, `followup_task`, `wait_agent`.
+The note `docs/reports/messages-idle-host-limit-2026-10-01.md`, in its "Evidence it was not tested" section, cites `spawn_agent` and `wait_agent` tool calls with "raw evidence in `messages-live-run/codex-messenger.txt`". That claim is false.
+- `grep -c 'wait_agent' docs/reports/messages-live-run/codex-messenger.txt` gives 0.
+- `grep -c 'spawn_agent' docs/reports/messages-live-run/codex-messenger.txt` gives 0.
+- The only source is `docs/reports/messages-live-run.md` line 156, which quotes the rollout files for the Codex parent: `spawn_agent`, `wait_agent`, `followup_task`, `wait_agent`.
 
 Fix: point the evidence cite at `messages-live-run.md` (the "rollout files" section near line 156) and drop or correct the `codex-messenger.txt` reference. This was checked against the live-run record, not the builder's wording. The builder might rebut that "raw evidence" meant the live-run bundle in general. The rebuttal fails because the sentence names one file and that file has no such calls. Nothing else needs changing.

@@ -3,9 +3,9 @@
 done
 
 ## Changes
-- `docs/validation/supervisor-live-run/probe.py` (new): the live probe. It has seven arms (`dry-run`, `claude`, `codex`, `claude-attached`, `codex-attached`, `claude-push`, `codex-push`), a pure `oracle(facts)`, and an offline `selftest` that uses a stub host.
-- `docs/validation/supervisor-live-run/AGENTS.md` (new): says what the folder holds (`probe.py`, the `<arm>.txt` evidence files step 5 writes, and the dated record), what each arm shows, and how to rerun the selftest and each arm.
-- `docs/validation/supervisor-live-run/CLAUDE.md` (new): contains `@AGENTS.md`.
+- `docs/reports/supervisor-live-run/probe.py` (new): the live probe. It has seven arms (`dry-run`, `claude`, `codex`, `claude-attached`, `codex-attached`, `claude-push`, `codex-push`), a pure `oracle(facts)`, and an offline `selftest` that uses a stub host.
+- `docs/reports/supervisor-live-run/AGENTS.md` (new): says what the folder holds (`probe.py`, the `<arm>.txt` evidence files step 5 writes, and the dated record), what each arm shows, and how to rerun the selftest and each arm.
+- `docs/reports/supervisor-live-run/CLAUDE.md` (new): contains `@AGENTS.md`.
 
 ## Checks
 - AC1 (selftest prints every `ok:` label and `probe selftest: PASS` last): exit 0. The selftest takes about 13 s.

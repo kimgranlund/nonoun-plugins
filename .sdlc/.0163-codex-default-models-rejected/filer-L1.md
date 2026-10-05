@@ -60,6 +60,6 @@ Fixed: Codex default models now use `gpt-6-astra` in place of `gpt-6-sol`, which
 - decide: Scout L1 still uses `gpt-6-luna`, which the ChatGPT account rejects, so Codex scout runs keep failing until the user picks a replacement.
 - fix-now: `plugins/sdlc-lite/adapters/codex/instructions.md` line 22 still mentions "alternate profiles that enforce a different model". The step 1 builder flagged it and it is embedded in every generated TOML, so edit it and regenerate. No step artifact shows it was changed.
 - fix-now: `docs/codex-role-execution.md` line 74 still names `sdlc-verifier-l1-alternate` in the live-run note. The step 1 builder flagged it, and the step 2 artifacts do not show it changed.
-- note: `docs/validation/native-codex-smoke.json` hashes the three deleted alternate TOMLs. It is historical evidence and was left untouched.
+- note: `docs/reports/native-codex-smoke.json` hashes the three deleted alternate TOMLs. It is historical evidence and was left untouched.
 - note: Projects that installed the old agents keep stale `sdlc-verifier-lN-alternate` TOMLs in `.codex/agents/`, because `install` does not remove them. They are unused while no alternate is configured.
 - note: A focused live Codex run through `scripts/run.sh` in a throwaway project is still needed, per root AGENTS.md. Only stub CLIs were used here.

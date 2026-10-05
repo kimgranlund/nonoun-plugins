@@ -25,7 +25,7 @@ A builder or verifier working on a plan step now reads the nearest non-root `AGE
 - `plugins/sdlc-lite/skills/fix/SKILL.md` and `skills/chain/SKILL.md` (loose-ends step): hand-written step handoffs add the same subsection.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: the step template documents the subsection as optional and gives the nearest-entry rule, with the root left out.
 - `plugins/sdlc-lite/scripts/check.py`: a read-first route check over seven files, with a negative control.
-- `docs/validation/entry-files-live-run.md`: new live-run report, linked from `docs/README.md` and `docs/repo-onboarding/design.md`.
+- `docs/reports/entry-files-live-run.md`: new live-run report, linked from `docs/README.md` and `docs/repo-onboarding/design.md`.
 
 ### How each was verified
 Every step has a verifier verdict of pass.

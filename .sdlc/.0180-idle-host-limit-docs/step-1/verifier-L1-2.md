@@ -10,7 +10,7 @@ pass
 - (guard) scope guard on changed files: pass. Evidence: run with `SDLC_BASE_SHA=2ca8fe8b…` read from `step-1/base-sha`; printed C5ok. Only the allowed paths changed.
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`: pass. Evidence: two runs, both exit 0. Output includes the "messages", "run", "hook" and "hook live probe" selftests PASS and "ok: plugin validate". The only skip was "skip: shellcheck not installed".
 - Previous-attempt fix: the note's citations hold. Evidence:
-  - `docs/validation/messages-live-run.md` line 156 holds `spawn_agent`, `wait_agent` and `followup_task`.
+  - `docs/reports/messages-live-run.md` line 156 holds `spawn_agent`, `wait_agent` and `followup_task`.
   - The note no longer mentions `codex-messenger.txt`.
   - `run_in_background` appears in `messages-live-run.md`, and "spawn it again" is at lines 47 and 51.
   - `release-0.20.2.md` exists.

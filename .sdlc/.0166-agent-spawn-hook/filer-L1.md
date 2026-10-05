@@ -17,7 +17,7 @@ The handoff allowed "warns or denies". The plan chose deny (exit 2).
   - It denies `sdlc-lite:*`, and plugin-qualified names with a `builder`, `verifier`, `reviewer`, `planner`, or `checker` token.
 - `scripts/hook-selftest.sh`: 12 fixtures (6 deny, 6 allow), including a session with no `agent_type`. `scripts/check.sh`: header comment lists the new hook.
 - `scripts/hook-live-probe.sh`: new `--conductor` mode. It runs two real `claude --agent sdlc-lite:conductor` sessions (one deny, one allow) and writes a report. Selftest cases (k) to (o) cover it.
-- New `docs/validation/agent-spawn-hook-live-run.md`, the recorded live run, linked from `docs/README.md`.
+- New `docs/reports/agent-spawn-hook-live-run.md`, the recorded live run, linked from `docs/README.md`.
 - `docs/maintenance/claude-hooks.md`: new `hooks/block-role-spawn.sh` section, with the Codex statement.
 - `plugins/sdlc-lite/agents/conductor.md`: one sentence naming the hook and the Codex gap. The generated `adapters/codex/agents/sdlc-conductor-l1.toml` is regenerated to match.
 

@@ -3,14 +3,14 @@
 blocked
 
 ## Changes
-- `docs/validation/carry-forward-live-run/probe.sh`: new. Builds the fixture, runs the three arms, and writes the evidence files. It also saves the untruncated tool inputs to `$P/<arm>-tools-full.txt` in the throwaway dir, outside the repo; the metrics do not use them.
-- `docs/validation/carry-forward-live-run/scout.txt`, `with.txt`, `without.txt`: new, written by probe.sh.
-- `docs/validation/carry-forward-live-run.md`: new report with Environment, Method, Evidence and Limits. It states the actual outcome.
+- `docs/reports/carry-forward-live-run/probe.sh`: new. Builds the fixture, runs the three arms, and writes the evidence files. It also saves the untruncated tool inputs to `$P/<arm>-tools-full.txt` in the throwaway dir, outside the repo; the metrics do not use them.
+- `docs/reports/carry-forward-live-run/scout.txt`, `with.txt`, `without.txt`: new, written by probe.sh.
+- `docs/reports/carry-forward-live-run.md`: new report with Environment, Method, Evidence and Limits. It states the actual outcome.
 - `docs/README.md`: one line added after the Messages wait live run entry. It states the actual outcome, not the passing-run text.
 
 ## Checks
 - Smoke test of probe.sh's evidence functions on stub files and a copied real log: `copies_section` came out yes, then no after the stub changed; `carry_forward_lines` counted correctly; `model=` dedupes. The search classifier counted 3 searches, 2 of them on `pad_cell`, on 5 sample lines.
-- `bash docs/validation/carry-forward-live-run/probe.sh` (run once, foreground, timeout 3600000): exit 0. scout L1, planner L2 with and planner L2 without each exited 0. Project dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/carry-forward-probe.7n2YHsjnKS`.
+- `bash docs/reports/carry-forward-live-run/probe.sh` (run once, foreground, timeout 3600000): exit 0. scout L1, planner L2 with and planner L2 without each exited 0. Project dir `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/carry-forward-probe.7n2YHsjnKS`.
 - AC1 (scout section, line count): pass (`carry_forward_section=yes`, `carry_forward_lines=6`).
 - AC2 (arm with): pass (`read_scout_result=yes`, `cites_result_path=yes`, `copies_section=no`, `symbol_searches=0`).
 - AC3 (arm without has `symbol_searches>=1`): **FAIL**, `symbol_searches=0`.

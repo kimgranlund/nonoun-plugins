@@ -16,4 +16,4 @@ done
 - c6 (guard), scope allow-list: exit 0
 
 ## Notes
-`SDLC_BASE_SHA` was taken from the env, or from step-4/base-sha if the env had none. The link target docs/validation/messages-live-run.md exists.
+`SDLC_BASE_SHA` was taken from the env, or from step-4/base-sha if the env had none. The link target docs/reports/messages-live-run.md exists.

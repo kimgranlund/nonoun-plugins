@@ -98,7 +98,7 @@ The decomposition is in `review/decompose/manifest-v1.json` and `report.md`; `co
 - A headless call can continue a recorded session on both hosts: verified by probe. Claude `--resume` recalled the code word; Codex resume by id recalled it.
 - The claim is one atomic rename and losers exit 1: verified by `messages.py:581-604` and `826-844`.
 - `count` reads only valid files in `new/<receiver>/` and prints no body: verified by `messages.py:967-975`. It does load each file, body included, to validate it.
-- `workspace-write` has no network by default: verified by the probe's `turn_context` and by `docs/validation/messages-live-run.md:13`. It holds only while user config does not set `network_access`.
+- `workspace-write` has no network by default: verified by the probe's `turn_context` and by `docs/reports/messages-live-run.md:13`. It holds only while user config does not set `network_access`.
 - A resumed Codex turn keeps a usable sandbox without a flag: false as designed. The no-override turn was `read-only`. The probe cannot tell inherited from default, because the session was created read-only.
 - A denied tool in `-p` fails without hanging: verified only under `--permission-mode dontAsk`. Unverified under the default mode.
 - `SDLC_HEADLESS=1` makes the plugin's hooks guard a wake: false for publishing, by `block-publish.sh:22`. This session's own probe script was blocked by that hook under `SDLC_ROLE=architect`, so the hook does bite when armed.

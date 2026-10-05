@@ -1,0 +1,129 @@
+{
+ "root": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/reorg-inventory",
+ "head": "d5b689e",
+ "summary": {
+  "documents": 498,
+  "skipped": 1958,
+  "flag_counts": {
+   "broken_links": 3,
+   "duplicate": 275,
+   "misplaced": 6,
+   "orphan": 170,
+   "oversized": 1
+  },
+  "folders_without_entry": 13,
+  "thresholds": {
+   "include_sdlc": false,
+   "stale_days": 180,
+   "max_lines": 500,
+   "many_docs": 8,
+   "duplicate": 0.6
+  }
+ },
+ "folders_without_entry": [
+  {
+   "folder": "docs/generative-constructs",
+   "documents": 8,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports",
+   "documents": 48,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/agent-command-live-run/arms",
+   "documents": 10,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/codex-conductor-solo-live-run",
+   "documents": 10,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/codex-fanout-live-run",
+   "documents": 12,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/fanout-solo-live-run",
+   "documents": 9,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/fanout-solo-live-run/rerun-t0222",
+   "documents": 8,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/solo-budget-gate-live-run",
+   "documents": 23,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/solo-close-live-run",
+   "documents": 8,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "docs/reports/solo-cost-live-run",
+   "documents": 9,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "plugins/sdlc-lite/agents",
+   "documents": 12,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "plugins/sdlc-lite/bench/results/2026-09-24-button-geometry-model",
+   "documents": 8,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  },
+  {
+   "folder": "plugins/sdlc-lite/skills/decompose/references",
+   "documents": 10,
+   "entry_file": false,
+   "flags": [
+    "no_entry_file"
+   ]
+  }
+ ]
+}

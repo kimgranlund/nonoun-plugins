@@ -158,7 +158,7 @@ Depends on: step 1 (the `wait` subparser must exist for `case_entry_parses` to p
 7. Left unchanged on purpose:
    - `docs/codex-role-execution.md:27`: it describes the messenger's polling and its host limits, which still hold for `count`-based polling. The handoff names the doc homes this step covers.
    - `docs/ticket-stages/README.md:3`: it lists the tickets that built the bus. The design Status paragraph records T-0181.
-   - `docs/validation/messages-live-run/probe.py`: it pins no entry-file text.
+   - `docs/reports/messages-live-run/probe.py`: it pins no entry-file text.
 
 Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py generate --check`.
 ### Acceptance criteria
@@ -180,11 +180,11 @@ Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py
 ## Step 3: Live probe for wait, with an offline selftest
 level: L3
 ### Do
-Target: the new file `docs/validation/messages-wait-live-run/probe.py`. Use Python 3.9 syntax only. This step makes no model call and runs no live arm.
+Target: the new file `docs/reports/messages-wait-live-run/probe.py`. Use Python 3.9 syntax only. This step makes no model call and runs no live arm.
 
 Depends on: none for its offline selftest, which drives `messages.py` send, read, reply, and ack, all of which exist now. It runs after steps 1 and 2 so that step 4's live arms use the finished plugin.
 
-1. Model the probe on `docs/validation/messages-live-run/probe.py` (T-0179). Read these parts of it first:
+1. Model the probe on `docs/reports/messages-live-run/probe.py` (T-0179). Read these parts of it first:
    - its docstring, `clean_env`, `run_checked`, `setup`, and `send`;
    - `parse_message`, `locate`, `find_reply`, `oracle`, and `Sampler`;
    - `ClaudeTrace`, `CodexTrace`, `codex_home`, `find_rollout`, `codex_control`, and `codex_isolation`;
@@ -215,7 +215,7 @@ Depends on: none for its offline selftest, which drives `messages.py` send, read
 4. Host commands, run with the project as cwd:
    - claude: `claude -p --safe-mode --disable-slash-commands --dangerously-skip-permissions --model sonnet --effort low --output-format stream-json --verbose --no-session-persistence -- "<prompt>"`.
    - codex: `codex exec --ignore-user-config --json --color never -C <project> -m gpt-6.1-sol -c model_reasoning_effort="medium" -c approval_policy="never" --sandbox workspace-write "<prompt>"`.
-     - This is the model and effort of the path-only arm in `docs/validation/messages-live-run.md` (its lines 13 and 41).
+     - This is the model and effort of the path-only arm in `docs/reports/messages-live-run.md` (its lines 13 and 41).
      - Before the arm, the two T-0179 isolation control calls run (`codex_isolation`).
    - The host starts first. `SEND_DELAY` seconds after launch, `run_host`'s `delayed` hook does three things:
      - sends the message with `messages.py send --receiver <harness> --sender probe --topic live-probe --follow-up true "<BODY>"`;
@@ -285,31 +285,31 @@ Depends on: none for its offline selftest, which drives `messages.py` send, read
      - `fail: a Codex cell wait` (the rollout holds a `function_call` named `wait`)
      - `unverified: a host not on PATH says host cannot run` (the PATH check, run with `PATH` set to an empty temp folder, returns a reason that starts with `host cannot run: `)
 
-Focused check: `python3 docs/validation/messages-wait-live-run/probe.py selftest`.
+Focused check: `python3 docs/reports/messages-wait-live-run/probe.py selftest`.
 ### Acceptance criteria
-- `out=$(python3 docs/validation/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "pass: a Codex wait call with no poll in the rollout" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: a backgrounded wait call" "fail: no wait call" "fail: the wait started after the send" "fail: the wait returned another id" "fail: a Codex write_stdin poll" "fail: a Codex cell wait" "unverified: a host not on PATH says host cannot run"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `for v in BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS; do grep -qF "$v" docs/validation/messages-wait-live-run/probe.py || exit 1; done`
-- `f=docs/validation/messages-wait-live-run/probe.py; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF docs/validation/messages-wait-live-run/probe.py)"`
+- `out=$(python3 docs/reports/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "pass: a Codex wait call with no poll in the rollout" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: a backgrounded wait call" "fail: no wait call" "fail: the wait started after the send" "fail: the wait returned another id" "fail: a Codex write_stdin poll" "fail: a Codex cell wait" "unverified: a host not on PATH says host cannot run"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `for v in BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS; do grep -qF "$v" docs/reports/messages-wait-live-run/probe.py || exit 1; done`
+- `f=docs/reports/messages-wait-live-run/probe.py; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF docs/reports/messages-wait-live-run/probe.py)"`
 
 ## Step 4: Live proof of wait on Claude Code and Codex
 level: L3
 ### Do
 Targets:
-- `docs/validation/messages-wait-live-run/claude.txt`
-- `docs/validation/messages-wait-live-run/codex.txt`
-- `docs/validation/messages-wait-live-run.md`
+- `docs/reports/messages-wait-live-run/claude.txt`
+- `docs/reports/messages-wait-live-run/codex.txt`
+- `docs/reports/messages-wait-live-run.md`
 - one line in `docs/README.md`
 
 Depends on: steps 1, 2, and 3.
 
-1. Run `python3 docs/validation/messages-wait-live-run/probe.py selftest` first. If it fails, stop with Status blocked.
+1. Run `python3 docs/reports/messages-wait-live-run/probe.py selftest` first. If it fails, stop with Status blocked.
 2. Before the arms, record the output of:
    - `claude --version`, `codex --version`, and `codex login status`;
    - `git rev-parse --short HEAD`;
    - `git status --porcelain -- plugins/`. The step 1 and 2 changes are uncommitted, because builders never commit, and the record says so.
 3. Run each arm once, as one foreground Bash call with the Bash timeout at 1200000:
-   - `set -o pipefail; python3 docs/validation/messages-wait-live-run/probe.py claude | tee docs/validation/messages-wait-live-run/claude.txt`
+   - `set -o pipefail; python3 docs/reports/messages-wait-live-run/probe.py claude | tee docs/reports/messages-wait-live-run/claude.txt`
    - the same command with `codex` and `codex.txt`.
 
    Never write or edit an evidence file by hand and never use a fixture. Never change the probe, the prompt, the send delay, or the oracle after an arm has run.
@@ -320,7 +320,7 @@ Depends on: steps 1, 2, and 3.
    - Keep the evidence file and still write the record (item 6) with `Result: fail` for that arm.
    - End with Status blocked. The first line of Notes is `live proof failed: <arm>: <the result line>`.
    - Do not rerun the arm. Whether to rerun, change the prompt, or accept the finding is the user's decision at the replan: /chain 4.2 routes a blocked builder to a planner L3 replan.
-6. Write `docs/validation/messages-wait-live-run.md`, modelled on `docs/validation/messages-live-run.md`:
+6. Write `docs/reports/messages-wait-live-run.md`, modelled on `docs/reports/messages-live-run.md`:
    - `# Messages wait live run`, a blank line, `Recorded: <YYYY-MM-DD>` with the run date, and an intro paragraph on what was shown.
    - `## Environment`:
      - the version and login output from item 2;
@@ -349,15 +349,15 @@ Depends on: steps 1, 2, and 3.
    - [Messages wait live run](validation/messages-wait-live-run.md): dated live run for T-0181 in which a fresh Claude Code host and a fresh Codex host were each told to make one `messages.py wait` call, then read, reply, and ack; Claude Code <result>, Codex <result>.
    ```
 ### Acceptance criteria
-- `test "$(tail -n 1 docs/validation/messages-wait-live-run/claude.txt)" = "result=pass"`
-- `tail -n 1 docs/validation/messages-wait-live-run/codex.txt | grep -qE "^result=(pass|unverified reason=host cannot run: .+)$"`
-- `for a in claude codex; do head -n 1 docs/validation/messages-wait-live-run/$a.txt | grep -qxF "arm=$a" || exit 1; done`
-- `for f in docs/validation/messages-wait-live-run/claude.txt docs/validation/messages-wait-live-run/codex.txt; do test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then python3 -c 'import re,sys; L=open(sys.argv[1]).read().splitlines(); mid=[l for l in L if l.startswith("message=")][0].rsplit("/",1)[1][:-3]; v=dict(x.split("=",1) for x in [l for l in L if l.startswith("send_time=")][0].split(" ")[:3]); T=re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z"); s=[v["send_time"],v["read_time"],v["ack_time"]]; assert "wait_calls=1 poll_calls=0" in L, "calls"; assert "wait_before_send=yes" in L, "before"; assert "wait_returned="+mid in L, "returned"; assert all(T.fullmatch(x) for x in s), "stamps"; assert sorted(s)==s, "order"' "$f" || exit 1; fi; done`
-- `f=docs/validation/messages-wait-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Claude Code" "## Codex" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
-- `python3 -c 'import re; t=open("docs/validation/messages-wait-live-run.md").read(); sec=lambda h: t.split("\n"+h+"\n",1)[1].split("\n## ",1)[0]; ev=lambda a: open("docs/validation/messages-wait-live-run/"+a+".txt").read().splitlines()[-1].split(" ")[0].split("=",1)[1]; got=[(re.findall(r"^Result: (\w+)$", sec(h), re.M), ev(a)) for h,a in (("## Claude Code","claude"),("## Codex","codex"))]; assert all(r==[e] for r,e in got), got'`
+- `test "$(tail -n 1 docs/reports/messages-wait-live-run/claude.txt)" = "result=pass"`
+- `tail -n 1 docs/reports/messages-wait-live-run/codex.txt | grep -qE "^result=(pass|unverified reason=host cannot run: .+)$"`
+- `for a in claude codex; do head -n 1 docs/reports/messages-wait-live-run/$a.txt | grep -qxF "arm=$a" || exit 1; done`
+- `for f in docs/reports/messages-wait-live-run/claude.txt docs/reports/messages-wait-live-run/codex.txt; do test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then python3 -c 'import re,sys; L=open(sys.argv[1]).read().splitlines(); mid=[l for l in L if l.startswith("message=")][0].rsplit("/",1)[1][:-3]; v=dict(x.split("=",1) for x in [l for l in L if l.startswith("send_time=")][0].split(" ")[:3]); T=re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z"); s=[v["send_time"],v["read_time"],v["ack_time"]]; assert "wait_calls=1 poll_calls=0" in L, "calls"; assert "wait_before_send=yes" in L, "before"; assert "wait_returned="+mid in L, "returned"; assert all(T.fullmatch(x) for x in s), "stamps"; assert sorted(s)==s, "order"' "$f" || exit 1; fi; done`
+- `f=docs/reports/messages-wait-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Claude Code" "## Codex" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
+- `python3 -c 'import re; t=open("docs/reports/messages-wait-live-run.md").read(); sec=lambda h: t.split("\n"+h+"\n",1)[1].split("\n## ",1)[0]; ev=lambda a: open("docs/reports/messages-wait-live-run/"+a+".txt").read().splitlines()[-1].split(" ")[0].split("=",1)[1]; got=[(re.findall(r"^Result: (\w+)$", sec(h), re.M), ev(a)) for h,a in (("## Claude Code","claude"),("## Codex","codex"))]; assert all(r==[e] for r,e in got), got'`
 - `grep -qF "validation/messages-wait-live-run.md" docs/README.md`
-- `for f in docs/validation/messages-wait-live-run.md docs/validation/messages-wait-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/messages-wait-live-run(\.md|/)")"`
+- `for f in docs/reports/messages-wait-live-run.md docs/reports/messages-wait-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Step 5: Gates green
 level: L2
@@ -379,7 +379,7 @@ Depends on: steps 1, 2, 3, and 4.
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `git diff --check`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/messages-wait-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Assumptions
 - This replan answers each `plan review:` finding in the handoff. No step had passed (the task dir holds no `step-*` dir), so steps were renumbered: steps 1 and 2 keep their numbers, the old step 3 is split into step 3 (the probe) and step 4 (the live run), and the old gates step 4 is now step 5.
@@ -410,7 +410,7 @@ Depends on: steps 1, 2, 3, and 4.
 - Codex `command_execution` items carry `item.started` and `aggregated_output`: verified in the T-0179 raw stream `messages-live-_81ol52h/host-stdout.jsonl`.
 - Claude `user` events carry `tool_result` blocks with `tool_use_id`: verified in the T-0179 raw stream `messages-live-0z9zhe6e/host-stdout.jsonl`.
 - Both host CLIs are installed and logged in: verified at plan time. `claude --version` printed `2.1.286 (Claude Code)`, `codex --version` printed `codex-cli 0.159.2`, `codex login status` printed `Logged in using ChatGPT`, and `python3 --version` printed 3.9.6.
-- The T-0179 unverified conditions are all cannot-run conditions: verified by docs/validation/messages-live-run/probe.py:585-587, 433-452, 510-513, and 650-653.
+- The T-0179 unverified conditions are all cannot-run conditions: verified by docs/reports/messages-live-run/probe.py:585-587, 433-452, 510-513, and 650-653.
 - run.sh exports Bash timeouts of 3600000 to every role: verified by run.sh:67-70.
 - `__pycache__/` is git-ignored (.gitignore:11), and step 2's import check uses `python3 -B` anyway.
 - The only tracked AGENTS.md files are the root, `.sdlc/`, and the two plugin files: verified by `git ls-files`. So steps 3 and 4, which change only `docs/`, have no Read first.

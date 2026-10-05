@@ -8,12 +8,12 @@ Depends on: none.
 
 Targets:
 - `docs/ticket-stages/watcher-design.md`, rewritten to v0.2.
-- `docs/validation/idle-host-watcher-design-review.md`, one appended `## Applied` section.
+- `docs/reports/idle-host-watcher-design-review.md`, one appended `## Applied` section.
 
 No code in this step. Level L3, not L2: this rewrite is the spec every later step builds on, and all 17 findings must land consistently.
 
 Evidence for every decision below:
-- the review's findings table (`docs/validation/idle-host-watcher-design-review.md`) and its raw result (`.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`);
+- the review's findings table (`docs/reports/idle-host-watcher-design-review.md`) and its raw result (`.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`);
 - the user decision on finding 4, recorded in the ticket Context and in the design's "Resolved decision": `ephemeral` is the default, `attached` and `notify` are opt-in;
 - `claude --help` (2.1.286) and `codex exec --help` / `codex exec resume --help` (codex-cli 0.159.2), read at plan time;
 - the code cited inline.
@@ -36,7 +36,7 @@ Evidence for every decision below:
      - Codex attached: `codex exec resume --json -c sandbox_mode="workspace-write"`, the same three `sandbox_workspace_write.*` overrides, `-c approval_policy="never" [-m <m>] [-c model_reasoning_effort="<e>"] <session> -`, prompt on stdin. `codex exec resume` rejects `--sandbox` and `--color`.
      - `--session-id` is never used: it is create-only (finding 12).
      - The wake's cwd is the receiver's `cwd`.
-     - Child environment: a copy of the watcher's environment without `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`, `CLAUDE_PID`, `CLAUDE_EFFORT`, `CLAUDE_JOB_DIR`, `CODEX_SANDBOX`, `CODEX_SANDBOX_NETWORK_DISABLED`, `CODEX_THREAD_ID`, and every `CLAUDE_CODE_*` and `SDLC_*` name. Then it adds `SDLC_ROLE=supervisor` and `SDLC_HEADLESS=1`. The scrub list follows the T-0181 probe, `docs/validation/messages-wait-live-run.md` Method.
+     - Child environment: a copy of the watcher's environment without `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`, `CLAUDE_PID`, `CLAUDE_EFFORT`, `CLAUDE_JOB_DIR`, `CODEX_SANDBOX`, `CODEX_SANDBOX_NETWORK_DISABLED`, `CODEX_THREAD_ID`, and every `CLAUDE_CODE_*` and `SDLC_*` name. Then it adds `SDLC_ROLE=supervisor` and `SDLC_HEADLESS=1`. The scrub list follows the T-0181 probe, `docs/reports/messages-wait-live-run.md` Method.
    - D3, authority (finding 2).
      - Claude: `dontAsk` denies every call that is not allowed; the review probe showed a `permission_denials` entry and no hang. `--tools` removes every other built-in tool. `--strict-mcp-config` with no `--mcp-config` loads no MCP server. `--plugin-dir` plus `SDLC_ROLE` arms `hooks/block-publish.sh`, which exits 0 unless `SDLC_ROLE` is set (line 22).
      - Codex: workspace-write with no network and no writable /tmp or `$TMPDIR`, approval never. Codex MCP and connector tools stay unblocked, and the doc states this as a limit.
@@ -186,6 +186,6 @@ Evidence for every decision below:
 - `f=docs/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
 - `f=docs/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
 - `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/ticket-stages/watcher-design.md`
-- `sed -n '/^## Applied$/,$p' docs/validation/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
-- (guard) `for f in docs/ticket-stages/watcher-design.md docs/validation/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `sed -n '/^## Applied$/,$p' docs/reports/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
+- (guard) `for f in docs/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`

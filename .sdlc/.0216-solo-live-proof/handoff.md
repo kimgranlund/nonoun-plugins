@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 A recorded live run shows the `solo` agent delivering a real size-M ticket end to end, with one independent batched verifier, on Claude Code and Codex.
 
 ## Intent
-- Do: pick one small real size-M change (a closed ticket with a known solution is fine, in a throwaway project or worktree), run it through `steps.py lane` (it must print `solo`), deliver it with the `solo` agent at tier M on each host (Claude: Sonnet xhigh; Codex: gpt-6.1-sol high), then run one independent batched verifier on a different model family. Record the lane output, the tier and model per host (from the run records, not from memory), pass or fail against hidden checks, cost and wall time, in docs/validation/solo-live-run.md with raw evidence beside it. Run each arm once; record a failure honestly as a limit.
+- Do: pick one small real size-M change (a closed ticket with a known solution is fine, in a throwaway project or worktree), run it through `steps.py lane` (it must print `solo`), deliver it with the `solo` agent at tier M on each host (Claude: Sonnet xhigh; Codex: gpt-6.1-sol high), then run one independent batched verifier on a different model family. Record the lane output, the tier and model per host (from the run records, not from memory), pass or fail against hidden checks, cost and wall time, in docs/reports/solo-live-run.md with raw evidence beside it. Run each arm once; record a failure honestly as a limit.
 - Non-goals: any change to agents, tables or lane logic (report defects as notes, do not fix here); a version bump, tag, push, or publish.
 - Done when: the validation record exists with both hosts, it cites the actual models used, and docs/README.md links it.
 

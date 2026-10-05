@@ -5,9 +5,9 @@ Evidence labels: observed here (a file or transcript of this repo's work), from 
 | Rule | Why | Label |
 |---|---|---|
 | Done when is checkable: a command exit code, a file, a published tag, a closed ticket. Never "looks good" | The stop hook evaluates the condition on each turn; a vague condition cannot end the goal or keeps it open | from the host: `/goal` reports a session-scoped Stop hook with the condition; it defers evaluation while background work runs |
-| Done when also covers stopping on a limit with state written | An overnight goal that hits a limit must end in a known state | observed: the 0.20.8 overnight goal (`docs/validation/release-0.20.8.md`) |
-| Scope is a numbered list verified with `tickets.py check` first | Stale or duplicate tickets waste a night | observed: `tickets.py check` gates every release in `docs/validation/` |
-| Lane first with `steps.py lane`; solo for size S and M; replan cap one, then record a limit | The chain cost about ten times a solo run on the same tasks | observed: `docs/validation/solo-vs-lean-benchmark-2026-10-04.md` |
+| Done when also covers stopping on a limit with state written | An overnight goal that hits a limit must end in a known state | observed: the 0.20.8 overnight goal (`docs/reports/release-0.20.8.md`) |
+| Scope is a numbered list verified with `tickets.py check` first | Stale or duplicate tickets waste a night | observed: `tickets.py check` gates every release in `docs/reports/` |
+| Lane first with `steps.py lane`; solo for size S and M; replan cap one, then record a limit | The chain cost about ten times a solo run on the same tasks | observed: `docs/reports/solo-vs-lean-benchmark-2026-10-04.md` |
 | Scope freeze, one writer per file, at most three lanes at once, merge one at a time with main merged in first | Merge conflicts in `check.py` guard numbers, `check.sh`, root `AGENTS.md`, `docs/README.md` cost the most time | observed: the 0.20.5 to 0.20.7 lane merges |
 | Stop rules carry numbers: total cap, per-ticket cap, a rate or weekly limit, three 529s in a row; state goes to `.sdlc/notes.md`; no retry loops | Weekly limits stopped two build agents; a retry loop spends the cap silently | observed: this repo's build lanes; `budget.py` tiers S $5, M $30, L $60 |
 | A verifier `fail` means fix and re-verify; never merge on a fail | Verifiers caught real defects on most tickets | observed: the 0.20.x verifier records |

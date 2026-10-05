@@ -15,4 +15,4 @@ done
 - `python3 plugins/sdlc-lite/scripts/codex-selftest.py`: exit 0.
 
 ## Notes
-`docs/validation/release-0.19.0.md` is unchanged.
+`docs/reports/release-0.19.0.md` is unchanged.

@@ -3,20 +3,20 @@
 done
 
 ## Changes
-- `docs/validation/messages-wait-live-run/claude.txt`: new. The probe wrote it through `tee`, live Claude arm, `result=pass`.
-- `docs/validation/messages-wait-live-run/codex.txt`: new. The probe wrote it through `tee`, live Codex arm, `result=pass`.
-- `docs/validation/messages-wait-live-run.md`: new dated record with Environment, Method, Claude Code, Codex and Limits sections.
+- `docs/reports/messages-wait-live-run/claude.txt`: new. The probe wrote it through `tee`, live Claude arm, `result=pass`.
+- `docs/reports/messages-wait-live-run/codex.txt`: new. The probe wrote it through `tee`, live Codex arm, `result=pass`.
+- `docs/reports/messages-wait-live-run.md`: new dated record with Environment, Method, Claude Code, Codex and Limits sections.
 - `docs/README.md`: one line added after the Messages live run line: "Claude Code pass, Codex pass".
 
 ## Checks
-- `python3 docs/validation/messages-wait-live-run/probe.py selftest`: all 12 cases ok, `probe selftest: PASS`, exit 0.
+- `python3 docs/reports/messages-wait-live-run/probe.py selftest`: all 12 cases ok, `probe selftest: PASS`, exit 0.
 - Environment commands:
   - `claude --version` printed `2.1.286 (Claude Code)`.
   - `codex --version` printed `codex-cli 0.159.2`.
   - `codex login status` printed `Logged in using ChatGPT`.
   - `git rev-parse --short HEAD` printed `bc21b53`.
   - `git status --porcelain -- plugins/` listed 3 modified files: messages.py, messenger.md, and sdlc-messenger-l1.toml.
-- Claude arm, `set -o pipefail; python3 docs/validation/messages-wait-live-run/probe.py claude | tee docs/validation/messages-wait-live-run/claude.txt`: exit 0, `result=pass` (wait_calls=1 poll_calls=0, wait_before_send=yes).
+- Claude arm, `set -o pipefail; python3 docs/reports/messages-wait-live-run/probe.py claude | tee docs/reports/messages-wait-live-run/claude.txt`: exit 0, `result=pass` (wait_calls=1 poll_calls=0, wait_before_send=yes).
 - Codex arm, the same command with `codex` and `codex.txt`: exit 0, `result=pass` (wait_calls=1 poll_calls=0, wait_before_send=yes).
 - Acceptance criteria 1 to 9, each run exactly as written: all PASS.
   - The first run of AC8 FAILED. The Write tool had turned the `\u2014` I typed in the Limits section into a real U+2014 character.

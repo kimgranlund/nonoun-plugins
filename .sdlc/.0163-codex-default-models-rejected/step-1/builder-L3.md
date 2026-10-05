@@ -47,5 +47,5 @@ done
 - Step 2 (docs) still has stale references to the removed alternates and to `gpt-6-sol`:
   - `plugins/sdlc-lite/adapters/codex/instructions.md` line 22, the "alternate profiles that enforce a different model" sentence. It is embedded in every generated TOML, so it has to be regenerated after editing.
   - `docs/codex-role-execution.md`: "22 project agent definitions, including three alternate verifier models" (there are now 19). The live-run note on line 74 also names `sdlc-verifier-l1-alternate`.
-  - `docs/validation/native-codex-smoke.json` hashes the deleted alternate TOMLs. It is historical evidence, and whether to leave it is step 2's call.
+  - `docs/reports/native-codex-smoke.json` hashes the deleted alternate TOMLs. It is historical evidence, and whether to leave it is step 2's call.
 - The `models.json` defaults were changed and not run live. No live Codex run was made in this step.

@@ -8,7 +8,7 @@
     { "id": "n2", "label": "citation group: proposal set (README.md, 02, 03, 04, progressive-context-plugin.md)", "leaf": true, "justify": null,
       "accept": "every proposal-set path:line opened; README off-by-two lines recorded with the commit that shifted them" },
     { "id": "n3", "label": "citation group: validation and .sdlc records (nested-entry-file-loading, release-0.20.6:13, verify-0224:15, verify-0229:11, codex-conductor-solo-live-run limits)", "leaf": true, "justify": null,
-      "accept": "each record line opened; each claim graded supports / overstates; 'some runs' checked with grep -il rollout docs/validation/*.md" },
+      "accept": "each record line opened; each claim graded supports / overstates; 'some runs' checked with grep -il rollout docs/reports/*.md" },
     { "id": "n4", "label": "citation group: SDLC Lite code and onboarding docs (run.sh:520-524, layered-context-pattern.md:40, repo-onboarding/design.md:195, .sdlc/AGENTS.md:1, onboard.py)", "leaf": true, "justify": null,
       "accept": "run.sh lines show routing_reason in the runs.jsonl record; onboard.py managed-block and stale-label mechanics read (lines 221-226, 369, 581, 696-711, 1140-1152)" },
     { "id": "n5", "label": "citation group: docs/docs-schema/design.md lines and commit 5a1165e", "leaf": true, "justify": null,

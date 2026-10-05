@@ -54,7 +54,7 @@ Depends on: step 1 (the `wait` subparser must exist for `case_entry_parses` to p
 7. Left unchanged on purpose:
    - `docs/codex-role-execution.md:27`: it describes the messenger's polling and its host limits, which still hold for `count`-based polling. The handoff names the doc homes this step covers.
    - `docs/ticket-stages/README.md:3`: it lists the tickets that built the bus. The design Status paragraph records T-0181.
-   - `docs/validation/messages-live-run/probe.py`: it pins no entry-file text.
+   - `docs/reports/messages-live-run/probe.py`: it pins no entry-file text.
 
 Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py generate --check`.
 ### Acceptance criteria

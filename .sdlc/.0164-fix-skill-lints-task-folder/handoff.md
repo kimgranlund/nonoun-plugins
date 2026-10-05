@@ -27,7 +27,7 @@ Observed 2026-09-29:
 - Step 3 prints `steps lint: ok` and exits 0.
 
 ## Context
-Found in the third onboarding design review, `docs/validation/repo-onboarding-design-review-3.md` finding N13, and rerun by the author on the reviewer's fixture.
+Found in the third onboarding design review, `docs/reports/repo-onboarding-design-review-3.md` finding N13, and rerun by the author on the reviewer's fixture.
 
 `skills/fix/SKILL.md` step 2 has the conductor write the step handoff by hand and never run `steps.py split`, so the task folder has no planner file. `skills/chain/SKILL.md` section 5 step 3 lints the step handoff path, which works.
 

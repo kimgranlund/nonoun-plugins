@@ -88,7 +88,7 @@ Depends on: step 1.
    - Add a table row `| Messenger | Terra 5.6 low | | | | |` after the Conductor row.
    - Change the count sentence to `There are 25 project agent definitions: 21 base definitions and four alternate definitions ...`, and add `messenger` to the "one each of" list.
    - Add a short paragraph naming `sdlc-messenger-l1` as a native subagent that polls `messages/new/codex` every 10 seconds through `messages.py`. On Codex it has its own lifetime and no Claude tools or hooks, and no Claude hook enforces anything on Codex. The Claude messenger lives only while its session runs, and its polling needs Monitor or a loop. One host working says nothing about the other.
-   - Leave `docs/validation/*` untouched: those are dated evidence records (for example `plan-reviewer-live-run.md` "installed 24 project agents").
+   - Leave `docs/reports/*` untouched: those are dated evidence records (for example `plan-reviewer-live-run.md` "installed 24 project agents").
 3. `plugins/sdlc-lite/AGENTS.md`, Contracts and routing: add a bullet saying `agents/` also holds two session agents that are not `run.sh` roles, the `conductor` and the `messenger`, and that `check.py` excludes both from the run.sh agreement check and checks the messenger's file and Codex mapping.
 4. Repo `AGENTS.md`, Authoritative sources table: change the row `Shared role and output contracts` so its source cell reads `plugins/sdlc-lite/agents/*.md` (pipeline roles plus the `conductor` and `messenger` session agents).
 5. No em dashes anywhere.

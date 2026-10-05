@@ -18,4 +18,4 @@ done
 - `git diff --check`: clean
 
 ## Notes
-The tracked tree was clean when this attempt started, so none of the earlier attempt's edits were present. The earlier attempt's log shows it also edited `docs/validation/codex-tier-mirror-2026-09-30.md` and wrote different note text. This attempt does neither. It uses the handoff's exact note text and does not touch the validation report.
+The tracked tree was clean when this attempt started, so none of the earlier attempt's edits were present. The earlier attempt's log shows it also edited `docs/reports/codex-tier-mirror-2026-09-30.md` and wrote different note text. This attempt does neither. It uses the handoff's exact note text and does not touch the validation report.

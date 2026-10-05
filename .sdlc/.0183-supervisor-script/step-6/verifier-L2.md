@@ -19,7 +19,7 @@ pass
 - Builder claims: accepted. The 17 labels and the guard I re-ran myself. The negative-control claim I re-ran differently, with mutated copies rather than a stub.
 
 ## Out of scope changes
-None. The tracked changes (`docs/README.md`, `docs/ticket-stages/watcher-design.md`, `docs/validation/idle-host-watcher-design-review.md`, `plugins/sdlc-lite/scripts/check.sh`) and the untracked `probe.py`, `AGENTS.md`, `supervisor.py` and `supervisor-live-run.md` all pass the guard's allowlist. They come from earlier steps or this step's own targets.
+None. The tracked changes (`docs/README.md`, `docs/ticket-stages/watcher-design.md`, `docs/reports/idle-host-watcher-design-review.md`, `plugins/sdlc-lite/scripts/check.sh`) and the untracked `probe.py`, `AGENTS.md`, `supervisor.py` and `supervisor-live-run.md` all pass the guard's allowlist. They come from earlier steps or this step's own targets.
 
 ## For the next attempt
 None. Steelman pass: I drafted "the hook case runs real git, so it may be flaky or depend on the environment". A selftest run took about 15 s, the hook case passed in every run, and the global `core.hooksPath` is bypassed by the absolute path. I dropped the finding.

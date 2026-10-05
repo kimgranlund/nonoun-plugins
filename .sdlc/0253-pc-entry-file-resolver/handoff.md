@@ -19,7 +19,7 @@ Extend onboard.py check so every AGENTS.md has a CLAUDE.md importing it and ever
 - Done when: a positive case passes and negative controls (missing CLAUDE.md import, broken link) are rejected, with a selftest.
 
 ## Context
-Gap analysis R4. Claude Code loads a nested AGENTS.md only through a CLAUDE.md @import (docs/repo-onboarding/layered-context-pattern.md:40; docs/validation/nested-entry-file-loading.md). Coordinate with docs-schema build tickets T-0241 to T-0245; do not duplicate their D-checks. Lane: solo. Philosophy: Done is better than perfect.
+Gap analysis R4. Claude Code loads a nested AGENTS.md only through a CLAUDE.md @import (docs/repo-onboarding/layered-context-pattern.md:40; docs/reports/nested-entry-file-loading.md). Coordinate with docs-schema build tickets T-0241 to T-0245; do not duplicate their D-checks. Lane: solo. Philosophy: Done is better than perfect.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes. Preserve other agents' worktrees.

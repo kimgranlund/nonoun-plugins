@@ -3,10 +3,10 @@
 blocked
 
 ## Changes
-- `docs/validation/runner-family-task-dir-live-run/fam/` (new): the rsync copy of the throwaway task dir, with handoffs, the builder and verifier results, `runs.jsonl` and attempt records.
-- `docs/validation/runner-family-task-dir-live-run/dry-run-base.txt` (new, written by redirection). It is not a real negative control (see Notes).
-- `docs/validation/runner-family-task-dir-live-run/dry-run-fixed.txt` (new, written by redirection).
-- Not written: the report `docs/validation/runner-family-task-dir-live-run.md` and the `docs/README.md` line.
+- `docs/reports/runner-family-task-dir-live-run/fam/` (new): the rsync copy of the throwaway task dir, with handoffs, the builder and verifier results, `runs.jsonl` and attempt records.
+- `docs/reports/runner-family-task-dir-live-run/dry-run-base.txt` (new, written by redirection). It is not a real negative control (see Notes).
+- `docs/reports/runner-family-task-dir-live-run/dry-run-fixed.txt` (new, written by redirection).
+- Not written: the report `docs/reports/runner-family-task-dir-live-run.md` and the `docs/README.md` line.
 
 ## Checks
 - `claude --version`: 2.1.286. `git rev-parse --short HEAD`: aa59ebc. `git hash-object plugins/sdlc-lite/scripts/run.sh`: e5308edf87a23bd02eb179eab631250a1bf24819. `git status --porcelain -- plugins/`: empty, because steps 1 and 2 are already committed in d87cc4b and aa59ebc.

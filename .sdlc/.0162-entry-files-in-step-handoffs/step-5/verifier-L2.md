@@ -3,10 +3,10 @@
 pass
 
 ## Criteria
-- `test -f docs/validation/entry-files-live-run.md`: pass. Evidence: the command exited 0 (printed c1).
+- `test -f docs/reports/entry-files-live-run.md`: pass. Evidence: the command exited 0 (printed c1).
 - `grep -qF 'validation/entry-files-live-run.md' docs/README.md`: pass. Evidence: exit 0. The diff adds the link line right after the onboard live run line.
 - `grep -qF 'entry-files-live-run.md' docs/repo-onboarding/design.md`: pass. Evidence: exit 0. The diff shows the link added in the "How roles reach an entry" bullet.
-- `grep -qF '| Host | Arm | Result | Evidence |' docs/validation/entry-files-live-run.md`: pass. Evidence: exit 0.
+- `grep -qF '| Host | Arm | Result | Evidence |' docs/reports/entry-files-live-run.md`: pass. Evidence: exit 0.
 - The 8-row `for h in ... grep -qF "| $h | $a | yes |"` loop: pass. Evidence: the loop ran to the end without exiting 1. Negative control: I changed the Codex `verifier read the entry` row to `no` in a temp copy and the same loop went red. So the loop can fail.
 - `grep -qF 'gpt-6-astra'`: pass. Evidence: exit 0.
 - `grep -qF 'shared_with_builder'`: pass. Evidence: exit 0.

@@ -2,7 +2,7 @@
 
 Status: implemented v0.7. Recorded: 2026-09-29. T-0160 implements it in `plugins/sdlc-lite/scripts/onboard.py` and the `onboard` skill. Ticket: T-0160.
 
-This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), the [third review](../validation/repo-onboarding-design-review-3.md), and the [loading probe](../validation/nested-entry-file-loading.md).
+This document covers setup. [Document reorganization](reorganization.md) covers moving existing files. Host loading behavior is described in the [layered context reference](layered-context-pattern.md). Evidence is in the [first review](../reports/repo-onboarding-design-review.md), the [second review](../reports/repo-onboarding-design-review-2.md), the [third review](../reports/repo-onboarding-design-review-3.md), and the [loading probe](../reports/nested-entry-file-loading.md).
 
 ## Problem
 
@@ -71,7 +71,7 @@ The template text is in [Templates](#templates).
 
 Claude Code loads a nested `AGENTS.md` only through an `@` import in a `CLAUDE.md` that is itself loaded. Codex loads entries from the repository root down to its working directory, and SDLC Lite roles start at the root. Host loading therefore cannot be the mechanism for roles.
 
-- For each plan step, the planner names the nearest entry file above each file the step changes. The list reaches the step handoff, and the role reads those files. Details are in ticket T-0162, and the [entry files live run](../validation/entry-files-live-run.md) shows it on both hosts.
+- For each plan step, the planner names the nearest entry file above each file the step changes. The list reaches the step handoff, and the role reads those files. Details are in ticket T-0162, and the [entry files live run](../reports/entry-files-live-run.md) shows it on both hosts.
 - A Claude Code role that reads a file in a `docs/` folder also gets that folder's entry through the stub. The entry is then in context twice. The cost is accepted. In the probe, a run with two 25-line entries used about 1,600 more input tokens on Claude Code and about 1,800 more on Codex. The probe report notes that the difference is not purely the entry files, which by size alone are about 430 tokens each.
 - The stubs in `docs/` serve interactive sessions, which have no handoff.
 

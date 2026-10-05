@@ -3,7 +3,7 @@
 pass
 
 ## Criteria
-- Criterion 1, copy with `.sdlc/evals` and `docs/validation` present and `check.py` run on it: pass. Evidence: I ran the command and got `ok: 19 role levels, 9 agents checked`, rc=0. The in-script negative control therefore flagged, since otherwise it would have appended an error.
+- Criterion 1, copy with `.sdlc/evals` and `docs/reports` present and `check.py` run on it: pass. Evidence: I ran the command and got `ok: 19 role levels, 9 agents checked`, rc=0. The in-script negative control therefore flagged, since otherwise it would have appended an error.
 - Criterion 2, `builder:L1` model rewritten in the copy: pass. Evidence: rc=1 and the output contained `FAIL evals: .sdlc/evals/table-lock.json: model table changed: sha256 dec3a8… is not the locked ab3aa5…`. This is the red case, and criterion 1 on the same tree is the green case.
 - Criterion 3, bare plugin copy with no repository `.sdlc`: pass. Evidence: rc=0, output `skip: evals lock guard (no /private/var/.../T/.sdlc)` and `ok: …`.
 - Criterion 4, `.sdlc` present but empty: pass. Evidence: rc=1 and the output contained `FAIL evals: .sdlc/evals: missing`.

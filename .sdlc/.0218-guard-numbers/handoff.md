@@ -19,7 +19,7 @@ check.py guard numbers are unique and sequential, and a guard keeps them that wa
 - Done when: the change is merged into local main with checks green and an independent verifier passed.
 
 ## Context
-Closes a known limit listed in docs/validation/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
+Closes a known limit listed in docs/reports/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
 
 ## Evidence
 Independent L2 verifier: pass on the rerun (`.sdlc/verify-0218/step-1/verifier-L2.md`). The first pass failed on a stale doc reference and two vacuous controls (`.sdlc/verify-0218/first-pass-note.md`); both fixed, then the rerun passed, showing each control exits 1 at 244d0af. check.sh, check-packaging, generate --check and tickets.py check passed on the merged branch.

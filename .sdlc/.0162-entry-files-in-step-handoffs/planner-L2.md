@@ -96,7 +96,7 @@ Each miss is reported as `FAIL <rel>: read-first route missing "Read first"`. Ad
 ## Step 5: Live run on Claude Code and Codex
 level: L3
 ### Do
-Read `AGENTS.md` and `docs/codex-role-execution.md` first. Use `docs/validation/onboard-live-run.md` as the model for the report.
+Read `AGENTS.md` and `docs/codex-role-execution.md` first. Use `docs/reports/onboard-live-run.md` as the model for the report.
 
 Build a throwaway git project in a temp folder outside this repository:
 - a root `AGENTS.md`
@@ -124,7 +124,7 @@ For each host, confirm four things, and quote a short excerpt from the role log 
 - The verifier log shows a read of `pkg/AGENTS.md`.
 - The `notes.txt` step handoff has no `### Read first`.
 
-Write `docs/validation/entry-files-live-run.md` with:
+Write `docs/reports/entry-files-live-run.md` with:
 - the recorded date, 2026-09-29, and ticket T-0162
 - the environment: host versions and the models taken from the logs
 - the method and the exact commands
@@ -136,12 +136,12 @@ Record what actually happened. A `no` stays a `no`. If a host cannot run, Status
 
 Add a link line for the report to `docs/README.md`, and link the report from the "How roles reach an entry" section of `docs/repo-onboarding/design.md`. Transcripts stay out of the repository.
 ### Acceptance criteria
-- `test -f docs/validation/entry-files-live-run.md`
+- `test -f docs/reports/entry-files-live-run.md`
 - `grep -qF 'validation/entry-files-live-run.md' docs/README.md`
 - `grep -qF 'entry-files-live-run.md' docs/repo-onboarding/design.md`
-- `grep -qF '| Host | Arm | Result | Evidence |' docs/validation/entry-files-live-run.md`
-- `for h in "Claude Code" Codex; do for a in "handoff lists the entry" "builder read the entry" "verifier read the entry" "root-only step has no Read first"; do grep -qF "| $h | $a | yes |" docs/validation/entry-files-live-run.md || exit 1; done; done`
-- `grep -qF 'gpt-6-astra' docs/validation/entry-files-live-run.md`
+- `grep -qF '| Host | Arm | Result | Evidence |' docs/reports/entry-files-live-run.md`
+- `for h in "Claude Code" Codex; do for a in "handoff lists the entry" "builder read the entry" "verifier read the entry" "root-only step has no Read first"; do grep -qF "| $h | $a | yes |" docs/reports/entry-files-live-run.md || exit 1; done; done`
+- `grep -qF 'gpt-6-astra' docs/reports/entry-files-live-run.md`
 - The report's evidence column or sections quote log excerpts that show a read of `pkg/AGENTS.md` by the builder and by the verifier on each host.
 
 ## Step 6: Gates green

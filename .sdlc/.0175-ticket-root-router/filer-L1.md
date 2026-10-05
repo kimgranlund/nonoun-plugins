@@ -28,7 +28,7 @@ T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router
 - Selftests in `tickets.py`, `board.py` and `traces/selftest.py` add cases for each rule, with negative controls.
 - Docs:
   - Updated `docs/maintenance/sdlc-internals.md`, the `handoff-format` and `ticket` skills, `docs/ticket-stages/design.md` and its `README.md`, and `docs/README.md`.
-  - Added `docs/validation/ticket-root-router-live-run.md`, linked from `docs/README.md`.
+  - Added `docs/reports/ticket-root-router-live-run.md`, linked from `docs/README.md`.
 - Generated `.sdlc/AGENTS.md` and `.sdlc/CLAUDE.md` for this repo's own `.sdlc` (no `ticket_root` line). `.sdlc/roadmap.md` shows no diff.
 - No new skill, no migration command, no version bump.
 
@@ -55,5 +55,5 @@ Limits:
 
 ## Follow-ups
 - decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
-- note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
+- note: the fresh-role live run in `docs/reports/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
 - note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.

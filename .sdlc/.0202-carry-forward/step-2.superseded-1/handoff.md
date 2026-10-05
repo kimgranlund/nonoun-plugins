@@ -7,15 +7,15 @@ level: L3
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
 New files:
-- `docs/validation/carry-forward-live-run/probe.sh`.
-- `docs/validation/carry-forward-live-run/scout.txt`, `with.txt`, and `without.txt`, all written by probe.sh.
-- `docs/validation/carry-forward-live-run.md`.
+- `docs/reports/carry-forward-live-run/probe.sh`.
+- `docs/reports/carry-forward-live-run/scout.txt`, `with.txt`, and `without.txt`, all written by probe.sh.
+- `docs/reports/carry-forward-live-run.md`.
 
 Changed: `docs/README.md` (one index line).
 
 **probe.sh setup**
-- Run it as `bash docs/validation/carry-forward-live-run/probe.sh` from the repository root.
-- It sets `R=$(git rev-parse --show-toplevel)`, `RUN=$R/plugins/sdlc-lite/scripts/run.sh`, and `OUT=$R/docs/validation/carry-forward-live-run`.
+- Run it as `bash docs/reports/carry-forward-live-run/probe.sh` from the repository root.
+- It sets `R=$(git rev-parse --show-toplevel)`, `RUN=$R/plugins/sdlc-lite/scripts/run.sh`, and `OUT=$R/docs/reports/carry-forward-live-run`.
 - It makes `P=$(mktemp -d -t carry-forward-probe)` and prints it. It keeps the directory after the run, so the verifier can reread the logs.
 - It builds two projects, `$P/with` and `$P/without`, with one shared function:
   - `git init -q`
@@ -55,7 +55,7 @@ tests/pad_test.sh    . "$(dirname "$0")/../lib/text/pad.sh"
 - Each run goes through a wrapper that works in a subshell:
   - It unsets `CLAUDECODE`, every `CLAUDE_CODE_*` variable, and `SDLC_ROLE SDLC_BASE_SHA SDLC_TMP_WORKTREES SDLC_HEADLESS SDLC_ATTEMPT_ID SDLC_ATTEMPT_NAME SDLC_LIFECYCLE_CHILD SDLC_ROUTING_REASON SDLC_BACKEND`.
   - It then `cd`s into the project and runs `bash "$RUN" <role> <level> .sdlc/cf/handoff.md`.
-  - Precedent: the Method section of `docs/validation/plan-reviewer-live-run.md`.
+  - Precedent: the Method section of `docs/reports/plan-reviewer-live-run.md`.
 - Planner L2 is the planner level the Lean chain section of `skills/chain/SKILL.md` gives a size S or M ticket. The scout has only L1.
 - Run one trial per arm. Never rerun an arm to get a different outcome. Report a run that exits nonzero as it is.
 
@@ -83,8 +83,8 @@ probe.sh writes one file per arm: `scout.txt` from `$P/with/.sdlc/cf/scout-L1.lo
   - Status is blocked, and Notes quote the evidence lines.
   - The report and evidence files stay in the tree, stating the actual result.
 
-**Report `docs/validation/carry-forward-live-run.md`**
-Follow the precedent of `docs/validation/role-result-schema-live-run.md`. Start with the title `# Carry forward live run` and a `Recorded: <date>. Live run for ticket T-0202: ...` line. Then:
+**Report `docs/reports/carry-forward-live-run.md`**
+Follow the precedent of `docs/reports/role-result-schema-live-run.md`. Start with the title `# Carry forward live run` and a `Recorded: <date>. Live run for ticket T-0202: ...` line. Then:
 - `## Environment`: the date, `sw_vers` or `uname -r`, `claude --version`, the `model=` lines and result headers, `git rev-parse HEAD` with a note that the step 1 contracts are in it, and the project path.
 - `## Method`: the fixture, the two arms, the commands, and the metric definitions above.
 - `## Evidence`: one table with columns arm, tool_calls, tree_searches, symbol_searches, read_scout_result, cites_result_path, copies_section. Quote the scout's carried-forward text and list the scout's own search tool lines.
@@ -104,13 +104,13 @@ Run every gate below. Fix any red that step 1 introduced, and only in step 1's f
 
 Depends on: step 1. The run needs the new contracts in the tree.
 ### Acceptance criteria
-- `f=docs/validation/carry-forward-live-run/scout.txt && grep -qx "carry_forward_section=yes" "$f" && awk -F= '$1=="carry_forward_lines" && $2>=1 && $2<=15 {ok=1} END {exit !ok}' "$f"`
-- `f=docs/validation/carry-forward-live-run/with.txt && grep -qx "read_scout_result=yes" "$f" && grep -qx "cites_result_path=yes" "$f" && grep -qx "copies_section=no" "$f" && grep -qx "symbol_searches=0" "$f"`
-- `awk -F= '$1=="symbol_searches" && $2>=1 {ok=1} END {exit !ok}' docs/validation/carry-forward-live-run/without.txt`
-- `bash -n docs/validation/carry-forward-live-run/probe.sh && for a in scout with without; do f=docs/validation/carry-forward-live-run/$a.txt; grep -qx "arm=$a" "$f" || exit 1; grep -q "^tool=" "$f" || exit 1; done`
-- `f=docs/validation/carry-forward-live-run.md && grep -qx "## Environment" "$f" && grep -qx "## Method" "$f" && grep -qx "## Evidence" "$f" && grep -qx "## Limits" "$f" && grep -qF "T-0202" "$f" && grep -qF "(validation/carry-forward-live-run.md)" docs/README.md`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(docs/validation/carry-forward-live-run\.md|docs/validation/carry-forward-live-run/(probe\.sh|scout\.txt|with\.txt|without\.txt)|docs/README\.md|plugins/sdlc-lite/agents/(scout|researcher|architect|archaeologist|planner|builder)\.md|plugins/sdlc-lite/scripts/(results|check)\.py|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
-- (guard) `! grep -qsF "—" docs/validation/carry-forward-live-run.md docs/validation/carry-forward-live-run/probe.sh docs/README.md`
+- `f=docs/reports/carry-forward-live-run/scout.txt && grep -qx "carry_forward_section=yes" "$f" && awk -F= '$1=="carry_forward_lines" && $2>=1 && $2<=15 {ok=1} END {exit !ok}' "$f"`
+- `f=docs/reports/carry-forward-live-run/with.txt && grep -qx "read_scout_result=yes" "$f" && grep -qx "cites_result_path=yes" "$f" && grep -qx "copies_section=no" "$f" && grep -qx "symbol_searches=0" "$f"`
+- `awk -F= '$1=="symbol_searches" && $2>=1 {ok=1} END {exit !ok}' docs/reports/carry-forward-live-run/without.txt`
+- `bash -n docs/reports/carry-forward-live-run/probe.sh && for a in scout with without; do f=docs/reports/carry-forward-live-run/$a.txt; grep -qx "arm=$a" "$f" || exit 1; grep -q "^tool=" "$f" || exit 1; done`
+- `f=docs/reports/carry-forward-live-run.md && grep -qx "## Environment" "$f" && grep -qx "## Method" "$f" && grep -qx "## Evidence" "$f" && grep -qx "## Limits" "$f" && grep -qF "T-0202" "$f" && grep -qF "(validation/carry-forward-live-run.md)" docs/README.md`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(docs/reports/carry-forward-live-run\.md|docs/reports/carry-forward-live-run/(probe\.sh|scout\.txt|with\.txt|without\.txt)|docs/README\.md|plugins/sdlc-lite/agents/(scout|researcher|architect|archaeologist|planner|builder)\.md|plugins/sdlc-lite/scripts/(results|check)\.py|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
+- (guard) `! grep -qsF "—" docs/reports/carry-forward-live-run.md docs/reports/carry-forward-live-run/probe.sh docs/README.md`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`

@@ -1,6 +1,6 @@
 # Layered context pattern for agent harnesses
 
-Status: reference, corrected 2026-09-29. Claims marked observed come from the [loading probe](../validation/nested-entry-file-loading.md). Claims marked unverified have not been tested in this repository.
+Status: reference, corrected 2026-09-29. Claims marked observed come from the [loading probe](../reports/nested-entry-file-loading.md). Claims marked unverified have not been tested in this repository.
 
 ## 1. Overview
 

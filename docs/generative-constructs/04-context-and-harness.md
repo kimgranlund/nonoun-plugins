@@ -54,7 +54,7 @@ Acceptance and publication are explicit UI commands invoking the lifecycle polic
 
 A handoff contains target revision, outcome of the stage, unresolved findings, artifact references, and recommended next operation. It must not depend on the previous conversation remaining available.
 
-The shipped filesystem pilot is narrower than this proposed harness: [Progressive Context's optional stage guidance](../../plugins/progressive-context/skills/progressive-context/references/workflow-stages.md) and its [small repository change example](../../plugins/progressive-context/skills/progressive-context/references/examples/small-repository-change.md) describe reusable handoff boundaries. A [manual SDLC Lite exercise](../validation/workflow-stage-pilot/exercise-run.md) records actual links and tool outputs. No stage scheduler or automatic exit enforcement is implemented by that pilot.
+The shipped filesystem pilot is narrower than this proposed harness: [Progressive Context's optional stage guidance](../../plugins/progressive-context/skills/progressive-context/references/workflow-stages.md) and its [small repository change example](../../plugins/progressive-context/skills/progressive-context/references/examples/small-repository-change.md) describe reusable handoff boundaries. A [manual SDLC Lite exercise](../reports/workflow-stage-pilot/exercise-run.md) records actual links and tool outputs. No stage scheduler or automatic exit enforcement is implemented by that pilot.
 
 ## Context budget
 

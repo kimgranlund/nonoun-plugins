@@ -3,7 +3,7 @@
 pass
 
 ## Criteria
-- `test -f docs/validation/agent-spawn-hook-live-run.md`: pass. Evidence: ran it and it printed `1ok`. At the pre-build HEAD (`$SDLC_BASE_SHA`) the same test exits 1, so the check can go red.
+- `test -f docs/reports/agent-spawn-hook-live-run.md`: pass. Evidence: ran it and it printed `1ok`. At the pre-build HEAD (`$SDLC_BASE_SHA`) the same test exits 1, so the check can go red.
 - `test "$(tail -n 1 …)" = "verdict: PASS"`: pass. Evidence: `2ok`. The last line of the file is `verdict: PASS`, and the builder's note sits under the top heading, above the payloads.
 - `grep -qE "^conductor deny: agent_type [^ ]*conductor, .*hook exit code 2$"`: pass. Evidence: `3ok`. The report line reads `conductor deny: agent_type sdlc-lite:conductor, subagent_type sdlc-lite:scout, hook exit code 2`. The file did not exist at base, so this would have been red there.
 - `grep -qE "^conductor allow: agent_type [^ ]*conductor, .*hook exit code 0$"`: pass. Evidence: `4ok`. The report line reads `conductor allow: agent_type sdlc-lite:conductor, subagent_type general-purpose, hook exit code 0`.

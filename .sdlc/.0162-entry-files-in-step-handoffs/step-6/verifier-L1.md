@@ -16,7 +16,7 @@ I did not run a pre-build worktree comparison. Every gate was green on the curre
 Steelman: I drafted a fail reason that the builder made no changes, so nothing was done. The step says to fix only reds introduced by steps 1 to 5, and none exist. `git status` shows no builder edits. The builder's claim of "None" changes matches that, and it is confirmed by my own gate runs.
 
 ## Out of scope changes
-None from this step. The modified files in `git status` are `docs/README.md`, four `plugin.json` manifests, and the untracked `docs/validation/release-0.19.0.md`. The builder says they come from concurrent release work. I did not check where they came from. `git diff --check` is clean, and every gate passes with them in the tree, so I left them alone.
+None from this step. The modified files in `git status` are `docs/README.md`, four `plugin.json` manifests, and the untracked `docs/reports/release-0.19.0.md`. The builder says they come from concurrent release work. I did not check where they came from. `git diff --check` is clean, and every gate passes with them in the tree, so I left them alone.
 
 ## For the next attempt
 None

@@ -3,7 +3,7 @@
 blocked
 
 ## Changes
-None. Nothing in the repository was changed. The throwaway projects and their role logs are kept outside the repository at `/tmp/entry-probe.bh1AfI/{claude,codex}`. `docs/validation/entry-files-live-run.md` was not written, and the two link lines were not added.
+None. Nothing in the repository was changed. The throwaway projects and their role logs are kept outside the repository at `/tmp/entry-probe.bh1AfI/{claude,codex}`. `docs/reports/entry-files-live-run.md` was not written, and the two link lines were not added.
 
 ## Checks
 - Setup: `git init` in `/tmp/entry-probe.bh1AfI/claude` and `/tmp/entry-probe.bh1AfI/codex`, each with root `AGENTS.md`, a `CLAUDE.md` holding `@AGENTS.md`, `pkg/AGENTS.md` (rule: "Every line written to a file in pkg/ must end with the marker token ZEBRA-7 after a single space."), `pkg/value.txt`, `notes.txt`, `.sdlc/entry-probe/handoff.md`, and one commit. Every role was run through a wrapper that unsets the parent run's `SDLC_*` and `CLAUDE_CODE_*` session variables, then execs this repository's `plugins/sdlc-lite/scripts/run.sh`.

@@ -23,7 +23,7 @@ pass
   - `git diff --check` is clean.
 
 ## Out of scope changes
-None. Tracked and untracked changes outside `.sdlc/` are `docs/README.md`, `docs/validation/plan-reviewer-live-run.md`, and `docs/validation/plan-reviewer-live-run/**`. I checked this with the strict guard above.
+None. Tracked and untracked changes outside `.sdlc/` are `docs/README.md`, `docs/reports/plan-reviewer-live-run.md`, and `docs/reports/plan-reviewer-live-run/**`. I checked this with the strict guard above.
 
 ## For the next attempt
 None. Three claims are accepted from the report and its evidence, not re-executed. The live model runs themselves (reviewer, planner, builder, and the Codex reviewer) were not re-run, because that is out of budget for a verifier. The `/tmp` probe directory cleanup was not checked. Evidence-file consistency was checked by replaying the steps.py runs and reading the verdict files, and the outputs agree with the report.

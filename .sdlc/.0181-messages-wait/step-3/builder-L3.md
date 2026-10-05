@@ -3,10 +3,10 @@
 done
 
 ## Changes
-- `docs/validation/messages-wait-live-run/probe.py` (new): live probe for `messages.py wait` with `claude` and `codex` arms, one shared `judge` verdict function, and an offline `selftest` with the 12 named cases.
+- `docs/reports/messages-wait-live-run/probe.py` (new): live probe for `messages.py wait` with `claude` and `codex` arms, one shared `judge` verdict function, and an offline `selftest` with the 12 named cases.
 
 ## Checks
-- `python3 docs/validation/messages-wait-live-run/probe.py selftest` (Python 3.9.6, which is `/usr/bin/python3`): 12 `ok:` lines, then `probe selftest: PASS`, exit 0.
+- `python3 docs/reports/messages-wait-live-run/probe.py selftest` (Python 3.9.6, which is `/usr/bin/python3`): 12 `ok:` lines, then `probe selftest: PASS`, exit 0.
 - AC1 (selftest PASS plus each labeled `ok:` line): exit 0.
 - AC2 (`BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS` appear in probe.py): exit 0.
 - AC3 (file exists and contains no em dash): exit 0.

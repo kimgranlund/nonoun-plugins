@@ -4,11 +4,11 @@ A parent host can wait for mail with one blocking command instead of a polling s
 ## Step 3: Live probe for wait, with an offline selftest
 level: L3
 ### Do
-Target: the new file `docs/validation/messages-wait-live-run/probe.py`. Use Python 3.9 syntax only. This step makes no model call and runs no live arm.
+Target: the new file `docs/reports/messages-wait-live-run/probe.py`. Use Python 3.9 syntax only. This step makes no model call and runs no live arm.
 
 Depends on: none for its offline selftest, which drives `messages.py` send, read, reply, and ack, all of which exist now. It runs after steps 1 and 2 so that step 4's live arms use the finished plugin.
 
-1. Model the probe on `docs/validation/messages-live-run/probe.py` (T-0179). Read these parts of it first:
+1. Model the probe on `docs/reports/messages-live-run/probe.py` (T-0179). Read these parts of it first:
    - its docstring, `clean_env`, `run_checked`, `setup`, and `send`;
    - `parse_message`, `locate`, `find_reply`, `oracle`, and `Sampler`;
    - `ClaudeTrace`, `CodexTrace`, `codex_home`, `find_rollout`, `codex_control`, and `codex_isolation`;
@@ -39,7 +39,7 @@ Depends on: none for its offline selftest, which drives `messages.py` send, read
 4. Host commands, run with the project as cwd:
    - claude: `claude -p --safe-mode --disable-slash-commands --dangerously-skip-permissions --model sonnet --effort low --output-format stream-json --verbose --no-session-persistence -- "<prompt>"`.
    - codex: `codex exec --ignore-user-config --json --color never -C <project> -m gpt-6.1-sol -c model_reasoning_effort="medium" -c approval_policy="never" --sandbox workspace-write "<prompt>"`.
-     - This is the model and effort of the path-only arm in `docs/validation/messages-live-run.md` (its lines 13 and 41).
+     - This is the model and effort of the path-only arm in `docs/reports/messages-live-run.md` (its lines 13 and 41).
      - Before the arm, the two T-0179 isolation control calls run (`codex_isolation`).
    - The host starts first. `SEND_DELAY` seconds after launch, `run_host`'s `delayed` hook does three things:
      - sends the message with `messages.py send --receiver <harness> --sender probe --topic live-probe --follow-up true "<BODY>"`;
@@ -109,9 +109,9 @@ Depends on: none for its offline selftest, which drives `messages.py` send, read
      - `fail: a Codex cell wait` (the rollout holds a `function_call` named `wait`)
      - `unverified: a host not on PATH says host cannot run` (the PATH check, run with `PATH` set to an empty temp folder, returns a reason that starts with `host cannot run: `)
 
-Focused check: `python3 docs/validation/messages-wait-live-run/probe.py selftest`.
+Focused check: `python3 docs/reports/messages-wait-live-run/probe.py selftest`.
 ### Acceptance criteria
-- `out=$(python3 docs/validation/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "pass: a Codex wait call with no poll in the rollout" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: a backgrounded wait call" "fail: no wait call" "fail: the wait started after the send" "fail: the wait returned another id" "fail: a Codex write_stdin poll" "fail: a Codex cell wait" "unverified: a host not on PATH says host cannot run"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `for v in BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS; do grep -qF "$v" docs/validation/messages-wait-live-run/probe.py || exit 1; done`
-- `f=docs/validation/messages-wait-live-run/probe.py; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF docs/validation/messages-wait-live-run/probe.py)"`
+- `out=$(python3 docs/reports/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "pass: a Codex wait call with no poll in the rollout" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: a backgrounded wait call" "fail: no wait call" "fail: the wait started after the send" "fail: the wait returned another id" "fail: a Codex write_stdin poll" "fail: a Codex cell wait" "unverified: a host not on PATH says host cannot run"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `for v in BASH_DEFAULT_TIMEOUT_MS BASH_MAX_TIMEOUT_MS; do grep -qF "$v" docs/reports/messages-wait-live-run/probe.py || exit 1; done`
+- `f=docs/reports/messages-wait-live-run/probe.py; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF docs/reports/messages-wait-live-run/probe.py)"`

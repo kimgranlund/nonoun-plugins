@@ -3,17 +3,17 @@
 blocked
 
 ## Changes
-- `docs/validation/supervisor-live-run/first-run-{dry-run,claude,claude-attached,claude-push,codex,codex-attached,codex-push}.txt`: the seven first-run files, renamed with `mv` before any arm ran and left unedited. All seven SHA-256 values match the pins.
-- `docs/validation/supervisor-live-run/{dry-run,claude,claude-attached,claude-push,codex,codex-attached,codex-push}.txt`: new evidence from this run, written only by the `tee` commands.
-- `docs/validation/supervisor-live-run.md`: rewritten whole. Sections: Environment, Method, First run, Claude Code, Codex, Negative controls, Limits.
-- `docs/validation/supervisor-live-run/AGENTS.md`: added a `first-run-<arm>.txt` item under Files.
+- `docs/reports/supervisor-live-run/first-run-{dry-run,claude,claude-attached,claude-push,codex,codex-attached,codex-push}.txt`: the seven first-run files, renamed with `mv` before any arm ran and left unedited. All seven SHA-256 values match the pins.
+- `docs/reports/supervisor-live-run/{dry-run,claude,claude-attached,claude-push,codex,codex-attached,codex-push}.txt`: new evidence from this run, written only by the `tee` commands.
+- `docs/reports/supervisor-live-run.md`: rewritten whole. Sections: Environment, Method, First run, Claude Code, Codex, Negative controls, Limits.
+- `docs/reports/supervisor-live-run/AGENTS.md`: added a `first-run-<arm>.txt` item under Files.
 - `docs/README.md`: one Supervisor live run line, ending `Claude Code pass, Codex fail.` (see Notes).
 
 ## Checks
 - `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`: PASS, exit 0, 69 cases.
-- `python3 docs/validation/supervisor-live-run/probe.py selftest`: PASS, exit 0, 17 cases.
+- `python3 docs/reports/supervisor-live-run/probe.py selftest`: PASS, exit 0, 17 cases.
 - Environment record: `claude --version` 2.1.286, `codex --version` codex-cli 0.159.2, `codex login status` "Logged in using ChatGPT", HEAD `72ac9a3`, and `git status --porcelain -- plugins/ docs/` shows steps 1 to 6 uncommitted.
-- Each arm ran once as `set -o pipefail; python3 docs/validation/supervisor-live-run/probe.py <arm> | tee .../<arm>.txt`, in order:
+- Each arm ran once as `set -o pipefail; python3 docs/reports/supervisor-live-run/probe.py <arm> | tee .../<arm>.txt`, in order:
   - 🟢 dry-run: `result=pass`
   - 🟢 claude: `result=pass`
   - 🟢 claude-attached: `result=pass`

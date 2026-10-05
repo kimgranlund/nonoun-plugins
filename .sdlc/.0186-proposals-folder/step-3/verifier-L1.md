@@ -10,7 +10,7 @@ pass
 - `python3 plugins/sdlc-lite/scripts/proposals.py selftest`: pass. Evidence: exit 0, "proposals selftest: PASS". Four of the negative controls are visible in the output (forward rule, threshold, known-pattern match, source-write check), so the checks can go red.
 - `git diff --check` (excluding `.sdlc`, and for `.sdlc/AGENTS.md`): pass. Evidence: both commands exit 0 against `$SDLC_BASE_SHA`.
 - No em dash in added diff lines: pass. Evidence: the negated grep pipeline exits 0.
-- No em dash in new untracked files: pass. Evidence: the loop exits 0 over 4 files: `.sdlc/proposals/AGENTS.md`, `.sdlc/proposals/CLAUDE.md`, `docs/validation/proposals-live-run.md`, `plugins/sdlc-lite/scripts/proposals.py`. The file list is non-empty, so the loop examined real files.
+- No em dash in new untracked files: pass. Evidence: the loop exits 0 over 4 files: `.sdlc/proposals/AGENTS.md`, `.sdlc/proposals/CLAUDE.md`, `docs/reports/proposals-live-run.md`, `plugins/sdlc-lite/scripts/proposals.py`. The file list is non-empty, so the loop examined real files.
 - No trailing whitespace in new files: pass. Evidence: the loop exits 0 over the same 4 files.
 - `run.sh` and `models.json` unchanged: pass. Evidence: `git diff --quiet "$SDLC_BASE_SHA" -- <both files>` exits 0.
 - Changed files are all in the allowed set: pass. Evidence: the name-only diff plus untracked files, filtered through the allowlist, leaves nothing (exit 0).

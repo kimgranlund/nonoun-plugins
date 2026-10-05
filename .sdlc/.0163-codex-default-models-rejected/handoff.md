@@ -27,7 +27,7 @@ Observed 2026-09-29 with Codex CLI 0.154.0:
 - `gpt-6-astra`: completed and replied OK.
 
 ## Context
-Found while running the loading probe recorded in `docs/validation/nested-entry-file-loading.md`. `gpt-6-sol` is also the default model in this machine's Codex configuration.
+Found while running the loading probe recorded in `docs/reports/nested-entry-file-loading.md`. `gpt-6-sol` is also the default model in this machine's Codex configuration.
 
 `plugins/sdlc-lite/adapters/codex/models.json` uses `gpt-6-sol` for most builder, planner, verifier, researcher, archaeologist, filer, and conductor levels, and `gpt-6-luna` for scout.
 

@@ -22,7 +22,7 @@ Scout, researcher, architect and archaeologist results now close with a `## Carr
 - `plugins/sdlc-lite/scripts/results.py`: `Carry forward` is added as the last section in `SCHEMA` for the four producer roles, with selftest cases. An out-of-order result fails with "## Carry forward comes before ## Map". Existing results without the section still validate.
 - `plugins/sdlc-lite/scripts/check.py`: docstring item 15 and a `CARRY_FORWARD` guard with negative controls. It flags a producer contract missing the heading or the "at most 15 lines" text, and a builder contract missing the reader text. The step 1 builder reports that a comment label in `check.py` numbered an item 13 where the docstring says 14. Commit `3617cda` ("check.py: carry-forward comment numbering") followed.
 - `plugins/sdlc-lite/adapters/codex/agents/*.toml`: 14 files regenerated with `codex_roles.py generate`.
-- `docs/validation/carry-forward-live-run.md`, `docs/validation/carry-forward-live-run/` (`probe.sh`, `scout.txt`, `with.txt`, `without.txt`) and one `docs/README.md` line: the live-run report. It states the actual outcome and its limits.
+- `docs/reports/carry-forward-live-run.md`, `docs/reports/carry-forward-live-run/` (`probe.sh`, `scout.txt`, `with.txt`, `without.txt`) and one `docs/README.md` line: the live-run report. It states the actual outcome and its limits.
 
 ### Verification
 Step 1 (contracts, schema, guard, Codex agents) passed the independent verifier at L2.

@@ -9,7 +9,7 @@ pass
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`: pass. Evidence: exit 0, "ok: 188 tickets, roadmap current".
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`: pass. Evidence: exit 0, no output. It can fail: on a trailing-whitespace fixture, `git diff --no-index --check` exited 3 and reported the line. This command does not cover untracked files. The two untracked files are `results.py` and the live-run doc, and the builder grepped them for trailing whitespace. I did not repeat that grep.
 - (guard) `! git diff "$SDLC_BASE_SHA" -- plugins docs | grep '^+' | grep -q <em dash>`: pass. Evidence: exit 0. The grep matches an em dash fixture (exit 0), so the check can go red.
-- (guard) `for f in $(git ls-files --others --exclude-standard -- plugins docs); do ! grep -q <em dash> "$f" || exit 1; done`: pass. Evidence: exit 0. The loop covers 2 files, `docs/validation/role-result-schema-live-run.md` and `plugins/sdlc-lite/scripts/results.py`. The fixture check above shows the same grep matches an em dash.
+- (guard) `for f in $(git ls-files --others --exclude-standard -- plugins docs); do ! grep -q <em dash> "$f" || exit 1; done`: pass. Evidence: exit 0. The loop covers 2 files, `docs/reports/role-result-schema-live-run.md` and `plugins/sdlc-lite/scripts/results.py`. The fixture check above shows the same grep matches an em dash.
 
 The builder's claim of no changes is accurate. `HEAD` equals `$SDLC_BASE_SHA`. `git status` shows no step-7 modifications beyond the earlier steps' files and the `.sdlc` records. No gate was red, so the pre-build baseline check was not needed.
 

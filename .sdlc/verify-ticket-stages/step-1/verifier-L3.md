@@ -19,7 +19,7 @@ fail
     - The branch's `close` does regenerate the router. Live run in `/tmp/vts-router.e6gzzz` with `ticket_root: tickets`: `new` gave `proposed: 1` with the ticket line; a status edit plus `roadmap` gave `ready: 1`; `claimed_by` showed on the line; `close --reason` gave `done: 1` and `.0001-alpha`.
     - `check` exited 1 for a stale count, a missing `CLAUDE.md` import and a missing block, then 0 after restore. Text added outside the block survived both regenerations.
     - `board.py` selftest has the `ticket_root` cases. `fanout.py` lacking `ticket_root` support is named as a `decide:` item in `.sdlc/notes.md`.
-  - T-0175, recorded unverified by the ticket (allowed by its wording): the fresh-role run, `docs/validation/ticket-root-router-live-run.md:99`. I did not rerun it.
+  - T-0175, recorded unverified by the ticket (allowed by its wording): the fresh-role run, `docs/reports/ticket-root-router-live-run.md:99`. I did not rerun it.
   - T-0177, met:
     - Live run in `/tmp/vts-live.YtiNoR`: send, read, reply, ack, with `send_time` 10:35:50.943 <= `read_time` 10:35:51.646 <= `ack_time` 10:35:51.950.
     - Refusals observed: `--read-time` exit 2 (`unrecognized arguments`); `--follow-up maybe`, missing `--follow-up` and receiver `../x` each exit 1 with the count unchanged; ack of an unread message; read by a non-recipient; a second read; ack before a reply on a follow-up message (file stayed in `read/`); ack and read on a done message.

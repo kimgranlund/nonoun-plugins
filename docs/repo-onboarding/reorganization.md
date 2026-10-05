@@ -4,7 +4,7 @@ Status: draft v0.6, not ready to build. Recorded: 2026-09-29. Nothing in this do
 
 Three review rounds each found new edge cases in these rules, so they will not be settled on paper. Spike T-0161 builds the read-only inventory and plan and runs them on this repository. Its results decide the rules below. Apply is deferred to a later ticket. The [open findings](#open-findings) list what is known to be unsettled.
 
-This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](design.md). Evidence is in the [first review](../validation/repo-onboarding-design-review.md), the [second review](../validation/repo-onboarding-design-review-2.md), and the [third review](../validation/repo-onboarding-design-review-3.md).
+This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](design.md). Evidence is in the [first review](../reports/repo-onboarding-design-review.md), the [second review](../reports/repo-onboarding-design-review-2.md), and the [third review](../reports/repo-onboarding-design-review-3.md).
 
 ## Decisions
 
@@ -139,8 +139,8 @@ From the third review. Each is unsettled and is input to the spike.
 
 This repository does not match the default layout, which makes it a realistic first case:
 
-- Five documents sit directly in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, `plugin-compatibility.md`, and `readiness-recovery-validation.md`.
-- `docs/validation/` and `docs/readiness-recovery-validation.md` are dated evidence. They are to be listed as frozen and stay where they are.
+- Four documents sit directly in `docs/`: `claude-handoff.md`, `claude-response.md`, `codex-role-execution.md`, and `plugin-compatibility.md`. (`readiness-recovery-validation.md` sat there until T-0246 moved it into `docs/reports/`.)
+- `docs/reports/` holds dated evidence. It is to be listed as frozen. It was `docs/validation/` until T-0246 renamed it to match the schema; earlier tags and published release notes keep the old paths, which is the accepted limit for frozen records.
 - `plugins/sdlc-lite/bench/results/` and `plugins/sdlc-lite/adapters/codex/agents/` are to be listed as frozen.
 - `docs/`, `docs/generative-constructs/`, and `docs/repo-onboarding/` use `README.md` as their index and have no `AGENTS.md`.
 - `docs/` paths are cited by the root `AGENTS.md`, the root `README.md`, `plugins/sdlc-lite/AGENTS.md`, and both plugins' `HARNESS-NOTES.md`. A move would change those cites.

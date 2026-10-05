@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- docs/validation/messages-idle-host-limit-2026-10-01.md: the evidence section now says the tool calls (`spawn_agent`, `wait_agent`, `followup_task`, `wait_agent`) are quoted from the parent's rollout files in the rollout paragraph of messages-live-run.md. The wrong `messages-live-run/codex-messenger.txt` reference is gone.
+- docs/reports/messages-idle-host-limit-2026-10-01.md: the evidence section now says the tool calls (`spawn_agent`, `wait_agent`, `followup_task`, `wait_agent`) are quoted from the parent's rollout files in the rollout paragraph of messages-live-run.md. The wrong `messages-live-run/codex-messenger.txt` reference is gone.
 - The other six files are unchanged from the first build: messages.py, messenger.md, design.md, codex-role-execution.md, README.md and the generated sdlc-messenger-l1.toml.
 
 ## Checks

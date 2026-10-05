@@ -14,7 +14,7 @@ All changes are in `plugins/sdlc-lite/scripts/messages.py`.
 - Add module constants `ENTRY_TEMPLATE` (becomes the mailbox root `AGENTS.md`) and `STAGE_TEMPLATES = {'new': ..., 'read': ..., 'done': ...}` (each becomes `<stage>/AGENTS.md`). Inline constants follow the repo's pattern for generated entry files: `ROUTER_TEMPLATE` in `tickets.py:885-908` and the onboard templates in `onboard.py:228-260`. They are the one source both writers use (step 2 calls the same function).
 - Write them as plain triple-double-quoted strings with literal `"` characters and no backslash escapes, so the source holds each command exactly as the generated file does.
 - One placeholder, `{{scripts}}`, rendered as `os.path.dirname(os.path.realpath(__file__))`. Every command in the templates is written `python3 "{{scripts}}/messages.py" <sub> ...`. The Codex install command is `python3 "{{scripts}}/codex_roles.py" install .`.
-  - Why an absolute path: a fresh role with no skill and no plugin cannot resolve `<plugin-root>`. `${CLAUDE_PLUGIN_ROOT}` exists only in plugin contexts, and the Codex rule needs the skill. The installed plugin caches are 0.20.1, which has no `messages.py` (docs/validation/ticket-root-router-live-run.md, Limits).
+  - Why an absolute path: a fresh role with no skill and no plugin cannot resolve `<plugin-root>`. `${CLAUDE_PLUGIN_ROOT}` exists only in plugin contexts, and the Codex rule needs the skill. The installed plugin caches are 0.20.1, which has no `messages.py` (docs/reports/ticket-root-router-live-run.md, Limits).
   - The mailbox is git-ignored local state, so a machine path is safe there. The tracked router keeps `<plugin-root>`.
   - A copied `messages.py` renders its own folder. The selftest relies on this.
 
@@ -79,7 +79,7 @@ List them: `python3 "{{scripts}}/messages.py" list --state done`.
   - `CLAUDE.md` holding `@AGENTS.md\n`.
   - For each of `new`, `read`, `done`: `<stage>/AGENTS.md` (the rendered stage template) and `<stage>/CLAUDE.md` holding `@AGENTS.md\n`.
 - Why the `.gitignore`: it makes the mailbox ignore itself. `git add -A` (fanout.py:586,684) and porcelain checks then never pick up entry files or messages, even in a repo that commits `.sdlc/` without ignoring `.sdlc/messages/`. A plan-time probe showed that a nested `.gitignore` holding `*` hides the folder from `git status --porcelain --untracked-files=all` and from `git add -A`.
-- Why each `CLAUDE.md`: Claude Code loads a nested `AGENTS.md` only through a `CLAUDE.md` import (docs/validation/nested-entry-file-loading.md, Results for Claude Code).
+- Why each `CLAUDE.md`: Claude Code loads a nested `AGENTS.md` only through a `CLAUDE.md` import (docs/reports/nested-entry-file-loading.md, Results for Claude Code).
 - `write_entries(mbox)` creates folders as needed. For each entry file that is missing or whose bytes differ, it writes a temp file in the same folder and `os.replace`s it. It returns the paths written. It overwrites whole files, because they are generated, git-ignored, and not managed blocks.
 - `cmd_send` and `cmd_reply` call `write_entries(mbox)` after `compose(...)` returns and before `deliver(...)`.
   - Every argument, body, and schema refusal is raised before that point, so a refused send or reply writes nothing. This keeps T-0177's contract: the selftest's `refused()` snapshots and the mailbox-absent checks at messages.py:1237 and 1267 keep holding.

@@ -32,7 +32,7 @@ All seven steps passed their verifiers. Step 6's first builder attempt was kille
   - `models.json` gets `plan-reviewer` L1 at `gpt-6-astra` high.
   - The alternate follows the newest planner's recorded model, so `gpt-6.1-sol` high reviews Astra plans.
   - Regenerated TOML profiles, `codex_roles.py`, `codex_exchange.py`, `instructions.md`, and `docs/codex-role-execution.md` are updated, with new selftests. There are now 24 project agent definitions.
-- Live validation doc (step 5): `docs/validation/plan-reviewer-live-run.md`, its copied evidence, and one `docs/README.md` entry.
+- Live validation doc (step 5): `docs/reports/plan-reviewer-live-run.md`, its copied evidence, and one `docs/README.md` entry.
 - Gates (step 6): no fixes were needed.
 - Loose end (step 7): the `run.sh` comment above the Codex resolve block now covers the plan-reviewer as well as the verifier. It is a comment-only change.
 

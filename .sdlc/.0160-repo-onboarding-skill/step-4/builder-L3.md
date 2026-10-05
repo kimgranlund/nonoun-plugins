@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- `docs/validation/onboard-live-run.md`: new dated report of the live run gate. It gives the environment, method, prompt, exact commands, the required results table, the answers observed, and limits.
+- `docs/reports/onboard-live-run.md`: new dated report of the live run gate. It gives the environment, method, prompt, exact commands, the required results table, the answers observed, and limits.
 - `docs/repo-onboarding/README.md`: added an Evidence link to `../validation/onboard-live-run.md`.
 - `docs/README.md`: added a link to `validation/onboard-live-run.md` after the other onboarding validation entries.
 

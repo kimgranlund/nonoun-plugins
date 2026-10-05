@@ -7,11 +7,11 @@ level: L3
 Depends on: steps 2 and 3.
 
 Targets (new):
-- `docs/validation/supervisor-live-run/probe.py`;
-- `docs/validation/supervisor-live-run/AGENTS.md`, which says what the folder holds (the probe, plus the `<arm>.txt` evidence files that step 5 writes) and how to rerun each arm and the selftest;
-- `docs/validation/supervisor-live-run/CLAUDE.md`, holding `@AGENTS.md`. Every folder this ticket adds is self-describing.
+- `docs/reports/supervisor-live-run/probe.py`;
+- `docs/reports/supervisor-live-run/AGENTS.md`, which says what the folder holds (the probe, plus the `<arm>.txt` evidence files that step 5 writes) and how to rerun each arm and the selftest;
+- `docs/reports/supervisor-live-run/CLAUDE.md`, holding `@AGENTS.md`. Every folder this ticket adds is self-describing.
 
-The model is the T-0181 probe (`docs/validation/messages-wait-live-run.md`).
+The model is the T-0181 probe (`docs/reports/messages-wait-live-run.md`).
 
 1. Arms. `probe.py <arm>` with the arm one of: `dry-run`, `claude`, `codex`, `claude-attached`, `codex-attached`, `claude-push`, `codex-push`. Also `probe.py selftest`.
 2. Setup for every arm. The probe never calls `run.sh` and never touches this repository or its remote.
@@ -75,9 +75,9 @@ The model is the T-0181 probe (`docs/validation/messages-wait-live-run.md`).
     - It makes no model call.
 11. The `BODY` criterion below matches `git[[:space:]]push` rather than the plain phrase, because `block-publish.sh` scans raw command text for that phrase when a verifier wraps a span in `bash -c` (hook lines 10 to 13 and 24).
 ### Acceptance criteria
-- `out=$(python3 docs/validation/supervisor-live-run/probe.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `d=docs/validation/supervisor-live-run; test -s "$d/AGENTS.md" && test "$(cat "$d/CLAUDE.md")" = "@AGENTS.md" && grep -qF "probe.py" "$d/AGENTS.md"`
-- `f=docs/validation/supervisor-live-run/probe.py; test -f "$f" && ! grep -qF "run.sh" "$f" && grep -qF "probe-remote" "$f" && grep -qF -- "--driver" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f"`
-- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 docs/validation/supervisor-live-run/probe.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
-- `for f in docs/validation/supervisor-live-run/probe.py docs/validation/supervisor-live-run/AGENTS.md docs/validation/supervisor-live-run/CLAUDE.md; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`
+- `out=$(python3 docs/reports/supervisor-live-run/probe.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `d=docs/reports/supervisor-live-run; test -s "$d/AGENTS.md" && test "$(cat "$d/CLAUDE.md")" = "@AGENTS.md" && grep -qF "probe.py" "$d/AGENTS.md"`
+- `f=docs/reports/supervisor-live-run/probe.py; test -f "$f" && ! grep -qF "run.sh" "$f" && grep -qF "probe-remote" "$f" && grep -qF -- "--driver" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f"`
+- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 docs/reports/supervisor-live-run/probe.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
+- `for f in docs/reports/supervisor-live-run/probe.py docs/reports/supervisor-live-run/AGENTS.md docs/reports/supervisor-live-run/CLAUDE.md; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`

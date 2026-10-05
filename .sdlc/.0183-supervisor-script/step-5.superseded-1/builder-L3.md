@@ -3,20 +3,20 @@
 blocked
 
 ## Changes
-- `docs/validation/supervisor-live-run/dry-run.txt`: probe stdout of the dry-run arm (tee).
-- `docs/validation/supervisor-live-run/claude.txt`: probe stdout of the claude arm (tee).
-- `docs/validation/supervisor-live-run/claude-attached.txt`: probe stdout of the claude-attached arm (tee).
-- `docs/validation/supervisor-live-run/claude-push.txt`: probe stdout of the claude-push arm (tee).
-- `docs/validation/supervisor-live-run/codex.txt`: probe stdout of the codex arm (tee).
-- `docs/validation/supervisor-live-run/codex-attached.txt`: probe stdout of the codex-attached arm (tee).
-- `docs/validation/supervisor-live-run/codex-push.txt`: probe stdout of the codex-push arm (tee).
-- `docs/validation/supervisor-live-run.md`: new dated record with Environment, Method, Claude Code, Codex, Negative controls, and Limits sections, plus one `Result <arm>: <word>` line per arm.
+- `docs/reports/supervisor-live-run/dry-run.txt`: probe stdout of the dry-run arm (tee).
+- `docs/reports/supervisor-live-run/claude.txt`: probe stdout of the claude arm (tee).
+- `docs/reports/supervisor-live-run/claude-attached.txt`: probe stdout of the claude-attached arm (tee).
+- `docs/reports/supervisor-live-run/claude-push.txt`: probe stdout of the claude-push arm (tee).
+- `docs/reports/supervisor-live-run/codex.txt`: probe stdout of the codex arm (tee).
+- `docs/reports/supervisor-live-run/codex-attached.txt`: probe stdout of the codex-attached arm (tee).
+- `docs/reports/supervisor-live-run/codex-push.txt`: probe stdout of the codex-push arm (tee).
+- `docs/reports/supervisor-live-run.md`: new dated record with Environment, Method, Claude Code, Codex, Negative controls, and Limits sections, plus one `Result <arm>: <word>` line per arm.
 - `docs/README.md`: one line added after the `Messages wait live run` line.
 
 ## Checks
-- `python3 docs/validation/supervisor-live-run/probe.py selftest`: 12 `ok:` cases, `probe selftest: PASS`, exit 0.
+- `python3 docs/reports/supervisor-live-run/probe.py selftest`: 12 `ok:` cases, `probe selftest: PASS`, exit 0.
 - `claude --version`: `2.1.286 (Claude Code)`. `codex --version`: `codex-cli 0.159.2`. `codex login status`: `Logged in using ChatGPT`, exit 0. `git rev-parse --short HEAD`: `5774f07`. `git status --porcelain -- plugins/ docs/`: 3 modified files and 2 untracked paths (steps 1 to 4, uncommitted).
-- Each arm ran once as `set -o pipefail; python3 docs/validation/supervisor-live-run/probe.py <arm> | tee docs/validation/supervisor-live-run/<arm>.txt`, in the handoff's order:
+- Each arm ran once as `set -o pipefail; python3 docs/reports/supervisor-live-run/probe.py <arm> | tee docs/reports/supervisor-live-run/<arm>.txt`, in the handoff's order:
 
 | Arm | Exit | Last line |
 |---|---|---|

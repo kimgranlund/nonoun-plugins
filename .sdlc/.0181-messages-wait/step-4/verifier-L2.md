@@ -11,7 +11,7 @@ pass
 - AC6 (each arm section has one `Result:` line matching the evidence file): pass. Evidence: the python check exited 0. Claude Code says `Result: pass` and Codex says `Result: pass`, matching `result=pass` in both evidence files.
 - AC7 (`docs/README.md` links the record): pass. Evidence: `grep -qF` exited 0. `git diff docs/README.md` shows the one added line after the Messages live run line, reading "Claude Code pass, Codex pass".
 - AC8 (no em dash in the record or `probe.py`): pass. Evidence: ran as written and it exited 0. I also grepped the two `.txt` evidence files for U+2014 and found 0 hits in each.
-- AC9 (diff stays inside the allowed files): pass. Evidence: ran as written and it exited 0 with `SDLC_BASE_SHA=bc21b53c…`. The changed files are the allowed ones, and the untracked files are only `docs/validation/messages-wait-live-run*`.
+- AC9 (diff stays inside the allowed files): pass. Evidence: ran as written and it exited 0 with `SDLC_BASE_SHA=bc21b53c…`. The changed files are the allowed ones, and the untracked files are only `docs/reports/messages-wait-live-run*`.
 - Builder claims checked against the host streams (not part of the nine criteria):
   - Claude stream: the init event's model is `claude-sonnet-5-5`. The `tools` list has no `Skill` and has `Monitor`, and `agents` is `claude, Explore, general-purpose, Plan`.
   - Claude stream: the first tool call is a `Bash` wait with `timeout: 140000`. Its result is a single id and path line, with no body.

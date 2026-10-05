@@ -12,7 +12,7 @@ This is the trial layout for spike T-0161. It is not `docs/layout.md` and nothin
 
 ## Frozen paths
 
-- `docs/validation/`
-- `docs/readiness-recovery-validation.md`
+- `docs/reports/`
+- `docs/reports/readiness-recovery-validation.md`
 - `plugins/sdlc-lite/bench/results/`
 - `plugins/sdlc-lite/adapters/codex/agents/`

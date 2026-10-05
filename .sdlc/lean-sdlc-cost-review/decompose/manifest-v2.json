@@ -20,7 +20,7 @@
     {"id": "B-hooks-json", "label": "adapters/claude/hooks.json: new Edit|Write|MultiEdit matcher entry", "leaf": true},
     {"id": "B-hook-selftest", "label": "scripts/hook-selftest.sh fixtures and docs/maintenance/claude-hooks.md", "leaf": true, "justify": "shared-util"},
     {"id": "B-conductor-text", "label": "conductor.md and chain/SKILL.md: change.md rule and the rerun route (after T-0199)", "leaf": true},
-    {"id": "B-live", "label": "docs/validation/handoff-freeze-live-run.md (Claude hook deny, stale flag on Claude and Codex)", "leaf": true},
+    {"id": "B-live", "label": "docs/reports/handoff-freeze-live-run.md (Claude hook deny, stale flag on Claude and Codex)", "leaf": true},
     {"id": "C", "label": "C replan delta and checklist", "leaf": false},
     {"id": "C-replan-handoff", "label": "steps.py replan-handoff: the chain:48 `## Plan review` append to handoff.md, scripted, refusing without a replan verdict", "leaf": true},
     {"id": "C-planner-checklist", "label": "planner.md checklist (after T-0201 and T-0202)", "leaf": true},

@@ -13,13 +13,13 @@ Non-blockers:
 
 4. `mode: adopt` voids the quarantine. `design.md:156` makes every error a warning with exit 0, and both repositories would run in `adopt` indefinitely (`design.md:233`), so D-5 and D-6 never bite and `other/` is not enforceable in practice. Resolved by finding 3 (scope by legacy list, no mode).
 5. Two mechanisms bind a folder to a kind and `## Homes` has no stated role. `## Kinds` (`design.md:137`) and `extra-homes:` (`design.md:143`) do the same thing; D-1 (`design.md:160`) checks "nine homes or a listed extra-home" and never reads `## Homes`, which the parser requires (`onboard.py:117-119`). Fix: `## Homes` is the one list of folders; a non-default name needs a `## Kinds` line; drop `extra-homes:`.
-6. D-9 and the depth rule reject real evidence. `docs/validation/dual-host-readiness-recovery.json` and `native-codex-smoke.json` sit at the home root; maison pairs each report with a `.sha256`; `docs/validation/plan-reviewer-live-run/claude/probe/step-1/` is depth 7 against `design.md:102`; maison's `gen-ui-audit-2026-10-03/audit-snapshot.json` has no same-stem Markdown at all (`design.md:216`). Say which checks the legacy list exempts and allow same-stem sidecars and any depth inside an evidence folder.
+6. D-9 and the depth rule reject real evidence. `docs/reports/dual-host-readiness-recovery.json` and `native-codex-smoke.json` sit at the home root; maison pairs each report with a `.sha256`; `docs/reports/plan-reviewer-live-run/claude/probe/step-1/` is depth 7 against `design.md:102`; maison's `gen-ui-audit-2026-10-03/audit-snapshot.json` has no same-stem Markdown at all (`design.md:216`). Say which checks the legacy list exempts and allow same-stem sidecars and any depth inside an evidence folder.
 7. B-1a misses retries. `design.md:172` matches `*-L[0-9].md`; `run.sh:6` writes `<role>-L<n>-<k>.md` (49 tracked). Also `budget-ack.md` (`budget.py:33`) and `decompose/` (`agents/architect.md:9`) are records B-2a does not list, and `.sdlc/fix-protocol-controls/` has no root `handoff.md`.
 8. Planning to archive on `status: superseded` (`design.md:76`) is a status-triggered move, which `repo-onboarding/design.md:189` forbids in so many words. The split can stay (user may change), but that sentence must be amended in the same change, or `planning/` folds into `specs/` with `status:`.
 9. Migration risk missing: `check.py:613` reads `docs/maintenance/claude-hooks.md` by path at run time, and the rewriter in `reorganization.md:87` covers tracked Markdown only. Root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and both `HARNESS-NOTES.md` cite moving paths.
-10. `reorganization.md:143,46` says `docs/validation/` is frozen and "not a defect to fix by moving"; `design.md:197` moves it. Pick one and amend the other.
+10. `reorganization.md:143,46` says `docs/reports/` is frozen and "not a defect to fix by moving"; `design.md:197` moves it. Pick one and amend the other.
 11. Promotion step 3 (`design.md:47`) writes into a ticket's `handoff.md`, which is frozen once a role reads it (root `AGENTS.md`, hook named at `check.py:607`) and hidden after close. `notes.md` or the `source:` key alone suffices.
-12. B-3a as written warns on 101 files in `docs/validation/` and on `lean-sdlc/cost-control.md:34,208`, `lean-sdlc/design.md:201`, `ticket-stages/watcher-design.md:34`. State whether the legacy list covers links.
+12. B-3a as written warns on 101 files in `docs/reports/` and on `lean-sdlc/cost-control.md:34,208`, `lean-sdlc/design.md:201`, `ticket-stages/watcher-design.md:34`. State whether the legacy list covers links.
 13. The design's own file fails D-1 (tenth top-level folder) and D-4 (no `status:`); add its mapping row.
 14. D-12 cannot prove "never reused" (`design.md:101`) across `decisions/<topic>/` subfolders; add a uniqueness pass.
 15. maison `reference/` is 30 tracked files (2 READMEs), not 32; the 32 counted `.DS_Store`.
@@ -68,9 +68,9 @@ Checked and clean: counts at `design.md:10` (69 entries, 48 Markdown, 19 folders
 - `budget-ack.md` written by `budget.py:33`; `decompose/` written by `agents/architect.md:9`.
 - `check.py:613` reads `docs/maintenance/claude-hooks.md` by path; `check.py:607` names the handoff-edit hook.
 - `tickets.py close` path-cite refusal: `tickets.py:40-48`.
-- `docs/validation/`: 69 entries, 48 `.md`, 19 folders, 2 `.json` at root, 8 dated, 18 `<name>.md`/`<name>/` pairs, max depth 7.
-- Validation files citing `.sdlc/` paths: 101, from `grep -rlE '\.sdlc/[0-9A-Za-z._-]+/' docs/validation | wc -l`.
-- Docs with YAML front matter: 4, all fixtures under `docs/validation/`; `Recorded:` lines in 45 files.
+- `docs/reports/`: 69 entries, 48 `.md`, 19 folders, 2 `.json` at root, 8 dated, 18 `<name>.md`/`<name>/` pairs, max depth 7.
+- Validation files citing `.sdlc/` paths: 101, from `grep -rlE '\.sdlc/[0-9A-Za-z._-]+/' docs/reports | wc -l`.
+- Docs with YAML front matter: 4, all fixtures under `docs/reports/`; `Recorded:` lines in 45 files.
 - maison: `docs/reference/` 30 tracked files, `reports/` 4 reports with `.sha256` sidecars, `maintenance/gen-ui-audit-2026-10-03/` holds 3 JSON and 2 Markdown, `.sdlc/` tracked (10 files).
-- `reorganization.md:143` freezes `docs/validation/`; `design.md:197` moves it.
+- `reorganization.md:143` freezes `docs/reports/`; `design.md:197` moves it.
 - Principle text that forbids status-triggered moves: `docs/repo-onboarding/design.md:189`.

@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- `docs/validation/entry-files-live-run.md`: new dated report for T-0162. It covers the environment, projects, method and commands, which runs came from which attempt at which plugin commit, the results table with 8 rows (all `yes`), and a limits section.
+- `docs/reports/entry-files-live-run.md`: new dated report for T-0162. It covers the environment, projects, method and commands, which runs came from which attempt at which plugin commit, the results table with 8 rows (all `yes`), and a limits section.
 - `docs/README.md`: added the report's link line right after the onboard live run line.
 - `docs/repo-onboarding/design.md`: linked the report from the "How roles reach an entry" section.
 - Outside the repository: added the wrapper `/tmp/entry-probe.bh1AfI/run-role2`, which unsets every `SDLC_*` and `CLAUDE_CODE_*` variable and `CLAUDECODE`. Refreshed the Codex project agents and added `verifier-L3-2.*` to the Codex project's step-1 folder.

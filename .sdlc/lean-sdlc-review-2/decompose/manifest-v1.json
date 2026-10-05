@@ -33,9 +33,9 @@
     {"id": "n-fanout-overlap", "label": "fanout lane overlap check (scope criteria at launch for planned tickets; git diff --name-only at merge)", "leaf": true, "justify": null,
      "accept": "fanout.py selftest: two lanes whose merged diffs touch one path are reported as overlapping at merge time and the second merge waits; disjoint lanes merge as today"},
     {"id": "n-docs", "label": "docs and skills print the resolved paths; upgrade note", "leaf": true, "justify": null,
-     "accept": "`git grep -n '\\.sdlc/roadmap\\.md\\|\\.sdlc/notes\\.md' -- AGENTS.md plugins/sdlc-lite/agents plugins/sdlc-lite/skills docs/maintenance docs/repo-onboarding` prints only lines that describe the flat layout as such; docs/validation records are untouched (`git diff --stat -- docs/validation` empty)"},
+     "accept": "`git grep -n '\\.sdlc/roadmap\\.md\\|\\.sdlc/notes\\.md' -- AGENTS.md plugins/sdlc-lite/agents plugins/sdlc-lite/skills docs/maintenance docs/repo-onboarding` prints only lines that describe the flat layout as such; docs/reports records are untouched (`git diff --stat -- docs/reports` empty)"},
     {"id": "n-live", "label": "live evidence: one lean and one full ticket end to end on Claude and Codex with footprint recorded", "leaf": true, "justify": null,
-     "accept": "docs/validation/lean-sdlc-live-run.md records both runs with footprint.py before and after, the lane printed at each decision point, and the verifier family per run from runs.jsonl"}
+     "accept": "docs/reports/lean-sdlc-live-run.md records both runs with footprint.py before and after, the lane printed at each decision point, and the verifier family per run from runs.jsonl"}
   ],
   "actions": [
     {"id": "a1", "label": "measure files, bytes, and role runs per ticket, repeatably"},

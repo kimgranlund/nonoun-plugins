@@ -8,7 +8,7 @@ task_set: pre-eval-baseline
 pass_rate: 0/0
 cost_usd: unknown
 date: 2026-09-30
-evidence: [docs/validation/haiku-alias-2026-09-30.md, docs/validation/planner-l3-opus-2026-09-30.md, docs/validation/codex-account-models-2026-09-30.md]
+evidence: [docs/reports/haiku-alias-2026-09-30.md, docs/reports/planner-l3-opus-2026-09-30.md, docs/reports/codex-account-models-2026-09-30.md]
 ---
 ## Method
 

@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- docs/validation/role-result-schema-live-run.md: new. Live run evidence with Environment, Commands, Evidence and Limits sections.
+- docs/reports/role-result-schema-live-run.md: new. Live run evidence with Environment, Commands, Evidence and Limits sections.
 
 ## Checks
 - Live runs in throwaway project `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/role-result-probe.jIfogzYTz9`, made with `mktemp -d` (one commit `a4b263f`). Each run went through a wrapper that unsets the `CLAUDE*` and `SDLC_*` env vars and then runs `bash <repo>/plugins/sdlc-lite/scripts/run.sh "$@"`:

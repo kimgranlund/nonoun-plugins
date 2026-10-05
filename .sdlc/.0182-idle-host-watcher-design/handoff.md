@@ -13,7 +13,7 @@ created: 2026-10-01
 A reviewed design for a process outside any agent that notices a message for a harness and resumes that harness when its session is idle. The result is a design document and an independent review of it; no code.
 
 ## Intent
-- Do: write `docs/ticket-stages/watcher-design.md`, link it from `docs/ticket-stages/README.md` and `docs/README.md`, then run an independent review through `scripts/run.sh` on a model family other than the author's, and record the result in `docs/validation/idle-host-watcher-design-review.md`.
+- Do: write `docs/ticket-stages/watcher-design.md`, link it from `docs/ticket-stages/README.md` and `docs/README.md`, then run an independent review through `scripts/run.sh` on a model family other than the author's, and record the result in `docs/reports/idle-host-watcher-design-review.md`.
 - Non-goals: any watcher code, launchd plist, or hook; changing `messages.py`; a Claude or Codex feature request.
 - Done when: the design covers every item under Context, the review is recorded with each finding resolved or listed as open, and `git diff --check` is clean.
 
@@ -32,11 +32,11 @@ The design must cover:
 9. A validation plan with a positive case and a negative control for each safety rule (no push, no claim by the watcher, storm limit, no body in the wake prompt), and what would count as passing.
 10. Open questions, listed.
 
-Read first: `docs/ticket-stages/design.md` (mailbox and bus), `docs/validation/messages-live-run.md`, `plugins/sdlc-lite/scripts/messages.py` (module docstring), `docs/codex-role-execution.md`. No em dashes anywhere.
+Read first: `docs/ticket-stages/design.md` (mailbox and bus), `docs/reports/messages-live-run.md`, `plugins/sdlc-lite/scripts/messages.py` (module docstring), `docs/codex-role-execution.md`. No em dashes anywhere.
 
 ## Constraints
 Docs only. Do not edit the plugin, the scripts, or any released record. The review must be by a role the author does not share a family with: the author is Claude Sonnet, so the reviewer is not Sonnet.
 
 ## Closed
 
-2026-10-01: design written and independently reviewed by the architect role (fable): ready after fixes; findings recorded in docs/validation/idle-host-watcher-design-review.md and applied by T-0183 step 1
+2026-10-01: design written and independently reviewed by the architect role (fable): ready after fixes; findings recorded in docs/reports/idle-host-watcher-design-review.md and applied by T-0183 step 1

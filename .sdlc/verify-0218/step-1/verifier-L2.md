@@ -25,7 +25,7 @@ pass
   | 614 | 23 | guard numbers |
 
   The in-docstring cross-reference "item 13 also requires `## Carry forward`" (line 67) still points at Result schema, which is item 13.
-- No living doc outside `docs/validation` cites an old number: pass. Evidence: `git grep` for `check.py … item/guard N` and `docstring item N`, excluding `docs/validation`, `.sdlc` task folders and evals, found two hits.
+- No living doc outside `docs/reports` cites an old number: pass. Evidence: `git grep` for `check.py … item/guard N` and `docstring item N`, excluding `docs/reports`, `.sdlc` task folders and evals, found two hits.
   - `docs/maintenance/sdlc-internals.md:19` says "docstring item 15" for the evals lock. That is correct, since evals lock is 15.
   - `docs/maintenance/sdlc-internals.md:94` says "item 18" for the solo agent. That is correct, and it was fixed from 17.
 

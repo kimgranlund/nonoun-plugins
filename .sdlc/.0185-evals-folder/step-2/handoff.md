@@ -36,7 +36,7 @@ Depends on: step 1. Run from the repository root. Change nothing outside `.sdlc/
    - The command:
 
      ```
-     python3 plugins/sdlc-lite/scripts/evals.py add baseline --role all --level all --model all --effort all --host all --task-set pre-eval-baseline --pass-rate 0/0 --cost-usd unknown --date 2026-09-30 --evidence docs/validation/haiku-alias-2026-09-30.md --evidence docs/validation/planner-l3-opus-2026-09-30.md --evidence docs/validation/codex-account-models-2026-09-30.md --method "<method>" --result "<result>"
+     python3 plugins/sdlc-lite/scripts/evals.py add baseline --role all --level all --model all --effort all --host all --task-set pre-eval-baseline --pass-rate 0/0 --cost-usd unknown --date 2026-09-30 --evidence docs/reports/haiku-alias-2026-09-30.md --evidence docs/reports/planner-l3-opus-2026-09-30.md --evidence docs/reports/codex-account-models-2026-09-30.md --method "<method>" --result "<result>"
      ```
 
    - It writes `.sdlc/evals/0000-baseline.md`, because the folder holds no eval yet.
@@ -67,7 +67,7 @@ The lock and the eval files must stay tracked, not git-ignored. `.gitignore` ign
 - `test "$(cat .sdlc/evals/CLAUDE.md)" = '@AGENTS.md'`
 - `for s in "## File format" "## Table lock" "## Procedures" "## Limits" "role:level model effort" "sort_keys" "table_sha256" "previous_eval" "evals.py add" "evals.py list" "evals.py check" "evals.py lock" "task_set" "pass_rate" "cost_usd" "evidence" "## Method" "## Result"; do grep -qF "$s" .sdlc/evals/AGENTS.md || exit 1; done`
 - `python3 -c 'import sys, pathlib; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import evals; r = evals.validate_eval(pathlib.Path(".sdlc/evals/0000-baseline.md"), pathlib.Path(".")); print(r); sys.exit(r is not None)'`
-- `f=.sdlc/evals/0000-baseline.md && grep -qx 'pass_rate: 0/0' "$f" && grep -qx 'cost_usd: unknown' "$f" && grep -qx 'date: 2026-09-30' "$f" && grep -qx 'host: all' "$f" && for e in haiku-alias-2026-09-30 planner-l3-opus-2026-09-30 codex-account-models-2026-09-30; do grep -q "^evidence: .*docs/validation/$e\.md" "$f" || exit 1; done`
+- `f=.sdlc/evals/0000-baseline.md && grep -qx 'pass_rate: 0/0' "$f" && grep -qx 'cost_usd: unknown' "$f" && grep -qx 'date: 2026-09-30' "$f" && grep -qx 'host: all' "$f" && for e in haiku-alias-2026-09-30 planner-l3-opus-2026-09-30 codex-account-models-2026-09-30; do grep -q "^evidence: .*docs/reports/$e\.md" "$f" || exit 1; done`
 - `python3 -c 'import json,sys; d=json.load(open(".sdlc/evals/table-lock.json")); sys.exit(not (sorted(d) == ["eval", "previous_eval", "table_sha256"] and d["eval"] == ".sdlc/evals/0000-baseline.md" and d["previous_eval"] is None))'`
 - `test "$(python3 -c 'import json; print(json.load(open(".sdlc/evals/table-lock.json"))["table_sha256"])')" = "$(python3 -c 'import re,json,hashlib; r=open("plugins/sdlc-lite/scripts/run.sh").read(); rows=sorted("%s:%s %s %s" % m for m in re.findall(r"^\s*([\w-]+):(L\d)\)\s*model=([\w-]+);\s*effort=(\w+)", r, re.M)); j=json.dumps(json.load(open("plugins/sdlc-lite/adapters/codex/models.json")), sort_keys=True, separators=(",", ":")); print(hashlib.sha256(("".join(x + "\n" for x in rows) + j + "\n").encode()).hexdigest())')"`
 - `python3 plugins/sdlc-lite/scripts/evals.py check`

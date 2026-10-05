@@ -10,7 +10,7 @@ pass
 - `python3 plugins/sdlc-lite/scripts/evals.py check`: pass. Evidence: exit 0, "evals check: ok (1 evals, lock cites .sdlc/evals/0000-baseline.md)".
 - `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`: pass. Evidence: exit 0 with no output.
 - No em dash in added lines under plugins, docs and `.sdlc/AGENTS.md`: pass. Evidence: the guard exited 0. The same predicate on a planted em dash exited 1, so it can fail.
-- No em dash in untracked files: pass. Evidence: I listed 6 untracked files (`.sdlc/evals/*`, `docs/validation/evals-live-run.md`, `plugins/sdlc-lite/scripts/evals.py`), so the loop is not empty. No EMDASH was printed.
+- No em dash in untracked files: pass. Evidence: I listed 6 untracked files (`.sdlc/evals/*`, `docs/reports/evals-live-run.md`, `plugins/sdlc-lite/scripts/evals.py`), so the loop is not empty. No EMDASH was printed.
 - No trailing whitespace in untracked files: pass. Evidence: the same 6 files, no TRAIL printed. The predicate exited 1 on a planted trailing space, so it can fail.
 - `git diff --quiet "$SDLC_BASE_SHA" -- run.sh models.json`: pass. Evidence: exit 0, so neither file changed.
 

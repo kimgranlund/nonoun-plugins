@@ -56,7 +56,7 @@
 
 - decide: Scout L1 still uses `gpt-6-luna`, which a ChatGPT account rejects, so Codex scout runs fail there until the user picks a replacement or accepts it.
 - decide: No live `scripts/run.sh` run with the Codex backend on a ChatGPT account was made. The root AGENTS.md asks for a focused live run in a throwaway project for changed role behavior.
-- note: `docs/validation/native-codex-smoke.json` hashes the deleted alternate TOMLs. It was left as historical evidence, and it may look stale next to the current agent set.
+- note: `docs/reports/native-codex-smoke.json` hashes the deleted alternate TOMLs. It was left as historical evidence, and it may look stale next to the current agent set.
 - note: Projects that installed the old agents keep stale `sdlc-verifier-lN-alternate` TOMLs in `.codex/agents/`, because `install` does not remove files it no longer generates. They are unused while no alternate is configured.
 
 ## T-0151: fanout.py never discards uncommitted edits when it resets the integration tree (2026-09-29)
@@ -143,12 +143,12 @@
 ## T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router (2026-09-30)
 
 - decide: `scripts/fanout.py` does not support `ticket_root` for regular lanes (builder step 8 and the verifier both flag it), so fanout lanes in a `tickets/` repo may miss tickets.
-- note: the fresh-role live run in `docs/validation/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
+- note: the fresh-role live run in `docs/reports/ticket-root-router-live-run.md` is recorded unverified, because the role got `tickets/AGENTS.md` by nested-memory loading and the `, claimed by` state was only replayed.
 - note: `render()` raises `Fail` for an external caller on an unsupported `ticket_root` value. All in-repo callers resolve the root first.
 
 ## T-0179: Messages entry files and fresh-role live validation (2026-10-01)
 
-- decide: The Codex messenger spawn check in `docs/validation/messages-live-run/probe.py` prints `messenger_spawned=yes` even when no agent spawned, because the entry file it prints names the agent. Decide whether to base it on the subagent rollout's `session_meta` (`agent_role` plus `parent_thread_id`).
+- decide: The Codex messenger spawn check in `docs/reports/messages-live-run/probe.py` prints `messenger_spawned=yes` even when no agent spawned, because the entry file it prints names the agent. Decide whether to base it on the subagent rollout's `session_meta` (`agent_role` plus `parent_thread_id`).
 - decide: A Claude messenger can return "polling" with no claim, and a parent that stops at the first report misses the message. Decide whether `messages/AGENTS.md` or the messenger agent should state the spawn-again rule.
 - note: The Claude path-only live arm ran in safe mode, so nested `CLAUDE.md` loading of the mailbox files was not exercised there.
 - note: The negative control and every arm ran one trial each on one machine, and the negative control ran on Claude Code only.
@@ -209,7 +209,7 @@
 - note: shellcheck is not installed on the build host, so the shell lint leg of `check.sh` was never exercised for this change.
 
 ## Release 0.20.8: prepared, not published (2026-10-05)
-- Branch `release-0.20.8` (worktree `.worktrees/release-0.20.8`) is cut from main 2e91432 with the 0.20.8 manifest bump and `docs/validation/release-0.20.8.md`. No tag exists and nothing was pushed; `origin/main` is still 9146596.
+- Branch `release-0.20.8` (worktree `.worktrees/release-0.20.8`) is cut from main 2e91432 with the 0.20.8 manifest bump and `docs/reports/release-0.20.8.md`. No tag exists and nothing was pushed; `origin/main` is still 9146596.
 - Full check set passed on 87ebde0 (check.sh full run, packaging, generate --check, check.py, tickets check, 13 selftests, diff --check). Later commits are docs only.
 - Fact-check passes (independent read-only Opus, detached): pass 1 FAIL (4 factual, 1 unsupported, all fixed), pass 2 FAIL (2 factual, fixed), pass 3 narrow PASS with no factual finding (one wording nit, fixed). The overnight goal says to publish only if the fact-check passes and to stop if it fails after one round of fixes; pass 2 failed after the first fix round, so publishing was left for a decision.
-- To publish from the release commit `git rev-parse release-0.20.8`: annotated tag v0.20.8, `git push origin ${SHA}:refs/heads/main` (fast-forward only), push the tag, `gh release create v0.20.8 --verify-tag --title "SDLC Lite 0.20.8" --notes-file docs/validation/release-0.20.8.md`, merge the branch back into local main.
+- To publish from the release commit `git rev-parse release-0.20.8`: annotated tag v0.20.8, `git push origin ${SHA}:refs/heads/main` (fast-forward only), push the tag, `gh release create v0.20.8 --verify-tag --title "SDLC Lite 0.20.8" --notes-file docs/reports/release-0.20.8.md`, merge the branch back into local main.

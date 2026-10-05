@@ -4,7 +4,7 @@
 ## Step 7: Live run in throwaway repos and the dated validation record
 level: L3
 ### Do
-Depends on: steps 1 to 3 (the code under test) and step 6 (the docs/README.md line this step extends). Files: the new `docs/validation/ticket-root-router-live-run.md` and one new list item in `docs/README.md`, placed after the "Plan reviewer live run" item: ``- [Ticket root and router live run](validation/ticket-root-router-live-run.md): dated live run for T-0175 showing the router block change as a ticket moves proposed to ready to done under `ticket_root: tickets`, and a fresh role claiming and closing a ticket from `tickets/AGENTS.md` alone.`` Run everything in `mktemp -d` projects outside this repository, and keep transcripts and logs out of the repository. Write no em dash. Model the doc on `docs/validation/plan-reviewer-live-run.md`.
+Depends on: steps 1 to 3 (the code under test) and step 6 (the docs/README.md line this step extends). Files: the new `docs/reports/ticket-root-router-live-run.md` and one new list item in `docs/README.md`, placed after the "Plan reviewer live run" item: ``- [Ticket root and router live run](validation/ticket-root-router-live-run.md): dated live run for T-0175 showing the router block change as a ticket moves proposed to ready to done under `ticket_root: tickets`, and a fresh role claiming and closing a ticket from `tickets/AGENTS.md` alone.`` Run everything in `mktemp -d` projects outside this repository, and keep transcripts and logs out of the repository. Write no em dash. Model the doc on `docs/reports/plan-reviewer-live-run.md`.
 - Scripted run: this is deterministic, with no model call.
   1. In a fresh git project, write `.sdlc/config` with `ticket_root: tickets` and `ticket_folders: numbered`.
   2. Run `python3 <repo>/plugins/sdlc-lite/scripts/tickets.py --root .sdlc new feature probe "Probe ticket"`.
@@ -35,14 +35,14 @@ Depends on: steps 1 to 3 (the code under test) and step 6 (the docs/README.md li
   - `## Fresh role`: the prompt, the observations, and the `Result:` line.
   - `## Limits`: Claude Code only, Codex not run and not claimed; the prompt named the plugin folder, for the reason above; one trial per arm.
 ### Acceptance criteria
-- `test -f docs/validation/ticket-root-router-live-run.md && grep -qE '^Recorded: [0-9]{4}-[0-9]{2}-[0-9]{2}\.' docs/validation/ticket-root-router-live-run.md`
+- `test -f docs/reports/ticket-root-router-live-run.md && grep -qE '^Recorded: [0-9]{4}-[0-9]{2}-[0-9]{2}\.' docs/reports/ticket-root-router-live-run.md`
 - `grep -qF '(validation/ticket-root-router-live-run.md)' docs/README.md`
-- `grep -qx '## Scripted run' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- proposed: 1' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- ready: 1' docs/validation/ticket-root-router-live-run.md && grep -qxF -- '- done: 1' docs/validation/ticket-root-router-live-run.md && grep -qF 'ticket_root: tickets' docs/validation/ticket-root-router-live-run.md`
-- `grep -qx '## Fresh role' docs/validation/ticket-root-router-live-run.md && grep -qE '^Result: (verified|unverified: .+)$' docs/validation/ticket-root-router-live-run.md && grep -qx '## Limits' docs/validation/ticket-root-router-live-run.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/tickets.py|plugins/sdlc-lite/scripts/board.py|plugins/sdlc-lite/scripts/traces/ingest.py|plugins/sdlc-lite/scripts/traces/sources/tickets.py|plugins/sdlc-lite/scripts/traces/selftest.py|docs/maintenance/sdlc-internals.md|plugins/sdlc-lite/skills/handoff-format/SKILL.md|plugins/sdlc-lite/skills/ticket/SKILL.md|docs/ticket-stages/design.md|docs/ticket-stages/README.md|docs/README.md|docs/validation/ticket-root-router-live-run.md" | { ! grep -q .; }`
+- `grep -qx '## Scripted run' docs/reports/ticket-root-router-live-run.md && grep -qxF -- '- proposed: 1' docs/reports/ticket-root-router-live-run.md && grep -qxF -- '- ready: 1' docs/reports/ticket-root-router-live-run.md && grep -qxF -- '- done: 1' docs/reports/ticket-root-router-live-run.md && grep -qF 'ticket_root: tickets' docs/reports/ticket-root-router-live-run.md`
+- `grep -qx '## Fresh role' docs/reports/ticket-root-router-live-run.md && grep -qE '^Result: (verified|unverified: .+)$' docs/reports/ticket-root-router-live-run.md && grep -qx '## Limits' docs/reports/ticket-root-router-live-run.md`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/tickets.py|plugins/sdlc-lite/scripts/board.py|plugins/sdlc-lite/scripts/traces/ingest.py|plugins/sdlc-lite/scripts/traces/sources/tickets.py|plugins/sdlc-lite/scripts/traces/selftest.py|docs/maintenance/sdlc-internals.md|plugins/sdlc-lite/skills/handoff-format/SKILL.md|plugins/sdlc-lite/skills/ticket/SKILL.md|docs/ticket-stages/design.md|docs/ticket-stages/README.md|docs/README.md|docs/reports/ticket-root-router-live-run.md" | { ! grep -q .; }`
 
 ## Previous attempt (verifier-L2.md)
-Only `docs/validation/ticket-root-router-live-run.md` needs a change. No re-run is needed.
+Only `docs/reports/ticket-root-router-live-run.md` needs a change. No re-run is needed.
 - Change the Fresh role `Result:` line from `Result: verified` to `Result: unverified: <reasons>`, giving two reasons that match the doc's own observations.
   - The role did not read `.sdlc/tickets/AGENTS.md` through the handoff's `router:` line. It received it through Claude Code nested-memory loading.
   - The `, claimed by` router state before the close was not captured live. It was reproduced only by replay.

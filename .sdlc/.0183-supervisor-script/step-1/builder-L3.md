@@ -8,7 +8,7 @@ done
   - Sections 1 to 10 are revised. Decisions D1 to D21 are each tagged once, where they are stated.
   - The "Owned session (default)" bullet, the claim that the watcher may call `expire`, and "about 17,600 tokens" are removed.
   - A `## Review findings applied` table has rows 1 to 17, and a note line covers finding 18.
-- `docs/validation/idle-host-watcher-design-review.md`: added one `## Applied` paragraph that points to Version 0.2. The findings above it are unchanged.
+- `docs/reports/idle-host-watcher-design-review.md`: added one `## Applied` paragraph that points to Version 0.2. The findings above it are unchanged.
 
 ## Checks
 - Each acceptance criterion, run as written with `SDLC_BASE_SHA=5774f077677f9e15cb993a4d07736aa2a54c286b`:

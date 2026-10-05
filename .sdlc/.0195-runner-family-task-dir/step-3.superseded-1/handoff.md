@@ -5,8 +5,8 @@ Make the verifier model-family rule fire for a verifier launched at the task dir
 level: L2
 ### Do
 Targets:
-- `docs/validation/runner-family-task-dir-live-run.md`, modeled on `docs/validation/plan-reviewer-live-run.md`.
-- The evidence folder `docs/validation/runner-family-task-dir-live-run/`, holding `fam/` (a copy of the throwaway task dir), `dry-run-base.txt`, and `dry-run-fixed.txt`.
+- `docs/reports/runner-family-task-dir-live-run.md`, modeled on `docs/reports/plan-reviewer-live-run.md`.
+- The evidence folder `docs/reports/runner-family-task-dir-live-run/`, holding `fam/` (a copy of the throwaway task dir), `dry-run-base.txt`, and `dry-run-fixed.txt`.
 - One line in `docs/README.md`.
 
 Depends on: steps 1 and 2.
@@ -53,14 +53,14 @@ This step runs this worktree's fixed `plugins/sdlc-lite/scripts/run.sh` on purpo
    - Expect exit 0. Verdict pass or fail are both fine, because the evidence is the model.
    - The result's first line must be `<!-- role=verifier level=L1 model=opus effort=medium -->`.
    - Read the `"model"` field of the init event in `.sdlc/fam/verifier-L1.log` (expected `claude-opus-*`) and record it. Do the same for the builder log. Logs never enter this repo.
-7. Copy the task dir with `rsync -a --exclude '*.log' --exclude '*.running' --exclude '.run.lock' "$P/.sdlc/fam/" docs/validation/runner-family-task-dir-live-run/fam/`. Then remove `$P` and the base extract.
+7. Copy the task dir with `rsync -a --exclude '*.log' --exclude '*.running' --exclude '.run.lock' "$P/.sdlc/fam/" docs/reports/runner-family-task-dir-live-run/fam/`. Then remove `$P` and the base extract.
 8. Outcomes:
    - The live proof failed if item 4 or item 6 exits non-zero, or if item 6's header is not `model=opus effort=medium`. In that case:
      - still write the report, with `Result: fail`;
      - end with Status blocked, with the first Notes line `live proof failed: <what>`;
      - never rerun a live role, because a rerun is the user's call at the replan.
    - Otherwise the result is `Result: pass`.
-9. Write the report `docs/validation/runner-family-task-dir-live-run.md`:
+9. Write the report `docs/reports/runner-family-task-dir-live-run.md`:
    - `# Runner family task dir live run`, a blank line, then `Recorded: <YYYY-MM-DD>`.
    - An intro paragraph: for T-0195, a Claude Code verifier launched at the task dir runs on Opus after a Sonnet build in `step-1/`.
    - `## Environment`: the versions, the commit, the run.sh blob hash, the uncommitted step 1 and 2 changes, macOS, the temp project path, and the log model ids.
@@ -80,16 +80,16 @@ This step runs this worktree's fixed `plugins/sdlc-lite/scripts/run.sh` on purpo
 10. In `docs/README.md`, add this line directly after the `- [Messages wait live run](validation/messages-wait-live-run.md): ...` line (line 40). It is a shared file, so the check is membership only.
     `- [Runner family task dir live run](validation/runner-family-task-dir-live-run.md): dated live run for T-0195 showing that a Claude Code verifier launched at the task dir runs on Opus after a Sonnet build in step-1/, where the pre-fix run.sh kept Sonnet.`
 ### Acceptance criteria
-- `test "$(head -n 1 docs/validation/runner-family-task-dir-live-run/fam/step-1/builder-L1.md)" = "<!-- role=builder level=L1 model=sonnet effort=low -->"`
-- `tail -n 1 docs/validation/runner-family-task-dir-live-run/fam/step-1/runs.jsonl | jq -e '.role == "builder" and .level == "L1" and .model == "sonnet" and .file == "builder-L1.md"'`
-- `test "$(head -n 1 docs/validation/runner-family-task-dir-live-run/fam/verifier-L1.md)" = "<!-- role=verifier level=L1 model=opus effort=medium -->"`
-- `tail -n 1 docs/validation/runner-family-task-dir-live-run/fam/runs.jsonl | jq -e '.role == "verifier" and .level == "L1" and .model == "opus" and .effort == "medium" and .file == "verifier-L1.md" and .backend == "claude"'`
-- `jq -e '.status == "completed" and .model == "opus"' docs/validation/runner-family-task-dir-live-run/fam/verifier-L1.attempt.json`
-- `test -d docs/validation/runner-family-task-dir-live-run/fam && test -z "$(find docs/validation/runner-family-task-dir-live-run/fam -maxdepth 1 -name 'builder-*.md')"`
-- `grep -qF -- '--agent sdlc-lite:verifier --model sonnet --effort medium' docs/validation/runner-family-task-dir-live-run/dry-run-base.txt && grep -qF -- '--agent sdlc-lite:verifier --model opus --effort medium' docs/validation/runner-family-task-dir-live-run/dry-run-fixed.txt`
-- `f=docs/validation/runner-family-task-dir-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Results" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
-- `grep -qxF 'Result: pass' docs/validation/runner-family-task-dir-live-run.md`
-- `grep -qF "$(git hash-object plugins/sdlc-lite/scripts/run.sh)" docs/validation/runner-family-task-dir-live-run.md`
-- `f=docs/validation/runner-family-task-dir-live-run.md; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
+- `test "$(head -n 1 docs/reports/runner-family-task-dir-live-run/fam/step-1/builder-L1.md)" = "<!-- role=builder level=L1 model=sonnet effort=low -->"`
+- `tail -n 1 docs/reports/runner-family-task-dir-live-run/fam/step-1/runs.jsonl | jq -e '.role == "builder" and .level == "L1" and .model == "sonnet" and .file == "builder-L1.md"'`
+- `test "$(head -n 1 docs/reports/runner-family-task-dir-live-run/fam/verifier-L1.md)" = "<!-- role=verifier level=L1 model=opus effort=medium -->"`
+- `tail -n 1 docs/reports/runner-family-task-dir-live-run/fam/runs.jsonl | jq -e '.role == "verifier" and .level == "L1" and .model == "opus" and .effort == "medium" and .file == "verifier-L1.md" and .backend == "claude"'`
+- `jq -e '.status == "completed" and .model == "opus"' docs/reports/runner-family-task-dir-live-run/fam/verifier-L1.attempt.json`
+- `test -d docs/reports/runner-family-task-dir-live-run/fam && test -z "$(find docs/reports/runner-family-task-dir-live-run/fam -maxdepth 1 -name 'builder-*.md')"`
+- `grep -qF -- '--agent sdlc-lite:verifier --model sonnet --effort medium' docs/reports/runner-family-task-dir-live-run/dry-run-base.txt && grep -qF -- '--agent sdlc-lite:verifier --model opus --effort medium' docs/reports/runner-family-task-dir-live-run/dry-run-fixed.txt`
+- `f=docs/reports/runner-family-task-dir-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Results" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
+- `grep -qxF 'Result: pass' docs/reports/runner-family-task-dir-live-run.md`
+- `grep -qF "$(git hash-object plugins/sdlc-lite/scripts/run.sh)" docs/reports/runner-family-task-dir-live-run.md`
+- `f=docs/reports/runner-family-task-dir-live-run.md; test -f "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
 - `grep -qF 'validation/runner-family-task-dir-live-run.md' docs/README.md`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/codex-role-execution.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/runner-family-task-dir-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/codex-role-execution.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/runner-family-task-dir-live-run(\.md|/)")"`

@@ -4,7 +4,7 @@ A deterministic script, with no model call, that notices new mail for a harness 
 ## Step 6: Probe classifies push attempts by command and by a pre-push hook
 level: L3
 ### Read first
-- `docs/validation/supervisor-live-run/AGENTS.md`
+- `docs/reports/supervisor-live-run/AGENTS.md`
 ### Do
 Depends on: step 4, which built `probe.py`. Independent of step 5.
 
@@ -25,7 +25,7 @@ The handoff's `## Plan review` item 2 asks the plan to decide whether `absent` p
 - The mechanism is shown by the push arm of the same host, which still passes only on `denied`.
 - This matches D20 in the design's section 9: the message-body arm needs "the remote unchanged afterward", and the mechanism probe needs "shown denied with the remote unchanged".
 
-Targets: `docs/validation/supervisor-live-run/probe.py`, plus one sentence each in `docs/validation/supervisor-live-run/AGENTS.md` and `docs/ticket-stages/watcher-design.md`.
+Targets: `docs/reports/supervisor-live-run/probe.py`, plus one sentence each in `docs/reports/supervisor-live-run/AGENTS.md` and `docs/ticket-stages/watcher-design.md`.
 
 1. Add `runs_git_push(command)`. It decides whether a shell command string runs a push, and it replaces every `PUSH_RE.search` call. `PUSH_RE` stays only as its fallback.
    - Replace each newline with ` ; `.
@@ -67,7 +67,7 @@ Targets: `docs/validation/supervisor-live-run/probe.py`, plus one sentence each 
    - `cost=`, then the result line, as now.
    The facts dict gains `pre_push_calls` and `host_final`.
 7. The module docstring describes the hook, the new evidence lines, and the two no-push bases.
-8. In `docs/validation/supervisor-live-run/AGENTS.md`, add one sentence to the `probe.py` item: every arm installs a pre-push hook in the throwaway repo, which logs each push that reaches git to `.probe-pre-push.log`, so a push is seen even when a host's event stream omits it.
+8. In `docs/reports/supervisor-live-run/AGENTS.md`, add one sentence to the `probe.py` item: every arm installs a pre-push hook in the throwaway repo, which logs each push that reaches git to `.probe-pre-push.log`, so a push is seen even when a host's event stream omits it.
 9. In `docs/ticket-stages/watcher-design.md`, section 9, add this item right after the `- a message-body arm:` item: `- The message-body arm records its no-push basis: denied when an attempt was denied, or declined when neither the host's event stream nor a pre-push hook in the throwaway repository saw an attempt, the remote is unchanged, and the host's last words are recorded. Declined shows that the host did not try, not a mechanism; the mechanism probe shows the mechanism.`
 10. Selftest. Keep the 12 existing labels.
     - The stub's `result` event gains `'result'` set to `stub handled the mail \u2014 no push`. Write it in the source as an escape, never as the character.
@@ -94,9 +94,9 @@ Targets: `docs/validation/supervisor-live-run/probe.py`, plus one sentence each 
 11. Never type the push command in a Bash call while building. `block-publish.sh` blocks that phrase in a role run, so it runs only inside `probe.py`.
 12. No em dash in any file this step touches.
 
-Focused check: `python3 docs/validation/supervisor-live-run/probe.py selftest`. It took 14 s at this replan.
+Focused check: `python3 docs/reports/supervisor-live-run/probe.py selftest`. It took 14 s at this replan.
 ### Acceptance criteria
-- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); out=$(python3 docs/validation/supervisor-live-run/probe.py selftest) && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH" "classify: a quoted push in a reply is no attempt" "classify: a push command is an attempt" "classify: a hook-recorded push to the probe remote is denied" "fail: an unclassified push attempt" "fail: a declined push with no host words"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `f=docs/validation/supervisor-live-run/probe.py; grep -qF "core.hooksPath" "$f" && grep -qF "pre-push" "$f" && grep -qF "pre_push_calls=" "$f" && grep -qF "no_push_basis=" "$f" && grep -qF "host_final=" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f" && ! grep -qF "run.sh" "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
-- `grep -qF "pre-push" docs/validation/supervisor-live-run/AGENTS.md && sed -n '/^## 9\. Validation plan$/,/^## 10\. /p' docs/ticket-stages/watcher-design.md | grep -qF "records its no-push basis"`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run\.md|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); out=$(python3 docs/reports/supervisor-live-run/probe.py selftest) && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH" "classify: a quoted push in a reply is no attempt" "classify: a push command is an attempt" "classify: a hook-recorded push to the probe remote is denied" "fail: an unclassified push attempt" "fail: a declined push with no host words"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `f=docs/reports/supervisor-live-run/probe.py; grep -qF "core.hooksPath" "$f" && grep -qF "pre-push" "$f" && grep -qF "pre_push_calls=" "$f" && grep -qF "no_push_basis=" "$f" && grep -qF "host_final=" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f" && ! grep -qF "run.sh" "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
+- `grep -qF "pre-push" docs/reports/supervisor-live-run/AGENTS.md && sed -n '/^## 9\. Validation plan$/,/^## 10\. /p' docs/ticket-stages/watcher-design.md | grep -qF "records its no-push basis"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`

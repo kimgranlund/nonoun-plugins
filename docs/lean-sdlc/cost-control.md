@@ -99,7 +99,7 @@ Nothing detects that a handoff changed while a role read it. The role finishes, 
 
 ### Files
 
-Edited: `scripts/run_lifecycle.py`, `scripts/run.sh`, `scripts/steps.py`, `scripts/footprint.py`, `adapters/claude/hooks.json`, new `hooks/warn-handoff-edit.sh`, `scripts/hook-selftest.sh`, `scripts/hook-live-probe.sh`, `docs/maintenance/claude-hooks.md`, `skills/chain/SKILL.md`, `scripts/check.py`, a dated `docs/validation/handoff-freeze-live-run.md`.
+Edited: `scripts/run_lifecycle.py`, `scripts/run.sh`, `scripts/steps.py`, `scripts/footprint.py`, `adapters/claude/hooks.json`, new `hooks/warn-handoff-edit.sh`, `scripts/hook-selftest.sh`, `scripts/hook-live-probe.sh`, `docs/maintenance/claude-hooks.md`, `skills/chain/SKILL.md`, `scripts/check.py`, a dated `docs/reports/handoff-freeze-live-run.md`.
 
 ### Ordering
 

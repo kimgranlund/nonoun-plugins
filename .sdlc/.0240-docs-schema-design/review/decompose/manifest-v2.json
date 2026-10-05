@@ -319,11 +319,11 @@
     },
     {
       "id": "a10",
-      "label": "keep non-Markdown sidecars beside a report (docs/validation/*.json at the root, maison reports/*.sha256)"
+      "label": "keep non-Markdown sidecars beside a report (docs/reports/*.json at the root, maison reports/*.sha256)"
     },
     {
       "id": "a11",
-      "label": "keep nested evidence trees (docs/validation depth 7) under a report"
+      "label": "keep nested evidence trees (docs/reports depth 7) under a report"
     },
     {
       "id": "a12",

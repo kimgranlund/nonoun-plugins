@@ -3,10 +3,10 @@
 done
 
 ## Changes
-- `docs/validation/messages-live-run/probe.py`: new. Runs the four arms plus `--defect` and `selftest`, as the handoff specifies.
-- `docs/validation/messages-live-run/defect-AGENTS.md`: new. The injected wrong `# Mailbox` procedure (`cat <path>`, then `mkdir -p ... && mv ...`, no reply, no script).
-- `docs/validation/messages-live-run/claude.txt`, `claude-defect.txt`, `codex.txt`, `claude-messenger.txt`, `codex-messenger.txt`: evidence from the recorded runs, saved with `| tee`.
-- `docs/validation/messages-live-run.md`: new dated validation doc with the eight required sections. Every arm section reads `Result: pass`.
+- `docs/reports/messages-live-run/probe.py`: new. Runs the four arms plus `--defect` and `selftest`, as the handoff specifies.
+- `docs/reports/messages-live-run/defect-AGENTS.md`: new. The injected wrong `# Mailbox` procedure (`cat <path>`, then `mkdir -p ... && mv ...`, no reply, no script).
+- `docs/reports/messages-live-run/claude.txt`, `claude-defect.txt`, `codex.txt`, `claude-messenger.txt`, `codex-messenger.txt`: evidence from the recorded runs, saved with `| tee`.
+- `docs/reports/messages-live-run.md`: new dated validation doc with the eight required sections. Every arm section reads `Result: pass`.
 - `docs/README.md`: added the Messages live run line after the Ticket root and router line.
 - `plugins/sdlc-lite/scripts/messages.py`: not edited. No run showed the entry files were wrong or unclear.
 

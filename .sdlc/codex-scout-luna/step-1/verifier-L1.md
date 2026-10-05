@@ -24,4 +24,4 @@ Steelman: the builder would answer that the Do limited the docs edit to the 2026
 
 No criterion swap is proposed, because the build itself still needs this change. The remaining build work is correct as it stands.
 
-I left the dated validation records alone because they are historical records the user contract says stay as dated reports: `docs/validation/codex-account-models-2026-09-30.md:55` ("including scout L1 Astra high") and `docs/validation/release-0.19.0.md:22`.
+I left the dated validation records alone because they are historical records the user contract says stay as dated reports: `docs/reports/codex-account-models-2026-09-30.md:55` ("including scout L1 Astra high") and `docs/reports/release-0.19.0.md:22`.

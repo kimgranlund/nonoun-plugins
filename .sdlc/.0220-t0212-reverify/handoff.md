@@ -19,7 +19,7 @@ T-0212's fixed check-packaging defect is independently re-verified.
 - Done when: the change is merged into local main with checks green and an independent verifier passed.
 
 ## Context
-Closes a known limit listed in docs/validation/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
+Closes a known limit listed in docs/reports/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
 
 ## Evidence
 Independent L2 verifier: pass (`.sdlc/verify-0220/step-1/verifier-L2.md`). check-packaging no longer pins 3 (it asserts 4 routes and the Edit|Write|NotebookEdit matcher). With the hook unregistered in a throwaway worktree, check-packaging.py and check.py each go red, and the registered tree is green.

@@ -81,7 +81,7 @@ level: L3
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Run `bash plugins/sdlc-lite/scripts/hook-live-probe.sh --conductor --out docs/validation/agent-spawn-hook-live-run.md` from the repository root in the foreground. This spends model calls; the handoff's done-condition asks for live evidence.
+Run `bash plugins/sdlc-lite/scripts/hook-live-probe.sh --conductor --out docs/reports/agent-spawn-hook-live-run.md` from the repository root in the foreground. This spends model calls; the handoff's done-condition asks for live evidence.
 - If the recorded `agent_type` is neither `sdlc-lite:conductor` nor `conductor`, change the match in `hooks/block-role-spawn.sh` and its selftest fixtures to the observed value, then rerun.
 - If the conductor model refuses the call, strengthen the probe prompt rather than weakening the checks.
 - Add a short note under the report's heading on what it proves: the observed `agent_type` for a plugin session agent. It does not prove the interactive `.claude/settings.json` agent path, unless you also observe that path and record it there.
@@ -95,10 +95,10 @@ Add a `## \`hooks/block-role-spawn.sh\`` section to `docs/maintenance/claude-hoo
 
 In `plugins/sdlc-lite/agents/conductor.md` line 24, add one sentence: in Claude Code, `hooks/block-role-spawn.sh` denies such spawns, and Codex has no equivalent enforcement. Then run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate`.
 ### Acceptance criteria
-- `test -f docs/validation/agent-spawn-hook-live-run.md`
-- `test "$(tail -n 1 docs/validation/agent-spawn-hook-live-run.md)" = "verdict: PASS"`
-- `grep -qE "^conductor deny: agent_type [^ ]*conductor, .*hook exit code 2$" docs/validation/agent-spawn-hook-live-run.md`
-- `grep -qE "^conductor allow: agent_type [^ ]*conductor, .*hook exit code 0$" docs/validation/agent-spawn-hook-live-run.md`
+- `test -f docs/reports/agent-spawn-hook-live-run.md`
+- `test "$(tail -n 1 docs/reports/agent-spawn-hook-live-run.md)" = "verdict: PASS"`
+- `grep -qE "^conductor deny: agent_type [^ ]*conductor, .*hook exit code 2$" docs/reports/agent-spawn-hook-live-run.md`
+- `grep -qE "^conductor allow: agent_type [^ ]*conductor, .*hook exit code 0$" docs/reports/agent-spawn-hook-live-run.md`
 - `grep -qF "## \`hooks/block-role-spawn.sh\`" docs/maintenance/claude-hooks.md`
 - `awk "/^## \`hooks\/block-role-spawn.sh\`/{f=1;next} /^## /{f=0} f" docs/maintenance/claude-hooks.md | grep -q Codex`
 - `grep -q block-role-spawn.sh plugins/sdlc-lite/agents/conductor.md`

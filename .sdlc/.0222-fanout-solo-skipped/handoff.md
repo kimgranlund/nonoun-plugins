@@ -29,7 +29,7 @@ Found by the 0.20.6 release fact-check (coordinator message). Cause: T-0221 adde
 ## Constraints
 The T-0219 guard stays unchanged. A selftest must run the real lane decision and the real close with a negative control.
 
-Done: `fanout.py` has `write_solo_skips` (called when a solo lane starts, before the close); selftest case 16 runs two solo tickets through the real `steps.py lane`, the default driver (a `claude` shim stands in for the model) and the real `tickets.py close`, and its negative control, with the write off, is refused. Live rerun: four lanes (three S, one M) all merged and closed, hidden check 24/24 (`docs/validation/fanout-solo-live-run.md`, addendum). Files: `plugins/sdlc-lite/scripts/fanout.py`, `plugins/sdlc-lite/skills/fanout/SKILL.md`, `docs/maintenance/sdlc-internals.md`, `docs/validation/fanout-solo-live-run*`. Verifier: independent L3 (Fable) passed 7 of 7. Merged at 51df377.
+Done: `fanout.py` has `write_solo_skips` (called when a solo lane starts, before the close); selftest case 16 runs two solo tickets through the real `steps.py lane`, the default driver (a `claude` shim stands in for the model) and the real `tickets.py close`, and its negative control, with the write off, is refused. Live rerun: four lanes (three S, one M) all merged and closed, hidden check 24/24 (`docs/reports/fanout-solo-live-run.md`, addendum). Files: `plugins/sdlc-lite/scripts/fanout.py`, `plugins/sdlc-lite/skills/fanout/SKILL.md`, `docs/maintenance/sdlc-internals.md`, `docs/reports/fanout-solo-live-run*`. Verifier: independent L3 (Fable) passed 7 of 7. Merged at 51df377.
 
 ## Closed
 

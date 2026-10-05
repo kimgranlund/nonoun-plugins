@@ -16,10 +16,10 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Intent
 - Do: per ticket in its lane worktree run `steps.py lane`, start `solo` at the tier's model and effort (Claude `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo`, Codex `codex_exec.py solo L1|L2|L3`), require one independent batched verifier for tier M and L before merging, keep the conductor chain for full, add `--lane`, `--max-lanes` (default 4, above 16 needs `--yes-many`), `--stagger` (default 20 s), `--allow-overlap`; print each ticket's lane in the plan and the report; selftest, check.py guard item 24, docs, and a live proof.
 - Non-goals: any model or effort default change; a version bump, tag, push, or publish; building the supervisor or board work.
-- Done when: selftest and check.sh pass, an independent verifier passed, the live record docs/validation/fanout-solo-live-run.md exists, and the branch is merged into main.
+- Done when: selftest and check.sh pass, an independent verifier passed, the live record docs/reports/fanout-solo-live-run.md exists, and the branch is merged into main.
 
 ## Context
-User decision 2026-10-05: fanout should follow the same solo-first default as the conductor. Evidence: docs/validation/solo-vs-lean-benchmark-2026-10-04.md (solo about $1 and 6 minutes per task; the chain about 10 times the cost). Burn-down rules: one handwritten step, one verifier, no planner.
+User decision 2026-10-05: fanout should follow the same solo-first default as the conductor. Evidence: docs/reports/solo-vs-lean-benchmark-2026-10-04.md (solo about $1 and 6 minutes per task; the chain about 10 times the cost). Burn-down rules: one handwritten step, one verifier, no planner.
 
 ## Constraints
 Keep `--driver CMD` overriding everything for selftests. Do not touch the limits agent's worktree. No em dashes.
@@ -31,9 +31,9 @@ Keep `--driver CMD` overriding everything for selftests. Do not touch the limits
 4. `fanout.py run` with five single-ticket lanes and no `--max-lanes` exits 2 naming `--max-lanes 4`; `--max-lanes 17` without `--yes-many` exits 2 naming `--yes-many`.
 5. `solo_command` builds `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` with `--model sonnet --effort low` for S, `--model sonnet --effort xhigh` for M, and `--model opus --effort xhigh` for L, matching the tiers in agents/solo.md; the Codex form runs `codex_exec.py solo L1|L2|L3`. No model or effort default in run.sh or adapters/codex/models.json changed (`git diff main -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json` is empty).
 6. A size M or L solo ticket does not merge without a new passing task-dir verifier result (read the run_ticket code path and the selftest), and a solo ticket closes with `tickets.py close --reason`, not a filer file.
-7. docs/validation/fanout-solo-live-run.md records four lanes merged with a hidden check of 24/24 and names the models from the session transcripts; every number in it can be checked against docs/validation/fanout-solo-live-run/.
+7. docs/reports/fanout-solo-live-run.md records four lanes merged with a hidden check of 24/24 and names the models from the session transcripts; every number in it can be checked against docs/reports/fanout-solo-live-run/.
 8. `git diff --check` is clean, and no em dash appears in the changed text files.
 
 ## Closed
 
-2026-10-04: Built and merged: fanout.py solo first (steps.py lane per ticket, solo tiers, --lane, --max-lanes, --stagger, --allow-overlap, solo close by reason), selftest case 15, check.py guard item 24, docs, and a live run (4 lanes, hidden check 24/24, docs/validation/fanout-solo-live-run.md). The first L3 branch verifier passed 7 of 8 criteria and failed the record's checkability; the fixes were re-verified by a narrow L3 that failed once more on gitignored .log files, which were then fixed and confirmed mechanically with git ls-tree and git check-ignore, not by a third verifier run. Codex lane not run live.
+2026-10-04: Built and merged: fanout.py solo first (steps.py lane per ticket, solo tiers, --lane, --max-lanes, --stagger, --allow-overlap, solo close by reason), selftest case 15, check.py guard item 24, docs, and a live run (4 lanes, hidden check 24/24, docs/reports/fanout-solo-live-run.md). The first L3 branch verifier passed 7 of 8 criteria and failed the record's checkability; the fixes were re-verified by a narrow L3 that failed once more on gitignored .log files, which were then fixed and confirmed mechanically with git ls-tree and git check-ignore, not by a third verifier run. Codex lane not run live.

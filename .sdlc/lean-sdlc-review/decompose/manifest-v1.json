@@ -43,7 +43,7 @@
     {"id": "release", "label": "version lines (`plan: 2` on delta-aware plans, `layout:` default per repo age) and the upgrade note", "leaf": true, "justify": null,
      "accept": "`python3 plugins/sdlc-lite/scripts/steps.py split <old plan without a plan: line>` still splits; CHANGELOG names migrate-layout and the flat default for existing repos; `python3 scripts/check-packaging.py` passes"},
     {"id": "live", "label": "live evidence: one lean and one full ticket end to end on Claude and Codex with footprint recorded", "leaf": true, "justify": null,
-     "accept": "`ls docs/validation/lean-sdlc-live-run.md` exists and holds footprint lines for both lanes on both hosts, and a `steps.py lane` line routing a steps.py-touching ticket to full"}
+     "accept": "`ls docs/reports/lean-sdlc-live-run.md` exists and holds footprint lines for both lanes on both hosts, and a `steps.py lane` line routing a steps.py-touching ticket to full"}
   ],
   "actions": [
     {"id": "a-decide-lane", "label": "decide the lane from facts already in the ticket and plan, by a script the conductor follows"},

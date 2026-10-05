@@ -40,7 +40,7 @@ task_set: bench scout set
 pass_rate: 9/10
 cost_usd: 1.25
 date: 2026-10-05
-evidence: [docs/validation/scout-sonnet-2026-10-05.md, https://example.com/run/42]
+evidence: [docs/reports/scout-sonnet-2026-10-05.md, https://example.com/run/42]
 ---
 ## Method
 

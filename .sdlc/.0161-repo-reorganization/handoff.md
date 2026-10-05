@@ -16,7 +16,7 @@ Which rules let a script classify this repository's documents and produce a move
 A recommendation with cited evidence, written back into this file: the rules to keep, the rules to change, and whether apply is worth building.
 
 ## Context
-Draft design: `docs/repo-onboarding/reorganization.md` (v0.6). Three review rounds each found new edge cases, so the user chose on 2026-09-29 to test the rules against real files before specifying more. The design's "Open findings" section lists N1, N2, N3, N5, N8, N9, and N15 from `docs/validation/repo-onboarding-design-review-3.md`.
+Draft design: `docs/repo-onboarding/reorganization.md` (v0.6). Three review rounds each found new edge cases, so the user chose on 2026-09-29 to test the rules against real files before specifying more. The design's "Open findings" section lists N1, N2, N3, N5, N8, N9, and N15 from `docs/reports/repo-onboarding-design-review-3.md`.
 
 Build a throwaway prototype that does only the read-only part:
 

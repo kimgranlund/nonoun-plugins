@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- docs/validation/messages-idle-host-limit-2026-10-01.md: replaced the "both address this limit" sentence with the handoff's text.
+- docs/reports/messages-idle-host-limit-2026-10-01.md: replaced the "both address this limit" sentence with the handoff's text.
 
 ## Checks
 - Criteria 1 and 2 (grep for the old phrase absent, new phrase present): passed.

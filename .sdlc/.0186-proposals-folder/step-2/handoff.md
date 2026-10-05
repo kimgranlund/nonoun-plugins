@@ -53,7 +53,7 @@ Depends on: step 1. Run from the repository root and use no em dashes. Each fact
    ```
 
 6. In `plugins/sdlc-lite/AGENTS.md`, add to the Verification list after the evals line: ``- Proposals mined from runs: `python3 plugins/sdlc-lite/scripts/proposals.py selftest`; read [the proposals entry file](../../.sdlc/proposals/AGENTS.md) before scan, accept, reject, or promote.``
-7. Run the live proof and record it in `docs/validation/proposals-live-run.md`, in the shape of `docs/validation/evals-live-run.md`. No model call is needed.
+7. Run the live proof and record it in `docs/reports/proposals-live-run.md`, in the shape of `docs/reports/evals-live-run.md`. No model call is needed.
    - Setup, from the repository root:
 
      ```
@@ -73,7 +73,7 @@ Depends on: step 1. Run from the repository root and use no em dashes. Each fact
      4. Idempotence: hash `$T/proposals` (`find "$T/proposals" -type f -exec shasum -a 256 {} + | sort`), scan again, hash again, and `cmp` the two (exit 0). The output ends `0 new, 0 updated, <n> unchanged`.
      5. Negative controls on the transitions (writing only under `$T`):
         - `python3 "$P" --root .sdlc --proposals "$T/proposals" accept P-0001` gives exit 1 with `no eval given`.
-        - `accept P-0001 --eval docs/validation/evals-live-run.md` gives exit 1 with `is not in`.
+        - `accept P-0001 --eval docs/reports/evals-live-run.md` gives exit 1 with `is not in`.
         - `cmp` shows P-0001's file unchanged.
         - Do not run `promote` against the real `.sdlc`: it would file a real ticket.
      6. Sources and plugins unchanged: `src >"$T/src.after"`, `plg >"$T/plg.after"`, and both `cmp` give exit 0. `ls -A .sdlc/proposals` still lists only `AGENTS.md` and `CLAUDE.md` (and `.DS_Store` if Finder wrote one).
@@ -105,9 +105,9 @@ Left untouched on purpose:
 - `for s in "## File format" "## Patterns" "## Statuses" "## Procedures" "## Limits" "proposals.py scan" "proposals.py list" "proposals.py show" "proposals.py accept" "proposals.py reject" "proposals.py promote" "--proposals" "P-NNNN" "candidate" "accepted" "rejected" "promoted" "verifier-fail" "replan" "builder-bump" "next-attempt" "plan-defect" "follow-up" "## Evidence" "## Proposed change" ".sdlc/evals/" "tickets.py new idea" "--rewrite-refs"; do grep -qF -- "$s" .sdlc/proposals/AGENTS.md || exit 1; done`
 - `awk '/sdlc-lite:managed:end/{e=1; next} e && /proposals\/AGENTS\.md/{f=1} END{exit !f}' .sdlc/AGENTS.md`
 - ``grep -qxF '## `scripts/proposals.py`' docs/maintenance/sdlc-internals.md && grep -qF '.sdlc/proposals/' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'scripts/proposals.py' plugins/sdlc-lite/AGENTS.md``
-- `f=docs/validation/proposals-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "proposals.py --root .sdlc --proposals" "no eval given" "is not in" "exit 0" "exit 1" "pattern: replan .sdlc/" "pattern: plan-defect" "P-0001" "0 new, 0 updated" "negative control" "plugins/"; do grep -qF -- "$s" "$f" || exit 1; done`
-- `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/validation/proposals-live-run.md`
+- `f=docs/reports/proposals-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "proposals.py --root .sdlc --proposals" "no eval given" "is not in" "exit 0" "exit 1" "pattern: replan .sdlc/" "pattern: plan-defect" "P-0001" "0 new, 0 updated" "negative control" "plugins/"; do grep -qF -- "$s" "$f" || exit 1; done`
+- `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/reports/proposals-live-run.md`
 - `test -f .sdlc/proposals/AGENTS.md && test -f .sdlc/proposals/CLAUDE.md && test -z "$(find .sdlc/proposals -mindepth 1 ! -name AGENTS.md ! -name CLAUDE.md ! -name .DS_Store)"`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/proposals.py -e plugins/sdlc-lite/scripts/check.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/validation/proposals-live-run.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/proposals.py -e plugins/sdlc-lite/scripts/check.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/reports/proposals-live-run.md | { ! grep -q .; }`

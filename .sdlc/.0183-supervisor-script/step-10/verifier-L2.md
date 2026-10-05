@@ -8,7 +8,7 @@ pass
 - `codex-rerun-1.txt` last line matches `^result=(pass|fail|unverified)`: pass. Evidence: last line `result=pass`.
 - `codex-rerun-2.txt` last line matches `^result=(pass|fail|unverified)`: pass. Evidence: last line `result=pass`.
 - `codex-rerun-3.txt` last line matches `^result=(pass|fail|unverified)`: pass. Evidence: last line `result=pass`.
-- k sentence in the record and README: pass. Evidence: computed k=3. `Codex wake arm after the fix: 3 of 3 passed.` is in `docs/validation/supervisor-live-run.md` (new section, before Limits) and in `docs/README.md` (T-0183 line). The grep exits 0.
+- k sentence in the record and README: pass. Evidence: computed k=3. `Codex wake arm after the fix: 3 of 3 passed.` is in `docs/reports/supervisor-live-run.md` (new section, before Limits) and in `docs/README.md` (T-0183 line). The grep exits 0.
 - Known-limit conditional: pass. Evidence: all three last lines are `result=pass`, so the condition does not apply and the `if` is vacuously true. It is not a bite-able check here, but k=3 means no limit line is required.
 - No `Codex pass` when any rerun failed: pass. Evidence: the condition does not apply (k=3). The README says `Codex pass`, which the formula allows. `Result codex-attached: pass` (line 269) and `Result codex-push: pass` (line 372) are in the record. The four Claude arms (dry-run, claude, claude-attached, claude-push) are all `pass` (lines 309, 144, 184, 337), so `Claude Code pass` follows the formula.
 - (guard) `supervisor.py selftest`: pass. Evidence: `supervisor selftest: PASS`.

@@ -34,7 +34,7 @@ Eval file:
 - `role`: regex `[a-z][a-z-]*`. It is syntactic, so renaming a role never invalidates an old record.
 - `level`: `L1` to `L5`, or `all`.
 - `model`: regex `[A-Za-z0-9][A-Za-z0-9._-]*`. Any model id passes, including one not in the table, and `all` matches.
-- `effort`: regex `[a-z]+`. There is no fixed list, because Codex advertises `max` and `ultra` (`docs/validation/codex-account-models-2026-09-30.md`).
+- `effort`: regex `[a-z]+`. There is no fixed list, because Codex advertises `max` and `ultra` (`docs/reports/codex-account-models-2026-09-30.md`).
 - `host`: `claude`, `codex`, or `all`.
 - `task_set`: any non-empty one-line text, a short name or a path, never checked for existence.
 - `pass_rate`: `<passed>/<total>`, both non-negative integers, with passed <= total. `0/0` is allowed.
@@ -213,7 +213,7 @@ Depends on: step 1. Run from the repository root. Change nothing outside `.sdlc/
    - The command:
 
      ```
-     python3 plugins/sdlc-lite/scripts/evals.py add baseline --role all --level all --model all --effort all --host all --task-set pre-eval-baseline --pass-rate 0/0 --cost-usd unknown --date 2026-09-30 --evidence docs/validation/haiku-alias-2026-09-30.md --evidence docs/validation/planner-l3-opus-2026-09-30.md --evidence docs/validation/codex-account-models-2026-09-30.md --method "<method>" --result "<result>"
+     python3 plugins/sdlc-lite/scripts/evals.py add baseline --role all --level all --model all --effort all --host all --task-set pre-eval-baseline --pass-rate 0/0 --cost-usd unknown --date 2026-09-30 --evidence docs/reports/haiku-alias-2026-09-30.md --evidence docs/reports/planner-l3-opus-2026-09-30.md --evidence docs/reports/codex-account-models-2026-09-30.md --method "<method>" --result "<result>"
      ```
 
    - It writes `.sdlc/evals/0000-baseline.md`, because the folder holds no eval yet.
@@ -244,7 +244,7 @@ The lock and the eval files must stay tracked, not git-ignored. `.gitignore` ign
 - `test "$(cat .sdlc/evals/CLAUDE.md)" = '@AGENTS.md'`
 - `for s in "## File format" "## Table lock" "## Procedures" "## Limits" "role:level model effort" "sort_keys" "table_sha256" "previous_eval" "evals.py add" "evals.py list" "evals.py check" "evals.py lock" "task_set" "pass_rate" "cost_usd" "evidence" "## Method" "## Result"; do grep -qF "$s" .sdlc/evals/AGENTS.md || exit 1; done`
 - `python3 -c 'import sys, pathlib; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import evals; r = evals.validate_eval(pathlib.Path(".sdlc/evals/0000-baseline.md"), pathlib.Path(".")); print(r); sys.exit(r is not None)'`
-- `f=.sdlc/evals/0000-baseline.md && grep -qx 'pass_rate: 0/0' "$f" && grep -qx 'cost_usd: unknown' "$f" && grep -qx 'date: 2026-09-30' "$f" && grep -qx 'host: all' "$f" && for e in haiku-alias-2026-09-30 planner-l3-opus-2026-09-30 codex-account-models-2026-09-30; do grep -q "^evidence: .*docs/validation/$e\.md" "$f" || exit 1; done`
+- `f=.sdlc/evals/0000-baseline.md && grep -qx 'pass_rate: 0/0' "$f" && grep -qx 'cost_usd: unknown' "$f" && grep -qx 'date: 2026-09-30' "$f" && grep -qx 'host: all' "$f" && for e in haiku-alias-2026-09-30 planner-l3-opus-2026-09-30 codex-account-models-2026-09-30; do grep -q "^evidence: .*docs/reports/$e\.md" "$f" || exit 1; done`
 - `python3 -c 'import json,sys; d=json.load(open(".sdlc/evals/table-lock.json")); sys.exit(not (sorted(d) == ["eval", "previous_eval", "table_sha256"] and d["eval"] == ".sdlc/evals/0000-baseline.md" and d["previous_eval"] is None))'`
 - `test "$(python3 -c 'import json; print(json.load(open(".sdlc/evals/table-lock.json"))["table_sha256"])')" = "$(python3 -c 'import re,json,hashlib; r=open("plugins/sdlc-lite/scripts/run.sh").read(); rows=sorted("%s:%s %s %s" % m for m in re.findall(r"^\s*([\w-]+):(L\d)\)\s*model=([\w-]+);\s*effort=(\w+)", r, re.M)); j=json.dumps(json.load(open("plugins/sdlc-lite/adapters/codex/models.json")), sort_keys=True, separators=(",", ":")); print(hashlib.sha256(("".join(x + "\n" for x in rows) + j + "\n").encode()).hexdigest())')"`
 - `python3 plugins/sdlc-lite/scripts/evals.py check`
@@ -289,8 +289,8 @@ In `plugins/sdlc-lite/scripts/check.py`, add the guard just before the final `fo
 
 `subprocess`, `tempfile`, `shutil`, and `re` are already imported (check.py:51). No other file depends on this: nothing reads check.py output beyond its exit code (check.sh line 15).
 ### Acceptance criteria
-- `t=$(mktemp -d) && mkdir -p "$t/r/plugins" "$t/r/.sdlc" "$t/r/docs" && cp -R plugins/sdlc-lite "$t/r/plugins/" && cp -R .sdlc/evals "$t/r/.sdlc/" && cp -R docs/validation "$t/r/docs/" && python3 "$t/r/plugins/sdlc-lite/scripts/check.py" "$t/r/plugins/sdlc-lite"`
-- `t=$(mktemp -d) && mkdir -p "$t/r/plugins" "$t/r/.sdlc" "$t/r/docs" && cp -R plugins/sdlc-lite "$t/r/plugins/" && cp -R .sdlc/evals "$t/r/.sdlc/" && cp -R docs/validation "$t/r/docs/" && python3 -c 'import re,sys,pathlib; p=pathlib.Path(sys.argv[1]); p.write_text(re.sub(r"(builder:L1\)\s*model=)[\w-]+", r"\g<1>evals-probe", p.read_text()))' "$t/r/plugins/sdlc-lite/scripts/run.sh" || exit 1; out=$(python3 "$t/r/plugins/sdlc-lite/scripts/check.py" "$t/r/plugins/sdlc-lite"); test "$?" -eq 1 || exit 1; printf '%s\n' "$out" | grep -q '^FAIL evals: .*model table changed'`
+- `t=$(mktemp -d) && mkdir -p "$t/r/plugins" "$t/r/.sdlc" "$t/r/docs" && cp -R plugins/sdlc-lite "$t/r/plugins/" && cp -R .sdlc/evals "$t/r/.sdlc/" && cp -R docs/reports "$t/r/docs/" && python3 "$t/r/plugins/sdlc-lite/scripts/check.py" "$t/r/plugins/sdlc-lite"`
+- `t=$(mktemp -d) && mkdir -p "$t/r/plugins" "$t/r/.sdlc" "$t/r/docs" && cp -R plugins/sdlc-lite "$t/r/plugins/" && cp -R .sdlc/evals "$t/r/.sdlc/" && cp -R docs/reports "$t/r/docs/" && python3 -c 'import re,sys,pathlib; p=pathlib.Path(sys.argv[1]); p.write_text(re.sub(r"(builder:L1\)\s*model=)[\w-]+", r"\g<1>evals-probe", p.read_text()))' "$t/r/plugins/sdlc-lite/scripts/run.sh" || exit 1; out=$(python3 "$t/r/plugins/sdlc-lite/scripts/check.py" "$t/r/plugins/sdlc-lite"); test "$?" -eq 1 || exit 1; printf '%s\n' "$out" | grep -q '^FAIL evals: .*model table changed'`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" || exit 1; out=$(python3 "$t/p/scripts/check.py" "$t/p"); test "$?" -eq 0 || exit 1; printf '%s\n' "$out" | grep -q '^skip: evals lock guard'`
 - `t=$(mktemp -d) && mkdir -p "$t/r/plugins" "$t/r/.sdlc" && cp -R plugins/sdlc-lite "$t/r/plugins/" || exit 1; out=$(python3 "$t/r/plugins/sdlc-lite/scripts/check.py" "$t/r/plugins/sdlc-lite"); test "$?" -eq 1 || exit 1; printf '%s\n' "$out" | grep -q '^FAIL evals: '`
 - `grep -qF '14. Evals lock' plugins/sdlc-lite/scripts/check.py`
@@ -348,7 +348,7 @@ Run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`. It must
 ## Step 5: Live run in a throwaway copy of the repository
 level: L2
 ### Do
-Depends on: steps 1 to 3. Record the run in `docs/validation/evals-live-run.md`, with no em dashes, in the shape of `docs/validation/role-result-schema-live-run.md`. No model call is needed.
+Depends on: steps 1 to 3. Record the run in `docs/reports/evals-live-run.md`, with no em dashes, in the shape of `docs/reports/role-result-schema-live-run.md`. No model call is needed.
 
 Setup:
 - Run `T=$(mktemp -d)`.
@@ -364,7 +364,7 @@ Record each arm's exact command and exit code:
    - `check.py` gives exit 1, and its only FAIL line is the `FAIL evals: ... model table changed ...` line.
 3. A reused eval is refused: `python3 plugins/sdlc-lite/scripts/evals.py lock --eval .sdlc/evals/0000-baseline.md` gives exit 1 with `is not later than`.
 4. A new eval passes:
-   - `python3 plugins/sdlc-lite/scripts/evals.py add live-probe --role builder --level L2 --model opus --effort medium --host claude --task-set evals-live-run --pass-rate 0/0 --cost-usd unknown --date "$(date +%F)" --evidence docs/validation/planner-l3-opus-2026-09-30.md --method "<text>" --result "<text>"` writes `.sdlc/evals/0001-live-probe.md`.
+   - `python3 plugins/sdlc-lite/scripts/evals.py add live-probe --role builder --level L2 --model opus --effort medium --host claude --task-set evals-live-run --pass-rate 0/0 --cost-usd unknown --date "$(date +%F)" --evidence docs/reports/planner-l3-opus-2026-09-30.md --method "<text>" --result "<text>"` writes `.sdlc/evals/0001-live-probe.md`.
    - `evals.py lock --eval .sdlc/evals/0001-live-probe.md` gives exit 0.
    - `check.py` then gives exit 0.
 5. Negative control on Codex: change scout L1's effort from `low` to `medium` in the copy's `models.json`. `check.py` gives exit 1 with `model table changed`.
@@ -386,12 +386,12 @@ The doc has these sections, holding the exact strings the criteria grep for:
   - a hand edit of `table_sha256` alone is not detected
   - only `check.py`, not the full `check.sh`, ran in the copy
 ### Acceptance criteria
-- `f=docs/validation/evals-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "check.py" "evals.py add" "evals.py lock" "model table changed" "is not later than" "exit 0" "exit 1" "models.json"; do grep -qF "$s" "$f" || exit 1; done`
-- `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/validation/evals-live-run.md`
+- `f=docs/reports/evals-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "check.py" "evals.py add" "evals.py lock" "model table changed" "is not later than" "exit 0" "exit 1" "models.json"; do grep -qF "$s" "$f" || exit 1; done`
+- `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/reports/evals-live-run.md`
 - `python3 -c 'import json,sys; d=json.load(open(".sdlc/evals/table-lock.json")); sys.exit(not (sorted(d) == ["eval", "previous_eval", "table_sha256"] and d["eval"] == ".sdlc/evals/0000-baseline.md" and d["previous_eval"] is None))'`
 - `python3 plugins/sdlc-lite/scripts/evals.py check`
 - (guard) `git diff --quiet "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/codex-role-execution.md -e docs/validation/evals-live-run.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/codex-role-execution.md -e docs/reports/evals-live-run.md | { ! grep -q .; }`
 
 ## Step 6: Gates green
 level: L2
@@ -424,9 +424,9 @@ A gate already red at the build-start HEAD is reported as Status `inherited red:
 - The host Python is 3.9.6. Verified by `python3 --version`.
 - An eval cites its evidence as a list. The handoff asks one baseline file to cite three records as evidence, so `evidence` accepts a `[a, b, c]` list. Verified by reading the handoff Intent.
 - The baseline uses `all` in role, level, model, effort, and host. It covers every row on both hosts, because it cites two Claude records and one Codex record, and one front matter cannot name a single row. The handoff's `claude` or `codex` list describes a single experiment. This is settled here; see Risks.
-- The baseline is dated 2026-09-30, the date of all three deciding records. Verified by their file names and headings under `docs/validation/`.
+- The baseline is dated 2026-09-30, the date of all three deciding records. Verified by their file names and headings under `docs/reports/`.
 - URLs are checked for form only, because check.sh runs offline. Verified at `plugins/sdlc-lite/scripts/check.sh` lines 6 to 8: the live probe "never runs here".
-- Effort cannot be a fixed list. Verified: `docs/validation/codex-account-models-2026-09-30.md` lists `max` and `ultra` as Codex efforts.
+- Effort cannot be a fixed list. Verified: `docs/reports/codex-account-models-2026-09-30.md` lists `max` and `ultra` as Codex efforts.
 - Two handoff phrases are read this way:
   - "the lock's previous value" is the date of `previous_eval`.
   - "updating the lock without an eval" is two cases: `lock` with no `--eval` (exit 2), and `lock` that cites the current eval again (exit 1, not later).

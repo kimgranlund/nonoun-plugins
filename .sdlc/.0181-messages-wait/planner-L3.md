@@ -109,7 +109,7 @@ Depends on: step 1 (the `wait` subparser must exist for `case_entry_parses` to p
 7. Left unchanged on purpose:
    - `docs/codex-role-execution.md:27`: the messenger still polls every 10 seconds through `messages.py` (now inside `wait`), and its host limits still hold. The handoff does not list it.
    - `docs/ticket-stages/README.md:3`: it lists the tickets that built the bus; the design Status paragraph records T-0181.
-   - `docs/validation/messages-live-run/probe.py`: it pins no entry-file text, and its selftest passes now.
+   - `docs/reports/messages-live-run/probe.py`: it pins no entry-file text, and its selftest passes now.
 
 Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py generate --check`.
 ### Acceptance criteria
@@ -130,7 +130,7 @@ level: L3
 ### Do
 Depends on: steps 1 and 2.
 
-1. Create the probe `docs/validation/messages-wait-live-run/probe.py`, modelled on `docs/validation/messages-live-run/probe.py`. First read that probe's docstring, `clean_env`, `setup`, `send`, `Sampler`, `oracle`, `ClaudeTrace`, `CodexTrace`, `codex_isolation`, `run_host`, and `selftest`. Reuse its setup and the same isolation:
+1. Create the probe `docs/reports/messages-wait-live-run/probe.py`, modelled on `docs/reports/messages-live-run/probe.py`. First read that probe's docstring, `clean_env`, `setup`, `send`, `Sampler`, `oracle`, `ClaudeTrace`, `CodexTrace`, `codex_isolation`, `run_host`, and `selftest`. Reuse its setup and the same isolation:
    - setup: a temp project, `git init`, one empty commit, then `tickets.py --root .sdlc roadmap`;
    - an environment without `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_CODE_*`, and `SDLC_*`;
      - It also drops `BASH_DEFAULT_TIMEOUT_MS` and `BASH_MAX_TIMEOUT_MS`, so the Claude host runs with its default Bash limits.
@@ -144,7 +144,7 @@ Depends on: steps 1 and 2.
    - The timeout sentence is in the prompt for two reasons: a shell tool that ends the call before `wait` returns forces a second call, and no record here settles Codex's default shell-tool timeout.
    - The host starts first. The probe sends the message 20 seconds after launch, through the `delayed` hook of `run_host`: `--receiver <harness> --sender probe --topic live-probe --follow-up true "What is 2 + 3? Answer in one line."`.
    - Claude command: `claude -p --safe-mode --disable-slash-commands --dangerously-skip-permissions --model sonnet --effort low --output-format stream-json --verbose --no-session-persistence -- "<prompt>"`.
-   - Codex command: `codex exec --ignore-user-config --json --color never -C <project> -m gpt-6.1-sol -c model_reasoning_effort="medium" -c approval_policy="never" --sandbox workspace-write "<prompt>"`. This is the model and effort of the path-only arm in `docs/validation/messages-live-run.md` (its lines 13 and 41).
+   - Codex command: `codex exec --ignore-user-config --json --color never -C <project> -m gpt-6.1-sol -c model_reasoning_effort="medium" -c approval_policy="never" --sandbox workspace-write "<prompt>"`. This is the model and effort of the path-only arm in `docs/reports/messages-live-run.md` (its lines 13 and 41).
 3. From the host's own stream, the probe derives four values:
    - `wait_calls`: shell calls whose command runs `messages.py` with the subcommand `wait`, each occurrence counted. The subcommand is the first word after the `messages.py` token, skipping `--root DIR`.
    - `poll_calls`: shell calls that run `messages.py count`, `messages.py list`, or `sleep`, plus Claude `Monitor`, `BashOutput`, and `TaskOutput` tool calls.
@@ -177,8 +177,8 @@ Depends on: steps 1 and 2.
    - `fail: a Monitor call`
    - `fail: no wait call`
    - `fail: the wait started after the send`
-6. Run each arm once. Save its stdout with `| tee` as `docs/validation/messages-wait-live-run/claude.txt` and `codex.txt`. When a host cannot run, its file holds `result=unverified reason=<why>`. Never use a fixture, and never change the oracle after seeing an arm's result.
-7. Write `docs/validation/messages-wait-live-run.md`, modelled on `docs/validation/messages-live-run.md`:
+6. Run each arm once. Save its stdout with `| tee` as `docs/reports/messages-wait-live-run/claude.txt` and `codex.txt`. When a host cannot run, its file holds `result=unverified reason=<why>`. Never use a fixture, and never change the oracle after seeing an arm's result.
+7. Write `docs/reports/messages-wait-live-run.md`, modelled on `docs/reports/messages-live-run.md`:
    - a `# Messages wait live run` title, then a `Recorded: <YYYY-MM-DD>` line;
    - an Environment section (heading `## Environment`) with:
      - the `claude --version` and `codex --version` output;
@@ -191,14 +191,14 @@ Depends on: steps 1 and 2.
    - a Limits section (heading `## Limits`): one run per arm, one machine, an active parent only, no idle-host wake (T-0182), and any probe limit found, such as a Codex command whose output was missing from its stream item.
 8. In `docs/README.md`, add one line right after the Messages live run line: `- [Messages wait live run](validation/messages-wait-live-run.md): dated live run for T-0181 ...`, ending with each arm's result.
 ### Acceptance criteria
-- `out=$(python3 docs/validation/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: no wait call" "fail: the wait started after the send"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `grep -qF "BASH_DEFAULT_TIMEOUT_MS" docs/validation/messages-wait-live-run/probe.py`
-- `for a in claude codex; do grep -qE "^result=(pass|fail|unverified)( reason=.*)?$" docs/validation/messages-wait-live-run/$a.txt || exit 1; done`
-- `for a in claude codex; do f=docs/validation/messages-wait-live-run/$a.txt; test -f "$f" || exit 1; if grep -qx "result=pass" "$f"; then grep -qx "wait_calls=1 poll_calls=0" "$f" || exit 1; grep -qx "wait_before_send=yes" "$f" || exit 1; grep -qE "^send_time=[^ ]+ read_time=[^ ]+ ack_time=" "$f" || exit 1; fi; done`
-- `f=docs/validation/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
+- `out=$(python3 docs/reports/messages-wait-live-run/probe.py selftest) && printf "%s\n" "$out" | grep -qxF "probe selftest: PASS" && for l in "pass: one wait call returned the id, then read, reply, ack" "fail: two wait calls" "fail: a count call" "fail: a Monitor call" "fail: no wait call" "fail: the wait started after the send"; do printf "%s\n" "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `grep -qF "BASH_DEFAULT_TIMEOUT_MS" docs/reports/messages-wait-live-run/probe.py`
+- `for a in claude codex; do grep -qE "^result=(pass|fail|unverified)( reason=.*)?$" docs/reports/messages-wait-live-run/$a.txt || exit 1; done`
+- `for a in claude codex; do f=docs/reports/messages-wait-live-run/$a.txt; test -f "$f" || exit 1; if grep -qx "result=pass" "$f"; then grep -qx "wait_calls=1 poll_calls=0" "$f" || exit 1; grep -qx "wait_before_send=yes" "$f" || exit 1; grep -qE "^send_time=[^ ]+ read_time=[^ ]+ ack_time=" "$f" || exit 1; fi; done`
+- `f=docs/reports/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
 - `grep -qF "validation/messages-wait-live-run.md" docs/README.md`
-- `for f in docs/validation/messages-wait-live-run.md docs/validation/messages-wait-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/messages-wait-live-run(\.md|/)")"`
+- `for f in docs/reports/messages-wait-live-run.md docs/reports/messages-wait-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Step 4: Gates green
 level: L2
@@ -220,7 +220,7 @@ Depends on: steps 1, 2, and 3.
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `git diff --check`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/validation/messages-wait-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Assumptions
 - What this replan changes:
@@ -236,7 +236,7 @@ Depends on: steps 1, 2, and 3.
 - `case_entry_parses` pins the set of entry-file subcommands (messages.py:1709-1731), and `ST_HEADINGS` pins the headings (messages.py:1629).
 - The tickets selftest pins only entry-file presence and restore (tickets.py:3594-3623). `MESSENGER_WORDS` is at check.py:368.
 - The generated messenger TOML copies messenger.md verbatim except `${CLAUDE_PLUGIN_ROOT}`, which becomes `@SDLC_PLUGIN_ROOT@`. Verified by comparing plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml line 7 with messenger.md. So `messages.py wait --receiver <harness>` carries into the TOML.
-- The Codex path-only arm ran `gpt-6.1-sol` at effort `medium` (docs/validation/messages-live-run.md:13 and :41).
+- The Codex path-only arm ran `gpt-6.1-sol` at effort `medium` (docs/reports/messages-live-run.md:13 and :41).
 - Both host CLIs are installed and logged in: `claude --version` printed 2.1.286, `codex --version` printed 0.159.2, and `codex login status` printed `Logged in using ChatGPT`.
 - Codex `command_execution` items carry `aggregated_output`. Verified from the item keys in a T-0179 raw stream (`/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/messages-live-_81ol52h/host-stdout.jsonl`).
 - run.sh exports Bash timeouts of 3600000 to every role, and Claude Code moves a foreground Bash call to the background once it passes its timeout (run.sh:67-70).

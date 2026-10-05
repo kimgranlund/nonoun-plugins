@@ -5,7 +5,7 @@ The handoff is a review brief, not a build brief: fact-check `docs/generative-co
 
 I ran the review itself as the verification of the design's load-bearing assumptions, since every finding depends on what the sources actually say. Every `path:line` in the analysis was opened with `sed -n`; the count is about 60 distinct citations in 94 backticked path strings. The result is written to `.sdlc/0247-pc-gap-analysis/review/decompose/report.md` in the handoff's shape (Verdict, Findings, Missed gaps). Verdict: fail, on three factual errors that mislead, each a small edit: the tier arithmetic (eleven tiers scored, 16 of 33, not "ten" and "of 30"; the 36-point scaling is derived from the wrong max against a rubric with 13 `## T` headings), the "tickets filed" sentence (no ticket above 0247 exists), and cross-check item (c) plus R1's rationale, which ask to build a drift check that `onboard.py check` already performs for `docs/AGENTS.md`. Eleven minor findings cover citation precision (README lines shifted by two by the analysis's own commit 881808d, a wrong line range in `04-context-and-harness.md`, a commit subject cited where `design.md:104` says it directly), labels ([E] defined and never used; the rubric at an absolute path outside the repo is labeled [O]), and overstatements ("some runs" from one run's limit). Scores, the tier map, and the what-not-to-build list otherwise hold against the cited material.
 
-The remaining work is one builder step on the analysis file applying the fixes in report.md, then the review record the ticket's Done condition names, which this report already is (the README's line-7 link points at `docs/validation/progressive-context-gap-analysis-review.md`, which does not exist yet; either materialize it from this record or repoint the link).
+The remaining work is one builder step on the analysis file applying the fixes in report.md, then the review record the ticket's Done condition names, which this report already is (the README's line-7 link points at `docs/reports/progressive-context-gap-analysis-review.md`, which does not exist yet; either materialize it from this record or repoint the link).
 
 ## Interfaces
 
@@ -24,7 +24,7 @@ The remaining work is one builder step on the analysis file applying the fixes i
 - `design.md` at HEAD is the 5a1165e version the analysis names: verified by `git log --oneline -- docs/docs-schema/design.md` (last change 5a1165e).
 - README line shift is caused by the analysis's own commit: verified by `git show 881808d^:docs/generative-constructs/README.md | sed -n '21p;45p'` showing the cited sentences at the old numbers.
 - `docs/layout.md` is absent here: verified by `ls` and `onboard.py:317,699-711` (written on setup).
-- "Codex rollout absent" is one run, not some: verified by `grep -il rollout docs/validation/*.md` (ten files, one absence statement at `codex-conductor-solo-live-run.md:23`).
+- "Codex rollout absent" is one run, not some: verified by `grep -il rollout docs/reports/*.md` (ten files, one absence statement at `codex-conductor-solo-live-run.md:23`).
 - Maison mentions "progressive context" only as a gen-ui concept: verified by `git grep -i "progressive context"` in `/Users/kimgranlund/Projects/maison/ui-kit-maison` (three files, all gen-ui).
 - The placement proof is absent from design.md v0.2: verified by `grep -i 'fresh session\|hidden-answer'` (empty); line 183 is the migration inventory.
 - `check-packaging.py` checks links in plugin context files: verified at `scripts/check-packaging.py:59,75`.
@@ -54,7 +54,7 @@ The remaining work is one builder step on the analysis file applying the fixes i
 - Blocker 3: analysis lines 115,123 ask for a docs/AGENTS.md drift check that exists: `onboard.py:581` labels `stale`, render at `:696-711`, layout feeds model at `:451-465`.
 - Real remaining gap behind blocker 3: `## Kinds` and `## Legacy` are not in the rendered model until build ticket 1 (`docs/docs-schema/design.md:151`).
 - README citations shift by +2 (45 to 47, 21 to 23, 7-14 to 9-16); cause is commit 881808d, confirmed via `git show 881808d^:docs/generative-constructs/README.md`.
-- `docs/generative-constructs/README.md:7` links to `docs/validation/progressive-context-gap-analysis-review.md`, which does not exist.
+- `docs/generative-constructs/README.md:7` links to `docs/reports/progressive-context-gap-analysis-review.md`, which does not exist.
 - `docs/layout.md` does not exist in this repo; `onboard.py setup` writes it (`onboard.py:317`).
 - Analysis defines [E] (line 5) and never uses it; rubric and W3C PROV are labeled [O].
 - Citation inventory: `grep -o '`[^`]*\.\(md\|json\|sh\|py\)[^`]*`'` over the analysis file, 94 strings, about 60 distinct.

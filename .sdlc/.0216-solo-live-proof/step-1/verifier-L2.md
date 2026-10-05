@@ -3,11 +3,11 @@
 pass
 
 ## Criteria
-- `test -f docs/validation/solo-live-run.md`: pass. Evidence: exit 0. I read the file (Environment, Method, Claude Code, Codex, Limits).
+- `test -f docs/reports/solo-live-run.md`: pass. Evidence: exit 0. I read the file (Environment, Method, Claude Code, Codex, Limits).
 - `grep -q "solo-live-run.md" docs/README.md`: pass. Evidence: exit 0. `git diff docs/README.md` shows one added line linking `validation/solo-live-run.md`.
-- `grep -qi "claude" ... && grep -qi "codex" docs/validation/solo-live-run.md`: pass. Evidence: exit 0.
-- `grep -q "gpt-6.1-sol" docs/validation/solo-live-run.md`: pass. Evidence: exit 0.
-- `test -d docs/validation/solo-live-run`: pass. Evidence: exit 0. `find` lists 21 files across `fixture/`, `claude/` and `codex/`, plus `lane.txt`.
+- `grep -qi "claude" ... && grep -qi "codex" docs/reports/solo-live-run.md`: pass. Evidence: exit 0.
+- `grep -q "gpt-6.1-sol" docs/reports/solo-live-run.md`: pass. Evidence: exit 0.
+- `test -d docs/reports/solo-live-run`: pass. Evidence: exit 0. `find` lists 21 files across `fixture/`, `claude/` and `codex/`, plus `lane.txt`.
 - `git diff --check main -- plugins docs`: pass. Evidence: exit 0, no output. Untracked files are skipped by a bare `git diff --check`, so this does not examine the new record or evidence dir. The builder's `git add -N` check on them is the builder's claim, and I did not rerun it.
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`: pass. Evidence: `ok: 216 tickets, roadmap current`, exit 0.
 - `bash plugins/sdlc-lite/scripts/check.sh`: pass. Evidence: I ran it twice, and the second run redirected to a file gave `exit:0`. Output ended with `skip: shellcheck not installed` and `ok: plugin validate`. The 67 lines matching "fail" are the names of control cases. This gate is green on the built tree, so no pre-build run was needed.

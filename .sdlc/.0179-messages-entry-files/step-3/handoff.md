@@ -9,17 +9,17 @@ level: L4
 Depends on: steps 1 and 2.
 
 Create:
-- `docs/validation/messages-live-run/probe.py` (Python 3, standard library)
-- `docs/validation/messages-live-run/defect-AGENTS.md`
+- `docs/reports/messages-live-run/probe.py` (Python 3, standard library)
+- `docs/reports/messages-live-run/defect-AGENTS.md`
 - the evidence files listed under Runs to record
-- `docs/validation/messages-live-run.md`, linked from `docs/README.md`
+- `docs/reports/messages-live-run.md`, linked from `docs/README.md`
 
 Edit `plugins/sdlc-lite/scripts/messages.py` only if a run shows the entry files are wrong or unclear. In that case keep its selftest green and rerun every arm.
 
 **`probe.py` interface**
 - Usage: `python3 probe.py <claude|codex|claude-messenger|codex-messenger> [--defect] [--timeout SECONDS]` and `python3 probe.py selftest`. `--defect` is accepted only with `claude` or `codex`.
 - The plugin is `Path(__file__).resolve().parents[3] / 'plugins' / 'sdlc-lite'`, this worktree's built copy. The probe never runs `run.sh`.
-- Every host process gets a copy of the environment with these removed: `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, and every name starting with `CLAUDE_CODE_` or `SDLC_`. This is the scrub of the `W` wrapper in docs/validation/plan-reviewer-live-run.md, plus the plugin root, so no role inherits a path to the plugin.
+- Every host process gets a copy of the environment with these removed: `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, and every name starting with `CLAUDE_CODE_` or `SDLC_`. This is the scrub of the `W` wrapper in docs/reports/plan-reviewer-live-run.md, plus the plugin root, so no role inherits a path to the plugin.
 
 **Setup** (exit 2 on any failure)
 - `tempfile.mkdtemp(prefix='messages-live-')`, project `<tmp>/project`, `git init -q`, and one empty commit made with `-c user.name=probe -c user.email=probe@example.invalid -c commit.gpgsign=false`.
@@ -43,7 +43,7 @@ Edit `plugins/sdlc-lite/scripts/messages.py` only if a run shows the entry files
   - Safe mode also disables `CLAUDE.md` loading, so the role reaches the procedures only through the message's `protocol:` line, as the Codex role does.
 - `codex`: `codex exec --ignore-user-config --json --color never -C <project> -m gpt-6.1-sol -c model_reasoning_effort="medium" -c approval_policy="never" --sandbox workspace-write "Handle the message at <absolute message path>."`
   - `--ignore-user-config` skips `$CODEX_HOME/config.toml`, which is where `[plugins."sdlc-lite@sdlc-lite"] enabled = true` lives on this host. Auth still uses `CODEX_HOME`.
-  - `gpt-6.1-sol` is the config default and completed a live probe (docs/validation/codex-account-models-2026-09-30.md).
+  - `gpt-6.1-sol` is the config default and completed a live probe (docs/reports/codex-account-models-2026-09-30.md).
 - Codex isolation proof, run before the `codex` arm:
   - Two control calls: `codex exec --json --color never --sandbox read-only -C <project> -m gpt-6-luna -c model_reasoning_effort="low" "Reply with exactly OK. Do not call tools."`, one with `--ignore-user-config` and one without.
   - For each, read `thread_id` from the `thread.started` event. Find `$CODEX_HOME/sessions/**/rollout-*<thread_id>*.jsonl` (`CODEX_HOME` defaults to `~/.codex`) and count occurrences of `sdlc-lite`.
@@ -94,10 +94,10 @@ Edit `plugins/sdlc-lite/scripts/messages.py` only if a run shows the entry files
 It prints `ok: <case>` per case and `probe selftest: PASS`.
 
 **Runs to record**, each saved with `| tee`:
-- `python3 docs/validation/messages-live-run/probe.py <arm>` into `docs/validation/messages-live-run/<arm>.txt`, for each of `claude`, `codex`, `claude-messenger`, and `codex-messenger`.
-- `python3 docs/validation/messages-live-run/probe.py claude --defect` into `docs/validation/messages-live-run/claude-defect.txt`.
+- `python3 docs/reports/messages-live-run/probe.py <arm>` into `docs/reports/messages-live-run/<arm>.txt`, for each of `claude`, `codex`, `claude-messenger`, and `codex-messenger`.
+- `python3 docs/reports/messages-live-run/probe.py claude --defect` into `docs/reports/messages-live-run/claude-defect.txt`.
 
-**`docs/validation/messages-live-run.md`**
+**`docs/reports/messages-live-run.md`**
 - Title `# Messages live run`, then a line `Recorded: <YYYY-MM-DD>`.
 - These exact `##` sections: `## Environment`, `## Method`, `## Claude Code, path only`, `## Codex, path only`, `## Messenger on Claude Code`, `## Messenger on Codex`, `## Negative control`, `## Limits`.
 - Environment: `claude --version`, `codex --version`, the models used, the plugin commit (`git rev-parse --short HEAD`), and whether `plugins/` had uncommitted changes.
@@ -115,17 +115,17 @@ It prints `ok: <case>` per case and `probe selftest: PASS`.
 
 No em dashes in any file. The live model calls are this step's runtime evidence. An arm that cannot run is recorded as unverified with its reason, never faked.
 ### Acceptance criteria
-- `python3 docs/validation/messages-live-run/probe.py selftest`
-- `python3 docs/validation/messages-live-run/probe.py claude`
-- `out=$(python3 docs/validation/messages-live-run/probe.py claude --defect); rc=$?; test "$rc" -eq 1 && printf "%s\n" "$out" | grep -q "^result=fail"`
-- `python3 docs/validation/messages-live-run/probe.py codex; rc=$?; test "$rc" -eq 0 -o "$rc" -eq 3`
-- `d=docs/validation/messages-live-run && grep -qx "result=pass" "$d/claude.txt" && grep -q "^result=fail" "$d/claude-defect.txt" && grep -qE "^result=(pass|unverified)" "$d/codex.txt" && grep -qE "^result=(pass|unverified)" "$d/codex-messenger.txt"`
-- `f=docs/validation/messages-live-run/claude-messenger.txt && grep -qx "result=pass" "$f" && grep -qx "messenger_spawned=yes" "$f" && awk '/^state=new /{n=NR} /^state=read /{r=NR} /^state=done /{d=NR} END{exit !(n && r && d && n < r && r < d)}' "$f"`
-- `d=docs/validation/messages-live-run && grep -qx "isolation=yes skills=0 slash_commands=0 sdlc_agents=0 skill_calls=0" "$d/claude.txt" && awk '/^result=unverified/{u=1} /^isolation=yes ignore_config_sdlc_mentions=0 /{i=1} END{exit !(u || i)}' "$d/codex.txt"`
-- `f=docs/validation/messages-live-run.md && grep -qE "^Recorded: 20[0-9]{2}-[0-9]{2}-[0-9]{2}" "$f" && for h in "## Environment" "## Method" "## Claude Code, path only" "## Codex, path only" "## Messenger on Claude Code" "## Messenger on Codex" "## Negative control" "## Limits"; do grep -qxF -- "$h" "$f" || exit 1; done`
-- `python3 -c "import re; t = open('docs/validation/messages-live-run.md').read(); parts = re.split(r'(?m)^## ', t); secs = {p.split(chr(10), 1)[0]: p for p in parts[1:]}; need = {'Claude Code, path only': 'Result: pass', 'Codex, path only': 'Result: ', 'Messenger on Claude Code': 'Result: pass', 'Messenger on Codex': 'Result: ', 'Negative control': 'Result: pass'}; bad = [k for k, v in need.items() if not re.search('(?m)^' + re.escape(v), secs.get(k, ''))]; assert not bad, bad"`
+- `python3 docs/reports/messages-live-run/probe.py selftest`
+- `python3 docs/reports/messages-live-run/probe.py claude`
+- `out=$(python3 docs/reports/messages-live-run/probe.py claude --defect); rc=$?; test "$rc" -eq 1 && printf "%s\n" "$out" | grep -q "^result=fail"`
+- `python3 docs/reports/messages-live-run/probe.py codex; rc=$?; test "$rc" -eq 0 -o "$rc" -eq 3`
+- `d=docs/reports/messages-live-run && grep -qx "result=pass" "$d/claude.txt" && grep -q "^result=fail" "$d/claude-defect.txt" && grep -qE "^result=(pass|unverified)" "$d/codex.txt" && grep -qE "^result=(pass|unverified)" "$d/codex-messenger.txt"`
+- `f=docs/reports/messages-live-run/claude-messenger.txt && grep -qx "result=pass" "$f" && grep -qx "messenger_spawned=yes" "$f" && awk '/^state=new /{n=NR} /^state=read /{r=NR} /^state=done /{d=NR} END{exit !(n && r && d && n < r && r < d)}' "$f"`
+- `d=docs/reports/messages-live-run && grep -qx "isolation=yes skills=0 slash_commands=0 sdlc_agents=0 skill_calls=0" "$d/claude.txt" && awk '/^result=unverified/{u=1} /^isolation=yes ignore_config_sdlc_mentions=0 /{i=1} END{exit !(u || i)}' "$d/codex.txt"`
+- `f=docs/reports/messages-live-run.md && grep -qE "^Recorded: 20[0-9]{2}-[0-9]{2}-[0-9]{2}" "$f" && for h in "## Environment" "## Method" "## Claude Code, path only" "## Codex, path only" "## Messenger on Claude Code" "## Messenger on Codex" "## Negative control" "## Limits"; do grep -qxF -- "$h" "$f" || exit 1; done`
+- `python3 -c "import re; t = open('docs/reports/messages-live-run.md').read(); parts = re.split(r'(?m)^## ', t); secs = {p.split(chr(10), 1)[0]: p for p in parts[1:]}; need = {'Claude Code, path only': 'Result: pass', 'Codex, path only': 'Result: ', 'Messenger on Claude Code': 'Result: pass', 'Messenger on Codex': 'Result: ', 'Negative control': 'Result: pass'}; bad = [k for k, v in need.items() if not re.search('(?m)^' + re.escape(v), secs.get(k, ''))]; assert not bad, bad"`
 - `grep -qF "(validation/messages-live-run.md)" docs/README.md`
-- `d=docs/validation/messages-live-run && test -f "$d/probe.py" && ! grep -rqF "$(printf '\342\200\224')" "$d" docs/validation/messages-live-run.md`
+- `d=docs/reports/messages-live-run && test -f "$d/probe.py" && ! grep -rqF "$(printf '\342\200\224')" "$d" docs/reports/messages-live-run.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/messages.py selftest`
 - (guard) `git diff "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/messages.py docs/README.md | grep '^+' | { ! grep -qF "$(printf '\342\200\224')"; }`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/SKILL\.md|docs/README\.md|docs/validation/messages-live-run\.md|docs/validation/messages-live-run/.*" | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*" | { ! grep -q .; }`

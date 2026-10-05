@@ -182,7 +182,7 @@ A ticket's artifacts stay inside its own folder (`tickets/0181-messages-wait/ste
 
 1. Refuses on a dirty tree. Id uniqueness is not a precondition: each worktree resolves its own ticket root from its own config (`tickets.py:122-129`), so a migrated tree beside a flat one keeps ids unique, and `check` reports a clash after merge.
 2. Moves ticket folders into `tickets/`, task folders without a ticket into `work/`, and `notes.md` and `roadmap.md` to their folders.
-3. Runs the existing citing-file scan (`close` and `archive` use it, `outside_refs` at `tickets.py:510-535`) for every moved ticket folder. That scan looks for folder literals `<rel>/<slug>`, so the two file moves (`roadmap.md`, `notes.md`) need their own cite scan. It refuses naming each citing file, or rewrites the cites with `--rewrite-refs`. Dated records under `docs/validation/` are never rewritten (repository `AGENTS.md`); five of the ten outside citers are such records, and the others (the root `AGENTS.md`, plugin guidance, docs) are listed in the dry run.
+3. Runs the existing citing-file scan (`close` and `archive` use it, `outside_refs` at `tickets.py:510-535`) for every moved ticket folder. That scan looks for folder literals `<rel>/<slug>`, so the two file moves (`roadmap.md`, `notes.md`) need their own cite scan. It refuses naming each citing file, or rewrites the cites with `--rewrite-refs`. Dated records under `docs/reports/` are never rewritten (repository `AGENTS.md`); five of the ten outside citers are such records, and the others (the root `AGENTS.md`, plugin guidance, docs) are listed in the dry run.
 4. Writes `layout: topics`, regenerates the router and roadmap, and runs `check`.
 5. Is idempotent: a second run moves nothing.
 

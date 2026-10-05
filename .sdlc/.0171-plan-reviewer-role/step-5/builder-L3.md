@@ -3,10 +3,10 @@
 done
 
 ## Changes
-- docs/validation/plan-reviewer-live-run.md: new dated live-run report. It covers environment, projects, method with exact commands, which runs ran, a Results table, Limits, and the "No benefit is claimed" sentence.
-- docs/validation/plan-reviewer-live-run/claude/probe-defective/: copied evidence (handoff.md, planner-L3.md, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl).
-- docs/validation/plan-reviewer-live-run/claude/probe/: copied evidence (handoff.md, planner-L3.md, planner-L3.attempt.json, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl, and step-1/ with base-sha, handoff.md, builder-L1.md, verifier-L1.md, both attempt.json files, runs.jsonl; no .log files).
-- docs/validation/plan-reviewer-live-run/codex/probe-defective/: copied evidence (handoff.md, planner-L3.md, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl).
+- docs/reports/plan-reviewer-live-run.md: new dated live-run report. It covers environment, projects, method with exact commands, which runs ran, a Results table, Limits, and the "No benefit is claimed" sentence.
+- docs/reports/plan-reviewer-live-run/claude/probe-defective/: copied evidence (handoff.md, planner-L3.md, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl).
+- docs/reports/plan-reviewer-live-run/claude/probe/: copied evidence (handoff.md, planner-L3.md, planner-L3.attempt.json, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl, and step-1/ with base-sha, handoff.md, builder-L1.md, verifier-L1.md, both attempt.json files, runs.jsonl; no .log files).
+- docs/reports/plan-reviewer-live-run/codex/probe-defective/: copied evidence (handoff.md, planner-L3.md, plan-reviewer-L1.md, plan-reviewer-L1.attempt.json, runs.jsonl).
 - docs/README.md: one list entry for the new report.
 
 ## Checks

@@ -21,7 +21,7 @@ Change, `plugins/sdlc-lite/scripts/run.sh`: `planner:L3)` becomes `model=opus; e
 2. The plan-reviewer family rule in `run.sh` (lines near 205 to 215) and `agents/plan-reviewer.md`: the reviewer is Opus high and moves to Fable high after an Opus planner. With planner L3 on Opus, every required L3 review now runs on Fable high. Keep the rule and say so in the rubric; this moves some Fable spend from the planner to the reviewer and is not a saving of all of it.
 3. `scripts/check.py`: the table comparison and any family-rule check.
 4. `scripts/run-selftest.sh` line 166 builds a fixture planner result with `model=fable effort=xhigh`; update the fixtures that exercise the plan-reviewer family rule so one case still covers a Fable planner and one an Opus planner.
-5. `docs/codex-role-execution.md` and `docs/validation/` are not edited except to add a dated note.
+5. `docs/codex-role-execution.md` and `docs/reports/` are not edited except to add a dated note.
 
 Replan wording: the rubric says any replan uses planner L3; it stays, now on Opus xhigh.
 

@@ -29,9 +29,9 @@ A role working on a plan step reads the entry files that govern the files it cha
 ## Context
 Decision agreed with the user on 2026-09-29, recorded in `docs/repo-onboarding/design.md` under "How roles reach an entry".
 
-Reason: the loading probe (`docs/validation/nested-entry-file-loading.md`) showed that Codex loads entries only from the repository root down to its working directory, and roles start at the root. Claude Code loads a nested entry only through an import in a loaded `CLAUDE.md`.
+Reason: the loading probe (`docs/reports/nested-entry-file-loading.md`) showed that Codex loads entries only from the repository root down to its working directory, and roles start at the root. Claude Code loads a nested entry only through an import in a loaded `CLAUDE.md`.
 
-Feasibility was checked in the second and third design reviews (`docs/validation/repo-onboarding-design-review-2.md` and `-3.md`): `parse_steps` in `scripts/steps.py` copies a step block up to the next `## ` line, and a `### Read first` subsection reached the step handoff unchanged with lint passing.
+Feasibility was checked in the second and third design reviews (`docs/reports/repo-onboarding-design-review-2.md` and `-3.md`): `parse_steps` in `scripts/steps.py` copies a step block up to the next `## ` line, and a `### Read first` subsection reached the step handoff unchanged with lint passing.
 
 Handwritten step handoffs are described in `skills/fix/SKILL.md` step 2 and `skills/chain/SKILL.md` section 5 step 3. The lint command in `/fix` has a separate defect, T-0164.
 

@@ -3,7 +3,7 @@
 pass
 
 ## Criteria
-- Required-strings loop (`## Environment`, `## Commands`, `## Evidence`, `## Limits`, `run.sh builder L1`, `exit 3`, `exit 0`, `rebuild L1`, `verify L1`, `invalid result`): pass. Evidence: I ran the loop on `docs/validation/role-result-schema-live-run.md` and nothing printed as MISSING. I checked that the strings sit in the right sections by reading the doc. The check can go red because `grep -qF` on an absent string exits 1, but I did not run a negative control.
+- Required-strings loop (`## Environment`, `## Commands`, `## Evidence`, `## Limits`, `run.sh builder L1`, `exit 3`, `exit 0`, `rebuild L1`, `verify L1`, `invalid result`): pass. Evidence: I ran the loop on `docs/reports/role-result-schema-live-run.md` and nothing printed as MISSING. I checked that the strings sit in the right sections by reading the doc. The check can go red because `grep -qF` on an absent string exits 1, but I did not run a negative control.
 - Date regex `2026-[0-9]{2}-[0-9]{2}`: pass. Evidence: grep matched (c2ok). The doc has `2026-10-01` under `## Environment`, as the Do requires.
 - (guard) allowed-files check: pass. Evidence: I ran the full guard command from the handoff and it printed c3ok. The only new file outside `.sdlc` is the doc. I did not run it in a worktree at the base SHA. Every other changed file is on the allow-list and belongs to earlier steps.
 - Do requirement: the live evidence is real and matches the doc. Evidence:
@@ -20,7 +20,7 @@ pass
 - Builder claims: accepted, each confirmed by the checks above. The builder's note that the throwaway project still exists is also true, since I listed it.
 
 ## Out of scope changes
-None. The only file this step added outside `.sdlc` is `docs/validation/role-result-schema-live-run.md`. The other modified files come from earlier steps and are on the guard's allow-list. The throwaway project outside the repo is left over, and the builder disclosed it.
+None. The only file this step added outside `.sdlc` is `docs/reports/role-result-schema-live-run.md`. The other modified files come from earlier steps and are on the guard's allow-list. The throwaway project outside the repo is left over, and the builder disclosed it.
 
 ## For the next attempt
 None.

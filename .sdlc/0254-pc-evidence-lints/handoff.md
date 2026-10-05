@@ -18,7 +18,7 @@ Add warning-level lints: no template placeholder text in a closed ticket, and a 
 - Done when: positive and negative controls exist for both lints and the gap analysis doc itself resolves clean.
 
 ## Context
-Gap analysis R6. Both failures happened: placeholder text in .sdlc/verify-0224/verifier-L3.md:15 and an unbacked record in .sdlc/verify-0229/verifier-L3.md:11. The architect review found three wrong citations a resolver would catch (docs/validation/progressive-context-gap-analysis-review.md). Lane: solo. Philosophy: Done is better than perfect.
+Gap analysis R6. Both failures happened: placeholder text in .sdlc/verify-0224/verifier-L3.md:15 and an unbacked record in .sdlc/verify-0229/verifier-L3.md:11. The architect review found three wrong citations a resolver would catch (docs/reports/progressive-context-gap-analysis-review.md). Lane: solo. Philosophy: Done is better than perfect.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes. Preserve other agents' worktrees.

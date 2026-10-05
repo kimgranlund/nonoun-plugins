@@ -26,4 +26,4 @@ One authoritative wording for the lane rule: link or mirror the root AGENTS.md s
 
 ## Closed
 
-2026-10-04: Built on branch onboard-lane (3264439, validation note docs/validation/onboard-lane-text.md): the root entry block routes by steps.py lane, solo default for S and M; no template version bump (TEMPLATE_VERSION is shared with the router blocks, text difference already makes a block stale); lane-text gate with negative controls; independent L3 Fable verifier passed 5 of 5; full check.sh rc=0; maison read-only check reports AGENTS.md stale.
+2026-10-04: Built on branch onboard-lane (3264439, validation note docs/reports/onboard-lane-text.md): the root entry block routes by steps.py lane, solo default for S and M; no template version bump (TEMPLATE_VERSION is shared with the router blocks, text difference already makes a block stale); lane-text gate with negative controls; independent L3 Fable verifier passed 5 of 5; full check.sh rc=0; maison read-only check reports AGENTS.md stale.

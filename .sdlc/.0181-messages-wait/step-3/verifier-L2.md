@@ -22,7 +22,7 @@ pass
 - Live arm: not run. The step says to make no model call. The `run_arm` host launch, delayed send and Codex isolation controls are therefore unobserved here. The criteria do not require them, and step 4 covers them.
 
 ## Out of scope changes
-None. The changed tracked files (`messages.py`, `messenger.md`, the codex toml, `sdlc-internals.md`, `design.md`) are on AC4's allow-list and come from steps 1 and 2. The untracked `docs/validation/messages-wait-live-run/probe.py` is this step's target. A probe run of mine left a temp project in `$TMPDIR` outside the repo. No project files were changed.
+None. The changed tracked files (`messages.py`, `messenger.md`, the codex toml, `sdlc-internals.md`, `design.md`) are on AC4's allow-list and come from steps 1 and 2. The untracked `docs/reports/messages-wait-live-run/probe.py` is this step's target. A probe run of mine left a temp project in `$TMPDIR` outside the repo. No project files were changed.
 
 ## For the next attempt
 None.

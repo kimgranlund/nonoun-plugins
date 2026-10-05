@@ -80,7 +80,7 @@ Depends on: step 1, plus T-0175 (`write_router`, `write_roadmap`, and the router
   - If T-0177 already has an equivalent private function, `mailbox_dir` is the public name that calls it. Do not create a second rule.
 - Add `write_entries(mailbox: Path) -> list[Path]`. It writes these files and returns the paths it wrote:
   - `AGENTS.md`: `skills/ticket/templates/messages/messages.md` with `{{plugin_root}}` replaced by the absolute plugin folder (`Path(__file__).resolve().parents[1]`).
-  - `CLAUDE.md`: exactly `@AGENTS.md\n`. Claude loads a nested `AGENTS.md` only through a `CLAUDE.md` import (docs/validation/nested-entry-file-loading.md, Results for Claude Code).
+  - `CLAUDE.md`: exactly `@AGENTS.md\n`. Claude loads a nested `AGENTS.md` only through a `CLAUDE.md` import (docs/reports/nested-entry-file-loading.md, Results for Claude Code).
   - For each of `new`, `read`, `done`: `<stage>/AGENTS.md` (the stage template's bytes) and `<stage>/CLAUDE.md` (`@AGENTS.md\n`).
   - It writes only a file that is missing or whose bytes differ.
 - `send` calls `write_entries(mailbox_dir(root))` only after validation passes, in the same run that writes the message. A refused send still writes nothing, so T-0177's "nothing written" selftests hold.
@@ -144,7 +144,7 @@ level: L4
 ### Do
 Depends on: steps 1 to 3, plus T-0178 merged.
 
-Add `docs/validation/messages-live-run/probe.sh` (bash), a reproducible probe the verifier can rerun. Usage: `probe.sh <claude|codex|claude-messenger|codex-messenger> [--defect]` and `probe.sh --selftest`.
+Add `docs/reports/messages-live-run/probe.sh` (bash), a reproducible probe the verifier can rerun. Usage: `probe.sh <claude|codex|claude-messenger|codex-messenger> [--defect]` and `probe.sh --selftest`.
 
 **Setup**
 - A throwaway git repo under `mktemp -d`, with `.gitignore` holding `.sdlc/messages/`.
@@ -180,9 +180,9 @@ Add `docs/validation/messages-live-run/probe.sh` (bash), a reproducible probe th
 
 **Runs to record**
 - Run all four arms and the Claude `--defect` arm.
-- Save the `claude-messenger` output as `docs/validation/messages-live-run/claude-messenger.txt`, and the other arms' output as `.txt` files beside it (`.log` is git-ignored).
+- Save the `claude-messenger` output as `docs/reports/messages-live-run/claude-messenger.txt`, and the other arms' output as `.txt` files beside it (`.log` is git-ignored).
 
-**Write `docs/validation/messages-live-run.md`**
+**Write `docs/reports/messages-live-run.md`**
 - A `Recorded: <YYYY-MM-DD>` line.
 - Environment: CLI versions, models, whether any skill was available per arm.
 - Method.
@@ -198,16 +198,16 @@ Link the doc from the validation list in `docs/README.md` as `(validation/messag
 
 If a run shows the entry files are wrong, fix the step 1 templates here and keep `messages.py selftest` green. No em dashes. Live model calls are this step's runtime evidence; a Codex arm that cannot run is recorded as unverified, not faked.
 ### Acceptance criteria
-- `bash docs/validation/messages-live-run/probe.sh --selftest`
-- `bash docs/validation/messages-live-run/probe.sh claude`
-- `out=$(bash docs/validation/messages-live-run/probe.sh claude --defect); rc=$?; test "$rc" -eq 1 && printf "%s\n" "$out" | grep -q "result=fail"`
-- `bash docs/validation/messages-live-run/probe.sh codex; rc=$?; test "$rc" -eq 0 -o "$rc" -eq 3`
-- `f=docs/validation/messages-live-run/claude-messenger.txt && awk "/state=new/{n=NR} /state=read/{r=NR} /state=done/{d=NR} END{exit !(n && r && d && n < r && r < d)}" "$f"`
-- `f=docs/validation/messages-live-run.md && test -f "$f" && grep -qE "^Recorded: 20[0-9]{2}-[0-9]{2}-[0-9]{2}" "$f"`
-- `f=docs/validation/messages-live-run.md && for h in "## Claude Code, path only" "## Codex, path only" "## Messenger on Claude Code" "## Messenger on Codex" "## Negative control" "## Limits"; do grep -qxF -- "$h" "$f" || exit 1; done`
+- `bash docs/reports/messages-live-run/probe.sh --selftest`
+- `bash docs/reports/messages-live-run/probe.sh claude`
+- `out=$(bash docs/reports/messages-live-run/probe.sh claude --defect); rc=$?; test "$rc" -eq 1 && printf "%s\n" "$out" | grep -q "result=fail"`
+- `bash docs/reports/messages-live-run/probe.sh codex; rc=$?; test "$rc" -eq 0 -o "$rc" -eq 3`
+- `f=docs/reports/messages-live-run/claude-messenger.txt && awk "/state=new/{n=NR} /state=read/{r=NR} /state=done/{d=NR} END{exit !(n && r && d && n < r && r < d)}" "$f"`
+- `f=docs/reports/messages-live-run.md && test -f "$f" && grep -qE "^Recorded: 20[0-9]{2}-[0-9]{2}-[0-9]{2}" "$f"`
+- `f=docs/reports/messages-live-run.md && for h in "## Claude Code, path only" "## Codex, path only" "## Messenger on Claude Code" "## Messenger on Codex" "## Negative control" "## Limits"; do grep -qxF -- "$h" "$f" || exit 1; done`
 - `grep -qF "(validation/messages-live-run.md)" docs/README.md`
-- `test -f docs/validation/messages-live-run/probe.sh && ! grep -rqF "—" docs/validation/messages-live-run docs/validation/messages-live-run.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|docs/README\.md|docs/validation/messages-live-run\.md|docs/validation/messages-live-run/.*" | { ! grep -q .; }`
+- `test -f docs/reports/messages-live-run/probe.sh && ! grep -rqF "—" docs/reports/messages-live-run docs/reports/messages-live-run.md`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*" | { ! grep -q .; }`
 
 ## Step 5: Gates green
 level: L2
@@ -226,7 +226,7 @@ Depends on: steps 1 to 4. Run every project gate and fix any red that steps 1 to
 - T-0175, T-0177, and T-0178 are merged before step 1 builds. Verified by `ls .sdlc/0175-ticket-root-router .sdlc/0177-mailbox-core .sdlc/0178-messenger-agent`: each holds only a running planner, so `messages.py`, the router, and the messenger TOML do not exist yet. That is why most criteria are red today for "file missing" rather than for this ticket's behavior.
 - T-0175 chose `tickets.py roadmap` (not `onboard.py`) as the writer of `.sdlc/AGENTS.md`, with `write_router(root, ts)` called from `write_roadmap`, `<plugin-root>` placeholders, and the mailbox line quoted in step 2. Verified by reading the T-0175 planner draft in `.sdlc/0175-ticket-root-router/planner-L3-2.log` (step 3 text). If the merged code differs, step 2's router edit targets the merged mailbox line instead.
 - A templates subfolder does not become a ticket type. Verified by tickets.py:742-744 (`d.glob('*.md')`, non-recursive), and by the guard going red when a `messages.md` sits directly in the templates folder.
-- Claude loads a nested `AGENTS.md` only through a `CLAUDE.md` import, and Codex loads only root-to-cwd `AGENTS.md`. Verified by `docs/validation/nested-entry-file-loading.md` (both result tables). That is why `CLAUDE.md` files are written beside the entry files, and why the Codex path-only arm depends on the message's `protocol:` field.
+- Claude loads a nested `AGENTS.md` only through a `CLAUDE.md` import, and Codex loads only root-to-cwd `AGENTS.md`. Verified by `docs/reports/nested-entry-file-loading.md` (both result tables). That is why `CLAUDE.md` files are written beside the entry files, and why the Codex path-only arm depends on the message's `protocol:` field.
 - `messages.py count --receiver <r>` prints the bare count, and `send` takes the body as a trailing argument. Taken from the T-0177 handoff's command list (`.sdlc/0177-mailbox-core/handoff.md`, Intent); not yet observable in code.
 - `claude -p --disable-slash-commands` disables all skills, and `claude --plugin-dir` and `codex exec -C/--sandbox` exist. Verified by `claude --help` and `codex exec --help` on this host (Claude Code 2.1.286, codex-cli 0.159.2).
 - A git worktree cannot be created in a criterion: the `block-stray-worktree.sh` hook blocks `git worktree add` outside `$SDLC_TMP_WORKTREES` for roles. Verified when my probe was denied. So the worktree-sharing case lives in the `messages.py` selftest, not in a criterion.

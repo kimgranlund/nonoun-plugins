@@ -9,12 +9,12 @@ Depends on: none.
 
 Targets:
 - `docs/ticket-stages/watcher-design.md`, rewritten to v0.2.
-- `docs/validation/idle-host-watcher-design-review.md`, one appended `## Applied` section.
+- `docs/reports/idle-host-watcher-design-review.md`, one appended `## Applied` section.
 
 No code in this step. Level L3, not L2: this rewrite is the spec every later step builds on, and all 17 findings must land consistently.
 
 Evidence for every decision below:
-- the review's findings table (`docs/validation/idle-host-watcher-design-review.md`) and its raw result (`.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`);
+- the review's findings table (`docs/reports/idle-host-watcher-design-review.md`) and its raw result (`.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`);
 - the user decision on finding 4, recorded in the ticket Context and in the design's "Resolved decision": `ephemeral` is the default, `attached` and `notify` are opt-in;
 - `claude --help` (2.1.286) and `codex exec --help` / `codex exec resume --help` (codex-cli 0.159.2), read at plan time;
 - the code cited inline.
@@ -37,7 +37,7 @@ Evidence for every decision below:
      - Codex attached: `codex exec resume --json -c sandbox_mode="workspace-write"`, the same three `sandbox_workspace_write.*` overrides, `-c approval_policy="never" [-m <m>] [-c model_reasoning_effort="<e>"] <session> -`, prompt on stdin. `codex exec resume` rejects `--sandbox` and `--color`.
      - `--session-id` is never used: it is create-only (finding 12).
      - The wake's cwd is the receiver's `cwd`.
-     - Child environment: a copy of the watcher's environment without `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`, `CLAUDE_PID`, `CLAUDE_EFFORT`, `CLAUDE_JOB_DIR`, `CODEX_SANDBOX`, `CODEX_SANDBOX_NETWORK_DISABLED`, `CODEX_THREAD_ID`, and every `CLAUDE_CODE_*` and `SDLC_*` name. Then it adds `SDLC_ROLE=supervisor` and `SDLC_HEADLESS=1`. The scrub list follows the T-0181 probe, `docs/validation/messages-wait-live-run.md` Method.
+     - Child environment: a copy of the watcher's environment without `CLAUDECODE`, `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`, `CLAUDE_PID`, `CLAUDE_EFFORT`, `CLAUDE_JOB_DIR`, `CODEX_SANDBOX`, `CODEX_SANDBOX_NETWORK_DISABLED`, `CODEX_THREAD_ID`, and every `CLAUDE_CODE_*` and `SDLC_*` name. Then it adds `SDLC_ROLE=supervisor` and `SDLC_HEADLESS=1`. The scrub list follows the T-0181 probe, `docs/reports/messages-wait-live-run.md` Method.
    - D3, authority (finding 2).
      - Claude: `dontAsk` denies every call that is not allowed; the review probe showed a `permission_denials` entry and no hang. `--tools` removes every other built-in tool. `--strict-mcp-config` with no `--mcp-config` loads no MCP server. `--plugin-dir` plus `SDLC_ROLE` arms `hooks/block-publish.sh`, which exits 0 unless `SDLC_ROLE` is set (line 22).
      - Codex: workspace-write with no network and no writable /tmp or `$TMPDIR`, approval never. Codex MCP and connector tools stay unblocked, and the doc states this as a limit.
@@ -187,9 +187,9 @@ Evidence for every decision below:
 - `f=docs/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
 - `f=docs/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
 - `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/ticket-stages/watcher-design.md`
-- `sed -n '/^## Applied$/,$p' docs/validation/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
-- (guard) `for f in docs/ticket-stages/watcher-design.md docs/validation/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `sed -n '/^## Applied$/,$p' docs/reports/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
+- (guard) `for f in docs/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Step 2: supervisor.py core: init, config, lock, STOP, poll, wake commands, and their selftest
 level: L4
@@ -316,7 +316,7 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`, `pyt
 - `f=plugins/sdlc-lite/scripts/supervisor.py; test -f "$f" && ! grep -qE "shell=True|os\.system\(|os\.popen\(" "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
 - `h=$(python3 plugins/sdlc-lite/scripts/supervisor.py --help) && printf '%s\n' "$h" | grep -qF "{init,watch,status,reset,selftest}" && w=$(python3 plugins/sdlc-lite/scripts/supervisor.py watch --help) && for o in --run --once --now --driver; do printf '%s\n' "$w" | grep -qF -- "$o" || exit 1; done && python3 plugins/sdlc-lite/scripts/supervisor.py reset --help | grep -qF -- "--receiver"`
 - `grep -qF 'python3 "$root/scripts/supervisor.py" selftest' plugins/sdlc-lite/scripts/check.sh && grep -qF "messages.py, and supervisor.py selftests" plugins/sdlc-lite/scripts/check.sh`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
 
 ## Step 3: supervisor.py limits: cooldown, caps, depth, active host, progress-based success, failures, and their selftest
 level: L4
@@ -396,7 +396,7 @@ Target: `plugins/sdlc-lite/scripts/supervisor.py` only.
 Focused check: `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`.
 ### Acceptance criteria
 - `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); out=$(python3 plugins/sdlc-lite/scripts/supervisor.py selftest) && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor && test "$(printf '%s\n' "$out" | tail -n 1)" = "supervisor selftest: PASS" && for l in "cooldown: a second wake waits, status cooling" "control: a copy without the cooldown wakes twice" "cap: the hourly cap holds" "control: a copy without the hourly cap wakes past it" "cap: the daily cap holds" "control: a copy without the daily cap wakes past it" "cap: limits set to 0 refuse every wake" "control: a copy that reads a 0 cap as no cap wakes" "depth: a reply chain of three records needs a human" "control: a copy without the depth rule wakes" "depth: a chain of two still wakes" "control: a copy that counts one hop too many refuses a chain of two" "depth: a wake-sent chain without re counts" "control: a copy without wake lineage wakes a re-less chain" "active: a running recorded wake skips the wake" "control: a copy that ignores a running wake starts another" "active: a recent transcript skips the wake" "control: a copy that ignores the transcript wakes an active host" "active: a stale pid record is dropped" "control: a copy that trusts a stale pid never wakes" "failure: backoff, then failed after three" "control: a copy without the backoff wakes at the plain cooldown" "control: a copy without the failure stop keeps waking" "failure: exit 0 without progress counts" "control: a copy that trusts the exit code counts no failure" "failure: a timed-out wake is killed and counts" "control: a copy without the timeout kill outlives the deadline" "failure: a stranded read message is retried" "control: a copy that drops stranded ids does not retry" "stop: a wake ended by STOP or TERM is stopped, not a failure" "control: a copy that counts stopped as a failure" "reset: clears failed" "control: a copy whose reset keeps failed fails the reset check" "restart: counters survive a restart" "control: a copy that starts from empty state forgets the counters"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
 
 ## Step 4: Live-run probe with an offline selftest
 level: L3
@@ -404,11 +404,11 @@ level: L3
 Depends on: steps 2 and 3.
 
 Targets (new):
-- `docs/validation/supervisor-live-run/probe.py`;
-- `docs/validation/supervisor-live-run/AGENTS.md`, which says what the folder holds (the probe, plus the `<arm>.txt` evidence files that step 5 writes) and how to rerun each arm and the selftest;
-- `docs/validation/supervisor-live-run/CLAUDE.md`, holding `@AGENTS.md`. Every folder this ticket adds is self-describing.
+- `docs/reports/supervisor-live-run/probe.py`;
+- `docs/reports/supervisor-live-run/AGENTS.md`, which says what the folder holds (the probe, plus the `<arm>.txt` evidence files that step 5 writes) and how to rerun each arm and the selftest;
+- `docs/reports/supervisor-live-run/CLAUDE.md`, holding `@AGENTS.md`. Every folder this ticket adds is self-describing.
 
-The model is the T-0181 probe (`docs/validation/messages-wait-live-run.md`).
+The model is the T-0181 probe (`docs/reports/messages-wait-live-run.md`).
 
 1. Arms. `probe.py <arm>` with the arm one of: `dry-run`, `claude`, `codex`, `claude-attached`, `codex-attached`, `claude-push`, `codex-push`. Also `probe.py selftest`.
 2. Setup for every arm. The probe never calls `run.sh` and never touches this repository or its remote.
@@ -472,12 +472,12 @@ The model is the T-0181 probe (`docs/validation/messages-wait-live-run.md`).
     - It makes no model call.
 11. The `BODY` criterion below matches `git[[:space:]]push` rather than the plain phrase, because `block-publish.sh` scans raw command text for that phrase when a verifier wraps a span in `bash -c` (hook lines 10 to 13 and 24).
 ### Acceptance criteria
-- `out=$(python3 docs/validation/supervisor-live-run/probe.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
-- `d=docs/validation/supervisor-live-run; test -s "$d/AGENTS.md" && test "$(cat "$d/CLAUDE.md")" = "@AGENTS.md" && grep -qF "probe.py" "$d/AGENTS.md"`
-- `f=docs/validation/supervisor-live-run/probe.py; test -f "$f" && ! grep -qF "run.sh" "$f" && grep -qF "probe-remote" "$f" && grep -qF -- "--driver" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f"`
-- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 docs/validation/supervisor-live-run/probe.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
-- `for f in docs/validation/supervisor-live-run/probe.py docs/validation/supervisor-live-run/AGENTS.md docs/validation/supervisor-live-run/CLAUDE.md; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`
+- `out=$(python3 docs/reports/supervisor-live-run/probe.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "probe selftest: PASS" && for l in "pass: wake arm" "pass: push arm denied" "pass: dry-run arm" "pass: dry-run sends the wake body" "fail: stamps out of order" "fail: two wakes" "fail: remote moved" "fail: no reply" "fail: dry-run woke" "fail: dry-run body differs" "unverified: no push attempt" "unverified: host not on PATH"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done`
+- `d=docs/reports/supervisor-live-run; test -s "$d/AGENTS.md" && test "$(cat "$d/CLAUDE.md")" = "@AGENTS.md" && grep -qF "probe.py" "$d/AGENTS.md"`
+- `f=docs/reports/supervisor-live-run/probe.py; test -f "$f" && ! grep -qF "run.sh" "$f" && grep -qF "probe-remote" "$f" && grep -qF -- "--driver" "$f" && grep -qE '^BODY = ".*git[[:space:]]push probe-remote HEAD:refs/heads/wake-probe"$' "$f"`
+- `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 docs/reports/supervisor-live-run/probe.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
+- `for f in docs/reports/supervisor-live-run/probe.py docs/reports/supervisor-live-run/AGENTS.md docs/reports/supervisor-live-run/CLAUDE.md; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`
 
 ## Step 5: Live runs on Claude Code and Codex, recorded
 level: L3
@@ -485,16 +485,16 @@ level: L3
 Depends on: steps 1 to 4.
 
 Targets:
-- `docs/validation/supervisor-live-run/<arm>.txt`, one per arm;
-- `docs/validation/supervisor-live-run.md`;
+- `docs/reports/supervisor-live-run/<arm>.txt`, one per arm;
+- `docs/reports/supervisor-live-run.md`;
 - one line in `docs/README.md`.
 
-1. Run `python3 docs/validation/supervisor-live-run/probe.py selftest`. If it fails, stop with Status blocked.
+1. Run `python3 docs/reports/supervisor-live-run/probe.py selftest`. If it fails, stop with Status blocked.
 2. Record:
    - `claude --version`, `codex --version`, and `codex login status`;
    - `git rev-parse --short HEAD`;
    - `git status --porcelain -- plugins/ docs/`. Steps 1 to 4 are uncommitted, because builders never commit, and the record says so.
-3. Run each arm once as its own foreground Bash call, with the Bash timeout at 1800000, in this order: `dry-run`, `claude`, `claude-attached`, `claude-push`, `codex`, `codex-attached`, `codex-push`. The command is `set -o pipefail; python3 docs/validation/supervisor-live-run/probe.py <arm> | tee docs/validation/supervisor-live-run/<arm>.txt`.
+3. Run each arm once as its own foreground Bash call, with the Bash timeout at 1800000, in this order: `dry-run`, `claude`, `claude-attached`, `claude-push`, `codex`, `codex-attached`, `codex-push`. The command is `set -o pipefail; python3 docs/reports/supervisor-live-run/probe.py <arm> | tee docs/reports/supervisor-live-run/<arm>.txt`.
    - Never edit an evidence file by hand and never use a fixture.
    - Never run `supervisor.py watch --run` from this repository.
    - Never push to this repository's remote.
@@ -505,7 +505,7 @@ Targets:
      - still write the record (item 5);
      - end with Status blocked, Notes starting `live proof failed: <arm>: <last line>`;
      - do not rerun the arm and do not change `supervisor.py`. A fix is a replan.
-5. Write `docs/validation/supervisor-live-run.md`, modelled on `docs/validation/messages-wait-live-run.md`:
+5. Write `docs/reports/supervisor-live-run.md`, modelled on `docs/reports/messages-wait-live-run.md`:
    - `# Supervisor live run`, a blank line, `Recorded: <YYYY-MM-DD>`, and an intro paragraph.
    - `## Environment`: versions, login, models from the hosts' own records, plugin commit and uncommitted state, macOS, temp location.
    - `## Method`: the exact probe and host commands, the message body and prompts verbatim, the limits used, and the oracle.
@@ -517,18 +517,18 @@ Targets:
 
    `- [Supervisor live run](validation/supervisor-live-run.md): dated live run for T-0183 in which supervisor.py woke an idle Claude Code host and an idle Codex host on new mail, in ephemeral and attached mode, with a dry-run control and a push-denial probe; Claude Code <result>, Codex <result>.`
 ### Acceptance criteria
-- `for a in dry-run claude claude-attached claude-push; do test "$(tail -n 1 docs/validation/supervisor-live-run/$a.txt)" = "result=pass" || exit 1; done`
-- `for a in codex codex-attached codex-push; do tail -n 1 docs/validation/supervisor-live-run/$a.txt | grep -qE "^result=(pass|unverified reason=host cannot run: .+)$" || exit 1; done`
-- `for a in dry-run claude codex claude-attached codex-attached claude-push codex-push; do head -n 1 docs/validation/supervisor-live-run/$a.txt | grep -qxF "arm=$a" || exit 1; done`
-- `for a in claude codex claude-attached codex-attached; do f=docs/validation/supervisor-live-run/$a.txt; test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then python3 -c 'import re,sys; L=open(sys.argv[1]).read().splitlines(); v=dict(x.split("=",1) for x in [l for l in L if l.startswith("send_time=")][0].split(" ")[:3]); T=re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z"); s=[v["send_time"],v["read_time"],v["ack_time"]]; assert all(T.fullmatch(x) for x in s), "stamps"; assert sorted(s)==s, "order"; assert "wakes=1" in L, "wakes"; assert "reply=yes" in L, "reply"; assert "message_state=done" in L, "state"; assert "remote_commits_added=0" in L, "remote"; assert "push_attempt=denied" in L or "push_attempt=absent" in L, "push"' "$f" || exit 1; fi; done`
-- `for a in claude-push codex-push; do f=docs/validation/supervisor-live-run/$a.txt; test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then grep -qxF "push_attempt=denied" "$f" || exit 1; grep -qxF "remote_commits_added=0" "$f" || exit 1; fi; done`
-- `f=docs/validation/supervisor-live-run/dry-run.txt; grep -qxF "wakes=0" "$f" && grep -qxF "message_state=new" "$f"`
-- `for f in docs/validation/supervisor-live-run/*.txt; do test -f "$f" || exit 1; if grep -q "^remote=" "$f"; then grep "^remote=" "$f" | grep -qE "^remote=/(private/)?(var/folders|tmp)/" || exit 1; fi; done`
-- `f=docs/validation/supervisor-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Claude Code" "## Codex" "## Negative controls" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
-- `python3 -c 'import re; t=open("docs/validation/supervisor-live-run.md").read(); ev=lambda a: open("docs/validation/supervisor-live-run/"+a+".txt").read().splitlines()[-1].split(" ")[0].split("=",1)[1]; bad=[a for a in ("dry-run","claude","codex","claude-attached","codex-attached","claude-push","codex-push") if re.findall(r"^Result "+re.escape(a)+r": (\w+)$", t, re.M)!=[ev(a)]]; assert not bad, bad'`
+- `for a in dry-run claude claude-attached claude-push; do test "$(tail -n 1 docs/reports/supervisor-live-run/$a.txt)" = "result=pass" || exit 1; done`
+- `for a in codex codex-attached codex-push; do tail -n 1 docs/reports/supervisor-live-run/$a.txt | grep -qE "^result=(pass|unverified reason=host cannot run: .+)$" || exit 1; done`
+- `for a in dry-run claude codex claude-attached codex-attached claude-push codex-push; do head -n 1 docs/reports/supervisor-live-run/$a.txt | grep -qxF "arm=$a" || exit 1; done`
+- `for a in claude codex claude-attached codex-attached; do f=docs/reports/supervisor-live-run/$a.txt; test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then python3 -c 'import re,sys; L=open(sys.argv[1]).read().splitlines(); v=dict(x.split("=",1) for x in [l for l in L if l.startswith("send_time=")][0].split(" ")[:3]); T=re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z"); s=[v["send_time"],v["read_time"],v["ack_time"]]; assert all(T.fullmatch(x) for x in s), "stamps"; assert sorted(s)==s, "order"; assert "wakes=1" in L, "wakes"; assert "reply=yes" in L, "reply"; assert "message_state=done" in L, "state"; assert "remote_commits_added=0" in L, "remote"; assert "push_attempt=denied" in L or "push_attempt=absent" in L, "push"' "$f" || exit 1; fi; done`
+- `for a in claude-push codex-push; do f=docs/reports/supervisor-live-run/$a.txt; test -f "$f" || exit 1; if test "$(tail -n 1 "$f")" = "result=pass"; then grep -qxF "push_attempt=denied" "$f" || exit 1; grep -qxF "remote_commits_added=0" "$f" || exit 1; fi; done`
+- `f=docs/reports/supervisor-live-run/dry-run.txt; grep -qxF "wakes=0" "$f" && grep -qxF "message_state=new" "$f"`
+- `for f in docs/reports/supervisor-live-run/*.txt; do test -f "$f" || exit 1; if grep -q "^remote=" "$f"; then grep "^remote=" "$f" | grep -qE "^remote=/(private/)?(var/folders|tmp)/" || exit 1; fi; done`
+- `f=docs/reports/supervisor-live-run.md; grep -qE "^Recorded: 2026-[0-9]{2}-[0-9]{2}$" "$f" && for h in "## Environment" "## Method" "## Claude Code" "## Codex" "## Negative controls" "## Limits"; do grep -qxF "$h" "$f" || exit 1; done`
+- `python3 -c 'import re; t=open("docs/reports/supervisor-live-run.md").read(); ev=lambda a: open("docs/reports/supervisor-live-run/"+a+".txt").read().splitlines()[-1].split(" ")[0].split("=",1)[1]; bad=[a for a in ("dry-run","claude","codex","claude-attached","codex-attached","claude-push","codex-push") if re.findall(r"^Result "+re.escape(a)+r": (\w+)$", t, re.M)!=[ev(a)]]; assert not bad, bad'`
 - `grep -F "validation/supervisor-live-run.md" docs/README.md | grep -qF "T-0183"`
-- `for f in docs/validation/supervisor-live-run.md docs/validation/supervisor-live-run/*.txt docs/validation/supervisor-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run\.md|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- `for f in docs/reports/supervisor-live-run.md docs/reports/supervisor-live-run/*.txt docs/reports/supervisor-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Step 6: Router line, implementation reference, layout list, and status lines
 level: L3
@@ -574,7 +574,7 @@ Depends on: steps 1 to 5. The docs describe the behavior as the live run left it
 - `grep -qF "supervisor.py selftest" plugins/sdlc-lite/AGENTS.md`
 - `grep -F "ticket-stages/watcher-design.md" docs/README.md | grep -qF "built as" && grep -F "(watcher-design.md)" docs/ticket-stages/README.md | grep -qF "built as" && grep -qF "Built in T-0183" docs/ticket-stages/watcher-design.md`
 - (guard) `for f in plugins/sdlc-lite/scripts/tickets.py docs/maintenance/sdlc-internals.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/AGENTS.md docs/README.md docs/ticket-stages/README.md docs/ticket-stages/watcher-design.md .sdlc/AGENTS.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run\.md|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Step 7: Gates green
 level: L2
@@ -588,7 +588,7 @@ Depends on: steps 1 to 6.
    - `python3 scripts/check-packaging.py`
    - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
    - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
-   - `python3 docs/validation/supervisor-live-run/probe.py selftest`
+   - `python3 docs/reports/supervisor-live-run/probe.py selftest`
    - `git diff --check`
 2. Why the guards split `check.sh` into groups: `steps.py split --only` runs each guard span under a 300 s limit and refuses a timeout (`--guard-timeout`, steps.py docstring). One span running all of `check.sh` took 307 s in the plan review. Its parts summed to 273 s at plan time under load average 18 to 28, before the supervisor selftest was added. Each guard below runs one group of `check.sh` lines, in `check.sh` order. Plan-time times per group: 1 s, 43 s, 57 s, 34 s, 45 s, 60 s, 33 s, and 0 s.
    - The supervisor selftest guard runs only when `check.sh` lists that selftest. It is green before step 2 and binding from step 2 on: if `check.sh` lists it and the file is missing or red, the guard is red.
@@ -607,14 +607,14 @@ Depends on: steps 1 to 6.
 - (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh && bash plugins/sdlc-lite/scripts/hook-live-probe.sh --selftest`
 - (guard) `claude plugin validate plugins/sdlc-lite`
 - (guard) `if grep -qF 'supervisor.py" selftest' plugins/sdlc-lite/scripts/check.sh; then python3 plugins/sdlc-lite/scripts/supervisor.py selftest; fi`
-- (guard) `if test -e docs/validation/supervisor-live-run.md; then python3 docs/validation/supervisor-live-run/probe.py selftest; fi`
+- (guard) `if test -e docs/reports/supervisor-live-run.md; then python3 docs/reports/supervisor-live-run/probe.py selftest; fi`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - (guard) `git diff --check`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
 - (guard) `for f in $(git ls-files --others --exclude-standard -- . ":(exclude).sdlc"); do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
 - (guard) `f=plugins/sdlc-lite/scripts/supervisor.py; if test -e "$f"; then ! grep -qE "shell=True|os\.system\(|os\.popen\(" "$f"; fi`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run\.md|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Assumptions
 - This replan comes before any build: the task dir holds no `step-*/` folder. Steps 1, 5, and 6 keep their numbers and text. Steps 2, 3, 4, and 7 change for the five `plan review:` findings in the handoff: verified by `find .sdlc/0183-supervisor-script -type f` and `.sdlc/0183-supervisor-script/plan-reviewer-L1.md`.
@@ -640,7 +640,7 @@ Depends on: steps 1 to 6.
 - `claude -p` has `--permission-mode dontAsk`, `--strict-mcp-config`, `--tools`, `--allowedTools`, `--max-budget-usd`, `--no-session-persistence`, `--resume`, `--effort`, and `--plugin-dir`: verified by `claude --help` (2.1.286, unchanged) and `run.sh:276-285`.
 - `block-publish.sh` bites only when `SDLC_ROLE` is non-empty, so a wake must set it: verified by `plugins/sdlc-lite/hooks/block-publish.sh:22`.
 - The valid-file rule shared with `count` is `messages.load_or_none` on top of `messages.check`. `wait_ready` applies it and skips an invalid file instead of exiting: verified by messages.py:977-988 (`cmd_count`) and 991-1003 (`wait_ready`). "Never reads a body" therefore means the watcher never uses, stores, prints, or passes a body or topic. Validation reads whole files, because the handoff requires reusing `count`'s rule. The prompt case and its topic control pin this.
-- Stripping `CLAUDE_CODE_*` and `SDLC_*` keeps CLI auth working: verified by `docs/validation/messages-wait-live-run.md` (Method: the same scrub, and both hosts authenticated).
+- Stripping `CLAUDE_CODE_*` and `SDLC_*` keeps CLI auth working: verified by `docs/reports/messages-wait-live-run.md` (Method: the same scrub, and both hosts authenticated).
 - T-0187 reads `status.json` per-receiver `state`, `last_wake`, `wakes_hour`, and `wakes_day`: verified by `.sdlc/0187-board-overview/handoff.md` Context. D16 keeps those names.
 - The host `python3` is 3.9.6 (`python3 --version`), and `ps -o lstart= -p <pid>` works here (first plan).
 - The live run's required arms are ephemeral and attached on both hosts. `attached` sessions are made by a direct headless call recorded in the evidence. No `init-session` command is built, because the user's 2026-10-01 decision replaced the owned session it served ("Resolved decision" in the design). The handoff allows "created by the watcher's first wake or by an explicit init-session command".

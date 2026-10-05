@@ -26,4 +26,4 @@ No harness: references; Codex adapter line; one authoritative place per fact. No
 
 ## Closed
 
-2026-10-05: built on branch plan-skills; verified by one L3 Fable verifier; see docs/validation/plan-skills-live-run.md
+2026-10-05: built on branch plan-skills; verified by one L3 Fable verifier; see docs/reports/plan-skills-live-run.md

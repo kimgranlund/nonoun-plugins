@@ -7,7 +7,7 @@ Independent review of docs/lean-sdlc/cost-control.md v0.1 (branch cost-control, 
 - Done when: your result lists a verdict (ready, ready after fixes, not ready), numbered findings each with severity (blocker, major, minor) and evidence as path:line, and per-item (A to D) whether it is plannable at the level the addendum states.
 
 ## Context
-The author is a different model family from you (Sonnet). The addendum was written from this week's run records; the user decided to keep all model and effort defaults unchanged. Relevant records: docs/validation/lean-sdlc-design-review-2.md.
+The author is a different model family from you (Sonnet). The addendum was written from this week's run records; the user decided to keep all model and effort defaults unchanged. Relevant records: docs/reports/lean-sdlc-design-review-2.md.
 
 ## Constraints
 Read-only. No em dashes. Concrete evidence only; do not soften.

@@ -130,7 +130,7 @@ Host settings:
 
 Negative control: the same project with the root managed block deleted from `AGENTS.md` must not report the line.
 
-Record the results in a new dated report, `docs/validation/onboard-live-run.md`. Include the date, host versions, models, the exact commands and prompt, and one trial per arm. Add this table with one row per arm, writing "reported" or "not reported" for what was actually observed:
+Record the results in a new dated report, `docs/reports/onboard-live-run.md`. Include the date, host versions, models, the exact commands and prompt, and one trial per arm. Add this table with one row per arm, writing "reported" or "not reported" for what was actually observed:
 
 | Host | Arm | Result |
 | --- | --- | --- |
@@ -141,8 +141,8 @@ Record the results in a new dated report, `docs/validation/onboard-live-run.md`.
 
 If an arm does not match the expected result, record what was observed truthfully and report Status blocked. Link the report from the Evidence list in `docs/repo-onboarding/README.md`, and from `docs/README.md` next to the other onboarding validation entries.
 ### Acceptance criteria
-- `f=docs/validation/onboard-live-run.md; for r in "| Claude Code | managed block present | reported |" "| Claude Code | managed block deleted | not reported |" "| Codex | managed block present | reported |" "| Codex | managed block deleted | not reported |"; do grep -qF "$r" "$f" || exit 1; done`
-- `grep -qF "gpt-6-astra" docs/validation/onboard-live-run.md`
+- `f=docs/reports/onboard-live-run.md; for r in "| Claude Code | managed block present | reported |" "| Claude Code | managed block deleted | not reported |" "| Codex | managed block present | reported |" "| Codex | managed block deleted | not reported |"; do grep -qF "$r" "$f" || exit 1; done`
+- `grep -qF "gpt-6-astra" docs/reports/onboard-live-run.md`
 - `grep -qF "../validation/onboard-live-run.md" docs/repo-onboarding/README.md`
 - `grep -qF "validation/onboard-live-run.md" docs/README.md`
 

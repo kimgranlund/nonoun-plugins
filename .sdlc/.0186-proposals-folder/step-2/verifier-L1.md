@@ -7,7 +7,7 @@ pass
 - The grep loop over 28 strings in `.sdlc/proposals/AGENTS.md`: pass. Evidence: I ran the loop and no string was reported missing.
 - The awk check for a `proposals/AGENTS.md` line after the managed end marker in `.sdlc/AGENTS.md`: pass. Evidence: exit 0. The Proposals line sits after the Evals line, below the generated block.
 - `## \`scripts/proposals.py\`` header, `.sdlc/proposals/` in handoff-format, `scripts/proposals.py` in plugin AGENTS.md: pass. Evidence: exit 0. I read the diffs and the three added lines match the handoff text.
-- The grep loop over 15 strings in `docs/validation/proposals-live-run.md`: pass. Evidence: nothing was reported missing.
+- The grep loop over 15 strings in `docs/reports/proposals-live-run.md`: pass. Evidence: nothing was reported missing.
 - Date regex `2026-NN-NN` in the live-run doc: pass. Evidence: exit 0.
 - `.sdlc/proposals/` holds only `AGENTS.md` and `CLAUDE.md`: pass. Evidence: exit 0.
 - (guard) `tickets.py check`: pass. Evidence: `ok: 208 tickets, roadmap current`.

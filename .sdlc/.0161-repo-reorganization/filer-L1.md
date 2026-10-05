@@ -14,7 +14,7 @@ The recommendation is written into `.sdlc/0161-repo-reorganization/handoff.md`. 
 The changes are all under `.sdlc/0161-repo-reorganization/`. The prototype moves and rewrites nothing, and it creates no ticket.
 
 ### Changes
-- `spike/layout.md`: trial layout with the homes `maintenance/`, `reference/` and `reports/`. It freezes `docs/validation/`, `docs/readiness-recovery-validation.md`, `plugins/sdlc-lite/bench/results/` and `plugins/sdlc-lite/adapters/codex/agents/`. `generative-constructs` and `repo-onboarding` stay topics.
+- `spike/layout.md`: trial layout with the homes `maintenance/`, `reference/` and `reports/`. It freezes `docs/reports/`, `docs/reports/readiness-recovery-validation.md`, `plugins/sdlc-lite/bench/results/` and `plugins/sdlc-lite/adapters/codex/agents/`. `generative-constructs` and `repo-onboarding` stay topics.
 - `spike/reorg_plan.py`: throwaway read-only planner. It uses the standard library and imports the T-0160 parser from `onboard.py`.
 - `spike/plan.json` and `spike/plan.txt`: output of the run on base `9d6ca64`.
 - `spike/review.md`: a person's ok/wrong verdict on each move.
@@ -33,7 +33,7 @@ The changes are all under `.sdlc/0161-repo-reorganization/`. The prototype moves
 ### How each was verified
 - Step 1 (prototype, builder L3, verifier L2: pass):
   - A fresh `--json` run matches `plan.json` with no diff.
-  - The four required paths are frozen; a negative control that freezes only `docs/validation/` fails the assertion.
+  - The four required paths are frozen; a negative control that freezes only `docs/reports/` fails the assertion.
   - Both generative-constructs links are in `baseline_broken`.
   - No frozen path appears in the moves or rewrites.
   - The script only reads: the only `open` is `'rb'`.

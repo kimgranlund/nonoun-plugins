@@ -19,7 +19,7 @@ A Claude Code conductor can start the `solo` agent for a size S or M ticket, and
 - Done when: a conductor session starts solo for a size-M ticket in a throwaway project on Claude Code (and a note on the Codex path), the routing texts agree, check.py guards the agreement with a negative control, and an independent verifier passed.
 
 ## Context
-Found by the 0.20.4 release fact-check, recorded as limits in docs/validation/release-0.20.4.md: solo shipped with no live run and no start path, and conductor.md and the maintainer guidance still route size S to /fix. T-0216 (solo live proof) cannot pass honestly through a conductor until this lands. Build one handwritten step, no planner. Philosophy: "Done is better than perfect." Budget about $15.
+Found by the 0.20.4 release fact-check, recorded as limits in docs/reports/release-0.20.4.md: solo shipped with no live run and no start path, and conductor.md and the maintainer guidance still route size S to /fix. T-0216 (solo live proof) cannot pass honestly through a conductor until this lands. Build one handwritten step, no planner. Philosophy: "Done is better than perfect." Budget about $15.
 
 ## Constraints
 One authoritative location per fact. No em dashes.

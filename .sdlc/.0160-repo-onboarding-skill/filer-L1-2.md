@@ -23,7 +23,7 @@ A repository adopting SDLC Lite can run one script to get entry files that route
 - `plugins/progressive-context/skills/progressive-context/references/sdlc-lite.md`: one sentence that names the `onboard` skill, with no path link.
 - `docs/repo-onboarding/design.md` and `docs/repo-onboarding/README.md`: the status now says the design is implemented and the reorganization is not.
 - `docs/AGENTS.md` template (design and script): links an existing `docs/README.md` first under `## Contents`, and adds no line when it does not exist. `TEMPLATE_VERSION` stays 1.
-- `docs/validation/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
+- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
 
 ### How each was verified
 - Selftest: `onboard.py selftest` exits 0 and prints eight gates, each `positive ok, negative ok`: layout-parsing, import-detection, create, preserve, idempotence, row-order, malformed-markers, and check-mode.

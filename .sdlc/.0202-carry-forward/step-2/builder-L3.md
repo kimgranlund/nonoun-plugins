@@ -3,19 +3,19 @@
 blocked
 
 ## Changes
-- `docs/validation/carry-forward-live-run/probe.sh`: added `--evidence-only <project dir> <out dir>` (exits 2 with a usage line on any other argument count). Tool lines now keep the full input with no `.[0:200]` cut. `search=` lines are read from the log with the handoff's reference jq. `tree_searches` and `symbol_searches` now count `search=` lines. The `<arm>-tools-full.txt` dump is gone, the header comment shows both invocations, and the script ends with `exit 0`.
-- `docs/validation/carry-forward-live-run/scout.txt`, `with.txt`, `without.txt`: rewritten by run 2.
-- `docs/validation/carry-forward-live-run.md`: rewritten for run 2's actual outcome. Its two Environment blocks cover run 2 and run 1. Method covers both metrics, `--evidence-only`, and criterion 4's fixture. Evidence has the subsections `### Run 1: 200-character metric` (with the recount output) and `### Run 2: full-input metric`, and Limits is updated.
+- `docs/reports/carry-forward-live-run/probe.sh`: added `--evidence-only <project dir> <out dir>` (exits 2 with a usage line on any other argument count). Tool lines now keep the full input with no `.[0:200]` cut. `search=` lines are read from the log with the handoff's reference jq. `tree_searches` and `symbol_searches` now count `search=` lines. The `<arm>-tools-full.txt` dump is gone, the header comment shows both invocations, and the script ends with `exit 0`.
+- `docs/reports/carry-forward-live-run/scout.txt`, `with.txt`, `without.txt`: rewritten by run 2.
+- `docs/reports/carry-forward-live-run.md`: rewritten for run 2's actual outcome. Its two Environment blocks cover run 2 and run 1. Method covers both metrics, `--evidence-only`, and criterion 4's fixture. Evidence has the subsections `### Run 1: 200-character metric` (with the recount output) and `### Run 2: full-input metric`, and Limits is updated.
 - `docs/README.md`: the carry forward line was replaced in place with run 2's actual outcome (not the criterion 9 text).
 
 ## Checks
-- `bash -n docs/validation/carry-forward-live-run/probe.sh`: OK.
+- `bash -n docs/reports/carry-forward-live-run/probe.sh`: OK.
 - `probe.sh --evidence-only x` and `probe.sh --bogus`: both print the usage line and exit 2.
 - Criterion 4, run before any model call: PASS.
 - Recount of run 1: `probe.sh --evidence-only .../carry-forward-probe.7n2YHsjnKS "$(mktemp -d)"` exits 0.
   - tree_searches and symbol_searches come out as scout 4 and 1, with 2 and 0, without 2 and 1.
   - Compared with the committed run 1 files, only the without arm's two counts changed (0 and 0 became 2 and 1).
-- Run 2: `bash docs/validation/carry-forward-live-run/probe.sh`, in the foreground, 10:38 to 10:39 PDT. All three arms exited 0. Project dir is `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/carry-forward-probe.3grTyXYGVo`.
+- Run 2: `bash docs/reports/carry-forward-live-run/probe.sh`, in the foreground, 10:38 to 10:39 PDT. All three arms exited 0. Project dir is `/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/carry-forward-probe.3grTyXYGVo`.
 - Criteria, each run verbatim from a scratch script in `$TMPDIR` (since removed):
   - 1: PASS
   - 2: FAIL (`read_scout_result=no`)

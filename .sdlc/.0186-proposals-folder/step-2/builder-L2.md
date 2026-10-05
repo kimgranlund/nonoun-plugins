@@ -9,7 +9,7 @@ done
 - `docs/maintenance/sdlc-internals.md`: new ``## `scripts/proposals.py` `` entry placed after the evals.py entry.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: added the `.sdlc/proposals/` layout line after the `.sdlc/evals/` line.
 - `plugins/sdlc-lite/AGENTS.md`: added the Proposals verification line after the evals line.
-- `docs/validation/proposals-live-run.md`: new live-run record with Environment, Commands, Evidence (all 8 arms, the list, and every proposal's text) and Limits.
+- `docs/reports/proposals-live-run.md`: new live-run record with Environment, Commands, Evidence (all 8 arms, the list, and every proposal's text) and Limits.
 
 ## Checks
 - `proposals.py selftest`: PASS, all 27 cases including the 7 negative controls.

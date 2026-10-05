@@ -15,5 +15,5 @@ None. Every gate was already green, so there was nothing to fix and I did not ne
 - `git diff --check`: exit 0
 
 ## Notes
-- The working tree already had uncommitted changes this step did not make: `docs/README.md`, four `plugin.json` manifests, and an untracked `docs/validation/release-0.19.0.md`. They look like concurrent release work, so I left them alone.
+- The working tree already had uncommitted changes this step did not make: `docs/README.md`, four `plugin.json` manifests, and an untracked `docs/reports/release-0.19.0.md`. They look like concurrent release work, so I left them alone.
 - `check.sh` skipped shellcheck because shellcheck is not installed here.

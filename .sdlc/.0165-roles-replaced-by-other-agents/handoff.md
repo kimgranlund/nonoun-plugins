@@ -47,4 +47,4 @@ The failing check lands before or with the fix. Generated Codex agents are regen
 
 ## Closed
 
-2026-09-29: fixed in session: conductor rule plus check.py guard (3988fd9), root routing line shipped in onboard (T-0160); live probe did not reproduce the bypass in either version, see docs/validation/role-routing-probe.md; enforcement is T-0166
+2026-09-29: fixed in session: conductor rule plus check.py guard (3988fd9), root routing line shipped in onboard (T-0160); live probe did not reproduce the bypass in either version, see docs/reports/role-routing-probe.md; enforcement is T-0166

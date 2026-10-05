@@ -13,7 +13,7 @@ None. Every gate was already green on the tree that steps 1 to 6 left, so nothin
 - `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`: exit 0, no output.
 - `! git diff "$SDLC_BASE_SHA" -- plugins docs | grep '^+' | grep -q <em dash>`: exit 0.
 - `for f in $(git ls-files --others --exclude-standard -- plugins docs); do ! grep -q <em dash> "$f" || exit 1; done`: exit 0.
-- Extra check: a trailing-whitespace grep over the two untracked files (`plugins/sdlc-lite/scripts/results.py`, `docs/validation/role-result-schema-live-run.md`). It found nothing. I ran it because `git diff --check` does not cover untracked files.
+- Extra check: a trailing-whitespace grep over the two untracked files (`plugins/sdlc-lite/scripts/results.py`, `docs/reports/role-result-schema-live-run.md`). It found nothing. I ran it because `git diff --check` does not cover untracked files.
 
 ## Notes
 - shellcheck is not installed on this host, so `check.sh` skipped its shellcheck stage. The shell scripts this ticket changed (`run.sh`, `run-selftest.sh`, `check.sh`) have not been linted by shellcheck.

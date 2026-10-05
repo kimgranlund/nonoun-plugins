@@ -21,10 +21,10 @@ fail
 - (guard) changed-file allowlist: pass. Evidence: the guard command exited 0.
 
 ## Out of scope changes
-None. `git status` shows only `docs/README.md` (modified) and `docs/validation/ticket-root-router-live-run.md` (new), plus untracked step artifacts under `.sdlc/`. `git diff --name-only 604d7cc -- plugins` is empty. `git diff --check` is clean and the doc has no em dash (`grep -nP '\x{2014}'` found nothing). The role log is in the mktemp folder, not in the repo.
+None. `git status` shows only `docs/README.md` (modified) and `docs/reports/ticket-root-router-live-run.md` (new), plus untracked step artifacts under `.sdlc/`. `git diff --name-only 604d7cc -- plugins` is empty. `git diff --check` is clean and the doc has no em dash (`grep -nP '\x{2014}'` found nothing). The role log is in the mktemp folder, not in the repo.
 
 ## For the next attempt
-Only `docs/validation/ticket-root-router-live-run.md` needs a change. No re-run is needed.
+Only `docs/reports/ticket-root-router-live-run.md` needs a change. No re-run is needed.
 - Change the Fresh role `Result:` line from `Result: verified` to `Result: unverified: <reasons>`, giving two reasons that match the doc's own observations.
   - The role did not read `.sdlc/tickets/AGENTS.md` through the handoff's `router:` line. It received it through Claude Code nested-memory loading.
   - The `, claimed by` router state before the close was not captured live. It was reproduced only by replay.

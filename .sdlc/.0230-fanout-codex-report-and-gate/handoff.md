@@ -19,7 +19,7 @@ The fanout report names the backend's real model for a solo lane (gpt-6.1-sol on
 - Done when: both are tested with negative controls and an independent verifier passed with an overall pass. Size S, solo lane, P2.
 
 ## Context
-Found by the overnight Codex fanout live run (docs/validation/codex-fanout-live-run.md): the report said 'tier S: sonnet low' on a Codex run (display defect) and the gate ran 0 tests because the fixture's tests/ was not a package (vacuous gate passed). Goes in 0.20.9 or later; do not start before 0.20.8 ships. Philosophy: "Done is better than perfect."
+Found by the overnight Codex fanout live run (docs/reports/codex-fanout-live-run.md): the report said 'tier S: sonnet low' on a Codex run (display defect) and the gate ran 0 tests because the fixture's tests/ was not a package (vacuous gate passed). Goes in 0.20.9 or later; do not start before 0.20.8 ships. Philosophy: "Done is better than perfect."
 
 ## Constraints
 No em dashes.

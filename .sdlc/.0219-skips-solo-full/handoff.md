@@ -19,7 +19,7 @@ The skips guard in tickets.py covers a done ticket whose last lane is solo or fu
 - Done when: the change is merged into local main with checks green and an independent verifier passed.
 
 ## Context
-Closes a known limit listed in docs/validation/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
+Closes a known limit listed in docs/reports/release-0.20.5.md. Built under the burn-down rules (one handwritten step, one L2 verifier).
 
 ## Evidence
 Independent L2 verifier: pass (`.sdlc/verify-0219/step-1/verifier-L2.md`). It confirmed the mutation (guard tuple reverted) makes the selftest fail and that `tickets.py --root .sdlc check` still passes on the repo's real tickets. Limit: a solo ticket's independent batched verifier is not required by this guard.

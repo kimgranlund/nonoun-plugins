@@ -22,7 +22,7 @@ done
 - Guard: `git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'` is empty: PASS
 - Guard: no untracked files outside `.sdlc/0161-repo-reorganization`: PASS
 - Extra: a fresh table-mode run matches `plan.txt` byte for byte. `py_compile` passes on python3 3.9.6.
-- Extra: `git grep` for the four file names confirms the cite counts: 12 inline links and 6 backticked paths in non-frozen files, and 25 mentions in frozen files (23 under `.sdlc/`, 2 in `docs/validation`).
+- Extra: `git grep` for the four file names confirms the cite counts: 12 inline links and 6 backticked paths in non-frozen files, and 25 mentions in frozen files (23 under `.sdlc/`, 2 in `docs/reports`).
 - Probe 1: a throwaway layout (`probe-layout.md`, deleted afterwards) triggered `multi_home` and `into_frozen`.
 - Probe 2: an in-process run with a simulated tracked `docs/reports/Claude-Handoff.md` triggered a case-folded `name_collision`.
 

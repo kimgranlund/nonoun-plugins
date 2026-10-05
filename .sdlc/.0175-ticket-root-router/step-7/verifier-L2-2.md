@@ -13,7 +13,7 @@ pass
 - (guard) changed-file allowlist: pass. Evidence: the guard command exited 0 with `SDLC_BASE_SHA=604d7cc...`. `git diff --name-only $SDLC_BASE_SHA -- plugins` is empty.
 
 ## Out of scope changes
-None. `git status` shows only `docs/README.md` (modified), `docs/validation/ticket-root-router-live-run.md` (new), and step artifacts under `.sdlc/`. `git diff --check` is clean. `grep -nP '\x{2014}'` finds no em dash in the doc or in `docs/README.md`. The role log is in the mktemp folder, outside the repository.
+None. `git status` shows only `docs/README.md` (modified), `docs/reports/ticket-root-router-live-run.md` (new), and step artifacts under `.sdlc/`. `git diff --check` is clean. `grep -nP '\x{2014}'` finds no em dash in the doc or in `docs/README.md`. The role log is in the mktemp folder, outside the repository.
 
 The builder also changed the "Router read: yes" bullet to "not through the `router:` line". I read the doc, and that change removes a contradiction with the new `Result:` line. It is within the single-file fix, so I accepted it.
 

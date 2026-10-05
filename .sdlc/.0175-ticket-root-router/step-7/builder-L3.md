@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- `docs/validation/ticket-root-router-live-run.md`: new dated live-run record with these sections: Environment, Scripted run, Fresh role, Limits.
+- `docs/reports/ticket-root-router-live-run.md`: new dated live-run record with these sections: Environment, Scripted run, Fresh role, Limits.
 - `docs/README.md`: added the "Ticket root and router live run" list item right after the "Plan reviewer live run" item.
 
 ## Checks

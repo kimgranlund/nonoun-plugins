@@ -3,19 +3,19 @@
 done
 
 ## Changes
-- `docs/validation/solo-live-run.md`: the opening paragraph now says the first two arms were direct launches, and a new paragraph points to the conductor start section. Appended the "Claude Code through a conductor" section with Method, What the conductor did (lane output, the solo start command, a table of models, effort, verifier, hidden check, cost and wall time), Defects, and Limits.
-- `docs/validation/solo-live-run/conductor/` (new): `session-trace.txt`, `prompt.txt`, `skips.md`, `runs.jsonl`, `verifier-L3.md`, `verifier-L3.attempt.json`, `footprint.txt`, `solo.diff`, `hidden-check.txt`.
+- `docs/reports/solo-live-run.md`: the opening paragraph now says the first two arms were direct launches, and a new paragraph points to the conductor start section. Appended the "Claude Code through a conductor" section with Method, What the conductor did (lane output, the solo start command, a table of models, effort, verifier, hidden check, cost and wall time), Defects, and Limits.
+- `docs/reports/solo-live-run/conductor/` (new): `session-trace.txt`, `prompt.txt`, `skips.md`, `runs.jsonl`, `verifier-L3.md`, `verifier-L3.attempt.json`, `footprint.txt`, `solo.diff`, `hidden-check.txt`.
 
 ## Checks
 - Fixture rebuilt: `cp -R` of step 1's pristine project into a fresh `mktemp -d` dir (`/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-cond.1ItLD1KNXX`), with `hidden_check.py` outside `project/`. On the fresh project the hidden check printed `hidden_check: 2/20 passed`. A lane probe on a separate copy printed `solo`.
 - Conductor run: `env-wrapper.sh env SDLC_HEADLESS=1 BASH_DEFAULT_TIMEOUT_MS=3600000 BASH_MAX_TIMEOUT_MS=3600000 claude -p --plugin-dir <plugin> --agent sdlc-lite:conductor --model sonnet --effort high --dangerously-skip-permissions --output-format stream-json --verbose "Deliver the size-M ticket at .sdlc/slug-max-length/handoff.md." < /dev/null`: exit 0, 21:42:30Z to 21:51:43Z, result `success`, verifier verdict pass.
 - `python3 hidden_check.py project` on the final tree: `hidden_check: 20/20 passed`, exit 0.
 - `footprint.py <task dir> --session <transcript>` on the conductor and solo transcripts: ran, output saved in `footprint.txt`.
-- `grep -q "Claude Code through a conductor" docs/validation/solo-live-run.md`: pass
-- `test -d docs/validation/solo-live-run/conductor`: pass
-- `grep -q "sdlc-lite:conductor" docs/validation/solo-live-run.md`: pass
-- `grep -q -- "--agent sdlc-lite:solo" docs/validation/solo-live-run.md`: pass
-- `grep -qi "hidden" docs/validation/solo-live-run.md`: pass
+- `grep -q "Claude Code through a conductor" docs/reports/solo-live-run.md`: pass
+- `test -d docs/reports/solo-live-run/conductor`: pass
+- `grep -q "sdlc-lite:conductor" docs/reports/solo-live-run.md`: pass
+- `grep -q -- "--agent sdlc-lite:solo" docs/reports/solo-live-run.md`: pass
+- `grep -qi "hidden" docs/reports/solo-live-run.md`: pass
 - `git diff --check main -- plugins docs`: pass, rerun after the last edit. The new untracked evidence files were also grepped for trailing whitespace and blank last lines: none found.
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`: `ok: 217 tickets, roadmap current`, exit 0
 - `bash plugins/sdlc-lite/scripts/check.sh`: exit 0. All selftests PASS, `ok: plugin validate`, `skip: shellcheck not installed`.

@@ -13,7 +13,7 @@ None from this step. I checked each part of the tree:
 - **Generated agents:** all 19 `adapters/codex/agents/*.toml` diffs are a single -/+ pair each. A `git diff -U0` count shows 18 lines with the old phrase replaced by 18 lines with the new phrase. The conductor toml's pair is the same line change; my count only reported it differently. This is the regeneration the Do asked for.
 - **Other dirty files:** these were already modified before the builder ran. The builder ran 18:07:00–18:07:17 local (attempt.json, 01:07 UTC). By mtime:
   - The plugin.json version bumps date from 17:48.
-  - `docs/README.md` and the untracked `docs/validation/release-0.19.0.md` date from 17:49.
+  - `docs/README.md` and the untracked `docs/reports/release-0.19.0.md` date from 17:49.
   - `.sdlc/notes.md` dates from 18:06.
   - The deleted `.sdlc/0162-*` files and the `.sdlc` bookkeeping are also not from this build.
 - **This step's files:** `instructions.md` and `codex-role-execution.md` are the only project files with mtime 18:07:10, which falls inside the build window.

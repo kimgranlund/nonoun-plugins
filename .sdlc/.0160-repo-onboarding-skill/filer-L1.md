@@ -22,7 +22,7 @@ A repository adopting SDLC Lite can now run one script to get entry files that r
 - `plugins/sdlc-lite/scripts/check.sh`: runs the `onboard.py` selftest.
 - `plugins/progressive-context/skills/progressive-context/references/sdlc-lite.md`: one sentence that names the `onboard` skill, with no path link.
 - `docs/repo-onboarding/design.md` and `docs/repo-onboarding/README.md`: the status lines now say the design is implemented and the reorganization is not.
-- `docs/validation/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
+- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
 
 ### How each was verified
 All five steps have a verifier verdict of pass.

@@ -1,5 +1,5 @@
 ## Task goal
-Independently re-check docs/validation/release-0.20.3.md on branch release-0.20.3 after its first fact-check. The first pass is at .sdlc/verify-release-0.20.3/step-1/verifier-L3.md (read its WRONG, UNSUPPORTED and MISSING lists); the record was then edited in the last commit (`git show HEAD`). Read-only: edit nothing outside your own result file.
+Independently re-check docs/reports/release-0.20.3.md on branch release-0.20.3 after its first fact-check. The first pass is at .sdlc/verify-release-0.20.3/step-1/verifier-L3.md (read its WRONG, UNSUPPORTED and MISSING lists); the record was then edited in the last commit (`git show HEAD`). Read-only: edit nothing outside your own result file.
 
 ## Step 1: Re-check the corrected record
 level: L3

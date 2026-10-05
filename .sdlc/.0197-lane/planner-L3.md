@@ -253,7 +253,7 @@ Focused checks: the gate commands below.
 - `tickets.parse` reads `size` from a ticket handoff, trailing comment included (`L` for this ticket), and `tickets.ENUMS['size']` is `('S', 'M', 'L', 'XL')`: verified by importing tickets.py.
 - `steps.py -h` prints only the docstring's first line: verified at steps.py:2836. That is why step 2 checks `steps.__doc__` directly.
 - No generated Codex agent embeds the chain or sdlc-lite skill text: verified by grepping `adapters/codex/agents/*.toml`.
-- Nothing reads `skips.md` today: verified by `git grep -n "skips\.md"` outside `docs/lean-sdlc` and `docs/validation`.
+- Nothing reads `skips.md` today: verified by `git grep -n "skips\.md"` outside `docs/lean-sdlc` and `docs/reports`.
 - Every gate is green at HEAD and can go red:
   - check.sh rc 0 in 253s; check-packaging, `codex_roles generate --check`, and `tickets.py check` rc 0.
   - Red controls, each observed: check.py on a copy with `## Lean chain` removed, `codex_roles --check` on a copy with planner.md edited (generated agent drift), `tickets.py check` on a bad fixture root, check-packaging on a copy with one catalog entry, the steps selftest on a copy with one reason removed, and the scope guards with `SDLC_BASE_SHA=HEAD~6`.

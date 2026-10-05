@@ -13,7 +13,7 @@ Depends on: steps 1 to 6.
    - `python3 scripts/check-packaging.py`
    - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
    - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
-   - `python3 docs/validation/supervisor-live-run/probe.py selftest`
+   - `python3 docs/reports/supervisor-live-run/probe.py selftest`
    - `git diff --check`
 2. Why the guards split `check.sh` into groups: `steps.py split --only` runs each guard span under a 300 s limit and refuses a timeout (`--guard-timeout`, steps.py docstring). One span running all of `check.sh` took 307 s in the plan review. Its parts summed to 273 s at plan time under load average 18 to 28, before the supervisor selftest was added. Each guard below runs one group of `check.sh` lines, in `check.sh` order. Plan-time times per group: 1 s, 43 s, 57 s, 34 s, 45 s, 60 s, 33 s, and 0 s.
    - The supervisor selftest guard runs only when `check.sh` lists that selftest. It is green before step 2 and binding from step 2 on: if `check.sh` lists it and the file is missing or red, the guard is red.
@@ -32,11 +32,11 @@ Depends on: steps 1 to 6.
 - (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh && bash plugins/sdlc-lite/scripts/hook-live-probe.sh --selftest`
 - (guard) `claude plugin validate plugins/sdlc-lite`
 - (guard) `if grep -qF 'supervisor.py" selftest' plugins/sdlc-lite/scripts/check.sh; then python3 plugins/sdlc-lite/scripts/supervisor.py selftest; fi`
-- (guard) `if test -e docs/validation/supervisor-live-run.md; then python3 docs/validation/supervisor-live-run/probe.py selftest; fi`
+- (guard) `if test -e docs/reports/supervisor-live-run.md; then python3 docs/reports/supervisor-live-run/probe.py selftest; fi`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - (guard) `git diff --check`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
 - (guard) `for f in $(git ls-files --others --exclude-standard -- . ":(exclude).sdlc"); do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
 - (guard) `f=plugins/sdlc-lite/scripts/supervisor.py; if test -e "$f"; then ! grep -qE "shell=True|os\.system\(|os\.popen\(" "$f"; fi`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/validation/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/validation/supervisor-live-run\.md|docs/validation/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
