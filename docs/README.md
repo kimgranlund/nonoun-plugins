@@ -20,6 +20,7 @@
 - [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
+- [Onboard lane text](validation/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
 - [Repository onboarding design review](validation/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](validation/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.
 - [Repository onboarding design review, third round](validation/repo-onboarding-design-review-3.md): dated independent review of the onboarding design at v0.5.
