@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:ec5485ef82ac -->
+<!-- sdlc-lite:managed:start v1 sha256:fef67b8e2a58 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 13
+- proposed: 12
   - T-0230 fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests (0230-fanout-codex-report-and-gate)
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0241 Schema format: ## Kinds and ## Legacy in the docs/layout.md parser (0241-docs-schema-parser)
@@ -17,7 +17,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
-  - T-0247 Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ (0247-pc-gap-analysis)
   - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
   - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
@@ -34,7 +33,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 204
+- done: 205
 - dropped: 19
 
 ## Procedures

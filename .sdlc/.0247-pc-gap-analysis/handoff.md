@@ -2,7 +2,7 @@
 id: T-0247
 title: "Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ User request: analyze the progressive context system using /generative-systems a
 
 ## Constraints
 No em dashes. Do not invent standards; mark inferences as inferences.
+
+## Closed
+
+2026-10-05: Gap analysis written, architect review recorded, blockers applied, T-0252 to T-0256 filed
