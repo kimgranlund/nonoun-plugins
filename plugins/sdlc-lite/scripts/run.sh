@@ -60,6 +60,8 @@
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
 # saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
 # 4 ticket budget at 80 percent or more with no ack.
+# Goal precheck: before a planner or plan-reviewer run on a task handoff (not a step dir), run.sh runs
+# steps.py precheck on the handoff dir; no ## Goal section prints the reason and exits 2 before any attempt record.
 # Spec gate: before a plan-reviewer run (dry runs too, never in the run_lifecycle.py child, either
 # backend), run.sh runs scripts/specgate.py check on the handoff dir. A refusal prints specgate's
 # lines and "run.sh: specgate.py check refused the plan in <dir>; replan, or set SDLC_SPECGATE=off"
@@ -260,6 +262,17 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 ]]; then
   done
   if (( msg_total > 0 )); then
     echo "run.sh: $msg_total new message(s) for $role; read with messages.py" >&2
+  fi
+fi
+
+# Goal precheck (T-0261): a planner or plan-reviewer on a task handoff (<task dir>/handoff.md, not a step
+# dir) needs the ## Goal section steps.py split reads; refuse before any attempt record, dry runs too.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == plan-reviewer ) \
+      && "$(basename "$handoff")" == handoff.md && "$(basename "$dir")" != step-* ]]; then
+  if ! goal_out=$(python3 "$plugin_root/scripts/steps.py" precheck "$dir" 2>&1); then
+    printf '%s\n' "$goal_out" >&2
+    echo "run.sh: steps.py precheck refused the task handoff in $dir; add a ## Goal section" >&2
+    exit 2
   fi
 fi
 

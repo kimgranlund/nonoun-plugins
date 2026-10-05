@@ -2,7 +2,7 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
-                 lint <planner.md | task dir> | review <task dir> | lane <task dir> | next <step dir> |
+                 lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | next <step dir> |
                  resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
@@ -51,6 +51,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             that counts after it, fails results.structure_error (role planner, plan-reviewer), it
             prints "invalid result: <path>: <reason>" before the review check and the goal read.
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
+  precheck  fail fast (exit 1, naming ## Goal) when <task dir>/handoff.md has no ## Goal section, as split
+            would; run.sh calls it before a planner or plan-reviewer on a task handoff. Writes nothing.
   lint      pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
             each <placeholder> replaced first, and that none holds an unquoted || operator (a
@@ -341,7 +343,7 @@ def find_plan(target):
     raise Fail(f'steps: no such file or directory: {target}')
 
 
-def read_goal(task_dir):
+def read_goal(task_dir, allow_empty=False):
     handoff = task_dir / 'handoff.md'
     if not handoff.is_file():
         raise Fail(f'steps: no task handoff at {handoff}; the goal comes from its ## Goal section')
@@ -364,7 +366,7 @@ def read_goal(task_dir):
         body.pop(0)
     while body and not body[-1].strip():
         body.pop()
-    if not body:
+    if not body and not allow_empty:
         raise Fail(f'steps: the ## Goal section of {handoff} is empty')
     return '\n'.join(body)
 
@@ -1036,6 +1038,17 @@ def split(target, only=None, guard_timeout=None):
         path.write_text(f'## Task goal\n{goal}\n\n{steps[n]}\n', encoding='utf-8')
         written.append(path)
     return written
+
+
+def cmd_precheck(task_dir):
+    """Fail fast, before any planner or plan-reviewer runs, when split could not read the task goal."""
+    try:
+        read_goal(pathlib.Path(task_dir), allow_empty=True)
+    except Fail as e:
+        print(f'{e}; steps.py split reads the goal from the ## Goal section of the task handoff '
+              f'(a "## Task goal" heading belongs to step handoffs only)', file=sys.stderr)
+        return 1
+    return 0
 
 
 def cmd_split(target, only, guard_timeout=None):
@@ -2223,6 +2236,14 @@ def selftest():
         want1 = f'## Task goal\n{GOAL}\n\n{STEP1}\n'
         want2 = f'## Task goal\n{GOAL}\n\n{STEP2}\n'
 
+        # (precheck) T-0261: a task handoff with no ## Goal (a ## Task goal heading) is refused before any
+        # planner runs; one with ## Goal passes
+        d = task(plan=None, handoff='## Task goal\nx\n')
+        refused('(precheck) a handoff with only ## Task goal is refused naming ## Goal', ['precheck', str(d)], d,
+                '## Goal')
+        d = task(plan=None, handoff=HANDOFF)
+        rc, out, err = run_main(['precheck', str(d)])
+        check('(precheck) a handoff with ## Goal passes silently', rc == 0 and out == '' and err == '')
         # (a) normal plan followed by ## Risks
         d = task()
         rc, out, _ = run_main(['split', str(d / 'planner-L2.md')])
@@ -3655,6 +3676,8 @@ def main(argv):
                         'a timeout is a red guard')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
+    p = sub.add_parser('precheck', help='fail fast when a task dir handoff has no ## Goal section; writes nothing')
+    p.add_argument('task', help='a task dir holding handoff.md')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p = sub.add_parser('resume', help='print the step dir a resumed /chain continues from, and its next action')
@@ -3686,6 +3709,8 @@ def main(argv):
         return cmd_widen(a.step_dir, a.paths + extra, a.timeout)
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'precheck':
+        return cmd_precheck(a.task)
     if a.cmd == 'next':
         return cmd_next(a.step_dir)
     if a.cmd == 'resume':

@@ -828,6 +828,30 @@ res $'## Goal\nx'
   "$here/run.sh" planner L1 .sdlc/t/handoff.md >/dev/null 2>&1) || fail "spec gate: planner run with SDLC_SPECGATE=off failed"
 ! tail -n 1 "$sgd/runs.jsonl" | jq -e 'has("specgate")' >/dev/null 2>&1 \
   || fail "spec gate: a planner run line carries a specgate key: $(tail -n 1 "$sgd/runs.jsonl")"
+# Goal precheck (T-0261): a planner or plan-reviewer on a task handoff with no "## Goal" section exits 2
+# before any attempt record, naming steps.py and the heading; with "## Goal" the same run exits 0.
+gpd="$sgrepo/.sdlc/gp"
+mkdir -p "$gpd"
+printf '%s\n' '## Task goal' x >"$gpd/handoff.md"
+gprun() { # gprun <role> <out file>: prints the exit code
+  local rc=0
+  (cd "$sgrepo" && env -u SDLC_SPECGATE -u SDLC_DRY_RUN STUB_RESULT="$tmp/res.json" PATH="$tmp/bin:$PATH" \
+    "$here/run.sh" "$1" L1 .sdlc/gp/handoff.md >"$2" 2>&1) || rc=$?
+  echo "$rc"
+}
+rm -f "$tmp/count"
+for grole in planner plan-reviewer; do
+  rc=$(gprun "$grole" "$tmp/gp1")
+  [[ "$rc" == 2 ]] || fail "goal precheck: $grole on a handoff with no ## Goal exited $rc, want 2: $(cat "$tmp/gp1")"
+  grep -qF "## Goal" "$tmp/gp1" || fail "goal precheck: $grole refusal does not name ## Goal: $(cat "$tmp/gp1")"
+  [[ ! -e "$tmp/count" ]] || fail "goal precheck: $grole on a handoff with no ## Goal called the stub claude"
+  [[ -z "$(find "$gpd" -name '*.attempt.json' -o -name 'runs.jsonl')" ]] \
+    || fail "goal precheck: $grole on a handoff with no ## Goal left a run record"
+done
+printf '%s\n' '## Goal' x >"$gpd/handoff.md"
+res $'## Goal\nx'
+rc=$(gprun planner "$tmp/gp2")
+[[ "$rc" == 0 ]] || fail "goal precheck: planner on a handoff with ## Goal exited $rc, want 0: $(cat "$tmp/gp2")"
 # Stale input: lifecycle records the launch hash; run.sh flags a handoff that changed during the run.
 srepo="$tmp/srepo"
 mkdir -p "$srepo/.sdlc/s" "$tmp/sbin"
