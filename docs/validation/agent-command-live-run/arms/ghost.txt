@@ -1,0 +1,26 @@
+arm: ghost
+tool calls: {}
+outer session models: ['claude-sonnet-5-5']
+outer session cost_usd: 0.133444  turns: 1  duration_ms: 2889
+
+Bash commands (trimmed to 700 chars):
+
+Final result text:
+`ghost` isn't an SDLC Lite agent name, so I didn't launch anything.
+
+The names I accept are:
+- `solo`
+- `scout`
+- `researcher`
+- `architect`
+- `archaeologist`
+
+Other roles have their own commands:
+- `planner`: `/sdlc-lite:plan`
+- `builder`: `/sdlc-lite:build`
+- `verifier`: `/sdlc-lite:verify`
+- `plan-reviewer`: `steps.py review`
+- `filer`: `/sdlc-lite:file`
+- `messenger`: `.sdlc/messages/AGENTS.md`
+
+`conductor` is refused because it's the session you're already in.

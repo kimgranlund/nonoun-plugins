@@ -1,0 +1,7 @@
+arm solo transcript aabb98b3: assistant models {'claude-fable-5-1': 31}, agentSetting sdlc-lite:verifier
+arm solo transcript cc06de8e: assistant models {'claude-sonnet-5-5': 6}, agentSetting None
+arm solo transcript ea25a556: assistant models {'claude-sonnet-5-5': 19}, agentSetting sdlc-lite:solo
+arm scout transcript 196c1e93: assistant models {'claude-sonnet-5-5': 8}, agentSetting None
+arm scout transcript 83c35b90: assistant models {'claude-haiku-4-5-20251001': 16}, agentSetting sdlc-lite:scout
+arm ghost transcript 3a5627da: assistant models {'claude-sonnet-5-5': 1}, agentSetting None
+arm conductor transcript fc1f161d: assistant models {'claude-sonnet-5-5': 1}, agentSetting None
