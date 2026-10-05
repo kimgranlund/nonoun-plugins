@@ -2,6 +2,9 @@
 
 Status: proposed v0.1. Thresholds below are initial experiment decisions, not measured results.
 
+
+> Shipped status: the Progressive Context skill implements a smaller subset of this proposal under different words. This document's terms (construct, revision, instance) map to the skill's capability, contract and assessment as listed in the [vocabulary table](README.md#vocabulary-proposal-and-shipped-skill). The skill specification and the shipped skill record later refinements; reconcile any difference before implementing from this document.
+
 ## Objective
 
 Demonstrate a complete intent → composition → evaluation → publication → independent reuse cycle in a browser JS harness, then test whether the additional structure improves reuse enough to justify its cost.

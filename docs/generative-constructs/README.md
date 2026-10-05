@@ -4,6 +4,8 @@ Status: proposal, version 0.1. Date: 2026-09-26.
 
 This set develops the conversation about ICM, progressive disclosure, reusable constructs, a browser-based JavaScript harness, and A2UI. These are proposed design contracts, not claims that a system has been implemented or validated. “Must” describes a requirement of this proposed design. Decisions remain editable through explicit revisions.
 
+Gap analysis of the shipped plugin against the generative-systems tiers: [Progressive Context gap analysis](progressive-context-gap-analysis.md), with its [review](../validation/progressive-context-gap-analysis-review.md).
+
 ## Read in this order
 
 1. [System brief](01-system-brief.md): purpose, hypothesis, scope, and design principles.
@@ -19,6 +21,21 @@ This set develops the conversation about ICM, progressive disclosure, reusable c
 - [Folder-native Gen UI ontology](../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md): the existing UI element-contract foundation, owned by the sibling UI project.
 
 The initial authoring plugin is now implemented; see [shipped scope and validation](../plugin-compatibility.md). The six numbered documents preserve the initial proposal. The skill specification records subsequent refinements; remaining differences should be reconciled before implementation.
+
+## Vocabulary: proposal and shipped skill
+
+The numbered documents use the proposal's words. The shipped skill ([SKILL.md](../../plugins/progressive-context/skills/progressive-context/SKILL.md), [contracts](../../plugins/progressive-context/skills/progressive-context/references/contracts.md), [evidence](../../plugins/progressive-context/skills/progressive-context/references/evidence.md)) uses fewer, plainer ones. The mapping below is this repository's reading of both texts; where the skill has no counterpart it says so.
+
+| Proposal term (document 2) | Shipped term | Note |
+| --- | --- | --- |
+| Construct | Capability | A subject with a stable ID line in its contract; the skill needs only identity, intent and unknowns to start |
+| Contract | Contract | Same word: public inputs, outputs, dependencies and constraints, plus acceptance criteria, in one small file |
+| Criterion, Evidence, Assessment | Assessment | One linked assessment records each criterion, the check actually run, the observed result and the evidence link |
+| Revision | Implementation revision or content digest | The skill records a Git revision or digest in the assessment; it stores no immutable snapshot |
+| Release | Release point (optional) | An immutable revision plus the applicable assessment, only when reuse is claimed |
+| Qualification for reuse | Qualify reuse | An independent consumer exercise of the public interface; acceptance for one use is not portability |
+| Run | Linked work records | Tickets, plans and verification are linked, not copied into the contract |
+| Instance | None | A runtime use of a revision belongs to the proposed browser harness; the shipped skill has no counterpart |
 
 ## Ownership of definitions
 

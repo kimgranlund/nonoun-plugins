@@ -234,14 +234,24 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0227 | [.0227-orient-entry-files](.0227-orient-entry-files/handoff.md) | Orient a harness: root AGENTS.md work section, tree map, docs entry | chore | S | P2 | none | 🟢 done |
 | T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | 🟢 done |
 | T-0229 | [.0229-solo-budget-gate](.0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | 🟢 done |
-| T-0230 | [0230-fanout-codex-report-and-gate](0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | ⏳ proposed |
+| T-0230 | [.0230-fanout-codex-report-and-gate](.0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | 🟢 done |
 | T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | 🟢 done |
+| T-0232 | [.0232-reorg-inventory](.0232-reorg-inventory/handoff.md) | inventory.py: read-only document inventory and reorganization plan procedure | feature | M | P2 | none | 🟢 done |
+| T-0233 | [0233-reorg-apply](0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L | P2 | T-0232 | ⏳ proposed |
 | T-0240 | [.0240-docs-schema-design](.0240-docs-schema-design/handoff.md) | Design: strict docs/ folder schema and the docs vs .sdlc boundary | feature | M | P1 | none | 🟢 done |
-| T-0241 | [0241-docs-schema-parser](0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds and ## Legacy in the docs/layout.md parser | feature | S | P2 | none | ⏳ proposed |
+| T-0241 | [0241-docs-schema-parser](0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser | feature | S | P2 | none | ⏳ proposed |
 | T-0242 | [0242-docs-check-script](0242-docs-check-script/handoff.md) | docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template | feature | M | P2 | T-0241 | ⏳ proposed |
 | T-0243 | [0243-sdlc-boundary-checks](0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | ⏳ proposed |
-| T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243 | ⏳ proposed |
 | T-0245 | [0245-docs-promotion-helper](0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | ⏳ proposed |
+| T-0246 | [0246-rename-validation-to-reports](0246-rename-validation-to-reports/handoff.md) | Rename docs/validation to docs/reports and rewrite references | chore | M | P2 | none | ⏳ proposed |
+| T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | ⏳ proposed |
+| T-0247 | [.0247-pc-gap-analysis](.0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | M | P2 | none | 🟢 done |
+| T-0248 | [0248-placement-proof](0248-placement-proof/handoff.md) | Placement proof for the context registry | chore | M | P2 | none | ⏳ proposed |
 | T-0249 | [0249-plan-goal](0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | ⏳ proposed |
 | T-0250 | [0250-plan-loop](0250-plan-loop/handoff.md) | plan-loop skill | feature | S | P2 | none | ⏳ proposed |
 | T-0251 | [0251-plan-fanout](0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | ⏳ proposed |
+| T-0252 | [0252-pc-run-context-trace](0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | M | P2 | none | ⏳ proposed |
+| T-0253 | [0253-pc-entry-file-resolver](0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | S | P2 | none | ⏳ proposed |
+| T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |
+| T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | 🟢 done |
+| T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | 🟢 done |

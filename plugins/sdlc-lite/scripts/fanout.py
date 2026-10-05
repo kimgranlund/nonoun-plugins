@@ -5,7 +5,7 @@ An external lane merges a registered branch an outside agent owns, with no workt
 
 Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
-                     [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap]
+                     [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -263,6 +263,8 @@ PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: neve
 SOLO_TIERS = {'S': ('sonnet', 'low', 'L1'), 'M': ('sonnet', 'xhigh', 'L2'), 'L': ('opus', 'xhigh', 'L3')}
 SOLO_VERIFIER = 'L3'  # a different family from every solo builder (Sonnet, Opus): the run.sh verifier L3
 MAX_LANES_DEFAULT, MAX_LANES_HARD, STAGGER_DEFAULT = 4, 16, 20
+# A test gate that ran nothing: unittest "Ran 0 tests", pytest "no tests ran" or exit code 5 (nothing collected).
+VACUOUS_GATE = re.compile(r'\bRan 0 tests\b|\bno tests ran\b|\bcollected 0 items\b', re.M)
 SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket and the '
                'files it names, make the smallest change that meets its done criterion, run every check command it '
                'names and rerun them all after a fix, and report files changed, each check with its outcome, and '
@@ -300,6 +302,24 @@ def cell(text):
 def solo_tier(size):
     """The tier for a ticket size: S, M, or L (an XL or unknown size has no solo tier: None)."""
     return size if size in SOLO_TIERS else None
+
+
+def solo_model_label(tier, backend=None):
+    """`<model> <effort>` the solo agent runs at for a tier on the backend: the Claude tier from SOLO_TIERS, or the
+    Codex model and effort of sdlc-solo-l1..l3 read from adapters/codex/models.json (never a hardcoded guess)."""
+    backend = backend or os.environ.get('SDLC_BACKEND', 'claude')
+    model, effort, level = SOLO_TIERS[tier]
+    if backend == 'codex':
+        try:
+            model, effort = json.loads((PLUGIN / 'adapters' / 'codex' / 'models.json').read_text())['solo'][level]
+        except (OSError, ValueError, KeyError):
+            return f'codex {level} (model unreadable)'
+    return f'{model} {effort}'
+
+
+def gate_vacuous(rc, text, gate=''):
+    """True when a gate's output shows it ran no tests (rc 0 or 5 only: any other failure is plain red)."""
+    return rc in (0, 5) and bool(VACUOUS_GATE.search(text) or (rc == 5 and 'pytest' in gate))
 
 
 def solo_command(handoff_rel, size, backend=None):
@@ -552,7 +572,8 @@ def preflight(a):
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
             'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
             'max_lanes': getattr(a, 'max_lanes', MAX_LANES_DEFAULT), 'stagger': getattr(a, 'stagger', STAGGER_DEFAULT),
-            'allow_overlap': bool(getattr(a, 'allow_overlap', False)), 'kinds': {}}
+            'allow_overlap': bool(getattr(a, 'allow_overlap', False)), 'kinds': {},
+            'allow_empty_gate': bool(getattr(a, 'allow_empty_gate', False))}
 
 
 def lane_decision(ctx, taskdir=None):
@@ -710,7 +731,7 @@ def print_plan(ctx):
             if not lane.external:
                 kind, why = lane_decision(ctx, tickets.ticket_dir(ctx['root']) / t.slug)
                 tier = solo_tier(t.size) if kind == 'solo' else None
-                shown = f'solo, tier {tier}: {SOLO_TIERS[tier][0]} {SOLO_TIERS[tier][1]}' if tier else kind
+                shown = f'solo, tier {tier}: {solo_model_label(tier)}' if tier else kind
                 out.append(f'    lane: {shown} ({why})')
     out += plan_overlap(ctx)
     if ctx['gates']:
@@ -1082,7 +1103,18 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
             rc = run_logged(['bash', '-c', gate], str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
                             ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
-            if rc:
+            logtext = ''
+            if rc in (0, 5):
+                try:
+                    logtext = (ctx['logs'] / f'{stem}{n}.log').read_text(errors='replace')
+                except OSError:
+                    pass
+            if gate_vacuous(rc, logtext, gate):
+                if not ctx.get('allow_empty_gate'):
+                    git_out(integ, 'reset', '-q', '--hard', before)
+                    return f'gate vacuous: {gate} ran no tests (--allow-empty-gate accepts it)', cell
+                say(ctx, lane, t.id, f'gate vacuous accepted (--allow-empty-gate): {gate}')
+            elif rc:
                 git_out(integ, 'reset', '-q', '--hard', before)
                 return f'red: {gate} rc={rc}', cell
         if lane.dir is not None:  # an external lane has no lane dir: its ticket folder came in with the merge
@@ -1168,7 +1200,7 @@ def report(ctx):
         for tid, _outcome, _commit in lane.results:
             if tid in ctx['kinds']:
                 kind, tier = ctx['kinds'][tid]
-                out.append(f'- Lane for `{tid}`: {kind}' + (f' (tier {tier}: {SOLO_TIERS[tier][0]} {SOLO_TIERS[tier][1]})' if tier else ''))
+                out.append(f'- Lane for `{tid}`: {kind}' + (f' (tier {tier}: {solo_model_label(tier)})' if tier else ''))
     out += ['', '| Lane | Ticket | Outcome | Commit |', '|---|---|---|---|']
     for lane in ctx['lanes']:
         for tid, outcome, commit in lane.results:
@@ -2289,6 +2321,37 @@ def selftest():
         expect(f'case 18 control: a 70 percent ticket merges, got rc={pu.returncode} out={pu.stdout[-300:]!r}',
                pu.returncode == 0 and ran_under)
 
+        # case 19: report names the real model per backend; a gate that ran no tests is flagged
+        for be, tier, want in (('claude', 'S', 'sonnet low'), ('claude', 'M', 'sonnet xhigh'), ('claude', 'L', 'opus xhigh'),
+                               ('codex', 'S', 'gpt-6.1-sol low'), ('codex', 'M', 'gpt-6.1-sol high'),
+                               ('codex', 'L', 'gpt-6.1-sol xhigh')):
+            got = solo_model_label(tier, be)
+            expect(f'case 19 model label: {be} tier {tier} is {want!r}, got {got!r}', got == want)
+        expect('case 19 codex label is not the Claude model', 'sonnet' not in solo_model_label('S', 'codex'))
+        for rc, text, gate, want in ((0, 'Ran 0 tests in 0.000s\nOK', 'x', True), (5, '', 'python -m pytest', True),
+                                     (0, '=== no tests ran in 0.01s ===', 'x', True), (0, 'Ran 3 tests in 0.1s\nOK', 'x', False),
+                                     (1, 'Ran 0 tests', 'x', False), (0, '', 'true', False)):
+            got = gate_vacuous(rc, text, gate)
+            expect(f'case 19 gate_vacuous({rc}, {text[:20]!r}, {gate!r}) is {want}, got {got}', got == want)
+        vdrv = ('printf "## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n" > "$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"; '
+                'echo work > "$FANOUT_SLUG.txt"')
+
+        def vac_run(name, gate, *extra):
+            vr = tmp / f'vac-{name}'
+            make_repo(vr, [('a', 'T-0001', 'ready')])
+            return fanout(vr, 'alpha=T-0001', '--integration', f'fanout/v{name}', '--lanes-dir', str(tmp / f'vl-{name}'),
+                          '--driver', vdrv, '--gate', gate, *extra)
+
+        pv = vac_run('empty', 'echo "Ran 0 tests in 0.000s"')
+        expect(f'case 19 vacuous gate: refused, got rc={pv.returncode} out={pv.stdout[-300:]!r}',
+               pv.returncode != 0 and 'gate vacuous' in pv.stdout)
+        pa = vac_run('allow', 'echo "Ran 0 tests in 0.000s"', '--allow-empty-gate')
+        expect(f'case 19 --allow-empty-gate: merges, got rc={pa.returncode} out={pa.stdout[-300:]!r}',
+               pa.returncode == 0 and 'gate vacuous' not in pa.stdout.split('| Lane')[-1])
+        pn = vac_run('real', 'echo "Ran 3 tests in 0.1s"')
+        expect(f'case 19 control: a gate that ran tests merges, got rc={pn.returncode} out={pn.stdout[-300:]!r}',
+               pn.returncode == 0)
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -2304,7 +2367,7 @@ def main(argv):
     if argv[:1] != ['run']:
         print('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
               '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
-              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] | '
+              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] | '
               'fanout.py selftest\n'
               '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
               '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -2339,6 +2402,8 @@ def main(argv):
                     help=f'seconds between lane starts (default {STAGGER_DEFAULT}; 0 for none)')
     ap.add_argument('--allow-overlap', action='store_true',
                     help='run tickets in different lanes whose planned scope overlaps (the merge-time wait serializes them)')
+    ap.add_argument('--allow-empty-gate', action='store_true',
+                    help='merge although a gate ran no tests (unittest "Ran 0 tests", pytest "no tests ran" or rc 5)')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 

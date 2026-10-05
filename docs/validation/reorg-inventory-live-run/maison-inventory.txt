@@ -1,0 +1,44 @@
+inventory of /Users/kimgranlund/Projects/maison/ui-kit-maison at 01951d4e
+documents 230, skipped (generated, vendored, ignored) 10, folders without entry file 2
+flags: broken_links 5, duplicate 42, misplaced 10, orphan 2
+
+orphan (2, first 2):
+  docs/maintenance/gen-ui-audit-2026-10-03/implementation-plan.md
+  examples/fourth-wave-domain/component.md
+
+duplicate (42, first 12):
+  .agents/skills/gen-ui-recipes/SKILL.md  (.agents/skills/gen-ui-system/SKILL.md)
+  .agents/skills/gen-ui-system/SKILL.md  (.agents/skills/gen-ui-recipes/SKILL.md)
+  src/components/agent-reasoning/README.md  (src/components/carousel/README.md, src/components/composer/README.md)
+  src/components/breadcrumb/README.md  (src/components/segmented/README.md)
+  src/components/card/README.md  (src/components/input/README.md, src/layout/grid/README.md)
+  src/components/carousel/README.md  (src/components/agent-reasoning/README.md, src/components/composer/README.md)
+  src/components/code-editor/README.md  (src/components/color-area/README.md, src/components/rich-text/README.md)
+  src/components/color-area/README.md  (src/components/code-editor/README.md, src/components/color-input/README.md)
+  src/components/color-input/README.md  (src/components/color-area/README.md, src/components/integration-card/README.md)
+  src/components/command-dialog/README.md  (src/components/command/README.md, src/components/context-menu/README.md)
+  src/components/command/README.md  (src/components/command-dialog/README.md, src/components/range/README.md)
+  src/components/composer/README.md  (src/components/agent-reasoning/README.md, src/components/carousel/README.md)
+
+misplaced (10, first 10):
+  .agents/skills/gen-ui-component/SKILL.md  (3 of 5 linked documents are in docs/reference/gen-ui-system/specs)
+  .agents/skills/gen-ui-review/SKILL.md  (4 of 6 linked documents are in docs/reference/gen-ui-system/specs)
+  docs/reference/gen-ui-system/specs/gen-ui-recipes.md  (3 of 5 linked documents are in docs/maintenance/gen-ui-audit-2026-10-03)
+  examples/application-patterns/component.md  (2 of 3 linked documents are in examples/advanced-workflows)
+  src/components/button/README.md  (4 of 6 linked documents are in docs/reports)
+  src/components/card/README.md  (4 of 6 linked documents are in docs/reports)
+  src/components/input/README.md  (4 of 6 linked documents are in docs/reports)
+  src/components/select/README.md  (4 of 6 linked documents are in docs/reports)
+  src/components/select/listbox/README.md  (4 of 6 linked documents are in docs/reports)
+  src/components/select/listbox/option/README.md  (4 of 6 linked documents are in docs/reports)
+
+broken_links (5, first 5):
+  docs/reference/gen-ui-system/specs/gen-ui-authoring.md  (../../../../.sdlc/tickets/0059-theme-context-provider/theme-context-contract.md#immediate-bootstrap-selection, ../../../../.sdlc/tickets/0059-theme-context-provider/theme-context-contract.md#integration-and-implementation-entry)
+  docs/reference/gen-ui-system/specs/gen-ui-components.md  (../../../../.sdlc/tickets/0046-gen-ui-source-layout-reconciliation/interfaces-v1.md, ../../../../.sdlc/tickets/0046-gen-ui-source-layout-reconciliation/policy.md)
+  docs/reference/gen-ui-system/specs/gen-ui-ontology.md  (../../../../.sdlc/tickets/0059-theme-context-provider/theme-context-contract.md#immediate-bootstrap-selection)
+  docs/reference/gen-ui-system/specs/gen-ui-system.md  (../../../../.sdlc/tickets/0059-theme-context-provider/theme-context-contract.md#immediate-bootstrap-selection)
+  src/components/button/component.md  (…)
+
+folders with many documents and no entry file (2):
+  docs/reference  (10 documents)
+  docs/reference/gen-ui-system/specs  (11 documents)
