@@ -23,3 +23,6 @@ User request 2026-10-05: an improved AskUserQuestion that sweeps for unanswered 
 
 ## Constraints
 Self-contained. One authoritative place per fact. No em dashes.
+
+## Verification
+Independent L3 verifier (`fable` `xhigh`, `.sdlc/verify-0231/verifier-L3.md`): pass on all 7 criteria, including the full `check.sh` (exit 0) and three on-disk mutations of the guard that each made `check.py` fail. Live run: `docs/validation/ask-skill-live-run.md`. The first live run found two defects in the skill (no concrete sweep searches, no plain-text fallback when `AskUserQuestion` is unavailable); both were fixed once and the rerun found all four planted items. Limits: `AskUserQuestion` itself was not exercised (unavailable in headless `claude -p`), Codex not run.
