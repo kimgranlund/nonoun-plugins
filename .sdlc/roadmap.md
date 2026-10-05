@@ -234,7 +234,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0227 | [.0227-orient-entry-files](.0227-orient-entry-files/handoff.md) | Orient a harness: root AGENTS.md work section, tree map, docs entry | chore | S | P2 | none | 🟢 done |
 | T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | 🟢 done |
 | T-0229 | [.0229-solo-budget-gate](.0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | 🟢 done |
-| T-0230 | [0230-fanout-codex-report-and-gate](0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | ⏳ proposed |
+| T-0230 | [.0230-fanout-codex-report-and-gate](.0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | 🟢 done |
 | T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | 🟢 done |
 | T-0232 | [.0232-reorg-inventory](.0232-reorg-inventory/handoff.md) | inventory.py: read-only document inventory and reorganization plan procedure | feature | M | P2 | none | 🟢 done |
 | T-0233 | [0233-reorg-apply](0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L | P2 | T-0232 | ⏳ proposed |
