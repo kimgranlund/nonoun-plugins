@@ -1,14 +1,3 @@
----
-id: T-0221
-title: "Re-verify criterion 7: the fanout solo live run record is checkable"
-type: chore
-status: ready
-size: S
-priority: P2
-depends: []
-created: 2026-10-05
----
-
 ## Goal
 Re-verify only the criterion the first branch verifier failed (`.sdlc/0221-fanout-solo-first/verifier-L3.md`, criterion 7), after the record was fixed in the latest commit.
 
