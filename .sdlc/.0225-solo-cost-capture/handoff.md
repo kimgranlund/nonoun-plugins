@@ -2,7 +2,7 @@
 id: T-0225
 title: "Solo sessions write no cost record, so the budget gate cannot see the default lane"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ A solo session started through its documented start path writes one runs.jsonl r
 
 ## Constraints
 Keep it small. One authoritative location per fact. Philosophy: "Done is better than perfect." No em dashes.
+
+## Closed
+
+2026-10-04: Built and merged. solo_run.py records each solo session's cost to runs.jsonl (check.py guard 27). First L3 verifier failed on a real defect (an inherited SDLC_ATTEMPT_ID made budget.py undercount a second solo run), fixed with a selftest control. The narrow re-verification passed every build criterion; its criterion 4 was a plan defect I rescoped and ran by hand. Live run: real solo session cost 0.1315212 matches the result event, counted by budget.py and the board. Limits: fanout solo lanes not metered yet (follow-up), Codex records null cost, one tier S run.
