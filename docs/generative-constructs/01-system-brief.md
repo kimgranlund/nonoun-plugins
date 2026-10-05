@@ -2,6 +2,9 @@
 
 Status: proposed v0.1. Related: [model](02-construct-model.md), [prototype](06-prototype-and-validation.md).
 
+
+> Shipped status: the Progressive Context skill implements a smaller subset of this proposal under different words. This document's terms (construct, revision, instance) map to the skill's capability, contract and assessment as listed in the [vocabulary table](README.md#vocabulary-proposal-and-shipped-skill). The skill specification and the shipped skill record later refinements; reconcile any difference before implementing from this document.
+
 ## Purpose
 
 Build a generative system that accumulates usable capabilities as it produces artifacts. Each construct carries intent, domain meaning, a public contract, a realization, and evidence. An agent discovers existing constructs, reads relevant context, composes a new construct, evaluates it, and qualifies a revision for subsequent reuse.

@@ -2,6 +2,9 @@
 
 Status: proposed v0.1. Adapter-neutral requirements precede AdiaUI-specific notes.
 
+
+> Shipped status: the Progressive Context skill implements a smaller subset of this proposal under different words. This document's terms (construct, revision, instance) map to the skill's capability, contract and assessment as listed in the [vocabulary table](README.md#vocabulary-proposal-and-shipped-skill). The skill specification and the shipped skill record later refinements; reconcile any difference before implementing from this document.
+
 ## Boundary
 
 A2UI represents the UI realization through declarative components, surface updates, and data bindings. The construct system supplies intent, semantic definitions, evaluation, and reuse policy. The JS harness supplies persistence, action dispatch, data resolution, and generation operations. [A2UI concepts](https://a2ui.org/concepts/overview/).

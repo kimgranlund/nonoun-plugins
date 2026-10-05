@@ -2,6 +2,9 @@
 
 Status: proposed v0.1. Depends on the [model](02-construct-model.md) and [lifecycle](03-lifecycle-and-evaluation.md).
 
+
+> Shipped status: the Progressive Context skill implements a smaller subset of this proposal under different words. This document's terms (construct, revision, instance) map to the skill's capability, contract and assessment as listed in the [vocabulary table](README.md#vocabulary-proposal-and-shipped-skill). The skill specification and the shipped skill record later refinements; reconcile any difference before implementing from this document.
+
 ## Responsibility
 
 The harness connects stored construct records to a model, tools, a runtime adapter, and a human editor. It owns resource resolution, context assembly, revision writes, evaluation dispatch, and lifecycle policy. The model proposes interpretations and changes; storage presence alone never implies model awareness.

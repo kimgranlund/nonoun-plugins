@@ -2,6 +2,9 @@
 
 Status: proposed v0.1. Uses the entities in the [construct model](02-construct-model.md).
 
+
+> Shipped status: the Progressive Context skill implements a smaller subset of this proposal under different words. This document's terms (construct, revision, instance) map to the skill's capability, contract and assessment as listed in the [vocabulary table](README.md#vocabulary-proposal-and-shipped-skill). The skill specification and the shipped skill record later refinements; reconcile any difference before implementing from this document.
+
 ## Independent status dimensions
 
 Maturity belongs to a revision: `proposed`, `specified`, `realized`, `accepted`, or `published`. A release can later be `withdrawn` or `retired` without erasing its history. Evidence state is `unassessed`, `passing`, `failing`, `inconclusive`, or `stale`. Applicability describes the specific uses and environments covered.
