@@ -2,7 +2,7 @@
 id: T-0246
 title: "Rename docs/validation to docs/reports and rewrite references"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2
 depends: []   # after the reorg-inventory branch is merged into main (see Context); T-0241 and T-0242 are not required
@@ -27,3 +27,7 @@ Route decision: this runs as its own one-step ticket now, with the safeguards in
 - Do not rewrite inside `.git`, `node_modules`, `.worktrees`, or any path git ignores.
 - One authoritative statement of the old and new path: this ticket.
 - No em dashes.
+
+## Closed
+
+2026-10-05: Renamed docs/validation to docs/reports via rename_refs.py; verifier L3 failed once (design wording, allowlist, numbers, roadmap), fixed in 01101ff; merged to main
