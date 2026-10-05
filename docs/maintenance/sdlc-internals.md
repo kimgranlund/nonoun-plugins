@@ -95,6 +95,10 @@ one per role; each defines its output format as its final message, which the run
 
 A session agent, not a `run.sh` role: it delivers one ticket end to end in one session from a typed brief (ticket, files, check commands, done criterion), and is the default lane `steps.py lane` names for size S and M. Its tier table (S Sonnet low, M Sonnet xhigh, L Opus xhigh) lives in its body, since effort is a launch parameter; the Codex tiers are `solo` L1 to L3 in `adapters/codex/models.json`. Tiers M and L end with one batched `run.sh verifier` at the task dir on another model family; `scripts/check.py` item 18 guards the file, the mapping, and the generated TOMLs.
 
+## `scripts/solo_run.py`
+
+Starts the solo agent for one ticket and records its cost (T-0225): `solo_run.py run --task-dir <ticket folder> --tier S|M|L --brief <text>` (also `--brief-file`, `--backend claude|codex`, `--cwd`, `--timeout`). It starts `claude -p --agent sdlc-lite:solo --output-format json` at the tier's model and effort (the same table as `fanout.SOLO_TIERS` and `agents/solo.md`, guarded by `check.py` item 25), or `codex_exec.py solo L1..L3`, prints the report, and appends one `role solo` line to `<task-dir>/runs.jsonl` in the run.sh record shape (ts, level L1..L3, model, effort, cost_usd, usage, duration_ms, turns, attempt_id, backend, transport, routing_reason, exit_code). `budget.py` and the board count it because they sum `cost_usd` over every `runs.jsonl` under the ticket. Cost is never guessed: a crash, a missing result event, a result without `total_cost_usd`, and Codex (which reports none) record `cost_usd` null with a `cost_reason`, and the budget reports that run as unmetered. The raw command in `agents/solo.md` still works and records nothing. Fanout's solo driver still starts the raw command, so fanout solo lanes are not metered yet. `solo_run.py selftest` runs against a stub `claude` on PATH.
+
 ## `skills/level-rubric`, `skills/handoff-format`
 
 reference skills (not commands) that the launcher skills and `/chain` read. The rubric must match the table in `run.sh`.

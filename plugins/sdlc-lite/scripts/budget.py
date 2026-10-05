@@ -19,7 +19,7 @@ not a positive number counts as no budget). Tiers: S $5, M $30, L $60, XL none (
 Spend is cost_usd summed over every runs.jsonl under the ticket folder, recursively (superseded step
 dirs included), deduplicated by attempt_id; a record with no (or an empty) attempt_id counts every
 time. A null or missing cost_usd counts 0 and is reported in unmetered_runs.
-Codex runs record no cost (codex_exec.py), so the meter covers Claude roles only. Conductor and
+Codex runs record no cost (codex_exec.py), so the meter covers Claude roles only. Solo sessions started through solo_run.py add a role solo record with the session cost. Conductor and
 background sessions are not in runs.jsonl, so the budget bounds the pipeline, not the session.
 run.sh calls status before launching a role and exits 4 on exit 3; board.py renders a Budget column.
 """

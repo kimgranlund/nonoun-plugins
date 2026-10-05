@@ -26,6 +26,12 @@ The launcher picks the tier from the ticket size and starts this session at that
 ## Start
 In Claude Code, `hooks/block-role-spawn.sh` denies a conductor's Agent-tool spawn of any `sdlc-lite:` agent, so a conductor starts solo as a headless session from Bash at the project root, with the tier's model and effort from the table, under the interactive vs headless rule in agents/conductor.md; `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work):
 
+Start it through the cost wrapper, so the session's cost and token usage land in the task's `runs.jsonl` and the budget gate and the board count the default lane:
+
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"`
+
+It starts the session at the tier's model and effort, prints the report, and records cost, usage, turns, and duration; a session that reports no cost records `cost_usd` null with a reason, never zero. The raw command is the fallback and records nothing:
+
 `SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`
 
 On Codex the conductor starts `sdlc-solo-l1`, `sdlc-solo-l2`, or `sdlc-solo-l3` for tier S, M, or L through the existing Codex role path.

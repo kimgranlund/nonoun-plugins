@@ -90,6 +90,9 @@
    `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
    `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
+25. Solo cost capture: scripts/solo_run.py names `sdlc-lite:solo`, `SDLC_ROLE`, `cost_usd`, `cost_reason`, and `total_cost_usd`;
+   its TIERS agree with the tiers in agents/solo.md and with fanout.py SOLO_TIERS; agents/solo.md names `solo_run.py` as the
+   start path. Negative controls: a changed tier, a phrase removed from solo_run.py, and solo.md without `solo_run.py`, must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -644,6 +647,22 @@ errors.extend(fanout_solo_bad(_ff, _fs, _fk))
 for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
+# Solo cost capture (docstring item 25): solo_run.py records the solo session's cost; solo.md names it as the start path.
+SOLO_RUN_PHRASES = ('sdlc-lite:solo', 'SDLC_ROLE', 'cost_usd', 'cost_reason', 'total_cost_usd')
+def solo_cost_bad(run_py, solo, fan):
+    bad = [f'solo_run.py missing "{ph}"' for ph in SOLO_RUN_PHRASES if ph not in run_py]
+    if 'solo_run.py' not in solo: bad.append('agents/solo.md does not name solo_run.py as the start path')
+    mine = re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", run_py)
+    if sorted(t[0] for t in mine) != ['L', 'M', 'S']: bad.append('solo_run.py TIERS does not list S, M, and L')
+    for tier, model, effort, level in mine:
+        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'solo_run.py TIERS {tier} {model} {effort} is not the tier {tier} row of agents/solo.md')
+    if sorted(mine) != sorted(re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", fan)): bad.append('solo_run.py TIERS differ from fanout.py SOLO_TIERS')
+    return bad
+_sr = _rd(root/'scripts/solo_run.py')
+errors.extend(solo_cost_bad(_sr, _fs, _ff))
+for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
+    if not solo_cost_bad(_mut(_sr), _fs, _ff): errors.append('check.py: solo cost capture negative control not flagged for a changed solo_run.py')
+if not solo_cost_bad(_sr, _fs.replace('solo_run.py', 'the wrapper'), _ff): errors.append('check.py: solo cost capture negative control not flagged for solo.md')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
