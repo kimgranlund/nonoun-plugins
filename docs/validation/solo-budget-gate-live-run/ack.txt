@@ -1,0 +1,2 @@
+/private/tmp/solo-budget.AY3h0j/.sdlc/over/budget-ack.md: ceiling 5
+ack rc=0

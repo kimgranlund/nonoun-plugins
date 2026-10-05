@@ -1,0 +1,2 @@
+solo_run.py: task folder .sdlc/quick-note
+solo_run.py: recorded solo L1 attempt f59ec462 cost $0.1215

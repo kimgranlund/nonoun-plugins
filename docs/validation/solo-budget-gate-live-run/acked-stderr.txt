@@ -1,0 +1,1 @@
+solo_run.py: recorded solo L1 attempt 90219769 cost $0.1274

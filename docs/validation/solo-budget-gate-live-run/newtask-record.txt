@@ -1,0 +1,1 @@
+{'role': 'solo', 'level': 'L1', 'model': 'sonnet', 'effort': 'low', 'cost_usd': 0.121484, 'turns': 2, 'backend': 'claude', 'exit_code': 0}
