@@ -2,7 +2,7 @@
 id: T-0243
 title: "The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2
 depends: [T-0242]   # T-NNNN, file:<path>, cap:<name>
@@ -24,3 +24,7 @@ Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's 
 ## Constraints
 The `.sdlc/layout.md` record-type registry (rows for `NNNN-slug/`, task folders, `.NNNN-slug/`, `messages/`, `evals/`, `proposals/`, `supervisor/`, `notes.md`, `roadmap.md`, `config`), its rendering into `.sdlc/AGENTS.md` by `tickets.py roadmap` through the same `render_registry` function T-0242 builds, the R-1 and R-2 checks on it, and the collapse of long stage ticket lists to counts so the block stays near 60 lines, start only after T-0248 reports a pass. B-1a, B-2a and B-3a do not wait.
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.
+
+## Closed
+
+2026-10-05: Boundary checks B-1a, B-2a, B-3a and --only boundary in docs_check.py; verifier L3 pass; full checks pass; merged to main

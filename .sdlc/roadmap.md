@@ -241,7 +241,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0240 | [.0240-docs-schema-design](.0240-docs-schema-design/handoff.md) | Design: strict docs/ folder schema and the docs vs .sdlc boundary | feature | M | P1 | none | 🟢 done |
 | T-0241 | [.0241-docs-schema-parser](.0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser | feature | S | P2 | none | 🟢 done |
 | T-0242 | [.0242-docs-check-script](.0242-docs-check-script/handoff.md) | docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template | feature | M | P2 | T-0241 | 🟢 done |
-| T-0243 | [0243-sdlc-boundary-checks](0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | ⏳ proposed |
+| T-0243 | [.0243-sdlc-boundary-checks](.0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | 🟢 done |
 | T-0245 | [0245-docs-promotion-helper](0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | ⏳ proposed |
 | T-0246 | [.0246-rename-validation-to-reports](.0246-rename-validation-to-reports/handoff.md) | Rename docs/validation to docs/reports and rewrite references | chore | M | P2 | none | 🟢 done |
 | T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | ⏳ proposed |
