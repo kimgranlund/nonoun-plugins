@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a98d60de0333 -->
+<!-- sdlc-lite:managed:start v1 sha256:a1688096c51a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 12
   - T-0230 fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests (0230-fanout-codex-report-and-gate)
   - T-0241 Schema format: ## Kinds and ## Legacy in the docs/layout.md parser (0241-docs-schema-parser)
   - T-0242 docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template (0242-docs-check-script)
@@ -17,6 +17,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
   - T-0247 Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ (0247-pc-gap-analysis)
+  - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
+  - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)
+  - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
+  - T-0255 Write one real capability contract for the solo lane (0255-pc-first-contract)
+  - T-0256 Reconcile construct and capability vocabulary in the specs (0256-pc-spec-vocabulary)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)

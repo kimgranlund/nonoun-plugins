@@ -243,3 +243,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243 | ⏳ proposed |
 | T-0245 | [0245-docs-promotion-helper](0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | ⏳ proposed |
 | T-0247 | [0247-pc-gap-analysis](0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | M | P2 | none | ⏳ proposed |
+| T-0252 | [0252-pc-run-context-trace](0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | M | P2 | none | ⏳ proposed |
+| T-0253 | [0253-pc-entry-file-resolver](0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | S | P2 | none | ⏳ proposed |
+| T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |
+| T-0255 | [0255-pc-first-contract](0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | ⏳ proposed |
+| T-0256 | [0256-pc-spec-vocabulary](0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | ⏳ proposed |

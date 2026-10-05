@@ -23,6 +23,7 @@
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](validation/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
+- [Progressive Context gap analysis review](validation/progressive-context-gap-analysis-review.md): dated independent architect review of the gap analysis, three blockers and eleven minor findings, and how each was applied.
 - [Docs schema design review](validation/docs-schema-design-review.md): dated independent architect review of the docs schema design, with 15 findings and how each was applied.
 - [Repository onboarding design review](validation/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](validation/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.
