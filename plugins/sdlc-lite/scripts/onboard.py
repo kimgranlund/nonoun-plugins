@@ -216,7 +216,7 @@ def has_import(text):
 
 # ---------------------------------------------------------------- templates
 
-TEMPLATE_VERSION = 2
+TEMPLATE_VERSION = 1
 
 TEMPLATE_START = '<!-- sdlc-lite:managed:start v<N> sha256:<H> -->'
 START_MARKER = '<!-- sdlc-lite:managed:start v%d sha256:%s -->'
@@ -1201,8 +1201,9 @@ def _swap_rows(rows, a, b):
     return tuple(rows)
 
 
-# The lane line of the root block (T-0228): a block written by template 1 still routes work to the chain and
-# /fix, so it is stale and replaced; a hand-edited block of that version stays edited and is not overwritten.
+# The lane line of the root block (T-0228): a block with the old route text is stale by TEXT (row 6), so setup replaces
+# it with no version bump (TEMPLATE_VERSION is shared with tickets.py's router blocks, so a bump would make every
+# router block stale); a hand-edited block stays edited and is not overwritten without --force.
 OLD_ROUTE = '`/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`'
 LANE_LINE = 'Pick the lane first with `steps.py lane <task dir>`'
 
@@ -1219,20 +1220,20 @@ def _render_old_route(model):
 def gate_lane_text(impl):
     old_block = ('## Work records\n\n- Plan, build, and verify work runs through SDLC Lite: ' + OLD_ROUTE
                  + ', which launch roles with `run.sh`.\n')
-    stale = '# Mine\n\n' + _region(1, old_block) + '\ntail\n'
+    stale = '# Mine\n\n' + _region(TEMPLATE_VERSION, old_block) + '\ntail\n'
     with _fixture({'AGENTS.md': stale}) as root:
         rc, out, err = _call(run_check, root, impl)
-        expect('stale AGENTS.md' in out + err, 'a v1 block with the old route is not reported stale: %r' % (out + err))
+        expect('stale AGENTS.md' in out + err, 'a block with the old route is not reported stale: %r' % (out + err))
         rc, out, err = _call(run_setup, root, impl)
         _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
         expect(rc == 0 and block.version == TEMPLATE_VERSION, 'the old block is not replaced by the current version')
         expect(LANE_LINE in block.text and OLD_ROUTE not in block.text, 'the replaced block does not route by the lane')
         expect('solo' in block.text and ROLE_LINE in block.text, 'the replaced block lost the solo default or the role line')
-    edited = '# Mine\n\n' + _region(1, 'edited by hand\n', old_block) + '\ntail\n'
+    edited = '# Mine\n\n' + _region(TEMPLATE_VERSION, 'edited by hand\n', old_block) + '\ntail\n'
     with _fixture({'AGENTS.md': edited}) as root:
         rc, out, err = _call(run_setup, root, impl)
-        expect('edited AGENTS.md' in out + err, 'a hand-edited v1 block is not reported edited: %r' % (out + err))
-        expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited v1 block was overwritten without --force')
+        expect('edited AGENTS.md' in out + err, 'a hand-edited block is not reported edited: %r' % (out + err))
+        expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited block was overwritten without --force')
 
 
 GATES = [
