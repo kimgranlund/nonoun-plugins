@@ -101,7 +101,7 @@ Tie-breaks: a document that is both a guide and a reference is split into two, o
 - `reports/` new files: `YYYY-MM-DD-slug.md`. A report may have a sibling evidence folder of the same stem, `YYYY-MM-DD-slug/`, for small text evidence files (the repository's `docs/validation/` already pairs `<name>.md` with `<name>/`). Evidence files are capped at 200 KB each by default. **(user may change)**
 - `decisions/` files: `NNNN-slug.md`, four digits, never reused.
 - Depth: `docs/<home>/<topic>/<file>`. A topic folder is optional and only in `specs/`, `planning/`, `references/`, `guides/` and `decisions/`. Nothing deeper except a report's evidence folder.
-- Size: an entry file is at most 80 lines (the root `AGENTS.md` here is 78). Other documents have a soft limit of 400 lines that produces a warning. **(user may change)**
+- Size: an entry file has a 60-line target, the one `onboard.py check` already reports (`size AGENTS.md: 78 lines, over the 60-line target` for this repository's root file, which it does not trim). Other documents have a soft limit of 400 lines that produces a warning. **(user may change)**
 - Links: relative links only, no absolute paths. A link to a file that does not exist is broken. `docs/` never links into `.sdlc/` by path (B-3).
 - `README.md` is optional and is a human-facing summary. `AGENTS.md` is the harness entry.
 
@@ -166,7 +166,7 @@ A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `pars
 | D-8 | A `planning/` file with status `accepted`, `rejected` or `superseded` older than the threshold | warning |
 | D-9 | A Markdown file in `assets/`, or a non-Markdown file outside `assets/`, outside a report's evidence folder (any depth) and outside a same-stem sidecar of a report (`<report>.sha256`, `<report>.json`) | error |
 | D-10 | A relative link that does not resolve | warning |
-| D-11 | An entry file over 80 lines, or a document over 400 lines | warning |
+| D-11 | An entry file over its 60-line target, or a document over 400 lines | warning |
 | D-12 | A file name that breaks the naming rules (case, spaces, version suffix, report date format, decision number), or a decision number used twice anywhere under `decisions/` | error |
 | B-1a | A path under `docs/` that matches a generated-file name: `runs.jsonl`, `skips.md`, `<role>-L<n>.md` and retries `<role>-L<n>-<k>.md`, `budget-ack.md`, `*.attempt.json`, `*.request.json`, `*.running`, `*.log` | error |
 | B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
