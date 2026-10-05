@@ -16,7 +16,7 @@ Recorded: 2026-10-05. Live run for ticket T-0223: `/sdlc-lite:agent {agent-name}
 
 ## Fixture and hidden check
 
-[`fixture/`](agent-command-live-run/fixture/) holds the ticket ([`ticket-handoff.md`](agent-command-live-run/fixture/ticket-handoff.md), size M: add `median`, with stated edge cases), the pristine package, and `hidden_check.py`. The hidden check sits beside the project, outside every arm's working directory, and no prompt names it. It runs 13 cases (odd, even, single, float, tuple, generator, negatives, duplicates, no input mutation, empty raises ValueError, float on even, `mean` intact). On the pristine project it prints `hidden_check: 0/1 passed` ([`hidden-check-base.txt`](agent-command-live-run/fixture/hidden-check-base.txt)).
+[`fixture/`](agent-command-live-run/fixture/) holds the ticket ([`ticket-handoff.md`](agent-command-live-run/fixture/ticket-handoff.md), size M: add `median`, with stated edge cases), the pristine package, and `hidden_check.py`. The hidden check sits beside the project, outside every arm's working directory, and no prompt names it. It runs 13 cases (the list below names most of them: odd, even, single, float, tuple, generator, negatives, duplicates, no input mutation, empty raises ValueError, float on even, `mean` intact). On the pristine project it prints `hidden_check: 0/1 passed` ([`hidden-check-base.txt`](agent-command-live-run/fixture/hidden-check-base.txt)).
 
 ## Results
 
