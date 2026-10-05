@@ -5,7 +5,7 @@ Read [the index](README.md) for the full list. Pick the folder for the task; rea
 | Folder or file | Holds | Read it for |
 |---|---|---|
 | `maintenance/` | Implementation references: [runner and ticket internals](maintenance/sdlc-internals.md), [Claude hooks](maintenance/claude-hooks.md) | Changing runner, ticket, board, fanout, or hook behavior |
-| `lean-sdlc/` | The lane, solo, and cost-control designs | Why the default lane is `solo` and how cost is controlled |
+| `lean-sdlc/` | The lean lane design and the cost-control addendum | How lanes are chosen and how cost is controlled; the evidence for solo as the default is [the benchmark](validation/solo-vs-lean-benchmark-2026-10-04.md) |
 | `ticket-stages/` | The `.sdlc` router, ticket root, mailbox, and watcher designs | Changing `.sdlc/` layout, messages, or the supervisor |
 | `repo-onboarding/` | Entry-file and docs-layout design for adopting repositories | Changing `onboard.py` or its templates |
 | `generative-constructs/` | Progressive Context specifications | Changing the Progressive Context plugin |
