@@ -1,0 +1,47 @@
+created integration branch fanout/live at 4ed118b2012a (HEAD)
+worktree integration: /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/integration
+worktree a: /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/a (branch fanout/live-a)
+worktree b: /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/b (branch fanout/live-b)
+worktree c: /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/c (branch fanout/live-c)
+worktree d: /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/d (branch fanout/live-d)
+[fanout-b90c16d8e429] [a] T-0001 lane solo tier S (size S decides before planning (no planner result yet))
+[fanout-b90c16d8e429] [a] T-0001 driver started (log /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/logs/a-T-0001.log)
+[fanout-b90c16d8e429] [b] T-0002 lane solo tier S (size S decides before planning (no planner result yet))
+[fanout-b90c16d8e429] [b] T-0002 driver started (log /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/logs/b-T-0002.log)
+[fanout-b90c16d8e429] [c] T-0003 lane solo tier S (size S decides before planning (no planner result yet))
+[fanout-b90c16d8e429] [c] T-0003 driver started (log /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/logs/c-T-0003.log)
+[fanout-b90c16d8e429] [d] T-0004 lane solo tier M (size M decides before planning (no planner result yet))
+[fanout-b90c16d8e429] [d] T-0004 driver started (log /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/logs/d-T-0004.log)
+[fanout-b90c16d8e429] [b] T-0002 committed 74a1df1 on fanout/live-b
+[fanout-b90c16d8e429] [b] T-0002 merged
+[fanout-b90c16d8e429] [a] T-0001 committed 4f88177 on fanout/live-a
+[fanout-b90c16d8e429] [a] T-0001 merged
+[fanout-b90c16d8e429] [c] T-0003 committed 0cede44 on fanout/live-c
+[fanout-b90c16d8e429] [c] T-0003 merged
+[fanout-b90c16d8e429] [d] T-0004 committed b590e8b on fanout/live-d
+[fanout-b90c16d8e429] [d] T-0004 merged
+
+# fanout report
+
+- Run: `fanout-b90c16d8e429`
+- Integration branch: `fanout/live` at `f9055451e79ae6e8a14639260e6a1d5d8e946427` (from `4ed118b2012a`)
+- Integration worktree: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/integration`
+- Lane `a`: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/a` (branch `fanout/live-a`)
+- Lane `b`: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/b` (branch `fanout/live-b`)
+- Lane `c`: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/c` (branch `fanout/live-c`)
+- Lane `d`: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/d` (branch `fanout/live-d`)
+- Gate 1: `python3 -m unittest discover -s tests -t .`
+- Logs: `/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/fs-live.2vtl22ba/lanes/logs`
+- Overlap: none
+- Lane for `T-0001`: solo (tier S: sonnet low)
+- Lane for `T-0002`: solo (tier S: sonnet low)
+- Lane for `T-0003`: solo (tier S: sonnet low)
+- Lane for `T-0004`: solo (tier M: sonnet xhigh)
+
+| Lane | Ticket | Outcome | Commit |
+|---|---|---|---|
+| a | T-0001 | merged | a762d65 |
+| b | T-0002 | merged | 1281376 |
+| c | T-0003 | merged | 1a68f85 |
+| d | T-0004 | merged | fca7b4c |
+rc=0
