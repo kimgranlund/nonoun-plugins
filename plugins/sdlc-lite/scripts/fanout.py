@@ -592,30 +592,10 @@ def close_reason(ctx, t):
 
 
 def write_solo_skips(taskdir, tier):
-    """Record the planner and filer a solo lane skips under ## Skipped in the task's skips.md, in the form
-    tickets.py's skips guard counts (`- skip: <role>; step: all; reason: ...; decided: lane`), so the close by
-    reason is not refused. Only when skips.md already records a `- lane:` line (steps.py lane wrote it): a forced
-    --lane solo leaves no lane record and the guard does not apply. Idempotent. Returns True when it wrote.
-    FANOUT_SELFTEST_NO_SKIPPED=1 turns it off (the selftest's negative control)."""
-    if os.environ.get('FANOUT_SELFTEST_NO_SKIPPED') == '1':
-        return False
-    f = pathlib.Path(taskdir) / 'skips.md'
-    if not f.is_file():
-        return False
-    text = f.read_text(encoding='utf-8')
-    if not re.search(r'(?m)^- lane: ', text):
-        return False
-    why = f'solo lane: size {tier} runs end to end in one session'
-    lines = ''.join(f'- skip: {role}; step: all; reason: {why}; decided: lane\n' for role in ('planner', 'filer')
-                    if not re.search(rf'(?m)^- skip: {role};', text))
-    if not lines:
-        return False
-    if re.search(r'(?m)^## Skipped\s*$', text):
-        text = re.sub(r'(?m)^(## Skipped[ \t]*\n)', lambda m: m.group(1) + lines, text, count=1)
-    else:
-        text = text.rstrip('\n') + '\n\n## Skipped\n' + lines
-    f.write_text(text, encoding='utf-8')
-    return True
+    """The solo lane's skipped planner and filer under ## Skipped, written by steps.write_solo_skips (the one
+    writer, shared with `steps.py lane` itself); called again here for the tier-sized reason and for an
+    already-recorded lane. True when it wrote."""
+    return steps.write_solo_skips(taskdir, tier)
 
 
 def verifier_files(taskdir):
@@ -2185,7 +2165,7 @@ def selftest():
         def real_lane(name, disable):
             rr_, ll_ = tmp / f'real-{name}', tmp / f'real-{name}-lanes'
             make_repo(rr_, [('one', 'T-0001', 'ready'), ('two', 'T-0002', 'ready')])
-            env_ = dict(shim_env, FANOUT_SELFTEST_NO_SKIPPED='1') if disable else shim_env
+            env_ = dict(shim_env, SDLC_SELFTEST_NO_SKIPPED='1') if disable else shim_env
             proc_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', 'x=T-0001,T-0002',
                                     '--base', 'main', '--integration', 'fanout/real', '--lanes-dir', str(ll_),
                                     '--stagger', '0'], cwd=str(rr_), env=env_, capture_output=True, text=True, timeout=300)

@@ -90,7 +90,14 @@
    `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
    `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
-25. Solo cost capture: scripts/solo_run.py names `sdlc-lite:solo`, `SDLC_ROLE`, `cost_usd`, `cost_reason`, and `total_cost_usd`;
+25. Agent command: skills/agent/SKILL.md names every agents/*.md stem in backticks, its start table names only
+   agents that exist and have a Codex entry in adapters/codex/models.json, and it names `block-role-spawn.sh`.
+   Negative controls: a stem removed from the skill, a table row for a name with no agent file, and a table row
+   with no Codex entry must each be flagged.
+26. Solo lane skips: scripts/steps.py names `solo_skips_text`, `write_solo_skips`, and calls `write_solo_skips(task)` in
+   `record_lane`; scripts/fanout.py calls `steps.write_solo_skips`; agents/conductor.md says a solo ticket closes with
+   `tickets.py close --reason`. Negative controls: each phrase removed must be flagged.
+27. Solo cost capture: scripts/solo_run.py names `sdlc-lite:solo`, `SDLC_ROLE`, `cost_usd`, `cost_reason`, and `total_cost_usd`;
    its TIERS agree with the tiers in agents/solo.md and with fanout.py SOLO_TIERS; agents/solo.md names `solo_run.py` as the
    start path. Negative controls: a changed tier, a phrase removed from solo_run.py, and solo.md without `solo_run.py`, must be flagged.
 """
@@ -647,7 +654,31 @@ errors.extend(fanout_solo_bad(_ff, _fs, _fk))
 for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
-# Solo cost capture (docstring item 25): solo_run.py records the solo session's cost; solo.md names it as the start path.
+# Agent command (docstring item 25): the /agent skill's names agree with agents/*.md and the Codex mapping.
+def agent_cmd_bad(skill, stems, codex_keys):
+    if not skill.strip(): return ['skills/agent/SKILL.md missing or empty']
+    bad = [f'skills/agent/SKILL.md does not name `{n}`' for n in sorted(stems) if f'`{n}`' not in skill]
+    rows = re.findall(r'(?m)^\| `([a-z][\w-]*)` \|', skill)
+    bad += [f'skills/agent/SKILL.md table row `{n}` has no agents/{n}.md' for n in rows if n not in stems]
+    bad += [f'skills/agent/SKILL.md table row `{n}` has no Codex entry in models.json' for n in rows if n in stems and n not in codex_keys]
+    if 'block-role-spawn.sh' not in skill: bad.append('skills/agent/SKILL.md does not name block-role-spawn.sh')
+    return bad
+_ak = _rd(root/'skills/agent/SKILL.md')
+_as = {p.stem for p in (root/'agents').glob('*.md')}
+errors.extend(agent_cmd_bad(_ak, _as, set(mc)))
+if not agent_cmd_bad(_ak.replace('`archaeologist`', 'archaeologist'), _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a removed stem')
+if not agent_cmd_bad(_ak + '\n| `ghost` | x | x |\n', _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a row with no agent file')
+if not agent_cmd_bad(_ak, _as, set(mc) - {'scout'}): errors.append('check.py: agent command negative control not flagged for a row with no Codex entry')
+# Solo lane skips (docstring item 26): the lane script itself writes the skipped planner and filer for lane solo.
+SOLO_SKIPS_PHRASES = (('scripts/steps.py', 'solo_skips_text'), ('scripts/steps.py', 'write_solo_skips(task)'),
+                      ('scripts/fanout.py', 'steps.write_solo_skips'), ('agents/conductor.md', 'tickets.py close --reason'))
+def solo_skips_missing(text, phrase): return phrase not in text
+for rel, phrase in SOLO_SKIPS_PHRASES:
+    sst = _rd(root/rel)
+    if solo_skips_missing(sst, phrase): errors.append(f'{rel}: solo lane skips missing "{phrase}"')
+    elif not solo_skips_missing(sst.replace(phrase, ''), phrase):
+        errors.append(f'check.py: solo lane skips negative control not flagged for "{phrase}"')
+# Solo cost capture (docstring item 27): solo_run.py records the solo session's cost; solo.md names it as the start path.
 SOLO_RUN_PHRASES = ('sdlc-lite:solo', 'SDLC_ROLE', 'cost_usd', 'cost_reason', 'total_cost_usd')
 def solo_cost_bad(run_py, solo, fan):
     bad = [f'solo_run.py missing "{ph}"' for ph in SOLO_RUN_PHRASES if ph not in run_py]

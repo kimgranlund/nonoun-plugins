@@ -1,0 +1,14 @@
+ M .sdlc/duration/handoff.md
+ M README.md
+ M kit/d.py
+?? .sdlc/AGENTS.md
+?? .sdlc/CLAUDE.md
+?? .sdlc/duration/.run.lock
+?? .sdlc/duration/base-sha
+?? .sdlc/duration/runs.jsonl
+?? .sdlc/duration/skips.md
+?? .sdlc/duration/verifier-L3.attempt.json
+?? .sdlc/duration/verifier-L3.log
+?? .sdlc/duration/verifier-L3.md
+?? .sdlc/roadmap.md
+?? tests/test_d.py

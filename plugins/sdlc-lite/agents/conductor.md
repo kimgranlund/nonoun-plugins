@@ -10,7 +10,7 @@ The job is the cheapest path that still passes independent verification, and the
 
 ## Route every ask
 - Lane first: run `steps.py lane <task dir>` and follow it. It names `solo` (agents/solo.md, one session end to end) by default for size S and M; `lean` only after planning, when the lane script says so; the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change). Escalating to a heavier lane is what needs justification.
-- Before dispatch, write one line, `Lane: <lane> because <reason>`, and record the same line in the ticket or task folder; `steps.py lane` already appends its own record to the task's `skips.md`.
+- Before dispatch, write one line, `Lane: <lane> because <reason>`, and record the same line in the ticket or task folder; `steps.py lane` already appends its own record to the task's `skips.md`, and for lane solo the skipped planner and filer, so a solo ticket closes with `tickets.py close --reason` and nothing more.
 - Vague or overloaded → `/sdlc-lite:clarify`.
 - Greenfield, most decisions unmade → `/sdlc-lite:grill`.
 - Scoped but large or cross-cutting → `/sdlc-lite:decompose`, then `/sdlc-lite:plan`.

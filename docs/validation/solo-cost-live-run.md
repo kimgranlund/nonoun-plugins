@@ -47,5 +47,5 @@ The selftest ([`solo_run.py selftest`](../../plugins/sdlc-lite/scripts/solo_run.
 - Fanout's solo driver still starts the raw command, so fanout solo lanes are not metered yet. The conductor path is metered only when the conductor uses the wrapper; `agents/solo.md` now names it as the start path, and the raw command stays as an unmetered fallback.
 - The verifier, if any, is a separate `run.sh verifier` run with its own record. The solo's own session cost covers the solo only.
 - The budget meter still covers Claude roles only; a Codex solo counts as an unmetered run.
-- `check.py` guard 25 ties `solo_run.py` TIERS to `agents/solo.md` and `fanout.py`; the guard number may be renumbered at merge if other work has taken 25.
+- `check.py` guard 27 ties `solo_run.py` TIERS to `agents/solo.md` and `fanout.py`.
 - Evidence is from the wrapper's own output plus the result event it saved with `--raw-out`; nothing else was captured from the session.
