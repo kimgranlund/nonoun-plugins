@@ -6,16 +6,16 @@ index b2bf7f8..f2f365a 100644
  import unittest
 -from util import whisper
 +from util import shout, whisper
- 
- 
+
+
  class T(unittest.TestCase):
      def test_whisper(self):
          self.assertEqual(whisper("Hi"), "hi...")
- 
+
 +    def test_shout(self):
 +        self.assertEqual(shout("hi"), "HI!")
 +
- 
+
  if __name__ == "__main__":
      unittest.main()
 diff --git a/util.py b/util.py

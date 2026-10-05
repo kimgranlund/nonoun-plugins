@@ -29,7 +29,7 @@ The wrapper started `SDLC_ROLE=solo claude -p --plugin-dir <plugin> --agent sdlc
 | --- | --- | --- |
 | Session | [`report.txt`](solo-cost-live-run/report.txt), [`rc.txt`](solo-cost-live-run/rc.txt) | exit 0; the agent reported the change and its test run |
 | Hidden check | [`hidden-check.txt`](solo-cost-live-run/hidden-check.txt) | `hidden_check: 3/3 passed` |
-| Change | [`solo-session.patch`](solo-cost-live-run/solo-session.patch) | `util.py` and `tests/test_util.py` only |
+| Change | [`solo-session.patch`](solo-cost-live-run/solo-session.patch) | `util.py` and `tests/test_util.py` only (trailing whitespace on blank context lines stripped so `git diff --check` is clean) |
 | Record written | [`runs.jsonl`](solo-cost-live-run/runs.jsonl) | one line: `role` `solo`, `level` `L1`, `model` `sonnet`, `effort` `low`, `backend` `claude`, an `attempt_id` |
 | Cost matches the result event | `raw-result.json` against `runs.jsonl` | `total_cost_usd` 0.1315212 equals `cost_usd` 0.1315212 |
 | Usage, turns, duration copied | same two files | `output_tokens` 1163, `turns` 9, `duration_ms` 14996 on both sides |
@@ -42,6 +42,7 @@ The selftest ([`solo_run.py selftest`](../../plugins/sdlc-lite/scripts/solo_run.
 
 ## Limits
 
+- The first branch verifier found that the wrapper reused an inherited `SDLC_ATTEMPT_ID`, which made `budget.py` skip a second solo record as a duplicate and undercount spend (two 3.25 runs metered 3.25). The wrapper now always mints its own attempt id and ignores an inherited routing reason; the selftest runs with both variables set and has a negative control. The live run above ran before that fix with no inherited id, so it did not exercise the path.
 - One run, tier S, Claude Code. No tier M or L run, and no Codex run: `codex_exec.py` reports no cost, so a Codex solo records `cost_usd` null by design.
 - Fanout's solo driver still starts the raw command, so fanout solo lanes are not metered yet. The conductor path is metered only when the conductor uses the wrapper; `agents/solo.md` now names it as the start path, and the raw command stays as an unmetered fallback.
 - The verifier, if any, is a separate `run.sh verifier` run with its own record. The solo's own session cost covers the solo only.

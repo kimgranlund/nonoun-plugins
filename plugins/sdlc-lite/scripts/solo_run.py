@@ -109,7 +109,7 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
         duration = round((time.monotonic() - started) * 1000)
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'solo', 'level': level,
            'model': model, 'effort': effort, 'file': '', 'shared_with_builder': False, 'attempt_id': attempt,
-           'routing_reason': reason or os.environ.get('SDLC_ROUTING_REASON') or f'solo lane, tier {tier}',
+           'routing_reason': reason or f'solo lane, tier {tier}',
            'backend': backend, 'transport': 'exec' if backend == 'codex' else 'claude',
            'usage': (result or {}).get('usage'), 'cost_usd': cost, 'duration_ms': duration,
            'turns': number((result or {}).get('num_turns')), 'exit_code': rc,
@@ -131,7 +131,9 @@ def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out
     argv, model, effort = command(tier, brief, backend)
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
-    attempt = os.environ.get('SDLC_ATTEMPT_ID') or uuid.uuid4().hex
+    # Always mint a fresh id: an inherited SDLC_ATTEMPT_ID belongs to a role attempt (fanout.py does the same), and
+    # budget.py skips a second record with a repeated attempt_id, so reusing it would undercount spend.
+    attempt = uuid.uuid4().hex
     env = dict(os.environ, SDLC_ROLE='solo', SDLC_ATTEMPT_ID=attempt)
     started = time.monotonic()
     try:
@@ -198,6 +200,9 @@ def selftest():
             return [json.loads(x) for x in f.read_text().splitlines()] if f.is_file() else []
 
         old_path = os.environ['PATH']
+        old_env = {k: os.environ.get(k) for k in ('SDLC_ATTEMPT_ID', 'SDLC_ROUTING_REASON')}
+        os.environ['SDLC_ATTEMPT_ID'] = 'inherited-role-attempt'
+        os.environ['SDLC_ROUTING_REASON'] = 'a role routing reason'
         os.environ['PATH'] = f'{bin_dir}{os.pathsep}{old_path}'
         try:
             usage = '{"input_tokens":10,"output_tokens":20,"cache_read_input_tokens":300}'
@@ -286,12 +291,17 @@ def selftest():
             q(d, 'M', 'b')
             ids = [x['attempt_id'] for x in lines(d)]
             expect('distinct attempt ids, both counted', len(set(ids)) == 2 and abs(budget.spend(d)[0] - 2) < 1e-9)
+            expect('inherited SDLC_ATTEMPT_ID is not reused', 'inherited-role-attempt' not in ids)
+            expect('inherited SDLC_ROUTING_REASON is not copied', all(x.get('routing_reason') == 'solo lane, tier M' for x in lines(d)))
 
             # find_result shapes.
             expect('find_result: none on empty', find_result('') is None and find_result('not json') is None)
             expect('find_result: json lines', (find_result('{"type":"x"}\n{"type":"result","total_cost_usd":2}\n') or {}).get('total_cost_usd') == 2)
         finally:
             os.environ['PATH'] = old_path
+            for k, v in old_env.items():
+                if v is None: os.environ.pop(k, None)
+                else: os.environ[k] = v
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
