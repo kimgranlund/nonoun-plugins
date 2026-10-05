@@ -227,3 +227,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0220 | [.0220-t0212-reverify](.0220-t0212-reverify/handoff.md) | Re-verify T-0212's check-packaging fix | chore | M | P2 | none | 🟢 done |
 | T-0221 | [.0221-fanout-solo-first](.0221-fanout-solo-first/handoff.md) | fanout.py runs each lane by steps.py lane: solo for S and M, chain for full, with a lane cap and stagger | feature | M | P2 | none | 🟢 done |
 | T-0222 | [.0222-fanout-solo-skipped](.0222-fanout-solo-skipped/handoff.md) | fanout solo lane closes: write the ## Skipped entries the T-0219 skips guard needs | bug | S | P2 | none | 🟢 done |
+| T-0224 | [0224-solo-lane-skipped](0224-solo-lane-skipped/handoff.md) | steps.py lane writes the planner and filer ## Skipped entries for lane solo, so any caller can close by reason | bug | S | P2 | none | ⏳ proposed |

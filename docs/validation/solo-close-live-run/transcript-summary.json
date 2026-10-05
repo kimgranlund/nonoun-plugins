@@ -1,0 +1,23 @@
+[
+ {
+  "agentSetting": "sdlc-lite:conductor",
+  "models": {
+   "claude-sonnet-5-5": 12
+  },
+  "output_tokens": 5068
+ },
+ {
+  "agentSetting": "sdlc-lite:verifier",
+  "models": {
+   "claude-fable-5-1": 36
+  },
+  "output_tokens": 55798
+ },
+ {
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 17
+  },
+  "output_tokens": 13594
+ }
+]

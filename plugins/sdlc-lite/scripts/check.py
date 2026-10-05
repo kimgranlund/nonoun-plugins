@@ -90,6 +90,9 @@
    `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
    `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
+25. Solo lane skips: scripts/steps.py names `solo_skips_text`, `write_solo_skips`, and calls `write_solo_skips(task)` in
+   `record_lane`; scripts/fanout.py calls `steps.write_solo_skips`; agents/conductor.md says a solo ticket closes with
+   `tickets.py close --reason`. Negative controls: each phrase removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -644,6 +647,15 @@ errors.extend(fanout_solo_bad(_ff, _fs, _fk))
 for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
+# Solo lane skips (docstring item 25): the lane script itself writes the skipped planner and filer for lane solo.
+SOLO_SKIPS_PHRASES = (('scripts/steps.py', 'solo_skips_text'), ('scripts/steps.py', 'write_solo_skips(task)'),
+                      ('scripts/fanout.py', 'steps.write_solo_skips'), ('agents/conductor.md', 'tickets.py close --reason'))
+def solo_skips_missing(text, phrase): return phrase not in text
+for rel, phrase in SOLO_SKIPS_PHRASES:
+    sst = _rd(root/rel)
+    if solo_skips_missing(sst, phrase): errors.append(f'{rel}: solo lane skips missing "{phrase}"')
+    elif not solo_skips_missing(sst.replace(phrase, ''), phrase):
+        errors.append(f'check.py: solo lane skips negative control not flagged for "{phrase}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

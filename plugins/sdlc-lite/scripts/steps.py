@@ -139,7 +139,10 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
   lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md.
             Stdout: the lane, then one "reason: <text>" line per reason, then one "read: <path>" line per
             file read (<task dir>/handoff.md when it exists, the newest planner-*.md by order.py when
-            there is one, <task dir>/skips.md when it existed before this call); exit 0.
+            there is one, <task dir>/skips.md when it existed before this call); exit 0. For lane solo it also
+            records the planner and filer under ## Skipped (one `- skip: <role>; step: all; reason: solo lane...;
+            decided: lane` line each, added once), the form the tickets.py skips guard counts, so a conductor can
+            close the ticket by reason with no extra step.
             Facts: the size is the handoff.md front matter field size (tickets.parse), valid only when it
             is S, M, L, or XL; a handoff with no front matter block has no size. The point is "before
             planning" with no planner result, "after plan review" when there is one and handoff.md has a
@@ -1708,8 +1711,52 @@ def lane_text(old, record):
     return ''.join(lines[:first] + ['## Lane\n', record + '\n', '\n'] + lines[first:])
 
 
+def solo_skips_text(text, size=None):
+    """skips.md text with the planner and filer a solo lane skips recorded under ## Skipped, in the form the
+    tickets.py skips guard counts (`- skip: <role>; step: all; reason: ...; decided: lane`), or None when
+    nothing is to be added: the last `- lane:` line is not solo, or both entries already exist (idempotent).
+    Every other line is kept byte for byte."""
+    lanes = re.findall(r'(?m)^- lane: ([^;\r\n]*)', text)
+    if not lanes or lanes[-1].strip() != 'solo':
+        return None
+    why = f'solo lane: size {size} runs end to end in one session' if size else 'solo lane: runs end to end in one session'
+    nl = '\r\n' if '\r\n' in text else '\n'
+    add = ''.join(f'- skip: {role}; step: all; reason: {why}; decided: lane{nl}' for role in ('planner', 'filer')
+                  if not re.search(rf'(?m)^- skip: {role};', text))
+    if not add:
+        return None
+    if re.search(r'(?m)^## Skipped[ \t]*\r?$', text):
+        return re.sub(r'(?m)^(## Skipped[ \t]*\r?\n)', lambda m: m.group(1) + add, text, count=1)
+    if text and not text.endswith(('\n', '\r')):
+        text += nl
+    return text + nl + '## Skipped' + nl + add
+
+
+def write_solo_skips(task, size=None):
+    """Record a solo lane's skipped planner and filer in <task>/skips.md (solo_skips_text). Returns True when
+    it wrote. The one writer for every caller: record_lane runs it after a solo lane record, and fanout.py calls
+    it too. SDLC_SELFTEST_NO_SKIPPED=1 turns it off (a selftest's negative control). An OSError is a Fail."""
+    if os.environ.get('SDLC_SELFTEST_NO_SKIPPED') == '1':
+        return False
+    p = pathlib.Path(task) / 'skips.md'
+    try:
+        if not p.is_file():
+            return False
+        with open(p, encoding='utf-8', newline='') as f:
+            old = f.read()
+        new = solo_skips_text(old, size)
+        if new is None:
+            return False
+        with open(p, 'w', encoding='utf-8', newline='') as f:
+            f.write(new)
+        return True
+    except OSError as e:
+        raise Fail(f'steps lane: cannot write {p}: {e}')
+
+
 def record_lane(task, lane, point, reasons):
-    """Append the lane record to <task>/skips.md. An OSError is a Fail naming the path."""
+    """Append the lane record to <task>/skips.md; for lane solo also the planner and filer ## Skipped
+    entries (write_solo_skips), so any caller can close the ticket by reason. An OSError is a Fail naming the path."""
     p = pathlib.Path(task) / 'skips.md'
     try:
         old = None
@@ -1720,6 +1767,8 @@ def record_lane(task, lane, point, reasons):
             f.write(lane_text(old, lane_record(lane, point, reasons)))
     except OSError as e:
         raise Fail(f'steps lane: cannot write {p}: {e}')
+    if lane == 'solo':
+        write_solo_skips(task)
 
 
 def cmd_lane(task):
@@ -3487,6 +3536,8 @@ def selftest():
               all(r[0] == 'full' and r[1] == [want] for r, want in res))
 
         rec_m = '- lane: solo; point: before planning; reasons: size M decides before planning (no planner result yet)'
+        why_s = 'solo lane: runs end to end in one session'
+        sk = f'- skip: planner; step: all; reason: {why_s}; decided: lane\n- skip: filer; step: all; reason: {why_s}; decided: lane\n'
         d = l_task(l_handoff())
         _, _, reads1, _ = l_run(d)
         made = (d / 'skips.md').read_text(encoding='utf-8')
@@ -3502,16 +3553,16 @@ def selftest():
         d4 = l_task(l_handoff())
         (d4 / 'skips.md').write_text('note\n', encoding='utf-8')
         l_run(d4)
-        check('(lane) skips.md: each call appends one - lane: line to ## Lane and keeps every other line',
-              made == f'# Skips\n\n## Lane\n{rec_m}\n'
-              and twice == f'# Skips\n\n## Lane\n{rec_m}\n{rec_m}\n'
+        check('(lane) skips.md: each call appends one - lane: line to ## Lane, a solo lane adds the planner and filer ## Skipped entries once, and every other line is kept',
+              made == f'# Skips\n\n## Lane\n{rec_m}\n\n## Skipped\n{sk}'
+              and twice == f'# Skips\n\n## Lane\n{rec_m}\n{rec_m}\n\n## Skipped\n{sk}'
               and str(d / 'skips.md') not in reads1 and str(d / 'skips.md') in reads2
               and (d2 / 'skips.md').read_text(encoding='utf-8')
-              == f'# Skips\n\n## Lane\n- lane: lean; point: x; reasons: old\n{rec_m}\n\n## Skipped\n- x\n'
+              == f'# Skips\n\n## Lane\n- lane: lean; point: x; reasons: old\n{rec_m}\n\n## Skipped\n{sk}- x\n'
               and str(d2 / 'skips.md') in reads3
-              and (d3 / 'skips.md').read_text(encoding='utf-8') == f'## Lane\n{rec_m}\n\n## Skipped\n- x\n'
+              and (d3 / 'skips.md').read_text(encoding='utf-8') == f'## Lane\n{rec_m}\n\n## Skipped\n{sk}- x\n'
               and str(d3 / 'skips.md') in reads4
-              and (d4 / 'skips.md').read_text(encoding='utf-8') == f'note\n\n## Lane\n{rec_m}\n')
+              and (d4 / 'skips.md').read_text(encoding='utf-8') == f'note\n\n## Lane\n{rec_m}\n\n## Skipped\n{sk}')
 
         d = l_task(l_handoff(), {'planner-L2.md': l_plan()},
                    {'.sdlc/0001-x/skips.md': '# Skips\n\n## Lane\n- lane: full; point: before planning; reasons: x\n'})
@@ -3529,6 +3580,52 @@ def selftest():
         check('(lane) a missing dir: one steps lane: line on stderr, nothing on stdout, exit 1, nothing written',
               rc == 1 and out == '' and err.startswith('steps lane: ') and len(err.strip().splitlines()) == 1
               and not missing.exists() and snapshot(tmp) == before)
+
+        # (lane solo close) a conductor-style flow, no fanout: steps lane, then tickets.py close --reason, with
+        # the T-0219 skips guard live. Negative control: with the Skipped write off, the close is refused.
+        def solo_flow(name, disable):
+            r = tmp / f'solo-{name}'
+            subprocess.run(['git', 'init', '-q', str(r)], check=True, capture_output=True)
+            tk = [sys.executable, str(pathlib.Path(__file__).resolve().parent / 'tickets.py'), '--root', '.sdlc']
+            env_ = dict(os.environ, SDLC_SELFTEST_NO_SKIPPED='1') if disable else {
+                k: v for k, v in os.environ.items() if k != 'SDLC_SELFTEST_NO_SKIPPED'}
+            made = subprocess.run([*tk, 'new', 'feature', 'solo-a', 'Solo A'], cwd=str(r), env=env_,
+                                  capture_output=True, text=True)
+            d = r / '.sdlc' / 'solo-a'
+            hp = d / 'handoff.md'
+            hp.write_text(re.sub(r'(?m)^size:.*$', 'size: M', hp.read_text(encoding='utf-8')), encoding='utf-8')
+            lane_run_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(d)],
+                                       cwd=str(r), env=env_, capture_output=True, text=True)
+            first = (d / 'skips.md').read_text(encoding='utf-8') if (d / 'skips.md').is_file() else ''
+            subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(d)], cwd=str(r),
+                           env=env_, capture_output=True, text=True)
+            second = (d / 'skips.md').read_text(encoding='utf-8')
+            closed = subprocess.run([*tk, 'close', 'solo-a', '--reason', 'delivered by solo'], cwd=str(r), env=env_,
+                                    capture_output=True, text=True)
+            return made, lane_run_, first, second, closed
+
+        made, lr, first, second, closed = solo_flow('on', False)
+        check('(lane solo close) lane solo writes the planner and filer ## Skipped entries and the close by reason passes '
+              f'with the guard live (rc={closed.returncode} {closed.stderr.strip()[:160]!r})',
+              made.returncode == 0 and lr.stdout.splitlines()[:1] == ['solo'] and closed.returncode == 0
+              and '- skip: planner; step: all;' in second and '- skip: filer; step: all;' in second
+              and 'decided: lane' in second)
+        check('(lane solo close) running lane twice adds no duplicate entries: one planner and one filer entry',
+              second.count('- skip: planner;') == 1 and second.count('- skip: filer;') == 1
+              and first.count('- skip:') == 2 and second.count('- lane: solo') == 2)
+        made0, lr0, first0, second0, closed0 = solo_flow('off', True)
+        check('(lane solo close) negative control: with the Skipped write off the close by reason is refused '
+              f'(rc={closed0.returncode} {closed0.stderr.strip()[:160]!r})',
+              closed0.returncode == 1 and 'no ## Skipped entry' in closed0.stderr and '- skip:' not in second0)
+        full_ = tmp / 'solo-full'
+        subprocess.run(['git', 'init', '-q', str(full_)], check=True, capture_output=True)
+        fd = full_ / '.sdlc' / 'big'
+        fd.mkdir(parents=True)
+        (fd / 'handoff.md').write_text(l_handoff('L'), encoding='utf-8')
+        subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(fd)], cwd=str(full_),
+                       capture_output=True, text=True)
+        check('(lane solo close) only lane solo writes Skipped entries: a size L ticket (lane full) gets none',
+              '- skip:' not in (fd / 'skips.md').read_text(encoding='utf-8'))
 
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
