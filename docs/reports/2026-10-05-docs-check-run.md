@@ -18,4 +18,8 @@ Recorded: 2026-10-05. Scripts: `plugins/sdlc-lite/scripts/docs_check.py` (D-1 to
 - D-8 reads age from `date:` front matter, then file modification time; a fresh checkout resets modification times, so D-8 can under-report there.
 - D-9 treats a report's evidence folder as a folder named like a sibling report (`<stem>/` next to `<stem>.md`); a folder such as `plan-skills-live-run.d/` is reported.
 - The registry rendering and the drift checks R-1 and R-2 are not built (they wait for T-0248). The `docs/AGENTS.md` block says the placement effect is unproven.
-- The boundary checks B-1a, B-2a and B-3a are T-0243.
+- The boundary checks are recorded below (T-0243).
+
+## Boundary checks B-1a, B-2a, B-3a (T-0243)
+
+`docs_check.py --only boundary` runs them. B-1a flags generated-file names under `docs/` (never exempted by Legacy), B-2a warns about Markdown in `.sdlc/` outside the record types, and B-3a warns about a docs link into `.sdlc/` (exempted by Legacy). Read-only run on this repository: B-1a 61 errors (all under `docs/reports/` evidence folders such as `agent-command-live-run/arms/` and `runner-family-task-dir-live-run/fam/`, to be settled in the migration), B-2a 0, B-3a 5 warnings. The run also prints that 50 role-result retry files (`<role>-L<n>-<k>.md`) sit under `.sdlc/`, where they belong and are not flagged, and 1 under `docs/`. The design's figure of 49 was a count of the day it was written. B-2a cannot tell a design review from a role result by name, so it reports candidates only.

@@ -40,6 +40,11 @@ VERSION_SUFFIX = re.compile(r'-v\d+(\.\d+)*$')
 DECISION_NAME = re.compile(r'^(\d{4})-[a-z0-9]+(-[a-z0-9]+)*\.md$')
 REPORT_NAME = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-z0-9]+(-[a-z0-9]+)*\.md$')
 LINK = re.compile(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
+GENERATED_NAME = re.compile(r'^(runs\.jsonl|skips\.md|budget-ack\.md|[a-z][a-z-]*-L\d(-\d+)?\.md|.*\.attempt\.json|.*\.request\.json|.*\.running|.*\.log)$')
+RETRY_NAME = re.compile(r'^[a-z][a-z-]*-L\d-\d+\.md$')
+SDLC_RECORD_DIRS = ('tickets', 'messages', 'evals', 'proposals', 'supervisor', '_templates', 'decompose')
+SDLC_LOOSE_MD = ('AGENTS.md', 'CLAUDE.md', 'notes.md', 'roadmap.md', 'board.md')
+TICKET_DIR = re.compile(r'^\.?\d{4}-')
 PLANNING_AGE_DAYS = 30
 OTHER_MAX_AHEAD_DAYS = 90
 ENTRY_TARGET_DOCS = 60
@@ -320,6 +325,45 @@ def run(root, only=None, today=None, disable=()):
             if folder + '/AGENTS.md' not in have and folder + '/CLAUDE.md' not in have:
                 out.append(Finding('error', 'D-7', 'docs/' + folder + '/',
                                    '%d documents and no AGENTS.md or CLAUDE.md' % count))
+    if on('B-1a'):
+        for rel in files:
+            if GENERATED_NAME.match(rel.rsplit('/', 1)[-1]):
+                add('error', 'B-1a', rel, 'generated-file name under docs/; run output belongs in .sdlc/')
+    if on('B-3a'):
+        for rel in files:
+            if not md(rel):
+                continue
+            folder = os.path.dirname(rel)
+            for line, fenced in onboard.scan_lines(repo.text('docs/' + rel)):
+                if fenced:
+                    continue
+                for m in LINK.finditer(line):
+                    target = m.group(1)
+                    if re.match(r'^[A-Za-z][A-Za-z0-9+.\-]*:', target) or target.startswith('#'):
+                        continue
+                    path = re.split(r'[#?]', target, 1)[0]
+                    res = os.path.normpath(os.path.join('docs', folder, path.lstrip('/') if path.startswith('/') else path))
+                    if res.replace(os.sep, '/').startswith('.sdlc/') or res.replace(os.sep, '/') == '.sdlc':
+                        add('warning', 'B-3a', rel, 'docs file links to a path under .sdlc/: %s' % target)
+    if on('B-2a'):
+        sdlc = [p[len('.sdlc/'):] for p in repo.files if p.startswith('.sdlc/')]
+        have = set(sdlc)
+        flagged = set()
+        for rel in sdlc:
+            if not md(rel):
+                continue
+            if '/' not in rel:
+                if rel not in SDLC_LOOSE_MD:
+                    out.append(Finding('warning', 'B-2a', '.sdlc/' + rel, 'loose Markdown file outside the record types'))
+                continue
+            top = rel.split('/', 1)[0]
+            if top in SDLC_RECORD_DIRS or TICKET_DIR.match(top) or top in flagged:
+                continue
+            if top + '/handoff.md' in have or any(p.startswith(top + '/step-') for p in sdlc):
+                continue
+            flagged.add(top)
+            out.append(Finding('warning', 'B-2a', '.sdlc/' + top + '/',
+                               'folder is not a ticket folder, a task folder (handoff.md or step-N/), or a known record folder'))
     out.sort(key=lambda f: (f.rule, f.path, f.message))
     return out
 
@@ -329,6 +373,13 @@ def _mtime(root, rel):
         return datetime.date.fromtimestamp(os.path.getmtime(os.path.join(root, rel)))
     except OSError:
         return None
+
+
+def retry_counts(root):
+    repo = Repo(root)
+    sdlc = sum(1 for p in repo.files if p.startswith('.sdlc/') and RETRY_NAME.match(p.rsplit('/', 1)[-1]))
+    docs = sum(1 for p in repo.files if p.startswith('docs/') and RETRY_NAME.match(p.rsplit('/', 1)[-1]))
+    return sdlc, docs
 
 
 def report(findings, out):
@@ -404,6 +455,11 @@ def _cases():
         ('D-10', w('docs/specs/links.md', '[x](missing.md)\n'), 'docs/specs/links.md'),
         ('D-11', w('docs/specs/long.md', 'x\n' * 401), 'docs/specs/long.md'),
         ('D-12', w('docs/specs/Bad Name.md', '# B\n'), 'docs/specs/Bad Name.md'),
+        ('B-1a', w('docs/reports/2026-10-05-run/builder-L1-2.md', 'x\n'), 'docs/reports/2026-10-05-run/builder-L1-2.md'),
+        ('B-1a', w('docs/reports/2026-10-05-run/runs.jsonl', 'x\n'), 'docs/reports/2026-10-05-run/runs.jsonl'),
+        ('B-2a', w('.sdlc/design-notes/review.md', '# R\n'), '.sdlc/design-notes/'),
+        ('B-2a', w('.sdlc/stray.md', '# S\n'), '.sdlc/stray.md'),
+        ('B-3a', w('docs/specs/cites.md', '[t](../../.sdlc/0001-x/handoff.md)\n'), 'docs/specs/cites.md'),
         ('D-12', many(('docs/decisions/0001-zebra.md', '---\nstatus: accepted\n---\n')), 'docs/decisions/0001-zebra.md'),
     ]
 
@@ -461,6 +517,40 @@ def gate_read_only(runner):
             raise GateFailure('the run changed files')
 
 
+def gate_boundary(runner):
+    """Record types in .sdlc/ are clean; Legacy exempts B-3a and never B-1a; retry files under .sdlc/ are not B-1a."""
+    layout = '## Homes\n\n- `specs/`\n- `reports/`\n\n## Frozen paths\n\n## Legacy\n\n- `specs/old.md`\n- `reports/old/**`\n'
+    with tempfile.TemporaryDirectory() as tmp:
+        _clean(tmp)
+        _write(tmp, '.sdlc/0001-x/handoff.md', '# H\n')
+        _write(tmp, '.sdlc/.0002-y/builder-L1-2.md', '# B\n')
+        _write(tmp, '.sdlc/wave-a/step-1/handoff.md', '# H\n')
+        _write(tmp, '.sdlc/wave-b/handoff.md', '# H\n')
+        _write(tmp, '.sdlc/messages/inbox/m.md', '# M\n')
+        _write(tmp, '.sdlc/AGENTS.md', '# A\n')
+        _write(tmp, '.sdlc/roadmap.md', '# R\n')
+        bad = [f.line() for f in runner(tmp) if f.rule.startswith('B-')]
+        if bad:
+            raise GateFailure('record types were flagged: %r' % bad)
+        _write(tmp, 'docs/layout.md', layout)
+        _write(tmp, 'docs/specs/old.md', '[t](../../.sdlc/0001-x/handoff.md)\n')
+        _write(tmp, 'docs/reports/old/builder-L1.md', '# B\n')
+        _write(tmp, 'docs/specs/new.md', '[t](../../.sdlc/0001-x/handoff.md)\n')
+        _write(tmp, '.sdlc/loose-folder/a.md', '# A\n')
+        got = runner(tmp)
+        if not any(f.rule == 'B-3a' and f.path == 'docs/specs/new.md' for f in got):
+            raise GateFailure('a docs link into .sdlc/ was not flagged')
+        if not any(f.rule == 'B-2a' and f.path == '.sdlc/loose-folder/' for f in got):
+            raise GateFailure('a folder outside the record types was not flagged')
+        if any(f.rule == 'B-3a' and f.path == 'docs/specs/old.md' for f in got):
+            raise GateFailure('a Legacy path was not exempted from B-3a')
+        if not any(f.rule == 'B-1a' and f.path == 'docs/reports/old/builder-L1.md' for f in got):
+            raise GateFailure('a Legacy path was exempted from B-1a')
+        only = run(tmp, only={'boundary'}, today=TODAY)
+        if any(f.rule.startswith('D-') for f in only) or not only:
+            raise GateFailure('--only boundary did not select only B rules')
+
+
 def _real(root):
     return run(root, today=TODAY)
 
@@ -473,6 +563,8 @@ def selftest():
     failed = 0
     gates = [('rules', gate_rules, _real, [('drops %s' % r, _without(r)) for r in sorted({c[0] for c in _cases()})]),
              ('legacy', gate_legacy, _real, [('drops D-3', _without('D-3')), ('drops D-5', _without('D-5'))]),
+             ('boundary', gate_boundary, _real, [('drops B-1a', _without('B-1a')), ('drops B-3a', _without('B-3a')),
+                                                 ('drops B-2a', _without('B-2a'))]),
              ('read-only', gate_read_only, _real, [])]
     for name, gate, real, defects in gates:
         problems = []
@@ -520,6 +612,9 @@ def main(argv=None):
     except onboard.LayoutError as e:
         sys.stderr.write('docs_check.py: %s\n' % e)
         return 2
+    if only is None or 'boundary' in only or 'B-1a' in only:
+        sd, dc = retry_counts(root)
+        sys.stdout.write('info B-1a: %d role-result retry files under .sdlc/ (they belong there, not flagged), %d under docs/ (flagged above)\n' % (sd, dc))
     return report(findings, sys.stdout)
 
 
