@@ -232,3 +232,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0225 | [.0225-solo-cost-capture](.0225-solo-cost-capture/handoff.md) | Solo sessions write no cost record, so the budget gate cannot see the default lane | bug | S | P1 | none | 🟢 done |
 | T-0226 | [.0226-fanout-solo-metering](.0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | S | P1 | none | 🟢 done |
 | T-0228 | [0228-onboard-lane-text](0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | ⏳ proposed |
+| T-0229 | [0229-solo-budget-gate](0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | ⏳ proposed |
