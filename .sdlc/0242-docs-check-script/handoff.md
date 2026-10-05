@@ -5,7 +5,7 @@ type: feature        # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2
-depends: [T-0241]   # T-NNNN, file:<path>, cap:<name>
+depends: [T-0241]   # registry parts also wait for T-0248   # T-NNNN, file:<path>, cap:<name>
 created: 2026-10-05
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
@@ -19,7 +19,8 @@ A deterministic script, plugins/sdlc-lite/scripts/docs_check.py, runs checks D-1
 - Done when: the selftest passes, `onboard.py` selftest passes with entries for homes, a read-only run of docs_check.py on this repository and on /Users/kimgranlund/Projects/maison/ui-kit-maison lists findings by rule id and writes nothing, the full check.sh passes, and an independent verifier passed. Note the setup change alters docs/AGENTS.md output for every adopter: say so in the validation note.
 
 ## Context
-Part of the docs schema design (docs/docs-schema/design.md v0.3 with the user's decisions of 2026-10-05 under Resolved decisions, ticket T-0240), reviewed once (v0.1) by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
+Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's decisions of 2026-10-05 under Resolved decisions, ticket T-0240), reviewed once (v0.1) by an independent architect (docs/validation/docs-schema-design-review.md). Build as ONE handwritten solo step under the burn-down rules (lane solo; philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction."); one independent verifier; merge main in first; check.py guard numbers stay unique (guard 23); a new check needs a positive case and an observed negative control.
 
 ## Constraints
+Registry parts (the shared `render_registry` function rendering the `row` table, `## Decide` list and `card` into `docs/AGENTS.md` and home entries, and the drift checks R-1 and R-2) start only after T-0248 reports a pass; see design.md v0.4 "The context registry pattern". The D-1 to D-12 checks do not wait.
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.

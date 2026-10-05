@@ -1,6 +1,6 @@
 # Docs schema and the docs/.sdlc boundary
 
-Status: draft v0.3, recorded 2026-10-05, after one independent architect review of v0.1 ([record](../validation/docs-schema-design-review.md)). v0.2 and v0.3 were not reviewed again. Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
+Status: draft v0.4, recorded 2026-10-05, after one independent architect review of v0.1 ([record](../validation/docs-schema-design-review.md)). v0.2, v0.3 and v0.4 were not reviewed by the architect again; v0.4 adds the context registry pattern, which is grounded in cited evidence and has placement unproven until T-0248 passes. Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
 
 Every choice marked **(user may change)** is a default I picked and justified. The rest follows from the repository's own files.
 
@@ -137,6 +137,150 @@ Existing documents mostly have no front matter. The review counted 4 documents w
 - Today `onboard.py` writes no entry file under a listed home (`onboard.py` line 463 skips every path under a home, and `docs/repo-onboarding/design.md` says a home gets no entry file in version 1). Build ticket 2 extends the setup model to write entries for homes and for topics nested under a home, and amends that sentence. That changes the `docs/AGENTS.md` output for every adopter, and row 6 of the upsert table replaces their managed blocks on the next setup.
 - `reports/AGENTS.md` carries a routing rule and no per-file list. Reports sort by name, so a list would only go stale. This keeps the "no giant index" rule.
 
+## The context registry pattern
+
+Added 2026-10-05 at the user's request: any harness or session must be able to adopt the organizing principles from the folders alone. The pattern below is one scheme used identically for `docs/` and `.sdlc/`. It is grounded in cited evidence and its placement effect is **unproven** until the placement proof (T-0248) passes. This design counts the pattern as proven only after that test, and every claim below carries a label.
+
+### Need, and what grounds it
+
+Progressive Context says to "add no registry ... without an actual need" (`plugins/progressive-context/skills/progressive-context/SKILL.md`, line 24). The need here is placement: a session that must put a new document or record somewhere has no stated rule. This repository's `docs/` holds 7 folders and 5 loose files, and the review counted that only 8 of 69 `docs/validation/` names carry a date. That shows the rule is missing, not that a registry fixes it, so the placement proof decides whether the registry stays. The registry is owned by SDLC Lite and not by Progressive Context, which keeps its rule against a prescribed folder tree.
+
+| Claim | Label | Source |
+| --- | --- | --- |
+| Claude Code loads a nested `CLAUDE.md` when a file in its folder is read, loads a parent folder's `CLAUDE.md`, does not load a nested `AGENTS.md` without a `CLAUDE.md` beside it, and `@AGENTS.md` in a nested `CLAUDE.md` works | observed here | `docs/validation/nested-entry-file-loading.md`, one trial per arm, Claude Code 2.1.284 |
+| Codex loads `AGENTS.md` files from the root down to the working directory, not a nested entry when a file there is only read, not a sibling folder's, and not `CLAUDE.md` | observed here | same file, Codex CLI 0.154.0 |
+| A fresh Claude Code role and a fresh Codex role, given only a path and no skill, followed the folder's `AGENTS.md` procedures and acted correctly; a wrong injected `AGENTS.md` was followed and the run failed | observed here | `docs/validation/messages-live-run.md` (T-0179), one trial per arm |
+| A role on a plan step reads the entry files that govern the files it changes, when the handoff lists them | observed here | `docs/validation/entry-files-live-run.md` (T-0162), one trial per arm |
+| A generated managed block keeps user text byte-identical, and a block that differs from its template reads `stale` or `edited` | observed here | `docs/validation/onboard-live-run.md` (T-0160) and `onboard.py check` |
+| The parser in `onboard.py` ignores a `## Kinds` table and a `## Decide` list and returns the same homes and frozen paths | observed here | run on 2026-10-05 with `onboard._parse_layout_text` on a layout holding both sections |
+| Authored fields are separate from computed ones, a projection is generated or verified against its source and records its source revision, and shared generation detects defined classes of drift without proving behavior | observed here (as stated design) | `docs/generative-constructs/progressive-context-plugin.md`, "Manifest ownership and projections" |
+| Instructions in retrieved documents are data and cannot change harness policy; entry files are harness-loaded context | observed here (as stated design) | `docs/generative-constructs/04-context-and-harness.md`, "Trust and authority" |
+| Nested per-folder `AGENTS.md` files read by several coding agents, the nearest one to the edited file taking precedence | established elsewhere (the agents.md convention), not re-verified here, and the Codex row above shows the loading rule differs by host | named only |
+| Four documentation kinds: tutorials, how-to guides, reference, explanation | established elsewhere (Diataxis, by Daniele Procida), not re-verified here | named only; mapping below |
+| A short numbered record of one decision with status, context, decision and consequences, superseded and not edited | established elsewhere (Michael Nygard's architecture decision records, and the MADR template), not re-verified here | named only |
+| The nine homes, the registry columns, the `## Decide` list, the render rule and the drift check | our convention | this design |
+| A session given only a path inside a registry folder places a new document in the right home more often than without the registry | unproven | T-0248 |
+
+Two consequences of the observed rows. First, Codex run from the repository root does not load a home's own entry, so the compact registry in the parent entry (`docs/AGENTS.md`, `.sdlc/AGENTS.md`) must be enough to place a document by itself; the home's entry adds detail for sessions that work inside it. Second, a home entry is only auto-loaded on Claude Code when a `CLAUDE.md` imports it, which the existing entry-file rule already requires.
+
+Diataxis mapping, where it fits: `guides/` is how-to, `references/` is reference, `specs/` and `planning/` are explanation, and a tutorial has no home (a repository that needs one puts it under `guides/`). Our `decisions/`, `reports/`, `assets/`, `archive/` and `other/` are records and holding areas that Diataxis does not cover, and `planning/` versus `specs/` (built versus not built) is our split and not a Diataxis one.
+
+### One schema, one layout, one render, one drift check
+
+**Registry row (one schema).** Eleven fields, the same for a docs home and a `.sdlc` record type:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | the folder (`specs/`) or file (`notes.md`) the row governs |
+| `kind` | one of the fixed kinds for docs, or a record kind for `.sdlc` |
+| `holds` | what belongs here |
+| `not` | what does not, each with the place it goes instead |
+| `why` | the principle, one phrase |
+| `writer` | who writes it and when |
+| `form` | naming and required front matter or file shape |
+| `life` | how it ends: promote, supersede to `archive/`, `review-by`, close, expire |
+| `entry` | the folder's own `AGENTS.md`, or none |
+| `read` | read when |
+| `owner` | the command or check that owns it |
+
+**Two projections of one row.** The `row` projection (fields `id`, `holds`, `not`, `why`, `form`, `read`) is a table line in the parent entry. The `card` projection (all eleven fields) is the first block of the folder's own `AGENTS.md`, followed by user-owned local rules. A cell is one short phrase; the check reports a cell over 70 characters. Detail lives in this design, linked, and not in the entry.
+
+**One entry-file layout.** `AGENTS.md` holds one managed block and then user text. The block of a parent entry holds, in this order: what this system is (one sentence), how to use it (read the registry, pick one home, read one file), the `row` table, the `## Decide` list, and the add-a-document checklist. A home entry holds the `card`. `CLAUDE.md` is one line, `@AGENTS.md`. This is the layout `onboard.py` already writes for entry files, with the block content defined here.
+
+**One source of truth.** The machine-readable registry is `## Kinds` in `docs/layout.md` for docs, and `## Kinds` in `.sdlc/layout.md` for `.sdlc/`: a Markdown table whose header names the eleven fields. The decision list is `## Decide`, ordered lines of the form `N. <question>? yes -> \`id\``, ending in one `otherwise -> \`id\``. The same parser reads both files. For `.sdlc/` the smaller choice is a new `.sdlc/layout.md`: `.sdlc/config` is a plain `key: value` file read by `tickets.py` with its own line rules, and a table in it would risk breaking that reader, while a second file of the same shape needs no new parser. The default content of each file is shipped by the plugin and written once when the file is missing, like `docs/layout.md` today.
+
+**One render mechanism.** A single function, `render_registry(layout, projection)`, in the shared module that `onboard.py` and `tickets.py` already share (`TEMPLATE_VERSION` is shared today), produces the block text, the `row` table, the `## Decide` list and the `card`. Two callers: `onboard.py setup` renders the docs entries and the `.sdlc` entries; `tickets.py roadmap` (also run by `new` and `close`) re-renders the `.sdlc/AGENTS.md` block it already regenerates, with the registry as one more section of that block. This is the smaller choice against a second managed block, which would need a name in the marker and a parser change. Authored fields are only in `layout.md`; the entries are projections that carry the layout's digest, as the generative-constructs material describes.
+
+**One drift check.** `onboard.py check` recomputes each registry block and card from the layout and compares it with the file: a mismatch reads `stale`, the existing word, and `setup` fixes it. It reports a malformed row (missing field, unknown kind, over-long cell, a `not` with no target) as `malformed`. The same code runs on both layouts, so the checks R-1 (drift) and R-2 (row shape) apply identically to `docs/` and `.sdlc/`.
+
+**Size.** `onboard.py`'s target is 60 lines per entry (`ROOT_SIZE_TARGET`). Eleven rows and the three lists fit when cells stay short: about 13 lines of table, 8 of decision list, 6 of checklist and 6 of how-to. The `.sdlc/AGENTS.md` block already lists tickets by stage and is near the target, so T-0243 collapses a stage's ticket list to a count above a small number of entries; that is a generator change in `tickets.py` and is the main size risk.
+
+### Worked examples side by side
+
+Both are first drafts for this repository, in the one schema, with the `row` projection. The `card` for `specs/` and for `messages/` is shown after, also in the one layout.
+
+**docs/** (`## Kinds` of `docs/layout.md`)
+
+| id | holds | not | why | form | read |
+| --- | --- | --- | --- | --- | --- |
+| `specs/` | what the system is and must do; built or accepted designs | unbuilt plans -> `planning/`; dated evidence -> `reports/` | one place to trust as current | kebab-case; `status`, `date` | when changing or using the feature |
+| `planning/` | proposals and designs under review, not built | built behavior -> `specs/` | plans must not read as fact | `status` proposed, accepted, rejected or superseded | before building new work |
+| `decisions/` | one decision with its reason | steps -> `guides/` | keep the why | `NNNN-slug.md`; superseded, not edited | when a choice looks odd |
+| `references/` | lookup facts: APIs, schemas, glossaries | narrative -> `specs/` | facts you look up, not read through | kebab-case; no steps | when you need a fact |
+| `guides/` | how-to steps a person follows | lookup -> `references/` | one task, one procedure | verb-first title; numbered steps | when doing the task |
+| `reports/` | dated evidence: reviews, audits, benchmarks, releases | living rules -> `specs/` or `guides/` | evidence stays as recorded | `YYYY-MM-DD-slug.md`; dated corrections only | when judging a claim |
+| `assets/` | non-Markdown files a doc cites | Markdown -> its home | keep binaries out of text | named for the doc that cites it | when a doc embeds one |
+| `archive/` | superseded or retired material | current material | history without clutter | `git mv`; one line says what replaced it | only when asked |
+| `other/` | unsorted documents, as a quarantine | permanent homes | nothing is lost while sorting | `owner:` and `review-by:` required | only to sort it |
+
+**.sdlc/** (`## Kinds` of `.sdlc/layout.md`)
+
+| id | holds | not | why | form | read |
+| --- | --- | --- | --- | --- | --- |
+| `NNNN-slug/` | a ticket and its work: `handoff.md`, `step-N/`, role results, `runs.jsonl`, `skips.md` | reader docs -> `docs/` | one folder per unit of work | `handoff.md` front matter; results `<role>-L<n>.md` | when claiming or continuing it |
+| `<task>/` | work folders with no ticket: `verify-*`, `merge-*`, `release-*` | tickets -> `NNNN-slug/` | same shape as a ticket folder | handoff plus results | when told to |
+| `.NNNN-slug/` | a closed ticket | open work -> `NNNN-slug/` | finished work leaves the listing | renamed by `tickets.py close` | only when asked |
+| `messages/` | the git-ignored mailbox | anything that must last -> ticket or `notes.md` | hand work between harnesses | front matter `send_time`, `sender`, `receiver`, `topic` | when mail waits for you |
+| `evals/` | dated model and effort experiments | the tables themselves | a table change needs evidence | `evals.py` file format | before changing a model table |
+| `proposals/` | candidate changes mined from runs | decisions -> `docs/decisions/` | nothing applied without evidence | `proposals.py` format | when triaging |
+| `supervisor/` | idle-host watcher config and state, created by `supervisor.py init` | tickets | keep watcher state apart | `hosts.local.json` | when waking a host |
+| `notes.md` | follow-ups not filed, one block per closed ticket | open work -> a ticket | nothing is dropped at close | `## T-NNNN: title (date)` | when sweeping open items |
+| `roadmap.md` | the generated queue | edits by hand | one ordered view | generated | when choosing next work |
+| `config` | repo-owned `key: value` lines | records | tool settings | `ticket_folders`, `ticket_root`, `external_branch` | by tools |
+
+The `.sdlc` `## Decide` list is the placement rule between the two systems:
+
+1. Does a script or role write it while work runs? yes -> its record type row above.
+2. Is it a deliverable a reader returns to? yes -> `docs/`, then the docs `## Decide` list.
+3. Must a result outlive its ticket? yes -> promote a copy to `docs/reports/` with `source:`, and the `.sdlc` copy stays.
+4. Is it a design that outlived its ticket? yes -> promote a copy to `docs/planning/` or `docs/specs/`.
+5. otherwise -> it stays in its ticket folder.
+
+The docs `## Decide` list, ordered:
+
+1. Is it not Markdown? yes -> `assets/`.
+2. Is it retired or replaced? yes -> `archive/`.
+3. Is it a dated record of something that happened (a run, review, audit, benchmark, release)? yes -> `reports/`.
+4. Is it one decision with its reason? yes -> `decisions/`.
+5. Is it steps a person follows to do a task? yes -> `guides/`.
+6. Is it lookup material (a table, API, glossary)? yes -> `references/`.
+7. Does it describe something not built yet? yes -> `planning/`.
+8. Does it describe what the system is or must do? yes -> `specs/`.
+9. otherwise -> `other/`, with `owner:` and `review-by:`.
+
+**Card layout, identical for both** (a managed block at the top of the folder's `AGENTS.md`, then local rules):
+
+```text
+## Registry row
+- id: `specs/`            - id: `messages/`
+- kind: specs             - kind: mailbox
+- holds: ...              - holds: ...
+- not: ...                - not: ...
+- why: ...                - why: ...
+- writer: ...             - writer: ...
+- form: ...               - form: ...
+- life: ...               - life: ...
+- entry: `specs/AGENTS.md` - entry: `messages/AGENTS.md`
+- read: ...               - read: ...
+- owner: ...              - owner: `messages.py`
+## Local rules
+(user-owned text)
+```
+
+The two columns are one layout; only the data differs. The labels in this design apply to these examples: the rows are our convention and carry no evidence until T-0248 passes. The managed block of `docs/AGENTS.md` and `.sdlc/AGENTS.md` must say so in one line while that holds: "placement effect unproven; see docs-schema design".
+
+### Placement proof (T-0248)
+
+The test that decides whether the pattern is "proven":
+
+- **Fixture:** a throwaway repository with `docs/` holding one existing document in each of the nine homes, the registry and cards in place, and a control copy with the registry and cards removed and the entry files otherwise unchanged. Built by hand first, so the proof does not wait for the render machinery.
+- **Briefs:** 12 short briefs, each describing one new document or record whose correct home is hidden from the sessions and fixed before the run (at least 1 per home, 2 boundary briefs with accepted alternates declared in advance, and 3 for `.sdlc` versus `docs/`).
+- **Sessions:** fresh, given only a path inside the folder and the brief, with no skill and no other instruction: Claude Code headless `claude -p`, a Claude headless role (the `solo` agent), Codex `codex exec` run in `docs/`, a Codex native subagent, and an interactive Claude session where one can be driven. A session type that cannot be run is recorded as a limit, not skipped silently.
+- **Score:** exact home match per brief, per session type, with the registry and with the control. Evidence is the placement each session wrote, committed.
+- **Pass rule, set before the run:** proven for a session type only if the with-registry accuracy is at least 10 of 12 and beats the control by at least 3 briefs; "proven across all session types" requires every run type to pass. N is small and each cell is one run, so no significance is claimed; the record says so.
+- **Negative control:** the control copy must misplace more than the registry copy. If it does not, the registry is not shown to help, and the design recommends dropping it, as Progressive Context's own rule says.
+- **Until it passes,** the status of the pattern is "grounded in the cited evidence, placement unproven", and the worked examples must not claim more.
+
 ## Overriding: docs/layout.md
 
 The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) reads the two required sections `## Homes` and `## Frozen paths`, raises a `LayoutError` on a list line under `## Homes` that does not fit `` `<home>/` [takes `<glob>`, ...] ``, and ignores any other heading of level 2 or less. The review ran the parser on the text below and confirmed that new sections are ignored by it, so a **new section is backward compatible** and a new form inside `## Homes` is not.
@@ -145,8 +289,8 @@ The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) read
 
 ```text
 ## Kinds
-- `design-system/` is `specs`
-- `runbooks/` is `guides`
+| id | kind | holds | not | why | writer | form | life | entry | read | owner |
+| `design-system/` | specs | the design system | unbuilt plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | `design-system/AGENTS.md` | when using it | `docs_check.py` |
 
 ## Legacy
 - `reports/old-notes/**`
@@ -155,7 +299,7 @@ The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) read
 
 The lines above are an example of the forms, not this repository's file.
 
-- `## Kinds` binds a home to one of the nine fixed kinds. A home that uses a default name needs no line. A home with a non-default name needs one, and the check reports it as an informational line, so an exception is visible and not forbidden. There is no second mechanism for custom homes.
+- `## Kinds` is the registry table (see The context registry pattern). It binds a home to one of the nine fixed kinds. The earlier line form `` `design-system/` is `specs` `` is dropped before anything shipped it; the table row carries the kind. A home that uses a default name needs no line. A home with a non-default name needs one, and the check reports it as an informational line, so an exception is visible and not forbidden. There is no second mechanism for custom homes.
 - `## Legacy` lists globs of existing paths that are exempt from most checks (see Enforcement), in the same backticked form as `## Frozen paths`. It replaces a global warn-only mode and a date cutoff. A path that is not listed, or is not tracked yet, is new and fully checked. The migration shrinks the list and never grows it silently: the apply step rewrites it like any other citer.
 - Anything else in these sections is an error that names the file and line, like the existing parser.
 
@@ -182,6 +326,8 @@ A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `pars
 | B-1a | A path under `docs/` that matches a generated-file name: `runs.jsonl`, `skips.md`, `<role>-L<n>.md` and retries `<role>-L<n>-<k>.md`, `budget-ack.md`, `*.attempt.json`, `*.request.json`, `*.running`, `*.log` | error |
 | B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
 | B-3a | A `docs/` file that links to a path under `.sdlc/` | warning |
+| R-1 | A registry block or card in an entry file that differs from the one rendered from `## Kinds` of the layout (`stale`); same code for `docs/layout.md` and `.sdlc/layout.md` | error |
+| R-2 | A registry row with a missing field, an unknown kind, a cell over 70 characters, or a `not` with no target (`malformed`) | error |
 
 The role-result file-name patterns in B-1a come from `run.sh` and `steps.py`, which write `<role>-L<n>.md`, retries as `<role>-L<n>-<k>.md` (49 tracked files in this repository), and `runs.jsonl`. The review reported that 101 files in `docs/validation/` cite `.sdlc/` paths, so B-3a depends on a `## Legacy` glob covering those existing records once they sit in `reports/` (new reports are fully checked). B-2a cannot tell a design review from a role result by name, so it reports the candidates and does not block. That is a limit of a deterministic check: it finds where a file is, not what it is for.
 
@@ -255,6 +401,8 @@ Questions 1 to 4 of the earlier draft are resolved (see Resolved decisions). Sti
 
 5. Is the 90-day `review-by` horizon right? Default 90 days.
 6. Should `README.md` stay optional? Default optional.
+7. Is a separate `.sdlc/layout.md` right, or should `.sdlc/config` grow a table? Default a separate file, since `config` is read by `tickets.py` as plain `key: value` lines.
+8. If T-0248 shows the registry does not help placement, drop it and keep the nine homes and the `## Decide` list in `docs/AGENTS.md` prose. Default: drop, as Progressive Context line 24 says.
 
 ## Validation plan
 
@@ -265,15 +413,18 @@ Each check gets a fixture repository with a positive case and a negative control
 - `parse_layout` accepts a file with `## Kinds` and `## Legacy`, and the current parser still reads the same file without error (the review ran it). A `## Kinds` or `## Legacy` line outside the forms fails with the file and line.
 - Legacy scope: a path matched by `## Legacy` passes D-3, D-4, D-9 and D-12 without the file-name or front matter rule, an unlisted or untracked path fails, and D-5, D-6, B-1a and B-2a still fire on a legacy path.
 - A decision number used twice under `decisions/` fails D-12.
+- R-1 and R-2: a clean render passes, an edited block fails `stale`, a row missing a field fails `malformed`, and a mutated renderer that skips a row fails the selftest. The same cases run for `docs/layout.md` and `.sdlc/layout.md`.
+- Placement proof T-0248 (see The context registry pattern). Until it passes the pattern is "grounded in the cited evidence, placement unproven".
 - A read-only run of `docs_check.py` on this repository and on maison reports each finding with the rule id, and writes nothing there.
 
 ## Build tickets
 
 Each is size S or M and fits one solo step. They are filed as `proposed`.
 
-1. **Schema format and parser (T-0241):** `## Kinds` and `## Legacy` in `onboard.py`'s `parse_layout`, `Layout` gains `kinds` and `legacy`, with the selftest. Depends on nothing.
-2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7) written by setup only after a dry-run diff and one question (decision 4), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Depends on 1.
-3. **The `.sdlc` boundary checks (T-0243):** B-1a, B-2a and B-3a in `docs_check.py` with `check.sh` wiring. Depends on 2.
+1. **Schema format and parser (T-0241):** the `## Kinds` registry table (eleven columns), `## Decide` list, and `## Legacy` in `onboard.py`'s `parse_layout`, `Layout` gains `kinds` and `legacy`, with the selftest. Depends on nothing.
+2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7) written by setup only after a dry-run diff and one question (decision 4), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Also the shared `render_registry` function and R-1 and R-2. Depends on 1.
+3. **The `.sdlc` boundary checks and registry (T-0243):** B-1a, B-2a and B-3a in `docs_check.py` with `check.sh` wiring, the new `.sdlc/layout.md` record-type registry rendered into `.sdlc/AGENTS.md` by `tickets.py roadmap` through the same render function, and the ticket-list size handling. Depends on 2.
 4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, except the validation move, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
 6. **Rename `docs/validation/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
 5. **Promotion helper (T-0245):** a small script that copies a `.sdlc` artifact to a `docs/` home with the `source:` front matter. Depends on 1.
+7. **Placement proof (T-0248, proposed, size M, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The T-0241 parser and the other checks do not wait.

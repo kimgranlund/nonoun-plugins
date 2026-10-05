@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:80fb273e67b1 -->
+<!-- sdlc-lite:managed:start v1 sha256:c6be06bdec7f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,14 +9,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 8
   - T-0230 fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests (0230-fanout-codex-report-and-gate)
-  - T-0241 Schema format: ## Kinds and ## Legacy in the docs/layout.md parser (0241-docs-schema-parser)
+  - T-0241 Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser (0241-docs-schema-parser)
   - T-0242 docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template (0242-docs-check-script)
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
   - T-0246 Rename docs/validation to docs/reports and rewrite references (0246-rename-validation-to-reports)
+  - T-0248 Placement proof for the context registry (0248-placement-proof)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
