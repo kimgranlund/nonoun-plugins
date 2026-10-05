@@ -2,7 +2,7 @@
 name: plan-goal
 description: "Plan a /goal session: gather the scope and limits from the thread and repo, apply the goal rules (a checkable done-when, stop rules with numbers, explicit authorization), check the block with plan_check.py, and return one copy/paste /goal block. Use for \"write me a goal\", \"overnight goal\", or before unattended work. NOT for running the goal."
 argument-hint: "[what the goal should achieve]"
-allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lane:*), Bash(git log:*), AskUserQuestion
+allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lane:*), Bash(git log:*), AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host question mechanism. `/goal` and `/loop` behavior on Codex is unverified here: emit the same block and say so. Claude Code follows the workflow below directly.
@@ -13,7 +13,7 @@ A `/goal` condition is checked by a session stop hook on every turn, so it must 
 
 ## 1. Gather
 
-Take every input from the thread and repo before asking: open tickets (`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check`, then the ready ones), each ticket's size and lane (`steps.py lane <task dir>`), spend so far, and what the person already authorized. Ask only for what is still missing, once, with 2 to 4 reasoned options each (a money cap, a release authorization, what to include). If `AskUserQuestion` is unavailable, ask in plain lines.
+Take every input from the thread and repo before asking: open tickets (`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py --root .sdlc check`, then the ready ones), each ticket's size and lane (`steps.py lane <task dir>`, which records the lane in that task's `skips.md`), spend so far, and what the person already authorized. Ask only for what is still missing, once, with 2 to 4 reasoned options each (a money cap, a release authorization, what to include). If `AskUserQuestion` is unavailable, ask in plain lines.
 
 ## 2. Write the block
 
