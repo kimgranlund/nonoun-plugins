@@ -35,16 +35,30 @@ import tempfile
 HOMES = '## Homes'
 FROZEN = '## Frozen paths'
 SECTIONS = (HOMES, FROZEN)
+KINDS = '## Kinds'
+DECIDE = '## Decide'
+LEGACY = '## Legacy'
+OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY)
+DOC_KINDS = ('specs', 'planning', 'decisions', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+KIND_COLUMNS = ('id', 'kind', 'holds', 'not', 'why', 'writer', 'form', 'life', 'entry', 'read', 'owner')
+KIND_REQUIRED = ('id', 'kind', 'holds', 'not', 'why', 'form', 'read')
 
 LIST_LINE = re.compile(r'^\s*[-*+]')
 HEADING = re.compile(r'^\s{0,3}(#{1,6})(?:\s|$)')
 TICKED = r'`([^`]+)`'
 HOME_FORM = re.compile(r'^\s*[-*+]\s+`([^`]*/)`(?:\s+takes\s+(' + TICKED + r'(?:\s*,\s*' + TICKED + r')*))?\s*$')
 FROZEN_FORM = re.compile(r'^\s*[-*+]\s+' + TICKED + r'\s*$')
+DECIDE_FORM = re.compile(r'^\s*(\d+)\.\s+(.*\?)\s+yes\s*->\s*`([^`]+)`\s*$')
+OTHERWISE_FORM = re.compile(r'^\s*otherwise\s*->\s*`([^`]+)`\s*$')
+TABLE_SPLIT = re.compile(r'(?<!\\)\|')
+SEPARATOR_CELL = re.compile(r'^:?-{3,}:?$')
 FENCE_OPEN = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
 
-Layout = collections.namedtuple('Layout', 'homes frozen')
-Layout.__doc__ = 'homes: dict of home path to a tuple of globs, in file order. frozen: list of patterns.'
+Layout = collections.namedtuple('Layout', 'homes frozen kinds decide legacy', defaults=({}, (), []))
+Layout.__doc__ = ('homes: dict of home path to a tuple of globs, in file order. frozen: list of patterns. '
+                  'kinds: dict of row id to a dict of the eleven registry fields, in file order. '
+                  'decide: tuple of (question, id) in order, ending with ("otherwise", id); empty without a '
+                  '## Decide section. legacy: list of globs.')
 
 
 class LayoutError(Exception):
@@ -68,15 +82,27 @@ def _split_lines(text):
     return [ln[:-1] if ln.endswith('\r') else ln for ln in lines]
 
 
-def _parse_layout(path, skip=frozenset()):
+def _parse_layout(path, skip=frozenset(), docs=True):
     """The parser. `skip` names rules to leave out; only the selftest's defective variants pass it."""
     with open(path, encoding='utf-8') as f:
         text = f.read()
-    return _parse_layout_text(text, path, skip)
+    return _parse_layout_text(text, path, skip, docs)
 
 
-def _parse_layout_text(text, path, skip=frozenset()):
-    homes, frozen = {}, []
+def _cells(line):
+    inner = line.strip()
+    if not (inner.startswith('|') and inner.endswith('|') and len(inner) > 1):
+        return None
+    return [c.strip().replace('\\|', '|') for c in TABLE_SPLIT.split(inner[1:-1])]
+
+
+def _parse_layout_text(text, path, skip=frozenset(), docs=True):
+    """docs=False reads a layout for another tree (.sdlc): kinds are free text and the required
+    ## Homes and ## Frozen paths sections and the home cross-check do not apply."""
+    homes, frozen, legacy = {}, [], []
+    kinds, decide = {}, []
+    otherwise = None
+    state = {'header': False, 'sep': False}
     seen = {}
     section = None
     n = 0
@@ -86,13 +112,64 @@ def _parse_layout_text(text, path, skip=frozenset()):
         m = HEADING.match(line)
         if m:
             head = line.strip()
-            if head in SECTIONS:
+            if head in SECTIONS or head in OPTIONAL_SECTIONS:
                 if head in seen and 'duplicate-heading' not in skip:
                     raise LayoutError(path, n, '%r appears twice (first at line %d)' % (head, seen[head]))
                 seen.setdefault(head, n)
                 section = head
             elif len(m.group(1)) <= 2:
                 section = None
+            continue
+        if section == KINDS:
+            if not line.strip():
+                continue
+            cells = _cells(line)
+            if cells is None or len(cells) != len(KIND_COLUMNS):
+                if 'kinds-form' in skip:
+                    continue
+                raise LayoutError(path, n, 'line under %r is not a table row of %d cells' % (KINDS, len(KIND_COLUMNS)))
+            if not state['header']:
+                if tuple(c.lower() for c in cells) != KIND_COLUMNS and 'kinds-form' not in skip:
+                    raise LayoutError(path, n, 'header under %r must name %s' % (KINDS, ', '.join(KIND_COLUMNS)))
+                state['header'] = True
+                continue
+            if not state['sep']:
+                state['sep'] = True
+                if all(SEPARATOR_CELL.match(c) for c in cells):
+                    continue
+                if 'kinds-form' not in skip:
+                    raise LayoutError(path, n, 'the row after the header under %r must be a separator row' % KINDS)
+            row = dict(zip(KIND_COLUMNS, cells))
+            for col in KIND_REQUIRED:
+                if row[col] in ('', '-') and 'kinds-form' not in skip:
+                    raise LayoutError(path, n, 'row under %r has no value for required column %r' % (KINDS, col))
+            rid = row['id'].strip('`')
+            row['id'] = rid
+            row['kind'] = row['kind'].strip('`')
+            if rid in kinds and 'kinds-duplicate' not in skip:
+                raise LayoutError(path, n, 'row id %r is listed twice under %r' % (rid, KINDS))
+            if docs and row['kind'] not in DOC_KINDS and 'kind-unknown' not in skip:
+                raise LayoutError(path, n, 'kind %r is not one of %s' % (row['kind'], ', '.join(DOC_KINDS)))
+            kinds[rid] = row
+            state.setdefault('lines', {})[rid] = n
+            continue
+        if section == DECIDE:
+            if not line.strip():
+                continue
+            if otherwise is not None and 'decide-form' not in skip:
+                raise LayoutError(path, n, 'line after the otherwise line under %r' % DECIDE)
+            m = OTHERWISE_FORM.match(line)
+            if m:
+                otherwise = m.group(1)
+                continue
+            m = DECIDE_FORM.match(line)
+            if not m:
+                if 'decide-form' in skip:
+                    continue
+                raise LayoutError(path, n, 'line under %r is not `N. <question>? yes -> `id`` or `otherwise -> `id``' % DECIDE)
+            if int(m.group(1)) != len(decide) + 1 and 'decide-form' not in skip:
+                raise LayoutError(path, n, 'decide line is numbered %s, expected %d' % (m.group(1), len(decide) + 1))
+            decide.append((m.group(2), m.group(3)))
             continue
         if section is None or not LIST_LINE.match(line):
             continue
@@ -110,19 +187,30 @@ def _parse_layout_text(text, path, skip=frozenset()):
         else:
             m = FROZEN_FORM.match(line)
             if not m:
-                if 'form' in skip:
+                if 'form' in skip and section == FROZEN:
                     continue
-                raise LayoutError(path, n, 'list line under %r is not one `<glob>`' % FROZEN)
-            frozen.append(m.group(1))
-    for head in SECTIONS:
-        if head not in seen:
-            raise LayoutError(path, max(n, 1), 'section heading %r is missing' % head)
-    return Layout(homes, frozen)
+                if 'legacy-form' in skip and section == LEGACY:
+                    continue
+                raise LayoutError(path, n, 'list line under %r is not one `<glob>`' % section)
+            (frozen if section == FROZEN else legacy).append(m.group(1))
+    if docs:
+        for head in SECTIONS:
+            if head not in seen:
+                raise LayoutError(path, max(n, 1), 'section heading %r is missing' % head)
+        if 'kinds-home' not in skip:
+            for rid, ln in state.get('lines', {}).items():
+                if rid not in homes:
+                    raise LayoutError(path, ln, 'row id %r under %r is not a home listed under %r' % (rid, KINDS, HOMES))
+    if DECIDE in seen and otherwise is None and 'decide-form' not in skip:
+        raise LayoutError(path, max(n, 1), '%r has no otherwise line' % DECIDE)
+    return Layout(homes, frozen, kinds, tuple(decide) + ((('otherwise', otherwise),) if otherwise else ()), legacy)
 
 
-def parse_layout(path):
-    """Parse docs/layout.md into Layout(homes, frozen). Raises LayoutError with file and line."""
-    return _parse_layout(path)
+def parse_layout(path, docs=True):
+    """Parse a layout file into Layout. Raises LayoutError with file and line.
+
+    docs=True is docs/layout.md; docs=False is another tree's layout (.sdlc/layout.md)."""
+    return _parse_layout(path, docs=docs)
 
 
 def _glob_regex(pattern):
@@ -829,6 +917,86 @@ def gate_layout_parsing(parse):
             raise GateFailure('%s: parsed without an error' % label)
 
 
+KIND_HEADER = '| ' + ' | '.join(KIND_COLUMNS) + ' |\n| ' + ' | '.join(['---'] * len(KIND_COLUMNS)) + ' |\n'
+
+
+def _kind_row(rid, kind='specs', **over):
+    cells = {'id': '`%s`' % rid, 'kind': kind, 'holds': 'the system', 'not': 'plans -> `planning/`', 'why': 'one place',
+             'writer': '-', 'form': 'kebab', 'life': '-', 'entry': '-', 'read': 'when using it', 'owner': '-'}
+    cells.update(over)
+    return '| ' + ' | '.join(cells[c] for c in KIND_COLUMNS) + ' |\n'
+
+
+def gate_layout_sections(parse):
+    base = '## Homes\n- `specs/`\n- `reports/`\n## Frozen paths\n'
+    kinds = '## Kinds\n' + KIND_HEADER + _kind_row('specs/') + _kind_row('reports/', 'reports')
+    decide = ('## Decide\n1. Is it evidence of something that happened? yes -> `reports/`\n'
+              '2. Is it a description of the system? yes -> `specs/`\notherwise -> `specs/`\n')
+    legacy = '## Legacy\n- `reports/old/**`\n- `imported/**`\n'
+    old_style = '## Homes\n- `maintenance/`\n## Frozen paths\n- `x/`\n## Kinds is mentioned in prose only\n'
+    cases = [
+        ('unknown kind', base + '## Kinds\n' + KIND_HEADER + _kind_row('specs/', 'diary'), 8),
+        ('row for a home that is not listed', base + '## Kinds\n' + KIND_HEADER + _kind_row('guides/', 'guides'), 8),
+        ('prose line under Kinds', base + '## Kinds\nsome prose\n', 6),
+        ('header missing a column', base + '## Kinds\n| id | kind |\n| --- | --- |\n', 6),
+        ('duplicate row id', base + '## Kinds\n' + KIND_HEADER + _kind_row('specs/') + _kind_row('specs/'), 9),
+        ('missing required value', base + '## Kinds\n' + KIND_HEADER + _kind_row('specs/', holds='-'), 8),
+        ('Kinds heading twice', base + kinds + '## Kinds\n', 10),
+        ('Decide line outside the form', base + '## Decide\n1. Is it a plan? maybe\n', 6),
+        ('Decide numbering skips', base + '## Decide\n2. Is it a plan? yes -> `specs/`\n', 6),
+        ('Decide with no otherwise', base + '## Decide\n1. Is it a plan? yes -> `specs/`\n', 6),
+        ('Decide line after otherwise', base + '## Decide\notherwise -> `specs/`\n1. Is it a plan? yes -> `specs/`\n', 7),
+        ('Legacy line without backticks', base + '## Legacy\n- reports/old/**\n', 6),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        def write(name, text):
+            p = os.path.join(tmp, name)
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(text)
+            return p
+
+        got = parse(write('ok.md', base + kinds + '\n' + decide + '\n' + legacy))
+        expect(list(got.kinds) == ['specs/', 'reports/'], 'kinds parsed as %r' % (list(got.kinds),))
+        expect(got.kinds['reports/']['kind'] == 'reports' and got.kinds['specs/']['read'] == 'when using it',
+               'kind row fields parsed wrong: %r' % (got.kinds,))
+        expect(got.decide == (('Is it evidence of something that happened?', 'reports/'),
+                              ('Is it a description of the system?', 'specs/'), ('otherwise', 'specs/')),
+               'decide parsed as %r' % (got.decide,))
+        expect(got.legacy == ['reports/old/**', 'imported/**'], 'legacy parsed as %r' % (got.legacy,))
+        expect(got.homes == {'specs/': (), 'reports/': ()} and got.frozen == [], 'homes or frozen changed: %r' % (got,))
+        got = parse(write('old.md', old_style))
+        expect(got.kinds == {} and got.decide == () and got.legacy == [] and got.frozen == ['x/'],
+               'an older-style file parsed as %r' % (got,))
+        for i, (label, text, line) in enumerate(cases):
+            path = write('bad%d.md' % i, text)
+            try:
+                parse(path)
+            except LayoutError as e:
+                expect(e.line == line, '%s: error at line %s, expected %d' % (label, e.line, line))
+                expect(e.path == path, '%s: error names %r, expected %r' % (label, e.path, path))
+                continue
+            raise GateFailure('%s: parsed without an error' % label)
+
+
+def gate_layout_other_tree(parse):
+    """A .sdlc layout: free-text kinds, no Homes or Frozen sections required."""
+    text = '## Kinds\n' + KIND_HEADER + _kind_row('notes.md', 'notebook')
+    with tempfile.TemporaryDirectory() as tmp:
+        p = os.path.join(tmp, 'layout.md')
+        with open(p, 'w', encoding='utf-8') as f:
+            f.write(text)
+        got = parse(p)
+        expect(list(got.kinds) == ['notes.md'] and got.kinds['notes.md']['kind'] == 'notebook',
+               'other-tree kinds parsed as %r' % (got.kinds,))
+        with open(p, 'w', encoding='utf-8') as f:
+            f.write('## Kinds\n| id | kind |\n')
+        try:
+            parse(p)
+        except LayoutError:
+            return
+        raise GateFailure('other-tree layout with a short header parsed without an error')
+
+
 def gate_import_detection(detect):
     yes = [
         '@AGENTS.md\n',
@@ -1241,6 +1409,18 @@ GATES = [
         ('skips the list-line form rule', functools.partial(_parse_layout, skip=frozenset({'form'}))),
         ('skips the duplicate heading rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-heading'}))),
         ('skips the duplicate home rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-home'}))),
+    ]),
+    ('layout-sections', gate_layout_sections, parse_layout, [
+        ('skips the unknown kind rule', functools.partial(_parse_layout, skip=frozenset({'kind-unknown'}))),
+        ('skips the home cross-check', functools.partial(_parse_layout, skip=frozenset({'kinds-home'}))),
+        ('skips the table form rules', functools.partial(_parse_layout, skip=frozenset({'kinds-form'}))),
+        ('skips the duplicate row rule', functools.partial(_parse_layout, skip=frozenset({'kinds-duplicate'}))),
+        ('skips the Decide form rules', functools.partial(_parse_layout, skip=frozenset({'decide-form'}))),
+        ('skips the Legacy form rule', functools.partial(_parse_layout, skip=frozenset({'legacy-form'}))),
+        ('skips the duplicate heading rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-heading'}))),
+    ]),
+    ('layout-other-tree', gate_layout_other_tree, functools.partial(_parse_layout, docs=False), [
+        ('skips the table form rules', functools.partial(_parse_layout, skip=frozenset({'kinds-form'}), docs=False)),
     ]),
     ('import-detection', gate_import_detection, has_import, [
         ('skips the code fence rule', functools.partial(_has_import, fences=False)),
