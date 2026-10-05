@@ -2,7 +2,7 @@
 id: T-0242
 title: "docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2
 depends: [T-0241]   # registry parts also wait for T-0248   # T-NNNN, file:<path>, cap:<name>
@@ -24,3 +24,7 @@ Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's 
 ## Constraints
 Registry parts (the shared `render_registry` function rendering the `row` table, `## Decide` list and `card` into `docs/AGENTS.md` and home entries, and the drift checks R-1 and R-2) start only after T-0248 reports a pass; see design.md v0.4 "The context registry pattern". The D-1 to D-12 checks do not wait.
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.
+
+## Closed
+
+2026-10-05: docs_check.py D-1 to D-12, setup entries for homes, default layout; verifier L3 failed once (depth, design templates, ask once), fixed; full checks pass; merged to main
