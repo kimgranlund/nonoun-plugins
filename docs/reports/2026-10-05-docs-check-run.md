@@ -4,13 +4,13 @@ Recorded: 2026-10-05. Scripts: `plugins/sdlc-lite/scripts/docs_check.py` (D-1 to
 
 ## What changed for adopters
 
-`onboard.py setup` now writes a different `docs/AGENTS.md` block for every adopter: the nine homes, the decision list, and the add-a-document steps replace the earlier three-step block. An existing block reads `stale` in `onboard.py check` and `setup` replaces it (use `setup --dry-run` to see the diff first). Setup also writes an entry file and a `CLAUDE.md` stub for a home, and for a topic folder directly under a home, once it holds two or more documents (at most 20 documents are listed, the rest are counted). The default `docs/layout.md` written when the file is missing now lists the nine homes with `## Kinds`, `## Decide` and an empty `## Legacy`. Existing layout files are not touched.
+`onboard.py setup` now writes a different `docs/AGENTS.md` block for every adopter: the nine homes, the decision list, and the add-a-document steps replace the earlier three-step block. An existing block reads `stale` in `onboard.py check` and `setup` replaces it (an interactive `setup` prints the diff and asks once before writing; `--dry-run` only prints it, `--yes` skips the question, and a non-interactive run writes as before). Setup also writes an entry file and a `CLAUDE.md` stub for a home, and for a topic folder directly under a home, once it holds two or more documents (at most 20 documents are listed, the rest are counted). The default `docs/layout.md` written when the file is missing now lists the nine homes with `## Kinds`, `## Decide` and an empty `## Legacy`. Existing layout files are not touched.
 
 ## Read-only runs (nothing written; `git status` counts were identical before and after)
 
 | Target | Result |
 | --- | --- |
-| This repository (no `docs/layout.md`, default homes) | 85 errors, 8 warnings: D-1 6, D-10 4, D-11 4, D-12 19, D-2 4, D-3 49, D-5 1, D-7 1, D-9 5. Expected before the migration (T-0244); the checker is not a gate here yet. |
+| This repository (no `docs/layout.md`, default homes) | 90 errors, 8 warnings: D-1 6, D-10 4, D-11 4, D-12 19, D-2 4, D-3 54, D-5 1, D-7 1, D-9 5. Expected before the migration (T-0244); the checker is not a gate here yet. |
 | `/Users/kimgranlund/Projects/maison/ui-kit-maison` | 15 errors, 7 warnings: D-1 3, D-10 7, D-12 7, D-9 5. `onboard.py check` there reports `stale docs/AGENTS.md` and missing entries for `docs/maintenance/`, `docs/reference/` and `docs/gen-ui-evaluation/`. |
 
 ## Limits

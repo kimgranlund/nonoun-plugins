@@ -1665,6 +1665,7 @@ def main(argv=None):
     sp = sub.add_parser('setup', help='create or update the managed files')
     sp.add_argument('--dry-run', action='store_true', help='print the diff of every change and write nothing')
     sp.add_argument('--force', action='store_true', help='replace a managed block edited by hand')
+    sp.add_argument('--yes', action='store_true', help='write without asking (an interactive run asks once after the diff)')
     sub.add_parser('check', help='report the state of every managed file and write nothing')
     sub.add_parser('selftest', help='run the gates on temp fixtures')
     args = ap.parse_args(argv)
@@ -1678,6 +1679,13 @@ def main(argv=None):
         print('onboard.py %s: not a Git work tree; run it inside the repository' % args.cmd, file=sys.stderr)
         return 1
     if args.cmd == 'setup':
+        if not args.dry_run and not args.yes and sys.stdin.isatty():
+            rc = run_setup(root, dry_run=True, force=args.force)
+            if rc:
+                return rc
+            if input('Write these changes? [y/N] ').strip().lower() not in ('y', 'yes'):
+                print('nothing written')
+                return 0
         return run_setup(root, dry_run=args.dry_run, force=args.force)
     return run_check(root)
 

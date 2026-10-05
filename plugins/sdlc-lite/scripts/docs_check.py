@@ -218,7 +218,7 @@ def run(root, only=None, today=None, disable=()):
         if on('D-2') and top is None and base not in TOP_FILES:
             add('error', 'D-2', rel, 'file directly in docs/; entry files, README.md and layout.md are the only ones allowed')
         if md(rel) and not entry(rel) and top is not None:
-            if on('D-3') and kind == 'reports' and depth == 1 and not in_ev:
+            if on('D-3') and kind == 'reports' and not in_ev:
                 if not DATE_IN_NAME.search(base) and not _dates(fm.get('date')):
                     add('error', 'D-3', rel, 'report with no date in the file name and no date: front matter')
             if on('D-4') and kind in ('planning', 'decisions'):
@@ -281,7 +281,7 @@ def run(root, only=None, today=None, disable=()):
                 problems.append('is not lowercase kebab-case')
             if VERSION_SUFFIX.search(stem):
                 problems.append('has a version suffix')
-            if kind == 'reports' and depth == 1 and md(rel) and DATE_IN_NAME.search(base) and not REPORT_NAME.match(base):
+            if kind == 'reports' and md(rel) and DATE_IN_NAME.search(base) and not REPORT_NAME.match(base):
                 problems.append('report date must lead the name as YYYY-MM-DD-slug.md')
             if kind == 'decisions' and md(rel) and not DECISION_NAME.match(base):
                 problems.append('decision name must be NNNN-slug.md')
@@ -394,6 +394,7 @@ def _cases():
         ('D-1', w('docs/notes/a.md', '# A\n'), 'docs/notes/'),
         ('D-2', w('docs/loose.md', '# L\n'), 'docs/loose.md'),
         ('D-3', w('docs/reports/summary.md', '# S\n'), 'docs/reports/summary.md'),
+        ('D-3', w('docs/reports/nested/summary.md', '# S\n'), 'docs/reports/nested/summary.md'),
         ('D-4', w('docs/planning/no-status.md', '# P\n'), 'docs/planning/no-status.md'),
         ('D-5', w('docs/other/orphan.md', '# O\n'), 'docs/other/orphan.md'),
         ('D-6', w('docs/other/late.md', '---\nowner: kim\nreview-by: 2026-09-01\n---\n'), 'docs/other/late.md'),
@@ -432,7 +433,10 @@ def gate_legacy(runner):
         _write(tmp, 'docs/layout.md', layout)
         _write(tmp, 'docs/reports/old/summary.md', '# S\n')
         _write(tmp, 'docs/other/orphan.md', '# O\n')
+        _write(tmp, 'docs/other/late.md', '---\nowner: kim\nreview-by: 2026-09-01\n---\n')
         got = runner(tmp)
+        if not any(f.rule == 'D-6' and f.path == 'docs/other/late.md' for f in got):
+            raise GateFailure('a Legacy path was exempted from D-6')
         if any(f.path == 'docs/reports/old/summary.md' for f in got):
             raise GateFailure('a Legacy path was not exempted from D-3')
         if not any(f.rule == 'D-5' and f.path == 'docs/other/orphan.md' for f in got):
@@ -506,6 +510,9 @@ def main(argv=None):
     if args.cmd == 'selftest':
         return selftest()
     root = args.root or onboard.repo_root() or os.getcwd()
+    if not os.path.isdir(root):
+        sys.stderr.write('docs_check.py: %s is not a directory\n' % root)
+        return 2
     only = set(args.only.split(',')) if args.only else None
     today = _dates(args.today) if args.today else None
     try:

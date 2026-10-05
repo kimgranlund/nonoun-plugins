@@ -272,44 +272,7 @@ Managed by SDLC Lite onboard, template <N>.
 <!-- sdlc-lite:managed:end -->
 ```
 
-`docs/AGENTS.md`:
-
-```markdown
-<!-- sdlc-lite:managed:start v<N> sha256:<H> -->
-# Documents
-
-## Adding a document
-
-1. Pick the home from [the layout](layout.md).
-2. Run the onboard setup again to refresh the links below.
-3. Put dated evidence in its own file. Do not add it to an entry file.
-
-## Contents
-
-<a link to README.md when it exists>
-<one link per topic: to its entry, or to its single document>
-<one line per home that exists: a link to its README.md, or the folder name>
-<one link per loose document>
-<!-- sdlc-lite:managed:end -->
-```
-
-`docs/layout.md`, written only when the file is missing:
-
-```markdown
-# Layout
-
-Any other folder directly under `docs/` is a topic. It holds the designs, specifications, and decisions for one concept.
-
-## Homes
-
-- `maintenance/`
-- `reference/`
-- `reports/`
-
-## Frozen paths
-
-- `docs/reports/`
-```
+`docs/AGENTS.md` and `docs/layout.md`: since T-0242 the text is `DOCS_AGENTS_TEMPLATE` and `LAYOUT_TEMPLATE` in `plugins/sdlc-lite/scripts/onboard.py`, defined by [the docs schema](../docs-schema/design.md) (the nine homes, the decision list, `## Kinds`, `## Decide`, and an empty `## Legacy`). The `docs/AGENTS.md` block ends with the same `## Contents` placeholders as before; `docs/layout.md` is written only when the file is missing.
 
 `docs/<topic>/AGENTS.md`:
 
