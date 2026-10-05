@@ -6,7 +6,7 @@ Recorded: 2026-10-05. Live run for ticket T-0225: a real headless solo session, 
 
 - `claude --version`: `2.1.289 (Claude Code)` ([`claude-version.txt`](solo-cost-live-run/claude-version.txt)).
 - Model, from the result event's `modelUsage` ([`raw-result.json`](solo-cost-live-run/raw-result.json)): `claude-sonnet-5-5`. Effort `low` comes from the launch flag the wrapper passes for tier S, and the record says the same (`"effort":"low"`).
-- Plugin: this worktree's `plugins/sdlc-lite` at the T-0225 step commit (`b6cf1a5` plus the `--raw-out` option added after it, which the run used). Not a released version.
+- Plugin: this worktree's `plugins/sdlc-lite` at the T-0225 step commit `b6cf1a5`, which already has the `--raw-out` option the run used. Not a released version.
 - macOS, one throwaway Git project from `mktemp -d` outside this repository. The run's start and end times are in [`start.txt`](solo-cost-live-run/start.txt) and [`end.txt`](solo-cost-live-run/end.txt): 18 seconds.
 - Nested-session variables (`CLAUDECODE`, `CLAUDE_CODE_*`, `CLAUDE_PLUGIN_ROOT`, and the other session ids) were removed with `env -u` before the launch, because this run was itself started from a Claude Code session. `SDLC_HEADLESS=1` and the 3600000 ms Bash timeouts were set, as `fanout.py` and the bench set them.
 
@@ -42,9 +42,9 @@ The selftest ([`solo_run.py selftest`](../../plugins/sdlc-lite/scripts/solo_run.
 
 ## Limits
 
-- The first branch verifier found that the wrapper reused an inherited `SDLC_ATTEMPT_ID`, which made `budget.py` skip a second solo record as a duplicate and undercount spend (two 3.25 runs metered 3.25). The wrapper now always mints its own attempt id and ignores an inherited routing reason; the selftest runs with both variables set and has a negative control. The live run above ran before that fix with no inherited id, so it did not exercise the path.
+- The first branch verifier found that the wrapper reused an inherited `SDLC_ATTEMPT_ID`, which made `budget.py` skip a second solo record as a duplicate and undercount spend (two 3.25 runs metered 3.25). The wrapper now always mints its own attempt id and ignores an inherited routing reason; the selftest runs with both variables set and asserts the fix holds (the failing side was observed in the narrow verifier's throwaway copy, not as a selftest case). The live run above ran before that fix with no inherited id, so it did not exercise the path.
 - One run, tier S, Claude Code. No tier M or L run, and no Codex run: `codex_exec.py` reports no cost, so a Codex solo records `cost_usd` null by design.
-- Fanout's solo driver still starts the raw command, so fanout solo lanes are not metered yet. The conductor path is metered only when the conductor uses the wrapper; `agents/solo.md` now names it as the start path, and the raw command stays as an unmetered fallback.
+- Fanout's solo driver started the raw command when this record was written, so fanout solo lanes were not metered; T-0226 moved it onto the wrapper, covered by fanout selftest case 17 (a stub `claude` result with `total_cost_usd` 2.5 lands as a `role solo` record per lane, and with the wrapper bypassed no record is written) and not by a live fanout run. The conductor path is metered only when the conductor uses the wrapper; `agents/solo.md` now names it as the start path, and the raw command stays as an unmetered fallback.
 - The verifier, if any, is a separate `run.sh verifier` run with its own record. The solo's own session cost covers the solo only.
 - The budget meter still covers Claude roles only; a Codex solo counts as an unmetered run.
 - `check.py` guard 27 ties `solo_run.py` TIERS to `agents/solo.md` and `fanout.py`.

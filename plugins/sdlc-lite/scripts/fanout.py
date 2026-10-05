@@ -13,7 +13,8 @@ Solo first (the default driver). For each ticket, after the lane syncs, `steps.p
   the lane and appends its record to the task's skips.md (committed with the lane): `solo` (size S and M by
   default) starts the solo agent (agents/solo.md) from a typed brief at the tier's model and effort (Claude:
   `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at S Sonnet low, M Sonnet xhigh; Codex: `codex_exec.py solo
-  L1|L2|L3`, honoring SDLC_BACKEND); anything else (`full`, or `lean` after a plan) keeps the headless conductor
+  L1|L2|L3`, honoring SDLC_BACKEND), both started through `solo_run.py` so each lane's solo session cost lands in
+  the ticket's runs.jsonl and the budget and board meter it (T-0226); anything else (`full`, or `lean` after a plan) keeps the headless conductor
   running /sdlc-lite:chain. A solo ticket of size M or L then needs one independent batched verifier: a new
   task-dir verifier result with Verdict pass, from the solo itself or else one fanout runs once
   (`run.sh verifier L3 <task dir>/handoff.md`, never the solo's own family); a missing or non-pass verdict is
@@ -236,7 +237,7 @@ selftest
   `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
   Neither creates a branch, worktree or lanes dir.
 """
-import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
+import argparse, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
@@ -302,20 +303,30 @@ def solo_tier(size):
 
 
 def solo_command(handoff_rel, size, backend=None):
-    """The shell command that starts the solo agent for one ticket at its size's tier, or raises Refuse."""
+    """The shell command that starts the solo agent for one ticket at its size's tier, or raises Refuse.
+
+    It starts through scripts/solo_run.py (T-0226), which runs `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo`
+    at the tier's model and effort (or codex_exec.py solo L1..L3) and appends one `role solo` record with the
+    session's cost to the ticket's runs.jsonl, so budget.py and the board meter the lane. SDLC_SELFTEST_RAW_SOLO
+    restores the raw unmetered command, which the selftest uses as its negative control."""
     backend = backend or os.environ.get('SDLC_BACKEND', 'claude')
     tier = solo_tier(size)
     if tier is None:
         raise Refuse(f'no solo tier for size {size!r}: want S, M, or L')
     model, effort, level = SOLO_TIERS[tier]
     prompt = SOLO_PROMPT.format(handoff=handoff_rel)
-    if backend == 'codex':
-        return ' '.join(shlex.quote(x) for x in (sys.executable, str(SCRIPTS / 'codex_exec.py'), 'solo', level, prompt))
-    if backend != 'claude':
+    if backend not in ('claude', 'codex'):
         raise Refuse('unknown SDLC_BACKEND: ' + backend)
-    return 'SDLC_ROLE=solo ' + ' '.join(shlex.quote(x) for x in (
-        'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:solo', '--model', model,
-        '--effort', effort, '--dangerously-skip-permissions', '--', prompt))
+    if os.environ.get('SDLC_SELFTEST_RAW_SOLO'):
+        if backend == 'codex':
+            return ' '.join(shlex.quote(x) for x in (sys.executable, str(SCRIPTS / 'codex_exec.py'), 'solo', level, prompt))
+        return 'SDLC_ROLE=solo ' + ' '.join(shlex.quote(x) for x in (
+            'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:solo', '--model', model,
+            '--effort', effort, '--dangerously-skip-permissions', '--', prompt))
+    task_dir = pathlib.PurePosixPath(handoff_rel).parent.as_posix()
+    return ' '.join(shlex.quote(x) for x in (
+        sys.executable, str(SCRIPTS / 'solo_run.py'), 'run', '--task-dir', task_dir, '--tier', tier,
+        '--backend', backend, '--brief', prompt))
 
 
 def default_driver(handoff_rel, kind='full', size=None):
@@ -2053,17 +2064,28 @@ def selftest():
         proc = fanout(sr, '--dry-run', '--lane', 'full', '--lanes-dir', str(sl), 'a=T-0001')
         expect(f'case 15 --lane full forces the chain for a size S ticket, got {proc.stdout!r}',
                proc.returncode == 0 and 'lane: full (--lane full)' in proc.stdout)
-        for label, size, want in (('S', 'S', ('--model sonnet', '--effort low')),
-                                  ('M', 'M', ('--model sonnet', '--effort xhigh')),
-                                  ('L', 'L', ('--model opus', '--effort xhigh'))):
+        for label, size in (('S', 'S'), ('M', 'M'), ('L', 'L')):
             cmd = solo_command('h.md', size, 'claude')
-            expect(f'case 15 command: tier {label} starts sdlc-lite:solo with {want}, got {cmd}',
-                   '--agent sdlc-lite:solo' in cmd and all(w in cmd for w in want) and cmd.startswith('SDLC_ROLE=solo ')
-                   and 'sdlc-lite:conductor' not in cmd and '--dangerously-skip-permissions' in cmd)
+            expect(f'case 15 command: tier {label} starts through solo_run.py with --tier {label}, got {cmd}',
+                   'solo_run.py' in cmd and ' run ' in cmd and f'--tier {label}' in cmd and '--backend claude' in cmd
+                   and '--task-dir .' in cmd and 'sdlc-lite:conductor' not in cmd)
+        saved_raw = os.environ.get('SDLC_SELFTEST_RAW_SOLO')
+        os.environ['SDLC_SELFTEST_RAW_SOLO'] = '1'
+        try:
+            for label, size, want in (('S', 'S', ('--model sonnet', '--effort low')),
+                                      ('M', 'M', ('--model sonnet', '--effort xhigh')),
+                                      ('L', 'L', ('--model opus', '--effort xhigh'))):
+                cmd = solo_command('h.md', size, 'claude')
+                expect(f'case 15 raw fallback: tier {label} starts sdlc-lite:solo with {want}, got {cmd}',
+                       '--agent sdlc-lite:solo' in cmd and all(w in cmd for w in want) and cmd.startswith('SDLC_ROLE=solo ')
+                       and 'sdlc-lite:conductor' not in cmd and '--dangerously-skip-permissions' in cmd and 'solo_run.py' not in cmd)
+        finally:
+            if saved_raw is None: os.environ.pop('SDLC_SELFTEST_RAW_SOLO', None)
+            else: os.environ['SDLC_SELFTEST_RAW_SOLO'] = saved_raw
         for size, level in (('S', 'L1'), ('M', 'L2'), ('L', 'L3')):
-            cmd = solo_command('h.md', size, 'codex')
-            expect(f'case 15 command: Codex tier {size} runs codex_exec.py solo {level}, got {cmd}',
-                   'codex_exec.py' in cmd and f' solo {level} ' in cmd)
+            cmd = solo_command('.sdlc/t/h/handoff.md', size, 'codex')
+            expect(f'case 15 command: Codex tier {size} runs solo_run.py --backend codex --tier {size}, got {cmd}',
+                   'solo_run.py' in cmd and '--backend codex' in cmd and f'--tier {size}' in cmd and '--task-dir .sdlc/t/h' in cmd)
         full = default_driver('h.md', 'full', 'M')
         expect(f'case 15 command negative control: the full driver starts the conductor, never solo, got {full}',
                'sdlc-lite:conductor' in full and 'sdlc-lite:solo' not in full)
@@ -2194,6 +2216,47 @@ def selftest():
         (tdir_ / 'skips.md').write_text('# Skips\n', encoding='utf-8')
         expect('case 16 write_solo_skips negative control: no lane record writes nothing',
                write_solo_skips(tdir_, 'S') is False and 'skip:' not in (tdir_ / 'skips.md').read_text())
+
+        # 17. Solo lanes are metered (T-0226): solo_command starts through solo_run.py, so a solo lane writes a
+        # `role solo` record with the session cost into the ticket's runs.jsonl. A `claude` shim on PATH prints a
+        # result event with total_cost_usd and stands in only for the model. Negative control: with the wrapper
+        # bypassed (SDLC_SELFTEST_RAW_SOLO restores the raw command) the same lane writes no solo record.
+        mshim = tmp / 'metered-shim'
+        mshim.mkdir()
+        (mshim / 'claude').write_text('#!/usr/bin/env bash\nset -eu\necho "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n'
+                                      'printf \'%s\' \'{"type":"result","is_error":false,"result":"ok","total_cost_usd":2.5,'
+                                      '"duration_ms":10,"num_turns":3,"usage":{"output_tokens":7}}\'\n')
+        (mshim / 'claude').chmod(0o755)
+        mshim_env = dict(ENV, PATH=f'{mshim}:{ENV.get("PATH", "")}')
+
+        def metered_lane(name, raw):
+            rr_, ll_ = tmp / f'meter-{name}', tmp / f'meter-{name}-lanes'
+            make_repo(rr_, [('one', 'T-0001', 'ready'), ('two', 'T-0002', 'ready')])
+            env_ = dict(mshim_env, SDLC_SELFTEST_RAW_SOLO='1') if raw else mshim_env
+            proc_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', 'x=T-0001,T-0002',
+                                    '--base', 'main', '--integration', 'fanout/meter', '--lanes-dir', str(ll_),
+                                    '--stagger', '0'], cwd=str(rr_), env=env_, capture_output=True, text=True, timeout=300)
+            recs_ = []
+            for s_ in ('one', 'two'):
+                for d_ in (s_, '.' + {'one': '0001', 'two': '0002'}[s_] + '-' + s_):
+                    body_ = sh(rr_, 'show', f'fanout/meter:.sdlc/{d_}/runs.jsonl').stdout
+                    for ln_ in body_.splitlines():
+                        try:
+                            r_ = json.loads(ln_)
+                        except ValueError:
+                            continue
+                        if isinstance(r_, dict) and r_.get('role') == 'solo':
+                            recs_.append(r_)
+            return proc_, recs_
+
+        pm, solo_recs = metered_lane('on', False)
+        expect(f'case 17 metered lane: both solo tickets merge and close, got rc={pm.returncode} out={pm.stdout[-300:]!r} '
+               f'err={pm.stderr[-300:]!r}', pm.returncode == 0)
+        expect(f'case 17 metered lane: each solo ticket has one role solo record with cost_usd 2.5, got {solo_recs!r}',
+               len(solo_recs) == 2 and all(r_.get('cost_usd') == 2.5 and r_.get('level') in ('L1', 'L2') for r_ in solo_recs))
+        pr_raw, raw_recs = metered_lane('off', True)
+        expect(f'case 17 negative control: with the wrapper bypassed the lane writes no solo record, got rc={pr_raw.returncode} '
+               f'records={raw_recs!r}', pr_raw.returncode == 0 and raw_recs == [])
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

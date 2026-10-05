@@ -16,7 +16,7 @@ Recorded: 2026-10-05. Live run for ticket T-0223: `/sdlc-lite:agent {agent-name}
 
 ## Fixture and hidden check
 
-[`fixture/`](agent-command-live-run/fixture/) holds the ticket ([`ticket-handoff.md`](agent-command-live-run/fixture/ticket-handoff.md), size M: add `median`, with stated edge cases), the pristine package, and `hidden_check.py`. The hidden check sits beside the project, outside every arm's working directory, and no prompt names it. It runs 13 cases (odd, even, single, float, tuple, generator, negatives, duplicates, no input mutation, empty raises ValueError, float on even, `mean` intact). On the pristine project it prints `hidden_check: 0/1 passed` ([`hidden-check-base.txt`](agent-command-live-run/fixture/hidden-check-base.txt)).
+[`fixture/`](agent-command-live-run/fixture/) holds the ticket ([`ticket-handoff.md`](agent-command-live-run/fixture/ticket-handoff.md), size M: add `median`, with stated edge cases), the pristine package, and `hidden_check.py`. The hidden check sits beside the project, outside every arm's working directory, and no prompt names it. It runs 13 cases (the list below names most of them: odd, even, single, float, tuple, generator, negatives, duplicates, no input mutation, empty raises ValueError, float on even, `mean` intact). On the pristine project it prints `hidden_check: 0/1 passed` ([`hidden-check-base.txt`](agent-command-live-run/fixture/hidden-check-base.txt)).
 
 ## Results
 
@@ -27,7 +27,7 @@ Recorded: 2026-10-05. Live run for ticket T-0223: `/sdlc-lite:agent {agent-name}
 | ghost | `/sdlc-lite:agent ghost do something` | Refused, launched nothing, printed the valid names and the pointers | $0.13 | none |
 | conductor | `/sdlc-lite:agent conductor take over this ticket` | Refused: `conductor` is the current session | $0.13 | none |
 
-- The solo session ran inside the outer session's Bash call, so its own cost is not in the outer cost or in any run record. Only the verifier is in `runs.jsonl`. Total counted spend is about $3.6.
+- The solo session ran inside the outer session's Bash call, so its own cost is not in the outer cost or in any run record. Only the verifier is in `runs.jsonl`. Total counted spend is about $3.74 (outer sessions $0.21, $0.17, $0.13 and $0.13, scout $0.07, verifier $3.03).
 - Tool calls: scout arm used `Read` and `Bash` only; solo arm used `Read` (1) and `Bash` (2); ghost and conductor made none. No arm called the Agent tool, so `hooks/block-role-spawn.sh` was not exercised.
 - Grading: `python3 hidden_check.py` on the final tree printed `hidden_check: 13/13 passed` ([`solo-hidden-check.txt`](agent-command-live-run/arms/solo-hidden-check.txt)); the scout arm's tree is unchanged and fails it, as it should ([`scout-hidden-check-unchanged.txt`](agent-command-live-run/arms/scout-hidden-check-unchanged.txt)).
 - Solo wrote acceptance criteria into the fixture ticket because it had none, as `agents/solo.md` says, and ran the batched verifier through `run.sh verifier L3`.
