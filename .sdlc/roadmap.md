@@ -256,3 +256,18 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | 🟢 done |
 | T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | 🟢 done |
 | T-0257 | [.0257-broken-links-cleanup](.0257-broken-links-cleanup/handoff.md) | Fix moved-target Markdown links, exclude code from the link counter, guard the baseline | chore | M | P2 | none | 🟢 done |
+| T-0258 | [0258-fanout-close-ticket-root](0258-fanout-close-ticket-root/handoff.md) | fanout numbered close ignores ticket_root | bug | S | P2 | none | ⏳ proposed |
+| T-0259 | [0259-fanout-gate-preflight](0259-fanout-gate-preflight/handoff.md) | fanout needs committed handoffs and node_modules in the gate worktree | chore | S | P2 | none | ⏳ proposed |
+| T-0260 | [0260-solo-session-limit-resume](0260-solo-session-limit-resume/handoff.md) | Solo long commands capped at 30 min and session-limit stops leave no resume | bug | M | P2 | none | ⏳ proposed |
+| T-0261 | [0261-split-goal-precheck](0261-split-goal-precheck/handoff.md) | steps.py split needs ## Goal; fail fast before any planner runs | bug | S | P2 | none | ⏳ proposed |
+| T-0262 | [0262-close-citation-scan-gaps](0262-close-citation-scan-gaps/handoff.md) | tickets.py close needs --force on tracked citations and cannot see .sdlc citations | bug | M | P2 | none | ⏳ proposed |
+| T-0263 | [0263-stale-lane-route](0263-stale-lane-route/handoff.md) | A builder blocked by a stale lane routes to replan, not rebase-and-resplit | bug | S | P2 | none | ⏳ proposed |
+| T-0264 | [0264-split-after-replan-override](0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | M | P2 | none | ⏳ proposed |
+| T-0265 | [0265-headless-planner-denied-rm](0265-headless-planner-denied-rm/handoff.md) | Headless planner stalled on a denied rm permission prompt | bug | S | P2 | none | ⏳ proposed |
+| T-0266 | [0266-tickets-check-partial-front-matter](0266-tickets-check-partial-front-matter/handoff.md) | tickets.py check breaks on partial front matter | bug | S | P2 | none | ⏳ proposed |
+| T-0267 | [0267-hook-denies-worktree-add-variable](0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | ⏳ proposed |
+| T-0268 | [0268-raw-solo-cost-records](0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | S | P2 | none | ⏳ proposed |
+| T-0269 | [0269-traces-failed-attempt-noise](0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | S | P2 | none | ⏳ proposed |
+| T-0270 | [0270-steps-lint-nested-backtick-message](0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | ⏳ proposed |
+| T-0271 | [0271-planner-contract-dependents-lint](0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | ⏳ proposed |
+| T-0272 | [0272-conductor-repo-opt-out](0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | ⏳ proposed |
