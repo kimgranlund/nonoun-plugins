@@ -1,0 +1,18 @@
+```
+python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/plan-skills/plugins/sdlc-lite/scripts/fanout.py run f1=T-0001 f2=T-0002 f3=T-0003 --lane auto --max-lanes 4 --stagger 20 --lanes-dir /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/tmp.k5bL1dJlBI-lanes --gate "python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/plan-skills/plugins/sdlc-lite/scripts/tickets.py --root .sdlc check" --dry-run
+python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/plan-skills/plugins/sdlc-lite/scripts/fanout.py run f1=T-0001 f2=T-0002 f3=T-0003 --lane auto --max-lanes 4 --stagger 20 --lanes-dir /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/tmp.k5bL1dJlBI-lanes --gate "python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/plan-skills/plugins/sdlc-lite/scripts/tickets.py --root .sdlc check"
+```
+
+Why this plan:
+- One lane per ticket (f1, f2, f3). The tickets are independent, with no `depends` and no shared hot-spot files named.
+- `--lane auto` resolves to solo for all three, because each is size M (sonnet, xhigh).
+- 3 lanes sit under the default cap of 4, with the default 20 s stagger.
+- The gate is `tickets.py --root .sdlc check`, run after each merge. The repo has no `check.sh`, so this is the only gate I could find.
+- `--lanes-dir` points outside the repo because `.worktrees/` isn't gitignored. Without it the dry run exited with code 2.
+
+🟡 Attention before you run it:
+- All three tickets are still `proposed`, not `ready`, and their handoffs are the unfilled template (empty Goal, Do, Done when). A solo lane has nothing concrete to build from.
+- None has a `budget_usd`. `plan_check` warns `no-budget` for each. Set one with `budget.py set`.
+- Scope overlap is "not planned, checked at merge time", so overlap is only caught when the lanes merge.
+
+You must authorize: the spend. Three tier M solo lanes, each capped at $30 by `budget.py`, so up to $90 in total. Fanout merges nothing to a remote and publishes nothing; it only merges into the local `fanout/2026-10-05` branch. I can't run this for you.

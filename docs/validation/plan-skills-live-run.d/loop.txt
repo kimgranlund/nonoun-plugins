@@ -1,0 +1,15 @@
+[33mWarning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.[39m
+```
+/loop 30m Read .sdlc/roadmap.md and count tickets whose Status is not done or closed. Report in two lines: the open count and which tickets changed status since the last run (compare against .sdlc/loop-last.txt, then overwrite that file with the current ID and Status rows). Change nothing else. If no tickets are open, say so and stop the loop.
+```
+
+Why this plan
+- Cadence: 30m is your stated interval. `plan_check.py` passed with no warnings.
+- Cost per fire: one short model turn that reads one file.
+- Stop condition: the loop ends when no ticket has a Status other than done or closed. Today T-0001 to T-0003 are all "proposed", so all three count as open.
+- Progress: each fire compares against `.sdlc/loop-last.txt`, so it reports only what changed since the last run.
+- Timing: a 30m interval can land on `:00` and `:30`, which the host asks you to avoid. Use `29m` or `31m` if you want an off-half-hour slot.
+
+You must authorize: each fire writes `.sdlc/loop-last.txt` (overwritten every time).
+
+Recurring jobs expire after 7 days and fire only while the session is idle. This skill can't run the loop for you, so paste the line yourself.

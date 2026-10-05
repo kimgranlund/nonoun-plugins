@@ -107,6 +107,9 @@
    `Nothing open.`, `AskUserQuestion`, the sweep searches (blocked tickets and `## Verdict` results), and the plain-text fallback
    `If AskUserQuestion is unavailable`, and holds no `harness:` reference; skills/sdlc-lite/SKILL.md and agents/conductor.md route to
    `ask`. Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
+30. Plan skills: skills/plan-goal, plan-loop, and plan-fanout each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
+   `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md.
+   Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -727,6 +730,22 @@ for _ph in ASK_NEEDS:
 if not ask_bad(_ask + ' see harness:find-open-questions', _entry, _cond): errors.append('check.py: ask skill negative control not flagged for a harness reference')
 if not ask_bad(_ask, _entry.replace('/ ask |', '|'), _cond): errors.append('check.py: ask skill negative control not flagged for a missing entry route')
 if not ask_bad(_ask, _entry, _cond.replace('/sdlc-lite:ask', '')): errors.append('check.py: ask skill negative control not flagged for a missing conductor route')
+# Plan skills (docstring item 30): three self-contained planning skills that return a validated paste-ready block, each routed from the entry skill.
+PLAN_NEEDS = ('## 1. Gather', 'plan_check.py', 'AskUserQuestion', 'Why this plan', 'You must authorize', 'Unattended', 'Codex host')
+def plan_bad(texts, entry):
+    out = []
+    for name, body in texts.items():
+        out += [f'{name} SKILL.md missing "{ph}"' for ph in PLAN_NEEDS if ph not in body]
+        if re.search(r'harness:', body): out.append(f'{name} SKILL.md references harness:')
+        if f'plan-{name}' not in entry: out.append(f'skills/sdlc-lite/SKILL.md does not route to plan-{name}')
+    return out
+_plans = {n: _rd(root/f'skills/plan-{n}/SKILL.md') for n in ('goal', 'loop', 'fanout')}
+errors.extend(f'check.py: plan skills: {m}' for m in plan_bad(_plans, _entry))
+for _n in _plans:
+    for _ph in PLAN_NEEDS:
+        if not plan_bad(dict(_plans, **{_n: _plans[_n].replace(_ph, '')}), _entry): errors.append(f'check.py: plan skills negative control not flagged for {_n} without "{_ph}"')
+    if not plan_bad(dict(_plans, **{_n: _plans[_n] + ' harness:x'}), _entry): errors.append(f'check.py: plan skills negative control not flagged for a harness reference in {_n}')
+    if not plan_bad(_plans, _entry.replace(f'plan-{_n}', 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

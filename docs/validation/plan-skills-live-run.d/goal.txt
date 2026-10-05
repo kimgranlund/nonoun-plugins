@@ -1,0 +1,32 @@
+```
+/goal Overnight: finish T-0001, T-0002, and T-0003, then stop.
+
+Scope (verify with tickets.py check first):
+1. T-0001 add file f1.txt
+2. T-0002 add file f2.txt
+3. T-0003 add file f3.txt
+Each handoff.md body is still the blank template. Before building, fill its Goal and Done when from the title: the file exists at the repo root with the name in the title. Change nothing else.
+
+How to work: lane first with steps.py lane (all three are size M, so solo); one writer per file; one ticket at a time, commit on a local branch; replan cap one, then record a limit; every status claim from a command or a committed file.
+A verifier fail means fix and re-verify; never merge on a fail.
+
+Budget and stop rules: stop and write state to .sdlc/notes.md at $30 total, $10 per ticket, a rate or weekly limit, or three 529s in a row. No retry loops.
+
+Authorization: local commits and local merges to main are allowed. publish, push, tag, and external writes are not implied. None of them is authorized.
+
+Done when: tickets.py check exits 0 and T-0001, T-0002, and T-0003 are closed on main and f1.txt, f2.txt, and f3.txt exist, or the goal stopped on a limit with state written to .sdlc/notes.md.
+```
+
+Why this plan
+- `tickets.py check` reports 3 tickets and a current roadmap. All three are `chore`, size M, priority P2, with no dependencies.
+- `steps.py lane` prints `solo` for f1 (size M decides before planning), so I used the solo lane for all three. I ran it on f1 only, and f2 and f3 have the same size.
+- The three handoffs still hold the blank template (empty Goal, Do, Done when). The block has the agent fill these in from the titles, and I inferred the repo-root location from them.
+- The `$30` total is yours. The `$10` per ticket is my even split of it, not something you gave me.
+- The three tickets touch separate files, so one at a time is enough and no parallel lanes are needed. `plan_check.py goal` passed.
+
+You must authorize
+- Spend: up to $30 total and $10 per ticket (you gave the total; confirm or change the per-ticket cap).
+- Local commits and local merges to main. I added this because "closed on main" needs it. Delete that sentence if you want branches only.
+- Not authorized: push, publish, tag, external writes.
+
+A goal pasted as plain text is not registered until you run it as `/goal`. This skill cannot run it for you.
