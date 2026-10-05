@@ -2,7 +2,7 @@
 id: T-0257
 title: "Fix moved-target Markdown links, exclude code from the link counter, guard the baseline"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ See docs/reports/broken-links-cleanup.md. Counter before: 829 checked, 96 broken
 
 ## Constraints
 What must not change. "None" if none.
+
+## Closed
+
+2026-10-05: Counter excludes code; 12 allowlisted; check.py item 32 guard; independent L3 verifier passed on attempt 2
