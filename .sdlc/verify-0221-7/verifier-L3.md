@@ -22,7 +22,7 @@ fail
 Gate note: neither criterion is a `(guard)` or repo-wide gate, so `inherited red` does not apply. Throwaway worktree created only at `$SDLC_TMP_WORKTREES/base` and removed (`git worktree list | grep -c tmp/verifier` = 0); git state untouched (HEAD 2493c30, `git status --short` shows only this run's `base-sha` and `verifier-L3.attempt.json`).
 
 ## Out of scope changes
-- `.sdlc/0221-fanout-solo-first/base-sha`, `runs.jsonl`, `verifier-L3.attempt.json`, `verifier-L3.md` were committed in the fix commit 25a559b (`git show --stat`). Read: they are the prior branch verifier run's own run.sh artifacts, and that run's criterion-7 finding is what this ticket re-verifies. Dismissed.
+- `.sdlc/.0221-fanout-solo-first/base-sha`, `runs.jsonl`, `verifier-L3.attempt.json`, `verifier-L3.md` were committed in the fix commit 25a559b (`git show --stat`). Read: they are the prior branch verifier run's own run.sh artifacts, and that run's criterion-7 finding is what this ticket re-verifies. Dismissed.
 - Untracked `.sdlc/verify-0221-7/base-sha` and `verifier-L3.attempt.json`: this run's own run.sh artifacts (`attempt.json` has `role verifier`, `level L3`, `process_pid 72879` matching `$SDLC_TMP_WORKTREES` suffix `verifier-72879`; `base-sha` equals `$SDLC_BASE_SHA`). Dismissed.
 
 Otherwise none.

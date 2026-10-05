@@ -2,7 +2,7 @@
 id: T-0221
 title: "fanout.py runs each lane by steps.py lane: solo for S and M, chain for full, with a lane cap and stagger"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Keep `--driver CMD` overriding everything for selftests. Do not touch the limits
 6. A size M or L solo ticket does not merge without a new passing task-dir verifier result (read the run_ticket code path and the selftest), and a solo ticket closes with `tickets.py close --reason`, not a filer file.
 7. docs/validation/fanout-solo-live-run.md records four lanes merged with a hidden check of 24/24 and names the models from the session transcripts; every number in it can be checked against docs/validation/fanout-solo-live-run/.
 8. `git diff --check` is clean, and no em dash appears in the changed text files.
+
+## Closed
+
+2026-10-04: Built and merged: fanout.py solo first (steps.py lane per ticket, solo tiers, --lane, --max-lanes, --stagger, --allow-overlap, solo close by reason), selftest case 15, check.py guard item 24, docs, and a live run (4 lanes, hidden check 24/24, docs/validation/fanout-solo-live-run.md). The first L3 branch verifier passed 7 of 8 criteria and failed the record's checkability; the fixes were re-verified by a narrow L3 that failed once more on gitignored .log files, which were then fixed and confirmed mechanically with git ls-tree and git check-ignore, not by a third verifier run. Codex lane not run live.
