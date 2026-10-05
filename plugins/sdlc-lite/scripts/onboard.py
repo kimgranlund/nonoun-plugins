@@ -216,7 +216,7 @@ def has_import(text):
 
 # ---------------------------------------------------------------- templates
 
-TEMPLATE_VERSION = 1
+TEMPLATE_VERSION = 2
 
 TEMPLATE_START = '<!-- sdlc-lite:managed:start v<N> sha256:<H> -->'
 START_MARKER = '<!-- sdlc-lite:managed:start v%d sha256:%s -->'
@@ -246,7 +246,7 @@ Managed by SDLC Lite onboard, template <N>.
 
 `.sdlc/` holds SDLC Lite tickets, plans, and run records.
 
-- Plan, build, and verify work runs through SDLC Lite: `/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`, which launch roles with `run.sh`. Do not spawn another plugin's builder, planner, or reviewer agent in their place.
+- Pick the lane first with `steps.py lane <task dir>` (in the plugin's `scripts/` folder): `solo` is the default for size S and M, `/sdlc-lite:fix` runs only when asked or when the lane script prints `fix`, and the full chain (`/sdlc-lite:chain`) needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). Roles launch with `run.sh`. Do not spawn another plugin's builder, planner, or reviewer agent in their place.
 - Handoff files follow the `sdlc-lite:handoff-format` skill.
 - Tickets are created, closed, and archived through the `sdlc-lite:ticket` skill.
 - `.sdlc/roadmap.md` is generated. Do not edit it by hand.
@@ -1201,6 +1201,40 @@ def _swap_rows(rows, a, b):
     return tuple(rows)
 
 
+# The lane line of the root block (T-0228): a block written by template 1 still routes work to the chain and
+# /fix, so it is stale and replaced; a hand-edited block of that version stays edited and is not overwritten.
+OLD_ROUTE = '`/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`'
+LANE_LINE = 'Pick the lane first with `steps.py lane <task dir>`'
+
+
+def _render_old_route(model):
+    out = render_templates(model)
+    t = out['AGENTS.md']
+    block = t.block.replace(LANE_LINE, 'Plan, build, and verify work runs through SDLC Lite: ' + OLD_ROUTE
+                            + ' (' + LANE_LINE + ')')
+    out['AGENTS.md'] = t._replace(block=block)
+    return out
+
+
+def gate_lane_text(impl):
+    old_block = ('## Work records\n\n- Plan, build, and verify work runs through SDLC Lite: ' + OLD_ROUTE
+                 + ', which launch roles with `run.sh`.\n')
+    stale = '# Mine\n\n' + _region(1, old_block) + '\ntail\n'
+    with _fixture({'AGENTS.md': stale}) as root:
+        rc, out, err = _call(run_check, root, impl)
+        expect('stale AGENTS.md' in out + err, 'a v1 block with the old route is not reported stale: %r' % (out + err))
+        rc, out, err = _call(run_setup, root, impl)
+        _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
+        expect(rc == 0 and block.version == TEMPLATE_VERSION, 'the old block is not replaced by the current version')
+        expect(LANE_LINE in block.text and OLD_ROUTE not in block.text, 'the replaced block does not route by the lane')
+        expect('solo' in block.text and ROLE_LINE in block.text, 'the replaced block lost the solo default or the role line')
+    edited = '# Mine\n\n' + _region(1, 'edited by hand\n', old_block) + '\ntail\n'
+    with _fixture({'AGENTS.md': edited}) as root:
+        rc, out, err = _call(run_setup, root, impl)
+        expect('edited AGENTS.md' in out + err, 'a hand-edited v1 block is not reported edited: %r' % (out + err))
+        expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited v1 block was overwritten without --force')
+
+
 GATES = [
     ('layout-parsing', gate_layout_parsing, parse_layout, [
         ('skips the list-line form rule', functools.partial(_parse_layout, skip=frozenset({'form'}))),
@@ -1231,6 +1265,10 @@ GATES = [
         ('treats a start marker with no end as no block',
          REAL._replace(find_block=functools.partial(_find_block, unclosed=False))),
         ('skips the code fence rule', REAL._replace(find_block=functools.partial(_find_block, fences=False))),
+    ]),
+    ('lane-text', gate_lane_text, REAL, [
+        ('template still routes to the chain', REAL._replace(render=_render_old_route)),
+        ('treats a stale block as current', REAL._replace(labels=_relabel(6, 'current'))),
     ]),
     ('check-mode', gate_check_mode, REAL, [
         ('labels an edited block current', REAL._replace(labels=_relabel(4, 'current'))),
