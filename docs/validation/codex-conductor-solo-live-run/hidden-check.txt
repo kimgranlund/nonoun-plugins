@@ -1,0 +1,2 @@
+hidden_check: 12/12 passed
+rc=0

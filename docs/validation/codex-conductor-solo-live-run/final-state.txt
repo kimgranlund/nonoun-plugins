@@ -1,0 +1,6 @@
+ README.md       |  6 ++++++
+ kit/d.py        | 14 ++++++++++++++
+ tests/test_d.py | 36 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 56 insertions(+)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+claimed_by: codex 2026-10-04

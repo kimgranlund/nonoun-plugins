@@ -1,0 +1,25 @@
+item_0 MESSAGE I’m using the SDLC Lite workflow for the duration ticket. 
+item_1 /bin/zsh -lc 'cat .sdlc/duration/handoff.md; pwd'
+item_2 /bin/zsh -lc 'cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/skills/agent/SKILL.md'
+item_3 /bin/zsh -lc "rg --files -g AGENTS.md -g CLAUDE.md -g '*solo*' ."
+item_4 /bin/zsh -lc 'cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/agents/solo.md'
+item_5 /bin/zsh -lc 'cat .sdlc/AGENTS.md'
+item_6 /bin/zsh -lc 'cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/skills/sdlc-lite/SKILL.md'
+item_7 /bin/zsh -lc 'python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/steps.py lane .sdlc/duration'
+item_8 /bin/zsh -lc "rg -n 'solo|base' /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/run.sh | head -35; cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/skills/handoff-format/run-operations.md; git rev-parse HEAD"
+item_9 /bin/zsh -lc "rg -n 'codex|subagent|request' /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/solo_run.py; sed -n '135,175p' /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/run.sh; python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/readiness.py --backend codex --transport subagent --project /private/tmp/codex-cond.WOrFF1/project"
+item_10 MESSAGE Lane: solo because size M selects the solo workflow, with independent verification before closing. 
+item_11 /bin/zsh -lc "python3 - <<'PY' from pathlib import Path p=Path('.sdlc/duration/handoff.md') s=p.read_text().replace('router: .sdlc/AGENTS.md', 'claimed_by: codex 2026-10-04\\nrouter: .sdlc/AGENTS.md') p.write_text(s) p=Path('.sdlc/duration/skips.md') p.write_text(p.read_text()+'\\nLane: solo because size M selects the solo workflow, with independent verification before closing.\\n') PY python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/tickets.py --root .sdlc roadmap"
+item_14 /bin/zsh -lc 'cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/skills/verify/SKILL.md'
+item_17 MESSAGE The ticket requires ordered, non-repeating units and rejection of malformed input. The solo agent is handling the parser, tests, and README together. 
+item_21 /bin/zsh -lc "SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent SDLC_ROUTING_REASON='Tier M solo requires independent verifier L3' /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/run.sh verifier L3 .sdlc/duration/handoff.md"
+item_22 /bin/zsh -lc 'cat .sdlc/duration/verifier-L3.request.json'
+item_23 MESSAGE The implementation and its tests pass. Independent verification is the remaining gate before closing the ticket. 
+item_28 MESSAGE The verifier is checking the acceptance criteria against the implementation and test results. 
+item_33 /bin/zsh -lc "cat > .sdlc/duration/verifier-submission.md <<'EOF' ## Verdict pass  ## Criteria - Ordered optional components return integer seconds: pass. Evidence: independent "'`PYTHONDONTWRITEBYTECODE=1 python3 -` probe passed 342 combinations, including minutes and seconds above 59. In-memory mutations changing hour/minute multipliers produced 5/6 test failures. - Required examples: pass. Evidence: runtime probe observed `"1h30m15s" → 5415`, `"90s" → 90`, `"2h" → 7200`. - Invalid strings raise `ValueError`, matching the whole string: pass. Evidence: independent runtime probe rejected 23 malformed inputs. Replacing `fullmatch` with `match` produced 21 failures; removing empty-input reject
+item_34 /bin/zsh -lc 'python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/steps.py next .sdlc/duration; cat .sdlc/duration/verifier-L3.md'
+item_35 MESSAGE Independent verification passed, including 342 valid combinations and 23 malformed inputs. No implementation issues remain. 
+item_36 /bin/zsh -lc "python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/codex-evidence/plugins/sdlc-lite/scripts/tickets.py --root .sdlc close duration --reason 'Delivered through size-M solo lane: parse_duration, tests, and README complete; unittest suite and independent verifier L3 passed; no follow-ups.'"
+item_37 MESSAGE 🟢 T-0001 delivered and closed.  - Added `parse_duration`, tests, and README usage. - All 3 tests and independent verification passed. - No follow-ups remain.  [Verification report](.sdlc/duration/verifier-L3.md)
+USAGE {"input_tokens": 992932, "cached_input_tokens": 949504, "cache_write_input_tokens": 0, "output_tokens": 2917, "reasoning_output_tokens": 111}
+RESULT {"backend": "codex", "is_error": false} 🟢 T-0001 delivered and closed.  - Added `parse_duration`, tests, and README usage. - All 3 tests and independent verification passed. - No follow-ups remain.  [Verification report](.sdlc/duration/verifier-L3.md)

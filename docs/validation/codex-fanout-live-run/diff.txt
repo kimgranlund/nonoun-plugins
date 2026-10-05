@@ -1,0 +1,42 @@
+diff --git a/kit/a.py b/kit/a.py
+index a4cd3c7..b58d2e1 100644
+--- a/kit/a.py
++++ b/kit/a.py
+@@ -1 +1,11 @@
+ """kit.a: small numeric helpers."""
++
++
++def clamp(value, lo, hi):
++    if lo > hi:
++        raise ValueError("lo must not exceed hi")
++    if value < lo:
++        return lo
++    if value > hi:
++        return hi
++    return value
+diff --git a/tests/test_a.py b/tests/test_a.py
+index b74732c..a23b618 100644
+--- a/tests/test_a.py
++++ b/tests/test_a.py
+@@ -1,6 +1,21 @@
+ import unittest
++
++from kit.a import clamp
++
++
+ class T(unittest.TestCase):
+     def test_import(self):
+         import kit.a
++
++    def test_clamp(self):
++        for value, expected in [(5, 5), (0, 0), (10, 10), (-1, 0), (11, 10)]:
++            with self.subTest(value=value):
++                self.assertEqual(clamp(value, 0, 10), expected)
++
++    def test_clamp_bad_range(self):
++        with self.assertRaises(ValueError):
++            clamp(5, 10, 0)
++
++
+ if __name__ == '__main__':
+     unittest.main()
