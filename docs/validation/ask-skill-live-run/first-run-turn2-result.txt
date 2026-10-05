@@ -1,0 +1,15 @@
+AskUserQuestion isn't available in this session, so I'm asking in plain text. Two items are open.
+
+**1. CSV exporter default delimiter** (your question, still unanswered)
+- Comma: the CSV standard and what most parsers expect. It breaks in locales where Excel reads the comma as the decimal separator.
+- Semicolon: opens cleanly in Excel for many European locales. It fails in standard parsers unless they're configured for it.
+- Configurable with a comma default: covers both, at the cost of one more option to maintain.
+
+I have no evidence in the thread or repo to rank these, so none is marked recommended.
+
+**2. Nightly sync blocked by the weekly 429** (it won't reset until Thursday)
+- Wait for Thursday's reset: no cost, but there's no sync until then.
+- Run a smaller manual upload now: this needs quota that doesn't exist until Thursday, so it would just hit 429 again.
+- Pause the nightly job until Thursday: it stops failing runs and alerts, but you have to re-enable it.
+
+Reply with your pick for each. For item 1, a single word is enough.

@@ -1,0 +1,3 @@
+Noted on the sync: the weekly 429 won't clear until Thursday, so I'll treat last night's run as missed.
+
+Should the CSV exporter default to a comma or a semicolon delimiter?

@@ -1,0 +1,3 @@
+Noted on the sync: the weekly 429 from the upload API means nothing will upload until Thursday.
+
+Should the CSV exporter default to a comma or a semicolon delimiter?

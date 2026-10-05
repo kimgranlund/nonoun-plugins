@@ -24,7 +24,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Architecture / finish and file work | architect / file |
 | Parallel ticket lanes / benchmark | fanout / bench |
 | Launch one SDLC Lite agent by name on instructions | agent |
-| Resolve outstanding questions | open-questions |
+| Resolve outstanding questions / sweep questions and blockers | open-questions / ask |
 | Set up or check entry files and docs layout | onboard |
 | Review sdlc run traces for sdlc-lite waste and bugs | review-traces |
 

@@ -20,7 +20,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket
-- "Anything still open", loose ends, or a close-out → `/sdlc-lite:open-questions`.
+- "Anything still open", loose ends, or a close-out → `/sdlc-lite:open-questions`; "what is blocking us" or a fuller sweep with reasoned options → `/sdlc-lite:ask`.
 - Review a project's sdlc run traces for waste and bugs caused by sdlc-lite → `/sdlc-lite:review-traces`.
 
 ## What you do yourself
