@@ -235,4 +235,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | 🟢 done |
 | T-0229 | [.0229-solo-budget-gate](.0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | 🟢 done |
 | T-0230 | [0230-fanout-codex-report-and-gate](0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | ⏳ proposed |
-| T-0231 | [0231-ask-skill](0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | ⏳ proposed |
+| T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | 🟢 done |

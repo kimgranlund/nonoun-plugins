@@ -2,7 +2,7 @@
 id: T-0231
 title: "/sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Self-contained. One authoritative place per fact. No em dashes.
 
 ## Verification
 Independent L3 verifier (`fable` `xhigh`, `.sdlc/verify-0231/verifier-L3.md`): pass on all 7 criteria, including the full `check.sh` (exit 0) and three on-disk mutations of the guard that each made `check.py` fail. Live run: `docs/validation/ask-skill-live-run.md`. The first live run found two defects in the skill (no concrete sweep searches, no plain-text fallback when `AskUserQuestion` is unavailable); both were fixed once and the rerun found all four planted items. Limits: `AskUserQuestion` itself was not exercised (unavailable in headless `claude -p`), Codex not run.
+
+## Closed
+
+2026-10-05: Built and independently verified (L3 pass, 7 of 7); live run recorded in docs/validation/ask-skill-live-run.md; merged into local main.
