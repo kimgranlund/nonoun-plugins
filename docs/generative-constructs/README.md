@@ -4,6 +4,8 @@ Status: proposal, version 0.1. Date: 2026-09-26.
 
 This set develops the conversation about ICM, progressive disclosure, reusable constructs, a browser-based JavaScript harness, and A2UI. These are proposed design contracts, not claims that a system has been implemented or validated. “Must” describes a requirement of this proposed design. Decisions remain editable through explicit revisions.
 
+Gap analysis of the shipped plugin against the generative-systems tiers: [Progressive Context gap analysis](progressive-context-gap-analysis.md), with its [review](../validation/progressive-context-gap-analysis-review.md).
+
 ## Read in this order
 
 1. [System brief](01-system-brief.md): purpose, hypothesis, scope, and design principles.

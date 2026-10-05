@@ -2,6 +2,7 @@
 
 - [Progressive Context specifications](generative-constructs/README.md): lifecycle, context architecture and browser/A2UI proposals.
 - [Progressive Context plugin specification](generative-constructs/progressive-context-plugin.md): scope and packaging decisions.
+- [Progressive Context gap analysis](generative-constructs/progressive-context-gap-analysis.md): tier-by-tier gaps, ranked improvements, what not to build, and how the pattern applies to `docs/` and `.sdlc/`.
 - [Plugin compatibility and validation](plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
 
 - [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
