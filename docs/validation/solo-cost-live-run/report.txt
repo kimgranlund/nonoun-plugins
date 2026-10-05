@@ -1,0 +1,9 @@
+🟢 Ticket T-0001 is done: `shout(s)` now exists, and `shout("hi")` returns `HI!`.
+
+Files changed:
+- `util.py`: added `shout(s)`, which returns `s.upper() + "!"`.
+- `tests/test_util.py`: imported `shout` and added `test_shout`.
+
+Check: `python3 -m unittest discover -s tests` ran 2 tests and passed.
+
+Nothing is committed, and nothing is open. This is tier S, so there was no independent verifier run.

@@ -1,0 +1,33 @@
+diff --git a/tests/test_util.py b/tests/test_util.py
+index b2bf7f8..f2f365a 100644
+--- a/tests/test_util.py
++++ b/tests/test_util.py
+@@ -1,11 +1,14 @@
+ import unittest
+-from util import whisper
++from util import shout, whisper
+ 
+ 
+ class T(unittest.TestCase):
+     def test_whisper(self):
+         self.assertEqual(whisper("Hi"), "hi...")
+ 
++    def test_shout(self):
++        self.assertEqual(shout("hi"), "HI!")
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/util.py b/util.py
+index 43700a4..11e9c86 100644
+--- a/util.py
++++ b/util.py
+@@ -4,3 +4,8 @@
+ def whisper(s):
+     """Lowercase the text and end it with an ellipsis."""
+     return s.lower() + "..."
++
++
++def shout(s):
++    """Uppercase the text and end it with an exclamation mark."""
++    return s.upper() + "!"
