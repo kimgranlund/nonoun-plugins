@@ -207,3 +207,9 @@
 
 - note: The `ticket_root` lane selftest fixture relies on `tickets.py close` succeeding in a fresh repo with no router files, so a later change to close's router handling could turn it red for a reason outside `fanout.py`.
 - note: shellcheck is not installed on the build host, so the shell lint leg of `check.sh` was never exercised for this change.
+
+## Release 0.20.8: prepared, not published (2026-10-05)
+- Branch `release-0.20.8` (worktree `.worktrees/release-0.20.8`) is cut from main 2e91432 with the 0.20.8 manifest bump and `docs/validation/release-0.20.8.md`. No tag exists and nothing was pushed; `origin/main` is still 9146596.
+- Full check set passed on 87ebde0 (check.sh full run, packaging, generate --check, check.py, tickets check, 13 selftests, diff --check). Later commits are docs only.
+- Fact-check passes (independent read-only Opus, detached): pass 1 FAIL (4 factual, 1 unsupported, all fixed), pass 2 FAIL (2 factual, fixed), pass 3 narrow PASS with no factual finding (one wording nit, fixed). The overnight goal says to publish only if the fact-check passes and to stop if it fails after one round of fixes; pass 2 failed after the first fix round, so publishing was left for a decision.
+- To publish from the release commit `git rev-parse release-0.20.8`: annotated tag v0.20.8, `git push origin ${SHA}:refs/heads/main` (fast-forward only), push the tag, `gh release create v0.20.8 --verify-tag --title "SDLC Lite 0.20.8" --notes-file docs/validation/release-0.20.8.md`, merge the branch back into local main.

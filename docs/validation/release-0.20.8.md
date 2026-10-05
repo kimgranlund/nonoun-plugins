@@ -1,6 +1,6 @@
 # Release 0.20.8
 
-Recorded: 2026-10-05 (UTC; the work and live runs were on 2026-10-04 local time). SDLC Lite 0.20.8. Progressive Context stays at 0.1.2. Previous release: SDLC Lite 0.20.7 (8d5afb7, tag `v0.20.7`). Built from main commit 2e91432; the release branch adds the manifest bump and this record. Main also holds 9146596, the docs-only correction of the 0.20.7 record, pushed after the 0.20.7 tag.
+Recorded: 2026-10-05 (UTC; the work and live runs were on 2026-10-04 local time). SDLC Lite 0.20.8. Progressive Context stays at 0.1.2. Previous release: SDLC Lite 0.20.7 (8d5afb7, tag `v0.20.7`). Built from main commit 2e91432; the release branch adds the manifest bump, this record and its docs index entry. Main also holds 9146596, the docs-only correction of the 0.20.7 record, pushed after the 0.20.7 tag.
 
 This record states only what a committed file or a command run for it shows. Where a record does not say something, it says so.
 
@@ -51,7 +51,7 @@ Three Codex agent files changed: `sdlc-solo-l1.toml`, `sdlc-solo-l2.toml`, `sdlc
 
 ## Checks run for the release
 
-Run from the release worktree on branch `release-0.20.8` at the commit that adds the manifest bump and this record (87ebde0), 2026-10-05, all exit 0:
+Run from the release worktree on branch `release-0.20.8` at the commit that adds the manifest bump, this record and its docs index entry (87ebde0), 2026-10-05, all exit 0:
 
 - `bash plugins/sdlc-lite/scripts/check.sh` (the full run; it prints `skip: shellcheck not installed`)
 - `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/check.py`
