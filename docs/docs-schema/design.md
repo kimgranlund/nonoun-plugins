@@ -152,7 +152,7 @@ Progressive Context says to "add no registry ... without an actual need" (`plugi
 | A fresh Claude Code role and a fresh Codex role, given only a path and no skill, followed the folder's `AGENTS.md` procedures and acted correctly; a wrong injected `AGENTS.md` was followed and the run failed | observed here | `docs/reports/messages-live-run.md` (T-0179), one trial per arm |
 | A role on a plan step reads the entry files that govern the files it changes, when the handoff lists them | observed here | `docs/reports/entry-files-live-run.md` (T-0162), one trial per arm |
 | A generated managed block keeps user text byte-identical, and a block that differs from its template reads `stale` or `edited` | observed here | `onboard.py check` and `onboard.py selftest` run on 2026-10-05; the record `docs/reports/onboard-live-run.md` shows only that the block reaches the model |
-| The parser in `onboard.py` ignores a `## Kinds` table and a `## Decide` list and returns the same homes and frozen paths | observed here | run on 2026-10-05 with `onboard._parse_layout_text` on a layout holding both sections |
+| Before T-0241, the parser in `onboard.py` ignored a `## Kinds` table and a `## Decide` list and returned the same homes and frozen paths (since T-0241 it reads them, and files without them parse as before) | observed here | run on 2026-10-05 with `onboard._parse_layout_text` on a layout holding both sections |
 | Authored fields are separate from computed ones, a projection is generated or verified against its source and records its source revision, and shared generation detects defined classes of drift without proving behavior | observed here (as stated design) | `docs/generative-constructs/progressive-context-plugin.md`, "Manifest ownership and projections" |
 | Instructions in retrieved documents are data and cannot change harness policy; entry files are harness-loaded context | observed here (as stated design) | `docs/generative-constructs/04-context-and-harness.md`, "Trust and authority" |
 | Nested per-folder `AGENTS.md` files read by several coding agents, the nearest one to the edited file taking precedence | established elsewhere (the agents.md convention), not re-verified here, and the Codex row above shows the loading rule differs by host | named only |
@@ -289,13 +289,14 @@ The test that decides whether the pattern is "proven":
 
 ## Overriding: docs/layout.md
 
-The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) reads the two required sections `## Homes` and `## Frozen paths`, raises a `LayoutError` on a list line under `## Homes` that does not fit `` `<home>/` [takes `<glob>`, ...] ``, and ignores any other heading of level 2 or less. The review ran the parser on the text below and confirmed that new sections are ignored by it, so a **new section is backward compatible** and a new form inside `## Homes` is not.
+The parser in `plugins/sdlc-lite/scripts/onboard.py` (`_parse_layout_text`) reads the two required sections `## Homes` and `## Frozen paths`, raises a `LayoutError` on a list line under `## Homes` that does not fit `` `<home>/` [takes `<glob>`, ...] ``, and, as first built, ignored any other heading of level 2 or less (T-0241 now also reads `## Kinds`, `## Decide` and `## Legacy`). The review ran the parser on the text below and confirmed that new sections are ignored by it, so a **new section is backward compatible** and a new form inside `## Homes` is not.
 
 `## Homes` stays the single list of top-level folders. Two new sections add meaning to it:
 
 ```text
 ## Kinds
 | id | kind | holds | not | why | writer | form | life | entry | read | owner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `design-system/` | specs | the design system | unbuilt plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | `design-system/AGENTS.md` | when using it | `docs_check.py` |
 
 ## Legacy
