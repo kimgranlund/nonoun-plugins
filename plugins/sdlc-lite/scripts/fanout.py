@@ -955,6 +955,8 @@ def run_ticket(ctx, lane, t, lock):
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=ENV)
     inherited = inherited_red(wt / ctx['trel'] / t.slug)
     if rc:  # a non-zero exit still reports an inherited-red cause, with the driver rc kept visible
+        if not inherited and rc == 4:  # solo_run.py's budget gate (T-0229): the ticket is at 80 percent with no ack
+            return 'driver failed rc=4 (budget gate: budget.py ack)', ''
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
         return inherited, ''
@@ -2257,6 +2259,35 @@ def selftest():
         pr_raw, raw_recs = metered_lane('off', True)
         expect(f'case 17 negative control: with the wrapper bypassed the lane writes no solo record, got rc={pr_raw.returncode} '
                f'records={raw_recs!r}', pr_raw.returncode == 0 and raw_recs == [])
+
+        # 18. The budget gate (T-0229): a solo lane for a ticket already at 80 percent of its budget with no ack does not
+        # start a session; the lane stops as `driver failed rc=4 (budget gate: budget.py ack)`, nothing is merged and the
+        # shim is never run. Control: the same fixture with the ticket under 80 percent merges.
+        def budget_lane(name, spent):
+            rr_, ll_ = tmp / f'budget-{name}', tmp / f'budget-{name}-lanes'
+            make_repo(rr_, [('one', 'T-0001', 'ready')])
+            h_ = rr_ / '.sdlc' / 'one' / 'handoff.md'
+            h_.write_text(h_.read_text().replace('size: S\n', 'size: S\nbudget_usd: 10\n'), encoding='utf-8')
+            (rr_ / '.sdlc' / 'one' / 'runs.jsonl').write_text(
+                json.dumps({'role': 'solo', 'attempt_id': 'seeded', 'cost_usd': spent}) + '\n', encoding='utf-8')
+            for args_ in (('add', '-A'), ('commit', '-q', '-m', 'budget fixture')):
+                sh(rr_, *args_)
+            proc_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', 'x=T-0001',
+                                    '--base', 'main', '--integration', 'fanout/budget', '--lanes-dir', str(ll_),
+                                    '--stagger', '0'], cwd=str(rr_), env=mshim_env, capture_output=True, text=True,
+                                   timeout=300)
+            ran_ = (ll_ / 'x' / 'T-0001.txt').exists() or any(ll_.rglob('T-0001.txt'))
+            return proc_, ran_
+
+        pb, ran_over = budget_lane('over', 8.0)
+        expect(f'case 18 budget gate: an 80 percent ticket does not merge, got rc={pb.returncode}',
+               pb.returncode != 0)
+        expect(f'case 18 budget gate: outcome names the gate, got out={pb.stdout[-300:]!r}',
+               'budget gate' in pb.stdout and 'rc=4' in pb.stdout)
+        expect('case 18 budget gate: no solo session started', not ran_over)
+        pu, ran_under = budget_lane('under', 7.0)
+        expect(f'case 18 control: a 70 percent ticket merges, got rc={pu.returncode} out={pu.stdout[-300:]!r}',
+               pu.returncode == 0 and ran_under)
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)

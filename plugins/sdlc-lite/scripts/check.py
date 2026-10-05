@@ -100,6 +100,9 @@
 27. Solo cost capture: scripts/solo_run.py names `sdlc-lite:solo`, `SDLC_ROLE`, `cost_usd`, `cost_reason`, and `total_cost_usd`;
    its TIERS agree with the tiers in agents/solo.md and with fanout.py SOLO_TIERS; agents/solo.md names `solo_run.py` as the
    start path. Negative controls: a changed tier, a phrase removed from solo_run.py, and solo.md without `solo_run.py`, must be flagged.
+28. Solo budget gate: scripts/solo_run.py names `budget_hold`, `budget.py ack`, `--new-task`, and returns 4 when it holds;
+   scripts/fanout.py names `budget gate: budget.py ack`; agents/solo.md, skills/agent/SKILL.md, and skills/fanout/SKILL.md name
+   the gate and `--new-task` where they start solo. Negative controls: each phrase removed from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -694,6 +697,17 @@ errors.extend(solo_cost_bad(_sr, _fs, _ff))
 for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
     if not solo_cost_bad(_mut(_sr), _fs, _ff): errors.append('check.py: solo cost capture negative control not flagged for a changed solo_run.py')
 if not solo_cost_bad(_sr, _fs.replace('solo_run.py', 'the wrapper'), _ff): errors.append('check.py: solo cost capture negative control not flagged for solo.md')
+# Solo budget gate (docstring item 28): solo_run.py stops at 80 percent with no ack, fanout names the outcome, the docs say so.
+_sa, _fk2 = _rd(root/'skills/agent/SKILL.md'), _fk
+SOLO_GATE_NEEDS = (('solo_run.py', ('budget_hold', 'budget.py ack', '--new-task', 'return 4')), ('fanout.py', ('budget gate: budget.py ack',)),
+                   ('solo.md', ('budget.py ack', '--new-task')), ('agent SKILL.md', ('--new-task', 'budget.py ack')), ('fanout SKILL.md', ('budget gate', 'budget.py ack')))
+def solo_gate_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in SOLO_GATE_NEEDS for ph in phrases if ph not in texts[name]]
+_gate_texts = {'solo_run.py': _sr, 'fanout.py': _ff, 'solo.md': _fs, 'agent SKILL.md': _sa, 'fanout SKILL.md': _fk2}
+errors.extend(f'check.py: solo budget gate: {m}' for m in solo_gate_bad(_gate_texts))
+for _name, _phrases in SOLO_GATE_NEEDS:
+    for _ph in _phrases:
+        if not solo_gate_bad(dict(_gate_texts, **{_name: _gate_texts[_name].replace(_ph, '')})): errors.append(f'check.py: solo budget gate negative control not flagged for {_name} without "{_ph}"')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

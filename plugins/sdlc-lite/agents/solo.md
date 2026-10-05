@@ -28,7 +28,9 @@ In Claude Code, `hooks/block-role-spawn.sh` denies a conductor's Agent-tool spaw
 
 Start it through the cost wrapper, so the session's cost and token usage land in the task's `runs.jsonl` and the budget gate and the board count the default lane:
 
-`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"`
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"` (no ticket: `--new-task [slug]` instead of `--task-dir`)
+
+Before it starts anything it checks the ticket's budget as `run.sh` does for roles: at 80 percent of `budget_usd` with no ack it exits 4 (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked.
 
 It starts the session at the tier's model and effort, prints the report, and records cost, usage, turns, and duration; a session that reports no cost records `cost_usd` null with a reason, never zero. The raw command is the fallback and records nothing:
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Start the solo agent for one ticket and record its cost, so the default lane is metered.
 
-  solo_run.py run --task-dir DIR --tier S|M|L (--brief TEXT | --brief-file FILE | --brief -)
+  solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier S|M|L (--brief TEXT | --brief-file FILE | --brief -)
                   [--backend claude|codex] [--cwd DIR] [--timeout SECONDS] [--raw-out FILE]
   solo_run.py selftest
 
@@ -11,6 +11,17 @@ stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh
 backend, transport, routing_reason). --task-dir is the ticket or task folder, the one holding handoff.md.
 budget.py sums cost_usd over every runs.jsonl under the ticket and counts a record with no numeric cost
 as unmetered, so this record is all the budget gate and the board need.
+
+Budget gate (T-0229): before it starts anything, run checks the ticket's budget the way run.sh does for roles.
+A ticket at 80 percent of its budget or more with no ack prints `solo_run.py: budget <pct>%: ask the user;
+budget.py ack` on stderr and exits 4 with no session, no record; `budget.py ack` raises the ceiling and the next
+start goes. A ticket with no budget (or a task folder with no ticket id) is never blocked. fanout.py starts its solo
+lanes through this wrapper, so the gate covers them too.
+
+--new-task [SLUG] is for a solo run that names no ticket (`/agent solo <instructions>`): it creates
+<ticket root>/<SLUG>/handoff.md from the brief (SLUG defaults to solo-YYYYMMDD-HHMMSS; refused when the folder
+exists), then runs there, so the session's cost is recorded like any other. A task folder without an `id` is not
+a ticket and has no budget.
 
 Cost is never guessed. A result with no total_cost_usd (a crash, a missing result event, Codex, which
 reports none) records cost_usd null with a cost_reason, and the budget reports that run as unmetered.
@@ -119,6 +130,36 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
     return rec
 
 
+def budget_hold(task_dir):
+    """The budget report when the ticket holding task_dir is at 80 percent or more with no ack, else None."""
+    sys.path.insert(0, str(SCRIPTS))
+    import budget
+    ticket = budget.ticket_of(task_dir)
+    rep = budget.report(ticket) if ticket is not None else None
+    return rep if rep and rep['state'] != 'ok' else None
+
+
+def new_task(slug, brief, root='.sdlc'):
+    """Create <ticket root>/<slug>/handoff.md from the brief and return the folder (a task, not a ticket)."""
+    sys.path.insert(0, str(SCRIPTS))
+    import re
+    import tickets
+    slug = slug or time.strftime('solo-%Y%m%d-%H%M%S')
+    if not re.fullmatch(r'[a-z0-9]+(-[a-z0-9]+)*', slug):
+        raise Refuse(f'bad task slug {slug!r}: lowercase letters, digits and single hyphens')
+    try:
+        base = tickets.ticket_dir(pathlib.Path(root))
+    except tickets.Fail as exc:
+        raise Refuse(str(exc))
+    d = base / slug
+    if d.exists():
+        raise Refuse(f'{d}: already exists; pick another slug')
+    d.mkdir(parents=True)
+    first = next((ln.strip() for ln in brief.splitlines() if ln.strip()), 'solo task')[:100]
+    (d / 'handoff.md').write_text(f'## Goal\n{first}\n\n## Brief\n{brief.strip()}\n', encoding='utf-8')
+    return d
+
+
 def append(task_dir, rec):
     task_dir = pathlib.Path(task_dir)
     if not (task_dir / 'handoff.md').is_file():
@@ -131,6 +172,10 @@ def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out
     argv, model, effort = command(tier, brief, backend)
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    hold = budget_hold(task_dir)
+    if hold:
+        print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
+        return 4
     # Always mint a fresh id: an inherited SDLC_ATTEMPT_ID belongs to a role attempt (fanout.py does the same), and
     # budget.py skips a second record with a repeated attempt_id, so reusing it would undercount spend.
     attempt = uuid.uuid4().hex
@@ -255,9 +300,91 @@ def selftest():
             q(d, 'M', 'b')
             rep = budget.report(d)
             expect('over 80 percent via solo cost warns', rep is not None and rep['state'] == 'warn' and rep['percent'] == 85)
+            expect('a second solo start at 85 percent is refused by the gate (T-0229)', q(d, 'M', 'b') == 4)
+            rep = budget.report(d)
+            expect('the refused start added no spend', rep is not None and rep['state'] == 'warn' and rep['percent'] == 85)
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                budget.cmd_ack(str(d), 20, 'selftest')
             q(d, 'M', 'b')
             rep = budget.report(d)
-            expect('two solo runs exceed the ceiling', rep is not None and rep['state'] == 'over')
+            expect('an acked ticket keeps metering', rep is not None and rep['percent'] == 85 and rep['budget'] == 20 and rep['state'] == 'warn')
+
+            # Budget gate (T-0229): a ticket at 80 percent or more with no ack does not start a session.
+            mark = tmp / 'started.txt'
+            os.environ['SOLO_MARK'] = str(mark)
+            shim("touch \"$SOLO_MARK\"\nprintf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+
+            def seed(d, usd):
+                (d / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'attempt_id': 'seed' + str(usd),
+                                                          'cost_usd': usd}) + '\n')
+
+            d = ticket('gate', budget_usd=10)
+            seed(d, 8.0)  # exactly 80 percent
+            rc = q(d, 'M', 'b')
+            expect('gate: 80 percent with no ack exits 4', rc == 4)
+            expect('gate: no session started at 80 percent', not mark.exists())
+            expect('gate: no record written when refused', len(lines(d)) == 1)
+            d79 = ticket('gate79', budget_usd=10)
+            seed(d79, 7.9)
+            expect('gate: 79 percent starts (boundary control)', q(d79, 'M', 'b') == 0 and mark.exists() and len(lines(d79)) == 2)
+            mark.unlink()
+            dov = ticket('gateover', budget_usd=10)
+            seed(dov, 12.0)
+            expect('gate: over budget exits 4', q(dov, 'M', 'b') == 4 and not mark.exists())
+            # Ack raises the ceiling: the same ticket then starts.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                rc_ack = budget.cmd_ack(str(d), 20, 'selftest')
+            expect('gate: ack accepted', rc_ack == 0)
+            expect('gate: acked ticket starts and records', q(d, 'M', 'b') == 0 and mark.exists() and len(lines(d)) == 2)
+            mark.unlink()
+            # No budget field, or a task folder with no ticket id, is never blocked.
+            dn = ticket('gatenone')
+            seed(dn, 999.0)
+            expect('gate: a ticket with no budget starts', q(dn, 'M', 'b') == 0 and mark.exists())
+            mark.unlink()
+            dt = tmp / 'plain-task'
+            dt.mkdir()
+            (dt / 'handoff.md').write_text('## Goal\ng\n')
+            expect('gate: a task folder without a ticket id starts', q(dt, 'S', 'b') == 0 and mark.exists())
+            mark.unlink()
+            # The gate runs before the brief reaches the model: stderr says to ack.
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                run(dov, 'M', 'b')
+            expect('gate: message names budget.py ack', 'budget.py ack' in err.getvalue() and 'budget 120%' in err.getvalue())
+
+            # --new-task: /agent solo with no ticket still leaves a `role solo` record.
+            root = tmp / 'proj' / '.sdlc'
+            root.mkdir(parents=True)
+            td = new_task('quick-fix', 'Fix the typo\nin README', root=str(root))
+            expect('new task: folder and handoff written', (td / 'handoff.md').is_file()
+                   and '## Goal\nFix the typo' in (td / 'handoff.md').read_text())
+            expect('new task: runs and records a solo run', q(td, 'S', 'Fix the typo') == 0
+                   and [x.get('role') for x in lines(td)] == ['solo'])
+            for name, fn in (('existing slug', lambda: new_task('quick-fix', 'x', root=str(root))),
+                             ('bad slug', lambda: new_task('Bad Slug', 'x', root=str(root)))):
+                try:
+                    fn()
+                    expect('new task: ' + name + ' refused', False)
+                except Refuse:
+                    expect('new task: ' + name + ' refused', True)
+            (root / 'config').write_text('ticket_root: tickets\n')
+            td2 = new_task('', 'In the ticket root', root=str(root))
+            expect('new task: default slug under ticket_root', td2.parent == root / 'tickets' and td2.name.startswith('solo-'))
+            # The CLI path end to end: no ticket, a shim claude, cwd is the project.
+            pr = tmp / 'cliproj'
+            (pr / '.sdlc').mkdir(parents=True)
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-task',
+                                 '--tier', 'S', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            recs = [json.loads(x) for x in (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').read_text().splitlines()] \
+                if (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').is_file() else []
+            expect(f'new task CLI: rc 0 and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 0 and [x.get('role') for x in recs] == ['solo'])
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--tier', 'S',
+                                 '--brief', 'x'], cwd=str(pr), capture_output=True, text=True, timeout=60)
+            expect('CLI: neither --task-dir nor --new-task exits 2', cp.returncode == 2)
+            os.environ.pop('SOLO_MARK', None)
 
             # Codex: codex_exec.py reports no cost; the record says so. A stub stands in for it.
             stub = tmp / 'codex_stub.py'
@@ -314,7 +441,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = p.add_subparsers(dest='cmd', required=True)
     r = sub.add_parser('run')
-    r.add_argument('--task-dir', required=True)
+    r.add_argument('--task-dir', help='the ticket or task folder holding handoff.md')
+    r.add_argument('--new-task', nargs='?', const='', metavar='SLUG', help='no ticket: create '
+                   '<ticket root>/<SLUG>/handoff.md from the brief and run there (default slug solo-<timestamp>)')
     r.add_argument('--tier', required=True, choices=sorted(TIERS))
     g = r.add_mutually_exclusive_group(required=True)
     g.add_argument('--brief')
@@ -335,8 +464,14 @@ def main():
     if not brief or not brief.strip():
         print('solo_run.py: empty brief', file=sys.stderr)
         return 2
+    if bool(a.task_dir) == (a.new_task is not None):
+        print('solo_run.py: give exactly one of --task-dir or --new-task', file=sys.stderr)
+        return 2
     try:
-        return run(a.task_dir, a.tier, brief, a.backend, a.cwd, a.timeout, a.raw_out)
+        task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
+        if a.new_task is not None:
+            print(f'solo_run.py: task folder {task_dir}', file=sys.stderr)
+        return run(task_dir, a.tier, brief, a.backend, a.cwd, a.timeout, a.raw_out)
     except Refuse as exc:
         print(f'solo_run.py: {exc}', file=sys.stderr)
         return 2
