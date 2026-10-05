@@ -1,5 +1,5 @@
 ## Task goal
-Independently verify three small defect fixes on this branch. The pre-build base is commit c4909ee; the fixes are 44ed997 (T-0258), c23fb94 (T-0261), 8ed117d (T-0263). Tickets: .sdlc/0258-fanout-close-ticket-root, .sdlc/0261-split-goal-precheck, .sdlc/0263-stale-lane-route. Each regression test must fail without its fix and pass with it.
+Independently verify three small defect fixes on this branch. The pre-build base is commit c4909ee; the fixes are 44ed997 (T-0258), c23fb94 (T-0261), 8ed117d (T-0263). Tickets: .sdlc/.0258-fanout-close-ticket-root, .sdlc/.0261-split-goal-precheck, .sdlc/.0263-stale-lane-route. Each regression test must fail without its fix and pass with it.
 
 ## Step 1: Verify the three fixes
 level: L3

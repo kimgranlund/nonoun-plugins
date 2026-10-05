@@ -2,7 +2,7 @@
 id: T-0258
 title: "fanout numbered close ignores ticket_root"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ Fix: resolve the close path through ticket_root. Regression test in the fanout s
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-05: fanout copies the untracked .sdlc/config into its worktrees (44ed997); verifier L3 pass, verify-defect-fixes-0209

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:5bb52a675c93 -->
+<!-- sdlc-lite:managed:start v1 sha256:d3a3b20e46cc -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 8
+- proposed: 20
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
@@ -18,6 +18,18 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
   - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
+  - T-0259 fanout needs committed handoffs and node_modules in the gate worktree (0259-fanout-gate-preflight)
+  - T-0260 Solo long commands capped at 30 min and session-limit stops leave no resume (0260-solo-session-limit-resume)
+  - T-0262 tickets.py close needs --force on tracked citations and cannot see .sdlc citations (0262-close-citation-scan-gaps)
+  - T-0264 steps.py split has no override after a replan verdict (0264-split-after-replan-override)
+  - T-0265 Headless planner stalled on a denied rm permission prompt (0265-headless-planner-denied-rm)
+  - T-0266 tickets.py check breaks on partial front matter (0266-tickets-check-partial-front-matter)
+  - T-0267 A hook denies git worktree add with variable paths (0267-hook-denies-worktree-add-variable)
+  - T-0268 Raw claude -p solos have no solo_run cost records (0268-raw-solo-cost-records)
+  - T-0269 traces detector reports failed attempts as missing a runs.jsonl row (0269-traces-failed-attempt-noise)
+  - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
+  - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
+  - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
@@ -29,7 +41,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 215
+- done: 218
 - dropped: 19
 
 ## Procedures
