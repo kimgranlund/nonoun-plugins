@@ -23,3 +23,6 @@ Coordinator decision 2026-10-05: fanout solo lanes are the parallel default path
 
 ## Constraints
 Keep it small. No em dashes. One authoritative location per fact.
+
+## Verification
+Independent L3 verifier (Fable, `.sdlc/verify-0226/verifier-L3.md`): pass on all six criteria. It ran the fanout selftest with and without the role env vars, showed case 17 fails when the lane starts the raw command (a disk mutant), observed two budgeted size S tickets through `fanout.py run` with a stub `claude` each get a `role solo` record at the stub cost and close with the skips guard live, confirmed `solo_command`'s contract and the three-file scope, and ran `check.sh` once (exit 0). Not exercised: a live fanout run with a real model (recorded as a limit by decision) and a Codex lane (null cost by design).
