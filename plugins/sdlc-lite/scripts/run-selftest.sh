@@ -934,4 +934,31 @@ n0=$(bcount); brc=0
 [[ ! -s "$tmp/berr" ]] || fail "$label: stderr is not empty: $(cat "$tmp/berr")"
 [[ ! -e "$nb/budget-ack.md" ]] || fail "$label: a budget-ack.md was written"
 
+# Session limit (T-0260): a failed run whose log shows a 429 leaves <role>-<level>.limit and prints the resume
+# command, exit 1; a failure with no limit text leaves no marker; a later success removes the marker.
+mkdir -p "$tmp/limitbin" "$repo/.sdlc/lim"
+echo '## Goal' >"$repo/.sdlc/lim/handoff.md"
+printf '#!/usr/bin/env bash\necho "API Error: 429 session limit reached" >&2\nexit 1\n' >"$tmp/limitbin/claude"
+printf '#!/usr/bin/env bash\necho "boom" >&2\nexit 1\n' >"$tmp/limitbin/claude-plain"
+chmod +x "$tmp/limitbin/claude" "$tmp/limitbin/claude-plain"
+label="session limit"
+lrc=0
+(cd "$repo" && PATH="$tmp/limitbin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>"$tmp/lerr") || lrc=$?
+[[ "$lrc" == 1 ]] || fail "$label: run.sh exited $lrc, want 1"
+grep -qF "session limit: resume with: bash $here/../scripts/run.sh planner L3" "$tmp/lerr" \
+  || grep -qE "session limit: resume with: bash .*/run.sh planner L3 .*/lim/handoff.md" "$tmp/lerr" \
+  || fail "$label: no resume line on stderr: $(cat "$tmp/lerr")"
+[[ -s "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label: no planner-L3.limit marker"
+jq -e '.resume | test("run.sh planner L3")' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label: marker has no resume command"
+rm -f "$repo/.sdlc/lim/planner-L3.limit"
+mv "$tmp/limitbin/claude-plain" "$tmp/limitbin/claude"
+lrc=0
+(cd "$repo" && PATH="$tmp/limitbin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>"$tmp/lerr") || lrc=$?
+[[ "$lrc" == 1 ]] || fail "$label control: run.sh exited $lrc, want 1"
+[[ ! -e "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label control: a plain failure left a limit marker"
+! grep -qF "session limit" "$tmp/lerr" || fail "$label control: a plain failure printed a limit line"
+echo '{}' >"$repo/.sdlc/lim/planner-L3.limit"
+(cd "$repo" && PATH="$tmp/bin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>/dev/null) || fail "$label: a stub success failed"
+[[ ! -e "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label: a success left the stale marker"
+
 echo "run selftest: PASS"

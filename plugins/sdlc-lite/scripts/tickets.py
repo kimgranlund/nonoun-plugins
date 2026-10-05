@@ -539,13 +539,21 @@ def outside_refs(root, slug, own=False, roadmap=None):
                             '-F', '-e', slug], env=env, capture_output=True, text=True)
         if p.returncode not in (0, 1):
             raise ValueError(p.stderr.strip())
+        hits = p.stdout
+        if rel.parts:  # the ticket root is often gitignored: scan it with ignore rules off so its citations count too
+            q = subprocess.run(['git', '-C', str(top), 'grep', '--untracked', '--no-exclude-standard', '-I', '-l', '-z',
+                                '--full-name', '-F', '-e', slug, '--', rel.as_posix()], env=env,
+                               capture_output=True, text=True)
+            if q.returncode not in (0, 1):
+                raise ValueError(q.stderr.strip())
+            hits += q.stdout
         if roadmap is None:
             skip = (rel / 'roadmap.md').as_posix()
         else:
             skip = (roadmap.parent.resolve() / roadmap.name).relative_to(top).as_posix()
         lit = literal_re(old)
         files = []
-        for f in sorted(f for f in p.stdout.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))):
+        for f in sorted({f for f in hits.split('\0') if f and f != skip and (own or not f.startswith(old + '/'))}):
             try:
                 text = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
             except OSError:
@@ -1396,7 +1404,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
 
     def rewrite_now():
         rewrite_files(top, rewrite, old_ref, new_ref)
-        return f'; rewrote refs in {", ".join(rewrite)}' if rewrite else ''
+        if rewrite:
+            return f'; rewrote refs in {", ".join(rewrite)}'
+        return f'; left refs to {old_ref} in {", ".join(refs)}' if refs else ''
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
     if reason is not None:
@@ -2712,6 +2722,25 @@ def selftest():
             expect(f'(u) refs: --force closes and leaves the reference: rc={rc} {out!r} {err!r}',
                    rc == 0 and (root / '.0003-x').is_dir() and 'rewrote' not in out
                    and spec.read_text(encoding='utf-8') == 'see .sdlc/0003-x/handoff.md\n')
+            expect(f'(u) refs: --force prints the files it left citing the folder: {out!r}',
+                   out.endswith('; left refs to .sdlc/0003-x in docs/spec.md'))
+
+            # T-0262: a citation under a gitignored ticket root is seen, refused, named, and rewritable
+            def ignored_ref():
+                root, spec = ref_repo(commit=False, where='.sdlc/index.md')
+                (root.parent / '.gitignore').write_text('.sdlc/\n', encoding='utf-8')
+                return root, spec
+
+            root, spec = ignored_ref()
+            before = whole(root)
+            rc, out, err = run(root, 'close', ('0003-x',))
+            expect(f'(u) refs: a citation in a gitignored .sdlc refuses and names .sdlc/index.md: rc={rc} {err!r}',
+                   rc == 1 and '.sdlc/index.md' in err and '--rewrite-refs' in err and whole(root) == before)
+            root, spec = ignored_ref()
+            rc, out, err = run(root, 'close', ('0003-x',), rewrite_refs=True)
+            expect(f'(u) refs: --rewrite-refs rewrites the gitignored .sdlc citation: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.endswith('; rewrote refs in .sdlc/index.md')
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/.0003-x/handoff.md\n')
 
             # negative controls: a reference only inside the ticket's own folder (or the roadmap) closes
             root, spec = ref_repo(where='.sdlc/0003-x/notes.md')

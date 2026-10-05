@@ -57,6 +57,9 @@
 # this run: <branch>". It says "appeared during this run", not that this role made them, because
 # concurrent fanout lanes and other role runs can add worktrees and branches too. It only reports:
 # it never removes or deletes anything and never changes the exit code.
+# Session limit: when a run fails (exit 1) and its log shows a 429 or a session or usage limit, run.sh writes
+# <role>-<level>.limit (one JSON line: ts, role, level, handoff, resume, evidence) beside the result and prints
+# "run.sh: session limit: resume with: <command>" on stderr; the exit code stays 1. A later success removes the marker.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
 # saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
 # 4 ticket budget at 80 percent or more with no ack.
@@ -483,6 +486,18 @@ on_exit() {
   report_strays
   exit "$rc"
 }
+# limit_marker: on a failed run, a 429 or session limit in the log leaves a resume marker and prints the command.
+limit_marker() {
+  local ev resume
+  ev=$(grep -Eim1 '429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit' "$log" 2>/dev/null | cut -c1-200) || return 0
+  [[ -n "$ev" ]] || return 0
+  resume="bash $plugin_root/scripts/run.sh $role $level $handoff"
+  jq -nc --arg role "$role" --arg level "$level" --arg handoff "$handoff" --arg resume "$resume" --arg ev "$ev" \
+    '{ts: (now|todate), role: $role, level: $level, handoff: $handoff, resume: $resume, evidence: $ev}' \
+    >"$dir/$role-$level.limit" 2>/dev/null || :
+  echo "run.sh: session limit: resume with: $resume" >&2
+  return 0
+}
 running="$dir/$role-$level.running"
 date +%s >"$running"
 role_pid=""
@@ -501,7 +516,7 @@ role_pid=$!
 role_rc=0
 wait "$role_pid" || role_rc=$?
 role_pid=""
-(( role_rc == 0 )) || { echo "$role exited non-zero; see $log" >&2; exit 1; }
+(( role_rc == 0 )) || { echo "$role exited non-zero; see $log" >&2; limit_marker; exit 1; }
 # Result pick (see the header): result events only, non-JSON lines skipped.
 sect=$(python3 "$plugin_root/scripts/results.py" key "$role")
 events=$(jq -R -c 'fromjson? // empty | select(type == "object" and .type == "result")' "$log" 2>/dev/null || true)
@@ -512,7 +527,7 @@ pick=$(jq -s -c --arg h "## $sect" '
   // last // empty' <<<"$events" 2>/dev/null || true)
 last_ev=$(jq -s -c 'last // empty' <<<"$events" 2>/dev/null || true)
 if [[ -z "$pick" ]] || ! jq -e '.is_error == false and (.result | strings | length > 0)' <<<"$pick" >/dev/null 2>&1; then
-  echo "$role returned no result; see $log" >&2; exit 1
+  echo "$role returned no result; see $log" >&2; limit_marker; exit 1
 fi
 { echo "<!-- role=$role level=$level model=$model effort=$effort$shared_note -->"; jq -r '.result' <<<"$pick"; } >"$result"
 detect_strays || :
@@ -548,6 +563,7 @@ if ! chk=$(python3 "$plugin_root/scripts/results.py" validate "$result" --role "
   echo "run.sh: $role result ${reason:-failed the result check}; see $result" >&2
   exit 3
 fi
+rm -f "$dir/$role-$level.limit"
 echo "$result"
 exit 0
 }

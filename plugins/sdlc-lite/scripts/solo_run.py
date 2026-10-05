@@ -37,6 +37,7 @@ import json
 import math
 import os
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
@@ -130,6 +131,25 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
     return rec
 
 
+LIMIT_RE = re.compile(r'429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit', re.I)
+
+
+def limit_hint(task_dir, tier, text):
+    """On a 429 or session-limit stop, write <task dir>/solo.limit (one JSON line) and print the resume hint."""
+    m = LIMIT_RE.search(text or '')
+    if not m:
+        return
+    resume = f'python3 {pathlib.Path(__file__).resolve()} run --task-dir {task_dir} --tier {tier} --brief <the same brief>'
+    rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'task_dir': str(task_dir), 'tier': tier,
+           'resume': resume, 'evidence': (text or '')[max(0, m.start() - 40):m.end() + 80].strip()[:200]}
+    try:
+        (pathlib.Path(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
+    except OSError:
+        pass
+    print('solo_run.py: session limit: the work is in the tree (fanout keeps it in the lane WIP commit); '
+          f'resume after the limit resets: {resume}', file=sys.stderr)
+
+
 def budget_hold(task_dir):
     """The budget report when the ticket holding task_dir is at 80 percent or more with no ack, else None."""
     sys.path.insert(0, str(SCRIPTS))
@@ -205,7 +225,12 @@ def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out
     print('solo_run.py: recorded solo %s attempt %s cost %s' % (
         rec['level'], attempt[:8], f'${cost:.4f}' if cost is not None else f"none ({rec['cost_reason']})"),
         file=sys.stderr)
-    return 1 if rc == 0 and (result or {}).get('is_error') else rc
+    failed = 1 if rc == 0 and (result or {}).get('is_error') else rc
+    if failed:
+        limit_hint(task_dir, tier, text if isinstance(text, str) and text else out)
+    else:
+        (pathlib.Path(task_dir) / 'solo.limit').unlink(missing_ok=True)
+    return failed
 
 
 def selftest():
@@ -293,6 +318,19 @@ def selftest():
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"e\",\"total_cost_usd\":1}'\n")
             d = ticket('err')
             expect('is_error result exits 1', q(d, 'M', 'b') == 1 and lines(d)[0].get('cost_usd') == 1)
+            expect('a plain failure leaves no resume marker (T-0260 control)', not (d / 'solo.limit').exists())
+
+            # T-0260: a 429 session-limit stop leaves solo.limit and prints the resume hint.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached\"}'\n")
+            d = ticket('limit')
+            err = io.StringIO()
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = run(d, 'M', 'b')
+            mk = d / 'solo.limit'
+            got = json.loads(mk.read_text()) if mk.is_file() else {}
+            expect('limit stop: exits 1, solo.limit has the resume command and evidence',
+                   rc == 1 and '--task-dir' in got.get('resume', '') and '429' in got.get('evidence', ''))
+            expect('limit stop: stderr prints the resume hint', 'session limit' in err.getvalue() and 'resume' in err.getvalue())
 
             # A ticket over 80 percent through solo cost alone trips the budget stop.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":8.5}'\n")
