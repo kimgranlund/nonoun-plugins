@@ -242,3 +242,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0243 | [0243-sdlc-boundary-checks](0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | ⏳ proposed |
 | T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243 | ⏳ proposed |
 | T-0245 | [0245-docs-promotion-helper](0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | ⏳ proposed |
+| T-0249 | [0249-plan-goal](0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | ⏳ proposed |
+| T-0250 | [0250-plan-loop](0250-plan-loop/handoff.md) | plan-loop skill | feature | S | P2 | none | ⏳ proposed |
+| T-0251 | [0251-plan-fanout](0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | ⏳ proposed |
