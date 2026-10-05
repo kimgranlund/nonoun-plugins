@@ -25,3 +25,4 @@ Recorded: 2026-10-04. One headless Codex conductor session was given only "Deliv
 - The verifier reported that creating its base worktree under `.git/worktrees/base` was blocked by the sandbox, so it claimed no baseline result.
 - Usage for the conductor's own turn was 992,932 input tokens (949,504 cached) and 2,917 output tokens; the solo's and verifier's usage is not captured here. Codex reports no cost, so the spend is unknown.
 - One run, one machine, one tiny size M ticket, in a project where the plugin was reached by absolute path. The interactive Codex conductor and size S and L tiers were not run.
+- Trailing whitespace was stripped from the copied evidence files so `git diff --check` passes; nothing else in them was edited.

@@ -18,4 +18,3 @@ Steelman: a scope-failure concern was considered, then dropped after checking th
 
 ## For the next attempt
 None.
-

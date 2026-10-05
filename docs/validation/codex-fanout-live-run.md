@@ -25,3 +25,4 @@ Recorded: 2026-10-04. One live run of `fanout.py run` with `SDLC_BACKEND=codex` 
 - Scope: one lane, one size S ticket, one run, one machine. The size M path, the batched verifier for tiers M and L, parallel lanes, the lane cap and the stagger were not exercised on Codex here.
 - Cost is unknown: Codex reports none. Only token counts exist.
 - Not a conductor run. The conductor start on Codex is in `docs/validation/codex-conductor-solo-live-run.md`.
+- Trailing whitespace was stripped from the copied evidence files so `git diff --check` passes; nothing else in them was edited.

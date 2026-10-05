@@ -1,5 +1,5 @@
-[fanout-2d7190145fbb] 
+[fanout-2d7190145fbb]
 [fanout-2d7190145fbb] ----------------------------------------------------------------------
 [fanout-2d7190145fbb] Ran 0 tests in 0.000s
-[fanout-2d7190145fbb] 
+[fanout-2d7190145fbb]
 [fanout-2d7190145fbb] OK

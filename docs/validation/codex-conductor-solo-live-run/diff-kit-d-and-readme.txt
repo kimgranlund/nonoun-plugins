@@ -4,7 +4,7 @@ index e6cde43..c0cff8e 100644
 +++ b/README.md
 @@ -1,3 +1,9 @@
  # kit
- 
+
  Small helpers.
 +
 +Use `from kit.d import parse_duration` to convert a duration string to integer
