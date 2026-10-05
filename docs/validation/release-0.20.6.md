@@ -54,11 +54,11 @@ Run from the release worktree on branch `release-0.20.6` (main's 51df377 merged 
 - `bash plugins/sdlc-lite/scripts/check.sh` (shellcheck skipped, not installed)
 - `python3 scripts/check-packaging.py`
 - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` (221 tickets, roadmap current)
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` (222 tickets, roadmap current)
 - `python3 plugins/sdlc-lite/scripts/messages.py selftest`, `results.py selftest`, `evals.py selftest`, `proposals.py selftest`, `supervisor.py selftest`, `specgate.py selftest`, `footprint.py selftest`, `budget.py selftest`, `board.py selftest`, `fanout.py selftest`
 - `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`
 - `python3 plugins/sdlc-lite/scripts/codex-selftest.py`
 - `git diff --check`
 - Version parity: both SDLC Lite manifests read 0.20.6; both Progressive Context manifests read 0.1.2.
 
-FACTCHECK_PLACEHOLDER
+An independent Opus reviewer is fact-checking this record against the repository; its summary is added when its passes finish.
