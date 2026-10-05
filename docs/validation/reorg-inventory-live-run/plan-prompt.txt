@@ -1,0 +1,9 @@
+You are writing a reorganization PLAN for the git repository at /Users/kimgranlund/Projects/maison/ui-kit-maison. Do not modify anything: you only have Read, Grep and Glob, and you print the plan as your final answer (do not try to write files).
+
+Follow this procedure exactly: /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/reorg-inventory/docs/repo-onboarding/reorganization-plan-procedure.md (read it first, Step 2 and its rules).
+
+Facts you start from (a deterministic inventory, already computed; read-only):
+- text report: /tmp/reorg/maison.txt
+- full JSON (230 documents; fields path, lines, heading, last_commit, inbound, outbound, broken_links, flags, duplicate_of, suggest_folder): /tmp/reorg/maison.json
+
+Rules: every proposal cites an inventory row (path and flag). Read a document only where a proposal needs it. Keep the plan under 120 lines. End with a section 'Not read' listing what you did not open. Do not propose anything under .sdlc/ (frozen). Treat the flags as leads, not verdicts: say when a duplicate flag is templated READMEs that are intentionally alike.

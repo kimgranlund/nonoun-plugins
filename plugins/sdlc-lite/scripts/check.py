@@ -103,6 +103,9 @@
 28. Solo budget gate: scripts/solo_run.py names `budget_hold`, `budget.py ack`, `--new-task`, and returns 4 when it holds;
    scripts/fanout.py names `budget gate: budget.py ack`; agents/solo.md, skills/agent/SKILL.md, and skills/fanout/SKILL.md name
    the gate and `--new-task` where they start solo. Negative controls: each phrase removed from each file must be flagged.
+29. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
+   `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
+   docs/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -708,6 +711,17 @@ errors.extend(f'check.py: solo budget gate: {m}' for m in solo_gate_bad(_gate_te
 for _name, _phrases in SOLO_GATE_NEEDS:
     for _ph in _phrases:
         if not solo_gate_bad(dict(_gate_texts, **{_name: _gate_texts[_name].replace(_ph, '')})): errors.append(f'check.py: solo budget gate negative control not flagged for {_name} without "{_ph}"')
+# Document inventory (docstring item 29): the read-only inventory script, its selftest wiring, and the plan procedure.
+INVENTORY_NEEDS = (('inventory.py', ('orphan', 'stale', 'duplicate', 'oversized', 'misplaced', 'broken_links', '--include-sdlc', '--out', 'refusing to write inside the repository')),
+                   ('check.sh', ('inventory.py" selftest',)), ('procedure', ('inventory.py',)))
+def inventory_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in INVENTORY_NEEDS for ph in phrases if ph not in texts[name]]
+_inv_texts = {'inventory.py': _rd(root/'scripts/inventory.py'), 'check.sh': _rd(root/'scripts/check.sh'),
+              'procedure': _rd(root/'../../docs/repo-onboarding/reorganization-plan-procedure.md')}
+errors.extend(f'check.py: document inventory: {m}' for m in inventory_bad(_inv_texts))
+for _name, _phrases in INVENTORY_NEEDS:
+    for _ph in _phrases:
+        if not inventory_bad(dict(_inv_texts, **{_name: _inv_texts[_name].replace(_ph, '')})): errors.append(f'check.py: document inventory negative control not flagged for {_name} without {_ph}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

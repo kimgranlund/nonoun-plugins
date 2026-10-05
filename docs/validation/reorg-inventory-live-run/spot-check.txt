@@ -1,0 +1,9 @@
+# Read-only spot check of six plan claims against /Users/kimgranlund/Projects/maison/ui-kit-maison (HEAD 01951d4e), 2026-10-05
+1 rewrite target exists dotted, undotted does not:
+  .sdlc/tickets/.0059-theme-context-provider/theme-context-contract.md exists; .sdlc/tickets/0059-theme-context-provider: No such file
+2 docs/layout.md lists docs/reports/ under Frozen paths (line 13) and reports/ under Homes (line 9)
+3 no entry file directly in docs/reference (AGENTS.md exists only in docs/reference/gen-ui-system and templates/); specs/ holds 11 .md files and no entry file; docs/reference holds 10 .md files
+4 examples/fourth-wave-domain/README.md has 3 lines; git grep finds no file citing fourth-wave-domain/component.md
+5 src/components/button/component.md line 46: - Navigation to a URL or fragment: `<a href="…">`, optionally with `m-button` styling.
+6 src/components/agent-reasoning/README.md:3 and src/layout/grid/README.md:3 both read "Author semantic intent in [contract.json](contract.json). ..." (the plan quotes the sentence without the link markup)
+The maison working tree had 3 modified files before and after every command here and the inventory run (status unchanged); none are from this work.
