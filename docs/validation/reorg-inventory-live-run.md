@@ -6,7 +6,7 @@ Recorded: 2026-10-05. Live run for ticket T-0232: `inventory.py` ran read-only o
 
 - `inventory.py` at the T-0232 branch, run from this worktree: `python3 plugins/sdlc-lite/scripts/inventory.py --root <repo> --out <path outside the repo> --top 12` (selftest result: [`selftest.txt`](reorg-inventory-live-run/selftest.txt), `PASS`).
 - Repositories: `/Users/kimgranlund/Projects/maison/ui-kit-maison` at HEAD `01951d4e`, and this repository at `d5b689e`.
-- Plan session: `claude -p --model sonnet --effort xhigh --allowedTools "Read Grep Glob"` with read access to the repository and the inventory files, `--output-format json`. Prompt: [`plan-prompt.txt`](reorg-inventory-live-run/plan-prompt.txt). Result: [`plan-session.json`](reorg-inventory-live-run/plan-session.json) (`success`, 34 turns, `total_cost_usd` 2.5008968, 364376 ms). The session had no write tool; the plan is its printed answer ([`maison-plan.md`](reorg-inventory-live-run/maison-plan.md), 122 lines).
+- Plan session: `claude -p --model sonnet --effort xhigh --allowedTools "Read Grep Glob"` with read access to the repository and the inventory files, `--output-format json` (the flags are in the command as I ran it; the effort is not recorded in the result). Prompt: [`plan-prompt.txt`](reorg-inventory-live-run/plan-prompt.txt). Result: [`plan-session-full.json`](reorg-inventory-live-run/plan-session-full.json) (`success`, 34 turns, `total_cost_usd` 2.5008968, 364376 ms; a six-field excerpt is in [`plan-session.json`](reorg-inventory-live-run/plan-session.json)). Its `modelUsage` lists two models: `claude-sonnet-5-5` ($0.924) and `claude-fable-5-1` ($1.577). The record does not say what the second model did; it is not the model that wrote the plan as far as the files show, but I did not trace it. The result also lists one denied `Bash` call (`permission_denials`), made by the session and refused because only Read, Grep, and Glob were allowed. The session had no write tool; the plan is its printed answer ([`maison-plan.md`](reorg-inventory-live-run/maison-plan.md), 122 lines).
 - Claude Code version: [`claude-version.txt`](reorg-inventory-live-run/claude-version.txt).
 
 ## Inventory results
@@ -20,7 +20,7 @@ Source: [`maison-summary.json`](reorg-inventory-live-run/maison-summary.json), [
 
 What the numbers say, from the text reports:
 
-- On maison, of the 12 duplicate rows shown in `maison-inventory.txt`, 10 are `README.md` files under `src/components/` and the other two are two `SKILL.md` files; the 10 misplaced rows are README and skill files whose links point at other folders. The plan session read some of these and judged them leads, not defects (see the plan below); the inventory itself does not.
+- On maison, of the 12 duplicate rows shown in `maison-inventory.txt`, 10 are `README.md` files under `src/components/` and the other two are two `SKILL.md` files; the 10 misplaced rows in `maison-inventory.txt` are six `README.md` files under `src/components/`, two `SKILL.md` files, the spec `docs/reference/gen-ui-system/specs/gen-ui-recipes.md`, and `examples/application-patterns/component.md`. The plan session read some of these and judged them leads, not defects (see the plan below); the inventory itself does not.
 - On this repository the flags are dominated by `docs/validation/` evidence (the `orphan` and `duplicate` rows in `sdlc-inventory.txt` are mostly small `.txt` and `.md` files inside live-run folders, with the same boilerplate in several of them). The inventory has no notion of dated or frozen evidence, so it reports it. The draft rules freeze that material by listing it in `docs/layout.md`; the inventory does not read that file yet.
 
 ## The plan and a spot check
@@ -46,5 +46,5 @@ The plan makes more claims than six and I did not count them. The spot check doe
 - A broken link whose target is `…` inside example markup is reported as broken (maison `src/components/button/component.md`); the inventory does not understand example prose.
 - The plan's links-to-rewrite item says it did not check whether a gate reads two hash files that cite the specs; that remains unchecked.
 - The rules in [the draft](../repo-onboarding/reorganization.md) are not implemented. There is no apply step (T-0233), no digest, and no refusal logic.
-- Spend: the plan session cost 2.5008968 dollars by its own result; the inventory runs cost nothing.
+- Spend: the plan session cost 2.5008968 dollars by its own result, of which $1.577 is listed under a second model (see above); the inventory runs cost nothing.
 - Maison's working tree had three modified files before this work and the same three after it.
