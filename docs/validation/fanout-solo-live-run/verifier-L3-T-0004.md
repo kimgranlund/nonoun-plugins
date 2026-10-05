@@ -1,0 +1,22 @@
+<!-- role=verifier level=L3 model=fable effort=xhigh -->
+## Verdict
+pass
+
+## Criteria
+- `kit/d.py` defines `parse_duration(text)` returning whole seconds: '1h30m15s' is 5415, '90s' is 90, '2h' is 7200, '45m' is 2700: pass. Evidence: kit/d.py:7 `def parse_duration(text):`. Independent probe (python3 3.9.6, not the builder's test file) `python3 -c 'from kit.d import parse_duration; ...'` printed `'1h30m15s' -> 5415`, `'90s' -> 90`, `'2h' -> 7200`, `'45m' -> 2700` (repr shows `int`, so whole seconds). Red leg: same probe in the throwaway worktree at `$SDLC_BASE_SHA` (82878de) gave `ImportError: cannot import name 'parse_duration' from 'kit.d'`, exit 1; base `kit/d.py` is the single line `"""kit.d"""`.
+- `parse_duration` raises ValueError for '', '5d', '1h2h', '15s1h', 'h', 'h30m': pass. Evidence: same probe printed the exception type by name for all six: `RAISE '' -> ValueError: invalid duration: ''`, `RAISE '5d' -> ValueError: ...`, `RAISE '1h2h' -> ValueError: ...`, `RAISE '15s1h' -> ValueError: ...`, `RAISE 'h' -> ValueError: ...`, `RAISE 'h30m' -> ValueError: ...`; no `NO RAISE` line. Red leg: same probe at base raised ImportError before any call, exit 1. Both legs ran on the same `python3` (3.9.6).
+- `tests/test_d.py` has at least 8 tests and `python3 -m unittest tests.test_d` passes: pass. Evidence: exact criterion command printed `Ran 13 tests in 0.000s` / `OK`, exit 0; `python3 -m unittest -v tests.test_d` lists 13 named `test_*` methods all `ok`; mechanism-distinct static count `grep -c "def test_" tests/test_d.py` = 13. Red leg at base: `git show 82878de:tests/test_d.py` exit 128 (file absent), so `python3 -m unittest tests.test_d` there gave `ModuleNotFoundError: No module named 'tests.test_d'`, `FAILED (errors=1)`, exit 1; with the built `tests/test_d.py` copied into the base worktree it gave `ImportError: cannot import name 'parse_duration' from 'kit.d'`, `FAILED (errors=1)`, exit 1, so the tests exercise the new symbol rather than merely exist.
+- `README.md` has a one-line `parse_duration` usage example: pass. Evidence: README.md:5 `Usage: \`from kit.d import parse_duration; parse_duration("1h30m15s")  # 5415\``; `git diff README.md | grep -c '^+[^+]'` = 1 (one added non-blank line plus a blank separator). Red leg: `grep -n parse_duration` on base README exit 1.
+- Only `kit/d.py`, `tests/test_d.py`, and `README.md` changed (plus this handoff's criteria and the skips file): pass. Evidence: `git diff --stat` lists only `.sdlc/duration/handoff.md`, `README.md`, `kit/d.py`; `git status --short --untracked-files=all` adds `tests/test_d.py`, `.sdlc/duration/skips.md`, and this run's own artifacts (see below); `git diff --quiet -- kit/a.py kit/b.py kit/c.py kit/__init__.py tests/__init__.py .sdlc/chunk .sdlc/clamp .sdlc/titlecase` exit 0; `tests/__init__.py` is tracked at base (`git ls-tree 82878de tests/` blob e69de29), so it is not a new file. `git grep -n parse_duration` finds the symbol only in kit/d.py, README.md, and the handoff; no other contract dependents exist.
+
+Gate note: the handoff has no `(guard)` or repo-wide gate criterion, so `inherited red` does not apply. No builder-*.md exists in the artifacts dir; every claim above is from my own runs. The throwaway worktree was created only under `$SDLC_TMP_WORKTREES/base` and removed (`git worktree list` no longer shows it; the prefix dir is empty); `git status` after cleanup matches the pre-verification state.
+
+## Out of scope changes
+- `.sdlc/duration/handoff.md` (modified): drafted as an out-of-scope edit. Steelman: criterion 5 names "this handoff's criteria" as allowed, and the diff hunk adds only the 7-line `## Acceptance criteria` section at lines 26-31. Rebuttal holds; dropped.
+- `.sdlc/duration/skips.md` (untracked): named by criterion 5 as allowed; content is the lane-skip record (`lane: solo; point: before planning`). Dismissed.
+- `.sdlc/duration/.run.lock`, `base-sha`, `verifier-L3.attempt.json`, `verifier-L3.log`, `verifier-L3.running` (untracked): this verifier run's own run.sh artifacts, not builder output. Check: `attempt.json` has `role: verifier`, `level: L3`, `process_pid: 84524` matching the tmp prefix `verifier-84524`, `started_at 2026-10-04T23:31:52Z`; `.running` holds epoch 1791156712 (same instant); `base-sha` equals `$SDLC_BASE_SHA` 82878de05f04961b9ed8ea2cfe3502756d97362d; `.run.lock` is 0 bytes. Dismissed.
+
+Otherwise none.
+
+## For the next attempt
+None

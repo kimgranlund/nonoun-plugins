@@ -1,0 +1,9 @@
+ .../codex/agents/sdlc-plan-reviewer-l1-alternate.toml     |  2 +-
+ .../adapters/codex/agents/sdlc-plan-reviewer-l1.toml      |  2 +-
+ .../sdlc-lite/adapters/codex/agents/sdlc-planner-l1.toml  |  2 +-
+ .../sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml  |  2 +-
+ .../sdlc-lite/adapters/codex/agents/sdlc-planner-l3.toml  |  2 +-
+ plugins/sdlc-lite/scripts/check.py                        | 15 +++++++++------
+ plugins/sdlc-lite/scripts/run.sh                          |  2 +-
+ plugins/sdlc-lite/skills/level-rubric/SKILL.md            |  4 +++-
+ 8 files changed, 18 insertions(+), 13 deletions(-)

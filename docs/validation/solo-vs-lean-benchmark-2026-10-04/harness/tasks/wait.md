@@ -1,0 +1,28 @@
+repo: /Users/kimgranlund/Projects/nonoun/sdlc-lite
+base: 2a428cc
+solution: cf3d43f
+level: L3
+tests_from: (external) tests/wait.sh
+test_paths: []
+setup: true
+check: bash /tmp/bench-sl/tests/wait.sh
+
+## Goal
+`plugins/sdlc-lite/scripts/messages.py` is the file mailbox under `.sdlc/messages/` (subcommands send, list, read, ack, reply, expire, count, selftest). Add a `wait` subcommand so a parent agent can block cheaply until a message arrives, instead of polling with a sub-agent.
+
+`python3 plugins/sdlc-lite/scripts/messages.py [--root DIR] wait --receiver NAME [--timeout SECONDS] [--interval SECONDS]`
+
+- It polls the same state that `count --receiver NAME` reports (messages in `new/<NAME>/`) every `--interval` seconds (integer, at least 1).
+- As soon as one or more messages are new for that receiver it exits 0 and prints one line per new message: `<message id>` TAB `<absolute path of the message file>`, where the id is the file name without the `.md` suffix. It never prints a message body.
+- When `--timeout` seconds (integer from 1 to 600) pass with no new message it exits 3 and prints `no new messages`.
+- It never claims, moves, edits, or deletes anything. After `wait` returns, the message is still in `new/<NAME>/` and the mailbox files are byte-identical.
+- A message sent to a different receiver does not wake it.
+- Invalid arguments exit 1 with a message on stderr naming the problem: a `--receiver` that does not match the existing receiver rule (lowercase letters, digits and single hyphens, at most 40 characters), a `--timeout` that is not an integer in 1..600, an invalid `--interval`.
+- Extend the `messages.py selftest` so it covers: returns immediately when a message already exists, returns after a message arrives mid-wait, times out with exit 3 and no state change, rejects a bad receiver and a bad timeout, and a negative control showing that a `wait` which claimed the message would fail the selftest.
+- Document the command in the usage text of the script and in `.sdlc/messages/AGENTS.md` generation (the entry file text written by the script), keeping the statement that `wait` cannot wake an idle host: it only returns inside a turn the parent is still running.
+
+## Context
+Size M. The mailbox lifecycle is new, read, done; `wait` is a read-only observer. Do not change any model or effort default. Do not commit, push, or publish.
+
+## Constraints
+Follow the repository guidance in AGENTS.md and plugins/sdlc-lite/AGENTS.md. No em dashes in anything you write. If you change the messenger agent body or any file that generated Codex agents embed, run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` and keep `generate --check` green.

@@ -1,0 +1,42 @@
+[
+ {
+  "transcript_dir": "0gn-T-fs-live-838zdgd6-lanes-a",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 818
+ },
+ {
+  "transcript_dir": "0gn-T-fs-live-838zdgd6-lanes-b",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 950
+ },
+ {
+  "transcript_dir": "0gn-T-fs-live-838zdgd6-lanes-c",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 4
+  },
+  "output_tokens": 743
+ },
+ {
+  "transcript_dir": "0gn-T-fs-live-838zdgd6-lanes-d",
+  "agentSetting": "sdlc-lite:solo",
+  "models": {
+   "claude-sonnet-5-5": 12
+  },
+  "output_tokens": 6044
+ },
+ {
+  "transcript_dir": "0gn-T-fs-live-838zdgd6-lanes-d",
+  "agentSetting": "sdlc-lite:verifier",
+  "models": {
+   "claude-fable-5-1": 29
+  },
+  "output_tokens": 44926
+ }
+]

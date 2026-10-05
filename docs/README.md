@@ -29,10 +29,12 @@
 - [Messages idle-host limit](validation/messages-idle-host-limit-2026-10-01.md): dated correction stating that the messenger cannot wake an idle host, the evidence, and the workaround.
 - [Handoff freeze live run](validation/handoff-freeze-live-run.md): dated live run for T-0212 (warn mode) showing the hook allows and logs an edit of a running handoff on Claude and blocks it in deny mode, plus the runner's stale_input flag and known limits.
 - [Release 0.20.6](validation/release-0.20.6.md): solo-first fanout, unique `check.py` guard numbers, the skips guard for solo and full lanes, and the solo vs lean benchmark record, with upgrade notes and known limits (draft until the fixed commit is named).
+- [Fanout solo-first live run](validation/fanout-solo-live-run.md): dated live run for T-0221 showing four lanes (three size S, one size M) delivered by solo sessions through `fanout.py run`, merged, gated, and closed, with the models used and the limits.
 - [Release 0.20.5](validation/release-0.20.5.md): the conductor rules, solo start path and routing texts, handoff freeze (warn mode), per-ticket budget, and the solo live run, with upgrade notes and known limits.
 - [Release 0.20.4](validation/release-0.20.4.md): the supervisor, evals lock, proposals, lane script, spec gate, runner family rule, and the solo operator agent, how they were verified, upgrade notes, and known limits..
 - [Release 0.20.3](validation/release-0.20.3.md): `messages.py wait`, the role-result schema, `footprint.py`, the lean lane text, and the idle-host limit, how they were verified, upgrade notes, and known limits.
 - [Release 0.20.2](validation/release-0.20.2.md): the ticket root and router, mailbox, and messenger agent, how they were verified, upgrade notes, and known limits.
+- [Solo vs lean benchmark](validation/solo-vs-lean-benchmark-2026-10-04.md): dated head-to-head of a single-session solo agent and the orchestrated chain on three real tickets, with cost, time, replans, caveats and the default-lane implication.
 - [Release 0.20.1](validation/release-0.20.1.md): the scout pin and planner L3 on Opus, how they were verified, and known limits.
 - [Release 0.20.0](validation/release-0.20.0.md): what shipped since 0.19.0, how it was verified, upgrade notes, and known limits.
 - [Release 0.19.0](validation/release-0.19.0.md): what shipped, how each change was verified, and known limits.

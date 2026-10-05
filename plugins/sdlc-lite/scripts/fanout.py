@@ -5,8 +5,25 @@ An external lane merges a registered branch an outside agent owns, with no workt
 
 Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
+                     [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
+
+Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
+  the lane and appends its record to the task's skips.md (committed with the lane): `solo` (size S and M by
+  default) starts the solo agent (agents/solo.md) from a typed brief at the tier's model and effort (Claude:
+  `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at S Sonnet low, M Sonnet xhigh; Codex: `codex_exec.py solo
+  L1|L2|L3`, honoring SDLC_BACKEND); anything else (`full`, or `lean` after a plan) keeps the headless conductor
+  running /sdlc-lite:chain. A solo ticket of size M or L then needs one independent batched verifier: a new
+  task-dir verifier result with Verdict pass, from the solo itself or else one fanout runs once
+  (`run.sh verifier L3 <task dir>/handoff.md`, never the solo's own family); a missing or non-pass verdict is
+  the outcome `verifier fail` or `no verifier result`, with no merge. --lane solo or full forces the choice for
+  every ticket (no lane call, no record); --driver CMD overrides everything and skips the lane call. The run
+  report lists each ticket's lane. Safety: --max-lanes N (default 4) is the most regular lanes one run may
+  hold, and above 16 it also needs --yes-many (a run over the cap refuses with exit 2); --stagger SECS (default
+  20, 0 for none) waits between lane starts so a plan limit is not hit by 16 sessions at once; two tickets in
+  different lanes whose planned scope overlaps refuse in preflight unless --allow-overlap (the merge-time wait
+  below still serializes real overlap). --dry-run prints the cap, the stagger, and each ticket's lane.
 
 run
   Lane specs: <lane>=<id>[,<id>...] is a regular lane (a worktree and a driver per ticket).
@@ -219,10 +236,11 @@ selftest
   `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
   Neither creates a branch, worktree or lanes dir.
 """
-import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, uuid
+import argparse, datetime, fcntl, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
 
 import tickets  # same scripts/ dir: the only front matter parser
 import steps  # same scripts/ dir: next_action and section read step results
+import order  # same scripts/ dir: newest result file of a role
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
@@ -237,6 +255,20 @@ PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: neve
           'In the file stage run the filer only and do not close the ticket (no tickets.py close), '
           'because /fanout closes it on the integration branch after the merge. '
           'Never commit, push, or publish: fanout.py commits this lane when you finish.')
+
+
+# Solo tiers (agents/solo.md): ticket size -> (Claude model, Claude effort, Codex level). The Codex agents are
+# sdlc-solo-l1..l3 from adapters/codex/models.json. check.py guards that solo.md and these agree.
+SOLO_TIERS = {'S': ('sonnet', 'low', 'L1'), 'M': ('sonnet', 'xhigh', 'L2'), 'L': ('opus', 'xhigh', 'L3')}
+SOLO_VERIFIER = 'L3'  # a different family from every solo builder (Sonnet, Opus): the run.sh verifier L3
+MAX_LANES_DEFAULT, MAX_LANES_HARD, STAGGER_DEFAULT = 4, 16, 20
+SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket and the '
+               'files it names, make the smallest change that meets its done criterion, run every check command it '
+               'names and rerun them all after a fix, and report files changed, each check with its outcome, and '
+               'anything still open. For a size M or L ticket write the handoff\'s ## Acceptance criteria if it has '
+               'none, then run the one batched independent verifier agents/solo.md names. No person is present: '
+               'never ask the user and never use AskUserQuestion. Never commit, push, open a PR, or publish: '
+               'fanout.py commits this lane when you finish and closes the ticket after the merge.')
 
 
 class Refuse(Exception):
@@ -264,7 +296,31 @@ def cell(text):
     return ' '.join(str(text).split()).replace('|', '\\|')
 
 
-def default_driver(handoff_rel):
+def solo_tier(size):
+    """The tier for a ticket size: S, M, or L (an XL or unknown size has no solo tier: None)."""
+    return size if size in SOLO_TIERS else None
+
+
+def solo_command(handoff_rel, size, backend=None):
+    """The shell command that starts the solo agent for one ticket at its size's tier, or raises Refuse."""
+    backend = backend or os.environ.get('SDLC_BACKEND', 'claude')
+    tier = solo_tier(size)
+    if tier is None:
+        raise Refuse(f'no solo tier for size {size!r}: want S, M, or L')
+    model, effort, level = SOLO_TIERS[tier]
+    prompt = SOLO_PROMPT.format(handoff=handoff_rel)
+    if backend == 'codex':
+        return ' '.join(shlex.quote(x) for x in (sys.executable, str(SCRIPTS / 'codex_exec.py'), 'solo', level, prompt))
+    if backend != 'claude':
+        raise Refuse('unknown SDLC_BACKEND: ' + backend)
+    return 'SDLC_ROLE=solo ' + ' '.join(shlex.quote(x) for x in (
+        'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:solo', '--model', model,
+        '--effort', effort, '--dangerously-skip-permissions', '--', prompt))
+
+
+def default_driver(handoff_rel, kind='full', size=None):
+    if kind == 'solo':
+        return solo_command(handoff_rel, size)
     backend = os.environ.get('SDLC_BACKEND', 'claude')
     if backend == 'codex':
         return ' '.join(shlex.quote(x) for x in (
@@ -278,8 +334,8 @@ def default_driver(handoff_rel):
 
 
 class Ticket:
-    def __init__(self, tid, slug, title):
-        self.id, self.slug, self.title = tid, slug, title
+    def __init__(self, tid, slug, title, size=''):
+        self.id, self.slug, self.title, self.size = tid, slug, title, size
 
 
 SPEC_FORMS = '<lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]'
@@ -385,7 +441,7 @@ def preflight(a):
                 errs.append(f'{tid} ({hits[0][0]}): status is {hits[0][1]["status"]}, nothing to run')
             else:
                 s, m = hits[0]
-                lane.tickets.append(Ticket(tid, s, str(m.get('title', ''))))
+                lane.tickets.append(Ticket(tid, s, str(m.get('title', '')), str(m.get('size', ''))))
     if not lanes and not errs:
         errs.append(f'no lanes given: want {SPEC_FORMS}')
     if errs:
@@ -467,17 +523,91 @@ def preflight(a):
         raise Refuse(f'not committed at {start[:12]}: {", ".join(missing)}; lanes see only committed '
                      f'files, so commit the .sdlc/ trail first')
 
+    max_lanes = getattr(a, 'max_lanes', MAX_LANES_DEFAULT)
+    if max_lanes < 1:
+        raise Refuse('--max-lanes must be at least 1')
+    if max_lanes > MAX_LANES_HARD and not getattr(a, 'yes_many', False):
+        raise Refuse(f'--max-lanes {max_lanes} is above {MAX_LANES_HARD}: add --yes-many to confirm, and expect '
+                     f'your plan limit and merge conflicts to be the limit, not this machine')
+    n_regular = sum(1 for x in lanes if not x.external)
+    if n_regular > max_lanes:
+        raise Refuse(f'{n_regular} lanes exceed --max-lanes {max_lanes}: fewer lanes, or raise --max-lanes N '
+                     f'(above {MAX_LANES_HARD} also needs --yes-many)')
+    if getattr(a, 'stagger', STAGGER_DEFAULT) < 0:
+        raise Refuse('--stagger must be 0 or more seconds')
     return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': trel, 'lanes': lanes, 'integration': integration,
             'reuse': reuse, 'start': start, 'base': a.base or 'HEAD', 'lanes_dir': lanes_dir,
             'integ_dir': integ_dir, 'logs': lanes_dir / 'logs', 'gates': list(a.gate or []),
             'driver': a.driver, 'rewrite_refs': bool(getattr(a, 'rewrite_refs', False)),
-            'numbered': tickets.config_numbered(root)}
+            'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
+            'max_lanes': getattr(a, 'max_lanes', MAX_LANES_DEFAULT), 'stagger': getattr(a, 'stagger', STAGGER_DEFAULT),
+            'allow_overlap': bool(getattr(a, 'allow_overlap', False)), 'kinds': {}}
 
 
-def driver_for(ctx, t):
+def lane_decision(ctx, taskdir=None):
+    """(kind, why) for a ticket: kind is solo or full. --lane solo or full forces it; with --driver the
+    driver decides (kind driver); else `steps.py lane` decides (read only when taskdir is given for a dry
+    run, a recorded subprocess call otherwise is lane_run). lean after a plan runs as the chain."""
+    mode = ctx['lane_mode']
+    if ctx['driver']:
+        return 'driver', '--driver given'
+    if mode in ('solo', 'full'):
+        return mode, f'--lane {mode}'
+    try:
+        lane, _point, reasons, _read = steps.lane_action(taskdir)
+    except steps.Fail as e:
+        return 'full', f'lane failed ({first_line(str(e))}): taking the full chain'
+    return ('solo' if lane == 'solo' else 'full'), (reasons[0] if reasons else lane)
+
+
+def lane_run(ctx, wt, t):
+    """The lane for a ticket in its lane worktree, recorded in its skips.md by `steps.py lane`."""
+    if ctx['driver'] or ctx['lane_mode'] in ('solo', 'full'):
+        return lane_decision(ctx)
+    taskdir = wt / ctx['trel'] / t.slug
+    p = subprocess.run([sys.executable, str(SCRIPTS / 'steps.py'), 'lane', str(taskdir)], cwd=str(wt), env=ENV,
+                       stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    if p.returncode:
+        return 'full', f'steps.py lane failed ({first_line(p.stderr, f"rc={p.returncode}")}): taking the full chain'
+    out = [ln for ln in p.stdout.splitlines() if ln.strip()]
+    lane = out[0].strip() if out else 'full'
+    why = next((ln[len('reason: '):] for ln in out if ln.startswith('reason: ')), lane)
+    return ('solo' if lane == 'solo' else 'full'), why
+
+
+def driver_for(ctx, t, kind='full'):
     if ctx['driver']:
         return ctx['driver']
-    return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix())
+    return default_driver((ctx['trel'] / t.slug / 'handoff.md').as_posix(), kind, t.size)
+
+
+def close_reason(ctx, t):
+    """The `tickets.py close --reason` text for a ticket a solo agent delivered (a solo lane writes no filer
+    file, which close needs otherwise), or None for every other lane."""
+    kind, tier = ctx['kinds'].get(t.id, ('', None))
+    if kind != 'solo':
+        return None
+    return (f'delivered by the solo agent (tier {tier}); one independent batched verifier passed before the merge'
+            if tier in ('M', 'L') else f'delivered by the solo agent (tier {tier}); the ticket\'s own checks and the fanout gates passed')
+
+
+def verifier_files(taskdir):
+    """The task dir's verifier result file names now (the batched-verification baseline)."""
+    try:
+        return {f.name for f in pathlib.Path(taskdir).iterdir() if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', f.name)}
+    except OSError:
+        return set()
+
+
+def solo_verdict(taskdir, before):
+    """'pass', 'fail', or None for the newest task-dir verifier result that is not in `before`."""
+    new = [f for f in verifier_files(taskdir) if f not in before]
+    if not new:
+        return None
+    newest = order.newest(pathlib.Path(taskdir), 'verifier')
+    if newest is None or pathlib.Path(newest).name not in new:
+        return None
+    return steps.verdict_or_none(newest)
 
 
 def planned_scope(root, slug):
@@ -506,8 +636,8 @@ def planned_scope(root, slug):
     return found if any_entry else None
 
 
-def plan_overlap(ctx):
-    """The dry run's planned-scope overlap lines."""
+def overlap_pairs(ctx):
+    """([(lane a, ticket a, lane b, ticket b, shared paths)], [unplanned ticket ids]) by planned scope."""
     scoped, unplanned = [], []
     for lane in ctx['lanes']:
         for t in lane.tickets:
@@ -516,12 +646,21 @@ def plan_overlap(ctx):
                 unplanned.append(t.id)
             else:
                 scoped.append((lane, t, sc))
-    out = []
+    pairs = []
     for i, (la, ta, sa) in enumerate(scoped):
         for lb, tb, sb in scoped[i + 1:]:
             if la is not lb and sa & sb:
-                out.append(f"overlap (planned scope): {la.name} {ta.id} and {lb.name} {tb.id}: "
-                           f"{', '.join(sorted(sa & sb))}")
+                pairs.append((la, ta, lb, tb, sorted(sa & sb)))
+    return pairs, unplanned
+
+
+def plan_overlap(ctx):
+    """The dry run's planned-scope overlap lines."""
+    pairs, unplanned = overlap_pairs(ctx)
+    out = [f"overlap (planned scope): {la.name} {ta.id} and {lb.name} {tb.id}: {', '.join(paths)}"
+           for la, ta, lb, tb, paths in pairs]
+    if pairs:
+        out.append('overlap (planned scope): run refuses unless --allow-overlap')
     if not out:
         out.append('overlap (planned scope): none')
     if unplanned:
@@ -540,6 +679,9 @@ def print_plan(ctx):
     out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
     if ctx['trel'] != ctx['rel']:
         out.append(f"ticket folders in each worktree: {ctx['trel'].as_posix()}")
+    n_reg = sum(1 for x in ctx['lanes'] if not x.external)
+    out.append(f"lane cap: {n_reg} regular lane(s) of at most {ctx['max_lanes']} (--max-lanes; above "
+               f"{MAX_LANES_HARD} also needs --yes-many); stagger: {ctx['stagger']} s between lane starts (--stagger)")
     for lane in ctx['lanes']:
         if lane.external:
             out.append(f'lane {lane.name}: external branch {lane.branch} (registered; no worktree, no driver)')
@@ -547,6 +689,11 @@ def print_plan(ctx):
             out.append(f'lane {lane.name}: branch {lane.branch}, worktree {lane.dir}')
         for t in lane.tickets:
             out.append(f'  {t.id} {t.slug}: {t.title}')
+            if not lane.external:
+                kind, why = lane_decision(ctx, tickets.ticket_dir(ctx['root']) / t.slug)
+                tier = solo_tier(t.size) if kind == 'solo' else None
+                shown = f'solo, tier {tier}: {SOLO_TIERS[tier][0]} {SOLO_TIERS[tier][1]}' if tier else kind
+                out.append(f'    lane: {shown} ({why})')
     out += plan_overlap(ctx)
     if ctx['gates']:
         out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
@@ -555,7 +702,9 @@ def print_plan(ctx):
     if ctx['driver']:
         out.append(f"driver: {ctx['driver']}")
     else:
-        out.append(f"driver: {default_driver('<handoff>')}")
+        out.append(f"driver: solo first (--lane {ctx['lane_mode']}): steps.py lane picks solo or the full chain per ticket")
+        out.append(f"  solo (size S and M): {solo_command('<handoff>', 'M')}")
+        out.append(f"  full: {default_driver('<handoff>')}")
         out.append("  (<handoff> is each ticket's handoff path relative to the lane worktree)")
     if ctx['rewrite_refs']:
         out.append('close: tickets.py close <slug> --rewrite-refs '
@@ -769,8 +918,17 @@ def run_ticket(ctx, lane, t, lock):
                FANOUT_INTEGRATION=integration, FANOUT_PLUGIN_ROOT=str(PLUGIN), SDLC_HEADLESS='1', SDLC_ROLE='conductor',
                BASH_DEFAULT_TIMEOUT_MS=TIMEOUT_MS, BASH_MAX_TIMEOUT_MS=TIMEOUT_MS, FANOUT_RUN_ID=ctx['run_id'])
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
+    kind, why = lane_run(ctx, wt, t)
+    tier = solo_tier(t.size) if kind == 'solo' else None
+    if kind == 'solo' and tier is None:  # an XL or unsized ticket has no solo tier: the chain takes it
+        kind, why = 'full', f'size {t.size or "unset"} has no solo tier'
+    ctx['kinds'][t.id] = (kind, tier)
+    env['FANOUT_LANE_KIND'] = kind
+    say(ctx, lane, t.id, f'lane {kind}' + (f' tier {tier}' if tier else '') + f' ({why})')
+    taskdir = wt / ctx['trel'] / t.slug
+    before = verifier_files(taskdir)
     say(ctx, lane, t.id, f'driver started (log {log})')
-    rc = run_logged(['bash', '-c', driver_for(ctx, t)], str(wt), env, log, ctx['run_id'])
+    rc = run_logged(['bash', '-c', driver_for(ctx, t, kind)], str(wt), env, log, ctx['run_id'])
     # The lane's last role run has no successor run.sh to reap a SIGKILLed run's prefix; reap it here,
     # before any lane commit. Only dead-owner prefixes go; the exit code is ignored.
     subprocess.run(['bash', str(SCRIPTS / 'reap-tmp-worktrees.sh'), str(wt)], stdin=subprocess.DEVNULL,
@@ -780,6 +938,18 @@ def run_ticket(ctx, lane, t, lock):
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
         return inherited, ''
+    if kind == 'solo' and tier in ('M', 'L'):  # one independent batched verifier decides before any merge
+        verdict = solo_verdict(taskdir, before)
+        if verdict is None:  # the solo did not run it (Codex solo, say): fanout runs it once
+            say(ctx, lane, t.id, f'verifier {SOLO_VERIFIER} started (the solo left no new verifier result)')
+            vrc = run_logged(['bash', str(SCRIPTS / 'run.sh'), 'verifier', SOLO_VERIFIER,
+                              str(taskdir / 'handoff.md')], str(wt), env,
+                             ctx['logs'] / f'{lane.name}-{t.id}-verifier.log', ctx['run_id'])
+            verdict = solo_verdict(taskdir, before) if not vrc else None
+            if verdict is None:
+                return (f'no verifier result (run.sh rc={vrc})' if vrc else 'no verifier result'), ''
+        if verdict != 'pass':
+            return f'verifier {verdict}', ''
 
     p = git(wt, 'add', '-A')
     if p.returncode:
@@ -898,6 +1068,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
                 shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
+        if close_reason(ctx, t):
+            argv += ['--reason', close_reason(ctx, t)]
         if ctx['rewrite_refs']:
             argv.append('--rewrite-refs')
         pre = porcelain(integ)
@@ -970,6 +1142,11 @@ def report(ctx):
     overlap = [f'- Overlap: `{x.name}` and `{y.name}`: ' + ', '.join(f'`{f}`' for f in sorted(x.files & y.files))
                for k, x in enumerate(lanes) for y in lanes[k + 1:] if x.files & y.files]
     out += overlap or ['- Overlap: none']
+    for lane in ctx['lanes']:
+        for tid, _outcome, _commit in lane.results:
+            if tid in ctx['kinds']:
+                kind, tier = ctx['kinds'][tid]
+                out.append(f'- Lane for `{tid}`: {kind}' + (f' (tier {tier}: {SOLO_TIERS[tier][0]} {SOLO_TIERS[tier][1]})' if tier else ''))
     out += ['', '| Lane | Ticket | Outcome | Commit |', '|---|---|---|---|']
     for lane in ctx['lanes']:
         for tid, outcome, commit in lane.results:
@@ -987,6 +1164,13 @@ def cmd_run(a):
             return 0
         # fanout mints its own id on every run; an inherited SDLC_ATTEMPT_ID belongs to a role attempt
         ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
+        if not ctx['allow_overlap']:
+            pairs, _ = overlap_pairs(ctx)
+            if pairs:
+                la, ta, lb, tb, paths = pairs[0]
+                raise Refuse(f"{ta.id} (lane {la.name}) and {tb.id} (lane {lb.name}) plan to change the same "
+                             f"files ({', '.join(paths)}): run them in one lane, or pass --allow-overlap and let "
+                             f"the merge-time wait serialize them")
         setup(ctx)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
@@ -995,7 +1179,9 @@ def cmd_run(a):
     ctx['cond'] = threading.Condition()  # wait_for_overlap waits on it; run_lane notifies it
     threads = [threading.Thread(target=run_lane, args=(ctx, lane, lock), name=lane.name, daemon=True)
                for lane in ctx['lanes']]
-    for th in threads:
+    for k, th in enumerate(threads):
+        if k and ctx['stagger'] > 0:  # a gap between lane starts: 16 sessions at once is how a plan limit is hit
+            time.sleep(ctx['stagger'])
         th.start()
     for th in threads:
         th.join()
@@ -1092,6 +1278,8 @@ def selftest():
             expect(f'fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
 
     def fanout(cwd, *args):
+        if not any(x == '--stagger' for x in args):
+            args = (*args, '--stagger', '0')  # the default 20 s gap would slow every case
         return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', *args],
                               cwd=str(cwd), env=ENV, capture_output=True, text=True, timeout=300)
 
@@ -1827,6 +2015,134 @@ def selftest():
                sh(pr, 'branch', '--list', 'fanout/*').stdout.strip() == ''
                and len(sh(pr, 'worktree', 'list').stdout.splitlines()) == 1 and not pl.exists())
 
+        # 15. Solo first: the lane per ticket, the commands, the lane cap and stagger, and the overlap refusal.
+        sr = tmp / 'solofirst'
+        sr.mkdir()
+        (sr / '.sdlc').mkdir()
+        sizes = [('s1', 'T-0001', 'S'), ('m1', 'T-0002', 'M'), ('l1', 'T-0003', 'L'), ('s2', 'T-0004', 'S'),
+                 ('s3', 'T-0005', 'S'), ('s4', 'T-0006', 'S')]
+        for slug, tid, size in sizes:
+            (sr / '.sdlc' / slug).mkdir()
+            (sr / '.sdlc' / slug / 'handoff.md').write_text(
+                f'---\nid: {tid}\ntitle: "Ticket {slug}"\ntype: chore\nstatus: ready\nsize: {size}\n'
+                f'priority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\n{slug}\n', encoding='utf-8')
+        for args in (('init', '-q', '-b', 'main'), ('config', 'user.name', 'fanout selftest'),
+                     ('config', 'user.email', 'selftest@example.invalid'), ('config', 'commit.gpgsign', 'false'),
+                     ('add', '-A'), ('commit', '-q', '-m', 'fixture')):
+            p = sh(sr, *args)
+            expect(f'solo-first fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+        sl = tmp / 'sololanes'
+        proc = fanout(sr, '--dry-run', '--lanes-dir', str(sl), 'a=T-0001', 'b=T-0002', 'c=T-0003')
+        out = proc.stdout
+        expect(f'case 15 lane: size S prints solo tier S (sonnet low), M tier M (sonnet xhigh), and L the full chain '
+               f'(steps.py lane decides), got {proc.returncode} stdout={out!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'lane: solo, tier S: sonnet low' in out
+               and 'lane: solo, tier M: sonnet xhigh' in out
+               and re.search(r'T-0003 l1: .*\n    lane: full \(', out) and 'driver: solo first (--lane auto)' in out)
+        expect('case 15 lane negative control: no solo line for the size L ticket',
+               not re.search(r'T-0003 l1: .*\n    lane: solo', out))
+        proc = fanout(sr, '--dry-run', '--lane', 'full', '--lanes-dir', str(sl), 'a=T-0001')
+        expect(f'case 15 --lane full forces the chain for a size S ticket, got {proc.stdout!r}',
+               proc.returncode == 0 and 'lane: full (--lane full)' in proc.stdout)
+        for label, size, want in (('S', 'S', ('--model sonnet', '--effort low')),
+                                  ('M', 'M', ('--model sonnet', '--effort xhigh')),
+                                  ('L', 'L', ('--model opus', '--effort xhigh'))):
+            cmd = solo_command('h.md', size, 'claude')
+            expect(f'case 15 command: tier {label} starts sdlc-lite:solo with {want}, got {cmd}',
+                   '--agent sdlc-lite:solo' in cmd and all(w in cmd for w in want) and cmd.startswith('SDLC_ROLE=solo ')
+                   and 'sdlc-lite:conductor' not in cmd and '--dangerously-skip-permissions' in cmd)
+        for size, level in (('S', 'L1'), ('M', 'L2'), ('L', 'L3')):
+            cmd = solo_command('h.md', size, 'codex')
+            expect(f'case 15 command: Codex tier {size} runs codex_exec.py solo {level}, got {cmd}',
+                   'codex_exec.py' in cmd and f' solo {level} ' in cmd)
+        full = default_driver('h.md', 'full', 'M')
+        expect(f'case 15 command negative control: the full driver starts the conductor, never solo, got {full}',
+               'sdlc-lite:conductor' in full and 'sdlc-lite:solo' not in full)
+        try:
+            solo_command('h.md', 'XL', 'claude')
+            expect('case 15: a size XL ticket has no solo tier (Refuse)', False)
+        except Refuse:
+            pass
+        fake = {'kinds': {'T-1': ('solo', 'M'), 'T-2': ('solo', 'S'), 'T-3': ('full', None), 'T-4': ('driver', None)}}
+        expect('case 15 close: a solo M ticket closes with a reason naming the verifier',
+               'verifier passed' in (close_reason(fake, Ticket('T-1', 'x', 't')) or ''))
+        expect('case 15 close: a solo S ticket closes with a reason naming the checks',
+               'solo agent (tier S)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
+        expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
+               close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
+        # the solo verifier gate reads only a result that is new since the driver started
+        vd = tmp / 'verdict-task'
+        vd.mkdir()
+        before = verifier_files(vd)
+        expect('case 15 verdict: no new verifier result is None', solo_verdict(vd, before) is None)
+        (vd / 'verifier-L3.md').write_text('<!-- role=verifier level=L3 model=fable effort=xhigh -->\n'
+                                           '## Verdict\npass\n\n## Evidence\nran\n\n'
+                                           '## For the next attempt\nNone\n', encoding='utf-8')
+        expect('case 15 verdict: a stale result present before the driver is ignored',
+               solo_verdict(vd, {'verifier-L3.md'}) is None)
+        got = solo_verdict(vd, before)
+        expect(f'case 15 verdict: a new passing result reads pass, got {got!r}', got == 'pass')
+        (vd / 'verifier-L3-2.md').write_text('<!-- role=verifier level=L3 model=fable effort=xhigh -->\n'
+                                             '## Verdict\nfail\n\n## Evidence\nbroke\n\n'
+                                             '## For the next attempt\nfix it\n', encoding='utf-8')
+        got = solo_verdict(vd, before)
+        expect(f'case 15 verdict negative control: a newer failing result reads fail, not pass, got {got!r}',
+               got == 'fail')
+        # cap and stagger
+        six = [f'l{k}={tid}' for k, (_slug, tid, _size) in enumerate(sizes, 1)]
+        proc = fanout(sr, '--dry-run', '--lanes-dir', str(sl), *six[:5])
+        expect(f'case 15 cap: five lanes over the default cap of 4 exit 2 naming --max-lanes, got '
+               f'{proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 2 and '--max-lanes 4' in proc.stderr)
+        proc = fanout(sr, '--dry-run', '--max-lanes', '5', '--lanes-dir', str(sl), *six[:5])
+        expect(f'case 15 cap: --max-lanes 5 accepts five lanes and the plan prints the cap, got '
+               f'{proc.returncode} stdout={proc.stdout!r} stderr={proc.stderr!r}',
+               proc.returncode == 0 and 'at most 5 (--max-lanes' in proc.stdout)
+        proc = fanout(sr, '--dry-run', '--max-lanes', '17', '--lanes-dir', str(sl), 'a=T-0001')
+        expect(f'case 15 cap: --max-lanes 17 without --yes-many exits 2 naming --yes-many, got '
+               f'{proc.returncode} stderr={proc.stderr!r}', proc.returncode == 2 and '--yes-many' in proc.stderr)
+        proc = fanout(sr, '--dry-run', '--max-lanes', '17', '--yes-many', '--lanes-dir', str(sl), 'a=T-0001')
+        expect(f'case 15 cap: --max-lanes 17 --yes-many is accepted, got {proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 0)
+        proc = fanout(sr, '--dry-run', '--stagger', '-1', '--lanes-dir', str(sl), 'a=T-0001')
+        expect(f'case 15 stagger: a negative stagger exits 2, got {proc.returncode}', proc.returncode == 2)
+        proc = fanout(sr, '--dry-run', '--stagger', '7', '--lanes-dir', str(sl), 'a=T-0001')
+        expect(f'case 15 stagger: the plan prints the stagger, got {proc.stdout!r}',
+               proc.returncode == 0 and 'stagger: 7.0 s' in proc.stdout)
+        starter = tmp / 'start.sh'
+        starter.write_text('#!/usr/bin/env bash\nset -eu\npython3 -c "import time;print(time.time())" >"$FANOUT_TICKET.start"\n'
+                           'printf \'## Warnings\\nNone\\n\\n## Follow-ups\\nNone\\n\' >"$FANOUT_ROOT/$FANOUT_SLUG/filer-L1.md"\n')
+        starter.chmod(0o755)
+        spread = {}
+        for gap in ('0', '2'):
+            gr, gl = tmp / f'stag{gap}', tmp / f'stag{gap}-lanes'
+            make_repo(gr, [(s_, f'T-000{i}', 'ready') for i, s_ in enumerate('abc', 1)])
+            proc = fanout(gr, 'x=T-0001', 'y=T-0002', 'z=T-0003', '--base', 'main', '--integration', 'fanout/g',
+                          '--lanes-dir', str(gl), '--driver', shlex.quote(str(starter)), '--stagger', gap)
+            ts = []
+            for tid, lane in (('T-0001', 'x'), ('T-0002', 'y'), ('T-0003', 'z')):
+                f = gl / lane / f'{tid}.start'
+                ts.append(float(f.read_text()) if f.is_file() else 0.0)
+            spread[gap] = max(ts) - min(ts) if all(ts) else -1
+            expect(f'case 15 stagger {gap}: all three lanes ran and merged, got rc={proc.returncode} {proc.stderr!r}',
+                   proc.returncode == 0 and all(ts))
+        expect(f'case 15 stagger: --stagger 2 spreads three lane starts by at least 3.5 s, got {spread}',
+               spread['2'] >= 3.5)
+        expect(f'case 15 stagger negative control: --stagger 0 starts them within 2.5 s of each other, got {spread}',
+               0 <= spread['0'] < 2.5)
+        # overlap refusal (the case 14 fixture): planned scopes that share shared.txt refuse a run
+        proc = fanout(pr, '--lanes-dir', str(tmp / 'solo-ovlanes'), '--integration', 'fanout/ov', '--driver', 'true',
+                      'alpha=T-0001', 'beta=T-0002')
+        expect(f'case 15 overlap: planned scopes sharing shared.txt refuse the run, naming both tickets, got '
+               f'{proc.returncode} stderr={proc.stderr!r}',
+               proc.returncode == 2 and 'T-0001' in proc.stderr and 'T-0002' in proc.stderr
+               and 'shared.txt' in proc.stderr and '--allow-overlap' in proc.stderr
+               and sh(pr, 'branch', '--list', 'fanout/*').stdout.strip() == '')
+        proc = fanout(pr, '--lanes-dir', str(tmp / 'solo-ovlanes2'), '--integration', 'fanout/ov2', '--driver', 'true',
+                      'alpha=T-0001', 'beta=T-0004')
+        expect(f'case 15 overlap negative control: disjoint planned scopes are not refused, got '
+               f'{proc.returncode} stderr={proc.stderr!r}', 'plan to change the same files' not in proc.stderr)
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -1841,7 +2157,9 @@ def main(argv):
         return selftest()
     if argv[:1] != ['run']:
         print('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
-              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] | fanout.py selftest\n'
+              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
+              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] | '
+              'fanout.py selftest\n'
               '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
               '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
               'line in <root>/config: no worktree, no driver)', file=sys.stderr)
@@ -1865,6 +2183,16 @@ def main(argv):
     ap.add_argument('--rewrite-refs', action='store_true', help='opt-in, numbered mode only: when a ticket '
                     'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
                     '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
+    ap.add_argument('--lane', choices=('auto', 'solo', 'full'), default='auto',
+                    help='auto (default): steps.py lane picks solo (size S and M) or the full chain per ticket; '
+                    'solo or full forces it for every ticket')
+    ap.add_argument('--max-lanes', type=int, default=MAX_LANES_DEFAULT, metavar='N',
+                    help=f'most regular lanes in one run (default {MAX_LANES_DEFAULT}); above {MAX_LANES_HARD} needs --yes-many')
+    ap.add_argument('--yes-many', action='store_true', help=f'confirm a --max-lanes above {MAX_LANES_HARD}')
+    ap.add_argument('--stagger', type=float, default=STAGGER_DEFAULT, metavar='SECS',
+                    help=f'seconds between lane starts (default {STAGGER_DEFAULT}; 0 for none)')
+    ap.add_argument('--allow-overlap', action='store_true',
+                    help='run tickets in different lanes whose planned scope overlaps (the merge-time wait serializes them)')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 
