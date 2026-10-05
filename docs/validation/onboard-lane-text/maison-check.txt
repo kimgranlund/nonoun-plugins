@@ -1,0 +1,7 @@
+stale AGENTS.md
+current CLAUDE.md
+stale docs/AGENTS.md
+current docs/CLAUDE.md
+missing docs/gen-ui-evaluation/AGENTS.md
+missing docs/gen-ui-evaluation/CLAUDE.md
+present docs/layout.md
