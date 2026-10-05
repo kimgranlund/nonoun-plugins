@@ -113,7 +113,9 @@
 31. Plan skills: skills/plan-goal, plan-loop, and plan-fanout each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
    `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md.
    Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
-32. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
+32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
+   equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
+33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
    `docs_check.py" selftest`. Negative controls: each phrase removed from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
@@ -762,7 +764,20 @@ for _n in _plans:
         if not plan_bad(dict(_plans, **{_n: _plans[_n].replace(_ph, '')}), _entry): errors.append(f'check.py: plan skills negative control not flagged for {_n} without "{_ph}"')
     if not plan_bad(dict(_plans, **{_n: _plans[_n] + ' harness:x'}), _entry): errors.append(f'check.py: plan skills negative control not flagged for a harness reference in {_n}')
     if not plan_bad(_plans, _entry.replace(f'plan-{_n}', 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
-# Docs check (docstring item 32): the docs schema checker, its rule ids, and its selftest wiring.
+# Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
+def links_bad(broken, allowed):
+    got, want = set(broken), set(allowed)
+    return [f'unlisted broken link {f} -> {t}' for f, t in sorted(got - want)] + [f'stale allowlist row {f} -> {t}' for f, t in sorted(want - got)]
+_repo = (root/'../..').resolve()
+if (_repo/'.git').exists() and (_repo/'docs/reports/broken-links-allowlist.md').is_file():
+    sys.path.insert(0, str(root/'scripts'))
+    import rename_refs as _R
+    _broken = [tuple(b) for b in _R.link_report(str(_repo))[1]]
+    _allowed = [tuple(c.strip('` ') for c in ln.split('|')[1:3]) for ln in (_repo/'docs/reports/broken-links-allowlist.md').read_text().splitlines() if ln.startswith('| `')]
+    errors.extend(f'check.py: broken links: {m}' for m in links_bad(_broken, _allowed))
+    if not links_bad(_broken + [('x.md', 'nope.md')], _allowed): errors.append('check.py: broken links negative control not flagged for an extra broken link')
+    if not links_bad(_broken, _allowed + [('x.md', 'nope.md')]): errors.append('check.py: broken links negative control not flagged for a stale allowlist row')
+# Docs check (docstring item 33): the docs schema checker, its rule ids, and its selftest wiring.
 DOCS_CHECK_NEEDS = (('docs_check.py', tuple(f'D-{i}' for i in range(1, 13)) + ('--root', '--only', 'Legacy')),
                     ('check.sh', ('docs_check.py" selftest',)))
 def docs_check_bad(texts):
