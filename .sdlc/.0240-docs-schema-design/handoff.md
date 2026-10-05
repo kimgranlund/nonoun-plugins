@@ -2,7 +2,7 @@
 id: T-0240
 title: "Design: strict docs/ folder schema and the docs vs .sdlc boundary"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ User request 2026-10-05: a schema for `./docs/*`, a stricter view of what lives 
 
 ## Constraints
 Claims only from files read. No em dashes. Budget $12.
+
+## Closed
+
+2026-10-05: Design docs/docs-schema/design.md v0.2 written, independently reviewed (architect L1, ready after fixes, 15 findings applied; docs/validation/docs-schema-design-review.md), build tickets T-0241 to T-0245 filed. Merged into local main.

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a5cd4d961e77 -->
+<!-- sdlc-lite:managed:start v1 sha256:dc8700ceb273 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,9 +9,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 6
   - T-0230 fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests (0230-fanout-codex-report-and-gate)
-  - T-0240 Design: strict docs/ folder schema and the docs vs .sdlc boundary (0240-docs-schema-design)
   - T-0241 Schema format: ## Kinds and ## Legacy in the docs/layout.md parser (0241-docs-schema-parser)
   - T-0242 docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template (0242-docs-check-script)
   - T-0243 The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py (0243-sdlc-boundary-checks)
@@ -28,7 +27,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 202
+- done: 203
 - dropped: 19
 
 ## Procedures
