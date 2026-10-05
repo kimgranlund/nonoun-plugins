@@ -23,6 +23,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Research / repository map / history | research / scout / dig |
 | Architecture / finish and file work | architect / file |
 | Parallel ticket lanes / benchmark | fanout / bench |
+| Launch one SDLC Lite agent by name on instructions | agent |
 | Resolve outstanding questions | open-questions |
 | Set up or check entry files and docs layout | onboard |
 | Review sdlc run traces for sdlc-lite waste and bugs | review-traces |

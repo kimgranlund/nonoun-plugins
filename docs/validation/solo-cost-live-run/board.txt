@@ -1,0 +1,3 @@
+| ID | Task | Ticket | Budget | Step | Status | % |
+|---|---|---|---|---|---|---|
+| T-0001 | shout | ready | $0.13/$5 2% | task | ⏳ not planned | 0 |

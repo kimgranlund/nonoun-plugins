@@ -1,0 +1,14 @@
+PASS exported
+PASS odd
+PASS even
+PASS single
+PASS float
+PASS tuple
+PASS generator
+PASS negatives
+PASS dupes
+PASS no mutation
+PASS empty raises
+PASS returns float on even
+PASS mean intact
+hidden_check: 13/13 passed

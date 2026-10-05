@@ -1,0 +1,195 @@
+init: model=claude-sonnet-5-5 agent=None cwd=/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-close.q76l3390/repo plugins=['sdlc-lite', 'progressive-context', 'cc-plugin-agents-md', 'cc-plugin-telemetry', 'cc-plugin-plugin-authoring']
+--- call 1 Bash: cat .sdlc/duration/handoff.md && ls .sdlc .sdlc/duration && git status --short | head
+--- call 2 Bash: ls /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite/scripts/ | head -50
+    result of call 2: _vendor
+bench-dir.sh
+bench-summary.sh
+bench.sh
+board.py
+budget.py
+check.py
+check.sh
+codex_exchange.py
+codex_exec.py
+codex_roles.py
+codex-selftest.py
+evals.py
+fanout.py
+footprint.py
+hook-live-probe.sh
+hook-selftest.sh
+lifecycle-selftest.py
+messages.py
+onboard.py
+order.py
+proposals.py
+readiness.py
+reap-tmp-worktrees.sh
+results.py
+run_lifecycle.py
+run-selftest.sh
+run.sh
+specgate.py
+statusline.sh
+steps.py
+supervisor.py
+tickets.py
+traces
+traces.py
+    result of call 1: ---
+id: T-0004
+title: "kit.d: add parse_duration"
+type: feature
+status: ready
+size: M
+priority: P2
+depends: []
+created: 2026-10-05
+---
+
+## Goal
+kit.d: add parse_duration
+
+## Intent
+- Do: In kit/d.py add parse_duration(text) returning whole seconds from strings like '1h30m15s', '90s', '2h', '45m' (units h, m, s in that order, each at most once, no spaces); raise ValueError for an empty string, an unknown unit, a repeated or out-of-order unit, or a missing number. Add tests/test_d.py with at least 8 tests and add a one-line usage example to README.md.
+- Non-goals: any file other than the ones named under Do.
+- Done when: the named tests pass: `python3 -m unittest tests.test_d`.
+
+## Context
+Throwaway fixture for the fanout solo-first live run. Python 3 standard library only.
+
+## Constraints
+Touch only the files named under Do.
+.sdlc:
+duration
+
+.sdlc/duration:
+handoff.md
+--- call 3 Bash: S=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite/scripts; python3 $S/steps.py lane .sdlc/duration; ls; cat kit/d.py README.md; ls tests kit; git log --oneline | head -3
+    result of call 3: solo
+reason: size M decides before planning (no planner result yet)
+read: .sdlc/duration/handoff.md
+kit
+README.md
+tests
+"""kit.d"""
+# kit
+
+A tiny utility package.
+kit:
+__init__.py
+a.py
+b.py
+c.py
+d.py
+
+tests:
+__init__.py
+6fe24cb fixture
+--- call 4 Bash: cat /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite/agents/solo.md; cat /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-close.q76l3390/repo/.sdlc/duration/skips.md
+    result of call 4: ---
+name: solo
+description: Session agent, not a run.sh pipeline role, that delivers one ticket end to end in this session from a typed brief, at tier S, M, or L by ticket size. The default lane for size S and M tickets (steps.py lane).
+---
+You are solo. You deliver one ticket end to end in this session. No planner, no builder role, no filer.
+
+## Brief
+Your launcher gives you a typed brief: the ticket (its handoff.md), the files to read, the check commands, and the done criterion. A missing field: read the ticket for it; still missing, stop and ask.
+
+## Loop
+1. Read the ticket and the named files. Read nothing else unless a check failure points there.
+2. Make the smallest change that meets the done criterion.
+3. Run every check command. On a failure, find the root cause, fix it, and rerun all checks.
+4. Commit nothing you were not asked to commit.
+5. Report: files changed, each check with its outcome, and anything still open.
+
+## Tiers
+The launcher picks the tier from the ticket size and starts this session at that model and effort. Effort is a launch parameter, so this file pins no model.
+
+| Tier | Ticket size | Claude | Codex |
+|---|---|---|---|
+| S | S | Sonnet low | `sdlc-solo-l1` (gpt-6.1-sol low) |
+| M | M | Sonnet xhigh | `sdlc-solo-l2` (gpt-6.1-sol high) |
+| L | L | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
+
+## Start
+In Claude Code, `hooks/block-role-spawn.sh` denies a conductor's Agent-tool spawn of any `sdlc-lite:` agent, so a conductor starts solo as a head
+--- call 5 Bash: echo "Lane: solo because size M decides before planning (steps.py lane)" >> .sdlc/duration/skips.md
+P=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite
+export CLAUDE_PLUGIN_ROOT=$P SDLC_HEADLESS=1
+BRIEF='Ticket: .sdlc/duration/handoff.md (task dir .sdlc/duration). Read it, kit/d.py, README.md. Do: add parse_duration to kit/d.py, tests/test_d.py (>=8 tests), one-line README usage example; touch only those files. Check: python3 -m unittest tests.test_d. Done when it passes. Tier M: after checks pass, write ## Acceptance criteria in the handoff if absent, then run verifier L3 via ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier L3 .sdlc/duration/handoff.md (foreground, Bash timeout 600000+). Do not commit, publish, or close the ticket; report.'
+SDLC_ROLE=solo timeout 3300 claude -p --plugin-dir "$P" --agent sdlc-lite:solo --model sonnet --effort xhigh --dangerously-skip-permissions -- "$BRIEF" 2>&1 | tail -40
+    result of call 5: (eval):5: command not found: timeout
+--- call 6 Bash: cd /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-close.q76l3390/repo
+P=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite
+export CLAUDE_PLUGIN_ROOT=$P SDLC_HEADLESS=1
+BRIEF='Ticket: .sdlc/duration/handoff.md (task dir .sdlc/duration). Read it, kit/d.py, README.md. Do: add parse_duration to kit/d.py, tests/test_d.py (>=8 tests), one-line README usage example; touch only those files. Check: python3 -m unittest tests.test_d. Done when it passes. Tier M: after checks pass, write ## Acceptance criteria in the handoff if absent, then run verifier L3 via ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier L3 .sdlc/duration/handoff.md (foreground, Bash timeout 600000+). Do not commit, publish, or close the ticket; report.'
+SDLC_ROLE=solo claude -p --plugin-dir "$P" --agent sdlc-lite:solo --model sonnet --effort xhigh --dangerously-skip-permissions -- "$BRIEF" 2>&1 | tail -40
+    result of call 6: 🟢 `parse_duration` is added, the 12 tests pass, and the L3 verifier (Fable) returned pass on the first run.
+
+Files changed:
+- `kit/d.py`: `parse_duration` uses a stdlib `re` fullmatch of `h`/`m`/`s` in order, each at most once, and returns int seconds. It raises `ValueError` for an empty string, an unknown unit, a repeated or out-of-order unit, a missing number, and stray spaces or signs.
+- `tests/test_d.py` (new): 12 tests covering the happy paths and each error class.
+- `README.md`: one usage line, `parse_duration("1h30m15s")  # 5415`.
+- `.sdlc/duration/handoff.md`: I added the `## Acceptance criteria` section, as the tier M step requires.
+
+Checks:
+- `python3 -m unittest tests.test_d`: passes, 12 tests.
+- Verifier L3 (`.sdlc/duration/verifier-L3.md`): pass on all 5 criteria, no out-of-scope changes. It also mutation-tested the parser, and the tests failed under both mutations it tried.
+
+Nothing is open. I did not commit, publish, or close the ticket. The untracked `.sdlc/duration/` run files (`.run.lock`, `base-sha`, `runs.jsonl`, `verifier-L3.*`, `skips.md`) are run bookkeeping, not part of the change.
+--- call 7 Bash: cd /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-close.q76l3390/repo
+S=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite/scripts
+python3 -m unittest tests.test_d 2>&1 | tail -3; git status --short; head -5 .sdlc/duration/verifier-L3.md; python3 $S/tickets.py close --help 2>&1 | head -15
+    result of call 7: Ran 12 tests in 0.000s
+
+OK
+ M .sdlc/duration/handoff.md
+ M README.md
+ M kit/d.py
+?? .sdlc/duration/.run.lock
+?? .sdlc/duration/base-sha
+?? .sdlc/duration/runs.jsonl
+?? .sdlc/duration/skips.md
+?? .sdlc/duration/verifier-L3.attempt.json
+?? .sdlc/duration/verifier-L3.log
+?? .sdlc/duration/verifier-L3.md
+?? tests/test_d.py
+<!-- role=verifier level=L3 model=fable effort=xhigh -->
+## Verdict
+pass
+
+## Criteria
+usage: tickets.py close [-h] [--force] [--reason TEXT] [--ack-warnings TEXT]
+                        [--dry-run] [--skip N[,N...]] [--ticket N]
+                        [--expect DIGEST] [--rewrite-refs] [--numbered]
+                        slug
+
+positional arguments:
+  slug
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --force              close even while the filer warnings are open
+  --reason TEXT        close without a filer file (work done elsewhere): set
+                       done, append a ## Closed section with the date and
+                       TEXT, file no follow-ups (refuses with --dry-run,
+                       --skip, --expect or --ticket)
+--- call 8 Bash: cd /private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/solo-close.q76l3390/repo
+S=/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/solo-skips/plugins/sdlc-lite/scripts
+python3 $S/tickets.py close duration --reason "Delivered via solo lane: parse_duration in kit/d.py, 12 tests in tests/test_d.py, README example; verifier L3 pass (.sdlc/duration/verifier-L3.md)"; echo exit $?; grep -n '^status' .sdlc/duration/handoff.md; tail -5 .sdlc/duration/handoff.md
+    result of call 8: T-0004 done (closed by reason: Delivered via solo lane: parse_duration in kit/d.py, 12 tests in tests/test_d.py, README example; verifier L3 pass (.sdlc/duration/verifier-L3.md)); no follow-ups filed
+exit 0
+5:status: done
+- The change touches only `kit/d.py`, `tests/test_d.py`, and `README.md` (plus this handoff's acceptance criteria); Python 3 standard library only.
+
+## Closed
+
+2026-10-04: Delivered via solo lane: parse_duration in kit/d.py, 12 tests in tests/test_d.py, README example; verifier L3 pass (.sdlc/duration/verifier-L3.md)
+RESULT cost_usd=0.20345420000000003 turns=9 permission_denials=0
+final report: 🟢 T-0004 is delivered and closed. `parse_duration` is in `kit/d.py`, `python3 -m unittest tests.test_d` passes all 12 tests, and the independent verifier (L3) returned pass on all 5 criteria. I reran the tests myself after the solo run.
+
+- **Lane:** `Lane: solo because size M decides before planning (steps.py lane)`, recorded in `.sdlc/duration/skips.md`.
+- **Changes:** `kit/d.py`, the new `tests/test_d.py`, and one usage line in `README.md`. The solo agent also wrote the handoff's `## Acceptance criteria`, which the M tier requires.
+- **Verifier report:** `.sdlc/duration/verifier-L3.md`. It also mutation-tested the parser, and the tests failed under both mutations it tried.
+- **Close:** `tickets.py close --reason`, with no follow-ups filed. Nothing is committed or published.
