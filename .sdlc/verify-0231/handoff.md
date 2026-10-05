@@ -1,0 +1,15 @@
+# Verify T-0231: /sdlc-lite:ask
+
+## Goal
+Independently verify `git diff main...HEAD` on branch ask-skill (T-0231): the new `plugins/sdlc-lite/skills/ask/SKILL.md` sweeps open questions and blockers, reasons options, asks once, takes prose input, is self-contained (no `harness:` reference), is routed from the entry skill and the conductor, and is guarded by `check.py` item 29. The fixture and evidence are under `docs/validation/ask-skill-live-run/`.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and prints `ok:`; item 29 exists in its docstring and its code, and numbers 1..29 are each used exactly once.
+2. The guard bites on disk (detached throwaway copy, not the branch): remove `Write it in chat` from the skill, then separately remove the `/ ask |` route from `plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`, then separately add the text `see harness:find-open-questions` to the skill; each must make `check.py` print a `FAIL check.py: ask skill:` line and exit 1.
+3. `grep -rn 'harness:' plugins/sdlc-lite/skills/ask` prints nothing, and the skill's frontmatter has `name: ask`, an `argument-hint`, `allowed-tools` limited to read-only tools plus `AskUserQuestion`, and the Codex-host adapter line like `skills/open-questions/SKILL.md`.
+4. The skill text implements the spec: a sweep that cites sources (conversation, task folder, blocked and Deferred tickets, run results, notes, external blockers) with concrete searches; options of 2 to 4 with a one-line consequence and a recommendation only where evidence supports it; exactly one `AskUserQuestion` call of 1 to 4 questions with a leftover count; a prose path (`Write it in chat`, a small file) that says the Other box is not rich text; a resolve step; an Unattended section; and a plain-text fallback when `AskUserQuestion` is unavailable.
+5. Every number and claim in `docs/validation/ask-skill-live-run.md` is backed by a committed, non-gitignored file under `docs/validation/ask-skill-live-run/` (use `git ls-tree -r HEAD --name-only` and `git check-ignore -v`): the tool lists, the four items of the second run, the `AskUserQuestion_calls: 0` limit, the costs. The record must not claim that `AskUserQuestion` was exercised.
+6. `bash plugins/sdlc-lite/scripts/check.sh` exits 0 (run it once), plus `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` and `git diff --check main...HEAD`.
+7. Scope: `git diff main...HEAD --name-only -- . ':!.sdlc'` lists only the ask skill and its guard, the one-line pointer in `skills/open-questions/SKILL.md`, the route lines in `skills/sdlc-lite/SKILL.md` and `agents/conductor.md`, the regenerated `adapters/codex/agents/sdlc-conductor-l1.toml`, `docs/README.md` and `docs/validation/ask-skill-live-run*`; no model or effort default and no version file changes; no em dash in the added text.
+
+Report each criterion pass or fail with the command and its output, then a verdict. A criterion that cannot hold as written is a plan defect: say so and give the corrected command rather than failing the build.
