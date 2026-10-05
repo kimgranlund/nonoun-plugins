@@ -23,3 +23,6 @@ User request 2026-10-04: what should AGENTS.md contain to orient a harness. onbo
 
 ## Constraints
 One authoritative location per fact; link instead of copying. No em dashes.
+
+## Verification
+First L3 (Fable) pass: criteria 1, 2 and 5 passed; criterion 3 failed on one real error (the `docs/AGENTS.md` row for `lean-sdlc/` called it a solo design), criterion 4 was a plan defect (the brief's own grep pattern held an em dash). Fixed in 613b251. Narrow L3 re-verification of those two criteria: pass (`.sdlc/verify-0227-b/verifier-L3.md`). check.sh, check-packaging.py and tickets.py check passed in the first pass on the same built files.
