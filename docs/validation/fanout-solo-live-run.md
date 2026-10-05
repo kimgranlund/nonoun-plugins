@@ -27,7 +27,7 @@ The transcripts stay in `~/.claude/projects` and are too large to copy; [`transc
 - No Codex lane was run (`codex_exec.py solo` is built and selftested, not exercised live). No size L ticket, and the full-chain branch was exercised only by the selftest.
 - The fixtures were disjoint by construction, so merge-time overlap handling was not tested live (the selftest covers it).
 - The solo sessions' own cost was not captured.
-- The plugin under test was the `fanout-solo` worktree (0.20.5 manifests) at commit 8e6d835, before T-0218 to T-0220 were merged in.
+- The plugin under test was the `fanout-solo` worktree (0.20.5 manifests) at commit adb9789 (8e6d835 only adds this record), before T-0218 to T-0220 were merged in.
 
 ## Addendum, 2026-10-05: rerun after the skips-guard fix (T-0222)
 
