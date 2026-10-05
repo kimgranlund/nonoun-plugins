@@ -2,7 +2,7 @@
 id: T-0255
 title: "Write one real capability contract for the solo lane"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Gap analysis R7: no real contract exists in this repository or maison to learn f
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes. Preserve other agents' worktrees.
+
+## Closed
+
+2026-10-05: Contract docs/lean-sdlc/solo-lane-contract.md and assessment docs/lean-sdlc/solo-lane-assessment.md written in the Progressive Context format; steps, fanout, solo_run and budget selftests rc=0 at the assessed revision; the independent reader check is the batched L3 verifier at the end of wave-b (a fail there is fixed forward and noted); format gaps recorded in the assessment.
