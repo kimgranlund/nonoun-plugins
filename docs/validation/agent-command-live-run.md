@@ -23,7 +23,7 @@ Recorded: 2026-10-05. Live run for ticket T-0223: `/sdlc-lite:agent {agent-name}
 | Arm | Prompt | Result | Outer cost | Role cost |
 | --- | --- | --- | --- | --- |
 | scout | `/sdlc-lite:agent scout Where is mean implemented ...` | Printed `Lane: scout L1 because ...`, wrote a handoff under `.sdlc/where-is-mean/`, ran `run.sh scout L1`, returned `scout-L1.md` and a three-line summary that names `mathkit/stats.py:4-9`, `tests/test_stats.py`, and `ValueError` | $0.21 | $0.07 (scout) |
-| solo | `/sdlc-lite:agent solo Deliver the ticket .sdlc/median/handoff.md ...` | `echo "Lane: solo M because ticket T-0001 is size M"`, then `SDLC_ROLE=solo claude -p ... --agent sdlc-lite:solo --model sonnet --effort xhigh ...`; the change is in [`solo-delivered.diff`](agent-command-live-run/arms/solo-delivered.diff), 11 tests pass, hidden check 13 of 13, verifier L3 passed | $0.17 | $3.03 (verifier) |
+| solo | `/sdlc-lite:agent solo Deliver the ticket .sdlc/median/handoff.md ...` | `echo "Lane: solo M because ticket T-0001 is size M"`, then `SDLC_ROLE=solo claude -p ... --agent sdlc-lite:solo --model sonnet --effort xhigh ...`; the change is in [`solo-delivered.diff`](agent-command-live-run/arms/solo-delivered.diff) (trailing spaces on added blank lines stripped so `git diff --check` passes), 11 tests pass, hidden check 13 of 13, verifier L3 passed | $0.17 | $3.03 (verifier) |
 | ghost | `/sdlc-lite:agent ghost do something` | Refused, launched nothing, printed the valid names and the pointers | $0.13 | none |
 | conductor | `/sdlc-lite:agent conductor take over this ticket` | Refused: `conductor` is the current session | $0.13 | none |
 
