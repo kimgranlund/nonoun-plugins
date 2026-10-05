@@ -1,0 +1,111 @@
+diff --git a/.sdlc/median/handoff.md b/.sdlc/median/handoff.md
+index 4002ae6..f9ec301 100644
+--- a/.sdlc/median/handoff.md
++++ b/.sdlc/median/handoff.md
+@@ -22,3 +22,15 @@ Files: mathkit/__init__.py, mathkit/stats.py, tests/test_stats.py, README.md.
+
+ ## Constraints
+ Standard library only.
++
++## Acceptance criteria
++- `median` is defined in `mathkit/stats.py` and importable as `from mathkit import median`.
++- Odd count returns the middle value of the sorted input.
++- Even count returns the mean of the two middle values as a float.
++- An empty sequence (list or empty iterator) raises ValueError.
++- The input is not mutated.
++- Any iterable is accepted (list, tuple, set, generator).
++- `tests/test_stats.py` covers each behavior above.
++- `README.md` gains exactly one line describing `median`.
++- `python3 -m unittest discover -s tests` passes.
++- Only the four files in Context are changed (plus this handoff's acceptance criteria); standard library only.
+diff --git a/README.md b/README.md
+index b5a1875..961b70e 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,3 @@
+ # mathki
+ `mean(values)` in `mathkit/stats.py`; tests in `tests/test_stats.py` (run `python3 -m unittest discover -s tests`).
++`median(values)` in `mathkit/stats.py`: middle value for an odd count, float mean of the two middle values for an even count, `ValueError` when empty.
+diff --git a/mathkit/__init__.py b/mathkit/__init__.py
+index 4b5b7e3..5eb7dc4 100644
+--- a/mathkit/__init__.py
++++ b/mathkit/__init__.py
+@@ -1 +1 @@
+-from .stats import mean
++from .stats import mean, median
+diff --git a/mathkit/stats.py b/mathkit/stats.py
+index 9d4d6bf..8b3b969 100644
+--- a/mathkit/stats.py
++++ b/mathkit/stats.py
+@@ -7,3 +7,16 @@ def mean(values):
+     if not values:
+         raise ValueError("mean of empty sequence")
+     return sum(values) / len(values)
++
++
++def median(values):
++    """Median. Odd count: the middle value; even count: the float mean of the
++    two middle values. Raises ValueError for an empty sequence. Does no
++    mutate its input and accepts any iterable."""
++    ordered = sorted(values)
++    if not ordered:
++        raise ValueError("median of empty sequence")
++    mid = len(ordered) // 2
++    if len(ordered) % 2:
++        return ordered[mid]
++    return (ordered[mid - 1] + ordered[mid]) / 2
+diff --git a/tests/test_stats.py b/tests/test_stats.py
+index 1e83f1c..16ba702 100644
+--- a/tests/test_stats.py
++++ b/tests/test_stats.py
+@@ -1,5 +1,5 @@
+ import unittes
+-from mathkit import mean
++from mathkit import mean, median
+
+
+ class MeanTests(unittest.TestCase):
+@@ -11,5 +11,43 @@ class MeanTests(unittest.TestCase):
+             mean([])
+
+
++class MedianTests(unittest.TestCase):
++    def test_odd_returns_middle_after_sorting(self):
++        self.assertEqual(median([5, 1, 3]), 3)
++
++    def test_single_value(self):
++        self.assertEqual(median([7]), 7)
++
++    def test_even_returns_float_mean_of_middle_two(self):
++        result = median([4, 1, 3, 2])
++        self.assertEqual(result, 2.5)
++        self.assertIsInstance(result, float)
++
++    def test_even_with_equal_middles_is_float(self):
++        result = median([2, 2])
++        self.assertEqual(result, 2.0)
++        self.assertIsInstance(result, float)
++
++    def test_empty_raises_value_error(self):
++        with self.assertRaises(ValueError):
++            median([])
++
++    def test_empty_iterator_raises_value_error(self):
++        with self.assertRaises(ValueError):
++            median(iter([]))
++
++    def test_does_not_mutate_input(self):
++        values = [3, 1, 2]
++        median(values)
++        self.assertEqual(values, [3, 1, 2])
++
++    def test_accepts_generator(self):
++        self.assertEqual(median(x for x in (9, 1, 5)), 5)
++
++    def test_accepts_tuple_and_set(self):
++        self.assertEqual(median((3, 1, 2)), 2)
++        self.assertEqual(median({1, 2, 3, 4}), 2.5)
++
++
+ if __name__ == "__main__":
+     unittest.main()
