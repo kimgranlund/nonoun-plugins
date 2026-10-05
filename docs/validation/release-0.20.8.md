@@ -10,11 +10,11 @@ This record states only what a committed file or a command run for it shows. Whe
 | --- | --- | --- |
 | A solo session started through `solo_run.py` checks the ticket's budget first. At 80 percent of `budget_usd` with no ack it prints `solo_run.py: budget <pct>%: ask the user; budget.py ack`, exits 4, starts no session and writes no record. A ticket with no budget is not blocked. Fanout solo lanes inherit it and stop as `driver failed rc=4 (budget gate: budget.py ack)` | `solo_run.py`, `fanout.py`; live run `docs/validation/solo-budget-gate-live-run.md` | T-0229 |
 | `solo_run.py run --new-task [slug]` creates a task folder from the brief, so `/agent solo` with no named ticket still writes a `role solo` record | same live run: `cost_usd` 0.121484 for the `--new-task` session | T-0229 |
-| `agents/solo.md`, `skills/agent/SKILL.md` and `skills/fanout/SKILL.md` describe the gate and `--new-task`; the fanout skill also names `--lane auto` and which lanes are metered (`--lane`, `--max-lanes` and `--stagger` were already in the 0.20.7 skill). `check.py` guard 28 requires the gate phrases in those files and in `solo_run.py` and `fanout.py`, with a negative control per phrase | the three files in this tree; `check.py` docstring item 28 | T-0229 |
+| `agents/solo.md`, `skills/agent/SKILL.md` and `skills/fanout/SKILL.md` describe the gate; `agents/solo.md` and `skills/agent/SKILL.md` also describe `--new-task`, and the fanout skill also names `--lane auto` and which lanes are metered (`--lane`, `--max-lanes` and `--stagger` were already in the 0.20.7 skill). `check.py` guard 28 requires the gate phrases in those files and in `solo_run.py` and `fanout.py`, with a negative control per phrase | the three files in this tree; `check.py` docstring item 28 | T-0229 |
 | `onboard.py` writes a root `AGENTS.md` block that says to pick the lane first with `steps.py lane`, solo by default for size S and M, `/fix` only when asked or when the lane script prints `fix`. There is no template version bump: a block with the old route text reads `stale` by its text, and a hand-edited block stays `edited` unless `--force` is used | `onboard.py` selftest gate `lane-text`; `docs/validation/onboard-lane-text.md` | T-0228 |
 | Two Codex live runs, recorded as evidence, no code change: one fanout lane and one conductor start of solo | `docs/validation/codex-fanout-live-run.md`, `docs/validation/codex-conductor-solo-live-run.md` | none |
 
-Repository maintenance, not shipped to consumers (`AGENTS.md` says maintenance instructions are not consumer context): T-0227 adds a section "Map and how work is done here" to the root `AGENTS.md` (78 lines in total) and new `docs/AGENTS.md` (20 lines) and `docs/CLAUDE.md` (an `@AGENTS.md` import), from `wc -l` on this tree.
+Repository maintenance, not shipped to consumers (`AGENTS.md` says maintenance instructions are not automatically shipped as consumer skill context): T-0227 adds a section "Map and how work is done here" to the root `AGENTS.md` (78 lines in total) and new `docs/AGENTS.md` (20 lines) and `docs/CLAUDE.md` (an `@AGENTS.md` import), from `wc -l` on this tree.
 
 Three Codex agent files changed: `sdlc-solo-l1.toml`, `sdlc-solo-l2.toml`, `sdlc-solo-l3.toml` (one line each in the diff, the `developer_instructions` line). No model or effort value was edited in this release.
 
@@ -27,7 +27,7 @@ Three Codex agent files changed: `sdlc-solo-l1.toml`, `sdlc-solo-l2.toml`, `sdlc
 ## Upgrade notes
 
 - Codex projects that installed the generated agents need `python3 plugins/sdlc-lite/scripts/codex_roles.py install <project>` to receive the three changed `sdlc-solo` agents.
-- A repository onboarded earlier has the old route text in its root block. `onboard.py check` then reports `AGENTS.md` as `stale`; `onboard.py setup --dry-run` shows the change and `onboard.py setup` writes it (run from the plugin's `scripts/` folder; in this repository `python3 plugins/sdlc-lite/scripts/onboard.py`). A read-only `onboard.py check` against `ui-kit-maison` with this tree's script printed `stale AGENTS.md` ([`maison-check.txt`](onboard-lane-text/maison-check.txt)); `git status --short` there was the same before and after. That it was `current` before this change rests on `docs/validation/onboard-lane-text.md` only. A hand-edited block reads `edited` and is left alone unless `--force` is used.
+- A repository onboarded earlier has the old route text in its root block. `onboard.py check` then reports `AGENTS.md` as `stale`; `onboard.py setup --dry-run` shows the change and `onboard.py setup` writes it (run from the plugin's `scripts/` folder; in this repository `python3 plugins/sdlc-lite/scripts/onboard.py`). A read-only `onboard.py check` against `ui-kit-maison` with this tree's script printed `stale AGENTS.md` and `stale docs/AGENTS.md` ([`maison-check.txt`](onboard-lane-text/maison-check.txt)); `git status --short` there was identical before and after ([`maison-status-before.txt`](onboard-lane-text/maison-status-before.txt), [`maison-status-after.txt`](onboard-lane-text/maison-status-after.txt)). That it was `current` before this change rests on `docs/validation/onboard-lane-text.md` only. A hand-edited block reads `edited` and is left alone unless `--force` is used.
 - `solo_run.py` can now exit 4. A caller that treated every non-zero exit as a crash should treat 4 as "ask the user, then `budget.py ack`".
 
 ## Verification
@@ -51,7 +51,7 @@ Three Codex agent files changed: `sdlc-solo-l1.toml`, `sdlc-solo-l2.toml`, `sdlc
 
 ## Checks run for the release
 
-Run from the release worktree on branch `release-0.20.8` at the commit that adds this record's manifest bump (87ebde0), 2026-10-05, all exit 0:
+Run from the release worktree on branch `release-0.20.8` at the commit that adds the manifest bump and this record (87ebde0), 2026-10-05, all exit 0:
 
 - `bash plugins/sdlc-lite/scripts/check.sh` (the full run; it prints `skip: shellcheck not installed`)
 - `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/check.py`
