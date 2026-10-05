@@ -2,7 +2,7 @@
 id: T-0227
 title: "Orient a harness: root AGENTS.md work section, tree map, docs entry"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ One authoritative location per fact; link instead of copying. No em dashes.
 
 ## Verification
 First L3 (Fable) pass: criteria 1, 2 and 5 passed; criterion 3 failed on one real error (the `docs/AGENTS.md` row for `lean-sdlc/` called it a solo design), criterion 4 was a plan defect (the brief's own grep pattern held an em dash). Fixed in 613b251. Narrow L3 re-verification of those two criteria: pass (`.sdlc/verify-0227-b/verifier-L3.md`). check.sh, check-packaging.py and tickets.py check passed in the first pass on the same built files.
+
+## Closed
+
+2026-10-04: Merged into local main (branch orient, T-0227). Independent L3 verifier: criteria 1, 2, 5 passed; criterion 3 found one real error (lean-sdlc row) fixed; criterion 4 was a plan defect; narrow re-verify passed. check.sh, check-packaging, generate --check, tickets check, git diff --check pass.
