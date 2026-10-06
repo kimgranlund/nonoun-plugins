@@ -87,7 +87,7 @@ def definitions():
     for role, levels in models().items():
         for level, (model, effort) in levels.items():
             name = 'sdlc-' + role + '-' + level.lower()
-            data = dict(name=name, description=f'SDLC {role} {level}. Read the handoff; follow the shared role contract.', model=model,
+            data = dict(name=name, description=f'SDLC Lite {role} {level}. Read the handoff; follow the shared role contract.', model=model,
                             model_reasoning_effort=effort,
                             sandbox_mode='workspace-write' if role in ('builder', 'conductor', 'architect', 'messenger', 'solo') else 'read-only',
                             developer_instructions=instructions(role))
@@ -245,7 +245,7 @@ def install(project, check=False, conductor=False):
         data = loads(source)
         data['developer_instructions'] = data['developer_instructions'].replace(TOKEN, str(ROOT))
         generated[source.name] = dumps(data)
-    generated['.gitignore'] = '# Generated SDLC agents are project-local runtime configuration.\n' + ''.join('/'+name+'\n' for name in generated) + '/.sdlc-managed.json\n/.gitignore\n'
+    generated['.gitignore'] = '# Generated SDLC Lite agents are project-local runtime configuration.\n' + ''.join('/'+name+'\n' for name in generated) + '/.sdlc-managed.json\n/.gitignore\n'
     # Preflight every target before any write. Never overwrite user edits or unrelated agents.
     for name, text in generated.items():
         target = dest / name

@@ -294,6 +294,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0306 | [0306-fleet-detect](0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | M | P2 | T-0305 | ⏳ proposed |
 | T-0307 | [0307-fleet-interview](0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | S | P2 | none | ⏳ proposed |
 | T-0308 | [0308-fleet-retro-skill](0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | ⏳ proposed |
+| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite | chore | M | P2 | none | 🟢 done |
 | T-0310 | [0310-fleet-config](0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | ⏳ proposed |
 | T-0311 | [0311-fleet-liveness](0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | ⏳ proposed |
 | T-0312 | [0312-fleet-status-render](0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | ⏳ proposed |

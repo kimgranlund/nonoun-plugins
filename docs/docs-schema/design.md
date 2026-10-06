@@ -358,7 +358,7 @@ These come from folder and file names only. The inventory and a person decide an
 | Today | Becomes | Note |
 | --- | --- | --- |
 | `docs/validation/` (385 tracked files on 2026-10-05, about 325 to 329 other tracked files cite it) | `reports/` | Renamed as a whole by T-0246, waited for the `reorg-inventory` merge, which has landed; file names are kept (8 of 69 top-level names contain a date, so most existing names are covered by a `## Legacy` glob and the date rule applies to new reports only). Historical tags and published release pages keep the old paths. T-0246 amends the freeze sentence in `docs/repo-onboarding/reorganization.md`. |
-| `docs/lean-sdlc/` | `specs/lean-sdlc/` | The lane design and cost-control addendum describe shipped behavior. |
+| `docs/sdlc-lite/` | `specs/sdlc-lite/` | The lane design and cost-control addendum describe shipped behavior. |
 | `docs/ticket-stages/` | `specs/ticket-stages/` | Router, messages and watcher designs describe built features. |
 | `docs/repo-onboarding/design.md` | `specs/repo-onboarding/` | Built (T-0160). |
 | `docs/repo-onboarding/reorganization.md` | `planning/repo-onboarding/` | A draft with `Nothing in this document is implemented`; status `proposed`. |

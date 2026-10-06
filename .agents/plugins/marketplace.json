@@ -1,7 +1,7 @@
 {
   "name": "sdlc-lite",
   "interface": {
-    "displayName": "Sdlc Lite"
+    "displayName": "SDLC Lite"
   },
   "plugins": [
     {

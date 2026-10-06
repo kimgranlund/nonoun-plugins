@@ -1,4 +1,4 @@
-# SDLC agents and Progressive Context
+# SDLC Lite agents and Progressive Context
 
 Two independently installable plugins, with Codex and Claude Code manifests and marketplace catalogs.
 
@@ -19,7 +19,7 @@ Start a fresh chat after installation. No plugin installs itself or modifies you
 
 ## Development
 
-- Run `bash plugins/sdlc-lite/scripts/check.sh` for the SDLC regression suite.
+- Run `bash plugins/sdlc-lite/scripts/check.sh` for the SDLC Lite regression suite.
 - Run `python3 scripts/check-packaging.py` for both catalogs, manifest parity, skill discovery and local links.
 - Read [specifications](docs/README.md) for design scope and deferred runtime work.
 
