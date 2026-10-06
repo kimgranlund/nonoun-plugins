@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a7c698d6f428 -->
+<!-- sdlc-lite:managed:start v1 sha256:551fef62e1d9 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 31
+- proposed: 35
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -41,6 +41,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
+  - T-0305 fleet_collect.py: per-repo collector (0305-fleet-collect)
+  - T-0306 fleet_detect.py: waste and stall detect rules (0306-fleet-detect)
+  - T-0307 fleet-retro interview template and environment fingerprint (0307-fleet-interview)
+  - T-0308 /sdlc-lite:fleet-retro skill, cross-repo report, verification sample (0308-fleet-retro-skill)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)

@@ -290,3 +290,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | M | P2 | none | 🟢 done |
 | T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | 🟢 done |
 | T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | ⏳ proposed |
+| T-0305 | [0305-fleet-collect](0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | M | P2 | none | ⏳ proposed |
+| T-0306 | [0306-fleet-detect](0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | M | P2 | T-0305 | ⏳ proposed |
+| T-0307 | [0307-fleet-interview](0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | S | P2 | none | ⏳ proposed |
+| T-0308 | [0308-fleet-retro-skill](0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | ⏳ proposed |
