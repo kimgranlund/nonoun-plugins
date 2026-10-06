@@ -308,7 +308,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0308 | [0308-fleet-retro-skill](0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | ⏳ proposed |
 | T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite | chore | M | P2 | none | 🟢 done |
 | T-0310 | [.0310-fleet-config](.0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | 🟢 done |
-| T-0311 | [0311-fleet-liveness](0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | ⏳ proposed |
+| T-0311 | [.0311-fleet-liveness](.0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | 🟢 done |
 | T-0312 | [0312-fleet-status-render](0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | ⏳ proposed |
 | T-0313 | [0313-solo-worktree-hook](0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | S | P2 | none | ⏳ proposed |
 | T-0314 | [0314-red-first-control](0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | M | P2 | none | ⏳ proposed |

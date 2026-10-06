@@ -2,7 +2,7 @@
 id: T-0311
 title: "fleet_status.py: liveness join, load trend and snapshot"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0305, T-0310]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,7 @@ Run from the repository root. The ui-kit-maison checks read that repo as it is o
 - `git diff --check`
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
