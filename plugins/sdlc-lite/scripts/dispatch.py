@@ -2,6 +2,7 @@
 """The pre-launch half of run.sh for Claude sub-agent dispatch (Python 3.9+).
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
+  dispatch.py record [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
@@ -46,6 +47,29 @@ throwaway-worktree prefix line (.worktrees/tmp/<Agent name>), and for builder an
 since a sub-agent cannot read SDLC_BASE_SHA from its environment.
 
 Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, spec gate, or a running attempt, 4 budget, 5 lane.
+
+record is the post-launch half (T-0278, design section 3). It takes <stem>.dispatch.json and the sub-agent's
+result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty
+(stdin with a "## " heading line is a result, any other stdin is the sub-agent's error text). In run.sh's order
+it then does the following.
+  header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
+               the body, to the result path.
+  cleanup      removes the worktrees and directory under the dispatch's tmp prefix (only a path under
+               <tree>/.worktrees/tmp/), then reports strays: worktrees and local branches that appeared since
+               prepare (its snapshot sits in the attempt record), the own prefix left out. Report only.
+  stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
+               while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
+  runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent.
+               cost_usd is null with cost_reason "subagent usage not priced" until the cost-estimate ticket lands;
+               usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given.
+  validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
+               <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
+  failed       no result file and no result on stdin: the stdin text is saved as <stem>.log, the attempt is failed
+               with exit_code 1 and the text, and no runs.jsonl line is written, as run.sh. A 429 or session-limit
+               text writes <role>-<level>.limit with the prepare command to resume; a later success removes it.
+  success      the attempt is completed, the result path is printed, exit 0.
+Exit codes: 0 ok, 1 failed sub-agent, 2 unreadable dispatch or attempt, an attempt that is not running, or a result
+path outside the artifacts dir, 3 invalid result.
 Not carried over: the .nvmrc PATH change (a sub-agent inherits the parent's environment) and the skill
 appending (the generated definition's skills: list loads them).
 """
@@ -60,6 +84,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from pathlib import Path
 
@@ -69,6 +94,7 @@ sys.path.insert(0, str(HERE))
 import budget  # noqa: E402
 import claude_roles  # noqa: E402
 import order  # noqa: E402
+import results  # noqa: E402
 import run_lifecycle  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
@@ -255,6 +281,31 @@ def settle(directory, dry_run):
     return recovered
 
 
+def worktrees(tree):
+    """[(path, branch)] of every registered worktree; branch is '' for a detached one."""
+    out, found, path, branch = git('worktree', 'list', '--porcelain', cwd=tree).stdout, [], '', ''
+    for line in out.splitlines() + ['']:
+        if line.startswith('worktree '):
+            path, branch = line[len('worktree '):], ''
+        elif line.startswith('branch '):
+            branch = line[len('branch '):]
+            branch = branch[len('refs/heads/'):] if branch.startswith('refs/heads/') else branch
+        elif not line and path:
+            found.append((path, branch))
+            path, branch = '', ''
+    return found
+
+
+def branches(tree):
+    return git('for-each-ref', '--format=%(refname:short)', 'refs/heads', cwd=tree).stdout.split()
+
+
+def under(path, prefix):
+    """True when path is prefix or below it, by physical path (macOS reports /private/var for /var)."""
+    real, base = os.path.realpath(path), os.path.realpath(prefix)
+    return real == base or real.startswith(base + os.sep)
+
+
 def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
     """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only)."""
     plugin = Path(plugin)
@@ -381,7 +432,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
         attempt = dict(attempt_id=uuid.uuid4().hex, name=stem, agent_name=name, role=role, level=level, backend='claude',
                        transport='subagent', model=model, effort=effort, routing_reason=dispatch['routing_reason'],
                        reason_source='caller' if reason else 'fallback', status='running', started_at=run_lifecycle.now(),
-                       project=os.getcwd(), handoff=str(handoff), parent_pid=pid, parent_pid_source=source, handoff_sha256=sha)
+                       project=os.getcwd(), handoff=str(handoff), parent_pid=pid, parent_pid_source=source, handoff_sha256=sha,
+                       worktrees_before=[p for p, _ in worktrees(toplevel)], branches_before=branches(toplevel))
         dispatch['attempt_id'] = attempt['attempt_id']
         run_lifecycle.write(Path(dispatch['attempt_file']), attempt)
         run_lifecycle.write(Path(dispatch['dispatch_file']), dispatch)
@@ -389,6 +441,168 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
     finally:
         if lock is not None:
             lock.close()
+
+
+LIMIT_RE = re.compile(r'429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit', re.I)
+COST_REASON = 'subagent usage not priced'
+RECORD_KEYS = ('role', 'level', 'model', 'effort', 'result', 'tmp_prefix', 'tree', 'handoff', 'artifacts_dir', 'handoff_sha256',
+               'attempt_id', 'attempt_file', 'routing_reason')
+
+
+def validate_result(role, path):
+    """None when the result passes results.py validate --role, else the one reason string run.sh prints."""
+    p = script('results.py', 'validate', path, '--role', role)
+    if p.returncode == 0:
+        return None
+    msg = (p.stdout + p.stderr).strip()
+    prefix = 'results.py: %s: ' % path
+    return (msg[len(prefix):] if msg.startswith(prefix) else msg) or 'failed the result check'
+
+
+def remove_tmp(tree, prefix):
+    """Remove the worktrees and directory under the dispatch's tmp prefix, then the empty parents. Never raises."""
+    root = os.path.realpath(os.path.join(tree, '.worktrees', 'tmp'))
+    if not os.path.realpath(prefix).startswith(root + os.sep):
+        say('refusing to remove %s: not under %s' % (prefix, root))
+        return
+    try:
+        for path, _ in worktrees(tree):
+            if under(path, prefix) or path == prefix:
+                git('worktree', 'remove', '--force', '--force', path, cwd=tree)
+        shutil.rmtree(prefix, ignore_errors=True)
+        git('worktree', 'prune', cwd=tree)
+        for parent in (root, os.path.dirname(root)):
+            try:
+                os.rmdir(parent)
+            except OSError:
+                pass
+    except OSError as e:
+        say('could not clean %s: %s' % (prefix, e))
+
+
+def strays(tree, prefix, attempt):
+    """(worktree [path, branch] pairs, branch names) that appeared since prepare, this dispatch's own prefix left out."""
+    if 'worktrees_before' not in attempt:
+        return [], []
+    seen, known = set(attempt['worktrees_before']), set(attempt.get('branches_before', []))
+    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix)]
+    return wts, [b for b in branches(tree) if b not in known]
+
+
+def limit_marker(d, error):
+    """A 429 or session limit in the error text leaves <role>-<level>.limit and prints the resume command."""
+    m = LIMIT_RE.search(error)
+    if not m:
+        return
+    line = next((l for l in error.splitlines() if LIMIT_RE.search(l)), m.group(0))[:200]
+    resume = 'python3 %s prepare %s %s %s' % (HERE / 'dispatch.py', d['role'], d['level'], d['handoff'])
+    marker = Path(d['artifacts_dir']) / ('%s-%s.limit' % (d['role'], d['level']))
+    marker.write_text(json.dumps(dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=d['role'], level=d['level'],
+                                      handoff=d['handoff'], resume=resume, evidence=line), separators=(',', ':')) + '\n', encoding='utf-8')
+    say('session limit: resume with: ' + resume)
+
+
+def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result):
+    """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused, 3 invalid result).
+
+    The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
+    missing or empty. stdin text with a ## heading line is a result; any other text is the sub-agent's error text.
+    validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control."""
+    try:
+        d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read dispatch file %s: %s' % (dispatch_file, e))
+    missing = [k for k in RECORD_KEYS if not isinstance(d, dict) or k not in d]
+    if missing:
+        raise Refuse(2, 'dispatch.py: %s is not a dispatch file (missing %s)' % (dispatch_file, ', '.join(missing)))
+    role, level, tree, prefix = d['role'], d['level'], d['tree'], d['tmp_prefix']
+    result, attempt_path = Path(d['result']), Path(d['attempt_file'])
+    if result.parent != Path(d['artifacts_dir']) or attempt_path.parent != result.parent:
+        raise Refuse(2, 'dispatch.py: result and attempt record must sit in the artifacts dir %s' % d['artifacts_dir'])
+    try:
+        attempt = json.loads(attempt_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        raise Refuse(2, 'dispatch.py: cannot read attempt record %s: %s' % (attempt_path, e))
+    if attempt.get('attempt_id') != d['attempt_id']:
+        raise Refuse(2, 'dispatch.py: %s belongs to another attempt than %s' % (attempt_path, dispatch_file))
+    if attempt.get('status') != 'running':
+        raise Refuse(2, 'dispatch.py: attempt %s is %s, not running; nothing to record' % (attempt_path.name, attempt.get('status')))
+
+    def close(status, rc, **extra):
+        attempt.update(status=status, exit_code=rc, finished_at=run_lifecycle.now(), **extra)
+        if agent_id:
+            attempt['agent_id'] = agent_id
+        run_lifecycle.write(attempt_path, attempt)
+        result.parent.joinpath('%s-%s.running' % (role, level)).unlink(missing_ok=True)
+
+    def report_strays(found):
+        for path, branch in found[0]:
+            say('stray worktree appeared during this run: %s%s' % (path, ' [%s]' % branch if branch else ''))
+        for branch in found[1]:
+            say('stray branch appeared during this run: ' + branch)
+
+    text = result.read_text(encoding='utf-8', errors='replace') if result.is_file() else ''
+    error = ''
+    if not text.strip():
+        said = (stdin() if stdin else '') or ''
+        if re.search(r'^## ', said, re.M):
+            text = said
+        else:
+            text, error = '', said.strip() or 'no result file at %s' % result
+    if not text.strip():
+        log = result.with_suffix('.log')
+        log.write_text(error + '\n', encoding='utf-8')
+        remove_tmp(tree, prefix)
+        found = strays(tree, prefix, attempt)
+        say('%s returned no result; see %s' % (role, log))
+        limit_marker(d, error)
+        report_strays(found)
+        close('failed', 1, error=error[:500])
+        return 1
+
+    lines = text.splitlines()
+    skip = next((i for i, l in enumerate(lines) if l.strip()), 0)
+    body = '\n'.join(lines[skip + 1:] if skip < len(lines) and results.HEADER.match(lines[skip].rstrip()) else lines)
+    header = '<!-- role=%s level=%s model=%s effort=%s%s -->' % (
+        role, level, d['model'], d['effort'], ' shared_with_builder=yes' if d.get('shared_with_builder') else '')
+    result.write_text(header + '\n' + body + '\n', encoding='utf-8')
+    remove_tmp(tree, prefix)
+    found = strays(tree, prefix, attempt)
+    stray_wt, stray_br = [p for p, _ in found[0]], found[1]
+    handoff = Path(d['handoff'])
+    now_sha = hashlib.sha256(handoff.read_bytes()).hexdigest() if handoff.is_file() else ''
+    stale = bool(now_sha) and now_sha != d['handoff_sha256']
+    line = dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=role, level=level, model=d['model'], effort=d['effort'],
+                file=result.name, shared_with_builder=bool(d.get('shared_with_builder')), attempt_id=d['attempt_id'],
+                handoff_sha256=d['handoff_sha256'], stale_input=stale, routing_reason=d['routing_reason'], backend='claude',
+                transport='subagent', agent_id=agent_id, usage=usage, cost_usd=None, cost_reason=COST_REASON,
+                duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br)
+    if d.get('specgate'):
+        line['specgate'] = d['specgate']
+    if d.get('lane_override'):
+        line['lane_override'] = d['lane_override']
+    with (result.parent / 'runs.jsonl').open('a', encoding='utf-8') as f:
+        f.write(json.dumps(line, separators=(',', ':')) + '\n')
+    if stale:
+        say('stale input: %s changed while %s ran' % (handoff, role))
+    reason = validate(role, str(result))
+    if reason is not None:
+        say('%s result %s; see %s' % (role, reason, result))
+        report_strays(found)
+        close('failed', 3)
+        return 3
+    (result.parent / ('%s-%s.limit' % (role, level))).unlink(missing_ok=True)
+    report_strays(found)
+    close('completed', 0)
+    print(result)
+    return 0
+
+
+def read_stdin():
+    try:
+        return '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
+    except (OSError, ValueError):
+        return ''
 
 
 def main(argv):
@@ -399,10 +613,27 @@ def main(argv):
     p.add_argument('--dry-run', action='store_true', help='print the JSON; write no record, take no lock')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
+    r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
+    r.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
+    r.add_argument('--agent-id', help='the sub-agent id the Agent tool returned')
+    r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
+    r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
+    r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
     sub.add_parser('selftest', help='run the regression cases in temp repos')
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
+    if args.cmd == 'record':
+        used = {k: v for k, v in (('subagent_tokens', args.tokens), ('tool_uses', args.tool_uses)) if v is not None}
+        try:
+            return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms)
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
+        except (OSError, ValueError) as e:
+            print('dispatch.py: ' + str(e), file=sys.stderr)
+            return 2
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run)
     except Refuse as r:
@@ -765,6 +996,213 @@ def selftest():
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'planner', 'L1', '.sdlc/ls/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         case('CLI exits 5 for the lane gate with the JSON absent from stdout', p.returncode == 5 and p.stdout == '')
+
+        # 9. record: the post-launch half. Parity with a real run.sh run (stub claude), then every refusal.
+        stub = tmp / 'bin'
+        stub.mkdir()
+        (stub / 'claude').write_text('#!/usr/bin/env bash\ncat "$STUB_RESULT"\n')
+        (stub / 'claude').chmod(0o755)
+        BODY = {'builder': '## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n',
+                'verifier': '## Verdict\npass\n\n## Criteria\n- x\n\n## Out of scope changes\nNone\n\n## For the next attempt\nNone\n',
+                'planner': '## Goal\nx\n\n## Assumptions\nNone\n\n## Risks\nNone\n',
+                'plan-reviewer': '## Verdict\npass\n\n## Findings\nNone\n'}
+        live_pid = str(os.getpid())
+
+        def mk(path):
+            init_repo(path)
+            put(path / '.sdlc' / 't' / 'handoff.md')
+            put(path / '.sdlc' / 't' / 'step-1' / 'handoff.md', '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n')
+            put(path / '.sdlc' / 'p' / 'handoff.md')
+            return path
+
+        def via_runsh(repo, role, level, rel, **env):
+            event = tmp / 'stub-result.json'
+            event.write_text(json.dumps({'type': 'result', 'is_error': False, 'result': BODY[role], 'total_cost_usd': 0.5,
+                                         'duration_ms': 5, 'num_turns': 2, 'usage': {'input_tokens': 1}}) + '\n')
+            with clean_env(PATH=str(stub) + os.pathsep + os.environ['PATH'], STUB_RESULT=str(event), **env):
+                p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
+            return p.returncode, p.stdout.strip(), p.stderr
+
+        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, **env):
+            """prepare, let the role write body (or not), then record in process: (rc, dispatch, stderr, stdout)."""
+            rc, got, err = prep(repo, role, level, rel, SDLC_DISPATCH_PARENT_PID=live_pid, **env)
+            if rc != 0:
+                raise AssertionError('prepare failed in the record selftest: ' + err)
+            if body is not None:
+                Path(got['result']).write_text(body, encoding='utf-8')
+            if mutate:
+                f = Path(got['dispatch_file'])
+                data = json.loads(f.read_text())
+                data.update(mutate)
+                f.write_text(json.dumps(data))
+            e, o = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+                try:
+                    out = record(got['dispatch_file'], stdin=(lambda: said) if said is not None else None, agent_id=agent_id, validate=validate)
+                except Refuse as r:
+                    print('\n'.join(r.lines), file=sys.stderr)
+                    out = r.rc
+            return out, got, e.getvalue(), o.getvalue()
+
+        def lines_of(directory):
+            return [json.loads(l) for l in (Path(directory) / 'runs.jsonl').read_text().splitlines()] if (Path(directory) / 'runs.jsonl').is_file() else []
+
+        def attempt_of(got):
+            return json.loads(Path(got['attempt_file']).read_text())
+
+        def next_out(repo, rel):
+            p = script('steps.py', 'next', repo / rel)
+            return p.returncode, p.stdout.replace(str(repo), '<repo>')
+
+        ra, rb = mk(tmp / 'A'), mk(tmp / 'B')
+        step = '.sdlc/t/step-1'
+        for role, level, rel, env in (('builder', 'L2', step, {}), ('verifier', 'L1', step, {}), ('planner', 'L1', '.sdlc/p', {}),
+                                      ('plan-reviewer', 'L1', '.sdlc/p', {'SDLC_SPECGATE': 'off'})):
+            src, a_result, _ = via_runsh(ra, role, level, rel + '/handoff.md', **env)
+            rc, got, err, out = go(rb, role, level, rel + '/handoff.md', body=BODY[role], agent_id='agent-' + role, **env)
+            a_line, b_line = lines_of(ra / rel)[-1], lines_of(rb / rel)[-1]
+            case('record parity %s: valid result exits 0 like run.sh and prints the result path' % role,
+                 src == 0 and rc == 0 and out.strip() == got['result'])
+            case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id and cost_reason' % role,
+                 set(b_line) == set(a_line) | {'agent_id', 'cost_reason'} and set(a_line) <= set(b_line))
+            case('record parity %s: transport subagent, agent_id, null cost with its reason' % role,
+                 (b_line['transport'], a_line['transport'], b_line['agent_id'], b_line['cost_usd'], b_line['cost_reason'])
+                 == ('subagent', 'claude', 'agent-' + role, None, 'subagent usage not priced'))
+            case('record parity %s: the shared fields equal the run.sh line shape' % role,
+                 (b_line['role'], b_line['level'], b_line['model'], b_line['effort'], b_line['file'], b_line['backend'], b_line['stale_input'],
+                  b_line['stray_worktrees'], b_line['stray_branches'], b_line['shared_with_builder'])
+                 == (a_line['role'], a_line['level'], a_line['model'], a_line['effort'], a_line['file'], a_line['backend'], a_line['stale_input'],
+                     a_line['stray_worktrees'], a_line['stray_branches'], a_line['shared_with_builder'])
+                 and b_line['attempt_id'] == got['attempt_id'])
+            case('record parity %s: the result header equals the run.sh header' % role,
+                 Path(a_result).read_text().splitlines()[0] == Path(got['result']).read_text().splitlines()[0])
+            case('record parity %s: specgate and lane_override are carried only when set' % role,
+                 ('specgate' in b_line) == ('specgate' in a_line) == (role == 'plan-reviewer') and 'lane_override' not in b_line)
+            att = attempt_of(got)
+            case('record %s closes the attempt completed with exit_code 0 and the agent id' % role,
+                 (att['status'], att['exit_code'], att['agent_id']) == ('completed', 0, 'agent-' + role) and 'finished_at' in att)
+            if role in ('builder', 'verifier'):
+                na, nb = next_out(ra, rel), next_out(rb, rel)
+                want = 'verify L1' if role == 'builder' else 'done'
+                case('steps.py next reads a recorded %s result exactly as a run.sh one (%s)' % (role, want),
+                     na == nb and na[0] == 0 and na[1].splitlines()[0] == want)
+                case('order.py reads a recorded %s result as a run.sh one' % role,
+                     os.path.basename(order.newest(str(ra / rel), role)) == os.path.basename(order.newest(str(rb / rel), role)))
+
+        # Invalid results: exit 3, the run.sh line shape, the file and record kept; the control accepts it with an accept-all validator.
+        accept_all = lambda role, path: None  # noqa: E731
+        for i, (label, role, bad, want) in enumerate((
+                ('missing key section', 'builder', '## Changes\nx\n\n## Checks\ny\n', 'lacks ## Status'),
+                ('disallowed first value', 'verifier', '## Verdict\nmaybe\n\n## Criteria\n- x\n', 'is not one of pass|fail'),
+                ('section order', 'builder', '## Status\ndone\n\n## Checks\ny\n\n## Changes\nx\n', '## Checks comes before ## Changes'))):
+            put(rb / '.sdlc' / ('bad%d' % i) / 'handoff.md')
+            put(rb / '.sdlc' / ('ctl%d' % i) / 'handoff.md')
+            rc, got, err, out = go(rb, role, 'L1', '.sdlc/bad%d/handoff.md' % i, body=bad)
+            att, shown = attempt_of(got), err.strip().splitlines()[-1] if err.strip() else ''
+            case('invalid result (%s) exits 3' % label, rc == 3 and out == '')
+            case('invalid result (%s) prints dispatch.py: %s result <reason>; see <file>' % (label, role),
+                 shown == 'dispatch.py: %s result %s; see %s' % (role, shown[len('dispatch.py: %s result ' % role):-len('; see ' + got['result'])], got['result'])
+                 and want in shown)
+            case('invalid result (%s) keeps the file, the runs.jsonl line, and a failed attempt with exit_code 3' % label,
+                 Path(got['result']).read_text().startswith('<!-- role=') and lines_of(rb / '.sdlc' / ('bad%d' % i))[-1]['file'] == Path(got['result']).name
+                 and (att['status'], att['exit_code']) == ('failed', 3))
+            rc, cgot, err, out = go(rb, role, 'L1', '.sdlc/ctl%d/handoff.md' % i, body=bad, validate=accept_all)
+            case('negative control (%s): an accept-all validator lets the same bad result pass' % label,
+                 rc == 0 and attempt_of(cgot)['status'] == 'completed' and err == '')
+
+        # A failed sub-agent: error text and no result; a limit text also leaves the resume marker.
+        for name in ('f1', 'f2', 'f3'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f1/handoff.md', said='API Error: connection reset by peer')
+        f1 = rb / '.sdlc' / 'f1'
+        att = attempt_of(got)
+        case('a failed sub-agent exits 1 and records status failed with its text', rc == 1 and att['status'] == 'failed' and att['exit_code'] == 1
+             and 'connection reset' in att['error'] and 'returned no result' in err)
+        case('a failed sub-agent writes no result, no runs.jsonl line, and no limit marker, and keeps the error as a log',
+             not Path(got['result']).exists() and lines_of(f1) == [] and not (f1 / 'builder-L1.limit').exists()
+             and 'connection reset' in (f1 / 'builder-L1.log').read_text())
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f2/handoff.md')
+        case('no result file and no stdin text is a failed sub-agent too', rc == 1 and 'no result file' in attempt_of(got)['error'])
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', said='API Error: 429 rate limit exceeded: session limit reached')
+        f3 = rb / '.sdlc' / 'f3'
+        marker = json.loads((f3 / 'builder-L1.limit').read_text()) if (f3 / 'builder-L1.limit').is_file() else {}
+        case('a 429 or session-limit text exits 1 and writes <role>-<level>.limit with the resume command',
+             rc == 1 and sorted(marker) == ['evidence', 'handoff', 'level', 'resume', 'role', 'ts'] and '429' in marker['evidence']
+             and marker['resume'] == 'python3 %s prepare builder L1 %s' % (HERE / 'dispatch.py', got['handoff'])
+             and 'session limit: resume with: ' + marker['resume'] in err)
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', body=BODY['builder'])
+        case('a later success in the same dir removes the limit marker', rc == 0 and not (f3 / 'builder-L1.limit').exists())
+
+        # The CLI: stdin carries the error text; flags carry the notice's numbers.
+        env_cli = {k: v for k, v in os.environ.items() if not k.startswith('SDLC_')}
+        put(rb / '.sdlc' / 'c1' / 'handoff.md')
+        put(rb / '.sdlc' / 'c2' / 'handoff.md')
+        rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/c1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', got['dispatch_file']], input='Error: session limit reached',
+                           capture_output=True, text=True, env=env_cli)
+        case('CLI record reads error text from stdin: exit 1 and the limit marker', p.returncode == 1 and (rb / '.sdlc' / 'c1' / 'builder-L1.limit').is_file())
+        rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(got['result']).write_text(BODY['builder'])
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--agent-id', 'ag-9', '--tokens', '1234', '--tool-uses', '7',
+                            '--duration-ms', '900', got['dispatch_file']], capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
+        line = lines_of(rb / '.sdlc' / 'c2')[-1] if lines_of(rb / '.sdlc' / 'c2') else {}
+        case('CLI record with a result file: exit 0, the path on stdout, the notice numbers in the line',
+             p.returncode == 0 and p.stdout.strip() == got['result'] and line.get('agent_id') == 'ag-9' and line.get('duration_ms') == 900
+             and line.get('usage') == {'subagent_tokens': 1234, 'tool_uses': 7})
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / 'nope.dispatch.json')],
+                           capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
+        case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
+        case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / '.sdlc' / 'c2' / 'builder-L1.dispatch.json')],
+                           capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
+        case('recording a closed attempt again exits 2 and changes nothing', p.returncode == 2 and 'not running' in p.stderr
+             and len(lines_of(rb / '.sdlc' / 'c2')) == 2)
+
+        # Stale handoff, strays, and the tmp prefix: reported, never an exit code.
+        put(rb / '.sdlc' / 's1' / 'handoff.md')
+        rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/s1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        outside = tmp / 'outside-wt'
+        own = Path(got['tmp_prefix']) / 'work'
+        for cmd in (['worktree', 'add', '--detach', str(own), 'HEAD'], ['worktree', 'add', '-b', 'stray-br', str(outside), 'HEAD'],
+                    ['worktree', 'add', '--detach', str(tmp / 'outside-detached'), 'HEAD']):
+            subprocess.run(['git', '-C', str(rb)] + cmd, check=True, capture_output=True)
+        (rb / '.sdlc' / 's1' / 'handoff.md').write_text('## Goal\nchanged\n')
+        Path(got['result']).write_text(BODY['builder'])
+        e, o = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+            rc = record(got['dispatch_file'])
+        err, line = e.getvalue(), lines_of(rb / '.sdlc' / 's1')[-1]
+        listed = subprocess.run(['git', '-C', str(rb), 'worktree', 'list', '--porcelain'], capture_output=True, text=True).stdout
+        case('a changed handoff is reported as stale input and flagged, with the exit code unchanged',
+             rc == 0 and 'stale input: %s changed while builder ran' % got['handoff'] in err and line['stale_input'] is True)
+        case('strays are reported with their branch, listed in the line, with the exit code unchanged',
+             'stray worktree appeared during this run: %s [stray-br]' % outside in err
+             and 'stray worktree appeared during this run: %s\n' % (tmp / 'outside-detached') in err
+             and 'stray branch appeared during this run: stray-br' in err
+             and sorted(line['stray_worktrees']) == sorted([str(outside), str(tmp / 'outside-detached')]) and line['stray_branches'] == ['stray-br'])
+        case('the dispatch tmp prefix is removed, its worktree unregistered, and it is not reported as a stray',
+             not Path(got['tmp_prefix']).exists() and str(own) not in listed and not (rb / '.worktrees').exists() and str(own) not in err)
+        case('the outside worktrees are only reported, never removed', outside.is_dir() and str(outside) in listed)
+
+        # Guards on a tampered dispatch file: nothing outside the tmp root is removed, nothing outside the artifacts dir is written.
+        keep = tmp / 'keep-me'
+        (keep / 'sub').mkdir(parents=True)
+        for name in ('g1', 'g2', 'g3', 'g4'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/g1/handoff.md', body=BODY['builder'], mutate={'tmp_prefix': str(keep)})
+        case('a tmp prefix outside <tree>/.worktrees/tmp is refused, not removed', rc == 0 and keep.is_dir() and 'refusing to remove' in err)
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/g2/handoff.md', body=BODY['builder'], mutate={'result': str(tmp / 'elsewhere.md')})
+        case('a result path outside the artifacts dir exits 2 and writes nothing', rc == 2 and not (tmp / 'elsewhere.md').exists()
+             and attempt_of(got)['status'] == 'running')
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/g3/handoff.md', body=BODY['builder'], mutate={'attempt_id': 'not-this-one'})
+        case('a dispatch file for another attempt exits 2', rc == 2 and 'another attempt' in err)
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/g4/handoff.md', body='<!-- role=builder level=L5 model=fable effort=max -->\n' + BODY['builder'],
+                               mutate={'lane_override': 'chain needed'})
+        head_lines = Path(got['result']).read_text().splitlines()
+        case('a header the role wrote is replaced by the dispatch header, once', rc == 0 and head_lines[0] == '<!-- role=builder level=L1 model=sonnet effort=low -->'
+             and not head_lines[1].startswith('<!--'))
+        case('a lane_override carried by the dispatch reaches the runs.jsonl line', lines_of(rb / '.sdlc' / 'g4')[-1].get('lane_override') == 'chain needed')
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 
