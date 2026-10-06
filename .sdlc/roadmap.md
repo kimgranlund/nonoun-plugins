@@ -287,3 +287,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0286 | [0286-supervisor-orphans](0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | ⏳ proposed |
 | T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
 | T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | S | P2 | T-0287 | ⏳ proposed |
+| T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | M | P2 | none | 🟢 done |
