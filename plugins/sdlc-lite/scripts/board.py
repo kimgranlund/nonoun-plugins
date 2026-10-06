@@ -190,10 +190,23 @@ def plan_steps(task: pathlib.Path):
     return steps
 
 
+def solo_lane(task: pathlib.Path) -> bool:
+    """True when the last `- lane:` line in the task's skips.md is solo."""
+    try:
+        lanes = re.findall(r'^- lane:\s*(\S+)', (task / 'skips.md').read_text(encoding='utf-8'), re.M)
+    except OSError:
+        return False
+    return bool(lanes) and lanes[-1] == 'solo'
+
+
 def task_rows(task: pathlib.Path):
     rows = []
     running = [p for p in task.glob('*.running')]
     steps = plan_steps(task)
+    front = ticket_of(task)
+    if not running and front is not None and front[1] == 'done' and solo_lane(task):
+        # A merged, closed solo lane keeps its step folder; its builder row is not the ticket's state.
+        return [(task.name, 'task', '🟢', 'closed', 100)], []
     if running:
         role_lvl = running[-1].stem
         rows.append((task.name, 'task', '🟡', f'running · {role_lvl}', 0))
@@ -622,6 +635,20 @@ def selftest() -> int:
             got = summary(croot)
             expect(f'{status} ticket summary reads shipped {word}, got {got!r}',
                    got == f'shipped {word}')
+
+        # 5d. A done ticket whose last skips.md lane is solo reads closed even with a step folder
+        # (T-0300); the same fixture at status ready is the control that still reads built.
+        for status, want in (('done', ['closed']), ('ready', ['built · builder L2, awaiting verify'])):
+            sroot = tmp / f'solo-lane-{status}'
+            st = task_dir(sroot, 'soloed', front.replace('status: ready', f'status: {status}'))
+            (st / 'skips.md').write_text('## Lane\n- lane: solo\n')
+            (st / 'runs.jsonl').write_text('{"role": "solo"}\n')
+            (st / 'step-1').mkdir()
+            (st / 'step-1' / 'handoff.md').write_text('## Step 1: do it\nlevel: L2\n')
+            (st / 'step-1' / 'builder-L2.md').write_text('## Status\ndone\n')
+            srows, _ = task_rows(st)
+            got = [r[3] for r in srows]
+            expect(f'solo lane {status} ticket reads {want!r}, got {got!r}', got == want)
 
         # 6. --sort through main(): id ignores mtime, unticketed tasks follow by name,
         # name is alphabetical. With no flag, a root with tickets sorts by id with
