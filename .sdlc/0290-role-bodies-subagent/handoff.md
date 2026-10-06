@@ -1,0 +1,25 @@
+---
+id: T-0290
+title: "Role bodies optimized for session and sub-agent execution"
+type: chore           # feature | bug | chore | spike | idea
+status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+size: M              # S | M | L | XL
+priority: P2         # P1 | P2 | P3
+depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
+created: 2026-10-06
+router: .sdlc/AGENTS.md  # how to claim and close this ticket
+---
+
+## Goal
+Rewrite the shared role bodies (scout, researcher, architect, archaeologist, planner, plan-reviewer, builder, verifier, filer, solo) so each runs well as a session agent or a named background sub-agent, while the headless run.sh path keeps working.
+
+## Intent
+- Do: add an input contract (blocked with the exact question), an output contract (compact final message in the results.py shape, optional result file checked with `results.py validate --role`), resume behavior, numeric stop rules, commit and worktree boundary, cost discipline, and a routing description; drop run.sh wording. Regenerate the Codex agents.
+- Non-goals: conductor.md and messenger.md; any model or effort value; check.py contracts; new scripts.
+- Done when: check.py, codex_roles.py generate --check, check-packaging.py, tickets.py check, and git diff --check are green; one solo ticket and one verifier run live through run.sh in a /tmp throwaway; a record at docs/reports/role-bodies-subagent.md; one verifier (L3) passes.
+
+## Context
+Design: docs/lean-sdlc/subagent-mode.md on branch worktree-agent-a8796067dca9eb594 (read-only). Sub-agent definitions will embed these bodies per level, so bodies stay level-neutral.
+
+## Constraints
+Preserve every phrase and section check.py and results.py assert. No push, publish, tag, or merge into main.
