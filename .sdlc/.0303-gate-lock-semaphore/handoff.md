@@ -2,7 +2,7 @@
 id: T-0303
 title: "gate_lock.py machine-wide semaphore for heavy gates"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - [ ] Negative control shown once: a copy of gate_lock.py with the slot cap removed lets the third holder start at once, so the case fails.
 - [ ] `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and a case shows a `--gate` command runs through gate_lock (observed via the lock dir or an env marker); `--no-gate-lock` skips it.
 - [ ] sdlc-internals.md and agents/conductor.md name `gate_lock.py run` for heavy gates; `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
