@@ -273,3 +273,17 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0272 | [0272-conductor-repo-opt-out](0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | ⏳ proposed |
 | T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
 | T-0274 | [.0274-lane-gate](.0274-lane-gate/handoff.md) | run.sh lane gate | chore | M | P2 | none | 🟢 done |
+| T-0275 | [0275-subagent-probes](0275-subagent-probes/handoff.md) | Probe the sub-agent mechanics the design assumes | spike | S | P2 | none | ⏳ proposed |
+| T-0276 | [0276-claude-levels-table](0276-claude-levels-table/handoff.md) | Claude level table and per-level generated agents | feature | M | P2 | T-0275 | ⏳ proposed |
+| T-0277 | [0277-dispatch-prepare](0277-dispatch-prepare/handoff.md) | dispatch.py prepare: the pre-launch half of run.sh | feature | M | P2 | T-0276 | ⏳ proposed |
+| T-0278 | [0278-dispatch-record](0278-dispatch-record/handoff.md) | dispatch.py record: validate, record, and close a dispatched role | feature | M | P2 | T-0277 | ⏳ proposed |
+| T-0279 | [0279-dispatch-recover](0279-dispatch-recover/handoff.md) | dispatch.py status and resume for dead or interrupted sub-agents | feature | S | P2 | T-0278 | ⏳ proposed |
+| T-0280 | [0280-cost-estimate](0280-cost-estimate/handoff.md) | Estimated cost for sub-agent runs from tokens and a price table | feature | S | P2 | T-0278 | ⏳ proposed |
+| T-0281 | [0281-hooks-agent-role](0281-hooks-agent-role/handoff.md) | Hooks key on agent_type; spawn gate replaces block-role-spawn | feature | M | P2 | T-0275, T-0277 | ⏳ proposed |
+| T-0282 | [0282-conductor-dispatch-core](0282-conductor-dispatch-core/handoff.md) | Conductor and chain dispatch roles as sub-agents | feature | M | P2 | T-0276, T-0278, T-0279, T-0280, T-0281 | ⏳ proposed |
+| T-0283 | [0283-launcher-skills-dispatch](0283-launcher-skills-dispatch/handoff.md) | Launcher skills dispatch through sub-agents | chore | M | P2 | T-0282 | ⏳ proposed |
+| T-0284 | [0284-solo-subagent](0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | S | P2 | T-0282 | ⏳ proposed |
+| T-0285 | [0285-fanout-subagent](0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | M | P2 | T-0284, T-0281 | ⏳ proposed |
+| T-0286 | [0286-supervisor-orphans](0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | ⏳ proposed |
+| T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
+| T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | S | P2 | T-0287 | ⏳ proposed |
