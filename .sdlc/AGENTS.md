@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d38a547da45f -->
+<!-- sdlc-lite:managed:start v1 sha256:c20911891367 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -28,9 +28,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0302 ADR number allocator note (repo-owned, docs only) (0302-adr-number-allocator-note)
-- ready: 8
+- ready: 7
   - T-0293 solo_run kills process group and refuses a second live run (0293-solo-run-kill-group)
-  - T-0294 Plan review only for L4 and L5 steps (0294-plan-review-l4-l5-only)
   - T-0295 steps lint names the handoff heading it found (0295-lint-name-found-heading)
   - T-0296 steps lane refuses size M over 20 criteria (0296-lane-refuse-m-over-20-criteria)
   - T-0297 Planner guard dry-run; split inherits earlier widenings (0297-planner-guard-dry-run-widen-inherit)
@@ -47,7 +46,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 223
+- done: 224
 - dropped: 19
 
 ## Procedures

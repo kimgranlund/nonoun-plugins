@@ -2,7 +2,7 @@
 id: T-0294
 title: "Plan review only for L4 and L5 steps"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Rule: review iff some step is `level: L4` or `L5` (a Merge step is L4 or higher 
 - [ ] Negative control shown once: with the old rule restored, the new L1-L3 case fails.
 - [ ] Each of skills/chain/SKILL.md, agents/conductor.md (both under plugins/sdlc-lite), docs/lean-sdlc/design.md, and skills/level-rubric/SKILL.md states plan review is for L4 and L5 steps only (grep output in the report).
 - [ ] No diff to the run.sh role:level model/effort rows, adapters/codex/models.json, or the level rubric's model table; `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
