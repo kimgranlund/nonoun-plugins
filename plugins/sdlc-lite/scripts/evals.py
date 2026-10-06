@@ -26,11 +26,13 @@ Eval file
   line before the next `## ` line.
 
 Model table hash
-  Every row of <plugin>/scripts/run.sh matching the role:level case regex, formatted as
-  `<role>:<level> <model> <effort>`, sorted, one per line, then models.json dumped with sorted keys
-  and compact separators, then a newline. table_sha256 is the sha256 hex of that UTF-8 text, so
-  whitespace edits leave it alone and any value change moves it. evals.py never writes run.sh or
-  models.json.
+  Every pipeline-role row of <plugin>/adapters/claude/levels.json (a level named L1 to L9; the solo
+  tiers S, M, and L are not rows of the lock), formatted as `<role>:<level> <model> <effort>`,
+  sorted, one per line, then adapters/codex/models.json dumped with sorted keys and compact
+  separators, then a newline. table_sha256 is the sha256 hex of that UTF-8 text, so whitespace
+  edits leave it alone and any value change moves it. The text equals the one the run.sh case rows
+  gave before levels.json became the table home, so the hash did not move. evals.py never writes
+  levels.json, run.sh, or models.json.
 
 Lock
   <root>/evals/table-lock.json holds exactly {eval, previous_eval, table_sha256}: the cited eval,
@@ -39,7 +41,7 @@ Lock
 CLI (global options come before the subcommand)
   evals.py [--root DIR] [--plugin DIR] <cmd>
     --root DIR     the .sdlc folder (default: .sdlc in the cwd)
-    --plugin DIR   the dir holding scripts/run.sh and adapters/codex/models.json
+    --plugin DIR   the dir holding adapters/claude/levels.json and adapters/codex/models.json
                    (default: the parent of this script's dir)
   add <slug> --role R --level L --model M --effort E --host H --task-set S --pass-rate P/T
       --cost-usd C --date D --evidence X [--evidence Y ...] --method TEXT --result TEXT
@@ -76,7 +78,7 @@ FIELDS = ('role', 'level', 'model', 'effort', 'host', 'task_set', 'pass_rate', '
 EVAL_NAME_RE = re.compile(r'\d{4}-[a-z0-9][a-z0-9-]*\.md')
 NUMBER_RE = re.compile(r'(\d{4})-')
 SLUG_RE = re.compile(r'[a-z0-9][a-z0-9-]*')
-TABLE_RE = re.compile(r'^\s*([\w-]+):(L\d)\)\s*model=([\w-]+);\s*effort=(\w+)', re.M)
+LEVEL_RE = re.compile(r'L\d')
 URL_RE = re.compile(r'https?://\S+')
 NOT_EVALS = ('AGENTS.md', 'CLAUDE.md')
 LOCK_NAME = 'table-lock.json'
@@ -101,17 +103,19 @@ class TableError(Exception):
 # ---------------------------------------------------------------- table
 
 def canonical_table(plugin):
-    """The canonical model table text: sorted run.sh rows, then the compact models.json dump."""
+    """The canonical model table text: sorted levels.json rows, then the compact models.json dump."""
     plugin = Path(plugin)
-    run_sh = plugin / 'scripts' / 'run.sh'
+    levels = plugin / 'adapters' / 'claude' / 'levels.json'
     models = plugin / 'adapters' / 'codex' / 'models.json'
     try:
-        text = run_sh.read_text(encoding='utf-8')
-    except (OSError, UnicodeDecodeError) as e:
-        raise TableError('%s: cannot read: %s' % (run_sh, e))
-    rows = sorted('%s:%s %s %s' % m for m in TABLE_RE.findall(text))
+        table = json.loads(levels.read_text(encoding='utf-8'))
+        rows = sorted('%s:%s %s %s' % (role, level, model, effort)
+                      for role, by_level in table.items() for level, (model, effort) in by_level.items()
+                      if LEVEL_RE.fullmatch(level))
+    except (OSError, UnicodeDecodeError, ValueError, AttributeError) as e:
+        raise TableError('%s: cannot read: %s' % (levels, e))
     if not rows:
-        raise TableError('%s: no role:level model rows parsed' % run_sh)
+        raise TableError('%s: no role:level model rows parsed' % levels)
     try:
         data = json.loads(models.read_text(encoding='utf-8'))
     except (OSError, UnicodeDecodeError, ValueError) as e:
@@ -506,7 +510,7 @@ def cmd_hash(args, root, plugin):
 
 def selftest(plugin):
     me = Path(__file__).resolve()
-    src_run = Path(plugin) / 'scripts' / 'run.sh'
+    src_levels = Path(plugin) / 'adapters' / 'claude' / 'levels.json'
     src_models = Path(plugin) / 'adapters' / 'codex' / 'models.json'
     tracked = {}
     violations = []
@@ -519,7 +523,7 @@ def selftest(plugin):
     def track(p):
         tracked[p] = sha(p)
 
-    track(src_run)
+    track(src_levels)
     track(src_models)
 
     def project(d):
@@ -527,11 +531,11 @@ def selftest(plugin):
         (d / '.sdlc').mkdir()
         (d / 'docs').mkdir()
         (d / 'docs' / 'e.md').write_text('e\n', encoding='utf-8')
-        (d / 'plugin' / 'scripts').mkdir(parents=True)
+        (d / 'plugin' / 'adapters' / 'claude').mkdir(parents=True)
         (d / 'plugin' / 'adapters' / 'codex').mkdir(parents=True)
-        shutil.copyfile(str(src_run), str(d / 'plugin' / 'scripts' / 'run.sh'))
+        shutil.copyfile(str(src_levels), str(d / 'plugin' / 'adapters' / 'claude' / 'levels.json'))
         shutil.copyfile(str(src_models), str(d / 'plugin' / 'adapters' / 'codex' / 'models.json'))
-        track(d / 'plugin' / 'scripts' / 'run.sh')
+        track(d / 'plugin' / 'adapters' / 'claude' / 'levels.json')
         track(d / 'plugin' / 'adapters' / 'codex' / 'models.json')
         return d
 
@@ -548,9 +552,11 @@ def selftest(plugin):
         return proc.returncode, proc.stdout, proc.stderr
 
     def change_model_row(d):
-        p = d / 'plugin' / 'scripts' / 'run.sh'
-        text, n = re.subn(r'(builder:L1\)\s*model=)[\w-]+', r'\g<1>evals-probe', p.read_text(encoding='utf-8'))
-        p.write_text(text, encoding='utf-8')
+        p = d / 'plugin' / 'adapters' / 'claude' / 'levels.json'
+        table = json.loads(p.read_text(encoding='utf-8'))
+        n = 1 if table['builder']['L1'][0] != 'evals-probe' else 0
+        table['builder']['L1'][0] = 'evals-probe'
+        p.write_text(json.dumps(table, indent=2) + '\n', encoding='utf-8')
         track(p)
         return n
 
@@ -668,7 +674,7 @@ def selftest(plugin):
 
         def c6(need):
             n = change_model_row(a)
-            need(n == 1, 'changed %d run.sh rows, want 1' % n)
+            need(n == 1, 'changed %d levels.json rows, want 1' % n)
             rc, out, err = ev(a, ['check'])
             need(rc == 1 and 'model table changed' in out, 'check: rc=%d %r' % (rc, out))
         case('a stale lock makes check fail naming the model table', c6)
@@ -770,7 +776,7 @@ def selftest(plugin):
             need(runs[0] > 0, 'no command ran')
             for v in violations:
                 need(False, v)
-        case('evals.py never writes run.sh or models.json', c13)
+        case('evals.py never writes levels.json or models.json', c13)
         report.insert(12, report.pop())  # case 13 runs last so it sees every command, but reports in place
 
     failed = False
@@ -791,7 +797,7 @@ def main(argv):
     ap = argparse.ArgumentParser(prog='evals.py', description=__doc__.split('\n')[0])
     ap.add_argument('--root', default='.sdlc', help='the .sdlc folder (default: .sdlc in the cwd)')
     ap.add_argument('--plugin', default=str(Path(__file__).resolve().parent.parent),
-                    help='dir holding scripts/run.sh and adapters/codex/models.json')
+                    help='dir holding adapters/claude/levels.json and adapters/codex/models.json')
     sub = ap.add_subparsers(dest='cmd')
     sub.required = True
     p = sub.add_parser('add', help='write the next NNNN-<slug>.md eval')
