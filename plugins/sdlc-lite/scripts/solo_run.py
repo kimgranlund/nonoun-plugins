@@ -136,6 +136,9 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
 LIMIT_RE = re.compile(r'429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit', re.I)
 
 
+RESET_RE = re.compile(r'resets +(\d{1,2}(?::\d{2})? *[ap]m)', re.I)
+
+
 def limit_hint(task_dir, tier, text):
     """On a 429 or session-limit stop, write <task dir>/solo.limit (one JSON line) and print the resume hint."""
     m = LIMIT_RE.search(text or '')
@@ -144,12 +147,15 @@ def limit_hint(task_dir, tier, text):
     resume = f'python3 {pathlib.Path(__file__).resolve()} run --task-dir {task_dir} --tier {tier} --brief <the same brief>'
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'task_dir': str(task_dir), 'tier': tier,
            'resume': resume, 'evidence': (text or '')[max(0, m.start() - 40):m.end() + 80].strip()[:200]}
+    rm = RESET_RE.search(text or '')
+    if rm:
+        rec['reset'] = rm.group(1)
     try:
         (pathlib.Path(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
     except OSError:
         pass
     print('solo_run.py: session limit: the work is in the tree (fanout keeps it in the lane WIP commit); '
-          f'resume after the limit resets: {resume}', file=sys.stderr)
+          f'resume after the limit resets: {resume}' + (f' (resets {rm.group(1)})' if rm else ''), file=sys.stderr)
 
 
 def budget_hold(task_dir):
@@ -445,10 +451,23 @@ def selftest():
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                 rc = run(d, 'M', 'b')
             mk = d / 'solo.limit'
+            tmp_limit = d
             got = json.loads(mk.read_text()) if mk.is_file() else {}
             expect('limit stop: exits 1, solo.limit has the resume command and evidence',
                    rc == 1 and '--task-dir' in got.get('resume', '') and '429' in got.get('evidence', ''))
             expect('limit stop: stderr prints the resume hint', 'session limit' in err.getvalue() and 'resume' in err.getvalue())
+
+            # T-0298: a reset time in the output lands in the marker and the hint.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached, resets 1:40pm\"}'\n")
+            d = ticket('limitreset')
+            err = io.StringIO()
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = run(d, 'M', 'b')
+            mk = d / 'solo.limit'
+            got = json.loads(mk.read_text()) if mk.is_file() else {}
+            expect('limit stop with a reset: marker reset is 1:40pm and the hint says so',
+                   rc == 1 and got.get('reset') == '1:40pm' and 'resets 1:40pm' in err.getvalue())
+            expect('limit stop without a reset: no reset field (T-0298 control)', 'reset' not in json.loads((tmp_limit / 'solo.limit').read_text()))
 
             # A ticket over 80 percent through solo cost alone trips the budget stop.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":8.5}'\n")
