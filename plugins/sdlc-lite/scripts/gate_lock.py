@@ -4,6 +4,7 @@ every session and repo, so a pile of lanes does not run the machine out of CPU a
 
 Usage: gate_lock.py run [--slots N] [--name X] [--nice] [--timeout SECS] -- <cmd...>
        gate_lock.py status
+       gate_lock.py reap [--older-than MIN] [--kill] [--match REGEX]
        gate_lock.py selftest
 
   run     takes one of N slots (--slots, else env SDLC_GATE_SLOTS, else 2), runs the command in it, releases
@@ -22,10 +23,21 @@ Usage: gate_lock.py run [--slots N] [--name X] [--nice] [--timeout SECS] -- <cmd
           group is killed first (SIGTERM, then SIGKILL after 5 s), then the slot is released, and the exit is
           128+signal. Fewer than 1 slot (SDLC_GATE_SLOTS=0) runs the command with no lock and no env change.
   status  lists the slot files: slot, pid, name, age (a dead holder is marked); `no holders` when empty.
+  reap    lists leftover browser processes from finished runs and stops nothing: a process whose command line
+          matches chrome-headless-shell, chromium, chrome for testing, playwright, or vite preview (case
+          ignored), whose parent pid is 1 or no longer exists, and that has run at least --older-than minutes
+          (default 30). A matching process with a live parent is never listed as stoppable and never stopped
+          (a count of those is printed). --kill sends each listed pid SIGTERM, SIGKILL after 2 s, and prints
+          each pid it stops; the process is checked again just before each signal. --match REGEX only narrows
+          the set (the selftest uses it so it never touches a real process). Review the list first: a browser
+          you started yourself from the desktop also has parent pid 1 and matches by name when it is Chromium.
   selftest  real child processes in a temp TMPDIR: two holders run and a third waits, then runs when one
           exits; a SIGKILLed holder's slot is stolen; SDLC_GATE_WORKERS and the exit status reach and leave
           the command; the timeout exits 3; SIGTERM kills the command and frees the slot; and a negative
-          control, a copy with the slot cap removed, must fail the three-holder case.
+          control, a copy with the slot cap removed, must fail the three-holder case. The reap cases use a fake
+          orphan (double fork, parent pid 1) and a fake with a live parent, both named to match: by default the
+          orphan is listed and stays alive, --kill stops it, the live-parent fake is neither listed nor stopped,
+          and a copy with the parent check removed must list the live-parent fake.
 """
 import argparse, fcntl, json, os, pathlib, re, shlex, shutil, signal, subprocess, sys, tempfile, time
 
@@ -226,9 +238,123 @@ def cmd_status():
     return 0
 
 
+REAP_RE = re.compile(r'chrome-headless-shell|chromium|chrome[ -]for[ -]testing|playwright|vite(?:\.js)?\s+preview', re.I)
+REAP_AGE_MIN = 30.0
+REAP_TERM_WAIT = 2.0
+
+
+def ps_rows():
+    """Every process as (pid, ppid, age seconds, command line) from ps; [] when ps cannot run."""
+    try:
+        p = subprocess.run(['ps', '-axww', '-o', 'pid=,ppid=,etime=,command='], capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    rows = []
+    for line in p.stdout.splitlines():
+        parts = line.split(None, 3)
+        try:
+            if len(parts) == 4:
+                rows.append((int(parts[0]), int(parts[1]), parse_etime(parts[2]), parts[3].strip()))
+        except ValueError:
+            continue
+    return rows
+
+
+def is_orphan(ppid):
+    return ppid == 1 or proc_start(ppid) is None  # PARENT-CHECK
+
+
+def leftovers(older_than_min, only=None):
+    """(orphans, live): the matching processes with no live parent that are old enough, as ps rows, and how many
+    matching processes were skipped because their parent is alive."""
+    me, orphans, live = os.getpid(), [], 0
+    for row in ps_rows():
+        pid, ppid, age, cmd = row
+        if pid == me or not REAP_RE.search(cmd) or (only and not only.search(cmd)):
+            continue
+        if not is_orphan(ppid):
+            live += 1
+        elif age >= older_than_min * 60:
+            orphans.append(row)
+    return orphans, live
+
+
+def fmt_age(sec):
+    return f'{sec}s' if sec < 60 else f'{sec // 60}m' if sec < 3600 else f'{sec // 3600}h{sec % 3600 // 60:02d}m'
+
+
+def reap_stop(pid, cmd):
+    """SIGTERM, SIGKILL after REAP_TERM_WAIT. Returns 'TERM', 'KILL', 'gone' (already exited or no longer the
+    same orphan), or an error text."""
+    def same():
+        r = next((r for r in ps_rows() if r[0] == pid), None)
+        return r is not None and r[3] == cmd and is_orphan(r[1])
+    try:
+        if not same():
+            return 'gone'
+        os.kill(pid, signal.SIGTERM)
+        end = time.time() + REAP_TERM_WAIT
+        while time.time() < end and proc_start(pid) is not None:
+            time.sleep(0.05)
+        if proc_start(pid) is None:
+            return 'TERM'
+        if not same():
+            return 'gone'
+        os.kill(pid, signal.SIGKILL)
+        return 'KILL'
+    except ProcessLookupError:
+        return 'gone'
+    except OSError as e:
+        return f'not stopped: {e.strerror or e}'
+
+
+def cmd_reap(argv):
+    ap = argparse.ArgumentParser(prog='gate_lock.py reap', description='list (and with --kill stop) orphaned browser processes')
+    ap.add_argument('--older-than', type=float, default=REAP_AGE_MIN, metavar='MIN', help=f'minimum age in minutes (default {REAP_AGE_MIN:g})')
+    ap.add_argument('--kill', action='store_true', help='SIGTERM, then SIGKILL after 2 s, each listed pid (default: list only)')
+    ap.add_argument('--match', metavar='REGEX', help='also require this regex to match the command line (only narrows)')
+    a = ap.parse_args(argv)
+    if a.older_than < 0:
+        ap.error('--older-than must not be negative')
+    try:
+        only = re.compile(a.match) if a.match else None
+    except re.error as e:
+        ap.error(f'--match: {e}')
+    orphans, live = leftovers(a.older_than, only)
+    for pid, ppid, age, cmd in sorted(orphans):
+        print(f'pid {pid}  age {fmt_age(age)}  parent {ppid}  {cmd[:200]}')
+    if live:
+        print(f'{live} matching process(es) with a live parent skipped')
+    if not orphans:
+        print(f'no leftover browser processes older than {a.older_than:g} min')
+        return 0
+    if not a.kill:
+        print(f'{len(orphans)} leftover process(es); nothing stopped (rerun with --kill to stop them)')
+        return 0
+    failed = 0
+    for pid, ppid, age, cmd in sorted(orphans):
+        r = reap_stop(pid, cmd)
+        if r in ('TERM', 'KILL'):
+            print(f'stopped pid {pid} ({r})')
+        else:
+            print(f'pid {pid} {r}', file=sys.stdout if r == 'gone' else sys.stderr)
+            failed += r != 'gone'
+    return 1 if failed else 0
+
+
 # ---- selftest ---------------------------------------------------------------------------------------------
 
 HOLD = 'touch "$GL_M/started-$GL_N"; until test -e "$GL_M/go-$GL_N"; do sleep 0.05; done'
+# the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
+# the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
+REAP_FAKE = "import os,time; open(os.environ['GL_PIDFILE'],'w').write(str(os.getpid())); time.sleep(300)"
+REAP_ORPHANER = ("import os,sys\n"
+                 "if os.fork() == 0:\n"
+                 "    os.setsid()\n"
+                 "    if os.fork() == 0:\n"
+                 "        os.execv(sys.executable, [sys.executable, '-c', sys.argv[1], os.environ['GL_NAME']])\n"
+                 "    os._exit(0)\n"
+                 "os._exit(0)")
 
 
 def selftest():
@@ -300,6 +426,67 @@ def selftest():
                 if p.poll() is None:
                     p.kill()
                     p.wait()
+
+    def reap_case(py, tmp, label, tok, stop):
+        """A fake orphan (double fork, so its parent is pid 1) and a fake with a live parent, both named to match
+        and both found only through --match <their unique name>: the orphan is listed and alive by default, not
+        listed under the default age, and (when stop) stopped by --kill; the live-parent fake is never listed
+        and (when stop) never stopped. Returns the misses."""
+        d, bad, pids, live = tmp / f'reap-{label}', [], {}, None
+        d.mkdir()
+        name = f'chrome-headless-shell-{tok}-{label}'
+        env = clean_env(d)
+        args = ('--match', re.escape(name))
+
+        def listed(out, pid):
+            return any(x.startswith(f'pid {pid} ') for x in out.splitlines())
+
+        def alive(pid):
+            return proc_start(pid) is not None
+
+        def pid_of(f):
+            try:
+                return int((d / f).read_text())
+            except (OSError, ValueError):
+                return 0
+        try:
+            subprocess.run([sys.executable, '-c', REAP_ORPHANER, REAP_FAKE], env=dict(env, GL_PIDFILE=str(d / 'o.pid'), GL_NAME=name),
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+            live = subprocess.Popen([sys.executable, '-c', REAP_FAKE, name], env=dict(env, GL_PIDFILE=str(d / 'l.pid')),
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if not waitfor(lambda: pid_of('o.pid') and pid_of('l.pid')):
+                return ['the fake processes did not start']
+            o, l = pids['orphan'], pids['live'] = pid_of('o.pid'), pid_of('l.pid')
+
+            def parentless():
+                row = next((r for r in ps_rows() if r[0] == o), None)
+                return row is not None and (row[1] == 1 or proc_start(row[1]) is None)
+            if not waitfor(parentless):
+                return ['the fake orphan was not reparented to pid 1']
+            r = gl(py, env, 'reap', '--older-than', '0', *args)
+            if not (r.returncode == 0 and listed(r.stdout, o) and 'nothing stopped' in r.stdout and alive(o)):
+                bad.append(f'orphan: not listed by default or not left alone, rc={r.returncode} {r.stdout!r} {r.stderr!r}')
+            if listed(r.stdout, l):
+                bad.append(f'live-parent: the process with a live parent was listed as stoppable, got {r.stdout!r}')
+            r = gl(py, env, 'reap', *args)
+            if listed(r.stdout, o):
+                bad.append(f'orphan: listed under the default {REAP_AGE_MIN:g} minute threshold, got {r.stdout!r}')
+            if stop:
+                r = gl(py, env, 'reap', '--older-than', '0', '--kill', *args)
+                if not (r.returncode == 0 and f'stopped pid {o} ' in r.stdout and waitfor(lambda: not alive(o), 10)):
+                    bad.append(f'orphan: --kill did not stop it, rc={r.returncode} {r.stdout!r} {r.stderr!r}')
+                if listed(r.stdout, l) or f'stopped pid {l} ' in r.stdout or not alive(l):
+                    bad.append(f'live-parent: --kill touched the process with a live parent, got {r.stdout!r}')
+            return bad
+        finally:
+            for pid in pids.values():
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+            if live is not None:
+                live.kill()
+                live.wait()
 
     with tempfile.TemporaryDirectory() as t:
         tmp = pathlib.Path(t).resolve()
@@ -422,6 +609,30 @@ def selftest():
                 a.kill()
                 a.wait()
 
+        # 6. reap: which command lines match, then a fake orphan and a fake with a live parent (never a real process:
+        #    every reap run here is narrowed by --match to the fakes' unique name), then the negative control
+        for cmd, want in (('/x/chrome-headless-shell --headless', True), ('/Applications/Chromium.app/Contents/MacOS/Chromium', True),
+                          ('/x/Google Chrome for Testing --remote-debugging-pipe', True), ('node /x/node_modules/playwright/cli.js test', True),
+                          ('node /x/node_modules/.bin/vite preview --port 4173', True), ('node /x/vite/bin/vite.js preview', True),
+                          ('node /x/node_modules/.bin/vite build', False), ('/usr/bin/python3 server.py', False),
+                          ('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', False)):
+            expect(f'reap match: {cmd!r} should {"" if want else "not "}match', bool(REAP_RE.search(cmd)) == want)
+        tok = f'{os.getpid():x}{int(time.time()):x}'
+        got = reap_case(script, tmp, 'real', tok, True)
+        expect(f'reap: fake orphan and live-parent fake: {got}', not got)
+        pc = 'return ppid == 1 or proc_start(ppid) is None' + '  # PARENT-CHECK'  # joined so this line does not match itself
+        expect('negative control: the parent check line is in the script exactly once', src.count(pc) == 1)
+        (tmp / 'mutant-reap').mkdir()
+        mutant = tmp / 'mutant-reap' / 'gate_lock.py'
+        mutant.write_text(src.replace(pc, 'return True  # PARENT-CHECK'))
+        got = reap_case(mutant, tmp, 'mutant', tok, False)
+        expect(f'negative control: with the parent check removed the live-parent case must fail, got {got}',
+               any(x.startswith('live-parent') for x in got))
+        for x in got:
+            if x.startswith('live-parent'):
+                print(f'gate_lock selftest: negative control observed (no parent check): {x[:150]}')
+                break
+
     if misses:
         print('gate_lock selftest: FAIL, these did not hold:', file=sys.stderr)
         for x in misses:
@@ -436,8 +647,10 @@ def main(argv):
         return selftest()
     if argv[:1] == ['status']:
         return cmd_status()
+    if argv[:1] == ['reap']:
+        return cmd_reap(argv[1:])
     if argv[:1] != ['run'] or '--' not in argv:
-        print('usage: gate_lock.py run [--slots N] [--name X] [--nice] [--timeout SECS] -- <cmd...> | status | selftest',
+        print('usage: gate_lock.py run [--slots N] [--name X] [--nice] [--timeout SECS] -- <cmd...> | status | reap [--older-than MIN] [--kill] [--match REGEX] | selftest',
               file=sys.stderr)
         return 2
     cut = argv.index('--')
