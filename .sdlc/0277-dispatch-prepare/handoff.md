@@ -28,3 +28,10 @@ Design sections 1, 2, 3. Reuse `order.py`, `steps.py`, `specgate.py`, `budget.py
 
 ## Constraints
 run.sh behavior unchanged; Codex paths untouched. No em dashes. No push, tag, or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0: for every `role:level` row of `adapters/claude/levels.json` and the family fixtures (builder newest in a step dir, verifier at a task dir, plan-reviewer after an Opus planner), `prepare --dry-run` gives the same model, effort, and result name as `SDLC_DRY_RUN=1 run.sh`.
+- The same selftest holds a refusal case per gate with the exit code `run.sh` gives (2 goal precheck, spec gate, preflight; 4 budget; 5 lane unless `SDLC_LANE_OVERRIDE` is set), each with a negative control that disables the gate and lets the bad input through, and a refusal writes no file.
+- A real `prepare` writes `<stem>.attempt.json` (status running, `transport: subagent`, `parent_pid`) and `<stem>.dispatch.json` (subagent_type, model, effort, name, result, tmp_prefix, base_sha, prompt), and a builder or verifier gets `base-sha`.
+- A second `prepare` on a handoff dir with a running attempt and a live parent exits 2; a dead-parent attempt is marked `interrupted` first and the new attempt takes the next result name.
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0, `git diff` shows `plugins/sdlc-lite/scripts/run.sh` unchanged, and no em dash appears in the changed files.
