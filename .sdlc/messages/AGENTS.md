@@ -8,42 +8,42 @@ The script path in the commands below was written when this file was generated. 
 
 ## Handle a message you were given
 
-1. Claim it: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" read <path> --receiver <receiver>`. `<path>` is the path you were given. `<receiver>` is the folder after `new/`, which equals the message's `receiver:`. This moves the message to `read/`, stamps `read_time`, and prints it. Opening the file is not reading it: only `read` stamps `read_time`, and `ack` refuses a message without one. A path already under `read/<receiver>/` was claimed by a messenger, so skip this step.
-2. Only when `follow_up_requested: true`, reply: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" reply <id> "<reply text>"`. `<id>` is the file name without `.md`.
-3. Acknowledge it: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" ack <id> --outcome "<outcome line>"`. This moves it to `done/` and stamps `ack_time`, so the stamps hold `send_time <= read_time <= ack_time`. It refuses a `follow_up_requested: true` message that has no reply.
+1. Claim it: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" read <path> --receiver <receiver>`. `<path>` is the path you were given. `<receiver>` is the folder after `new/`, which equals the message's `receiver:`. This moves the message to `read/`, stamps `read_time`, and prints it. Opening the file is not reading it: only `read` stamps `read_time`, and `ack` refuses a message without one. A path already under `read/<receiver>/` was claimed by a messenger, so skip this step.
+2. Only when `follow_up_requested: true`, reply: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" reply <id> "<reply text>"`. `<id>` is the file name without `.md`.
+3. Acknowledge it: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" ack <id> --outcome "<outcome line>"`. This moves it to `done/` and stamps `ack_time`, so the stamps hold `send_time <= read_time <= ack_time`. It refuses a `follow_up_requested: true` message that has no reply.
 
 ## Send
 
-`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" send --receiver <name> --sender <name> --topic "<one line>" --follow-up <true|false> "<body>"`
+`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" send --receiver <name> --sender <name> --topic "<one line>" --follow-up <true|false> "<body>"`
 
 Names match `[a-z0-9]+(-[a-z0-9]+)*`. `--follow-up true` makes `ack` wait for a reply. Optional flags: `--re <id>`, `--kind question|handoff|ack`, `--ttl` (default `7d`). A body of `-` is read from stdin. The command prints the new message path.
 
 ## Read
 
-Count new messages with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" count --receiver <name>`. List them with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" list --receiver <name> --state new`; the id is the third tab-separated field. Claim one with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" read <id> --receiver <name>`. `read` prints the body between the BEGIN and END data markers.
+Count new messages with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" count --receiver <name>`. List them with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" list --receiver <name> --state new`; the id is the third tab-separated field. Claim one with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" read <id> --receiver <name>`. `read` prints the body between the BEGIN and END data markers.
 
-To block until a message arrives, run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
+To block until a message arrives, run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
 
 ## Reply
 
-`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.
+`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.
 
 ## Ack
 
-`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" ack <id> --outcome "<outcome line>"`, after a reply when one was requested. A message never moves backward.
+`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" ack <id> --outcome "<outcome line>"`, after a reply when one was requested. A message never moves backward.
 
 ## Expire
 
-`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" expire` moves every message in `new/` or `read/` past its `expires` time to `done/`. Outcomes are `expired`, or `expired, no reply` plus a notice to the sender when a requested reply never came.
+`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" expire` moves every message in `new/` or `read/` past its `expires` time to `done/`. Outcomes are `expired`, or `expired, no reply` plus a notice to the sender when a requested reply never came.
 
 ## Messenger
 
 Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
 - Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-4-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
-- Codex: install the project agents once with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
+- Codex: install the project agents once with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
 
-While the parent is active, `wait` is the cheaper alternative to a polling subagent. The messenger may run it in its loop, or the parent may skip the messenger and run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7/plugins/sdlc-lite/scripts/messages.py" wait --receiver <harness> --timeout 100 --interval 10` itself, then claim each printed id with `read`. On Claude Code, `--timeout 100` keeps the call under the default 120-second Bash timeout. `wait` returns only into an active parent, so it does not wake an idle host.
+While the parent is active, `wait` is the cheaper alternative to a polling subagent. The messenger may run it in its loop, or the parent may skip the messenger and run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <harness> --timeout 100 --interval 10` itself, then claim each printed id with `read`. On Claude Code, `--timeout 100` keeps the call under the default 120-second Bash timeout. `wait` returns only into an active parent, so it does not wake an idle host.
 
 ## Host limits
 

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:5bb7166271ec -->
+<!-- sdlc-lite:managed:start v1 sha256:a107502bc88e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -51,7 +51,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
   - T-0320 fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) (0320-fleet-config-nameless-entry-line)
   - T-0321 Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4) (0321-interview-template-readthrough)
-  - T-0322 Fix the three findings from the T-0307 and T-0310 verifier and the flaky fleet_status selftest (0322-fleet-verify-fixes)
+  - T-0322 Make the flaky fleet_status selftest deterministic (0322-fleet-verify-fixes)
 - ready: 0
 - blocked: 0
 - done: 248
