@@ -3,6 +3,9 @@
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
   dispatch.py record [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
+  dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
+  dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
@@ -256,29 +259,84 @@ def mailbox(role):
         say('%d new message(s) for %s; read with messages.py' % (total, role))
 
 
-def settle(directory, dry_run):
-    """Refuse while a dispatched attempt in directory is alive; mark dead-parent ones interrupted."""
+RECOVERY = 'Owner lock released without a terminal record. Inspect artifacts and working tree before a new attempt.'
+
+
+def read_attempt(path):
+    try:
+        data = json.loads(Path(path).read_text(encoding='utf-8'))
+    except ValueError:
+        raise Refuse(2, 'dispatch.py: unreadable attempt record, inspect it first: ' + str(path))
+    return data if isinstance(data, dict) else {}
+
+
+def attempt_state(data):
+    """running, completed, failed, or orphaned (running, claude backend, parent pid dead); else the recorded status."""
+    status = data.get('status')
+    if status != 'running':
+        return status or 'unknown'
+    pid = data.get('parent_pid') or data.get('owner_pid')
+    if data.get('backend', 'claude') == 'claude' and isinstance(pid, int) and not pid_alive(pid):
+        return 'orphaned'
+    return 'running'
+
+
+def recover_orphans(directory, dry_run=False):
+    """Mark orphaned attempts interrupted with run_lifecycle.py's recovery text; return (recovered, live) names."""
     live, recovered = [], []
     for path in sorted(Path(directory).glob('*.attempt.json')):
-        try:
-            data = json.loads(path.read_text(encoding='utf-8'))
-        except ValueError:
-            raise Refuse(2, 'dispatch.py: unreadable attempt record, inspect it first: ' + str(path))
-        if not isinstance(data, dict) or data.get('status') != 'running':
-            continue
-        pid = data.get('parent_pid') or data.get('owner_pid')
-        if data.get('backend', 'claude') == 'claude' and isinstance(pid, int) and not pid_alive(pid):
+        data = read_attempt(path)
+        state = attempt_state(data)
+        if state == 'orphaned':
             if not dry_run:
-                data.update(status='interrupted', finished_at=run_lifecycle.now(),
-                            recovery='Parent session ended with no terminal record. Inspect git status and the artifacts dir before a new attempt; never replay an old report.')
+                data.update(status='interrupted', finished_at=run_lifecycle.now(), recovery=RECOVERY)
                 run_lifecycle.write(path, data)
                 (Path(directory) / ('%s-%s.running' % (data.get('role'), data.get('level')))).unlink(missing_ok=True)
             recovered.append(path.name)
-        else:
-            live.append('%s (pid %s)' % (path.name, pid))
+        elif state == 'running':
+            live.append('%s (pid %s)' % (path.name, data.get('parent_pid') or data.get('owner_pid')))
+    return recovered, live
+
+
+def settle(directory, dry_run):
+    """Refuse while a dispatched attempt in directory is alive; mark dead-parent ones interrupted."""
+    recovered, live = recover_orphans(directory, dry_run)
     if live:
         raise Refuse(2, 'dispatch.py: an attempt is still running in %s: %s; record it, or wait for it, before dispatching another role' % (directory, ', '.join(live)))
     return recovered
+
+
+def status(directory):
+    """One line per attempt: stem, state, role-level, parent pid."""
+    lines = []
+    for path in sorted(Path(directory).glob('*.attempt.json')):
+        data = read_attempt(path)
+        lines.append('%s %s %s-%s parent_pid=%s' % (path.name[:-len('.attempt.json')], attempt_state(data), data.get('role'), data.get('level'),
+                                                    data.get('parent_pid') or data.get('owner_pid')))
+    return lines
+
+
+def resume(name, root='.'):
+    """The resume ladder for an orphaned or interrupted attempt found by stem or Agent name under root."""
+    for path in sorted(Path(root).glob('**/*.attempt.json')):
+        if '.git' in path.parts or '.worktrees' in path.parts:
+            continue
+        data = read_attempt(path)
+        if name not in (data.get('name'), data.get('agent_name')):
+            continue
+        state = attempt_state(data)
+        if state not in ('orphaned', 'interrupted'):
+            raise Refuse(2, 'dispatch.py: %s is %s, not orphaned or interrupted; nothing to resume' % (name, state))
+        agent = data.get('agent_name') or data.get('name')
+        aid = data.get('agent_id') or 'unknown'
+        transcript = data.get('transcript') or 'the sub-agent transcript for %s under ~/.claude/projects/' % (aid if aid != 'unknown' else agent)
+        addendum = ('Resume note: attempt %s was interrupted before it reported. First step: run git status, then read its transcript at %s; '
+                    'continue from what is on disk and never replay an old report.' % (data.get('name'), transcript))
+        return ['1. SendMessage({to: "%s", message: "Continue your interrupted work."})   # by name' % agent,
+                '2. SendMessage({to: "%s", message: "Continue your interrupted work."})   # by id' % aid,
+                '3. python3 dispatch.py prepare %s %s %s   # new attempt; add to its brief: %s'
+                % (data.get('role'), data.get('level'), data.get('handoff'), addendum)]
+    raise Refuse(2, 'dispatch.py: no attempt named %s under %s' % (name, root))
 
 
 def worktrees(tree):
@@ -619,10 +677,34 @@ def main(argv):
     r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
     r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
+    st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
+    st.add_argument('directory')
+    rc_ = sub.add_parser('recover', help='mark orphaned attempts interrupted')
+    rc_.add_argument('directory')
+    rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
+    rs.add_argument('name', help='the attempt stem or Agent name')
+    rs.add_argument('--root', default='.', help='where to search for attempt records')
     sub.add_parser('selftest', help='run the regression cases in temp repos')
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
+    if args.cmd in ('status', 'recover', 'resume'):
+        try:
+            if args.cmd == 'status':
+                out = status(args.directory)
+            elif args.cmd == 'resume':
+                out = resume(args.name, args.root)
+            else:
+                out = ['marked interrupted: ' + n for n in recover_orphans(args.directory)[0]] or ['no orphaned attempts']
+        except Refuse as r:
+            for line in r.lines:
+                print(line, file=sys.stderr)
+            return r.rc
+        except OSError as e:
+            print('dispatch.py: ' + str(e), file=sys.stderr)
+            return 2
+        print('\n'.join(out))
+        return 0
     if args.cmd == 'record':
         used = {k: v for k, v in (('subagent_tokens', args.tokens), ('tool_uses', args.tool_uses)) if v is not None}
         try:
@@ -967,6 +1049,38 @@ def selftest():
         a = json.loads((w / 'builder-L1.attempt.json').read_text())
         a['parent_pid'] = dead
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        (w / 'builder-L1.running').write_text('1\n')
+        st_dead = status(w)
+        case('status: running attempt with a dead parent prints orphaned', st_dead == ['builder-L1 orphaned builder-L1 parent_pid=%d' % dead])
+        a['parent_pid'] = live
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        case('negative control: a live parent prints running', 'running' in status(w)[0] and 'orphaned' not in status(w)[0])
+        a['parent_pid'] = dead
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        a['agent_id'] = 'ag-7'
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        ladder = resume('builder-L1', str(rr))
+        case('resume prints SendMessage by name, by id, then the new attempt with the addendum',
+             len(ladder) == 3 and 'SendMessage' in ladder[0] and 'builder-L1-w' in ladder[0] and 'SendMessage' in ladder[1] and 'ag-7' in ladder[1]
+             and ladder[2].startswith('3. python3 dispatch.py prepare builder L1') and 'git status' in ladder[2] and 'transcript' in ladder[2])
+        case('resume replays no old report', 'builder-L1.md' not in ' '.join(ladder))
+        a.pop('agent_id')
+        a['parent_pid'] = live
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        try:
+            resume('builder-L1', str(rr))
+            refused = False
+        except Refuse:
+            refused = True
+        case('resume refuses a running attempt', refused)
+        a['parent_pid'] = dead
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        rec, _ = recover_orphans(w)
+        old_r = json.loads((w / 'builder-L1.attempt.json').read_text())
+        case('recover marks it interrupted with run_lifecycle.py text', rec == ['builder-L1.attempt.json'] and old_r['status'] == 'interrupted'
+             and old_r['recovery'] == RECOVERY and 'finished_at' in old_r)
+        old_r['status'] = 'running'
+        (w / 'builder-L1.attempt.json').write_text(json.dumps(old_r))
         (w / 'builder-L1.running').write_text('1\n')
         rc3, got3, err3 = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
         old = json.loads((w / 'builder-L1.attempt.json').read_text())
