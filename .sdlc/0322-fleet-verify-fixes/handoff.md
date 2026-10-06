@@ -26,3 +26,6 @@ Scope reduced on 2026-10-06 after the followups lane filed T-0320 and T-0321 for
 
 ## Constraints
 No em dashes. No push, tag or publish.
+
+## Notes
+Cause: collect matches live processes machine-wide by ticket folder name, so a sibling or leftover selftest sleeper with the same folder name made rows live; fixed with a per-run folder suffix in both selftests.
