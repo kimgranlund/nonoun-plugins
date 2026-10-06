@@ -1,7 +1,7 @@
 {
   "version": 1,
   "repos": [
-    {"path": "/Users/kimgranlund/Projects/nonoun/ui-kit-maison", "name": "ui-kit-maison", "conductor": "ui-kit-maison", "status": "active"},
+    {"path": "/Users/kimgranlund/Projects/maison/ui-kit-maison", "name": "ui-kit-maison", "conductor": "ui-kit-maison", "status": "active"},
     {"path": "/Users/kimgranlund/Projects/nonoun/agent-ui", "name": "agent-ui", "conductor": "agent-ui", "status": "active"},
     {"path": "/Users/kimgranlund/Projects/nonoun/gen-ui-kit", "name": "gen-ui-kit", "conductor": "gen-ui-kit", "status": "active"},
     {"path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite", "name": "sdlc-lite", "conductor": "sdlc-lite", "status": "active"},
