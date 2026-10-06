@@ -1134,7 +1134,7 @@ def lean_warnings(plan, task_dir, steps):
     except Fail:
         return []
     unresolved, why = review_required(plan, task_dir)
-    if unresolved or why:
+    if unresolved or why or lean_only_reasons(plan, task_dir):
         return []
     rule = '(agents/planner.md, Coarse steps)'
     out = []
@@ -1682,7 +1682,7 @@ def ticket_criteria(text):
     return n
 
 
-def lean_only_reasons(plan, task_dir, review_line):
+def lean_only_reasons(plan, task_dir):
     """Reasons the lean lane refuses a plan that needs no plan review (T-0294 narrowed review to L4 and
     L5): a planner L3 plan, a Merge step, a replan, a ## Plan review line. Lean is a stricter lane."""
     _, _, titles = plan_facts(plan)
@@ -1694,7 +1694,8 @@ def lean_only_reasons(plan, task_dir, review_line):
     n = len(order.ordered(task_dir, 'planner'))
     if n >= 2:
         why.append(f'{n} planner results (a replan)')
-    if review_line:
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(x.rstrip() == '## Plan review' for x in h.read_text(encoding='utf-8').splitlines()):
         why.append('handoff.md holds ## Plan review')
     return why
 
@@ -1746,7 +1747,7 @@ def lane_action(task):
     if unresolved:
         reasons.append(f'{pname} lists an unresolved assumption: "{unresolved[0]}"')
     reasons += why
-    reasons += lean_only_reasons(plan, t, review_line)
+    reasons += lean_only_reasons(plan, t)
     try:
         steps = parse_steps(pathlib.Path(plan))
     except Fail:
@@ -2460,7 +2461,7 @@ def selftest():
         rc, out, err = run_main(['lint', str(d)])
         rc2, _, _ = run_main(['split', str(d)])
         check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
-              rc == 0 and out.strip() == 'steps lint: ok' and rc2 == 0)
+              rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
 
         # (lean) coarse-step warnings after a clean lint
         def lean_plan(levels, n_crit=2, title='Thing', assume=''):
@@ -2480,11 +2481,16 @@ def selftest():
         three = lean_plan([1, 2, 3], n_crit=1)
         quiet = [task(plan=three, plan_name='planner-L3.md'),
                  task(plan=lean_plan([1, 4, 2], n_crit=1)),
+                 task(plan=lean_plan([1, 2], n_crit=1) + '\n## Step 3: Merge lane\nlevel: L2\n'
+                      '### Acceptance criteria\n- m\n'),
+                 task(plan=three, plan_name='planner-L1.md'),
+                 task(plan=three, handoff=HANDOFF + '\n## Plan review\nrequired\n'),
                  task(plan=lean_plan([1, 2, 3], n_crit=1,
                                      assume='## Assumptions\n- unresolved: which db\n\n'))]
+        (quiet[4] / 'planner-L2.md').write_text(three, encoding='utf-8')
         res = [run_main(['lint', str(q)]) for q in quiet]
-        check('(lean) no warning for a planner L3 plan, a step at L4, '
-              'or an unresolved: assumption',
+        check('(lean) no warning for a planner L3 plan, a step at L4, a merge step, a replan, '
+              'a ## Plan review line, or an unresolved: assumption',
               all(r[0] == 0 and r[2] == '' for r in res))
         d = task(plan=lean_plan([2, 3]))
         rc, out, err = run_main(['lint', str(d)])
@@ -3611,6 +3617,10 @@ def selftest():
                 and reads == [str(d / 'handoff.md'), str(d / 'planner-L2.md')]
         check('(lane) a two-step size M plan at L1 to L3 inside one AGENTS.md owner is lean, for scope forms F, E, '
               'and A', ok)
+
+        lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge lane/x')}))
+        check('(lane) lean stays strict: a Merge step keeps a ticket full though plan review no longer needs it',
+              lane == 'full' and reasons == ['the plan has a merge step'])
 
         lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 4))}))
         check('(lane) negative: the same two-step plan with one step at L4 is full',

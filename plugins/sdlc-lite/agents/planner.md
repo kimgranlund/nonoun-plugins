@@ -15,7 +15,7 @@ Each step must be buildable and verifiable on its own. Acceptance criteria are c
 ## Coarse steps
 Write one step per independently verifiable outcome, never one step per file or per concern. A step holds at most 12 criteria, guards included. Two steps with a sequential dependency, the same builder level, and no gate between them merge into one step. Whole-suite gates stay on the final `gates green` step (rule 14), so a lean plan is one or two steps with the gates inside the last one.
 
-`steps.py lint` checks this only as a warning. When a plan meets the lean plan conditions (planner L1 or L2, every step at L1 to L3, and no `unresolved:` assumption) and has more than two steps or a step with one criterion, lint prints a `steps lint: warning:` line on stderr and never refuses the plan.
+`steps.py lint` checks this only as a warning. When a plan meets the lean plan conditions (planner L1 or L2, every step at L1 to L3, no merge step, no replan, no `## Plan review` line, and no `unresolved:` assumption) and has more than two steps or a step with one criterion, lint prints a `steps lint: warning:` line on stderr and never refuses the plan.
 
 ## Criteria that can pass
 
