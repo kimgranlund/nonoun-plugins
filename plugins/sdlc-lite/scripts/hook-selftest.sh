@@ -421,7 +421,7 @@ out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
 perf=$(python3 - "$hooks" <<'PYEOF'
 import json, os, subprocess, sys, time
 hooks = sys.argv[1]
-body = "\n".join(f"echo line {i} 'quoted text' \"dq\" done" for i in range(700))
+body = "\n".join(f"echo line {i} 'quoted text' \"dq\" done C:\\tmp\\row{i}" for i in range(600))
 cases = [  # hook, role, tail, wanted exit
     ("block-pattern-kill.sh", "solo", "git status", 0), ("block-pattern-kill.sh", "solo", "pkill -f x", 2),
     ("block-disk-scan.sh", "solo", "ls -la", 0), ("block-disk-scan.sh", "solo", "find / -name x", 2),

@@ -319,7 +319,7 @@ if found=$(python3 -c "$checker" "$cmd" "$prefix" "$cwd" 2>/dev/null); then
   [[ -n $found ]] && block "$found"
   exit 0
 fi
-raw=$(tr '\n' ' ' <<<"${cmd//\\/}")
+raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 word='(^|[^[:alnum:]_-])'
 wend='([^[:alnum:]_-]|$)'
 grep -Eq "${word}git[^[:alnum:]_-](.*[^[:alnum:]_-])?worktree[[:space:]]+add${wend}" <<<"$raw" &&

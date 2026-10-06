@@ -311,6 +311,6 @@ loose+="|${word}gofmt[[:space:]]([^;&|]*[[:space:]])?-w${wend}"
 loose+="|${word}(go|cargo|dprint)${tok}fmt${wend}"
 loose+="|${word}biome${wend}[^;&|]*--(write|fix|apply)"
 loose+="|${word}clang-format[[:space:]]([^;&|]*[[:space:]])?--?i${wend}"
-raw=$(tr '\n' ' ' <<<"${cmd//\\/}")
+raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 grep -Eq "$loose" <<<"$raw" && block
 exit 0

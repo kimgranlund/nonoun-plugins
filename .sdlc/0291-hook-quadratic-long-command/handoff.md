@@ -23,7 +23,7 @@ Linear time, milliseconds.
 0.24 s at 1 KB, 1.3 s at 2 KB, 8.8 s at 4 KB, over 40 s at 8 KB.
 
 ## Context
-Cause: the cheap-exit line `pf=${cmd//[\\\'\"]/}` in four hooks. Bash 3.2 pattern substitution with a bracket class is quadratic (a literal pattern is not). Fix: `tr -d`.
+Cause: the cheap-exit line `pf=${cmd//[\\\'\"]/}` and the raw-scan line `raw=$(tr ... <<<"${cmd//\\/}")` in four hooks. Bash 3.2 pattern substitution is quadratic for a bracket class, and for a literal backslash pattern when the text holds many backslashes. Fix: `tr -d`.
 
 ## Acceptance criteria
 1. The hook selftest has a 20 KB case per hook, run under a 2 s timeout, with a pass and a deny control; it fails on the old hooks and passes on the new.

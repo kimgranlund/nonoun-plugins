@@ -36,4 +36,4 @@ PreToolUse hook under its own `Edit|Write|NotebookEdit` matcher, acting in any s
 
 Use `bash plugins/sdlc-lite/scripts/hook-selftest.sh` and `bash plugins/sdlc-lite/scripts/hook-live-probe.sh --selftest` from the repository root for offline validation. Actual host payload changes also require the relevant opt-in live probe; it makes model calls. See the probe script usage for its Bash, Agent, and conductor modes.
 
-Hook speed: keep a hook linear in command length. Do not use `${var//[class]/}` on the command (quadratic on bash 3.2); use `tr`, `grep` or one python3 call. `hook-selftest.sh` runs a 20 KB heredoc case per hook under a 2 s timeout; see [hook perf](../reports/hook-perf.md).
+Hook speed: keep a hook linear in command length. Do not use `${var//pattern/}` on the whole command (quadratic on bash 3.2 for a bracket class, and for a literal `\\` once the text holds many backslashes); use `tr`, `grep` or one python3 call. `hook-selftest.sh` runs a 20 KB heredoc case (with backslashes) under a 2 s timeout for the five Bash hooks that scan the command (disk-scan, pattern-kill, stray-worktree, publish, repo-format); see [hook perf](../reports/hook-perf.md).
