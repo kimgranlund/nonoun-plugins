@@ -28,3 +28,14 @@ Decided by the user on 2026-10-06. Replaces the hand-built status the author ses
 
 ## Constraints
 No model call. Read-only on every repo inspected. No em dashes. No change to any model or effort value. No push, tag or publish.
+
+## Acceptance criteria
+Run from the repository root.
+1. `python3 plugins/sdlc-lite/scripts/fleet_status.py selftest` exits 0 and its render half prints `ok:` for each of: the sections in the fixed order (Machine, Needs you, Moving, Stale or stuck, Done since last report, Release state); a planted stale row under Stale or stuck and not under Moving, then the same row with a process behind it under Moving and not under Stale or stuck (observed negative control, in a pure model and end to end through the CLI); a row with no source refused with `RenderError`; a heavy three-repo status at most 60 lines while the same data with unshrunk caps is over 60 (negative control); no em dash in titles that carry one; a repo excluded in the registry absent, also when `--repos` names it.
+2. `python3 plugins/sdlc-lite/scripts/fleet_status.py render --no-write --no-gh --repos sdlc-lite,agent-ui,ui-kit-maison > /tmp/r.txt` exits 0, `wc -l < /tmp/r.txt` is at most 60, `grep -c $'\xe2\x80\x94' /tmp/r.txt` (the em dash bytes) prints 0, and every indented row and the Machine line ends with a bracketed source.
+3. `render --repos sdlc-lite,maison-testing` (the registry excludes `maison-testing`) prints no `maison-testing` and notes the skip on stderr; `render --repos nope` exits 2.
+4. Each repo row under Moving carries `unread N` and, when `.sdlc/supervisor/status.json` exists, the supervisor state; unread ids are file names under `.sdlc/messages/new/<receiver>/` and no message body is printed or opened (selftest end-to-end case with a planted body).
+5. `plugins/sdlc-lite/skills/fleet-status/SKILL.md` runs the script, prints its output verbatim, asks at most one AskUserQuestion round for the Needs-you rows with the recommended option first, never composes a table, and says `--ping` sends nothing; `skills/sdlc-lite/SKILL.md` routes to it and `check.py` guard 36 pins both (its negative controls fire).
+6. `python3 plugins/sdlc-lite/scripts/check.py`, `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `git diff --check` all pass.
+7. `docs/maintenance/sdlc-internals.md` names `render` and the skill in the `fleet_status.py` entry; the script's docstring lists the `render` usage and the new `collect` keys (`unread`, `supervisor`, `report_since`, `closed_since`, `merged_since`, `age_s`).
+8. No model call, no message sent, no push: `grep -n "messages\." plugins/sdlc-lite/scripts/fleet_status.py` shows only `messages.ID_RE`.
