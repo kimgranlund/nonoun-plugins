@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d7d63095dc29 -->
+<!-- sdlc-lite:managed:start v1 sha256:524eb89f9223 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,10 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 44
-  - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
-  - T-0206 tickets.py migrate-layout (0206-migrate-layout)
-  - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
+- proposed: 41
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -56,7 +53,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0322 Fix the three findings from the T-0307 and T-0310 verifier and the flaky fleet_status selftest (0322-fleet-verify-fixes)
 - ready: 0
 - blocked: 0
-- done: 244
+- done: 247
 - dropped: 25
 
 ## Procedures

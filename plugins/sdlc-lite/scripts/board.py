@@ -20,8 +20,9 @@ failure) it prints "<root>: not inside a git work tree" on stderr and exits 1. T
 is unchanged.
 
 A task dir is .sdlc/<task>/ with planner-L*.md and step-<n>/ subdirs (see skills/handoff-format),
-or also .sdlc/tickets/<task>/ when .sdlc/config has a `ticket_root: tickets` line (an unsupported
-ticket_root value is ignored: the board lists root tasks only and never fails on config).
+or also .sdlc/tickets/<task>/ when .sdlc/config has a `ticket_root: tickets` line, and also
+.sdlc/work/<task>/ (tasks with no ticket) when it has `layout: topics` too (an unsupported
+ticket_root or layout value is ignored: the board lists root tasks only and never fails on config).
 A step dir replaced by a replan is renamed step-<n>.superseded-<k>/: it is ignored for step rows
 and the --summary L5 check, but its cost and recorded work still count.
 Status is derived from files only: <role>-<level>.md (done), <role>-<level>.running (live),
@@ -56,7 +57,7 @@ $SDLC_BOARD_STATE_DIR, else ${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state;
 never inside the repo). A legacy <root>/.board-state.json left by older versions gets a one-line
 "safe to delete" hint in the full board (never in --summary); board.py never touches it.
 """
-import argparse, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
+import argparse, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 import tickets  # same scripts/ dir: the only front matter parser
 import order  # same scripts/ dir: recorded run order for result files
@@ -230,8 +231,10 @@ def task_rows(task: pathlib.Path):
 
 def task_dirs(root: pathlib.Path):
     """Dirs directly under root holding a handoff.md, plus those directly under the ticket dir
-    when tickets.ticket_dir(root) is not root. An unsupported ticket_root value (tickets.Fail)
-    counts root only: the board is display-only and never fails on config."""
+    when tickets.ticket_dir(root) is not root, plus those under the work dir when
+    tickets.layout_paths(root) puts it elsewhere (`layout: topics`: ticket-less tasks live in
+    <root>/work). An unsupported ticket_root or layout value (tickets.Fail) counts root only:
+    the board is display-only and never fails on config."""
     def under(d):
         return [c for c in d.iterdir() if c.is_dir() and (c / 'handoff.md').exists()] if d.is_dir() else []
     found = under(root)
@@ -241,6 +244,12 @@ def task_dirs(root: pathlib.Path):
         return found
     if td != root:
         found += under(td)
+    try:
+        work = tickets.layout_paths(root).work
+    except tickets.Fail:
+        return found
+    if work != root:
+        found += under(work)
     return found
 
 
@@ -1015,6 +1024,51 @@ def selftest() -> int:
         proc = board(bad)
         expect(f'an unsupported ticket_root still lists root tasks, got {proc.returncode} {proc.stdout!r}',
                proc.returncode == 0 and '| T-0002 | 0002-b |' in proc.stdout)
+
+    # 10. layout: topics: tasks under <root>/work/ join the board, --summary, and the status line.
+    with tempfile.TemporaryDirectory() as ptmp:
+        ptmp = pathlib.Path(ptmp)
+        me = str(pathlib.Path(__file__).resolve())
+        env = dict(os.environ, SDLC_BOARD_STATE_DIR=str(ptmp / 'state'))
+
+        def board_p(root, *args):
+            return subprocess.run([sys.executable, me, '--root', str(root), *args],
+                                  env=env, capture_output=True, text=True)
+
+        proj = ptmp / 'proj'
+        pr = proj / '.sdlc'
+        tk = task_dir(pr / 'tickets', '0001-a', front.replace('T-0042', 'T-0001'))
+        (tk / 'planner-L1.md').write_text('## Step 1: x\nlevel: L1\n')
+        wk = task_dir(pr / 'work', 'w1', '## Goal\ny\n')
+        (wk / 'planner-L1.md').write_text('## Step 1: y\nlevel: L1\n')
+        (pr / 'config').write_text('ticket_root: tickets\nlayout: topics\n')
+        os.utime(tk / 'handoff.md', (1_000_000_000, 1_000_000_000))
+        os.utime(wk / 'handoff.md', (2_000_000_000, 2_000_000_000))
+        os.utime(wk / 'planner-L1.md', (2_000_000_000, 2_000_000_000))
+        out = board_p(pr).stdout
+        expect(f'layout: topics renders the ticket and the work/ task, got {out!r}',
+               '| T-0001 | 0001-a |' in out and '| w1 |' in out)
+        proc = board_p(pr, '--task', 'w1')
+        expect(f'--task finds a task under work/, got {proc.returncode} {proc.stdout!r}',
+               proc.returncode == 0 and '| w1 |' in proc.stdout and '0001-a' not in proc.stdout)
+        out = board_p(pr, '--summary').stdout.strip()
+        expect(f'--summary names the newest task under work/, got {out!r}', out.startswith('w1 '))
+        if shutil.which('jq'):
+            status = json.dumps({'model': {'display_name': 'm'}, 'workspace': {'current_dir': str(proj)}})
+            sl = subprocess.run(['bash', str(pathlib.Path(me).with_name('statusline.sh'))], input=status,
+                                env=env, capture_output=True, text=True)
+            line2 = sl.stdout.split('\n')[1:2]
+            expect(f'statusline line 2 names the work/ task, got rc={sl.returncode} {sl.stdout!r}',
+                   sl.returncode == 0 and bool(line2) and line2[0].startswith('w1 '))
+        # Negative controls: ticket_root without layout (work/ is not a task dir), and an unsupported layout.
+        (pr / 'config').write_text('ticket_root: tickets\n')
+        out = board_p(pr).stdout
+        expect(f'without layout: topics work/<dir> is not a task, got {out!r}',
+               '| w1 |' not in out and '0001-a' in out)
+        (pr / 'config').write_text('ticket_root: tickets\nlayout: nested\n')
+        proc = board_p(pr)
+        expect(f'an unsupported layout still lists the tickets and never fails, got {proc.returncode} {proc.stdout!r}',
+               proc.returncode == 0 and '0001-a' in proc.stdout and '| w1 |' not in proc.stdout)
 
     if misses:
         print('board selftest: FAIL, these did not hold:', file=sys.stderr)

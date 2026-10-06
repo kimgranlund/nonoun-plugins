@@ -1,0 +1,21 @@
+{
+  "attempt_id": "f2ba0b165e074640bc9ef9c4302fa6c5",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "filer L1: loose ends draft after all steps done",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-06T20:28:01.005886+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-layout/layout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-layout/layout/.sdlc/0205-layout-resolver/handoff.md",
+  "owner_pid": 28236,
+  "handoff_sha256": "3b0655b70b795cc2c4160ff59102cd75e5726eef2fc480e63f6eb9dcc37b851b",
+  "process_pid": 28278,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T20:28:22.835379+00:00"
+}

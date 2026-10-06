@@ -220,3 +220,17 @@
 - The nine parked tickets (T-0187, T-0200, T-0201, T-0205 to T-0208, T-0211, T-0213) get a per-ticket review; stale ones are dropped, with the table in docs/reports/parked-tickets-review-2026-10-06.md.
 - 2026-10-06 (user, via AskUserQuestion): the fleet skills (/sdlc-lite:fleet-retro T-0305 to T-0308, /sdlc-lite:fleet-status T-0310 to T-0312) ship as 0.20.12 tonight, ahead of 0.21.0, on the same publish terms as the earlier patches (fast-forward only, never force, independent fact-check first). Plan: merge branch `fleet-status` (based on `fleet`, which holds retro and config) into main, verify, prepare the release with the 0.20.11 procedure, publish.
 - 2026-10-06 (user, via /sdlc-lite:ask): red-under-load rule approved as verifier policy: a browser-test red under measured load above the stop line re-runs once, alone; green alone is recorded as a load flake. Ticket T-0317. gen-ui-kit onboarding is skipped (it does not use the .sdlc pipeline; the conductor stops asking). dom-charts' local commit 09c0c16 stays local.
+
+## T-0205: layout key and one resolver for ticket dir, roadmap, notes (2026-10-06)
+
+- decide: this repo's own `.sdlc/config` has no `layout:` line, so every `tickets.py check` now prints the migrate-layout warning; choose between adding `layout: flat` and migrating (T-0206 or T-0207).
+- note: `ROUTER_FLAT_INTRO` duplicates the first paragraph still inside `ROUTER_TEMPLATE`, and `router_bodies` swaps them by string match; editing one without the other leaves a topics tree with the flat paragraph (the `tp-new` selftest case catches it).
+- note: the builder edited two selftest asserts the handoff did not list, in the numbered-config warning block. Each now checks `'ticket_folders: numbered' not in out + err`, because every flat root now warns.
+- note: `check.py` guards, listed among the ticket's owning files, were not touched, and the artifacts show no guidance-doc update (the AGENTS.md files). The Done-when line says affected guidance is updated, so confirm whether anything was needed.
+
+## T-0206: tickets.py migrate-layout (2026-10-06)
+
+- note: This repo's `.sdlc` has not been migrated. The command would refuse today because the tree is dirty and `.sdlc/pause-2026-10-06.md` is a loose root file. Move or remove that file and commit before any real run.
+- note: After a migration the managed `AGENTS.md` block reads `stale` until `onboard.py setup` runs. This is by design and is stated in the upgrade note.
+- note: The `ticket_root` bullet and the `.sdlc/roadmap.md` and `.sdlc/notes.md` path text in the docs were left to T-0207 (readers and docs).
+- note: The tickets selftest now takes about 37 s, up from about 31 s at HEAD.
