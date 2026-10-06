@@ -272,11 +272,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0271 | [0271-planner-contract-dependents-lint](0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | ⏳ proposed |
 | T-0272 | [0272-conductor-repo-opt-out](0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | ⏳ proposed |
 | T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
-| T-0293 | [0293-solo-run-kill-group](0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | S | P2 | none | 🔵 ready |
-| T-0294 | [0294-plan-review-l4-l5-only](0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | S | P2 | none | 🔵 ready |
-| T-0295 | [0295-lint-name-found-heading](0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🔵 ready |
-| T-0296 | [0296-lane-refuse-m-over-20-criteria](0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | S | P2 | none | 🔵 ready |
-| T-0297 | [0297-planner-guard-dry-run-widen-inherit](0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | S | P2 | none | 🔵 ready |
+| T-0293 | [.0293-solo-run-kill-group](.0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | S | P2 | none | 🟢 done |
+| T-0294 | [.0294-plan-review-l4-l5-only](.0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | S | P2 | none | 🟢 done |
+| T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🟢 done |
+| T-0296 | [.0296-lane-refuse-m-over-20-criteria](.0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | S | P2 | none | 🟢 done |
+| T-0297 | [.0297-planner-guard-dry-run-widen-inherit](.0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | S | P2 | none | 🟢 done |
 | T-0298 | [0298-limit-marker-reset-time](0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | S | P2 | none | 🔵 ready |
 | T-0299 | [0299-fanout-bare-ticket-ids](0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🔵 ready |
 | T-0300 | [0300-board-solo-merged-done](0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🔵 ready |

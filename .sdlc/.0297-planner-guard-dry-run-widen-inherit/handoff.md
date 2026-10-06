@@ -2,7 +2,7 @@
 id: T-0297
 title: "Planner guard dry-run; split inherits earlier widenings"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ Agent-ui no-barrels: 12 planner results, because guards diff against the base co
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with a new case: step 1 widened by path P, then `split --only 2` yields a step 2 scope allow-list containing P and a `## Scope widened` entry; a step 2 with no prior widening is unchanged.
 - [ ] Negative control shown once: without the inheritance the case fails.
 - [ ] agents/planner.md holds one sentence requiring the dry-run of each `(guard)` at base before returning; `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
