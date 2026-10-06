@@ -156,7 +156,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               no valid size -> "handoff.md front matter has no size of S, M, L, or XL"
             Before planning, size alone decides: with either reason above the lane is full and only those
             print; else S or M -> solo, L or XL -> full, with the one reason "size <v> decides before
-            planning (no planner result yet)". After planning, more reasons follow, in order:
+            planning (no planner result yet)"; but size S or M with more than 20 checkbox lines under the
+            handoff's ## Acceptance criteria is full, with the one reason "ticket lists <N> criteria (limit
+            20 for size S or M); split it into tickets of at most 20". After planning, more reasons follow, in order:
               size L or XL -> "size <v> is above M, and lean takes only size S or M"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
                 an unresolved assumption: "<first item>""
@@ -1540,6 +1542,7 @@ def cmd_review(task):
 
 LANE_MAX_STEPS = 2
 LANE_MAX_CRITERIA = 12
+LANE_MAX_TICKET_CRITERIA = 20
 LANE_CONTRACTS = (
     'plugins/sdlc-lite/agents/',
     'plugins/sdlc-lite/skills/',
@@ -1616,6 +1619,17 @@ def lane_sticky(skips):
     return False
 
 
+def ticket_criteria(text):
+    """The number of checkbox lines ('- [ ]', '- [x]') under '## Acceptance criteria' of a handoff."""
+    inside, n = False, 0
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Acceptance criteria'
+        elif inside and re.match(r'^\s*[-*] \[[ xX]\]', line):
+            n += 1
+    return n
+
+
 def lane_action(task):
     """Return (lane, point, reasons, [files read]) for a task dir: solo, lean, or full. Writes nothing.
     The plan is read leniently, like plan_facts: split, lint, and review refuse a bad plan."""
@@ -1627,12 +1641,13 @@ def lane_action(task):
         raise Fail(f'steps lane: no such directory: {t}')
     h, skips = t / 'handoff.md', t / 'skips.md'
     read = []
-    size, review_line = None, False
+    size, review_line, ticket_k = None, False, 0
     if h.is_file():
         read.append(str(h))
         text = h.read_text(encoding='utf-8')
         size = (tickets.parse(text) or {}).get('size')
         review_line = any(line.rstrip() == '## Plan review' for line in text.splitlines())
+        ticket_k = ticket_criteria(text)
     if size not in tickets.ENUMS['size']:
         size = None
     plan = order.newest(t, 'planner')
@@ -1649,6 +1664,9 @@ def lane_action(task):
     if not plan:
         if reasons:
             return 'full', point, reasons, read
+        if size in ('S', 'M') and ticket_k > LANE_MAX_TICKET_CRITERIA:
+            return 'full', point, [f'ticket lists {ticket_k} criteria (limit {LANE_MAX_TICKET_CRITERIA} for size S or M); '
+                                   f'split it into tickets of at most {LANE_MAX_TICKET_CRITERIA}'], read
         lane = {'S': 'solo', 'M': 'solo'}.get(size, 'full')
         return lane, point, [f'size {size} decides before planning (no planner result yet)'], read
 
@@ -3483,6 +3501,12 @@ def selftest():
             why = f'size {size} decides before planning (no planner result yet)'
             ok = ok and lane == want and reasons == [why] \
                 and recs == [f'- lane: {want}; point: before planning; reasons: {why}']
+        for k, want in ((20, 'solo'), (21, 'full')):
+            crit = '\n## Acceptance criteria\n' + ''.join(f'- [ ] c{i}\n' for i in range(k))
+            lane, reasons, _, _ = l_run(l_task(l_handoff('M', crit)))
+            why = 'size M decides before planning (no planner result yet)' if k == 20 else \
+                'ticket lists 21 criteria (limit 20 for size S or M); split it into tickets of at most 20'
+            ok = ok and lane == want and reasons == [why]
         lane, reasons, _, recs = l_run(l_task(l_handoff(None)))
         check('(lane) before planning, size alone decides: S and M solo, L and XL full, no size full',
               ok and lane == 'full' and reasons == [LANE_NO_SIZE]

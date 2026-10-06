@@ -88,7 +88,7 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 ### Decision points
 
-`lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
+Before planning, size alone decides, with one limit: a size S or M ticket with more than 20 checkbox criteria under `## Acceptance criteria` is `full`, with a reason that says to split it into tickets of at most 20 (T-0296). `lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
 
 ### Coarse steps
 
