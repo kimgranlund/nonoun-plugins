@@ -2,7 +2,7 @@
 id: T-0306
 title: "fleet_detect.py: waste and stall detect rules"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0305]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,7 @@ Run from the repository root. fleet_detect reads only fingerprints, so the colle
 - `grep -q 'fleet_detect.py" selftest' plugins/sdlc-lite/scripts/check.sh && grep -q '^## `scripts/fleet_detect.py`' docs/maintenance/sdlc-internals.md`
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
