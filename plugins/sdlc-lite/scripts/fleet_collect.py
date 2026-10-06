@@ -11,14 +11,24 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   uptime_load {uptime_s, load1, load5, load15, cpus}
   runs            the string "none" when no `.sdlc` exists under the repo or any of its worktrees; else
                   total, cost_usd, duration_s, unmetered (null cost_usd), by_role {role: count, cost_usd,
-                  duration_s}, by_lane {solo, full}, interrupted {count, attempts[]}, limit_markers {count,
-                  files[]}, lane_overrides[], duplicates_dropped, sources
+                  duration_s}, by_lane {solo, full}, by_ticket {ticket folder: {role: count}}, interrupted
+                  {count, attempts[]}, limit_markers {count, files[]}, lane_overrides[], duplicates_dropped,
+                  sources
   plan_review_share   (plan-reviewer + planner cost_usd) / total cost_usd, null with no cost
-  processes       chromium, hooks, claude: {count, cpu_pct} from one `ps` snapshot
+  tickets         {count, items[]}: each `.sdlc/<folder>/handoff.md` (main checkout first, then worktrees; the first
+                  copy of a folder wins) is counted. A ticket folder is keyed by its path under `.sdlc`: its name,
+                  or `tickets/<name>` when any checkout's `.sdlc/config` sets `ticket_root: tickets` (the same key
+                  as in `runs.by_ticket`). items lists those with an `## Acceptance criteria` section as {ticket, id,
+                  size, criteria} (criteria = top-level list lines in that section). Not windowed.
+  processes       chromium, hooks, claude: {count, cpu_pct, rss_mb} from one `ps` snapshot; hooks also carries
+                  items[] {pid, cpu_pct, etime_s, command} (capped, busiest first)
   worktrees       linked worktrees: count, size (a "<n> MB" string, or "unknown" when any `du` timed out),
                   size_kb_known, items[] {path, size}
   ci              "skipped" without --gh; with --gh runs, wall_minutes, failed, by_workflow from `gh api`
-                  (run wall time is updated_at minus run_started_at), or {"error": ...}
+                  (run wall time is updated_at minus run_started_at), or {"error": ...}. Each workflow also
+                  carries by_event {event: runs}, and over the last 7 days (`window_days` of the fetch, at most
+                  7 are counted) push_runs_7d, pull_request_runs_7d, and push_dup_7d (push runs whose head_sha
+                  also has a pull_request run of the same workflow).
 
 Runs. Every `.sdlc/**/runs.jsonl` under the repo and each worktree (`git worktree list`, plus `.worktrees/*`
 and `.claude/worktrees/*`) is read and deduplicated by attempt_id (a row with none is deduplicated on its
@@ -264,6 +274,35 @@ def num(v):
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else None
 
 
+TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')   # as tickets.py reads `.sdlc/config`
+
+
+def nested_tickets(sdlc):
+    """True when `<sdlc>/config` has a `ticket_root: tickets` line (tickets.py ticket_dir): the ticket folders
+    then live in `<sdlc>/tickets/`, and any other folder under `.sdlc` is a plain task."""
+    for line in read_text(os.path.join(sdlc, 'config')).splitlines():
+        m = TICKET_ROOT_RE.fullmatch(line) if line.strip() and not line.lstrip().startswith('#') else None
+        if m and m.group(1) == 'tickets':
+            return True
+    return False
+
+
+def repo_nested(roots):
+    """True when any checkout's `.sdlc/config` sets `ticket_root: tickets`. The layout is the repo's, not one
+    checkout's: `.sdlc/config` can be untracked, so a lane worktree holding `tickets/<folder>` has no config."""
+    return any(nested_tickets(os.path.join(r, '.sdlc')) for r in roots)
+
+
+def ticket_of(sdlc, path, nested=False):
+    """The ticket folder a runs.jsonl belongs to, as a path under `.sdlc`: its first component, or
+    `tickets/<folder>` with `ticket_root: tickets`."""
+    rel = os.path.relpath(os.path.dirname(path), sdlc)
+    if rel == '.':
+        return '.sdlc'
+    parts = rel.split(os.sep)
+    return '/'.join(parts[:2]) if nested and parts[0] == 'tickets' else parts[0]
+
+
 def new_bucket():
     return {'count': 0, 'cost_usd': 0.0, 'duration_s': 0.0}
 
@@ -293,8 +332,10 @@ def collect_runs(repo, window, dedupe=True):
     total = new_bucket()
     unmetered = 0
     by_role, by_lane = collections.OrderedDict(), {'solo': new_bucket(), 'full': new_bucket()}
+    by_ticket, nested = {}, repo_nested(roots)
     for sdlc, p in runs_files:
         lane_of = lanes.of_file(sdlc, p)
+        ticket = ticket_of(sdlc, p, nested)
         for line in read_text(p).splitlines():
             line = line.strip()
             if not line:
@@ -325,6 +366,8 @@ def collect_runs(repo, window, dedupe=True):
             add_bucket(total, cost, dur)
             add_bucket(by_role.setdefault(role, new_bucket()), cost, dur)
             add_bucket(by_lane[lane], cost, dur)
+            roles = by_ticket.setdefault(ticket, {})
+            roles[role] = roles.get(role, 0) + 1
     interrupted, attempts_seen = [], set()
     for sdlc, p in attempt_files:
         try:
@@ -367,12 +410,83 @@ def collect_runs(repo, window, dedupe=True):
         'duration_s': round(total['duration_s'], 1), 'unmetered': unmetered,
         'by_role': {k: round_bucket(v) for k, v in by_role.items()},
         'by_lane': {k: round_bucket(v) for k, v in by_lane.items()},
+        'by_ticket': {t: dict(sorted(r.items())) for t, r in sorted(by_ticket.items())},
         'interrupted': {'count': len(interrupted), 'attempts': interrupted[:LIST_CAP]},
         'limit_markers': {'count': len(limits), 'files': limits[:LIST_CAP]},
         'lane_overrides': sorted(lanes.overrides.values(), key=lambda o: o['ticket']),
         'duplicates_dropped': dup, 'undated_dropped': undated,
         'sources': {'roots': len(roots), 'runs_files': len(runs_files)},
     }
+
+
+def parse_handoff(text):
+    """(id, size, criteria count or None) from one handoff.md. criteria counts the top-level list lines of the
+    `## Acceptance criteria` section (fenced blocks skipped); None when the section is absent."""
+    tid = size = None
+    lines = text.splitlines()
+    if lines and lines[0].strip() == '---':
+        for line in lines[1:]:
+            if line.strip() == '---':
+                break
+            m = re.match(r'^(id|size):\s*"?([^\s"#]+)', line)
+            if m:
+                if m.group(1) == 'id':
+                    tid = m.group(2)
+                else:
+                    size = m.group(2).upper()
+    criteria, inside, fenced = None, False, False
+    for line in lines:
+        if line.startswith('## '):
+            inside = line.strip().lower() == '## acceptance criteria'
+            fenced = False
+            if inside:
+                criteria = 0
+            continue
+        if not inside:
+            continue
+        if line.lstrip().startswith('```'):
+            fenced = not fenced
+            continue
+        if not fenced and re.match(r'^(?:[-*+]|\d+[.)])\s+\S', line):
+            criteria += 1
+    return tid, size, criteria
+
+
+def ticket_folders(sdlc, nested):
+    """(key, dir) for each ticket or task folder under a `.sdlc`: its direct children, and when `nested` the
+    folders in `tickets/` keyed `tickets/<folder>`."""
+    try:
+        names = sorted(os.listdir(sdlc))
+    except OSError:
+        return []
+    out = []
+    for n in names:
+        if n == 'tickets' and nested:
+            try:
+                inner = sorted(os.listdir(os.path.join(sdlc, n)))
+            except OSError:
+                inner = []
+            out.extend(('tickets/' + m, os.path.join(sdlc, n, m)) for m in inner)
+        else:
+            out.append((n, os.path.join(sdlc, n)))
+    return out
+
+
+def tickets_info(repo):
+    """Every ticket folder that holds a handoff.md, main checkout first; the first copy of a folder wins."""
+    roots, _linked = worktree_roots(repo)
+    nested = repo_nested(roots)
+    seen, items = set(), []
+    for root in roots:
+        for key, d in ticket_folders(os.path.join(root, '.sdlc'), nested):
+            h = os.path.join(d, 'handoff.md')
+            if key in seen or not os.path.isfile(h):
+                continue
+            seen.add(key)
+            tid, size, criteria = parse_handoff(read_text(h))
+            if criteria is not None:
+                items.append({'ticket': key, 'id': tid, 'size': size, 'criteria': criteria})
+    return {'count': len(seen), 'items': items}
 
 
 def plan_review_share(runs):
@@ -447,23 +561,51 @@ def classify_process(cmd):
     return None
 
 
+def parse_etime(text):
+    """Seconds from a ps etime field `[[dd-]hh:]mm:ss`, else None."""
+    m = re.fullmatch(r'(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)', text.strip())
+    if not m:
+        return None
+    d, h, mi, sec = (int(g) if g else 0 for g in m.groups())
+    return ((d * 24 + h) * 60 + mi) * 60 + sec
+
+
+def parse_ps_line(line):
+    """(pid, cpu_pct, etime_s, rss_kb, command) from one `ps -axo pid=,pcpu=,etime=,rss=,command=` line, else None."""
+    m = re.match(r'^\s*(\d+)\s+([\d.]+)\s+(\S+)\s+(\d+)\s+(.*)$', line)
+    if not m:
+        return None
+    return int(m.group(1)), float(m.group(2)), parse_etime(m.group(3)), int(m.group(4)), m.group(5)
+
+
 def process_info():
-    out = {k: {'count': 0, 'cpu_pct': 0.0} for k in ('chromium', 'hooks', 'claude')}
-    r = run_bounded([PS_CMD, '-axo', 'pid=,pcpu=,command='], PROBE_TIMEOUT)
+    out = {k: {'count': 0, 'cpu_pct': 0.0, 'rss_kb': 0} for k in ('chromium', 'hooks', 'claude')}
+    hooks = []
+    r = run_bounded([PS_CMD, '-axo', 'pid=,pcpu=,etime=,rss=,command='], PROBE_TIMEOUT)
     if not r.ok:
         out['error'] = 'ps unavailable'
+        for k in ('chromium', 'hooks', 'claude'):
+            out[k]['rss_mb'] = 0.0
+            del out[k]['rss_kb']
+        out['hooks']['items'] = []
         return out
     me = os.getpid()
     for line in r.out.splitlines():
-        m = re.match(r'^\s*(\d+)\s+([\d.]+)\s+(.*)$', line)
-        if not m or int(m.group(1)) == me:
+        parsed = parse_ps_line(line)
+        if not parsed or parsed[0] == me:
             continue
-        kind = classify_process(m.group(3))
+        pid, cpu, etime, rss, cmd = parsed
+        kind = classify_process(cmd)
         if kind:
             out[kind]['count'] += 1
-            out[kind]['cpu_pct'] += float(m.group(2))
+            out[kind]['cpu_pct'] += cpu
+            out[kind]['rss_kb'] += rss
+            if kind == 'hooks':
+                hooks.append({'pid': pid, 'cpu_pct': cpu, 'etime_s': etime, 'command': cmd[:200]})
     for k in ('chromium', 'hooks', 'claude'):
         out[k]['cpu_pct'] = round(out[k]['cpu_pct'], 1)
+        out[k]['rss_mb'] = round(out[k].pop('rss_kb') / 1024.0, 1)
+    out['hooks']['items'] = sorted(hooks, key=lambda h: -h['cpu_pct'])[:LIST_CAP]
     return out
 
 
@@ -495,17 +637,23 @@ def worktree_info(repo, du_timeout=None):
             'items': items[:LIST_CAP]}
 
 
-def ci_info(repo, window, days):
-    start = window.since or (datetime.datetime.now(UTC) - datetime.timedelta(days=days))
+CI_RECENT_DAYS = 7      # the push-run counts cover this many days back from `now`
+
+
+def ci_info(repo, window, days, now=None):
+    now = now or datetime.datetime.now(UTC)
+    start = window.since or (now - datetime.timedelta(days=days))
     cmd = [GH_CMD, 'api', '-X', 'GET', 'repos/{owner}/{repo}/actions/runs', '-f', 'per_page=100',
            '-f', 'created=>=' + start.strftime('%Y-%m-%d'), '--paginate', '--jq',
-           '.workflow_runs[] | {name, conclusion, run_started_at, updated_at} | @json']
+           '.workflow_runs[] | {name, event, head_sha, conclusion, run_started_at, updated_at} | @json']
     r = run_bounded(cmd, GH_TIMEOUT, cwd=repo)
     if r.timed_out:
         return {'error': 'gh api timed out'}
     if not r.ok:
         return {'error': (r.err.strip().splitlines() or ['gh failed'])[0][:200]}
     by, total, failed, wall = {}, 0, 0, 0.0
+    recent_from = now - datetime.timedelta(days=CI_RECENT_DAYS)
+    pr_shas, pushes, pr_recent = {}, {}, {}
     for line in r.out.splitlines():
         try:
             run = json.loads(line)
@@ -515,17 +663,35 @@ def ci_info(repo, window, days):
             continue
         a, b = parse_ts(run.get('run_started_at')), parse_ts(run.get('updated_at'))
         mins = max((b - a).total_seconds() / 60.0, 0.0) if a and b else 0.0
-        w = by.setdefault(run.get('name') or 'unknown', {'runs': 0, 'wall_minutes': 0.0, 'failed': 0})
+        name = run.get('name') or 'unknown'
+        w = by.setdefault(name, {'runs': 0, 'wall_minutes': 0.0, 'failed': 0, 'by_event': {}})
         w['runs'] += 1
         w['wall_minutes'] += mins
+        event = run.get('event') if isinstance(run.get('event'), str) else 'unknown'
+        w['by_event'][event] = w['by_event'].get(event, 0) + 1
+        sha = run.get('head_sha') if isinstance(run.get('head_sha'), str) else None
+        if event == 'pull_request' and sha:
+            pr_shas.setdefault(name, set()).add(sha)
+        if a and a >= recent_from:
+            if event == 'push':
+                pushes.setdefault(name, []).append(sha)
+            elif event == 'pull_request':
+                pr_recent[name] = pr_recent.get(name, 0) + 1
         if run.get('conclusion') == 'failure':
             w['failed'] += 1
             failed += 1
         total += 1
         wall += mins
-    return {'since': start.strftime('%Y-%m-%d'), 'runs': total, 'wall_minutes': round(wall, 1), 'failed': failed,
-            'by_workflow': {k: {'runs': v['runs'], 'wall_minutes': round(v['wall_minutes'], 1),
-                                'failed': v['failed']} for k, v in sorted(by.items())}}
+    out = {}
+    for k, v in sorted(by.items()):
+        shas = pushes.get(k, [])
+        out[k] = {'runs': v['runs'], 'wall_minutes': round(v['wall_minutes'], 1), 'failed': v['failed'],
+                  'by_event': dict(sorted(v['by_event'].items())),
+                  'push_runs_7d': len(shas), 'pull_request_runs_7d': pr_recent.get(k, 0),
+                  'push_dup_7d': sum(1 for h in shas if h and h in pr_shas.get(k, ()))}
+    return {'since': start.strftime('%Y-%m-%d'),
+            'window_days': min(CI_RECENT_DAYS, max(0, int((now - start).total_seconds() // 86400))),
+            'runs': total, 'wall_minutes': round(wall, 1), 'failed': failed, 'by_workflow': out}
 
 
 def summary_line(runs):
@@ -545,6 +711,7 @@ def collect(repo, since=None, until=None, gh=False, days=14, du_timeout=None, de
         ('env', env_info()),
         ('runs', runs),
         ('plan_review_share', plan_review_share(runs)),
+        ('tickets', tickets_info(repo)),
         ('processes', process_info()),
         ('worktrees', worktree_info(repo, du_timeout)),
         ('ci', ci_info(os.path.realpath(repo), window, days) if gh else 'skipped'),
@@ -681,7 +848,47 @@ def selftest():
         write(os.path.join(lane, '.sdlc', 't1', 'step-1', 'builder-L2.attempt.json'), json.dumps(
             {'attempt_id': 'X', 'role': 'builder', 'level': 'L2', 'status': 'interrupted',
              'started_at': '2026-10-04T09:00:00.123456+00:00'}))                # copy of the interrupted attempt
+        write(os.path.join(t1, 'handoff.md'), '---\nid: T-0001\nsize: M      # S | M | L\n---\n\n## Goal\n- not a criterion\n\n'
+              '## Acceptance criteria\n- one\n  - nested, not counted\n2. two\n```\n- fenced, not counted\n```\n'
+              '* three\nprose line\n\n## Closed\n- after the section\n')
+        write(os.path.join(t2, 'handoff.md'), '---\nid: "T-0002"\nsize: L\n---\n\n## Goal\nno criteria yet\n')
+        write(os.path.join(lane, '.sdlc', 't1', 'handoff.md'), '---\nid: T-0001\nsize: S\n---\n## Acceptance criteria\n- x\n')
+
+        def layout(root, base, config=None):
+            """Two tickets of 3 planner rows each and a size M handoff with 25 criteria, under root/.sdlc/<base>."""
+            if config is not None:
+                write(os.path.join(root, '.sdlc', 'config'), config)
+            for name, ids in (('0001-a', 'abc'), ('0002-b', 'def')):
+                write(os.path.join(root, '.sdlc', base, name, 'runs.jsonl'), rows(*[
+                    rec('planner', name + i, 1.0, 1000, '2026-10-05T10:00:00Z') for i in ids]))
+            write(os.path.join(root, '.sdlc', base, '0001-a', 'handoff.md'), '---\nid: T-9\nsize: M\n---\n'
+                  '## Acceptance criteria\n' + ''.join('- c%d\n' % i for i in range(25)))
+            write(os.path.join(root, '.sdlc', 'plain', 'runs.jsonl'), rows(rec('planner', 'p', 1.0, 1000, '2026-10-05T10:00:00Z')))
+
+        flat, nest, cmt = (os.path.join(tmp, n) for n in ('flat', 'nest', 'cmt'))
+        layout(flat, '')
+        layout(nest, 'tickets', 'ticket_folders: numbered\nticket_root: tickets  # the one supported value\n')
+        layout(cmt, '', '# ticket_root: tickets\nticket_folders: numbered\n')
+        # a lane worktree of the nested repo: its `.sdlc/config` is untracked, so the lane has none
+        write(os.path.join(nest, '.worktrees', 'lane', '.sdlc', 'tickets', '0003-c', 'runs.jsonl'),
+              rows(rec('planner', 'lane1', 1.0, 1000, '2026-10-05T10:00:00Z')))
         before = snap(tmp)
+        fr, nr, cr = (collect_runs(d, Window())['by_ticket'] for d in (flat, nest, cmt))
+        ok('ticket_root: tickets keys each ticket folder, not the tickets dir, in a config-less lane too', nr == {
+            'plain': {'planner': 1}, 'tickets/0001-a': {'planner': 3}, 'tickets/0002-b': {'planner': 3},
+            'tickets/0003-c': {'planner': 1}})
+        ok('ticket_root control: the flat layout keys the same folders by name', fr == {
+            'plain': {'planner': 1}, '0001-a': {'planner': 3}, '0002-b': {'planner': 3}})
+        ok('ticket_root control: a commented ticket_root line does not switch layouts', cr == fr)
+        ok('tickets: the nested layout is read too, and the flat one', tickets_info(nest)['items'] == [
+            {'ticket': 'tickets/0001-a', 'id': 'T-9', 'size': 'M', 'criteria': 25}]
+           and tickets_info(flat)['items'] == [{'ticket': '0001-a', 'id': 'T-9', 'size': 'M', 'criteria': 25}]
+           and tickets_info(nest)['count'] == 1)
+
+        tk = tickets_info(repo)
+        ok('tickets: count, size, and the criteria of the first copy of each folder', tk['count'] == 2
+           and tk['items'] == [{'ticket': 't1', 'id': 'T-0001', 'size': 'M', 'criteria': 3}])
+        ok('tickets: a repo with no .sdlc has none', tickets_info(os.path.join(tmp, 'nowhere')) == {'count': 0, 'items': []})
 
         r = collect_runs(repo, Window())
         # unique: A, B, C, no-id filer (once), D, E, F, G = 8; cost 1+0.5+2+3+0.25+4+1 = 11.75
@@ -702,6 +909,9 @@ def selftest():
            and abs(r['by_lane']['solo']['cost_usd'] - 6.75) < 1e-9)
         ok('by_lane: no skips.md and a skipsless worktree copy are full', r['by_lane']['full']['count'] == 2
            and abs(r['by_lane']['full']['cost_usd'] - 5.0) < 1e-9)
+        ok('by_ticket: runs per ticket folder and role, deduplicated, worktree copy included',
+           r['by_ticket']['t1'] == {'builder': 2, 'filer': 1, 'plan-reviewer': 1, 'planner': 1, 'solo': 1}
+           and r['by_ticket']['t3'] == {'planner': 1} and r['by_ticket']['t2'] == {'verifier': 1})
         ok('plan_review_share: (planner + plan-reviewer) / total', abs(plan_review_share(r) - 5.5 / 11.75) < 1e-3)
         ok('duration_s sums milliseconds', abs(r['duration_s'] - 316.0) < 1e-6)
         # negative control: with dedupe off, duplicates change the total
@@ -728,7 +938,7 @@ def selftest():
         ok('cli: collect exits 0 with JSON', rc == 0 and data.get('runs', {}).get('total') == 8)
         ok('cli: stderr carries the runs line', err.startswith('runs: 8 deduped'))
         ok('cli: every documented key is present', all(k in data for k in (
-            'env', 'runs', 'plan_review_share', 'processes', 'worktrees', 'ci', 'summary')))
+            'env', 'runs', 'plan_review_share', 'tickets', 'processes', 'worktrees', 'ci', 'summary')))
         ok('cli: env names the plugin version and the time', data['env']['plugin']['version'] != ''
            and data['env']['time'].endswith('Z') and 'load1' in data['env']['uptime_load'])
         ok('cli: ci is skipped without --gh', data.get('ci') == 'skipped')
@@ -796,19 +1006,36 @@ def selftest():
         ok('processes: classification of known command lines', all(classify_process(c) == k for c, k in samples))
         ps = process_info()
         ok('processes: a live ps snapshot has the three groups', all(k in ps for k in ('chromium', 'hooks', 'claude')))
+        ok('processes: every group carries cpu, rss and the hooks carry items', all(
+            'cpu_pct' in ps[k] and 'rss_mb' in ps[k] for k in ('chromium', 'hooks', 'claude'))
+           and isinstance(ps['hooks']['items'], list))
+        ok('processes: etime forms', [parse_etime(t) for t in ('00:07', '1:02:03', '2-01:00:00', 'x')]
+           == [7, 3723, 176400, None])
+        ok('processes: a ps line gives pid, cpu, etime, rss and the command', parse_ps_line(
+            '  4321  99.5   00:31 20480 /bin/bash /p/hooks/block-disk-scan.sh')
+           == (4321, 99.5, 31, 20480, '/bin/bash /p/hooks/block-disk-scan.sh') and parse_ps_line('garbage') is None)
 
         # gh: a stub gh feeds the aggregation; a missing gh is an error object, not a crash
         stub = os.path.join(tmp, 'bin', 'gh')
         write(stub, '#!/bin/sh\ncat <<EOF\n'
-              '{"name":"CI","conclusion":"success","run_started_at":"2026-10-05T10:00:00Z","updated_at":"2026-10-05T10:10:00Z"}\n'
-              '{"name":"CI","conclusion":"failure","run_started_at":"2026-10-05T11:00:00Z","updated_at":"2026-10-05T11:05:30Z"}\n'
+              '{"name":"CI","event":"pull_request","head_sha":"aaa","conclusion":"success","run_started_at":"2026-10-05T10:00:00Z","updated_at":"2026-10-05T10:10:00Z"}\n'
+              '{"name":"CI","event":"push","head_sha":"aaa","conclusion":"failure","run_started_at":"2026-10-05T11:00:00Z","updated_at":"2026-10-05T11:05:30Z"}\n'
+              '{"name":"CI","event":"push","head_sha":"bbb","conclusion":"success","run_started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:01:00Z"}\n'
+              '{"name":"CI","event":"push","head_sha":"aaa","conclusion":"success","run_started_at":"2026-09-01T12:00:00Z","updated_at":"2026-09-01T12:01:00Z"}\n'
               '{"name":"Deploy","conclusion":"success","run_started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:02:00Z"}\n'
               'EOF\n', 0o755)
         globals()['GH_CMD'] = stub
-        ci = ci_info(repo, Window(), 7)
-        ok('ci: runs and wall minutes by workflow', ci.get('runs') == 3 and ci['failed'] == 1
-           and ci['by_workflow']['CI'] == {'runs': 2, 'wall_minutes': 15.5, 'failed': 1}
+        ci = ci_info(repo, Window(), 7, now=datetime.datetime(2026, 10, 6, tzinfo=UTC))
+        ok('ci: runs and wall minutes by workflow', ci.get('runs') == 5 and ci['failed'] == 1
+           and ci['by_workflow']['CI']['runs'] == 4 and ci['by_workflow']['CI']['failed'] == 1
+           and ci['by_workflow']['CI']['wall_minutes'] == 17.5
            and ci['by_workflow']['Deploy']['wall_minutes'] == 2.0)
+        ok('ci: runs by event, and a missing event is unknown', ci['by_workflow']['CI']['by_event']
+           == {'pull_request': 1, 'push': 3} and ci['by_workflow']['Deploy']['by_event'] == {'unknown': 1}
+           and ci['window_days'] == 7)
+        ok('ci: push runs over the last 7 days, and the ones duplicating a pull_request run',
+           ci['by_workflow']['CI']['push_runs_7d'] == 2 and ci['by_workflow']['CI']['pull_request_runs_7d'] == 1
+           and ci['by_workflow']['CI']['push_dup_7d'] == 1 and ci['by_workflow']['Deploy']['push_dup_7d'] == 0)
         globals()['GH_CMD'] = os.path.join(tmp, 'bin', 'no-such-gh')
         ok('ci: a missing gh is an error object', 'error' in ci_info(repo, Window(), 7))
         globals()['GH_CMD'] = saved[3]
