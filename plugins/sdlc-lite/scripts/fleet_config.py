@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Active repo registry: .sdlc/fleet.json. No model call; reads and writes only that file.
+
+Usage: fleet_config.py [--file PATH] show [--active] | add --path P --name N --conductor C [--gh O/R]
+       | exclude REPO --reason R | include REPO | selftest
+Schema: docs/sdlc-lite/fleet-config.md. A malformed file exits 1 naming the line.
+"""
+import argparse, datetime, json, os, sys, tempfile
+
+DEFAULT = os.path.join(".sdlc", "fleet.json")
+REQ = ("path", "name", "conductor", "status")
+
+
+class FleetError(Exception):
+    pass
+
+
+def _line_of(text, entry):
+    key = '"name": "%s"' % entry.get("name") if isinstance(entry, dict) else None
+    for i, ln in enumerate(text.splitlines(), 1):
+        if key and key in ln.replace('":"', '": "'):
+            return i
+    return 1
+
+
+def load(path):
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError as e:
+        raise FleetError("%s: %s" % (path, e.strerror))
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as e:
+        raise FleetError("%s:%d: %s" % (path, e.lineno, e.msg))
+    if not isinstance(data, dict) or not isinstance(data.get("repos"), list):
+        raise FleetError("%s:1: top level must be an object with a repos list" % path)
+    seen = set()
+    for r in data["repos"]:
+        ln = _line_of(text, r)
+        if not isinstance(r, dict):
+            raise FleetError("%s:%d: repo entry must be an object" % (path, ln))
+        for k in REQ:
+            if not isinstance(r.get(k), str) or not r[k]:
+                raise FleetError("%s:%d: repo %s missing %s" % (path, ln, r.get("name"), k))
+        if r["status"] not in ("active", "excluded"):
+            raise FleetError("%s:%d: status must be active or excluded" % (path, ln))
+        if r["status"] == "excluded" and not (r.get("reason") and r.get("date")):
+            raise FleetError("%s:%d: excluded repo %s needs reason and date" % (path, ln, r["name"]))
+        if r["name"] in seen:
+            raise FleetError("%s:%d: duplicate name %s" % (path, ln, r["name"]))
+        seen.add(r["name"])
+    return data
+
+
+def save(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+
+
+def find(data, name):
+    for r in data["repos"]:
+        if r["name"] == name:
+            return r
+    raise FleetError("no repo named %s" % name)
+
+
+def show(data, active_only):
+    for r in data["repos"]:
+        if active_only and r["status"] != "active":
+            continue
+        extra = " (%s, %s)" % (r.get("date"), r.get("reason")) if r["status"] == "excluded" else ""
+        print("%-9s %-18s %-22s %s%s" % (r["status"], r["name"], r["conductor"], r["path"], extra))
+
+
+def selftest():
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, "fleet.json")
+    save(p, {"version": 1, "repos": []})
+    data = load(p)
+    data["repos"] += [
+        {"path": "/a", "name": "a", "conductor": "ca", "status": "active"},
+        {"path": "/b", "name": "b", "conductor": "cb", "status": "excluded", "reason": "r", "date": "2026-10-06"}]
+    save(p, data)
+    data = load(p)
+    act = [r["name"] for r in data["repos"] if r["status"] == "active"]
+    assert act == ["a"] and len(data["repos"]) == 2, "active filter"
+    open(p, "w").write('{\n "repos": [\n  {"name": "x",\n}\n ]\n}\n')
+    try:
+        load(p)
+        raise AssertionError("malformed file loaded")
+    except FleetError as e:
+        assert ":4:" in str(e) or ":5:" in str(e), str(e)
+    open(p, "w").write('{"repos": [\n{"path": "/a", "name": "a", "conductor": "c"}\n]}\n')
+    try:
+        load(p)
+        raise AssertionError("incomplete entry loaded")
+    except FleetError as e:
+        assert ":2:" in str(e) or ":1:" in str(e), str(e)
+    print("selftest ok")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--file", default=DEFAULT)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("show"); s.add_argument("--active", action="store_true")
+    a = sub.add_parser("add")
+    for k in ("path", "name", "conductor"):
+        a.add_argument("--" + k, required=True)
+    a.add_argument("--gh")
+    e = sub.add_parser("exclude"); e.add_argument("repo"); e.add_argument("--reason", required=True)
+    i = sub.add_parser("include"); i.add_argument("repo")
+    sub.add_parser("selftest")
+    args = ap.parse_args()
+    try:
+        if args.cmd == "selftest":
+            return selftest()
+        data = load(args.file)
+        if args.cmd == "show":
+            show(data, args.active)
+            return
+        if args.cmd == "add":
+            if any(r["name"] == args.name for r in data["repos"]):
+                raise FleetError("repo %s already present" % args.name)
+            r = {"path": args.path, "name": args.name, "conductor": args.conductor, "status": "active"}
+            if args.gh:
+                r["gh"] = args.gh
+            data["repos"].append(r)
+        elif args.cmd == "exclude":
+            r = find(data, args.repo)
+            r.update(status="excluded", reason=args.reason, date=datetime.date.today().isoformat())
+        elif args.cmd == "include":
+            r = find(data, args.repo)
+            r["status"] = "active"; r.pop("reason", None); r.pop("date", None)
+        save(args.file, data)
+        print("ok")
+    except FleetError as ex:
+        print(ex, file=sys.stderr)
+        sys.exit(1)
+    except AssertionError as ex:
+        print("selftest FAILED: %s" % ex, file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

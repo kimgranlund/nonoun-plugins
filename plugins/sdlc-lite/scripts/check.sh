@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Plugin checks: level-table and agent consistency, the generated Claude and Codex agent definitions (claude_roles.py, codex_roles.py) and the claude_roles.py selftest, the dispatch.py selftest (prepare parity with the run.sh dry run, gate refusals, attempt records; record parity with a stub-claude run.sh run, invalid and failed results, strays, cleanup), the coverage_check, tickets.py, board.py,
-# results.py, evals.py, proposals.py, steps.py, order.py, fanout.py, gate_lock.py, onboard.py, traces.py, messages.py, footprint.py, specgate.py, and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
+# results.py, evals.py, proposals.py, steps.py, order.py, fanout.py, gate_lock.py, onboard.py, traces.py, messages.py, footprint.py, fleet_collect.py, fleet_detect.py, fleet_config.py, fleet_status.py, specgate.py, and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the budget.py selftest (per-ticket budget meter), the solo_run.py selftest (solo cost capture; stub claude), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
 # (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, and block-role-spawn.sh on fixture JSON), the
 # hook live probe selftest
@@ -30,6 +30,10 @@ python3 "$root/scripts/onboard.py" selftest || fail=1
 python3 "$root/scripts/traces.py" selftest || fail=1
 python3 "$root/scripts/messages.py" selftest || fail=1
 python3 "$root/scripts/footprint.py" selftest || fail=1
+python3 "$root/scripts/fleet_collect.py" selftest || fail=1
+python3 "$root/scripts/fleet_detect.py" selftest || fail=1
+python3 "$root/scripts/fleet_config.py" selftest || fail=1
+python3 "$root/scripts/fleet_status.py" selftest || fail=1
 python3 "$root/scripts/specgate.py" selftest || fail=1
 python3 "$root/scripts/budget.py" selftest || fail=1
 python3 "$root/scripts/solo_run.py" selftest || fail=1

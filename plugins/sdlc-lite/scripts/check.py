@@ -127,7 +127,16 @@
 35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
    scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
-36. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
+36. Fleet retro: skills/fleet-retro/SKILL.md names `fleet_collect.py`, `fleet_detect.py`, `SendMessage`, `interview.md`, `rubric.md`, `AskUserQuestion`,
+   `review-traces`, `Codex host`, `SDLC_HEADLESS`, and the stages `## 1. Collect` to `## 6. File`, and holds no `harness:` reference; skills/fleet-retro/rubric.md names
+   gates `G1` to `G5`, criteria `C1` to `C5`, `7 of 10`, and `Outcome check`; skills/fleet-retro/fixtures.md names `F1`, `F2`, `F3`; skills/sdlc-lite/SKILL.md and
+   agents/conductor.md route to `fleet-retro`; and, where docs/maintenance/sdlc-internals.md exists, it names `fleet-retro`. Negative controls: each phrase removed
+   from each file, a harness reference added, and a missing route must be flagged.
+37. Fleet status: skills/fleet-status/SKILL.md names `fleet_status.py render`, `## 1. Render`, `## 2. Print it`, `## 3. Ask once`, `## 4. Relay, do not act`,
+   `Render, never compose`, `AskUserQuestion`, `If AskUserQuestion is unavailable`, `--ping`, `sends nothing`, and `Codex host`, and holds no `harness:` reference;
+   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, and `def selftest_render`; scripts/check.sh runs
+   `fleet_status.py" selftest`. Negative controls: each phrase removed from each file, a harness reference added, and the routing line removed must be flagged.
+38. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
    agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
    Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
    check.sh phrase removed must be flagged.
@@ -876,7 +885,40 @@ errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
 for _name, _phrases in GATE_LOCK_NEEDS:
     for _ph in _phrases:
         if _name in _gl_texts and not gate_lock_bad(dict(_gl_texts, **{_name: _gl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: gate lock negative control not flagged for {_name} without {_ph}')
-# Generated Claude definitions (docstring item 36): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
+# Fleet retro (docstring item 36): the skill, its rubric and fixtures, and the routes to it.
+FLEET_NEEDS = (('skill', ('fleet_collect.py', 'fleet_detect.py', 'SendMessage', 'interview.md', 'rubric.md', 'AskUserQuestion', 'review-traces', 'Codex host',
+                          'SDLC_HEADLESS', '## 1. Collect', '## 2. Detect', '## 3. Interview', '## 4. Report', '## 5. Verify', '## 6. File')),
+               ('rubric', tuple(f'G{i}' for i in range(1, 6)) + tuple(f'C{i}' for i in range(1, 6)) + ('7 of 10', 'Outcome check')),
+               ('fixtures', ('F1', 'F2', 'F3')), ('entry', ('fleet-retro',)), ('conductor', ('fleet-retro',)), ('internals', ('fleet-retro',)))
+def fleet_bad(texts):
+    out = [f'{name} missing "{ph}"' for name, phrases in FLEET_NEEDS for ph in phrases if name in texts and ph not in texts[name]]
+    if 'harness:' in texts['skill']: out.append('skill references harness:')
+    return out
+_fl_texts = {'skill': _rd(root/'skills/fleet-retro/SKILL.md'), 'rubric': _rd(root/'skills/fleet-retro/rubric.md'), 'fixtures': _rd(root/'skills/fleet-retro/fixtures.md'),
+             'entry': _entry, 'conductor': _rd(root/'agents/conductor.md')}
+if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _fl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+errors.extend(f'check.py: fleet retro: {m}' for m in fleet_bad(_fl_texts))
+for _name, _phrases in FLEET_NEEDS:
+    for _ph in _phrases:
+        if _name in _fl_texts and not fleet_bad(dict(_fl_texts, **{_name: _fl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: fleet retro negative control not flagged for {_name} without {_ph}')
+if not fleet_bad(dict(_fl_texts, skill=_fl_texts['skill'] + ' harness:x')): errors.append('check.py: fleet retro negative control not flagged for a harness reference')
+# Fleet status (docstring item 37): the skill prints the renderer's output and asks once; the renderer refuses a row with no source.
+FLEET_STATUS_NEEDS = (('skill', ('fleet_status.py render', '## 1. Render', '## 2. Print it', '## 3. Ask once', '## 4. Relay, do not act', 'Render, never compose',
+                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host')),
+                      ('script', ('RenderError', 'def render(', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+def fleet_status_bad(texts, entry):
+    out = [f'{name} missing "{ph}"' for name, phrases in FLEET_STATUS_NEEDS for ph in phrases if ph not in texts[name]]
+    if re.search(r'harness:', texts['skill']): out.append('fleet-status SKILL.md references harness:')
+    if '| fleet-status |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to fleet-status')
+    return out
+_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+errors.extend(f'check.py: fleet status: {m}' for m in fleet_status_bad(_fs_texts, _entry))
+for _name, _phrases in FLEET_STATUS_NEEDS:
+    for _ph in _phrases:
+        if not fleet_status_bad(dict(_fs_texts, **{_name: _fs_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_name} without "{_ph}"')
+if not fleet_status_bad(dict(_fs_texts, skill=_fs_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: fleet status negative control not flagged for a harness reference')
+if not fleet_status_bad(_fs_texts, _entry.replace('| fleet-status |', '|')): errors.append('check.py: fleet status negative control not flagged for a missing entry route')
+# Generated Claude definitions (docstring item 38): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
 def claude_roles_check(plugin):
     return subprocess.run([sys.executable, str(root/'scripts/claude_roles.py'), '--plugin', str(plugin), 'generate', '--check'], capture_output=True, text=True)
 _cr = claude_roles_check(root)
