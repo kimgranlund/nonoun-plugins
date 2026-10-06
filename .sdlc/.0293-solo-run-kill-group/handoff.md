@@ -2,7 +2,7 @@
 id: T-0293
 title: "solo_run kills process group and refuses a second live run"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ Maison T-0181 ran twice: pkill killed the python wrapper but not the child `clau
 - [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 and includes a case with a real child process (a stub `claude` that spawns `sleep`) proving the whole group is gone after a timeout and after SIGTERM to the wrapper.
 - [ ] The selftest has a second-run refusal case (live pid), a stale-lock case (dead pid proceeds), and a negative control: a copy of solo_run.py without the group kill leaves the child alive, so the case fails.
 - [ ] docs/maintenance/sdlc-internals.md `scripts/solo_run.py` entry describes both behaviors in one or two sentences.
+
+## Closed
+
+2026-10-06: Built by solo lane, merged into fanout/fix-0.20.11
