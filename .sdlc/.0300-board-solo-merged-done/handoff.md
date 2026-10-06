@@ -2,7 +2,7 @@
 id: T-0300
 title: "Board row for a merged solo lane reads done"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ Maison T-0039, T-0043, T-0036: the board row for a merged solo lane read "built,
 - [ ] `python3 plugins/sdlc-lite/scripts/board.py selftest` exits 0 with a new case reproducing the stale row (red before the fix, shown once) and asserting the row reads done or closed after.
 - [ ] A solo ticket that is built but not closed still reads as before (control case in the selftest).
 - [ ] docs/maintenance/sdlc-internals.md Feed entry states the rule in one sentence.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
