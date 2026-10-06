@@ -45,6 +45,7 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 
 ## Stay thin
 - Delegate context-heavy reads and long checks to a role or a read-only agent, and take back conclusions, not file contents or logs.
+- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, a machine-wide semaphore (2 slots by default, `SDLC_GATE_SLOTS`) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists who holds the slots, and `fanout.py` runs its `--gate` commands the same way.
 - Do not narrate every background wake-up.
 - Keep your own context small: it persists, and every later turn pays for it. `footprint.py <task dir> --session <transcript.jsonl>` shows this session's tokens next to the role costs.
 

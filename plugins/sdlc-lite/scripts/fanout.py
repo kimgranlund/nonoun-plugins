@@ -6,6 +6,7 @@ An external lane merges a registered branch an outside agent owns, with no workt
 Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH]
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
                      [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
+                     [--no-gate-lock]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
 
@@ -128,7 +129,11 @@ run
        `git diff --name-only HEAD...<ref>` join the lane's merged paths (the report's Overlap
        lines), then
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
-       is aborted: `merge conflict`); each --gate in order via bash -c, output to
+       is aborted: `merge conflict`); each --gate in order via bash -c, run through
+       `gate_lock.py run --name <lane>/<id> --` (T-0303: a machine-wide semaphore, at most
+       SDLC_GATE_SLOTS gates at once, default 2; `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
+       bare; a wait past the lock's timeout is gate rc 3 with the `gate_lock: timeout` line in the
+       log), output to
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
        the highest attempt already logged for that gate, so it grows on each rerun); the first red one runs `git reset --hard <pre-merge HEAD>`
        (`red: <gate> rc=<n>`). All green: copy the lane's <rel>/<slug>/ in when the integration
@@ -236,6 +241,11 @@ selftest
   shared.txt pair line and the not-planned line for T-0003; negative control
   `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
   Neither creates a branch, worktree or lanes dir.
+  A gate lock case (case 21, T-0303): every selftest run gets a private TMPDIR (so a private lock dir)
+  and no SDLC_GATE_* variables, so all cases run their gates through gate_lock.py. The probe gate
+  prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and cats the slot file it holds. The gate log of a
+  default run shows both set and `alpha/T-0001` as the holder; SDLC_GATE_SLOTS=3 gives max(1, cpus // 3)
+  workers; the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
 """
 import argparse, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
 
@@ -315,6 +325,22 @@ def solo_model_label(tier, backend=None):
         except (OSError, ValueError, KeyError):
             return f'codex {level} (model unreadable)'
     return f'{model} {effort}'
+
+
+def gate_slots_off():
+    """True when SDLC_GATE_SLOTS says no gate lock (0 or below): gates then run bare, as gate_lock.py itself would."""
+    try:
+        return int(ENV.get('SDLC_GATE_SLOTS') or 1) < 1
+    except ValueError:
+        return False
+
+
+def gate_argv(ctx, lane, t, gate):
+    """The argv that runs one --gate command: bash -c, through gate_lock.py run unless the lock is off."""
+    argv = ['bash', '-c', gate]
+    if ctx.get('gate_lock'):
+        argv = [sys.executable, str(SCRIPTS / 'gate_lock.py'), 'run', '--name', f'{lane.name}/{t.id}', '--', *argv]
+    return argv
 
 
 def gate_vacuous(rc, text, gate=''):
@@ -579,7 +605,8 @@ def preflight(a):
             'numbered': tickets.config_numbered(root), 'lane_mode': getattr(a, 'lane', 'auto') or 'auto',
             'max_lanes': getattr(a, 'max_lanes', MAX_LANES_DEFAULT), 'stagger': getattr(a, 'stagger', STAGGER_DEFAULT),
             'allow_overlap': bool(getattr(a, 'allow_overlap', False)), 'kinds': {},
-            'allow_empty_gate': bool(getattr(a, 'allow_empty_gate', False))}
+            'allow_empty_gate': bool(getattr(a, 'allow_empty_gate', False)),
+            'gate_lock': not getattr(a, 'no_gate_lock', False) and not gate_slots_off()}
 
 
 def lane_decision(ctx, taskdir=None):
@@ -1131,7 +1158,7 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             stem = f'gate-{lane.name}-{t.id}-{k}-a'
             pat = re.compile(re.escape(stem) + r'(\d+)\.log$')
             n = 1 + max((int(m.group(1)) for f in ctx['logs'].iterdir() if (m := pat.match(f.name))), default=0)
-            rc = run_logged(['bash', '-c', gate], str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
+            rc = run_logged(gate_argv(ctx, lane, t, gate), str(integ), dict(ENV, FANOUT_RUN_ID=ctx['run_id']),
                             ctx['logs'] / f'{stem}{n}.log', ctx['run_id'])
             logtext = ''
             if rc in (0, 5):
@@ -1364,14 +1391,24 @@ def selftest():
             p = sh(repo, *args)
             expect(f'fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
 
-    def fanout(cwd, *args):
+    def gate_env(**extra):
+        # a private TMPDIR gives every run a private gate_lock dir, and a gate-locked caller's own
+        # SDLC_GATE_* (this selftest may run inside gate_lock.py) must not leak in
+        env = {k: v for k, v in ENV.items() if not k.startswith('SDLC_GATE_')}
+        env['TMPDIR'] = str(gate_tmp)
+        env.update(extra)
+        return env
+
+    def fanout(cwd, *args, **extra_env):
         if not any(x == '--stagger' for x in args):
             args = (*args, '--stagger', '0')  # the default 20 s gap would slow every case
         return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', *args],
-                              cwd=str(cwd), env=ENV, capture_output=True, text=True, timeout=300)
+                              cwd=str(cwd), env=gate_env(**extra_env), capture_output=True, text=True, timeout=300)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp).resolve()
+        gate_tmp = tmp / 'gate-tmp'
+        gate_tmp.mkdir()
 
         # 1. Two lanes, a stub driver, a gate that goes red on T-0003.
         repo, lanes = tmp / 'repo', tmp / 'lanes'
@@ -2443,6 +2480,32 @@ def selftest():
         expect(f'case 20 uncommitted handoff: refused naming git add -f, got rc={up.returncode} err={up.stderr!r}',
                up.returncode == 2 and 'not committed' in up.stderr and 'git add -f' in up.stderr)
 
+        # case 21 (T-0303): each --gate runs through gate_lock.py; --no-gate-lock and SDLC_GATE_SLOTS=0 skip it
+        gprobe = ('echo "W=[$SDLC_GATE_WORKERS] H=[$SDLC_GATE_LOCK_HELD]"; cat "$TMPDIR"/sdlc-gate-locks/slot-* 2>/dev/null; '
+                  'echo; echo "Ran 1 tests"')
+
+        def gate_run(name, *extra, **extra_env):
+            gr = tmp / f'gl-{name}'
+            make_repo(gr, [('a', 'T-0001', 'ready')])
+            pr = fanout(gr, 'alpha=T-0001', '--integration', f'fanout/g{name}', '--lanes-dir', str(tmp / f'gll-{name}'),
+                        '--driver', vdrv, '--gate', gprobe, *extra, **extra_env)
+            log = tmp / f'gll-{name}' / 'logs' / 'gate-alpha-T-0001-1-a1.log'
+            return pr, log.read_text() if log.is_file() else ''
+
+        cpus = os.cpu_count() or 1
+        for name, extra, env_extra, workers, locked in (
+                ('on', (), {}, str(max(1, cpus // 2)), True),
+                ('slots3', (), {'SDLC_GATE_SLOTS': '3'}, str(max(1, cpus // 3)), True),
+                ('flag', ('--no-gate-lock',), {}, '', False),
+                ('zero', (), {'SDLC_GATE_SLOTS': '0'}, '', False)):
+            pr, text = gate_run(name, *extra, **env_extra)
+            expect(f'case 21 {name}: merges, got rc={pr.returncode} out={pr.stdout[-300:]!r}', pr.returncode == 0)
+            expect(f'case 21 {name}: the gate saw SDLC_GATE_WORKERS=[{workers}], log={text!r}', f'W=[{workers}]' in text)
+            expect(f'case 21 {name}: lock marker is {"set" if locked else "unset"}, log={text!r}',
+                   (' H=[1]' in text) == locked)
+            expect(f'case 21 {name}: the slot file names the lane and ticket is {locked}, log={text!r}',
+                   ('"name": "alpha/T-0001"' in text) == locked)
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -2458,7 +2521,8 @@ def main(argv):
     if argv[:1] != ['run']:
         print('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
               '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
-              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] | '
+              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] '
+              '[--no-gate-lock] | '
               'fanout.py selftest\n'
               '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
               '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
@@ -2495,6 +2559,8 @@ def main(argv):
                     help='run tickets in different lanes whose planned scope overlaps (the merge-time wait serializes them)')
     ap.add_argument('--allow-empty-gate', action='store_true',
                     help='merge although a gate ran no tests (unittest "Ran 0 tests", pytest "no tests ran" or rc 5)')
+    ap.add_argument('--no-gate-lock', action='store_true',
+                    help='run each gate bare, not through gate_lock.py (as does SDLC_GATE_SLOTS=0)')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 
