@@ -1,0 +1,21 @@
+{
+  "attempt_id": "c85c328b7b00428394f2537028f2490d",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "solo tier M batched verifier, different model family",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-06T19:57:18.442637+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro/.sdlc/0305-fleet-collect/handoff.md",
+  "owner_pid": 82238,
+  "handoff_sha256": "3a4b31de28cb62ab89818d7514afad8ce9ce5a7319c565ee200880568bfcb0fc",
+  "process_pid": 82270,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T20:10:50.390331+00:00"
+}
