@@ -2,7 +2,7 @@
 id: T-0309
 title: "Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -23,3 +23,7 @@ Method and allowlist pattern: docs/reports/rename-validation-to-reports.md. Lane
 
 ## Constraints
 Mechanical diff only; other branches are in flight.
+
+## Closed
+
+2026-10-06: Solo lane; verifier L3 (fable) pass, all criteria; full check.sh green from a /tmp clone; see docs/reports/naming-sdlc-lite.md

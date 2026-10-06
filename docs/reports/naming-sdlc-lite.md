@@ -41,7 +41,7 @@ Live after, by cause. The 4 spellings above sit only in the T-0309 handoff, whic
 - Guard: `check.py` fails on `Lean SDLC`, `lean SDLC`, `SDLC-Lite` and `sdlc lite` in tracked files outside the allowlist. The banned strings in its own source are split so it does not flag itself.
 - Positive case: `python3 plugins/sdlc-lite/scripts/check.py` prints `ok: 19 role levels, 9 agents checked`.
 - Negative control observed: appending `planted: Lean SDLC here` to `docs/maintenance/sdlc-internals.md` made it print `FAIL check.py: product name: docs/maintenance/sdlc-internals.md: retired spelling "Lean SDLC"` and exit 1; after `git checkout` of the file it printed `ok` again. The check also carries two in-process controls (a planted spelling is flagged, an allowlisted path is not).
-- Broken relative Markdown links (`rename_refs.py links`): 12 before, 12 after (797 checked, same targets; the baseline allowlist test inside `check.py` agrees).
+- Broken relative Markdown links (`rename_refs.py links`): 12 before, 12 after (796 checked before, 798 after, same 12 targets; the baseline allowlist test inside `check.py` agrees).
 - `codex_roles.py generate` rewrote the generated agent TOML; `generate --check` verified. `check-packaging.py` PASS. `tickets.py check` ok.
 
 Verification by the independent verifier and the full suite run are recorded in the ticket's close reason.
