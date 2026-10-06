@@ -2,7 +2,7 @@
 id: T-0304
 title: "gate_lock.py reap suggests orphaned browser processes"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0303]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0 with reap cases using a fake orphan (a process named to match, reparented to pid 1 by double fork or a dead parent, age threshold set to 0): listed by default and still alive, killed by `--kill`; a matching process with a live parent is neither listed killable nor killed.
 - [ ] Negative control shown once: without the parent check the live-parent case fails.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
