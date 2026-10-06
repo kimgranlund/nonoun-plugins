@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4d723cbaf3a3 -->
+<!-- sdlc-lite:managed:start v1 sha256:f1b8d9d392c7 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 47
+- proposed: 48
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
@@ -57,6 +57,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0314 Red-first control: a (red) criterion must fail at base and pass after, for solo and chain (0314-red-first-control)
   - T-0315 Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule (0315-replan-cost-remeasure)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
+  - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
 - ready: 0
 - blocked: 0
 - done: 237
