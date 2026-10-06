@@ -2,7 +2,7 @@
 id: T-0277
 title: "dispatch.py prepare: the pre-launch half of run.sh"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0276]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ run.sh behavior unchanged; Codex paths untouched. No em dashes. No push, tag, or
 - A real `prepare` writes `<stem>.attempt.json` (status running, `transport: subagent`, `parent_pid`) and `<stem>.dispatch.json` (subagent_type, model, effort, name, result, tmp_prefix, base_sha, prompt), and a builder or verifier gets `base-sha`.
 - A second `prepare` on a handoff dir with a running attempt and a live parent exits 2; a dead-parent attempt is marked `interrupted` first and the new attempt takes the next result name.
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0, `git diff` shows `plugins/sdlc-lite/scripts/run.sh` unchanged, and no em dash appears in the changed files.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
