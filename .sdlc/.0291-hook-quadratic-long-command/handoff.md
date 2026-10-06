@@ -2,7 +2,7 @@
 id: T-0291
 title: "PreToolUse hooks run super-quadratic on long Bash commands"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ Cause: the cheap-exit line `pf=${cmd//[\\\'\"]/}` and the raw-scan line `raw=$(t
 
 ## Constraints
 Do not touch the sub-agent wave files. No em dashes.
+
+## Closed
+
+2026-10-06: Fixed: pf= and raw= lines in four hooks now use tr; 20 KB perf case in hook-selftest.sh; verifier L3 pass on the rerun; docs/reports/hook-perf.md

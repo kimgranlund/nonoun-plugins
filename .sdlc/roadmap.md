@@ -272,5 +272,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0271 | [0271-planner-contract-dependents-lint](0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | ⏳ proposed |
 | T-0272 | [0272-conductor-repo-opt-out](0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | ⏳ proposed |
 | T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
-| T-0291 | [0291-hook-quadratic-long-command](0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | ⏳ proposed |
+| T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | 🟢 done |
 | T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | ⏳ proposed |
