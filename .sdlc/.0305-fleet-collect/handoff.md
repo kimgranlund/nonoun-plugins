@@ -2,7 +2,7 @@
 id: T-0305
 title: "fleet_collect.py: per-repo collector"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,7 @@ Run from the repository root. The agent-ui report's 193 runs is a snapshot taken
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/nonoun/agent-ui --du-timeout 0.01 2>/dev/null | python3 -c "import json,sys; w=json.load(sys.stdin)['worktrees']; sys.exit(0 if w['count'] > 0 and w['size'] == 'unknown' else 1)"`
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
