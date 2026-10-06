@@ -2,7 +2,7 @@
 id: T-0296
 title: "steps lane refuses size M over 20 criteria"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ Maison T-0137 was sized M for a 134-row epic; its verifier failed at the cost of
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with new cases: size M with 21 criteria prints `full` with the split reason; size M with 20 prints `solo`.
 - [ ] Negative control shown once: without the check the 21 case prints `solo`.
 - [ ] docs/maintenance/sdlc-internals.md `steps.py lane` text and docs/lean-sdlc/design.md lane section name the 20-criteria limit.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
