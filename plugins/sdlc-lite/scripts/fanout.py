@@ -393,6 +393,12 @@ def branch_clash(name, refs):
     return None
 
 
+def norm_tid(x):
+    """T-0123, 0123, and 123 are one id: return T-NNNN; anything else comes back unchanged."""
+    m = re.fullmatch(r'(?:T-)?(\d{1,4})', x)
+    return f'T-{int(m.group(1)):04d}' if m else x
+
+
 def preflight(a):
     """Every check before any write. Returns the run context; raises Refuse."""
     cwd = pathlib.Path.cwd()
@@ -423,7 +429,7 @@ def preflight(a):
     for spec in a.lanes:
         left, eq, ids = spec.rpartition('=')
         name, at, ext = left.partition('@')
-        tids = [x.strip() for x in ids.split(',') if x.strip()]
+        tids = [norm_tid(x.strip()) for x in ids.split(',') if x.strip()]
         if not eq or not tids or (at and not ext):
             errs.append(f'{spec!r}: want {SPEC_FORMS}')
             continue
@@ -1441,12 +1447,20 @@ def selftest():
         expect(f'--dry-run with --lanes-dir exits 0, got {proc.returncode} stderr={proc.stderr!r}',
                proc.returncode == 0 and str(rl) in proc.stdout)
         for label, args in (('the same id in two lanes', ('alpha=T-0001', 'beta=T-0001')),
+                            ('the same id bare and prefixed', ('alpha=0001', 'beta=T-0001')),
                             ('an unknown id', ('alpha=T-0009',)),
                             ('a done ticket', ('alpha=T-0002',))):
             # a no-op driver: if a refusal regresses, the run must never reach the default claude driver
             proc = fanout(rr, '--lanes-dir', str(rl), '--driver', 'exit 3', *args)
             expect(f'{label} exits 2 with a reason, got {proc.returncode} stderr={proc.stderr!r}',
                    proc.returncode == 2 and proc.stderr.strip() and 'Traceback' not in proc.stderr)
+        outs = [fanout(rr, '--dry-run', '--lanes-dir', str(rl), f'alpha={v}') for v in ('T-0001', '0001', '1')]
+        expect('bare 0001, 1 and T-0001 resolve the same ticket in a dry run: '
+               f'{[(o.returncode, o.stderr) for o in outs]}',
+               all(o.returncode == 0 for o in outs) and outs[0].stdout == outs[1].stdout == outs[2].stdout)
+        proc = fanout(rr, '--lanes-dir', str(rl), '--driver', 'exit 3', 'alpha=0001', 'beta=T-0001')
+        expect(f'alpha=0001 beta=T-0001 refuses as twice listed, got {proc.returncode} {proc.stderr!r}',
+               proc.returncode == 2 and 'T-0001 appears in lane alpha and lane beta' in proc.stderr)
         expect('dry run and refusals create no fanout/* branch',
                sh(rr, 'branch', '--list', 'fanout/*').stdout.strip() == '')
         expect('dry run and refusals add no worktree',
