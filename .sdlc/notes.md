@@ -218,3 +218,4 @@
 - 0.21.0 publish is authorized once T-0287's live evidence and the independent fact-check pass; fast-forward only, never force.
 - maison may contact maison-testing (T-0002) for the T-0106 tar handoff; the sdlc-lite author stays out of that session.
 - The nine parked tickets (T-0187, T-0200, T-0201, T-0205 to T-0208, T-0211, T-0213) get a per-ticket review; stale ones are dropped, with the table in docs/reports/parked-tickets-review-2026-10-06.md.
+- 2026-10-06 (user, via AskUserQuestion): the fleet skills (/sdlc-lite:fleet-retro T-0305 to T-0308, /sdlc-lite:fleet-status T-0310 to T-0312) ship as 0.20.12 tonight, ahead of 0.21.0, on the same publish terms as the earlier patches (fast-forward only, never force, independent fact-check first). Plan: merge branch `fleet-status` (based on `fleet`, which holds retro and config) into main, verify, prepare the release with the 0.20.11 procedure, publish.
