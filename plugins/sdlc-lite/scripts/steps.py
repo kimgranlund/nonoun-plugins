@@ -2487,7 +2487,7 @@ def selftest():
                  task(plan=three, handoff=HANDOFF + '\n## Plan review\nrequired\n'),
                  task(plan=lean_plan([1, 2, 3], n_crit=1,
                                      assume='## Assumptions\n- unresolved: which db\n\n'))]
-        (quiet[4] / 'planner-L2.md').write_text(three, encoding='utf-8')
+        (quiet[3] / 'planner-L2.md').write_text(three, encoding='utf-8')
         res = [run_main(['lint', str(q)]) for q in quiet]
         check('(lean) no warning for a planner L3 plan, a step at L4, a merge step, a replan, '
               'a ## Plan review line, or an unresolved: assumption',
