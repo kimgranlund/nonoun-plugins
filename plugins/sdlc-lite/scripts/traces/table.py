@@ -20,7 +20,7 @@ import datetime, re
 import order  # same scripts/ dir: RESULT is the one <role>-L<n>(-<k>).md name rule
 
 ROW_FIELDS = ('attempt_id', 'ticket', 'task_dir', 'step', 'superseded', 'role', 'level',
-              'attempt_k', 'status', 'verdict', 'plan_defect', 'turns', 'cost_usd', 'secs',
+              'attempt_k', 'status', 'verdict', 'plan_defect', 'turns', 'cost_usd', 'cost_estimated', 'secs',
               'tool_calls', 'denials', 'rate_limits', 'exit_code', 'sources')
 
 STEP_DIR = re.compile(r'^step-(\d+)(\.superseded-\d+)?$')
@@ -106,6 +106,7 @@ def _row(dir_rel, ticket, attempt_id, name, attempt, run, result, legacy):
         row['verdict'], row['plan_defect'] = result.get('verdict'), result.get('plan_defect')
     if run is not None:
         row['turns'], row['cost_usd'] = run.get('turns'), run.get('cost_usd')
+        row['cost_estimated'] = run.get('cost_estimated') is True
     row['secs'] = _secs(run, attempt)
     for key in COUNTERS:
         row[key] = _first(key, run, attempt, result)

@@ -124,7 +124,7 @@ def cost_over_baseline(ctx, aux, notes):
         if not ids:
             continue
         ev = [{'attempt_id': ids[0], 'ratio': ratio, 'cost_usd': round(total, 4),
-               'baseline': base}] + [{'attempt_id': a} for a in ids[1:]]
+               'baseline': base, 'estimated': any(r.get('cost_estimated') is True for r in rows)}] + [{'attempt_id': a} for a in ids[1:]]
         out.append(_make(ctx, 'cost-over-baseline', LAYER, 'skills/level-rubric/SKILL.md',
                          'pick the lowest level that passes',
                          ev, f'{d}: passed step cost ${total:.2f}, {ratio}x the bench median '

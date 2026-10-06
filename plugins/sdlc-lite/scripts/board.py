@@ -91,14 +91,19 @@ def live_step_dirs(task: pathlib.Path):
     return [d for d in task.glob('step-*') if d.is_dir() and re.fullmatch(r'step-\d+', d.name)]
 
 
-def cost(d: pathlib.Path) -> float:
+def cost(d: pathlib.Path, est=None) -> float:
+    """Total cost_usd under a task; when est is a list, the cost_estimated part is appended to it."""
     total = 0.0
     # step-* on purpose: superseded dirs still count toward cost.
     for f in [d / 'runs.jsonl', *d.glob('step-*/runs.jsonl')]:
         if f.exists():
             for line in f.read_text().splitlines():
                 try:
-                    total += json.loads(line).get('cost_usd') or 0
+                    rec = json.loads(line)
+                    c = rec.get('cost_usd') or 0
+                    total += c
+                    if est is not None and rec.get('cost_estimated') is True:
+                        est.append(c)
                 except json.JSONDecodeError:
                     pass
     return total
@@ -395,10 +400,10 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
     else:
         out.append('| Task | Step | Status | % |')
         out.append('|---|---|---|---|')
-    total_cost, pcts = 0.0, []
+    total_cost, est_cost, pcts = 0.0, [], []
     for t in tasks:
         rows, steps = task_rows(t)
-        total_cost += cost(t)
+        total_cost += cost(t, est_cost)
         tid, tstatus = fronts[t] or ('', '')
         for task, step, glyph, status, pct in rows:
             key = f'{task}/{step}'
@@ -415,7 +420,7 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
                 pcts.append(pct)
     if pcts:
         out.append('')
-        out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent')
+        out.append(f'{sum(pcts) // len(pcts)}% across {len(pcts)} steps · ${total_cost:.2f} spent' + (f' (~${sum(est_cost):.2f} estimated)' if est_cost else ''))
     legacy = root / '.board-state.json'
     if legacy.exists():  # read-only hint; never delete or modify it
         out.append('')

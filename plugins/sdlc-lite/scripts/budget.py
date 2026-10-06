@@ -18,7 +18,8 @@ not a positive number counts as no budget). Tiers: S $5, M $30, L $60, XL none (
 
 Spend is cost_usd summed over every runs.jsonl under the ticket folder, recursively (superseded step
 dirs included), deduplicated by attempt_id; a record with no (or an empty) attempt_id counts every
-time. A null or missing cost_usd counts 0 and is reported in unmetered_runs.
+time. A null or missing cost_usd counts 0 and is reported in unmetered_runs. A record with
+cost_estimated true (cost_estimate.py, sub-agent runs) counts like any cost; status prints `estimated`, its percent of spend.
 Codex runs record no cost (codex_exec.py), so the meter covers Claude roles only. Solo sessions started through solo_run.py add a role solo record with the session cost. Conductor and
 background sessions are not in runs.jsonl, so the budget bounds the pipeline, not the session.
 run.sh calls status before launching a role and exits 4 on exit 3; board.py renders a Budget column.
@@ -71,8 +72,8 @@ def ticket_of(path):
 
 
 def spend(ticket):
-    """(spend, unmetered_runs) over every runs.jsonl under the ticket folder, deduplicated by attempt_id."""
-    total, unmetered, seen = 0.0, 0, set()
+    """(spend, unmetered_runs, estimated_spend) over every runs.jsonl under the ticket folder, deduplicated by attempt_id."""
+    total, unmetered, est, seen = 0.0, 0, 0.0, set()
     for f in sorted(pathlib.Path(ticket).rglob('runs.jsonl')):
         try:
             lines = f.read_text(encoding='utf-8').splitlines()
@@ -93,9 +94,11 @@ def spend(ticket):
             c = rec.get('cost_usd')
             if isinstance(c, (int, float)) and not isinstance(c, bool) and math.isfinite(c):
                 total += c
+                if rec.get('cost_estimated') is True:
+                    est += c
             else:
                 unmetered += 1
-    return total, unmetered
+    return total, unmetered, est
 
 
 def ceiling(ticket):
@@ -114,10 +117,10 @@ def report(ticket):
     _, ceil = ceiling(ticket)
     if ceil is None:
         return None
-    s, unmetered = spend(ticket)
+    s, unmetered, est = spend(ticket)
     state = 'over' if s >= ceil else 'warn' if s * 100 >= ceil * WARN_PCT else 'ok'
     return {'spend': s, 'budget': ceil, 'percent': int(s * 100 / ceil + 1e-9), 'state': state,
-            'unmetered_runs': unmetered}
+            'unmetered_runs': unmetered, 'estimated': int(est * 100 / s + 0.5) if s else 0}
 
 
 def cmd_status(path):
@@ -134,6 +137,7 @@ def cmd_status(path):
     print(f"percent: {r['percent']}")
     print(f"state: {r['state']}")
     print(f"unmetered_runs: {r['unmetered_runs']}")
+    print(f"estimated: {r['estimated']}%")
     return 0 if r['state'] == 'ok' else 3
 
 
@@ -268,6 +272,15 @@ def selftest():
                status(t)[0] == 2 and status(bad)[0] == 2 and status(loose)[0] == 2)
 
         t = ticket(root, 'acked')
+        # Estimated cost counts: all-estimated runs at 85 percent exit 3; the same runs with null costs exit 0.
+        te = ticket(root, 'est-pos')
+        runs(te, {'role': 'builder', 'cost_usd': 8.5, 'cost_estimated': True, 'attempt_id': 'e1'})
+        rc, out = status(te)
+        expect('status: all-estimated runs at 85 percent exit 3 and print the estimated share',
+               rc == 3 and out.get('estimated') == '100%')
+        tn = ticket(root, 'est-null')
+        runs(tn, {'role': 'builder', 'cost_usd': None, 'cost_reason': 'x', 'attempt_id': 'n1'})
+        expect('status: the same ticket with null costs exits 0 (the gap this closes)', status(tn)[0] == 0)
         runs(t, {'role': 'builder', 'cost_usd': 8.5, 'attempt_id': 'a1'})
         rc0, _ = status(t)
         rc1 = quiet(cmd_ack, t, 20.0, 'scope grew: needs #2')
