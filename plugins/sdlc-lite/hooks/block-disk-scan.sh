@@ -28,7 +28,7 @@
 cmd=$(jq -r '.tool_input.command // ""')
 
 # Cheap exit: no search command word appears, even with quotes and backslashes removed.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree)([^[:alnum:]_-]|$)'
 [[ $pf =~ $re ]] || exit 0
 

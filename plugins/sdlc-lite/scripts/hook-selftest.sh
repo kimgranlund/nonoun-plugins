@@ -415,4 +415,36 @@ out=$(run "$wh" "$(wj "$wtmp/other/handoff.md")" ); rc=$?
 out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: missing file_path was not a silent pass (rc=$rc)"
 
+# Large commands: each Bash hook must finish a 20 KB heredoc command in under 2 seconds and
+# keep blocking. Bash 3.2 made ${cmd//[class]/} quadratic (40+ s at 8 KB). One positive and one
+# negative control per hook: the denied tail still exits 2, the harmless tail exits 0.
+perf=$(python3 - "$hooks" <<'PYEOF'
+import json, os, subprocess, sys, time
+hooks = sys.argv[1]
+body = "\n".join(f"echo line {i} 'quoted text' \"dq\" done" for i in range(700))
+cases = [  # hook, role, tail, wanted exit
+    ("block-pattern-kill.sh", "solo", "git status", 0), ("block-pattern-kill.sh", "solo", "pkill -f x", 2),
+    ("block-disk-scan.sh", "solo", "ls -la", 0), ("block-disk-scan.sh", "solo", "find / -name x", 2),
+    ("block-stray-worktree.sh", "solo", "git status", 0), ("block-stray-worktree.sh", "solo", "git worktree add -b x /tmp/y", 2),
+    ("block-publish.sh", "solo", "git status", 0), ("block-publish.sh", "solo", "git push origin x", 2),
+    ("block-repo-format.sh", "builder", "ls", 0), ("block-repo-format.sh", "builder", "npm run format", 2),
+]
+bad = []
+for hook, role, tail, want in cases:
+    cmd = "cat > /tmp/x.txt <<'EOF2'\n" + body + "\nEOF2\n" + tail
+    env = {k: v for k, v in os.environ.items() if k not in ("SDLC_ROLE", "SDLC_HEADLESS", "SDLC_TMP_WORKTREES")}
+    env["SDLC_ROLE"] = role
+    try:
+        rc = subprocess.run(["bash", os.path.join(hooks, hook)],
+                            input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}}),
+                            text=True, capture_output=True, timeout=2, env=env).returncode
+    except subprocess.TimeoutExpired:
+        rc = "timeout>2s"
+    if rc != want:
+        bad.append(f"{hook} [{tail}] exit {rc}, want {want}")
+print("; ".join(bad))
+PYEOF
+)
+[[ -z "$perf" ]] || fail "large 20 KB command: $perf"
+
 echo "hook selftest: PASS"

@@ -28,7 +28,7 @@ json=$(cat)
 cmd=$(jq -r '.tool_input.command // ""' <<<"$json")
 
 # Cheap exit: the word does not appear even with quotes and backslashes removed.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 [[ $pf == *worktree* ]] || exit 0
 
 cwd=$(jq -r '.cwd // ""' <<<"$json")

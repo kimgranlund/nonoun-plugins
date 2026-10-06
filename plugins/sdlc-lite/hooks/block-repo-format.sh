@@ -31,7 +31,7 @@ cmd=$(jq -r '.tool_input.command // ""')
 
 # Cheap exit: no formatter or format-script word appears, even with quotes and backslashes
 # removed.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 [[ $pf == *format* || $pf == *fmt* || $pf == *fix* || $pf == *prettier* ||
   $pf == *black* || $pf == *ruff* || $pf == *biome* ]] || exit 0
 
