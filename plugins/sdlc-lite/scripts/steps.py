@@ -160,8 +160,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               size L or XL -> "size <v> is above M, and lean takes only size S or M"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
                 an unresolved assumption: "<first item>""
-              every reason review_required() returns, verbatim (planner L3, a step at L4 or L5, a merge
-                step, a replan, a ## Plan review line)
+              every reason review_required() returns, verbatim (a step at L4 or L5)
               steps that do not parse -> "<plan> has steps that do not parse (steps.py lint names why)",
                 and the step rules below are skipped
               more than 2 steps -> "<k> steps, and lean allows at most 2"
@@ -1446,21 +1445,9 @@ def review_required(plan, task_dir):
     """(unresolved assumption items, reasons a plan review is required) for plan in task_dir. The one
     rule that review, lane, and lint's lean warnings read. result_level's Fail propagates."""
     unresolved, levels, titles = plan_facts(plan)
-    pname = os.path.basename(plan)
     why = []
-    if result_level(plan) == 3:
-        why.append(f'{pname} is a planner L3 plan')
     if any(n in (4, 5) for n in levels):
         why.append('a step is at builder L4 or L5')
-    if any(x.startswith('Merge ') for x in titles):
-        why.append('the plan has a merge step')
-    n = len(order.ordered(task_dir, 'planner'))
-    if n >= 2:
-        why.append(f'{n} planner results (a replan)')
-    h = pathlib.Path(task_dir) / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
-        why.append('handoff.md holds ## Plan review')
     return unresolved, why
 
 
@@ -2373,7 +2360,7 @@ def selftest():
         rc, out, err = run_main(['lint', str(d)])
         rc2, _, _ = run_main(['split', str(d)])
         check('(j) lint on a task dir skips an older broken planner-L3.md, like split',
-              rc == 0 and out.strip() == 'steps lint: ok' and err == '' and rc2 == 0)
+              rc == 0 and out.strip() == 'steps lint: ok' and rc2 == 0)
 
         # (lean) coarse-step warnings after a clean lint
         def lean_plan(levels, n_crit=2, title='Thing', assume=''):
@@ -2393,16 +2380,11 @@ def selftest():
         three = lean_plan([1, 2, 3], n_crit=1)
         quiet = [task(plan=three, plan_name='planner-L3.md'),
                  task(plan=lean_plan([1, 4, 2], n_crit=1)),
-                 task(plan=lean_plan([1, 2], n_crit=1) + '\n## Step 3: Merge lane\nlevel: L2\n'
-                      '### Acceptance criteria\n- m\n'),
-                 task(plan=three, plan_name='planner-L1.md'),
-                 task(plan=three, handoff=HANDOFF + '\n## Plan review\nrequired\n'),
                  task(plan=lean_plan([1, 2, 3], n_crit=1,
                                      assume='## Assumptions\n- unresolved: which db\n\n'))]
-        (quiet[3] / 'planner-L2.md').write_text(three, encoding='utf-8')
         res = [run_main(['lint', str(q)]) for q in quiet]
-        check('(lean) no warning for a planner L3 plan, a step at L4, a merge step, a replan, '
-              'a ## Plan review line, or an unresolved: assumption',
+        check('(lean) no warning for a planner L3 plan, a step at L4, '
+              'or an unresolved: assumption',
               all(r[0] == 0 and r[2] == '' for r in res))
         d = task(plan=lean_plan([2, 3]))
         rc, out, err = run_main(['lint', str(d)])
@@ -3354,71 +3336,63 @@ def selftest():
               == 'split')
         check('(r) a routine plan (planner L2, steps at L1..L3, no merge, one plan, no ## Plan review) -> split',
               r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
-        check('(r) a planner L3 plan -> review L1; negative: planner L2 -> split',
-              r_first(r_task({'planner-L3.md': r_plan()})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
         check('(r) a step at L4 or L5 -> review L1; negative: a step at L3 -> split',
               r_first(r_task({'planner-L2.md': r_plan('L4')})) == 'review L1'
               and r_first(r_task({'planner-L2.md': r_plan('L5')})) == 'review L1'
               and r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
-        check('(r) a step titled Merge <branch> -> review L1; negative: a title Merger or merge -> split',
-              r_first(r_task({'planner-L2.md': r_plan(title='Merge lane/x')})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan(title='Merger of x')})) == 'split'
-              and r_first(r_task({'planner-L2.md': r_plan(title='merge lane/x')})) == 'split')
-        check('(r) two planner results (a replan) -> review L1; negative: one -> split',
-              r_first(r_task({'planner-L2.md': r_plan(), 'planner-L2-2.md': r_plan()})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
-        check('(r) handoff.md with a ## Plan review line -> review L1; negative: ### Plan review -> split',
-              r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n## Plan review\nplan defect: x\n'))
-              == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n### Plan review\nx\n'))
-              == 'split')
-        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})
+        check('(r) plan review only for L4 or L5: an all-L1-to-L3 plan (planner L3, a replan, a ## Plan review '
+              'handoff line, a Merge title) -> split; an L4 and an L5 step -> review L1',
+              r_first(r_task({'planner-L3.md': r_plan()})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan('L3'), 'planner-L2-2.md': r_plan('L3')})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan()},
+                                 handoff='## Goal\ng\n\n## Plan review\nplan defect: x\n')) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan(title='Merge lane/x')})) == 'split'
+              and r_first(r_task({'planner-L3.md': r_plan('L4')})) == 'review L1'
+              and r_first(r_task({'planner-L3.md': r_plan('L5')})) == 'review L1')
+        d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass')})
         rc, out, _ = run_main(['review', str(d)])
         check('(r) a pass review after the plan -> split, reading the plan and the review',
               rc == 0 and out.splitlines()[0] == 'split'
               and f'read: {d / "plan-reviewer-L1.md"}' in out.splitlines())
         check('(r) negative: a pass review before a newer plan does not count -> review L1',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass'),
-                              'planner-L3-2.md': r_plan()},
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass'),
+                              'planner-L3-2.md': r_plan('L4')},
                              ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md'])) == 'review L1')
         check('(r) one replan review -> replan; a PASS verdict is read lowercased -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan')})) == 'replan'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('PASS')})) == 'split')
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan')})) == 'replan'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('PASS')})) == 'split')
         check('(r) a second replan review in the task dir -> stop; negative: a replan then a pass -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
-                              'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('replan')},
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan'),
+                              'planner-L3-2.md': r_plan('L4'), 'plan-reviewer-L1-2.md': r_review('replan')},
                              ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md', 'plan-reviewer-L1-2.md']))
               == 'stop'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
-                                  'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('pass')},
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan'),
+                                  'planner-L3-2.md': r_plan('L4'), 'plan-reviewer-L1-2.md': r_review('pass')},
                                  ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md',
                                   'plan-reviewer-L1-2.md'])) == 'split')
         check('(r) a blocked review -> stop; negative: the same review with pass -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('blocked')})) == 'stop'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})) == 'split')
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('blocked')})) == 'stop'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass')})) == 'split')
         check('(r) one verdict-less review -> review L1 (a rerun, never a replan); two consecutive -> stop',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe')})) == 'review L1'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe'),
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('maybe')})) == 'review L1'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('maybe'),
                                   'plan-reviewer-L1-2.md': '## Findings\nNone\n'},
                                  ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'])) == 'stop')
         check('(r) negative: a verdict-less review before the plan does not count toward two -> review L1',
-              r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan(),
+              r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan('L4'),
                               'plan-reviewer-L1-2.md': r_review('maybe')},
                              ['plan-reviewer-L1.md', 'planner-L3.md', 'plan-reviewer-L1-2.md'])) == 'review L1')
 
-        d = r_task({'planner-L3.md': r_plan(), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
+        d = r_task({'planner-L3.md': r_plan('L4'), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
                    runs=['planner-L3.md', 'planner-L3-2.md'], handoff='## Goal\ng\n\n## Plan review\nx\n')
-        rr_why = ['planner-L3-2.md is a planner L3 plan', 'a step is at builder L4 or L5',
-                  'the plan has a merge step', '2 planner results (a replan)', 'handoff.md holds ## Plan review']
+        rr_why = ['a step is at builder L4 or L5']
         rr_out = run_main(['review', str(d)])[1].splitlines()
         d2 = r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: which db\n')})
         check('(r) review_required returns the unresolved items and every reason review prints, in order',
               review_required(d / 'planner-L3-2.md', d) == ([], rr_why)
               and len(rr_out) >= 2
-              and rr_out[1] == 'reason: a plan review is required (planner-L3-2.md is a planner L3 plan; a step is '
-              'at builder L4 or L5; the plan has a merge step; 2 planner results (a replan); handoff.md holds '
-              '## Plan review) and none counts after planner-L3-2.md'
+              and rr_out[1] == 'reason: a plan review is required (a step is at builder L4 or L5) and none counts '
+              'after planner-L3-2.md'
               and review_required(d2 / 'planner-L2.md', d2) == (['unresolved: which db'], []))
 
         # (r) split refuses a plan whose newest counting review says replan or blocked, before any write
@@ -3516,22 +3490,16 @@ def selftest():
         check('(lane) negative: the same two-step plan with one step at L4 is full',
               lane == 'full' and reasons == ['a step is at builder L4 or L5'])
 
-        d = l_task(l_handoff(), {'planner-L2.md': l_plan()})
-        first = l_run(d)[0]
+        d = l_task(l_handoff(), {'planner-L3.md': l_plan(), 'planner-L3-2.md': l_plan()})
         with open(d / 'handoff.md', 'a', encoding='utf-8') as f:
             f.write('\n## Plan review\nrequired\n')
-        lane, reasons, _, recs = l_run(d)
-        check('(lane) negative: a lean ticket whose handoff gains a ## Plan review line is full on the next call',
-              first == 'lean' and lane == 'full' and reasons == ['handoff.md holds ## Plan review']
-              and len(recs) == 2 and recs[1].startswith('- lane: full; point: after plan review; '))
+        lane, reasons, _, _ = l_run(d)
+        check('(lane) planner L3, a replan, and a ## Plan review line alone no longer make a ticket full',
+              lane == 'lean')
 
         rr_cases = [
-            l_task(l_handoff(), {'planner-L3.md': l_plan()}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(4, 3))}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 5))}),
-            l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge x')}),
-            l_task(l_handoff(), {'planner-L2.md': l_plan(), 'planner-L2-2.md': l_plan()}),
-            l_task(l_handoff(tail='\n## Plan review\nrequired\n'), {'planner-L2.md': l_plan()}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(assume='- unresolved: which db')}),
         ]
         ok = True
