@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:449fba65c592 -->
+<!-- sdlc-lite:managed:start v1 sha256:d38a547da45f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 16
+- proposed: 18
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -26,7 +26,17 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
   - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
   - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
-- ready: 0
+  - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
+  - T-0302 ADR number allocator note (repo-owned, docs only) (0302-adr-number-allocator-note)
+- ready: 8
+  - T-0293 solo_run kills process group and refuses a second live run (0293-solo-run-kill-group)
+  - T-0294 Plan review only for L4 and L5 steps (0294-plan-review-l4-l5-only)
+  - T-0295 steps lint names the handoff heading it found (0295-lint-name-found-heading)
+  - T-0296 steps lane refuses size M over 20 criteria (0296-lane-refuse-m-over-20-criteria)
+  - T-0297 Planner guard dry-run; split inherits earlier widenings (0297-planner-guard-dry-run-widen-inherit)
+  - T-0298 429 limit marker records the reset time (0298-limit-marker-reset-time)
+  - T-0299 fanout lane specs accept T-0123 or bare 0123 (0299-fanout-bare-ticket-ids)
+  - T-0300 Board row for a merged solo lane reads done (0300-board-solo-merged-done)
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
