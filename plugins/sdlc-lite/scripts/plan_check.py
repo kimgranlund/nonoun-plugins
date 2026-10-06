@@ -63,8 +63,8 @@ def check_goal(text):
             fails.append(('stop-529', 'stop rules need the three-529s rule'))
         if not re.search(r'(?i)rate|weekly|limit', s):
             fails.append(('stop-limit', 'stop rules need the rate or weekly limit rule'))
-        if '.sdlc/notes.md' not in s:
-            fails.append(('stop-state', 'stop rules need where state is written (.sdlc/notes.md)'))
+        if not re.search(r'\.sdlc/notes(/notes)?\.md', s):
+            fails.append(('stop-state', 'stop rules need where state is written (.sdlc/notes.md, or .sdlc/notes/notes.md with layout: topics)'))
     if not re.search(r'(?is)verifier.{0,80}fail|fail.{0,80}verifier', text):
         fails.append(('verifier-fail', 'say that a verifier fail means fix and re-verify, never merge on a fail'))
     if 'auth' in sec:
@@ -343,6 +343,10 @@ def selftest():
             bad.append(label)
     f, _ = check_goal(GOOD_GOAL)
     expect('goal: the good block passes', not f)
+    f, _ = check_goal(GOOD_GOAL.replace('.sdlc/notes.md', '.sdlc/notes/notes.md'))
+    expect('goal: the topics-layout notes path passes', not f)
+    f, _ = check_goal(GOOD_GOAL.replace('write state to .sdlc/notes.md', 'write state to .sdlc/notes/other.md'))
+    expect('goal: a notes folder file that is not notes.md is flagged as stop-state', any(r == 'stop-state' for r, _ in f))
     muts = {
         'starts-with-goal': GOOD_GOAL.replace('/goal Overnight', 'Overnight'),
         'section-scope': GOOD_GOAL.replace('Scope (', 'Items ('),

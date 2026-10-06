@@ -13,4 +13,4 @@ Labels: from the host (the `/loop` skill and tool descriptions in Claude Code), 
 | Prompt shape | Self-contained, idempotent, reads state from files or commands, reports progress since the last run, ends on a stop condition | observed: the status loop in this repo's thread restated progress each fire |
 | Cost | Each fire is a model turn: choose the longest interval that fits the need | inferred |
 
-Example: `/loop 20m a status update with progress since the last run; stop when .sdlc/notes.md says done`
+Example: `/loop 20m a status update with progress since the last run; stop when .sdlc/notes.md says done` (`.sdlc/notes/notes.md` with `layout: topics`)

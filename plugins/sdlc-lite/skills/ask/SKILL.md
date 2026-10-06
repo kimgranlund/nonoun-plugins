@@ -15,7 +15,7 @@ Collect every item that needs the person, and cite where each came from. Look in
 
 - **The conversation:** a question asked and never answered, a decision deferred, an assumption stated and not confirmed.
 - **The task folder:** `(gap: ...; default: ...)` lines in the handoff `## Intent`, unanswered `## Plan review` entries, builder `## Notes`, a verifier `fail` or `## For the next attempt`, filer `decide:` follow-ups.
-- **Tickets and notes:** tickets with status `blocked` or a `## Deferred` note, and `.sdlc/notes.md`.
+- **Tickets and notes:** tickets with status `blocked` or a `## Deferred` note, and `.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`).
 - **Run results:** a failed, interrupted, or `inherited red` result.
 - **External blockers the thread names:** a rate or weekly limit, a missing credential, a permission denial, a failing check.
 
@@ -23,7 +23,7 @@ Run the searches before you ask anything; the conversation alone is not the swee
 
 - `grep -rl '^status: blocked' .sdlc/tickets` and `grep -rl '^## Deferred' .sdlc/tickets`, then read each hit.
 - `grep -rl -A1 '^## Verdict' .sdlc` to list result files, and read any whose verdict line is `fail` or whose status is `blocked` or `inherited red`.
-- `grep -rn 'gap:' .sdlc` for unresolved gap lines, and read `.sdlc/notes.md` and any `## Plan review` entries.
+- `grep -rn 'gap:' .sdlc` for unresolved gap lines, and read the notes file (`.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`)) and any `## Plan review` entries.
 
 Never invent an item. Drop one already answered or made stale since it was raised. If nothing qualifies, say `Nothing open.` and stop.
 
@@ -41,7 +41,7 @@ AskUserQuestion has no rich text field: the automatic "Other" box is plain text.
 
 ## 5. Resolve
 
-After the answers, record a decision where it belongs only when the person asked or a task folder clearly owns it (the handoff `## Intent` line or a `.sdlc/notes.md` line). Then state in two lines what is now decided and what is unblocked. A declined question is recorded as declined, not asked again.
+After the answers, record a decision where it belongs only when the person asked or a task folder clearly owns it (the handoff `## Intent` line or a line in the notes file). Then state in two lines what is now decided and what is unblocked. A declined question is recorded as declined, not asked again.
 
 ## Unattended
 

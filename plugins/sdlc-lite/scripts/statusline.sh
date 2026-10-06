@@ -3,6 +3,8 @@
 # Line 1: model · dir · git (branch, * dirty, ↑ahead ↓behind, wt:<worktree>) · ctx % · $cost · duration
 # Line 2 (only when <cwd>/.sdlc has tasks): live role run, then board.py --summary
 #         ("<task> <pct>% (<passed>/<steps>) · 🔴<n> · ⚠ L5").
+# Layout-neutral: the live-run search is recursive and the task list comes from board.py, which resolves
+# tickets/ and work/ through tickets.layout_paths, so flat, ticket_root: tickets and layout: topics all work.
 input=$(cat)
 j() { jq -r "$1 // empty" <<<"$input"; }
 root="$(cd "$(dirname "$0")/.." && pwd)"
