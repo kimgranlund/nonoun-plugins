@@ -2,7 +2,7 @@
 id: T-0211
 title: "Spec gate A2: specgate.py red, (red) tag, split and review wiring"
 type: chore           # feature | bug | chore | spike | idea
-status: blocked     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped
 size: L
 priority: P2         # P1 | P2 | P3
 depends: [T-0197, T-0201, T-0202, T-0210]
@@ -24,5 +24,8 @@ Cost-control addendum to the SDLC Lite design: `docs/sdlc-lite/cost-control.md` 
 ## Constraints
 Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's (change none), no em dashes, one authoritative location for each fact, checks that can fail with a negative control. Read the design first: docs/sdlc-lite/cost-control.md (v0.2) and docs/reports/lean-sdlc-cost-control-review.md; re-read every cited line number at plan time, since T-0196, T-0197, T-0199, T-0200, T-0201 and T-0202 move them. Conductor wording is T-0199's file (agents/conductor.md): do not restate it, and edit it only as a pointer line after T-0199 merges. Merge main into the build branch before each local merge and keep both sides of check.py and check.sh conflicts. Run roles from the main checkout's run.sh in a separate worktree. No version bump, tag, push or publish.
 
-## Deferred
+## Dropped
+2026-10-06, by user decision (review of parked tickets): `specgate.py red` runs only at chain split time; solo criteria are not split. specgate.py keeps `check` (T-0210). Red-first for solo is a new ticket if wanted. See docs/reports/parked-tickets-review-2026-10-06.md.
+
+## Deferred (history)
 Parked 2026-10-04 by user decision (course correction): the solo-vs-lean evidence showed the default lane is the problem, so tuning the orchestrated chain is frozen until solo has run on real tickets. Revisit with that data. Status blocked, not dropped; handoff otherwise unchanged.

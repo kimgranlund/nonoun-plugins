@@ -2,7 +2,7 @@
 id: T-0187
 title: "board.py --overview: queue, running roles, supervisor, unread mail from the folders"
 type: feature
-status: blocked
+status: dropped
 size: M
 priority: P2
 depends: [T-0183]
@@ -28,5 +28,8 @@ Read-only, folder-driven, no new store. Existing board behavior is unchanged.
 ## Common rules
 Rules for this ticket, from the user (2026-10-01): every folder this ticket adds is self-describing through its own `AGENTS.md` (with a `CLAUDE.md` containing `@AGENTS.md`), so a role that reads one file learns the system and no skill is added; progressive disclosure holds (a short router line in `.sdlc/AGENTS.md`, details in the folder); every status or state transition is covered by a selftest case that asserts the folder or file state and the stamped fields, plus a negative control that fails when the rule is removed; a live run proves the behavior with a negative control and is recorded in a dated `docs/reports/<name>.md` (environment, exact commands, evidence, limits; an arm that cannot run is recorded unverified, never replaced by a fixture); checks to run before merging locally: `bash plugins/sdlc-lite/scripts/check.sh`, `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, and every selftest; update `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md` layout list, and `plugins/sdlc-lite/AGENTS.md` when behavior or layout changes; do not bump versions, tag, push, or publish; generated Codex agent TOML is never edited by hand; no em dashes anywhere.
 
-## Deferred
+## Dropped
+2026-10-06, by user decision (review of parked tickets): Merged into T-0312: per-repo unread-mail ids and supervisor state go in the fleet-status Moving rows. board.py has no overview and fleet_status.py owns cross-folder status.
+
+## Deferred (history)
 Parked by the user on 2026-10-04 (solo is the default lane, chain tuning is parked): not started; resume as a solo ticket after T-0183 lands.
