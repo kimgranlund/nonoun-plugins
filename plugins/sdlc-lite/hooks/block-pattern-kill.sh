@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash): inside a role run (SDLC_ROLE set by scripts/run.sh or fanout), block
+# PreToolUse(Bash): inside a role run (a role from hooks/_role.sh: SDLC_ROLE set by scripts/run.sh
+# or fanout, else the sub-agent's agent_type), block
 # commands that kill processes by name pattern, because a pattern also matches processes that
 # other sessions, lanes, or the user started. Blocked: pkill or killall in command position,
 # kill fed by pgrep or ps (kill $(pgrep ...), kill `pgrep ...`, pgrep ... | xargs kill,
@@ -19,8 +20,12 @@
 # missing or the masker errors, when a quote is unterminated, when the command holds a
 # heredoc (<<), or when a shell or evaluator (bash, sh, zsh, dash, ksh, fish, eval, ssh, su)
 # appears as a command word, so bash -c "pkill x" stays blocked.
-[[ -n "${SDLC_ROLE:-}" ]] || exit 0
-cmd=$(jq -r '.tool_input.command // ""')
+# shellcheck source=_role.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
+input=$(cat)
+role=$(sdlc_role "$input")
+[[ -n "$role" ]] || exit 0
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 
 # Cheap exit: none of the words appear even with quotes and backslashes removed. A command
 # with kill passes on when it also holds ps, or an assignment and a $ expansion.
@@ -48,7 +53,7 @@ loose="${word}(pkill|killall)${wend}|${word}kill${wend}.*${word}(pgrep|ps)${wend
 loose+="|[[:alpha:]_][[:alnum:]_]*=[\"']?([^[:space:];&|()\`]*/)?(pkill|killall|kill)${wend}.*(^|[;&|({\`]|\\\$\\()[[:space:]]*[\"']?\\\$\\{?[[:alpha:]_]"
 
 block() {
-  echo "Blocked for sdlc role '$SDLC_ROLE': killing by name pattern (pkill, killall, kill \$(pgrep ...), pgrep | xargs kill, kill \$(ps ...), ps ... | xargs kill, a kill word held in a variable) can stop processes other sessions started. Stop only the PIDs you started, for example save \$! at launch and kill that PID. Never kill by name pattern." >&2
+  echo "Blocked for sdlc role '$role': killing by name pattern (pkill, killall, kill \$(pgrep ...), pgrep | xargs kill, kill \$(ps ...), ps ... | xargs kill, a kill word held in a variable) can stop processes other sessions started. Stop only the PIDs you started, for example save \$! at launch and kill that PID. Never kill by name pattern." >&2
   exit 2
 }
 

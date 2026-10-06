@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash): inside a builder run (SDLC_ROLE=builder, set by scripts/run.sh), block a
+# PreToolUse(Bash): inside a builder run (hooks/_role.sh resolves builder: SDLC_ROLE=builder, set by
+# scripts/run.sh, else a sdlc-lite:builder-L<n> sub-agent's agent_type), block a
 # repo-wide formatter, --fix linter, or format script, because builder rule 6 says to run
 # them only on the files the step changed, with those paths passed explicitly.
 # Blocked (exit 2):
@@ -26,8 +27,12 @@
 # when the command holds a heredoc (<<), or when a shell or evaluator (bash, sh, zsh, dash,
 # ksh, fish, eval, ssh, su) appears as a command word, so bash -c 'npm run format' is blocked.
 # Every other role, and a session with no role, passes unchanged.
-[[ "${SDLC_ROLE:-}" == builder ]] || exit 0
-cmd=$(jq -r '.tool_input.command // ""')
+# shellcheck source=_role.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
+input=$(cat)
+role=$(sdlc_role "$input")
+[[ "$role" == builder ]] || exit 0
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 
 # Cheap exit: no formatter or format-script word appears, even with quotes and backslashes
 # removed.
@@ -36,7 +41,7 @@ pf=$(tr -d "\\\\'\"" <<<"$cmd")
   $pf == *black* || $pf == *ruff* || $pf == *biome* ]] || exit 0
 
 block() {
-  echo "Blocked for sdlc role '$SDLC_ROLE' by builder rule 6: a repo-wide formatter, --fix linter, or format script (no file arguments, or a directory, ., or a glob) rewrites files this step did not ask for. Run the formatter only on the files this step changed and pass those paths explicitly, for example prettier --write <paths> or npm run format -- <paths>." >&2
+  echo "Blocked for sdlc role '$role' by builder rule 6: a repo-wide formatter, --fix linter, or format script (no file arguments, or a directory, ., or a glob) rewrites files this step did not ask for. Run the formatter only on the files this step changed and pass those paths explicitly, for example prettier --write <paths> or npm run format -- <paths>." >&2
   exit 2
 }
 
