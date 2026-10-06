@@ -21,6 +21,7 @@
 - [Lean SDLC design review](reports/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
 - [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
 - [Lean SDLC cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
+- [SDLC Lite pillars](lean-sdlc/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
 - [Sub-agent execution mode](lean-sdlc/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
 - [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 

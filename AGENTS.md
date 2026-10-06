@@ -15,7 +15,7 @@ All paths and shell commands in this file are relative to the repository root.
 
 - `plugins/` holds the two plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
-- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support.
+- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/lean-sdlc/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for size S and M, `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
 - A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
 

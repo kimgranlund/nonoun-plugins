@@ -1,6 +1,6 @@
 # SDLC Lite maintenance
 
-Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction.
+Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction. Improvements serve [the four pillars](../../docs/lean-sdlc/pillars.md): performance, cost, quality, resilience.
 
 Read [repository guidance](../../AGENTS.md) first. Paths below are relative to this plugin unless a command starts with `plugins/`; those commands run from the repository root.
 
