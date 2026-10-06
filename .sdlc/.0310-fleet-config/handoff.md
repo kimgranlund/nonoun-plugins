@@ -2,7 +2,7 @@
 id: T-0310
 title: "fleet.json: the active repo registry and conductor list"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Decided by the user on 2026-10-06. Replaces the hand-built status the author ses
 
 ## Constraints
 No model call. Read-only on every repo inspected. No em dashes. No change to any model or effort value. No push, tag or publish.
+
+## Closed
+
+2026-10-06: built and merged on the fleet integration branch; verifier passed

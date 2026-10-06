@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f2b2dcf2f5bb -->
+<!-- sdlc-lite:managed:start v1 sha256:bd2104b796fa -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 46
+- proposed: 45
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
@@ -49,7 +49,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0306 fleet_detect.py: waste and stall detect rules (0306-fleet-detect)
   - T-0307 fleet-retro interview template and environment fingerprint (0307-fleet-interview)
   - T-0308 /sdlc-lite:fleet-retro skill, cross-repo report, verification sample (0308-fleet-retro-skill)
-  - T-0310 fleet.json: the active repo registry and conductor list (0310-fleet-config)
   - T-0311 fleet_status.py: liveness join, load trend and snapshot (0311-fleet-liveness)
   - T-0312 fleet_status.py render and the /sdlc-lite:fleet-status skill (0312-fleet-status-render)
   - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
@@ -58,7 +57,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
 - ready: 0
 - blocked: 0
-- done: 238
+- done: 239
 - dropped: 25
 
 ## Procedures
