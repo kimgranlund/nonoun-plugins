@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Consistency checks for the sdlc-lite plugin. Exit 1 on any mismatch.
 
-1. Level tables agree: scripts/run.sh (source of truth) vs skills/level-rubric. Repository guidance links these sources instead of copying tables.
-2. Every agents/<role>.md has run.sh cases, and every run.sh role has an agent file.
+1. Level tables agree three ways: adapters/claude/levels.json (the table home), scripts/run.sh (until its Claude branch is retired),
+   and skills/level-rubric. Repository guidance links these sources instead of copying tables. Negative controls: one effort changed in
+   each of the three sources must be flagged.
+2. Every agents/<role>.md (the role files, not the generated per-level definitions) has levels.json rows, every levels.json pipeline
+   role has an agent file, and every levels.json row has a run.sh case and every run.sh case a levels.json row until run.sh is retired.
 3. Every skill an agent declares (frontmatter skills:) exists under skills/.
 4. Long role runs: chain, bench, fanout, and conductor state the interactive vs headless rule.
 5. Plan-defect route: the `plan defect` tag, the `Plan review` section, and the planner's
@@ -51,9 +54,10 @@
    `independently verifiable outcome` appears in agents/planner.md; and `steps lint: warning:` appears in
    agents/planner.md and scripts/steps.py. Each pair has a negative control (the phrase removed must be flagged).
 15. Evals lock: when `<plugin>/../../.sdlc` exists, `scripts/evals.py check` must pass for it: every eval is valid,
-   and `evals/table-lock.json` holds the current model-table hash and cites a valid eval dated later than its
-   `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such folder, the guard prints
-   `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
+   and `evals/table-lock.json` holds the current model-table hash (read from adapters/claude/levels.json and the Codex models.json)
+   and cites a valid eval dated later than its `previous_eval`. Each problem line prints as `FAIL evals: <line>`. With no such
+   folder, the guard prints `skip: evals lock guard`. Negative control: levels.json with the builder:L1 model changed gives
+   `model table changed`.
 16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
    and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
    agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
@@ -67,8 +71,9 @@
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
 18. Solo agent: agents/solo.md exists and names tiers S, M, and L with `Sonnet low`, `Sonnet xhigh`, and
    `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
-   L3 gpt-6.1-sol xhigh; and the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist. Negative controls:
-   each phrase removed, no `solo` key, a changed `solo` entry, and one TOML missing must be flagged.
+   L3 gpt-6.1-sol xhigh; the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist; and adapters/claude/levels.json has the
+   `solo` tiers S sonnet low, M sonnet xhigh, L opus xhigh. Negative controls: each phrase removed, no `solo` key, a changed
+   `solo` entry, one TOML missing, and a changed levels.json solo tier must be flagged.
 19. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
    still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
    dispatch line `Lane: <lane> because <reason>`, (3) the stop rules `hard stop that comes to the user`, and (4) the
@@ -117,6 +122,10 @@
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
    `docs_check.py" selftest`. Negative controls: each phrase removed from each file must be flagged.
+34. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
+   agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
+   Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
+   check.sh phrase removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -134,6 +143,17 @@ for role, lvl, model, effort in re.findall(r'^\s*([\w-]+):(L\d)\)\s*model=([\w-]
     run[(role, lvl)] = f'{cap(model)} {effort}'
 if not run: errors.append('run.sh: no role:level cases parsed')
 
+# levels.json: {role: {level: [model, effort]}}; the L<n> rows are the pipeline roles, the S, M, L rows the solo tiers.
+levels, solo_levels = {}, {}
+try:
+    for role, by_level in json.loads((root/'adapters/claude/levels.json').read_text()).items():
+        for lvl, (model, effort) in by_level.items():
+            if role == 'solo': solo_levels[lvl] = [model, effort]
+            else: levels[(role, lvl)] = f'{cap(model)} {effort}'
+except (OSError, ValueError) as e:
+    errors.append(f'adapters/claude/levels.json: cannot read: {e}')
+if not levels: errors.append('adapters/claude/levels.json: no role:level rows parsed')
+
 # level-rubric: per-role sections "## builder (...)" with rows "| L1 | Sonnet low | ...",
 # plus the single-level table rows "| architect | L1 | Fable high |".
 rubric = {}
@@ -147,12 +167,26 @@ for line in (root/'skills/level-rubric/SKILL.md').read_text().splitlines():
     m = re.match(r'^\| ([\w-]+) \| (L\d) \| (\w+(?: \d+\.\d+)? \w+) \|', line)
     if m: rubric[(m.group(1), m.group(2))] = m.group(3)
 
-def compare(label, other):
-    for k in sorted(set(run) | set(other)):
-        if k not in other: errors.append(f'{label}: missing {k[0]}:{k[1]} (run.sh has {run[k]})')
-        elif k not in run: errors.append(f'{label}: has {k[0]}:{k[1]} = {other[k]}, run.sh does not')
-        elif run[k] != other[k]: errors.append(f'{label}: {k[0]}:{k[1]} = {other[k]}, run.sh = {run[k]}')
-compare('level-rubric', rubric)
+def table_diffs(levels, run, rubric):
+    """Three-way agreement of the Claude level table. levels.json and run.sh also get their missing rows named by item 2."""
+    out = []
+    for la, a, lb, b, rows in (('levels.json', levels, 'run.sh', run, False), ('levels.json', levels, 'level-rubric', rubric, True),
+                               ('run.sh', run, 'level-rubric', rubric, True)):
+        for k in sorted(set(a) | set(b)):
+            if k in a and k in b:
+                if a[k] != b[k]: out.append(f'{lb}: {k[0]}:{k[1]} = {b[k]}, {la} = {a[k]}')
+            elif rows and k not in b: out.append(f'{lb}: missing {k[0]}:{k[1]} ({la} has {a[k]})')
+            elif rows: out.append(f'{lb}: has {k[0]}:{k[1]} = {b[k]}, {la} does not')
+    return out
+errors.extend(table_diffs(levels, run, rubric))
+def change_effort(table):
+    """A copy of the table with one effort changed, for a negative control."""
+    k = sorted(table)[0]
+    model, effort = table[k].rsplit(' ', 1)
+    return {**table, k: f'{model} {"low" if effort == "xhigh" else "xhigh"}'}
+for _label, _args in (('levels.json', (change_effort(levels), run, rubric)), ('run.sh', (levels, change_effort(run), rubric)),
+                      ('level-rubric', (levels, run, change_effort(rubric)))):
+    if not table_diffs(*_args): errors.append(f'check.py: level table negative control not flagged for a changed {_label} effort')
 # Scout pin guard: run.sh scout row and rubric scout row agree, with a built-in negative control.
 def scout_mismatch(run_text, rubric_text):
     m = re.search(r'^\s*scout:L1\)\s*model=([\w-]+);\s*effort=(\w+)', run_text, re.M)
@@ -165,11 +199,27 @@ if cap('claude-haiku-4-5') != 'Haiku 4.5' or cap('sonnet') != 'Sonnet':
 if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku-9-9', _rs), _rb):
     errors.append('check.py: scout pin guard negative control not flagged')
 
+# Role files (docstring item 2). The generated per-level definitions (agents/<role>-L<n>.md, agents/solo-<tier>.md) are not role files.
+sys.path.insert(0, str(root/'scripts'))
+import claude_roles
 SESSION_AGENTS = {'conductor', 'messenger', 'solo'}  # all run as session agents (main session or its sub-agent), not through run.sh
-agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS
-roles = {r for r, _ in run}
-for r in sorted(agents - roles): errors.append(f'agents/{r}.md has no run.sh case')
-for r in sorted(roles - agents): errors.append(f'run.sh role {r} has no agents/{r}.md')
+try: GENERATED = claude_roles.generated_stems(root)
+except claude_roles.TableError as e: GENERATED = set(); errors.append(f'claude_roles.py: {e}')
+agents = {p.stem for p in (root/'agents').glob('*.md')} - SESSION_AGENTS - GENERATED
+def role_table_diffs(agents, levels, run):
+    roles, run_roles = {r for r, _ in levels}, {r for r, _ in run}
+    return ([f'agents/{r}.md has no levels.json rows' for r in sorted(agents - roles)]
+            + [f'levels.json role {r} has no agents/{r}.md' for r in sorted(roles - agents)]
+            + [f'run.sh role {r} has no agents/{r}.md' for r in sorted(run_roles - agents)]
+            + [f'levels.json row {r}:{l} has no run.sh case' for r, l in sorted(set(levels) - set(run))]
+            + [f'run.sh case {r}:{l} has no levels.json row' for r, l in sorted(set(run) - set(levels))])
+errors.extend(role_table_diffs(agents, levels, run))
+_some = sorted(levels)[0] if levels else ('builder', 'L1')
+for _label, _args in (('an agent file with no levels.json rows', (agents | {'ghost'}, levels, run)),
+                      ('a levels.json role with no agent file', (agents - {_some[0]}, levels, run)),
+                      ('a levels.json row with no run.sh case', (agents, levels, {k: v for k, v in run.items() if k != _some})),
+                      ('a run.sh case with no levels.json row', (agents, {k: v for k, v in levels.items() if k != _some}, run))):
+    if not role_table_diffs(*_args): errors.append(f'check.py: role file negative control not flagged for {_label}')
 
 for p in sorted((root/'agents').glob('*.md')):
     fm = p.read_text().split('---')[1] if p.read_text().startswith('---') else ''
@@ -550,6 +600,11 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
+SOLO_CLAUDE = {'S': ['sonnet', 'low'], 'M': ['sonnet', 'xhigh'], 'L': ['opus', 'xhigh']}
+def solo_levels_bad(claude_solo): return [] if claude_solo == SOLO_CLAUDE else [f'solo: adapters/claude/levels.json solo tiers are not {SOLO_CLAUDE}']
+errors.extend(solo_levels_bad(solo_levels))
+if not solo_levels_bad(dict(solo_levels, M=['sonnet', 'low'])) or not solo_levels_bad({}):
+    errors.append('check.py: solo levels negative control not flagged')
 # Conductor rules (docstring item 19): philosophy and objective, lane first, stop rules, thin conductor.
 CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
                    'context and instruction.',
@@ -601,8 +656,9 @@ if sdlc.is_dir():
     else:
         with tempfile.TemporaryDirectory() as _td:
             _tp = pathlib.Path(_td)
-            (_tp/'scripts').mkdir(); (_tp/'adapters/codex').mkdir(parents=True)
-            (_tp/'scripts/run.sh').write_text(re.sub(r'(builder:L1\)\s*model=)[\w-]+', r'\g<1>evals-negative-control', rt))
+            (_tp/'adapters/claude').mkdir(parents=True); (_tp/'adapters/codex').mkdir(parents=True)
+            _lv = json.loads((root/'adapters/claude/levels.json').read_text()); _lv['builder']['L1'][0] = 'evals-negative-control'
+            (_tp/'adapters/claude/levels.json').write_text(json.dumps(_lv))
             shutil.copy(root/'adapters/codex/models.json', _tp/'adapters/codex/models.json')
             _n = _evals(_tp)
             if 'model table changed' not in _n.stdout + _n.stderr:
@@ -681,7 +737,7 @@ def agent_cmd_bad(skill, stems, codex_keys):
     if 'block-role-spawn.sh' not in skill: bad.append('skills/agent/SKILL.md does not name block-role-spawn.sh')
     return bad
 _ak = _rd(root/'skills/agent/SKILL.md')
-_as = {p.stem for p in (root/'agents').glob('*.md')}
+_as = {p.stem for p in (root/'agents').glob('*.md')} - GENERATED
 errors.extend(agent_cmd_bad(_ak, _as, set(mc)))
 if not agent_cmd_bad(_ak.replace('`archaeologist`', 'archaeologist'), _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a removed stem')
 if not agent_cmd_bad(_ak + '\n| `ghost` | x | x |\n', _as, set(mc)): errors.append('check.py: agent command negative control not flagged for a row with no agent file')
@@ -787,6 +843,29 @@ errors.extend(f'check.py: docs check: {m}' for m in docs_check_bad(_dc_texts))
 for _name, _phrases in DOCS_CHECK_NEEDS:
     for _ph in _phrases:
         if not docs_check_bad(dict(_dc_texts, **{_name: _dc_texts[_name].replace(_ph, '')})): errors.append(f'check.py: docs check negative control not flagged for {_name} without {_ph}')
+# Generated Claude definitions (docstring item 34): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
+def claude_roles_check(plugin):
+    return subprocess.run([sys.executable, str(root/'scripts/claude_roles.py'), '--plugin', str(plugin), 'generate', '--check'], capture_output=True, text=True)
+_cr = claude_roles_check(root)
+if _cr.returncode != 0: errors.extend(f'generated definitions: {l.removeprefix("claude_roles.py: ")}' for l in (_cr.stderr or _cr.stdout).strip().splitlines())
+elif GENERATED:
+    with tempfile.TemporaryDirectory() as _td:
+        _tp = pathlib.Path(_td)
+        shutil.copytree(root/'agents', _tp/'agents'); (_tp/'adapters/claude').mkdir(parents=True)
+        shutil.copy(root/'adapters/claude/levels.json', _tp/'adapters/claude/levels.json')
+        _gen = _tp/'agents'/(sorted(GENERATED)[0] + '.md')
+        _gen.write_text(_gen.read_text() + 'hand edit\n')
+        if claude_roles_check(_tp).returncode != 1: errors.append('check.py: generated definitions negative control not flagged for a hand edit')
+        shutil.copy(root/('agents/' + _gen.name), _gen)
+        _lv = json.loads((_tp/'adapters/claude/levels.json').read_text()); _lv['builder']['L1'][1] = 'xhigh'
+        (_tp/'adapters/claude/levels.json').write_text(json.dumps(_lv))
+        if claude_roles_check(_tp).returncode != 1: errors.append('check.py: generated definitions negative control not flagged for a levels.json effort changed without regenerating')
+CLAUDE_ROLES_NEEDS = ('claude_roles.py" generate --check', 'claude_roles.py" selftest')
+def claude_roles_wiring_bad(sh): return [f'scripts/check.sh missing "{ph}"' for ph in CLAUDE_ROLES_NEEDS if ph not in sh]
+_cr_sh = _rd(root/'scripts/check.sh')
+errors.extend(f'check.py: generated definitions: {m}' for m in claude_roles_wiring_bad(_cr_sh))
+for _ph in CLAUDE_ROLES_NEEDS:
+    if not claude_roles_wiring_bad(_cr_sh.replace(_ph, '')): errors.append(f'check.py: generated definitions negative control not flagged for check.sh without {_ph}')
 for e in errors: print('FAIL', e)
-print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
+print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

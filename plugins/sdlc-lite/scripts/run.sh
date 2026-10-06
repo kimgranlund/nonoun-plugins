@@ -127,7 +127,7 @@ backend="${SDLC_BACKEND:-claude}"
 case "$backend" in claude|codex) ;; *) echo "unknown SDLC_BACKEND: $backend" >&2; exit 2 ;; esac
 usage() { echo "usage: run.sh <role> <level> <handoff.md>  (see levels in this file)" >&2; exit 2; }
 
-# role:level -> model effort. Keep in sync with skills/level-rubric/SKILL.md (Claude mapping).
+# role:level -> model effort. Mirrors adapters/claude/levels.json (the table home) until this Claude branch is retired; keep in sync with it and skills/level-rubric/SKILL.md (Claude mapping).
 case "$role:$level" in
   builder:L1)       model=sonnet; effort=low ;;
   builder:L2)       model=opus;   effort=low ;;

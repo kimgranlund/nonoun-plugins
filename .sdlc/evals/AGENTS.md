@@ -1,6 +1,6 @@
 # Evals
 
-This folder holds dated records of model and effort experiments. A change to a model or effort row in `plugins/sdlc-lite/scripts/run.sh` (the `case "$role:$level"` rows) or to `plugins/sdlc-lite/adapters/codex/models.json` lands only with a new eval and `evals.py lock`, else `python3 plugins/sdlc-lite/scripts/check.py` fails. Model and effort defaults stay user decisions; an eval records evidence and never changes one. Run every command below from the repository root.
+This folder holds dated records of model and effort experiments. A change to a model or effort row in `plugins/sdlc-lite/adapters/claude/levels.json` (the `scripts/run.sh` `case "$role:$level"` rows mirror it until run.sh is retired, and `claude_roles.py generate` regenerates the agent definitions) or to `plugins/sdlc-lite/adapters/codex/models.json` lands only with a new eval and `evals.py lock`, else `python3 plugins/sdlc-lite/scripts/check.py` fails. Model and effort defaults stay user decisions; an eval records evidence and never changes one. Run every command below from the repository root.
 
 ## File format
 
