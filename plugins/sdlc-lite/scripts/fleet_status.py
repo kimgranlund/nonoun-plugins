@@ -121,7 +121,7 @@ LOAD_FN = os.getloadavg
 PROBE_TIMEOUT = 10.0
 GIT_TIMEOUT = 20.0
 GH_TIMEOUT = 30.0
-DEFAULT_STOP_LINE = 14.0
+DEFAULT_STOP_LINE = 60.0
 DEFAULT_ACTIVE_MINUTES = 15.0
 NEAR_FRACTION = 0.8
 TREND_MIN_AGE_S = 20
@@ -1881,7 +1881,7 @@ def selftest_render():
     # --- machine line ------------------------------------------------------------------------------------
     ml = [ln for ln in text.splitlines() if ln.startswith('Machine')]
     ok('machine: one line with load, trend, cores, stop line, top consumers with a pid, and the verdict',
-       len(ml) == 1 and 'load 6.0' in ml[0] and '8 cores' in ml[0] and 'stop line 14' in ml[0]
+       len(ml) == 1 and 'load 6.0' in ml[0] and '8 cores' in ml[0] and 'stop line 60' in ml[0]
        and 'claude 1 proc 40% (pid 41)' in ml[0] and 'watchers 1 proc 6% (pid 42)' in ml[0]
        and ml[0].rstrip().endswith('[loadavg, ps]') and re.search(r'load 6\.0 (\u2192 flat|[↑↓] [+-]\d)', ml[0])
        and 'verdict ok' in ml[0])
