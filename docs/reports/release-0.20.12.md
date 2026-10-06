@@ -68,3 +68,10 @@ Not exercised: no live Codex run of either new skill or script, no Codex adapter
 ## Checks run for the release
 
 From this worktree, all passing: `check.py` (19 role levels, 9 agents), `codex_roles.py generate --check` (no agent body changed except the conductor line; the TOML is already regenerated), `check-packaging.py`, `tickets.py check` (310 tickets, roadmap current), the selftests of `fleet_collect.py`, `fleet_detect.py`, `fleet_config.py` and `fleet_status.py`. Results of the broken-link comparison, `git diff --check`, the full `check.sh` run on a `git archive` copy with a path without `claude`, and the independent fact-check are recorded in the release commit message and the hand-off report; their logs are not committed.
+
+## Follow-up: independent verification of T-0307 and T-0310
+
+T-0319 ran one L3 verifier over both tickets (verdict in `.sdlc/verify-fleet-0307-0310/verifier-L3.md`): fail on two criteria, everything else passed.
+
+- T-0320: `fleet_config.py` reports line 1 for a nameless or non-object repo entry (T-0310 criterion B3); exit 1 and no dropped repo hold.
+- T-0321: the T-0307 read-through has no record, the gen-ui-kit report is absent on this machine, and `interview.md` states no rule for a finding with two marks or for positives (criterion A4).
