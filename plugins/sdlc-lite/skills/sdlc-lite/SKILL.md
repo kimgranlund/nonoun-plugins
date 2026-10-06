@@ -14,6 +14,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Request | Workflow |
 |---|---|
 | Status or progress | board |
+| Status across every active repo, what needs the user, what is stuck | fleet-status |
 | Create, inspect, prioritize tickets | ticket |
 | Capture work context | handoff |
 | Clarify one ask / explore design decisions | clarify / grill |
