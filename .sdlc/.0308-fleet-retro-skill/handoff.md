@@ -2,7 +2,7 @@
 id: T-0308
 title: "/sdlc-lite:fleet-retro skill, cross-repo report, verification sample"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0305, T-0306, T-0307]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,7 @@ Run from the repository root. The live run was read-only and headless: its inter
 - `test "$(printf '%s %s' "$(git -C /Users/kimgranlund/Projects/nonoun/agent-ui status --short | md5)" "$(git -C /Users/kimgranlund/Projects/maison/ui-kit-maison status --short | md5)")" = "$(cat /tmp/fleet-retro-live/git-before.txt)"`
 - Open `plugins/sdlc-lite/skills/fleet-retro/fixtures.md` rows F1, F2 and F3 (`grep -n '^| F[123] |' plugins/sdlc-lite/skills/fleet-retro/fixtures.md`) and apply `plugins/sdlc-lite/skills/fleet-retro/rubric.md` to each yourself, following each row's evidence (use `git show`, `git log` and `git tag --contains` for G2), without reading the Calibration section of rubric.md first: F1 passes every gate and scores at least 7 of 10; F2 and F3 each fail a gate or score below 7. Write each row's gate results and scores in the evidence.
 - `! grep -n "$(printf '\342\200\224')" plugins/sdlc-lite/skills/fleet-retro/SKILL.md plugins/sdlc-lite/skills/fleet-retro/rubric.md plugins/sdlc-lite/skills/fleet-retro/fixtures.md docs/reports/fleet-retro-2026-10-06.md plugins/sdlc-lite/scripts/check.py docs/maintenance/sdlc-internals.md .sdlc/0308-fleet-retro-skill/handoff.md && git diff --check`
+
+## Closed
+
+2026-10-06: built and merged on the fleet integration branch; verifier passed
