@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:982ea7cdaf5a -->
+<!-- sdlc-lite:managed:start v1 sha256:948857877ace -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -52,18 +52,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0312 fleet_status.py render and the /sdlc-lite:fleet-status skill (0312-fleet-status-render)
   - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
 - ready: 0
-- blocked: 9
-  - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
-  - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
-  - T-0201 Anchor rule for step blocks and its lint check (0201-anchor)
-  - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
-  - T-0206 tickets.py migrate-layout (0206-migrate-layout)
-  - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
-  - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
-  - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
-  - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
+- blocked: 0
 - done: 237
-- dropped: 19
+- dropped: 28
 
 ## Procedures
 

@@ -2,7 +2,7 @@
 id: T-0207
 title: "Readers and docs for the topic layout"
 type: chore           # feature | bug | chore | spike | idea
-status: blocked     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: dropped
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0206]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,5 +24,8 @@ Part of the SDLC Lite design, `docs/sdlc-lite/design.md` (v0.4, build row L15), 
 ## Constraints
 Flat layout output unchanged. check.py:330 matches the suffix `/step-1/handoff.md` only, so only its message string changes. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
 
-## Deferred
+## Dropped
+2026-10-06, by user decision (review of parked tickets): Readers for a layout dropped with T-0205. See docs/reports/parked-tickets-review-2026-10-06.md.
+
+## Deferred (history)
 Parked 2026-10-04 by user decision (course correction): the solo-vs-lean evidence showed the default lane is the problem, so tuning the orchestrated chain is frozen until solo has run on real tickets. Revisit with that data. Status blocked, not dropped; handoff otherwise unchanged.

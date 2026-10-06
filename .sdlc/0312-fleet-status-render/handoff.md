@@ -15,6 +15,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Intent
 - Do: Add `fleet_status.py render [--repos A,B] [--since last|DATE]` printing sections in this order, one screen: Machine (one line: load, trend, cores, top consumers, verdict), Needs you (decision, credential or merge, owner, age), Moving per repo with the liveness mark, Stale or stuck, Done since last report, Release state. Add plugins/sdlc-lite/skills/fleet-status/SKILL.md: run the script, print its output verbatim, then at most one AskUserQuestion round for the Needs-you items with a recommendation first; never composes a table itself; optional `--ping` lists which conductor sessions to message for health reports (it does not send). Add it to packaging and discovery checks and a line in docs maintenance reference.
+- Also (folded in from dropped T-0187, 2026-10-06): each Moving row carries the repo's unread message ids (names only, never a body, from `.sdlc/messages/*/new/`) and the supervisor state from `.sdlc/supervisor/status.json` when present.
 - Non-goals: Sending messages to conductors; filing tickets.
 - Done when:
   - A planted stale row appears under Stale or stuck, not under Moving (observed negative control).
