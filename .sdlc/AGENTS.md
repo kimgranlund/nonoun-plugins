@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:948857877ace -->
+<!-- sdlc-lite:managed:start v1 sha256:48e488c2064e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 41
+- proposed: 44
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -51,6 +51,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0311 fleet_status.py: liveness join, load trend and snapshot (0311-fleet-liveness)
   - T-0312 fleet_status.py render and the /sdlc-lite:fleet-status skill (0312-fleet-status-render)
   - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
+  - T-0314 Red-first control: a (red) criterion must fail at base and pass after, for solo and chain (0314-red-first-control)
+  - T-0315 Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule (0315-replan-cost-remeasure)
+  - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
 - ready: 0
 - blocked: 0
 - done: 237

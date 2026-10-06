@@ -311,3 +311,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0311 | [0311-fleet-liveness](0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | ⏳ proposed |
 | T-0312 | [0312-fleet-status-render](0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | ⏳ proposed |
 | T-0313 | [0313-solo-worktree-hook](0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | S | P2 | none | ⏳ proposed |
+| T-0314 | [0314-red-first-control](0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | M | P2 | none | ⏳ proposed |
+| T-0315 | [0315-replan-cost-remeasure](0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | S | P2 | none | ⏳ proposed |
+| T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | M | P2 | none | ⏳ proposed |
