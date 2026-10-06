@@ -225,3 +225,10 @@
 - note: `ROUTER_FLAT_INTRO` duplicates the first paragraph still inside `ROUTER_TEMPLATE`, and `router_bodies` swaps them by string match; editing one without the other leaves a topics tree with the flat paragraph (the `tp-new` selftest case catches it).
 - note: the builder edited two selftest asserts the handoff did not list, in the numbered-config warning block. Each now checks `'ticket_folders: numbered' not in out + err`, because every flat root now warns.
 - note: `check.py` guards, listed among the ticket's owning files, were not touched, and the artifacts show no guidance-doc update (the AGENTS.md files). The Done-when line says affected guidance is updated, so confirm whether anything was needed.
+
+## T-0206: tickets.py migrate-layout (2026-10-06)
+
+- note: This repo's `.sdlc` has not been migrated. The command would refuse today because the tree is dirty and `.sdlc/pause-2026-10-06.md` is a loose root file. Move or remove that file and commit before any real run.
+- note: After a migration the managed `AGENTS.md` block reads `stale` until `onboard.py setup` runs. This is by design and is stated in the upgrade note.
+- note: The `ticket_root` bullet and the `.sdlc/roadmap.md` and `.sdlc/notes.md` path text in the docs were left to T-0207 (readers and docs).
+- note: The tickets selftest now takes about 37 s, up from about 31 s at HEAD.

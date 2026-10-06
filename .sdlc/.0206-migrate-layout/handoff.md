@@ -2,7 +2,7 @@
 id: T-0206
 title: "tickets.py migrate-layout"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed
+status: done
 size: L              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0205]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
