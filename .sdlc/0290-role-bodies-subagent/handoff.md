@@ -30,5 +30,5 @@ Preserve every phrase and section check.py and results.py assert. No push, publi
 - `python3 scripts/check-packaging.py` exits 0
 - `for r in scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo; do grep -q "results.py" plugins/sdlc-lite/agents/$r.md || exit 1; done`
 - `! grep -l "run\.sh" plugins/sdlc-lite/agents/scout.md plugins/sdlc-lite/agents/researcher.md plugins/sdlc-lite/agents/architect.md plugins/sdlc-lite/agents/archaeologist.md plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/filer.md plugins/sdlc-lite/agents/plan-reviewer.md`
-- `git diff --quiet "$SDLC_BASE_SHA" -- plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/agents/messenger.md plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
+- `git diff --quiet main -- plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/agents/messenger.md plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
 - `test -s docs/reports/role-bodies-subagent.md`
