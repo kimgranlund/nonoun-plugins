@@ -55,7 +55,7 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 
 ## When a plan is reviewed
 
-The plan-reviewer (L1, one level) reviews a plan before any builder starts. It is for L4 and L5 steps only: required for any plan with a step at builder L4 or L5 (a merge step is L4 or higher). Planner level, a replan, and a `## Plan review` line no longer trigger it; the planner's open readiness concerns become `## Notes` for the builder.
+The plan-reviewer (L1, one level) reviews a plan before any builder starts. It is for L4 and L5 steps only: required for any plan with a step at builder L4 or L5. Planner level, a merge step, a replan, and a `## Plan review` line no longer trigger it; the planner's open readiness concerns become `## Notes` for the builder.
 
 Other plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
 

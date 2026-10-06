@@ -121,9 +121,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               the plan's ## Assumptions section (lines up to the next ## heading) holds a list item
                 whose text after "- " or "* " starts with "unresolved:" -> stop (the reason quotes
                 the item; the user decides)
-              required when: the plan's file name level is L3, or a step block's level: is L4 or L5,
-                or a step title starts with "Merge ", or the task dir holds two or more planner
-                results (a replan), or handoff.md holds a line "## Plan review"
+              required when: a step block's level: is L4 or L5 (T-0294; planner level, a Merge title,
+                a replan, and a "## Plan review" line no longer require it)
               not required                               -> split
               no plan-reviewer-*.md counts after the plan (order.counts_after) -> review L1
               the newest such result fails results.structure_error(r, 'plan-reviewer') -> invalid
@@ -162,7 +161,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               size L or XL -> "size <v> is above M, and lean takes only size S or M"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
                 an unresolved assumption: "<first item>""
-              every reason review_required() returns, verbatim (a step at L4 or L5)
+              every reason review_required() returns, verbatim (a step at L4 or L5), then the lean-only
+                reasons (a planner L3 plan, a Merge step, a replan, a ## Plan review line: plan review no
+                longer needs them, but lean stays strict)
               steps that do not parse -> "<plan> has steps that do not parse (steps.py lint names why)",
                 and the step rules below are skipped
               more than 2 steps -> "<k> steps, and lean allows at most 2"
@@ -1681,6 +1682,23 @@ def ticket_criteria(text):
     return n
 
 
+def lean_only_reasons(plan, task_dir, review_line):
+    """Reasons the lean lane refuses a plan that needs no plan review (T-0294 narrowed review to L4 and
+    L5): a planner L3 plan, a Merge step, a replan, a ## Plan review line. Lean is a stricter lane."""
+    _, _, titles = plan_facts(plan)
+    why = []
+    if result_level(plan) == 3:
+        why.append(f'{os.path.basename(plan)} is a planner L3 plan')
+    if any(x.startswith('Merge ') for x in titles):
+        why.append('the plan has a merge step')
+    n = len(order.ordered(task_dir, 'planner'))
+    if n >= 2:
+        why.append(f'{n} planner results (a replan)')
+    if review_line:
+        why.append('handoff.md holds ## Plan review')
+    return why
+
+
 def lane_action(task):
     """Return (lane, point, reasons, [files read]) for a task dir: solo, lean, or full. Writes nothing.
     The plan is read leniently, like plan_facts: split, lint, and review refuse a bad plan."""
@@ -1728,6 +1746,7 @@ def lane_action(task):
     if unresolved:
         reasons.append(f'{pname} lists an unresolved assumption: "{unresolved[0]}"')
     reasons += why
+    reasons += lean_only_reasons(plan, t, review_line)
     try:
         steps = parse_steps(pathlib.Path(plan))
     except Fail:
@@ -3601,8 +3620,10 @@ def selftest():
         with open(d / 'handoff.md', 'a', encoding='utf-8') as f:
             f.write('\n## Plan review\nrequired\n')
         lane, reasons, _, _ = l_run(d)
-        check('(lane) planner L3, a replan, and a ## Plan review line alone no longer make a ticket full',
-              lane == 'lean')
+        check('(lane) lean stays strict: planner L3, a replan, and a ## Plan review line each keep a ticket full '
+              'though plan review no longer requires them',
+              lane == 'full' and 'handoff.md holds ## Plan review' in reasons
+              and any('planner L3 plan' in r for r in reasons) and any('(a replan)' in r for r in reasons))
 
         rr_cases = [
             l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(4, 3))}),

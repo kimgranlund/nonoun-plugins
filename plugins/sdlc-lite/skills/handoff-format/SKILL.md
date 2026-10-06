@@ -16,7 +16,7 @@ user-invocable: false
   scout-L1.md           outputs of task-level roles: <role>-<level>.md
   planner-L2.md
   planner-L3-2.md       a replan; the latest runs.jsonl record is current
-  plan-reviewer-L1.md   plan review (planner L3, a step at L4 or L5, a merge step, or a replan)
+  plan-reviewer-L1.md   plan review (only for a plan with a step at L4 or L5)
   runs.jsonl            one line per run: role, level, model, effort, cost, duration, file
   skips.md              lane history: one "- lane:" line per steps.py lane run, under ## Lane
                         and, under ## Skipped, one entry per full-chain role (planner, verifier
