@@ -31,7 +31,7 @@ cmd=$(jq -r '.tool_input.command // ""')
 
 # Cheap exit: no formatter or format-script word appears, even with quotes and backslashes
 # removed.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 [[ $pf == *format* || $pf == *fmt* || $pf == *fix* || $pf == *prettier* ||
   $pf == *black* || $pf == *ruff* || $pf == *biome* ]] || exit 0
 
@@ -311,6 +311,6 @@ loose+="|${word}gofmt[[:space:]]([^;&|]*[[:space:]])?-w${wend}"
 loose+="|${word}(go|cargo|dprint)${tok}fmt${wend}"
 loose+="|${word}biome${wend}[^;&|]*--(write|fix|apply)"
 loose+="|${word}clang-format[[:space:]]([^;&|]*[[:space:]])?--?i${wend}"
-raw=$(tr '\n' ' ' <<<"${cmd//\\/}")
+raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 grep -Eq "$loose" <<<"$raw" && block
 exit 0

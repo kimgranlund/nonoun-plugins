@@ -28,7 +28,7 @@
 cmd=$(jq -r '.tool_input.command // ""')
 
 # Cheap exit: no search command word appears, even with quotes and backslashes removed.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree)([^[:alnum:]_-]|$)'
 [[ $pf =~ $re ]] || exit 0
 
@@ -265,6 +265,6 @@ loose+="|${word}e?grep${more}${gr}([^;&|]*[[:space:]])?${rt}"
 loose+="|${word}e?grep${more}${rt}([^;&|]*[[:space:]])?${gr}"
 loose+="|${word}ls${more}${lr}([^;&|]*[[:space:]])?${rt}"
 loose+="|${word}ls${more}${rt}([^;&|]*[[:space:]])?${lr}"
-raw=$(tr '\n' ' ' <<<"${cmd//\\/}")
+raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 grep -Eq "$loose" <<<"$raw" && block
 exit 0

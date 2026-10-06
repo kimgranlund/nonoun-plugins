@@ -24,7 +24,7 @@ cmd=$(jq -r '.tool_input.command // ""')
 
 # Cheap exit: none of the words appear even with quotes and backslashes removed. A command
 # with kill passes on when it also holds ps, or an assignment and a $ expansion.
-pf=${cmd//[\\\'\"]/}
+pf=$(tr -d "\\\\'\"" <<<"$cmd")
 [[ $pf == *pkill* || $pf == *killall* || $pf == *pgrep* ]] ||
   [[ $pf == *kill* && ($pf == *ps* || ($pf == *=* && $pf == *\$*)) ]] || exit 0
 
@@ -114,6 +114,6 @@ if scan=$(python3 -c "$masker" "$cmd" 2>/dev/null); then
   held_kill "$scan"
   exit 0
 fi
-raw=$(tr '\n' ' ' <<<"${cmd//\\/}")
+raw=$(tr -d '\\' <<<"$cmd" | tr '\n' ' ')
 grep -Eq "$loose" <<<"$raw" && block
 exit 0
