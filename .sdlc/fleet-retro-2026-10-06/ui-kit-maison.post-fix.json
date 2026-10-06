@@ -1,0 +1,971 @@
+{
+  "repo": "/Users/kimgranlund/Projects/maison/ui-kit-maison",
+  "summary": "runs: 17 deduped, $92.19, 1 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-06T14:30:00Z",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.20.11",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.20.11",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.20.11",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.292 (Claude Code)",
+    "time": "2026-10-06T21:17:58Z",
+    "uptime_load": {
+      "uptime_s": 1659644,
+      "load1": 10.14,
+      "load5": 9.14,
+      "load15": 9.17,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 17,
+    "cost_usd": 92.1896,
+    "duration_s": 30422.9,
+    "unmetered": 0,
+    "by_role": {
+      "verifier": {
+        "count": 7,
+        "cost_usd": 45.7205,
+        "duration_s": 5478.2
+      },
+      "solo": {
+        "count": 8,
+        "cost_usd": 37.1089,
+        "duration_s": 23893.2
+      },
+      "planner": {
+        "count": 1,
+        "cost_usd": 6.6922,
+        "duration_s": 887.6
+      },
+      "plan-reviewer": {
+        "count": 1,
+        "cost_usd": 2.668,
+        "duration_s": 163.9
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 12,
+        "cost_usd": 70.3355,
+        "duration_s": 27411.4
+      },
+      "full": {
+        "count": 5,
+        "cost_usd": 21.8541,
+        "duration_s": 3011.5
+      }
+    },
+    "by_ticket": {
+      "tickets/.0183-chart-core-export-payload": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/0150-recipe-ts-naming-and-custom-elements": {
+        "solo": 1
+      },
+      "tickets/0179-chart-slice-8": {
+        "plan-reviewer": 1,
+        "planner": 1
+      },
+      "tickets/0182-maison-element-base": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/0184-verification-runs-in-testing-repo": {
+        "solo": 2,
+        "verifier": 3
+      },
+      "tickets/0185-button-active-paint": {
+        "solo": 1
+      },
+      "tickets/0186-cycle-intent-scorer-source": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/0189-listbox-scroll-and-scrollbar": {
+        "solo": 1,
+        "verifier": 1
+      }
+    },
+    "interrupted": {
+      "count": 1,
+      "attempts": [
+        {
+          "attempt_id": "61228c619f044c339fc5f6011d3a3d4b",
+          "role": "verifier",
+          "level": "L3",
+          "started_at": "2026-10-06T14:48:50.241865+00:00",
+          "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-EL-T-0182/c/.sdlc/tickets/0182-maison-element-base/verifier-L3-2.attempt.json"
+        }
+      ]
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [
+      {
+        "ticket": "tickets/.0021-agent-reasoning-nested-alignment",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S fix of a verifier-confirmed defect (T-0142 result)"
+      },
+      {
+        "ticket": "tickets/.0131-app-incident-war-room",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0132-app-plan-pricing-configurator",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0133-app-research-notebook-composer",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0134-app-media-asset-library",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0135-app-account-security-center",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0136-app-operations-analytics-dashboard",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0156-red-playwright-specs-beyond-five",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0157-harness-catalog-mutations-timeout",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0171-settlement-test-fixture-build-json",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0172-candidate-regeneration",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M, mechanical regeneration with a documented playbook (T-0125)"
+      }
+    ],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 138,
+      "runs_files": 2281
+    }
+  },
+  "plan_review_share": 0.1015,
+  "tickets": {
+    "count": 249,
+    "items": [
+      {
+        "ticket": "tickets/.0010-textarea-composition",
+        "id": "T-0010",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0039-dogfooding-finding-disposition",
+        "id": "T-0039",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0051-gen-ui-internal-distribution",
+        "id": "T-0051",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0052-gen-ui-consumer-distribution-validation",
+        "id": "T-0052",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0124-main-gate-inherited-red",
+        "id": "T-0124",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0125-typescript-runtime-dependency",
+        "id": "T-0125",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0126-maison-cycle-command",
+        "id": "T-0126",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0131-app-incident-war-room",
+        "id": "T-0131",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0132-app-plan-pricing-configurator",
+        "id": "T-0132",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0133-app-research-notebook-composer",
+        "id": "T-0133",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0134-app-media-asset-library",
+        "id": "T-0134",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0135-app-account-security-center",
+        "id": "T-0135",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0139-main-gate-red-specs",
+        "id": "T-0139",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0140-harness-check-eperm-cleanup",
+        "id": "T-0140",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0141-data-token-layer",
+        "id": "T-0141",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0142-reconcile-stale-verify-criteria",
+        "id": "T-0142",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0143-naming-vocabulary-doc",
+        "id": "T-0143",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0144-decision-log-evidence-manifest",
+        "id": "T-0144",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0145-component-spec-map-layered-gates",
+        "id": "T-0145",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0146-pack-docs-link-validator",
+        "id": "T-0146",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0147-intent-ir-schema-scorer",
+        "id": "T-0147",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0148-skills-single-source-generator",
+        "id": "T-0148",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0149-generate-all-entry-point",
+        "id": "T-0149",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0156-red-playwright-specs-beyond-five",
+        "id": "T-0156",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0157-harness-catalog-mutations-timeout",
+        "id": "T-0157",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0161-composer-toolbar-select-width",
+        "id": "T-0161",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/.0162-card-border-paint-freeze-skip",
+        "id": "T-0162",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0163-examples-slice-2-theme",
+        "id": "T-0163",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0164-examples-slice-3-fields-actions",
+        "id": "T-0164",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0166-examples-slice-5-overlays-commands",
+        "id": "T-0166",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0167-examples-slice-6-data-navigation",
+        "id": "T-0167",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0168-examples-slice-7-patterns",
+        "id": "T-0168",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0169-examples-slice-8-color",
+        "id": "T-0169",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0170-chart-core-math-port",
+        "id": "T-0170",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0171-settlement-test-fixture-build-json",
+        "id": "T-0171",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0172-candidate-regeneration",
+        "id": "T-0172",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0173-candidate-3-regeneration",
+        "id": "T-0173",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0174-chart-slice-3",
+        "id": "T-0174",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0175-chart-slice-4",
+        "id": "T-0175",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0176-chart-slice-5",
+        "id": "T-0176",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0177-chart-slice-6",
+        "id": "T-0177",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0178-chart-slice-7",
+        "id": "T-0178",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0180-tests-read-tracked-fixtures",
+        "id": "T-0180",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0183-chart-core-export-payload",
+        "id": "T-0183",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0137-port-native-dom-charts",
+        "id": "T-0137",
+        "size": "XL",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/0138-example-pages-component-coverage",
+        "id": "T-0138",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0150-recipe-ts-naming-and-custom-elements",
+        "id": "T-0150",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0151-package-assets-docs-css",
+        "id": "T-0151",
+        "size": "L",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0152-manifest-driven-renderers",
+        "id": "T-0152",
+        "size": "XL",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0153-harness-coverage-all-components",
+        "id": "T-0153",
+        "size": "XL",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0154-wire-standalone-scripts-and-regenerate-once",
+        "id": "T-0154",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0155-batch-generation-packaging-architecture",
+        "id": "T-0155",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0165-examples-slice-4-choices",
+        "id": "T-0165",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0179-chart-slice-8",
+        "id": "T-0179",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0181-candidate-4-regeneration",
+        "id": "T-0181",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0182-maison-element-base",
+        "id": "T-0182",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0184-verification-runs-in-testing-repo",
+        "id": "T-0184",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0185-button-active-paint",
+        "id": "T-0185",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0186-cycle-intent-scorer-source",
+        "id": "T-0186",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0187-chart-slice-9",
+        "id": "T-0187",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0188-chart-slice-10",
+        "id": "T-0188",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0189-listbox-scroll-and-scrollbar",
+        "id": "T-0189",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0092-reusable-popup-width",
+        "id": "T-0092",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0096-shared-control-note-typography",
+        "id": "T-0096",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0127-button-pressed-and-page-presentation",
+        "id": "T-0127",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/0141-data-token-layer",
+        "id": "T-0141",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0143-naming-vocabulary-doc",
+        "id": "T-0143",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0144-decision-log-evidence-manifest",
+        "id": "T-0144",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0145-component-spec-map-layered-gates",
+        "id": "T-0145",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0146-pack-docs-link-validator",
+        "id": "T-0146",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0147-intent-ir-schema-scorer",
+        "id": "T-0147",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0148-skills-single-source-generator",
+        "id": "T-0148",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0149-generate-all-entry-point",
+        "id": "T-0149",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0161-composer-toolbar-select-width",
+        "id": "T-0161",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0162-card-border-paint-freeze-skip",
+        "id": "T-0162",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0163-examples-slice-2-theme",
+        "id": "T-0163",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0164-examples-slice-3-fields-actions",
+        "id": "T-0164",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0166-examples-slice-5-overlays-commands",
+        "id": "T-0166",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0167-examples-slice-6-data-navigation",
+        "id": "T-0167",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0168-examples-slice-7-patterns",
+        "id": "T-0168",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0169-examples-slice-8-color",
+        "id": "T-0169",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0170-chart-core-math-port",
+        "id": "T-0170",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0171-settlement-test-fixture-build-json",
+        "id": "T-0171",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0036-dogfooding-independent-acceptance",
+        "id": "T-0036",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0039-dogfooding-finding-disposition",
+        "id": "T-0039",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0174-chart-slice-3",
+        "id": "T-0174",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0175-chart-slice-4",
+        "id": "T-0175",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0176-chart-slice-5",
+        "id": "T-0176",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0177-chart-slice-6",
+        "id": "T-0177",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0178-chart-slice-7",
+        "id": "T-0178",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0180-tests-read-tracked-fixtures",
+        "id": "T-0180",
+        "size": "S",
+        "criteria": 4
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 58,
+      "cpu_pct": 125.8,
+      "rss_mb": 14663.8
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 19,
+      "cpu_pct": 21.6,
+      "rss_mb": 9228.8
+    }
+  },
+  "worktrees": {
+    "count": 137,
+    "size": "unknown",
+    "size_kb_known": 35888304,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/bap",
+        "size": "43.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/baseX",
+        "size": "31.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a1",
+        "size": "30.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a2",
+        "size": "31.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a3",
+        "size": "431.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a4",
+        "size": "30.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a5",
+        "size": "31.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/a6",
+        "size": "31.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchA/integration",
+        "size": "33.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchB/integration",
+        "size": "36.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchB/s1",
+        "size": "211.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchB2/integration",
+        "size": "32.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchB2/s2",
+        "size": "195.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d1",
+        "size": "196.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d2",
+        "size": "196.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d3",
+        "size": "193.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d4",
+        "size": "205.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d5",
+        "size": "194.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d6",
+        "size": "42.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d7",
+        "size": "34.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d8",
+        "size": "195.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d9",
+        "size": "196.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/integration",
+        "size": "41.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e1",
+        "size": "200.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e2",
+        "size": "200.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e3",
+        "size": "199.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e5",
+        "size": "200.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e7",
+        "size": "199.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/e8",
+        "size": "198.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD2/integration",
+        "size": "45.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/cand4",
+        "size": "773.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/candidate",
+        "size": "953.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0127/c",
+        "size": "441.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0127/integration",
+        "size": "38.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0141/c",
+        "size": "314.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0141/integration",
+        "size": "30.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0161/c",
+        "size": "197.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0161/integration",
+        "size": "31.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B2-T-0096/c",
+        "size": "375.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B2-T-0096/integration",
+        "size": "31.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B2-T-0109/c",
+        "size": "193.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B2-T-0109/integration",
+        "size": "31.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-C-T-0150/c",
+        "size": "224.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-C-T-0150/integration",
+        "size": "32.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-CH-T-0137/c",
+        "size": "202.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-CH-T-0137/integration",
+        "size": "38.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-EL-T-0182/c",
+        "size": "214.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-EL-T-0182/integration",
+        "size": "32.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-F-T-0180/c",
+        "size": "195.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-F-T-0180/integration",
+        "size": "32.5 MB"
+      }
+    ]
+  },
+  "ci": "skipped"
+}

@@ -22,7 +22,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket
 - "Anything still open", loose ends, or a close-out → `/sdlc-lite:open-questions`; "what is blocking us" or a fuller sweep with reasoned options → `/sdlc-lite:ask`.
-- Review a project's sdlc run traces for waste and bugs caused by sdlc-lite → `/sdlc-lite:review-traces`.
+- Review a project's sdlc run traces for waste and bugs caused by sdlc-lite → `/sdlc-lite:review-traces`; a retro across several repos → `/sdlc-lite:fleet-retro`.
 
 ## What you do yourself
 Only trivial edits: a typo, a rename in one file, a config value, a one-line fix whose effect is obvious. For each one, say in one line that you are doing it yourself, make it, run the project's relevant tests or checks, and report the result. Anything else, or anything where you would want a second opinion, goes through the pipeline. Never plan, build, or verify a non-trivial change yourself: whoever writes the work never checks it.

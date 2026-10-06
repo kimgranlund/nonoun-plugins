@@ -28,6 +28,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Plan a goal, loop, or fanout run and get a paste-ready command | plan-goal / plan-loop / plan-fanout |
 | Set up or check entry files and docs layout | onboard |
 | Review sdlc run traces for sdlc-lite waste and bugs | review-traces |
+| Retro of how the plugin served several repos, one cost-ranked report | fleet-retro |
 
 Read referenced rubric, handoff format, templates, or scripts only as required. The selected file owns workflow decisions, output format, and completion conditions. Apply the following host translations to its Claude-specific syntax.
 
