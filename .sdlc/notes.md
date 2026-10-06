@@ -213,3 +213,8 @@
 - Full check set passed on 87ebde0 (check.sh full run, packaging, generate --check, check.py, tickets check, 13 selftests, diff --check). Later commits are docs only.
 - Fact-check passes (independent read-only Opus, detached): pass 1 FAIL (4 factual, 1 unsupported, all fixed), pass 2 FAIL (2 factual, fixed), pass 3 narrow PASS with no factual finding (one wording nit, fixed). The overnight goal says to publish only if the fact-check passes and to stop if it fails after one round of fixes; pass 2 failed after the first fix round, so publishing was left for a decision.
 - To publish from the release commit `git rev-parse release-0.20.8`: annotated tag v0.20.8, `git push origin ${SHA}:refs/heads/main` (fast-forward only), push the tag, `gh release create v0.20.8 --verify-tag --title "SDLC Lite 0.20.8" --notes-file docs/reports/release-0.20.8.md`, merge the branch back into local main.
+
+## Decisions recorded 2026-10-06 (user, via /sdlc-lite:ask)
+- 0.21.0 publish is authorized once T-0287's live evidence and the independent fact-check pass; fast-forward only, never force.
+- maison may contact maison-testing (T-0002) for the T-0106 tar handoff; the sdlc-lite author stays out of that session.
+- The nine parked tickets (T-0187, T-0200, T-0201, T-0205 to T-0208, T-0211, T-0213) get a per-ticket review; stale ones are dropped, with the table in docs/reports/parked-tickets-review-2026-10-06.md.
