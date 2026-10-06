@@ -2,7 +2,7 @@
 id: T-0207
 title: "Readers and docs for the topic layout"
 type: chore           # feature | bug | chore | spike | idea
-status: dropped
+status: proposed
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0206]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,8 +24,11 @@ Part of the SDLC Lite design, `docs/sdlc-lite/design.md` (v0.4, build row L15), 
 ## Constraints
 Flat layout output unchanged. check.py:330 matches the suffix `/step-1/handoff.md` only, so only its message string changes. Follow the root and plugin AGENTS.md invariants: independent verification, model and effort defaults are the user's, no em dashes, keep one authoritative location for each fact. Run roles from the main checkout's run.sh in a separate worktree so a builder never edits a running script.
 
-## Dropped
+## Dropped (history, reinstated below)
 2026-10-06, by user decision (review of parked tickets): Readers for a layout dropped with T-0205. See docs/reports/parked-tickets-review-2026-10-06.md.
 
 ## Deferred (history)
 Parked 2026-10-04 by user decision (course correction): the solo-vs-lean evidence showed the default lane is the problem, so tuning the orchestrated chain is frozen until solo has run on real tickets. Revisit with that data. Status blocked, not dropped; handoff otherwise unchanged.
+
+## Reinstated
+2026-10-06, by user decision ("we should still do T-206"): the topic layout (T-0205 resolver, T-0206 migration, T-0207 readers and docs) is back as a unit, since T-0206 depends on T-0205 and the layout is useless without its readers. The earlier drop reason (numbered folders plus `tickets.py archive` cover the clutter) is recorded in docs/reports/parked-tickets-review-2026-10-06.md. Re-plan against the current design (docs/sdlc-lite/design.md v0.4, build row L14, docs schema T-0240 to T-0243, the sub-agent mode) before building; the docs/ versus .sdlc/ boundary rules in docs/docs-schema/design.md apply. Size L: use the lane script, a full chain only with the stated reason (L-size plan).

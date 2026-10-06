@@ -19,3 +19,7 @@ Common finding: every ticket tuned the orchestrated chain or the `.sdlc/` layout
 KEEP rows: none.
 
 Recording: `tickets.py close --reason` sets status done, so dropped is recorded by front matter `status: dropped` plus a `## Dropped` section in each handoff (the pattern of earlier dropped tickets). Folders are not archived.
+
+## Update, 2026-10-06 (later the same day)
+
+The user reinstated T-0205, T-0206 and T-0207 (the topic layout as a unit; T-0206 depends on T-0205 and both need the readers in T-0207). They are `proposed` again with a `## Reinstated` note; the DROP rows above for those three no longer apply.

@@ -209,9 +209,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0202 | [.0202-carry-forward](.0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | 🟢 done |
 | T-0203 | [.0203-fanout-overlap](.0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | M | P2 | none | 🟢 done |
 | T-0204 | [.0204-fanout-resolver](.0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | 🟢 done |
-| T-0205 | [0205-layout-resolver](0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | ⚪ dropped |
-| T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | ⚪ dropped |
-| T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | ⚪ dropped |
+| T-0205 | [0205-layout-resolver](0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | ⏳ proposed |
+| T-0206 | [0206-migrate-layout](0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | ⏳ proposed |
+| T-0207 | [0207-layout-readers-docs](0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | ⏳ proposed |
 | T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | M | P2 | T-0199, T-0201, T-0207 | ⚪ dropped |
 | T-0209 | [.0209-maintainer-lean-default](.0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | S | P2 | T-0194 | 🟢 done |
 | T-0210 | [.0210-spec-gate-check](.0210-spec-gate-check/handoff.md) | Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line | chore | M | P2 | none | 🟢 done |
