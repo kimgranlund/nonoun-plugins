@@ -1,3 +1,3 @@
 `new/<receiver>/` holds messages sent to that receiver and not yet claimed; the full procedures are in `../AGENTS.md`.
 A message leaves `new/` when its receiver claims it with `read` (it moves to `read/`) or when `expire` finds it past its `expires` time (it moves to `done/`).
-Claim: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" read <path> --receiver <receiver>`. Expire: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" expire`.
+Claim: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a430ff9c9526003d1/plugins/sdlc-lite/scripts/messages.py" read <path> --receiver <receiver>`. Expire: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a430ff9c9526003d1/plugins/sdlc-lite/scripts/messages.py" expire`.

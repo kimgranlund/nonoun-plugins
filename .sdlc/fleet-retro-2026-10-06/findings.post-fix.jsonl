@@ -1,0 +1,4 @@
+{"rule": "chromium_load", "repo": "/Users/kimgranlund/Projects/nonoun/agent-ui", "scope": "machine", "evidence": "processes.chromium.count", "value": 57, "threshold": 30, "source": ".sdlc/fleet-retro-2026-10-06/agent-ui.post-fix.json"}
+{"rule": "chromium_load", "repo": "/Users/kimgranlund/Projects/nonoun/agent-ui", "scope": "machine", "evidence": "processes.chromium.rss_mb", "value": 14515.2, "threshold": 6144, "source": ".sdlc/fleet-retro-2026-10-06/agent-ui.post-fix.json"}
+{"rule": "chromium_load", "repo": "/Users/kimgranlund/Projects/maison/ui-kit-maison", "scope": "machine", "evidence": "processes.chromium.count", "value": 58, "threshold": 30, "source": ".sdlc/fleet-retro-2026-10-06/ui-kit-maison.post-fix.json"}
+{"rule": "chromium_load", "repo": "/Users/kimgranlund/Projects/maison/ui-kit-maison", "scope": "machine", "evidence": "processes.chromium.rss_mb", "value": 14663.8, "threshold": 6144, "source": ".sdlc/fleet-retro-2026-10-06/ui-kit-maison.post-fix.json"}

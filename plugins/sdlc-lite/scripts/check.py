@@ -122,6 +122,11 @@
 35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
    scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
+36. Fleet retro: skills/fleet-retro/SKILL.md names `fleet_collect.py`, `fleet_detect.py`, `SendMessage`, `interview.md`, `rubric.md`, `AskUserQuestion`,
+   `review-traces`, `Codex host`, `SDLC_HEADLESS`, and the stages `## 1. Collect` to `## 6. File`, and holds no `harness:` reference; skills/fleet-retro/rubric.md names
+   gates `G1` to `G5`, criteria `C1` to `C5`, `7 of 10`, and `Outcome check`; skills/fleet-retro/fixtures.md names `F1`, `F2`, `F3`; skills/sdlc-lite/SKILL.md and
+   agents/conductor.md route to `fleet-retro`; and, where docs/maintenance/sdlc-internals.md exists, it names `fleet-retro`. Negative controls: each phrase removed
+   from each file, a harness reference added, and a missing route must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -820,6 +825,23 @@ errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
 for _name, _phrases in GATE_LOCK_NEEDS:
     for _ph in _phrases:
         if _name in _gl_texts and not gate_lock_bad(dict(_gl_texts, **{_name: _gl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: gate lock negative control not flagged for {_name} without {_ph}')
+# Fleet retro (docstring item 36): the skill, its rubric and fixtures, and the routes to it.
+FLEET_NEEDS = (('skill', ('fleet_collect.py', 'fleet_detect.py', 'SendMessage', 'interview.md', 'rubric.md', 'AskUserQuestion', 'review-traces', 'Codex host',
+                          'SDLC_HEADLESS', '## 1. Collect', '## 2. Detect', '## 3. Interview', '## 4. Report', '## 5. Verify', '## 6. File')),
+               ('rubric', tuple(f'G{i}' for i in range(1, 6)) + tuple(f'C{i}' for i in range(1, 6)) + ('7 of 10', 'Outcome check')),
+               ('fixtures', ('F1', 'F2', 'F3')), ('entry', ('fleet-retro',)), ('conductor', ('fleet-retro',)), ('internals', ('fleet-retro',)))
+def fleet_bad(texts):
+    out = [f'{name} missing "{ph}"' for name, phrases in FLEET_NEEDS for ph in phrases if name in texts and ph not in texts[name]]
+    if 'harness:' in texts['skill']: out.append('skill references harness:')
+    return out
+_fl_texts = {'skill': _rd(root/'skills/fleet-retro/SKILL.md'), 'rubric': _rd(root/'skills/fleet-retro/rubric.md'), 'fixtures': _rd(root/'skills/fleet-retro/fixtures.md'),
+             'entry': _entry, 'conductor': _rd(root/'agents/conductor.md')}
+if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _fl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+errors.extend(f'check.py: fleet retro: {m}' for m in fleet_bad(_fl_texts))
+for _name, _phrases in FLEET_NEEDS:
+    for _ph in _phrases:
+        if _name in _fl_texts and not fleet_bad(dict(_fl_texts, **{_name: _fl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: fleet retro negative control not flagged for {_name} without {_ph}')
+if not fleet_bad(dict(_fl_texts, skill=_fl_texts['skill'] + ' harness:x')): errors.append('check.py: fleet retro negative control not flagged for a harness reference')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

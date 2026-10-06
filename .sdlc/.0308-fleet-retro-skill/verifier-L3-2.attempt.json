@@ -1,0 +1,21 @@
+{
+  "attempt_id": "dafc4652c6c5411db824534f58735036",
+  "name": "verifier-L3-2",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "T-0308 solo tier M: second and last batched verifier run after fixing the rubric G2 as-of rule and the fixtures header",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-06T21:34:23.187195+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro/.sdlc/0308-fleet-retro-skill/handoff.md",
+  "owner_pid": 72139,
+  "handoff_sha256": "99db6a8f5315daea00a71097b120b71ff5b8bc1fd98b35aacc0fb061e72b92d3",
+  "process_pid": 72163,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T21:44:27.953050+00:00"
+}

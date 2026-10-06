@@ -2,7 +2,7 @@
 id: T-0305
 title: "fleet_collect.py: per-repo collector"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,19 @@ Decided by the user on 2026-10-06 after three repo root-cause reports (maison, a
 
 ## Constraints
 No model call inside collect or detect. Read-only on every repo it inspects. No em dashes. No change to any model or effort value. No push, tag or publish.
+
+## Acceptance criteria
+Run from the repository root. The agent-ui report's 193 runs is a snapshot taken at 2026-10-06T14:06:53Z (the report's mtime); the live repo keeps adding runs, so the match is checked at that cutoff with `--until`, and a collect with no bound prints the larger live total.
+- `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest) && printf '%s\n' "$out" | grep -qx 'fleet_collect selftest: ok'`
+- `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest) && printf '%s\n' "$out" | grep -q 'ok: negative control: dedupe off changes the total'`
+- `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/nonoun/agent-ui --until 2026-10-06T14:06:53Z --du-timeout 5 2>/dev/null | python3 -c "import json,sys; t=json.load(sys.stdin)['runs']['total']; sys.exit(0 if 189 <= t <= 197 else 1)"`
+- `a=$(git -C /Users/kimgranlund/Projects/nonoun/agent-ui status --short) && python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/nonoun/agent-ui --du-timeout 5 >/dev/null 2>&1 && b=$(git -C /Users/kimgranlund/Projects/nonoun/agent-ui status --short) && test "$a" = "$b"`
+- `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/nonoun/agent-ui --du-timeout 5 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if all(k in d for k in ('env','runs','plan_review_share','processes','worktrees','ci')) else 1)"`
+- `d=$(mktemp -d) && mkdir "$d/r" && python3 plugins/sdlc-lite/scripts/fleet_collect.py collect "$d/r" >"$d/out.json" 2>"$d/err.txt" && grep -qx 'runs: none' "$d/err.txt" && grep -q '"runs": "none"' "$d/out.json"`
+- `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/nonoun/agent-ui --du-timeout 0.01 2>/dev/null | python3 -c "import json,sys; w=json.load(sys.stdin)['worktrees']; sys.exit(0 if w['count'] > 0 and w['size'] == 'unknown' else 1)"`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
