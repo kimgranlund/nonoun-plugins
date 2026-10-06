@@ -59,7 +59,7 @@
 # it never removes or deletes anything and never changes the exit code.
 # Session limit: when a run fails (exit 1) and its log shows a 429 or a session or usage limit, run.sh writes
 # <role>-<level>.limit (one JSON line: ts, role, level, handoff, resume, evidence) beside the result and prints
-# "run.sh: session limit: resume with: <command>" on stderr; the exit code stays 1. A later success removes the marker.
+# "run.sh: session limit: resume with: <command>" on stderr (a log reset time adds a `reset` field and " (resets 1:40pm)"); the exit code stays 1. A later success removes the marker.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
 # saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
 # 4 ticket budget at 80 percent or more with no ack, 5 lane gate (below).
@@ -516,14 +516,18 @@ on_exit() {
 }
 # limit_marker: on a failed run, a 429 or session limit in the log leaves a resume marker and prints the command.
 limit_marker() {
-  local ev resume
+  local ev resume reset hint
   ev=$(grep -Eim1 '429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit' "$log" 2>/dev/null | cut -c1-200) || return 0
   [[ -n "$ev" ]] || return 0
   resume="bash $plugin_root/scripts/run.sh $role $level $handoff"
-  jq -nc --arg role "$role" --arg level "$level" --arg handoff "$handoff" --arg resume "$resume" --arg ev "$ev" \
-    '{ts: (now|todate), role: $role, level: $level, handoff: $handoff, resume: $resume, evidence: $ev}' \
+  # reset time (T-0298): the text after "resets" (for example 1:40pm), absent when the log has none
+  reset=$(grep -Eio -m1 'resets +[0-9]{1,2}(:[0-9]{2})? *[ap]m' "$log" 2>/dev/null | head -1 | sed -E 's/^resets +//I') || reset=""
+  jq -nc --arg role "$role" --arg level "$level" --arg handoff "$handoff" --arg resume "$resume" --arg ev "$ev" --arg reset "$reset" \
+    '{ts: (now|todate), role: $role, level: $level, handoff: $handoff, resume: $resume, evidence: $ev} + (if $reset != "" then {reset: $reset} else {} end)' \
     >"$dir/$role-$level.limit" 2>/dev/null || :
-  echo "run.sh: session limit: resume with: $resume" >&2
+  hint="run.sh: session limit: resume with: $resume"
+  [[ -z "$reset" ]] || hint="$hint (resets $reset)"
+  echo "$hint" >&2
   return 0
 }
 running="$dir/$role-$level.running"

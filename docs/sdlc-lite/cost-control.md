@@ -1,4 +1,4 @@
-# Lean SDLC cost control
+# SDLC Lite cost control
 
 Version 0.3, 2026-10-04. Proposal addendum to [the lean design](design.md). A1 (T-0210) is built; nothing else here is. It adds four items the lean tickets T-0193 to T-0208 do not cover. It changes no model or effort default.
 

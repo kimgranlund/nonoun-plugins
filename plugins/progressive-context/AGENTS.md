@@ -8,5 +8,5 @@ Read [repository guidance](../../AGENTS.md) first. This plugin supplies an autho
 - Add a reference only when it has a distinct retrieval purpose. Link it from the skill with a clear loading condition.
 - Keep host manifests consistent. This plugin requires no model mapping, subagents, hooks, or SDLC Lite dependency.
 
-For reference edits, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root, validate the skill with the available skill validator, and run `git diff --check`. The SDLC runner/hook suite is unnecessary unless that implementation also changes.
+For reference edits, inspect changed links, run `python3 scripts/check-packaging.py` from the repository root, validate the skill with the available skill validator, and run `git diff --check`. The SDLC Lite runner/hook suite is unnecessary unless that implementation also changes.
 For substantive workflow changes, evaluate a realistic request against the revised guidance and report observed behavior separately from structural validation.

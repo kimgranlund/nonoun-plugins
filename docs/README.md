@@ -18,14 +18,15 @@
 - [Idle-host watcher design](ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
 - [Idle-host watcher design review](reports/idle-host-watcher-design-review.md): dated independent review of the watcher design, ready after fixes, with four blockers and the decision it needs.
 
-- [Lean SDLC design review, second round](reports/lean-sdlc-design-review-2.md): dated second architect review of the lean SDLC design at v0.3, ready after fixes, and what v0.4 changed.
-- [Lean SDLC design review](reports/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
-- [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
-- [Lean SDLC cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
-- [Sub-agent execution mode](lean-sdlc/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
-- [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
+- [SDLC Lite design review, second round](reports/lean-sdlc-design-review-2.md): dated second architect review of the SDLC Lite design at v0.3, ready after fixes, and what v0.4 changed.
+- [SDLC Lite design review](reports/lean-sdlc-design-review.md): dated independent architect review of the SDLC Lite design at v0.1 and the changes made in v0.2.
+- [SDLC Lite cost control](sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [SDLC Lite cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
+- [SDLC Lite pillars](sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
+- [Sub-agent execution mode](sdlc-lite/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
+- [SDLC Lite](sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
-- [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
+- [SDLC Lite implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](reports/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
@@ -41,6 +42,7 @@
 - [Handoff freeze live run](reports/handoff-freeze-live-run.md): dated live run for T-0212 (warn mode) showing the hook allows and logs an edit of a running handoff on Claude and blocks it in deny mode, plus the runner's stale_input flag and known limits.
 - [Plan skills live run](reports/plan-skills-live-run.md): dated live run for T-0249 to T-0251 of `/sdlc-lite:plan-goal`, `plan-loop`, and `plan-fanout` in a throwaway project: each returned block checked by `plan_check.py`, the defects fixed along the way, and what was not exercised.
 - [Ask skill live run](reports/ask-skill-live-run.md): dated live run for T-0231 of `/sdlc-lite:ask`: what the sweep found before and after the fix, the plain-text fallback in headless runs, and what was not exercised.
+- [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC Lite, with verifier history and known limits.
 - [Release 0.20.10](reports/release-0.20.10.md): the `.sdlc` boundary checks in `docs_check.py` and four defect fixes (fanout preflight, session-limit resume, close citation scan, a Codex selftest path check), with known limits.
 - [Release 0.20.9](reports/release-0.20.9.md): `/sdlc-lite:ask`, the document inventory, the docs schema and `docs_check.py`, the plan skills, the `docs/reports` rename and three defect fixes, with known limits.
 - [Release 0.20.8](reports/release-0.20.8.md): the solo budget gate, the onboard lane text, the orientation files and two Codex live runs, with the verifier results and known limits.
@@ -75,3 +77,4 @@
 - [Solo live run](reports/solo-live-run.md): dated live run for T-0216 in which `steps.py lane` printed `solo` for a size-M ticket and the `solo` agent delivered it at tier M on Claude Code (Sonnet xhigh, Fable verifier) and Codex (`sdlc-solo-l2` on gpt-6.1-sol high, gpt-6-astra verifier); both passed a hidden check and their verifier, and the Codex solo did not launch its own verifier.
 - [Agent command live run](reports/agent-command-live-run.md): dated live run for T-0223 showing `/sdlc-lite:agent` launching `scout` and `solo` by name and refusing an unknown name and `conductor`, with committed evidence and its limits.
 - [Dual-host readiness and recovery validation](reports/readiness-recovery-validation.md): dated live trials, oracle outcomes, routing history, and scope limits.
+- [Fix batch 0.20.11](reports/fix-batch-0.20.11.md): dated record of the ten fixes built from three consumer root-cause reports (T-0293 to T-0300, T-0303, T-0304), the red-then-green evidence, verifier verdicts, and the one unverified repair.

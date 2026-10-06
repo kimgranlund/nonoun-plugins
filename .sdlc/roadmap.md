@@ -287,3 +287,27 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0286 | [0286-supervisor-orphans](0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | ⏳ proposed |
 | T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
 | T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | S | P2 | T-0287 | ⏳ proposed |
+| T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | M | P2 | none | 🟢 done |
+| T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | 🟢 done |
+| T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | ⏳ proposed |
+| T-0293 | [.0293-solo-run-kill-group](.0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | S | P2 | none | 🟢 done |
+| T-0294 | [.0294-plan-review-l4-l5-only](.0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | S | P2 | none | 🟢 done |
+| T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🟢 done |
+| T-0296 | [.0296-lane-refuse-m-over-20-criteria](.0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | S | P2 | none | 🟢 done |
+| T-0297 | [.0297-planner-guard-dry-run-widen-inherit](.0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | S | P2 | none | 🟢 done |
+| T-0298 | [.0298-limit-marker-reset-time](.0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | S | P2 | none | 🟢 done |
+| T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🟢 done |
+| T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🟢 done |
+| T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | M | P2 | none | ⏳ proposed |
+| T-0302 | [0302-adr-number-allocator-note](0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | ⏳ proposed |
+| T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | M | P2 | none | 🟢 done |
+| T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | M | P2 | T-0303 | 🟢 done |
+| T-0305 | [0305-fleet-collect](0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | M | P2 | none | ⏳ proposed |
+| T-0306 | [0306-fleet-detect](0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | M | P2 | T-0305 | ⏳ proposed |
+| T-0307 | [0307-fleet-interview](0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | S | P2 | none | ⏳ proposed |
+| T-0308 | [0308-fleet-retro-skill](0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | ⏳ proposed |
+| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite | chore | M | P2 | none | 🟢 done |
+| T-0310 | [0310-fleet-config](0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | ⏳ proposed |
+| T-0311 | [0311-fleet-liveness](0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | ⏳ proposed |
+| T-0312 | [0312-fleet-status-render](0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | ⏳ proposed |
+| T-0313 | [0313-solo-worktree-hook](0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | S | P2 | none | ⏳ proposed |

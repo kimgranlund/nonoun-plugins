@@ -39,6 +39,8 @@ import os
 import pathlib
 import re
 import shlex
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -134,6 +136,9 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
 LIMIT_RE = re.compile(r'429|session limit|usage limit|hit your (session |usage )?limit|rate.?limit', re.I)
 
 
+RESET_RE = re.compile(r'resets +(\d{1,2}(?::\d{2})? *[ap]m)', re.I)
+
+
 def limit_hint(task_dir, tier, text):
     """On a 429 or session-limit stop, write <task dir>/solo.limit (one JSON line) and print the resume hint."""
     m = LIMIT_RE.search(text or '')
@@ -142,12 +147,15 @@ def limit_hint(task_dir, tier, text):
     resume = f'python3 {pathlib.Path(__file__).resolve()} run --task-dir {task_dir} --tier {tier} --brief <the same brief>'
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'task_dir': str(task_dir), 'tier': tier,
            'resume': resume, 'evidence': (text or '')[max(0, m.start() - 40):m.end() + 80].strip()[:200]}
+    rm = RESET_RE.search(text or '')
+    if rm:
+        rec['reset'] = rm.group(1)
     try:
         (pathlib.Path(task_dir) / 'solo.limit').write_text(json.dumps(rec, separators=(',', ':')) + '\n', encoding='utf-8')
     except OSError:
         pass
     print('solo_run.py: session limit: the work is in the tree (fanout keeps it in the lane WIP commit); '
-          f'resume after the limit resets: {resume}', file=sys.stderr)
+          f'resume after the limit resets: {resume}' + (f' (resets {rm.group(1)})' if rm else ''), file=sys.stderr)
 
 
 def budget_hold(task_dir):
@@ -188,10 +196,121 @@ def append(task_dir, rec):
         f.write(json.dumps(rec, separators=(',', ':')) + '\n')
 
 
+class Stopped(Exception):
+    """The wrapper got SIGTERM, SIGINT or SIGHUP (T-0293)."""
+
+    def __init__(self, sig):
+        super().__init__(sig)
+        self.sig = sig
+
+
+def _sig_group(pgid, sig):
+    try:
+        os.killpg(pgid, sig)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+
+def _group_alive(pgid):
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except (ProcessLookupError, PermissionError):
+        return False
+
+
+def kill_group(p):
+    """End the child's whole process group: TERM, then KILL after 2 s (T-0293). Returns the child's captured stdout."""
+    pgid = p.pid
+    _sig_group(pgid, signal.SIGTERM)
+    end = time.monotonic() + 2
+    while time.monotonic() < end:
+        p.poll()
+        if not _group_alive(pgid):
+            break
+        time.sleep(0.05)
+    _sig_group(pgid, signal.SIGKILL)
+    try:
+        out, _ = p.communicate(timeout=3)
+    except subprocess.TimeoutExpired:
+        out = ''
+    p.poll()
+    return out or ''
+
+
+def lock_path(where):
+    """<git dir of the worktree holding where>/solo_run.lock, or None outside a git repository."""
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--absolute-git-dir'], cwd=str(where), capture_output=True,
+                           text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return pathlib.Path(r.stdout.strip()) / 'solo_run.lock' if r.returncode == 0 and r.stdout.strip() else None
+
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def take_lock(path):
+    """Write this wrapper's pid to the lock; Refuse when the pid already there is alive, clear it when dead."""
+    for _ in range(3):
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            try:
+                pid = int(path.read_text().strip())
+            except (OSError, ValueError):
+                pid = 0
+            if pid > 0 and _pid_alive(pid):
+                raise Refuse(f'another solo run is live (pid {pid})')
+            path.unlink(missing_ok=True)
+            continue
+        with os.fdopen(fd, 'w') as f:
+            f.write(str(os.getpid()) + '\n')
+        return
+    raise Refuse('could not take the solo run lock ' + str(path))
+
+
+def drop_lock(path):
+    try:
+        if path.read_text().strip() == str(os.getpid()):
+            path.unlink()
+    except (OSError, ValueError):
+        pass
+
+
 def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out=None):
     argv, model, effort = command(tier, brief, backend)
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    lock = lock_path(cwd or task_dir)
+    if lock is not None:
+        take_lock(lock)
+    old_handlers = {}
+    try:
+        def on_signal(signum, _frame):
+            raise Stopped(signum)
+        try:
+            for sg in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+                old_handlers[sg] = signal.signal(sg, on_signal)
+        except ValueError:  # not the main thread: no handlers
+            pass
+        return _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, model, effort)
+    finally:
+        for sg, h in old_handlers.items():
+            signal.signal(sg, h)
+        if lock is not None:
+            drop_lock(lock)
+
+
+def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, model, effort):
     hold = budget_hold(task_dir)
     if hold:
         print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
@@ -201,16 +320,21 @@ def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out
     attempt = uuid.uuid4().hex
     env = dict(os.environ, SDLC_ROLE='solo', SDLC_ATTEMPT_ID=attempt)
     started = time.monotonic()
+    p = None
     try:
-        p = subprocess.run(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                           text=True, timeout=timeout)
-        out, rc = p.stdout, p.returncode
+        p = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                             text=True, start_new_session=True)
+        out, _ = p.communicate(timeout=timeout)
+        rc = p.returncode
     except FileNotFoundError as exc:
         out, rc = '', 127
         print(f'solo_run.py: {exc}', file=sys.stderr)
-    except subprocess.TimeoutExpired as exc:
-        out, rc = (exc.stdout.decode() if isinstance(exc.stdout, bytes) else exc.stdout) or '', 124
+    except subprocess.TimeoutExpired:
+        out, rc = kill_group(p), 124
         print(f'solo_run.py: timed out after {timeout}s', file=sys.stderr)
+    except Stopped as exc:
+        out, rc = (kill_group(p) if p else ''), 128 + exc.sig
+        print(f'solo_run.py: stopped by signal {exc.sig}; process group ended', file=sys.stderr)
     if raw_out:
         pathlib.Path(raw_out).write_text(out or '', encoding='utf-8')
     result = find_result(out)
@@ -327,10 +451,23 @@ def selftest():
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                 rc = run(d, 'M', 'b')
             mk = d / 'solo.limit'
+            tmp_limit = d
             got = json.loads(mk.read_text()) if mk.is_file() else {}
             expect('limit stop: exits 1, solo.limit has the resume command and evidence',
                    rc == 1 and '--task-dir' in got.get('resume', '') and '429' in got.get('evidence', ''))
             expect('limit stop: stderr prints the resume hint', 'session limit' in err.getvalue() and 'resume' in err.getvalue())
+
+            # T-0298: a reset time in the output lands in the marker and the hint.
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":true,\"result\":\"API Error: 429 session limit reached, resets 1:40pm\"}'\n")
+            d = ticket('limitreset')
+            err = io.StringIO()
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                rc = run(d, 'M', 'b')
+            mk = d / 'solo.limit'
+            got = json.loads(mk.read_text()) if mk.is_file() else {}
+            expect('limit stop with a reset: marker reset is 1:40pm and the hint says so',
+                   rc == 1 and got.get('reset') == '1:40pm' and 'resets 1:40pm' in err.getvalue())
+            expect('limit stop without a reset: no reset field (T-0298 control)', 'reset' not in json.loads((tmp_limit / 'solo.limit').read_text()))
 
             # A ticket over 80 percent through solo cost alone trips the budget stop.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":8.5}'\n")
@@ -462,6 +599,112 @@ def selftest():
             # find_result shapes.
             expect('find_result: none on empty', find_result('') is None and find_result('not json') is None)
             expect('find_result: json lines', (find_result('{"type":"x"}\n{"type":"result","total_cost_usd":2}\n') or {}).get('total_cost_usd') == 2)
+
+            # T-0293: a real child (a stub claude that spawns sleep): the whole group is gone after a timeout and after
+            # SIGTERM to the wrapper; a second run in a live worktree is refused; a dead pid's lock is cleared.
+            me = pathlib.Path(__file__).resolve()
+            repo = tmp / 'grprepo'
+            repo.mkdir()
+            subprocess.run(['git', 'init', '-q', str(repo)], check=True)
+            dg = ticket('grp')
+            shutil.move(str(dg), str(repo / 'grp'))
+            dg = repo / 'grp'
+            pidf = tmp / 'child.pid'
+            errf = tmp / 'wrapper.err'
+            shim(f'sleep 300 >/dev/null 2>&1 &\necho $! > "{pidf}"\nwait\n')
+
+            def gone(pid, wait=4.0):
+                end = time.monotonic() + wait
+                while time.monotonic() < end:
+                    try:
+                        os.kill(pid, 0)
+                    except ProcessLookupError:
+                        return True
+                    time.sleep(0.05)
+                return False
+
+            def child_pid():
+                end = time.monotonic() + 10
+                while time.monotonic() < end:
+                    if pidf.is_file() and pidf.read_text().strip():
+                        return int(pidf.read_text().strip())
+                    time.sleep(0.05)
+                return None
+
+            def wrapper(script, *extra):
+                pidf.unlink(missing_ok=True)
+                return subprocess.Popen([sys.executable, str(script), 'run', '--task-dir', str(dg), '--tier', 'S',
+                                         '--brief', 'b', '--cwd', str(repo), *extra], stdout=subprocess.DEVNULL,
+                                        stderr=open(errf, 'w'))
+
+            def kill_leftover():
+                if pidf.is_file() and pidf.read_text().strip():
+                    try:
+                        os.kill(int(pidf.read_text().strip()), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+
+            def group_case(script, how):
+                w = wrapper(script, *(['--timeout', '1'] if how == 'timeout' else []))
+                cp = child_pid()
+                if cp is None:
+                    w.kill()
+                    return None, None, ''
+                if how == 'sigterm':
+                    time.sleep(0.3)
+                    w.send_signal(signal.SIGTERM)
+                try:
+                    w.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    w.kill()
+                    w.wait()
+                return w.returncode, gone(cp), errf.read_text()
+
+            for how in ('timeout', 'sigterm'):
+                rc_w, child_gone, err = group_case(me, how)
+                expect(f'group kill after {how}: wrapper exits nonzero and the child is gone', bool(rc_w) and child_gone)
+                expect(f'group kill after {how}: lock removed', not (repo / '.git' / 'solo_run.lock').exists())
+                kill_leftover()
+            ctl = tmp / 'solo_run_nokill.py'
+            src = me.read_text()
+            body = '    try:\n        os.killpg(pgid, sig)\n    except (ProcessLookupError, PermissionError):\n        pass\n'
+            assert body in src
+            src = src.replace(body, '    pass\n', 1).replace(
+                'SCRIPTS = pathlib.Path(__file__).resolve().parent', f'SCRIPTS = pathlib.Path({str(SCRIPTS)!r})', 1)
+            ctl.write_text(src)
+            for how in ('timeout', 'sigterm'):
+                res = group_case(ctl, how)
+                survived = res[1] is False
+                kill_leftover()
+                expect(f'negative control: a copy without the group kill leaves the child alive after {how}', survived)
+
+            # Second run while a live pid holds the lock: refused, one line, no session, no record.
+            lock = repo / '.git' / 'solo_run.lock'
+            live = subprocess.Popen(['sleep', '60'])
+            try:
+                lock.write_text(f'{live.pid}\n')
+                pidf.unlink(missing_ok=True)
+                before = len(lines(dg))
+                cp = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+                                     '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
+                msg = cp.stderr.strip().splitlines()
+                expect('second run: refused with the one-line message, nonzero',
+                       cp.returncode != 0 and msg == [f'solo_run.py: another solo run is live (pid {live.pid})'])
+                expect('second run: no session and no record', not pidf.exists() and len(lines(dg)) == before)
+                expect('second run: the first run keeps its lock', lock.read_text().strip() == str(live.pid))
+            finally:
+                live.kill()
+                live.wait()
+            # Stale lock: a dead pid is cleared and the run proceeds.
+            dead = subprocess.Popen(['true'])
+            dead.wait()
+            lock.write_text(f'{dead.pid}\n')
+            shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
+            before = len(lines(dg))
+            cp = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+                                 '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
+            expect('stale lock: a dead pid proceeds and records', cp.returncode == 0 and len(lines(dg)) == before + 1)
+            expect('stale lock: removed on exit', not lock.exists())
         finally:
             os.environ['PATH'] = old_path
             for k, v in old_env.items():

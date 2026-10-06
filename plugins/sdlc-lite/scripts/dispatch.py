@@ -6,7 +6,7 @@
   dispatch.py selftest
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
-conductor passes to the Agent tool (design: docs/lean-sdlc/subagent-mode.md sections 1 to 3). It launches
+conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
 goal precheck, lane gate, spec gate, budget gate, then the one write section.
 

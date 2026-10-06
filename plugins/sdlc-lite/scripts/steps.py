@@ -121,9 +121,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               the plan's ## Assumptions section (lines up to the next ## heading) holds a list item
                 whose text after "- " or "* " starts with "unresolved:" -> stop (the reason quotes
                 the item; the user decides)
-              required when: the plan's file name level is L3, or a step block's level: is L4 or L5,
-                or a step title starts with "Merge ", or the task dir holds two or more planner
-                results (a replan), or handoff.md holds a line "## Plan review"
+              required when: a step block's level: is L4 or L5 (T-0294; planner level, a Merge title,
+                a replan, and a "## Plan review" line no longer require it)
               not required                               -> split
               no plan-reviewer-*.md counts after the plan (order.counts_after) -> review L1
               the newest such result fails results.structure_error(r, 'plan-reviewer') -> invalid
@@ -156,12 +155,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               no valid size -> "handoff.md front matter has no size of S, M, L, or XL"
             Before planning, size alone decides: with either reason above the lane is full and only those
             print; else S or M -> solo, L or XL -> full, with the one reason "size <v> decides before
-            planning (no planner result yet)". After planning, more reasons follow, in order:
+            planning (no planner result yet)"; but size S or M with more than 20 checkbox lines under the
+            handoff's ## Acceptance criteria is full, with the one reason "ticket lists <N> criteria (limit
+            20 for size S or M); split it into tickets of at most 20". After planning, more reasons follow, in order:
               size L or XL -> "size <v> is above M, and lean takes only size S or M"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
                 an unresolved assumption: "<first item>""
-              every reason review_required() returns, verbatim (planner L3, a step at L4 or L5, a merge
-                step, a replan, a ## Plan review line)
+              every reason review_required() returns, verbatim (a step at L4 or L5), then the lean-only
+                reasons (a planner L3 plan, a Merge step, a replan, a ## Plan review line: plan review no
+                longer needs them, but lean stays strict)
               steps that do not parse -> "<plan> has steps that do not parse (steps.py lint names why)",
                 and the step rules below are skipped
               more than 2 steps -> "<k> steps, and lean allows at most 2"
@@ -358,7 +360,10 @@ def read_goal(task_dir, allow_empty=False):
         i = end + 1
     start = next((j for j in range(i, len(lines)) if lines[j].rstrip() == '## Goal'), None)
     if start is None:
-        raise Fail(f'steps: {handoff} has no ## Goal section')
+        near = next((l.strip() for l in lines[i:] if l.startswith('## ') and l.rstrip() != '## Goal'
+                     and 'goal' in l.lower()), None)
+        hint = f'; found {near} instead, expected ## Goal' if near else ''
+        raise Fail(f'steps: {handoff} has no ## Goal section{hint}')
     body = []
     for line in lines[start + 1:]:
         if line.startswith('## '):
@@ -1037,9 +1042,60 @@ def split(target, only=None, guard_timeout=None):
         d = task_dir / f'step-{n}'
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
-        path.write_text(f'## Task goal\n{goal}\n\n{steps[n]}\n', encoding='utf-8')
+        body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(task_dir, n))
+        path.write_text(body, encoding='utf-8')
         written.append(path)
     return written
+
+
+def earlier_widened(task_dir, n):
+    """The paths listed under ## Scope widened in the live step-<m>/handoff.md files with m < n, in
+    step order, no duplicates. A superseded or non-numeric step dir is not live."""
+    found = []
+    for m, d in sorted((int(p.name[5:]), p) for p in pathlib.Path(task_dir).glob('step-*')
+                       if re.fullmatch(r'step-\d+', p.name) and int(p.name[5:]) < n):
+        h = d / 'handoff.md'
+        if not h.is_file():
+            continue
+        lines = h.read_text(encoding='utf-8').splitlines()
+        start = next((i for i, x in enumerate(lines) if x.rstrip() == '## Scope widened'), None)
+        if start is None:
+            continue
+        for x in lines[start + 1:]:
+            if x.startswith('## '):
+                break
+            mm = re.match(r'^- `([^`]+)`', x)
+            if mm and repo_path_ok(mm.group(1)) and mm.group(1) not in found:
+                found.append(mm.group(1))
+    return found
+
+
+def inherit_widened(text, paths):
+    """The step handoff text with paths added to its one scope allow-list and listed under
+    ## Scope widened. Unchanged when there are no paths, the step has not exactly one scope span in a
+    recognized form, or every path is already allowed. Runs no guard."""
+    if not paths:
+        return text
+    lines = text.splitlines(keepends=True)
+    scope = [(i, line, s) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines])
+             if list_item(line) for s in line_spans(line) if is_scope_span(s)]
+    if len(scope) != 1:
+        return text
+    idx, target, old = scope[0]
+    forms = widen_forms(old)
+    if len(forms) != 1:
+        return text
+    form, m = forms[0]
+    listed = widen_listed(form, m)
+    add = [p for p in paths if (p if form == 'F' else ere_escape(p)) not in listed]
+    if not add:
+        return text
+    new_line = replace_span(target, old, widen_span(old, form, m, add))
+    if new_line is None:
+        return text
+    ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
+    lines[idx] = new_line + ending
+    return add_scope_widened(''.join(lines), add)
 
 
 def cmd_precheck(task_dir):
@@ -1078,7 +1134,7 @@ def lean_warnings(plan, task_dir, steps):
     except Fail:
         return []
     unresolved, why = review_required(plan, task_dir)
-    if unresolved or why:
+    if unresolved or why or lean_only_reasons(plan, task_dir):
         return []
     rule = '(agents/planner.md, Coarse steps)'
     out = []
@@ -1446,21 +1502,9 @@ def review_required(plan, task_dir):
     """(unresolved assumption items, reasons a plan review is required) for plan in task_dir. The one
     rule that review, lane, and lint's lean warnings read. result_level's Fail propagates."""
     unresolved, levels, titles = plan_facts(plan)
-    pname = os.path.basename(plan)
     why = []
-    if result_level(plan) == 3:
-        why.append(f'{pname} is a planner L3 plan')
     if any(n in (4, 5) for n in levels):
         why.append('a step is at builder L4 or L5')
-    if any(x.startswith('Merge ') for x in titles):
-        why.append('the plan has a merge step')
-    n = len(order.ordered(task_dir, 'planner'))
-    if n >= 2:
-        why.append(f'{n} planner results (a replan)')
-    h = pathlib.Path(task_dir) / 'handoff.md'
-    if h.is_file() and any(line.rstrip() == '## Plan review'
-                           for line in h.read_text(encoding='utf-8').splitlines()):
-        why.append('handoff.md holds ## Plan review')
     return unresolved, why
 
 
@@ -1550,6 +1594,7 @@ def cmd_review(task):
 
 LANE_MAX_STEPS = 2
 LANE_MAX_CRITERIA = 12
+LANE_MAX_TICKET_CRITERIA = 20
 LANE_CONTRACTS = (
     'plugins/sdlc-lite/agents/',
     'plugins/sdlc-lite/skills/',
@@ -1626,6 +1671,35 @@ def lane_sticky(skips):
     return False
 
 
+def ticket_criteria(text):
+    """The number of checkbox lines ('- [ ]', '- [x]') under '## Acceptance criteria' of a handoff."""
+    inside, n = False, 0
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Acceptance criteria'
+        elif inside and re.match(r'^\s*[-*] \[[ xX]\]', line):
+            n += 1
+    return n
+
+
+def lean_only_reasons(plan, task_dir):
+    """Reasons the lean lane refuses a plan that needs no plan review (T-0294 narrowed review to L4 and
+    L5): a planner L3 plan, a Merge step, a replan, a ## Plan review line. Lean is a stricter lane."""
+    _, _, titles = plan_facts(plan)
+    why = []
+    if result_level(plan) == 3:
+        why.append(f'{os.path.basename(plan)} is a planner L3 plan')
+    if any(x.startswith('Merge ') for x in titles):
+        why.append('the plan has a merge step')
+    n = len(order.ordered(task_dir, 'planner'))
+    if n >= 2:
+        why.append(f'{n} planner results (a replan)')
+    h = pathlib.Path(task_dir) / 'handoff.md'
+    if h.is_file() and any(x.rstrip() == '## Plan review' for x in h.read_text(encoding='utf-8').splitlines()):
+        why.append('handoff.md holds ## Plan review')
+    return why
+
+
 def lane_action(task):
     """Return (lane, point, reasons, [files read]) for a task dir: solo, lean, or full. Writes nothing.
     The plan is read leniently, like plan_facts: split, lint, and review refuse a bad plan."""
@@ -1637,12 +1711,13 @@ def lane_action(task):
         raise Fail(f'steps lane: no such directory: {t}')
     h, skips = t / 'handoff.md', t / 'skips.md'
     read = []
-    size, review_line = None, False
+    size, review_line, ticket_k = None, False, 0
     if h.is_file():
         read.append(str(h))
         text = h.read_text(encoding='utf-8')
         size = (tickets.parse(text) or {}).get('size')
         review_line = any(line.rstrip() == '## Plan review' for line in text.splitlines())
+        ticket_k = ticket_criteria(text)
     if size not in tickets.ENUMS['size']:
         size = None
     plan = order.newest(t, 'planner')
@@ -1659,6 +1734,9 @@ def lane_action(task):
     if not plan:
         if reasons:
             return 'full', point, reasons, read
+        if size in ('S', 'M') and ticket_k > LANE_MAX_TICKET_CRITERIA:
+            return 'full', point, [f'ticket lists {ticket_k} criteria (limit {LANE_MAX_TICKET_CRITERIA} for size S or M); '
+                                   f'split it into tickets of at most {LANE_MAX_TICKET_CRITERIA}'], read
         lane = {'S': 'solo', 'M': 'solo'}.get(size, 'full')
         return lane, point, [f'size {size} decides before planning (no planner result yet)'], read
 
@@ -1669,6 +1747,7 @@ def lane_action(task):
     if unresolved:
         reasons.append(f'{pname} lists an unresolved assumption: "{unresolved[0]}"')
     reasons += why
+    reasons += lean_only_reasons(plan, t)
     try:
         steps = parse_steps(pathlib.Path(plan))
     except Fail:
@@ -2252,6 +2331,15 @@ def selftest():
         d = task(plan=None, handoff='## Task goal\nx\n')
         refused('(precheck) a handoff with only ## Task goal is refused naming ## Goal', ['precheck', str(d)], d,
                 '## Goal')
+        refused('(precheck) the refusal names the ## Task goal heading it found', ['precheck', str(d)], d,
+                needles=('found ## Task goal', 'expected ## Goal'))
+        d = task(plan=None, handoff='## Notes\nx\n')
+        refused('(precheck) no near heading keeps the plain message', ['precheck', str(d)], d)
+        rc, _, err = run_main(['precheck', str(d)])
+        check('(precheck) no near heading adds no found hint', 'found' not in err)
+        d = task(handoff='## Task goal\nx\n')
+        refused('(split) a handoff with only ## Task goal names it as found', ['split', str(d)], d,
+                needles=('found ## Task goal', 'expected ## Goal'))
         d = task(plan=None, handoff=HANDOFF)
         rc, out, err = run_main(['precheck', str(d)])
         check('(precheck) a handoff with ## Goal passes silently', rc == 0 and out == '' and err == '')
@@ -3265,6 +3353,26 @@ def selftest():
               and text.endswith('- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
                                 '- `e.txt`: allowed by a conductor scope decision (steps.py widen)\n'))
 
+        # split inherits earlier widenings: step 1 widened by P, then split --only 2 puts P in step 2's
+        # scope allow-list and its ## Scope widened section; a plan with no earlier widening is unchanged
+        i_span = f'`{W_LIST} | grep -vxF -e a.txt | {{ ! grep -q .; }}`'
+        i_plan = PLAN.replace('- two works', f'- two works\n- {i_span}')
+        d = task(plan=i_plan)
+        (d / 'step-1').mkdir()
+        (d / 'step-1' / 'handoff.md').write_text(
+            w_handoff(i_span) + '\n## Scope widened\n- `p/inherit.txt`: allowed by a conductor scope decision '
+            '(steps.py widen)\n', encoding='utf-8')
+        rc, _, _ = run_main(['split', str(d), '--only', '2'])
+        text = (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8')
+        check('split: step 2 inherits the path step 1 widened, in its allow-list and its Scope widened section',
+              rc == 0 and '-e a.txt -e p/inherit.txt' in text
+              and '## Scope widened\n- `p/inherit.txt`: allowed by a conductor scope decision (steps.py widen)\n' in text)
+        d = task(plan=i_plan)
+        rc, _, _ = run_main(['split', str(d), '--only', '2'])
+        text = (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8')
+        check('split: a step 2 with no earlier widening is unchanged',
+              rc == 0 and '## Scope widened' not in text and '-e a.txt | ' in text)
+
         # (c) refusals: each writes nothing and ends with the plan-defect line
         r, d = w_repo(w_handoff('`test -d .`'))
         widen_refused('(c) no scope criterion line', d, ['b.txt'], 'no criterion line')
@@ -3355,71 +3463,63 @@ def selftest():
               == 'split')
         check('(r) a routine plan (planner L2, steps at L1..L3, no merge, one plan, no ## Plan review) -> split',
               r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
-        check('(r) a planner L3 plan -> review L1; negative: planner L2 -> split',
-              r_first(r_task({'planner-L3.md': r_plan()})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
         check('(r) a step at L4 or L5 -> review L1; negative: a step at L3 -> split',
               r_first(r_task({'planner-L2.md': r_plan('L4')})) == 'review L1'
               and r_first(r_task({'planner-L2.md': r_plan('L5')})) == 'review L1'
               and r_first(r_task({'planner-L2.md': r_plan('L3')})) == 'split')
-        check('(r) a step titled Merge <branch> -> review L1; negative: a title Merger or merge -> split',
-              r_first(r_task({'planner-L2.md': r_plan(title='Merge lane/x')})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan(title='Merger of x')})) == 'split'
-              and r_first(r_task({'planner-L2.md': r_plan(title='merge lane/x')})) == 'split')
-        check('(r) two planner results (a replan) -> review L1; negative: one -> split',
-              r_first(r_task({'planner-L2.md': r_plan(), 'planner-L2-2.md': r_plan()})) == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()})) == 'split')
-        check('(r) handoff.md with a ## Plan review line -> review L1; negative: ### Plan review -> split',
-              r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n## Plan review\nplan defect: x\n'))
-              == 'review L1'
-              and r_first(r_task({'planner-L2.md': r_plan()}, handoff='## Goal\ng\n\n### Plan review\nx\n'))
-              == 'split')
-        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})
+        check('(r) plan review only for L4 or L5: an all-L1-to-L3 plan (planner L3, a replan, a ## Plan review '
+              'handoff line, a Merge title) -> split; an L4 and an L5 step -> review L1',
+              r_first(r_task({'planner-L3.md': r_plan()})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan('L3'), 'planner-L2-2.md': r_plan('L3')})) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan()},
+                                 handoff='## Goal\ng\n\n## Plan review\nplan defect: x\n')) == 'split'
+              and r_first(r_task({'planner-L2.md': r_plan(title='Merge lane/x')})) == 'split'
+              and r_first(r_task({'planner-L3.md': r_plan('L4')})) == 'review L1'
+              and r_first(r_task({'planner-L3.md': r_plan('L5')})) == 'review L1')
+        d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass')})
         rc, out, _ = run_main(['review', str(d)])
         check('(r) a pass review after the plan -> split, reading the plan and the review',
               rc == 0 and out.splitlines()[0] == 'split'
               and f'read: {d / "plan-reviewer-L1.md"}' in out.splitlines())
         check('(r) negative: a pass review before a newer plan does not count -> review L1',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass'),
-                              'planner-L3-2.md': r_plan()},
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass'),
+                              'planner-L3-2.md': r_plan('L4')},
                              ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md'])) == 'review L1')
         check('(r) one replan review -> replan; a PASS verdict is read lowercased -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan')})) == 'replan'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('PASS')})) == 'split')
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan')})) == 'replan'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('PASS')})) == 'split')
         check('(r) a second replan review in the task dir -> stop; negative: a replan then a pass -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
-                              'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('replan')},
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan'),
+                              'planner-L3-2.md': r_plan('L4'), 'plan-reviewer-L1-2.md': r_review('replan')},
                              ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md', 'plan-reviewer-L1-2.md']))
               == 'stop'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan'),
-                                  'planner-L3-2.md': r_plan(), 'plan-reviewer-L1-2.md': r_review('pass')},
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan'),
+                                  'planner-L3-2.md': r_plan('L4'), 'plan-reviewer-L1-2.md': r_review('pass')},
                                  ['planner-L3.md', 'plan-reviewer-L1.md', 'planner-L3-2.md',
                                   'plan-reviewer-L1-2.md'])) == 'split')
         check('(r) a blocked review -> stop; negative: the same review with pass -> split',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('blocked')})) == 'stop'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})) == 'split')
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('blocked')})) == 'stop'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('pass')})) == 'split')
         check('(r) one verdict-less review -> review L1 (a rerun, never a replan); two consecutive -> stop',
-              r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe')})) == 'review L1'
-              and r_first(r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('maybe'),
+              r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('maybe')})) == 'review L1'
+              and r_first(r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('maybe'),
                                   'plan-reviewer-L1-2.md': '## Findings\nNone\n'},
                                  ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'])) == 'stop')
         check('(r) negative: a verdict-less review before the plan does not count toward two -> review L1',
-              r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan(),
+              r_first(r_task({'plan-reviewer-L1.md': r_review('maybe'), 'planner-L3.md': r_plan('L4'),
                               'plan-reviewer-L1-2.md': r_review('maybe')},
                              ['plan-reviewer-L1.md', 'planner-L3.md', 'plan-reviewer-L1-2.md'])) == 'review L1')
 
-        d = r_task({'planner-L3.md': r_plan(), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
+        d = r_task({'planner-L3.md': r_plan('L4'), 'planner-L3-2.md': r_plan('L4', 'Merge x')},
                    runs=['planner-L3.md', 'planner-L3-2.md'], handoff='## Goal\ng\n\n## Plan review\nx\n')
-        rr_why = ['planner-L3-2.md is a planner L3 plan', 'a step is at builder L4 or L5',
-                  'the plan has a merge step', '2 planner results (a replan)', 'handoff.md holds ## Plan review']
+        rr_why = ['a step is at builder L4 or L5']
         rr_out = run_main(['review', str(d)])[1].splitlines()
         d2 = r_task({'planner-L2.md': r_plan(tail='\n## Assumptions\n- unresolved: which db\n')})
         check('(r) review_required returns the unresolved items and every reason review prints, in order',
               review_required(d / 'planner-L3-2.md', d) == ([], rr_why)
               and len(rr_out) >= 2
-              and rr_out[1] == 'reason: a plan review is required (planner-L3-2.md is a planner L3 plan; a step is '
-              'at builder L4 or L5; the plan has a merge step; 2 planner results (a replan); handoff.md holds '
-              '## Plan review) and none counts after planner-L3-2.md'
+              and rr_out[1] == 'reason: a plan review is required (a step is at builder L4 or L5) and none counts '
+              'after planner-L3-2.md'
               and review_required(d2 / 'planner-L2.md', d2) == (['unresolved: which db'], []))
 
         # (r) split refuses a plan whose newest counting review says replan or blocked, before any write
@@ -3498,6 +3598,12 @@ def selftest():
             why = f'size {size} decides before planning (no planner result yet)'
             ok = ok and lane == want and reasons == [why] \
                 and recs == [f'- lane: {want}; point: before planning; reasons: {why}']
+        for k, want in ((20, 'solo'), (21, 'full')):
+            crit = '\n## Acceptance criteria\n' + ''.join(f'- [ ] c{i}\n' for i in range(k))
+            lane, reasons, _, _ = l_run(l_task(l_handoff('M', crit)))
+            why = 'size M decides before planning (no planner result yet)' if k == 20 else \
+                'ticket lists 21 criteria (limit 20 for size S or M); split it into tickets of at most 20'
+            ok = ok and lane == want and reasons == [why]
         lane, reasons, _, recs = l_run(l_task(l_handoff(None)))
         check('(lane) before planning, size alone decides: S and M solo, L and XL full, no size full',
               ok and lane == 'full' and reasons == [LANE_NO_SIZE]
@@ -3513,26 +3619,26 @@ def selftest():
         check('(lane) a two-step size M plan at L1 to L3 inside one AGENTS.md owner is lean, for scope forms F, E, '
               'and A', ok)
 
+        lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge lane/x')}))
+        check('(lane) lean stays strict: a Merge step keeps a ticket full though plan review no longer needs it',
+              lane == 'full' and reasons == ['the plan has a merge step'])
+
         lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 4))}))
         check('(lane) negative: the same two-step plan with one step at L4 is full',
               lane == 'full' and reasons == ['a step is at builder L4 or L5'])
 
-        d = l_task(l_handoff(), {'planner-L2.md': l_plan()})
-        first = l_run(d)[0]
+        d = l_task(l_handoff(), {'planner-L3.md': l_plan(), 'planner-L3-2.md': l_plan()})
         with open(d / 'handoff.md', 'a', encoding='utf-8') as f:
             f.write('\n## Plan review\nrequired\n')
-        lane, reasons, _, recs = l_run(d)
-        check('(lane) negative: a lean ticket whose handoff gains a ## Plan review line is full on the next call',
-              first == 'lean' and lane == 'full' and reasons == ['handoff.md holds ## Plan review']
-              and len(recs) == 2 and recs[1].startswith('- lane: full; point: after plan review; '))
+        lane, reasons, _, _ = l_run(d)
+        check('(lane) lean stays strict: planner L3, a replan, and a ## Plan review line each keep a ticket full '
+              'though plan review no longer requires them',
+              lane == 'full' and 'handoff.md holds ## Plan review' in reasons
+              and any('planner L3 plan' in r for r in reasons) and any('(a replan)' in r for r in reasons))
 
         rr_cases = [
-            l_task(l_handoff(), {'planner-L3.md': l_plan()}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(4, 3))}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 5))}),
-            l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge x')}),
-            l_task(l_handoff(), {'planner-L2.md': l_plan(), 'planner-L2-2.md': l_plan()}),
-            l_task(l_handoff(tail='\n## Plan review\nrequired\n'), {'planner-L2.md': l_plan()}),
             l_task(l_handoff(), {'planner-L2.md': l_plan(assume='- unresolved: which db')}),
         ]
         ok = True

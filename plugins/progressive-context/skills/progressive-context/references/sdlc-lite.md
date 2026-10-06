@@ -12,6 +12,6 @@ Progressive Context owns durable intent, capability boundaries, context routes, 
 
 For a repeated process with a useful context boundary, a task handoff may also link a reusable [workflow definition](workflow-stages.md) and its relevant stage heading. The definition supplies expected inputs and outputs; the handoff supplies this task's actual paths, decisions, and unresolved findings. SDLC Lite's plan steps and `steps.py next` still own build and verification routing. A stage boundary never advances a task or qualifies a capability by itself.
 
-One capability can have several tickets; one ticket can touch several capabilities. Ticket closure does not publish a capability, and an accepted capability may still have open enhancement tickets. Do not synchronize independent status flags or duplicate the SDLC board in context files.
+One capability can have several tickets; one ticket can touch several capabilities. Ticket closure does not publish a capability, and an accepted capability may still have open enhancement tickets. Do not synchronize independent status flags or duplicate the SDLC Lite board in context files.
 
 Example: a ticket adds keyboard selection to an existing invoice review capability. Its plan links the contract's selection criterion; its verifier result is referenced by a new assessment of the changed revision. The contract retains its stable ID after the ticket closes.

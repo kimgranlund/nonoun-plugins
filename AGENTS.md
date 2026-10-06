@@ -15,7 +15,7 @@ All paths and shell commands in this file are relative to the repository root.
 
 - `plugins/` holds the two plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
-- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support.
+- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for size S and M, `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
 - A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
 
@@ -24,7 +24,7 @@ All paths and shell commands in this file are relative to the repository root.
 | Task | Read next |
 |---|---|
 | Progressive Context skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
-| SDLC roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
+| SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
 | Codex execution or generated agents | [Codex execution guide](docs/codex-role-execution.md) |
 | Claude hook behavior | [Hook maintenance](docs/maintenance/claude-hooks.md) |
 | Marketplace or host packaging | [Compatibility report](docs/plugin-compatibility.md) and `scripts/check-packaging.py` |
@@ -64,7 +64,7 @@ Run commands from the repository root. Select checks for the affected behavior; 
 |---|---|
 | Documentation or reference-only edits | Inspect local links, run `git diff --check`; validate changed skills and run packaging checks when plugin files or routes change |
 | Skill frontmatter or packaging | `python3 scripts/check-packaging.py`, available host/skill validators, and inspection of discovery routes |
-| SDLC role or execution behavior | Relevant regression checks, generated-agent parity, and a focused live run in a throwaway project |
+| SDLC Lite role or execution behavior | Relevant regression checks, generated-agent parity, and a focused live run in a throwaway project |
 | Shared runner, cross-workflow behavior, or release | `bash plugins/sdlc-lite/scripts/check.sh` and packaging checks; live evidence for changed host behavior |
 | New or changed check/gate | A positive case and an observed negative control proving the gate rejects the defect |
 

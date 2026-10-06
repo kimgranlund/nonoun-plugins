@@ -1005,6 +1005,16 @@ grep -qF "session limit: resume with: bash $here/../scripts/run.sh planner L3" "
   || fail "$label: no resume line on stderr: $(cat "$tmp/lerr")"
 [[ -s "$repo/.sdlc/lim/planner-L3.limit" ]] || fail "$label: no planner-L3.limit marker"
 jq -e '.resume | test("run.sh planner L3")' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label: marker has no resume command"
+jq -e 'has("reset") | not' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label control: a no-reset log wrote a reset field"
+! grep -qF "(resets" "$tmp/lerr" || fail "$label control: a no-reset log printed a reset"
+rm -f "$repo/.sdlc/lim/planner-L3.limit"
+# T-0298: a log that prints a reset time lands it in the marker and the hint.
+printf '#!/usr/bin/env bash\necho "API Error: 429 session limit reached, resets 1:40pm" >&2\nexit 1\n' >"$tmp/limitbin/claude-reset"
+chmod +x "$tmp/limitbin/claude-reset"
+mkdir -p "$tmp/resetbin"; cp "$tmp/limitbin/claude-reset" "$tmp/resetbin/claude"
+(cd "$repo" && PATH="$tmp/resetbin:$PATH" "$here/run.sh" planner L3 .sdlc/lim/handoff.md >/dev/null 2>"$tmp/lerr") || :
+jq -e '.reset == "1:40pm"' "$repo/.sdlc/lim/planner-L3.limit" >/dev/null || fail "$label reset: marker has no reset 1:40pm"
+grep -qF "resets 1:40pm" "$tmp/lerr" || fail "$label reset: hint has no resets 1:40pm"
 rm -f "$repo/.sdlc/lim/planner-L3.limit"
 mv "$tmp/limitbin/claude-plain" "$tmp/limitbin/claude"
 lrc=0

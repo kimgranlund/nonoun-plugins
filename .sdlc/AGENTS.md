@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e2f0293360b8 -->
+<!-- sdlc-lite:managed:start v1 sha256:ff40c3f4eafb -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 26
+- proposed: 37
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -36,6 +36,17 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0286 Supervisor reports orphaned dispatches (0286-supervisor-orphans)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
+  - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
+  - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
+  - T-0302 ADR number allocator note (repo-owned, docs only) (0302-adr-number-allocator-note)
+  - T-0305 fleet_collect.py: per-repo collector (0305-fleet-collect)
+  - T-0306 fleet_detect.py: waste and stall detect rules (0306-fleet-detect)
+  - T-0307 fleet-retro interview template and environment fingerprint (0307-fleet-interview)
+  - T-0308 /sdlc-lite:fleet-retro skill, cross-repo report, verification sample (0308-fleet-retro-skill)
+  - T-0310 fleet.json: the active repo registry and conductor list (0310-fleet-config)
+  - T-0311 fleet_status.py: liveness join, load trend and snapshot (0311-fleet-liveness)
+  - T-0312 fleet_status.py render and the /sdlc-lite:fleet-status skill (0312-fleet-status-render)
+  - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
 - ready: 0
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
@@ -47,7 +58,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0208 Live evidence: lean and full ticket on both hosts (0208-live-evidence)
   - T-0211 Spec gate A2: specgate.py red, (red) tag, split and review wiring (0211-spec-gate-red)
   - T-0213 Replan handoff, planner checklist, scoped plan review, replans metric (0213-replan-delta-checklist)
-- done: 228
+- done: 241
 - dropped: 19
 
 ## Procedures
@@ -70,5 +81,5 @@ Close a ticket:
 
 ## Other records
 
-- Evals: `evals/` holds the dated model and effort experiments and `table-lock.json`; read `evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/adapters/claude/levels.json` (mirrored by the `plugins/sdlc-lite/scripts/run.sh` rows) or `plugins/sdlc-lite/adapters/codex/models.json`.
+- Evals: `evals/` holds the dated model and effort experiments and `table-lock.json`; read `evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.

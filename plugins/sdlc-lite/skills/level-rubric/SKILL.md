@@ -55,13 +55,9 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 
 ## When a plan is reviewed
 
-The plan-reviewer (L1, one level) reviews a plan before any builder starts. It is required for:
-- any plan by planner L3,
-- any plan with a step at builder L4 or L5,
-- any plan with a merge step,
-- every replan.
+The plan-reviewer (L1, one level) reviews a plan before any builder starts. It is for L4 and L5 steps only: required for any plan with a step at builder L4 or L5. Planner level, a merge step, a replan, and a `## Plan review` line no longer trigger it; the planner's open readiness concerns become `## Notes` for the builder.
 
-Routine plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
+Other plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
 
 The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. With planner L2 and L3 both on Opus, a review of a plan by planner L2 or L3 runs on Fable high; only a plan by the Sonnet planner L1 is reviewed on Opus high. `run.sh` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
 

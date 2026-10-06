@@ -122,7 +122,12 @@
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
    `docs_check.py" selftest`. Negative controls: each phrase removed from each file must be flagged.
-34. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
+34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
+   (docs/reports, closed tickets, run workspaces under .sdlc, bench results). Negative control: a planted spelling must be flagged and an allowlisted path must not.
+35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
+   scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
+   it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
+36. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
    agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
    Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
    check.sh phrase removed must be flagged.
@@ -843,7 +848,35 @@ errors.extend(f'check.py: docs check: {m}' for m in docs_check_bad(_dc_texts))
 for _name, _phrases in DOCS_CHECK_NEEDS:
     for _ph in _phrases:
         if not docs_check_bad(dict(_dc_texts, **{_name: _dc_texts[_name].replace(_ph, '')})): errors.append(f'check.py: docs check negative control not flagged for {_name} without {_ph}')
-# Generated Claude definitions (docstring item 34): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
+# Product name guard (docstring item 34): runs only where the repository root is a git work tree.
+NAME_BANNED = ('Lean ' + 'SDLC', 'lean ' + 'SDLC', 'SDLC' + '-Lite', 'sdlc ' + 'lite')
+NAME_ALLOW = ('docs/reports/*', '.sdlc/.[0-9]*', '.sdlc/verify-*', '.sdlc/*0309*', 'plugins/sdlc-lite/bench/results/*')
+def name_bad(texts):
+    import fnmatch
+    return [f'{rel}: retired spelling "{b}"' for rel, t in sorted(texts.items()) if not any(fnmatch.fnmatchcase(rel, g) for g in NAME_ALLOW) for b in NAME_BANNED if b in t]
+if (_repo/'.git').exists():
+    _names = {}
+    for _rel in subprocess.run(['git', 'ls-files', '-z'], cwd=_repo, capture_output=True, text=True).stdout.split('\0'):
+        if _rel and (_repo/_rel).is_file():
+            try: _names[_rel] = (_repo/_rel).read_text(encoding='utf-8')
+            except (UnicodeDecodeError, OSError): pass
+    errors.extend(f'check.py: product name: {m}' for m in name_bad(_names))
+    if not name_bad(dict(_names, **{'docs/x.md': 'a ' + NAME_BANNED[0] + ' b'})): errors.append('check.py: product name negative control not flagged for a planted spelling')
+    if name_bad({'docs/reports/x.md': 'a ' + NAME_BANNED[1] + ' b'}): errors.append('check.py: product name allowlist did not suppress a docs/reports path')
+# Gate lock (docstring item 35): the semaphore script, its selftest wiring, the fanout wrapper, and the conductor and internals mentions.
+GATE_LOCK_NEEDS = (('gate_lock.py', ('SLOT-CAP', 'SDLC_GATE_WORKERS', 'SDLC_GATE_SLOTS', 'sdlc-gate-locks')),
+                   ('check.sh', ('gate_lock.py" selftest',)), ('fanout.py', ('gate_lock.py', '--no-gate-lock')),
+                   ('conductor', ('gate_lock.py run',)), ('internals', ('gate_lock.py',)))
+def gate_lock_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in GATE_LOCK_NEEDS for ph in phrases if name in texts and ph not in texts[name]]
+_gl_texts = {'gate_lock.py': _rd(root/'scripts/gate_lock.py'), 'check.sh': _rd(root/'scripts/check.sh'), 'fanout.py': _rd(root/'scripts/fanout.py'),
+             'conductor': _rd(root/'agents/conductor.md')}
+if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _gl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
+for _name, _phrases in GATE_LOCK_NEEDS:
+    for _ph in _phrases:
+        if _name in _gl_texts and not gate_lock_bad(dict(_gl_texts, **{_name: _gl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: gate lock negative control not flagged for {_name} without {_ph}')
+# Generated Claude definitions (docstring item 36): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
 def claude_roles_check(plugin):
     return subprocess.run([sys.executable, str(root/'scripts/claude_roles.py'), '--plugin', str(plugin), 'generate', '--check'], capture_output=True, text=True)
 _cr = claude_roles_check(root)

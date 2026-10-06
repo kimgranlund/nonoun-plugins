@@ -1,12 +1,12 @@
 # SDLC Lite maintenance
 
-Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction.
+Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction. Improvements serve [the four pillars](../../docs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 
 Read [repository guidance](../../AGENTS.md) first. Paths below are relative to this plugin unless a command starts with `plugins/`; those commands run from the repository root.
 
 ## Contracts and routing
 
-- Size S and M plugin work goes to `solo` by default; `/fix` only when the user asks for it or the lane script prints `fix`, and the lean lane when the lane script says so. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the lean SDLC design](../../docs/lean-sdlc/design.md).
+- Size S and M plugin work goes to `solo` by default; `/fix` only when the user asks for it or the lane script prints `fix`, and the lean lane when the lane script says so. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the SDLC Lite design](../../docs/sdlc-lite/design.md).
 - Shared roles live in `agents/`; workflows and output contracts live in `skills/`. Keep callers and producers consistent when changing handoffs or verdicts.
 - `agents/` also holds three session agents that are not `run.sh` roles, the `conductor`, the `messenger`, and `solo`. `scripts/check.py` excludes all three from the run.sh agreement check and checks the messenger's and solo's files and Codex mappings.
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
