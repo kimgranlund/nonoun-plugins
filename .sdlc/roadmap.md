@@ -298,3 +298,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0310 | [0310-fleet-config](0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | ⏳ proposed |
 | T-0311 | [0311-fleet-liveness](0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | ⏳ proposed |
 | T-0312 | [0312-fleet-status-render](0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | ⏳ proposed |
+| T-0313 | [0313-solo-worktree-hook](0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | S | P2 | none | ⏳ proposed |
