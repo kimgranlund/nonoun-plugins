@@ -2,7 +2,7 @@
 id: T-0276
 title: "Claude level table and per-level generated agents"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0275]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,7 @@ Run the negative controls in a throwaway copy, never in the working tree: from t
 
 ## Constraints
 Model and effort values must not change (user decision). Codex files and `models.json` untouched. No em dashes. No push, tag, or publish.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
