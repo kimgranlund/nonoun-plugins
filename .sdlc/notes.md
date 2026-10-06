@@ -218,3 +218,10 @@
 - 0.21.0 publish is authorized once T-0287's live evidence and the independent fact-check pass; fast-forward only, never force.
 - maison may contact maison-testing (T-0002) for the T-0106 tar handoff; the sdlc-lite author stays out of that session.
 - The nine parked tickets (T-0187, T-0200, T-0201, T-0205 to T-0208, T-0211, T-0213) get a per-ticket review; stale ones are dropped, with the table in docs/reports/parked-tickets-review-2026-10-06.md.
+
+## T-0205: layout key and one resolver for ticket dir, roadmap, notes (2026-10-06)
+
+- decide: this repo's own `.sdlc/config` has no `layout:` line, so every `tickets.py check` now prints the migrate-layout warning; choose between adding `layout: flat` and migrating (T-0206 or T-0207).
+- note: `ROUTER_FLAT_INTRO` duplicates the first paragraph still inside `ROUTER_TEMPLATE`, and `router_bodies` swaps them by string match; editing one without the other leaves a topics tree with the flat paragraph (the `tp-new` selftest case catches it).
+- note: the builder edited two selftest asserts the handoff did not list, in the numbered-config warning block. Each now checks `'ticket_folders: numbered' not in out + err`, because every flat root now warns.
+- note: `check.py` guards, listed among the ticket's owning files, were not touched, and the artifacts show no guidance-doc update (the AGENTS.md files). The Done-when line says affected guidance is updated, so confirm whether anything was needed.
