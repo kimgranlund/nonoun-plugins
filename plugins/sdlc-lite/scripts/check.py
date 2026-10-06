@@ -122,6 +122,10 @@
 35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
    scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
+36. Fleet status: skills/fleet-status/SKILL.md names `fleet_status.py render`, `## 1. Render`, `## 2. Print it`, `## 3. Ask once`, `## 4. Relay, do not act`,
+   `Render, never compose`, `AskUserQuestion`, `If AskUserQuestion is unavailable`, `--ping`, `sends nothing`, and `Codex host`, and holds no `harness:` reference;
+   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, and `def selftest_render`; scripts/check.sh runs
+   `fleet_status.py" selftest`. Negative controls: each phrase removed from each file, a harness reference added, and the routing line removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -820,6 +824,22 @@ errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
 for _name, _phrases in GATE_LOCK_NEEDS:
     for _ph in _phrases:
         if _name in _gl_texts and not gate_lock_bad(dict(_gl_texts, **{_name: _gl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: gate lock negative control not flagged for {_name} without {_ph}')
+# Fleet status (docstring item 36): the skill prints the renderer's output and asks once; the renderer refuses a row with no source.
+FLEET_STATUS_NEEDS = (('skill', ('fleet_status.py render', '## 1. Render', '## 2. Print it', '## 3. Ask once', '## 4. Relay, do not act', 'Render, never compose',
+                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host')),
+                      ('script', ('RenderError', 'def render(', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+def fleet_status_bad(texts, entry):
+    out = [f'{name} missing "{ph}"' for name, phrases in FLEET_STATUS_NEEDS for ph in phrases if ph not in texts[name]]
+    if re.search(r'harness:', texts['skill']): out.append('fleet-status SKILL.md references harness:')
+    if '| fleet-status |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to fleet-status')
+    return out
+_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+errors.extend(f'check.py: fleet status: {m}' for m in fleet_status_bad(_fs_texts, _entry))
+for _name, _phrases in FLEET_STATUS_NEEDS:
+    for _ph in _phrases:
+        if not fleet_status_bad(dict(_fs_texts, **{_name: _fs_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_name} without "{_ph}"')
+if not fleet_status_bad(dict(_fs_texts, skill=_fs_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: fleet status negative control not flagged for a harness reference')
+if not fleet_status_bad(_fs_texts, _entry.replace('| fleet-status |', '|')): errors.append('check.py: fleet status negative control not flagged for a missing entry route')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

@@ -1,13 +1,43 @@
 #!/usr/bin/env python3
-"""Fleet status collector: is each board row really moving, how loaded is the machine, what needs the user,
-what changed since the last call. No model call, read-only on every repo it inspects. It renders nothing:
-`collect` prints one JSON object that the status renderer (T-0312) draws from.
+"""Fleet status: is each board row really moving, how loaded is the machine, what needs the user, what changed
+since the last call. No model call, read-only on every repo it inspects. `collect` prints one JSON object;
+`render` draws it as the status, one screen in a fixed order.
 
-Usage: fleet_status.py collect [REPO ...] [--fleet FILE] [--state-dir DIR] [--stop-line N]
+Usage: fleet_status.py render [--repos A,B] [--since last|DATE] [--ping] [--fleet FILE] [--state-dir DIR]
+                              [--stop-line N] [--active-minutes N] [--no-gh] [--no-write]
+       fleet_status.py collect [REPO ...] [--fleet FILE] [--state-dir DIR] [--stop-line N]
                                [--active-minutes N] [--no-gh] [--no-write]
        fleet_status.py selftest
 
-REPO paths name the repos to inspect; with none, the active entries of the fleet registry (--fleet, default
+render prints these sections in this order, at most 60 lines for three repos (the list caps shrink together until
+it fits, the cut rows become `+N more`):
+  Machine         one line: load, trend arrow, cores, stop line and headroom, the two top consumers with a pid,
+                  and the verdict (ok, NEAR or OVER the stop line)
+  Needs you       open non-draft PRs (kind merge) and blocked tickets whose owner is the user or unknown (kind
+                  credential when the title or note names a credential, token, login or the like, else decision),
+                  each with owner and age; user-owned first, oldest first. A blocked ticket the conductor owns is
+                  stuck work and goes under Stale or stuck.
+  Moving          one row per repo with its mark (filled circle live, half circle idle, empty circle nothing),
+                  the row counts, `unread N` (message ids waiting under .sdlc/messages/new, names only, never a
+                  body; the first two ids on the next line) and the supervisor state from
+                  .sdlc/supervisor/status.json when present; then that repo's live and idle rows
+  Stale or stuck  dead and stale rows (the board claims work and no process, marker or recent activity backs it),
+                  a done ticket whose board rows still claim work, a conductor-owned blocked ticket, a ticket
+                  that vanished, a registry repo whose directory is missing
+  Done since ...  tickets closed, dropped and PRs merged or closed unmerged since the last report (the stored
+                  snapshot), or with --since DATE the `close T-NNNN` commits on each default branch since DATE
+                  plus the PRs gh lists as merged since DATE
+  Release state   one line per repo: default branch against origin, last tag and distance, unpushed commits, fetch age
+  Ping            only with --ping: the conductors with work to report on, to message for a health report.
+                  Nothing is sent.
+Every row ends with its source in brackets (the ticket folder, `repo PR #N`, `repo @ sha`, a repo's `.sdlc`, or
+`loadavg, ps`); a row with no source raises RenderError, render exits 1 and prints nothing. No em dash is printed.
+render reads the registry (--fleet, default .sdlc/fleet.json): --repos narrows the active repos by name, a name the
+registry excludes is skipped with a note on stderr and never shown, an unknown name exits 2. render writes the
+same state files as collect (the snapshot makes the next call's `since last`); --no-write skips them. Exit codes:
+0 ok, 1 a row had no source, 2 usage, a bad registry or an unknown repo.
+
+collect: REPO paths name the repos to inspect; with none, the active entries of the fleet registry (--fleet, default
 `.sdlc/fleet.json`, see docs/sdlc-lite/fleet-config.md) are inspected. A registry entry whose directory is
 missing is reported with an `error` and skipped; an explicit REPO that is missing exits 2.
 
@@ -29,7 +59,9 @@ Output keys (stdout, JSON):
                 `ps` failed. watchers: vite, nodemon, fswatch, watchman, chokidar, tsc -w, supervisor.py watch, any
                 `--watch`.
   repos[]       name, path, conductor, gh, error (a missing directory only), rows[], counts, needs_you[], prs,
-                release, worktrees (linked worktree count)
+                release, worktrees (linked worktree count), unread[] (ids of the messages in
+                .sdlc/messages/new/<receiver>/, from file names only), supervisor (null, {error}, or {running,
+                age_s, receivers{name: state}} from .sdlc/supervisor/status.json)
     rows[]      one per board row (the tasks board.py shows): id, task (folder), title, ticket_status, board (the
                 most telling cell: a red step, else a yellow one, else the first), pct, claims_work (the board shows
                 yellow or red), state, evidence[], flags[]
@@ -45,10 +77,11 @@ Output keys (stdout, JSON):
                 each linked worktree. handoff.md and skips.md are never activity.
       flags     `ticket-done-board-open` when the ticket is done or dropped yet its board rows still claim work.
     counts      rows per state
-    needs_you[] {kind: blocked, id, task, title, owner: user | conductor | unknown, note} for each ticket with
-                status blocked (owner from an `owner: user|conductor` line in its handoff.md or in .sdlc/notes.md
-                on a line naming its id), and {kind: pr, number, title, url, detail} for each open, non-draft
-                pull request (gh pr list; `--no-gh` skips)
+    needs_you[] {kind: blocked, id, task, title, owner: user | conductor | unknown, note, age_s} for each ticket
+                with status blocked (owner from an `owner: user|conductor` line in its handoff.md or in
+                .sdlc/notes.md on a line naming its id; age_s since handoff.md's last commit, else its mtime),
+                and {kind: pr, number, title, url, detail, age_s} for each open, non-draft pull request (gh pr
+                list; `--no-gh` skips; age_s since it was opened)
     prs         {open[], drafts, error?} or "skipped"
     release     branch, default, local, remote, ahead, behind, last_tag, tag_distance, fetched_age_s, unpushed[]
                 (commits the default branch holds that origin/<default> lacks, newest first, at most 10),
@@ -60,6 +93,9 @@ Output keys (stdout, JSON):
                 gone[] (a ticket that vanished while not done), prs_merged[], prs_closed[] (gh only). Tickets are
                 keyed by id, so closing one (which renames its folder to .NNNN-<slug>) is a close, not a
                 vanished row plus a new one.
+  report_since  {mode: last | date, at}; with a date, repos[] also carry closed_since[] {id, title, task, sha,
+                when} (the `close T-NNNN` commits on the default branch since the date) and merged_since (PRs gh
+                lists as merged since it; null with --no-gh, {error} when gh failed)
   snapshot      {path, written}
 Read-only: only `ps`, `git` plumbing and `gh pr list` GET calls run on a repo, each bounded by a timeout and
 killed with its process group on expiry. Exit codes: 0 ok, 2 usage or a missing explicit repo.
@@ -72,6 +108,7 @@ if HERE not in sys.path:
 import board          # same scripts/ dir: the board's own task and row logic (display only here)
 import fleet_collect  # same scripts/ dir: bounded subprocess, worktree discovery, process classes
 import fleet_config   # same scripts/ dir: the repo registry
+import messages       # same scripts/ dir: ID_RE only; a message file is never opened here
 import tickets        # same scripts/ dir: the only front matter parser
 
 UTC = datetime.timezone.utc
@@ -94,7 +131,9 @@ PID_SLACK_S = 3          # a process may start this much after the marker's own 
 LIST_CAP = 10
 UP, DOWN, FLAT = '↑', '↓', '→'
 
-USAGE = ('usage: fleet_status.py collect [REPO ...] [--fleet FILE] [--state-dir DIR] [--stop-line N]\n'
+USAGE = ('usage: fleet_status.py render [--repos A,B] [--since last|DATE] [--ping] [--fleet FILE] [--state-dir DIR]\n'
+         '                              [--stop-line N] [--active-minutes N] [--no-gh] [--no-write]\n'
+         '       fleet_status.py collect [REPO ...] [--fleet FILE] [--state-dir DIR] [--stop-line N]\n'
          '                               [--active-minutes N] [--no-gh] [--no-write]\n'
          '       fleet_status.py selftest')
 
@@ -499,12 +538,13 @@ def gh_list(entry, state, fields, limit=30):
 
 
 def open_prs(entry):
-    data, err = gh_list(entry, 'open', 'number,title,url,isDraft,reviewDecision,mergeStateStatus,headRefName')
+    data, err = gh_list(entry, 'open', 'number,title,url,isDraft,reviewDecision,mergeStateStatus,headRefName,createdAt')
     if err:
         return {'error': err}
     prs = [{'number': p.get('number'), 'title': p.get('title'), 'url': p.get('url'), 'draft': bool(p.get('isDraft')),
             'review': p.get('reviewDecision') or None, 'merge_state': p.get('mergeStateStatus') or None,
-            'branch': p.get('headRefName')} for p in data if isinstance(p, dict)]
+            'branch': p.get('headRefName'), 'created': p.get('createdAt') or None}
+           for p in data if isinstance(p, dict)]
     return {'open': [p for p in prs if not p['draft']], 'drafts': sum(1 for p in prs if p['draft'])}
 
 
@@ -532,11 +572,93 @@ def board_cell(rows):
     return '%s %s' % (r[2], r[3]) + ('' if r[1] == 'task' else ' (step %s)' % r[1].split('.')[0])
 
 
-def scan_repo(entry, procs, now, active_s, gh):
+def unread_ids(repo):
+    """Sorted ids of the messages waiting under <repo>/.sdlc/messages/new/<receiver>/, from file names only: a
+    message is never opened, claimed or moved."""
+    base = os.path.join(repo, '.sdlc', 'messages', 'new')
+    out = []
+    try:
+        receivers = sorted(os.listdir(base))
+    except OSError:
+        return out
+    for r in receivers:
+        try:
+            names = os.listdir(os.path.join(base, r))
+        except OSError:
+            continue
+        out += [n[:-3] for n in names if n.endswith('.md') and messages.ID_RE.fullmatch(n[:-3])]
+    return sorted(out)
+
+
+def supervisor_state(repo, now_ts):
+    """The supervisor's last status from <repo>/.sdlc/supervisor/status.json: None when absent, {error} when it
+    does not parse, else {running (its pid answers kill 0), age_s, receivers {name: state}}."""
+    path = os.path.join(repo, '.sdlc', 'supervisor', 'status.json')
+    if not os.path.isfile(path):
+        return None
+    data = fleet_collect.read_json(path)
+    recs = data.get('receivers') if isinstance(data, dict) else None
+    if not isinstance(recs, dict):
+        return {'error': 'status.json unreadable'}
+    when = parse_ts(data.get('updated'))
+    return {'running': pid_alive(data.get('pid')), 'age_s': max(0, int(now_ts - when.timestamp())) if when else None,
+            'receivers': {str(n): str(r.get('state')) for n, r in sorted(recs.items()) if isinstance(r, dict)}}
+
+
+def file_age_s(repo, path, now_ts):
+    """Seconds since the file's last commit (the close or the block is a commit), else since its mtime."""
+    rel = os.path.relpath(path, repo)
+    ct = git_out(repo, 'log', '-1', '--format=%ct', '--', rel)
+    try:
+        return max(0, int(now_ts - int(ct)))
+    except (TypeError, ValueError):
+        pass
+    try:
+        return max(0, int(now_ts - os.stat(path).st_mtime))
+    except OSError:
+        return None
+
+
+CLOSE_RE = re.compile(r'^close (T-\d{4,})\b')
+
+
+def since_report(entry, rec, since, gh):
+    """(closed_since[], merged_since or None) for --since DATE. A close is a commit on the default branch whose
+    subject is `close T-NNNN` (what fanout.py and the close step write), so the sha is its source."""
+    rel = rec['release'] or {}
+    ref = 'refs/heads/' + rel['default'] if rel.get('default') else 'HEAD'
+    # git's own --since mishandles a far-future date (it returns every commit), so the commit time is checked here
+    # too; --since only narrows the walk for a sane date
+    narrow = ['--since', iso(since)] if since.year < 2100 else []
+    log = git_out(entry['path'], 'log', *narrow, '-n', '300', '--format=%h%x09%cI%x09%s', ref) or ''
+    by_id = {t['id']: t for t in rec['tickets'].values() if t['id']}
+    closed, seen = [], set()
+    for line in log.splitlines():
+        parts = line.split('\t', 2)
+        m = CLOSE_RE.match(parts[2]) if len(parts) == 3 else None
+        when = parse_ts(parts[1]) if len(parts) == 3 else None
+        if m and when is not None and when >= since and m.group(1) not in seen:
+            seen.add(m.group(1))
+            t = by_id.get(m.group(1), {})
+            closed.append({'id': m.group(1), 'title': t.get('title') or '', 'task': t.get('task') or '',
+                           'sha': parts[0], 'when': parts[1]})
+    merged = None
+    if gh:
+        data, err = gh_list(entry, 'merged', 'number,title,mergedAt', 50)
+        if err:
+            merged = {'error': err}
+        else:
+            merged = [{'number': p.get('number'), 'title': p.get('title'), 'merged': p.get('mergedAt')}
+                      for p in data if isinstance(p, dict) and (parse_ts(p.get('mergedAt')) or since) >= since]
+    return closed, merged
+
+
+def scan_repo(entry, procs, now, active_s, gh, since=None):
     repo = entry['path']
     out = {'name': entry['name'], 'path': repo, 'conductor': entry.get('conductor'), 'gh': entry.get('gh'),
            'rows': [], 'counts': {}, 'needs_you': [], 'prs': 'skipped', 'release': release_state(repo),
-           'worktrees': 0, 'tickets': {}}
+           'worktrees': 0, 'tickets': {}, 'unread': unread_ids(repo),
+           'supervisor': supervisor_state(repo, now.timestamp())}
     root = pathlib.Path(repo) / '.sdlc'
     _roots, linked = fleet_collect.worktree_roots(repo)
     linked = [w for w in linked if os.path.isdir(w)]
@@ -557,7 +679,8 @@ def scan_repo(entry, procs, now, active_s, gh):
             if status == 'blocked':
                 owner, note = blocked_owner(task, root, tid)
                 out['needs_you'].append({'kind': 'blocked', 'id': tid, 'task': task.name, 'title': title,
-                                         'owner': owner, 'note': note})
+                                         'owner': owner, 'note': note,
+                                         'age_s': file_age_s(repo, str(task / 'handoff.md'), now_ts)})
             if not board.belongs_on_board(task):
                 continue
             try:
@@ -585,8 +708,12 @@ def scan_repo(entry, procs, now, active_s, gh):
     if gh:
         out['prs'] = open_prs(entry)
         for p in out['prs'].get('open', []):
+            made = parse_ts(p.get('created'))
             out['needs_you'].append({'kind': 'pr', 'number': p['number'], 'title': p['title'], 'url': p['url'],
-                                     'detail': ', '.join(x for x in (p['review'], p['merge_state']) if x)})
+                                     'detail': ', '.join(x for x in (p['review'], p['merge_state']) if x),
+                                     'age_s': max(0, int(now_ts - made.timestamp())) if made else None})
+    if since is not None:
+        out['closed_since'], out['merged_since'] = since_report(entry, out, since, gh)
     return out
 
 
@@ -662,7 +789,7 @@ def write_json(path, data):
 # --- collect -----------------------------------------------------------------
 
 def collect(entries, state_dir=None, stop_line=DEFAULT_STOP_LINE, active_minutes=DEFAULT_ACTIVE_MINUTES,
-            gh=True, write=True, now=None, procs=None):
+            gh=True, write=True, now=None, procs=None, since=None):
     now = now or now_utc()
     if procs is None:
         procs = ps_snapshot()
@@ -682,9 +809,9 @@ def collect(entries, state_dir=None, stop_line=DEFAULT_STOP_LINE, active_minutes
         if not os.path.isdir(e['path']):
             repos.append({'name': e['name'], 'path': e['path'], 'conductor': e.get('conductor'), 'gh': e.get('gh'),
                           'error': 'no such directory', 'rows': [], 'counts': {}, 'needs_you': [], 'prs': 'skipped',
-                          'release': None, 'worktrees': 0, 'tickets': {}})
+                          'release': None, 'worktrees': 0, 'tickets': {}, 'unread': [], 'supervisor': None})
             continue
-        repos.append(scan_repo(e, workers, now, active_minutes * 60.0, gh))
+        repos.append(scan_repo(e, workers, now, active_minutes * 60.0, gh, since))
     prev = read_snapshot(snap_path) if snap_path else None
     delta = compute_delta(prev, repos, entries)
     written = False
@@ -696,6 +823,7 @@ def collect(entries, state_dir=None, stop_line=DEFAULT_STOP_LINE, active_minutes
         r.pop('tickets', None)
     needs = [dict(n, repo=r['name']) for r in repos for n in r['needs_you']]
     return {'time': iso(now), 'machine': machine, 'repos': repos, 'needs_you': needs, 'delta': delta,
+            'report_since': {'mode': 'date' if since is not None else 'last', 'at': iso(since) if since is not None else None},
             'snapshot': {'path': snap_path, 'written': written}}
 
 
@@ -708,6 +836,352 @@ def summary_line(out):
     return 'status: %d repos, %s, load %.1f %s %s' % (
         len(out['repos']), ', '.join('%d %s' % (counts[k], k) for k in ('live', 'idle', 'dead', 'stale') if counts.get(k))
         or 'no rows', ld['load1'], ld['arrow'], ld['verdict'])
+
+
+# --- render ------------------------------------------------------------------
+
+EM_DASH, EN_DASH = chr(0x2014), chr(0x2013)   # spelled as code points: the file itself holds neither
+MAX_LINES = 60
+CAP_START = {'needs': 8, 'moving': 6, 'stale': 8, 'done': 6}   # list caps, shrunk together until the output fits
+TITLE_W = 40
+MARKS = {'live': '●', 'idle': '◐', 'dead': '✖', 'stale': '⚠', 'none': '○'}
+DONE_MARK = '✓'
+CREDENTIAL_RE = re.compile(r'(credential|token|secret|password|api[ _-]?key|log ?in\b|sign[ -]?in\b|2fa|oauth|authenticat)', re.I)
+OWNER_ORDER = {'user': 0, 'unknown': 1}
+
+
+class RenderError(ValueError):
+    """A row the renderer cannot trace to a source. The renderer refuses to print it."""
+
+
+def clean(text, width=None):
+    """One printable line: control characters gone, em and en dashes turned into a hyphen, optionally truncated."""
+    t = re.sub(r'[\x00-\x1f\x7f]+', ' ', '' if text is None else str(text))
+    t = ' '.join(t.replace(EM_DASH, '-').replace(EN_DASH, '-').split())
+    return t[:width - 3].rstrip() + '...' if width and len(t) > width else t
+
+
+def human_dur(seconds):
+    if not isinstance(seconds, (int, float)):
+        return '?'
+    s = int(seconds)
+    return '%dd' % (s // 86400) if s >= 86400 else '%dh' % (s // 3600) if s >= 3600 \
+        else '%dm' % round(s / 60.0) if s >= 90 else '%ds' % max(0, s)
+
+
+def fmt(text, source, indent='  '):
+    """One output row: indent, text, then its source in brackets. A row with no source is a defect."""
+    if not clean(source):
+        raise RenderError('row has no source: %s' % clean(text, 60))
+    return '%s%s  [%s]' % (indent, clean(text), clean(source))
+
+
+def plural(n, word):
+    return '%d %s%s' % (n, word, '' if n == 1 else 's')
+
+
+def head(title, n, empty='nothing', note=''):
+    return ('%s (%d%s):' % (title, n, ', ' + note if note else '')) if n else '%s: %s%s' % (
+        title, empty, ' (%s)' % note if note else '')
+
+
+def capped(items, cap, indent='    '):
+    """(rows to show, the `+N more` line or None)."""
+    shown = items[:cap]
+    return shown, ('%s+%d more' % (indent, len(items) - cap) if len(items) > cap else None)
+
+
+def short_evidence(evidence):
+    return clean((evidence or [''])[0].split(':', 1)[0], 48)
+
+
+def machine_line(m):
+    ld, tr = m['load'], m['load']['trend']
+    trend = ('%s %+.1f in %sm' % (ld['arrow'], tr['delta'], '%g' % tr['minutes']) if tr['source'] == 'samples'
+             else '%s %+.1f vs 5m avg' % (ld['arrow'], tr['delta']))
+    tops = []
+    for k in (m.get('ranked') or [])[:2]:
+        c = m['consumers'][k]
+        pid = ' (pid %d)' % c['top'][0]['pid'] if c['top'] else ''
+        tops.append('%s %s %.0f%%%s' % (k, plural(c['count'], 'proc'), c['cpu_pct'], pid))
+    top = ', '.join(tops) or ('ps unavailable' if m.get('error') else 'none')
+    verdict = {'ok': 'ok', 'near': 'NEAR the stop line', 'over': 'OVER the stop line'}.get(ld['verdict'], ld['verdict'])
+    return fmt('Machine: load %.1f %s, %s cores, stop line %g (headroom %.1f); top: %s; verdict %s' % (
+        ld['load1'], trend, ld['cpus'] if ld.get('cpus') else '?', ld['stop_line'], ld['headroom'], top, verdict),
+        'loadavg, ps', indent='')
+
+
+def supervisor_text(sup):
+    if not sup:
+        return ''
+    if sup.get('error'):
+        return 'supervisor: status unreadable'
+    recs = ', '.join('%s %s' % (n, s) for n, s in list(sup['receivers'].items())[:3])
+    if sup['running']:
+        return 'supervisor: running' + (' (%s)' % recs if recs else '')
+    return 'supervisor: not running (status %s old)' % human_dur(sup.get('age_s'))
+
+
+def needs_items(data):
+    """(sort key, text, source) for what needs the user: open PRs to merge, and blocked tickets the user or nobody
+    owns. A blocked ticket the conductor owns is stuck work, not a request to the user (see stale_items)."""
+    items = []
+    for n in data['needs_you']:
+        if n['kind'] == 'pr':
+            detail = ('; ' + n['detail']) if n.get('detail') else ''
+            items.append(((0, -(n.get('age_s') or 0)), 'merge: PR #%s %s (owner user, age %s%s)' % (
+                n['number'], clean(n['title'], TITLE_W), human_dur(n.get('age_s')), detail), '%s PR #%s' % (n['repo'], n['number'])))
+        elif n['kind'] == 'blocked' and n['owner'] != 'conductor':
+            label = n['id'] or n['task'].lstrip('.')
+            kind = 'credential' if CREDENTIAL_RE.search('%s %s' % (n.get('title') or '', n.get('note') or '')) else 'decision'
+            items.append(((OWNER_ORDER.get(n['owner'], 2), -(n.get('age_s') or 0)), '%s: %s %s (owner %s, age %s)' % (
+                kind, label, clean(n['title'], TITLE_W), n['owner'], human_dur(n.get('age_s'))),
+                '%s/.sdlc/%s' % (n['repo'], n['task']) if n.get('task') else ''))
+    return [(t, s) for _k, t, s in sorted(items, key=lambda x: x[0])]
+
+
+def stale_items(data):
+    """Rows that claim work and have none: dead and stale rows, a done ticket whose board still claims work, a
+    ticket the conductor holds blocked, a ticket that vanished, a repo that is not there."""
+    items = []
+    for repo in data['repos']:
+        name = repo['name']
+        if repo.get('error'):
+            items.append((0, '%s %s: %s' % (MARKS['dead'], name, repo['error']), repo['path'] or ''))
+        for r in repo['rows']:
+            if r['state'] not in ('dead', 'stale'):
+                continue
+            why = '%s: %s' % (r['state'], short_evidence(r['evidence']))
+            if 'ticket-done-board-open' in r['flags']:
+                why += '; ticket is done, board still claims work'
+            items.append((0 if r['state'] == 'dead' else 1 if r['flags'] else 2,
+                          '%s %s %s %s (%s)' % (MARKS[r['state']], name, r['id'] or r['task'].lstrip('.'),
+                                                clean(r['title'], TITLE_W), why),
+                          '%s/.sdlc/%s' % (name, r['task']) if r['task'] else ''))
+        for n in repo['needs_you']:
+            if n['kind'] == 'blocked' and n['owner'] == 'conductor':
+                items.append((3, '%s %s %s %s (blocked, owner conductor, age %s)' % (
+                    MARKS['stale'], name, n['id'] or n['task'].lstrip('.'), clean(n['title'], TITLE_W),
+                    human_dur(n.get('age_s'))), '%s/.sdlc/%s' % (name, n['task']) if n.get('task') else ''))
+    for g in data['delta']['gone']:
+        items.append((4, '%s %s %s (vanished since the last report, not closed)' % (MARKS['stale'], g['repo'], g['id']),
+                      '%s/.sdlc/%s' % (g['repo'], g['task']) if g.get('task') else ''))
+    return [(t, s) for _k, t, s in sorted(items, key=lambda x: x[0])]
+
+
+def done_items(data):
+    """(heading, [(text, source)]) for the since-last-report section."""
+    rep = data.get('report_since') or {'mode': 'last'}
+    items, note = [], ''
+    if rep['mode'] == 'date':
+        since = rep['at']
+        for repo in data['repos']:
+            for c in repo.get('closed_since', []):
+                items.append(('%s %s %s %s (closed)' % (DONE_MARK, repo['name'], c['id'], clean(c['title'], TITLE_W)),
+                              '%s @ %s' % (repo['name'], c['sha'])))
+            merged = repo.get('merged_since')
+            for p in merged if isinstance(merged, list) else []:
+                items.append(('%s %s PR #%s %s (merged)' % (DONE_MARK, repo['name'], p['number'], clean(p['title'], TITLE_W)),
+                              '%s PR #%s' % (repo['name'], p['number'])))
+        if any(not isinstance(r.get('merged_since'), list) for r in data['repos'] if not r.get('error')):
+            note = ' (PR merges not checked)'
+    else:
+        d = data['delta']
+        if d['first_run']:
+            return 'Done since last report: first report, nothing earlier to compare (pass --since DATE for a dated list)', []
+        since = d['since']
+        for c in d['closed']:
+            items.append(('%s %s %s %s (closed)' % (DONE_MARK, c['repo'], c['id'], clean(c['title'], TITLE_W)),
+                          '%s/.sdlc/%s' % (c['repo'], c['task'])))
+        for c in d['dropped']:
+            items.append(('- %s %s %s (dropped)' % (c['repo'], c['id'], clean(c['title'], TITLE_W)),
+                          '%s/.sdlc/%s' % (c['repo'], c['task'])))
+        for p in d['prs_merged']:
+            items.append(('%s %s PR #%s %s (merged)' % (DONE_MARK, p['repo'], p['number'], clean(p['title'], TITLE_W)),
+                          '%s PR #%s' % (p['repo'], p['number'])))
+        for p in d['prs_closed']:
+            items.append(('- %s PR #%s %s (closed, not merged)' % (p['repo'], p['number'], clean(p['title'], TITLE_W)),
+                          '%s PR #%s' % (p['repo'], p['number'])))
+    title = 'Done since %s' % (clean(since)[:16].replace('T', ' ') + 'Z' if since else 'the last report')
+    return (('%s (%d)%s:' % (title, len(items), note)) if items else '%s: nothing%s' % (title, note)), items
+
+
+def release_line(repo):
+    r = repo['release'] or {}
+    name = repo['name']
+    if not r.get('default'):
+        return fmt('%s: no default branch found' % name, '%s git' % name, indent='  ')
+    if r.get('ahead') is None:
+        sync = 'no origin to compare'
+    elif not r['ahead'] and not r['behind']:
+        sync = 'in sync with origin'
+    else:
+        sync = '%d unpushed, %d behind origin' % (r['ahead'], r['behind'])
+    parts = [r['default'], sync,
+             'last tag %s, %s since' % (r['last_tag'], plural(r['tag_distance'], 'commit') if r['tag_distance'] is not None
+                                        else 'commits unknown') if r.get('last_tag') else 'no tag']
+    if r.get('unpushed_branch_commits'):
+        parts.append('%s across branches no remote has' % plural(r['unpushed_branch_commits'], 'commit'))
+    if r.get('fetched_age_s') is not None:
+        parts.append('fetched %s ago' % human_dur(r['fetched_age_s']))
+    return fmt('%s: %s' % (name, ', '.join(parts)), '%s %s' % (name, r['default']))
+
+
+def repo_counts(repo):
+    c = repo['counts']
+    parts = ['%d %s' % (c[k], k) for k in ('live', 'idle', 'dead', 'stale', 'queued') if c.get(k)]
+    return ', '.join(parts) or ('not inspected' if repo.get('error') else 'no board rows')
+
+
+def build(data, caps, ping):
+    lines = ['Fleet status %s, %d repo%s' % (clean(data['time'])[:16].replace('T', ' ') + 'Z', len(data['repos']),
+                                              '' if len(data['repos']) == 1 else 's'), machine_line(data['machine'])]
+    needs = needs_items(data)
+    blind = [r['name'] for r in data['repos'] if not r.get('error') and not (isinstance(r['prs'], dict) and 'open' in r['prs'])]
+    lines.append(head('Needs you', len(needs), note='PRs not checked: ' + ', '.join(blind[:3]) + (' +%d' % (len(blind) - 3) if len(blind) > 3 else '')
+                      if blind else ''))
+    shown, more = capped(needs, caps['needs'], '  ')
+    lines += [fmt(t, s) for t, s in shown] + ([more] if more else [])
+    # Moving: one row per repo with its liveness mark, then the rows that are live or idle
+    moving = sum(1 for r in data['repos'] for x in r['rows'] if x['state'] in ('live', 'idle'))
+    lines.append(head('Moving', moving, 'nothing live or idle'))
+    for repo in data['repos']:
+        rows = sorted((x for x in repo['rows'] if x['state'] in ('live', 'idle')),
+                      key=lambda x: (x['state'] != 'live', x['task'].lstrip('.')))
+        mark = MARKS['live'] if any(x['state'] == 'live' for x in rows) else MARKS['idle'] if rows else MARKS['none']
+        who = ' (%s)' % repo['conductor'] if repo.get('conductor') else ''
+        sup = supervisor_text(repo.get('supervisor'))
+        lines.append(fmt('%s %s%s: %s | unread %d%s' % (mark, repo['name'], who, repo_counts(repo), len(repo['unread']),
+                                                        ' | ' + sup if sup else ''), '%s/.sdlc' % repo['name']))
+        if repo['unread']:
+            ids = repo['unread'][:2] + (['+%d more' % (len(repo['unread']) - 2)] if len(repo['unread']) > 2 else [])
+            lines.append(fmt('unread: ' + ', '.join(ids), '%s/.sdlc/messages/new' % repo['name'], indent='    '))
+        items = [(('%s %s %s (%s)' % (MARKS[x['state']], x['id'] or x['task'].lstrip('.'), clean(x['title'], TITLE_W),
+                                      short_evidence(x['evidence']))), '%s/.sdlc/%s' % (repo['name'], x['task']) if x['task'] else '')
+                 for x in rows]
+        shown, more = capped(items, caps['moving'])
+        lines += [fmt(t, s, indent='    ') for t, s in shown] + ([more] if more else [])
+    stale = stale_items(data)
+    lines.append(head('Stale or stuck', len(stale)))
+    shown, more = capped(stale, caps['stale'], '  ')
+    lines += [fmt(t, s) for t, s in shown] + ([more] if more else [])
+    title, done = done_items(data)
+    lines.append(title)
+    shown, more = capped(done, caps['done'], '  ')
+    lines += [fmt(t, s) for t, s in shown] + ([more] if more else [])
+    lines.append('Release state:')
+    lines += [release_line(r) for r in data['repos'] if not r.get('error')]
+    if ping:
+        asks = {}
+        for repo in data['repos']:
+            c = repo['counts']
+            if repo.get('conductor') and any(c.get(k) for k in ('live', 'idle', 'dead', 'stale')):
+                asks.setdefault(repo['conductor'], []).append(repo)
+        lines.append(head('Ping (nothing is sent)', len(asks), 'no conductor has work to report on'))
+        for who, repos in sorted(asks.items()):
+            lines.append(fmt('message %s for a health report: %s' % (who, '; '.join(
+                '%s %s, unread %d' % (r['name'], repo_counts(r), len(r['unread'])) for r in repos)),
+                ', '.join('%s/.sdlc' % r['name'] for r in repos)))
+    return lines
+
+
+def render(data, ping=False):
+    """The whole status as text, from one collect() object. Sections in the fixed order: Machine, Needs you, Moving,
+    Stale or stuck, Done since last report, Release state. Lists are capped, the caps shrunk together until the
+    output is at most MAX_LINES lines (three repos fit). Every row ends with its source in brackets; a row with no
+    source raises RenderError. No em dash is ever printed."""
+    caps = dict(CAP_START)
+    while True:
+        lines = build(data, caps, ping)
+        if len(lines) <= MAX_LINES or max(caps.values()) <= 1:
+            break
+        caps[max(caps, key=lambda k: caps[k])] -= 1
+    return '\n'.join(lines).replace(EM_DASH, '-') + '\n'
+
+
+def parse_since(value):
+    """None for `last` (the stored snapshot decides), else the aware instant a DATE names."""
+    if value in (None, 'last'):
+        return None
+    dt = parse_ts(value)
+    if dt is None:
+        raise ValueError('--since wants last or a date such as 2026-10-06: %s' % value)
+    return dt
+
+
+def select_entries(fleet, names):
+    """(entries, notes): the active registry entries, narrowed to --repos names. A name the registry excludes is
+    skipped with a note and never shown; a name it does not hold is an error."""
+    by_name = {r['name']: r for r in fleet['repos']}
+    notes = []
+    if not names:
+        return [r for r in fleet['repos'] if r['status'] == 'active'], notes
+    out = []
+    for n in names:
+        if n not in by_name:
+            raise ValueError('no repo named %s in the registry' % n)
+        if by_name[n]['status'] != 'active':
+            notes.append('%s is excluded in the registry: skipped' % n)
+        elif by_name[n] not in out:
+            out.append(by_name[n])
+    if not out:
+        raise ValueError('no active repo selected')
+    return out, notes
+
+
+def render_main(argv):
+    fleet_file, names, since_arg, ping = fleet_config.DEFAULT, [], 'last', False
+    state_dir, stop_line, active, gh, write = None, DEFAULT_STOP_LINE, DEFAULT_ACTIVE_MINUTES, True, True
+    i = 0
+    try:
+        while i < len(argv):
+            a = argv[i]
+            if a == '--ping':
+                ping = True
+            elif a == '--no-gh':
+                gh = False
+            elif a == '--no-write':
+                write = False
+            elif a in ('--repos', '--since', '--fleet', '--state-dir', '--stop-line', '--active-minutes') and i + 1 < len(argv):
+                i += 1
+                v = argv[i]
+                if a == '--repos':
+                    names = [x for x in v.split(',') if x]
+                elif a == '--since':
+                    since_arg = v
+                elif a == '--fleet':
+                    fleet_file = v
+                elif a == '--state-dir':
+                    state_dir = v
+                elif a == '--stop-line':
+                    stop_line = float(v)
+                else:
+                    active = float(v)
+            else:
+                print(USAGE, file=sys.stderr)
+                return 2
+            i += 1
+        since = parse_since(since_arg)
+        try:
+            fleet = fleet_config.load(fleet_file)
+        except fleet_config.FleetError as e:
+            raise ValueError(str(e))
+        entries, notes = select_entries(fleet, names)
+    except ValueError as e:
+        print('fleet_status: %s' % e, file=sys.stderr)
+        return 2
+    for n in notes:
+        print('fleet_status: %s' % n, file=sys.stderr)
+    if state_dir is None and os.path.isdir(os.path.join(os.getcwd(), '.sdlc')):
+        state_dir = os.path.join(os.getcwd(), '.sdlc', 'runtime')
+    out = collect(entries, state_dir, stop_line, active, gh, write, since=since)
+    try:
+        text = render(out, ping)
+    except RenderError as e:
+        print('fleet_status: %s' % e, file=sys.stderr)
+        return 1
+    sys.stdout.write(text)
+    return 0
 
 
 # --- cli ---------------------------------------------------------------------
@@ -734,6 +1208,8 @@ def main(argv):
         return 2
     if argv[0] == 'selftest':
         return selftest()
+    if argv[0] == 'render':
+        return render_main(argv[1:])
     if argv[0] != 'collect':
         print(USAGE, file=sys.stderr)
         return 2
@@ -778,7 +1254,7 @@ def main(argv):
 
 # --- selftest ----------------------------------------------------------------
 
-def selftest():
+def selftest_collect():
     global PS_CMD, GH_CMD, GIT_CMD, LOAD_FN
     import shutil, subprocess
 
@@ -1160,7 +1636,449 @@ def selftest():
         os.environ.pop('GH_MERGED', None)
         shutil.rmtree(tmp, ignore_errors=True)
     if misses:
-        print('fleet_status selftest: %d failed: %s' % (len(misses), '; '.join(misses)), file=sys.stderr)
+        print('fleet_status collect selftest: %d failed: %s' % (len(misses), '; '.join(misses)), file=sys.stderr)
+        return 1
+    print('fleet_status collect selftest: ok')
+    return 0
+
+
+# --- render selftest ---------------------------------------------------------
+
+def selftest_render():
+    import shutil, subprocess
+    misses = []
+
+    def ok(name, cond):
+        if cond:
+            print('ok: ' + name)
+        else:
+            misses.append(name)
+            print('FAIL: ' + name)
+
+    def write(path, data):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(data)
+
+    EM = EM_DASH
+    now = now_utc()
+    TITLES = ['Fleet', 'Machine', 'Needs you', 'Moving', 'Stale or stuck', 'Done since', 'Release state']
+
+    def row(tid, task, state, title='a ticket', evidence=None, flags=None):
+        return {'id': tid, 'task': task, 'title': title, 'ticket_status': 'ready', 'board': 'x', 'pct': 10,
+                'claims_work': state in ('live', 'idle', 'dead', 'stale'), 'state': state,
+                'evidence': ['ev %s' % tid] if evidence is None else evidence, 'flags': flags or []}
+
+    REL = {'branch': 'main', 'default': 'main', 'local': 'a', 'remote': 'a', 'ahead': 0, 'behind': 0, 'last_tag': 'v1.0.0',
+           'tag_distance': 2, 'fetched_age_s': 120, 'unpushed': [], 'unpushed_branch_commits': 0}
+
+    def repo(name, rows, needs=(), unread=(), sup=None, conductor='c', release=REL, error=None):
+        counts = {}
+        for r in rows:
+            counts[r['state']] = counts.get(r['state'], 0) + 1
+        out = {'name': name, 'path': '/x/' + name, 'conductor': conductor, 'gh': None, 'rows': list(rows), 'counts': counts,
+               'needs_you': list(needs), 'prs': 'skipped', 'release': None if error else release, 'worktrees': 0,
+               'unread': list(unread), 'supervisor': sup}
+        if error:
+            out['error'] = error
+        return out
+
+    def model(repos, delta=None, report=None):
+        cons, ranked = consumers([{'pid': 41, 'cpu': 40.0, 'cmd': '/x/claude -p'}, {'pid': 42, 'cpu': 6.0, 'cmd': 'vite --host'}])
+        mach = {'load': load_report([], {'ts': iso(now), 'load1': 6.0, 'load5': 5.0, 'load15': 4.0, 'cpus': 8}, now, 14.0),
+                'consumers': cons, 'ranked': ranked}
+        d = {'since': '2026-10-06T13:00:00Z', 'first_run': False, 'state_changes': [], 'closed': [], 'dropped': [], 'new': [],
+             'gone': [], 'prs_merged': [], 'prs_closed': []}
+        d.update(delta or {})
+        return {'time': '2026-10-06T14:30:00Z', 'machine': mach, 'repos': repos,
+                'needs_you': [dict(n, repo=r['name']) for r in repos for n in r['needs_you']], 'delta': d,
+                'report_since': report or {'mode': 'last', 'at': None}}
+
+    def title_of(ln):
+        return next(k for k in TITLES + ['Ping'] if ln.startswith(k))
+
+    def sections(text):
+        """{heading: [rows]}: a line that starts in column 0 opens a section, an indented one is a row of it."""
+        out, cur = {}, None
+        for ln in text.splitlines():
+            if not ln.startswith(' '):
+                cur = title_of(ln)
+                out.setdefault(cur, [])
+            else:
+                out[cur].append(ln)
+        return out
+
+    def head_titles(text):
+        return [title_of(ln) for ln in text.splitlines() if not ln.startswith(' ')]
+
+    def has(rows, token):
+        return any(token in r for r in rows)
+
+    def traceable(text):
+        """The content lines that do not end with a bracketed source (a `+N more` tail is not a row)."""
+        bad = []
+        for ln in text.splitlines():
+            if re.match(r'^\s+\+\d+ more$', ln):
+                continue
+            if (ln.startswith(' ') or ln.startswith('Machine')) and not re.search(r'  \[[^\]]+\]$', ln):
+                bad.append(ln)
+        return bad
+
+    # --- order, placement and the planted stale row ---------------------------------------------
+    base = model([repo('alpha', [row('T-0001', '0001-live', 'live', evidence=['process 41: x']),
+                                 row('T-0002', '0002-stale', 'stale', evidence=['no process, marker or activity in 15 minutes']),
+                                 row('T-0003', '0003-dead', 'dead', evidence=['marker builder-L1 pid 9 not running']),
+                                 row('T-0004', '0004-idle', 'idle', evidence=['runs.jsonl changed 3m ago']),
+                                 row('T-0005', '0005-queued', 'queued', evidence=[])])])
+    text = render(base)
+    ok('order: the sections come in the fixed order', head_titles(text) == TITLES)
+    sec = sections(text)
+    ok('placement: a stale row is under Stale or stuck and not under Moving',
+       has(sec['Stale or stuck'], 'T-0002') and not has(sec['Moving'], 'T-0002'))
+    ok('placement: a dead row is under Stale or stuck and not under Moving',
+       has(sec['Stale or stuck'], 'T-0003') and not has(sec['Moving'], 'T-0003'))
+    ok('placement: a live and an idle row are under Moving and not under Stale or stuck',
+       has(sec['Moving'], 'T-0001') and has(sec['Moving'], 'T-0004')
+       and not has(sec['Stale or stuck'], 'T-0001') and not has(sec['Stale or stuck'], 'T-0004'))
+    ok('placement: a queued row is in neither list', 'T-0005' not in text)
+    ok('liveness mark: live and idle rows carry different marks', MARKS['live'] + ' T-0001' in text and MARKS['idle'] + ' T-0004' in text)
+    flipped = model([repo('alpha', [row('T-0002', '0002-stale', 'live', evidence=['process 41: x'])])])
+    sec = sections(render(flipped))
+    ok('negative control: the same row made live moves from Stale or stuck to Moving',
+       has(sec['Moving'], 'T-0002') and not has(sec['Stale or stuck'], 'T-0002') and sec['Stale or stuck'] == [])
+    lie = model([repo('alpha', [row('T-0007', '0007-lie', 'stale', flags=['ticket-done-board-open'])])])
+    ok('a done ticket whose board still claims work is stale, with the reason',
+       has(sections(render(lie))['Stale or stuck'], 'ticket is done'))
+
+    # --- sources ----------------------------------------------------------------------------
+    ok('source: every row of a full render ends with a bracketed source', traceable(text) == [])
+    try:
+        render(model([repo('alpha', [row('T-0002', '', 'stale')])]))
+        refused = False
+    except RenderError as e:
+        refused = 'no source' in str(e)
+    ok('source: a stale row with no ticket folder fails the render', refused)
+    refused = []
+    for blank in ('', '   ', None):
+        try:
+            fmt('a row', blank)
+            refused.append(False)
+        except RenderError:
+            refused.append(True)
+    ok('source: fmt refuses an empty, a blank and a missing source, and prints one that is there',
+       all(refused) and fmt('a row', 'src') == '  a row  [src]')
+    try:
+        render(model([repo('alpha', [], needs=[{'kind': 'blocked', 'id': 'T-9', 'task': '', 'title': 'x', 'owner': 'user',
+                                                  'note': '', 'age_s': 5}])]))
+        refused = False
+    except RenderError:
+        refused = True
+    ok('source: a Needs-you row with no ticket folder fails the render', refused)
+
+    # --- 60 lines for three repos, caps shrink together ---------------------------------------
+    def heavy(name):
+        rows = [row('T-1%03d' % i, '1%03d-live-%s' % (i, name), 'live', evidence=['process %d: c' % i]) for i in range(25)]
+        rows += [row('T-2%03d' % i, '2%03d-stale-%s' % (i, name), 'stale', evidence=['no process, marker or activity in 15 minutes'])
+                 for i in range(30)]
+        needs = [{'kind': 'pr', 'number': i, 'title': 'pr %d' % i, 'url': 'u', 'detail': 'APPROVED, CLEAN', 'age_s': 3600 * i}
+                 for i in range(1, 6)]
+        needs += [{'kind': 'blocked', 'id': 'T-3%03d' % i, 'task': '3%03d-b' % i, 'title': 'blocked %d' % i, 'owner': 'user',
+                   'note': '', 'age_s': 90000} for i in range(4)]
+        ids = ['20261006T0000000000%02dZ-a-b' % i for i in range(5)]
+        return repo(name, rows, needs=needs, unread=ids, sup={'running': True, 'age_s': 5, 'receivers': {'c': 'idle'}})
+    big = model([heavy('r1'), heavy('r2'), heavy('r3')], delta={
+        'closed': [{'repo': 'r1', 'id': 'T-%d' % i, 'task': '.%d-x' % i, 'title': 't'} for i in range(20)],
+        'prs_merged': [{'repo': 'r2', 'number': i, 'title': 'm'} for i in range(10)]})
+    long_text = render(big, ping=True)
+    n_lines = len(long_text.splitlines())
+    ok('size: a heavy three-repo status with the ping list fits 60 lines (%d)' % n_lines, n_lines <= MAX_LINES)
+    ok('size: the cut rows are counted in `+N more` tails', len(re.findall(r'\+\d+ more', long_text)) >= 4)
+    ok('negative control: with the caps unshrunk the same data is over 60 lines', len(build(big, dict(CAP_START), True)) > MAX_LINES)
+    ok('size: the heavy render keeps every section and every row traceable',
+       head_titles(long_text)[:7] == TITLES and traceable(long_text) == [])
+
+    # --- no em dash ---------------------------------------------------------------------------------
+    dashy = model([repo('alpha', [row('T-0001', '0001-x', 'live', title='first %s second\nthird' % EM)],
+                        needs=[{'kind': 'blocked', 'id': 'T-0009', 'task': '0009-b', 'title': 'a %s b' % EM, 'owner': 'user',
+                                'note': '', 'age_s': 60}])],
+                  delta={'closed': [{'repo': 'alpha', 'id': 'T-0100', 'task': '.0100-x', 'title': 'c %s d' % EM}]})
+    dtext = render(dashy, ping=True)
+    ok('no em dash: titles with an em dash or a newline print on one line without one',
+       EM not in dtext and 'first - second third' in dtext and 'c - d' in dtext)
+    ok('no em dash: clean() turns an en dash into a hyphen too', clean('a' + EN_DASH + 'b') == 'a-b')
+
+    # --- needs you ----------------------------------------------------------------------------------
+    nm = model([repo('alpha', [], needs=[
+        {'kind': 'pr', 'number': 7, 'title': 'seven', 'url': 'u', 'detail': 'APPROVED, CLEAN', 'age_s': 2 * 86400},
+        {'kind': 'blocked', 'id': 'T-0010', 'task': '0010-tok', 'title': 'Rotate the deploy token', 'owner': 'user', 'note': '', 'age_s': 5 * 3600},
+        {'kind': 'blocked', 'id': 'T-0011', 'task': '0011-pick', 'title': 'Pick the storage backend', 'owner': 'unknown', 'note': '', 'age_s': 600},
+        {'kind': 'blocked', 'id': 'T-0012', 'task': '0012-cond', 'title': 'Conductor owns this', 'owner': 'conductor', 'note': '', 'age_s': 60}])])
+    sec = sections(render(nm))
+    ny = sec['Needs you']
+    ok('needs you: a PR is a merge row with owner and age', has(ny, 'merge: PR #7') and has(ny, 'owner user, age 2d')
+       and has(ny, 'APPROVED, CLEAN') and has(ny, '[alpha PR #7]'))
+    ok('needs you: a blocked ticket naming a token is a credential, another a decision',
+       has(ny, 'credential: T-0010') and has(ny, 'decision: T-0011') and has(ny, 'owner unknown'))
+    ok('needs you: the oldest user-owned row comes first', 'PR #7' in ny[0] and 'T-0010' in ny[1] and 'T-0011' in ny[2])
+    ok('needs you: a conductor-owned blocked ticket is stuck work, not a request to the user',
+       not has(ny, 'T-0012') and has(sec['Stale or stuck'], 'T-0012') and has(sec['Stale or stuck'], 'owner conductor'))
+    ok('needs you: with nothing to ask the section says so, and says which repos had no PR check',
+       'Needs you: nothing (PRs not checked: alpha)' in render(base))
+    checked = model([repo('alpha', [])])
+    checked['repos'][0]['prs'] = {'open': [], 'drafts': 0}
+    unchecked = model([repo('alpha', []), repo('beta', [])])
+    unchecked['repos'][0]['prs'] = {'open': [], 'drafts': 0}
+    unchecked['repos'][1]['prs'] = {'error': 'gh timed out'}
+    ok('needs you: a repo whose PRs were read says nothing; one whose gh failed is named',
+       'Needs you: nothing\n' in render(checked) and 'Needs you: nothing (PRs not checked: beta)' in render(unchecked))
+
+    # --- moving rows carry unread ids and the supervisor ------------------------------------------
+    ids = ['20261006T000000000001Z-a-b', '20261006T000000000002Z-a-c', '20261006T000000000003Z-a-d']
+    mv = model([repo('alpha', [row('T-0001', '0001-x', 'live')], unread=ids,
+                     sup={'running': True, 'age_s': 4, 'receivers': {'c1': 'idle', 'c2': 'waking'}}),
+                repo('beta', [row('T-0002', '0002-x', 'idle')], sup={'running': False, 'age_s': 3 * 3600, 'receivers': {}}),
+                repo('gamma', [row('T-0003', '0003-x', 'live')], sup={'error': 'status.json unreadable'}),
+                repo('delta', [])])
+    mtext = render(mv)
+    msec = sections(mtext)['Moving']
+    hdr = {r.split(':')[0].strip(): r for r in msec if not r.startswith('    ')}
+    a_row, b_row, g_row = hdr[MARKS['live'] + ' alpha (c)'], hdr[MARKS['idle'] + ' beta (c)'], hdr[MARKS['live'] + ' gamma (c)']
+    ok('moving: the repo row carries the unread count and the supervisor state',
+       'unread 3' in a_row and 'supervisor: running (c1 idle, c2 waking)' in a_row)
+    ok('moving: the first two unread ids are named, the rest counted', has(msec, 'unread: %s, %s, +1 more' % (ids[0], ids[1])))
+    ok('moving: a stopped supervisor and an unreadable one say so',
+       'supervisor: not running (status 3h old)' in b_row and 'status unreadable' in g_row)
+    ok('moving: a repo with nothing moving still gets its row, with the empty mark and no supervisor',
+       MARKS['none'] + ' delta (c): no board rows | unread 0' in mtext)
+
+    # --- machine line ------------------------------------------------------------------------------------
+    ml = [ln for ln in text.splitlines() if ln.startswith('Machine')]
+    ok('machine: one line with load, trend, cores, stop line, top consumers with a pid, and the verdict',
+       len(ml) == 1 and 'load 6.0' in ml[0] and '8 cores' in ml[0] and 'stop line 14' in ml[0]
+       and 'claude 1 proc 40% (pid 41)' in ml[0] and 'watchers 1 proc 6% (pid 42)' in ml[0]
+       and ml[0].rstrip().endswith('[loadavg, ps]') and re.search(r'load 6\.0 [↑↓→] [+-]\d', ml[0])
+       and 'verdict ok' in ml[0])
+    hot = model([repo('alpha', [])])
+    hot['machine']['load'] = load_report([], {'ts': iso(now), 'load1': 15.0, 'load5': 9.0, 'load15': 5.0, 'cpus': 8}, now, 14.0)
+    ok('machine: a load above the stop line reads OVER', 'verdict OVER the stop line' in render(hot))
+
+    # --- done since the last report --------------------------------------------------------------------
+    first = model([repo('alpha', [])], delta={'first_run': True, 'since': None})
+    ok('done: the first report says there is nothing to compare', 'first report' in render(first))
+    dn = model([repo('alpha', [])], delta={
+        'closed': [{'repo': 'alpha', 'id': 'T-0100', 'task': '.0100-x', 'title': 'closed one'}],
+        'dropped': [{'repo': 'alpha', 'id': 'T-0101', 'task': '.0101-x', 'title': 'dropped one'}],
+        'prs_merged': [{'repo': 'alpha', 'number': 7, 'title': 'merged one'}],
+        'prs_closed': [{'repo': 'alpha', 'number': 8, 'title': 'shut one'}],
+        'gone': [{'repo': 'alpha', 'id': 'T-0102', 'task': '0102-x'}]})
+    dsec = sections(render(dn))
+    ok('done: closed, dropped, merged and closed-unmerged are listed with their sources',
+       has(dsec['Done since'], 'T-0100 closed one (closed)  [alpha/.sdlc/.0100-x]') and has(dsec['Done since'], 'T-0101 dropped one (dropped)')
+       and has(dsec['Done since'], 'PR #7 merged one (merged)  [alpha PR #7]') and has(dsec['Done since'], 'PR #8 shut one (closed, not merged)'))
+    ok('done: a ticket that vanished is stuck, not done', has(dsec['Stale or stuck'], 'T-0102') and not has(dsec['Done since'], 'T-0102'))
+    dm = model([repo('alpha', [], conductor='c')], report={'mode': 'date', 'at': '2026-10-01T00:00:00Z'})
+    dm['repos'][0]['closed_since'] = [{'id': 'T-0200', 'title': 'dated', 'task': '.0200-x', 'sha': 'abc1234', 'when': '2026-10-02T00:00:00Z'}]
+    dm['repos'][0]['merged_since'] = [{'number': 9, 'title': 'pr nine', 'merged': '2026-10-03T00:00:00Z'}]
+    dtx = render(dm)
+    ok('done: a dated report lists the close commit by sha and the merged PRs', 'Done since 2026-10-01 00:00Z (2):' in dtx
+       and 'T-0200 dated (closed)  [alpha @ abc1234]' in dtx and 'PR #9 pr nine (merged)' in dtx)
+    dm['repos'][0]['merged_since'] = None
+    ok('done: a dated report without gh says the PR merges were not checked', 'PR merges not checked' in render(dm))
+
+    # --- release -------------------------------------------------------------------------------------------
+    rl = sections(render(model([repo('alpha', [], release=dict(REL, ahead=3, behind=1, unpushed_branch_commits=1)),
+                                repo('beta', [], release=dict(REL, ahead=None, behind=None, last_tag=None)),
+                                repo('gamma', [], error='no such directory')])))['Release state']
+    ok('release: unpushed, behind, tag distance and the cross-branch count are shown',
+       has(rl, 'alpha: main, 3 unpushed, 1 behind origin, last tag v1.0.0, 2 commits since, 1 commit across branches no remote has'))
+    ok('release: no origin and no tag are said plainly; a missing repo has no release row',
+       has(rl, 'beta: main, no origin to compare, no tag') and not has(rl, 'gamma') and len(rl) == 2)
+    ok('release: the row names its repo and branch as the source', has(rl, '[alpha main]'))
+
+    # --- a repo whose directory is missing is stuck, not silent ----------------------------------------------
+    ms = sections(render(model([repo('ghost', [], error='no such directory')])))
+    ok('a registry repo with no directory is listed under Stale or stuck, with its path as the source',
+       has(ms['Stale or stuck'], 'ghost: no such directory  [/x/ghost]') and has(ms['Moving'], 'not inspected'))
+
+    # --- ping ------------------------------------------------------------------------------------------------
+    pg = model([repo('alpha', [row('T-0001', '0001-x', 'live')], conductor='conductor-a'),
+                repo('beta', [row('T-0002', '0002-x', 'queued')], conductor='conductor-b'),
+                repo('gamma', [row('T-0003', '0003-x', 'stale')], conductor=None)])
+    pping = sections(render(pg, ping=True))['Ping']
+    ok('ping: only a conductor with work to report on is listed, and nothing is sent',
+       'Ping (nothing is sent) (1):' in render(pg, ping=True) and len(pping) == 1 and 'message conductor-a for a health report' in pping[0])
+    ok('ping: no Ping section without the flag', 'Ping' not in render(pg))
+
+    # --- registry selection ---------------------------------------------------------------------------------
+    fl = {'version': 1, 'repos': [{'path': '/a', 'name': 'a', 'conductor': 'ca', 'status': 'active'},
+                                  {'path': '/b', 'name': 'b', 'conductor': 'cb', 'status': 'active'},
+                                  {'path': '/x', 'name': 'x', 'conductor': 'cx', 'status': 'excluded', 'reason': 'r', 'date': '2026-10-06'}]}
+    ent, notes = select_entries(fl, [])
+    ok('registry: with no --repos the active repos are chosen and the excluded one is not', [e['name'] for e in ent] == ['a', 'b'])
+    ent, notes = select_entries(fl, ['b', 'x'])
+    ok('registry: --repos naming an excluded repo skips it with a note', [e['name'] for e in ent] == ['b'] and 'x is excluded' in notes[0])
+    for bad_names, why in ((['nope'], 'an unknown name'), (['x'], 'only an excluded name')):
+        try:
+            select_entries(fl, bad_names)
+            raised = False
+        except ValueError:
+            raised = True
+        ok('registry: %s is an error' % why, raised)
+    ok('--since: last is the stored snapshot, a date is an instant',
+       parse_since('last') is None and parse_since(None) is None and parse_since('2026-10-01').year == 2026)
+    try:
+        parse_since('yesterday-ish')
+        raised = False
+    except ValueError:
+        raised = True
+    ok('--since: an unparseable date is refused', raised)
+
+    # --- end to end: a fixture fleet through the real collect and the CLI ------------------------------------
+    tmp = tempfile.mkdtemp()
+    kids = []
+    me = os.path.abspath(__file__)
+    OLD = 30 * 86400
+
+    def git(cwd, *args):
+        return subprocess.run(['git', '-C', cwd, '-c', 'user.name=t', '-c', 'user.email=t@t'] + list(args),
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
+    def ticket(rp, folder, tid, status, title, built=True, extra=''):
+        d = os.path.join(rp, '.sdlc', folder)
+        write(os.path.join(d, 'handoff.md'), '---\nid: %s\ntitle: "%s"\ntype: chore\nstatus: %s\nsize: S\n---\n\n## Goal\n%s\n'
+              % (tid, title, status, extra))
+        if built:
+            write(os.path.join(d, 'planner-L1.md'), '## Step 1: build it\nlevel: L1\n')
+            write(os.path.join(d, 'step-1', 'builder-L1.md'), '## Status\ndone\n')
+            write(os.path.join(d, 'step-1', 'runs.jsonl'), json.dumps({'role': 'builder', 'ts': '2026-09-01T00:00:00Z'}) + '\n')
+            write(os.path.join(d, 'step-1', 'builder-L1.log'), 'x\n')
+            for f in ('runs.jsonl', 'builder-L1.log'):
+                t = time.time() - OLD
+                os.utime(os.path.join(d, 'step-1', f), (t, t))
+        return d
+
+    def mkrepo(name):
+        rp = os.path.join(tmp, name)
+        os.makedirs(rp)
+        git(rp, 'init', '-q', '-b', 'main')
+        return rp
+
+    def commit(rp, msg):
+        git(rp, 'add', '-A')
+        return git(rp, 'commit', '-q', '--allow-empty', '-m', msg)
+
+    def cli(*args):
+        p = subprocess.run([sys.executable, me] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           universal_newlines=True, cwd=tmp)
+        return p.returncode, p.stdout, p.stderr
+
+    def files(paths):
+        out = []
+        for rp in paths:
+            for cur, dirs, ns in os.walk(rp):
+                dirs[:] = [d for d in dirs if d != '.git']
+                out += [(os.path.join(cur, n), os.stat(os.path.join(cur, n)).st_mtime_ns) for n in ns]
+        return sorted(out)
+
+    try:
+        ra, rb, rc_, rx = mkrepo('alpha'), mkrepo('beta'), mkrepo('gamma'), mkrepo('ghost-excluded')
+        t_live = ticket(ra, '0001-live-one', 'T-0001', 'ready', 'live one')
+        ticket(ra, '0003-stale-row', 'T-0003', 'ready', 'planted stale row')
+        ticket(ra, '0009-blocked', 'T-0009', 'blocked', 'Provide the deploy token', built=False, extra='owner: user\n')
+        ticket(ra, '0013-closed-built', 'T-0013', 'done', 'closed with a dash %s in it' % EM)
+        ticket(rb, '0021-queued', 'T-0021', 'ready', 'queued only', built=False)
+        ticket(rc_, '0031-stale-c', 'T-0031', 'ready', 'stale in gamma')
+        ticket(rx, '0099-ghost-stale', 'T-0099', 'ready', 'ghost ticket in an excluded repo')
+        mid = '20261006T123456123456Z-sender-topic'
+        write(os.path.join(ra, '.sdlc', 'messages', 'new', 'conductor-a', mid + '.md'), 'BODY-MUST-NOT-APPEAR\n')
+        write(os.path.join(ra, '.sdlc', 'supervisor', 'status.json'), json.dumps(
+            {'version': 1, 'updated': iso(now_utc()), 'pid': os.getpid(), 'run': True, 'stopping': False,
+             'receivers': {'conductor-a': {'state': 'idle', 'pending': 1}}}))
+        for rp in (ra, rb, rc_, rx):
+            commit(rp, 'first')
+        origin = os.path.join(tmp, 'origin.git')
+        git(tmp, 'clone', '-q', '--bare', ra, origin)
+        git(ra, 'remote', 'add', 'origin', origin)
+        git(ra, 'fetch', '-q', 'origin')
+        commit(ra, 'close T-0013')
+        sleeper = 'import time; time.sleep(120)'
+        kids.append(subprocess.Popen([sys.executable, '-c', sleeper, t_live], stdin=subprocess.DEVNULL))
+        fleet = os.path.join(tmp, 'fleet.json')
+        write(fleet, json.dumps({'version': 1, 'repos': [
+            {'path': ra, 'name': 'alpha', 'conductor': 'conductor-a', 'status': 'active'},
+            {'path': rb, 'name': 'beta', 'conductor': 'conductor-b', 'status': 'active'},
+            {'path': rc_, 'name': 'gamma', 'conductor': 'conductor-c', 'status': 'active'},
+            {'path': rx, 'name': 'ghost-excluded', 'conductor': 'cx', 'status': 'excluded', 'reason': 'r', 'date': '2026-10-06'}]}))
+        sd = os.path.join(tmp, 'state')
+        before = files((ra, rb, rc_, rx))
+        rc, so, se = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd)
+        ok('e2e: render exits 0 and prints the sections in order', rc == 0 and head_titles(so) == TITLES)
+        sec = sections(so)
+        ok('e2e: the planted stale row is under Stale or stuck, not under Moving',
+           has(sec['Stale or stuck'], 'T-0003') and not has(sec['Moving'], 'T-0003'))
+        ok('e2e: the row backed by a process is under Moving with the process as evidence, not under Stale or stuck',
+           has(sec['Moving'], 'T-0001') and has(sec['Moving'], 'process %d' % kids[0].pid) and not has(sec['Stale or stuck'], 'T-0001'))
+        ok('e2e: every row is traceable to a source', traceable(so) == [])
+        ok('e2e: three repos fit 60 lines (%d)' % len(so.splitlines()), len(so.splitlines()) <= MAX_LINES)
+        ok('e2e: a repo excluded in the registry never appears', 'ghost' not in so and 'T-0099' not in so)
+        ok('e2e: the blocked ticket naming a token is a credential row for the user',
+           has(sec['Needs you'], 'credential: T-0009') and has(sec['Needs you'], 'owner user'))
+        ok('e2e: unread ids are named and no message body is printed',
+           mid in so and 'unread 1' in so and 'BODY-MUST-NOT-APPEAR' not in so and 'unread 0' in so)
+        ok('e2e: the supervisor state is on the repo row', 'supervisor: running (conductor-a idle)' in so)
+        ok('e2e: release shows the unpushed close commit', has(sec['Release state'], 'alpha: main, 1 unpushed, 0 behind origin'))
+        ok('e2e: render is read-only on every inspected repo', files((ra, rb, rc_, rx)) == before)
+        # the observed negative control: a process now names the planted stale row, and it moves to Moving
+        kids.append(subprocess.Popen([sys.executable, '-c', sleeper, os.path.join(ra, '.sdlc', '0003-stale-row')],
+                                     stdin=subprocess.DEVNULL))
+        rc, so2, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd, '--no-write')
+        sec2 = sections(so2)
+        ok('e2e negative control: with a process behind it the planted row leaves Stale or stuck for Moving',
+           rc == 0 and has(sec2['Moving'], 'T-0003') and not has(sec2['Stale or stuck'], 'T-0003'))
+        kids[1].terminate()
+        kids[1].wait()
+        rc, so3, se3 = cli('render', '--fleet', fleet, '--repos', 'alpha,ghost-excluded', '--no-gh', '--state-dir', sd, '--no-write')
+        ok('e2e: --repos narrows to alpha; the excluded name is skipped with a stderr note and never printed',
+           rc == 0 and 'beta' not in so3 and 'gamma' not in so3 and 'ghost' not in so3 and 'ghost-excluded is excluded' in se3
+           and ', 1 repo' in so3)
+        rc, so4, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd, '--no-write', '--ping')
+        pp = sections(so4).get('Ping', [])
+        ok('e2e: --ping lists the conductors with work and sends nothing',
+           rc == 0 and has(pp, 'message conductor-a for a health report') and has(pp, 'message conductor-c') and not has(pp, 'conductor-b')
+           and 'nothing is sent' in so4)
+        rc, so5, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd, '--no-write', '--since', '2000-01-01')
+        ok('e2e: --since DATE lists the close commit, with its sha as the source, and no em dash',
+           rc == 0 and re.search(r'T-0013 closed with a dash - in it \(closed\)  \[alpha @ [0-9a-f]{7,}\]', so5)
+           and 'PR merges not checked' in so5 and EM not in so5)
+        rc, so6, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd, '--no-write', '--since', '2999-01-01')
+        ok('e2e negative control: --since a future date lists no close', rc == 0 and not re.search(r'T-0013 .*\(closed\)', so6) and 'Done since 2999-01-01 00:00Z: nothing' in so6)
+        rcs = [cli('render', '--fleet', fleet, '--repos', 'nope', '--no-gh', '--state-dir', sd)[0],
+               cli('render', '--fleet', fleet, '--repos', 'ghost-excluded', '--no-gh', '--state-dir', sd)[0],
+               cli('render', '--fleet', fleet, '--since', 'yesterday-ish', '--no-gh', '--state-dir', sd)[0],
+               cli('render', '--fleet', os.path.join(tmp, 'absent.json'), '--no-gh')[0], cli('render', '--bogus')[0]]
+        ok('e2e: an unknown repo, only an excluded one, a bad date, a missing registry and a bad flag all exit 2', rcs == [2] * 5)
+        # the since-last delta: the first call stored a snapshot, so a second one reports what changed
+        os.rename(os.path.join(ra, '.sdlc', '0013-closed-built'), os.path.join(ra, '.sdlc', '.0013-closed-built'))
+        rc, so8, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd)
+        ok('e2e: the second call reports a delta, not the first-report line',
+           rc == 0 and 'first report' in so and 'first report' not in so8 and 'Done since 20' in so8)
+    finally:
+        for k in kids:
+            if k.poll() is None:
+                k.terminate()
+                k.wait()
+        shutil.rmtree(tmp, ignore_errors=True)
+    if misses:
+        print('fleet_status render selftest: %d failed: %s' % (len(misses), '; '.join(misses)), file=sys.stderr)
+        return 1
+    print('fleet_status render selftest: ok')
+    return 0
+
+
+def selftest():
+    a = selftest_collect()
+    b = selftest_render()
+    if a or b:
         return 1
     print('fleet_status selftest: ok')
     return 0
