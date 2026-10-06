@@ -6,6 +6,8 @@ Usage: onboard.py setup [--dry-run] [--force]   create or update the managed fil
        onboard.py selftest                      run the gates on temp fixtures
 
 Design: docs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
+The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
+block names the resolved roadmap path (.sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`).
 
 setup --dry-run prints a unified diff of every change on stdout and nothing else, and writes
 nothing. setup writes the same changes; --force also replaces a managed block edited by hand.
@@ -475,11 +477,13 @@ NESTED_SIZE_TARGET = 30
 Template = collections.namedtuple('Template', 'before block after')
 Template.__doc__ = 'One entry file: starter text before the block, the block text, starter text after it.'
 
-Model = collections.namedtuple('Model', 'name topics homes loose readme nested', defaults=((),))
+Model = collections.namedtuple('Model', 'name topics homes loose readme nested roadmap',
+                               defaults=((), '.sdlc/roadmap.md'))
 Model.__doc__ = ('name: repository folder name. topics: list of Topic with one or more documents. '
                  'homes: list of Home that exist. loose: documents directly in docs/. '
                  'readme: docs/README.md exists. nested: list of Topic for a home, or a topic folder '
-                 'under a home, that holds two or more documents (name is the path under docs/).')
+                 'under a home, that holds two or more documents (name is the path under docs/). '
+                 'roadmap: the resolved roadmap path relative to the root, posix form.')
 Topic = collections.namedtuple('Topic', 'name docs readme')
 Home = collections.namedtuple('Home', 'path readme entry', defaults=(False,))
 NESTED_LINK_CAP = 20
@@ -533,7 +537,7 @@ def render_templates(model):
     out = collections.OrderedDict()
     t = _split_template(ROOT_AGENTS_TEMPLATE)
     out['AGENTS.md'] = Template(t.before.replace('<repository folder name>', model.name),
-                                t.block.replace('<N>', n), t.after)
+                                t.block.replace('<N>', n).replace('.sdlc/roadmap.md', model.roadmap), t.after)
     stub = _split_template(CLAUDE_TEMPLATE)
     out['CLAUDE.md'] = stub
     topic_lines, home_lines, loose_lines = [], [], []
@@ -645,7 +649,18 @@ def build_model(root, layout, documents):
                  for h in homes if os.path.isdir(os.path.join(root, 'docs', h))]
     name = os.path.basename(os.path.normpath(root))
     return Model(name, topic_list, home_list, sorted(loose),
-                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested)
+                 os.path.isfile(os.path.join(root, 'docs', 'README.md')), nested, _roadmap_path(root))
+
+
+def _roadmap_path(root):
+    """The roadmap path from .sdlc/config, relative to root in posix form. A bad config is a SetupError."""
+    import pathlib
+    import tickets  # function-local: tickets.py imports this module at its top level
+    try:
+        roadmap = tickets.layout_paths(pathlib.Path(root, '.sdlc')).roadmap
+    except tickets.Fail as e:
+        raise SetupError(str(e))
+    return pathlib.Path(os.path.relpath(str(roadmap), root)).as_posix()
 
 
 def _nested_topics(root, layout, documents):
@@ -1559,6 +1574,36 @@ def gate_lane_text(impl):
         expect('edited by hand' in _text(root, 'AGENTS.md'), 'a hand-edited block was overwritten without --force')
 
 
+def _render_roadmap(model, roadmap):
+    return render_templates(model._replace(roadmap=roadmap))
+
+
+def _render_topics_always(model):
+    return _render_roadmap(model, '.sdlc/tickets/roadmap.md')
+
+
+def _render_flat_always(model):
+    return _render_roadmap(model, '.sdlc/roadmap.md')
+
+
+def gate_layout_variant(impl):
+    flat = _split_template(ROOT_AGENTS_TEMPLATE).block.replace('<N>', str(TEMPLATE_VERSION))
+    with _fixture() as root:
+        rc, out, err = _call(run_setup, root, impl)
+        _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
+        expect(rc == 0 and block.text == flat, 'a flat repo does not get the unsubstituted root block')
+        rc, out, err = _call(run_check, root, impl)
+        expect('current AGENTS.md' in out.splitlines(), 'flat AGENTS.md is not current: %r' % (out + err))
+    with _fixture({'.sdlc/config': 'ticket_root: tickets\nlayout: topics\n'}) as root:
+        rc, out, err = _call(run_setup, root, impl)
+        _, block, _ = _parts(_text(root, 'AGENTS.md'), 'AGENTS.md')
+        expect(rc == 0 and '.sdlc/tickets/roadmap.md' in block.text and '.sdlc/roadmap.md' not in block.text,
+               'a topics repo block does not name .sdlc/tickets/roadmap.md only')
+        expect(block.version == TEMPLATE_VERSION, 'topics block is v%d' % block.version)
+        rc, out, err = _call(run_check, root, impl)
+        expect('current AGENTS.md' in out.splitlines(), 'topics AGENTS.md is not current: %r' % (out + err))
+
+
 GATES = [
     ('layout-parsing', gate_layout_parsing, parse_layout, [
         ('skips the list-line form rule', functools.partial(_parse_layout, skip=frozenset({'form'}))),
@@ -1609,6 +1654,10 @@ GATES = [
     ('lane-text', gate_lane_text, REAL, [
         ('template still routes to the chain', REAL._replace(render=_render_old_route)),
         ('treats a stale block as current', REAL._replace(labels=_relabel(6, 'current'))),
+    ]),
+    ('layout-variant', gate_layout_variant, REAL, [
+        ('renders the topics text for a flat repo', REAL._replace(render=_render_topics_always)),
+        ('renders the flat text for a topics repo', REAL._replace(render=_render_flat_always)),
     ]),
     ('check-mode', gate_check_mode, REAL, [
         ('labels an edited block current', REAL._replace(labels=_relabel(4, 'current'))),
