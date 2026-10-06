@@ -297,7 +297,7 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == bui
     if [[ -n "${SDLC_LANE_OVERRIDE:-}" ]]; then
       export SDLC_LANE_OVERRIDE_APPLIED="$SDLC_LANE_OVERRIDE"
       lane_line="lane override: $SDLC_LANE_OVERRIDE"
-      grep -qxF "$lane_line" "$lane_dir/skips.md" 2>/dev/null || printf '%s\n' "$lane_line" >>"$lane_dir/skips.md"
+      [[ "${SDLC_DRY_RUN:-}" == 1 ]] || grep -qxF "$lane_line" "$lane_dir/skips.md" 2>/dev/null || printf '%s\n' "$lane_line" >>"$lane_dir/skips.md"
     else
       lane_size=$(sed -n 's/^size: *\([SMLX]*\).*/\1/p' "$lane_dir/handoff.md" | head -n 1)
       echo "run.sh: lane solo for $lane_dir: use the solo agent: python3 $plugin_root/scripts/solo_run.py run --task-dir $lane_dir --tier ${lane_size:-M} --brief \"<brief>\"" >&2
