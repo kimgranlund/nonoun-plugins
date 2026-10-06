@@ -317,3 +317,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0317 | [0317-red-under-load-rerun](0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | M | P2 | none | ⏳ proposed |
 | T-0318 | [0318-fleet-status-noise](0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | S | P2 | none | ⏳ proposed |
 | T-0319 | [0319-fleet-verify-0307-0310](0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | S | P2 | none | ⏳ proposed |
+| T-0322 | [0322-fleet-verify-fixes](0322-fleet-verify-fixes/handoff.md) | Fix the three findings from the T-0307 and T-0310 verifier and the flaky fleet_status selftest | bug | S | P2 | none | ⏳ proposed |
