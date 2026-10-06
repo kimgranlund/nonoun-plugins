@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash): inside a role run (SDLC_ROLE set by scripts/run.sh), block commands that
+# PreToolUse(Bash): inside a role run (a role from hooks/_role.sh: SDLC_ROLE, else the sub-agent's
+# agent_type), block commands that
 # publish outside the machine. Publishing happens only from the user's session after approval.
 #
 # The publish pattern is matched against a masked copy of the command, so text that only
@@ -19,8 +20,12 @@
 # take a separate value word may come before the flag (python3 -X dev -c, node --require x -e,
 # perl -I lib -e); any other non-option word ends the option run. A plain
 # python3 script.py keeps the masked scan, and an interpreter word inside quotes is masked away.
-[[ -n "${SDLC_ROLE:-}" ]] || exit 0
-cmd=$(jq -r '.tool_input.command // ""')
+# shellcheck source=_role.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
+input=$(cat)
+role=$(sdlc_role "$input")
+[[ -n "$role" ]] || exit 0
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 pattern='(^|[^[:alnum:]_-])(git[[:space:]]+push|gh[[:space:]]+(pr|issue)[[:space:]]+(create|merge|comment|edit|close|reopen|review|ready|delete)|gh[[:space:]]+release|gh[[:space:]]+api[^|;&]*(-X|--method)[[:space:]]*(POST|PATCH|PUT|DELETE)|(npm|pnpm|yarn)[[:space:]]+publish)'
 
 # Masking only removes text, so a command whose raw text does not match is allowed as before.
@@ -210,7 +215,7 @@ PY
 
 scan=$(python3 -c "$masker" "$cmd" 2>/dev/null) || scan=$cmd
 if grep -Eq "$pattern" <<<"$scan"; then
-  echo "Blocked for sdlc role '$SDLC_ROLE': publishing is the user's call. Draft it in your final message instead." >&2
+  echo "Blocked for sdlc role '$role': publishing is the user's call. Draft it in your final message instead." >&2
   exit 2
 fi
 exit 0
