@@ -987,6 +987,8 @@ def run_ticket(ctx, lane, t, lock):
         kind, why = 'full', f'size {t.size or "unset"} has no solo tier'
     ctx['kinds'][t.id] = (kind, tier)
     env['FANOUT_LANE_KIND'] = kind
+    if kind in ('full', 'driver') and (ctx['driver'] or ctx['lane_mode'] == 'full') and not env.get('SDLC_LANE_OVERRIDE'):
+        env['SDLC_LANE_OVERRIDE'] = 'fanout forced the full chain (--lane full or --driver)'  # run.sh lane gate
     say(ctx, lane, t.id, f'lane {kind}' + (f' tier {tier}' if tier else '') + f' ({why})')
     taskdir = wt / ctx['trel'] / t.slug
     if kind == 'solo' and tier:

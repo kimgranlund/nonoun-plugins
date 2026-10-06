@@ -1794,10 +1794,11 @@ def record_lane(task, lane, point, reasons):
         write_solo_skips(task)
 
 
-def cmd_lane(task):
+def cmd_lane(task, check=False):
     try:
         lane, point, reasons, read = lane_action(task)
-        record_lane(task, lane, point, reasons)
+        if not check:
+            record_lane(task, lane, point, reasons)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -3701,6 +3702,7 @@ def main(argv):
     p.add_argument('task', help='a task dir holding planner-*.md and any plan-reviewer-*.md results')
     p = sub.add_parser('lane', help='print a task dir\'s lane (solo, lean, or full) and append it to its skips.md')
     p.add_argument('task', help='a task dir holding handoff.md and any planner-*.md results')
+    p.add_argument('--check', action='store_true', help='print the lane only; write nothing (run.sh lane gate)')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -3733,7 +3735,7 @@ def main(argv):
     if a.cmd == 'review':
         return cmd_review(a.task)
     if a.cmd == 'lane':
-        return cmd_lane(a.task)
+        return cmd_lane(a.task, a.check)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
