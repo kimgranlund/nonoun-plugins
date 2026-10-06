@@ -2,7 +2,7 @@
 id: T-0312
 title: "fleet_status.py render and the /sdlc-lite:fleet-status skill"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0310, T-0311]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,7 @@ Run from the repository root.
 6. `python3 plugins/sdlc-lite/scripts/check.py`, `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `git diff --check` all pass.
 7. `docs/maintenance/sdlc-internals.md` names `render` and the skill in the `fleet_status.py` entry; the script's docstring lists the `render` usage and the new `collect` keys (`unread`, `supervisor`, `report_since`, `closed_since`, `merged_since`, `age_s`).
 8. No model call, no message sent, no push: `grep -n "messages\." plugins/sdlc-lite/scripts/fleet_status.py` shows only `messages.ID_RE`.
+
+## Closed
+
+2026-10-06: built and merged on the fleet-status integration branch; verifier passed
