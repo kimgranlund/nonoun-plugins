@@ -2,7 +2,7 @@
 id: T-0321
 title: "Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -72,3 +72,7 @@ Paths are relative to the repo root; `F=plugins/sdlc-lite/skills/fleet-retro/int
 - [ ] The record's reading of the two present reports holds: for each row of the record's table, the cited report line exists and says what the row says (open both reports at the paths under Context).
 - [ ] `python3 plugins/sdlc-lite/scripts/check.py` prints `ok:` and exits 0; `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0; `git diff --check` exits 0.
 - [ ] Only these files changed: `git status --short` lists `interview.md`, `SKILL.md` of fleet-retro, this handoff, and the lane's own `skips.md`.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
