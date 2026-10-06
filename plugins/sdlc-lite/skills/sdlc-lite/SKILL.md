@@ -1,6 +1,6 @@
 ---
 name: sdlc-lite
-description: "Run SDLC Lite workflows in Codex: tickets, handoffs, plans, builds, verification, chains, boards, and parallel lanes. Use for structured software delivery or SDLC status. Includes native Codex role execution and project-scoped predefined subagents. Requires authenticated Codex CLI for pipeline roles."
+description: "Run SDLC Lite workflows in Codex: tickets, handoffs, plans, builds, verification, chains, boards, and parallel lanes. Use for structured software delivery or SDLC Lite status. Includes native Codex role execution and project-scoped predefined subagents. Requires authenticated Codex CLI for pipeline roles."
 ---
 
 # SDLC Lite in Codex

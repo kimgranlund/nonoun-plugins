@@ -17,15 +17,15 @@
 - [Idle-host watcher design](ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
 - [Idle-host watcher design review](reports/idle-host-watcher-design-review.md): dated independent review of the watcher design, ready after fixes, with four blockers and the decision it needs.
 
-- [Lean SDLC design review, second round](reports/lean-sdlc-design-review-2.md): dated second architect review of the lean SDLC design at v0.3, ready after fixes, and what v0.4 changed.
-- [Lean SDLC design review](reports/lean-sdlc-design-review.md): dated independent architect review of the lean SDLC design at v0.1 and the changes made in v0.2.
-- [Lean SDLC cost control](lean-sdlc/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
-- [Lean SDLC cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
-- [SDLC Lite pillars](lean-sdlc/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
-- [Sub-agent execution mode](lean-sdlc/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
-- [Lean SDLC](lean-sdlc/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
+- [SDLC Lite design review, second round](reports/lean-sdlc-design-review-2.md): dated second architect review of the SDLC Lite design at v0.3, ready after fixes, and what v0.4 changed.
+- [SDLC Lite design review](reports/lean-sdlc-design-review.md): dated independent architect review of the SDLC Lite design at v0.1 and the changes made in v0.2.
+- [SDLC Lite cost control](sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [SDLC Lite cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
+- [SDLC Lite pillars](sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
+- [Sub-agent execution mode](sdlc-lite/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
+- [SDLC Lite](sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
-- [SDLC implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
+- [SDLC Lite implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
 - [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](reports/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.

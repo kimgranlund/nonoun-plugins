@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a predefined SDLC role in Codex, emitting the runner's normalized result event."""
+"""Run a predefined SDLC Lite role in Codex, emitting the runner's normalized result event."""
 import argparse
 import json
 import os

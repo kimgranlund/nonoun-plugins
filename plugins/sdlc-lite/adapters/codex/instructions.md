@@ -1,6 +1,6 @@
 # Codex execution adapter
 
-You are running the SDLC role natively in Codex. The shared contract below contains some Claude-specific vocabulary; apply these host translations to it.
+You are running the SDLC Lite role natively in Codex. The shared contract below contains some Claude-specific vocabulary; apply these host translations to it.
 
 Use Codex's available file, search, shell, and web tools. Bash means the shell tool. Await shell session completion using the returned session ID; never use Claude run_in_background or Monitor parameters. Remain active until required work finishes. Do not spawn further agents from an individual role. A conductor invokes the existing runner for each role with SDLC_BACKEND=codex. For a conductor, use the native subagent exchange described below; never start another Codex CLI from a sandboxed shell.
 

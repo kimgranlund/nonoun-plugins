@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:551fef62e1d9 -->
+<!-- sdlc-lite:managed:start v1 sha256:83cd8f83ecd6 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -45,7 +45,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0306 fleet_detect.py: waste and stall detect rules (0306-fleet-detect)
   - T-0307 fleet-retro interview template and environment fingerprint (0307-fleet-interview)
   - T-0308 /sdlc-lite:fleet-retro skill, cross-repo report, verification sample (0308-fleet-retro-skill)
-- ready: 0
+- ready: 1
+  - T-0309 Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite (0309-naming-sdlc-lite)
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)

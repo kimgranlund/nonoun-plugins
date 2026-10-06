@@ -4,11 +4,11 @@ Date: 2026-09-27. Packaging implementation: Progressive Context 0.1.0 and SDLC L
 
 ## Shipped scope
 
-Progressive Context is a shared skill for expressing intent, navigating context, evaluating the gap to implementation, and qualifying bounded reuse. Its small reference set covers contracts, evidence, SDLC links, and filesystem/browser/A2UI representations. Browser persistence and A2UI runtime adapters remain proposals.
+Progressive Context is a shared skill for expressing intent, navigating context, evaluating the gap to implementation, and qualifying bounded reuse. Its small reference set covers contracts, evidence, SDLC Lite links, and filesystem/browser/A2UI representations. Browser persistence and A2UI runtime adapters remain proposals.
 
 SDLC Lite now executes roles natively through Codex or Claude. Codex uses generated predefined agent configurations, an explicit model/effort table, and `codex exec`; no Claude installation is required on that path. The shared runner retains result artifacts, base tracking, cleanup and output validation. Project setup additionally installs named in-session agents. See [native execution](codex-role-execution.md) for setup, model choices and live test evidence.
 
-Both repository catalogs point to the same two plugin roots. Both host manifests preserve plugin identity. Every SDLC skill routes Codex through the adapter before Claude-specific tool syntax. Claude's hook configuration is explicitly selected from `adapters/claude/hooks.json`, outside Codex's automatic hook discovery location.
+Both repository catalogs point to the same two plugin roots. Both host manifests preserve plugin identity. Every SDLC Lite skill routes Codex through the adapter before Claude-specific tool syntax. Claude's hook configuration is explicitly selected from `adapters/claude/hooks.json`, outside Codex's automatic hook discovery location.
 
 ## Validation evidence
 

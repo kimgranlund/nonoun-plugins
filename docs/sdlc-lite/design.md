@@ -1,4 +1,4 @@
-# Lean SDLC design
+# SDLC Lite design
 
 Version 0.4, 2026-10-04. Proposal. Nothing here is built. Tickets T-0189, T-0190, T-0191, T-0192.
 

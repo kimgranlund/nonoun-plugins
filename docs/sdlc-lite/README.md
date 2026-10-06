@@ -1,4 +1,8 @@
-# Lean SDLC
+# SDLC Lite
+
+Vocabulary: the product is `SDLC Lite` in prose; identifiers stay `sdlc-lite`, `SDLC_*` environment variables, `.sdlc/`, and the plugin and skill names.
+Bare "SDLC" appears only where it means the software lifecycle in general; "lean lane" names only that one lane (not the product).
+`scripts/check.py` fails on the retired spellings outside dated history (docs/reports, closed tickets, run workspaces, bench results).
 
 Proposal, not implemented. Version 0.4, 2026-10-04.
 

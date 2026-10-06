@@ -1,4 +1,4 @@
-# SDLC implementation reference
+# SDLC Lite implementation reference
 
 Read only the entry relevant to the subsystem being changed. Paths in this reference are relative to `plugins/sdlc-lite/`; commands run from that directory. Shared scripts and their tests own executable behavior. Update affected entries when behavior changes.
 
