@@ -35,6 +35,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 
 - Role/skill contracts: `python3 plugins/sdlc-lite/scripts/check.py`.
 - Generated agents: `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` (and `claude_roles.py selftest`).
+- Sub-agent dispatch gates (`prepare`, the pre-launch half of `run.sh`): `python3 plugins/sdlc-lite/scripts/dispatch.py selftest`; a gate change in `run.sh` needs the same change in `dispatch.py`, which the parity cases compare.
 - Codex adapter: `python3 plugins/sdlc-lite/scripts/codex-selftest.py`.
 - Tickets, board, steps, ordering, fanout: the affected `plugins/sdlc-lite/scripts/<name>.py selftest`.
 - Evals and the model-table lock: `python3 plugins/sdlc-lite/scripts/evals.py check` (and `selftest`).
