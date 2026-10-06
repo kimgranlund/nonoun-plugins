@@ -2,7 +2,7 @@
 id: T-0275
 title: "Probe the sub-agent mechanics the design assumes"
 type: spike           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Design: `docs/lean-sdlc/subagent-mode.md` sections 1 to 9 name each assumption. 
 
 ## Constraints
 No runner or hook code changes. No push or publish. No em dashes. No push, tag, or publish.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed

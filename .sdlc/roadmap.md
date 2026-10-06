@@ -273,7 +273,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0272 | [0272-conductor-repo-opt-out](0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | ⏳ proposed |
 | T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
 | T-0274 | [.0274-lane-gate](.0274-lane-gate/handoff.md) | run.sh lane gate | chore | M | P2 | none | 🟢 done |
-| T-0275 | [0275-subagent-probes](0275-subagent-probes/handoff.md) | Probe the sub-agent mechanics the design assumes | spike | S | P2 | none | ⏳ proposed |
+| T-0275 | [.0275-subagent-probes](.0275-subagent-probes/handoff.md) | Probe the sub-agent mechanics the design assumes | spike | S | P2 | none | 🟢 done |
 | T-0276 | [0276-claude-levels-table](0276-claude-levels-table/handoff.md) | Claude level table and per-level generated agents | feature | M | P2 | T-0275 | ⏳ proposed |
 | T-0277 | [0277-dispatch-prepare](0277-dispatch-prepare/handoff.md) | dispatch.py prepare: the pre-launch half of run.sh | feature | M | P2 | T-0276 | ⏳ proposed |
 | T-0278 | [0278-dispatch-record](0278-dispatch-record/handoff.md) | dispatch.py record: validate, record, and close a dispatched role | feature | M | P2 | T-0277 | ⏳ proposed |
