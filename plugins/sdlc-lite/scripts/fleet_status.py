@@ -75,7 +75,7 @@ Output keys (stdout, JSON):
                 work and none of those holds. queued or done: the board claims no work and none of those holds.
                 Markers and activity are read in the task folder, its `step-*` folders and the same ticket folder in
                 each linked worktree. handoff.md and skips.md are never activity.
-      flags     `ticket-done-board-open` when the ticket is done or dropped yet its board rows still claim work.
+      flags     `ticket-done-board-open` when the ticket is done or dropped yet a role is still marked running on it (built or failed step history of a closed ticket is not a claim).
     counts      rows per state
     needs_you[] {kind: blocked, id, task, title, owner: user | conductor | unknown, note, age_s} for each ticket
                 with status blocked (owner from an `owner: user|conductor` line in its handoff.md or in
@@ -690,12 +690,18 @@ def scan_repo(entry, procs, now, active_s, gh, since=None):
             if not brows:
                 brows = [(task.name, 'task', '⏳', 'unreadable', 0)]
             claims = any(r[2] in ('\U0001F7E1', '\U0001F534') for r in brows)
+            if status in ('done', 'dropped'):
+                # A closed ticket keeps its step history (awaiting verify, a red retry): only a role still
+                # running on it is work the board claims.
+                claims = any(r[2] == '\U0001F7E1' and r[3].startswith(('running', 'building', 'verifying'))
+                             for r in brows)
             rel = task.relative_to(root)
             copies = [os.path.join(w, '.sdlc', str(rel)) for w in linked]
             copies = [c for c in copies if os.path.isdir(c)]
             state, evidence = judge_row(str(task), copies, worktrees_named(linked, tid, task.name), procs,
                                         claims, now_ts, active_s)
-            if state in ('queued',) and not claims and all(r[2] == '\U0001F7E2' for r in brows):
+            if state in ('queued',) and not claims and (status in ('done', 'dropped')
+                                                        or all(r[2] == '\U0001F7E2' for r in brows)):
                 state = 'done'
             flags = ['ticket-done-board-open'] if claims and status in ('done', 'dropped') else []
             cell = board_cell(brows)
@@ -897,8 +903,11 @@ def short_evidence(evidence):
 
 def machine_line(m):
     ld, tr = m['load'], m['load']['trend']
-    trend = ('%s %+.1f in %sm' % (ld['arrow'], tr['delta'], '%g' % tr['minutes']) if tr['source'] == 'samples'
-             else '%s %+.1f vs 5m avg' % (ld['arrow'], tr['delta']))
+    if ld['arrow'] == FLAT:                          # inside the flat threshold the number is noise
+        trend = FLAT + (' flat' if tr['source'] != 'samples' else ' flat in %gm' % tr['minutes'])
+    else:
+        trend = ('%s %+.1f in %sm' % (ld['arrow'], tr['delta'], '%g' % tr['minutes']) if tr['source'] == 'samples'
+                 else '%s %+.1f vs 5m avg' % (ld['arrow'], tr['delta']))
     tops = []
     for k in (m.get('ranked') or [])[:2]:
         c = m['consumers'][k]
@@ -1340,7 +1349,8 @@ def selftest_collect():
         write(os.path.join(t4, 'step-1', 'runs.jsonl'), json.dumps({'role': 'builder', 'ts': iso(now_utc())}) + '\n')
         t5 = ticket(repo, '0005-marker-live', 'T-0005', 'ready')
         t6 = ticket(repo, '0006-reused-pid', 'T-0006', 'ready')
-        ticket(repo, '0007-done-lie', 'T-0007', 'done')
+        t7 = ticket(repo, '0007-done-lie', 'T-0007', 'done')
+        write(os.path.join(t7, 'step-1', 'builder-L1.running'), '%d\n' % (int(time.time()) - 3600))   # a role still marked running
         ticket(repo, '0008-queued', 'T-0008', 'ready', built=False)
         ticket(repo, '0009-blocked-user', 'T-0009', 'blocked', built=False, extra='owner: user\n')
         ticket(repo, '0010-blocked-conductor', 'T-0010', 'blocked', built=False, extra='Owner: Conductor\n')
@@ -1381,9 +1391,26 @@ def selftest_collect():
         ok('live: evidence names the process', 'process' in row['T-0001']['evidence'][0])
         ok('dead: evidence names the pid that is not running', 'not running' in row['T-0002']['evidence'][0])
         ok('flag: a done ticket whose board rows still claim work', row['T-0007']['flags'] == ['ticket-done-board-open']
-           and row['T-0007']['state'] == 'stale')
+           and row['T-0007']['state'] == 'dead')
+        ok('a done ticket whose step history is built, awaiting verify, is closed history, not a claim',
+           row['T-0013']['flags'] == [] and row['T-0013']['state'] == 'done')
+        # ticket_root: tickets with a board file: closed tickets raise no board-still-claims flag (red before the fix)
+        nr = os.path.join(tmp, 'nestrepo')
+        os.makedirs(nr)
+        git(nr, 'init', '-q', '-b', 'main')
+        write(os.path.join(nr, '.sdlc', 'config'), 'ticket_root: tickets\n')
+        write(os.path.join(nr, '.sdlc', 'board.md'), '| T-0001 | closed |\n')
+        for i in (1, 2):
+            nd = os.path.join(nr, '.sdlc', 'tickets', '000%d-c' % i)
+            write(os.path.join(nd, 'handoff.md'), '---\nid: T-000%d\ntitle: "c"\ntype: chore\nstatus: done\nsize: S\n---\n' % i)
+            write(os.path.join(nd, 'planner-L1.md'), '## Step 1: b\nlevel: L1\n')
+            write(os.path.join(nd, 'step-1', 'builder-L1.md'), '## Status\ndone\n')
+        outn = collect([{'name': 'nest', 'path': nr, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
+        rown = next(r for r in outn['repos'] if r['name'] == 'nest')['rows']
+        ok('ticket_root: tickets: closed tickets show no board-still-claims flag',
+           len(rown) == 2 and all(r['flags'] == [] and r['state'] == 'done' for r in rown))
         ok('flag: a live row carries none', row['T-0001']['flags'] == [])
-        ok('counts add up', out['repos'][0]['counts'].get('live') == 2 and out['repos'][0]['counts'].get('dead') == 2)
+        ok('counts add up', out['repos'][0]['counts'].get('live') == 2 and out['repos'][0]['counts'].get('dead') == 3)
         # negative control: the marker removed turns dead into stale, not idle or live
         os.unlink(os.path.join(t2, 'builder-L1.running'))
         out2 = collect([{'name': 'repo', 'path': repo, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
@@ -1856,8 +1883,17 @@ def selftest_render():
     ok('machine: one line with load, trend, cores, stop line, top consumers with a pid, and the verdict',
        len(ml) == 1 and 'load 6.0' in ml[0] and '8 cores' in ml[0] and 'stop line 14' in ml[0]
        and 'claude 1 proc 40% (pid 41)' in ml[0] and 'watchers 1 proc 6% (pid 42)' in ml[0]
-       and ml[0].rstrip().endswith('[loadavg, ps]') and re.search(r'load 6\.0 [↑↓→] [+-]\d', ml[0])
+       and ml[0].rstrip().endswith('[loadavg, ps]') and re.search(r'load 6\.0 (\u2192 flat|[↑↓] [+-]\d)', ml[0])
        and 'verdict ok' in ml[0])
+    def mline(l1, l5):
+        m = model([repo('alpha', [])])
+        m['machine']['load'] = load_report([], {'ts': iso(now), 'load1': l1, 'load5': l5, 'load15': l5, 'cpus': 8}, now, 14.0)
+        return next(ln for ln in render(m).splitlines() if ln.startswith('Machine'))
+    flat, up, dn = mline(5.0, 5.1), mline(8.0, 5.0), mline(3.0, 6.0)
+    ok('machine: a delta under the flat threshold prints a flat arrow and no number',
+       re.search(r'load 5\.0 \u2192 flat,', flat) and not re.search(r'[+-]\d\.\d vs', flat))
+    ok('machine: a clear rise prints up with its number, a clear fall prints down with its number',
+       re.search(r'load 8\.0 \u2191 \+3\.0 vs', up) and re.search(r'load 3\.0 \u2193 -3\.0 vs', dn))
     hot = model([repo('alpha', [])])
     hot['machine']['load'] = load_report([], {'ts': iso(now), 'load1': 15.0, 'load5': 9.0, 'load15': 5.0, 'cpus': 8}, now, 14.0)
     ok('machine: a load above the stop line reads OVER', 'verdict OVER the stop line' in render(hot))
