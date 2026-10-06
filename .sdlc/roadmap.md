@@ -277,7 +277,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🟢 done |
 | T-0296 | [.0296-lane-refuse-m-over-20-criteria](.0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | S | P2 | none | 🟢 done |
 | T-0297 | [.0297-planner-guard-dry-run-widen-inherit](.0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | S | P2 | none | 🟢 done |
-| T-0298 | [0298-limit-marker-reset-time](0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | S | P2 | none | 🔵 ready |
+| T-0298 | [.0298-limit-marker-reset-time](.0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | S | P2 | none | 🟢 done |
 | T-0299 | [0299-fanout-bare-ticket-ids](0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🔵 ready |
 | T-0300 | [0300-board-solo-merged-done](0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🔵 ready |
 | T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | M | P2 | none | ⏳ proposed |

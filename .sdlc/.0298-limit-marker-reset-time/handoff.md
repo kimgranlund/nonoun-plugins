@@ -2,7 +2,7 @@
 id: T-0298
 title: "429 limit marker records the reset time"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -21,3 +21,7 @@ Writers: plugins/sdlc-lite/scripts/run.sh (`<role>-<level>.limit`, hint `run.sh:
 - [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 with the same reset case for `solo.limit`.
 - [ ] Negative control shown once for one writer: without the reset parse the new case fails.
 - [ ] docs/maintenance/sdlc-internals.md `run.sh` and `solo_run.py` session-limit sentences mention the reset time.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
