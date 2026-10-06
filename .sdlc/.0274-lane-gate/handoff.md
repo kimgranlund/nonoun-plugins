@@ -2,7 +2,7 @@
 id: T-0274
 title: "run.sh lane gate"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -29,3 +29,7 @@ Re-verify of the failed criteria only (first verdict: .sdlc/0274-lane-gate/verif
 5. fanout.py sets SDLC_LANE_OVERRIDE for a `--driver` run and a forced `--lane full` run, and leaves it unset for `--lane auto` on a size L ticket; observe it in a driver log with a stub driver in a throwaway repo (the first run's method).
 7. plugins/sdlc-lite/skills/fix/SKILL.md step 3 no longer dead-ends: following it (append the `- lane: fix` line to skips.md, then `run.sh builder L1 .sdlc/<slug>/step-1/handoff.md` on a size S ticket with id and no planner result, dry run) exits 0, and the same dry run without the line exits 5.
 8. A dry run with SDLC_LANE_OVERRIDE set does not write skips.md.
+
+## Closed
+
+2026-10-05: delivered solo; run.sh lane gate, selftest red then green, independent L3 verifier (two rounds)
