@@ -2,7 +2,7 @@
 id: T-0280
 title: "Estimated cost for sub-agent runs from tokens and a price table"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0278]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Design section 3. Lost with sub-agents: `total_cost_usd`, the input/output/cache
 
 ## Constraints
 No change to the budget tiers or the 80 percent rule. No em dashes. No push, tag, or publish.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed

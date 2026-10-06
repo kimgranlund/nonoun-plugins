@@ -278,7 +278,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0277 | [.0277-dispatch-prepare](.0277-dispatch-prepare/handoff.md) | dispatch.py prepare: the pre-launch half of run.sh | feature | M | P2 | T-0276 | 🟢 done |
 | T-0278 | [.0278-dispatch-record](.0278-dispatch-record/handoff.md) | dispatch.py record: validate, record, and close a dispatched role | feature | M | P2 | T-0277 | 🟢 done |
 | T-0279 | [.0279-dispatch-recover](.0279-dispatch-recover/handoff.md) | dispatch.py status and resume for dead or interrupted sub-agents | feature | S | P2 | T-0278 | 🟢 done |
-| T-0280 | [0280-cost-estimate](0280-cost-estimate/handoff.md) | Estimated cost for sub-agent runs from tokens and a price table | feature | S | P2 | T-0278 | ⏳ proposed |
+| T-0280 | [.0280-cost-estimate](.0280-cost-estimate/handoff.md) | Estimated cost for sub-agent runs from tokens and a price table | feature | S | P2 | T-0278 | 🟢 done |
 | T-0281 | [0281-hooks-agent-role](0281-hooks-agent-role/handoff.md) | Hooks key on agent_type; spawn gate replaces block-role-spawn | feature | M | P2 | T-0275, T-0277 | ⏳ proposed |
 | T-0282 | [0282-conductor-dispatch-core](0282-conductor-dispatch-core/handoff.md) | Conductor and chain dispatch roles as sub-agents | feature | M | P2 | T-0276, T-0278, T-0279, T-0280, T-0281 | ⏳ proposed |
 | T-0283 | [0283-launcher-skills-dispatch](0283-launcher-skills-dispatch/handoff.md) | Launcher skills dispatch through sub-agents | chore | M | P2 | T-0282 | ⏳ proposed |
