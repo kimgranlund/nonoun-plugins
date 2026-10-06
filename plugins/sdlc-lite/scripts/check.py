@@ -405,7 +405,7 @@ def fix_lint_bad(text):
     return not targets or any(not t.endswith('/step-1/handoff.md') for t in targets)
 fx = root/'skills/fix/SKILL.md'
 fxt = fx.read_text() if fx.is_file() else ''
-if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not .sdlc/<slug>/step-1/handoff.md')
+if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not <ticket dir>/<slug>/step-1/handoff.md (.sdlc/<slug>/..., or .sdlc/tickets/<slug>/... with ticket_root: tickets)')
 if not fix_lint_bad(fxt.replace('/step-1/handoff.md`', '`')): errors.append('check.py: /fix lint-target guard negative control not flagged')
 # /fix step 5 stops at publish when unattended: no push, no pull request.
 def fix_unattended_bad(text):

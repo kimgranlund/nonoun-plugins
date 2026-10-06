@@ -17,7 +17,7 @@ Take every input from the thread and repo before asking: open tickets (`python3 
 
 ## 2. Write the block
 
-Fill the five labelled sections in the order of the example: Scope (a numbered list), How to work, Budget and stop rules, Authorization, Done when. Every number comes from the thread or the person's answer, never a default you invented. Authorization is explicit: publish, push, tag, and external writes are never implied; name exactly what is allowed and under what condition, or write `None`. Done when is a command exit code, a file, a tag, or a closed ticket, and it also covers stopping on a limit with state written to `.sdlc/notes.md`. Keep it under about 5000 characters so it can be read overnight.
+Fill the five labelled sections in the order of the example: Scope (a numbered list), How to work, Budget and stop rules, Authorization, Done when. Every number comes from the thread or the person's answer, never a default you invented. Authorization is explicit: publish, push, tag, and external writes are never implied; name exactly what is allowed and under what condition, or write `None`. Done when is a command exit code, a file, a tag, or a closed ticket, and it also covers stopping on a limit with state written to the notes file (`.sdlc/notes.md` (`.sdlc/notes/notes.md` with `layout: topics`)). Keep it under about 5000 characters so it can be read overnight.
 
 ## 3. Check
 

@@ -1967,6 +1967,59 @@ def _():
         assert got == {'0001-a': ('T-0001', 'ready')}, got
 
 
+@case('tickets: layout: topics lists tickets/<name> and work/<name>, and work and notes are not tasks')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        _write(repo, '.sdlc/work/w1/handoff.md', '## Goal\nx\n')
+        _write(repo, '.sdlc/notes/notes.md', 'n\n')
+        _write(repo, '.sdlc/side/handoff.md', '## Goal\nx\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['side', 'tickets/0001-a', 'work/w1'], got
+        # Negative controls: without the layout line work and notes are plain dir names, and an
+        # unsupported layout value falls back to the ticket_root listing without failing.
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['notes', 'side', 'work', 'tickets/0001-a'], got
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: nested\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['notes', 'side', 'work', 'tickets/0001-a'], got
+
+
+@case('tickets: layout: topics reads the notes file from notes/notes.md, not the root')
+def _():
+    from .sources import tickets as reader
+    with tempfile.TemporaryDirectory() as repo:
+        sdlc = os.path.join(repo, '.sdlc')
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        assert reader.read(sdlc)['notes'] is False
+        _write(repo, '.sdlc/notes.md', 'root notes\n')
+        assert reader.read(sdlc)['notes'] is False, 'a root notes.md is not the topics notes file'
+        _write(repo, '.sdlc/notes/notes.md', 'n\n')
+        assert reader.read(sdlc)['notes'] is True
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        os.remove(os.path.join(sdlc, 'notes.md'))
+        assert reader.read(sdlc)['notes'] is False, 'flat layout ignores notes/notes.md'
+
+
+@case('tickets: ingest run on a layout: topics repo reads a work/ task into rows')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as out:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/work/w1/handoff.md', '## Goal\nx\n')
+        _write(repo, '.sdlc/work/w1/runs.jsonl',
+               json.dumps({'role': 'planner', 'level': 'L1', 'model': 'm', 'exit': 0,
+                           'started': '2026-10-01T00:00:00Z', 'ended': '2026-10-01T00:01:00Z'}) + '\n')
+        ingest.run(repo, out=out)
+        cursor = json.load(open(os.path.join(out, 'cursor.json')))
+        keys = sorted(cursor['keys'])
+        assert '.sdlc/work/w1' in keys and '.sdlc/work' not in keys, keys
+
+
 @case('tickets: with no ticket_root line a tickets dir is a plain task dir name')
 def _():
     from . import ingest

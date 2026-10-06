@@ -42,7 +42,7 @@ REPORT_NAME = re.compile(r'^\d{4}-\d{2}-\d{2}-[a-z0-9]+(-[a-z0-9]+)*\.md$')
 LINK = re.compile(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
 GENERATED_NAME = re.compile(r'^(runs\.jsonl|skips\.md|budget-ack\.md|[a-z][a-z-]*-L\d(-\d+)?\.md|.*\.attempt\.json|.*\.request\.json|.*\.running|.*\.log)$')
 RETRY_NAME = re.compile(r'^[a-z][a-z-]*-L\d-\d+\.md$')
-SDLC_RECORD_DIRS = ('tickets', 'messages', 'evals', 'proposals', 'supervisor', '_templates', 'decompose')
+SDLC_RECORD_DIRS = ('tickets', 'work', 'notes', 'messages', 'evals', 'proposals', 'supervisor', '_templates', 'decompose')
 SDLC_LOOSE_MD = ('AGENTS.md', 'CLAUDE.md', 'notes.md', 'roadmap.md', 'board.md')
 TICKET_DIR = re.compile(r'^\.?\d{4}-')
 PLANNING_AGE_DAYS = 30
@@ -529,6 +529,12 @@ def gate_boundary(runner):
         _write(tmp, '.sdlc/messages/inbox/m.md', '# M\n')
         _write(tmp, '.sdlc/AGENTS.md', '# A\n')
         _write(tmp, '.sdlc/roadmap.md', '# R\n')
+        # layout: topics record folders: ticket-less tasks in work/, the notes file in notes/, each with an entry file
+        _write(tmp, '.sdlc/tickets/roadmap.md', '# R\n')
+        _write(tmp, '.sdlc/work/AGENTS.md', '# W\n')
+        _write(tmp, '.sdlc/work/w1/handoff.md', '# H\n')
+        _write(tmp, '.sdlc/notes/AGENTS.md', '# N\n')
+        _write(tmp, '.sdlc/notes/notes.md', '# N\n')
         bad = [f.line() for f in runner(tmp) if f.rule.startswith('B-')]
         if bad:
             raise GateFailure('record types were flagged: %r' % bad)
