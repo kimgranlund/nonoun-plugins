@@ -2,7 +2,7 @@
 id: T-0281
 title: "Hooks key on agent_type; spawn gate replaces block-role-spawn"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0275, T-0277]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,7 @@ Paths are under `plugins/sdlc-lite/` unless a command starts with `plugins/`; co
 6. `block-role-write.sh` (registered under the `Edit|Write|NotebookEdit` matcher) exits 0 for a `sdlc-lite:verifier-L3` Write whose `file_path` is the `result` of the `verifier-L3.dispatch.json` beside it; exits 2 for that role writing any other path, for an Edit, and for a NotebookEdit; exits 0 for `sdlc-lite:builder-L3` writing, editing, or notebook-editing any path.
 7. `docs/maintenance/claude-hooks.md` has sections for `hooks/_role.sh`, the rewritten `hooks/block-role-spawn.sh` (four conditions, fork rules), and `hooks/block-role-write.sh`; `git diff --check` is clean and no changed file holds an em dash.
 8. Scope: only files under `plugins/sdlc-lite/hooks/`, `plugins/sdlc-lite/scripts/hook-selftest.sh`, the header comment of `plugins/sdlc-lite/scripts/check.sh`, `plugins/sdlc-lite/adapters/claude/hooks.json`, `docs/maintenance/claude-hooks.md`, and this task folder changed.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
