@@ -60,7 +60,8 @@ it then does the following.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
   runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent.
-               cost_usd is null with cost_reason "subagent usage not priced" until the cost-estimate ticket lands;
+               cost_usd is estimated from the notice tokens by cost_estimate.py (cost_estimated true, cost_basis
+               "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero;
                usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given.
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
                <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
@@ -93,6 +94,7 @@ PLUGIN = HERE.parent
 sys.path.insert(0, str(HERE))
 import budget  # noqa: E402
 import claude_roles  # noqa: E402
+import cost_estimate  # noqa: E402
 import order  # noqa: E402
 import results  # noqa: E402
 import run_lifecycle  # noqa: E402
@@ -572,11 +574,14 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     handoff = Path(d['handoff'])
     now_sha = hashlib.sha256(handoff.read_bytes()).hexdigest() if handoff.is_file() else ''
     stale = bool(now_sha) and now_sha != d['handoff_sha256']
+    est, basis, _ = cost_estimate.estimate(d['model'], usage)
     line = dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=role, level=level, model=d['model'], effort=d['effort'],
                 file=result.name, shared_with_builder=bool(d.get('shared_with_builder')), attempt_id=d['attempt_id'],
                 handoff_sha256=d['handoff_sha256'], stale_input=stale, routing_reason=d['routing_reason'], backend='claude',
-                transport='subagent', agent_id=agent_id, usage=usage, cost_usd=None, cost_reason=COST_REASON,
+                transport='subagent', agent_id=agent_id, usage=usage, cost_usd=est, cost_reason=None if est is not None else COST_REASON,
                 duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br)
+    if est is not None:
+        line.update(cost_estimated=True, cost_basis=basis)
     if d.get('specgate'):
         line['specgate'] = d['specgate']
     if d.get('lane_override'):
@@ -1149,6 +1154,9 @@ def selftest():
         case('CLI record with a result file: exit 0, the path on stdout, the notice numbers in the line',
              p.returncode == 0 and p.stdout.strip() == got['result'] and line.get('agent_id') == 'ag-9' and line.get('duration_ms') == 900
              and line.get('usage') == {'subagent_tokens': 1234, 'tool_uses': 7})
+        case('record with notice tokens estimates cost: cost_estimated, cost_basis, no cost_reason',
+             line.get('cost_estimated') is True and line.get('cost_basis') == 'tokens x blended'
+             and isinstance(line.get('cost_usd'), float) and line['cost_usd'] > 0 and line.get('cost_reason') is None)
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / 'nope.dispatch.json')],
                            capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)

@@ -36,6 +36,7 @@ python3 "$root/scripts/fleet_config.py" selftest || fail=1
 python3 "$root/scripts/fleet_status.py" selftest || fail=1
 python3 "$root/scripts/specgate.py" selftest || fail=1
 python3 "$root/scripts/budget.py" selftest || fail=1
+python3 "$root/scripts/cost_estimate.py" selftest || fail=1
 python3 "$root/scripts/solo_run.py" selftest || fail=1
 python3 "$root/scripts/inventory.py" selftest || fail=1
 python3 "$root/scripts/docs_check.py" selftest || fail=1
