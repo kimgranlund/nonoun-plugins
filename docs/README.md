@@ -10,6 +10,7 @@
 - [Docs check and setup entries](reports/2026-10-05-docs-check-run.md): dated record of `docs_check.py` (D-1 to D-12), the new entry files for homes, the default layout, the change to every adopter's `docs/AGENTS.md`, and read-only runs on this repository and maison.
 - [Rename to reports](reports/rename-validation-to-reports.md): dated record of renaming the evidence folder to `docs/reports/` (T-0246), with before and after counts, the rewrite rules, the allowlist, and the limits.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
+- [Sub-agent probes](reports/subagent-probes-2026-10-06.md): dated record of the eight sub-agent mechanics probes (T-0275) with raw evidence and the design fallback each triggers.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
 - [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
