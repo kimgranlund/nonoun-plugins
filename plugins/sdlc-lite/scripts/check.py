@@ -119,6 +119,9 @@
    `docs_check.py" selftest`. Negative controls: each phrase removed from each file must be flagged.
 34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
    (docs/reports, closed tickets, run workspaces under .sdlc, bench results). Negative control: a planted spelling must be flagged and an allowlisted path must not.
+35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
+   scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
+   it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -804,6 +807,19 @@ if (_repo/'.git').exists():
     errors.extend(f'check.py: product name: {m}' for m in name_bad(_names))
     if not name_bad(dict(_names, **{'docs/x.md': 'a ' + NAME_BANNED[0] + ' b'})): errors.append('check.py: product name negative control not flagged for a planted spelling')
     if name_bad({'docs/reports/x.md': 'a ' + NAME_BANNED[1] + ' b'}): errors.append('check.py: product name allowlist did not suppress a docs/reports path')
+# Gate lock (docstring item 35): the semaphore script, its selftest wiring, the fanout wrapper, and the conductor and internals mentions.
+GATE_LOCK_NEEDS = (('gate_lock.py', ('SLOT-CAP', 'SDLC_GATE_WORKERS', 'SDLC_GATE_SLOTS', 'sdlc-gate-locks')),
+                   ('check.sh', ('gate_lock.py" selftest',)), ('fanout.py', ('gate_lock.py', '--no-gate-lock')),
+                   ('conductor', ('gate_lock.py run',)), ('internals', ('gate_lock.py',)))
+def gate_lock_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in GATE_LOCK_NEEDS for ph in phrases if name in texts and ph not in texts[name]]
+_gl_texts = {'gate_lock.py': _rd(root/'scripts/gate_lock.py'), 'check.sh': _rd(root/'scripts/check.sh'), 'fanout.py': _rd(root/'scripts/fanout.py'),
+             'conductor': _rd(root/'agents/conductor.md')}
+if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _gl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
+for _name, _phrases in GATE_LOCK_NEEDS:
+    for _ph in _phrases:
+        if _name in _gl_texts and not gate_lock_bad(dict(_gl_texts, **{_name: _gl_texts[_name].replace(_ph, '')})): errors.append(f'check.py: gate lock negative control not flagged for {_name} without {_ph}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)

@@ -82,13 +82,13 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 ### Full chain is mandatory when any holds
 
-- Planner L3, any step at builder L4 or L5, any merge step, any replan, a `## Plan review` line in the ticket handoff, or an `unresolved:` assumption in the plan. These are the cases `steps.py review` requires a review or a stop for (`steps.py:103`, `1227-1242`). `lane` calls the same function `review` uses, so the two cannot disagree.
+- Any step at builder L4 or L5, or an `unresolved:` assumption in the plan. Plan review is for L4 and L5 steps only (T-0294): planner L3, a merge step, a replan, and a `## Plan review` line no longer require it. These are the cases `steps.py review` requires a review or a stop for (`steps.py:103`, `1227-1242`). `lane` calls the same function `review` uses, so the two cannot disagree.
 - The ticket changes role behavior, a runner invariant, a hook, or a check. A focused live run is still required (plugin guidance), and lean does not waive it.
 - A step that touches shared generated state (roadmap, router, generated Codex agents) alongside other tickets in flight.
 
 ### Decision points
 
-`lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
+Before planning, size alone decides, with one limit: a size S or M ticket with more than 20 checkbox criteria under `## Acceptance criteria` is `full`, with a reason that says to split it into tickets of at most 20 (T-0296). `lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
 
 ### Coarse steps
 
@@ -214,7 +214,7 @@ A role may be skipped only by an entry in the ticket's `skips.md` (one line: rol
 ### Never skipped
 
 - The independent verifier on any step at builder L4 or L5, and on any merge step.
-- The plan review that `steps.py review` requires (planner L3, steps at L4 or L5, a merge step, a replan).
+- The plan review that `steps.py review` requires (steps at L4 or L5 only).
 - A focused live run for a role behavior change, and the checks in the root validation matrix.
 - The filer when the builder or verifier reported follow-ups or warnings.
 - The user's approval for any publish or external write, and any decision that is the user's to make.
