@@ -1041,9 +1041,60 @@ def split(target, only=None, guard_timeout=None):
         d = task_dir / f'step-{n}'
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
-        path.write_text(f'## Task goal\n{goal}\n\n{steps[n]}\n', encoding='utf-8')
+        body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(task_dir, n))
+        path.write_text(body, encoding='utf-8')
         written.append(path)
     return written
+
+
+def earlier_widened(task_dir, n):
+    """The paths listed under ## Scope widened in the live step-<m>/handoff.md files with m < n, in
+    step order, no duplicates. A superseded or non-numeric step dir is not live."""
+    found = []
+    for m, d in sorted((int(p.name[5:]), p) for p in pathlib.Path(task_dir).glob('step-*')
+                       if re.fullmatch(r'step-\d+', p.name) and int(p.name[5:]) < n):
+        h = d / 'handoff.md'
+        if not h.is_file():
+            continue
+        lines = h.read_text(encoding='utf-8').splitlines()
+        start = next((i for i, x in enumerate(lines) if x.rstrip() == '## Scope widened'), None)
+        if start is None:
+            continue
+        for x in lines[start + 1:]:
+            if x.startswith('## '):
+                break
+            mm = re.match(r'^- `([^`]+)`', x)
+            if mm and repo_path_ok(mm.group(1)) and mm.group(1) not in found:
+                found.append(mm.group(1))
+    return found
+
+
+def inherit_widened(text, paths):
+    """The step handoff text with paths added to its one scope allow-list and listed under
+    ## Scope widened. Unchanged when there are no paths, the step has not exactly one scope span in a
+    recognized form, or every path is already allowed. Runs no guard."""
+    if not paths:
+        return text
+    lines = text.splitlines(keepends=True)
+    scope = [(i, line, s) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines])
+             if list_item(line) for s in line_spans(line) if is_scope_span(s)]
+    if len(scope) != 1:
+        return text
+    idx, target, old = scope[0]
+    forms = widen_forms(old)
+    if len(forms) != 1:
+        return text
+    form, m = forms[0]
+    listed = widen_listed(form, m)
+    add = [p for p in paths if (p if form == 'F' else ere_escape(p)) not in listed]
+    if not add:
+        return text
+    new_line = replace_span(target, old, widen_span(old, form, m, add))
+    if new_line is None:
+        return text
+    ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
+    lines[idx] = new_line + ending
+    return add_scope_widened(''.join(lines), add)
 
 
 def cmd_precheck(task_dir):
@@ -3275,6 +3326,26 @@ def selftest():
               and text.count('## Scope widened') == 1 and text.count('`b.txt`: allowed') == 1
               and text.endswith('- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
                                 '- `e.txt`: allowed by a conductor scope decision (steps.py widen)\n'))
+
+        # split inherits earlier widenings: step 1 widened by P, then split --only 2 puts P in step 2's
+        # scope allow-list and its ## Scope widened section; a plan with no earlier widening is unchanged
+        i_span = f'`{W_LIST} | grep -vxF -e a.txt | {{ ! grep -q .; }}`'
+        i_plan = PLAN.replace('- two works', f'- two works\n- {i_span}')
+        d = task(plan=i_plan)
+        (d / 'step-1').mkdir()
+        (d / 'step-1' / 'handoff.md').write_text(
+            w_handoff(i_span) + '\n## Scope widened\n- `p/inherit.txt`: allowed by a conductor scope decision '
+            '(steps.py widen)\n', encoding='utf-8')
+        rc, _, _ = run_main(['split', str(d), '--only', '2'])
+        text = (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8')
+        check('split: step 2 inherits the path step 1 widened, in its allow-list and its Scope widened section',
+              rc == 0 and '-e a.txt -e p/inherit.txt' in text
+              and '## Scope widened\n- `p/inherit.txt`: allowed by a conductor scope decision (steps.py widen)\n' in text)
+        d = task(plan=i_plan)
+        rc, _, _ = run_main(['split', str(d), '--only', '2'])
+        text = (d / 'step-2' / 'handoff.md').read_text(encoding='utf-8')
+        check('split: a step 2 with no earlier widening is unchanged',
+              rc == 0 and '## Scope widened' not in text and '-e a.txt | ' in text)
 
         # (c) refusals: each writes nothing and ends with the plan-defect line
         r, d = w_repo(w_handoff('`test -d .`'))
