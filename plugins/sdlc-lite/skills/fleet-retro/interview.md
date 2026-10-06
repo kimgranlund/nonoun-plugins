@@ -30,6 +30,13 @@ One row per finding, ranked by cost, at most 7 rows:
 | Symptom | Evidence (command or log path) | Mechanism | Cost | [V] or [U] | Prevention |
 |---|---|---|---|---|---|
 
-[V] means you ran the evidence yourself. Write the answer to
+[V] means you ran the evidence yourself. Row rules:
+
+- One mark per row: `[V]` or `[U]`. A row with a checked and an unchecked part is `[U]`; name the unchecked part in Mechanism. Any other mark (an emoji, "unverified") or none is written `[U]`.
+- One finding per row. A bullet listing several symptoms is several rows. A note that names no symptom, cost, or gain is not a row. A proposed change goes in the Prevention cell of the finding it fixes; one with no finding behind it is left out.
+- Fill every cell; write `none` where there is nothing to say (no fix exists, the cause is outside the plugin, a decision waits on the user).
+- Something that got faster is a row: Symptom is what got faster, Cost the measured saving or `unmeasured`, Prevention `keep`.
+
+Write the answer to
 `.sdlc/fleet-retro-<date>.md` (max 80 lines), with Part 1 on top.
 Reply with one line: the path and your top three findings.
