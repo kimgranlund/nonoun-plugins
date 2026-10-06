@@ -37,3 +37,8 @@ Bodies grew, not shrank: each now carries the new contracts on top of the existi
 - Solo tier S through `solo_run.py run --tier S` implemented a stub `clamp`; it ran the check, made no commit, and reported compactly. Recorded cost $0.1467.
 - Verifier L3 through `run.sh verifier L3` (model fable, a different family from the Sonnet solo) returned `pass`; `results.py validate --role verifier` accepted the result file. Recorded cost $3.24, 11 turns, 250 s.
 - Not exercised live: the sub-agent launch (Agent tool), resume by `SendMessage`, and the blocked-brief path. Those are unverified here; this run covers the headless path only.
+
+## Independent verification
+
+- Pass 1 (`run.sh verifier L3`, fable, against the T-0290 handoff): fail on one criterion. Solo's body had no `results.py` reference, and my criterion required one in all ten bodies. Fixed by adding the verifier-result check line to solo's Verification; Codex agents regenerated. The same pass flagged generated path rewrites in four `.sdlc/messages` files that I had committed by mistake; restored to main.
+- Pass 2 (only the failed criterion plus the two regeneration gates, `recheck/handoff.md`): pass.

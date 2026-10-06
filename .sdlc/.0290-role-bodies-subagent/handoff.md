@@ -2,7 +2,7 @@
 id: T-0290
 title: "Role bodies optimized for session and sub-agent execution"
 type: chore           # feature | bug | chore | spike | idea
-status: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ Preserve every phrase and section check.py and results.py assert. No push, publi
 - `! grep -l "run\.sh" plugins/sdlc-lite/agents/scout.md plugins/sdlc-lite/agents/researcher.md plugins/sdlc-lite/agents/architect.md plugins/sdlc-lite/agents/archaeologist.md plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/filer.md plugins/sdlc-lite/agents/plan-reviewer.md`
 - `git diff --quiet main -- plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/agents/messenger.md plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
 - `test -s docs/reports/role-bodies-subagent.md`
+
+## Closed
+
+2026-10-06: Role bodies rewritten; checks green; verifier L3 pass after one fix. Record docs/reports/role-bodies-subagent.md
