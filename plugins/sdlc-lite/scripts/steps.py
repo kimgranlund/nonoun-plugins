@@ -357,7 +357,10 @@ def read_goal(task_dir, allow_empty=False):
         i = end + 1
     start = next((j for j in range(i, len(lines)) if lines[j].rstrip() == '## Goal'), None)
     if start is None:
-        raise Fail(f'steps: {handoff} has no ## Goal section')
+        near = next((l.strip() for l in lines[i:] if l.startswith('## ') and l.rstrip() != '## Goal'
+                     and 'goal' in l.lower()), None)
+        hint = f'; found {near} instead, expected ## Goal' if near else ''
+        raise Fail(f'steps: {handoff} has no ## Goal section{hint}')
     body = []
     for line in lines[start + 1:]:
         if line.startswith('## '):
@@ -2238,6 +2241,15 @@ def selftest():
         d = task(plan=None, handoff='## Task goal\nx\n')
         refused('(precheck) a handoff with only ## Task goal is refused naming ## Goal', ['precheck', str(d)], d,
                 '## Goal')
+        refused('(precheck) the refusal names the ## Task goal heading it found', ['precheck', str(d)], d,
+                needles=('found ## Task goal', 'expected ## Goal'))
+        d = task(plan=None, handoff='## Notes\nx\n')
+        refused('(precheck) no near heading keeps the plain message', ['precheck', str(d)], d)
+        rc, _, err = run_main(['precheck', str(d)])
+        check('(precheck) no near heading adds no found hint', 'found' not in err)
+        d = task(handoff='## Task goal\nx\n')
+        refused('(split) a handoff with only ## Task goal names it as found', ['split', str(d)], d,
+                needles=('found ## Task goal', 'expected ## Goal'))
         d = task(plan=None, handoff=HANDOFF)
         rc, out, err = run_main(['precheck', str(d)])
         check('(precheck) a handoff with ## Goal passes silently', rc == 0 and out == '' and err == '')
