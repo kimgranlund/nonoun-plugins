@@ -42,6 +42,7 @@ On Codex the conductor starts `sdlc-solo-l1`, `sdlc-solo-l2`, or `sdlc-solo-l3` 
 ## Verification
 - Tier S: none beyond your checks, as /fix today.
 - Tiers M and L: once all checks pass, write the task handoff's `## Acceptance criteria` if it has none, then run one batched independent verifier over the whole ticket: `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier <level> <task dir>/handoff.md`, under the interactive vs headless rule in agents/conductor.md. Pick the level so the verifier is a different model family from yours, because solo writes no builder result for run.sh's family rule to read: tier M (Sonnet) uses `verifier L3` (Fable); tier L (Opus) uses `verifier L2` (Sonnet). On Codex the verifier is `sdlc-verifier-l3`. When you run as a sub-agent without a way to start it, say `verify: needed` in your report and the parent runs it.
+- The verifier result file is checked by the runner; to check one yourself: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role verifier`.
 - A verifier fail: fix its findings once and run it once more. A second fail: stop and report.
 
 ## Output
