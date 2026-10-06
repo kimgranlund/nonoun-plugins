@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -117,6 +117,22 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             <rel>/NNNN-<slug>, persist `ticket_folders: numbered`, regenerate the roadmap. Refuses, writing
             nothing, on a bad ticket, a non T-NNNN id, or an existing target. --dry-run lists the renames
             and rewrites. Follow with archive --rewrite-refs to hide done and dropped folders
+  migrate-layout  move a flat root to the topics layout: each ticket folder directly under <root> (load's rule,
+            or a .NNNN-<slug> name) to tickets/<name>, each other dir not in check's allowed list and not _ or .
+            prefixed to work/<name>, roadmap.md to tickets/roadmap.md and notes.md to notes/notes.md (Path.rename,
+            never git mv); then add `ticket_root: tickets` and `layout: topics` to config (dropping other layout
+            lines), regenerate the roadmap, routers and mailbox entries, and append check's output. Refuses, writing
+            nothing, on a bad config line, outside git, on any uncommitted change (untracked files included), on a
+            bad ticket or malformed router block, on a loose file at the root (not roadmap.md or notes.md), or on an
+            existing target. Cites: files that cite a moved path (outside_refs per moved name, plus files under the
+            moved paths holding ../) are rewritten by migrate_text so each path token resolves after the moves to
+            the same file (a token inside an onboard managed block never changes; a file-relative token in a
+            moved file is re-expressed from its new dir). Without --rewrite-refs a citing file refuses, named;
+            with it each prints `rewrite <file>`. A file under docs/reports/ is a dated record: printed `keep
+            <file> (dated record under docs/reports/)`, never rewritten. --dry-run prints the `move <src> -> <dst>`,
+            rewrite, keep and `config <line>` lines and writes nothing. With nothing to move and both config lines
+            present it prints `nothing to migrate` and check's output. Afterwards run onboard.py setup to refresh
+            the root AGENTS.md block
   config    <root>/config may also hold `external_branch: <branch>` lines, one branch per line (blank lines, #
             comment lines and a trailing # comment are ignored; a repeated name counts once), each registering a
             branch an outside agent owns that no worktree here checks out. new and close read the ticket folders
@@ -199,6 +215,7 @@ import hashlib
 import heapq
 import os
 import pathlib
+import posixpath
 import re
 import shutil
 import subprocess
@@ -307,6 +324,33 @@ def ensure_numbered_config(root):
     if old and not old.endswith('\n'):
         old += '\n'
     path.write_text(old + 'ticket_folders: numbered\n', encoding='utf-8')
+
+
+def ensure_topics_config(root, write=True):
+    """Persist the topics layout in <root>/config (created if missing): append `ticket_root: tickets` when no
+    ticket_root line exists, and unless every layout line already says topics, drop every `layout:` line and append
+    `layout: topics`. Every other line stays byte-identical. Returns the lines added; write=False only computes
+    them (for --dry-run)."""
+    path = root / 'config'
+    old = path.read_text(encoding='utf-8') if path.is_file() else ''
+    lines = old.splitlines(keepends=True)
+
+    def live(line, rx):
+        return line.strip() and not line.lstrip().startswith('#') and rx.fullmatch(line.rstrip('\r\n'))
+
+    added = []
+    if not any(live(x, TICKET_ROOT_RE) for x in lines):
+        added.append('ticket_root: tickets')
+    found = layout_lines(root)
+    if not found or any(v != 'topics' for v, _ in found):
+        lines = [x for x in lines if not live(x, LAYOUT_RE)]
+        added.append('layout: topics')
+    if added and write:
+        new = ''.join(lines)
+        if new and not new.endswith('\n'):
+            new += '\n'
+        path.write_text(new + ''.join(x + '\n' for x in added), encoding='utf-8')
+    return added
 
 
 def external_branches(root):
@@ -702,6 +746,93 @@ def rewrite_files(top, files, old, new):
         for start, end, tok in reversed(ref_tokens(text, top, f, old, new.rsplit('/', 1)[-1])):
             text = text[:start] + tok + text[end:]
         path.write_bytes(text.encode('utf-8', 'surrogateescape'))
+
+
+def migrate_text(text, top, f, moves):
+    """text (read from toplevel-relative file f under top, f's path before the moves) with each path token rewritten
+    so it resolves after the moves to the file it resolved to before. moves: [(src, dst)] toplevel-relative posix
+    paths. Tokens are TOKEN_RE runs holding a '/' (trailing .,;:!? stripped); a token on a line of the managed block
+    onboard.find_block reports never changes. A token names a src by ref_tokens' rule; its form comes from the first
+    base the prefix lands on src from: absolute (starts with /), file-relative (f's dir), toplevel-relative. A
+    file-relative token in a file that moves becomes os.path.relpath from f's new dir to the moved target; any other
+    named token gets only the matched component replaced by dst relative to src's parent. In a file that moves, a
+    file-relative token naming no src that resolves from f's old dir to an existing path is re-expressed the same
+    way. A trailing / and a leading ./ (when the new form does not start with ../) are kept."""
+    top = str(top)
+    S = [(os.path.normpath(os.path.join(top, s)), os.path.normpath(os.path.join(top, d))) for s, d in moves]
+
+    def post(p):
+        for s, d in S:
+            if p == s or p.startswith(s + '/'):
+                return d + p[len(s):]
+        return p
+
+    fpath = os.path.normpath(os.path.join(top, f))
+    fdir = os.path.dirname(fpath)
+    moving = post(fpath) != fpath
+    newdir = os.path.dirname(post(fpath))
+
+    def rel_form(tok, target):
+        new = os.path.relpath(post(target), newdir)
+        if tok.endswith('/') and not new.endswith('/'):
+            new += '/'
+        if tok.startswith('./') and not new.startswith('../'):
+            new = './' + new
+        return new
+
+    frozen = None
+    fb = onboard.find_block(text)
+    if fb.status == 'block':
+        lines = onboard._split_keep(text)
+        frozen = (sum(len(x) for x in lines[:fb.block.start]), sum(len(x) for x in lines[:fb.block.end + 1]))
+    out = []
+    for m in TOKEN_RE.finditer(text):
+        tok = m.group().rstrip('.,;:!?')
+        if '/' not in tok or (frozen and frozen[0] <= m.start() < frozen[1]):
+            continue
+        parts = tok.split('/')
+        new = None
+        for (s, d), (src, dst) in zip(S, moves):
+            name = s.rsplit('/', 1)[-1]
+            if name not in parts:
+                continue
+            bases = [] if tok.startswith('/') else [('file', fdir), ('top', top)]
+            for i, part in enumerate(parts):
+                if part != name:
+                    continue
+                prefix = '/'.join(parts[:i + 1]) or '/'
+                form = None
+                if tok.startswith('/'):
+                    if s in (os.path.normpath(prefix), os.path.realpath(prefix)):
+                        whole = [os.path.normpath(tok), os.path.realpath(tok)]
+                        if any(w == s or w.startswith(s + '/') for w in whole):
+                            form = 'abs'
+                else:
+                    for kind, b in bases:
+                        if os.path.normpath(os.path.join(b, prefix)) == s:
+                            w = os.path.normpath(os.path.join(b, tok))
+                            if w == s or w.startswith(s + '/'):
+                                form = kind
+                            break
+                if form is None:
+                    continue
+                if form == 'file' and moving:
+                    new = rel_form(tok, os.path.normpath(os.path.join(fdir, tok)))
+                else:
+                    parts = parts[:i] + [posixpath.relpath(dst, posixpath.dirname(src) or '.')] + parts[i + 1:]
+                    new = '/'.join(parts)
+                break
+            if new is not None:
+                break
+        if new is None and moving and not tok.startswith('/'):
+            target = os.path.normpath(os.path.join(fdir, tok))
+            if os.path.exists(target):
+                new = rel_form(tok, target)
+        if new is not None and new != tok:
+            out.append((m.start(), m.start() + len(tok), new))
+    for start, end, new in reversed(out):
+        text = text[:start] + new + text[end:]
+    return text
 
 
 def id_floor(root):
@@ -1842,6 +1973,128 @@ def cmd_number(root, dry_run=False):
             'ones')
 
 
+def cmd_migrate_layout(root, dry_run=False, rewrite_refs=False):
+    """Move a flat root to the topics layout: ticket folders directly under <root> (load's rule, or a .NNNN-<slug>
+    name) to tickets/<name>, every other non-allowed dir to work/<name>, roadmap.md to tickets/roadmap.md and
+    notes.md to notes/notes.md; rewrite the files that cite a moved path (migrate_text) with --rewrite-refs, else
+    refuse naming them; files under docs/reports/ are dated records and stay; then set `ticket_root: tickets` and
+    `layout: topics` in config, regenerate the roadmap, routers and mailbox entries, and run check. Refuses, writing
+    nothing, on a bad config, outside git, on a dirty work tree, on a bad ticket or malformed router block, on a
+    loose file at the root, or when a move target exists. --dry-run prints the move, rewrite, keep and config lines
+    and writes nothing."""
+    lp = layout_paths(root)
+    env = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+    here = root.resolve()
+    anchor = here
+    while not anchor.is_dir() and anchor != anchor.parent:
+        anchor = anchor.parent
+    try:
+        p = subprocess.run(['git', '-C', str(anchor), 'rev-parse', '--show-toplevel'], env=env,
+                           capture_output=True, text=True)
+        top = pathlib.Path(p.stdout.strip()).resolve() if p.returncode == 0 else None
+        rel = here.relative_to(top) if top else None
+    except (OSError, ValueError):
+        top = None
+    if top is None:
+        raise Fail(f'migrate-layout: {root} is not inside a git work tree; the cite scan needs git to find the files '
+                   f'that cite the moved paths; nothing written')
+    p = subprocess.run(['git', '-C', str(top), 'status', '--porcelain'], env=env, capture_output=True, text=True)
+    if p.returncode:
+        raise Fail(f'migrate-layout: git status failed: {p.stderr.strip()}; nothing written')
+    dirty = p.stdout.splitlines()
+    if dirty:
+        raise Fail('migrate-layout: the work tree has uncommitted changes; commit or stash them first:\n'
+                   + ''.join(f'  {x}\n' for x in dirty[:10]) + ('  ...\n' if len(dirty) > 10 else '')
+                   + 'nothing written')
+    td = lp.tickets
+    at_root = [(n, m) for n, m in load(root) if n not in ROOT_ALLOWED]
+    ts = sorted((load(td) if td != root else []) + at_root)
+    errs = problems(ts, config_numbered(root))
+    if errs:
+        raise Fail('\n'.join(errs + ['nothing written: fix the problems above first']))
+    router_preflight(root)
+    entries = sorted(root.iterdir()) if root.is_dir() else []
+    loose = [e.name for e in entries if not e.is_dir() and e.name not in ROOT_ALLOWED
+             and not e.name.startswith(('_', '.')) and e.name not in ('roadmap.md', 'notes.md')]
+    if loose:
+        raise Fail('migrate-layout: these files at the root have no topic folder; move each into tickets/, work/ or '
+                   'notes/ (or remove it), commit, and rerun:\n' + ''.join(f'  {n}\n' for n in loose)
+                   + 'nothing written')
+    tickets = {n for n, _ in at_root}
+    moves = []
+    for e in entries:
+        n = e.name
+        if e.is_dir() and (n in tickets or DOT_RE.fullmatch(n)):
+            moves.append((n, f'tickets/{n}'))
+        elif e.is_dir() and n not in ROOT_ALLOWED and not n.startswith(('_', '.')):
+            moves.append((n, f'work/{n}'))
+        elif n == 'roadmap.md' and e.is_file():
+            moves.append((n, 'tickets/roadmap.md'))
+        elif n == 'notes.md' and e.is_file():
+            moves.append((n, 'notes/notes.md'))
+    taken = [dst for _, dst in moves if (root / dst).exists() or (root / dst).is_symlink()]
+    if taken:
+        raise Fail(f'migrate-layout: {", ".join(taken)} already exist(s); nothing written')
+    config = ensure_topics_config(root, write=False)
+    if not moves and not config:
+        return 'nothing to migrate\n' + cmd_check(root)
+    tmoves = [((rel / s).as_posix(), (rel / d).as_posix()) for s, d in moves]
+    old_roadmap = (rel / 'roadmap.md').as_posix()
+    cands = set()
+    for s, _ in moves:
+        t, _, _, files = outside_refs(root, s, own=True, roadmap=root / 'roadmap.md')
+        if t is None:
+            raise Fail('migrate-layout: cite scan failed (git grep); nothing written')
+        cands.update(files)
+    if moves:
+        p = subprocess.run(['git', '-C', str(top), 'grep', '--untracked', '--no-exclude-standard', '-I', '-l', '-z',
+                            '--full-name', '-F', '-e', '../', '--', *(s for s, _ in tmoves)], env=env,
+                           capture_output=True, text=True)
+        if p.returncode not in (0, 1):
+            raise Fail(f'migrate-layout: cite scan failed (git grep): {p.stderr.strip()}; nothing written')
+        cands.update(f for f in p.stdout.split('\0') if f)
+    cands.discard(old_roadmap)
+    rewrites, keeps, unreadable = {}, [], []
+    for f in sorted(cands):
+        try:
+            text = (top / f).read_bytes().decode('utf-8', 'surrogateescape')
+        except OSError:
+            unreadable.append(f)
+            continue
+        new = migrate_text(text, top, f, tmoves)
+        if new == text:
+            continue
+        if f.startswith('docs/reports/'):
+            keeps.append(f)
+        else:
+            rewrites[f] = new
+    if unreadable:
+        raise Fail('migrate-layout: cannot read these files to scan them for cites:\n'
+                   + ''.join(f'  {f}\n' for f in unreadable) + 'nothing written')
+    if rewrites and not rewrite_refs:
+        raise Fail('migrate-layout would move these paths, but other files cite them:\n'
+                   + ''.join(f'  {f}\n' for f in sorted(rewrites))
+                   + 'rerun with --rewrite-refs (rewrite them to the new paths); nothing written')
+    lines = ([f'move {s} -> {d}' for s, d in moves]
+             + [f'rewrite {f}' if f in rewrites else f'keep {f} (dated record under docs/reports/)'
+                for f in sorted(list(rewrites) + keeps)]
+             + [f'config {x}' for x in config])
+    if dry_run:
+        return '\n'.join(lines)
+    for f, new in rewrites.items():
+        (top / f).write_bytes(new.encode('utf-8', 'surrogateescape'))
+    for s, d in moves:
+        (root / d).parent.mkdir(parents=True, exist_ok=True)
+        (root / s).rename(root / d)
+    ensure_topics_config(root)
+    write_roadmap(root, load(layout_paths(root).tickets))
+    try:
+        checked = cmd_check(root)
+    except Fail as e:
+        raise Fail(f'migrated, but check failed:\n{e}')
+    return '\n'.join(lines + [checked])
+
+
 def run(root, cmd, args=(), **kw):
     """(exit code, stdout, stderr). The CLI and the selftest both go through here.
     kw goes to new, close, roadmap, check and archive (numbered=)."""
@@ -1858,6 +2111,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_archive(root, **kw), ''
         if cmd == 'number':
             return 0, cmd_number(root, **kw), ''
+        if cmd == 'migrate-layout':
+            return 0, cmd_migrate_layout(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -4052,6 +4307,165 @@ def selftest():
         expect(f'(skips) close --reason with entries succeeds: rc={rc} {err!r}',
                rc == 0 and status(r, 'lean-a') == 'done' and run(r, 'check')[0] == 0)
 
+        # ---- migrate-layout: flat to topics, with the cite rewrite ----
+        if shutil.which('git') is None:
+            print('tickets selftest: git not found; skipping the migrate-layout cases')
+        else:
+            menv = {k: v for k, v in os.environ.items() if k not in GIT_ENV_DROP}
+
+            def mgit(cwd, *args):
+                p = subprocess.run(['git', '-C', str(cwd), *args], env=menv, capture_output=True, text=True)
+                if p.returncode:
+                    raise AssertionError(f'selftest git fixture failed: git {" ".join(args)}: {p.stderr.strip()}')
+
+            def mcommit(cwd, msg='x'):
+                mgit(cwd, 'add', '-A')
+                mgit(cwd, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false',
+                     'commit', '--no-verify', '-qm', msg)
+
+            def mig_root(label, config=None, git=True):
+                mr = pathlib.Path(tmp) / f'mig-{label}' / '.sdlc'
+                mr.mkdir(parents=True)
+                if config:
+                    (mr / 'config').write_text(config, encoding='utf-8')
+                if git:
+                    mgit(mr.parent, 'init', '-q')
+                return mr
+
+            def wr(path, text):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text, encoding='utf-8')
+
+            def mig_flat(label):
+                mr = mig_root(label)
+                top = mr.parent
+                run(mr, 'new', ('chore', 'alpha', 'Alpha'))
+                run(mr, 'new', ('chore', 'beta', 'Beta'))
+                wr(mr / 'rel-x' / 'handoff.md', 'release record\n')
+                wr(mr / 'notes.md', '# Notes\nsee ../README.md\n')
+                wr(mr / 'alpha' / 'links.md', 'see ../rel-x/handoff.md and ../beta/handoff.md and ../../README.md\n')
+                wr(mr / 'beta' / 'links.md', 'see ../alpha/handoff.md and ../../nowhere.md\n')
+                wr(top / 'docs' / 'guide.md', 'see .sdlc/alpha/handoff.md and ../.sdlc/rel-x/handoff.md\n')
+                wr(top / 'README.md', 'see .sdlc/roadmap.md and .sdlc/notes.md\n')
+                wr(top / 'docs' / 'reports' / 'r.md', 'see .sdlc/alpha/handoff.md\n')
+                wr(top / 'AGENTS.md', 'intro\n' + onboard.wrap_block('see .sdlc/roadmap.md and .sdlc/alpha/x\n'))
+                mcommit(top)
+                return mr
+
+            mr = mig_flat('flat')
+            top = mr.parent
+            agents_before = (top / 'AGENTS.md').read_bytes()
+            # negative controls first, each refusing with the tree unchanged
+            with (top / 'README.md').open('a', encoding='utf-8') as fh:
+                fh.write('x\n')
+            rc, _, err = run(mr, 'migrate-layout', rewrite_refs=True)
+            expect(f'(mig) a modified tracked file refuses: rc={rc} {err!r}',
+                   rc == 1 and 'uncommitted changes' in err and err.endswith('nothing written')
+                   and (mr / 'alpha').is_dir() and not (mr / 'tickets').exists())
+            mgit(top, 'checkout', '-q', '--', 'README.md')
+            wr(top / 'new.txt', 'x\n')
+            rc, _, err = run(mr, 'migrate-layout', dry_run=True, rewrite_refs=True)
+            expect(f'(mig) an untracked file refuses: rc={rc} {err!r}',
+                   rc == 1 and 'uncommitted changes' in err and 'new.txt' in err)
+            (top / 'new.txt').unlink()
+            rc, _, err = run(mr, 'migrate-layout')
+            el = err.splitlines()
+            expect(f'(mig) cites without --rewrite-refs refuse, naming each file but not docs/reports: rc={rc} {err!r}',
+                   rc == 1 and all(f'  {f}' in el for f in ('docs/guide.md', 'README.md', '.sdlc/alpha/links.md',
+                                                            '.sdlc/notes.md'))
+                   and not any(f'  {f}' in el for f in ('docs/reports/r.md', '.sdlc/beta/links.md', 'AGENTS.md',
+                                                        '.sdlc/AGENTS.md'))
+                   and '--rewrite-refs' in err and (mr / 'alpha').is_dir() and not (mr / 'tickets').exists())
+            rc, out, err = run(mr, 'migrate-layout', dry_run=True, rewrite_refs=True)
+            ol = out.splitlines()
+            expect(f'(mig) dry run lists moves, rewrites, the docs/reports keep and config, writing nothing: '
+                   f'rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'move alpha -> tickets/alpha' in ol and 'move rel-x -> work/rel-x' in ol
+                   and 'move notes.md -> notes/notes.md' in ol and 'move roadmap.md -> tickets/roadmap.md' in ol
+                   and 'keep docs/reports/r.md (dated record under docs/reports/)' in ol
+                   and 'rewrite docs/reports/r.md' not in ol and 'config layout: topics' in ol
+                   and not (mr / 'tickets').exists() and not (mr / 'config').exists())
+            wr(mr / 'pause.md', 'x\n')
+            mcommit(top)
+            rc, _, err = run(mr, 'migrate-layout', rewrite_refs=True)
+            expect(f'(mig) a loose root file refuses, named: rc={rc} {err!r}',
+                   rc == 1 and 'pause.md' in err and (mr / 'alpha').is_dir())
+            (mr / 'pause.md').unlink()
+            wr(mr / 'work' / 'rel-x' / 'x.md', 'x\n')
+            mcommit(top)
+            rc, _, err = run(mr, 'migrate-layout', rewrite_refs=True)
+            expect(f'(mig) an existing move target refuses: rc={rc} {err!r}',
+                   rc == 1 and 'work/rel-x already exist' in err and (mr / 'rel-x').is_dir())
+            shutil.rmtree(mr / 'work')
+            mcommit(top)
+            # positive: the full migration
+            rc, out, err = run(mr, 'migrate-layout', rewrite_refs=True)
+            rd = lambda p: (top / p).read_text(encoding='utf-8')
+            expect(f'(mig) flat fixture migrates, rewrites cites, and check passes: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'ok: 2 tickets, roadmap current' in out.splitlines()
+                   and all((mr / p).is_file() for p in ('tickets/alpha/handoff.md', 'tickets/beta/links.md',
+                                                         'work/rel-x/handoff.md', 'notes/notes.md',
+                                                         'tickets/roadmap.md'))
+                   and not any((mr / p).exists() for p in ('alpha', 'beta', 'rel-x', 'notes.md', 'roadmap.md'))
+                   and rd('docs/guide.md') == 'see .sdlc/tickets/alpha/handoff.md and ../.sdlc/work/rel-x/handoff.md\n'
+                   and rd('README.md') == 'see .sdlc/tickets/roadmap.md and .sdlc/notes/notes.md\n'
+                   and rd('.sdlc/tickets/alpha/links.md')
+                   == 'see ../../work/rel-x/handoff.md and ../beta/handoff.md and ../../../README.md\n'
+                   and rd('.sdlc/tickets/beta/links.md') == 'see ../alpha/handoff.md and ../../nowhere.md\n'
+                   and rd('.sdlc/notes/notes.md') == '# Notes\nsee ../../README.md\n'
+                   and rd('docs/reports/r.md') == 'see .sdlc/alpha/handoff.md\n'
+                   and (top / 'AGENTS.md').read_bytes() == agents_before
+                   and (mr / 'config').read_text(encoding='utf-8') == 'ticket_root: tickets\nlayout: topics\n'
+                   and run(mr, 'check')[0] == 0)
+            mcommit(top)
+            rc, out, err = run(mr, 'migrate-layout')
+            expect(f'(mig) a second run prints nothing to migrate: rc={rc} {out!r} {err!r}',
+                   rc == 0 and out.splitlines()[0] == 'nothing to migrate' and 'ok: 2 tickets' in out)
+            # ticket_root: tickets already set: ticket folders stay, only layout: topics is added
+            tr = mig_root('tr', 'ticket_root: tickets\n')
+            run(tr, 'new', ('chore', 'alpha', 'Alpha'))
+            wr(tr / 'rel-x' / 'handoff.md', 'record\n')
+            mcommit(tr.parent)
+            rc, out, err = run(tr, 'migrate-layout')
+            ol = out.splitlines()
+            expect(f'(mig) ticket_root: tickets keeps its ticket folders and gains only layout: topics: '
+                   f'rc={rc} {out!r} {err!r}',
+                   rc == 0 and not any(x.startswith('move alpha') for x in ol) and 'move rel-x -> work/rel-x' in ol
+                   and 'config layout: topics' in ol and 'config ticket_root: tickets' not in ol
+                   and (tr / 'tickets' / 'alpha' / 'handoff.md').is_file()
+                   and (tr / 'config').read_text(encoding='utf-8') == 'ticket_root: tickets\nlayout: topics\n')
+            # a closed .NNNN-<slug> folder moves to tickets/
+            cr = mig_root('closed')
+            run(cr, 'new', ('chore', 'gamma', 'Gamma'))
+            edit(cr, 'gamma', r'^status:.*$', 'status: done')
+            (cr / 'gamma').rename(cr / '.0001-gamma')
+            run(cr, 'roadmap')
+            mcommit(cr.parent)
+            rc, out, err = run(cr, 'migrate-layout')
+            expect(f'(mig) a closed .NNNN-x folder moves to tickets/: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'move .0001-gamma -> tickets/.0001-gamma' in out.splitlines()
+                   and (cr / 'tickets' / '.0001-gamma' / 'handoff.md').is_file() and run(cr, 'check')[0] == 0)
+            # a skipped migration (topics config, folders still at the root) fails check, then is completed
+            sr = mig_root('skipped')
+            run(sr, 'new', ('chore', 'alpha', 'Alpha'))
+            wr(sr / 'rel-x' / 'handoff.md', 'record\n')
+            (sr / 'config').write_text('ticket_root: tickets\nlayout: topics\n', encoding='utf-8')
+            mcommit(sr.parent)
+            rc, _, err = run(sr, 'check')
+            expect(f'(mig) topics config without the moves fails check, naming the stray root folder: rc={rc} {err!r}',
+                   rc == 1 and 'rel-x: stray entry at the root' in err)
+            rc, out, err = run(sr, 'migrate-layout')
+            ol = out.splitlines()
+            expect(f'(mig) a skipped migration is completed: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'move alpha -> tickets/alpha' in ol and 'move rel-x -> work/rel-x' in ol
+                   and not any(x.startswith('config ') for x in ol) and run(sr, 'check')[0] == 0)
+            # a root outside git refuses
+            nr = mig_root('nogit', git=False)
+            run(nr, 'new', ('chore', 'alpha', 'Alpha'))
+            rc, _, err = run(nr, 'migrate-layout', rewrite_refs=True)
+            expect(f'(mig) a root outside git refuses: rc={rc} {err!r}',
+                   rc == 1 and 'not inside a git work tree' in err and (nr / 'alpha').is_dir())
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -4135,6 +4549,12 @@ def main(argv):
                                       'and turn numbered mode on')
     p.add_argument('--dry-run', action='store_true',
                    help='print each <slug> -> NNNN-<slug> rename and each rewrite <file>; write nothing')
+    p = sub.add_parser('migrate-layout', help='move a flat root to the topics layout (tickets/, work/, notes/), '
+                                              'rewrite cites with --rewrite-refs, set layout: topics, run check')
+    p.add_argument('--dry-run', action='store_true',
+                   help='print each move, rewrite, keep and config line; write nothing')
+    p.add_argument('--rewrite-refs', action='store_true',
+                   help='rewrite files that cite a moved path to its new path instead of refusing')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
@@ -4144,6 +4564,9 @@ def main(argv):
     kw = {'numbered': getattr(a, 'numbered', False)} if cmd in ('new', 'close', 'roadmap', 'check', 'archive') else {}
     if cmd == 'number':
         kw['dry_run'] = a.dry_run
+    if cmd == 'migrate-layout':
+        kw['dry_run'] = a.dry_run
+        kw['rewrite_refs'] = a.rewrite_refs
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs

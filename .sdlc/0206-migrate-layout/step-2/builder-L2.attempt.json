@@ -1,0 +1,21 @@
+{
+  "attempt_id": "2eba33f557d0429490aac13b571a5311",
+  "name": "builder-L2",
+  "role": "builder",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "low",
+  "routing_reason": "step 2 planned at L2",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-06T21:17:18.254641+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-layout/layout",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-layout/layout/.sdlc/0206-migrate-layout/step-2/handoff.md",
+  "owner_pid": 68478,
+  "handoff_sha256": "aad28858ea7f8db8899ced78cacfdca83ad0e12aefe70996643e0dad5ca47020",
+  "process_pid": 68524,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T21:25:38.011571+00:00"
+}
