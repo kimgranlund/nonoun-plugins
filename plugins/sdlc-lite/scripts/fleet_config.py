@@ -5,7 +5,7 @@ Usage: fleet_config.py [--file PATH] show [--active] | add --path P --name N --c
        | exclude REPO --reason R | include REPO | selftest
 Schema: docs/sdlc-lite/fleet-config.md. A malformed file exits 1 naming the line.
 """
-import argparse, datetime, json, os, sys, tempfile
+import argparse, datetime, json, os, re, sys, tempfile
 
 DEFAULT = os.path.join(".sdlc", "fleet.json")
 REQ = ("path", "name", "conductor", "status")
@@ -15,11 +15,19 @@ class FleetError(Exception):
     pass
 
 
-def _line_of(text, entry):
-    key = '"name": "%s"' % entry.get("name") if isinstance(entry, dict) else None
-    for i, ln in enumerate(text.splitlines(), 1):
-        if key and key in ln.replace('":"', '": "'):
-            return i
+def _line_of(text, idx):
+    """Line where the idx-th element of the top-level repos list starts (1 if not found)."""
+    try:
+        m = re.search(r'"repos"\s*:\s*\[', text)
+        pos, dec = m.end(), json.JSONDecoder()
+        for i in range(idx + 1):
+            while text[pos] in " \t\r\n,":
+                pos += 1
+            if i == idx:
+                return text.count("\n", 0, pos) + 1
+            pos = dec.raw_decode(text, pos)[1]
+    except (AttributeError, IndexError, ValueError):
+        pass
     return 1
 
 
@@ -35,8 +43,8 @@ def load(path):
     if not isinstance(data, dict) or not isinstance(data.get("repos"), list):
         raise FleetError("%s:1: top level must be an object with a repos list" % path)
     seen = set()
-    for r in data["repos"]:
-        ln = _line_of(text, r)
+    for i, r in enumerate(data["repos"]):
+        ln = _line_of(text, i)
         if not isinstance(r, dict):
             raise FleetError("%s:%d: repo entry must be an object" % (path, ln))
         for k in REQ:
@@ -97,6 +105,14 @@ def selftest():
         raise AssertionError("incomplete entry loaded")
     except FleetError as e:
         assert ":2:" in str(e) or ":1:" in str(e), str(e)
+    for body, want in (('{"repos": [\n{"path": "/a", "name": "a", "conductor": "c", "status": "active"},\n{"path": "/b"},\n5\n]}\n', ":3:"),
+                       ('{"repos": [\n{"path": "/a", "name": "a", "conductor": "c", "status": "active"},\n5\n]}\n', ":3:")):
+        open(p, "w").write(body)
+        try:
+            load(p)
+            raise AssertionError("bad entry loaded")
+        except FleetError as e:
+            assert want in str(e), str(e)
     print("selftest ok")
 
 
