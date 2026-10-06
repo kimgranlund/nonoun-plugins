@@ -2,7 +2,7 @@
 id: T-0278
 title: "dispatch.py record: validate, record, and close a dispatched role"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0277]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,7 @@ No change to `results.py` schema. No em dashes. No push, tag, or publish.
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 - `git diff HEAD --name-only -- plugins/sdlc-lite/scripts/results.py plugins/sdlc-lite/scripts/run.sh` prints nothing (no schema change, run.sh untouched).
 - `git diff HEAD -- docs plugins .sdlc/0278-dispatch-record | grep '^+' | grep -c "$(printf '\xe2\x80\x94')"` prints 0 (no em dashes), and `git diff HEAD --check` exits 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
