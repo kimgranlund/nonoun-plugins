@@ -23,3 +23,12 @@ Design: docs/lean-sdlc/subagent-mode.md on branch worktree-agent-a8796067dca9eb5
 
 ## Constraints
 Preserve every phrase and section check.py and results.py assert. No push, publish, tag, or merge into main.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0
+- `python3 scripts/check-packaging.py` exits 0
+- `for r in scout researcher architect archaeologist planner plan-reviewer builder verifier filer solo; do grep -q "results.py" plugins/sdlc-lite/agents/$r.md || exit 1; done`
+- `! grep -l "run\.sh" plugins/sdlc-lite/agents/scout.md plugins/sdlc-lite/agents/researcher.md plugins/sdlc-lite/agents/architect.md plugins/sdlc-lite/agents/archaeologist.md plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/filer.md plugins/sdlc-lite/agents/plan-reviewer.md`
+- `git diff --quiet "$SDLC_BASE_SHA" -- plugins/sdlc-lite/agents/conductor.md plugins/sdlc-lite/agents/messenger.md plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
+- `test -s docs/reports/role-bodies-subagent.md`

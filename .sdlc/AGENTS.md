@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a5439c54ea63 -->
+<!-- sdlc-lite:managed:start v1 sha256:8544a488b987 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -26,7 +26,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
   - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
   - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
-- ready: 0
+- ready: 1
+  - T-0290 Role bodies optimized for session and sub-agent execution (0290-role-bodies-subagent)
 - blocked: 9
   - T-0187 board.py --overview: queue, running roles, supervisor, unread mail from the folders (0187-board-overview)
   - T-0200 Replan by delta: merged plan view and steps.py resolve (0200-plan-merge)
