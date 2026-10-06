@@ -62,7 +62,14 @@
 # "run.sh: session limit: resume with: <command>" on stderr; the exit code stays 1. A later success removes the marker.
 # Exit codes: 0 ok, 1 run failed or returned no result (run_lifecycle.py also turns an exit 0 with no
 # saved result into 1), 2 usage or preflight, or a spec gate refusal, 3 result fails the result check,
-# 4 ticket budget at 80 percent or more with no ack.
+# 4 ticket budget at 80 percent or more with no ack, 5 lane gate (below).
+# Lane gate (T-0274): a planner, builder, or plan-reviewer run on a task or step handoff whose ticket (the task
+# handoff has an `id:` line) gets `steps.py lane --check` on its task dir; lane solo prints the exact
+# solo_run.py command on stderr and exits 5 before any attempt record. SDLC_LANE_OVERRIDE="<reason>" proceeds,
+# appends `lane override: <reason>` once to the task's skips.md, and adds "lane_override" to the runs.jsonl line.
+# Not gated: other roles, a task with no ticket id, any lane but solo, a task whose skips.md already ends in a
+# non-solo `lane:` record (a chain or fanout recorded its own reason), and fanout's forced-lane runs (it sets
+# the override itself).
 # Goal precheck: before a planner or plan-reviewer run on a task handoff (not a step dir), run.sh runs
 # steps.py precheck on the handoff dir; no ## Goal section prints the reason and exits 2 before any attempt record.
 # Spec gate: before a plan-reviewer run (dry runs too, never in the run_lifecycle.py child, either
@@ -276,6 +283,27 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == pla
     printf '%s\n' "$goal_out" >&2
     echo "run.sh: steps.py precheck refused the task handoff in $dir; add a ## Goal section" >&2
     exit 2
+  fi
+fi
+
+# Lane gate (see the header): solo is the path of least resistance; a planner, builder, or plan-reviewer on a
+# solo-lane ticket needs SDLC_LANE_OVERRIDE. Parent process only, dry runs too.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == builder || "$role" == plan-reviewer ) ]]; then
+  lane_dir="$dir"
+  [[ "$(basename "$dir")" != step-* ]] || lane_dir="$(dirname "$dir")"
+  if [[ -f "$lane_dir/handoff.md" ]] && grep -Eq '^id: *T-[0-9]+' "$lane_dir/handoff.md" \
+     && ! { [[ -f "$lane_dir/skips.md" ]] && grep -Ei '^(- )?lane: ' "$lane_dir/skips.md" | tail -n 1 | grep -Eviq '^(- )?lane: *solo'; } \
+     && [[ "$(python3 "$plugin_root/scripts/steps.py" lane --check "$lane_dir" 2>/dev/null | head -n 1)" == solo ]]; then
+    if [[ -n "${SDLC_LANE_OVERRIDE:-}" ]]; then
+      export SDLC_LANE_OVERRIDE_APPLIED="$SDLC_LANE_OVERRIDE"
+      lane_line="lane override: $SDLC_LANE_OVERRIDE"
+      grep -qxF "$lane_line" "$lane_dir/skips.md" 2>/dev/null || printf '%s\n' "$lane_line" >>"$lane_dir/skips.md"
+    else
+      lane_size=$(sed -n 's/^size: *\([SMLX]*\).*/\1/p' "$lane_dir/handoff.md" | head -n 1)
+      echo "run.sh: lane solo for $lane_dir: use the solo agent: python3 $plugin_root/scripts/solo_run.py run --task-dir $lane_dir --tier ${lane_size:-M} --brief \"<brief>\"" >&2
+      echo "run.sh: or set SDLC_LANE_OVERRIDE=\"<reason the chain is needed>\" to run $role anyway (recorded in skips.md)" >&2
+      exit 5
+    fi
   fi
 fi
 
@@ -548,10 +576,12 @@ jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort 
   --arg attempt_id "${SDLC_ATTEMPT_ID:-}" --arg routing_reason "${SDLC_ROUTING_REASON:-}" \
   --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
   --argjson shared_with_builder "$shared_with_builder" --arg specgate "$specgate_flag" \
+  --arg lane_override "${SDLC_LANE_OVERRIDE_APPLIED:-}" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file, shared_with_builder: $shared_with_builder,
     attempt_id: $attempt_id, handoff_sha256: $handoff_sha256, stale_input: $stale_input, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
     stray_worktrees: $stray_wt, stray_branches: $stray_br}
-    + (if $specgate == "" then {} else {specgate: $specgate} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
+    + (if $specgate == "" then {} else {specgate: $specgate} end)
+    + (if $lane_override == "" then {} else {lane_override: $lane_override} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
 
 if [[ "$stale_input" == true ]]; then
   echo "run.sh: stale input: $handoff changed while $role ran" >&2
