@@ -1,0 +1,494 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/agent-ui",
+  "summary": "runs: 193 deduped, $786.95, 2 interrupted, 0 limit markers",
+  "window": {
+    "since": null,
+    "until": "2026-10-06T14:06:53Z"
+  },
+  "env": {
+    "plugin": {
+      "version": "0.20.11",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.20.11",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.20.11",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.292 (Claude Code)",
+    "time": "2026-10-06T21:07:10Z",
+    "uptime_load": {
+      "uptime_s": 1658996,
+      "load1": 7.79,
+      "load5": 9.52,
+      "load15": 9.95,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 193,
+    "cost_usd": 786.9513,
+    "duration_s": 105582.2,
+    "unmetered": 0,
+    "by_role": {
+      "architect": {
+        "count": 9,
+        "cost_usd": 101.3893,
+        "duration_s": 10381.0
+      },
+      "planner": {
+        "count": 37,
+        "cost_usd": 249.9606,
+        "duration_s": 44433.0
+      },
+      "plan-reviewer": {
+        "count": 25,
+        "cost_usd": 186.4769,
+        "duration_s": 14891.3
+      },
+      "filer": {
+        "count": 16,
+        "cost_usd": 4.8896,
+        "duration_s": 412.6
+      },
+      "builder": {
+        "count": 53,
+        "cost_usd": 180.5021,
+        "duration_s": 24776.4
+      },
+      "verifier": {
+        "count": 47,
+        "cost_usd": 58.6991,
+        "duration_s": 9247.3
+      },
+      "scout": {
+        "count": 2,
+        "cost_usd": 0.6498,
+        "duration_s": 230.7
+      },
+      "solo": {
+        "count": 4,
+        "cost_usd": 4.384,
+        "duration_s": 1209.9
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 13,
+        "cost_usd": 96.3305,
+        "duration_s": 12139.7
+      },
+      "full": {
+        "count": 180,
+        "cost_usd": 690.6209,
+        "duration_s": 93442.5
+      }
+    },
+    "by_ticket": {
+      "a2ui-test-kit": {
+        "architect": 1,
+        "plan-reviewer": 2,
+        "planner": 3
+      },
+      "admin-headless-flows": {
+        "architect": 1,
+        "builder": 5,
+        "filer": 1,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "solo": 1,
+        "verifier": 5
+      },
+      "agent-behavior-evals": {
+        "builder": 2,
+        "filer": 1,
+        "plan-reviewer": 1,
+        "planner": 2,
+        "verifier": 2
+      },
+      "agents-md": {
+        "builder": 1,
+        "planner": 1,
+        "verifier": 1
+      },
+      "asset-embed": {
+        "architect": 1,
+        "builder": 4,
+        "plan-reviewer": 3,
+        "planner": 3,
+        "verifier": 2
+      },
+      "catalog-notfor-intents": {
+        "architect": 1,
+        "builder": 3,
+        "filer": 1,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "verifier": 3
+      },
+      "concurrency-ceiling-amendment": {
+        "builder": 1,
+        "verifier": 1
+      },
+      "context-budget-trace": {
+        "architect": 1,
+        "builder": 7,
+        "filer": 2,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "verifier": 5
+      },
+      "croupier-haiku-faces-padding": {
+        "planner": 1,
+        "solo": 1,
+        "verifier": 1
+      },
+      "croupier-round-surface": {
+        "builder": 1,
+        "verifier": 2
+      },
+      "dev-proxy-abort": {
+        "builder": 2,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 3,
+        "verifier": 1
+      },
+      "dogfood-selection-guidance": {
+        "architect": 1,
+        "builder": 2,
+        "filer": 1,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "verifier": 2
+      },
+      "harness-gaps": {
+        "scout": 2
+      },
+      "nested-agents-md": {
+        "builder": 1,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 3,
+        "verifier": 1
+      },
+      "no-barrels": {
+        "architect": 1,
+        "builder": 13,
+        "filer": 2,
+        "plan-reviewer": 5,
+        "planner": 6,
+        "verifier": 10
+      },
+      "persona-manifest": {
+        "architect": 1,
+        "builder": 2,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "verifier": 2
+      },
+      "persona-registry": {
+        "architect": 1
+      },
+      "ratify-adr-0232": {
+        "builder": 1,
+        "verifier": 1
+      },
+      "rebase-retry": {
+        "builder": 1,
+        "verifier": 1
+      },
+      "remove-ops": {
+        "builder": 2,
+        "filer": 1,
+        "planner": 1,
+        "verifier": 2
+      },
+      "retry-tests-and-docs": {
+        "builder": 1,
+        "verifier": 1
+      },
+      "sidecar-why-rewrite": {
+        "solo": 1
+      },
+      "sse-deadline": {
+        "builder": 1,
+        "filer": 1,
+        "planner": 1,
+        "verifier": 1
+      },
+      "stale-plugin-refs": {
+        "builder": 1,
+        "filer": 1,
+        "planner": 1,
+        "verifier": 1
+      },
+      "tool-dispatch-timeout": {
+        "builder": 1,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 3,
+        "verifier": 1
+      },
+      "transport-retry": {
+        "builder": 1,
+        "filer": 1,
+        "plan-reviewer": 1,
+        "planner": 2,
+        "verifier": 1
+      },
+      "worker-deploy-fix": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 2,
+      "attempts": [
+        {
+          "attempt_id": "4b8ae7d66ea649a7946d4cc253e899db",
+          "role": "plan-reviewer",
+          "level": "L1",
+          "started_at": "2026-10-05T06:02:03.174819+00:00",
+          "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.sdlc/nested-agents-md/plan-reviewer-L1-2.attempt.json"
+        },
+        {
+          "attempt_id": "8de995f2512147af9589fb7f8f548812",
+          "role": "planner",
+          "level": "L2",
+          "started_at": "2026-10-05T15:56:02.683381+00:00",
+          "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-croupier/.sdlc/croupier-haiku-faces-padding/planner-L2.attempt.json"
+        }
+      ]
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [
+      {
+        "ticket": "a2ui-test-kit",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user chose a solo builder after the second replan verdict (2026-10-06); steps.py lane prints full for size L"
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user explicitly directed a solo builder for the whole ticket on 2026-10-06; steps.py lane printed full (size L)"
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user asked for solo builders on new work for comparison (relayed 2026-10-06, same as T-0015) and said 'do it'; steps.py lane prints full for size L"
+      }
+    ],
+    "duplicates_dropped": 58,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 20,
+      "runs_files": 97
+    }
+  },
+  "plan_review_share": 0.5546,
+  "tickets": {
+    "count": 31,
+    "items": [
+      {
+        "ticket": "a2ui-test-kit",
+        "id": "T-0011",
+        "size": "XL",
+        "criteria": 13
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "id": "T-0016",
+        "size": "L",
+        "criteria": 10
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "id": "T-0017",
+        "size": "L",
+        "criteria": 9
+      },
+      {
+        "ticket": "devtools-meta-replay",
+        "id": "T-0018",
+        "size": "M",
+        "criteria": 10
+      },
+      {
+        "ticket": "persona-registry",
+        "id": "T-0013",
+        "size": "M",
+        "criteria": 13
+      },
+      {
+        "ticket": "sub-tag-aliases",
+        "id": "T-0015",
+        "size": "M",
+        "criteria": 8
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 59,
+      "cpu_pct": 323.6,
+      "rss_mb": 14258.8
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 20,
+      "cpu_pct": 8.4,
+      "rss_mb": 9380.4
+    }
+  },
+  "worktrees": {
+    "count": 19,
+    "size": "1286.7 MB",
+    "size_kb_known": 1317604,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/gap-tool-timeout",
+        "size": "58.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-activity",
+        "size": "69.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-admin",
+        "size": "75.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-ceiling",
+        "size": "56.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-croupier",
+        "size": "57.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-croupier2",
+        "size": "69.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-croupier3",
+        "size": "70.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-deployfix",
+        "size": "56.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-dogfood",
+        "size": "60.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-embed",
+        "size": "81.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-manifest",
+        "size": "74.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-nobarrels",
+        "size": "99.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-replay",
+        "size": "70.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-subtags",
+        "size": "70.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-testkit",
+        "size": "76.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-why",
+        "size": "56.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-1727",
+        "size": "72.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-planner",
+        "size": "56.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-reviewer",
+        "size": "55.8 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-09-22",
+    "window_days": 7,
+    "runs": 359,
+    "wall_minutes": 848.3,
+    "failed": 20,
+    "by_workflow": {
+      "CI": {
+        "runs": 126,
+        "wall_minutes": 653.9,
+        "failed": 5,
+        "by_event": {
+          "pull_request": 126
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 126,
+        "push_dup_7d": 0
+      },
+      "Claude Code Review": {
+        "runs": 126,
+        "wall_minutes": 128.6,
+        "failed": 14,
+        "by_event": {
+          "pull_request": 126
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 126,
+        "push_dup_7d": 0
+      },
+      "Deploy docs site": {
+        "runs": 63,
+        "wall_minutes": 45.4,
+        "failed": 1,
+        "by_event": {
+          "push": 63
+        },
+        "push_runs_7d": 63,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Theme-provider fixture regen": {
+        "runs": 44,
+        "wall_minutes": 20.4,
+        "failed": 0,
+        "by_event": {
+          "push": 44
+        },
+        "push_runs_7d": 44,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}

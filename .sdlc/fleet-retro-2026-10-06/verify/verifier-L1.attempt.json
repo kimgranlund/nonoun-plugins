@@ -1,0 +1,21 @@
+{
+  "attempt_id": "26b39c5f0a654e33a94fdb0865ce46cd",
+  "name": "verifier-L1",
+  "role": "verifier",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "fleet-retro step 5: sampled verification of the live-run report, solo tier M ticket T-0308",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-06T21:16:30.135392+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-fleet/retro/.sdlc/fleet-retro-2026-10-06/verify/handoff.md",
+  "owner_pid": 63674,
+  "handoff_sha256": "427cc4ed124fb4a225dc77e9ad039383fcf74a3cfa8d1594b754b806aabc0f99",
+  "process_pid": 63735,
+  "exit_code": 0,
+  "finished_at": "2026-10-06T21:17:27.485769+00:00"
+}
