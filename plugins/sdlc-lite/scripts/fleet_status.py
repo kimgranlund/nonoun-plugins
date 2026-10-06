@@ -1325,6 +1325,9 @@ def selftest_collect():
     saved = (PS_CMD, GH_CMD, GIT_CMD, LOAD_FN)
     kids = []
     tmp = tempfile.mkdtemp()
+    # collect matches live processes machine-wide by folder name: a sibling or leftover selftest's sleeper with the same
+    # folder name would make a row live, so every process-matched folder carries a per-run suffix
+    U = '-' + os.path.basename(tmp).lower().replace('_', 'x')
     try:
         # --- fixture repo: a real git repo with an origin, a tag, and one unpushed commit
         repo = os.path.join(tmp, 'repo')
@@ -1342,9 +1345,9 @@ def selftest_collect():
         git(repo, 'add', 'g.txt')
         git(repo, 'commit', '-q', '-m', 'second, not pushed')
 
-        t1 = ticket(repo, '0001-live-one', 'T-0001', 'ready')
+        t1 = ticket(repo, '0001-live-one' + U, 'T-0001', 'ready')
         t2 = ticket(repo, '0002-dead-marker', 'T-0002', 'ready')
-        t3 = ticket(repo, '0003-stale-row', 'T-0003', 'ready')
+        t3 = ticket(repo, '0003-stale-row' + U, 'T-0003', 'ready')
         t4 = ticket(repo, '0004-idle-row', 'T-0004', 'ready')
         write(os.path.join(t4, 'step-1', 'runs.jsonl'), json.dumps({'role': 'builder', 'ts': iso(now_utc())}) + '\n')
         t5 = ticket(repo, '0005-marker-live', 'T-0005', 'ready')
@@ -1421,7 +1424,7 @@ def selftest_collect():
         out3 = collect([{'name': 'repo', 'path': repo, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
         ok('negative control: killing the process changes live to stale', states(out3)['T-0001'] == 'stale')
         # a worktree named for the ticket: a process naming it makes the row live
-        wt = os.path.join(repo, '.worktrees', 'chain-L1-T-0003')
+        wt = os.path.join(repo, '.worktrees', 'chain-L1-T-0003-' + U.lstrip('-'))
         os.makedirs(wt)
         kids.append(subprocess.Popen([sys.executable, '-c', sleeper, wt], stdin=subprocess.DEVNULL))
         out4 = collect([{'name': 'repo', 'path': repo, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
@@ -1429,7 +1432,7 @@ def selftest_collect():
            and states(out4)['T-0004'] == 'idle')
         # a lane worktree copy with a live marker makes the main row live; a plain checkout copy is no activity
         lane = os.path.join(repo, '.worktrees', 'lane1')
-        copy3 = os.path.join(lane, '.sdlc', '0003-stale-row')
+        copy3 = os.path.join(lane, '.sdlc', '0003-stale-row' + U)
         os.makedirs(copy3)
         os.makedirs(os.path.join(copy3, 'step-1'))
         shutil.copy(os.path.join(t3, 'step-1', 'runs.jsonl'), os.path.join(copy3, 'step-1', 'runs.jsonl'))
@@ -1570,8 +1573,8 @@ def selftest_collect():
         ok('needs you: open non-draft PRs via gh, drafts counted apart', [p['number'] for p in prs] == [7, 8]
            and a['repos'][0]['prs']['drafts'] == 1 and 'APPROVED' in prs[0]['detail'])
         os.unlink(os.path.join(t2, 'builder-L1.running'))
-        os.rename(t3, os.path.join(repo, '.sdlc', '.0003-stale-row'))
-        write(os.path.join(repo, '.sdlc', '.0003-stale-row', 'handoff.md'),
+        os.rename(t3, os.path.join(repo, '.sdlc', '.0003-stale-row' + U))
+        write(os.path.join(repo, '.sdlc', '.0003-stale-row' + U, 'handoff.md'),
               '---\nid: T-0003\ntitle: "t T-0003"\ntype: chore\nstatus: done\nsize: S\n---\n\n## Goal\nx\n')
         write(os.environ['GH_OPEN'], json.dumps([
             {'number': 8, 'title': 'eight', 'url': 'u8', 'isDraft': False, 'reviewDecision': '', 'mergeStateStatus': 'BLOCKED', 'headRefName': 'b'}]))
@@ -1971,6 +1974,9 @@ def selftest_render():
 
     # --- end to end: a fixture fleet through the real collect and the CLI ------------------------------------
     tmp = tempfile.mkdtemp()
+    # collect matches live processes machine-wide by folder name: a sibling or leftover selftest's sleeper with the same
+    # folder name would make a row live, so every process-matched folder carries a per-run suffix
+    U = '-' + os.path.basename(tmp).lower().replace('_', 'x')
     kids = []
     me = os.path.abspath(__file__)
     OLD = 30 * 86400
@@ -2018,8 +2024,8 @@ def selftest_render():
 
     try:
         ra, rb, rc_, rx = mkrepo('alpha'), mkrepo('beta'), mkrepo('gamma'), mkrepo('ghost-excluded')
-        t_live = ticket(ra, '0001-live-one', 'T-0001', 'ready', 'live one')
-        ticket(ra, '0003-stale-row', 'T-0003', 'ready', 'planted stale row')
+        t_live = ticket(ra, '0001-live-one' + U, 'T-0001', 'ready', 'live one')
+        ticket(ra, '0003-stale-row' + U, 'T-0003', 'ready', 'planted stale row')
         ticket(ra, '0009-blocked', 'T-0009', 'blocked', 'Provide the deploy token', built=False, extra='owner: user\n')
         ticket(ra, '0013-closed-built', 'T-0013', 'done', 'closed with a dash %s in it' % EM)
         ticket(rb, '0021-queued', 'T-0021', 'ready', 'queued only', built=False)
@@ -2065,7 +2071,7 @@ def selftest_render():
         ok('e2e: release shows the unpushed close commit', has(sec['Release state'], 'alpha: main, 1 unpushed, 0 behind origin'))
         ok('e2e: render is read-only on every inspected repo', files((ra, rb, rc_, rx)) == before)
         # the observed negative control: a process now names the planted stale row, and it moves to Moving
-        kids.append(subprocess.Popen([sys.executable, '-c', sleeper, os.path.join(ra, '.sdlc', '0003-stale-row')],
+        kids.append(subprocess.Popen([sys.executable, '-c', sleeper, os.path.join(ra, '.sdlc', '0003-stale-row' + U)],
                                      stdin=subprocess.DEVNULL))
         rc, so2, _e = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd, '--no-write')
         sec2 = sections(so2)
