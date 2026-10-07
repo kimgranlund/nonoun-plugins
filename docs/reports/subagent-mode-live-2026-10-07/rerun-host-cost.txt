@@ -1,0 +1,8 @@
+R1 (two-lane fanout, solo-M + solo-S, verifier L3 fable), session 387e0782-0b24-4106-8dff-b2558559d96a, 20:45:25 to 20:50:17 PDT
+total_cost_usd 2.9478
+claude-sonnet-5-5 costUSD 0.6453 (conductor plus both solos)
+claude-fable-5-1  costUSD 2.3025 (the verifier only)  in 51956 out 18417 cache_read 410383 cache_write 60757
+subagent_stats spawned 3 (solo-M 1, solo-S 1, verifier-L3 1) refused 0 permission_denials 2 (verifier worktree-add mutation commands)
+Estimates for the verifier: runs.jsonl row (record --tokens 59930) cost_usd 0.19657; priced from its transcript (cost_estimate.transcript_usage) 0.849809
+R2 (two size S lanes after the land fix), session in /tmp/sdlcrerun3, 20:56:15 to 20:57:10 PDT
+total_cost_usd 0.4820, all claude-sonnet-5-5 (conductor plus two solos); spawned 2 solo-S, refused 0, denials 0

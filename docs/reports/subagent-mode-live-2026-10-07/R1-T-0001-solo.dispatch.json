@@ -1,0 +1,18 @@
+{
+  "subagent_type": "sdlc-lite:solo-M",
+  "name": "T-0001-solo",
+  "description": "solo M: T-0001",
+  "model": "sonnet",
+  "effort": "xhigh",
+  "prompt": "Handoff: .sdlc/0001-slugify/handoff.md\nBrief: deliver ticket .sdlc/0001-slugify/handoff.md end to end in this session as the solo agent. Read the ticket and the files it names, make the smallest change that meets its done criterion, run every check command it names and rerun them all after a fix, and report files changed, each check with its outcome, and anything still open. For a size M or L ticket write the handoff's ## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the parent runs the one batched independent verifier. No person is present: never ask the user and never use AskUserQuestion. You work on your own worktree branch: commit early and often, one `WIP T-0001` commit after each green check and a final commit `T-0001: Add slugify(s)` when every check is green. Never push, open a PR, or publish: fanout.py land merges your branch, runs the gates, and closes the ticket.",
+  "run_in_background": false,
+  "isolation": "worktree",
+  "ticket": "T-0001",
+  "tier": "M",
+  "branch": "worktree-T-0001-solo",
+  "worktree": ".claude/worktrees/T-0001-solo",
+  "handoff": ".sdlc/0001-slugify/handoff.md",
+  "verifier": "/Library/Developer/CommandLineTools/usr/bin/python3 /Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-w6/integration/plugins/sdlc-lite/scripts/dispatch.py prepare verifier L3 .claude/worktrees/T-0001-solo/.sdlc/0001-slugify/handoff.md",
+  "role": "solo",
+  "level": "L2"
+}

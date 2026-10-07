@@ -92,3 +92,50 @@ Not driven by this run, and I did not run `/login`. The coordinator's session sw
 - Behavior at a session limit (utilization reached 0.95 on the old account but no limit was hit), parent exit with sub-agents running, nested lane conductors (P8), and a lane whose spawn fails on a missing model.
 - Whether lane sub-agents were started in one assistant message or two (their transcripts overlap, so concurrent, but the spawn order was the conductor's).
 - Estimated cost within the 35 percent band: failed (see Cost), so unmet.
+
+## Rerun after T-0326 to T-0328
+
+Plugin under test: this worktree (`.worktrees/fanout-w6/integration`, branch `subagent-w6`, commit 995632ed, which holds T-0326, T-0327 and T-0328), `claude -p --plugin-dir <worktree>/plugins/sdlc-lite --agent sdlc-lite:conductor --dangerously-skip-permissions --output-format stream-json --verbose`, `SDLC_HEADLESS=1`, Claude Code 2.1.292, no `/login`. Two throwaway projects, `/tmp/sdlcrerun/proj` (R1) and `/tmp/sdlcrerun3/proj` (R2), each a tiny `kit` package, `onboard.py setup`, two ready tickets. Raw records: files prefixed `R1-`, `R2-` and [rerun-host-cost.txt](subagent-mode-live-2026-10-07/rerun-host-cost.txt) in [subagent-mode-live-2026-10-07/](subagent-mode-live-2026-10-07/). Stream logs and transcripts stay in `/tmp/sdlcrerun*/logs` and `~/.claude/projects/-private-tmp-sdlcrerun-proj`. Headless runs spawn foreground sub-agents.
+
+R1 ran the one two-lane fanout asked for: a=T-0001 (size M, solo-M) and b=T-0002 (size S, solo-S), verifier L3 on T-0001 (family fable, solos sonnet), `fanout.py land` per branch (20:45:25 to 20:50:17 PDT). It exposed one still-failing fix, so I fixed that in this branch and ran R2, two size S lanes with `land` on its default `--lane auto` (20:56:15 to 20:57:10 PDT).
+
+| Fix | Verdict | Evidence |
+|---|---|---|
+| T-0326 prep lane spawns pass the gate | fixed (observed) | R1 and R2: every lane spawn (`T-0001-solo`, `T-0002-solo`) went through the Agent gate; host `subagent_stats` `spawned 3 ... refused 0` (R1), `spawned 2 ... refused 0`, `permission_denials 0` (R2). |
+| T-0327 land recognizes host branches | still failing at 995632ed, fixed by the commit that carries this section (observed in R2) | R1 below, then R2. |
+| T-0328 cost within 35 percent, solo rows priced | still failing | Cost below. |
+
+### T-0326, fixed (observed)
+
+The spawn prompt began `Handoff: .sdlc/0001-slugify/handoff.md` ([R1-T-0001-solo.dispatch.json](subagent-mode-live-2026-10-07/R1-T-0001-solo.dispatch.json), [R1-T-0002-solo.dispatch.json](subagent-mode-live-2026-10-07/R1-T-0002-solo.dispatch.json)), and `fanout.py prep` wrote `T-0001-solo.dispatch.json` and `T-0002-solo.dispatch.json` beside each handoff before the spawn. The conductor spawned both from the prep JSON with no fallback to `solo_run.py run`; both solos ran in isolated worktrees (`.claude/worktrees/agent-ac24d8dfc4ddda2ad`, `agent-aca0f892eefaa7b91`) and committed `WIP` plus `T-000N: <title>`. The verifier spawn (`verifier-L3-0001-slugify`, `model fable`, transcript `claude-fable-5-1`) also passed.
+
+### T-0327, still failing at 995632ed, then fixed
+
+R1: the host again named the branches `worktree-agent-<agent_id>` (`worktree-agent-ac24d8dfc4ddda2ad`, `worktree-agent-aca0f892eefaa7b91`; the agent id is the `task_started` `task_id`). `land ... --ticket T-0001` printed `(lane full)` and `merged, close refused: no filer-L*.md`, the same symptom as finding 3; the conductor then closed both by hand with `tickets.py close --reason`, after a `--lane solo` re-land that returned `no changes`.
+
+Root cause: `host_branch_ticket` finds the lane through an `agent_id` in a `runs.jsonl` line on the branch, and a `kind` of solo needs that line to say `role: solo`. A real solo sub-agent writes no `runs.jsonl` line in its lane (the fanout prep path writes only the dispatch JSON, untracked in the main tree), and T-0001's branch held only the verifier line (the verifier's own agent id, `a63896d71b9e6437b`). The T-0327 selftest fixture hand-wrote a solo `agent_id` line, so it passed against a record nothing produces.
+
+Fix (this branch, `fanout.py land_preflight`): fanout spawns only solo lanes as sub-agents, so a host-form branch with no record naming another role is a solo lane, and a record that names another role or another ticket still routes `full`. The selftest gains the real shape (a host branch with no record and `--ticket`), with its negative control observed: with the old condition restored, `fanout.py selftest` fails on exactly that case; with the fix it passes. `SKILL.md` step 2 and design section 5 now say the host names the branch and the conductor reads it from the Agent result.
+
+R2 ([R2-fanout-report.md](subagent-mode-live-2026-10-07/R2-fanout-report.md), [R2-land.jsonl](subagent-mode-live-2026-10-07/R2-land.jsonl)): with the fix, `land worktree-agent-aab842b43e18de66e --ticket T-0001` printed `(lane solo tier S)`, `merged`, and the integration branch holds `close T-0001` and `close T-0002` commits made by `land`; the conductor closed nothing by hand (gate green, tickets done and archived on `fanout/rerun`). Both lanes report `Lane for ...: solo (tier S: sonnet low)`.
+
+### T-0328, still failing
+
+Verifier row of R1 ([R1-runs.jsonl](subagent-mode-live-2026-10-07/R1-runs.jsonl)): `usage {"subagent_tokens":59930,"tool_uses":12}`, `cost_usd 0.19657`, `cost_estimated true`, `cost_basis "tokens x blended"`. Host, same scope (the verifier is the only fable use, the conductor runs sonnet): `claude-fable-5-1` `costUSD 2.3025`. The estimate is 8.5 percent of host, outside the 35 percent band by about 12x.
+
+Root causes, two:
+
+1. The new `dispatch.py record --transcript` path (and the field-priced `usage_input` rates) is never reached: the conductor's text and the fanout skill pass `--tokens`, not `--transcript`, so the row is still priced from the notice count. Pricing the same verifier from its transcript with `cost_estimate.transcript_usage` gives $0.8498 (37 percent of host), still outside the band.
+2. The transcript undercounts against the host: the verifier transcript sums `output_tokens 1697` and `input_tokens 258` against the host's `modelUsage` `outputTokens 18417` and `inputTokens 51956` (cache fields are close: read 360163 vs 410383, write 58224 vs 60757). The fitted rates in `prices.json` reproduce the host figure from the host's counts (about $1.89, 82 percent), so the remaining gap is the transcript's streamed usage values, which carry early partial counts.
+
+Solo rows: priced rows do not exist on the fanout path. Neither lane has a `runs.jsonl` row for the solo (`git show worktree-agent-aca0f892eefaa7b91:.sdlc/0002-titlecase/runs.jsonl` does not exist; T-0001's branch holds only the verifier row), so `solo_run.py complete`, which prices an existing unpriced solo row in place, has nothing to price. Solo cost from the host side: R1 sonnet $0.6453 for the conductor and both solos; R2 sonnet $0.4820 for the conductor and two size S solos. Estimate for the solos: none recorded. Criterion not met; proposed ticket: record a solo row at `prep`/`land` and make the conductor pass `--transcript`, then recalibrate against the host with the output and input counts the transcript undercounts.
+
+### Other findings in R1
+
+- The verifier prompt printed by `dispatch.py prepare verifier L3 <worktree handoff>` carried `Tree: /private/tmp/sdlcrerun/proj` (the main tree, which has no change); the conductor added a note pointing the verifier at the built worktree. `prepare` should set `Tree` to the worktree when the handoff sits under `.claude/worktrees/`. Open, not fixed here.
+- The verifier's final message was not on disk as `verifier-L3.md` when `record` ran, so the conductor passed a condensed verdict on stdin; the record is the conductor's summary, not the verifier's full report. Open.
+- Both runs: the conductor's first `land` loop failed on a zsh word-splitting slip in its own shell (`set -- $p`), before any land ran; it reran with explicit arguments. The skill's printed command is a single call, so this is a conductor habit, not a script defect.
+
+### Still unverified
+
+Account switch, resume ladder, interactive background sub-agents and the other items listed under Unverified above are unchanged by this rerun. The R2 fix is observed on size S lanes; a size M lane through `land` with a verifier result on a host-named branch was exercised only in R1 (before the fix, forced `--lane solo`) and by the selftest.
