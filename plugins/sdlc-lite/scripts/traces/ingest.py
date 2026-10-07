@@ -12,7 +12,9 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
                 other subdir holding a runs.jsonl (its rows keep step None). Per dir:
                 the attempt, run, and result readers, the transcript reader on each <name>.log
                 next to a result <name>.md (its tool_calls, denials count, and rate_limits go on
-                the result record, and the log path joins the row's sources), then table.join
+                the result record, and the log path joins the row's sources; its loaded_context
+                comes from sources/context.py, {'status': 'log absent'} when no log sits beside the
+                result, used by table.join only when the run record has none), then table.join
                 with the ticket id from the task dir's handoff.md front matter (tickets.parse).
                 Record paths are repo-relative, so row sources and legacy ids are too.
   lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.worktrees/*/ that
@@ -35,7 +37,7 @@ import json, os, pathlib
 import tickets  # same scripts/ dir
 
 from . import rerun, store, table
-from .sources import attempts, bench, fanout, git, results, runs, transcripts
+from .sources import attempts, bench, context, fanout, git, results, runs, transcripts
 from .sources import tickets as ticket_reader
 
 SKIP_TASK = ('_templates', 'runtime')
@@ -125,8 +127,11 @@ def read_dir(repo, rel, ticket):
     run_recs, _ = runs.read(d)
     res, _ = results.read(d)
     logs = {}
+    backends = {rec.get('file'): rec.get('backend') for rec in run_recs}
     for r in res:
         log = os.path.join(d, r['name'] + '.log')
+        # loaded_context: a result with no log beside it is reported as 'log absent', never as [].
+        r['loaded_context'] = context.read(log, backend=backends.get(r['name'] + '.md'))
         if os.path.isfile(log):
             t = transcripts.read(log)
             r['tool_calls'], r['rate_limits'] = t['tool_calls'], t['rate_limits']

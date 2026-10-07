@@ -11,7 +11,8 @@ Join rules:
   - a run record with no attempt_id but with "file" joins the attempt whose name + ".md" is file;
   - a run record that joins nothing becomes its own row: attempt_id "legacy:<dir_rel>/<file>",
     or "legacy:<dir_rel>/runs.jsonl#<index>" with no file, status "completed", exit_code None;
-  - a result record joins the row whose name matches (an unmatched result makes no row).
+  - a result record joins the row whose name matches (an unmatched result makes no row);
+  - loaded_context (T-0252) is the run record's, else the result record's, else None.
 Row order: attempt rows in input order, then the orphan run rows in runs.jsonl order.
 Every row holds every field of ROW_FIELDS (None when unknown).
 """
@@ -21,7 +22,7 @@ import order  # same scripts/ dir: RESULT is the one <role>-L<n>(-<k>).md name r
 
 ROW_FIELDS = ('attempt_id', 'ticket', 'task_dir', 'step', 'superseded', 'role', 'level',
               'attempt_k', 'status', 'verdict', 'plan_defect', 'turns', 'cost_usd', 'secs',
-              'tool_calls', 'denials', 'rate_limits', 'exit_code', 'sources')
+              'tool_calls', 'denials', 'rate_limits', 'exit_code', 'loaded_context', 'sources')
 
 STEP_DIR = re.compile(r'^step-(\d+)(\.superseded-\d+)?$')
 # Counters a later reader may put on any record; the first record that has one wins.
@@ -109,6 +110,8 @@ def _row(dir_rel, ticket, attempt_id, name, attempt, run, result, legacy):
     row['secs'] = _secs(run, attempt)
     for key in COUNTERS:
         row[key] = _first(key, run, attempt, result)
+    # The run record's own list (written by run.sh) wins over the one ingest derived from the log.
+    row['loaded_context'] = _first('loaded_context', run, result)
     sources = []
     if attempt is not None:
         sources.append(_source(attempt, f'{d}/{name}.attempt.json'))

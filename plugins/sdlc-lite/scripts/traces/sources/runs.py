@@ -12,7 +12,8 @@ import os
 import order  # same scripts/ dir: the one runs.jsonl line reader
 
 FIELDS = ('ts', 'role', 'level', 'model', 'effort', 'file', 'attempt_id', 'backend', 'cost_usd',
-          'duration_ms', 'turns', 'stray_worktrees', 'stray_branches', 'routing_reason')
+          'duration_ms', 'turns', 'stray_worktrees', 'stray_branches', 'routing_reason',
+          'loaded_context')
 LISTS = ('stray_worktrees', 'stray_branches')
 
 
