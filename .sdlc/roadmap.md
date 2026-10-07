@@ -323,6 +323,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0323 | [.0323-fleet-status-tables](.0323-fleet-status-tables/handoff.md) | fleet_status render: colored emoji marks and tables, collapse done-but-open rows | feature | M | P2 | none | 🟢 done |
 | T-0324 | [.0324-fleet-status-schema](.0324-fleet-status-schema/handoff.md) | JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section | feature | M | P2 | T-0323 | 🟢 done |
 | T-0325 | [0325-skills-self-contained](0325-skills-self-contained/handoff.md) | Make every skill self-contained: ship its resources, drop repo-relative path assumptions | chore | M | P2 | T-0324 | ⏳ proposed |
-| T-0326 | [0326-fanout-prep-spawn-gate](0326-fanout-prep-spawn-gate/handoff.md) | fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) | bug | S | P2 | none | ⏳ proposed |
+| T-0326 | [.0326-fanout-prep-spawn-gate](.0326-fanout-prep-spawn-gate/handoff.md) | fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) | bug | S | P2 | none | 🟢 done |
 | T-0327 | [0327-fanout-land-branch-name](0327-fanout-land-branch-name/handoff.md) | fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3) | bug | S | P2 | none | ⏳ proposed |
 | T-0328 | [.0328-subagent-cost-estimate-gap](.0328-subagent-cost-estimate-gap/handoff.md) | Sub-agent cost estimate is 7 to 12 percent of host and null for solo rows (T-0287 finding 4) | bug | S | P2 | none | 🟢 done |
