@@ -2,7 +2,7 @@
 id: T-0248
 title: "Placement proof for the context registry"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ From docs/docs-schema/design.md v0.4, "Placement proof". Evidence labels and the
 
 ## Constraints
 Hand-build the fixture; do not wait on or depend on `docs_check.py` or `render_registry`. Stop only processes you started. No em dashes. Do not touch other agents' worktrees.
+
+## Closed
+
+2026-10-06: built and merged by fanout lane

@@ -2,7 +2,7 @@
 id: T-0245
 title: "Promotion helper: copy a .sdlc artifact into a docs home with source front matter"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2
 depends: [T-0241]   # T-NNNN, file:<path>, cap:<name>
@@ -23,3 +23,7 @@ Part of the docs schema design (docs/docs-schema/design.md v0.4 with the user's 
 
 ## Constraints
 One authoritative location per fact. No em dashes. Do not touch other agents' worktrees.
+
+## Closed
+
+2026-10-06: built and merged by fanout lane
