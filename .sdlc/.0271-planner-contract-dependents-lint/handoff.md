@@ -2,7 +2,7 @@
 id: T-0271
 title: "steps.py lint should enforce plan-defect contract dependents"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ No push, tag, version bump, or publish. No em dashes.
 - Full regression suite is green: `bash plugins/sdlc-lite/scripts/check.sh`
 - Whitespace is clean and the diff adds no em dash: `git diff --check`
 - Scope: `git diff --name-only` lists only `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/agents/planner.md`, the three `plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l*.toml` files, and `plugins/sdlc-lite/scripts/steps.py`, besides this ticket folder.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
