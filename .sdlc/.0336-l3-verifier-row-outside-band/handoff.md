@@ -2,7 +2,7 @@
 id: T-0336
 title: "The L3 verifier row of the live evidence prices at 0.57 of host after the T-0332 refit (T-0328 and T-0331 finding)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Found by the independent verifiers of T-0328 (T0328-1) and T-0331 (T0331-3), `.s
 
 ## Constraints
 No model or effort change. The failing check lands before or with the fix. No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: built and merged by fanout lane (batch fix021)

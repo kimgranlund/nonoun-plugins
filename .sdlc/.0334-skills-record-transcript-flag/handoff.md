@@ -2,7 +2,7 @@
 id: T-0334
 title: "Twelve launcher skills spell dispatch.py record without --transcript (T-0331 finding)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Found by the independent verifier of T-0331 (criterion T0331-1), `.sdlc/verify-s
 
 ## Constraints
 The failing check lands before or with the fix: a `check.py` guard that lists the offending skill and has an observed negative control. No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: built and merged by fanout lane (batch fix021)
