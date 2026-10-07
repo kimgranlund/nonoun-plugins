@@ -99,6 +99,34 @@ def transcript_model(path):
     return got
 
 
+def transcript_final(path):
+    """(text, stop_reason) of the transcript's last assistant message that holds text, or None (T-0343).
+
+    text joins that message's text blocks; stop_reason is the message's own (end_turn, max_tokens, ...), None if absent."""
+    got = None
+    try:
+        lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            msg = json.loads(line).get('message')
+        except (ValueError, AttributeError):
+            continue
+        if not isinstance(msg, dict) or msg.get('role') != 'assistant':
+            continue
+        c = msg.get('content')
+        if isinstance(c, str):
+            text = c
+        elif isinstance(c, list):
+            text = '\n'.join(b.get('text', '') for b in c if isinstance(b, dict) and b.get('type') == 'text')
+        else:
+            continue
+        if text.strip():
+            got = (text, msg.get('stop_reason'))
+    return got
+
+
 def family(model, table):
     m = (model or '').lower()
     return next((k for k in table if k in m), None)
