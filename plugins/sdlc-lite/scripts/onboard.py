@@ -304,6 +304,53 @@ def has_import(text):
     return _has_import(text)
 
 
+LINK = re.compile(r'\[[^\]]*\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)')
+IMPORT_LINE = re.compile(r'^@(\S+)\s*$')
+
+
+def _entry_paths(root):
+    r = subprocess.run(['git', '-C', root, 'ls-files', '-z'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    paths = [p.decode('utf-8', 'surrogateescape') for p in r.stdout.split(b'\0')]
+    return sorted(p for p in paths if p.rsplit('/', 1)[-1] in ('AGENTS.md', 'CLAUDE.md')
+                  and os.path.isfile(os.path.join(root, p)))
+
+
+def _targets(text, links=True):
+    for line, fenced in scan_lines(text):
+        if fenced:
+            continue
+        m = IMPORT_LINE.match(line)
+        if m:
+            yield m.group(1)
+        if links:
+            for m in LINK.finditer(re.sub(r'`[^`]*`', '', line)):
+                yield m.group(1)
+
+
+def resolve_entries(root, check_import=True, check_links=True):
+    """Problem lines for tracked entry files: an AGENTS.md without a CLAUDE.md importing it, and a link or
+    @import that names no file. The keyword switches exist only for the selftest's defective variants."""
+    problems = []
+    tracked = _entry_paths(root)
+    for path in tracked:
+        folder = path.rsplit('/', 1)[0] if '/' in path else ''
+        name = path.rsplit('/', 1)[-1]
+        if name == 'AGENTS.md' and check_import:
+            sibling = (folder + '/' if folder else '') + 'CLAUDE.md'
+            full = os.path.join(root, *sibling.split('/'))
+            if not os.path.isfile(full) or not has_import(_read(full)):
+                problems.append('no-import %s' % sibling)
+        if not check_links:
+            continue
+        for target in _targets(_read(os.path.join(root, *path.split('/')))):
+            if re.match(r'^([a-zA-Z][a-zA-Z0-9+.-]*:|#|/|~)', target):
+                continue
+            rel = target.split('#', 1)[0].split('?', 1)[0]
+            if rel and not os.path.exists(os.path.normpath(os.path.join(root, folder, rel))):
+                problems.append('broken-link %s: %s' % (path, target))
+    return problems
+
+
 # ---------------------------------------------------------------- templates
 
 TEMPLATE_VERSION = 1
@@ -978,7 +1025,7 @@ def run_setup(root, impl=None, dry_run=False, force=False, out=None, err=None):
     return 0
 
 
-def run_check(root, impl=None, out=None, err=None):
+def run_check(root, impl=None, out=None, err=None, resolver=None):
     """check: one `<label> <path>` line per file; 1 unless all are current or present."""
     impl, out, err = impl or REAL, out or sys.stdout, err or sys.stderr
     changes = _plan_or_report(root, impl, False, err)
@@ -989,7 +1036,10 @@ def run_check(root, impl=None, out=None, err=None):
         for note in c.notes + ([size] if size else []):
             err.write(note + '\n')
         out.write('%s %s\n' % (c.label, c.path))
-    return 0 if all(c.label in ('current', 'present') for c in changes) else 1
+    problems = (resolver or resolve_entries)(root)
+    for p in problems:
+        out.write(p + '\n')
+    return 0 if all(c.label in ('current', 'present') for c in changes) and not problems else 1
 
 
 # ---------------------------------------------------------------- selftest
@@ -1465,6 +1515,27 @@ def gate_malformed_markers(impl):
             expect(rc != 0 and 'malformed AGENTS.md\n' in out, '%s: check printed %r' % (label, out))
 
 
+def gate_entry_resolver(resolve):
+    good = {'AGENTS.md': '# A\n[sub](sub/AGENTS.md)\n[web](https://x.y/z) [anchor](#top)\n```\n[fenced](nope.md)\n```\n',
+            'CLAUDE.md': '@AGENTS.md\n', 'sub/AGENTS.md': '# S\n[up](../AGENTS.md#a)\n', 'sub/CLAUDE.md': '@AGENTS.md\n'}
+    tracked = tuple(good)
+    with _fixture(good, tracked) as root:
+        expect(resolve(root) == [], 'positive fixture reported %r' % resolve(root))
+    bad = [('no CLAUDE.md', {'sub/CLAUDE.md': None}, 'no-import sub/CLAUDE.md'),
+           ('CLAUDE.md without the import', {'sub/CLAUDE.md': '# mine\n'}, 'no-import sub/CLAUDE.md'),
+           ('broken link', {'AGENTS.md': '[gone](missing.md)\n'}, 'broken-link AGENTS.md: missing.md'),
+           ('broken import', {'CLAUDE.md': '@AGENTS.md\n@nope.md\n'}, 'broken-link CLAUDE.md: nope.md')]
+    for label, change, want in bad:
+        files = dict(good)
+        for k, v in change.items():
+            if v is None:
+                del files[k]
+            else:
+                files[k] = v
+        with _fixture(files, tuple(files)) as root:
+            expect(want in resolve(root), '%s: expected %r, got %r' % (label, want, resolve(root)))
+
+
 def gate_check_mode(impl):
     with _fixture() as root:
         _call(run_setup, root, impl)
@@ -1605,6 +1676,10 @@ def gate_layout_variant(impl):
 
 
 GATES = [
+    ('entry-resolver', gate_entry_resolver, resolve_entries, [
+        ('skips the CLAUDE.md import rule', functools.partial(resolve_entries, check_import=False)),
+        ('skips the link rule', functools.partial(resolve_entries, check_links=False)),
+    ]),
     ('layout-parsing', gate_layout_parsing, parse_layout, [
         ('skips the list-line form rule', functools.partial(_parse_layout, skip=frozenset({'form'}))),
         ('skips the duplicate heading rule', functools.partial(_parse_layout, skip=frozenset({'duplicate-heading'}))),
