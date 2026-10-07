@@ -348,7 +348,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 # isolation worktree. The host cuts <name> a worktree under .claude/worktrees/<name> on branch worktree-<name>.
 HOST_WORKTREES = '.claude/worktrees'
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
-SOLO_SUBAGENT_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+SOLO_SUBAGENT_PROMPT = ('Handoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and rerun them all after a fix, and report files changed, each check '
                         'with its outcome, and anything still open. For a size M or L ticket write the handoff\'s '
@@ -1442,7 +1442,7 @@ def land_command(ctx, branch, tid):
 def print_prep(ctx):
     """The prep plan: per ticket the lane, then the dispatch JSON of a solo ticket or the tree commands of a full one.
     Returns 4 when a ticket stops at the budget gate, else 0."""
-    out = ['fanout prep (sub-agent lanes: nothing created)']
+    out = ['fanout prep (sub-agent lanes: creates only each solo ticket\'s <name>.dispatch.json, the record the spawn gate checks)']
     if ctx['reuse']:
         out.append(f"integration branch {ctx['integration']} exists at {ctx['start']}: land reuses it")
     else:
@@ -1473,6 +1473,9 @@ def print_prep(ctx):
                     rc = 4
                     continue
                 d = subagent_dispatch(ctx, t, tier)
+                # The spawn gate (hooks/block-role-spawn.sh) finds this record beside the prompt's Handoff line (T-0326).
+                (taskdir / f"{d['name']}.dispatch.json").write_text(
+                    json.dumps({**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2]}, indent=2) + '\n', encoding='utf-8')
                 out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
                 out.append(f"    dispatch {t.id}:")
                 out.append('\n'.join('    ' + ln for ln in json.dumps(d, indent=2).splitlines()))
@@ -2992,7 +2995,17 @@ def selftest():
         expect('case 22 prep: creates no branch, worktree, lanes dir or file in the repo',
                sh(p1, 'branch', '--list', 'fanout/*', 'worktree-*').stdout.strip() == ''
                and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists()
-               and sh(p1, 'status', '--porcelain').stdout == '')
+               and [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all').stdout.splitlines()
+                    if not ln.endswith('-solo.dispatch.json')] == [])
+        # T-0326: both lane prompts pass the spawn gate; the same prompt without its Handoff line is still refused
+        def gate_rc(d, prompt):
+            ev = json.dumps({'tool_name': 'Agent', 'agent_type': 'sdlc-lite:conductor', 'cwd': str(p1), 'tool_input': {
+                'subagent_type': d.get('subagent_type'), 'name': d.get('name'), 'model': d.get('model'), 'prompt': prompt}})
+            return subprocess.run(['bash', str(PLUGIN / 'hooks' / 'block-role-spawn.sh')], input=ev, capture_output=True, text=True).returncode
+        nohand = lambda d: '\n'.join(ln for ln in d.get('prompt', '').splitlines() if not ln.startswith('Handoff: '))
+        expect('case 22 prep: both lane prompts pass the spawn gate, one without its Handoff line is refused',
+               gate_rc(d1, d1.get('prompt', '')) == 0 and gate_rc(d2, d2.get('prompt', '')) == 0
+               and gate_rc(d1, nohand(d1)) == 2 and gate_rc(d2, nohand(d2)) == 2)
         ph = verb(p1, 'prep', 'alpha=T-0001', '--lanes-dir', str(pl1), '--integration', 'fanout/p', '--stagger', '0',
                   SDLC_HEADLESS='1')
         expect('case 22 prep: a headless parent gets a foreground spawn (run_in_background false)',
