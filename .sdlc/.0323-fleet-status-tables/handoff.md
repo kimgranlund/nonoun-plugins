@@ -2,7 +2,7 @@
 id: T-0323
 title: "fleet_status render: colored emoji marks and tables, collapse done-but-open rows"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,7 @@ No em or en dashes in output. No push or publish. Model and effort defaults unch
 - `diff <(git show HEAD:plugins/sdlc-lite/scripts/fleet_status.py | sed -n '/^import datetime/,/^# --- render/p') <(sed -n '/^import datetime/,/^# --- render/p' plugins/sdlc-lite/scripts/fleet_status.py)` (collect data code is unchanged)
 - The selftest holds a control that done-but-open rows fold into one `N closed tickets still shown on the board` row per repo while a genuinely stale row stays listed, and a control that a row with no source still raises RenderError. Each fails when its behavior is removed: in a scratch copy of `plugins/sdlc-lite/scripts/`, make the `if 'ticket-done-board-open' in r['flags']:` test in `stale_items` read `if False:` (the collapse controls print FAIL), and delete the `if not clean(source): raise RenderError(...)` lines in `trow` (the source controls print FAIL).
 - `python3 plugins/sdlc-lite/scripts/fleet_status.py render --no-write --no-gh` prints Needs you, Moving, Stale or stuck and Release state as markdown tables with the marks 🟢 live, 🟡 idle, 🔴 dead, ⚠️ stale, ⚪ nothing moving, keeps Machine as one line, and the `skills/fleet-status/SKILL.md` text and the `docs/maintenance/sdlc-internals.md` fleet_status paragraph describe the same layout and marks; the skill's AskUserQuestion step is unchanged apart from naming the State, Detail and Source columns.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
