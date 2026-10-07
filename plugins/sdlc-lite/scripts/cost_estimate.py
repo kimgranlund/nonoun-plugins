@@ -9,7 +9,7 @@ with adapters/claude/prices.json (blended USD per million tokens, per model fami
 when usage holds no token count or the model has no price. Never zero for a missing usage block.
 usage may hold subagent_tokens (the sub-agent notice) or the result-event fields input_tokens,
 cache_creation_input_tokens, cache_read_input_tokens, output_tokens (summed). The estimate is marked
-cost_estimated true by the caller. Probe P5 (transcript usage x price) is not assumed.
+cost_estimated true by the caller. Transcript usage is priced per field (basis "usage fields x rates", see below).
 
 selftest calibrates the table against recorded runs.jsonl lines with both usage and a real cost_usd: per
 model with at least 3 such lines, the aggregate estimate must be within 35 percent of the aggregate actual.
@@ -168,6 +168,8 @@ def selftest():
                        'cache_creation_input_tokens': 60757}, 2.3025),  # R1 verifier
             ('fable', {'input_tokens': 486, 'output_tokens': 20945, 'cache_read_input_tokens': 900039,
                        'cache_creation_input_tokens': 68277}, 3.6384)]  # final-rerun verifier (cache fields equal the host's)
+    expect('docstring names the transcript label and does not call transcript pricing unassumed',
+           BASIS_USAGE in __doc__ and 'is not assumed' not in __doc__)
     for fam, u, host in live:
         e, b, _ = estimate(fam, u, table)
         expect('live %s verifier row: estimate %s vs host %.4f within 35 percent' % (fam, e, host),
