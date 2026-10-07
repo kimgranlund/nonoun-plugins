@@ -236,3 +236,5 @@
 - note: The tickets selftest now takes about 37 s, up from about 31 s at HEAD.
 
 2026-10-07: 0.21.0 published (v0.21.0, 027da15a) under the standing authorization after T-0287 live evidence (docs/reports/2026-10-07-subagent-mode-live.md) and two detached Opus fact-checks (second pass found one record omission, fixed before tagging). Open: T-0288 (retire the headless path), the account-switch spanning-run criterion of T-0287, resume ladder, background sub-agents, session-limit behavior, Codex live evidence; tickets T-0275, T-0279, T-0280, T-0284, T-0286 and T-0326 to T-0332 closed without a verifier verdict file.
+
+2026-10-07: 0.21.1 published (v0.21.1, a0692d0d) on the user's 'release 0.21.1' after five Opus fact-check passes and check.sh exit 0 on the exact tree. Includes T-0333 to T-0337, T-0339, T-0340, the docs renames and the live scout proof. Known gaps stated in docs/reports/2026-10-07-release-0-21-1.md: T-0339 covers headless fanout lane commits only (sub-agent lane commits still use git add -A); fanout.py docstring item 4, level-rubric haiku line and two report nits remain; T-0288, T-0338, T-0325 open.
