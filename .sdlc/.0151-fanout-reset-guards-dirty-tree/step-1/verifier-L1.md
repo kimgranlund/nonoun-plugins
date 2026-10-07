@@ -4,7 +4,7 @@ pass
 
 ## Criteria
 - `grep -qF 'integration dirty' plugins/sdlc-lite/scripts/fanout.py`: pass. Evidence: grep matched at fanout.py:65, :565, and in the selftest case at :1003-1009.
-- `grep -qF 'integration dirty' docs/maintenance/sdlc-internals.md`: pass. Evidence: grep exited 0 and printed `ok`. `git diff --stat` shows one line changed in that file.
+- `grep -qF 'integration dirty' docs/references/sdlc-internals.md`: pass. Evidence: grep exited 0 and printed `ok`. `git diff --stat` shows one line changed in that file.
 - `grep -qF 'integration dirty' plugins/sdlc-lite/skills/fanout/SKILL.md`: pass. Evidence: grep exited 0 and printed `ok`. `git diff --stat` shows one line changed in that file.
 - `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and its source carries the new dirty-integration case: pass. Evidence:
   - On the built tree the selftest printed `fanout selftest: PASS` and exited 0 (`selftest_rc=0`).

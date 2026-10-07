@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic checks for the docs/ folder schema (docs/docs-schema/design.md, Enforcement).
+"""Deterministic checks for the docs/ folder schema (docs/planning/docs-schema/design.md, Enforcement).
 
 Usage:
   docs_check.py [--root DIR] [--only GROUP_OR_ID[,..]] [--today YYYY-MM-DD]
@@ -11,7 +11,7 @@ Read-only: reads the target, writes nothing, calls no model. Prints one line per
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
 nine default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
-D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. The registry drift checks R-1 and R-2
+D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
 """
 import argparse
@@ -327,7 +327,8 @@ def run(root, only=None, today=None, disable=()):
                                    '%d documents and no AGENTS.md or CLAUDE.md' % count))
     if on('B-1a'):
         for rel in files:
-            if GENERATED_NAME.match(rel.rsplit('/', 1)[-1]):
+            # a report's evidence folder keeps copies of run output on purpose (the zone D-9 also treats as evidence)
+            if GENERATED_NAME.match(rel.rsplit('/', 1)[-1]) and not ('B-1a-evidence' not in disable and under(ev, rel)):
                 add('error', 'B-1a', rel, 'generated-file name under docs/; run output belongs in .sdlc/')
     if on('B-3a'):
         for rel in files:
@@ -455,8 +456,8 @@ def _cases():
         ('D-10', w('docs/specs/links.md', '[x](missing.md)\n'), 'docs/specs/links.md'),
         ('D-11', w('docs/specs/long.md', 'x\n' * 401), 'docs/specs/long.md'),
         ('D-12', w('docs/specs/Bad Name.md', '# B\n'), 'docs/specs/Bad Name.md'),
-        ('B-1a', w('docs/reports/2026-10-05-run/builder-L1-2.md', 'x\n'), 'docs/reports/2026-10-05-run/builder-L1-2.md'),
-        ('B-1a', w('docs/reports/2026-10-05-run/runs.jsonl', 'x\n'), 'docs/reports/2026-10-05-run/runs.jsonl'),
+        ('B-1a', w('docs/references/builder-L1-2.md', 'x\n'), 'docs/references/builder-L1-2.md'),
+        ('B-1a', w('docs/references/runs.jsonl', 'x\n'), 'docs/references/runs.jsonl'),
         ('B-2a', w('.sdlc/design-notes/review.md', '# R\n'), '.sdlc/design-notes/'),
         ('B-2a', w('.sdlc/stray.md', '# S\n'), '.sdlc/stray.md'),
         ('B-3a', w('docs/specs/cites.md', '[t](../../.sdlc/0001-x/handoff.md)\n'), 'docs/specs/cites.md'),
@@ -552,6 +553,15 @@ def gate_boundary(runner):
             raise GateFailure('a Legacy path was not exempted from B-3a')
         if not any(f.rule == 'B-1a' and f.path == 'docs/reports/old/builder-L1.md' for f in got):
             raise GateFailure('a Legacy path was exempted from B-1a')
+        _write(tmp, 'docs/reports/2026-10-05-run.md', '# R\n')
+        _write(tmp, 'docs/reports/2026-10-05-run/runs.jsonl', 'x\n')
+        _write(tmp, 'docs/reports/2026-10-05-run/builder-L1-2.md', '# B\n')
+        _write(tmp, 'docs/specs/runs.jsonl', 'x\n')
+        got = runner(tmp)
+        if any(f.rule == 'B-1a' and f.path.startswith('docs/reports/2026-10-05-run/') for f in got):
+            raise GateFailure('a generated name inside a report evidence folder was flagged')
+        if not any(f.rule == 'B-1a' and f.path == 'docs/specs/runs.jsonl' for f in got):
+            raise GateFailure('a generated name outside an evidence folder was not flagged')
         only = run(tmp, only={'boundary'}, today=TODAY)
         if any(f.rule.startswith('D-') for f in only) or not only:
             raise GateFailure('--only boundary did not select only B rules')
@@ -570,7 +580,8 @@ def selftest():
     gates = [('rules', gate_rules, _real, [('drops %s' % r, _without(r)) for r in sorted({c[0] for c in _cases()})]),
              ('legacy', gate_legacy, _real, [('drops D-3', _without('D-3')), ('drops D-5', _without('D-5'))]),
              ('boundary', gate_boundary, _real, [('drops B-1a', _without('B-1a')), ('drops B-3a', _without('B-3a')),
-                                                 ('drops B-2a', _without('B-2a'))]),
+                                                 ('drops B-2a', _without('B-2a')),
+                                                 ('flags an evidence folder', lambda root: run(root, today=TODAY, disable=('B-1a-evidence',)))]),
              ('read-only', gate_read_only, _real, [])]
     for name, gate, real, defects in gates:
         problems = []

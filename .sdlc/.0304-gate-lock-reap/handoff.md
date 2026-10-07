@@ -15,7 +15,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Requirements
 - `gate_lock.py reap [--older-than MIN] [--kill]` lists processes matching chrome-headless-shell, chromium (Chromium/Chrome for Testing), playwright, and vite preview whose parent pid is 1 or no longer exists and whose age exceeds the threshold (default 30 min). Default prints the list and kills nothing. `--kill` TERMs (then KILLs after 2 s) only those, printing each pid it stops. A process with a live parent is never listed as killable and never killed.
-- docs/maintenance/sdlc-internals.md `gate_lock.py` entry gets one sentence.
+- docs/references/sdlc-internals.md `gate_lock.py` entry gets one sentence.
 
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0 with reap cases using a fake orphan (a process named to match, reparented to pid 1 by double fork or a dead parent, age threshold set to 0): listed by default and still alive, killed by `--kill`; a matching process with a live parent is neither listed killable nor killed.

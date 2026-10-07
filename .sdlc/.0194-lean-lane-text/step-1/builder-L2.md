@@ -4,14 +4,14 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/steps.py`: added `lean_warnings(plan, task_dir, steps)`. `cmd_lint` now prints its warnings on stderr after a clean lint. The lint docstring entry is extended, an argparse epilog holding the literal `steps lint: warning:` was added, and there are four new `(lean)` selftest cases.
-- `docs/maintenance/sdlc-internals.md`: added one parenthetical to the `lint` sentence naming `steps lint: warning:`, the eligibility conditions and both triggers.
+- `docs/references/sdlc-internals.md`: added one parenthetical to the `lint` sentence naming `steps lint: warning:`, the eligibility conditions and both triggers.
 
 ## Checks
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest`: rc 0, `steps selftest: PASS`. All four `ok: (lean) ...` labels are present (each label checked with `grep -qF`, all 0).
 - Criterion 5 (one-step L1 plan in `planner-L2.md`, lint stderr holds `steps lint: warning:`): 0.
 - Criterion 6 (guard: lint stdout is exactly `steps lint: ok`): 0.
 - Criterion 7 (`steps.py -h | grep -qF "steps lint: warning:"`): failed (1) on the first try, then 0 after adding the epilog. Also 0 with `COLUMNS=40`.
-- Criterion 8 (`grep -qF "steps lint: warning:" docs/maintenance/sdlc-internals.md`): 0.
+- Criterion 8 (`grep -qF "steps lint: warning:" docs/references/sdlc-internals.md`): 0.
 - Criterion 9 (guard: scope limited to the two files, against `SDLC_BASE_SHA=99d29b8`): 0.
 - `git diff --check`: clean.
 

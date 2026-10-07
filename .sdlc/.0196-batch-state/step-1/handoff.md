@@ -47,7 +47,7 @@ Implementation targets:
    - `steps.py next`/`resume` treat a listed, unchanged step as verified, and `board.py` renders it.
    - The exclusions above, and the newest-listing rule.
    - Undeclared headings are fine because `results.structure_error` ignores them (docs/maintenance/sdlc-internals.md:15).
-6. In `docs/maintenance/sdlc-internals.md`, in the `scripts/steps.py` entry's `next` description, add the same rule in one clause naming `## Verified`.
+6. In `docs/references/sdlc-internals.md`, in the `scripts/steps.py` entry's `next` description, add the same rule in one clause naming `## Verified`.
 
 Left untouched on purpose:
 - `agents/verifier.md`, `agents/conductor.md` and `skills/chain`: teaching the conductor to batch and the verifier to emit the listing belongs to design row L7 (T-0192 conductor-rules, design.md:236).
@@ -69,5 +69,5 @@ If the rule grows past one function plus one call site, stop with builder Status
 - `t=$(mktemp -d) && S=plugins/sdlc-lite/scripts/steps.py && mk(){ mkdir -p $t/$1 && printf "## Step 1: %s\nlevel: L2\n" "$3" > $t/$1/handoff.md && printf "\074!-- role=builder level=L%s model=opus effort=low -->\n## Status\ndone\n" "$2" > $t/$1/builder-L$2$4.md; } && vf(){ printf "\074!-- role=verifier level=L3 model=fable effort=xhigh -->\n## Verdict\npass\n\n## Verified\n" > $t/verifier-L3.md && for p in "$@"; do printf -- "- %s\n" "$p" >> $t/verifier-L3.md; done; } && mk step-1 2 a && mk step-2 2 b && vf step-1/builder-L2.md step-2/builder-L2.md && test "$(python3 $S resume $t | head -2 | tr "\n" " ")" = "$t/step-2 verify L1 "`
 - `t=$(mktemp -d) && S=plugins/sdlc-lite/scripts/steps.py && mk(){ mkdir -p $t/$1 && printf "## Step 1: %s\nlevel: L2\n" "$3" > $t/$1/handoff.md && printf "\074!-- role=builder level=L%s model=opus effort=low -->\n## Status\ndone\n" "$2" > $t/$1/builder-L$2$4.md; } && vf(){ printf "\074!-- role=verifier level=L3 model=fable effort=xhigh -->\n## Verdict\npass\n\n## Verified\n" > $t/verifier-L3.md && for p in "$@"; do printf -- "- %s\n" "$p" >> $t/verifier-L3.md; done; } && mk step-1 2 a && mk step-2 2 b && mk step-3 2 c && mkdir $t/step-2.superseded-1 && vf step-1/builder-L2.md step-2/builder-L2.md && test "$(python3 $S resume $t | head -2 | tr "\n" " ")" = "$t/step-2 verify L1 "`
 - `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest) && printf "%s\n" "$out" | grep -qF "ok: next batch:"`
-- `for f in plugins/sdlc-lite/scripts/steps.py plugins/sdlc-lite/skills/handoff-format/SKILL.md docs/maintenance/sdlc-internals.md; do grep -qF "## Verified" "$f" || exit 1; done`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/maintenance/sdlc-internals.md | grep -q .`
+- `for f in plugins/sdlc-lite/scripts/steps.py plugins/sdlc-lite/skills/handoff-format/SKILL.md docs/references/sdlc-internals.md; do grep -qF "## Verified" "$f" || exit 1; done`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/references/sdlc-internals.md | grep -q .`

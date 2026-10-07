@@ -20,7 +20,7 @@ Writers: plugins/sdlc-lite/scripts/run.sh (`<role>-<level>.limit`, hint `run.sh:
 - [ ] `bash plugins/sdlc-lite/scripts/run-selftest.sh` case `session limit` has a variant whose log prints `resets 1:40pm`: the marker JSON has reset `1:40pm` and the stderr hint contains `resets 1:40pm`; the plain-failure and no-reset controls are unchanged.
 - [ ] `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` exits 0 with the same reset case for `solo.limit`.
 - [ ] Negative control shown once for one writer: without the reset parse the new case fails.
-- [ ] docs/maintenance/sdlc-internals.md `run.sh` and `solo_run.py` session-limit sentences mention the reset time.
+- [ ] docs/references/sdlc-internals.md `run.sh` and `solo_run.py` session-limit sentences mention the reset time.
 
 ## Closed
 

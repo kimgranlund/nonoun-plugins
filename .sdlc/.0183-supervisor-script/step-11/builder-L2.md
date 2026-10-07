@@ -8,7 +8,7 @@ inherited red: traces selftest (corpus: attempts in no row: .sdlc/0183-superviso
 - plugins/sdlc-lite/AGENTS.md: added a Behavioral invariants bullet saying the supervisor never claims, moves, or reads a message body, and that a wake follows unattended-run rules.
 
 ## Checks
-- `grep -q 'scripts/supervisor.py' docs/maintenance/sdlc-internals.md`: pass
+- `grep -q 'scripts/supervisor.py' docs/references/sdlc-internals.md`: pass
 - `grep -q '.sdlc/supervisor/' plugins/sdlc-lite/skills/handoff-format/SKILL.md`: pass
 - `grep -q 'supervisor' plugins/sdlc-lite/AGENTS.md`: pass
 - (guard) em dash grep on sdlc-internals.md: pass. The other two files have no em dash either.

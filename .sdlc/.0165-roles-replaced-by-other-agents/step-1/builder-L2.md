@@ -17,5 +17,5 @@ done
 - `git diff --check`: clean.
 
 ## Notes
-- `.sdlc/0160-repo-onboarding-skill/handoff.md` and `docs/repo-onboarding/design.md` were already modified before this step and are not my changes. I left them alone.
+- `.sdlc/0160-repo-onboarding-skill/handoff.md` and `docs/specs/repo-onboarding/design.md` were already modified before this step and are not my changes. I left them alone.
 - For the red-before run I temporarily put the HEAD conductor.md in place. My temporary backup copy failed, so I reapplied the conductor edits with the same script and regenerated the Codex TOML afterwards. The final tree has the new text, and every check above passes on it.

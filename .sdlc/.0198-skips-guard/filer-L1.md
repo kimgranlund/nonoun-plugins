@@ -19,7 +19,7 @@ T-0198: skips.md guard in tickets.py check and close
   - `cmd_close` runs it right after the existing `status == 'done'` refusal and before any write. It covers the plain, `--reason`, `--ack-warnings` and `--dry-run` paths. The existing refusals are unchanged.
   - A new `(skips)` selftest block with 11 cases, plus docstring sentences for `check` and `close`.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: the Layout `skips.md` line now covers `## Skipped` and gives the entry format. This is the one place the format is written out.
-- `docs/maintenance/sdlc-internals.md`: one sentence on the guard and its exemption.
+- `docs/references/sdlc-internals.md`: one sentence on the guard and its exemption.
 
 Exemption: a ticket is exempt when it has no `skips.md`, no `## Lane` section, no `- lane:` line, or a last lane of `full`. The planner read "closed before the guard's introduction marker" as "has no lane record". A plain close writes no close date, so a date marker could not be derived. No existing ticket has a `skips.md`, so the 214 tickets stay green.
 

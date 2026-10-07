@@ -20,7 +20,7 @@ pass
   - `git diff --check -- docs/` is clean.
 
 ## Out of scope changes
-None outside `.sdlc/`. The docs diff is only `docs/ticket-stages/watcher-design.md` and `docs/reports/idle-host-watcher-design-review.md`. The `.sdlc` changes (`runs.jsonl` and the untracked step and plan artifacts) are run records and are excluded by the scope guard. The extra "Status fields" row in the D20 table is within the design doc and the builder disclosed it.
+None outside `.sdlc/`. The docs diff is only `docs/planning/ticket-stages/watcher-design.md` and `docs/reports/idle-host-watcher-design-review.md`. The `.sdlc` changes (`runs.jsonl` and the untracked step and plan artifacts) are run records and are excluded by the scope guard. The extra "Status fields" row in the D20 table is within the design doc and the builder disclosed it.
 
 ## For the next attempt
 None

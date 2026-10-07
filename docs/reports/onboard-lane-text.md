@@ -4,7 +4,7 @@ Recorded: 2026-10-05. Ticket T-0228. Branch `onboard-lane`.
 
 ## What changed
 
-The root entry block that `onboard.py setup` writes into a repository's `AGENTS.md` told a harness to run work through `/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`. That contradicted the lane rule this repository ships. The line (`plugins/sdlc-lite/scripts/onboard.py`, `ROOT_AGENTS_TEMPLATE`, and its copy in `docs/repo-onboarding/design.md`) now reads:
+The root entry block that `onboard.py setup` writes into a repository's `AGENTS.md` told a harness to run work through `/sdlc-lite:chain`, `/sdlc-lite:fix`, or `/sdlc-lite:build`. That contradicted the lane rule this repository ships. The line (`plugins/sdlc-lite/scripts/onboard.py`, `ROOT_AGENTS_TEMPLATE`, and its copy in `docs/specs/repo-onboarding/design.md`) now reads:
 
 > Pick the lane first with `steps.py lane <task dir>` (in the plugin's `scripts/` folder): `solo` is the default for size S and M, `/sdlc-lite:fix` runs only when asked or when the lane script prints `fix`, and the full chain (`/sdlc-lite:chain`) needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). Roles launch with `run.sh`. Do not spawn another plugin's builder, planner, or reviewer agent in their place.
 

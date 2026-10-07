@@ -10,7 +10,7 @@ pass
   - Base `run.sh` with the new selftest gave rc=1 and `run selftest: FAIL: self-edit: stdout is '', want '.../erepo/planner-L3.md'`. The criterion's final test then exited 0.
   - The base tree's only diff was the copied selftest, and the worktree was removed afterwards.
   - Green on the built tree (criterion 2) and red on base together show the case can go red, and that the `{ ... }` wrap is the variable that fixes it.
-- `grep -qF 'edits run.sh while it runs' docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. The sentence sits in the `scripts/run.sh` entry and says the whole body is parsed first, the process keeps its behavior, and it still saves its result.
+- `grep -qF 'edits run.sh while it runs' docs/references/sdlc-internals.md`: pass. Evidence: exit 0. The sentence sits in the `scripts/run.sh` entry and says the whole body is parsed first, the process keeps its behavior, and it still saves its result.
 - `git diff --check "$SDLC_BASE_SHA" -- <the three files>`: pass. Evidence: exit 0 with no output.
 - Wiring and assertions in the diff:
   - `run.sh` wraps everything after `set -euo pipefail` in `{ ... }` ending `exit 0` and a closing brace, plus a "Self-edit:" header paragraph.

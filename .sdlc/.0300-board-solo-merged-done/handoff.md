@@ -19,7 +19,7 @@ Maison T-0039, T-0043, T-0036: the board row for a merged solo lane read "built,
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/board.py selftest` exits 0 with a new case reproducing the stale row (red before the fix, shown once) and asserting the row reads done or closed after.
 - [ ] A solo ticket that is built but not closed still reads as before (control case in the selftest).
-- [ ] docs/maintenance/sdlc-internals.md Feed entry states the rule in one sentence.
+- [ ] docs/references/sdlc-internals.md Feed entry states the rule in one sentence.
 
 ## Closed
 

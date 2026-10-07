@@ -33,6 +33,6 @@ done
 
 ## Notes
 - One behavior change comes from step 1's schema, not from this step. An `inherited red:` value now has to match `inherited red: .+` exactly. The old prefix check also accepted a bare `inherited red:` or `inherited red:x` with no space; both now read as statusless or no verdict. No existing fixture used those forms.
-- Docs that describe the next and review actions (`docs/maintenance/sdlc-internals.md`, the `/chain` skill) were not touched, because they are outside this step's scope guard. Step 5 owns them.
+- Docs that describe the next and review actions (`docs/references/sdlc-internals.md`, the `/chain` skill) were not touched, because they are outside this step's scope guard. Step 5 owns them.
 - `lint`, `board.py`, `traces/sources/results.py`, and the other traces readers were left unchanged, as the handoff says.
 - No commit was made. The changes to check.py, check.sh, run.sh, and run-selftest.sh in the tree come from step 2, not this step.

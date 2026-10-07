@@ -30,6 +30,6 @@ The Codex transport records raw events plus one normalized final result. Missing
 
 Codex's sandbox is not a port of Claude's command hooks. Publishing restrictions, formatting scope, and process ownership are role instructions. Read-only roles may be unable to run tests requiring writes; they must report the limitation. Architect receives workspace-write for its decomposition artifacts, while its instructions prohibit implementation changes. No automatic permission escalation is used. Direct in-session agents also inherit live parent permission overrides as documented by Codex.
 
-See [native execution and validation](../../docs/codex-role-execution.md).
+See [native execution and validation](../../docs/references/codex-role-execution.md).
 
 No extra network or Codex-home write access is added to the conductor sandbox. Benchmark launchers return nonzero when a conductor process fails. Native exchange failures and malformed reports are tested separately from model verdicts.

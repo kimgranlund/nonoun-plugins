@@ -7,7 +7,7 @@ T-0160: Add the `onboard` skill for entry files, docs layout, and check mode
 
 ## PR body
 ### Summary
-A repository adopting SDLC Lite can run one script to get entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout. Anything the repository already wrote in those files stays as it was. This implements `docs/repo-onboarding/design.md` v0.7, including the role routing line in the root managed block. All six steps have a verifier verdict of pass.
+A repository adopting SDLC Lite can run one script to get entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout. Anything the repository already wrote in those files stays as it was. This implements `docs/specs/repo-onboarding/design.md` v0.7, including the role routing line in the root managed block. All six steps have a verifier verdict of pass.
 
 ### Changes
 - `plugins/sdlc-lite/scripts/onboard.py` (new, standard library only, run on Python 3.9.6):
@@ -21,9 +21,9 @@ A repository adopting SDLC Lite can run one script to get entry files that route
 - `plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`: a route table row for `onboard`.
 - `plugins/sdlc-lite/scripts/check.sh`: runs the `onboard.py` selftest.
 - `plugins/progressive-context/skills/progressive-context/references/sdlc-lite.md`: one sentence that names the `onboard` skill, with no path link.
-- `docs/repo-onboarding/design.md` and `docs/repo-onboarding/README.md`: the status now says the design is implemented and the reorganization is not.
+- `docs/specs/repo-onboarding/design.md` and `docs/specs/repo-onboarding/README.md`: the status now says the design is implemented and the reorganization is not.
 - `docs/AGENTS.md` template (design and script): links an existing `docs/README.md` first under `## Contents`, and adds no line when it does not exist. `TEMPLATE_VERSION` stays 1.
-- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
+- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/specs/repo-onboarding/README.md`: the dated live run report.
 
 ### How each was verified
 - Selftest: `onboard.py selftest` exits 0 and prints eight gates, each `positive ok, negative ok`: layout-parsing, import-detection, create, preserve, idempotence, row-order, malformed-markers, and check-mode.

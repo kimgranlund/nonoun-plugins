@@ -21,4 +21,4 @@ done
 - `git diff --check`: clean.
 
 ## Notes
-The work tree also has changes this step did not make, left untouched: `scripts/steps.py`, `docs/maintenance/sdlc-internals.md` and the task handoff. They appear to be step 1's work.
+The work tree also has changes this step did not make, left untouched: `scripts/steps.py`, `docs/references/sdlc-internals.md` and the task handoff. They appear to be step 1's work.

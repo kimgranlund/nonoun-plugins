@@ -20,7 +20,7 @@ pass
   - The `scope widened:` and `scope decision:` wording matches the Do.
 
 ## Out of scope changes
-None from this step. `scripts/steps.py`, `docs/maintenance/sdlc-internals.md` and the task handoff also show as modified. The builder's notes attribute them to step 1, and `check.py` passing confirms `steps.py` now contains the `steps.py widen` string that the new `PLAN_DEFECT_DOCS` entry requires. I did not check whether these files fall within step 1's scope.
+None from this step. `scripts/steps.py`, `docs/references/sdlc-internals.md` and the task handoff also show as modified. The builder's notes attribute them to step 1, and `check.py` passing confirms `steps.py` now contains the `steps.py widen` string that the new `PLAN_DEFECT_DOCS` entry requires. I did not check whether these files fall within step 1's scope.
 
 ## For the next attempt
 None

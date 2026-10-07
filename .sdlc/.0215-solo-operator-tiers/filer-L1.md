@@ -29,7 +29,7 @@ Tiers M and L end with one independent batched verifier on a different model fam
 - `scripts/steps.py`: before planning, S and M give `solo`. The help text, docstring and selftest cases are updated.
 - `scripts/check.py`: new item 17 covers the solo agent file, the `solo` models.json entry and the three TOMLs, with negative controls. `solo` is excluded from the run.sh agreement check like conductor and messenger.
 - `agents/conductor.md`: one lane-choice line. T-0199 will reconcile it later.
-- `plugins/sdlc-lite/AGENTS.md` and `docs/maintenance/sdlc-internals.md`: session-agents sentence, lane text, and a new `solo` entry.
+- `plugins/sdlc-lite/AGENTS.md` and `docs/references/sdlc-internals.md`: session-agents sentence, lane text, and a new `solo` entry.
 - `.sdlc/evals/0001-solo-tiers.md` and `table-lock.json`: new eval for the T-0185 model-table rule, then relocked. The eval records a user decision with no experiment (pass_rate 0/0, cost unknown).
 
 ### Verification

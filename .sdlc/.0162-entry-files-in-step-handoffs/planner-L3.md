@@ -22,14 +22,14 @@ Add selftest case (r). It uses a temp git repo so the toplevel base is exercised
 - `(r) lint refuses a ### Read first path that does not exist`
 - `(r) split copies ### Read first into the step handoff`
 
-In `docs/maintenance/sdlc-internals.md`, add the `### Read first` path check to the `scripts/steps.py` entry. That keeps the reference current.
+In `docs/references/sdlc-internals.md`, add the `### Read first` path check to the `scripts/steps.py` entry. That keeps the reference current.
 ### Acceptance criteria
 - ``d=$(mktemp -d) && git -C "$d" init -q && mkdir -p "$d/sub" "$d/.sdlc/t" && touch "$d/sub/AGENTS.md" && printf '## Step 1: x\nlevel: L1\n### Read first\n- `sub/AGENTS.md`\n### Do\nd\n### Acceptance criteria\n- ok\n' > "$d/.sdlc/t/ok.md" && sed "s#sub/AGENTS#gone/AGENTS#" "$d/.sdlc/t/ok.md" > "$d/.sdlc/t/bad.md" && python3 plugins/sdlc-lite/scripts/steps.py lint "$d/.sdlc/t/ok.md" && { python3 plugins/sdlc-lite/scripts/steps.py lint "$d/.sdlc/t/bad.md" > "$d/out" 2>&1; test $? -eq 1; } && grep -qF gone/AGENTS.md "$d/out" && grep -qF "plan defect" "$d/out"``
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) lint accepts a ### Read first path that exists'`
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) lint refuses a ### Read first path that does not exist'`
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) split copies ### Read first into the step handoff'`
 - `grep -qF '### Read first' plugins/sdlc-lite/scripts/steps.py`
-- `grep -qF 'Read first' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'Read first' docs/references/sdlc-internals.md`
 
 ## Step 2: Planner writes the subsection; builder and verifier read it
 level: L2
@@ -96,7 +96,7 @@ Each miss is reported as `FAIL <rel>: read-first route missing "Read first"`. Ad
 ## Step 5: Live run on Claude Code and Codex
 level: L3
 ### Do
-Read `AGENTS.md` and `docs/codex-role-execution.md` first. Use `docs/reports/onboard-live-run.md` as the model for the report.
+Read `AGENTS.md` and `docs/references/codex-role-execution.md` first. Use `docs/reports/onboard-live-run.md` as the model for the report.
 
 This replaces the blocked first attempt, `.sdlc/0162-entry-files-in-step-handoffs/step-5.superseded-1/builder-L3.md`. That attempt got seven of the eight arms. The Codex verifier failed because it resolved to `gpt-6-sol`. T-0163 has since mapped every Codex level to `gpt-6-astra` in `plugins/sdlc-lite/adapters/codex/models.json` and left `verifier_alternates` empty. The Codex verifier now keeps the builder's model, and `run.sh` records `shared_with_builder=yes` in the verifier result header and `"shared_with_builder": true` in `runs.jsonl`.
 
@@ -142,11 +142,11 @@ Write `docs/reports/entry-files-live-run.md` with:
 
 Record what actually happened. A `no` stays a `no`. If a host cannot run, Status is blocked with the evidence, and nothing is fabricated.
 
-Add a link line for the report to `docs/README.md`, next to the onboard live run line. Link the report from the "How roles reach an entry" section of `docs/repo-onboarding/design.md`. Transcripts and role logs stay out of the repository.
+Add a link line for the report to `docs/README.md`, next to the onboard live run line. Link the report from the "How roles reach an entry" section of `docs/specs/repo-onboarding/design.md`. Transcripts and role logs stay out of the repository.
 ### Acceptance criteria
 - `test -f docs/reports/entry-files-live-run.md`
 - `grep -qF 'validation/entry-files-live-run.md' docs/README.md`
-- `grep -qF 'entry-files-live-run.md' docs/repo-onboarding/design.md`
+- `grep -qF 'entry-files-live-run.md' docs/specs/repo-onboarding/design.md`
 - `grep -qF '| Host | Arm | Result | Evidence |' docs/reports/entry-files-live-run.md`
 - `for h in "Claude Code" Codex; do for a in "handoff lists the entry" "builder read the entry" "verifier read the entry" "root-only step has no Read first"; do grep -qF "| $h | $a | yes |" docs/reports/entry-files-live-run.md || exit 1; done; done`
 - `grep -qF 'gpt-6-astra' docs/reports/entry-files-live-run.md`

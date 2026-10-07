@@ -16,4 +16,4 @@ done
 - `git diff --check`: clean.
 
 ## Notes
-`docs/maintenance/sdlc-internals.md` was already modified in the working tree when this step started, most likely by step 1. This step did not touch it.
+`docs/references/sdlc-internals.md` was already modified in the working tree when this step started, most likely by step 1. This step did not touch it.

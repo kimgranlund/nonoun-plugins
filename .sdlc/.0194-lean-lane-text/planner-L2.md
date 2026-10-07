@@ -7,7 +7,7 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Targets are `plugins/sdlc-lite/scripts/steps.py` (a new function `lean_warnings(plan, task_dir, steps)`, `cmd_lint`, the lint entry of the module docstring, and `selftest`) and `docs/maintenance/sdlc-internals.md` (the `## scripts/steps.py` paragraph, in the sentence ``lint <planner.md | task dir>` runs the same check and writes nothing``).
+Targets are `plugins/sdlc-lite/scripts/steps.py` (a new function `lean_warnings(plan, task_dir, steps)`, `cmd_lint`, the lint entry of the module docstring, and `selftest`) and `docs/references/sdlc-internals.md` (the `## scripts/steps.py` paragraph, in the sentence ``lint <planner.md | task dir>` runs the same check and writes nothing``).
 
 Settled decisions:
 - **Eligibility.** A plan is eligible ("meets the lean plan conditions") only when all of these hold. Each one reuses an existing helper, so the facts stay where they already live.
@@ -43,8 +43,8 @@ Depends on: none. Focused check: `python3 plugins/sdlc-lite/scripts/steps.py sel
 - `d=$(mktemp -d) && printf "## Step 1: a\nlevel: L1\n### Acceptance criteria\n- x\n" > "$d/planner-L2.md" && python3 plugins/sdlc-lite/scripts/steps.py lint "$d" 2>&1 >/dev/null | grep -qF "steps lint: warning:"`
 - (guard) `d=$(mktemp -d) && printf "## Step 1: a\nlevel: L1\n### Acceptance criteria\n- x\n" > "$d/planner-L2.md" && out=$(python3 plugins/sdlc-lite/scripts/steps.py lint "$d" 2>/dev/null) && test "$out" = "steps lint: ok"`
 - `python3 plugins/sdlc-lite/scripts/steps.py -h | grep -qF "steps lint: warning:"`
-- `grep -qF "steps lint: warning:" docs/maintenance/sdlc-internals.md`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/maintenance/sdlc-internals.md | grep -q .`
+- `grep -qF "steps lint: warning:" docs/references/sdlc-internals.md`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/references/sdlc-internals.md | grep -q .`
 
 ## Step 2: Lean chain text, coarse-step rule, check.py guard, regenerate, gates green
 level: L2
@@ -91,7 +91,7 @@ Depends on: step 1, which provides the `steps lint: warning:` text that the guar
 - `grep -qF "independently verifiable outcome" plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" && python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace(\"independently verifiable outcome\", \"\"))" "$t/p/agents/planner.md" && ! python3 plugins/sdlc-lite/scripts/check.py "$t/p"`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" && python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace(\"## Lean chain\", \"\"))" "$t/p/skills/chain/SKILL.md" && ! python3 plugins/sdlc-lite/scripts/check.py "$t/p"`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
 - (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(plugins/sdlc-lite/agents/planner\.md|plugins/sdlc-lite/skills/chain/SKILL\.md|plugins/sdlc-lite/scripts/check\.py|plugins/sdlc-lite/scripts/steps\.py|docs/maintenance/sdlc-internals\.md|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`

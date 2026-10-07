@@ -88,13 +88,13 @@ Depends on: step 1.
    - Under Host limits, note that on Claude Code `wait` is one foreground Bash call and needs no Monitor.
    - Keep the words `check.py` `MESSENGER_WORDS` pins (`model: claude-haiku-4-5`, `messages.py`, `.sdlc/messages/AGENTS.md`).
 4. Run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` to regenerate `plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml`. Never edit it by hand.
-5. `docs/maintenance/sdlc-internals.md`, the `scripts/messages.py` entry:
+5. `docs/references/sdlc-internals.md`, the `scripts/messages.py` entry:
    - Add `` `wait` `` to the subcommand list, with its output, exit 3 on timeout, the defaults and ranges, that it skips an invalid file, and that it never claims.
    - Add the seven wait selftest cases to the coverage sentence.
-6. `docs/ticket-stages/design.md`:
+6. `docs/specs/ticket-stages/design.md`:
    - In the Host limits bullet, add that `messages.py wait` is one blocking call a parent can make instead of a polling subagent, and that it still does not wake an idle host.
    - In the line-77 Status paragraph, add that T-0181 built `messages.py wait`.
-7. `docs/codex-role-execution.md` line 27 is left unchanged on purpose. It describes the messenger's polling and host limits, which stay true, and the handoff does not list it.
+7. `docs/references/codex-role-execution.md` line 27 is left unchanged on purpose. It describes the messenger's polling and host limits, which stay true, and the handoff does not list it.
 
 Focused checks: messages selftest, tickets selftest, `codex_roles.py generate --check`.
 ### Acceptance criteria
@@ -104,9 +104,9 @@ Focused checks: messages selftest, tickets selftest, `codex_roles.py generate --
 - `grep -qF "messages.py wait --receiver <harness>" plugins/sdlc-lite/agents/messenger.md`
 - `grep -qF "messages.py wait --receiver <harness>" plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml`
 - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- `grep -qF "\`wait\`" docs/maintenance/sdlc-internals.md`
-- `grep -qF "messages.py wait" docs/ticket-stages/design.md`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py)"`
+- `grep -qF "\`wait\`" docs/references/sdlc-internals.md`
+- `grep -qF "messages.py wait" docs/specs/ticket-stages/design.md`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py)"`
 
 ## Step 3: Live proof of wait on Claude Code and Codex
 level: L3
@@ -151,7 +151,7 @@ Depends on: steps 1 and 2.
 - `f=docs/reports/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
 - `grep -qF "validation/messages-wait-live-run.md" docs/README.md`
 - `! grep -rqF "—" docs/reports/messages-wait-live-run.md docs/reports/messages-wait-live-run/probe.py`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Step 4: Gates green
 level: L2

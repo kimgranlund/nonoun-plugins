@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/fanout.py`: runs `bash <SCRIPTS>/reap-tmp-worktrees.sh <lane worktree>` right after the driver returns, ignoring its exit code. This happens before `inherited_red` and before any `git add -A` or wip commit. Module docstring step 2 now describes it. Added `REAP_STUB` and selftest case 10, `lane tmp prefix reaped`.
-- `docs/maintenance/sdlc-internals.md`: the fanout paragraph gets one clause about the per-driver lane reap.
+- `docs/references/sdlc-internals.md`: the fanout paragraph gets one clause about the per-driver lane reap.
 
 ## Checks
 - Red run: I disabled the reaper call by turning it into `if 0: subprocess.run(...)` and ran `python3 plugins/sdlc-lite/scripts/fanout.py selftest`. It exited 1:

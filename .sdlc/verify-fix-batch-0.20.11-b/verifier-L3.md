@@ -31,7 +31,7 @@ pass
     - Stale lock with a dead pid: rc=0, one record added, lock absent.
   - **Before picture, 3482207 script, same harness.** `timeout: sleep=ALIVE`; SIGTERM and SIGHUP: `sleep=ALIVE stub=ALIVE`; second run `STILL RUNNING after 8s (not refused)`, sessions 1 to 2. SIGINT is not a clean comparison there: a background launch ignores INT. My first harness pass signalled a bash subshell instead of the wrapper (visible as a pid mismatch); I discarded it and reran.
   - **Note, not a fail.** Two SIGTERMs 0.5 s apart with a child that ignores TERM: `wrapper rc=1 sleep=ALIVE stub=ALIVE lock=absent`, stderr ends `__main__.Stopped: 15`. `on_signal` (`solo_run.py:298-299`) raises again while `kill_group` (`:222`) runs inside `except Stopped` (`:335`), so KILL is never sent. Steelman: the handoff and ticket name one signal, and the single-signal case passed even with a TERM-ignoring child. Follow-up candidate.
-  - **Ticket doc lines** in `docs/maintenance/sdlc-internals.md`: 11 (run.sh `reset`), 31 (`## Feed`, the T-0300 rule), 67 (bare ids), 106 (process group, lock, `solo.limit` reset). Each still greps 1 at 2cd5342.
+  - **Ticket doc lines** in `docs/references/sdlc-internals.md`: 11 (run.sh `reset`), 31 (`## Feed`, the T-0300 rule), 67 (bare ids), 106 (process group, lock, `solo.limit` reset). Each still greps 1 at 2cd5342.
   - **Dependents.**
     - `.limit` marker: `git grep` for `resume with`, `session limit`, `.limit`, `solo.limit` outside `run.sh`, `solo_run.py`, and `run-selftest.sh` returned nothing in `plugins/` and `scripts/`, so the added `reset` key has no reader.
     - `plan_check.py selftest`: `PASS (46 checks)`. `plan_check.py:253` still requires the `T-` prefix, stricter than fanout; nothing breaks.

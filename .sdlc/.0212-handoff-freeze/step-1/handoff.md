@@ -5,9 +5,9 @@ T-0212 handoff freeze, WARN mode (user decision): record a handoff's hash at rol
 level: L3
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
-- `docs/maintenance/claude-hooks.md` (section `hooks/warn-handoff-edit.sh`)
+- `docs/references/claude-hooks.md` (section `hooks/warn-handoff-edit.sh`)
 ### Do
-Built directly (no builder role) against the base commit in `base-sha`: `run_lifecycle.py` (handoff_sha256 in the attempt record, SDLC_HANDOFF_SHA256 in the child env), `run.sh` (rehash before the jq append, `handoff_sha256` and `stale_input` on the run line, stderr `run.sh: stale input: <handoff> changed while <role> ran`, exit code unchanged), new `hooks/warn-handoff-edit.sh` registered under `Edit|Write|NotebookEdit` in `adapters/claude/hooks.json`, selftests in `run-selftest.sh` and `hook-selftest.sh`, `check.py` item 18, `docs/maintenance/claude-hooks.md`, and `docs/reports/handoff-freeze-live-run.md`.
+Built directly (no builder role) against the base commit in `base-sha`: `run_lifecycle.py` (handoff_sha256 in the attempt record, SDLC_HANDOFF_SHA256 in the child env), `run.sh` (rehash before the jq append, `handoff_sha256` and `stale_input` on the run line, stderr `run.sh: stale input: <handoff> changed while <role> ran`, exit code unchanged), new `hooks/warn-handoff-edit.sh` registered under `Edit|Write|NotebookEdit` in `adapters/claude/hooks.json`, selftests in `run-selftest.sh` and `hook-selftest.sh`, `check.py` item 18, `docs/references/claude-hooks.md`, and `docs/reports/handoff-freeze-live-run.md`.
 ### Acceptance criteria
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh` prints `run selftest: PASS`.
 - `bash plugins/sdlc-lite/scripts/hook-selftest.sh` prints `hook selftest: PASS`.

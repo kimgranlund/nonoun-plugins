@@ -1,7 +1,7 @@
 <!-- role=architect level=L1 model=fable effort=high -->
 ## Approach
 
-The handoff is a review brief, not a build brief: fact-check `docs/generative-constructs/progressive-context-gap-analysis.md` (150 lines, HEAD 61404dd) against its own citations. The design question is how to make that review independent and reproducible rather than a second reading of the same prose. The outside-in plane groups the analysis by source family (Progressive Context skill files, the proposal set, validation and `.sdlc` records, SDLC Lite code and onboarding docs, `docs/docs-schema/design.md`, outside-repo sources), plus the label audit, the score arithmetic, the cross-check list, the ranked list, repository-state claims, format, and the review record. The inside-out plane was taken from the handoff's six numbered checks, not from the analysis's headings, plus two it implies: claims about repository state (tickets filed, files present, links resolving) and the shifted README line numbers. The manifest crosses clean in strict plan mode (14 nodes, 16 actions, 26 hosts, 13 edges).
+The handoff is a review brief, not a build brief: fact-check `docs/specs/generative-constructs/progressive-context-gap-analysis.md` (150 lines, HEAD 61404dd) against its own citations. The design question is how to make that review independent and reproducible rather than a second reading of the same prose. The outside-in plane groups the analysis by source family (Progressive Context skill files, the proposal set, validation and `.sdlc` records, SDLC Lite code and onboarding docs, `docs/planning/docs-schema/design.md`, outside-repo sources), plus the label audit, the score arithmetic, the cross-check list, the ranked list, repository-state claims, format, and the review record. The inside-out plane was taken from the handoff's six numbered checks, not from the analysis's headings, plus two it implies: claims about repository state (tickets filed, files present, links resolving) and the shifted README line numbers. The manifest crosses clean in strict plan mode (14 nodes, 16 actions, 26 hosts, 13 edges).
 
 I ran the review itself as the verification of the design's load-bearing assumptions, since every finding depends on what the sources actually say. Every `path:line` in the analysis was opened with `sed -n`; the count is about 60 distinct citations in 94 backticked path strings. The result is written to `.sdlc/0247-pc-gap-analysis/review/decompose/report.md` in the handoff's shape (Verdict, Findings, Missed gaps). Verdict: fail, on three factual errors that mislead, each a small edit: the tier arithmetic (eleven tiers scored, 16 of 33, not "ten" and "of 30"; the 36-point scaling is derived from the wrong max against a rubric with 13 `## T` headings), the "tickets filed" sentence (no ticket above 0247 exists), and cross-check item (c) plus R1's rationale, which ask to build a drift check that `onboard.py check` already performs for `docs/AGENTS.md`. Eleven minor findings cover citation precision (README lines shifted by two by the analysis's own commit 881808d, a wrong line range in `04-context-and-harness.md`, a commit subject cited where `design.md:104` says it directly), labels ([E] defined and never used; the rubric at an absolute path outside the repo is labeled [O]), and overstatements ("some runs" from one run's limit). Scores, the tier map, and the what-not-to-build list otherwise hold against the cited material.
 
@@ -12,7 +12,7 @@ The remaining work is one builder step on the analysis file applying the fixes i
 - New: `.sdlc/0247-pc-gap-analysis/review/decompose/manifest-v1.json` (domain goals, plan mode, strict clean).
 - New: `.sdlc/0247-pc-gap-analysis/review/decompose/report.md` (decompose header, then `## Verdict`, `## Findings` 1-14 with blocker/minor and a fix each, `## Missed gaps`).
 - Unchanged: `.sdlc/0247-pc-gap-analysis/review/handoff.md` (frozen, `.run.lock` present; the `Decomposition:` line was not added).
-- To change (next step, not by me): `docs/generative-constructs/progressive-context-gap-analysis.md` lines 9, 10, 27, 31, 40, 42, 56, 58, 68, 72, 89, 113, 115, 123, 125, 134, 150; `docs/generative-constructs/README.md:7` link target.
+- To change (next step, not by me): `docs/specs/generative-constructs/progressive-context-gap-analysis.md` lines 9, 10, 27, 31, 40, 42, 56, 58, 68, 72, 89, 113, 115, 123, 125, 134, 150; `docs/specs/generative-constructs/README.md:7` link target.
 
 ## Constraints and assumptions
 
@@ -21,7 +21,7 @@ The remaining work is one builder step on the analysis file applying the fixes i
 - The rubric has 13 `## T` headings and a band topping at 36: verified by `grep -c "^## T"` (13) and lines 99-104 of `/Users/kimgranlund/.claude/skills/generative-systems/references/review-rubric.md`.
 - The analysis table scores eleven tiers summing to 16: verified by counting rows at analysis lines 35-40.
 - No ticket above 0247 exists: verified by `ls .sdlc/024[8-9]* .sdlc/025*` (no match).
-- `design.md` at HEAD is the 5a1165e version the analysis names: verified by `git log --oneline -- docs/docs-schema/design.md` (last change 5a1165e).
+- `design.md` at HEAD is the 5a1165e version the analysis names: verified by `git log --oneline -- docs/planning/docs-schema/design.md` (last change 5a1165e).
 - README line shift is caused by the analysis's own commit: verified by `git show 881808d^:docs/generative-constructs/README.md | sed -n '21p;45p'` showing the cited sentences at the old numbers.
 - `docs/layout.md` is absent here: verified by `ls` and `onboard.py:317,699-711` (written on setup).
 - "Codex rollout absent" is one run, not some: verified by `grep -il rollout docs/reports/*.md` (ten files, one absence statement at `codex-conductor-solo-live-run.md:23`).
@@ -41,7 +41,7 @@ The remaining work is one builder step on the analysis file applying the fixes i
 ## Risks
 
 - The tickets for R3, R4, R6, R7, R8 may be filed in another session before the doc merges; then blocker 2 becomes a wording fix only. The verdict should be re-read against `.sdlc/` at merge time.
-- A revision of `docs/docs-schema/design.md` is in review elsewhere (analysis line 110); if it lands first, cross-check items (b) to (e) and finding 3's "until build ticket 1" clause need re-checking against the new lines.
+- A revision of `docs/planning/docs-schema/design.md` is in review elsewhere (analysis line 110); if it lands first, cross-check items (b) to (e) and finding 3's "until build ticket 1" clause need re-checking against the new lines.
 - The rubric file is user-scoped and changed today (mtime Oct 5 05:26); a later edit to its tier headings or bands would move the arithmetic in finding 1.
 - If the conductor expects the review output in `architect-L1.md` itself rather than in report.md, the verdict is only in Carry forward below and the findings must be read from report.md.
 
@@ -52,9 +52,9 @@ The remaining work is one builder step on the analysis file applying the fixes i
 - Blocker 1: analysis lines 40,42 say ten tiers, 16 of 30, 19 of 36; table has eleven tiers = 16 of 33; rubric has 13 `## T` headings, band to 36 (rubric:99-104).
 - Blocker 2: analysis line 134 "Tickets filed" is false at HEAD 61404dd; `ls .sdlc/024[8-9]* .sdlc/025*` matches nothing.
 - Blocker 3: analysis lines 115,123 ask for a docs/AGENTS.md drift check that exists: `onboard.py:581` labels `stale`, render at `:696-711`, layout feeds model at `:451-465`.
-- Real remaining gap behind blocker 3: `## Kinds` and `## Legacy` are not in the rendered model until build ticket 1 (`docs/docs-schema/design.md:151`).
+- Real remaining gap behind blocker 3: `## Kinds` and `## Legacy` are not in the rendered model until build ticket 1 (`docs/planning/docs-schema/design.md:151`).
 - README citations shift by +2 (45 to 47, 21 to 23, 7-14 to 9-16); cause is commit 881808d, confirmed via `git show 881808d^:docs/generative-constructs/README.md`.
-- `docs/generative-constructs/README.md:7` links to `docs/reports/progressive-context-gap-analysis-review.md`, which does not exist.
+- `docs/specs/generative-constructs/README.md:7` links to `docs/reports/progressive-context-gap-analysis-review.md`, which does not exist.
 - `docs/layout.md` does not exist in this repo; `onboard.py setup` writes it (`onboard.py:317`).
 - Analysis defines [E] (line 5) and never uses it; rubric and W3C PROV are labeled [O].
 - Citation inventory: `grep -o '`[^`]*\.\(md\|json\|sh\|py\)[^`]*`'` over the analysis file, 94 strings, about 60 distinct.

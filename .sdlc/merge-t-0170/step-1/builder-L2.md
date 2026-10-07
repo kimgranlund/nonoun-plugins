@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: resolved the merge conflict by keeping both lanes' additions. That is the integration branch's "temporary worktree recipe" test (header comment and body) and the runner lane's "self-edit" test (header comment and body).
-- Merge commit a7783bb "Merge fanout/2026-09-29-runner (T-0170)". Git merged these without conflict: `docs/maintenance/sdlc-internals.md`, `lifecycle-selftest.py`, `run.sh`, `run_lifecycle.py`, and the `.sdlc/0170-*` artifacts.
+- Merge commit a7783bb "Merge fanout/2026-09-29-runner (T-0170)". Git merged these without conflict: `docs/references/sdlc-internals.md`, `lifecycle-selftest.py`, `run.sh`, `run_lifecycle.py`, and the `.sdlc/0170-*` artifacts.
 
 ## Checks
 - `bash -n run-selftest.sh` on the resolved file: ok.

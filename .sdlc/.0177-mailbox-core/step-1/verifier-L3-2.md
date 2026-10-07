@@ -55,7 +55,7 @@ Concerns examined and dismissed:
 - `read` prints no blank line for an empty body. Observed output keeps each marker on its own line, and the Do's wording is ambiguous for an empty body.
 - The builder notes a real duplicate can go undetected on one call if one copy moves mid-scan. The handoff requires the refusal to fire only for real duplicates, which holds; drafted as a fail, then dropped because nothing in the handoff requires detection during a concurrent move.
 
-Neighbor check: `git grep messages.py` outside `.sdlc` finds only `docs/ticket-stages/design.md`, so no runnable dependent exists yet.
+Neighbor check: `git grep messages.py` outside `.sdlc` finds only `docs/specs/ticket-stages/design.md`, so no runnable dependent exists yet.
 
 ## Out of scope changes
 None. `git status --short` shows only `plugins/sdlc-lite/scripts/messages.py` outside `.sdlc`. The modified `.sdlc/0177-mailbox-core/step-1/handoff.md` is 12 added lines, the runner's "Previous attempt" section, and the other untracked files are the runner's step artifacts.

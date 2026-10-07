@@ -11,7 +11,7 @@ pass
 Bite check: I did not observe any of these gates fail, which is only acceptable because they are guards that hold before and after the step. The `check.sh` output includes its own positive and negative control lines ("positive ok, negative ok").
 
 ## Out of scope changes
-The step's Do is to run the gates and fix any red, and the builder reported no changes. The diff still shows steps 1 and 2 files (`steps.py`, `check.py`, agents, skills, adapters, `docs/maintenance/sdlc-internals.md`). These belong to earlier steps of this task. I checked this with `git status` and `git diff --stat`, which show no step-3 file edits beyond those, plus the untracked `.sdlc` artifacts.
+The step's Do is to run the gates and fix any red, and the builder reported no changes. The diff still shows steps 1 and 2 files (`steps.py`, `check.py`, agents, skills, adapters, `docs/references/sdlc-internals.md`). These belong to earlier steps of this task. I checked this with `git status` and `git diff --stat`, which show no step-3 file edits beyond those, plus the untracked `.sdlc` artifacts.
 
 ## For the next attempt
 None. `check.sh` had one unexplained non-zero exit (see criterion 2). If it recurs, capture the log and check whether it depends on concurrent runner activity.

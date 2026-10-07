@@ -38,14 +38,14 @@ In `plugins/sdlc-lite/scripts/hook-selftest.sh`, add a variable for the new hook
 
 Update the hook list in the header comment of `plugins/sdlc-lite/scripts/check.sh`.
 
-Add a `## hooks/block-disk-scan.sh` section to `docs/maintenance/claude-hooks.md`, before the closing validation paragraph. Use the same shape as the other hook sections: what it blocks, what passes, when it fails closed, and where its fixtures are. State that it is Claude-only and that Codex roles are not covered by it.
+Add a `## hooks/block-disk-scan.sh` section to `docs/references/claude-hooks.md`, before the closing validation paragraph. Use the same shape as the other hook sections: what it blocks, what passes, when it fails closed, and where its fixtures are. State that it is Claude-only and that Codex roles are not covered by it.
 
 Do not run formatters repo-wide. shellcheck is not installed on this host, so check.sh skips it; the runtime behavior in a live role session is not proven by this step (the offline selftest is the evidence).
 ### Acceptance criteria
 - `test -x plugins/sdlc-lite/hooks/block-disk-scan.sh`
 - `grep -qF block-disk-scan.sh plugins/sdlc-lite/adapters/claude/hooks.json`
 - `jq -e '.hooks.PreToolUse[] | select(.matcher=="Bash") | .hooks[] | select(.command | contains("block-disk-scan.sh"))' plugins/sdlc-lite/adapters/claude/hooks.json`
-- `grep -qF "block-disk-scan.sh" docs/maintenance/claude-hooks.md`
+- `grep -qF "block-disk-scan.sh" docs/references/claude-hooks.md`
 - `jq -n --arg c 'find / -name quick_validate.py -path "*skill*" 2>/dev/null | head -3' '{tool_input:{command:$c}}' | SDLC_ROLE=planner plugins/sdlc-lite/hooks/block-disk-scan.sh 2>/dev/null; test $? -eq 2`
 - `jq -n --arg c 'bfs / -name x' '{tool_input:{command:$c}}' | SDLC_ROLE=planner plugins/sdlc-lite/hooks/block-disk-scan.sh 2>/dev/null; test $? -eq 2`
 - `jq -n --arg c 'find ~ -name x' '{tool_input:{command:$c}}' | SDLC_ROLE=builder plugins/sdlc-lite/hooks/block-disk-scan.sh 2>/dev/null; test $? -eq 2`
@@ -59,4 +59,4 @@ Do not run formatters repo-wide. shellcheck is not installed on this host, so ch
 - `jq -n --arg c 'find / -name x' '{tool_input:{command:$c}}' | env -u SDLC_ROLE plugins/sdlc-lite/hooks/block-disk-scan.sh; test $? -eq 0`
 - The selftest fails without the hook. This negative control copies the hooks and scripts to a temp dir, stubs the new hook to `exit 0`, and expects a `block-disk-scan` failure: `t=$(mktemp -d) && cp -R plugins/sdlc-lite/hooks plugins/sdlc-lite/scripts "$t"/ && printf "#!/usr/bin/env bash\nexit 0\n" > "$t/hooks/block-disk-scan.sh" && chmod +x "$t/hooks/block-disk-scan.sh" && out=$(bash "$t/scripts/hook-selftest.sh"); rm -rf "$t"; printf "%s\n" "$out" | grep -q "FAIL: block-disk-scan"`
 - (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/hooks/block-disk-scan.sh|plugins/sdlc-lite/adapters/claude/hooks.json|plugins/sdlc-lite/scripts/hook-selftest.sh|plugins/sdlc-lite/scripts/check.sh|docs/maintenance/claude-hooks.md" | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/hooks/block-disk-scan.sh|plugins/sdlc-lite/adapters/claude/hooks.json|plugins/sdlc-lite/scripts/hook-selftest.sh|plugins/sdlc-lite/scripts/check.sh|docs/references/claude-hooks.md" | { ! grep -q .; }`

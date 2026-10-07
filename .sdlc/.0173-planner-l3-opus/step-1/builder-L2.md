@@ -26,6 +26,6 @@ done
 - **Search:** I ran `grep -rni fable` over `plugins/`, `docs/` and AGENTS.md, filtered to lines that mention planner or replan, with `docs/reports/` excluded. Skills and agents sit under `plugins/`, so the search covered them.
 - **What it found:**
   - `plugins/sdlc-lite/bench/results/*`: historical run records, left as they are.
-  - `run.sh` lines 25 and 206, `run-selftest.sh` line 6 and `docs/maintenance/sdlc-internals.md`: these state the family rule in general terms ("a Fable planner keeps Opus"). They are still correct, so I left them.
+  - `run.sh` lines 25 and 206, `run-selftest.sh` line 6 and `docs/references/sdlc-internals.md`: these state the family rule in general terms ("a Fable planner keeps Opus"). They are still correct, so I left them.
   - `docs/reports/readiness-recovery-validation.md`: a dated historical record of an earlier replan, left as it is.
 - **Result:** no other text claims that planner L3 runs on Fable today.

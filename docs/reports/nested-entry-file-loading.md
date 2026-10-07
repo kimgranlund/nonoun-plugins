@@ -1,6 +1,6 @@
 # Nested entry file loading
 
-Recorded: 2026-09-29. Live probe for the [repository onboarding design](../repo-onboarding/design.md). One trial per arm.
+Recorded: 2026-09-29. Live probe for the [repository onboarding design](../specs/repo-onboarding/design.md). One trial per arm.
 
 ## Environment
 

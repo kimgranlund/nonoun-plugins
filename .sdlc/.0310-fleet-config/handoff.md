@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 One config file says which repos and conductors are active, so excluding a repo is a setting and not a memory.
 
 ## Intent
-- Do: Add .sdlc/fleet.json (schema documented in docs/sdlc-lite/, plus a loader in scripts/fleet_config.py with `show`, `add`, `exclude <repo>`, `include <repo>`, `selftest`): entries have path, name, conductor session name, optional gh repo, status active|excluded with a reason and date. Seed it with ui-kit-maison, agent-ui, gen-ui-kit (and sdlc-lite itself) active, maison-testing and native-dom-charts excluded with the 2026-10-06 reason.
+- Do: Add .sdlc/fleet.json (schema documented in docs/specs/sdlc-lite/, plus a loader in scripts/fleet_config.py with `show`, `add`, `exclude <repo>`, `include <repo>`, `selftest`): entries have path, name, conductor session name, optional gh repo, status active|excluded with a reason and date. Seed it with ui-kit-maison, agent-ui, gen-ui-kit (and sdlc-lite itself) active, maison-testing and native-dom-charts excluded with the 2026-10-06 reason.
 - Non-goals: Collection, rendering, messaging conductors.
 - Done when:
   - `fleet_config.py selftest` passes; an excluded repo is absent from `show --active` and present in `show` (observed).

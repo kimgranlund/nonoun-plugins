@@ -8,7 +8,7 @@ level: L3
 Depends on: none.
 
 Targets:
-- `docs/ticket-stages/watcher-design.md`, rewritten to v0.2.
+- `docs/planning/ticket-stages/watcher-design.md`, rewritten to v0.2.
 - `docs/reports/idle-host-watcher-design-review.md`, one appended `## Applied` section.
 
 No code in this step. Level L3, not L2: this rewrite is the spec every later step builds on, and all 17 findings must land consistently.
@@ -176,27 +176,27 @@ Evidence for every decision below:
    - One row per finding 1 to 17. Each row starts `| <n> | ` and names the D tags that apply the finding.
    - Finding 18 (probe leftovers) goes in a note line under the table, not as a row.
 5. Section 2 (launch) names the commands `supervisor.py init`, `supervisor.py watch --run`, `supervisor.py status`, `supervisor.py reset --receiver <name>`, and `supervisor.py selftest`.
-6. In the review doc, append `## Applied` with one paragraph: T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/ticket-stages/watcher-design.md`). The findings above it stay unchanged as the record of the review.
+6. In the review doc, append `## Applied` with one paragraph: T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/planning/ticket-stages/watcher-design.md`). The findings above it stay unchanged as the record of the review.
 7. No em dash (U+2014) in either file. Check with `git diff --check -- docs/`.
 ### Acceptance criteria
-- `grep -qE "^Version 0\.2, " docs/ticket-stages/watcher-design.md`
-- `f=docs/ticket-stages/watcher-design.md; grep -qxF "## Review findings applied" "$f" && for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do grep -qE "^\| $n \| " "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21; do grep -qF "(D$n)" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for t in 'sandbox_mode="workspace-write"' 'sandbox_workspace_write.network_access=false' 'exclude_slash_tmp=true' 'approval_policy="never"' '--permission-mode dontAsk' '--strict-mcp-config' '--plugin-dir' '--output-format stream-json' '--no-session-persistence' 'codex exec resume' 'SDLC_ROLE=supervisor' 'SDLC_HEADLESS=1' 'hosts.local.json' 'git-common-dir' 'lstart' '111,431'; do grep -qF -- "$t" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for k in poll_seconds debounce_polls cooldown_seconds max_wakes_per_hour max_wakes_per_day wake_timeout_seconds reply_depth_limit max_failures quiet_seconds max_budget_usd log_keep; do grep -qF "$k" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
-- `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/ticket-stages/watcher-design.md`
+- `grep -qE "^Version 0\.2, " docs/planning/ticket-stages/watcher-design.md`
+- `f=docs/planning/ticket-stages/watcher-design.md; grep -qxF "## Review findings applied" "$f" && for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do grep -qE "^\| $n \| " "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21; do grep -qF "(D$n)" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for t in 'sandbox_mode="workspace-write"' 'sandbox_workspace_write.network_access=false' 'exclude_slash_tmp=true' 'approval_policy="never"' '--permission-mode dontAsk' '--strict-mcp-config' '--plugin-dir' '--output-format stream-json' '--no-session-persistence' 'codex exec resume' 'SDLC_ROLE=supervisor' 'SDLC_HEADLESS=1' 'hosts.local.json' 'git-common-dir' 'lstart' '111,431'; do grep -qF -- "$t" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for k in poll_seconds debounce_polls cooldown_seconds max_wakes_per_hour max_wakes_per_day wake_timeout_seconds reply_depth_limit max_failures quiet_seconds max_budget_usd log_keep; do grep -qF "$k" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
+- `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/planning/ticket-stages/watcher-design.md`
 - `sed -n '/^## Applied$/,$p' docs/reports/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
-- (guard) `for f in docs/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- (guard) `for f in docs/planning/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Step 2: supervisor.py core: init, config, lock, STOP, poll, wake commands, and their selftest
 level: L4
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Depends on: step 1. The spec is `docs/ticket-stages/watcher-design.md` v0.2 (D1 to D21).
+Depends on: step 1. The spec is `docs/planning/ticket-stages/watcher-design.md` v0.2 (D1 to D21).
 
 Targets:
 - new file `plugins/sdlc-lite/scripts/supervisor.py`;
@@ -285,7 +285,7 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`, `pyt
 - `h=$(python3 plugins/sdlc-lite/scripts/supervisor.py --help) && printf '%s\n' "$h" | grep -qF "{init,watch,status,reset,selftest}" && w=$(python3 plugins/sdlc-lite/scripts/supervisor.py watch --help) && for o in --run --once --now --driver; do printf '%s\n' "$w" | grep -qF -- "$o" || exit 1; done`
 - `grep -qF 'python3 "$root/scripts/supervisor.py" selftest' plugins/sdlc-lite/scripts/check.sh && grep -qF "messages.py, and supervisor.py selftests" plugins/sdlc-lite/scripts/check.sh`
 - `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 plugins/sdlc-lite/scripts/supervisor.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
 
 ## Step 3: supervisor.py limits: cooldown, caps, depth, active host, progress-based success, failures, and their selftest
 level: L4
@@ -343,7 +343,7 @@ Focused check: `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`.
 - `python3 plugins/sdlc-lite/scripts/supervisor.py reset --help | grep -qF -- "--receiver"`
 - `f=plugins/sdlc-lite/scripts/supervisor.py; test -f "$f" && ! grep -qE "shell=True|os\.system\(|os\.popen\(" "$f" && ! grep -qF "$(printf '\342\200\224')" "$f"`
 - `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 plugins/sdlc-lite/scripts/supervisor.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/supervisor.py)"`
 
 ## Step 4: Live-run probe with an offline selftest
 level: L3
@@ -418,7 +418,7 @@ The model is the T-0181 probe (`docs/reports/messages-wait-live-run.md`).
 - `f=docs/reports/supervisor-live-run/probe.py; test -f "$f" && ! grep -qF "run.sh" "$f" && grep -qF "probe-remote" "$f" && grep -qF -- "--driver" "$f"`
 - `p="$(dirname "$(cd "$(git rev-parse --git-common-dir)" && pwd)")/.sdlc/supervisor"; b=$(ls -A "$p" 2>/dev/null); python3 docs/reports/supervisor-live-run/probe.py selftest >/dev/null && test "$(ls -A "$p" 2>/dev/null)" = "$b" && test ! -e .sdlc/supervisor`
 - `for f in docs/reports/supervisor-live-run/probe.py docs/reports/supervisor-live-run/AGENTS.md docs/reports/supervisor-live-run/CLAUDE.md; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md)")"`
 
 ## Step 5: Live runs on Claude Code and Codex, recorded
 level: L3
@@ -469,7 +469,7 @@ Targets:
 - `python3 -c 'import re; t=open("docs/reports/supervisor-live-run.md").read(); ev=lambda a: open("docs/reports/supervisor-live-run/"+a+".txt").read().splitlines()[-1].split(" ")[0].split("=",1)[1]; bad=[a for a in ("dry-run","claude","codex","claude-attached","codex-attached","claude-push","codex-push") if re.findall(r"^Result "+re.escape(a)+r": (\w+)$", t, re.M)!=[ev(a)]]; assert not bad, bad'`
 - `grep -F "validation/supervisor-live-run.md" docs/README.md | grep -qF "T-0183"`
 - `for f in docs/reports/supervisor-live-run.md docs/reports/supervisor-live-run/*.txt docs/reports/supervisor-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Step 6: Router line, implementation reference, layout list, and status lines
 level: L3
@@ -491,7 +491,7 @@ Depends on: steps 1 to 5. The docs describe the behavior as the live run left it
    - Left untouched on purpose:
      - `onboard.py`'s root template: the supervisor folder ignores its own runtime files through the `.gitignore` that `init` writes, so a consumer's root entry needs no new rule, and changing the template moves its version and digest.
      - `messages.py` `ENTRY_TEMPLATE`: its statements about subagents and `wait` stay true, and the router line covers discovery. Also a ticket non-goal.
-3. `docs/maintenance/sdlc-internals.md`:
+3. `docs/references/sdlc-internals.md`:
    - Add a section `## `scripts/supervisor.py`` after the `messages.py` section. It holds one paragraph in the same style covering: commands, the folder beside the mailbox, files and git-ignore, limits with defaults, floors, and caps, modes and argv, env scrub, the D8 decision order, success and stranded mail, backoff and `failed`, depth, active signals, `status.json` fields, and selftest coverage with its controls.
    - In the `tickets.py` paragraph, after the mailbox sentence, add the same "The router's Supervisor line links ..." sentence.
 4. `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: in the layout block, after the `.sdlc/messages/` line, add:
@@ -502,20 +502,20 @@ Depends on: steps 1 to 5. The docs describe the behavior as the live run left it
    - Under Behavioral invariants add `- `scripts/supervisor.py` never calls a model and never touches a message file; wakes run from fixed argument lists. Its folder contract is the `AGENTS.md` that `supervisor.py init` writes.`
 6. Status lines:
    - `docs/README.md` line 11 becomes `- [Idle-host watcher design](ticket-stages/watcher-design.md): the external watcher, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its limits and validation plan.`
-   - `docs/ticket-stages/README.md` line 6 becomes `- [Idle-host watcher design](watcher-design.md): the external process, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its safety limits and validation plan.`
-   - In `docs/ticket-stages/watcher-design.md`, the header line keeps its `Version 0.2, 2026-10-01.` start, and its status sentence becomes `Built in T-0183 as plugins/sdlc-lite/scripts/supervisor.py; live run in ../validation/supervisor-live-run.md.`, written as a link.
+   - `docs/specs/ticket-stages/README.md` line 6 becomes `- [Idle-host watcher design](watcher-design.md): the external process, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its safety limits and validation plan.`
+   - In `docs/planning/ticket-stages/watcher-design.md`, the header line keeps its `Version 0.2, 2026-10-01.` start, and its status sentence becomes `Built in T-0183 as plugins/sdlc-lite/scripts/supervisor.py; live run in ../validation/supervisor-live-run.md.`, written as a link.
 7. No em dash in any file this step touches.
 ### Acceptance criteria
 - `python3 -c 'import sys; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import tickets; assert any(l.startswith("- Supervisor:") and "supervisor/AGENTS.md" in l and "scripts/supervisor.py init" in l for l in tickets.ROUTER_TEMPLATE.splitlines())'`
 - `grep -E "^- Supervisor: " .sdlc/AGENTS.md | grep -qF "supervisor/AGENTS.md"`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - `out=$(python3 plugins/sdlc-lite/scripts/tickets.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "tickets selftest: PASS" && grep -qF "router: the router links supervisor/AGENTS.md" plugins/sdlc-lite/scripts/tickets.py && grep -qF "Supervisor line links" plugins/sdlc-lite/scripts/tickets.py`
-- `grep -qE "^## .scripts/supervisor\.py.$" docs/maintenance/sdlc-internals.md && grep -qF "Supervisor line links" docs/maintenance/sdlc-internals.md`
+- `grep -qE "^## .scripts/supervisor\.py.$" docs/references/sdlc-internals.md && grep -qF "Supervisor line links" docs/references/sdlc-internals.md`
 - `grep -qE "^\.sdlc/supervisor/ " plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF "supervisor.py selftest" plugins/sdlc-lite/AGENTS.md`
-- `grep -F "ticket-stages/watcher-design.md" docs/README.md | grep -qF "built as" && grep -F "(watcher-design.md)" docs/ticket-stages/README.md | grep -qF "built as" && grep -qF "Built in T-0183" docs/ticket-stages/watcher-design.md`
-- (guard) `for f in plugins/sdlc-lite/scripts/tickets.py docs/maintenance/sdlc-internals.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/AGENTS.md docs/README.md docs/ticket-stages/README.md docs/ticket-stages/watcher-design.md .sdlc/AGENTS.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- `grep -F "ticket-stages/watcher-design.md" docs/README.md | grep -qF "built as" && grep -F "(watcher-design.md)" docs/specs/ticket-stages/README.md | grep -qF "built as" && grep -qF "Built in T-0183" docs/planning/ticket-stages/watcher-design.md`
+- (guard) `for f in plugins/sdlc-lite/scripts/tickets.py docs/references/sdlc-internals.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/AGENTS.md docs/README.md docs/specs/ticket-stages/README.md docs/planning/ticket-stages/watcher-design.md .sdlc/AGENTS.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/specs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Step 7: Gates green
 level: L2
@@ -544,7 +544,7 @@ Depends on: steps 1 to 6.
 - `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`
 - `python3 docs/reports/supervisor-live-run/probe.py selftest`
 - `for f in plugins/sdlc-lite/scripts/supervisor.py docs/reports/supervisor-live-run.md docs/reports/supervisor-live-run/*; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/specs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
 
 ## Assumptions
 - The base sha stays fixed across steps and builders never commit, so each later scope criterion lists every earlier step's files: verified by `.sdlc/.0181-messages-wait/step-2/base-sha` and `step-3/base-sha`, which both hold `bc21b53...`, and by `plugins/sdlc-lite/skills/chain/SKILL.md:29` ("A plain /chain outside fanout commits nothing").

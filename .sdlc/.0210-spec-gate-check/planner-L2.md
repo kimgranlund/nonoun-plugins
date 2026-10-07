@@ -92,7 +92,7 @@ Depends on: step 1.
    - A missing phrase prints `FAIL <rel>: spec gate text missing "<phrase>"`.
    - The order check fails with `FAIL scripts/run.sh: specgate.py check does not come before exec run_lifecycle.py` unless the first `specgate.py check` line of run.sh sits before the line that holds `exec python3 "$plugin_root/scripts/run_lifecycle.py"`.
    - Each check has a negative control (phrase removed, lines swapped) that appends `check.py: spec gate ... negative control not flagged` when it does not fire.
-6. `docs/maintenance/sdlc-internals.md`:
+6. `docs/references/sdlc-internals.md`:
    - Add a `scripts/specgate.py` entry: what `check` flags, exit 0/1, skip on no plan, findings on stderr, imports steps, the `run.sh` gate with exit 2 and `SDLC_SPECGATE=off`.
    - In the `scripts/steps.py` entry, add that `--guard-timeout` defaults to the step's, then the plan's, `guard timeout:` line, else 300.
 7. `docs/lean-sdlc/cost-control.md` line 3: replace "Nothing here is built." with "A1 (T-0210) is built; nothing else here is." This keeps the record from going stale.
@@ -106,11 +106,11 @@ Depends on: step 1.
 - `grep -qF "guard timeout:" plugins/sdlc-lite/agents/planner.md && grep -qF "specgate.py check" plugins/sdlc-lite/agents/planner.md`
 - `grep -qF "guard timeout:" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF "specgate.py check" plugins/sdlc-lite/skills/chain/SKILL.md && grep -qF "specgate.py check" plugins/sdlc-lite/agents/conductor.md`
-- `grep -qF "scripts/specgate.py" docs/maintenance/sdlc-internals.md && grep -qF "guard timeout:" docs/maintenance/sdlc-internals.md`
+- `grep -qF "scripts/specgate.py" docs/references/sdlc-internals.md && grep -qF "guard timeout:" docs/references/sdlc-internals.md`
 - `grep -qF "A1 (T-0210) is built" docs/lean-sdlc/cost-control.md`
 - `grep -qF "guard timeout:" plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" && python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); f=p/\"agents/planner.md\"; f.write_text(f.read_text().replace(\"guard timeout:\", \"x\")); g=p/\"scripts/run.sh\"; g.write_text(g.read_text().replace(\"specgate.py check\", \"x\"))" "$t/p" && out=$(python3 "$t/p/scripts/check.py" "$t/p" 2>&1); printf "%s\n" "$out" | grep -qF "FAIL agents/planner.md: spec gate text missing \"guard timeout:\"" && printf "%s\n" "$out" | grep -qF "FAIL scripts/run.sh: spec gate text missing \"specgate.py check\""`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/agents/planner.md -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/skills/chain/SKILL.md -e docs/maintenance/sdlc-internals.md -e docs/lean-sdlc/cost-control.md | grep -vE "^plugins/sdlc-lite/adapters/codex/")" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/specgate.py)"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/agents/planner.md -e plugins/sdlc-lite/agents/conductor.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/skills/chain/SKILL.md -e docs/references/sdlc-internals.md -e docs/lean-sdlc/cost-control.md | grep -vE "^plugins/sdlc-lite/adapters/codex/")" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxF plugins/sdlc-lite/scripts/specgate.py)"`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`

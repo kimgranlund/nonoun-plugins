@@ -6,7 +6,7 @@ done
 - `.sdlc/proposals/CLAUDE.md`: new file, holds only `@AGENTS.md`.
 - `.sdlc/proposals/AGENTS.md`: new self-contained entry file with the intro paragraph and the sections File format, Patterns, Statuses, Procedures and Limits.
 - `.sdlc/AGENTS.md`: added the Proposals line to `## Other records`, after the Evals line and outside the managed block.
-- `docs/maintenance/sdlc-internals.md`: new ``## `scripts/proposals.py` `` entry placed after the evals.py entry.
+- `docs/references/sdlc-internals.md`: new ``## `scripts/proposals.py` `` entry placed after the evals.py entry.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: added the `.sdlc/proposals/` layout line after the `.sdlc/evals/` line.
 - `plugins/sdlc-lite/AGENTS.md`: added the Proposals verification line after the evals line.
 - `docs/reports/proposals-live-run.md`: new live-run record with Environment, Commands, Evidence (all 8 arms, the list, and every proposal's text) and Limits.

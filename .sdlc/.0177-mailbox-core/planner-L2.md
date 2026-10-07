@@ -7,7 +7,7 @@ level: L4
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Create `plugins/sdlc-lite/scripts/messages.py`: standard library only, runs on Python 3.9. Follow the style of `scripts/fanout.py` and `scripts/tickets.py` (argparse subcommands, a `selftest` that runs on throwaway repos in `tempfile` dirs). Depends on: none. The interface below is settled by the handoff (Intent, Do) and `docs/ticket-stages/design.md` (Message bus). Where the handoff is silent, this plan settles it:
+Create `plugins/sdlc-lite/scripts/messages.py`: standard library only, runs on Python 3.9. Follow the style of `scripts/fanout.py` and `scripts/tickets.py` (argparse subcommands, a `selftest` that runs on throwaway repos in `tempfile` dirs). Depends on: none. The interface below is settled by the handoff (Intent, Do) and `docs/specs/ticket-stages/design.md` (Message bus). Where the handoff is silent, this plan settles it:
 
 - Exit codes: 0 for success, 1 for any refusal or validation failure (nothing written or moved), 2 for argparse usage errors.
 - Mailbox root. An explicit `--root DIR` (a global option before the subcommand, relative to cwd) means the mailbox is `DIR/messages`. Without it, run `git rev-parse --git-common-dir` and make the result absolute against cwd. If its basename is `.git`, the root is `<its parent>/.sdlc`, so every linked worktree shares the main checkout's mailbox. Otherwise (a bare common dir) use `git rev-parse --show-toplevel` plus `/.sdlc`. Outside git, use `./.sdlc`. `list`, `count`, and `expire` with nothing to move never create a directory. `count` on a missing mailbox prints `0`.
@@ -103,12 +103,12 @@ Depends on: step 1 (the documented interface), step 2 (the notice text).
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`:
   - In the layout tree (near the `.sdlc/runtime/` line, about line 31), add `.sdlc/messages/` with the note: git-ignored mailbox written by `scripts/messages.py`; never committed.
   - Add `.sdlc/messages/` to the fenced ignore list (lines 40-45) and a matching bullet below it.
-- `plugins/sdlc-lite/scripts/onboard.py`: in `ROOT_AGENTS_TEMPLATE`, add the bullet ``- `.sdlc/messages/` is a local mailbox. Keep it in `.gitignore` and never commit it.`` right after the `.sdlc/roadmap.md` line. Mirror it byte for byte in `docs/repo-onboarding/design.md` at the same place (about line 261), because the onboard.py comment says the template texts are copied byte for byte from that design. Keep `TEMPLATE_VERSION = 1`: the handoff forbids version bumps, and an existing v1 block whose text differs from the template is decided as row 6 `stale` and replaced on the next setup (`onboard.py` `_row_current`/`_row_other_block`). Contract dependent: the onboard selftest, run below. No fixture pins the root template text (checked with `git grep`).
-- `docs/maintenance/sdlc-internals.md`:
+- `plugins/sdlc-lite/scripts/onboard.py`: in `ROOT_AGENTS_TEMPLATE`, add the bullet ``- `.sdlc/messages/` is a local mailbox. Keep it in `.gitignore` and never commit it.`` right after the `.sdlc/roadmap.md` line. Mirror it byte for byte in `docs/specs/repo-onboarding/design.md` at the same place (about line 261), because the onboard.py comment says the template texts are copied byte for byte from that design. Keep `TEMPLATE_VERSION = 1`: the handoff forbids version bumps, and an existing v1 block whose text differs from the template is decided as row 6 `stale` and replaced on the next setup (`onboard.py` `_row_current`/`_row_other_block`). Contract dependent: the onboard selftest, run below. No fixture pins the root template text (checked with `git grep`).
+- `docs/references/sdlc-internals.md`:
   - Add a `## \`scripts/messages.py\`` entry: subcommands, layout, root resolution, schema, lifecycle and reply rule, trust rule, selftest coverage including the race negative control.
   - In the `scripts/run.sh` entry, add one sentence on the notice line.
   - Edit only these sections, because T-0175 edits this file too.
-- `docs/ticket-stages/design.md`:
+- `docs/specs/ticket-stages/design.md`:
   - In the status line (line 3), say that the mailbox core is built in T-0177 (`messages.py`, run.sh notice) and that the messenger agent and entry files are pending (T-0178, T-0179).
   - In the Message bus transition table, name the command per row (`messages.py send`, `read`, `ack`, `expire`).
   - State the exact reply rule and the `expired, no reply` notice.
@@ -118,11 +118,11 @@ No em dashes in any added line.
 ### Acceptance criteria
 - `git check-ignore -q .sdlc/messages/new/bob/x.md`
 - `grep -qF ".sdlc/messages/" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- `a=$(grep -F "local mailbox" plugins/sdlc-lite/scripts/onboard.py) && printf "%s\n" "$a" | grep -qF ".sdlc/messages/" && test "$a" = "$(grep -F "local mailbox" docs/repo-onboarding/design.md)" && python3 plugins/sdlc-lite/scripts/onboard.py selftest`
-- `grep -q "^## .scripts/messages.py.$" docs/maintenance/sdlc-internals.md && grep -qF "new message(s)" docs/maintenance/sdlc-internals.md`
-- `grep -qF "messages.py expire" docs/ticket-stages/design.md`
-- `grep -qF "T-0177" docs/ticket-stages/design.md`
-- `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/repo-onboarding/design.md -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md ); test -z "$out"`
+- `a=$(grep -F "local mailbox" plugins/sdlc-lite/scripts/onboard.py) && printf "%s\n" "$a" | grep -qF ".sdlc/messages/" && test "$a" = "$(grep -F "local mailbox" docs/specs/repo-onboarding/design.md)" && python3 plugins/sdlc-lite/scripts/onboard.py selftest`
+- `grep -q "^## .scripts/messages.py.$" docs/references/sdlc-internals.md && grep -qF "new message(s)" docs/references/sdlc-internals.md`
+- `grep -qF "messages.py expire" docs/specs/ticket-stages/design.md`
+- `grep -qF "T-0177" docs/specs/ticket-stages/design.md`
+- `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/specs/repo-onboarding/design.md -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md ); test -z "$out"`
 
 ## Step 4: gates green
 level: L2
@@ -148,10 +148,10 @@ Depends on: steps 1 to 3. Run every gate below from the repository root and fix 
 - Baseline gates are green at HEAD 25dccba: `check.sh` rc=0 (about 2.5 min), `check-packaging.py` rc=0, and `git diff --check` clean, all run during planning.
 - `--ttl` defaults to `7d`: settled from the handoff's `[--ttl 7d]` example and the design's rule that the bus is short-lived ("a mailbox, not a record") and that expired messages move to `done/`.
 - `read` takes a required `--receiver <name>` to identify the reader: settled because the handoff requires refusing a non-receiver, `read <path-or-id>` carries no identity, and `list` and `count` already use `--receiver`.
-- The new to done expiry always records `expired`. Only read to done records `expired, no reply` plus a notice: settled by the design table rows in `docs/ticket-stages/design.md` (Message bus).
+- The new to done expiry always records `expired`. Only read to done records `expired, no reply` plus a notice: settled by the design table rows in `docs/specs/ticket-stages/design.md` (Message bus).
 
 ## Risks
-- `docs/ticket-stages/design.md` and `docs/maintenance/sdlc-internals.md` are also edited by T-0175. Step 3 confines its edits to named sections, but a main sync could still conflict.
+- `docs/specs/ticket-stages/design.md` and `docs/references/sdlc-internals.md` are also edited by T-0175. Step 3 confines its edits to named sections, but a main sync could still conflict.
 - The barrier-based race harness depends on two subprocesses meeting within 10 s. A heavily loaded host could time out, which makes the selftest flaky rather than wrong.
 - Once a real `.sdlc/messages/` exists in this repo's main checkout, live `run.sh` runs print the notice. Any downstream tool that compares run.sh stderr exactly outside `run-selftest.sh` would see an extra line. None was found in the repo.
 - Step 1 is large for one builder (a full CLI plus a broad selftest). If it blocks, a replan could split it into a CLI step and a selftest-hardening step.

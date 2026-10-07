@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/check.sh`: added the `footprint.py selftest` line after the `messages.py` selftest, and `footprint.py` to the header comment's selftest list.
-- `docs/maintenance/sdlc-internals.md`: added a `## \`scripts/footprint.py\`` entry after the `order.py` entry. It names `--max-files`.
+- `docs/references/sdlc-internals.md`: added a `## \`scripts/footprint.py\`` entry after the `order.py` entry. It names `--max-files`.
 
 ## Checks
 - `bash plugins/sdlc-lite/scripts/check.sh`: exit 0. shellcheck was skipped because it isn't installed.

@@ -28,7 +28,7 @@ The mechanism is one registration line in the ticket root's config, `external_br
     - two lanes on one branch
   - `merge_gate_close` is one helper both lane kinds call. It skips the gates when the merge leaves HEAD unchanged, so a second ticket on the same branch merges nothing new and gates once.
   - The dry-run plan, `report.md`, docstring, usage line and argparse help are updated.
-- `plugins/sdlc-lite/skills/fanout/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md` and `docs/maintenance/sdlc-internals.md` describe the external lane form and the registration line.
+- `plugins/sdlc-lite/skills/fanout/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md` and `docs/references/sdlc-internals.md` describe the external lane form and the registration line.
 
 Two deliberate deviations from the ticket's default wording:
 - The external lane does not sync the outside branch first. The branch is usually checked out in the outside agent's worktree, so `git worktree add` would refuse it, and moving the ref would desync that agent's index.

@@ -9,7 +9,7 @@ level: L4
 ### Do
 Create `plugins/sdlc-lite/scripts/messages.py` with every subcommand except `selftest` (step 2). Depends on: none.
 
-Use the standard library only, and keep it running on Python 3.9 (the host `python3` is 3.9.6). Follow `scripts/tickets.py` for a global `--root` option before the subcommand (`tickets.py:2925`), and `scripts/fanout.py` for `fcntl.flock` (`fanout.py:521-541`). The handoff (Intent) and `docs/ticket-stages/design.md` (Message bus) settle the interface below. Where both are silent, this plan settles it, including the plan review's findings on ids, malformed files, and caller-set stamps.
+Use the standard library only, and keep it running on Python 3.9 (the host `python3` is 3.9.6). Follow `scripts/tickets.py` for a global `--root` option before the subcommand (`tickets.py:2925`), and `scripts/fanout.py` for `fcntl.flock` (`fanout.py:521-541`). The handoff (Intent) and `docs/specs/ticket-stages/design.md` (Message bus) settle the interface below. Where both are silent, this plan settles it, including the plan review's findings on ids, malformed files, and caller-set stamps.
 
 Parser and exit codes:
 - Build the parser as `argparse.ArgumentParser(prog="messages.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)`, and give every subparser `allow_abbrev=False`.
@@ -272,35 +272,35 @@ Depends on: steps 1 to 3, because the docs describe the built interface and the 
 
 `plugins/sdlc-lite/scripts/onboard.py`:
 - In `ROOT_AGENTS_TEMPLATE`, add the bullet ``- `.sdlc/messages/` is a local mailbox. Keep it in `.gitignore` and never commit it.`` right after the `.sdlc/roadmap.md` line (`onboard.py:252`).
-- Mirror it byte for byte in `docs/repo-onboarding/design.md` after line 261, because `onboard.py:228` says the template texts are copied byte for byte from that design.
+- Mirror it byte for byte in `docs/specs/repo-onboarding/design.md` after line 261, because `onboard.py:228` says the template texts are copied byte for byte from that design.
 - Keep `TEMPLATE_VERSION = 1`. An existing v1 block whose text differs from the template is row 6 `stale`, and the next setup replaces it (`onboard.py:552-580`).
 - Contract dependents: the onboard selftest, run below. No other file pins the template text: `git grep` of the roadmap line finds only these two.
 
-`docs/maintenance/sdlc-internals.md`:
+`docs/references/sdlc-internals.md`:
 - Add an entry headed ``## `scripts/messages.py` `` between the `scripts/run.sh` entry and `## Feed`. Cover the subcommands, layout, root resolution, schema, lifecycle, reply rule, lock, trust rule, and selftest coverage, including the race negative control.
 - Append one sentence on the notice to the `scripts/run.sh` entry.
 - Touch nothing else in this file: T-0175 edits the tickets, board, fanout, and traces entries.
 
-`docs/ticket-stages/design.md`, Message bus section only:
+`docs/specs/ticket-stages/design.md`, Message bus section only:
 - Add a status line right after the heading. It says the mailbox core is built in T-0177 (`scripts/messages.py` and the run.sh notice), and that the `messenger` agent (T-0178) and the entry files with the live run (T-0179) are pending.
 - Replace "`re` (ticket id)" with wording that says `re` holds the id of the message being answered.
 - In the transition table, name the command on every row: `messages.py send` or `reply` on create, with `protocol` added to its Stamped cell, and `messages.py expire` on both expiry rows.
 - State the exact reply rule and the notice fields.
 - Leave line 3 alone, because T-0175 rewrites it.
 
-Leave `docs/README.md` and `docs/ticket-stages/README.md` untouched. T-0175 rewrites their ticket-stages lines, and T-0179 owns the final status.
+Leave `docs/README.md` and `docs/specs/ticket-stages/README.md` untouched. T-0175 rewrites their ticket-stages lines, and T-0179 owns the final status.
 
 Write no em dash in any added line.
 ### Acceptance criteria
 - `git check-ignore -q .sdlc/messages/new/bob/x.md`
 - `grep -qx ".sdlc/messages/" plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qE "^\.sdlc/messages/ +.*scripts/messages\.py" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- `a=$(grep -F "local mailbox" plugins/sdlc-lite/scripts/onboard.py) && printf "%s\n" "$a" | grep -qF ".sdlc/messages/" && test "$a" = "$(grep -F "local mailbox" docs/repo-onboarding/design.md)" && python3 plugins/sdlc-lite/scripts/onboard.py selftest`
-- `grep -qF "new message(s)" docs/maintenance/sdlc-internals.md && awk '/^## .scripts\/run.sh.$/ {r = NR} /^## .scripts\/messages.py.$/ {m = NR} /^## Feed$/ {f = NR} END {exit !(r && m > r && f > m)}' docs/maintenance/sdlc-internals.md`
-- `grep -qF "messages.py expire" docs/ticket-stages/design.md && grep -qF "T-0177" docs/ticket-stages/design.md && ! grep -qF "(ticket id)" docs/ticket-stages/design.md`
+- `a=$(grep -F "local mailbox" plugins/sdlc-lite/scripts/onboard.py) && printf "%s\n" "$a" | grep -qF ".sdlc/messages/" && test "$a" = "$(grep -F "local mailbox" docs/specs/repo-onboarding/design.md)" && python3 plugins/sdlc-lite/scripts/onboard.py selftest`
+- `grep -qF "new message(s)" docs/references/sdlc-internals.md && awk '/^## .scripts\/run.sh.$/ {r = NR} /^## .scripts\/messages.py.$/ {m = NR} /^## Feed$/ {f = NR} END {exit !(r && m > r && f > m)}' docs/references/sdlc-internals.md`
+- `grep -qF "messages.py expire" docs/specs/ticket-stages/design.md && grep -qF "T-0177" docs/specs/ticket-stages/design.md && ! grep -qF "(ticket id)" docs/specs/ticket-stages/design.md`
 - (guard) `grep -qx "TEMPLATE_VERSION = 1" plugins/sdlc-lite/scripts/onboard.py`
-- (guard) `test "$(sed -n 3p docs/ticket-stages/design.md)" = "$(git show "$SDLC_BASE_SHA":docs/ticket-stages/design.md | sed -n 3p)"`
-- (guard) `! git diff "$SDLC_BASE_SHA" -- .gitignore plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/scripts/onboard.py docs/repo-onboarding/design.md docs/maintenance/sdlc-internals.md docs/ticket-stages/design.md | grep "^+" | grep -q "$(printf "\xe2\x80\x94")"`
-- (guard) `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/repo-onboarding/design.md -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md ); test -z "$out"`
+- (guard) `test "$(sed -n 3p docs/specs/ticket-stages/design.md)" = "$(git show "$SDLC_BASE_SHA":docs/ticket-stages/design.md | sed -n 3p)"`
+- (guard) `! git diff "$SDLC_BASE_SHA" -- .gitignore plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/scripts/onboard.py docs/specs/repo-onboarding/design.md docs/references/sdlc-internals.md docs/specs/ticket-stages/design.md | grep "^+" | grep -q "$(printf "\xe2\x80\x94")"`
+- (guard) `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/specs/repo-onboarding/design.md -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md ); test -z "$out"`
 
 ## Step 5: gates green
 level: L2
@@ -318,7 +318,7 @@ Depends on: steps 1 to 4. Run every gate below from the repository root, and fix
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep "^+" | grep -q "$(printf "\xe2\x80\x94")"`
 - (guard) `git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | while read -r f; do ! grep -q "$(printf "\xe2\x80\x94")" "$f" || exit 1; done`
-- (guard) `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/repo-onboarding/design.md -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md ); test -z "$out"`
+- (guard) `out=$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.sh -e .gitignore -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/scripts/onboard.py -e docs/specs/repo-onboarding/design.md -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md ); test -z "$out"`
 
 ## Assumptions
 - This is a replan of `planner-L2.md` after plan-reviewer-L1 returned `replan`. No step had passed, so every step was rewritten, and the old step 1 is now steps 1 and 2: verified by reading `.worktrees/ticket-stages/.sdlc/0177-mailbox-core/plan-reviewer-L1.md` (this handoff carries no `## Plan review` section) and finding no step dirs in this task.
@@ -346,10 +346,10 @@ Depends on: steps 1 to 4. Run every gate below from the repository root, and fix
   - Everything except the claim runs under the lock, so the race test can bite.
 
 ## Risks
-- Merging with T-0175 may still conflict in `docs/ticket-stages/design.md`, `docs/maintenance/sdlc-internals.md`, and `handoff-format/SKILL.md`. Step 4 avoids T-0175's lines, but git can conflict on nearby hunks.
+- Merging with T-0175 may still conflict in `docs/specs/ticket-stages/design.md`, `docs/references/sdlc-internals.md`, and `handoff-format/SKILL.md`. Step 4 avoids T-0175's lines, but git can conflict on nearby hunks.
 - `count` refuses a mailbox that has a malformed message in `new/<role>/`, so run.sh prints no notice for that role until someone fixes or removes the file (`read` names it). This follows the handoff's rule for every subcommand.
 - The race cases depend on two subprocesses meeting at a 10 s barrier. A heavily loaded host can time out, which makes the selftest flaky rather than wrong.
 - `.gitignore` ignores the whole `.sdlc/messages/` directory, so T-0179's `messages/AGENTS.md` files cannot be tracked there without a pattern change. T-0179's handoff has a tool write them.
-- After this task, `docs/README.md` and `docs/ticket-stages/README.md` still call the mailbox proposed. T-0175 and T-0179 own those lines.
+- After this task, `docs/README.md` and `docs/specs/ticket-stages/README.md` still call the mailbox proposed. T-0175 and T-0179 own those lines.
 - The step 1 worktree criterion needs `SDLC_TMP_WORKTREES`, which run.sh sets for role runs. Run by hand, it stops at the `rm`.
 - `steps.py split --only 5` runs `check.sh` as a guard under the default 300 s guard timeout. `check.sh` took about 2.5 minutes here, so a loaded host may need `--guard-timeout`.

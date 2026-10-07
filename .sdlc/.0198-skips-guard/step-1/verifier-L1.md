@@ -12,7 +12,7 @@ pass
 - `grep -qF "(skips)"` in `tickets.py`: pass (C7=0).
 - (guard) `tickets.py selftest`: pass. It printed `tickets selftest: PASS`, and the run was green on the built tree. Nothing was red, so I did not run the pre-build HEAD gate.
 - `## Skipped` in the handoff-format SKILL.md: pass (C9=0).
-- `## Skipped` in `docs/maintenance/sdlc-internals.md`: pass (C10=0).
+- `## Skipped` in `docs/references/sdlc-internals.md`: pass (C10=0).
 - Only the three allowed files changed: pass. The negated diff check against `$SDLC_BASE_SHA` is empty (C11=0). `git status` shows only those three files modified, plus `.sdlc` artifacts.
 - Pre-feature exemption holds on the real repo: pass. `tickets.py --root .sdlc check` printed `ok: 214 tickets, roadmap current`.
 

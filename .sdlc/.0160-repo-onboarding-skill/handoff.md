@@ -13,7 +13,7 @@ created: 2026-09-29
 A repository that adopts SDLC Lite gets entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout, without losing anything it already wrote.
 
 ## Intent
-- Do: build the `onboard` skill and its script as specified in `docs/repo-onboarding/design.md` (v0.7). v0.7 adds a role routing line to the root managed block, from T-0165. The script is `plugins/sdlc-lite/scripts/onboard.py` with the commands `setup --dry-run`, `setup [--force]`, and `check`.
+- Do: build the `onboard` skill and its script as specified in `docs/specs/repo-onboarding/design.md` (v0.7). v0.7 adds a role routing line to the root managed block, from T-0165. The script is `plugins/sdlc-lite/scripts/onboard.py` with the commands `setup --dry-run`, `setup [--force]`, and `check`.
   1. Setup mode: create or update the files in the design's Files table from its templates. One script writes every file.
   2. The upsert table, rows 1 to 8, first match wins. Start markers carry a template version and a content hash.
   3. Check mode with the seven labels and a nonzero exit when any file is not current.
@@ -23,7 +23,7 @@ A repository that adopts SDLC Lite gets entry files that route into `docs/` and 
 - Done when: the existing checks named in the design pass, every new gate in the design's validation table has a passing positive case and an observed negative control in the script's selftest, and the live run gate passes on Claude Code and on Codex.
 
 ## Context
-Design: `docs/repo-onboarding/design.md`. Index of the topic: `docs/repo-onboarding/README.md`. Decisions agreed with the user on 2026-09-29: the skill lives in SDLC Lite and is named `onboard`, navigation follows Progressive Context, the layout is an overridable default kept in `docs/layout.md`, number prefixes express order only, existing `README.md` indexes stay, monorepos are out of scope for version 1, and the guidance for `.sdlc/` lives in the root managed block because `.sdlc/` is ignored by Git by default.
+Design: `docs/specs/repo-onboarding/design.md`. Index of the topic: `docs/specs/repo-onboarding/README.md`. Decisions agreed with the user on 2026-09-29: the skill lives in SDLC Lite and is named `onboard`, navigation follows Progressive Context, the layout is an overridable default kept in `docs/layout.md`, number prefixes express order only, existing `README.md` indexes stay, monorepos are out of scope for version 1, and the guidance for `.sdlc/` lives in the root managed block because `.sdlc/` is ignored by Git by default.
 
 Evidence: `docs/reports/repo-onboarding-design-review.md`, `docs/reports/repo-onboarding-design-review-2.md`, `docs/reports/repo-onboarding-design-review-3.md`, and `docs/reports/nested-entry-file-loading.md`. The probe showed that Claude Code loads a nested `AGENTS.md` only through an import in a loaded `CLAUDE.md`, that the import works between the managed block markers, that Codex loads entries only from the repository root down to its working directory, and that Claude Code removes HTML comments from entry files before the model sees them while Codex keeps them.
 

@@ -8,7 +8,7 @@ Branch `lane-gate`, from main at 8d45cb6. Claims below are backed by command out
 - Not gated: other roles, a handoff with no ticket id, lanes other than solo, a skips.md whose last `lane:` record is not solo, lifecycle children.
 - `scripts/steps.py`: `lane --check` prints the lane and writes nothing.
 - `scripts/fanout.py`: sets the override for `--lane full` and `--driver` runs.
-- `skills/fix/SKILL.md` step 3 records `lane: fix` and the planner and filer skips; `agents/conductor.md` gets one line on exit 5; `docs/maintenance/sdlc-internals.md` describes the gate.
+- `skills/fix/SKILL.md` step 3 records `lane: fix` and the planner and filer skips; `agents/conductor.md` gets one line on exit 5; `docs/references/sdlc-internals.md` describes the gate.
 - Two budget-gate fixtures in `run-selftest.sh` moved from size S to size L so they still reach the budget gate.
 
 ## Red then green

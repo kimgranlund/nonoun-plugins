@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- `docs/maintenance/sdlc-internals.md`: I took HEAD's `fanout.py` paragraph, which covers run ids, the integration-dirty refusal and per-run log prefixes. I added the runner lane's sentence on the reap step, placed after the driver and before the lane commit.
+- `docs/references/sdlc-internals.md`: I took HEAD's `fanout.py` paragraph, which covers run ids, the integration-dirty refusal and per-run log prefixes. I added the runner lane's sentence on the reap step, placed after the driver and before the lane commit.
 - `plugins/sdlc-lite/scripts/fanout.py`: `run_ticket` keeps HEAD's `say(ctx, ...)` and `run_logged` driver call, followed by the runner lane's `reap-tmp-worktrees.sh` call. The selftest keeps HEAD's cases 9 (resume) and 10 (gate retry) and adds the runner lane's reap case, renumbered to 11.
 - Merge commit created on `fanout/night-2026-09-29` (parents `6139f73` and `fanout/night-2026-09-29-runner`). Nothing was pushed.
 

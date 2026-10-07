@@ -9,7 +9,7 @@ pass
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`: pass. Evidence: it printed `Codex agent definitions verified`. `sdlc-conductor-l1.toml` shows as changed in the diff, so it was regenerated.
 
 ## Out of scope changes
-- `.sdlc/0160-repo-onboarding-skill/handoff.md` and `docs/repo-onboarding/design.md` show as modified. The builder says they were dirty before this step.
+- `.sdlc/0160-repo-onboarding-skill/handoff.md` and `docs/specs/repo-onboarding/design.md` show as modified. The builder says they were dirty before this step.
 - I did not diff them against the base, so I can't independently confirm that. The step touches neither, and the diff of the step's own files shows nothing from them.
 - No other changes beyond the three files the step named.
 

@@ -1,8 +1,8 @@
 # Parked tickets review, 2026-10-06
 
-Nine tickets parked on 2026-10-04 were reviewed against the four pillars (`docs/sdlc-lite/pillars.md`) and the actionability test (evidence, mechanism, right owner, not already fixed). Code checked at main 41d6f096 under `plugins/sdlc-lite/scripts/`.
+Nine tickets parked on 2026-10-04 were reviewed against the four pillars (`docs/specs/sdlc-lite/pillars.md`) and the actionability test (evidence, mechanism, right owner, not already fixed). Code checked at main 41d6f096 under `plugins/sdlc-lite/scripts/`.
 
-Common finding: every ticket tuned the orchestrated chain or the `.sdlc/` layout for the lean-chain design (`docs/sdlc-lite/design.md` v0.4, "Nothing here is built"). Solo is now the default lane and has run on real tickets (`docs/reports/solo-vs-lean-benchmark-2026-10-04.md`, `docs/reports/solo-live-run.md`); plan review is limited to L4 and L5 steps. None of the nine moved a pillar measure that is still in flight.
+Common finding: every ticket tuned the orchestrated chain or the `.sdlc/` layout for the lean-chain design (`docs/specs/sdlc-lite/design.md` v0.4, "Nothing here is built"). Solo is now the default lane and has run on real tickets (`docs/reports/solo-vs-lean-benchmark-2026-10-04.md`, `docs/reports/solo-live-run.md`); plan review is limited to L4 and L5 steps. None of the nine moved a pillar measure that is still in flight.
 
 | Id | Verdict | Why | Evidence |
 |---|---|---|---|

@@ -7,7 +7,7 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Implementation targets: `plugins/sdlc-lite/scripts/tickets.py` (a new `skip_problems` helper, `cmd_check`, `cmd_close`, the module usage docstring's `check` and `close` entries, a new selftest block), `plugins/sdlc-lite/skills/handoff-format/SKILL.md` (Layout), and `docs/maintenance/sdlc-internals.md` (the `scripts/tickets.py` section). Depends on: none. T-0197 already ships `steps.py lane` and is merged at 026622f.
+Implementation targets: `plugins/sdlc-lite/scripts/tickets.py` (a new `skip_problems` helper, `cmd_check`, `cmd_close`, the module usage docstring's `check` and `close` entries, a new selftest block), `plugins/sdlc-lite/skills/handoff-format/SKILL.md` (Layout), and `docs/references/sdlc-internals.md` (the `scripts/tickets.py` section). Depends on: none. T-0197 already ships `steps.py lane` and is merged at 026622f.
 
 Settled decisions:
 
@@ -84,15 +84,15 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` (about 3
 - `grep -qF "(skips)" plugins/sdlc-lite/scripts/tickets.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py selftest`
 - `grep -qF "## Skipped" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- `grep -qF "## Skipped" docs/maintenance/sdlc-internals.md`
-- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/maintenance/sdlc-internals.md)"`
+- `grep -qF "## Skipped" docs/references/sdlc-internals.md`
+- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/references/sdlc-internals.md)"`
 
 ## Step 2: gates green
 level: L1
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Run every project gate named in the handoff's Done-when on the tree that step 1 left, and fix any red that step 1 introduced. Fix only in `plugins/sdlc-lite/scripts/tickets.py`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md` and `docs/maintenance/sdlc-internals.md`. Depends on: step 1.
+Run every project gate named in the handoff's Done-when on the tree that step 1 left, and fix any red that step 1 introduced. Fix only in `plugins/sdlc-lite/scripts/tickets.py`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md` and `docs/references/sdlc-internals.md`. Depends on: step 1.
 
 All four gates were green at the build-start HEAD a5a0e21:
 - `check.sh` rc 0 in about 4 minutes;
@@ -111,8 +111,8 @@ What is and is not proven red here:
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
-- (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/tickets.py plugins/sdlc-lite/skills/handoff-format/SKILL.md docs/maintenance/sdlc-internals.md`
-- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/maintenance/sdlc-internals.md)"`
+- (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/tickets.py plugins/sdlc-lite/skills/handoff-format/SKILL.md docs/references/sdlc-internals.md`
+- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/references/sdlc-internals.md)"`
 
 ## Assumptions
 - Lane records exist only in `skips.md` `## Lane` lines written by `steps.py lane`: verified by reading `lane_record`/`lane_text`/`record_lane` (steps.py:1579-1617) and `git grep skips.md` outside `.sdlc`.

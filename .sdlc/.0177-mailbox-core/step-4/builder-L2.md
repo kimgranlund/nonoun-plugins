@@ -6,9 +6,9 @@ done
 - `.gitignore`: added `.sdlc/messages/` after `.sdlc/runtime/`.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: added the Layout line, the ignore-list entry and the bullet below the list.
 - `plugins/sdlc-lite/scripts/onboard.py`: added the local mailbox bullet to `ROOT_AGENTS_TEMPLATE` after the roadmap line. `TEMPLATE_VERSION` is still 1.
-- `docs/repo-onboarding/design.md`: added the same bullet, byte for byte, after the roadmap line.
-- `docs/maintenance/sdlc-internals.md`: added one notice sentence to the `scripts/run.sh` entry, and a new `scripts/messages.py` entry placed before `## Feed`.
-- `docs/ticket-stages/design.md`, Message bus section only:
+- `docs/specs/repo-onboarding/design.md`: added the same bullet, byte for byte, after the roadmap line.
+- `docs/references/sdlc-internals.md`: added one notice sentence to the `scripts/run.sh` entry, and a new `scripts/messages.py` entry placed before `## Feed`.
+- `docs/specs/ticket-stages/design.md`, Message bus section only:
   - Added a status line after the heading.
   - Changed the `re` wording.
   - Named the command on every transition row, with `protocol` and `expires` added to the create row's Stamped cell.

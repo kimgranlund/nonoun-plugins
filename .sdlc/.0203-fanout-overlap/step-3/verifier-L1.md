@@ -3,9 +3,9 @@
 pass
 
 ## Criteria
-- `grep -qF -- '- Overlap:' docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. The check can go red: the string is absent at the base, since the base diff shows the doc line gained it.
-- `grep -qF 'overlap (planned scope)' docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. The doc matches fanout.py:517-522 for the pair, `none` and `not planned` forms.
-- `grep -qF 'waiting for lane' docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. It matches the event at fanout.py:841.
+- `grep -qF -- '- Overlap:' docs/references/sdlc-internals.md`: pass. Evidence: exit 0. The check can go red: the string is absent at the base, since the base diff shows the doc line gained it.
+- `grep -qF 'overlap (planned scope)' docs/references/sdlc-internals.md`: pass. Evidence: exit 0. The doc matches fanout.py:517-522 for the pair, `none` and `not planned` forms.
+- `grep -qF 'waiting for lane' docs/references/sdlc-internals.md`: pass. Evidence: exit 0. It matches the event at fanout.py:841.
 - (guard) scope guard over changed and untracked files outside `.sdlc`: pass. Evidence: exit 0. Only `fanout.py` and `sdlc-internals.md` changed (`git diff --stat` shows 2 files, 3 insertions, 2 deletions).
 - (guard) `git diff --check` on both files: pass. Evidence: exit 0, no output.
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`: pass. Evidence: rc=0 on a rerun with the exit captured. The output ends with the fanout, footprint, run and hook selftests PASS and `ok: plugin validate`. `shellcheck not installed` is skipped. A grep for fail lines that aren't ok or PASS lines returned nothing. I did not run a base-HEAD comparison because the gate is green.

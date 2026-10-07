@@ -11,7 +11,7 @@ pass
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`: pass. Evidence: exit=0 with no output (base 9d6ca64). Negative control: adding a line with trailing whitespace to check.sh in the throwaway gave `check.sh:33: trailing whitespace.` and exit=2; restoring the file brought it back to exit=0. `git diff` does not look at the untracked `plugins/sdlc-lite/hooks/block-disk-scan.sh`, so I checked that file directly with `grep -nE '[[:space:]]$'`: exit=1, no trailing whitespace.
 
 ## Out of scope changes
-None. `git diff --stat` shows only docs/maintenance/claude-hooks.md, adapters/claude/hooks.json, scripts/check.sh and scripts/hook-selftest.sh, plus the untracked hooks/block-disk-scan.sh. That is exactly the file list in step 1's builder `## Changes`. The step-2 builder said it made no changes, and `git status` shows no file beyond step 1's set, which fits that claim. I removed my throwaway worktree afterwards; `git worktree list` has no verifier entry left.
+None. `git diff --stat` shows only docs/references/claude-hooks.md, adapters/claude/hooks.json, scripts/check.sh and scripts/hook-selftest.sh, plus the untracked hooks/block-disk-scan.sh. That is exactly the file list in step 1's builder `## Changes`. The step-2 builder said it made no changes, and `git status` shows no file beyond step 1's set, which fits that claim. I removed my throwaway worktree afterwards; `git worktree list` has no verifier entry left.
 
 ## For the next attempt
 None

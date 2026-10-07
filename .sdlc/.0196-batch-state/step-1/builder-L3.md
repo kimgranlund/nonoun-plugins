@@ -5,7 +5,7 @@ done
 ## Changes
 - `plugins/sdlc-lite/scripts/steps.py`: added `batch_verified(step_dir)` and the module constant `BATCH_PATH_RE` just above `next_action`. `next_action` now calls it once, in the branch where no step verifier counts after the build, and returns `done` when it names a task-dir verifier result. The module docstring has the new `next` rule (names `## Verified` and every exclusion) and one `resume` sentence. Added 16 selftest cases with the prefix `next batch: `.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: new section `## Batched verifier result (task dir)` placed before `## Free-text arguments`.
-- `docs/maintenance/sdlc-internals.md`: added one clause to the `steps.py` `next` description. It names `## Verified`, the newest-listing rule and the exclusions.
+- `docs/references/sdlc-internals.md`: added one clause to the `steps.py` `next` description. It names `## Verified`, the newest-listing rule and the exclusions.
 
 ## Checks
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest`: PASS. All 16 `ok: next batch:` lines print, including the positive case (next and resume print done), the newer builder whose runs.jsonl order contradicts the -2 name, unlisted step, L4, L5, Merge title, gates green title, last step, superseded sibling, Verdict fail, newer fail over older pass and the reverse, disjoint batches, structurally invalid task verifier, and per-step fail giving rebuild.

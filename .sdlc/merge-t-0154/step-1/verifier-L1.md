@@ -17,7 +17,7 @@ pass
   - I removed the base worktree.
 
 ## Out of scope changes
-None. `git status` shows only the untracked `.sdlc/merge-t-0154/` artifacts directory. The builder reports that the two conflict files were `docs/maintenance/sdlc-internals.md` and `plugins/sdlc-lite/scripts/fanout.py`. I did not inspect the merge diff itself.
+None. `git status` shows only the untracked `.sdlc/merge-t-0154/` artifacts directory. The builder reports that the two conflict files were `docs/references/sdlc-internals.md` and `plugins/sdlc-lite/scripts/fanout.py`. I did not inspect the merge diff itself.
 
 ## For the next attempt
 None. The merge commit message still contains git's default `# Conflicts:` comment lines. It is cosmetic and no criterion covers it.

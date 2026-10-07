@@ -38,7 +38,7 @@ Two builder choices were examined and dismissed:
 - `read` prints no blank line for an empty body. Observed output keeps each marker on its own line, and the Do's wording is ambiguous for an empty body.
 - A path elsewhere in the mailbox gets the id-based refusal. Observed exit 1, which matches "else exit 1".
 
-Neighbor checks: `python3 plugins/sdlc-lite/scripts/check.py` and `python3 scripts/check-packaging.py` both exit 0 with the new file present. `git grep messages.py` outside `.sdlc` finds only `docs/ticket-stages/design.md`, so no dependent exists yet.
+Neighbor checks: `python3 plugins/sdlc-lite/scripts/check.py` and `python3 scripts/check-packaging.py` both exit 0 with the new file present. `git grep messages.py` outside `.sdlc` finds only `docs/specs/ticket-stages/design.md`, so no dependent exists yet.
 
 ## Out of scope changes
 None. `git status --short` shows only `plugins/sdlc-lite/scripts/messages.py` outside `.sdlc`; the other untracked files are the runner's step artifacts.

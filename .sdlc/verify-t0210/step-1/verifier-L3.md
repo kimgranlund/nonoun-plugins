@@ -28,7 +28,7 @@ pass
 - `.sdlc/.0210-spec-gate-check/handoff.md` gained `## Burn-down brief` on the branch: ticket record edit; `tickets.py check` green.
 - `.sdlc/verify-t0210/step-1/handoff.md`, `base-sha`, `verifier-L3.attempt.json`: this verification's own brief and run records.
 - Regenerated `plugins/sdlc-lite/adapters/codex/agents/sdlc-{conductor-l1,planner-l1,planner-l2,planner-l3}.toml`: `codex_roles.py generate --check` green.
-- `docs/lean-sdlc/cost-control.md:3`, `docs/maintenance/sdlc-internals.md`, `agents/planner.md`, `agents/conductor.md`, `skills/chain/SKILL.md`, `skills/handoff-format/SKILL.md`, `scripts/check.py`: all named in the step-2 Do; read each hunk in `git diff main...HEAD`, each is the specified text. None otherwise.
+- `docs/lean-sdlc/cost-control.md:3`, `docs/references/sdlc-internals.md`, `agents/planner.md`, `agents/conductor.md`, `skills/chain/SKILL.md`, `skills/handoff-format/SKILL.md`, `scripts/check.py`: all named in the step-2 Do; read each hunk in `git diff main...HEAD`, each is the specified text. None otherwise.
 
 ## For the next attempt
 None. Notes for the filer, not defects: `docs/lean-sdlc/cost-control.md:41` still says `--guard-timeout (default 300)` with no mention of the plan line; check.py's spec gate order guard keys on the header comment (run.sh:63), so deleting the gate command block does not turn check.py red (run-selftest.sh covers it); check.py docstring item `17. Spec gate` sits before `16. Carry forward`.

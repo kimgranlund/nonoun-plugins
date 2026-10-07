@@ -2,7 +2,7 @@
 
 Recorded: 2026-09-29. Independent review of the onboarding design at v0.1, before it was committed. The reviewer was a fresh agent with no access to the authoring conversation. It was read-only and changed no file in this repository.
 
-Subject: `docs/repo-onboarding/design.md` v0.1, an uncommitted working copy. The closest committed revision is v0.2 in 3ac677c, which already contains the fixes. The v0.1 text was not preserved, so these findings cannot be rechecked against the exact material reviewed.
+Subject: `docs/specs/repo-onboarding/design.md` v0.1, an uncommitted working copy. The closest committed revision is v0.2 in 3ac677c, which already contains the fixes. The v0.1 text was not preserved, so these findings cannot be rechecked against the exact material reviewed.
 
 Verdict: ready after fixes. No blockers, 8 major findings, 5 minor.
 

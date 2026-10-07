@@ -45,7 +45,7 @@ None.
 - My three throwaway worktrees are removed. A cleanup command for my scratch fixtures was denied, so `/tmp/vfix-a2.tYo8Iv` and a few `/tmp/vfix-a2-*` files remain outside the repo.
 
 ## For the next attempt
-plan defect: the fix's file list and this handoff's Do omit a dependent of the changed `review_required` contract, `docs/maintenance/sdlc-internals.md` (line 57: the review sentence, the lint sentence, and the lane sentence). Widen the scope to include it.
+plan defect: the fix's file list and this handoff's Do omit a dependent of the changed `review_required` contract, `docs/references/sdlc-internals.md` (line 57: the review sentence, the lint sentence, and the lane sentence). Widen the scope to include it.
 
 The lane and review behavior is verified and needs no change. What is left is lint and the text around it.
 

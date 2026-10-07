@@ -6,7 +6,7 @@ Recorded: 2026-10-06. Lane: solo (`steps.py lane` printed `solo`, size M). Metho
 
 - Prose name is `SDLC Lite`. Identifiers stay: `sdlc-lite`, `SDLC_*`, `.sdlc/`, plugin and skill names.
 - "Lean SDLC", "lean SDLC" and "Sdlc Lite" became "SDLC Lite". Bare "SDLC" meaning this product became "SDLC Lite" (entry files, manifest descriptions, README title, Codex role text and the generated Codex agent descriptions). "lean lane" and the `## Lean chain` heading stay.
-- `docs/lean-sdlc/` moved to `docs/sdlc-lite/` (7 files, `git mv`); 19 references in 13 files rewritten by `rename_refs.py apply docs/lean-sdlc docs/sdlc-lite` restricted to live files with `--only`, plus the folder row in `docs/AGENTS.md` and one target column in `docs/docs-schema/design.md` by hand.
+- `docs/lean-sdlc/` moved to `docs/specs/sdlc-lite/` (7 files, `git mv`); 19 references in 13 files rewritten by `rename_refs.py apply docs/lean-sdlc docs/specs/sdlc-lite` restricted to live files with `--only`, plus the folder row in `docs/AGENTS.md` and one target column in `docs/planning/docs-schema/design.md` by hand.
 - No model or effort value changed. The managed block in `onboard.py` and the router blocks in `tickets.py` contain none of the variants, so nothing was left there.
 
 ## Counts
@@ -23,12 +23,12 @@ Occurrences in tracked text files. "History" is the allowlisted set below; "live
 | bare `SDLC` (product meaning) | 61 | 100 (60 of them in generated Codex agent TOML) | 11 |
 | `lean-sdlc` (any use) | 219 | 49 | 30 |
 
-Live after, by cause. The 4 spellings above sit only in the T-0309 handoff, which names them on purpose (allowlisted). The 11 bare "SDLC" are: `.sdlc/notes.md` (1, a dated note, "SDLC-caused"), `.sdlc/roadmap.md` (1, a generated closed-ticket title), the T-0309 handoff (5), the guard's own banned-string source in `check.py` (3, split literals), and the vocabulary note in `docs/sdlc-lite/README.md` (1). The 30 `lean-sdlc` are file names of dated reports (`docs/reports/lean-sdlc-design-review*.md`, `lean-sdlc-cost-control-review.md`, kept because reports are history), the T-0309 title in the ticket, generated roadmap and router, and the `.sdlc/lean-sdlc-*` workspace directory names.
+Live after, by cause. The 4 spellings above sit only in the T-0309 handoff, which names them on purpose (allowlisted). The 11 bare "SDLC" are: `.sdlc/notes.md` (1, a dated note, "SDLC-caused"), `.sdlc/roadmap.md` (1, a generated closed-ticket title), the T-0309 handoff (5), the guard's own banned-string source in `check.py` (3, split literals), and the vocabulary note in `docs/specs/sdlc-lite/README.md` (1). The 30 `lean-sdlc` are file names of dated reports (`docs/reports/lean-sdlc-design-review*.md`, `lean-sdlc-cost-control-review.md`, kept because reports are history), the T-0309 title in the ticket, generated roadmap and router, and the `.sdlc/lean-sdlc-*` workspace directory names.
 
 ## Places a variant sits inside an identifier, path, quoted dated text or managed block
 
 - Paths: `docs/reports/lean-sdlc-*.md` (three report files and their links), `.sdlc/lean-sdlc-review*`, `.sdlc/lean-sdlc-cost-review` run workspaces. Not renamed; linked as is.
-- `docs/sdlc-lite/cost-control.md` line 234 and `design.md` line 5 cite `../validation/lean-sdlc-*` (a stale link from the earlier rename, already on the broken-link allowlist). Left.
+- `docs/specs/sdlc-lite/cost-control.md` line 234 and `design.md` line 5 cite `../validation/lean-sdlc-*` (a stale link from the earlier rename, already on the broken-link allowlist). Left.
 - Quoted dated text: `.sdlc/notes.md` and every `.sdlc/.NNNN-*` folder, `docs/reports/`, `plugins/sdlc-lite/bench/results/`, run workspaces `.sdlc/verify-*`. Left.
 - Managed block text (`onboard.py`) and router blocks (`tickets.py`): none contain a variant.
 
@@ -40,7 +40,7 @@ Live after, by cause. The 4 spellings above sit only in the T-0309 handoff, whic
 
 - Guard: `check.py` fails on `Lean SDLC`, `lean SDLC`, `SDLC-Lite` and `sdlc lite` in tracked files outside the allowlist. The banned strings in its own source are split so it does not flag itself.
 - Positive case: `python3 plugins/sdlc-lite/scripts/check.py` prints `ok: 19 role levels, 9 agents checked`.
-- Negative control observed: appending `planted: Lean SDLC here` to `docs/maintenance/sdlc-internals.md` made it print `FAIL check.py: product name: docs/maintenance/sdlc-internals.md: retired spelling "Lean SDLC"` and exit 1; after `git checkout` of the file it printed `ok` again. The check also carries two in-process controls (a planted spelling is flagged, an allowlisted path is not).
+- Negative control observed: appending `planted: Lean SDLC here` to `docs/references/sdlc-internals.md` made it print `FAIL check.py: product name: docs/maintenance/sdlc-internals.md: retired spelling "Lean SDLC"` and exit 1; after `git checkout` of the file it printed `ok` again. The check also carries two in-process controls (a planted spelling is flagged, an allowlisted path is not).
 - Broken relative Markdown links (`rename_refs.py links`): 12 before, 12 after (796 checked before, 798 after, same 12 targets; the baseline allowlist test inside `check.py` agrees).
 - `codex_roles.py generate` rewrote the generated agent TOML; `generate --check` verified. `check-packaging.py` PASS. `tickets.py check` ok.
 

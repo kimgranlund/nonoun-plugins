@@ -10,7 +10,7 @@ T-0307 (plugins/sdlc-lite/skills/fleet-retro/interview.md):
 - A3: it states counts and costs come from the collector, not the conductor.
 - A4: each finding in the three existing root-cause reports fits one row of the answer format (see fixtures.md/rubric.md in the skill folder); any that do not are listed.
 
-T-0310 (.sdlc/fleet.json, plugins/sdlc-lite/scripts/fleet_config.py, schema doc under docs/sdlc-lite/):
+T-0310 (.sdlc/fleet.json, plugins/sdlc-lite/scripts/fleet_config.py, schema doc under docs/specs/sdlc-lite/):
 - B1: `python3 plugins/sdlc-lite/scripts/fleet_config.py selftest` passes.
 - B2: an excluded repo is absent from `show --active` and present in `show` (run it and observe).
 - B3: a malformed file exits 1 naming the line and never silently drops a repo (try a temp copy; do not edit the real file).

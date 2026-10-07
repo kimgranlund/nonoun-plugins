@@ -46,7 +46,7 @@ same state files as collect (the snapshot makes the next call's `since last`); -
 0 ok, 1 a row had no source, 2 usage, a bad registry or an unknown repo.
 
 collect: REPO paths name the repos to inspect; with none, the active entries of the fleet registry (--fleet, default
-`.sdlc/fleet.json`, see docs/sdlc-lite/fleet-config.md) are inspected. A registry entry whose directory is
+`.sdlc/fleet.json`, see docs/specs/sdlc-lite/fleet-config.md) are inspected. A registry entry whose directory is
 missing is reported with an `error` and skipped; an explicit REPO that is missing exits 2.
 
 State. Two files live in --state-dir (default `<cwd>/.sdlc/runtime`, git-ignored; never inside an inspected

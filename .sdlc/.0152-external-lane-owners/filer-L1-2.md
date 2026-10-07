@@ -24,7 +24,7 @@ One registration line does both jobs: `external_branch: <branch>` in `<root>/con
   - Gates run only when the merge produced a new commit, so a second ticket on the same branch merges nothing new and skips the gates.
   - Preflight refuses an unregistered branch (exit 2, naming the `external_branch:` line and the config path), a missing ref, the integration branch or an `<integration>-<lane>` branch as the external branch, and two lanes on one branch.
   - Dry-run plan line, report lane line, usage text, docstring and selftest case 11 cover the new form.
-- `plugins/sdlc-lite/skills/fanout/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md`, `docs/maintenance/sdlc-internals.md`: updated for the external lane form and the registration line.
+- `plugins/sdlc-lite/skills/fanout/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md`, `docs/references/sdlc-internals.md`: updated for the external lane form and the registration line.
 - Existing `<lane>=<id>` lanes, their branch naming and refusals behave as before. Main is untouched and nothing is pushed or fetched.
 
 Design note: the architect chose not to sync the outside branch, because it is usually checked out in the outside agent's worktree. This deliberately differs from the ticket's default wording ("syncs ... like any lane"). The outside agent reconciles a diverged branch on their side.

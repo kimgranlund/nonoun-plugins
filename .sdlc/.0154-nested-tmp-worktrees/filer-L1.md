@@ -31,7 +31,7 @@ The evidence for the 2026-09-28 overnight run is in another repo and was not rea
   - `stale prefix` checks that a dead-owner prefix is removed and a live one kept.
   - `term cleanup` uses a stub role that ignores TERM. It checks that no worktree is registered, `.worktrees/tmp` is gone, and the stub is dead.
 - **`fanout.py`:** runs the reaper on the lane worktree right after each driver returns, before `inherited_red` and before any `git add -A` or wip commit. A new selftest case, `lane tmp prefix reaped`, covers it.
-- **`docs/maintenance/sdlc-internals.md`:** describes the reaper, the prompt TERM cleanup and the per-driver lane reap.
+- **`docs/references/sdlc-internals.md`:** describes the reaper, the prompt TERM cleanup and the per-driver lane reap.
 
 ### Verification
 - **Step 1 (verifier L3, pass):**

@@ -18,7 +18,7 @@
     {"id": "B-steps-stale", "label": "steps.py next, resume, review treat stale input", "leaf": true},
     {"id": "B-hook", "label": "hooks/block-handoff-edit.sh", "leaf": true},
     {"id": "B-hooks-json", "label": "hooks/hooks.json (path as written)", "leaf": true},
-    {"id": "B-hook-selftest", "label": "scripts/hook-selftest.sh and docs/maintenance/claude-hooks.md", "leaf": true},
+    {"id": "B-hook-selftest", "label": "scripts/hook-selftest.sh and docs/references/claude-hooks.md", "leaf": true},
     {"id": "B-conductor-text", "label": "conductor.md and chain/SKILL.md change-request rule", "leaf": true},
     {"id": "C", "label": "C replan delta and checklist", "leaf": false},
     {"id": "C-replan-handoff", "label": "steps.py replan-handoff", "leaf": true},

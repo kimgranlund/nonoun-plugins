@@ -11,10 +11,10 @@ Add a `## Recommendation` section at the end of `.sdlc/0161-repo-reorganization/
   - N2: the `ambiguities` entries.
   - N3: whether a topic needed a glob.
   - N1, N9, and N15: what should hold the plan (a ticket or a file outside `.sdlc/`), with the reason.
-- `### Rules to keep` and `### Rules to change`: bullet lists that name the rule in `docs/repo-onboarding/reorganization.md` each item refers to.
+- `### Rules to keep` and `### Rules to change`: bullet lists that name the rule in `docs/planning/repo-onboarding/reorganization.md` each item refers to.
 - One line in exactly the form `Apply verdict: build`, `Apply verdict: defer`, or `Apply verdict: drop`, followed by a short justification. Say whether a reviewed plan carried out by hand is enough.
 
-Do not edit `docs/repo-onboarding/reorganization.md`. Changing the design is follow-up work after the spike.
+Do not edit `docs/planning/repo-onboarding/reorganization.md`. Changing the design is follow-up work after the spike.
 
 This is the gates green step. Run every gate below and fix any red that step 1 introduced.
 ### Acceptance criteria

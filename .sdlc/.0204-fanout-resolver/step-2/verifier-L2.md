@@ -16,7 +16,7 @@ Steelman: my draft fail reason was that the doc edit was not run. The builder's 
 Builder claims checked: the diff matches `builder-L3.md` (the routing change at fanout.py:487, fixtures `y` and `z`, a new dry-run assertion, one doc sentence). I confirmed the negative control myself rather than trusting its report.
 
 ## Out of scope changes
-None. `git diff --stat` shows only `docs/maintenance/sdlc-internals.md` and `plugins/sdlc-lite/scripts/fanout.py`. The untracked files under `.sdlc/0204-fanout-resolver/step-2/` are run records written by run.sh. My throwaway worktree was removed and `git status` is unchanged.
+None. `git diff --stat` shows only `docs/references/sdlc-internals.md` and `plugins/sdlc-lite/scripts/fanout.py`. The untracked files under `.sdlc/0204-fanout-resolver/step-2/` are run records written by run.sh. My throwaway worktree was removed and `git status` is unchanged.
 
 ## For the next attempt
 None

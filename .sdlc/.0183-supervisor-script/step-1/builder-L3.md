@@ -3,7 +3,7 @@
 done
 
 ## Changes
-- `docs/ticket-stages/watcher-design.md`: rewritten to Version 0.2.
+- `docs/planning/ticket-stages/watcher-design.md`: rewritten to Version 0.2.
   - Header starts `Version 0.2, 2026-10-01.` and no longer says "four blockers open".
   - Sections 1 to 10 are revised. Decisions D1 to D21 are each tagged once, where they are stated.
   - The "Owned session (default)" bullet, the claim that the watcher may call `expire`, and "about 17,600 tokens" are removed.

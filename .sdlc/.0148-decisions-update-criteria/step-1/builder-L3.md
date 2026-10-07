@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/steps.py`: added the `widen` subcommand, built from `swap`'s helpers: `ere_escape`, `widen_forms`, `widen_listed`, `widen_span`, `replace_span`, `add_scope_widened`, `widen` and `cmd_widen`. Also added the argparse subparser, the `widen <step dir> ...` usage and entry in the module docstring, and 25 selftest cases prefixed `widen:`.
-- `docs/maintenance/sdlc-internals.md`: documented `widen <step dir> <path> [<path> ...] [--timeout SECONDS]` in the `scripts/steps.py` entry.
+- `docs/references/sdlc-internals.md`: documented `widen <step dir> <path> [<path> ...] [--timeout SECONDS]` in the `scripts/steps.py` entry.
 
 ## Checks
 - Criterion 1 (the F form in a throwaway repo): rc 0. b.txt passes the widened span, c.txt fails it, and the `## Scope widened` item is written.
@@ -13,7 +13,7 @@ done
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: widen:'`: rc 0.
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest`: rc 0, `steps selftest: PASS`.
 - `grep -qF 'widen <step dir>' plugins/sdlc-lite/scripts/steps.py`: rc 0.
-- `grep -qF 'widen <step dir>' docs/maintenance/sdlc-internals.md`: rc 0.
+- `grep -qF 'widen <step dir>' docs/references/sdlc-internals.md`: rc 0.
 - (guard) scope criterion, with `SDLC_BASE_SHA` from `step-1/base-sha` (e399089): rc 0.
 - Negative control: a copy of steps.py with ERE escaping turned off makes the selftest exit 1, failing only the E-form and A-form `(a)` cases. The copy was in a mktemp dir and has been removed.
 - `python3 plugins/sdlc-lite/scripts/check.py`: rc 0.

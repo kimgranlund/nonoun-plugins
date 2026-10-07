@@ -335,7 +335,7 @@
     },
     {
       "id": "a14",
-      "label": "rewrite non-Markdown citers of a moved doc (check.py:613 reads docs/maintenance/claude-hooks.md)"
+      "label": "rewrite non-Markdown citers of a moved doc (check.py:613 reads docs/references/claude-hooks.md)"
     },
     {
       "id": "a15",

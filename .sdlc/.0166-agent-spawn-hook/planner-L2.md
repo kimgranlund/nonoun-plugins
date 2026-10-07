@@ -86,7 +86,7 @@ Run `bash plugins/sdlc-lite/scripts/hook-live-probe.sh --conductor --out docs/re
 - If the conductor model refuses the call, strengthen the probe prompt rather than weakening the checks.
 - Add a short note under the report's heading on what it proves: the observed `agent_type` for a plugin session agent. It does not prove the interactive `.claude/settings.json` agent path, unless you also observe that path and record it there.
 
-Add a `## \`hooks/block-role-spawn.sh\`` section to `docs/maintenance/claude-hooks.md` covering:
+Add a `## \`hooks/block-role-spawn.sh\`` section to `docs/references/claude-hooks.md` covering:
 - the event and matcher
 - conductor detection
 - the deny rule and the allowed helpers
@@ -99,8 +99,8 @@ In `plugins/sdlc-lite/agents/conductor.md` line 24, add one sentence: in Claude 
 - `test "$(tail -n 1 docs/reports/agent-spawn-hook-live-run.md)" = "verdict: PASS"`
 - `grep -qE "^conductor deny: agent_type [^ ]*conductor, .*hook exit code 2$" docs/reports/agent-spawn-hook-live-run.md`
 - `grep -qE "^conductor allow: agent_type [^ ]*conductor, .*hook exit code 0$" docs/reports/agent-spawn-hook-live-run.md`
-- `grep -qF "## \`hooks/block-role-spawn.sh\`" docs/maintenance/claude-hooks.md`
-- `awk "/^## \`hooks\/block-role-spawn.sh\`/{f=1;next} /^## /{f=0} f" docs/maintenance/claude-hooks.md | grep -q Codex`
+- `grep -qF "## \`hooks/block-role-spawn.sh\`" docs/references/claude-hooks.md`
+- `awk "/^## \`hooks\/block-role-spawn.sh\`/{f=1;next} /^## /{f=0} f" docs/references/claude-hooks.md | grep -q Codex`
 - `grep -q block-role-spawn.sh plugins/sdlc-lite/agents/conductor.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh`

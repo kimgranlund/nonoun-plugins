@@ -14,7 +14,7 @@ fail
 
 ## Out of scope changes
 - `.sdlc/AGENTS.md`, `.sdlc/roadmap.md`: diff hunks add only the T-0221 stage line, the roadmap row, and the managed-block sha; these are `tickets.py` registration output for the ticket itself. Dismissed on the diff read.
-- `docs/README.md` (one index line), `docs/maintenance/sdlc-internals.md` (one paragraph on solo first), `plugins/sdlc-lite/skills/fanout/SKILL.md` (description, argument hint, `Solo first` paragraph, run-time sentence): named by the Do's "docs"; `check-packaging.py` printed `PASS: catalog parity, identity, skill routes, hook isolation and context links` and `git grep "run through a headless /chain one at a time"` finds no stale copy of the old description. Dismissed.
+- `docs/README.md` (one index line), `docs/references/sdlc-internals.md` (one paragraph on solo first), `plugins/sdlc-lite/skills/fanout/SKILL.md` (description, argument hint, `Solo first` paragraph, run-time sentence): named by the Do's "docs"; `check-packaging.py` printed `PASS: catalog parity, identity, skill routes, hook isolation and context links` and `git grep "run through a headless /chain one at a time"` finds no stale copy of the old description. Dismissed.
 - Untracked `.sdlc/0221-fanout-solo-first/base-sha`, `verifier-L3.attempt.json`: this run's own run.sh artifacts (`git status --short` after cleanup shows only these; HEAD still 70f92dc; `git worktree list` has no `tmp/verifier` entry; the tmp prefix is empty).
 
 Otherwise none.

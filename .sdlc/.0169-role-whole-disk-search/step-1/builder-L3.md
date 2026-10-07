@@ -7,7 +7,7 @@ done
 - `plugins/sdlc-lite/adapters/claude/hooks.json`: registered the hook in the Bash matcher's list, after `block-repo-format.sh`.
 - `plugins/sdlc-lite/scripts/hook-selftest.sh`: added the `ds` variable, a header comment for the new hook, and a fixture block. It has 9 blocked cases (the T-0160 repro plus the 8 cases the handoff lists) and 6 allowed cases (including no role). The search phrases are built with printf, and every failure message starts with `block-disk-scan`.
 - `plugins/sdlc-lite/scripts/check.sh`: added `block-disk-scan.sh` to the hook list in the header comment.
-- `docs/maintenance/claude-hooks.md`: new `## hooks/block-disk-scan.sh` section before the validation paragraph, covering what it blocks, what passes, when it fails closed, where its fixtures are, and that it is Claude-only (Codex roles are not covered).
+- `docs/references/claude-hooks.md`: new `## hooks/block-disk-scan.sh` section before the validation paragraph, covering what it blocks, what passes, when it fails closed, where its fixtures are, and that it is Claude-only (Codex roles are not covered).
 
 ## Checks
 - AC1 to AC15 (the executable bit, the grep and jq registration checks, the docs grep, and the 11 hook invocations for exit 2, exit 0 and the role in stderr): all PASS, each run exactly as written.

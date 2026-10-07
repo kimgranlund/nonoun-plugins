@@ -8,7 +8,7 @@ level: L4
 ### Do
 Create `plugins/sdlc-lite/scripts/messages.py` with every subcommand except `selftest` (step 2). Depends on: none.
 
-Use the standard library only, and keep it running on Python 3.9 (the host `python3` is 3.9.6). Follow `scripts/tickets.py` for a global `--root` option before the subcommand (`tickets.py:2925`), and `scripts/fanout.py` for `fcntl.flock` (`fanout.py:521-541`). The handoff (Intent) and `docs/ticket-stages/design.md` (Message bus) settle the interface below. Where both are silent, this plan settles it, including the plan review's findings on ids, malformed files, and caller-set stamps.
+Use the standard library only, and keep it running on Python 3.9 (the host `python3` is 3.9.6). Follow `scripts/tickets.py` for a global `--root` option before the subcommand (`tickets.py:2925`), and `scripts/fanout.py` for `fcntl.flock` (`fanout.py:521-541`). The handoff (Intent) and `docs/specs/ticket-stages/design.md` (Message bus) settle the interface below. Where both are silent, this plan settles it, including the plan review's findings on ids, malformed files, and caller-set stamps.
 
 Parser and exit codes:
 - Build the parser as `argparse.ArgumentParser(prog="messages.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)`, and give every subparser `allow_abbrev=False`.

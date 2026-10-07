@@ -2,7 +2,7 @@
 """Spike T-0161: read-only document reorganization plan.
 
 Throwaway prototype. It reads the repository and prints a plan; it writes nothing, moves
-nothing, and creates no ticket. Rules follow docs/repo-onboarding/reorganization.md
+nothing, and creates no ticket. Rules follow docs/planning/repo-onboarding/reorganization.md
 (Inventory, Frozen material, Plan). The layout parser and frozen matching are imported from
 plugins/sdlc-lite/scripts/onboard.py, not copied.
 

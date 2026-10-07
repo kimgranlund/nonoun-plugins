@@ -35,7 +35,7 @@ On a ChatGPT account, Codex rejects `gpt-6-sol` and `gpt-6-luna` with status 400
   - The stub CLI gains a `verdict` mode.
 - Docs:
   - `skills/level-rubric/SKILL.md` and `plugins/sdlc-lite/HARNESS-NOTES.md` describe the configured-alternate and shared rule.
-  - `docs/codex-role-execution.md` gets:
+  - `docs/references/codex-role-execution.md` gets:
     - the agent count, now 19
     - the mapping table with Sol changed to Astra
     - the rewritten verifier paragraph
