@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a3d051c61fc9 -->
+<!-- sdlc-lite:managed:start v1 sha256:391c84e2ba63 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 13
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
@@ -20,6 +20,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
   - T-0333 Independent verification of the sub-agent mode tickets that closed with no verifier verdict (0333-verify-subagent-tickets)
+  - T-0334 Twelve launcher skills spell dispatch.py record without --transcript (T-0331 finding) (0334-skills-record-transcript-flag)
+  - T-0335 cost_basis label for transcript pricing drifted from the T-0280 criterion and its docstring is stale (T-0280 finding) (0335-cost-basis-label-drift)
+  - T-0336 The L3 verifier row of the live evidence prices at 0.57 of host after the T-0332 refit (T-0328 and T-0331 finding) (0336-l3-verifier-row-outside-band)
 - ready: 0
 - blocked: 0
 - done: 291
