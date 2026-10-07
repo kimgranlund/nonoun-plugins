@@ -107,6 +107,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             ticket folder has an NNNN- prefix, prints a warning (exit stays 0) that the config line is missing.
             Inside a git work tree it also prints `warning: external_branch <b> is not a local branch` (exit
             stays 0) for each registered branch with no refs/heads/<b>
+            It also prints `warning: <slug>/handoff.md:<n>: closed ticket still holds <type> template
+            placeholder text: '<line>'` (exit stays 0) for each done or dropped ticket whose handoff holds a
+            prompt line of its type's template as a whole line (the template's default statements, a bare
+            `- Label:` line and headings never count): newest id first, at most 5 lines, then one
+            `<N> more closed tickets hold template placeholder text` line
             Last, it fails each done ticket whose skips.md records lane solo, lean, fix, or full (the last
             `- lane:` line under ## Lane) but has neither the result nor a ## Skipped entry (format:
             skills/handoff-format) for a missing planner, verifier step <n> or filer result (a solo ticket has
@@ -1091,6 +1096,71 @@ def skip_problems(td, ts):
     return out
 
 
+# A template line that is real default content, not a prompt to the author: a closed ticket may keep it.
+PLACEHOLDER_KEEP = frozenset({
+    'the bug is fixed and a test that failed before the fix passes after it',
+    'the failing test lands before or with the fix, never after',
+    'a decision or a recommendation with cited evidence, written back into this file',
+    'timebox. no production code lands from a spike',
+})
+PLACEHOLDER_SHOWN = 5  # warning lines printed per check, newest ticket first; the rest are counted in one line
+LABEL_ONLY_RE = re.compile(r'(?:[-*]|\d+[.)])?[ \t]*[^:]{1,40}:')  # fullmatch: a bare `- Do:` label
+
+
+def prompt_text(line):
+    """The comparable form of one body line: no list marker, no trailing period, lower case. '' for a blank,
+    a heading, or a bare `- Label:` line (a label is structure, not a prompt)."""
+    line = line.strip()
+    if not line or line.startswith('#') or LABEL_ONLY_RE.fullmatch(line):
+        return ''
+    m = BULLET_RE.fullmatch(line)
+    return (m.group(1) if m else line).strip().rstrip('.').strip().lower()
+
+
+def body_lines(text):
+    """[(line number, line)] after the front matter block; every line when there is none."""
+    lines = text.replace('\r\n', '\n').split('\n')
+    start = 0
+    if lines and lines[0] == '---':
+        for i in range(1, len(lines)):
+            if re.fullmatch(r'---[ \t]*', lines[i]):
+                start = i + 1
+                break
+    return [(i + 1, lines[i]) for i in range(start, len(lines))]
+
+
+def placeholder_problems(root, td, ts):
+    """One warning line per done or dropped ticket whose handoff.md still holds a prompt line copied verbatim
+    from the template of its type (<root>/_templates first, as `new` reads it): the first such line, with its
+    line number. Warnings only: check prints them and still passes. Newest ticket (highest id) first,
+    at most PLACEHOLDER_SHOWN lines, then one line counting the rest: old closed tickets are history, the
+    recent ones are the ones to fix."""
+    prompts, out = {}, []
+    for slug, m in sorted(ts, key=lambda t: str(t[1].get('id', '')), reverse=True):
+        if m.get('status') not in ('done', 'dropped'):
+            continue
+        kind = m.get('type')
+        if kind not in prompts:
+            try:
+                prompts[kind] = {t for _, l in body_lines(template(root, kind).read_text(encoding='utf-8'))
+                                 for t in [prompt_text(l)] if t and t not in PLACEHOLDER_KEEP}
+            except (Fail, OSError):
+                prompts[kind] = set()
+        try:
+            text = (td / slug / 'handoff.md').read_text(encoding='utf-8')
+        except OSError:
+            continue
+        for n, line in body_lines(text):
+            if prompt_text(line) in prompts[kind] and prompt_text(line):
+                out.append(f'warning: {slug}/handoff.md:{n}: closed ticket still holds {kind} template placeholder '
+                           f'text: {line.strip()[:60]!r}')
+                break
+    if len(out) > PLACEHOLDER_SHOWN:
+        out[PLACEHOLDER_SHOWN:] = [f'warning: {len(out) - PLACEHOLDER_SHOWN} more closed tickets hold template '
+                                   f'placeholder text ({PLACEHOLDER_SHOWN} shown, newest first)']
+    return out
+
+
 def file_base(root):
     """The dir file:<path> entries resolve against: the git toplevel of root, else root's parent directory
     (git missing or failing, or root outside git). GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped."""
@@ -1875,6 +1945,7 @@ def cmd_check(root, numbered=False):
     if errs:
         raise Fail('\n'.join(errs))
     out = [f'ok: {len(ts)} tickets, roadmap current']
+    out += placeholder_problems(root, td, ts)
     if not numbered and ts and all(PREFIX_RE.match(slug) or DOT_RE.fullmatch(slug) for slug, _ in ts):
         out.append(f"warning: every ticket folder has an NNNN- prefix but {root}/config lacks "
                    f"'ticket_folders: numbered'; add that line (or run new/close --numbered once) to enforce it")
@@ -4465,6 +4536,67 @@ def selftest():
             rc, _, err = run(nr, 'migrate-layout', rewrite_refs=True)
             expect(f'(mig) a root outside git refuses: rc={rc} {err!r}',
                    rc == 1 and 'not inside a git work tree' in err and (nr / 'alpha').is_dir())
+
+    # placeholder lint: a closed ticket that still holds template prompt text is a warning, never a failure
+    with tempfile.TemporaryDirectory() as tmp:
+        pr = pathlib.Path(tmp) / 'pl' / '.sdlc'
+
+        def ph(root):
+            rc, out, err = run(root, 'check')
+            return rc, [x for x in out.splitlines() if 'template placeholder text' in x or 'more closed tickets' in x], err
+
+        run(pr, 'new', ('bug', 'beta', 'Beta'))
+        run(pr, 'new', ('bug', 'gamma', 'Gamma'))
+        rc, got, err = ph(pr)
+        expect(f'(ph) open tickets holding template text give no warning: rc={rc} {got} {err!r}', rc == 0 and got == [])
+        run(pr, 'close', ('beta',), reason='done elsewhere')
+        rc, got, err = ph(pr)
+        expect(f'(ph) a closed unfilled bug ticket warns once, rc stays 0, open gamma stays quiet: rc={rc} {got} {err!r}',
+               rc == 0 and len(got) == 1 and got[0].startswith('warning: beta/handoff.md:')
+               and 'bug template placeholder text' in got[0] and 'gamma' not in got[0])
+        expect(f'(ph) the warning names the line it found: {got}',
+               bool(got) and (pr / 'beta' / 'handoff.md').read_text(encoding='utf-8').splitlines()[
+                   int(got[0].split('handoff.md:')[1].split(':')[0]) - 1].startswith('1. Exact command'))
+        for pat, repl in ((r'^1\. Exact command.*$', '1. run the failing test'), (r'^Paste the output.*$', 'rc=1'),
+                          (r'^Where it was found.*$', 'tickets.py:10')):
+            edit(pr, 'beta', pat, repl)
+        rc, got, err = ph(pr)
+        expect(f'(ph) a filled ticket that keeps the template default Goal and Constraints lines is clean: '
+               f'rc={rc} {got} {err!r}',
+               rc == 0 and got == [] and 'The failing test lands before or with the fix'
+               in (pr / 'beta' / 'handoff.md').read_text(encoding='utf-8'))
+        run(pr, 'close', ('gamma',), reason='dropped as a duplicate')
+        edit(pr, 'gamma', r'^status: done', 'status: dropped')
+        run(pr, 'roadmap')
+        rc, got, err = ph(pr)
+        expect(f'(ph) a dropped unfilled ticket warns too: rc={rc} {got} {err!r}',
+               rc == 0 and len(got) == 1 and got[0].startswith('warning: gamma/handoff.md:'))
+        # more than PLACEHOLDER_SHOWN: newest first, then one count line
+        for i in range(PLACEHOLDER_SHOWN + 1):
+            run(pr, 'new', ('chore', f'c{i}', 'C'))
+            run(pr, 'close', (f'c{i}',), reason='x')
+        rc, got, err = ph(pr)
+        expect(f'(ph) {PLACEHOLDER_SHOWN} lines newest first then a count line: rc={rc} {got} {err!r}',
+               rc == 0 and len(got) == PLACEHOLDER_SHOWN + 1
+               and [x.split('/')[0] for x in got[:-1]] == [f'warning: c{i}' for i in range(PLACEHOLDER_SHOWN, 0, -1)]
+               and got[-1].startswith('warning: 2 more closed tickets hold template placeholder text'))
+        # a repo template under _templates overrides the shipped one, as `new` reads it
+        ov = pathlib.Path(tmp) / 'ov' / '.sdlc'
+        (ov / '_templates').mkdir(parents=True)
+        (ov / '_templates' / 'chore.md').write_text(
+            (PLUGIN / 'skills' / 'ticket' / 'templates' / 'chore.md').read_text(encoding='utf-8').replace(
+                'One or two sentences: the outcome, not the method.', 'Say what and why in one line.'),
+            encoding='utf-8')
+        run(ov, 'new', ('chore', 'delta', 'Delta'))
+        run(ov, 'close', ('delta',), reason='x')
+        rc, got, err = ph(ov)
+        expect(f'(ph) the repo template text is the placeholder: rc={rc} {got} {err!r}',
+               rc == 0 and len(got) == 1 and "'Say what and why in one line.'" in got[0])
+        # every default the lint exempts is still a line of a shipped template, so the list cannot go stale
+        shipped = {prompt_text(l) for k in template_types(pr) if (PLUGIN / 'skills' / 'ticket' / 'templates' / f'{k}.md').is_file()
+                   for _, l in body_lines((PLUGIN / 'skills' / 'ticket' / 'templates' / f'{k}.md').read_text(encoding='utf-8'))}
+        expect(f'(ph) every PLACEHOLDER_KEEP line is in a shipped template: {sorted(PLACEHOLDER_KEEP - shipped)}',
+               PLACEHOLDER_KEEP <= shipped)
 
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
