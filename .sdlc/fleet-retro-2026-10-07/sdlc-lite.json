@@ -1,0 +1,1022 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
+  "summary": "runs: 142 deduped, $577.06, 0 interrupted, 2 limit markers",
+  "window": {
+    "since": "2026-10-06",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.21.0",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.21.0",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.21.0",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.292 (Claude Code)",
+    "time": "2026-10-07T12:51:09Z",
+    "uptime_load": {
+      "uptime_s": 1715635,
+      "load1": 13.16,
+      "load5": 11.26,
+      "load15": 9.31,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 142,
+    "cost_usd": 577.0592,
+    "duration_s": 147701.8,
+    "unmetered": 0,
+    "by_role": {
+      "planner": {
+        "count": 4,
+        "cost_usd": 32.5109,
+        "duration_s": 6472.6
+      },
+      "filer": {
+        "count": 3,
+        "cost_usd": 0.7048,
+        "duration_s": 68.8
+      },
+      "builder": {
+        "count": 6,
+        "cost_usd": 24.1143,
+        "duration_s": 4930.0
+      },
+      "verifier": {
+        "count": 58,
+        "cost_usd": 326.5181,
+        "duration_s": 49447.7
+      },
+      "solo": {
+        "count": 69,
+        "cost_usd": 181.0832,
+        "duration_s": 85502.2
+      },
+      "plan-reviewer": {
+        "count": 2,
+        "cost_usd": 12.128,
+        "duration_s": 1280.5
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 95,
+        "cost_usd": 331.651,
+        "duration_s": 107697.3
+      },
+      "full": {
+        "count": 47,
+        "cost_usd": 245.4081,
+        "duration_s": 40004.5
+      }
+    },
+    "by_ticket": {
+      ".0205-layout-resolver": {
+        "builder": 2,
+        "filer": 1,
+        "planner": 1,
+        "verifier": 2
+      },
+      ".0206-migrate-layout": {
+        "builder": 2,
+        "filer": 1,
+        "planner": 1,
+        "verifier": 2
+      },
+      ".0207-layout-readers-docs": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0233-reorg-apply": {
+        "builder": 2,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "verifier": 2
+      },
+      ".0244-docs-schema-migration": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0245-docs-promotion-helper": {
+        "solo": 1
+      },
+      ".0248-placement-proof": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0252-pc-run-context-trace": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0253-pc-entry-file-resolver": {
+        "solo": 1
+      },
+      ".0264-split-after-replan-override": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0265-headless-planner-denied-rm": {
+        "solo": 1
+      },
+      ".0266-tickets-check-partial-front-matter": {
+        "solo": 1
+      },
+      ".0267-hook-denies-worktree-add-variable": {
+        "solo": 1
+      },
+      ".0268-raw-solo-cost-records": {
+        "solo": 1
+      },
+      ".0269-traces-failed-attempt-noise": {
+        "solo": 1
+      },
+      ".0270-steps-lint-nested-backtick-message": {
+        "solo": 1
+      },
+      ".0271-planner-contract-dependents-lint": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0272-conductor-repo-opt-out": {
+        "solo": 1
+      },
+      ".0275-subagent-probes": {
+        "solo": 1
+      },
+      ".0276-claude-levels-table": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0277-dispatch-prepare": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0278-dispatch-record": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0279-dispatch-recover": {
+        "solo": 1
+      },
+      ".0280-cost-estimate": {
+        "solo": 1
+      },
+      ".0281-hooks-agent-role": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0282-conductor-dispatch-core": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0283-launcher-skills-dispatch": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0284-solo-subagent": {
+        "solo": 1
+      },
+      ".0285-fanout-subagent": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0286-supervisor-orphans": {
+        "solo": 1
+      },
+      ".0290-role-bodies-subagent": {
+        "verifier": 2
+      },
+      ".0291-hook-quadratic-long-command": {
+        "verifier": 2
+      },
+      ".0294-plan-review-l4-l5-only": {
+        "solo": 1
+      },
+      ".0295-lint-name-found-heading": {
+        "solo": 1
+      },
+      ".0296-lane-refuse-m-over-20-criteria": {
+        "solo": 1
+      },
+      ".0297-planner-guard-dry-run-widen-inherit": {
+        "solo": 1
+      },
+      ".0298-limit-marker-reset-time": {
+        "solo": 1
+      },
+      ".0299-fanout-bare-ticket-ids": {
+        "solo": 1
+      },
+      ".0300-board-solo-merged-done": {
+        "solo": 1
+      },
+      ".0302-adr-number-allocator-note": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0303-gate-lock-semaphore": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0304-gate-lock-reap": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0305-fleet-collect": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0306-fleet-detect": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0307-fleet-interview": {
+        "solo": 1
+      },
+      ".0308-fleet-retro-skill": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0309-naming-sdlc-lite": {
+        "verifier": 1
+      },
+      ".0310-fleet-config": {
+        "solo": 1
+      },
+      ".0311-fleet-liveness": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0312-fleet-status-render": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0313-solo-worktree-hook": {
+        "solo": 1
+      },
+      ".0314-red-first-control": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0315-replan-cost-remeasure": {
+        "solo": 1
+      },
+      ".0318-fleet-status-noise": {
+        "solo": 1
+      },
+      ".0320-fleet-config-nameless-entry-line": {
+        "solo": 1
+      },
+      ".0321-interview-template-readthrough": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0322-fleet-verify-fixes": {
+        "solo": 1
+      },
+      ".0323-fleet-status-tables": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0324-fleet-status-schema": {
+        "solo": 1,
+        "verifier": 1
+      },
+      ".0326-fanout-prep-spawn-gate": {
+        "solo": 1
+      },
+      ".0327-fanout-land-branch-name": {
+        "solo": 1
+      },
+      ".0328-subagent-cost-estimate-gap": {
+        "solo": 1
+      },
+      ".0329-fanout-verifier-tree": {
+        "solo": 1
+      },
+      ".0330-verifier-report-on-disk": {
+        "solo": 1
+      },
+      ".0331-cost-estimate-calibrate": {
+        "solo": 1
+      },
+      ".0333-verify-subagent-tickets": {
+        "solo": 1,
+        "verifier": 2
+      },
+      ".0334-skills-record-transcript-flag": {
+        "solo": 1
+      },
+      ".0335-cost-basis-label-drift": {
+        "solo": 1
+      },
+      ".0336-l3-verifier-row-outside-band": {
+        "solo": 1
+      },
+      ".0337-scout-haiku-spawn-denied": {
+        "solo": 1
+      },
+      "0254-pc-evidence-lints": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "0301-limit-conductor-rerun": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "0317-red-under-load-rerun": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "0319-fleet-verify-0307-0310": {
+        "solo": 1
+      },
+      "0325-skills-self-contained": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "fleet-retro-2026-10-06": {
+        "verifier": 2
+      },
+      "verify-fix-batch-0.20.11-a": {
+        "verifier": 1
+      },
+      "verify-fix-batch-0.20.11-a2": {
+        "verifier": 1
+      },
+      "verify-fix-batch-0.20.11-a3": {
+        "verifier": 1
+      },
+      "verify-fix-batch-0.20.11-b": {
+        "verifier": 1
+      },
+      "verify-fleet-0307-0310": {
+        "verifier": 1
+      },
+      "verify-subagent": {
+        "verifier": 6
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 2,
+      "files": [
+        {
+          "file": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/verify-fix-batch-0.20.11-a3/verifier-L2.limit",
+          "role": "verifier",
+          "level": "L2",
+          "ts": "2026-10-06T16:41:01Z",
+          "reset": "11:40am"
+        },
+        {
+          "file": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/verify-fix-batch-0.20.11-a3/verifier-L3.limit",
+          "role": "verifier",
+          "level": "L3",
+          "ts": "2026-10-06T16:40:40Z",
+          "reset": "11:40am"
+        }
+      ]
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 5895,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 149,
+      "runs_files": 79151
+    }
+  },
+  "plan_review_share": 0.0774,
+  "tickets": {
+    "count": 468,
+    "items": [
+      {
+        "ticket": ".0056-filer-record-lost-in-worktree",
+        "id": "T-0056",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0108-a-dry-run-of-a",
+        "id": "T-0108",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0207-layout-readers-docs",
+        "id": "T-0207",
+        "size": "M",
+        "criteria": 12
+      },
+      {
+        "ticket": ".0221-fanout-solo-first",
+        "id": "T-0221",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0244-docs-schema-migration",
+        "id": "T-0244",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0252-pc-run-context-trace",
+        "id": "T-0252",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0264-split-after-replan-override",
+        "id": "T-0264",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0271-planner-contract-dependents-lint",
+        "id": "T-0271",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0274-lane-gate",
+        "id": "T-0274",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0276-claude-levels-table",
+        "id": "T-0276",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0277-dispatch-prepare",
+        "id": "T-0277",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": ".0278-dispatch-record",
+        "id": "T-0278",
+        "size": "M",
+        "criteria": 11
+      },
+      {
+        "ticket": ".0281-hooks-agent-role",
+        "id": "T-0281",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0282-conductor-dispatch-core",
+        "id": "T-0282",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0283-launcher-skills-dispatch",
+        "id": "T-0283",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0285-fanout-subagent",
+        "id": "T-0285",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": ".0290-role-bodies-subagent",
+        "id": "T-0290",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0291-hook-quadratic-long-command",
+        "id": "T-0291",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": ".0293-solo-run-kill-group",
+        "id": "T-0293",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0294-plan-review-l4-l5-only",
+        "id": "T-0294",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0295-lint-name-found-heading",
+        "id": "T-0295",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0296-lane-refuse-m-over-20-criteria",
+        "id": "T-0296",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0297-planner-guard-dry-run-widen-inherit",
+        "id": "T-0297",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0298-limit-marker-reset-time",
+        "id": "T-0298",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0299-fanout-bare-ticket-ids",
+        "id": "T-0299",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0300-board-solo-merged-done",
+        "id": "T-0300",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": ".0302-adr-number-allocator-note",
+        "id": "T-0302",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": ".0303-gate-lock-semaphore",
+        "id": "T-0303",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0304-gate-lock-reap",
+        "id": "T-0304",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": ".0305-fleet-collect",
+        "id": "T-0305",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": ".0306-fleet-detect",
+        "id": "T-0306",
+        "size": "M",
+        "criteria": 14
+      },
+      {
+        "ticket": ".0308-fleet-retro-skill",
+        "id": "T-0308",
+        "size": "M",
+        "criteria": 13
+      },
+      {
+        "ticket": ".0311-fleet-liveness",
+        "id": "T-0311",
+        "size": "M",
+        "criteria": 11
+      },
+      {
+        "ticket": ".0312-fleet-status-render",
+        "id": "T-0312",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0314-red-first-control",
+        "id": "T-0314",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": ".0321-interview-template-readthrough",
+        "id": "T-0321",
+        "size": "M",
+        "criteria": 11
+      },
+      {
+        "ticket": ".0323-fleet-status-tables",
+        "id": "T-0323",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": ".0324-fleet-status-schema",
+        "id": "T-0324",
+        "size": "M",
+        "criteria": 10
+      },
+      {
+        "ticket": ".0333-verify-subagent-tickets",
+        "id": "T-0333",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "0254-pc-evidence-lints",
+        "id": "T-0254",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "verify-0221-7",
+        "id": null,
+        "size": null,
+        "criteria": 2
+      },
+      {
+        "ticket": "verify-0222",
+        "id": null,
+        "size": null,
+        "criteria": 7
+      },
+      {
+        "ticket": "verify-0224",
+        "id": null,
+        "size": null,
+        "criteria": 6
+      },
+      {
+        "ticket": "verify-0224-4",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "verify-0225",
+        "id": null,
+        "size": null,
+        "criteria": 7
+      },
+      {
+        "ticket": "verify-0225-narrow",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "verify-0226",
+        "id": null,
+        "size": null,
+        "criteria": 6
+      },
+      {
+        "ticket": "verify-0227",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "verify-0227-b",
+        "id": null,
+        "size": null,
+        "criteria": 2
+      },
+      {
+        "ticket": "verify-0228",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "verify-0229",
+        "id": null,
+        "size": null,
+        "criteria": 7
+      },
+      {
+        "ticket": "verify-0229-b",
+        "id": null,
+        "size": null,
+        "criteria": 2
+      },
+      {
+        "ticket": "verify-0231",
+        "id": null,
+        "size": null,
+        "criteria": 7
+      },
+      {
+        "ticket": "verify-0232",
+        "id": null,
+        "size": null,
+        "criteria": 6
+      },
+      {
+        "ticket": "verify-0232-narrow",
+        "id": null,
+        "size": null,
+        "criteria": 3
+      },
+      {
+        "ticket": "verify-docs-schema-2",
+        "id": null,
+        "size": null,
+        "criteria": 5
+      },
+      {
+        "ticket": "verify-docs-schema-3",
+        "id": null,
+        "size": null,
+        "criteria": 7
+      },
+      {
+        "ticket": "verify-fleet-0307-0310",
+        "id": null,
+        "size": null,
+        "criteria": 9
+      },
+      {
+        "ticket": "wave-b-verify",
+        "id": null,
+        "size": null,
+        "criteria": 4
+      },
+      {
+        "ticket": "0299-fanout-bare-ticket-ids",
+        "id": "T-0299",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "0300-board-solo-merged-done",
+        "id": "T-0300",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "0303-gate-lock-semaphore",
+        "id": "T-0303",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "0304-gate-lock-reap",
+        "id": "T-0304",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": "0333-verify-subagent-tickets",
+        "id": "T-0333",
+        "size": "M",
+        "criteria": 6
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 42,
+      "cpu_pct": 8.3,
+      "rss_mb": 19402.9
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 13,
+      "cpu_pct": 6.6,
+      "rss_mb": 6705.8
+    }
+  },
+  "worktrees": {
+    "count": 148,
+    "size": "5925.1 MB",
+    "size_kb_known": 6067328,
+    "items": [
+      {
+        "path": "/private/tmp/bench-sl/wt/footprint-lean",
+        "size": "19.9 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/footprint-solo",
+        "size": "19.4 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/scout-pin-lean",
+        "size": "17.6 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/scout-pin-solo",
+        "size": "16.3 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-footprint-base",
+        "size": "19.3 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-footprint-sol",
+        "size": "19.5 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-scout-pin-base",
+        "size": "16.3 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-scout-pin-sol",
+        "size": "16.4 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-wait-base",
+        "size": "18.1 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/val-wait-sol",
+        "size": "18.6 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/wait-lean",
+        "size": "20.6 MB"
+      },
+      {
+        "path": "/private/tmp/bench-sl/wt/wait-solo",
+        "size": "18.1 MB"
+      },
+      {
+        "path": "/private/tmp/rel01010",
+        "size": "27.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a430ff9c9526003d1",
+        "size": "29.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4ba8dd76ecdf90eb",
+        "size": "27.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a4f5f90e9874364b7",
+        "size": "29.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a6e9add44c70c0c78",
+        "size": "28.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a71eae2e5d02b449d",
+        "size": "28.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a8796067dca9eb594",
+        "size": "27.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-a9406df26f05555bb",
+        "size": "28.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-aaee304bcd5963894",
+        "size": "27.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-aaf7cd0fac455cb08",
+        "size": "27.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ace17ca49a3f0e509",
+        "size": "27.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ace6489ecedabd8ac",
+        "size": "28.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae11c915f68bab1f5",
+        "size": "27.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae9ec401bb7128396",
+        "size": "114.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae9ec401bb7128396/.worktrees/fanout/a",
+        "size": "28.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae9ec401bb7128396/.worktrees/fanout/b",
+        "size": "28.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-ae9ec401bb7128396/.worktrees/fanout/integration",
+        "size": "28.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.claude/worktrees/agent-afafb1b20c1d0dd6f",
+        "size": "28.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/ask-skill",
+        "size": "26.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/docs-schema",
+        "size": "26.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/docs-schema-2",
+        "size": "27.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b2/cost",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b2/integration",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b2/stall",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b2/tk",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b2/traces",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b3/integration",
+        "size": "29.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b3/lints",
+        "size": "29.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b3/promo",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b3/resolver",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b3/trace",
+        "size": "29.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/integration",
+        "size": "30.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/lint1",
+        "size": "29.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/lint2",
+        "size": "29.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/place",
+        "size": "30.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg",
+        "size": "34.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b5/hookwt",
+        "size": "29.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b5/integration",
+        "size": "29.6 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-06",
+    "window_days": 1,
+    "runs": 0,
+    "wall_minutes": 0.0,
+    "failed": 0,
+    "by_workflow": {}
+  }
+}

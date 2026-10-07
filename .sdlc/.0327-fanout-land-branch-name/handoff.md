@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 `fanout.py land` recognizes host-named worktree branches `worktree-agent-<agent_id>` (under `.claude/worktrees/agent-<agent_id>`) as the solo or full lane they belong to and closes the ticket.
 
 ## Intent
-- Do: Finding 3 in docs/reports/subagent-mode-live-2026-10-07.md: land treated each lane as an external lane `full`, merged them, then refused to close for lack of a filer file. Map the host branch to its lane through the dispatch record's agent_id instead of the branch name. Done when a selftest with host-style branch names lands and closes a solo lane, and an unknown branch is still treated as external (observed).
+- Do: Finding 3 in docs/reports/2026-10-07-subagent-mode-live.md: land treated each lane as an external lane `full`, merged them, then refused to close for lack of a filer file. Map the host branch to its lane through the dispatch record's agent_id instead of the branch name. Done when a selftest with host-style branch names lands and closes a solo lane, and an unknown branch is still treated as external (observed).
 - Non-goals: any model or effort change; the account-switch criterion of T-0287.
 - Done when:
   - The observed result above holds; `check.py`, `tickets.py check` and the touched script selftests pass.

@@ -1,0 +1,29 @@
+{
+  "attempt_id": "507ca43f7aaa49c8a1cdbf32b8c63da7",
+  "name": "scout-L1",
+  "agent_name": "scout-L1-0001-scout",
+  "role": "scout",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "haiku",
+  "effort": "low",
+  "routing_reason": "single scout L1 location question",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-07T12:45:52.903600+00:00",
+  "project": "/private/tmp/scoutproj",
+  "handoff": "/private/tmp/scoutproj/.sdlc/0001-scout/handoff.md",
+  "parent_pid": 23880,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "8dc0df66dc4d863092f8068637c7f57217434ef9681d8dfb10cdf579ee989fee",
+  "worktrees_before": [
+    "/private/tmp/scoutproj"
+  ],
+  "branches_before": [
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-07T12:46:23.409399+00:00",
+  "agent_id": "af4e67cac17c4d962"
+}

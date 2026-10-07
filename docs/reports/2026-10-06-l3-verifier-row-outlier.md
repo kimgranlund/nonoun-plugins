@@ -1,6 +1,6 @@
 # L3 verifier row: accepted outlier (T-0336)
 
-Dated 2026-10-06. Supersedes nothing; it narrows the claim in `subagent-mode-live-2026-10-07.md` and the T-0328 and T-0331 conditions.
+Dated 2026-10-06. Supersedes nothing; it narrows the claim in `2026-10-07-subagent-mode-live.md` and the T-0328 and T-0331 conditions.
 
 ## Finding
 

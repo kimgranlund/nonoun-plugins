@@ -157,6 +157,19 @@ def solo_model(directory):
     return got[-1] if got and isinstance(got[-1], str) else ''
 
 
+AGENT_ALIASES = ('sonnet', 'opus', 'haiku', 'fable')
+
+
+def agent_alias(model):
+    """The Agent tool accepts only an alias; map a pinned id such as claude-haiku-4-5 to its family alias.
+    On a Max login the alias haiku has resolved to Sonnet 5.5 (docs/reports/bench-scout-pin), so the
+    transcript model field, not this alias, says which model ran."""
+    if model in AGENT_ALIASES:
+        return model
+    m = re.match(r'claude-(sonnet|opus|haiku|fable)(-|$)', model or '')
+    return m.group(1) if m else model
+
+
 def family(role, model, directory):
     if role == 'verifier':
         built = order.newest(str(directory), 'builder') or step_build(directory)
@@ -315,7 +328,7 @@ def settle(directory, dry_run):
     """Refuse while a dispatched attempt in directory is alive; mark dead-parent ones interrupted."""
     recovered, live = recover_orphans(directory, dry_run)
     if live:
-        raise Refuse(2, 'dispatch.py: an attempt is still running in %s: %s; record it, or wait for it, before dispatching another role' % (directory, ', '.join(live)))
+        raise Refuse(2, 'dispatch.py: an attempt is still running in %s: %s; record it, or wait for it, before dispatching another role. If its spawn was denied or never started, recover it: python3 %s %s' % (directory, ', '.join(live), Path(run_lifecycle.__file__).resolve().with_name('run_lifecycle.py'), 'recover "%s"' % directory))
     return recovered
 
 
@@ -411,7 +424,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
     except claude_roles.TableError as e:
         raise Refuse(2, 'dispatch.py: ' + str(e))
 
-    model = family(role, model, directory)
+    model = agent_alias(family(role, model, directory))
     if not dry_run:
         mailbox(role)
 
@@ -834,7 +847,7 @@ def selftest():
         """prepare --dry-run and run.sh dry run agree on model, effort, result name, and exit code."""
         rc, got, _ = prep(repo, role, level, rel, '--dry-run', **env)
         rrc, model, effort, name, _ = runsh(repo, role, level, rel, **env)
-        ok = rc == rrc and (rc != 0 or (got['model'], got['effort'], os.path.basename(got['result'])) == (model, effort, name))
+        ok = rc == rrc and (rc != 0 or (got['model'], got['effort'], os.path.basename(got['result'])) == (agent_alias(model), effort, name))
         case('parity %s: %s %s -> %s' % (label, role, level, ('exit %d' % rc) if rc else '%s %s %s' % (got['model'], got['effort'], os.path.basename(got['result']))), ok)
         return rc, got
 
@@ -1086,7 +1099,8 @@ def selftest():
              and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(dl['tree'] + '/.worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
-        case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2)
+        case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2
+             and 'run_lifecycle.py recover "%s"' % w in err2)
         case('the refused prepare wrote no second record', sorted(p.name for p in w.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
         with clean_env(SDLC_DISPATCH_PARENT_PID=str(live)), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             doubled = prepare('verifier', 'L1', '.sdlc/w/handoff.md', skip=('lock',))
@@ -1151,12 +1165,24 @@ def selftest():
         case('the Agent name fits 64 characters and keeps the step and attempt suffix', len(long_name) <= NAME_MAX and long_name.endswith('-s12-12')
              and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,63}', long_name) is not None)
 
+        # 7b. Every one of the 22 level-table rows (solo too) prints a model the Agent tool accepts.
+        for r_role, r_levels in claude_roles.table(PLUGIN).items():
+            for r_level, (r_model, _) in r_levels.items():
+                if r_role == 'solo':
+                    r_printed = agent_alias(r_model)
+                else:
+                    r_got = prep(repo, r_role, r_level, '.sdlc/t/handoff.md')[1]
+                    r_printed = r_got['model'] if r_got else agent_alias(r_model)  # a lane gate refusal prints nothing
+                case('row %s %s prints an Agent alias' % (r_role, r_level), r_printed in AGENT_ALIASES)
+        case('a bad model is not an Agent alias (negative control)', agent_alias('gpt-9') not in AGENT_ALIASES
+             and agent_alias('claude-haiku-4-5') == 'haiku')
+
         # 8. The CLI: stdout is the JSON alone, the exit code is the gate's.
         env = {k: v for k, v in os.environ.items() if not k.startswith('SDLC_')}
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         cli = json.loads(p.stdout) if p.returncode == 0 else {}
-        case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'claude-haiku-4-5' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
+        case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'haiku' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'planner', 'L1', '.sdlc/ls/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         case('CLI exits 5 for the lane gate with the JSON absent from stdout', p.returncode == 5 and p.stdout == '')

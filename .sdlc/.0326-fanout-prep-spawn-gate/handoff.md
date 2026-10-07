@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 `fanout.py prep` lane prompts pass the spawn gate and each lane writes a dispatch record, so a fanout lane runs as a sub-agent.
 
 ## Intent
-- Do: Finding 2 in docs/reports/subagent-mode-live-2026-10-07.md: the prep prompt has no `Handoff:` line and prep writes no record, so the spawn gate denied both lane spawns. Make prep emit the Handoff line and write the dispatch record (the solo-S|M|L form the gate now allows, commit 08bf3599). Done when a selftest spawns two lanes through the gate and both are allowed, and a lane prompt without the line is still refused (observed).
+- Do: Finding 2 in docs/reports/2026-10-07-subagent-mode-live.md: the prep prompt has no `Handoff:` line and prep writes no record, so the spawn gate denied both lane spawns. Make prep emit the Handoff line and write the dispatch record (the solo-S|M|L form the gate now allows, commit 08bf3599). Done when a selftest spawns two lanes through the gate and both are allowed, and a lane prompt without the line is still refused (observed).
 - Non-goals: any model or effort change; the account-switch criterion of T-0287.
 - Done when:
   - The observed result above holds; `check.py`, `tickets.py check` and the touched script selftests pass.
