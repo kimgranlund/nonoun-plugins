@@ -2,7 +2,7 @@
 id: T-0264
 title: "steps.py split has no override after a replan verdict"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,7 @@ Take the explicit flag: `steps.py split <task dir> --override-review "<reason>"`
 - `bash plugins/sdlc-lite/scripts/check.sh` exits 0.
 - `python3 scripts/check-packaging.py` exits 0.
 - `git diff --check` exits 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
