@@ -60,7 +60,8 @@
    `model table changed`.
 16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
    and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
-   agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
+   agents/conductor.md; `specgate.py red` (the red-first control for a `(red)` criterion) appears in
+   agents/solo.md, agents/planner.md, and scripts/steps.py; and the first `specgate.py check` line of run.sh comes before its
    `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
    two run.sh lines swapped, must be flagged.
 17. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
@@ -135,8 +136,10 @@
    from each file, a harness reference added, and a missing route must be flagged.
 37. Fleet status: skills/fleet-status/SKILL.md names `fleet_status.py render`, `## 1. Render`, `## 2. Print it`, `## 3. Ask once`, `## 4. Relay, do not act`,
    `Render, never compose`, `AskUserQuestion`, `If AskUserQuestion is unavailable`, `--ping`, `sends nothing`, and `Codex host`, and holds no `harness:` reference;
-   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, and `def selftest_render`; scripts/check.sh runs
-   `fleet_status.py" selftest`. Negative controls: each phrase removed from each file, a harness reference added, and the routing line removed must be flagged.
+   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, `def schema_errors`, and `def selftest_render`;
+   scripts/check.sh runs `fleet_status.py" selftest`; skills/fleet-status/SKILL.md links `resources/fleet-status.schema.json`, and that file exists, parses as
+   JSON, declares draft 2020-12, and requires the `machine`, `repos`, `needs_you`, and `delta` keys. Negative controls: each phrase removed from each file, a
+   harness reference added, the routing line removed, and a missing, unparsable, wrong-draft, or key-less schema file must be flagged.
 38. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
    agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
    Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
@@ -471,7 +474,7 @@ def fix_lint_bad(text):
     return not targets or any(not t.endswith('/step-1/handoff.md') for t in targets)
 fx = root/'skills/fix/SKILL.md'
 fxt = fx.read_text() if fx.is_file() else ''
-if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not .sdlc/<slug>/step-1/handoff.md')
+if fix_lint_bad(fxt): errors.append('skills/fix/SKILL.md: steps.py lint target is not <ticket dir>/<slug>/step-1/handoff.md (.sdlc/<slug>/..., or .sdlc/tickets/<slug>/... with ticket_root: tickets)')
 if not fix_lint_bad(fxt.replace('/step-1/handoff.md`', '`')): errors.append('check.py: /fix lint-target guard negative control not flagged')
 # /fix step 5 stops at publish when unattended: no push, no pull request.
 def fix_unattended_bad(text):
@@ -535,7 +538,8 @@ for phrase, rels in LEAN_LANE.items():
             errors.append(f'{rel}: lean-lane negative control not flagged')
 # Spec gate text (docstring item 16): the guard timeout line and the run.sh gate are named where they route.
 SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
-             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
+             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md'),
+             'specgate.py red': ('agents/solo.md', 'agents/planner.md', 'scripts/steps.py')}
 def spec_gate_missing(text, phrase): return phrase not in text
 for phrase, rels in SPEC_GATE.items():
     for rel in rels:
@@ -913,20 +917,35 @@ for _name, _phrases in FLEET_NEEDS:
 if not fleet_bad(dict(_fl_texts, skill=_fl_texts['skill'] + ' harness:x')): errors.append('check.py: fleet retro negative control not flagged for a harness reference')
 # Fleet status (docstring item 37): the skill prints the renderer's output and asks once; the renderer refuses a row with no source.
 FLEET_STATUS_NEEDS = (('skill', ('fleet_status.py render', '## 1. Render', '## 2. Print it', '## 3. Ask once', '## 4. Relay, do not act', 'Render, never compose',
-                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host')),
-                      ('script', ('RenderError', 'def render(', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host',
+                                 'resources/fleet-status.schema.json')),
+                      ('script', ('RenderError', 'def render(', 'def schema_errors', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+FLEET_SCHEMA_KEYS = ('machine', 'repos', 'needs_you', 'delta')
+def fleet_schema_bad(text):
+    if not text.strip(): return ['skills/fleet-status/resources/fleet-status.schema.json is missing or empty']
+    try: doc = json.loads(text)
+    except ValueError as e: return [f'fleet-status.schema.json does not parse as JSON: {e}']
+    if not isinstance(doc, dict): return ['fleet-status.schema.json is not a JSON object']
+    out = [] if doc.get('$schema') == 'https://json-schema.org/draft/2020-12/schema' else ['fleet-status.schema.json does not declare draft 2020-12']
+    return out + [f'fleet-status.schema.json does not require "{k}"' for k in FLEET_SCHEMA_KEYS if k not in (doc.get('required') or [])]
 def fleet_status_bad(texts, entry):
     out = [f'{name} missing "{ph}"' for name, phrases in FLEET_STATUS_NEEDS for ph in phrases if ph not in texts[name]]
+    out += fleet_schema_bad(texts['schema'])
     if re.search(r'harness:', texts['skill']): out.append('fleet-status SKILL.md references harness:')
     if '| fleet-status |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to fleet-status')
     return out
-_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh'),
+             'schema': _rd(root/'skills/fleet-status/resources/fleet-status.schema.json')}
 errors.extend(f'check.py: fleet status: {m}' for m in fleet_status_bad(_fs_texts, _entry))
 for _name, _phrases in FLEET_STATUS_NEEDS:
     for _ph in _phrases:
         if not fleet_status_bad(dict(_fs_texts, **{_name: _fs_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_name} without "{_ph}"')
 if not fleet_status_bad(dict(_fs_texts, skill=_fs_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: fleet status negative control not flagged for a harness reference')
 if not fleet_status_bad(_fs_texts, _entry.replace('| fleet-status |', '|')): errors.append('check.py: fleet status negative control not flagged for a missing entry route')
+for _why, _bad in (('a missing schema file', ''), ('an unparsable schema file', _fs_texts['schema'][:-20]), ('a schema file that is not an object', '[]'),
+                   ('a schema file with the wrong draft', _fs_texts['schema'].replace('2020-12', '2019-09')),
+                   ('a schema file that does not require repos', _fs_texts['schema'].replace('"repos", ', '', 1))):
+    if not fleet_status_bad(dict(_fs_texts, schema=_bad), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_why}')
 # Generated Claude definitions (docstring item 38): one agents/<role>-L<n>.md per levels.json row, never hand-edited.
 def claude_roles_check(plugin):
     return subprocess.run([sys.executable, str(root/'scripts/claude_roles.py'), '--plugin', str(plugin), 'generate', '--check'], capture_output=True, text=True)

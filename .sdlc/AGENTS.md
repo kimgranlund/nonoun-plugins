@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f3fc3b2faae9 -->
+<!-- sdlc-lite:managed:start v1 sha256:3d76eb89728e -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,41 +9,26 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 31
-  - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
-  - T-0206 tickets.py migrate-layout (0206-migrate-layout)
-  - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
+- proposed: 16
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
-  - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
-  - T-0248 Placement proof for the context registry (0248-placement-proof)
-  - T-0252 Record which context a run loaded (0252-pc-run-context-trace)
-  - T-0253 Entry-file resolver in onboard.py check (0253-pc-entry-file-resolver)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0264 steps.py split has no override after a replan verdict (0264-split-after-replan-override)
-  - T-0265 Headless planner stalled on a denied rm permission prompt (0265-headless-planner-denied-rm)
-  - T-0266 tickets.py check breaks on partial front matter (0266-tickets-check-partial-front-matter)
   - T-0267 A hook denies git worktree add with variable paths (0267-hook-denies-worktree-add-variable)
-  - T-0268 Raw claude -p solos have no solo_run cost records (0268-raw-solo-cost-records)
-  - T-0269 traces detector reports failed attempts as missing a runs.jsonl row (0269-traces-failed-attempt-noise)
   - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
   - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
-  - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0302 ADR number allocator note (repo-owned, docs only) (0302-adr-number-allocator-note)
-  - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
-  - T-0314 Red-first control: a (red) criterion must fail at base and pass after, for solo and chain (0314-red-first-control)
-  - T-0315 Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule (0315-replan-cost-remeasure)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
-  - T-0318 fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow (0318-fleet-status-noise)
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
+  - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 256
+- done: 277
 - dropped: 25
 
 ## Procedures

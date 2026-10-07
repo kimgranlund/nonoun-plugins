@@ -6,11 +6,15 @@ run(repo, lanes_dirs=(), out=None, bench_dir=None, rerun_criteria=False, thresho
                 other `.`-prefixed folders holding a handoff.md included; `_templates`,
                 `runtime`, other `_`- or `.`-prefixed names, and plain files skipped; when
                 <repo>/.sdlc/config sets `ticket_root: tickets`, the `tickets` dir itself is not a
-                task and each task dir under it follows as tickets/<name>, by the same filter), then each step-<n> and step-<n>.superseded-<k> dir under it, then any
+                task and each task dir under it follows as tickets/<name>, by the same filter; with
+                `layout: topics` too, the `work` and `notes` dirs are not tasks either and each task
+                dir under `work` follows as work/<name>), then each step-<n> and step-<n>.superseded-<k> dir under it, then any
                 other subdir holding a runs.jsonl (its rows keep step None). Per dir:
                 the attempt, run, and result readers, the transcript reader on each <name>.log
                 next to a result <name>.md (its tool_calls, denials count, and rate_limits go on
-                the result record, and the log path joins the row's sources), then table.join
+                the result record, and the log path joins the row's sources; its loaded_context
+                comes from sources/context.py, {'status': 'log absent'} when no log sits beside the
+                result, used by table.join only when the run record has none), then table.join
                 with the ticket id from the task dir's handoff.md front matter (tickets.parse).
                 Record paths are repo-relative, so row sources and legacy ids are too.
   lanes dirs    the fanout reader on every given lanes dir plus each <repo>/.worktrees/*/ that
@@ -33,7 +37,7 @@ import json, os, pathlib
 import tickets  # same scripts/ dir
 
 from . import rerun, store, table
-from .sources import attempts, bench, fanout, git, results, runs, transcripts
+from .sources import attempts, bench, context, fanout, git, results, runs, transcripts
 from .sources import tickets as ticket_reader
 
 SKIP_TASK = ('_templates', 'runtime')
@@ -71,7 +75,16 @@ def task_dirs(sdlc):
     out = _names(sdlc)
     if tdir == root:
         return out
-    return [n for n in out if n != 'tickets'] + ['tickets/' + n for n in _names(tdir)]
+    try:
+        lp = tickets.layout_paths(root)
+    except tickets.Fail:
+        lp = None
+    if lp is None or lp.layout != 'topics':
+        return [n for n in out if n != 'tickets'] + ['tickets/' + n for n in _names(tdir)]
+    # layout: topics: tickets/, work/ and notes/ are topic folders, not tasks; work/<name> are ticket-less tasks.
+    topics = (tdir.name, lp.work.name, lp.notes.parent.name)
+    return ([n for n in out if n not in topics] + ['tickets/' + n for n in _names(tdir)]
+            + ['work/' + n for n in _names(lp.work)])
 
 
 def step_dirs(task):
@@ -114,8 +127,11 @@ def read_dir(repo, rel, ticket):
     run_recs, _ = runs.read(d)
     res, _ = results.read(d)
     logs = {}
+    backends = {rec.get('file'): rec.get('backend') for rec in run_recs}
     for r in res:
         log = os.path.join(d, r['name'] + '.log')
+        # loaded_context: a result with no log beside it is reported as 'log absent', never as [].
+        r['loaded_context'] = context.read(log, backend=backends.get(r['name'] + '.md'))
         if os.path.isfile(log):
             t = transcripts.read(log)
             r['tool_calls'], r['rate_limits'] = t['tool_calls'], t['rate_limits']

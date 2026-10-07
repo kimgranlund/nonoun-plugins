@@ -9,16 +9,20 @@
       findings through findings.write, prints each note and then the findings.jsonl path.
   clusters --max N [--repo REPO] [--out DIR]
       prints findings.clusters(out, N) as JSON.
+  context <log> [--backend claude|codex] [--codex-home DIR]
+      prints one JSON line, sources/context.read of the log: the paths the run read, or a
+      status ('log absent', 'rollout absent', ...); exit 0 whatever the status (run.sh records it).
 detect and clusters resolve the out dir as ingest does (store.out_dir; REPO defaults to `.`).
 None of these spawns a claude or codex process.
 """
 import argparse, datetime, json, os, sys
 
 from . import findings, ingest, selftest, store
+from .sources import context
 from .detectors import cost, escalation, hygiene, plan
 
 USAGE = ('usage: traces.py selftest [-k FAMILY] | ingest <repo> [...] | detect [...] | '
-         'clusters --max N [...]')
+         'clusters --max N [...] | context <log> [...]')
 
 
 def usage():
@@ -100,7 +104,19 @@ def _clusters(rest):
     return 0
 
 
-COMMANDS = {'selftest': _selftest, 'ingest': _ingest, 'detect': _detect, 'clusters': _clusters}
+def _context(rest):
+    p = _parser('context')
+    p.add_argument('log')
+    p.add_argument('--backend', choices=('claude', 'codex'))
+    p.add_argument('--codex-home')
+    a = p.parse_args(rest)
+    print(json.dumps(context.read(a.log, backend=a.backend, codex_home=a.codex_home),
+                     ensure_ascii=False))
+    return 0
+
+
+COMMANDS = {'selftest': _selftest, 'ingest': _ingest, 'detect': _detect, 'clusters': _clusters,
+            'context': _context}
 
 
 def main(argv):

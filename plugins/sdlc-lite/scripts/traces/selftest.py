@@ -298,7 +298,7 @@ def _runs_read():
                 'model': 'm', 'effort': 'low', 'file': 'builder-L2.md', 'attempt_id': 'r1',
                 'backend': 'claude', 'cost_usd': 1.5, 'cost_estimated': True, 'duration_ms': 900, 'turns': 4,
                 'stray_worktrees': ['w'], 'stray_branches': ['b'], 'routing_reason': 'why',
-                'extra': 1}
+                'loaded_context': {'paths': ['/p'], 'source': 'stream-json'}, 'extra': 1}
         _write(repo, f'{d}/runs.jsonl',
                json.dumps(legacy) + '\n{not json\n' + json.dumps(full) + '\n')
         base = os.path.join(repo, d)
@@ -308,8 +308,8 @@ def _runs_read():
         a, b = recs
         path = os.path.join(base, 'runs.jsonl')
         assert (a['index'], a['path'], b['index'], b['path']) == (0, path, 2, path), recs
-        assert (a['file'], a['attempt_id'], a['ts'], a['routing_reason']) == \
-            (None, None, None, None), a
+        assert (a['file'], a['attempt_id'], a['ts'], a['routing_reason'], a['loaded_context']) == \
+            (None, None, None, None, None), a
         assert (a['stray_worktrees'], a['stray_branches']) == ([], []), a
         assert (a['role'], a['turns']) == ('scout', 2), a
         want = dict(full, index=2, path=path)
@@ -462,6 +462,145 @@ def _transcripts_missing():
     with tempfile.TemporaryDirectory() as repo:
         r = transcripts.read(os.path.join(repo, 'nope.log'))
         assert set(r) == set(transcripts.FIELDS) and all(v is None for v in r.values()), r
+
+
+# --- context (T-0252) ----------------------------------------------------------------------------
+
+def _read_event(*paths, tool='Read', key='file_path'):
+    return json.dumps({'type': 'assistant', 'message': {'content': [
+        {'type': 'tool_use', 'name': tool, 'input': {key: p}} for p in paths]}})
+
+
+def _claude_log(*lines):
+    return '\n'.join(lines) + '\n'
+
+
+@case('context: the Claude arm lists Read paths once each; Bash and non-JSON lines add none')
+def _context_claude():
+    from .sources import context
+    with tempfile.TemporaryDirectory() as tmp:
+        _write(tmp, 'a.log', _claude_log(
+            _read_event('/r/AGENTS.md', '/r/docs/a.md'), 'prose the CLI printed',
+            _read_event('/r/AGENTS.md'), _read_event('cat /r/CLAUDE.md', tool='Bash', key='command'),
+            json.dumps({'type': 'user', 'message': {'content': [
+                {'type': 'tool_use', 'name': 'Read', 'input': {'file_path': '/r/user.md'}}]}}),
+            '{truncated'))
+        got = context.read(os.path.join(tmp, 'a.log'))
+        assert got == {'source': 'stream-json', 'paths': ['/r/AGENTS.md', '/r/docs/a.md']}, got
+        assert context.read(os.path.join(tmp, 'a.log'), backend='claude') == got
+
+
+@case('context: a log with no Read says paths [] with a source, not a status')
+def _context_claude_empty():
+    from .sources import context
+    with tempfile.TemporaryDirectory() as tmp:
+        _write(tmp, 'a.log', _claude_log(_read_event('echo 1', tool='Bash', key='command')))
+        got = context.read(os.path.join(tmp, 'a.log'))
+        assert got == {'source': 'stream-json', 'paths': []} and 'status' not in got, got
+
+
+@case('context: a missing or unreadable log is a status with no paths key, never []')
+def _context_log_status():
+    from .sources import context
+    with tempfile.TemporaryDirectory() as tmp:
+        for backend in (None, 'claude', 'codex'):
+            got = context.read(os.path.join(tmp, 'nope.log'), backend=backend)
+            assert got == {'status': 'log absent'}, (backend, got)
+        _write(tmp, 'locked.log', _claude_log(_read_event('/r/a.md')))
+        os.chmod(os.path.join(tmp, 'locked.log'), 0)
+        try:
+            if os.access(os.path.join(tmp, 'locked.log'), os.R_OK):
+                raise Skip('chmod 0 does not block this user (root)')
+            got = context.read(os.path.join(tmp, 'locked.log'))
+            assert got == {'status': 'log unreadable'}, got
+        finally:
+            os.chmod(os.path.join(tmp, 'locked.log'), 0o600)
+
+
+def _codex_log(thread_id):
+    ev = [{'type': 'codex_event', 'event': {'type': 'turn.started'}}]
+    if thread_id:
+        ev.insert(0, {'type': 'codex_event', 'event': {'type': 'thread.started', 'thread_id': thread_id}})
+    return _claude_log(*[json.dumps(e) for e in ev], json.dumps({'type': 'result', 'backend': 'codex'}))
+
+
+def _rollout_call(cmd, workdir):
+    return json.dumps({'type': 'response_item', 'payload': {
+        'type': 'function_call', 'name': 'exec_command',
+        'arguments': json.dumps({'cmd': cmd, 'workdir': workdir})}})
+
+
+@case('context: the Codex arm lists the files its rollout read, found by thread id')
+def _context_codex():
+    from .sources import context
+    tid = '01a113e7-1ca9-7c62-8c76-9879b9631837'
+    with tempfile.TemporaryDirectory() as tmp:
+        work = os.path.join(tmp, 'work')
+        _write(work, 'AGENTS.md', 'x\n')
+        _write(work, 'docs/guide.md', 'x\n')
+        _write(tmp, f'home/sessions/2026/10/06/rollout-2026-10-06T11-00-00-{tid}.jsonl', _claude_log(
+            json.dumps({'type': 'session_meta', 'payload': {'id': tid}}),
+            _rollout_call("sed -n '1,80p' AGENTS.md && cat docs/guide.md | head -5", work),
+            _rollout_call('cat missing.md; rg -n foo AGENTS.md; ls docs', work),
+            json.dumps({'type': 'response_item', 'payload': {
+                'type': 'function_call', 'name': 'exec_command', 'arguments': '{not json'}}),
+            json.dumps({'type': 'response_item', 'payload': {
+                'type': 'function_call', 'name': 'shell', 'arguments': json.dumps(
+                    {'command': ['bash', '-lc', 'tail -n 3 AGENTS.md'], 'workdir': work})}})))
+        _write(tmp, 'a.log', _codex_log(tid))
+        home = os.path.join(tmp, 'home')
+        want = {'source': 'rollout', 'paths': [os.path.join(work, 'AGENTS.md'),
+                                               os.path.join(work, 'docs/guide.md')]}
+        got = context.read(os.path.join(tmp, 'a.log'), codex_home=home)
+        assert got == want, got
+        assert context.read(os.path.join(tmp, 'a.log'), backend='codex', codex_home=home) == want
+
+
+@case('context: a Codex log with no rollout, or no thread id, says rollout absent')
+def _context_codex_absent():
+    from .sources import context
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, 'home/sessions/2026/10/06'))
+        _write(tmp, 'a.log', _codex_log('01a113e7-1ca9-7c62-8c76-9879b9631837'))
+        _write(tmp, 'b.log', _codex_log(None))
+        _write(tmp, 'c.log', _codex_log('../../x'))
+        for name in ('a.log', 'b.log', 'c.log'):
+            got = context.read(os.path.join(tmp, name), codex_home=os.path.join(tmp, 'home'))
+            assert got == {'status': 'rollout absent'}, (name, got)
+        # The same log read as Claude has no thread lookup at all.
+        assert context.read(os.path.join(tmp, 'a.log'), backend='claude')['source'] == 'stream-json'
+
+
+@case('context: ingest gives a result with no log beside it status log absent, never []')
+def _context_ingest():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = os.path.join(tmp, 'repo')
+        d = '.sdlc/0001-a'
+        _write(repo, f'{d}/handoff.md', _ticket('T-0001', 'ready'))
+        recorded = {'source': 'stream-json', 'paths': ['/recorded/by/run.sh']}
+        lines = []
+        for name, aid, ctx in (('builder-L2', 'a1', None), ('verifier-L1', 'a2', None),
+                               ('scout-L1', 'a3', recorded), ('filer-L1', 'a4', None)):
+            _write(repo, f'{d}/{name}.attempt.json', json.dumps(_attempt(name, aid)))
+            _write(repo, f'{d}/{name}.md', _builder_text('done'))
+            rec = {'role': name.split('-')[0], 'level': name.split('-')[1], 'file': name + '.md',
+                   'attempt_id': aid}
+            if ctx:
+                rec['loaded_context'] = ctx
+            lines.append(json.dumps(rec))
+        _write(repo, f'{d}/runs.jsonl', '\n'.join(lines) + '\n')
+        _write(repo, f'{d}/builder-L2.log', _claude_log(_read_event('/r/AGENTS.md')))
+        _write(repo, f'{d}/scout-L1.log', _claude_log(_read_event('/r/derived.md')))
+        _write(repo, f'{d}/verifier-L1.log', _codex_log('01a113e7-1ca9-7c62-8c76-9879b9631837'))
+        out = ingest.run(repo, out=os.path.join(tmp, 'out'), bench_dir=os.path.join(tmp, 'nobench'))
+        with open(os.path.join(out, 'events.jsonl'), encoding='utf-8') as f:
+            rows = {r['attempt_id']: r for r in map(json.loads, f.read().splitlines())}
+        assert rows['a1']['loaded_context'] == {'source': 'stream-json', 'paths': ['/r/AGENTS.md']}, rows['a1']
+        assert rows['a3']['loaded_context'] == recorded, 'the run record wins over the log'
+        assert rows['a4']['loaded_context'] == {'status': 'log absent'}, rows['a4']
+        # a2 has a Codex log; its run record carries no backend, so the log's codex_event picks the arm.
+        assert rows['a2']['loaded_context'] == {'status': 'rollout absent'}, rows['a2']
 
 
 # --- fanout -------------------------------------------------------------------------------------
@@ -1166,12 +1305,12 @@ def _ck_no_verdict_verifier(f):
 def _fx_attempt_without_run_row(tmp, defect):
     return _esc_repo(tmp, {'step-1': [
         _e('builder-L2', 'ok1', _builder_text('done')),
-        _e('builder-L3', 'lost', None, run=not defect, status='failed', exit_code=1)]})
+        _e('builder-L3', 'lost', None, run=not defect, status='completed', exit_code=0)]})
 
 
 def _ck_attempt_without_run_row(f):
-    assert f['severity'] == 3, f
-    assert f['evidence'] == [{'attempt_id': 'lost', 'status': 'failed'}], f
+    assert f['severity'] == 2, f
+    assert f['evidence'] == [{'attempt_id': 'lost', 'status': 'completed'}], f
 
 
 def _fx_stale_running_marker(tmp, defect):
@@ -1924,10 +2063,6 @@ def _corpus():
              {'path': '.sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md'}),
             ('replan-loop',
              {'path': '.sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md'})]
-    att = os.path.join(top, '.sdlc/.0162-entry-files-in-step-handoffs/step-6/'
-                            'builder-L2.attempt.json')
-    with open(att, encoding='utf-8') as f:
-        want.append(('attempt-without-run-row', {'attempt_id': json.load(f)['attempt_id']}))
     logs = os.path.join(top, '.worktrees/fanout-night/logs')
     if os.path.isdir(logs):
         want.append(('overwritten-gate-log', {}))
@@ -1965,6 +2100,59 @@ def _():
         _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
         got = reader.read(os.path.join(repo, '.sdlc'))['by_slug']
         assert got == {'0001-a': ('T-0001', 'ready')}, got
+
+
+@case('tickets: layout: topics lists tickets/<name> and work/<name>, and work and notes are not tasks')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        _write(repo, '.sdlc/work/w1/handoff.md', '## Goal\nx\n')
+        _write(repo, '.sdlc/notes/notes.md', 'n\n')
+        _write(repo, '.sdlc/side/handoff.md', '## Goal\nx\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['side', 'tickets/0001-a', 'work/w1'], got
+        # Negative controls: without the layout line work and notes are plain dir names, and an
+        # unsupported layout value falls back to the ticket_root listing without failing.
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['notes', 'side', 'work', 'tickets/0001-a'], got
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: nested\n')
+        got = ingest.task_dirs(os.path.join(repo, '.sdlc'))
+        assert got == ['notes', 'side', 'work', 'tickets/0001-a'], got
+
+
+@case('tickets: layout: topics reads the notes file from notes/notes.md, not the root')
+def _():
+    from .sources import tickets as reader
+    with tempfile.TemporaryDirectory() as repo:
+        sdlc = os.path.join(repo, '.sdlc')
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/tickets/0001-a/handoff.md', _TICKET_FM)
+        assert reader.read(sdlc)['notes'] is False
+        _write(repo, '.sdlc/notes.md', 'root notes\n')
+        assert reader.read(sdlc)['notes'] is False, 'a root notes.md is not the topics notes file'
+        _write(repo, '.sdlc/notes/notes.md', 'n\n')
+        assert reader.read(sdlc)['notes'] is True
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\n')
+        os.remove(os.path.join(sdlc, 'notes.md'))
+        assert reader.read(sdlc)['notes'] is False, 'flat layout ignores notes/notes.md'
+
+
+@case('tickets: ingest run on a layout: topics repo reads a work/ task into rows')
+def _():
+    from . import ingest
+    with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as out:
+        _write(repo, '.sdlc/config', 'ticket_root: tickets\nlayout: topics\n')
+        _write(repo, '.sdlc/work/w1/handoff.md', '## Goal\nx\n')
+        _write(repo, '.sdlc/work/w1/runs.jsonl',
+               json.dumps({'role': 'planner', 'level': 'L1', 'model': 'm', 'exit': 0,
+                           'started': '2026-10-01T00:00:00Z', 'ended': '2026-10-01T00:01:00Z'}) + '\n')
+        ingest.run(repo, out=out)
+        cursor = json.load(open(os.path.join(out, 'cursor.json')))
+        keys = sorted(cursor['keys'])
+        assert '.sdlc/work/w1' in keys and '.sdlc/work' not in keys, keys
 
 
 @case('tickets: with no ticket_root line a tickets dir is a plain task dir name')

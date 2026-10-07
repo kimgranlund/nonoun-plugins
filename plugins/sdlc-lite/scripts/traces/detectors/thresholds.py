@@ -37,7 +37,6 @@ THRESHOLDS = {
         'statusless-builder': 2,
         'no-verdict-verifier': 2,
         'attempt-without-run-row': 2,
-        'attempt-without-run-row-failed': 3,
         'stale-running-marker': 2,
         'criteria-never-red': 2,
         'contract-dependents': 2,

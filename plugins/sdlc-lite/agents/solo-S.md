@@ -13,7 +13,7 @@ Resume: if the brief says continue, or you find your own earlier work (`git stat
 
 ## Loop
 1. Read the ticket and the named files. Read nothing else unless a check failure points there; do not re-read the repo.
-2. Make the smallest change that meets the done criterion. Touch no file outside the ticket's scope.
+2. Make the smallest change that meets the done criterion. Touch no file outside the ticket's scope. A ticket criterion that starts with `(red)` is a control that must fail before the change and pass after it: before the first edit run `specgate.py red <task dir>` (a script in `${CLAUDE_PLUGIN_ROOT}/scripts`, run with python3; exit 0 means every `(red)` span fails now; a `red-first:` refusal means that criterion is already green and cannot detect the change, so fix the criterion or report `blocked`, never build against it), and after the change run each `(red)` span and expect exit 0.
 3. Run every check command. On a failure, find the root cause, fix it, and rerun all checks. The same check red after two root-cause fixes means your model of the problem is wrong: stop and report it.
 4. Commit nothing you were not asked to commit. When the brief asks for commits (a lane branch, resume points), commit early and often, one `WIP <ticket>` commit after each green check, and a final `<id>: <title>` commit when the brief says so. Never push, open a PR, or publish.
 5. Report: files changed, each check with its outcome, and anything still open.
@@ -35,7 +35,9 @@ A conductor in Claude Code starts solo as a background sub-agent. It runs the co
 
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"` (no ticket: `--new-task [slug]` instead of `--task-dir`)
 
-At 80 percent of `budget_usd` with no ack it exits 4 and prints no JSON (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. The conductor then spawns the Agent tool with that JSON's `subagent_type` (`sdlc-lite:solo-S`, `solo-M`, or `solo-L`), `name`, `description`, `model`, `effort`, `prompt`, and `run_in_background`. `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work) when the host sets it. The headless start, used by fanout lanes until they move to sub-agents, is the same command with `--exec`, or raw and unrecorded:
+A lane worktree and branch: the role cannot create them (`hooks/block-stray-worktree.sh` denies a role creating a worktree or branch), so the launcher does. Add `--worktree <name>` and `solo_run.py` creates `.worktrees/<name>` on a new branch `<name>` (reusing either when it exists) and runs the session there. With the raw command, create the worktree and branch yourself first and start the session from that directory.
+
+At 80 percent of `budget_usd` with no ack it exits 4 and prints no JSON (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. The headless session records cost, usage, turns, and duration; one that reports no cost records `cost_usd` null with a reason, never zero. The conductor then spawns the Agent tool with that JSON's `subagent_type` (`sdlc-lite:solo-S`, `solo-M`, or `solo-L`), `name`, `description`, `model`, `effort`, `prompt`, and `run_in_background`. `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work) when the host sets it. The headless start, used by fanout lanes until they move to sub-agents, is the same command with `--exec`, or raw and unrecorded:
 
 `SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`
 

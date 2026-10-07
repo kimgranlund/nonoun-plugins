@@ -81,6 +81,10 @@
 # run with no edit, an edit of a sibling file, and a stub that never reads the handoff but whose handoff
 # changed (the hash decides) behave as stated: no edit and sibling edit give stale_input false and no
 # stderr line, the never-reads stub is still flagged. Its failures read "stale input: <reason>".
+# Loaded context (T-0252): runs.jsonl loaded_context holds the Read paths of the log (paths [] when none), a
+# failing collector records {"status":"collector failed"} with a stderr line and exit 0, and traces.py context
+# prints status log absent for a missing log and rollout absent for a Codex log with no rollout. Its failures
+# read "loaded context: <reason>" or "loaded context control: <reason>".
 # Uses a stub `claude` on PATH (no model call) inside a throwaway git repo.
 # Prints "run selftest: PASS" or "run selftest: FAIL: <reason>" and exits non-zero on failure.
 set -euo pipefail
@@ -743,6 +747,46 @@ jq -e 'select(.file == "planner-L3.md")' "$edir/runs.jsonl" >/dev/null 2>&1 \
   || fail "self-edit: runs.jsonl has no line with file planner-L3.md"
 est=$(jq -r '.status' "$edir/planner-L3.attempt.json" 2>/dev/null || echo MISSING)
 [[ "$est" == completed ]] || fail "self-edit: planner-L3.attempt.json status is '$est', want completed"
+
+# Loaded context (T-0252): the runs.jsonl line holds loaded_context. A stub log with Read tool_use blocks
+# gives their paths (deduplicated, Bash ignored) and no stderr line; a log with no Read gives paths [] with a
+# source; a collector that fails is recorded as {"status":"collector failed"}, reported on stderr, and does
+# not change the exit code; traces.py context on a missing log prints {"status":"log absent"} and exits 0
+# (never an empty list), and on a Codex log with no rollout prints {"status":"rollout absent"}.
+ctx_run() { # <stub log file> <run.sh> -> exit code in ctx_rc, stderr in $tmp/cerr, last runs.jsonl line in ctx_line
+  rm -f "$rrepo"/*-L*.md "$rrepo"/*.log "$rrepo"/*.attempt.json "$rrepo/runs.jsonl"
+  ctx_rc=0
+  (cd "$rrepo" && STUB_RESULT="$1" PATH="$tmp/bin:$PATH" "$2" scout L1 h.md >/dev/null 2>"$tmp/cerr") || ctx_rc=$?
+  ctx_line=$(tail -n 1 "$rrepo/runs.jsonl" 2>/dev/null || true)
+}
+{ jq -nc '{type:"assistant",message:{content:[{type:"tool_use",name:"Read",input:{file_path:"/r/AGENTS.md"}},{type:"tool_use",name:"Read",input:{file_path:"/r/docs/a.md"}}]}}'
+  jq -nc '{type:"assistant",message:{content:[{type:"tool_use",name:"Read",input:{file_path:"/r/AGENTS.md"}},{type:"tool_use",name:"Bash",input:{command:"cat /r/b.md"}}]}}'
+  jq -nc '{type:"result",is_error:false,result:"## Map\nx",total_cost_usd:0,duration_ms:1,num_turns:2}'
+} >"$tmp/ctxlog.json"
+ctx_run "$tmp/ctxlog.json" "$here/run.sh"
+[[ "$ctx_rc" == 0 ]] || fail "loaded context: run.sh exited $ctx_rc ($(cat "$tmp/cerr"))"
+jq -e '.loaded_context == {source:"stream-json",paths:["/r/AGENTS.md","/r/docs/a.md"]}' <<<"$ctx_line" >/dev/null \
+  || fail "loaded context: runs.jsonl loaded_context is $(jq -c .loaded_context <<<"$ctx_line"), want the two Read paths"
+! grep -q 'loaded context not recorded' "$tmp/cerr" || fail "loaded context: a good run printed a loaded-context line"
+{ jq -nc '{type:"result",is_error:false,result:"## Map\nx",total_cost_usd:0,duration_ms:1,num_turns:1}'; } >"$tmp/ctxlog0.json"
+ctx_run "$tmp/ctxlog0.json" "$here/run.sh"
+jq -e '.loaded_context == {source:"stream-json",paths:[]}' <<<"$ctx_line" >/dev/null \
+  || fail "loaded context: a run with no Read recorded $(jq -c .loaded_context <<<"$ctx_line"), want source and empty paths"
+copy2="$tmp/plugin-copy-ctx"
+cp -R "$here/.." "$copy2"
+printf '#!/usr/bin/env python3\nraise SystemExit(1)\n' >"$copy2/scripts/traces.py"
+ctx_run "$tmp/ctxlog.json" "$copy2/scripts/run.sh"
+[[ "$ctx_rc" == 0 ]] || fail "loaded context control: a failing collector changed the exit code to $ctx_rc"
+jq -e '.loaded_context == {status:"collector failed"}' <<<"$ctx_line" >/dev/null \
+  || fail "loaded context control: a failing collector recorded $(jq -c .loaded_context <<<"$ctx_line"), want status collector failed"
+grep -q 'run.sh: loaded context not recorded: collector failed' "$tmp/cerr" \
+  || fail "loaded context control: a failing collector printed no stderr line: $(cat "$tmp/cerr")"
+nolog=$(python3 "$here/traces.py" context "$tmp/no-such.log") || fail "loaded context control: traces.py context on a missing log exited non-zero"
+[[ "$nolog" == '{"status": "log absent"}' ]] || fail "loaded context control: a missing log printed '$nolog', want status log absent"
+printf '%s\n' '{"type":"codex_event","event":{"type":"thread.started","thread_id":"01a113e7-1ca9-7c62-8c76-9879b9631837"}}' >"$tmp/codex.log"
+norollout=$(CODEX_HOME="$tmp/no-codex-home" python3 "$here/traces.py" context "$tmp/codex.log" --backend codex) \
+  || fail "loaded context control: traces.py context on a Codex log exited non-zero"
+[[ "$norollout" == '{"status": "rollout absent"}' ]] || fail "loaded context control: a Codex log with no rollout printed '$norollout', want status rollout absent"
 
 # Mailbox notice.
 mrepo="$tmp/mrepo"

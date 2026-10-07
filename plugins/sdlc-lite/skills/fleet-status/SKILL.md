@@ -17,7 +17,7 @@ Exit 2 or 1: report stderr in one sentence (a bad registry, an unknown repo, a b
 
 ## 2. Print it
 
-Print stdout verbatim as the reply, before any question. Render, never compose: do not rewrite, reorder, shorten, summarize, or fix a row, and never build a table of your own. The output order is Machine, Needs you, Moving, Stale or stuck, Done since last report, Release state, and Ping with `--ping`. Marks: `●` live, `◐` idle, `✖` dead, `⚠` stale, `○` nothing moving. Every row ends with its source in brackets.
+Print stdout verbatim as the reply, before any question, inside one fenced code block (plain `text`) so the columns keep their alignment. Render, never compose: do not rewrite, reorder, shorten, summarize, or fix a row, and never build a table of your own. The output order is Machine, Needs you, Moving, Stale or stuck, Done since last report, Release state, and Ping with `--ping`. Needs you, Moving, Stale or stuck, and Release state are plain aligned tables the script writes (a header row, a dashed rule, columns Repo, Row, State, Detail, Source padded with spaces, no pipes); Machine is one line. Marks in the State column: 🟢 live, 🟡 idle, 🔴 dead, ⚠️ stale, ⚪ nothing moving. Closed tickets whose board rows still claim work are folded into one row per repo under Stale or stuck (`N closed tickets still shown on the board`). Every row carries its source in brackets, the last column of a table row.
 
 `--ping` lists the conductors with work to report on, to message for a health report. This skill sends nothing; the user or the conductor sends with `messages.py`.
 
@@ -27,8 +27,8 @@ The rows under `Needs you` are the only reason to ask. None (`Needs you: nothing
 
 Otherwise make exactly ONE AskUserQuestion call of 1 to 4 questions, one per row, oldest first. With more than 4 rows ask the 4 oldest and name the rest in the framing ("4 of 7"). Header chips stay under 12 characters. For each row write 2 to 3 options whose descriptions carry the consequence in one line, and put an option first marked `(Recommended)` only when the row or the ticket supports it:
 
-- `merge` row: `Merge it` first and recommended when the row says APPROVED and CLEAN; otherwise `Look at it first` first. Then `Leave it open`.
-- `decision` row: read the ticket's `## Goal` and `## Context` (the row's bracketed folder) and offer the real choices it names. Recommend one only when the ticket states a default.
+- `merge` row (State column): `Merge it` first and recommended when the Detail says APPROVED and CLEAN; otherwise `Look at it first` first. Then `Leave it open`.
+- `decision` row: read the ticket's `## Goal` and `## Context` (the row's Source is the ticket folder under that repo's `.sdlc`) and offer the real choices it names. Recommend one only when the ticket states a default.
 - `credential` row: `I will provide it` first, then `Skip this ticket for now`.
 
 If AskUserQuestion is unavailable in this session (a headless run, for example), ask the same round as numbered plain-text questions with the same options, then end the turn; say that it is plain text. Never a second round in the same turn.
@@ -39,6 +39,7 @@ Reply with one line per answer. Do not merge, message a conductor, edit a ticket
 
 Rules:
 - Render, never compose. The script is the only author of the table.
+- The data `render` draws is the `collect` object, and [resources/fleet-status.schema.json](resources/fleet-status.schema.json) (JSON Schema, draft 2020-12) is the authority for its keys, types and allowed values; the script's selftest checks a collected fixture against it.
 - `Moving` lists only rows with a live process, a live marker, or activity in the last 15 minutes. A row the board shows as building with none of those is under `Stale or stuck`, whatever the board says.
 - A repo the registry excludes never appears; `--repos` naming one skips it.
 - The first call after a fresh checkout says `first report` under Done since: pass `--since DATE` for a dated list.

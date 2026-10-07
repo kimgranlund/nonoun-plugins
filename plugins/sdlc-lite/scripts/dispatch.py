@@ -62,7 +62,8 @@ it then does the following.
                prepare (its snapshot sits in the attempt record), the own prefix left out. Report only.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
-  runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent.
+  runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent;
+               loaded_context is {"status":"log absent"} (a sub-agent leaves no stream-json log).
                cost_usd is estimated from the notice tokens by cost_estimate.py (cost_estimated true, cost_basis
                "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero;
                usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given.
@@ -648,7 +649,8 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
                 file=result.name, shared_with_builder=bool(d.get('shared_with_builder')), attempt_id=d['attempt_id'],
                 handoff_sha256=d['handoff_sha256'], stale_input=stale, routing_reason=d['routing_reason'], backend='claude',
                 transport='subagent', agent_id=agent_id, usage=usage, cost_usd=est, cost_reason=None if est is not None else COST_REASON,
-                duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br)
+                duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br,
+                loaded_context={'status': 'log absent'})  # T-0252: a sub-agent leaves no stream-json log to read
     if est is not None:
         line.update(cost_estimated=True, cost_basis=basis)
     if d.get('specgate'):

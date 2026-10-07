@@ -41,6 +41,15 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             "plan defect: ... (guard) criteria changed the work tree: <paths>; replan this step
             (/chain 3)" (a red guard, if any, is named on the same line). A tree dirty before
             the guards passes when they leave it as it was. Nothing is undone.
+            Then it runs that step's (red) criteria the same way (a criterion line whose leading
+            tags, after - or *, hold (red); same timeout, same SDLC_BASE_SHA, spans that reference
+            HEAD^1 or hold a <placeholder> skipped): a (red) span is a check of the step's new
+            behavior, so it must exit nonzero now. A span that exits 0 (green now, it cannot
+            detect the change), a timeout, or a span that changed the work tree refuses, one line
+            "steps: <plan> red-first: step <n>: `<span>` is green now; it cannot detect the
+            change", then a last line "plan defect: red-first: <k> refusal(s); replan this step
+            (/chain 3)". A tree change is undone from a content snapshot taken before the first
+            (red) span (red_first, one rule with specgate.py red) and the line says "restored".
             A full split (no --only) and lint never execute a span.
             Refuses a plan the plan review rejected: when the newest plan-reviewer-*.md that counts
             after the chosen plan (order.counts_after) has Verdict replan or blocked, it prints
@@ -261,7 +270,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             fail, its note starts "plan defect:", it holds a pair, and no other verifier result in
             the dir holds one (one swap per step). Exactly one criterion line (the criteria_lines
             region, a - or * list item) must hold the old span among its command spans. The new
-            text starts with (guard) exactly when that line does, holds at least one command span,
+            text starts with (guard), and carries (red) in its leading tags, exactly when that line
+            does, holds at least one command span,
             no span references HEAD^1 or holds a <placeholder>, and it lints clean (the lint rules
             above). Each new span then runs under bash -c from the git toplevel of the step dir
             (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA set to
@@ -325,6 +335,8 @@ DEFAULT_GUARD_TIMEOUT = 300
 SPAN_RE = re.compile(r'(`+)(.+?)\1')
 ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
 PLACEHOLDER_RE = re.compile(r'<[^<>\s][^<>]*>')
+TAG_RUN_RE = re.compile(r'^(?:\([\w-]+\)\s*)+')
+RED_SNAPSHOT_LIMIT = 8_000_000
 BUILTINS = {'cd', 'test', '[', 'echo', 'printf', 'export', 'set', 'true', 'false', 'time', 'type',
             'command', 'eval', 'exec', 'source', '.'}
 PLAN_DEFECT = 'plan defect: replan this step (/chain 3)'
@@ -526,6 +538,31 @@ def guard_spans(block):
     return [text for line in criteria_lines(block) if is_guard_line(line) for text in line_spans(line)]
 
 
+def leading_tags(line):
+    """The tags of a criterion line's leading tag run, after its list marker (- or *): ["red"] for
+    "- (red) `cmd`", ["guard", "red"] for "- (guard)(red) `cmd`". A tag later in the line is not in the run."""
+    text = line.lstrip()
+    if text.startswith('- ') or text.startswith('* '):
+        text = text[2:].lstrip()
+    m = TAG_RUN_RE.match(text)
+    return re.findall(r'\(([\w-]+)\)', m.group(0)) if m else []
+
+
+def is_red_line(line):
+    """True when a criterion line's leading tag run, after its list marker, holds (red)."""
+    return 'red' in leading_tags(line)
+
+
+def red_spans(block):
+    """The command-like code spans on a step block's (red) criterion lines, in order, a repeated span
+    once. Same lines (criteria_lines) and same span test (line_spans) as guard_spans."""
+    out = []
+    for line in criteria_lines(block):
+        if is_red_line(line):
+            out += [t for t in line_spans(line) if t not in out]
+    return out
+
+
 def guard_skipped(text):
     """A guard span that cannot run against the current tree: it references HEAD^1 (a merge
     commit not made yet) or holds a <placeholder>."""
@@ -666,6 +703,122 @@ def run_guards(plan, steps, chosen, task_dir, timeouts):
         red.append(f'{which} (guard) criteria changed the work tree: {", ".join(changed)}')
     if red:
         raise Fail('\n'.join(lines + [f'plan defect: {"; ".join(red)}; replan this step (/chain 3)']))
+
+
+def red_snapshot(top, state):
+    """The content of every path in a tree_state that exists on disk: path -> ('link', target),
+    ('file', bytes, mode, mtime_ns), or None (over RED_SNAPSHOT_LIMIT bytes, or unreadable)."""
+    snap = {}
+    for p, (_, stat) in state.items():
+        if stat is None:
+            continue
+        fp = os.path.join(top, p)
+        try:
+            if os.path.islink(fp):
+                snap[p] = ('link', os.readlink(fp))
+            elif os.path.isfile(fp) and stat[0] <= RED_SNAPSHOT_LIMIT:
+                st = os.lstat(fp)
+                with open(fp, 'rb') as f:
+                    snap[p] = ('file', f.read(), st.st_mode & 0o7777, st.st_mtime_ns)
+            else:
+                snap[p] = None
+        except OSError:
+            snap[p] = None
+    return snap
+
+
+def red_remove(top, p):
+    """Delete path p under top (a file, link, or directory), then any parent directory left empty."""
+    fp = os.path.join(top, p)
+    with contextlib.suppress(OSError):
+        if os.path.isdir(fp) and not os.path.islink(fp):
+            shutil.rmtree(fp)
+        else:
+            os.remove(fp)
+    d = os.path.dirname(fp)
+    while d.startswith(top + os.sep):
+        try:
+            os.rmdir(d)
+        except OSError:
+            break
+        d = os.path.dirname(d)
+
+
+def red_restore(top, before, after, snap):
+    """Undo what the (red) spans did to the work tree: for each path tree_changes(before, after) names,
+    a path that was dirty before gets its saved content back, a new untracked path is deleted, and a path
+    that was clean is reset to HEAD (an added path that is not in HEAD is unstaged and deleted). Returns the
+    paths still different from the before state afterwards, sorted: empty when the tree is restored."""
+    def git(*args):
+        return subprocess.run(['git', '-C', top, *args], capture_output=True, stdin=subprocess.DEVNULL,
+                              timeout=60).returncode
+
+    for p in tree_changes(before, after):
+        fp = os.path.join(top, p)
+        try:
+            if p in before:
+                saved = snap.get(p)
+                if before[p][1] is None:
+                    red_remove(top, p)
+                elif saved is not None:
+                    if os.path.lexists(fp):
+                        red_remove(top, p)
+                    os.makedirs(os.path.dirname(fp), exist_ok=True)
+                    if saved[0] == 'link':
+                        os.symlink(saved[1], fp)
+                    else:
+                        with open(fp, 'wb') as f:
+                            f.write(saved[1])
+                        os.chmod(fp, saved[2])
+                        os.utime(fp, ns=(saved[3], saved[3]))
+            elif after[p][0].strip() == '??':
+                red_remove(top, p)
+            elif git('cat-file', '-e', f'HEAD:{p}') == 0:
+                git('checkout', 'HEAD', '--', p)
+            else:
+                git('rm', '-f', '-q', '--cached', '--ignore-unmatch', '--', p)
+                red_remove(top, p)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    now = tree_state(top)
+    return tree_changes(before, now) if now is not None else sorted(tree_changes(before, after))
+
+
+def red_first(items, top, cwd, base):
+    """Run each (n, span, timeout) of items once, in order, in the current tree and return one message per
+    refusal: a span that exits 0 is green now and cannot detect the change; a timeout; and, in a git work
+    tree, a tree change, which is undone from a content snapshot taken before the first span (the message
+    says whether the tree is restored). n is the step number, or None for a ticket handoff. Empty list: every
+    span is red now. The spans run synchronously, so the caller must own the tree while they do."""
+    out = []
+    before = tree_state(top) if top and items else None
+    snap = red_snapshot(top, before) if before is not None else {}
+    for n, span, timeout in items:
+        where = f'step {n}: ' if n is not None else ''
+        rc, _ = run_guard(span, cwd, timeout, base)
+        if rc == 0:
+            out.append(f'{where}`{span}` is green now; it cannot detect the change')
+        elif rc is None:
+            out.append(f'{where}`{span}` timed out after {timeout:g}s; a (red) span must exit nonzero quickly')
+    after = tree_state(top) if before is not None else None
+    changed = tree_changes(before, after) if after is not None else []
+    if changed:
+        left = red_restore(top, before, after, snap)
+        state = f'not restored: {", ".join(left)}' if left else 'restored'
+        out.append(f'(red) spans changed the work tree: {", ".join(changed)} ({state})')
+    return out
+
+
+def run_red(plan, steps, chosen, task_dir, timeouts):
+    """Run the runnable (red) spans of each chosen step, each under timeouts[n] seconds, and raise Fail
+    when one is green now, times out, or changes the tree (see red_first). Called only by split --only,
+    beside run_guards; a full split and lint never execute a span."""
+    top = git_toplevel(task_dir)
+    items = [(n, text, timeouts[n]) for n in chosen for text in red_spans(steps[n]) if not guard_skipped(text)]
+    found = red_first(items, top, top or str(task_dir), base_sha(top))
+    if found:
+        raise Fail('\n'.join([f'steps: {plan} red-first: {m}' for m in found]
+                             + [f'plan defect: red-first: {len(found)} refusal(s); replan this step (/chain 3)']))
 
 
 OR_ALLOWED_LEFT = ['test', '$#', '-eq', '0']
@@ -1037,6 +1190,7 @@ def split(target, only=None, guard_timeout=None):
                     else step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT
                     for n in chosen}
         run_guards(plan, steps, chosen, task_dir, timeouts)
+        run_red(plan, steps, chosen, task_dir, timeouts)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -1984,6 +2138,9 @@ def swap(step_dir, timeout=300):
     if new.startswith('(guard)') != is_guard_line(target):
         refuse('the new text must start with (guard) exactly when the old criterion line does: '
                f'old {"is" if is_guard_line(target) else "is not"} a (guard) line')
+    if is_red_line(new) != is_red_line(target):
+        refuse('the new text must carry (red) in its leading tags exactly when the old criterion line does: '
+               f'old {"is" if is_red_line(target) else "is not"} a (red) line')
     spans = line_spans(f'- {new}')
     if not spans:
         refuse(f'the new criterion holds no runnable command span: {new}')
@@ -2813,6 +2970,77 @@ def selftest():
         check('(o) full split in a git repo runs no guard and does not refuse',
               rc == 0 and not (d.parents[1] / 'o-full').exists() and (d / 'step-1' / 'handoff.md').is_file())
 
+        # (red) split --only runs the step's (red) criteria after its guards: a span must exit nonzero now.
+        def red_refused(name, d, *needles):
+            before = snapshot(d)
+            rc, out, err = run_main(['split', str(d), '--only', '1'])
+            last = err.strip().splitlines()[-1] if err.strip() else ''
+            check(name, rc == 1 and out == '' and snapshot(d) == before and not (d / 'step-1').exists()
+                  and last.startswith('plan defect: red-first:') and last.endswith('; replan this step (/chain 3)')
+                  and all(x in err for x in needles))
+
+        def porcelain(d):
+            return subprocess.run(['git', '-C', str(d.parents[1]), 'status', '--porcelain', '--untracked-files=all'],
+                                  capture_output=True, text=True).stdout
+
+        d = o_repo('(red) `test -f red-made`', '(guard) `test -d .sdlc`', commit='tracked.txt')
+        rc, out, err = run_main(['split', str(d), '--only', '1'])
+        check('(red) a (red) span that is red now passes: split --only writes the handoff',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+        d = o_repo('(red) `test -d .sdlc`', commit='tracked.txt')
+        red_refused('(red) a (red) span that is green now is refused with its name and writes nothing', d,
+                    'red-first: step 1: `test -d .sdlc` is green now; it cannot detect the change')
+        d = o_repo('(red) `sleep 30`')
+        rc, out, err = run_main(['split', str(d), '--only', '1', '--guard-timeout', '1'])
+        check('(red) a (red) span that times out is refused under the step timeout',
+              rc == 1 and not (d / 'step-1').exists() and 'timed out after 1s' in err
+              and 'red-first: step 1:' in err)
+        d = o_repo('(red) `touch red-made; false`', commit='tracked.txt')
+        red_refused('(red) a (red) span that changes the tree is refused, naming the path', d,
+                    'changed the work tree: red-made (restored)')
+        check('(red) the refused span left the tree as it found it (the snapshot restored it)',
+              not (d.parents[1] / 'red-made').exists())
+        d = o_repo('(red) `echo b >> tracked.txt; false`', commit='tracked.txt', dirty='already-dirty')
+        (d.parents[1] / 'already-dirty').write_text('pre-edit\n', encoding='utf-8')
+        red_refused('(red) a tracked-file edit is refused too', d, 'changed the work tree: tracked.txt (restored)')
+        check('(red) tracked and already-dirty files are byte-identical after the refusal',
+              (d.parents[1] / 'tracked.txt').read_text(encoding='utf-8') == 'a\n'
+              and (d.parents[1] / 'already-dirty').read_text(encoding='utf-8') == 'pre-edit\n')
+        d = o_repo('(red) `echo mine > already-dirty; false`', dirty='already-dirty')
+        (d.parents[1] / 'already-dirty').write_text('builder work\n', encoding='utf-8')
+        red_refused('(red) a span that rewrites an already-dirty file is refused', d, 'already-dirty (restored)')
+        check('(red) the already-dirty file holds its content from before the span',
+              (d.parents[1] / 'already-dirty').read_text(encoding='utf-8') == 'builder work\n')
+        d = o_repo('(red) `touch s1; git add s1; false`', commit='tracked.txt')
+        red_refused('(red) a span that stages a new file is refused', d, 's1 (restored)')
+        check('(red) the staged new file is unstaged and gone',
+              's1' not in porcelain(d) and not (d.parents[1] / 's1').exists())
+        d = o_repo('(red) `git rm -q tracked.txt; false`', commit='tracked.txt')
+        red_refused('(red) a span that deletes a tracked file is refused', d, 'tracked.txt (restored)')
+        check('(red) the deleted tracked file is back and clean',
+              (d.parents[1] / 'tracked.txt').read_text(encoding='utf-8') == 'a\n'
+              and 'tracked.txt' not in porcelain(d))
+        # control: with the restore disabled the same span leaves its file behind, so the checks above can fail
+        d = o_repo('(red) `touch red-kept; false`')
+        kept = globals()['red_restore']
+        globals()['red_restore'] = lambda *a: []
+        try:
+            rc, _, err = run_main(['split', str(d), '--only', '1'])
+        finally:
+            globals()['red_restore'] = kept
+        check('(red) control: with red_restore disabled the changed file stays behind (the restore check bites)',
+              rc == 1 and (d.parents[1] / 'red-kept').exists())
+        d = o_repo('(red) `test -d .sdlc`', '(guard) `test -d .sdlc`')
+        rc, _, err = run_main(['split', str(d)])
+        check('(red) a full split runs no (red) span: a green one does not refuse',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+        check('(red) red_spans keeps only (red) lines, a repeat once, and the spans line_spans sees',
+              red_spans('## Step 1: x\nlevel: L1\n### Do\n- (red) `cat -e x`\n### Acceptance criteria\n'
+                        '- `cat -a x`\n* (red) `cat -b x` and `cat -c x`\n  - (red) `cat -f x`\n'
+                        '- (red) `cat -b x`\n- (guard) `cat -h x`\n- (guard)(red) `cat -i x`\n'
+                        '- (red) prose\n- x (red) `cat -d x`\n```\n- (red) `cat -g x`\n```\n')
+              == ['cat -b x', 'cat -c x', 'cat -f x', 'cat -i x'])
+
         # (r) ### Read first: each listed path must exist under the git toplevel of the plan's folder
         r = tmp / 'r-repo'
         (r / 'sub').mkdir(parents=True)
@@ -3207,6 +3435,18 @@ def selftest():
                      s_step(pair + [('verifier-L1.md', swap_v(new='(guard) `test -f handoff.md`'))]), '(guard)')
         swap_refused('(c) tag mismatch: a (guard) line swapped for a plain text',
                      s_step(pair + [('verifier-L1.md', swap_v('test -d .', '`test -f handoff.md`'))]), '(guard)')
+        R_HANDOFF = S_HANDOFF.replace('  * `' + S_OLD + '`', '  * (red) `' + S_OLD + '`')
+        swap_refused('(c) tag mismatch: a (red) line swapped for a plain text drops the (red) tag',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='`test -f handoff.md`'))], handoff=R_HANDOFF),
+                     '(red)')
+        swap_refused('(c) tag mismatch: a plain line swapped for a (red) text adds a (red) tag',
+                     s_step(pair + [('verifier-L1.md', swap_v(new='(red) `test -f handoff.md`'))]), '(red)')
+        d = s_step(pair + [('verifier-L1.md', swap_v(new='(red) `test -f handoff.md` (new check)'))],
+                   handoff=R_HANDOFF)
+        rc, out, err = run_main(['swap', str(d)])
+        check('swap: (a) a (red) line swapped for a (red) text applies and keeps the tag',
+              rc == 0 and err == ''
+              and '  * (red) `test -f handoff.md` (new check)' in (d / 'handoff.md').read_text(encoding='utf-8'))
         swap_refused('(c) new text with no command span',
                      s_step(pair + [('verifier-L1.md', swap_v(new='the file exists'))]), 'no runnable')
         swap_refused('(c) new span with an unquoted || join',

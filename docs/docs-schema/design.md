@@ -53,10 +53,12 @@ A `.sdlc/` artifact that should outlive its ticket (an architect result, a desig
 
 1. Copy it to the target home in `docs/` with front matter that names the source: `source: T-0240` (ticket id) and the original file name.
 2. The `docs/` copy is the authoritative one. The `.sdlc/` copy stays as the record and gets no further edits.
-3. The promoted file's `source:` key is the link back. The ticket's `handoff.md` is not edited, because it is frozen once a role reads it and hidden after the ticket closes. A line in `.sdlc/notes.md` may record the promotion.
+3. The promoted file's `source:` key is the link back. The ticket's `handoff.md` is not edited, because it is frozen once a role reads it and hidden after the ticket closes. A line in the notes file (`.sdlc/notes.md`, or `.sdlc/notes/notes.md` with `layout: topics`) may record the promotion.
 4. Which home: a design that is accepted goes to `specs/`, a record of one choice goes to `decisions/`, evidence goes to `reports/`.
 
-Promotion is advice in version 1 and a small script later (build ticket 5). A check cannot know what "should outlive" a ticket, so it only checks a promoted file's front matter.
+Usage: `python3 plugins/sdlc-lite/scripts/promote.py <artifact path> <home> [--slug S] [--ticket T-NNNN] [--note]` does steps 1 to 3 (it adds `source:` and `source-file:`, plus `status: proposed` for planning and decisions or `date:` and a date prefix for reports, and refuses an unknown home or an existing target). Choosing the home stays a person's call.
+
+Promotion is advice in version 1 and the script above in version 2. A check cannot know what "should outlive" a ticket, so it only checks a promoted file's front matter.
 
 ## The docs schema
 
@@ -331,7 +333,7 @@ A new script `plugins/sdlc-lite/scripts/docs_check.py` (not built) imports `pars
 | D-11 | An entry file over its 60-line target, or a document over 400 lines | warning |
 | D-12 | A file name that breaks the naming rules (case, spaces, version suffix, report date format, decision number), or a decision number used twice anywhere under `decisions/` | error |
 | B-1a | A path under `docs/` that matches a generated-file name: `runs.jsonl`, `skips.md`, `<role>-L<n>.md` and retries `<role>-L<n>-<k>.md`, `budget-ack.md`, `*.attempt.json`, `*.request.json`, `*.running`, `*.log` | error |
-| B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
+| B-2a | In `.sdlc/`, a Markdown file outside the record types: a folder that is not a ticket folder, a task folder (a `handoff.md` at its root or `step-<n>/` folders), `tickets/`, `work/` and `notes/` (the `layout: topics` folders), `messages/`, `evals/`, `proposals/`, `supervisor/`, `_templates/`, a role's `decompose/` folder, and a loose `.md` other than `AGENTS.md`, `CLAUDE.md`, `notes.md`, `roadmap.md`, `board.md` | warning |
 | B-3a | A `docs/` file that links to a path under `.sdlc/` | warning |
 | R-1 | (run by `onboard.py check`, not `docs_check.py`) A registry block or card in an entry file that differs from the one rendered from `## Kinds` of the layout (`stale`); same code for `docs/layout.md` and `.sdlc/layout.md` | error |
 | R-2 | A registry row with a missing field, an unknown kind, a cell over 70 characters, or a `not` with no target (`malformed`) | error |
