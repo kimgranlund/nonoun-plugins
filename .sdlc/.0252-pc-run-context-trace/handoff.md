@@ -2,7 +2,7 @@
 id: T-0252
 title: "Record which context a run loaded"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Run from the repository root. The change is in `plugins/sdlc-lite/scripts/` (`ru
 5. `bash plugins/sdlc-lite/scripts/run-selftest.sh` prints `run selftest: PASS`.
 6. `bash plugins/sdlc-lite/scripts/check.sh` exits 0, `python3 scripts/check-packaging.py` exits 0, and `git diff --check` is clean.
 7. (guard) `git status --short` lists only these paths: `plugins/sdlc-lite/scripts/{run.sh,run-selftest.sh,traces.py}`, `plugins/sdlc-lite/scripts/traces/{cli.py,ingest.py,selftest.py,table.py}`, `plugins/sdlc-lite/scripts/traces/sources/{runs.py,context.py}`, `docs/maintenance/sdlc-internals.md`, and `.sdlc/0252-pc-run-context-trace/`.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
