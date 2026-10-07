@@ -1164,6 +1164,39 @@ def defect_dependents(plan, steps):
     return findings
 
 
+NODE_TEST_RE = re.compile(r'\bnode\s+(?:--?[A-Za-z][\w=-]*\s+)*--test\b((?:\s+[^\s;&|<>]+)*)')
+TEST_FILE_EXT_RE = re.compile(r'\.(?:[cm]?[jt]sx?)$')
+COUNT_RE = re.compile(r'\b\d+\s+(?:(?:unit |passing |new |failing )?(?:tests?|cases?|checks?|assertions?|files?|specs?)|passed|passing)\b')
+
+
+def node_test_dir(text):
+    """True when a span runs `node --test` on a directory: a positional argument with no script
+    extension and no glob character (a bare `node --test` finds no tests in some node versions and
+    a dir argument is read as a module path, so the criterion fails or runs nothing)."""
+    for m in NODE_TEST_RE.finditer(text):
+        for tok in m.group(1).split():
+            tok = tok.strip('"\'')
+            if tok.startswith('-') or any(c in tok for c in '*?[{$'):
+                continue
+            if tok.endswith('/') or not TEST_FILE_EXT_RE.search(tok):
+                return True
+    return False
+
+
+def count_warnings(plan, steps):
+    """One warning per top-level acceptance criterion that cites a numeric count (12 tests) with no
+    command code span naming where the count comes from."""
+    out = []
+    for n, block in steps.items():
+        for line in criteria_lines(block):
+            if not re.match(r'^[-*] ', line) or not COUNT_RE.search(line) or line_spans(line):
+                continue
+            out.append(f'steps lint: warning: {plan} step {n}: criterion cites a count without a named '
+                       f'source file or command: {line.strip()[:100]}\n'
+                       '  name the command or file the count comes from, so a verifier can recompute it')
+    return out
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -1211,6 +1244,10 @@ def lint_steps(plan, steps):
                                 '  compare against HEAD at build start (`HEAD`, `HEAD~1`) instead: '
                                 'a fixed sha goes stale on the first sync from main '
                                 '(only `git merge-base --is-ancestor <sha> HEAD` may name a sha)')
+            if node_test_dir(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion runs node --test on a directory: '
+                                f'{text}\n'
+                                '  name the test files or a glob (node --test dir/*.test.js)')
             if fixed_set_count(text):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion compares a count over a changing set '
                                 f'with a fixed number: {text}\n'
@@ -1409,7 +1446,7 @@ def cmd_lint(target):
         print(e, file=sys.stderr)
         return 1
     print('steps lint: ok')
-    for w in lean_warnings(plan, task_dir, steps):
+    for w in count_warnings(plan, steps) + lean_warnings(plan, task_dir, steps):
         print(w, file=sys.stderr)
     return 0
 
@@ -2805,6 +2842,21 @@ def selftest():
         rc, out, err = run_main(['lint', str(d)])
         check('(lean) no warning for a two-step plan with two criteria per step',
               rc == 0 and out == 'steps lint: ok\n' and err == '')
+
+        # (t0347) node --test on a directory fails lint; a bare count warns; a count with a command passes
+        d = task(plan=PLAN.replace('- one works', '- `node --test tests`'))
+        refused('(t0347) lint refuses node --test on a directory',
+                ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'node --test on a directory'))
+        d = task(plan=PLAN.replace('- one works', '- `node --test tests/*.test.js` and `node --test tests/a.test.js`'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0347) node --test on a glob or a file passes lint', rc == 0 and 'directory' not in err)
+        d = task(plan=PLAN.replace('- one works', '- all 12 tests pass'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0347) a bare count warns and exits 0',
+              rc == 0 and 'cites a count without a named' in err and 'step 1' in err)
+        d = task(plan=PLAN.replace('- one works', '- `python3 scripts/steps.py selftest` runs 12 cases'))
+        rc, out, err = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(t0347) a count with a named command does not warn', rc == 0 and 'cites a count' not in err)
 
         # (k) command spans that parse, and non-command spans, pass
         k_spans = ['grep -c "x" scripts/steps.py', 'scripts/steps.py',
