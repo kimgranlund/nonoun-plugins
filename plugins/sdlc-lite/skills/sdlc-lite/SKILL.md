@@ -52,7 +52,7 @@ Before work on a ticket, run `python3 "<plugin-root>/scripts/steps.py" lane <tic
 
 On Claude Code every role is a sub-agent, dispatched as `agents/conductor.md` ("How you run roles") says; this section is the Codex path.
 
-Read [shared run operations](../handoff-format/run-operations.md) for readiness, routing rationale, and safe recovery. Set `SDLC_ROUTING_REASON` when launching a role; do not invent a task-specific rationale when none was supplied.
+Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, routing rationale, and safe recovery. Set `SDLC_ROUTING_REASON` when launching a role; do not invent a task-specific rationale when none was supplied.
 
 Run from the target project root. For runner calls inside Codex, use `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent` and follow the exchange below. Standalone terminal launchers use `SDLC_BACKEND=codex`; do not rely on an exported variable surviving between shell tool calls. Example inside Codex: `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent "<plugin-root>/scripts/run.sh" builder L2 .sdlc/example/step-1/handoff.md`.
 
@@ -64,7 +64,7 @@ When the user also wants SDLC Lite to guide the main Codex session by default in
 
 Names include `sdlc-scout-l1`, `sdlc-builder-l1` through `sdlc-builder-l5`, `sdlc-planner-l1` through `sdlc-planner-l3`, `sdlc-plan-reviewer-l1`, and corresponding verifier/researcher levels. Each definition sets its instructions, model, reasoning effort, and sandbox. Use native named agents for delegated tasks; a direct subagent's return does not automatically update pipeline state. Use run.sh for pipeline steps so results, base tracking, and independent-model verification are recorded and checked.
 
-Before an in-session pipeline call, read [the shared Codex execution instructions](../../adapters/codex/instructions.md), especially “Native pipeline exchange for conductors”. Start the runner with a short yield, read its request JSON, spawn the exact named agent with fresh context, wait for its report, submit that report with codex_exchange.py, then await the original runner. This adapter overrides workflow text that assumes a runner call can simply block until completion. Never launch a nested Codex CLI from a sandboxed shell. If setup or native tools are unavailable, report the blocker rather than changing permissions.
+Before an in-session pipeline call, read the shared Codex execution instructions at `${CLAUDE_PLUGIN_ROOT}/adapters/codex/instructions.md`, especially “Native pipeline exchange for conductors”. Start the runner with a short yield, read its request JSON, spawn the exact named agent with fresh context, wait for its report, submit that report with codex_exchange.py, then await the original runner. This adapter overrides workflow text that assumes a runner call can simply block until completion. Never launch a nested Codex CLI from a sandboxed shell. If setup or native tools are unavailable, report the blocker rather than changing permissions.
 
 The Codex backend preloads the shared role instructions and required skill bodies. It waits for completion and writes the existing result artifacts. Raw Codex events are retained in the log; runs.jsonl records backend and token usage. Dollar cost is unknown rather than estimated.
 

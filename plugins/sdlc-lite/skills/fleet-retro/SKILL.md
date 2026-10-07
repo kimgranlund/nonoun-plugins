@@ -5,11 +5,11 @@ argument-hint: "<repo>..."
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_collect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_detect.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Write, Grep, Glob, SendMessage, AskUserQuestion
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. SendMessage becomes the host's way to message another session; with none, run step 3 as skipped. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. SendMessage becomes the host's way to message another session; with none, run step 3 as skipped. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (one repo path per word; none means the active entries of `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_config.py show --active`, whose second column names each repo's conductor session).
 
-Every repo is read-only: this skill never writes, commits, or messages into a repo it inspects, and the interview tells a conductor the same. No model call runs before step 3. When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level; read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery.
+Every repo is read-only: this skill never writes, commits, or messages into a repo it inspects, and the interview tells a conductor the same. No model call runs before step 3. When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level; read run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness and interrupted-attempt recovery.
 
 Work folder `W` is `.sdlc/fleet-retro-<date>/` in the repo that runs this skill; the report is `docs/reports/fleet-retro-<date>.md` there. A repo with no `.sdlc` is listed in the report header and skipped.
 
