@@ -11,6 +11,8 @@
 - [Rename to reports](reports/rename-validation-to-reports.md): dated record of renaming the evidence folder to `docs/reports/` (T-0246), with before and after counts, the rewrite rules, the allowlist, and the limits.
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
+- [Sub-agent probes](reports/subagent-probes-2026-10-06.md): dated record of the eight sub-agent mechanics probes (T-0275) with raw evidence and the design fallback each triggers.
+- [Sub-agent live evidence](reports/subagent-mode-live-2026-10-07.md): dated live runs of sub-agent mode (T-0287): solo S, chain, two-lane fanout, with raw records, the defects found, and what stays unverified.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
 - [Reorganization apply live run](reports/reorg-apply-live-run.md): dated record of `reorg.py` moving four documents in a clone of this repository in two batches, the listing, the digest and approval refusals, the link counts, and the limits.
 - [Docs schema migration](reports/2026-10-06-docs-schema-migration.md): dated record of moving this repository's `docs/` into the schema (T-0244): baseline, plan, four batches with counts, `docs/layout.md` and its Legacy list, the B-1a scope change, and the limits.

@@ -46,7 +46,7 @@ user-invocable: false
 .sdlc/supervisor/       written by `supervisor.py init` in the main checkout: AGENTS.md, CLAUDE.md, .gitignore, limits.json; hosts.local.json, state.json, status.json, lock, STOP, and wakes/ stay local
 ```
 
-`scripts/run.sh <role> <level> <handoff.md>` writes `<role>-<level>.md` and `.log` next to the handoff it is given. A rerun of the same role and level writes `<role>-<level>-<k>.md` and `.log` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (run.sh records `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
+A role dispatched as a sub-agent on Claude (`dispatch.py prepare <role> <level> <handoff.md>`, an `Agent` spawn with the printed `name`, `model`, and `run_in_background`, then `dispatch.py record <dispatch_file>`) writes `<role>-<level>.md` next to the handoff it is given; on Codex, `scripts/run.sh <role> <level> <handoff.md>` writes the same `<role>-<level>.md` and `.log`. `prepare` also writes `<role>-<level>.attempt.json` and `<role>-<level>.dispatch.json` (the brief and paths the spawn gate matches), and `record` writes the header line, validates the result, and appends the `runs.jsonl` line with `transport: subagent`. A rerun of the same role and level writes `<role>-<level>-<k>.md` (k = 2, 3, ...); the first result is never overwritten, and the newest is decided by `scripts/order.py`: latest runs.jsonl record (both writers record `file`), else level then rerun index then name; never mtime. runs.jsonl keeps the history. Add `.sdlc/` to the project's `.gitignore` unless the user wants the trail committed.
 
 A live step dir is exactly `step-<digits>`; a replan renames replaced dirs to `step-<n>.superseded-<k>/` (k is the first free number); the board and scripts do not count these as steps.
 
@@ -55,6 +55,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 ```
 .sdlc/**/*.running
 .sdlc/**/*.log
+.sdlc/**/*.dispatch.json
 .sdlc/**/.run.lock
 .sdlc/runtime/
 .sdlc/messages/
@@ -69,6 +70,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc-lite/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
 - `.sdlc/**/*.running`: marker for a role run in progress
 - `.sdlc/**/*.log`: raw role transcript (stream-json: one JSON event per line, stderr mixed in)
+- `.sdlc/**/*.dispatch.json`: the dispatch a sub-agent role was spawned from, local to the machine (absolute paths, the brief); `dispatch.py record` and the spawn gate read it between `prepare` and the result
 - `.sdlc/**/.run.lock`: local lock state used to prevent overlapping runs
 - `.sdlc/runtime/`: `traces.py` analysis outputs and ingest cursor, regenerated on each run
 - `.sdlc/messages/`: the local mailbox written by `scripts/messages.py`; never committed, even when the trail is.
@@ -100,7 +102,7 @@ router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGEN
 
 A `file:` depends entry is repo-relative and met once the path exists; it never orders tickets. A `cap:` entry is met once a `done` ticket provides it, and orders the ticket after every provider. `check` fails a malformed entry or an unprovided `cap:`.
 
-Front matter is purely additive: a handoff with no front matter keeps working unchanged, and `run.sh` never requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
+Front matter is purely additive: a handoff with no front matter keeps working unchanged, and no runner requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
 
 `status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 

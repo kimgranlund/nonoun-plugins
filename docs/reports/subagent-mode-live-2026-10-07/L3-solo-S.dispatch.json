@@ -1,0 +1,16 @@
+{
+  "subagent_type": "sdlc-lite:solo-S",
+  "name": "solo-S-0005-titlecase",
+  "description": "solo S: 0005-titlecase",
+  "model": "sonnet",
+  "effort": "low",
+  "prompt": "Handoff: /private/tmp/sdlcprobe/proj/.sdlc/0005-titlecase/handoff.md\nArtifacts dir: /private/tmp/sdlcprobe/proj/.sdlc/0005-titlecase\nDeliver ticket .sdlc/0005-titlecase/handoff.md end to end as the solo agent. Read the ticket and the files it names, make the smallest change that meets its done criterion, run every check command it names and rerun them all after a fix, and report files changed, each check with its outcome, and anything still open. No person is present: never ask the user. You work on your own worktree branch: commit early, one `WIP T-0005` commit after each green check and a final commit `T-0005: Add title_case(s)` when every check is green. Never push or publish: fanout.py land merges your branch.",
+  "run_in_background": false,
+  "role": "solo",
+  "level": "L1",
+  "tier": "S",
+  "handoff": "/private/tmp/sdlcprobe/proj/.sdlc/0005-titlecase/handoff.md",
+  "artifacts_dir": "/private/tmp/sdlcprobe/proj/.sdlc/0005-titlecase",
+  "attempt_id": "04151dfa229b4c2a948a0e21aee3b55b",
+  "verifier": null
+}

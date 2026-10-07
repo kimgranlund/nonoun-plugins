@@ -22,10 +22,19 @@
 # search of the whole filesystem or a home folder (find, bfs, rg, grep -r on /, ~, "$HOME",
 # /Users, also behind sudo or inside bash -c) with a stderr naming the role, and allows
 # find ., a path below those roots, ls / without -R, a quoted mention, and no role.
-# block-role-spawn.sh, in a conductor session (agent_type sdlc-lite:conductor or conductor, or
-# SDLC_ROLE=conductor), denies an Agent spawn of an sdlc-lite: agent or another plugin's builder,
-# verifier, reviewer, planner, or checker agent with a stderr naming run.sh, and allows Explore,
-# general-purpose, harness:fact-finder, non-conductor sessions, and non-Agent tools.
+# block-role-spawn.sh is the spawn gate. In a conductor session (agent_type sdlc-lite:conductor or
+# conductor, or SDLC_ROLE=conductor) it allows an sdlc-lite:<role>-L<n> spawn only when the name is
+# <role>-L<n>-<slug>[-<k>], a dispatch record beside the prompt's Handoff names that agent, and the
+# call's model equals the record's model; each of the four conditions has a deny case, built by
+# changing one thing in a passing payload. It denies a fork named verifier- or plan-reviewer-, a
+# fork with no "Fork reason:" line, and another plugin's builder, verifier, reviewer, planner, or
+# checker agent (stderr naming run.sh), and allows Explore, general-purpose, harness:fact-finder,
+# non-conductor sessions, a run.sh Bash call, and non-Agent tools.
+# _role.sh resolves the role (SDLC_ROLE, else agent_type minus sdlc-lite: and -L<n>); the five role
+# hooks above each block a sub-agent role input and pass an input with no role, an interactive
+# conductor, or a non-SDLC agent. block-role-write.sh lets a read-only role sub-agent Write only
+# its dispatch result path (Write elsewhere, Edit, and NotebookEdit denied) and leaves the
+# builder, solo, the conductor, and no role unrestricted.
 # warn-handoff-edit.sh, for an Edit, Write, or NotebookEdit whose file is named handoff.md with a
 # <role>-<level>.running file beside it, allows the edit (exit 0), prints a freeze warning, and
 # appends one line to stale-edits.log beside the handoff; with SDLC_HANDOFF_EDIT_MODE=deny the same
@@ -46,6 +55,7 @@ rf="$hooks/block-repo-format.sh"
 ds="$hooks/block-disk-scan.sh"
 rs="$hooks/block-role-spawn.sh"
 wh="$hooks/warn-handoff-edit.sh"
+wrh="$hooks/block-role-write.sh"
 
 fail() { echo "hook selftest: FAIL: $*"; exit 1; }
 
@@ -364,7 +374,10 @@ rsj() {
 }
 out=$(run "$rs" "$(rsj sdlc-lite:conductor sdlc-lite:builder)"); rc=$?
 [[ $rc -eq 2 ]] || fail "role-spawn conductor + sdlc-lite:builder: exit $rc, want 2"
-grep -q run.sh <<<"$out" || fail "role-spawn conductor + sdlc-lite:builder: stderr lacks run.sh"
+grep -q "dispatch.py prepare" <<<"$out" || fail "role-spawn conductor + sdlc-lite:builder: stderr lacks dispatch.py prepare"
+out=$(run "$rs" "$(rsj sdlc-lite:conductor other:code-builder)"); rc=$?
+[[ $rc -eq 2 ]] || fail "role-spawn conductor + other:code-builder: exit $rc, want 2"
+grep -q run.sh <<<"$out" || fail "role-spawn conductor + other:code-builder: stderr lacks run.sh"
 while IFS='|' read -r at sub env want; do
   if [[ -n "$env" ]]; then run "$rs" "$(rsj "$at" "$sub")" "$env" >/dev/null; rc=$?
   else run "$rs" "$(rsj "$at" "$sub")" >/dev/null; rc=$?; fi
@@ -384,8 +397,133 @@ CASES
 run "$rs" "$(rsj sdlc-lite:conductor sdlc-lite:builder Bash)" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "role-spawn tool Bash + conductor: exit $rc, want 0"
 
-# warn-handoff-edit.sh: warn mode allows and logs; deny mode blocks; everything else passes silently.
+# A run.sh invocation is a Bash call, so the spawn gate never sees it.
+runsh_json=$(jq -n '{tool_name:"Bash",agent_type:"sdlc-lite:conductor",tool_input:{command:"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier L3 .sdlc/t/handoff.md"}}')
+run "$rs" "$runsh_json" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "role-spawn leaves a run.sh Bash call alone: exit $rc, want 0"
+hooks_json="$hooks/../adapters/claude/hooks.json"
+[[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Agent") | .hooks[].command | select(contains("block-role-spawn.sh"))] | length' "$hooks_json")" == 1 ]] ||
+  fail "hooks.json does not register block-role-spawn.sh under the Agent matcher"
+[[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher != "Agent") | .hooks[].command | select(contains("block-role-spawn.sh"))] | length' "$hooks_json")" == 0 ]] ||
+  fail "hooks.json registers block-role-spawn.sh under a matcher other than Agent"
+[[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Edit|Write|NotebookEdit") | .hooks[].command | select(contains("block-role-write.sh"))] | length' "$hooks_json")" == 1 ]] ||
+  fail "hooks.json does not register block-role-write.sh under the Edit|Write|NotebookEdit matcher"
+[[ "$(jq -r '[.hooks.PreToolUse[].hooks[].command | select(contains("_role.sh"))] | length' "$hooks_json")" == 0 ]] ||
+  fail "hooks.json registers _role.sh, which is sourced by the hooks and never run"
+
 wtmp=$(mktemp -d); trap 'rm -rf "$wtmp"' EXIT
+
+# Spawn gate. A prepared dispatch is allowed; each of its four conditions has a deny case, built by
+# changing exactly one thing in a payload that passes. gate/ holds what dispatch.py prepare writes:
+# <role>-L<n>.dispatch.json (keyed by the stem, with the Agent name inside it) beside the handoff.
+gate="$wtmp/gate"; mkdir -p "$gate/other"
+: >"$gate/handoff.md"
+printf '%s' '{"subagent_type":"sdlc-lite:verifier-L3","name":"verifier-L3-gate-task","model":"opus","role":"verifier","level":"L3"}' >"$gate/verifier-L3.dispatch.json"
+printf '%s' '{"subagent_type":"sdlc-lite:builder-L2","name":"builder-L2-gate-task-2","model":"sonnet","role":"builder","level":"L2"}' >"$gate/builder-L2-2.dispatch.json"
+printf '%s' '{"model":"haiku"}' >"$gate/scout-L1-gate-task.dispatch.json"
+# gj <subagent_type> <name> <model> <handoff> [agent_type]: the JSON of one conductor Agent spawn
+# whose prompt carries the Handoff line dispatch.py prepare writes.
+gj() {
+  jq -n --arg sub "$1" --arg name "$2" --arg model "$3" --arg h "$4" --arg at "${5-sdlc-lite:conductor}" --arg cwd "$gate" \
+    '{tool_name:"Agent",cwd:$cwd,tool_input:{subagent_type:$sub,description:"d",prompt:("Handoff: " + $h + "\nArtifacts dir: x\nYour final message is saved verbatim as y."),run_in_background:true}}
+     | if $at != "" then .agent_type = $at else . end
+     | if $name != "" then .tool_input.name = $name else . end
+     | if $model != "" then .tool_input.model = $model else . end'
+}
+gh="$gate/handoff.md"
+vt=sdlc-lite:verifier-L3; vn=verifier-L3-gate-task
+run "$rs" "$(gj $vt $vn opus "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (record keyed by stem): exit $rc, want 0"
+run "$rs" "$(gj $vt $vn opus "$gh" conductor)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (agent_type conductor): exit $rc, want 0"
+run "$rs" "$(gj $vt $vn opus "$gh" "")" SDLC_ROLE=conductor >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (SDLC_ROLE=conductor): exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:builder-L2 builder-L2-gate-task-2 sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a -k dispatch (builder-L2-gate-task-2): exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task haiku "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a record named <name>.dispatch.json: exit $rc, want 0"
+run "$rs" "$(gj $vt $vn opus "other/../handoff.md")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate resolves a relative Handoff path against the hook cwd: exit $rc, want 0"
+# A solo dispatch (sdlc-lite:solo-S|M|L, solo_run.py) is gated by its record and model only (T-0287 live defect).
+printf '%s' '{"subagent_type":"sdlc-lite:solo-M","name":"solo-M-gate-task","model":"sonnet","role":"solo"}' >"$gate/solo-M-gate-task.dispatch.json"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a recorded solo dispatch: exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task opus "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a solo dispatch with another model: exit $rc, want 2"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-no-record sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a solo spawn with no dispatch record: exit $rc, want 2"
+# Condition 1: subagent_type is sdlc-lite:<role>-L<n>.
+for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:messenger sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
+  out=$(run "$rs" "$(gj "$sub" $vn opus "$gh")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate condition 1, subagent_type '$sub': exit $rc, want 2"
+done
+grep -q "sdlc-lite:<role>-L<n>" <<<"$out" || fail "spawn gate condition 1: stderr does not name the required form"
+# Condition 2: name is <role>-L<n>-<slug>[-<k>] for the same <role>-L<n>.
+for nm in "" verifier-L3 verifier-L3- builder-L3-gate-task verifier-L2-gate-task verifier-gate-task gate-task-verifier-L3 "verifier-L3-bad name" "verifier-L3-a/b"; do
+  out=$(run "$rs" "$(gj $vt "$nm" opus "$gh")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate condition 2, name '$nm': exit $rc, want 2"
+done
+grep -q "does not match" <<<"$out" || fail "spawn gate condition 2: stderr lacks the name rule"
+# Condition 3: a dispatch record beside the named handoff.
+out=$(run "$rs" "$(gj $vt verifier-L3-no-record opus "$gh")"); rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 3, no record naming the agent: exit $rc, want 2"
+grep -q "no dispatch record" <<<"$out" || fail "spawn gate condition 3: stderr lacks 'no dispatch record'"
+run "$rs" "$(gj $vt $vn opus "$gate/other/handoff.md")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 3, handoff in a directory with no record: exit $rc, want 2"
+run "$rs" "$(gj $vt $vn opus "$wtmp/missing/handoff.md")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 3, handoff directory missing: exit $rc, want 2"
+no_handoff=$(jq -n --arg name $vn '{tool_name:"Agent",agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:$name,model:"opus",prompt:"Artifacts dir: x"}}')
+out=$(run "$rs" "$no_handoff"); rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 3, prompt with no Handoff line: exit $rc, want 2"
+grep -q "Handoff" <<<"$out" || fail "spawn gate condition 3: stderr lacks the Handoff line rule"
+# Condition 4: the call's model equals the dispatch model.
+for m in sonnet fable haiku OPUS ""; do
+  out=$(run "$rs" "$(gj $vt $vn "$m" "$gh")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate condition 4, model '${m:-unset}' against opus: exit $rc, want 2"
+done
+grep -q "dispatch model 'opus'" <<<"$out" || fail "spawn gate condition 4: stderr lacks the dispatch model"
+printf '%s' '{"subagent_type":"sdlc-lite:planner-L1","name":"planner-L1-gate-task","role":"planner"}' >"$gate/planner-L1.dispatch.json"
+run "$rs" "$(gj sdlc-lite:planner-L1 planner-L1-gate-task opus "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 4, a record with no model: exit $rc, want 2"
+run "$rs" "$(gj sdlc-lite:planner-L1 planner-L1-gate-task "" "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate condition 4, no model on the call or in the record: exit $rc, want 2"
+# The same denied calls pass outside a conductor session: the gate acts only for the conductor.
+run "$rs" "$(gj $vt $vn sonnet "$gh" "")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate: a wrong-model spawn from a non-conductor session: exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:verifier bad-name sonnet "$gh" sdlc-lite:builder-L3)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate: a spawn from a builder sub-agent session: exit $rc, want 0"
+# Forks: verifier- and plan-reviewer- names are denied outright; any other fork needs a Fork reason line.
+# fkj <name or empty> <prompt>: the JSON of one conductor fork.
+fkj() {
+  jq -n --arg name "$1" --arg prompt "$2" \
+    '{tool_name:"Agent",agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"fork",description:"d",prompt:$prompt}}
+     | if $name != "" then .tool_input.name = $name else . end'
+}
+for nm in verifier-L3-gate-task verifier-L1-x plan-reviewer-L1-gate-task plan-reviewer-L2-x; do
+  out=$(run "$rs" "$(fkj $nm $'Fork reason: need the whole thread\nrest')"); rc=$?
+  [[ $rc -eq 2 ]] || fail "fork named '$nm' with a Fork reason: exit $rc, want 2"
+  grep -q independent <<<"$out" || fail "fork named '$nm': stderr lacks the independence reason"
+done
+for nm in builder-L3-gate-task scout-L1-x planner-L3-x ""; do
+  out=$(run "$rs" "$(fkj "$nm" "just do it")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "fork '$nm' with no Fork reason: exit $rc, want 2"
+  grep -q "Fork reason" <<<"$out" || fail "fork '$nm' with no Fork reason: stderr lacks 'Fork reason'"
+  run "$rs" "$(fkj "$nm" $'Fork reason:\nrest')" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "fork '$nm' with an empty Fork reason: exit $rc, want 2"
+  run "$rs" "$(fkj "$nm" "the Fork reason: is inline, not a line start")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "fork '$nm' with an inline Fork reason: exit $rc, want 2"
+  run "$rs" "$(fkj "$nm" "Fork reason: needs this thread's context")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "fork '$nm' with a Fork reason first line: exit $rc, want 0"
+  run "$rs" "$(fkj "$nm" $'Handoff: x\nFork reason: needs this thread\'s context')" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "fork '$nm' with a Fork reason line: exit $rc, want 0"
+done
+run "$rs" "$(fkj verifier-L3-x "no reason")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "fork verifier-: exit $rc, want 2"
+jq -n '{tool_name:"Agent",tool_input:{subagent_type:"fork",name:"verifier-L3-x",prompt:"x"}}' >"$wtmp/fork-noconductor.json"
+run "$rs" "$(cat "$wtmp/fork-noconductor.json")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "fork verifier- outside a conductor session: exit $rc, want 0"
+
+# warn-handoff-edit.sh: warn mode allows and logs; deny mode blocks; everything else passes silently.
 mkdir -p "$wtmp/live" "$wtmp/idle" "$wtmp/other"
 : >"$wtmp/live/handoff.md"; : >"$wtmp/idle/handoff.md"; : >"$wtmp/live/notes.md"; : >"$wtmp/other/handoff.md"
 : >"$wtmp/live/planner-L3.running"; : >"$wtmp/other/builder-L1.running"; mkdir -p "$wtmp/sep" && : >"$wtmp/sep/builder-L1.running"
@@ -414,6 +552,160 @@ out=$(run "$wh" "$(wj "$wtmp/other/handoff.md")" ); rc=$?
 [[ $rc -eq 0 && "$out" == *builder-L1* ]] || fail "handoff-edit: a different handoff's own .running was not used (rc=$rc)"
 out=$(run "$wh" '{"tool_name":"Edit","tool_input":{}}'); rc=$?
 [[ $rc -eq 0 && -z "$out" ]] || fail "handoff-edit: missing file_path was not a silent pass (rc=$rc)"
+
+# Role resolution (hooks/_role.sh): SDLC_ROLE, else the sub-agent's agent_type with the sdlc-lite:
+# prefix and the -L<n> or solo tier suffix removed. Session agents and non-SDLC agents have no role.
+rr() { ( unset SDLC_ROLE; . "$hooks/_role.sh"; sdlc_role "$1" ); }
+# rj <agent_type or empty> <command>: the JSON of one Bash call, with agent_type only when given.
+rj() {
+  jq -n --arg at "$1" --arg c "$2" '{tool_name:"Bash",tool_input:{command:$c}} | if $at != "" then .agent_type = $at else . end'
+}
+while IFS='|' read -r at want; do
+  got=$(rr "$(rj "$at" x)")
+  [[ "$got" == "$want" ]] || fail "_role.sh: agent_type '$at' resolved '$got', want '$want'"
+done <<'CASES'
+sdlc-lite:builder-L3|builder
+sdlc-lite:verifier-L1|verifier
+sdlc-lite:plan-reviewer-L2|plan-reviewer
+sdlc-lite:scout-L1|scout
+sdlc-lite:solo-M|solo
+sdlc-lite:solo-S|solo
+sdlc-lite:solo-L|solo
+sdlc-lite:solo|solo
+sdlc-lite:planner|planner
+builder|builder
+verifier-L2|verifier
+sdlc-lite:conductor|
+conductor|
+sdlc-lite:messenger|
+general-purpose|
+Explore|
+harness:agent-checker|
+other:builder-L3|
+|
+CASES
+[[ "$(rr '{"tool_name":"Bash"}')" == "" ]] || fail "_role.sh: a payload with no agent_type resolved a role"
+[[ "$(rr 'not json agent_type')" == "" ]] || fail "_role.sh: unparsable input resolved a role"
+[[ "$( . "$hooks/_role.sh"; SDLC_ROLE=verifier sdlc_role "$(rj sdlc-lite:builder-L3 x)" )" == verifier ]] || fail "_role.sh: SDLC_ROLE must win over agent_type"
+[[ "$( . "$hooks/_role.sh"; SDLC_ROLE=solo sdlc_role '{}' )" == solo ]] || fail "_role.sh: SDLC_ROLE alone must resolve"
+
+# The five role hooks resolve the role through _role.sh. For each: a sub-agent role input still
+# blocks the same defect SDLC_ROLE blocked (stderr names the role), and an input with no role,
+# an interactive conductor, and a non-SDLC agent pass (negative controls).
+pushc=$(printf 'git %s origin main' push)
+pkc="$pkw -f vite"
+dsc="$fw / -name x"
+fmtc="npm run format"
+while IFS='|' read -r at rname; do
+  for spec in "$pub|$pushc" "$pk|$pkc" "$ds|$dsc"; do
+    hook="${spec%%|*}"; c="${spec#*|}"
+    out=$(run "$hook" "$(rj "$at" "$c")"); rc=$?
+    [[ $rc -eq 2 ]] || fail "$(basename "$hook") blocks '$c' for sub-agent $at: exit $rc, want 2"
+    grep -q "role '$rname'" <<<"$out" || fail "$(basename "$hook") for $at: stderr does not name role '$rname'"
+  done
+done <<'CASES'
+sdlc-lite:builder-L3|builder
+sdlc-lite:verifier-L2|verifier
+sdlc-lite:plan-reviewer-L1|plan-reviewer
+sdlc-lite:solo-M|solo
+CASES
+out=$(run "$rf" "$(rj sdlc-lite:builder-L2 "$fmtc")"); rc=$?
+[[ $rc -eq 2 ]] || fail "block-repo-format blocks '$fmtc' for sub-agent sdlc-lite:builder-L2: exit $rc, want 2"
+grep -q "role 'builder'" <<<"$out" || fail "block-repo-format for sdlc-lite:builder-L2: stderr does not name the role"
+for at in "" sdlc-lite:conductor conductor general-purpose Explore harness:agent-checker sdlc-lite:messenger; do
+  for spec in "$pub|$pushc" "$pk|$pkc" "$ds|$dsc" "$rf|$fmtc"; do
+    hook="${spec%%|*}"; c="${spec#*|}"
+    run "$hook" "$(rj "$at" "$c")" >/dev/null; rc=$?
+    [[ $rc -eq 0 ]] || fail "$(basename "$hook") passes '$c' with agent_type '${at:-none}': exit $rc, want 0"
+  done
+done
+for at in sdlc-lite:verifier-L2 sdlc-lite:solo-M sdlc-lite:planner-L1; do
+  run "$rf" "$(rj "$at" "$fmtc")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-repo-format passes '$fmtc' for non-builder sub-agent $at: exit $rc, want 0"
+done
+# SDLC_ROLE wins over agent_type: a verifier role with a builder agent_type is not a builder, and a builder role is.
+run "$rf" "$(rj sdlc-lite:builder-L3 "$fmtc")" SDLC_ROLE=verifier >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-repo-format: SDLC_ROLE=verifier with a builder agent_type: exit $rc, want 0"
+run "$rf" "$(rj sdlc-lite:verifier-L1 "$fmtc")" SDLC_ROLE=builder >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-repo-format: SDLC_ROLE=builder with a verifier agent_type: exit $rc, want 2"
+# The sub-agent role also gets the stray-worktree rule. With no SDLC_TMP_WORKTREES a sub-agent may add
+# a detached worktree only under <git toplevel>/.worktrees/tmp, the parent of its dispatch tmp prefix.
+srepo="$wtmp/repo"; mkdir -p "$srepo" "$wtmp/nogit"; git -C "$srepo" init -q
+stop=$(git -C "$srepo" rev-parse --show-toplevel)
+# swj <agent_type or empty> <command> [cwd]: the JSON of one Bash call with a cwd.
+swj() {
+  jq -n --arg at "$1" --arg c "$2" --arg cwd "${3:-$stop}" \
+    '{tool_name:"Bash",cwd:$cwd,tool_input:{command:$c}} | if $at != "" then .agent_type = $at else . end'
+}
+wtp="$stop/.worktrees/tmp/verifier-L1-t"
+for c in "git worktree add -b x \"$wtp/w\" HEAD" "git worktree add --detach /tmp/y HEAD" \
+  "git worktree add --detach \"$stop/.worktrees/other/w\" HEAD" "git worktree add --detach \"$stop/.worktrees/tmp/../w\" HEAD" \
+  "git worktree add \"$wtp/w\" HEAD" "git worktree add --detach \"$stop/.worktrees/tmp\" HEAD" \
+  "bash -c \"git worktree add /tmp/y HEAD\""; do
+  out=$(run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-stray-worktree denies '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 2"
+  grep -q "role 'verifier'" <<<"$out" || fail "block-stray-worktree '$c' for sub-agent: stderr does not name the role"
+done
+for c in "git worktree add --detach \"$wtp/w\" HEAD" "git worktree add -d \"$wtp/w\" HEAD" \
+  "git worktree add --detach .worktrees/tmp/verifier-L1-t/w HEAD" "git worktree list" "git worktree remove \"$wtp/w\""; do
+  run "$sw" "$(swj sdlc-lite:verifier-L1 "$c")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree allows '$c' for sub-agent sdlc-lite:verifier-L1: exit $rc, want 0"
+done
+run "$sw" "$(swj sdlc-lite:verifier-L1 "git worktree add --detach \"$wtp/w\" HEAD" "$wtmp/nogit")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-stray-worktree denies a sub-agent outside a git work tree: exit $rc, want 2"
+for at in "" sdlc-lite:conductor general-purpose; do
+  run "$sw" "$(swj "$at" "git worktree add -b x /tmp/y HEAD")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-stray-worktree passes agent_type '${at:-none}' (negative control): exit $rc, want 0"
+done
+
+# block-role-write.sh: a read-only role sub-agent may Write only its dispatch result path (the
+# "result" of a <stem>.dispatch.json beside it); Edit and NotebookEdit and any other Write are denied;
+# the builder, solo, the conductor, and a session with no role are not restricted.
+wd="$wtmp/write"; mkdir -p "$wd/sub"
+printf '%s' "$(jq -n --arg r "$wd/verifier-L3.md" '{subagent_type:"sdlc-lite:verifier-L3",role:"verifier",result:$r}')" >"$wd/verifier-L3.dispatch.json"
+printf '%s' "$(jq -n --arg r "$wd/planner-L1.md" '{subagent_type:"sdlc-lite:planner-L1",role:"planner",result:$r}')" >"$wd/planner-L1.dispatch.json"
+# wrj <agent_type or empty> <tool> <path>: the JSON of one file-edit call.
+wrj() {
+  jq -n --arg at "$1" --arg t "$2" --arg p "$3" \
+    '{tool_name:$t,tool_input:{file_path:$p,content:"x"}} | if $at != "" then .agent_type = $at else . end'
+}
+run "$wrh" "$(wrj sdlc-lite:verifier-L3 Write "$wd/verifier-L3.md")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-write allows a verifier Write to its result path: exit $rc, want 0"
+run "$wrh" "$(wrj sdlc-lite:planner-L1 Write "$wd/planner-L1.md")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-write allows a planner Write to its result path: exit $rc, want 0"
+run "$wrh" "$(wrj "" Write "$wd/verifier-L3.md")" SDLC_ROLE=verifier >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "block-role-write allows a SDLC_ROLE=verifier Write to its result path: exit $rc, want 0"
+for spec in "sdlc-lite:verifier-L3|Write|$wd/notes.md" "sdlc-lite:verifier-L3|Write|$wd/other.md" \
+  "sdlc-lite:verifier-L3|Write|$wd/sub/verifier-L3.md" "sdlc-lite:verifier-L3|Write|/tmp/x.md" \
+  "sdlc-lite:verifier-L3|Write|$wd/handoff.md" "sdlc-lite:verifier-L3|Write|verifier-L3.md" \
+  "sdlc-lite:verifier-L3|Write|$wd/sub/../verifier-L3.md" "sdlc-lite:verifier-L3|Write|$wd/verifier-L3.dispatch.json" \
+  "sdlc-lite:verifier-L3|Write|" "sdlc-lite:planner-L1|Write|$wd/verifier-L3.md" \
+  "sdlc-lite:verifier-L3|Edit|$wd/verifier-L3.md" "sdlc-lite:verifier-L3|Edit|$wd/notes.md" \
+  "sdlc-lite:scout-L1|NotebookEdit|$wd/n.ipynb" "sdlc-lite:plan-reviewer-L1|Write|$wd/plan-review.md" \
+  "sdlc-lite:researcher-L2|Write|/etc/x" "sdlc-lite:architect-L1|Write|$wd/decompose/m.json" \
+  "sdlc-lite:archaeologist-L1|Write|$wd/x.md" "sdlc-lite:filer-L1|Write|$wd/x.md"; do
+  IFS='|' read -r at tool path <<<"$spec"
+  out=$(run "$wrh" "$(wrj "$at" "$tool" "$path")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "block-role-write denies $at $tool '$path': exit $rc, want 2"
+  rn=${at#sdlc-lite:}; rn=${rn%-L*}
+  grep -q "role '$rn'" <<<"$out" || fail "block-role-write $at $tool '$path': stderr does not name the role"
+done
+run "$wrh" "$(wrj "" Write "$wd/notes.md")" SDLC_ROLE=planner >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-role-write denies a SDLC_ROLE=planner Write elsewhere: exit $rc, want 2"
+# Not restricted (negative controls): the builder, solo, the conductor, other agents, no role, other tools.
+for spec in "sdlc-lite:builder-L3|Write|$wd/notes.md" "sdlc-lite:builder-L3|Edit|$wd/notes.md" \
+  "sdlc-lite:builder-L3|NotebookEdit|$wd/n.ipynb" "sdlc-lite:builder-L3|Write|/tmp/x.md" \
+  "sdlc-lite:solo-M|Write|$wd/notes.md" "sdlc-lite:solo-M|Edit|$wd/notes.md" \
+  "sdlc-lite:conductor|Write|$wd/notes.md" "general-purpose|Write|$wd/notes.md" \
+  "|Write|$wd/notes.md" "|Edit|$wd/notes.md" "sdlc-lite:verifier-L3|Read|$wd/notes.md" "sdlc-lite:verifier-L3|Bash|$wd/notes.md"; do
+  IFS='|' read -r at tool path <<<"$spec"
+  run "$wrh" "$(wrj "$at" "$tool" "$path")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "block-role-write passes ${at:-no role} $tool '$path': exit $rc, want 0"
+done
+# A record whose result is another path does not unlock this one.
+printf '%s' "$(jq -n --arg r "$wd/elsewhere.md" '{subagent_type:"sdlc-lite:verifier-L3",role:"verifier",result:$r}')" >"$wd/stale-L3.dispatch.json"
+run "$wrh" "$(wrj sdlc-lite:verifier-L3 Write "$wd/stale-L3.md")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "block-role-write: a record whose result is another path unlocked this path: exit $rc, want 2"
 
 # Large commands: each Bash hook must finish a 20 KB heredoc command in under 2 seconds and
 # keep blocking. Bash 3.2 made ${cmd//[class]/} quadratic (40+ s at 8 KB). One positive and one

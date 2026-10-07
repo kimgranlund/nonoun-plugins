@@ -296,7 +296,7 @@ def _runs_read():
         legacy = {'role': 'scout', 'level': 'L1', 'turns': 2, 'cost_usd': 0.01}
         full = {'ts': '2026-09-30T06:00:00+00:00', 'role': 'builder', 'level': 'L2',
                 'model': 'm', 'effort': 'low', 'file': 'builder-L2.md', 'attempt_id': 'r1',
-                'backend': 'claude', 'cost_usd': 1.5, 'duration_ms': 900, 'turns': 4,
+                'backend': 'claude', 'cost_usd': 1.5, 'cost_estimated': True, 'duration_ms': 900, 'turns': 4,
                 'stray_worktrees': ['w'], 'stray_branches': ['b'], 'routing_reason': 'why',
                 'loaded_context': {'paths': ['/p'], 'source': 'stream-json'}, 'extra': 1}
         _write(repo, f'{d}/runs.jsonl',

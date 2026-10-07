@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash): inside a role run (SDLC_ROLE set by scripts/run.sh or fanout), block a
+# PreToolUse(Bash): inside a role run (a role from hooks/_role.sh: SDLC_ROLE set by scripts/run.sh
+# or fanout, else the sub-agent's agent_type), block a
 # search of the whole filesystem or a home folder, because it can run for many minutes with no
 # output and stall the run (| head does not stop it when nothing matches).
 # Blocked (exit 2): a search command in command position with a path operand that is exactly
@@ -24,8 +25,12 @@
 # looser match, when python3 is missing or errors, when a quote is unterminated, when the
 # command holds a heredoc (<<), or when a shell or evaluator (bash, sh, zsh, dash, ksh, fish,
 # eval, ssh, su) appears as a command word, so bash -c "find / -name x" stays blocked.
-[[ -n "${SDLC_ROLE:-}" ]] || exit 0
-cmd=$(jq -r '.tool_input.command // ""')
+# shellcheck source=_role.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
+input=$(cat)
+role=$(sdlc_role "$input")
+[[ -n "$role" ]] || exit 0
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 
 # Cheap exit: no search command word appears, even with quotes and backslashes removed.
 pf=$(tr -d "\\\\'\"" <<<"$cmd")
@@ -33,7 +38,7 @@ re='(^|[^[:alnum:]_-])(find|bfs|fd|fdfind|rg|ag|e?grep|du|ls|tree)([^[:alnum:]_-
 [[ $pf =~ $re ]] || exit 0
 
 block() {
-  echo "Blocked for sdlc role '$SDLC_ROLE': searching the whole filesystem or a home folder (find /, find ~, rg x /, grep -r x \$HOME, du /, ls -R /, tree /) can run for many minutes with no output and stall the run; | head does not stop it when nothing matches. Search a bounded path instead: the repository (.), a named subfolder such as ~/.claude/plugins, or \$CLAUDE_PLUGIN_ROOT." >&2
+  echo "Blocked for sdlc role '$role': searching the whole filesystem or a home folder (find /, find ~, rg x /, grep -r x \$HOME, du /, ls -R /, tree /) can run for many minutes with no output and stall the run; | head does not stop it when nothing matches. Search a bounded path instead: the repository (.), a named subfolder such as ~/.claude/plugins, or \$CLAUDE_PLUGIN_ROOT." >&2
   exit 2
 }
 

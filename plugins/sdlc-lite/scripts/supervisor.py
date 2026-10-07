@@ -137,7 +137,7 @@ Layout (D5)
     .gitignore                 lists hosts.local.json, status.json, state.json, lock, STOP, and wakes/
     limits.json                the limits below
     hosts.local.json           the receiver map (D15)
-    status.json                {"version": 1, "updated", "pid", "run", "stopping", "receivers": {"<name>":
+    status.json                {"version": 1, "updated", "pid", "run", "stopping", "orphans": [{"ticket", "attempt"}], "receivers": {"<name>":
                                {"host", "mode", "state", "reason", "new", "pending", "last_wake",
                                "last_result", "wakes_hour", "wakes_day", "failures", "next_wake"}}} (D16)
     state.json                 {"version": 1, "receivers": {"<name>": {"wakes": [{"start", "end", "result",
@@ -170,6 +170,7 @@ import argparse
 import datetime
 import errno
 import fcntl
+import glob
 import json
 import os
 import re
@@ -957,6 +958,28 @@ class Watch:
                 'wakes_hour': len(window_starts(rs, now, HOUR)), 'wakes_day': len(window_starts(rs, now, DAY)),
                 'failures': rs['failures'], 'next_wake': next_wake}
 
+    def orphans(self):
+        """Read-only (T-0286): dispatch.py status --orphans over each ticket folder holding an attempt record."""
+        root = os.path.dirname(self.folder)
+        found = []
+        try:
+            names = sorted(os.listdir(root))
+        except OSError:
+            return found
+        for name in names:
+            d = os.path.join(root, name)
+            if name.startswith('.') or not os.path.isfile(os.path.join(d, 'handoff.md')) \
+                    or not glob.glob(os.path.join(d, '*.attempt.json')):
+                continue
+            try:
+                r = subprocess.run([sys.executable, os.path.join(scripts_dir(), 'dispatch.py'), 'status', '--orphans', d],
+                                   capture_output=True, text=True, timeout=30)
+            except (OSError, subprocess.SubprocessError):
+                continue
+            if r.returncode == 0:
+                found += [{'ticket': name, 'attempt': line.split()[0]} for line in r.stdout.splitlines() if line.strip()]
+        return found
+
     def write_files(self):
         """Rewrite status.json and state.json through a temp file and os.replace (D8, D16)."""
         now = self.clock.now()
@@ -964,7 +987,8 @@ class Watch:
             rs['wakes'] = prune(rs.get('wakes', []), now)
         status = {'version': 1, 'updated': messages.stamp(now), 'pid': os.getpid(), 'run': self.run,
                   'stopping': self.stopping,
-                  'receivers': {n: self.status_entry(n, self.hosts[n], now) for n in sorted(self.hosts)}}
+                  'receivers': {n: self.status_entry(n, self.hosts[n], now) for n in sorted(self.hosts)},
+                  'orphans': self.orphans()}
         write_json(os.path.join(self.folder, 'status.json'), status)
         write_json(os.path.join(self.folder, 'state.json'), self.state)
 
@@ -2140,6 +2164,24 @@ def case_wake(h):
         st_fail('the status the stub saw does not say run')
 
 
+def case_orphans(h):
+    b = Box(h)
+    t = os.path.join(b.repo, '.sdlc', 'tk')
+    os.makedirs(t)
+    open(os.path.join(t, 'handoff.md'), 'w').close()
+    dead = subprocess.Popen([sys.executable, '-c', 'pass'])
+    dead.wait()
+    for pid in (dead.pid, os.getpid()):
+        with open(os.path.join(t, 'builder-L1.attempt.json'), 'w') as f:
+            json.dump({'status': 'running', 'backend': 'claude', 'role': 'builder', 'level': 'L1', 'parent_pid': pid}, f)
+        b.watch('--once')
+        with open(os.path.join(b.folder, 'status.json'), encoding='utf-8') as f:
+            got = json.load(f).get('orphans')
+        want = [{'ticket': 'tk', 'attempt': 'builder-L1'}] if pid == dead.pid else []
+        if got != want:
+            st_fail(f'orphans for parent pid {pid} was {got!r}, expected {want!r}')
+
+
 def case_dry_run(h):
     b = Box(h)
     b.send()
@@ -2800,6 +2842,7 @@ SELFTEST_CASES = (
     ('init: entry files, limits, and git-ignore', case_init),
     ('control: a copy whose init writes no git-ignore fails the init check',
      control(case_init, CTL_NO_GITIGNORE, INIT_IGNORE)),
+    ('orphans: a dead-parent dispatch is listed in status.json and a live one is not', case_orphans),
     ('config: a bad limit or host entry is refused', case_config),
     ('control: a copy without limit validation accepts a bad limit', control(case_config, CTL_ANY_LIMITS, BAD_LIMIT)),
     ('control: a copy without host validation accepts a bad host entry', control(case_config, CTL_ANY_HOSTS, BAD_HOST)),

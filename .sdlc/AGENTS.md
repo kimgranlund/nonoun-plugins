@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:f544e86fdb35 -->
+<!-- sdlc-lite:managed:start v1 sha256:9feb6929ea3a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,20 +9,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 21
+- proposed: 9
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
-  - T-0275 Probe the sub-agent mechanics the design assumes (0275-subagent-probes)
-  - T-0276 Claude level table and per-level generated agents (0276-claude-levels-table)
-  - T-0277 dispatch.py prepare: the pre-launch half of run.sh (0277-dispatch-prepare)
-  - T-0278 dispatch.py record: validate, record, and close a dispatched role (0278-dispatch-record)
-  - T-0279 dispatch.py status and resume for dead or interrupted sub-agents (0279-dispatch-recover)
-  - T-0280 Estimated cost for sub-agent runs from tokens and a price table (0280-cost-estimate)
-  - T-0281 Hooks key on agent_type; spawn gate replaces block-role-spawn (0281-hooks-agent-role)
-  - T-0282 Conductor and chain dispatch roles as sub-agents (0282-conductor-dispatch-core)
-  - T-0283 Launcher skills dispatch through sub-agents (0283-launcher-skills-dispatch)
-  - T-0284 Solo and its verifier run as sub-agents (0284-solo-subagent)
-  - T-0285 Fanout lanes as isolated background sub-agents (0285-fanout-subagent)
-  - T-0286 Supervisor reports orphaned dispatches (0286-supervisor-orphans)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
@@ -33,7 +21,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 272
+- done: 291
 - dropped: 25
 
 ## Procedures

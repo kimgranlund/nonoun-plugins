@@ -2,10 +2,16 @@
 """Start the solo agent for one ticket and record its cost, so the default lane is metered.
 
   solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier S|M|L (--brief TEXT | --brief-file FILE | --brief -)
-                  [--backend claude|codex] [--cwd DIR] [--worktree NAME] [--timeout SECONDS] [--raw-out FILE]
+                  [--backend claude|codex] [--exec] [--cwd DIR] [--worktree NAME] [--timeout SECONDS] [--raw-out FILE]
   solo_run.py selftest
 
-run starts the session at the tier's model and effort (agents/solo.md), prints the agent's report on
+Claude (T-0284): run checks the budget gate, appends one `role solo` record (transport subagent, cost null) so the
+verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
+sub-agent (`subagent_type sdlc-lite:solo-<tier>`, model, effort, prompt = the brief). It starts no `claude -p`. The
+parent then runs one `dispatch.py prepare verifier L2 <task dir>/handoff.md` for tiers M and L. `--exec` is the legacy
+headless start that the next paragraphs describe (`fanout.py run` lanes use it until T-0288; sub-agent lanes use `fanout.py prep` and `land`, T-0285); Codex always executes.
+
+With --exec (or Codex), run starts the session at the tier's model and effort (agents/solo.md), prints the agent's report on
 stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh writes for roles
 (ts, role solo, level L1..L3 for tier S..L, model, effort, cost_usd, usage, duration_ms, turns, attempt_id,
 backend, transport, routing_reason). --task-dir is the ticket or task folder, the one holding handoff.md.
@@ -72,6 +78,33 @@ def command(tier, brief, backend):
         raise Refuse('unknown backend: ' + backend)
     return ['claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:solo', '--model', model,
             '--effort', effort, '--dangerously-skip-permissions', '--output-format', 'json', '--', brief], model, effort
+
+
+def dispatch_json(task_dir, tier, brief):
+    """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
+    if tier not in TIERS:
+        raise Refuse(f'no solo tier {tier!r}: want S, M, or L')
+    handoff = pathlib.Path(task_dir) / 'handoff.md'
+    if not handoff.is_file():
+        raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
+    hold = budget_hold(task_dir)
+    if hold:
+        print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
+        return 4, None
+    model, effort, level = TIERS[tier]
+    attempt = uuid.uuid4().hex
+    slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
+    d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=f'solo-{tier}-{slug}', description=f'solo {tier}: {slug}',
+             model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
+             role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
+             attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'S' else None)
+    # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
+    d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
+    rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
+    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
+    append(task_dir, rec)
+    return 0, d
 
 
 def find_result(text):
@@ -194,6 +227,36 @@ def append(task_dir, rec):
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
     with (task_dir / 'runs.jsonl').open('a', encoding='utf-8') as f:
         f.write(json.dumps(rec, separators=(',', ':')) + '\n')
+
+
+def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
+    """Price the solo row dispatch_json wrote (usage null) from the sub-agent transcript or the notice token count (T-0328).
+    Rewrites that row in place so budget.py does not count the run twice. Returns the priced cost, or None with the row untouched."""
+    sys.path.insert(0, str(SCRIPTS))
+    import cost_estimate
+    usage = cost_estimate.transcript_usage(transcript) if transcript else None
+    if usage is None and tokens is not None:
+        usage = {'subagent_tokens': tokens}
+    f = pathlib.Path(task_dir) / 'runs.jsonl'
+    if usage is None or not f.is_file():
+        return None
+    rows, cost = [], None
+    for line in f.read_text(encoding='utf-8').splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            rows.append(line)
+            continue
+        if isinstance(r, dict) and r.get('role') == 'solo' and r.get('attempt_id', '').startswith(attempt) and r.get('usage') is None:
+            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[model_tier][0], usage)
+            if est is not None:
+                r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
+                r.pop('cost_reason', None)
+                cost = est
+        rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
+    if cost is not None:
+        f.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+    return cost
 
 
 class Stopped(Exception):
@@ -433,7 +496,7 @@ def selftest():
                    and rec.get('turns') == 7 and rec.get('duration_ms') == 4321)
             expect('attempt id set', isinstance(rec.get('attempt_id'), str) and len(rec['attempt_id']) >= 8)
             expect('exit status 0', rc == 0)
-            s, un = budget.spend(d)
+            s, un, _est = budget.spend(d)
             expect('budget counts the solo cost', abs(s - 3.25) < 1e-9 and un == 0)
 
             shim(f"printf '%s\\n' '[{{\"type\":\"system\"}},{ok_json}]'\n")
@@ -447,7 +510,7 @@ def selftest():
             q(d, 'M', 'b')
             rec = lines(d)[0]
             expect('no usage: cost null, not zero', rec.get('cost_usd') is None and 'cost_reason' in rec)
-            s, un = budget.spend(d)
+            s, un, _est = budget.spend(d)
             expect('no usage: budget reports unmetered', s == 0 and un == 1)
 
             shim('exit 3\n')
@@ -524,6 +587,23 @@ def selftest():
             dov = ticket('gateover', budget_usd=10)
             seed(dov, 12.0)
             expect('gate: over budget exits 4', q(dov, 'M', 'b') == 4 and not mark.exists())
+            # T-0284: the Claude default prints the dispatch JSON for a sub-agent and starts no claude -p.
+            def pj(*a):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    return dispatch_json(*a)
+            rc4, none = pj(d, 'M', 'b')
+            expect('subagent: the budget gate exits 4 with no dispatch and no record', rc4 == 4 and none is None and len(lines(d)) == 1)
+            dsub = ticket('subagent', budget_usd=10)
+            seed(dsub, 1.0)
+            rcd, dd = pj(dsub, 'M', 'the brief')
+            recs = lines(dsub)
+            expect('subagent: tier M dispatch names solo-M, sonnet xhigh, the brief, and the verifier command',
+                   rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-M' and (dd['model'], dd['effort']) == ('sonnet', 'xhigh')
+                   and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-M-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
+            expect('subagent: one solo record with transport subagent and cost null, and no session started',
+                   len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
+                   and recs[1]['cost_usd'] is None and not mark.exists())
+            expect('subagent: tier S has no verifier command', pj(dsub, 'S', 'b')[1]['verifier'] is None)
             # Ack raises the ceiling: the same ticket then starts.
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 rc_ack = budget.cmd_ack(str(d), 20, 'selftest')
@@ -651,7 +731,7 @@ def selftest():
 
             def wrapper(script, *extra):
                 pidf.unlink(missing_ok=True)
-                return subprocess.Popen([sys.executable, str(script), 'run', '--task-dir', str(dg), '--tier', 'S',
+                return subprocess.Popen([sys.executable, str(script), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S',
                                          '--brief', 'b', '--cwd', str(repo), *extra], stdout=subprocess.DEVNULL,
                                         stderr=open(errf, 'w'))
 
@@ -703,7 +783,7 @@ def selftest():
                 lock.write_text(f'{live.pid}\n')
                 pidf.unlink(missing_ok=True)
                 before = len(lines(dg))
-                cp = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+                cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
                                      '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
                 msg = cp.stderr.strip().splitlines()
                 expect('second run: refused with the one-line message, nonzero',
@@ -719,7 +799,7 @@ def selftest():
             lock.write_text(f'{dead.pid}\n')
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
             before = len(lines(dg))
-            cp = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
                                  '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
             expect('stale lock: a dead pid proceeds and records', cp.returncode == 0 and len(lines(dg)) == before + 1)
             expect('stale lock: removed on exit', not lock.exists())
@@ -733,7 +813,7 @@ def selftest():
             dw = wrepo / 'wt'
             pwdf = tmp / 'pwd.out'
             shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
-            cp = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(dw), '--tier', 'S', '--brief', 'b',
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'S', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
             want = (wrepo / '.worktrees' / 'lane-x').resolve()
             br = subprocess.run(['git', 'branch', '--list', 'lane-x'], cwd=str(wrepo), capture_output=True, text=True).stdout
@@ -745,6 +825,20 @@ def selftest():
             for k, v in old_env.items():
                 if v is None: os.environ.pop(k, None)
                 else: os.environ[k] = v
+    with tempfile.TemporaryDirectory() as tmp:
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        tr = d / 't.jsonl'
+        tr.write_text(json.dumps({'message': {'id': 'm1', 'usage': {'input_tokens': 10, 'output_tokens': 1000,
+                                                                      'cache_read_input_tokens': 500000}}}) + '\n')
+        row = lambda: [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()]
+        expect('solo row starts unpriced', row()[0]['cost_usd'] is None)
+        expect('complete: unknown attempt prices nothing', complete(d, 'zzzz', 'M', str(tr)) is None and row()[0]['cost_usd'] is None)
+        got = complete(d, disp['attempt_id'], 'M', str(tr))
+        r0 = row()
+        expect('complete: solo row priced in place, one row', got and len(r0) == 1 and r0[0]['cost_usd'] == got and got > 0
+               and r0[0].get('cost_estimated') and 'cost_reason' not in r0[0] and r0[0]['usage']['output_tokens'] == 1000)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
@@ -765,15 +859,26 @@ def main():
     g.add_argument('--brief')
     g.add_argument('--brief-file')
     r.add_argument('--backend', default=os.environ.get('SDLC_BACKEND', 'claude'))
+    r.add_argument('--exec', action='store_true', help='Claude: start the headless session instead of printing the dispatch JSON')
     r.add_argument('--cwd')
     r.add_argument('--worktree', metavar='NAME', help='create .worktrees/NAME on a new branch NAME first '
                    '(unless it exists) and run the session there')
     r.add_argument('--timeout', type=float)
     r.add_argument('--raw-out', help='also save the session stdout (the result JSON) to this file')
+    c = sub.add_parser('complete', help='price a finished solo sub-agent row from its transcript usage or notice tokens')
+    c.add_argument('--task-dir', required=True)
+    c.add_argument('--attempt', required=True, help='attempt_id (or a prefix) from the dispatch JSON')
+    c.add_argument('--tier', required=True, choices=sorted(TIERS))
+    c.add_argument('--transcript')
+    c.add_argument('--tokens', type=int)
     sub.add_parser('selftest')
     a = p.parse_args()
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'complete':
+        cost = complete(a.task_dir, a.attempt, a.tier, a.transcript, a.tokens)
+        print('solo_run.py: no row priced (no usage, or no unpriced solo row for that attempt)' if cost is None else 'priced $%.4f' % cost)
+        return 0 if cost is not None else 2
     brief = a.brief
     if a.brief_file:
         brief = sys.stdin.read() if a.brief_file == '-' else pathlib.Path(a.brief_file).read_text(encoding='utf-8')
@@ -789,6 +894,11 @@ def main():
         task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
         if a.new_task is not None:
             print(f'solo_run.py: task folder {task_dir}', file=sys.stderr)
+        if a.backend == 'claude' and not a.exec:
+            rc, d = dispatch_json(task_dir, a.tier, brief)
+            if d:
+                print(json.dumps(d, indent=2))
+            return rc
         cwd = ensure_worktree(a.worktree, a.cwd) if a.worktree else a.cwd
         return run(task_dir, a.tier, brief, a.backend, cwd, a.timeout, a.raw_out)
     except Refuse as exc:

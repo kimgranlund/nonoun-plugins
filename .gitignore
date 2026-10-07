@@ -11,3 +11,4 @@ plugins/sdlc-lite/bench/logs/
 __pycache__/
 .sdlc/runtime/
 .sdlc/messages/
+.claude/worktrees/

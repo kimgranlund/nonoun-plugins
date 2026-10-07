@@ -2,14 +2,14 @@
 name: review-traces
 description: "Review a project's sdlc run traces for waste and bugs caused by sdlc-lite, with no model call in the ingest and detect stages, then diagnose, verify, propose, and file each confirmed finding as a ticket after approval."
 argument-hint: "<repo> [--lanes-dir DIR]... [--max N]"
-allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/traces.py:*), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/run.sh:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Read, Write, Grep, Glob, AskUserQuestion
+allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/traces.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Agent, Read, Write, Grep, Glob, AskUserQuestion
 ---
 
 **Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
 
-When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). The runner records the resolved model and effort separately. Read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery.
+When launching a role, set `SDLC_ROUTING_REASON` to a short explanation of the chosen role and level (user selection, task scope, or escalation evidence). `dispatch.py prepare` (Codex: `run.sh`) reads it and records the resolved model and effort separately. Read [run operations](../handoff-format/run-operations.md) for readiness and interrupted-attempt recovery. To dispatch a role, follow the three steps of `${CLAUDE_PLUGIN_ROOT}/agents/conductor.md` ("How you run roles"): `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py prepare <role> <level> <handoff.md>` runs the gates and prints the dispatch JSON; an `Agent` call passes its `subagent_type`, `name`, `description`, `model`, `prompt`, and `run_in_background` unchanged; `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n> --tool-uses <n> --duration-ms <ms>`, with the sub-agent's final message on stdin, validates and records the result at `<role>-<level>.md` next to the handoff. On Codex a role runs through `SDLC_BACKEND=codex ${CLAUDE_PLUGIN_ROOT}/scripts/run.sh <role> <level> <handoff.md>`.
 
 Create a review task dir `.sdlc/<review task>/` from the arguments per `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/SKILL.md`, with a `handoff.md` naming the repo, every `--lanes-dir`, and `--max`. All stage outputs below go under it.
 
@@ -41,7 +41,7 @@ Read only the evidence paths listed above; nothing else.
 Which layer causes these findings: sdlc-lite, project, host, or task text? If sdlc-lite, name the plugin file or rule at fault.
 ```
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh archaeologist L1 <cluster handoff.md>` on it, or `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh scout L1 <cluster handoff.md>` when the question is where a rule lives. Read the result's `## Summary` for the layer and the file. Keep only findings whose layer is sdlc-lite for stage 3; the rest go to the stage 5 report.
+Dispatch the archaeologist at L1 on `<cluster handoff.md>`, or the scout at L1 when the question is where a rule lives. Read the result's `## Summary` for the layer and the file. Keep only findings whose layer is sdlc-lite for stage 3; the rest go to the stage 5 report.
 
 ## 3. Verify
 
@@ -64,7 +64,7 @@ Nothing to build. This step only reproduces finding <id> from its evidence: run 
 - `<evidence command>`
 ```
 
-Lint it with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lint <finding handoff.md>` and fix any finding before the run. Then run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier L1 <finding handoff.md>` on it.
+Lint it with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lint <finding handoff.md>` and fix any finding before the run. Then dispatch the verifier at L1 on `<finding handoff.md>`.
 
 - A `fail` verdict drops the finding from the propose list.
 - A `pass` verdict keeps it for stage 4.
@@ -99,7 +99,7 @@ Red check: <one command that fails today and passes once fixed>
 - One `## Step` per ticket, each at level L1.
 ```
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh planner L2 <propose handoff.md>` on it once. Each `## Step` of the result is one ticket draft: its title is the ticket title, its Do is the ticket body, and its acceptance criteria are the red check.
+Dispatch the planner at L2 on `<propose handoff.md>` once. Each `## Step` of the result is one ticket draft: its title is the ticket title, its Do is the ticket body, and its acceptance criteria are the red check.
 
 ## 5. File
 

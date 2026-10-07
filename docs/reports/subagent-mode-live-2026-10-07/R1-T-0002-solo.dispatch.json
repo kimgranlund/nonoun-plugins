@@ -1,0 +1,18 @@
+{
+  "subagent_type": "sdlc-lite:solo-S",
+  "name": "T-0002-solo",
+  "description": "solo S: T-0002",
+  "model": "sonnet",
+  "effort": "low",
+  "prompt": "Handoff: .sdlc/0002-titlecase/handoff.md\nBrief: deliver ticket .sdlc/0002-titlecase/handoff.md end to end in this session as the solo agent. Read the ticket and the files it names, make the smallest change that meets its done criterion, run every check command it names and rerun them all after a fix, and report files changed, each check with its outcome, and anything still open. For a size M or L ticket write the handoff's ## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the parent runs the one batched independent verifier. No person is present: never ask the user and never use AskUserQuestion. You work on your own worktree branch: commit early and often, one `WIP T-0002` commit after each green check and a final commit `T-0002: Add titlecase(s)` when every check is green. Never push, open a PR, or publish: fanout.py land merges your branch, runs the gates, and closes the ticket.",
+  "run_in_background": false,
+  "isolation": "worktree",
+  "ticket": "T-0002",
+  "tier": "S",
+  "branch": "worktree-T-0002-solo",
+  "worktree": ".claude/worktrees/T-0002-solo",
+  "handoff": ".sdlc/0002-titlecase/handoff.md",
+  "verifier": null,
+  "role": "solo",
+  "level": "L1"
+}

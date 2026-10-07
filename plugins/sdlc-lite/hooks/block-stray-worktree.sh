@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse(Bash): inside a role run (SDLC_ROLE set by scripts/run.sh or fanout), block a
+# PreToolUse(Bash): inside a role run (a role from hooks/_role.sh: SDLC_ROLE set by scripts/run.sh
+# or fanout, else the sub-agent's agent_type), block a
 # git worktree add that would leave a worktree or branch behind when the run ends. run.sh
 # removes only the worktrees under $SDLC_TMP_WORKTREES and never deletes a branch. For each
 # git worktree add (git global options such as -C <dir> may sit between git and worktree) it
@@ -12,6 +13,8 @@
 # on a remote becomes a new tracking branch, no commit makes one named after the path) or check
 # out an existing branch; with --detach it skips all branch DWIM whatever refs exist, so the
 # rule stays textual and the hook never queries the repo.
+# For a sub-agent role (no SDLC_ROLE) with no prefix variable, the prefix is the git toplevel of the
+# hook JSON's cwd plus /.worktrees/tmp, the parent of every dispatch tmp prefix.
 # Allowed: git worktree add --detach "$SDLC_TMP_WORKTREES/<name>" <commit>, every other git
 # worktree subcommand (list, remove, prune), a mention inside a quoted argument
 # (grep -n "git worktree add" f), and anything outside a role run.
@@ -23,8 +26,11 @@
 # a quote is unterminated, when the command holds a heredoc (<<), or when a shell or evaluator
 # (bash, sh, zsh, dash, ksh, fish, eval, ssh, su) appears as a command word, so
 # bash -c "git worktree add /tmp/x HEAD" stays blocked.
-[[ -n "${SDLC_ROLE:-}" ]] || exit 0
+# shellcheck source=_role.sh
+. "$(dirname "${BASH_SOURCE[0]}")/_role.sh"
 json=$(cat)
+role=$(sdlc_role "$json")
+[[ -n "$role" ]] || exit 0
 cmd=$(jq -r '.tool_input.command // ""' <<<"$json")
 
 # Cheap exit: the word does not appear even with quotes and backslashes removed.
@@ -34,10 +40,15 @@ pf=$(tr -d "\\\\'\"" <<<"$cmd")
 cwd=$(jq -r '.cwd // ""' <<<"$json")
 [[ -n $cwd ]] || cwd=$PWD
 prefix=${SDLC_TMP_WORKTREES:-}
+# A sub-agent has no per-run prefix in its environment: its dispatch brief names
+# <repo>/.worktrees/tmp/<name>, so any path under <repo>/.worktrees/tmp passes for it.
+if [[ -z $prefix && -z "${SDLC_ROLE:-}" ]]; then
+  top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) && prefix="$top/.worktrees/tmp"
+fi
 
 block() {
   # shellcheck disable=SC2016
-  echo "Blocked for sdlc role '$SDLC_ROLE': $1. run.sh removes only detached worktrees under \$SDLC_TMP_WORKTREES (${prefix:-unset}) when the run ends and never deletes a branch. Use the allowed form: git worktree add --detach \"\$SDLC_TMP_WORKTREES/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else." >&2
+  echo "Blocked for sdlc role '$role': $1. The run removes only detached worktrees under its throwaway prefix \$SDLC_TMP_WORKTREES (${prefix:-unset}) when it ends and never deletes a branch. Use the allowed form: git worktree add --detach \"\$SDLC_TMP_WORKTREES/<name>\" <commit>. Never create a branch (-b, -B, --orphan) or a worktree anywhere else." >&2
   exit 2
 }
 

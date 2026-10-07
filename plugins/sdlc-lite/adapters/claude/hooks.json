@@ -28,6 +28,7 @@
       {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-role-write.sh\"" },
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/warn-handoff-edit.sh\"" }
         ]
       }

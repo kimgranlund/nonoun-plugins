@@ -1,0 +1,16 @@
+{
+  "subagent_type": "sdlc-lite:solo-S",
+  "name": "solo-S-0003-chunk",
+  "description": "solo S: 0003-chunk",
+  "model": "sonnet",
+  "effort": "low",
+  "prompt": "Handoff: /private/tmp/sdlcprobe/proj/.sdlc/0003-chunk/handoff.md\nArtifacts dir: /private/tmp/sdlcprobe/proj/.sdlc/0003-chunk\n---\nid: T-0003\ntitle: \"Add chunk(seq, n)\"\ntype: feature        # feature | bug | chore | spike | idea\nstatus: ready        # proposed | ready | blocked | done | dropped (build progress lives in /board)\nsize: S              # S | M | L | XL\npriority: P2         # P1 | P2 | P3\ndepends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]\ncreated: 2026-10-06\nrouter: .sdlc/AGENTS.md  # how to claim and close this ticket\nbudget_usd: 5\n---\n\n## Goal\nAdd chunk(seq, n) in kit/seqs.py returning a list of consecutive lists of length n (last may be shorter); n < 1 raises ValueError.\n\n## Intent\n- Do: Add chunk(seq, n) in kit/seqs.py returning a list of consecutive lists of length n (last may be shorter); n < 1 raises ValueError.\n- Non-goals: anything else in the repo; no new dependencies.\n- Done when: tests/test_seqs.py covers exact, short-last, empty and n<1 and the full suite passes.\n\n## Context\nFiles: kit/seqs.py (new), tests/test_seqs.py (new). Python 3 stdlib only. Run the whole suite with `python3 -m unittest discover -s tests -t .`.\n\n## Constraints\nTouch only the files named in Context. Do not edit existing tests.\n",
+  "run_in_background": false,
+  "role": "solo",
+  "level": "L1",
+  "tier": "S",
+  "handoff": "/private/tmp/sdlcprobe/proj/.sdlc/0003-chunk/handoff.md",
+  "artifacts_dir": "/private/tmp/sdlcprobe/proj/.sdlc/0003-chunk",
+  "attempt_id": "daa918f2a7144058aad4b2144f10c993",
+  "verifier": null
+}
