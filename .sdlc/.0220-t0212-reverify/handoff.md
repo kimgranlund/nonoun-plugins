@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 T-0212's fixed check-packaging defect is independently re-verified.
 
 ## Intent
-- Do: No code change. The T-0212 L3 verifier returned fail on `scripts/check-packaging.py` pinning the PreToolUse route count at 3; the fix landed afterwards with no re-verification committed. Re-verified with a narrow L2 verifier. The Codex note in docs/maintenance/claude-hooks.md already exists, so nothing was added there.
+- Do: No code change. The T-0212 L3 verifier returned fail on `scripts/check-packaging.py` pinning the PreToolUse route count at 3; the fix landed afterwards with no re-verification committed. Re-verified with a narrow L2 verifier. The Codex note in docs/references/claude-hooks.md already exists, so nothing was added there.
 - Non-goals: model or effort defaults; a version bump, tag, push, or publish.
 - Done when: the change is merged into local main with checks green and an independent verifier passed.
 

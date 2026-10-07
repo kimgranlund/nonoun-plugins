@@ -5,7 +5,7 @@ done
 ## Changes
 - `docs/reports/supervisor-live-run/probe.py`: added the `runs_git_push` shlex classifier, with `PUSH_RE` kept only as its fallback for an unbalanced quote. Added `install_pre_push`, called in `setup()` right after `git remote add`, which writes the hook and sets an absolute `core.hooksPath`. Also added `pre_push_calls`, the new `push_attempt(logs, hook_calls, remote_added, remote)`, `host_final` and `no_push_basis`. The oracle's wake and attached rule now runs on the no-push basis. Added the new evidence lines and facts keys and updated the docstring. The stub's `result` event now carries a `\u2014` escape. The new selftest cases are wired in.
 - `docs/reports/supervisor-live-run/AGENTS.md`: added the pre-push hook sentence to the `probe.py` item.
-- `docs/ticket-stages/watcher-design.md`: in section 9, added the "records its no-push basis" item right after the `- a message-body arm:` item.
+- `docs/planning/ticket-stages/watcher-design.md`: in section 9, added the "records its no-push basis" item right after the `- a message-body arm:` item.
 
 ## Checks
 - `python3 docs/reports/supervisor-live-run/probe.py selftest`: all 17 labels printed `ok:`, then `probe selftest: PASS` (about 15 s).

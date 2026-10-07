@@ -28,7 +28,7 @@ The close stays the plain `tickets.py close <slug>` on the integration branch, r
   - Docstring and `main()` usage line: the new form, preflight rules, per-ticket path, selftest cases.
 - `plugins/sdlc-lite/skills/fanout/SKILL.md`: `argument-hint` adds `<lane>@<branch>=<ids>`; one paragraph on registration, no driver, never written, `merge conflict` means the outside agent merges integration themselves, and that an external lane appears in `report.md` but not in `board.py --lanes` (no worktree).
 - `plugins/sdlc-lite/skills/ticket/SKILL.md`: one sentence after the config-line sentence.
-- `docs/maintenance/sdlc-internals.md`: the `tickets.py` and `fanout.py` entries.
+- `docs/references/sdlc-internals.md`: the `tickets.py` and `fanout.py` entries.
 - Selftests: `fanout.py` case (a): registered `ext` branch made in a temporary checkout, `alpha@ext=T-0001,T-0002 --driver 'exit 9'`, gate present; asserts merged twice, one merge commit, one gate log per gate, no `fanout/test-alpha` ref, no `<lanes>/alpha` dir, `ext` tip unchanged, tickets done on integration, main clean; negative control: same repo without the config line refuses exit 2 and creates nothing; a mixed run with one regular lane still merges both. `tickets.py` case (b): `external_branch: ext`, T-0002 committed only on `ext` (not checked out), `new` in main mints T-0003; negative control without the line mints T-0002.
 
 ## Constraints and assumptions

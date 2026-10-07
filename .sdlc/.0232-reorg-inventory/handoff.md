@@ -14,12 +14,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 A read-only `inventory.py` states the facts about a repository's documents, and a procedure doc says how a solo session turns them into a reorganization plan, so reorganizing starts from measured facts and not from guesses. Nothing is moved.
 
 ## Intent
-- Do: `plugins/sdlc-lite/scripts/inventory.py` (tracked documents with size, heading, last commit, inbound and outbound links and mentions, flags orphan, stale, duplicate, oversized, misplaced, broken_links, folders without an entry file; `--json`, `--out` outside the repo, `--include-sdlc`); a selftest with a fixture repository, a negative control per mutation and a clean fixture; `docs/repo-onboarding/reorganization-plan-procedure.md`; a live run on two repositories and one model-written plan, recorded in `docs/reports/reorg-inventory-live-run.md`; a `check.py` guard and the selftest wired into `check.sh`.
+- Do: `plugins/sdlc-lite/scripts/inventory.py` (tracked documents with size, heading, last commit, inbound and outbound links and mentions, flags orphan, stale, duplicate, oversized, misplaced, broken_links, folders without an entry file; `--json`, `--out` outside the repo, `--include-sdlc`); a selftest with a fixture repository, a negative control per mutation and a clean fixture; `docs/planning/repo-onboarding/reorganization-plan-procedure.md`; a live run on two repositories and one model-written plan, recorded in `docs/reports/reorg-inventory-live-run.md`; a `check.py` guard and the selftest wired into `check.sh`.
 - Non-goals: moving or rewriting any file; the apply step (T-0233); changing `onboard.py`; a version bump, tag, push, or publish.
 - Done when: the selftest passes with its negative controls, the live run is recorded with committed evidence, an independent L3 verifier passed with an overall pass, and the work is merged and closed.
 
 ## Context
-Reorganization was a draft (docs/repo-onboarding/reorganization.md, v0.6, "not ready to build"; three design reviews each found new edge cases) and the old spike T-0161 never produced a reusable tool. User decision 2026-10-05: do it for 0.20.9 as a hybrid: a deterministic script for facts, a model session for the plan, a later gated script for applying. Size M, solo lane. Philosophy: "Done is better than perfect."
+Reorganization was a draft (docs/planning/repo-onboarding/reorganization.md, v0.6, "not ready to build"; three design reviews each found new edge cases) and the old spike T-0161 never produced a reusable tool. User decision 2026-10-05: do it for 0.20.9 as a hybrid: a deterministic script for facts, a model session for the plan, a later gated script for applying. Size M, solo lane. Philosophy: "Done is better than perfect."
 
 ## Constraints
 Read-only: the script writes nothing into the target repository. No model calls and no network in the script. No em dashes.

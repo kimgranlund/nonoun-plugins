@@ -4,7 +4,7 @@ Four size S and M tickets, each routed to the solo lane by `steps.py lane` (it p
 
 | Ticket | Change | Regression test |
 |---|---|---|
-| T-0259 | `fanout.py`: an uncommitted handoff refusal names `git add -f <path>`; a plan whose start commit tracks `package.json` and whose gates never install prints a `note:` naming `npm ci && ...`; a red gate in a worktree with `package.json` and no `node_modules` appends the same hint. Documented in `docs/maintenance/sdlc-internals.md`. | `fanout.py selftest` case 20 |
+| T-0259 | `fanout.py`: an uncommitted handoff refusal names `git add -f <path>`; a plan whose start commit tracks `package.json` and whose gates never install prints a `note:` naming `npm ci && ...`; a red gate in a worktree with `package.json` and no `node_modules` appends the same hint. Documented in `docs/references/sdlc-internals.md`. | `fanout.py selftest` case 20 |
 | T-0260 | `run.sh`: a failed run whose log shows 429 or a session limit writes `<role>-<level>.limit` and prints `run.sh: session limit: resume with: <command>` (exit stays 1; a success removes the marker). `solo_run.py`: writes `solo.limit` and prints a resume hint. | `run-selftest.sh` case `session limit`; `solo_run.py selftest` |
 | T-0262 | `tickets.py`: `outside_refs` also scans the ticket root with ignore rules off, so citations under a gitignored `.sdlc` are found, refused, and rewritable; `--force` prints `left refs to <folder> in <files>`. | `tickets.py selftest` `(u) refs` cases |
 | T-0273 (new) | `codex-selftest.py` `test_fanout_uses_codex` checks the argv (role script, not the `claude` CLI) instead of a `claude` substring, so it passes under a path containing `claude`. | `codex-selftest.py CodexTests.test_fanout_uses_codex` |

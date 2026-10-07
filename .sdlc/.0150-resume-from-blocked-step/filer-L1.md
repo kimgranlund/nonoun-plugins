@@ -23,7 +23,7 @@ This adds a read-only `steps.py resume <task dir>`. It picks the lowest-numbered
 - `plugins/sdlc-lite/skills/chain/SKILL.md`:
   - New resume rule at the start of section 4: check for stale attempts and run `run_lifecycle.py recover` when explicit recovery is required, inspect the step, then run `steps.py resume`. A `replan` takes the 4.2 path.
   - `Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_lifecycle.py:*)` added to `allowed-tools`.
-- `docs/maintenance/sdlc-internals.md`: the `steps.py` entry documents `resume <task dir>`, and its closing sentence says /chain runs `resume` when it resumes a task.
+- `docs/references/sdlc-internals.md`: the `steps.py` entry documents `resume <task dir>`, and its closing sentence says /chain runs `resume` when it resumes a task.
 
 ### How each was verified
 Both steps have a verifier verdict of pass.

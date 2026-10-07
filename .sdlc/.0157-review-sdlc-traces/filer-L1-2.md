@@ -32,7 +32,7 @@ This adds a read-only trace analyzer for sdlc run trails. `scripts/traces.py` ru
   - `agents/conductor.md` gains a route to `/sdlc-lite:review-traces`.
   - `skills/sdlc-lite/SKILL.md` gains a table row, so `adapters/codex/agents/sdlc-conductor-l1.toml` is regenerated.
   - `skills/handoff-format/SKILL.md` documents `.sdlc/runtime/`.
-  - `docs/maintenance/sdlc-internals.md` gains a `scripts/traces.py` section.
+  - `docs/references/sdlc-internals.md` gains a `scripts/traces.py` section.
 - `.gitignore` adds `__pycache__/` and `.sdlc/runtime/`.
 
 ### How each was verified

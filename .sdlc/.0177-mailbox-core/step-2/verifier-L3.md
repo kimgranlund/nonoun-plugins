@@ -34,7 +34,7 @@ None.
 - `git status --short` shows only `plugins/sdlc-lite/scripts/messages.py` modified, plus the runner's untracked files under `.sdlc/0177-mailbox-core/step-2/`.
 - `git diff --check "$SDLC_BASE_SHA"` exits 0.
 - Inside `messages.py`, the diff to step 1's code is limited to the docstring, three imports, `barrier()`, the `claim()` hook, and the `selftest` registration.
-- Neighbors: `git grep "messages\.py"` finds only `docs/ticket-stages/design.md`; no script, `check.sh` or `check.py` depends on it.
+- Neighbors: `git grep "messages\.py"` finds only `docs/specs/ticket-stages/design.md`; no script, `check.sh` or `check.py` depends on it.
 - Step 1's criteria 1 to 11, rerun on the built tree: 11 of 11 exit 0.
 - Hooks observed on the real file: a lone `read` with the barrier set exits 1 with `barrier timeout` after 10 s and leaves the message in `new/`; an unknown `SDLC_MESSAGES_TEST_CLAIM` value keeps the rename (3 of 3 one-winner verdicts).
 

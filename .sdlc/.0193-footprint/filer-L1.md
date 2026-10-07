@@ -16,7 +16,7 @@ Adds `plugins/sdlc-lite/scripts/footprint.py`. It measures a ticket folder's foo
   - `footprint.py check <ticket dir> [--max-files N] [--max-bytes N]` exits 1 and names each exceeded flag on stderr. It exits 2 for no limit, a missing dir, or bad args.
   - `footprint.py selftest` builds a fix-lane fixture and a chained fixture and asserts exact counts. It includes a negative control, an extra file that fails `check --max-files 8`. It also asserts that measuring writes nothing.
 - `plugins/sdlc-lite/scripts/check.sh`: runs the `footprint.py` selftest after the `messages.py` selftest. The header comment's selftest list now names `footprint.py`.
-- `docs/maintenance/sdlc-internals.md`: a new `scripts/footprint.py` entry after the `order.py` entry. It does not copy the Baseline table, which stays in `docs/lean-sdlc/design.md`.
+- `docs/references/sdlc-internals.md`: a new `scripts/footprint.py` entry after the `order.py` entry. It does not copy the Baseline table, which stays in `docs/lean-sdlc/design.md`.
 
 Recorded output for the four closed folders, from the step 2 builder result. Columns are steps / role runs / files / bytes / `.md` bytes. The Baseline table in `docs/lean-sdlc/design.md` ("Baseline (measured 2026-10-03)") matches all four rows.
 

@@ -99,16 +99,16 @@ Depends on: step 1 (the `wait` subparser must exist for `case_entry_parses` to p
    - In the Host limits Claude Code bullet, add that `wait` is one foreground Bash call and needs no Monitor.
    - Keep the three words `MESSENGER_WORDS` pins (check.py:368): `model: claude-haiku-4-5`, `messages.py`, and `.sdlc/messages/AGENTS.md`.
 4. Run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` to regenerate `plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml`. Never edit it by hand.
-5. `docs/maintenance/sdlc-internals.md`, the `scripts/messages.py` entry (line 15):
+5. `docs/references/sdlc-internals.md`, the `scripts/messages.py` entry (line 15):
    - In the Subcommands list, between the `count` item and `and selftest`, add a `wait` item. It says: `wait` blocks until a valid message is in `new/<receiver>/`, checking every `--interval` seconds (default 5, at least 1) for up to `--timeout` seconds (default 120, 1 to 600); it prints `<id>\t<absolute path>` per message, sorted by id, and exits 0; at the timeout it prints `no new messages` and exits 3; it skips an invalid file; it never claims, moves, writes, or prints a body.
    - After "exit 2 only for a usage error", add "; exit 3 only when `wait` times out".
    - In the selftest coverage sentence, after "one shared mailbox across worktrees", add this text: "the `wait` cases (a present message returns at once with the mailbox unchanged, a message sent mid-wait wakes it, the timeout exits 3 with the mailbox unchanged, bad values are refused, a malformed file and another receiver's message do not wake it, no body is printed, and a claiming wait is caught as a negative control)".
-6. `docs/ticket-stages/design.md`:
+6. `docs/specs/ticket-stages/design.md`:
    - In the Host limits bullet (line 105), add that `messages.py wait` is one blocking call a parent can make instead of running a polling subagent, and that it still does not wake an idle host.
    - In the Status paragraph (line 77), add a sentence that T-0181 built `messages.py wait`.
 7. Left unchanged on purpose:
    - `docs/codex-role-execution.md:27`: the messenger still polls every 10 seconds through `messages.py` (now inside `wait`), and its host limits still hold. The handoff does not list it.
-   - `docs/ticket-stages/README.md:3`: it lists the tickets that built the bus; the design Status paragraph records T-0181.
+   - `docs/specs/ticket-stages/README.md:3`: it lists the tickets that built the bus; the design Status paragraph records T-0181.
    - `docs/reports/messages-live-run/probe.py`: it pins no entry-file text, and its selftest passes now.
 
 Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py generate --check`.
@@ -119,11 +119,11 @@ Focused checks: the messages selftest, the tickets selftest, and `codex_roles.py
 - `grep -qF "messages.py wait --receiver <harness>" plugins/sdlc-lite/agents/messenger.md`
 - `grep -qF "messages.py wait --receiver <harness>" plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- `grep -qF "no new messages" docs/maintenance/sdlc-internals.md`
-- `grep -qF "a claiming wait is caught" docs/maintenance/sdlc-internals.md`
-- `grep -qF "messages.py wait" docs/ticket-stages/design.md`
-- `grep -qF "T-0181" docs/ticket-stages/design.md`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `grep -qF "no new messages" docs/references/sdlc-internals.md`
+- `grep -qF "a claiming wait is caught" docs/references/sdlc-internals.md`
+- `grep -qF "messages.py wait" docs/specs/ticket-stages/design.md`
+- `grep -qF "T-0181" docs/specs/ticket-stages/design.md`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Step 3: Live proof of wait on Claude Code and Codex
 level: L3
@@ -198,7 +198,7 @@ Depends on: steps 1 and 2.
 - `f=docs/reports/messages-wait-live-run.md; grep -qE "^Recorded: 2026-" $f && for h in "## Environment" "## Method" "## Limits"; do grep -qxF "$h" $f || exit 1; done && test "$(grep -cE "^Result: (pass|fail|unverified)" $f)" -ge 2`
 - `grep -qF "validation/messages-wait-live-run.md" docs/README.md`
 - `for f in docs/reports/messages-wait-live-run.md docs/reports/messages-wait-live-run/probe.py; do test -f "$f" || exit 1; ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Step 4: Gates green
 level: L2
@@ -220,7 +220,7 @@ Depends on: steps 1, 2, and 3.
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `git diff --check`
 - (guard) `! git diff "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/maintenance/sdlc-internals.md -e docs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/messages.py -e plugins/sdlc-lite/agents/messenger.md -e plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml -e docs/references/sdlc-internals.md -e docs/specs/ticket-stages/design.md -e docs/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vE "^docs/reports/messages-wait-live-run(\.md|/)")"`
 
 ## Assumptions
 - What this replan changes:

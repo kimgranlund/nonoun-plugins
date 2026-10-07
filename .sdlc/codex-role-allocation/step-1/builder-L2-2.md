@@ -11,7 +11,7 @@ done
 ## Checks
 - AC1 models assert: exit 0
 - AC2 verifier_alternates assert: exit 0
-- AC3 `grep -qF "adopted a role-based allocation" docs/codex-role-execution.md`: exit 0
+- AC3 `grep -qF "adopted a role-based allocation" docs/references/codex-role-execution.md`: exit 0
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`: "Codex agent definitions verified", exit 0
 - (guard) `python3 plugins/sdlc-lite/scripts/codex-selftest.py`: Ran 20 tests, OK, exit 0
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py`: "ok: 18 role levels, 8 agents checked", exit 0

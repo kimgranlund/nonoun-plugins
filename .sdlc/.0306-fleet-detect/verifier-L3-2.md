@@ -46,7 +46,7 @@ None.
 - `.sdlc/0306-fleet-detect/handoff.md`: the diff only adds the `## Acceptance criteria` section, which the solo lane writes. Compared with the 12 criteria in my earlier verdict, none was removed or loosened; two were added (C9, C10) and the preamble now names the nested layout.
 - `plugins/sdlc-lite/scripts/fleet_collect.py`: sanctioned by the preamble as additive, and additive by evidence. The pre-build collector and the built one were run on agent-ui at the cutoff. All 109 old key paths are present in the 250 new ones, the only additions at the old levels are `tickets` and `runs.by_ticket`, and every old value under `runs` and `plan_review_share` is equal.
   - The `env.plugin` differences in that comparison come from running the pre-build copy out of a temp dir (its `path` is the temp dir). They are not a collector regression.
-- `plugins/sdlc-lite/scripts/check.sh` and `docs/maintenance/sdlc-internals.md`: named by C12. The docs entry and the collector docstring (lines 18 to 22) carry the `tickets/<name>` wording.
+- `plugins/sdlc-lite/scripts/check.sh` and `docs/references/sdlc-internals.md`: named by C12. The docs entry and the collector docstring (lines 18 to 22) carry the `tickets/<name>` wording.
 - `base-sha`, `skips.md`, `runs.jsonl`, the `verifier-L3*` files: runner records.
 - Dependents: `git grep -lE 'fleet_collect|fleet_detect'` finds only `check.sh`, the docs entry, the collector itself and ticket handoffs. There is no other consumer of the fingerprint.
 - My own footprint: `git status` is the same 11 lines as on arrival, the throwaway worktree is removed, no `__pycache__` was written, the stash list is empty, and HEAD is still b5186e46.

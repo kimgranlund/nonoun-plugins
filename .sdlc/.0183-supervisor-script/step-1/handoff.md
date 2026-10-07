@@ -7,7 +7,7 @@ level: L3
 Depends on: none.
 
 Targets:
-- `docs/ticket-stages/watcher-design.md`, rewritten to v0.2.
+- `docs/planning/ticket-stages/watcher-design.md`, rewritten to v0.2.
 - `docs/reports/idle-host-watcher-design-review.md`, one appended `## Applied` section.
 
 No code in this step. Level L3, not L2: this rewrite is the spec every later step builds on, and all 17 findings must land consistently.
@@ -175,17 +175,17 @@ Evidence for every decision below:
    - One row per finding 1 to 17. Each row starts `| <n> | ` and names the D tags that apply the finding.
    - Finding 18 (probe leftovers) goes in a note line under the table, not as a row.
 5. Section 2 (launch) names the commands `supervisor.py init`, `supervisor.py watch --run`, `supervisor.py status`, `supervisor.py reset --receiver <name>`, and `supervisor.py selftest`.
-6. In the review doc, append `## Applied` with one paragraph: T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/ticket-stages/watcher-design.md`). The findings above it stay unchanged as the record of the review.
+6. In the review doc, append `## Applied` with one paragraph: T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/planning/ticket-stages/watcher-design.md`). The findings above it stay unchanged as the record of the review.
 7. No em dash (U+2014) in either file. Check with `git diff --check -- docs/`.
 ### Acceptance criteria
-- `grep -qE "^Version 0\.2, " docs/ticket-stages/watcher-design.md`
-- `f=docs/ticket-stages/watcher-design.md; grep -qxF "## Review findings applied" "$f" && for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do grep -qE "^\| $n \| " "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21; do grep -qF "(D$n)" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for t in 'sandbox_mode="workspace-write"' 'sandbox_workspace_write.network_access=false' 'exclude_slash_tmp=true' 'approval_policy="never"' '--permission-mode dontAsk' '--strict-mcp-config' '--plugin-dir' '--output-format stream-json' '--no-session-persistence' 'codex exec resume' 'SDLC_ROLE=supervisor' 'SDLC_HEADLESS=1' 'hosts.local.json' 'git-common-dir' 'lstart' '111,431'; do grep -qF -- "$t" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for k in poll_seconds debounce_polls cooldown_seconds max_wakes_per_hour max_wakes_per_day wake_timeout_seconds reply_depth_limit max_failures quiet_seconds max_budget_usd log_keep; do grep -qF "$k" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
-- `f=docs/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
-- `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/ticket-stages/watcher-design.md`
+- `grep -qE "^Version 0\.2, " docs/planning/ticket-stages/watcher-design.md`
+- `f=docs/planning/ticket-stages/watcher-design.md; grep -qxF "## Review findings applied" "$f" && for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17; do grep -qE "^\| $n \| " "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21; do grep -qF "(D$n)" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for t in 'sandbox_mode="workspace-write"' 'sandbox_workspace_write.network_access=false' 'exclude_slash_tmp=true' 'approval_policy="never"' '--permission-mode dontAsk' '--strict-mcp-config' '--plugin-dir' '--output-format stream-json' '--no-session-persistence' 'codex exec resume' 'SDLC_ROLE=supervisor' 'SDLC_HEADLESS=1' 'hosts.local.json' 'git-common-dir' 'lstart' '111,431'; do grep -qF -- "$t" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for k in poll_seconds debounce_polls cooldown_seconds max_wakes_per_hour max_wakes_per_day wake_timeout_seconds reply_depth_limit max_failures quiet_seconds max_budget_usd log_keep; do grep -qF "$k" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; for c in "supervisor.py init" "supervisor.py watch --run" "supervisor.py status" "supervisor.py reset --receiver" "supervisor.py selftest"; do grep -qF -- "$c" "$f" || exit 1; done`
+- `f=docs/planning/ticket-stages/watcher-design.md; ! grep -qF "Owned session (default)" "$f" && ! grep -qF "which the watcher may call" "$f" && ! grep -qF "about 17,600" "$f" && ! grep -qF "four blockers open" "$f"`
+- `grep -qF "Mail waits for <receiver>: <n> message(s). Follow .sdlc/messages/AGENTS.md as receiver <receiver>:" docs/planning/ticket-stages/watcher-design.md`
 - `sed -n '/^## Applied$/,$p' docs/reports/idle-host-watcher-design-review.md | grep -qF "Version 0.2"`
-- (guard) `for f in docs/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- (guard) `for f in docs/planning/ticket-stages/watcher-design.md docs/reports/idle-host-watcher-design-review.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`

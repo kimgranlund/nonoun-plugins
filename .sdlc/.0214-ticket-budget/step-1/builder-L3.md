@@ -10,7 +10,7 @@ done
 - `plugins/sdlc-lite/skills/ticket/SKILL.md`: `allowed-tools` gains the budget.py path, and step 2 gets the filing instruction (tiers, `--usd N`, 80 percent stop answered by `budget.py ack`).
 - `plugins/sdlc-lite/scripts/check.sh`: `python3 "$root/scripts/budget.py" selftest || fail=1` after the footprint line, and the header comment names "the budget.py selftest".
 - `plugins/sdlc-lite/scripts/check.py`: docstring item 17 and the `TICKET_BUDGET` guard with negative controls.
-- `docs/maintenance/sdlc-internals.md`: a `scripts/budget.py` entry.
+- `docs/references/sdlc-internals.md`: a `scripts/budget.py` entry.
 
 ## Checks
 - Criterion 1 (budget selftest, last line plus all 10 labels): exit 0.

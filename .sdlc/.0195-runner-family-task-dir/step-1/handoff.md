@@ -9,7 +9,7 @@ level: L3
 Targets:
 - `plugins/sdlc-lite/scripts/run.sh`: the verifier family block (lines 196-208) and the header "Family rules" paragraph (lines 22-26).
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: a new task-dir block and a header paragraph.
-- `docs/maintenance/sdlc-internals.md`: the `scripts/run.sh` entry (line 11).
+- `docs/references/sdlc-internals.md`: the `scripts/run.sh` entry (line 11).
 
 Depends on: none.
 
@@ -76,5 +76,5 @@ Focused checks: `bash plugins/sdlc-lite/scripts/run-selftest.sh` (65 s at plan t
 - (guard) `bash plugins/sdlc-lite/scripts/run-selftest.sh`
 - `sed -n '1,/^set -euo pipefail/p' plugins/sdlc-lite/scripts/run.sh | grep -qF 'step-<n>.superseded-<k>'`
 - `sed -n '1,/^set -euo pipefail/p' plugins/sdlc-lite/scripts/run-selftest.sh | grep -q '^# Task dir: '`
-- `awk '/^## .scripts\/run\.sh./{f=1;next} /^## /{f=0} f' docs/maintenance/sdlc-internals.md | grep -qF 'step-<n>.superseded-<k>'`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `awk '/^## .scripts\/run\.sh./{f=1;next} /^## /{f=0} f' docs/references/sdlc-internals.md | grep -qF 'step-<n>.superseded-<k>'`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/references/sdlc-internals.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`

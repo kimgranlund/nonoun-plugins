@@ -1,2 +1,2 @@
- M docs/maintenance/sdlc-internals.md
+ M docs/references/sdlc-internals.md
  M plugins/sdlc-lite/scripts/messages.py

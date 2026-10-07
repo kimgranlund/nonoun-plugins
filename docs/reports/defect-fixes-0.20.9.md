@@ -21,4 +21,4 @@ Tickets closed with `tickets.py close --reason`.
 ## Filed, not fixed
 
 T-0259 (B), T-0260 (C), T-0262 (D close citations), T-0264 (F), T-0265 (G), T-0266 (H), T-0267 (I), T-0268 (J), T-0269 to T-0271 (K), T-0272 (L).
-J: `docs/maintenance/sdlc-internals.md` already documents `solo_run.py`; the ticket checks the conductor and solo agent text.
+J: `docs/references/sdlc-internals.md` already documents `solo_run.py`; the ticket checks the conductor and solo agent text.

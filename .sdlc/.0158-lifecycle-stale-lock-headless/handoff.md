@@ -27,7 +27,7 @@ A killed run never stops the next headless Claude run in the same handoff dir, a
 The next run refuses until someone runs `recover` by hand. Headless conductors (fanout, bench) are not told to, so the lane stops. `.run.lock` is untracked and `git add -A` in fanout lane commits picks it up.
 
 ## Context
-Raised in docs/claude-response.md (items 1 and 2) on Codex commit d4ad342 (0.17.0). Code: plugins/sdlc-lite/scripts/run_lifecycle.py `run()` stale check, `recover()`; docs: skills/handoff-format/run-operations.md.
+Raised in docs/other/claude-response.md (items 1 and 2) on Codex commit d4ad342 (0.17.0). Code: plugins/sdlc-lite/scripts/run_lifecycle.py `run()` stale check, `recover()`; docs: skills/handoff-format/run-operations.md.
 
 ## Constraints
 No change to role, model, or effort mappings. Keep the codex subagent refusal.

@@ -17,7 +17,7 @@ pass
 - SKILL.md name and HARNESS-NOTES count: pass. Evidence: both greps exit 0.
 - (guard) `codex_roles.py generate --check`: pass. Evidence: printed "Codex agent definitions verified".
 - (guard) full `codex-selftest.py`: pass. Evidence: "Ran 22 tests in 14.754s, OK", exit 0. The builder's claim that existing tests are unchanged matches the diff, which has only added lines in `codex-selftest.py`.
-- (guard) changed-files allowlist: pass. Evidence: the pipeline exited 0. The non-agent files changed against base are `docs/codex-role-execution.md`, `HARNESS-NOTES.md`, `instructions.md`, `models.json`, `codex-selftest.py`, `codex_exchange.py`, `codex_roles.py` and `SKILL.md`, all in the allowlist. The rest are `adapters/codex/agents/*.toml`. The two new plan-reviewer TOMLs are also under that glob.
+- (guard) changed-files allowlist: pass. Evidence: the pipeline exited 0. The non-agent files changed against base are `docs/references/codex-role-execution.md`, `HARNESS-NOTES.md`, `instructions.md`, `models.json`, `codex-selftest.py`, `codex_exchange.py`, `codex_roles.py` and `SKILL.md`, all in the allowlist. The rest are `adapters/codex/agents/*.toml`. The two new plan-reviewer TOMLs are also under that glob.
 
 Extra checks:
 - `python3 scripts/check-packaging.py` printed PASS.

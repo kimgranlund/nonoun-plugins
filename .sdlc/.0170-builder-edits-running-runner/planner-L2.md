@@ -18,13 +18,13 @@ Root cause: bash reads a script file as it executes it. `run_lifecycle.py` start
    - the `.attempt.json` status is `completed`.
 
    Do not add a variant that inserts bytes before the current offset: on the base code it can re-run earlier lines and loop.
-3. In `docs/maintenance/sdlc-internals.md`, add to the run.sh entry one sentence containing the exact phrase `edits run.sh while it runs`. It should say that the whole body is parsed before execution, so the running process keeps its behavior and still saves its result.
+3. In `docs/references/sdlc-internals.md`, add to the run.sh entry one sentence containing the exact phrase `edits run.sh while it runs`. It should say that the whole body is parsed before execution, so the running process keeps its behavior and still saves its result.
 ### Acceptance criteria
 - `grep -qF 'FAIL: self-edit' plugins/sdlc-lite/scripts/run-selftest.sh`
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh | grep -qx "run selftest: PASS"`
 - The new case fails on the base runner: `w="${SDLC_TMP_WORKTREES:?}/base-s1"; git worktree add -q --detach "$w" "$SDLC_BASE_SHA" && cp plugins/sdlc-lite/scripts/run-selftest.sh "$w/plugins/sdlc-lite/scripts/run-selftest.sh" && out=$(bash "$w/plugins/sdlc-lite/scripts/run-selftest.sh" 2>&1); rc=$?; git worktree remove --force "$w"; test "$rc" -ne 0 && printf '%s\n' "$out" | grep -q "run selftest: FAIL: self-edit"`
-- `grep -qF 'edits run.sh while it runs' docs/maintenance/sdlc-internals.md`
-- `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh docs/maintenance/sdlc-internals.md`
+- `grep -qF 'edits run.sh while it runs' docs/references/sdlc-internals.md`
+- `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh docs/references/sdlc-internals.md`
 
 ## Step 2: run_lifecycle.py fails an exit 0 that wrote no result
 level: L2
@@ -35,13 +35,13 @@ Defense in depth for the stated exit code contract ("1 run failed or returned no
 
 In `plugins/sdlc-lite/scripts/lifecycle-selftest.py`, add `test_exit_zero_without_result_fails` and append it to the `names` list in `__main__`. It drives `run_lifecycle.run` with a runner that exits 0 without writing a result. For example, point `readiness.ROOT` (as seen by `run_lifecycle`) at a temp root whose `scripts/run.sh` is just `exit 0`, with readiness patched to ready. It asserts return code 1, attempt status `failed`, and the stderr line.
 
-Update the `Exit codes` line in the `run.sh` header, and add a sentence to the run.sh entry in `docs/maintenance/sdlc-internals.md` containing the exact phrase `exits 0 without a result`: the lifecycle owner records such a run as failed with exit 1.
+Update the `Exit codes` line in the `run.sh` header, and add a sentence to the run.sh entry in `docs/references/sdlc-internals.md` containing the exact phrase `exits 0 without a result`: the lifecycle owner records such a run as failed with exit 1.
 ### Acceptance criteria
 - `grep -q "'test_exit_zero_without_result_fails'" plugins/sdlc-lite/scripts/lifecycle-selftest.py`
 - `grep -qF 'wrote no result' plugins/sdlc-lite/scripts/run_lifecycle.py`
 - `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`
 - The new test fails on the base lifecycle: `w="${SDLC_TMP_WORKTREES:?}/base-s2"; git worktree add -q --detach "$w" "$SDLC_BASE_SHA" && cp plugins/sdlc-lite/scripts/lifecycle-selftest.py "$w/plugins/sdlc-lite/scripts/lifecycle-selftest.py" && out=$(python3 "$w/plugins/sdlc-lite/scripts/lifecycle-selftest.py" 2>&1); rc=$?; git worktree remove --force "$w"; test "$rc" -ne 0 && printf '%s\n' "$out" | grep -q "test_exit_zero_without_result_fails"`
-- `grep -qF 'exits 0 without a result' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'exits 0 without a result' docs/references/sdlc-internals.md`
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh | grep -qx "run selftest: PASS"`
 
 ## Step 3: Gates green

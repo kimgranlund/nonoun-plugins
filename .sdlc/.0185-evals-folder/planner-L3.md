@@ -305,7 +305,7 @@ level: L2
 ### Do
 Depends on: steps 1 to 3. Use no em dashes. Each fact has one authoritative place: the format, the canonical text, and the lock rules live in `.sdlc/evals/AGENTS.md` (step 2) and in evals.py. These edits link there instead of copying them.
 
-`docs/maintenance/sdlc-internals.md`: add an entry headed exactly ``## `scripts/evals.py` ``, after the `scripts/results.py` entry. It covers:
+`docs/references/sdlc-internals.md`: add an entry headed exactly ``## `scripts/evals.py` ``, after the `scripts/results.py` entry. It covers:
 - the purpose: dated eval records, and the lock that ties the model table to one of them
 - the CLI: `add`, `list`, `check`, `lock`, `hash`, `selftest`, the global `--root` and `--plugin`, and the exit codes
 - the Python API, including `validate_eval` for later callers
@@ -326,7 +326,7 @@ handoff-format is not a preloaded skill (the agents preload only level-rubric), 
 - Extend the Contracts bullet that starts "Claude models and efforts live in `scripts/run.sh`". A change to either table needs a new eval in `.sdlc/evals/` and `scripts/evals.py lock`, else `scripts/check.py` fails; read [the evals entry file](../../.sdlc/evals/AGENTS.md) first.
 - Add to the Verification list: `- Evals and the model-table lock: python3 plugins/sdlc-lite/scripts/evals.py check (and selftest).`
 
-`docs/codex-role-execution.md`: after "Regenerate the agent files after changes." (line 46), add "A change also needs a new eval in `.sdlc/evals/` and `evals.py lock`, or `check.py` fails; see [the evals entry file](../.sdlc/evals/AGENTS.md)."
+`docs/references/codex-role-execution.md`: after "Regenerate the agent files after changes." (line 46), add "A change also needs a new eval in `.sdlc/evals/` and `evals.py lock`, or `check.py` fails; see [the evals entry file](../.sdlc/evals/AGENTS.md)."
 
 Left untouched on purpose:
 - `skills/level-rubric/SKILL.md`: the planner and plan-reviewer preload it, so an edit would regenerate the Codex TOML. It is consumer guidance, and the lock is a maintainer gate.
@@ -335,15 +335,15 @@ Left untouched on purpose:
 
 Run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`. It must stay green.
 ### Acceptance criteria
-- ``grep -qxF '## `scripts/evals.py`' docs/maintenance/sdlc-internals.md``
-- `grep -qF 'table-lock.json' docs/maintenance/sdlc-internals.md`
+- ``grep -qxF '## `scripts/evals.py`' docs/references/sdlc-internals.md``
+- `grep -qF 'table-lock.json' docs/references/sdlc-internals.md`
 - `grep -qF '.sdlc/evals/' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF 'scripts/evals.py' plugins/sdlc-lite/AGENTS.md`
-- `grep -qF 'evals.py lock' docs/codex-role-execution.md`
+- `grep -qF 'evals.py lock' docs/references/codex-role-execution.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite`
 - (guard) `git diff --quiet "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/codex-role-execution.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/references/codex-role-execution.md | { ! grep -q .; }`
 
 ## Step 5: Live run in a throwaway copy of the repository
 level: L2
@@ -391,7 +391,7 @@ The doc has these sections, holding the exact strings the criteria grep for:
 - `python3 -c 'import json,sys; d=json.load(open(".sdlc/evals/table-lock.json")); sys.exit(not (sorted(d) == ["eval", "previous_eval", "table_sha256"] and d["eval"] == ".sdlc/evals/0000-baseline.md" and d["previous_eval"] is None))'`
 - `python3 plugins/sdlc-lite/scripts/evals.py check`
 - (guard) `git diff --quiet "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/adapters/codex/models.json`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/codex-role-execution.md -e docs/reports/evals-live-run.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/evals.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/check.py -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/references/codex-role-execution.md -e docs/reports/evals-live-run.md | { ! grep -q .; }`
 
 ## Step 6: Gates green
 level: L2

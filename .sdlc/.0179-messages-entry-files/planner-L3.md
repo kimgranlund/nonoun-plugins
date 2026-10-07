@@ -112,7 +112,7 @@ List them: `python3 "{{scripts}}/messages.py" list --state done`.
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: its mailbox notice case sends with `messages.py` into a temp repo. Entry files now appear there and the counts do not change. Guarded below.
 - `scripts/check.py` `MESSENGER_WORDS` pins `.sdlc/messages/AGENTS.md` in `agents/messenger.md`. Unchanged.
 - `agents/messenger.md` and its generated TOML are left untouched on purpose. The body already defers to `.sdlc/messages/AGENTS.md`, and the agent belongs to T-0178.
-- Prose references (`docs/maintenance/sdlc-internals.md` and the skills) are steps 2 and 4.
+- Prose references (`docs/references/sdlc-internals.md` and the skills) are steps 2 and 4.
 
 No em dashes anywhere. Focused checks: `python3 plugins/sdlc-lite/scripts/messages.py selftest` and `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 ### Acceptance criteria
@@ -187,7 +187,7 @@ This skill is not preloaded into any role (the agents' `skills:` lists name only
 - `fanout.py`: lanes run `tickets.py close` and roadmap, commit with `git add -A`, and check porcelain. The mailbox's own `.gitignore` (step 1) keeps entry files out. Guarded below.
 - `board.py` imports `tickets`. `task_dirs` needs a `handoff.md` (board.py:205-210), so `messages/` never shows as a task. Guarded below.
 - `docs/reports/ticket-root-router-live-run.md` lists the files `new` wrote. It is dated evidence and stays untouched on purpose.
-- Prose in `skills/handoff-format/SKILL.md` and `docs/maintenance/sdlc-internals.md` is step 4.
+- Prose in `skills/handoff-format/SKILL.md` and `docs/references/sdlc-internals.md` is step 4.
 
 No em dashes. Focused checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest`, `fanout.py selftest`, `board.py selftest`.
 ### Acceptance criteria
@@ -345,7 +345,7 @@ Depends on: step 3 (the design status links its validation doc).
 
 Edit only the named entries and lines, because T-0175 and T-0177 also touched these files. No em dashes.
 
-`docs/maintenance/sdlc-internals.md`, the `scripts/messages.py` entry: append
+`docs/references/sdlc-internals.md`, the `scripts/messages.py` entry: append
 
 ```
 `send` and `reply` call `write_entries` after validation and before delivery. It writes nine entry files (`.gitignore` holding `*`, `AGENTS.md` and `CLAUDE.md` at the mailbox root, and `AGENTS.md` and `CLAUDE.md` in each of `new/`, `read/`, and `done/`) from the inline `ENTRY_TEMPLATE` and `STAGE_TEMPLATES`, rendering `{{scripts}}` as the absolute scripts folder, and rewrites any that differ. The root `AGENTS.md` is the one authoritative mailbox procedure; the messenger agent defers to it. `selftest` adds entry-file cases: written, refreshed, none on a refused send, every command parses against `--help`, and a scripted path-only run with its negative control.
@@ -357,7 +357,7 @@ Same file, the `scripts/tickets.py` entry: append
 `write_roadmap` also writes the mailbox entry files under `<root>/messages/` through `messages.write_entries`, creating the folder, and the router's Mailbox line links `messages/AGENTS.md`; `check` does not validate the entry files.
 ```
 
-`docs/ticket-stages/design.md`: line 3 becomes
+`docs/specs/ticket-stages/design.md`: line 3 becomes
 
 ```
 Version 0.2, 2026-09-30. Built: Option A (the router), the opt-in `tickets/` root, and the message bus (T-0177, T-0178, T-0179). The rest is a proposal.
@@ -377,12 +377,12 @@ The entry files are built in T-0179: `messages.py send` and `reply` and `tickets
 
 `handoff-format` is not preloaded into any role, so no Codex agent regeneration is needed.
 ### Acceptance criteria
-- `f=docs/maintenance/sdlc-internals.md && grep -qF "write_entries" "$f" && grep -qF "scripted path-only run" "$f" && grep -qF "messages.write_entries" "$f" && grep -qF "Mailbox line links" "$f"`
-- `grep -qF "validation/messages-live-run.md" docs/ticket-stages/design.md && ! grep -qF "The entry files with the live run (T-0179) are pending." docs/ticket-stages/design.md`
+- `f=docs/references/sdlc-internals.md && grep -qF "write_entries" "$f" && grep -qF "scripted path-only run" "$f" && grep -qF "messages.write_entries" "$f" && grep -qF "Mailbox line links" "$f"`
+- `grep -qF "validation/messages-live-run.md" docs/specs/ticket-stages/design.md && ! grep -qF "The entry files with the live run (T-0179) are pending." docs/specs/ticket-stages/design.md`
 - `grep -E "^\.sdlc/messages/ " plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep -qF "AGENTS.md"`
-- (guard) `git diff "$SDLC_BASE_SHA" -- docs/maintenance/sdlc-internals.md docs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep '^+' | { ! grep -qF "$(printf '\342\200\224')"; }`
-- (guard) `git diff --check "$SDLC_BASE_SHA" -- docs/maintenance/sdlc-internals.md docs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/(handoff-format|ticket)/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*|docs/maintenance/sdlc-internals\.md|docs/ticket-stages/design\.md" | { ! grep -q .; }`
+- (guard) `git diff "$SDLC_BASE_SHA" -- docs/references/sdlc-internals.md docs/specs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep '^+' | { ! grep -qF "$(printf '\342\200\224')"; }`
+- (guard) `git diff --check "$SDLC_BASE_SHA" -- docs/references/sdlc-internals.md docs/specs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/(handoff-format|ticket)/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*|docs/maintenance/sdlc-internals\.md|docs/specs/ticket-stages/design\.md" | { ! grep -q .; }`
 
 ## Step 5: Gates green
 level: L2
@@ -411,7 +411,7 @@ Depends on: steps 1 to 4.
   - `plugins/sdlc-lite/adapters/codex/agents/sdlc-messenger-l1.toml` (name `sdlc-messenger-l1`, model `gpt-5.6-terra`, effort low).
 - T-0175 chose `tickets.py roadmap` as the writer of `.sdlc/AGENTS.md`: verified by tickets.py:837-841 (`write_roadmap` calls `write_router`) and tickets.py:988-1014.
 - The mailbox rule is T-0177's and does not change: `--root DIR` means `DIR/messages`, else the `.sdlc/messages` folder next to the git common dir (messages.py:350-363, `messages.py --help` Mailbox root). Step 2 writes `<root>/messages`, which is the explicit-root case, so no second rule exists.
-- `send` and `reply` also write the entry files, although the handoff names only the router's writer: verified by docs/ticket-stages/design.md, Message bus. Every message is stamped `protocol: .sdlc/messages/AGENTS.md` "so a reader who opens only a message finds the rules". The writer that creates the message therefore guarantees the file it points to, even where `roadmap` never ran. Both writers call one function over one template.
+- `send` and `reply` also write the entry files, although the handoff names only the router's writer: verified by docs/specs/ticket-stages/design.md, Message bus. Every message is stamped `protocol: .sdlc/messages/AGENTS.md` "so a reader who opens only a message finds the rules". The writer that creates the message therefore guarantees the file it points to, even where `roadmap` never ran. Both writers call one function over one template.
 - Writing the entry files after `compose` keeps every refusal write-free: verified by cmd_send at messages.py:644-657 (argument and body checks, then compose, then deliver), cmd_reply at 660-676, and the refused-send checks at messages.py:985-1000, 1237, and 1267. The step 1 guard uses refusals made inside the command (an invalid name and a 4001-byte body). The same command shape went red at plan time when a valid send was substituted.
 - Every subcommand already ignores `AGENTS.md`, `CLAUDE.md`, and `.gitignore` entries: verified by `receivers()` and `message_ids()` (messages.py:380-387) and the docstring Layout section.
 - A mailbox `.gitignore` holding `*` hides the folder from `git status --porcelain --untracked-files=all` and from `git add -A`: verified by a plan-time probe in a temp repo. fanout commits lanes with `git add -A` (fanout.py:586, 684).

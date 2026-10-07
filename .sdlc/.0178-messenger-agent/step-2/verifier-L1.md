@@ -5,7 +5,7 @@ pass
 ## Criteria
 - Criterion 1, level-rubric prose note: pass. Evidence: the grep for `messenger.*not a run.sh role` on `skills/level-rubric/SKILL.md` exited 0.
 - Criterion 2, five regenerated planner and plan-reviewer TOMLs carry "The messenger is not a run.sh role": pass. Evidence: the loop over all five exited 0.
-- Criterion 3, Messenger row in `docs/codex-role-execution.md`: pass. Evidence: the grep exited 0.
+- Criterion 3, Messenger row in `docs/references/codex-role-execution.md`: pass. Evidence: the grep exited 0.
 - Criterion 4, agent count sentence: pass. Evidence: the TOML counts derived at run time were 25 total and 21 base. The grep for "There are 25 project agent definitions: 21 base definitions" exited 0. My `r` helper's `n` variable was overwritten, so the PASS label printed as 25, but the check itself exited 0.
 - Criterion 5, `sdlc-messenger-l1`, "no Claude tools or hooks" and "conductor/messenger" in the Codex doc: pass. Evidence: the loop exited 0.
 - Criterion 6, `messenger` in `plugins/sdlc-lite/AGENTS.md`: pass. Evidence: the grep exited 0.

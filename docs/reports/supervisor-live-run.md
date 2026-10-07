@@ -15,7 +15,7 @@ Second live run for ticket T-0183, after the fixes from steps 5 and 6. In each a
 
   ```
    M docs/README.md
-   M docs/ticket-stages/watcher-design.md
+   M docs/planning/ticket-stages/watcher-design.md
    M docs/reports/idle-host-watcher-design-review.md
    M plugins/sdlc-lite/scripts/check.sh
   ?? docs/reports/supervisor-live-run.md

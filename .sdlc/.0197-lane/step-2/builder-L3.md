@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/steps.py`: new `# --- lane ---` section between review and swap. It adds `LANE_MAX_STEPS`, `LANE_MAX_CRITERIA`, `LANE_CONTRACTS`, `is_lane_contract`, `scope_entry`, `scope_entries`, `agents_owner`, `lane_sticky`, `lane_action`, `lane_record`, `lane_text`, `record_lane`, and `cmd_lane`. It also adds `criteria_count`, which `lean_warnings` now calls, and `is_scope_span` and `repo_path_ok`, which `widen` now calls. Other edits: the `lane` subparser and its dispatch in `main`, the docstring `Usage:` line and the `  lane      lane <task dir>: ...` entry, and 9 `(lane)` selftest cases.
-- `docs/maintenance/sdlc-internals.md`: a `lane <task dir>` clause in the `## scripts/steps.py` paragraph, right after the `review` clause that ends "(/chain 3 runs it after each planner run)".
+- `docs/references/sdlc-internals.md`: a `lane <task dir>` clause in the `## scripts/steps.py` paragraph, right after the `review` clause that ends "(/chain 3 runs it after each planner run)".
 
 ## Checks
 - All 13 acceptance criteria, run verbatim through `bash -c` from the repo root: 13/13 PASS. That covers criteria 1 to 10 and the three guards: `results.py selftest`, the em dash grep, and the scope diff against `$SDLC_BASE_SHA`.

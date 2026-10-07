@@ -19,7 +19,7 @@ Maison T-0137 was sized M for a 134-row epic; its verifier failed at the cost of
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with new cases: size M with 21 criteria prints `full` with the split reason; size M with 20 prints `solo`.
 - [ ] Negative control shown once: without the check the 21 case prints `solo`.
-- [ ] docs/maintenance/sdlc-internals.md `steps.py lane` text and docs/lean-sdlc/design.md lane section name the 20-criteria limit.
+- [ ] docs/references/sdlc-internals.md `steps.py lane` text and docs/lean-sdlc/design.md lane section name the 20-criteria limit.
 
 ## Closed
 

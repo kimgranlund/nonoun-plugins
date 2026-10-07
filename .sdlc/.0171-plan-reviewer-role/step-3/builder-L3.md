@@ -9,7 +9,7 @@ done
 - `plugins/sdlc-lite/skills/plan/SKILL.md`: step 5 runs `steps.py review` and reports the outcome.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: `plan-reviewer-L1.md` layout line, and the `plan review: <verdict>: <finding>` entries in the `## Plan review` paragraph.
 - `plugins/sdlc-lite/scripts/check.py`: new docstring item 11. The plan-defect route dict gains `plan-reviewer`, `steps.py review`, `## Assumptions`, `unresolved:`, `Missing decisions` and `plan review:` with the file sets from the handoff.
-- `docs/maintenance/sdlc-internals.md`: the `steps.py` entry gains `review <task dir>` and the split refusal. The `run.sh` entry gains the plan-reviewer family rule (an Opus planner moves the review to Fable at the same effort).
+- `docs/references/sdlc-internals.md`: the `steps.py` entry gains `review <task dir>` and the split refusal. The `run.sh` entry gains the plan-reviewer family rule (an Opus planner moves the review to Fable at the same effort).
 
 ## Checks
 - All 18 non-guard acceptance criteria: PASS. AC1 to AC18 were run in one bash loop with the printf formats requoted. AC9 and AC13 were also run verbatim: AC9 prints `stop`; AC13 split exits 1, prints the refusal, and leaves no `step-1`.

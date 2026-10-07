@@ -21,11 +21,11 @@ Add selftest case (r). It uses a temp git repo so the toplevel base is exercised
 - `(r) lint refuses a ### Read first path that does not exist`
 - `(r) split copies ### Read first into the step handoff`
 
-In `docs/maintenance/sdlc-internals.md`, add the `### Read first` path check to the `scripts/steps.py` entry. That keeps the reference current.
+In `docs/references/sdlc-internals.md`, add the `### Read first` path check to the `scripts/steps.py` entry. That keeps the reference current.
 ### Acceptance criteria
 - ``d=$(mktemp -d) && git -C "$d" init -q && mkdir -p "$d/sub" "$d/.sdlc/t" && touch "$d/sub/AGENTS.md" && printf '## Step 1: x\nlevel: L1\n### Read first\n- `sub/AGENTS.md`\n### Do\nd\n### Acceptance criteria\n- ok\n' > "$d/.sdlc/t/ok.md" && sed "s#sub/AGENTS#gone/AGENTS#" "$d/.sdlc/t/ok.md" > "$d/.sdlc/t/bad.md" && python3 plugins/sdlc-lite/scripts/steps.py lint "$d/.sdlc/t/ok.md" && { python3 plugins/sdlc-lite/scripts/steps.py lint "$d/.sdlc/t/bad.md" > "$d/out" 2>&1; test $? -eq 1; } && grep -qF gone/AGENTS.md "$d/out" && grep -qF "plan defect" "$d/out"``
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) lint accepts a ### Read first path that exists'`
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) lint refuses a ### Read first path that does not exist'`
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: (r) split copies ### Read first into the step handoff'`
 - `grep -qF '### Read first' plugins/sdlc-lite/scripts/steps.py`
-- `grep -qF 'Read first' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'Read first' docs/references/sdlc-internals.md`

@@ -50,7 +50,7 @@ level: L3
 ### Do
 Targets:
 - `plugins/sdlc-lite/scripts/steps.py`: a new `# --- lane ---` section after `# --- review ---`, `main`, the module docstring, a few small helpers, and `selftest`.
-- `docs/maintenance/sdlc-internals.md`: the `## scripts/steps.py` paragraph.
+- `docs/references/sdlc-internals.md`: the `## scripts/steps.py` paragraph.
 
 Depends on: step 1 (`review_required`).
 
@@ -159,7 +159,7 @@ Evidence:
 
 **Docstring entry.** It states the stdout shape, every rule above with its reason meaning, the skips.md layout, the lenient plan read, and the error exits. It names `review_required()` as the function `review` uses, and names `LANE_CONTRACTS`.
 
-**Internals doc.** In `docs/maintenance/sdlc-internals.md`, add one `lane <task dir>` clause to the steps.py paragraph, right after the `review <task dir>` clause that ends with "(/chain 3 runs it after each planner run)". It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane` in `skips.md`.
+**Internals doc.** In `docs/references/sdlc-internals.md`, add one `lane <task dir>` clause to the steps.py paragraph, right after the `review <task dir>` clause that ends with "(/chain 3 runs it after each planner run)". It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane` in `skips.md`.
 
 **Selftest.** Print exactly these labels through `check(...)`. Use a temp git repo (`git init`, as the `(o)` and `(r)` cases do) with the ticket at `<repo>/.sdlc/0001-x/`. The lean fixture has:
 - a handoff with front matter `size: M`
@@ -206,10 +206,10 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` and `pytho
 - `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest) && for l in "(lane) full after planning: size L, three steps, a 13-criterion step, no recognized scope allow-list, a non-path scope entry, a contract path, or two AGENTS.md owners" "(lane) skips.md: each call appends one - lane: line to ## Lane and keeps every other line" "(lane) a recorded full stays full when the facts give lean" "(lane) a missing dir: one steps lane: line on stderr, nothing on stdout, exit 1, nothing written"; do printf "%s\n" "$out" | grep -qF "ok: $l" || exit 1; done`
 - `d=$(mktemp -d) && printf "%s\n" "---" "size: M" "---" "" "## Goal" "g" > "$d/handoff.md" && out=$(python3 plugins/sdlc-lite/scripts/steps.py lane "$d") && test "$(printf "%s\n" "$out" | head -n 1)" = lean && grep -qxF -e "- lane: lean; point: before planning; reasons: size M decides before planning (no planner result yet)" "$d/skips.md"`
 - `python3 -c 'import inspect, sys; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import steps; d = steps.__doc__; sys.exit(0 if "review_required(" in inspect.getsource(steps.lane_action) and "\n  lane " in d and "skips.md" in d else 1)'`
-- `grep -qF "skips.md" docs/maintenance/sdlc-internals.md && grep -qF "review_required" docs/maintenance/sdlc-internals.md`
+- `grep -qF "skips.md" docs/references/sdlc-internals.md && grep -qF "review_required" docs/references/sdlc-internals.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/results.py selftest`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/maintenance/sdlc-internals.md | grep -q .`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/references/sdlc-internals.md | grep -q .`
 
 ## Step 3: Codex host skill lane instruction, chain lane sentence, gates green
 level: L2
@@ -238,7 +238,7 @@ Focused checks: the gate commands below.
 - `grep -qF "skips.md" plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`
 - `! grep -qF "no script computes the lane yet" plugins/sdlc-lite/skills/chain/SKILL.md`
 - `grep -qF "steps.py lane" plugins/sdlc-lite/skills/chain/SKILL.md`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/skills/sdlc-lite/SKILL.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/skills/sdlc-lite/SKILL.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
 - (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(plugins/sdlc-lite/skills/sdlc-lite/SKILL\.md|plugins/sdlc-lite/skills/chain/SKILL\.md|plugins/sdlc-lite/scripts/steps\.py|docs/maintenance/sdlc-internals\.md|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`
@@ -264,7 +264,7 @@ Focused checks: the gate commands below.
 ## Risks
 - The step 3 `check.sh` guard took 253s at HEAD, and `steps.py split --only` defaults to a 300s guard timeout. Under host load, split can refuse on a timeout. The conductor should run `steps.py split --only 3 --guard-timeout 900`.
 - `LANE_CONTRACTS` names sdlc-lite paths only. In a consumer repo it never matches, so only the review facts, size, step and criteria counts, scope parsing, and the owner rule route to `full`. A consumer-declared contract list would be a follow-up.
-- The owner rule counts `docs/maintenance/sdlc-internals.md` (root owner) and plugin files as two owners. Most tickets in this repo will be `full`. That is the safe side, but `lean` will be rare here until the rule is relaxed.
+- The owner rule counts `docs/references/sdlc-internals.md` (root owner) and plugin files as two owners. Most tickets in this repo will be `full`. That is the safe side, but `lean` will be rare here until the rule is relaxed.
 - The chain SKILL.md sentence and the Codex skill paragraph are in files T-0199 will also edit. `depends` sequences them, and step 3 changes only one line and one new section.
 - T-0200 will switch review to a merged plan. `lane` reads the same `order.newest` plan and calls the same `review_required`, so both change at one point.
 - The builder edits steps.py in this worktree. The conductor must keep running steps.py and run.sh from the main checkout while a step builds (handoff Constraints).

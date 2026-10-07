@@ -252,7 +252,7 @@ level: L2
 Depends on: steps 2, 3, 4. Make these edits, with no em dashes:
 - `plugins/sdlc-lite/skills/chain/SKILL.md`, the action list at line 45: `invalid result: <path>: <reason>` from `steps.py next` (also from `steps.py review`, and the `steps.py split` refusal) is a stop. Interactive: report it and ask the user. Unattended: stop the task and report the line. It is never a rebuild, reverify, bump, or replan. Update the sentence "`run.sh` exits 3 when the result lacks its required section" to say that `run.sh` exits 3 when the result fails `results.py validate`, and that a missing or disallowed Status or Verdict still routes through items 5 and 6.
 - `plugins/sdlc-lite/skills/fix/SKILL.md` step 3: add `invalid result` from `steps.py next` to the stop list.
-- `docs/maintenance/sdlc-internals.md`:
+- `docs/references/sdlc-internals.md`:
   - Add an entry headed exactly ``## `scripts/results.py` `` (table, CLI, reasons, `structure_error` versus `validate`, selftest and negative control).
   - Update the `scripts/run.sh` entry (line 11): the post-run check is `results.py validate`, the heading comes from `results.py key`, and the order case.
   - Update the `scripts/steps.py` entry (line 35): the `invalid result` action for `next`, `review`, and `resume`, and the `split` refusal.
@@ -267,12 +267,12 @@ Run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`. It must
 ### Acceptance criteria
 - `grep -qF 'invalid result' plugins/sdlc-lite/skills/chain/SKILL.md`
 - `grep -qF 'invalid result' plugins/sdlc-lite/skills/fix/SKILL.md`
-- ``grep -qxF '## `scripts/results.py`' docs/maintenance/sdlc-internals.md``
-- `grep -qF 'invalid result' docs/maintenance/sdlc-internals.md`
+- ``grep -qxF '## `scripts/results.py`' docs/references/sdlc-internals.md``
+- `grep -qF 'invalid result' docs/references/sdlc-internals.md`
 - `grep -qF 'scripts/results.py' plugins/sdlc-lite/AGENTS.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/results.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/fanout.py -e plugins/sdlc-lite/scripts/traces/selftest.py -e plugins/sdlc-lite/skills/chain/SKILL.md -e plugins/sdlc-lite/skills/fix/SKILL.md -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/AGENTS.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/results.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/fanout.py -e plugins/sdlc-lite/scripts/traces/selftest.py -e plugins/sdlc-lite/skills/chain/SKILL.md -e plugins/sdlc-lite/skills/fix/SKILL.md -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/AGENTS.md | { ! grep -q .; }`
 
 ## Step 6: Live run proving a malformed builder result does not advance
 level: L3
@@ -300,7 +300,7 @@ The doc has these sections, each containing the exact strings named:
 ### Acceptance criteria
 - `f=docs/reports/role-result-schema-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "run.sh builder L1" "exit 3" "exit 0" "rebuild L1" "verify L1" "invalid result"; do grep -qF "$s" "$f" || exit 1; done`
 - `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/reports/role-result-schema-live-run.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/results.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/fanout.py -e plugins/sdlc-lite/scripts/traces/selftest.py -e plugins/sdlc-lite/skills/chain/SKILL.md -e plugins/sdlc-lite/skills/fix/SKILL.md -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/AGENTS.md -e docs/reports/role-result-schema-live-run.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/results.py -e plugins/sdlc-lite/scripts/check.sh -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e plugins/sdlc-lite/scripts/check.py -e plugins/sdlc-lite/scripts/steps.py -e plugins/sdlc-lite/scripts/fanout.py -e plugins/sdlc-lite/scripts/traces/selftest.py -e plugins/sdlc-lite/skills/chain/SKILL.md -e plugins/sdlc-lite/skills/fix/SKILL.md -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/AGENTS.md -e docs/reports/role-result-schema-live-run.md | { ! grep -q .; }`
 
 ## Step 7: Gates green
 level: L3

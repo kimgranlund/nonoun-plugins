@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/fanout.py`: `run_ticket` now checks the integration worktree with `git status --porcelain --untracked-files=no` inside the merge lock and before `before = ...`. If the tree is dirty, it returns `integration dirty: <first path>` with `lane_sha[:7]`. No merge, reset, or gate runs. If the status command itself fails, it returns `integration status failed: ...`. Also updated the step-5 docstring and added selftest case 5d.
-- `docs/maintenance/sdlc-internals.md`: the fanout paragraph now says a dirty integration tree is refused with `integration dirty`.
+- `docs/references/sdlc-internals.md`: the fanout paragraph now says a dirty integration tree is refused with `integration dirty`.
 - `plugins/sdlc-lite/skills/fanout/SKILL.md`: added one sentence on the `integration dirty` refusal.
 
 ## Checks

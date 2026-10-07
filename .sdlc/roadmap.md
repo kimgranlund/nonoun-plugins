@@ -262,10 +262,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0261 | [.0261-split-goal-precheck](.0261-split-goal-precheck/handoff.md) | steps.py split needs ## Goal; fail fast before any planner runs | bug | S | P2 | none | 🟢 done |
 | T-0262 | [.0262-close-citation-scan-gaps](.0262-close-citation-scan-gaps/handoff.md) | tickets.py close needs --force on tracked citations and cannot see .sdlc citations | bug | M | P2 | none | 🟢 done |
 | T-0263 | [.0263-stale-lane-route](.0263-stale-lane-route/handoff.md) | A builder blocked by a stale lane routes to replan, not rebase-and-resplit | bug | S | P2 | none | 🟢 done |
-| T-0264 | [0264-split-after-replan-override](0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | M | P2 | none | ⏳ proposed |
+| T-0264 | [.0264-split-after-replan-override](.0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | M | P2 | none | 🟢 done |
 | T-0265 | [.0265-headless-planner-denied-rm](.0265-headless-planner-denied-rm/handoff.md) | Headless planner stalled on a denied rm permission prompt | bug | S | P2 | none | 🟢 done |
 | T-0266 | [.0266-tickets-check-partial-front-matter](.0266-tickets-check-partial-front-matter/handoff.md) | tickets.py check breaks on partial front matter | bug | S | P2 | none | 🟢 done |
-| T-0267 | [0267-hook-denies-worktree-add-variable](0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | ⏳ proposed |
+| T-0267 | [.0267-hook-denies-worktree-add-variable](.0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | 🟢 done |
 | T-0268 | [.0268-raw-solo-cost-records](.0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | S | P2 | none | 🟢 done |
 | T-0269 | [.0269-traces-failed-attempt-noise](.0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | S | P2 | none | 🟢 done |
 | T-0270 | [.0270-steps-lint-nested-backtick-message](.0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | 🟢 done |
@@ -299,14 +299,14 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🟢 done |
 | T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🟢 done |
 | T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | M | P2 | none | ⏳ proposed |
-| T-0302 | [0302-adr-number-allocator-note](0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | ⏳ proposed |
+| T-0302 | [.0302-adr-number-allocator-note](.0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | 🟢 done |
 | T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | M | P2 | none | 🟢 done |
 | T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | M | P2 | T-0303 | 🟢 done |
 | T-0305 | [.0305-fleet-collect](.0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | M | P2 | none | 🟢 done |
 | T-0306 | [.0306-fleet-detect](.0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | M | P2 | T-0305 | 🟢 done |
 | T-0307 | [.0307-fleet-interview](.0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | S | P2 | none | 🟢 done |
 | T-0308 | [.0308-fleet-retro-skill](.0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | 🟢 done |
-| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite | chore | M | P2 | none | 🟢 done |
+| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/specs/sdlc-lite | chore | M | P2 | none | 🟢 done |
 | T-0310 | [.0310-fleet-config](.0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | 🟢 done |
 | T-0311 | [.0311-fleet-liveness](.0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | 🟢 done |
 | T-0312 | [.0312-fleet-status-render](.0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | 🟢 done |

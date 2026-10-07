@@ -2,7 +2,7 @@
   "domain": "technical-architecture",
   "plan": false,
   "nodes": [
-    {"id": "n0", "label": "watcher design under review (docs/ticket-stages/watcher-design.md)", "leaf": false, "justify": "grouping"},
+    {"id": "n0", "label": "watcher design under review (docs/planning/ticket-stages/watcher-design.md)", "leaf": false, "justify": "grouping"},
     {"id": "n1", "label": "s1 resume commands and session modes (owned, attached)", "leaf": true, "justify": null},
     {"id": "n2", "label": "s2 launch mechanisms", "leaf": true, "justify": null},
     {"id": "n3", "label": "s3 claim race and active-host detection, watcher lock", "leaf": true, "justify": null},

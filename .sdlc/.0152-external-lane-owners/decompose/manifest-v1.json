@@ -32,7 +32,7 @@
      "accept": "argument-hint contains `<lane>@<branch>=<ids>`; the body says an external lane needs `external_branch: <branch>` in .sdlc/config, runs no driver, is never written, and shows in report.md not board.py --lanes; check-packaging.py passes"},
     {"id": "skill-ticket", "label": "skills/ticket/SKILL.md: the config line and the id guard", "leaf": true,
      "accept": "the numbered-folders paragraph's config sentence is followed by one sentence on `external_branch: <branch>` and what new/close count"},
-    {"id": "internals", "label": "docs/maintenance/sdlc-internals.md tickets.py and fanout.py entries", "leaf": true,
+    {"id": "internals", "label": "docs/references/sdlc-internals.md tickets.py and fanout.py entries", "leaf": true,
      "accept": "both entries mention external_branch and the `@<branch>` lane form; `git diff --check` clean"}
   ],
   "actions": [

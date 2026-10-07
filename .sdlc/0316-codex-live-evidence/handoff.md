@@ -22,7 +22,7 @@ A real headless chain run on Codex is recorded, so Codex execution has live evid
   - No model or effort value changed; `codex_roles.py generate --check` passes.
 
 ## Context
-From dropped T-0208: a headless chain run on Codex stayed unproven (docs/reports/parked-tickets-review-2026-10-06.md). T-0287 covers Claude sub-agent evidence only. Read docs/codex-role-execution.md first. Costs Codex runs; keep the task tiny.
+From dropped T-0208: a headless chain run on Codex stayed unproven (docs/reports/parked-tickets-review-2026-10-06.md). T-0287 covers Claude sub-agent evidence only. Read docs/references/codex-role-execution.md first. Costs Codex runs; keep the task tiny.
 
 ## Constraints
 No change to any model or effort value. No em dashes. No push, tag or publish. Independent verifier per ticket; checks need a positive case and an observed negative control.

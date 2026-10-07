@@ -15,7 +15,7 @@ All paths and shell commands in this file are relative to the repository root.
 
 - `plugins/` holds the two plugins; `docs/` holds contracts, designs, and dated evidence ([docs entry](docs/AGENTS.md)); `scripts/` holds repo-level checks; `.sdlc/` holds tickets, plans, and run records ([router](.sdlc/AGENTS.md)).
 - Do not read unless asked: closed `.NNNN-*` ticket folders, `docs/reports/` evidence, and `docs/other/`.
-- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
+- Philosophy: "Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction." Give each role a clear brief and the files it needs; do not add steps or checks for doubt the evidence does not support. Improvements are judged against [the four pillars](docs/specs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 - Pick the lane first with `steps.py lane <task dir>`: `solo` is the default for size S and M, `/fix` runs only when the user asks or the lane script prints `fix`, and the full chain needs a stated reason (an L4 or L5 step, a merge step, or cross-cutting scope). One independent verifier per ticket.
 - A new idea becomes a new ticket, not a larger one. Freeze a handoff once a role reads it, replan at most once, then ask.
 
@@ -25,9 +25,9 @@ All paths and shell commands in this file are relative to the repository root.
 |---|---|
 | Progressive Context skill or references | [Plugin guidance](plugins/progressive-context/AGENTS.md) |
 | SDLC Lite roles, skills, runner, or checks | [Plugin guidance](plugins/sdlc-lite/AGENTS.md) |
-| Codex execution or generated agents | [Codex execution guide](docs/codex-role-execution.md) |
-| Claude hook behavior | [Hook maintenance](docs/maintenance/claude-hooks.md) |
-| Marketplace or host packaging | [Compatibility report](docs/plugin-compatibility.md) and `scripts/check-packaging.py` |
+| Codex execution or generated agents | [Codex execution guide](docs/references/codex-role-execution.md) |
+| Claude hook behavior | [Hook maintenance](docs/references/claude-hooks.md) |
+| Marketplace or host packaging | [Compatibility report](docs/references/plugin-compatibility.md) and `scripts/check-packaging.py` |
 | Design rationale and runtime proposals | [Documentation index](docs/README.md) |
 
 Read only the linked details needed for the change. Keep scope-specific instructions in their owning plugin; keep implementation explanations in references.

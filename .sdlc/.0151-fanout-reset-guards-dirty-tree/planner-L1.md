@@ -20,11 +20,11 @@ Add a selftest case in `cmd_selftest`, written before the fix. It uses a fixture
 Observe the case fail with the guard removed (a negative control), then pass with it. The runtime failure is proven by the selftest itself.
 ### Acceptance criteria
 - `grep -qF 'integration dirty' plugins/sdlc-lite/scripts/fanout.py`
-- `grep -qF 'integration dirty' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'integration dirty' docs/references/sdlc-internals.md`
 - `grep -qF 'integration dirty' plugins/sdlc-lite/skills/fanout/SKILL.md`
 - `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and its source carries the new dirty-integration case (the `integration dirty` string appears in a selftest `expect` line).
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py` shows no new findings versus base: run the same command in a `git worktree add --detach <tmp> HEAD` copy and compare.
-- (guard) `bash -c 'test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vE "^(plugins/sdlc-lite/scripts/fanout.py|plugins/sdlc-lite/skills/fanout/SKILL.md|docs/maintenance/sdlc-internals.md)$")"'`
+- (guard) `bash -c 'test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vE "^(plugins/sdlc-lite/scripts/fanout.py|plugins/sdlc-lite/skills/fanout/SKILL.md|docs/references/sdlc-internals.md)$")"'`
 
 ## Risks
 - A verifier cannot run the new case red at base, because the case does not exist there. The Do requires the builder to record a negative control, and the `grep` criteria are red at base.

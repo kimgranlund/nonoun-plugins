@@ -24,7 +24,7 @@ A criterion tagged `(red)` must fail before its step and pass after, checked mec
   - `check.py`, `tickets.py check` and the selftests pass.
 
 ## Context
-Reconsidered 2026-10-06 from dropped T-0211 (see docs/reports/parked-tickets-review-2026-10-06.md and the old handoff .sdlc/0211-spec-gate-red). Evidence: agent-ui's report lists plan review catches such as vacuous loader scenarios; plan review now runs only for L4 and L5 steps, so L1 to L3 steps need a mechanical replacement. 2026-10-04 measurement: 4 of 7 plans returned for replan, about $190 over 78 role runs. The repo rule that a new check needs a positive and an observed negative control is the same idea applied to criteria. Owning files: scripts/specgate.py, scripts/steps.py, agents/solo.md and the generated per-level agents if bodies change, docs/sdlc-lite/cost-control.md.
+Reconsidered 2026-10-06 from dropped T-0211 (see docs/reports/parked-tickets-review-2026-10-06.md and the old handoff .sdlc/0211-spec-gate-red). Evidence: agent-ui's report lists plan review catches such as vacuous loader scenarios; plan review now runs only for L4 and L5 steps, so L1 to L3 steps need a mechanical replacement. 2026-10-04 measurement: 4 of 7 plans returned for replan, about $190 over 78 role runs. The repo rule that a new check needs a positive and an observed negative control is the same idea applied to criteria. Owning files: scripts/specgate.py, scripts/steps.py, agents/solo.md and the generated per-level agents if bodies change, docs/specs/sdlc-lite/cost-control.md.
 
 ## Constraints
 No change to any model or effort value. No em dashes. No push, tag or publish. Independent verifier per ticket; checks need a positive case and an observed negative control.

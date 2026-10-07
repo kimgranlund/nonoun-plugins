@@ -17,7 +17,7 @@ T-0203: fanout.py merge-time file-overlap check
   - `report.md` gets `- Overlap: '<lane>' and '<lane>': '<file>'` lines, or `- Overlap: none`.
   - `--dry-run` prints `overlap (planned scope)` lines. They cover pairs, `none`, and `not planned, checked at merge time: <tickets>`.
   - The module docstring covers the new behavior, including its limit.
-- `docs/maintenance/sdlc-internals.md`: the `fanout.py` entry describes the wait, the event, the report lines, the dry-run lines and the limit.
+- `docs/references/sdlc-internals.md`: the `fanout.py` entry describes the wait, the event, the report lines, the dry-run lines and the limit.
 - Selftest: case 13 (two lanes touching `shared.txt`, plus a disjoint negative control) and case 14 (the planned-scope dry run, plus a negative control).
 
 ### How each was verified

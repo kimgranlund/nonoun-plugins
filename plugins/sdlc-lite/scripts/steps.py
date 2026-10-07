@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] |
+Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--override-review REASON] |
                  lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | next <step dir> |
                  resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
@@ -57,6 +57,16 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             "steps: <plan>: the newest plan review <file> says <verdict>; a rejected plan is never
             split" and a last line "plan defect: plan review: <verdict>; run steps.py review
             (/chain 3)", with or without --only, for a file or a dir target.
+            --override-review REASON splits a plan whose newest review says replan anyway (the user's
+            call: never a conductor's own, never unattended). REASON is one line, required, and is
+            whitespace-collapsed. Once every other check passes, split appends the line
+            "review override: <review file name>: <reason>" under "## Plan review" in <task dir>/handoff.md
+            (the section is created when missing) and prints "steps: review override: <review file> says
+            replan; split anyway: <reason>" on stderr. The record makes the override stick: a later split
+            of the same plan, and steps.py review, treat that review as overridden, so
+            `split --only N` in /chain 4.2 needs no flag. A review that says blocked is never overridden
+            (it names missing decisions the user answers), and a newer plan-reviewer result ends the
+            override. With no rejecting review the flag does nothing and writes nothing.
             Refuses an invalid result first: when the chosen plan, or the newest plan-reviewer-*.md
             that counts after it, fails results.structure_error (role planner, plan-reviewer), it
             prints "invalid result: <path>: <reason>" before the review check and the goal read.
@@ -151,7 +161,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest such result's Verdict (first non-blank line under ## Verdict, lowercased):
                 pass                                     -> split
                 replan                                   -> replan, but stop when the task dir holds
-                  two or more plan-reviewer results with Verdict replan (the count is per task dir)
+                  two or more plan-reviewer results with Verdict replan (the count is per task dir);
+                  a "review override: <that file name>: <reason>" line under ## Plan review in
+                  <task dir>/handoff.md (written by split --override-review) -> split, whatever the count
                 blocked                                  -> stop (ask its ## Missing decisions)
                 anything else                            -> review L1 (a rerun, never a replan), but
                   two consecutive verdict-less reviews after the plan -> stop
@@ -1225,10 +1237,11 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=None):
+def split(target, only=None, guard_timeout=None, override_review=None):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write, each step under guard_timeout when given, else
-    its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT."""
+    its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT. override_review (a reason)
+    splits a plan whose newest review says replan, and records the override (record_review_override)."""
     plan, task_dir = find_plan(target)
     err = results.structure_error(plan, 'planner')
     if err is not None:
@@ -1239,6 +1252,10 @@ def split(target, only=None, guard_timeout=None):
         if err is not None:
             raise Fail(f'invalid result: {after[-1]}: {err}')
     rejected = rejected_by_review(plan, task_dir)
+    override = None
+    if rejected and override_review is not None and rejected[1] == 'replan':
+        override = (os.path.basename(rejected[0]), override_review)
+        rejected = None
     if rejected:
         r, v = rejected
         raise Fail(f'steps: {plan}: the newest plan review {os.path.basename(r)} says {v}; '
@@ -1268,6 +1285,9 @@ def split(target, only=None, guard_timeout=None):
                     for n in chosen}
         run_guards(plan, steps, chosen, task_dir, timeouts)
         run_red(plan, steps, chosen, task_dir, timeouts)
+    if override:
+        record_review_override(task_dir, *override)
+        print(f'steps: review override: {override[0]} says replan; split anyway: {override[1]}', file=sys.stderr)
     written = []
     for n in chosen:
         d = task_dir / f'step-{n}'
@@ -1340,9 +1360,9 @@ def cmd_precheck(task_dir):
     return 0
 
 
-def cmd_split(target, only, guard_timeout=None):
+def cmd_split(target, only, guard_timeout=None, override_review=None):
     try:
-        written = split(target, only, guard_timeout)
+        written = split(target, only, guard_timeout, override_review)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -1739,13 +1759,50 @@ def review_required(plan, task_dir):
     return unresolved, why
 
 
+REVIEW_OVERRIDE_RE = re.compile(r'^(?:[-*] )?review override: (\S+): (\S.*)$')
+
+
+def review_overrides(task_dir):
+    """{plan-reviewer result file name: reason} from the `review override: <file>: <reason>` lines under
+    ## Plan review in <task dir>/handoff.md. Read leniently: a missing handoff holds none."""
+    found, inside = {}, False
+    try:
+        lines = (pathlib.Path(task_dir) / 'handoff.md').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return found
+    for line in lines:
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Plan review'
+            continue
+        m = inside and REVIEW_OVERRIDE_RE.match(line.strip())
+        if m:
+            found[m.group(1)] = m.group(2)
+    return found
+
+
+def record_review_override(task_dir, review_name, reason):
+    """Append `review override: <review file name>: <reason>` to ## Plan review in <task dir>/handoff.md
+    (created when missing). An OSError is a Fail naming the path."""
+    p = pathlib.Path(task_dir) / 'handoff.md'
+    try:
+        with open(p, encoding='utf-8', newline='') as f:
+            old = f.read()
+        with open(p, 'w', encoding='utf-8', newline='') as f:
+            f.write(section_text(old, '## Plan review', f'review override: {review_name}: {reason}', at_end=True))
+    except OSError as e:
+        raise Fail(f'steps split: cannot write {p}: {e}')
+
+
 def rejected_by_review(plan, task_dir):
     """(plan-reviewer result, verdict) when the newest plan-reviewer result that counts after plan
-    says replan or blocked, else None."""
+    says replan or blocked, else None. A replan review that a `review override:` line names is not
+    a rejection; a blocked one never is overridden."""
     after = [r for r in order.ordered(task_dir, 'plan-reviewer') if order.counts_after(r, plan)]
     if not after:
         return None
     v = review_verdict(after[-1])
+    if v == 'replan' and os.path.basename(after[-1]) in review_overrides(task_dir):
+        return None
     return (after[-1], v) if v in ('replan', 'blocked') else None
 
 
@@ -1786,6 +1843,9 @@ def review_action(task):
     if v == 'pass':
         return 'split', None, f'the newest plan review {rname} passed {pname}', read
     if v == 'replan':
+        why_override = review_overrides(t).get(rname)
+        if why_override:
+            return 'split', None, f'the newest plan review {rname} says replan; overridden: {why_override}', read
         replans = [x for x in reviews if review_verdict(x) == 'replan']
         if len(replans) >= 2:
             read += [x for x in replans if x not in read]
@@ -2027,11 +2087,18 @@ def lane_text(old, record):
     file. Every other line is kept byte for byte."""
     if old is None:
         return f'# Skips\n\n## Lane\n{record}\n'
+    return section_text(old, '## Lane', record)
+
+
+def section_text(old, heading, record, at_end=False):
+    """old with record appended to its heading section: after that section's last non-blank line; else
+    a new section before the first ## line, or at the end (always at the end with at_end, for a file
+    whose ## sections come first). Every other line is kept byte for byte."""
     lines = old.splitlines(keepends=True)
     if lines and not lines[-1].endswith(('\n', '\r')):
         lines[-1] += '\n'
     bare = [x.rstrip('\r\n') for x in lines]
-    start = next((i for i, x in enumerate(bare) if x.rstrip() == '## Lane'), None)
+    start = next((i for i, x in enumerate(bare) if x.rstrip() == heading), None)
     if start is not None:
         end = next((j for j in range(start + 1, len(bare)) if bare[j].startswith('## ')), len(bare))
         last = end
@@ -2039,9 +2106,10 @@ def lane_text(old, record):
             last -= 1
         return ''.join(lines[:last] + [record + '\n'] + lines[last:])
     first = next((i for i, x in enumerate(bare) if x.startswith('## ')), None)
-    if first is None:
-        return ''.join(lines) + f'\n## Lane\n{record}\n'
-    return ''.join(lines[:first] + ['## Lane\n', record + '\n', '\n'] + lines[first:])
+    if first is None or at_end:
+        sep = '' if not bare or not bare[-1].strip() else '\n'
+        return ''.join(lines) + f'{sep}{heading}\n{record}\n'
+    return ''.join(lines[:first] + [heading + '\n', record + '\n', '\n'] + lines[first:])
 
 
 def solo_skips_text(text, size=None):
@@ -3944,6 +4012,62 @@ def selftest():
         rc, _, _ = run_main(['split', str(d)])
         check('(r) negative: split writes a replan whose rejecting review ran before it',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file())
+        # (r) --override-review: a replan verdict only, after every other check, recorded, sticky
+        OV = '\n## Plan review\nreview override: plan-reviewer-L1.md: the user accepts it\n'
+        for how, extra in (('a dir target', []), ('--only 1', ['--only', '1'])):
+            d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan')})
+            rc, out, err = run_main(['split', str(d), *extra, '--override-review', '  the user   accepts it '])
+            h = (d / 'handoff.md').read_text(encoding='utf-8')
+            rc2, _, err2 = run_main(['split', str(d), '--only', '1'])
+            rc3, rout, _ = run_main(['review', str(d)])
+            check(f'(r) --override-review splits a replan review ({how}), records one collapsed line under '
+                  '## Plan review, and sticks for a later split and for review',
+                  rc == 0 and (d / 'step-1' / 'handoff.md').is_file()
+                  and h == '## Goal\ng\n' + OV
+                  and 'steps: review override: plan-reviewer-L1.md says replan; split anyway: the user accepts it'
+                  in err
+                  and rc2 == 0 and err2 == '' and (d / 'handoff.md').read_text(encoding='utf-8') == h
+                  and rc3 == 0 and rout.splitlines()[0] == 'split'
+                  and 'says replan; overridden: the user accepts it' in rout)
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan')},
+                   handoff='## Goal\ng\n\n## Plan review\nplan review: replan: x\n\n## Other\ny\n')
+        rc, _, _ = run_main(['split', str(d), '--override-review', 'ok'])
+        check('(r) --override-review appends after the last ## Plan review line and keeps every other line',
+              rc == 0 and (d / 'handoff.md').read_text(encoding='utf-8')
+              == '## Goal\ng\n\n## Plan review\nplan review: replan: x\nreview override: plan-reviewer-L1.md: ok\n'
+                 '\n## Other\ny\n')
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('replan')})
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d), '--override-review', ' \t '])
+        check('(r) negative: an empty --override-review reason refuses and writes nothing',
+              rc == 1 and out == '' and 'steps: --override-review needs a reason' in err and snapshot(d) == before)
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('blocked')})
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d), '--override-review', 'ok'])
+        check('(r) negative: --override-review never overrides a blocked review',
+              rc == 1 and out == '' and snapshot(d) == before and not (d / 'step-1').exists()
+              and err.strip().splitlines()[-1] == 'plan defect: plan review: blocked; run steps.py review (/chain 3)')
+        d = r_task({'planner-L3.md': r_plan(tail='- `echo "x`\n'), 'plan-reviewer-L1.md': r_review('replan')})
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d), '--override-review', 'ok'])
+        check('(r) negative: --override-review runs after every other check: a plan the lint refuses records nothing',
+              rc == 1 and out == '' and snapshot(d) == before and 'plan defect' in err
+              and 'review override' not in (d / 'handoff.md').read_text(encoding='utf-8'))
+        d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_review('replan'),
+                    'plan-reviewer-L1-2.md': r_review('replan')},
+                   ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'],
+                   handoff='## Goal\ng\n' + OV)
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d)])
+        check('(r) negative: an override names one review file, so a newer replan review is not overridden',
+              rc == 1 and out == '' and snapshot(d) == before
+              and 'the newest plan review plan-reviewer-L1-2.md says replan; a rejected plan is never split' in err
+              and r_first(d) == 'stop')
+        d = r_task({'planner-L3.md': r_plan(), 'plan-reviewer-L1.md': r_review('pass')})
+        rc, _, err = run_main(['split', str(d), '--override-review', 'ok'])
+        check('(r) --override-review with no rejecting review does nothing: it splits and writes no record',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and err == ''
+              and (d / 'handoff.md').read_text(encoding='utf-8') == '## Goal\ng\n')
         # (lane) the lane of a ticket, and its record in skips.md
         def l_handoff(size='M', tail=''):
             front = f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n' if size is not None else ''
@@ -4196,6 +4320,10 @@ def main(argv):
                    help='per-guard timeout for --only; it overrides any "guard timeout: <seconds>" line '
                         '(default: the step block\'s line, else the plan\'s line outside every step, else 300); '
                         'a timeout is a red guard')
+    p.add_argument('--override-review', default=None, metavar='REASON',
+                   help='split a plan whose newest plan review says replan anyway (the user\'s call); records '
+                        '"review override: <review file>: <reason>" under ## Plan review in handoff.md; '
+                        'a blocked review is never overridden')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
     p = sub.add_parser('precheck', help='fail fast when a task dir handoff has no ## Goal section; writes nothing')
@@ -4252,7 +4380,13 @@ def main(argv):
     if a.guard_timeout is not None and not 0 < a.guard_timeout < float('inf'):
         print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
         return 1
-    return cmd_split(a.target, a.only, a.guard_timeout)
+    reason = None
+    if a.override_review is not None:
+        reason = ' '.join(a.override_review.split())
+        if not reason:
+            print('steps: --override-review needs a reason', file=sys.stderr)
+            return 1
+    return cmd_split(a.target, a.only, a.guard_timeout, reason)
 
 
 if __name__ == '__main__':

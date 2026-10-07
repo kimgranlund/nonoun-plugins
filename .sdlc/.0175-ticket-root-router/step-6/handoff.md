@@ -6,8 +6,8 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Depends on: steps 1 to 5 (the docs describe built behavior). Files: `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md`, `docs/ticket-stages/design.md`, `docs/ticket-stages/README.md`, `docs/README.md`. Write no em dash. Keep every phrase that `scripts/check.py` requires in these files (`notes.md`, `fix-now:`, `decide:`, `Plan review`, the merge-step block, and the others it lists) byte-identical. Neither skill is preloaded by any agent (`skills:` in `agents/*.md` names only level-rubric, checks-that-bite, checking-rules, and decompose), so no Codex agent regeneration is needed.
-- `docs/maintenance/sdlc-internals.md`:
+Depends on: steps 1 to 5 (the docs describe built behavior). Files: `docs/references/sdlc-internals.md`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md`, `plugins/sdlc-lite/skills/ticket/SKILL.md`, `docs/specs/ticket-stages/design.md`, `docs/specs/ticket-stages/README.md`, `docs/README.md`. Write no em dash. Keep every phrase that `scripts/check.py` requires in these files (`notes.md`, `fix-now:`, `decide:`, `Plan review`, the merge-step block, and the others it lists) byte-identical. Neither skill is preloaded by any agent (`skills:` in `agents/*.md` names only level-rubric, checks-that-bite, checking-rules, and decompose), so no Codex agent regeneration is needed.
+- `docs/references/sdlc-internals.md`:
   - The `scripts/tickets.py` entry gains these facts:
     - An opt-in `ticket_root: tickets` line in `<root>/config` puts the ticket folders under `<root>/tickets/`.
     - Ids, closure, the cite scan (it then looks for `<rel>/tickets/<slug>`), the roadmap (it links `tickets/<slug>/handoff.md`), `check`, and the worktree and external-branch id floor all follow that root, each other tree or branch resolved by its own config.
@@ -35,19 +35,19 @@ Depends on: steps 1 to 5 (the docs describe built behavior). Files: `docs/mainte
   - Every command that regenerates the roadmap also regenerates the router block in `.sdlc/AGENTS.md` (and `.sdlc/tickets/AGENTS.md`). The block lists each stage's count and the open tickets, and carries the create, claim, and close procedures.
   - `check` fails when a router block is missing, stale, or malformed, or when a `CLAUDE.md` lacks `@AGENTS.md`. After an upgrade, run `roadmap` once to write the router.
   - An optional `claimed_by: <harness> <YYYY-MM-DD>` front matter line marks a claim and shows in the router.
-- `docs/ticket-stages/design.md` line 3 becomes ``Version 0.2, <today's date>. Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal.``
-- `docs/ticket-stages/README.md` line 3 becomes ``Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal, not yet independently reviewed.``
+- `docs/specs/ticket-stages/design.md` line 3 becomes ``Version 0.2, <today's date>. Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal.``
+- `docs/specs/ticket-stages/README.md` line 3 becomes ``Built: Option A (the router) and the opt-in `tickets/` root. The rest is a proposal, not yet independently reviewed.``
 - `docs/README.md`: the Ticket stages line's text after the link becomes ``: the `.sdlc/` router and the opt-in `tickets/` root (built), stage folders and a cross-harness mailbox (proposed).``
 - Focused checks: `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite`, `python3 scripts/check-packaging.py`, and `git diff --check`.
 ### Acceptance criteria
-- `grep -qF 'ticket_root: tickets' docs/maintenance/sdlc-internals.md && grep -qF '.sdlc/AGENTS.md' docs/maintenance/sdlc-internals.md && grep -qF 'claimed_by' docs/maintenance/sdlc-internals.md && grep -qF 'router:' docs/maintenance/sdlc-internals.md`
-- ``grep -qF 'task dirs under `.sdlc/tickets/`' docs/maintenance/sdlc-internals.md``
-- ``grep -qF 'do not follow `ticket_root`' docs/maintenance/sdlc-internals.md``
+- `grep -qF 'ticket_root: tickets' docs/references/sdlc-internals.md && grep -qF '.sdlc/AGENTS.md' docs/references/sdlc-internals.md && grep -qF 'claimed_by' docs/references/sdlc-internals.md && grep -qF 'router:' docs/references/sdlc-internals.md`
+- ``grep -qF 'task dirs under `.sdlc/tickets/`' docs/references/sdlc-internals.md``
+- ``grep -qF 'do not follow `ticket_root`' docs/references/sdlc-internals.md``
 - `grep -qF '.sdlc/AGENTS.md' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF '.sdlc/CLAUDE.md' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF '.sdlc/tickets/' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'ticket_root: tickets' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'claimed_by:' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'router:' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF 'ticket_root: tickets' plugins/sdlc-lite/skills/ticket/SKILL.md && grep -qF '.sdlc/AGENTS.md' plugins/sdlc-lite/skills/ticket/SKILL.md && grep -qF 'claimed_by' plugins/sdlc-lite/skills/ticket/SKILL.md`
-- ``grep -qF 'Built: Option A (the router) and the opt-in `tickets/` root' docs/ticket-stages/design.md && grep -qF 'Built: Option A (the router) and the opt-in `tickets/` root' docs/ticket-stages/README.md``
+- ``grep -qF 'Built: Option A (the router) and the opt-in `tickets/` root' docs/specs/ticket-stages/design.md && grep -qF 'Built: Option A (the router) and the opt-in `tickets/` root' docs/specs/ticket-stages/README.md``
 - ``grep -qF 'opt-in `tickets/` root (built)' docs/README.md``
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/tickets.py|plugins/sdlc-lite/scripts/board.py|plugins/sdlc-lite/scripts/traces/ingest.py|plugins/sdlc-lite/scripts/traces/sources/tickets.py|plugins/sdlc-lite/scripts/traces/selftest.py|docs/maintenance/sdlc-internals.md|plugins/sdlc-lite/skills/handoff-format/SKILL.md|plugins/sdlc-lite/skills/ticket/SKILL.md|docs/ticket-stages/design.md|docs/ticket-stages/README.md|docs/README.md" | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/tickets.py|plugins/sdlc-lite/scripts/board.py|plugins/sdlc-lite/scripts/traces/ingest.py|plugins/sdlc-lite/scripts/traces/sources/tickets.py|plugins/sdlc-lite/scripts/traces/selftest.py|docs/references/sdlc-internals.md|plugins/sdlc-lite/skills/handoff-format/SKILL.md|plugins/sdlc-lite/skills/ticket/SKILL.md|docs/specs/ticket-stages/design.md|docs/specs/ticket-stages/README.md|docs/README.md" | { ! grep -q .; }`

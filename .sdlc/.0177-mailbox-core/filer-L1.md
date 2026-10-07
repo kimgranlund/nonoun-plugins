@@ -26,9 +26,9 @@ Adds `plugins/sdlc-lite/scripts/messages.py`. It runs a git-ignored `.sdlc/messa
 - `run.sh`: prints `run.sh: <n> new message(s) for <role>; read with messages.py` when the count for the role or host name is above 0. It never prints a body, and a missing mailbox prints nothing.
 - `run-selftest.sh`: new notice case.
 - `check.sh`: runs `messages.py selftest`.
-- `.gitignore`, `handoff-format` `SKILL.md`, `onboard.py` (`TEMPLATE_VERSION` still 1) and `docs/repo-onboarding/design.md` name `.sdlc/messages/` as ignored.
-- `docs/maintenance/sdlc-internals.md`: new `messages.py` entry, and a notice sentence on the `run.sh` entry.
-- `docs/ticket-stages/design.md`: Message bus section updated with status, the reply rule, notice fields, and commands per transition.
+- `.gitignore`, `handoff-format` `SKILL.md`, `onboard.py` (`TEMPLATE_VERSION` still 1) and `docs/specs/repo-onboarding/design.md` name `.sdlc/messages/` as ignored.
+- `docs/references/sdlc-internals.md`: new `messages.py` entry, and a notice sentence on the `run.sh` entry.
+- `docs/specs/ticket-stages/design.md`: Message bus section updated with status, the reply rule, notice fields, and commands per transition.
 
 ### Verification
 - Step 1 (CLI), second attempt, verifier L3: all 13 criteria passed on Python 3.9.6.

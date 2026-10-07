@@ -9,7 +9,7 @@ pass
 - `grep -qF 'fail "stale prefix:' plugins/sdlc-lite/scripts/run-selftest.sh`: pass. Evidence: rc 0 built; rc 1 at base. `grep -c 'reap-tmp' run-selftest.sh` is 0, so the case drives run.sh only, as the Do requires.
 - `grep -qF 'fail "term cleanup:' plugins/sdlc-lite/scripts/run-selftest.sh`: pass. Evidence: rc 0 built; rc 1 at base.
 - The new selftest fails on the base run.sh (verbatim command): pass. Evidence: ran the exact command with `$SDLC_BASE_SHA`=e399089c…; `criterion rc=0`; captured output `run selftest: FAIL: stale prefix: dead-owner prefix builder-81703 is still on disk`. Archive dir removed afterwards.
-- `grep -qF reap-tmp-worktrees.sh docs/maintenance/sdlc-internals.md`: pass. Evidence: rc 0 built; rc 1 at base. The diff shows the run.sh paragraph now describes the background role + TERM/KILL-after-2 s handler and the reaper at start and exit, dead-owner prefixes, never deletes a branch.
+- `grep -qF reap-tmp-worktrees.sh docs/references/sdlc-internals.md`: pass. Evidence: rc 0 built; rc 1 at base. The diff shows the run.sh paragraph now describes the background role + TERM/KILL-after-2 s handler and the reaper at start and exit, dead-owner prefixes, never deletes a branch.
 - `bash -n plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`: pass. Evidence: rc 0; the check goes red on a bad snippet (`bash -n <<<'if [ ; then'` rc 2, "syntax error").
 
 Do-item checks beyond the criteria, all observed:

@@ -22,7 +22,7 @@ A path token starts at the beginning of text or after whitespace, a quote, a bac
 
 - `.sdlc/*0246*`: this ticket's handoff, verifier handoff and result, which name the old path on purpose.
 - `.sdlc/AGENTS.md` and `.sdlc/roadmap.md`: the generated ticket title "Rename docs/validation to docs/reports ...".
-- `docs/repo-onboarding/reorganization.md`, `docs/docs-schema/design.md`, `plugins/sdlc-lite/scripts/rename_refs.py` and this note: sentences, fixtures and docstrings that are about the rename.
+- `docs/planning/repo-onboarding/reorganization.md`, `docs/planning/docs-schema/design.md`, `plugins/sdlc-lite/scripts/rename_refs.py` and this note: sentences, fixtures and docstrings that are about the rename.
 
 `rename_refs.py check docs/validation` with those allowlist globs reports 0 stale references. `rename_refs.py selftest` includes a negative control: a reintroduced stale reference in a fixture is found, and the allowlist suppresses it.
 

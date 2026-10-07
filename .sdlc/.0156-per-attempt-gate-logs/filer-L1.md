@@ -15,7 +15,7 @@ A rerun of `fanout.py run` after a red gate overwrote `logs/gate-<lane>-<id>-<k>
   - The module docstring and the `run_logged` docstring now say gate logs are never overwritten (one file per attempt) and driver logs still are.
   - Selftest case 9 uses the attempt-1 file name.
   - New selftest case 10, "gate retry case": run 1 is red, run 2 is green, and the two attempt logs hold `attempt-one` and `attempt-two`.
-- `docs/maintenance/sdlc-internals.md`: the fanout entry gives the per-attempt name and says earlier attempts survive.
+- `docs/references/sdlc-internals.md`: the fanout entry gives the per-attempt name and says earlier attempts survive.
 
 ### How verified
 Verifier L1 verdict: pass. Every criterion passed.

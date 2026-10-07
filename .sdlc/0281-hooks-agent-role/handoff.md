@@ -21,7 +21,7 @@ Role-scoped hooks identify the role from the hook input `agent_type` (sub-agents
   - `block-role-spawn.sh` allows a conductor Agent spawn only when `subagent_type` is `sdlc-lite:<role>-L<n>`, `name` matches `<role>-L<n>-<slug>[-<k>]`, a `<name>.dispatch.json` exists next to the named handoff, and the `model` parameter equals the dispatch model; each of the four conditions has a deny case, and a `run.sh` invocation is unaffected.
   - `subagent_type: fork` is denied when the name starts with `verifier-` or `plan-reviewer-`; a fork of any other role needs a `Fork reason:` line in the prompt.
   - A read-only role sub-agent may Write only the dispatch result path; a Write elsewhere is denied; the builder is unrestricted (deny and allow cases).
-  - `bash plugins/sdlc-lite/scripts/hook-selftest.sh` passes, and `docs/maintenance/claude-hooks.md` describes the new rules.
+  - `bash plugins/sdlc-lite/scripts/hook-selftest.sh` passes, and `docs/references/claude-hooks.md` describes the new rules.
 
 ## Context
 Design section 4. If probe P2 fails (hooks do not see agent_type for sub-agent calls), stop and replan: the fallback is `tools:` allowlists in the generated definitions and the spawn gate only.

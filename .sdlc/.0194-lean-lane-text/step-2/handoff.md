@@ -46,7 +46,7 @@ Depends on: step 1, which provides the `steps lint: warning:` text that the guar
 - `grep -qF "independently verifiable outcome" plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l2.toml`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" && python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace(\"independently verifiable outcome\", \"\"))" "$t/p/agents/planner.md" && ! python3 plugins/sdlc-lite/scripts/check.py "$t/p"`
 - `t=$(mktemp -d) && cp -R plugins/sdlc-lite "$t/p" && python3 -c "import pathlib,sys; p=pathlib.Path(sys.argv[1]); p.write_text(p.read_text().replace(\"## Lean chain\", \"\"))" "$t/p/skills/chain/SKILL.md" && ! python3 plugins/sdlc-lite/scripts/check.py "$t/p"`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/agents/planner.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/scripts/check.py plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
 - (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(plugins/sdlc-lite/agents/planner\.md|plugins/sdlc-lite/skills/chain/SKILL\.md|plugins/sdlc-lite/scripts/check\.py|plugins/sdlc-lite/scripts/steps\.py|docs/maintenance/sdlc-internals\.md|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`

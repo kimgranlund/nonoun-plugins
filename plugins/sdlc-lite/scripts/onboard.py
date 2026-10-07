@@ -5,7 +5,7 @@ Usage: onboard.py setup [--dry-run] [--force]   create or update the managed fil
        onboard.py check                         report the state of every managed file
        onboard.py selftest                      run the gates on temp fixtures
 
-Design: docs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
+Design: docs/specs/repo-onboarding/design.md. Standard library only; runs on Python 3.9.
 The .sdlc layout is read through a function-local import of the sibling tickets.py, and the root
 block names the resolved roadmap path (.sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`).
 

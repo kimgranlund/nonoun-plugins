@@ -17,7 +17,7 @@ T-0204: fanout.py resolves lane tickets through ticket_dir
   - The dry run prints `ticket folders in each worktree: <dir>` only when `trel` differs from the root, so flat dry-run output is unchanged.
   - The module docstring is updated.
   - A new selftest case, labelled `ticket_root lane`, is added.
-- `docs/maintenance/sdlc-internals.md`: the "Regular lanes do not follow `ticket_root` yet ... follow-up" sentences are replaced with a description of the new behavior.
+- `docs/references/sdlc-internals.md`: the "Regular lanes do not follow `ticket_root` yet ... follow-up" sentences are replaced with a description of the new behavior.
 - Deliberately unchanged:
   - `FANOUT_ROOT` still points at the lane root that holds `config`.
   - The `tickets.py --root <rel> close` command is untouched, because tickets.py resolves `ticket_dir` itself.

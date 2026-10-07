@@ -14,4 +14,4 @@ done
 - `git diff --check`: clean.
 
 ## Notes
-`git diff --stat` also shows `docs/maintenance/sdlc-internals.md` as changed. That change was already in the tree before this step, and this step did not touch the file.
+`git diff --stat` also shows `docs/references/sdlc-internals.md` as changed. That change was already in the tree before this step, and this step did not touch the file.

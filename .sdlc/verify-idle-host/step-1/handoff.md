@@ -13,4 +13,4 @@ Read-only verification. Run every criterion, then inject defects in a throwaway 
 - `python3 scripts/check-packaging.py`
 - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
-- `test "$(grep -l 'cannot wake an idle host' plugins/sdlc-lite/scripts/messages.py plugins/sdlc-lite/agents/messenger.md docs/ticket-stages/design.md docs/codex-role-execution.md docs/reports/messages-idle-host-limit-2026-10-01.md | wc -l)" -eq 5`
+- `test "$(grep -l 'cannot wake an idle host' plugins/sdlc-lite/scripts/messages.py plugins/sdlc-lite/agents/messenger.md docs/specs/ticket-stages/design.md docs/references/codex-role-execution.md docs/reports/messages-idle-host-limit-2026-10-01.md | wc -l)" -eq 5`

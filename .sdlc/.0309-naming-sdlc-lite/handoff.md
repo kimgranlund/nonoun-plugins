@@ -1,6 +1,6 @@
 ---
 id: T-0309
-title: "Name the product SDLC Lite and rename docs/lean-sdlc to docs/sdlc-lite"
+title: "Name the product SDLC Lite and rename docs/lean-sdlc to docs/specs/sdlc-lite"
 type: chore           # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
@@ -11,7 +11,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-Name the product `SDLC Lite` everywhere in prose and rename the design hub docs/lean-sdlc/ to docs/sdlc-lite/, with a check guard so the old variants do not return.
+Name the product `SDLC Lite` everywhere in prose and rename the design hub docs/lean-sdlc/ to docs/specs/sdlc-lite/, with a check guard so the old variants do not return.
 
 ## Intent
 - Do: 'Lean SDLC' and 'lean SDLC' become 'SDLC Lite'; bare 'SDLC' meaning this product becomes 'SDLC Lite'; rename the hub with rename_refs.py; add a three-line vocabulary note to the hub README; add a check.py guard on 'Lean SDLC', 'lean SDLC', 'SDLC-Lite', 'sdlc lite' outside an allowlist.

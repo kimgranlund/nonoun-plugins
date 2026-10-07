@@ -19,7 +19,7 @@ This is the fix for T-0151, from the gen-ui-system-svelte-lite overnight run on 
   - If the status command itself fails, the ticket returns `integration status failed: ...` instead of raising. The plan didn't ask for this outcome; the builder added it, and the verifier judged it in scope.
   - Updated the step-5 docstring.
   - Added selftest case 5d.
-- `docs/maintenance/sdlc-internals.md`: the fanout paragraph now says a dirty integration tree is refused with `integration dirty`.
+- `docs/references/sdlc-internals.md`: the fanout paragraph now says a dirty integration tree is refused with `integration dirty`.
 - `plugins/sdlc-lite/skills/fanout/SKILL.md`: one sentence on the same refusal.
 
 ### Verification

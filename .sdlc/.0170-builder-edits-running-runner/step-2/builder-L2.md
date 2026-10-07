@@ -13,7 +13,7 @@ done
 - `grep -qF 'wrote no result' plugins/sdlc-lite/scripts/run_lifecycle.py`: pass
 - `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`: OK
 - Base red control: the criterion's single-line form was blocked by the builder worktree hook, so I split it across two Bash calls. Same steps: `git worktree add --detach "$SDLC_TMP_WORKTREES/base-s2" "$SDLC_BASE_SHA"`, copy the new selftest in, run it, `git worktree remove --force`. Result: rc=1, and the output shows `FAIL: test_exit_zero_without_result_fails`. Pass.
-- `grep -qF 'exits 0 without a result' docs/maintenance/sdlc-internals.md`: pass
+- `grep -qF 'exits 0 without a result' docs/references/sdlc-internals.md`: pass
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh | grep -qx "run selftest: PASS"`: pass
 - `git diff --check`: clean
 

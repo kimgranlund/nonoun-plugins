@@ -1,6 +1,6 @@
 # Idle-host watcher design review
 
-Recorded: 2026-10-01. Independent review of `docs/ticket-stages/watcher-design.md` v0.1 (commit 5c1f574 on branch `idle-host-watcher`), ticket T-0182. The reviewer was the `architect` role, `run.sh architect L1`, model `fable` effort high, a different family from the author (Claude Sonnet). It was read-only in the repository except for its own `decompose/` folder. Raw result: `.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`; handoff: `.sdlc/.0182-idle-host-watcher-design/review/handoff.md`. The reviewer ran one probe per host in `/tmp` with `claude 2.1.286` and `codex-cli 0.159.2`, each a single trial on one machine and account.
+Recorded: 2026-10-01. Independent review of `docs/planning/ticket-stages/watcher-design.md` v0.1 (commit 5c1f574 on branch `idle-host-watcher`), ticket T-0182. The reviewer was the `architect` role, `run.sh architect L1`, model `fable` effort high, a different family from the author (Claude Sonnet). It was read-only in the repository except for its own `decompose/` folder. Raw result: `.sdlc/.0182-idle-host-watcher-design/review/architect-L1.md`; handoff: `.sdlc/.0182-idle-host-watcher-design/review/handoff.md`. The reviewer ran one probe per host in `/tmp` with `claude 2.1.286` and `codex-cli 0.159.2`, each a single trial on one machine and account.
 
 ## Verdict
 
@@ -28,7 +28,7 @@ Alternatives the design did not weigh: notify the person or wake the host the us
 
 ## Decision from the user
 
-Finding 4, decided 2026-10-01: the default for an idle host is a fresh ephemeral session per wake (it reads the message and entry files, handles it, and exits). Attached-session resume and notify-only stay opt-in. Recorded in `docs/ticket-stages/watcher-design.md` and applied by T-0183.
+Finding 4, decided 2026-10-01: the default for an idle host is a fresh ephemeral session per wake (it reads the message and entry files, handles it, and exits). Attached-session resume and notify-only stay opt-in. Recorded in `docs/planning/ticket-stages/watcher-design.md` and applied by T-0183.
 
 ## What this review does not cover
 
@@ -36,4 +36,4 @@ It did not re-run `claude -p --continue` or `codex exec resume --last`. A differ
 
 ## Applied
 
-T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/ticket-stages/watcher-design.md`). Its "Review findings applied" table maps each finding to the decisions, tagged D1 to D21, that apply it; finding 18 needed no design change. The findings above stay unchanged as the record of the review.
+T-0183 step 1 applied findings 1 to 17 to the design, Version 0.2 (`docs/planning/ticket-stages/watcher-design.md`). Its "Review findings applied" table maps each finding to the decisions, tagged D1 to D21, that apply it; finding 18 needed no design change. The findings above stay unchanged as the record of the review.

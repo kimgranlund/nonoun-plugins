@@ -7,7 +7,7 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-All changes go in `plugins/sdlc-lite/scripts/fanout.py`, plus the matching docs in `docs/maintenance/sdlc-internals.md` (the `scripts/fanout.py` entry) and, if it states the line or log format, `plugins/sdlc-lite/skills/fanout/SKILL.md`.
+All changes go in `plugins/sdlc-lite/scripts/fanout.py`, plus the matching docs in `docs/references/sdlc-internals.md` (the `scripts/fanout.py` entry) and, if it states the line or log format, `plugins/sdlc-lite/skills/fanout/SKILL.md`.
 
 Why fanout mints its own id: `run_lifecycle.py` sets `SDLC_ATTEMPT_ID` only for a `run.sh` role process. A fanout run is never a role attempt. The roles its driver launches already record their own `attempt_id` in `*.attempt.json` and `runs.jsonl`, and that part stays untouched. Fanout must not reuse an inherited `SDLC_ATTEMPT_ID` either. When a builder or verifier runs `fanout.py selftest`, it inherits one id, so two fanout runs would then share the same id and a resumed run would be indistinguishable. This is the ticket's "separate identifier for fanout lines that have no role attempt."
 
@@ -38,10 +38,10 @@ This step is also the gates green step: run every gate below and fix any red thi
 - Resume probe (fails now because `logs/fanout.log` does not exist and `FANOUT_RUN_ID` is empty): `t=$(mktemp -d); r=$t/r; mkdir -p $r/.sdlc/a; printf -- '---\nid: T-0001\ntitle: "A"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\na\n' >$r/.sdlc/a/handoff.md; export GIT_AUTHOR_NAME=p GIT_AUTHOR_EMAIL=p@x.invalid GIT_COMMITTER_NAME=p GIT_COMMITTER_EMAIL=p@x.invalid; git -C $r init -qb main; git -C $r add -A; git -C $r -c commit.gpgsign=false commit -qm f; F=$PWD/plugins/sdlc-lite/scripts/fanout.py; d="if test -e $t/ok; then echo rid=\$FANOUT_RUN_ID; printf '## Warnings\nNone\n\n## Follow-ups\nNone\n' >\"\$FANOUT_ROOT/\$FANOUT_SLUG/filer-L1.md\"; else exit 3; fi"; (cd $r && python3 $F run alpha=T-0001 --integration fanout/p --lanes-dir $t/l --driver "$d" --gate "echo gated" >$t/o1 2>&1); touch $t/ok; git -C $r worktree remove --force $t/l/integration; git -C $r worktree remove --force $t/l/alpha; git -C $r branch -qD fanout/p-alpha; (cd $r && python3 $F run alpha=T-0001 --integration fanout/p --lanes-dir $t/l --driver "$d" --gate "echo gated" >$t/o2 2>&1); L=$t/l/logs; A=$(sed -nE 's/^\[(fanout-[0-9a-f]{12})\] \[alpha\] T-0001 driver failed rc=3$/\1/p' $L/fanout.log); B=$(sed -nE 's/^\[(fanout-[0-9a-f]{12})\] \[alpha\] T-0001 merged$/\1/p' $L/fanout.log); test -n "$A" && test -n "$B" && test "$A" != "$B" && ! grep -vqE '^\[fanout-[0-9a-f]{12}\] ' $L/fanout.log && grep -qxF "[$B] rid=$B" $L/alpha-T-0001.log && ! grep -vqF "[$B] " $L/alpha-T-0001.log && grep -qxF "[$B] gated" $L/gate-alpha-T-0001-1.log && grep -qxF "[$B] [alpha] T-0001 merged" $t/o2 && grep -qF "$B" $t/l/report.md`
 - `grep -qF "resume case" plugins/sdlc-lite/scripts/fanout.py`
 - `grep -qF "FANOUT_RUN_ID" plugins/sdlc-lite/scripts/fanout.py`
-- `grep -qF "logs/fanout.log" docs/maintenance/sdlc-internals.md`
-- `grep -qF "FANOUT_RUN_ID" docs/maintenance/sdlc-internals.md`
+- `grep -qF "logs/fanout.log" docs/references/sdlc-internals.md`
+- `grep -qF "FANOUT_RUN_ID" docs/references/sdlc-internals.md`
 - The builder result records the resume case's negative control: with a constant run id, `fanout.py selftest` failed on a `resume case` label; after the fix it passed.
-- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/fanout.py|docs/maintenance/sdlc-internals.md|plugins/sdlc-lite/skills/fanout/SKILL.md")"`
+- (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/fanout.py|docs/references/sdlc-internals.md|plugins/sdlc-lite/skills/fanout/SKILL.md")"`
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`

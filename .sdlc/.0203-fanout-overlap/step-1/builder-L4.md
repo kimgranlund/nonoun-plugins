@@ -28,5 +28,5 @@ done
 - No base-SHA pre-build run was needed. No gate failed, and case 13 does not exist at the base; the negative control above shows it red without the wait.
 - Lock order: `wait_for_overlap` holds `ctx['cond']` (never the merge lock) while it runs `lane_pending` git reads and `say`. `run_lane` notifies with no other lock held, so no lock-order inversion is possible.
 - `lane_pending` drops the result unless `merge-base` returns exactly one sha, and it turns any git failure or exception into an empty set. If the waiting lane's own-paths read fails, that also counts as no paths, so the lane never blocks.
-- `docs/maintenance/sdlc-internals.md` is left alone here; step 3 updates its fanout entry.
+- `docs/references/sdlc-internals.md` is left alone here; step 3 updates its fanout entry.
 - The untracked `.sdlc/0203-fanout-overlap/step-1/base-sha` and `builder-L4.attempt.json` were created by the runner, not by this step.

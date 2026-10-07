@@ -18,7 +18,7 @@ A ticket is retried by running `fanout.py run` again after it went red, with the
    - The step 5 line that names `logs/gate-<lane>-<id>-<k>.log` gets the new name and says the attempt number grows on each rerun.
    - The sentence "Driver and gate log files keep their names and are overwritten" becomes: driver logs are overwritten, and gate logs are never overwritten, one file per attempt.
    - Fix the `run_logged` docstring if it says otherwise.
-3. Update the fanout entry in `docs/maintenance/sdlc-internals.md` the same way: replace `logs/gate-<lane>-<id>-<k>.log` with the per-attempt name and say earlier attempts survive.
+3. Update the fanout entry in `docs/references/sdlc-internals.md` the same way: replace `logs/gate-<lane>-<id>-<k>.log` with the per-attempt name and say earlier attempts survive.
 4. Selftest in the same file:
    - In the resume case (case 9), rename the `'gate-alpha-T-0001-1.log'` references to the attempt-1 name. The gate first runs in that case's second run.
    - Add a case 10, commented `# 10. Gate retry case`, whose expect labels start with `gate retry case`. The setup is one lane `alpha=T-0001` with the stub-style driver (it writes a file and a `filer-L1.md` with `## Warnings` and `## Follow-ups`). The gate prints `attempt-one` and exits 1 until a marker file exists, then prints `attempt-two`.
@@ -39,9 +39,9 @@ This step is also the gates green step: run `bash plugins/sdlc-lite/scripts/chec
   bash -c 'F=$PWD/plugins/sdlc-lite/scripts/fanout.py; d=$(mktemp -d) && git init -q -b main "$d/r" && cd "$d/r" && git config user.email t@e.invalid && git config user.name t && git config commit.gpgsign false && mkdir -p .sdlc/a && printf -- "---\nid: T-0001\ntitle: \"x\"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\ncreated: 2026-01-01\n---\n\n## Goal\nx\n" > .sdlc/a/handoff.md && git add -A && git commit -qm f && g="if test -e $d/ok; then echo attempt-two; else echo attempt-one; exit 1; fi" && dr="echo hi > f.txt; printf \"## Warnings\nNone\n\n## Follow-ups\nNone\n\" > \"\$FANOUT_ROOT/\$FANOUT_SLUG/filer-L1.md\"" && { python3 "$F" run alpha=T-0001 --integration fanout/p --lanes-dir "$d/l" --driver "$dr" --gate "$g" >/dev/null 2>&1; test $? -eq 1 || exit 1; } && touch "$d/ok" && git worktree remove --force "$d/l/integration" && git worktree remove --force "$d/l/alpha" && git branch -qD fanout/p-alpha && python3 "$F" run alpha=T-0001 --integration fanout/p --lanes-dir "$d/l" --driver "$dr" --gate "$g" >/dev/null 2>&1 && a=$(grep -l attempt-one "$d"/l/logs/gate-alpha-T-0001-1*.log) && b=$(grep -l attempt-two "$d"/l/logs/gate-alpha-T-0001-1*.log) && test "$a" != "$b"'
   ```
 - `grep -qF "gate retry case" plugins/sdlc-lite/scripts/fanout.py`
-- `! grep -qF "gate-<lane>-<id>-<k>.log" plugins/sdlc-lite/scripts/fanout.py docs/maintenance/sdlc-internals.md`
+- `! grep -qF "gate-<lane>-<id>-<k>.log" plugins/sdlc-lite/scripts/fanout.py docs/references/sdlc-internals.md`
 - `! grep -qF "Driver and gate log files keep their names and are overwritten" plugins/sdlc-lite/scripts/fanout.py`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" ":(exclude)plugins/sdlc-lite/scripts/fanout.py" ":(exclude)docs/maintenance/sdlc-internals.md"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" ":(exclude)plugins/sdlc-lite/scripts/fanout.py" ":(exclude)docs/references/sdlc-internals.md"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`

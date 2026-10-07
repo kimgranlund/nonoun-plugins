@@ -9,8 +9,8 @@ pass
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -qF 'ok: widen:'`: pass. rc=0, and 21 `ok: widen:` lines are printed.
 - `python3 plugins/sdlc-lite/scripts/steps.py selftest`: pass. It printed `steps selftest: PASS`, with rc 0 from the first pipeline element.
 - `grep -qF 'widen <step dir>' plugins/sdlc-lite/scripts/steps.py`: pass. rc=0.
-- `grep -qF 'widen <step dir>' docs/maintenance/sdlc-internals.md`: pass. rc=0.
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" ...; git ls-files --others ...; } | grep -vxE "plugins/sdlc-lite/scripts/steps.py|docs/maintenance/sdlc-internals.md" | { ! grep -q .; }`: pass. `SDLC_BASE_SHA` was e399089 and the check exited 0. It compares the tree with that sha and excludes `.sdlc`, so it can go red when another file changes. I did not separately run it red.
+- `grep -qF 'widen <step dir>' docs/references/sdlc-internals.md`: pass. rc=0.
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" ...; git ls-files --others ...; } | grep -vxE "plugins/sdlc-lite/scripts/steps.py|docs/references/sdlc-internals.md" | { ! grep -q .; }`: pass. `SDLC_BASE_SHA` was e399089 and the check exited 0. It compares the tree with that sha and excludes `.sdlc`, so it can go red when another file changes. I did not separately run it red.
 
 Extra checks beyond the criteria, all in throwaway repos:
 - **A forms:** `grep -vE "^(a\.txt|d/e)$"` gained `b.txt` and `x\.y\+z` (path escaped). `grep -E -v "^(a\.txt)$"` gained `x\.y\+z`.

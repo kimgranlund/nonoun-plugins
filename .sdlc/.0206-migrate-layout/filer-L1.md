@@ -16,7 +16,7 @@ Adds `tickets.py migrate-layout [--dry-run] [--rewrite-refs]`. It moves a flat `
   - Managed blocks in `AGENTS.md` files are frozen rather than rewritten. After the move, `onboard.py check` reports `stale`, and `onboard.py setup` brings it back to `current`.
   - `ensure_topics_config` keeps existing `layout: topics` lines so a topics config stays byte-identical.
   - New `(mig)` selftest cases cover the dirty-tree, cite, loose-file and stray-folder controls listed under Verification.
-- `docs/maintenance/sdlc-internals.md`: a `migrate-layout` passage in the `scripts/tickets.py` entry.
+- `docs/references/sdlc-internals.md`: a `migrate-layout` passage in the `scripts/tickets.py` entry.
 - `plugins/sdlc-lite/skills/ticket/SKILL.md`: `migrate-layout` in the argument-hint, plus an upgrade-note bullet.
 
 ## Verification

@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 check.py guard numbers are unique and sequential, and a guard keeps them that way.
 
 ## Intent
-- Do: Renumbered the docstring guards to 1..23 once each (Spec gate 16, Carry forward 17, Solo agent 18, Conductor rules 19, Handoff freeze 20, Solo start path 21, Ticket budget 22), fixed every `docstring item N` comment, fixed docs/maintenance/sdlc-internals.md (Solo agent guard is item 18), and added guard 23: the numbers must run 1..N once each and every cited item must exist, with two negative controls inside check.py. Dated validation records are historical and keep the old numbers.
+- Do: Renumbered the docstring guards to 1..23 once each (Spec gate 16, Carry forward 17, Solo agent 18, Conductor rules 19, Handoff freeze 20, Solo start path 21, Ticket budget 22), fixed every `docstring item N` comment, fixed docs/references/sdlc-internals.md (Solo agent guard is item 18), and added guard 23: the numbers must run 1..N once each and every cited item must exist, with two negative controls inside check.py. Dated validation records are historical and keep the old numbers.
 - Non-goals: model or effort defaults; a version bump, tag, push, or publish.
 - Done when: the change is merged into local main with checks green and an independent verifier passed.
 

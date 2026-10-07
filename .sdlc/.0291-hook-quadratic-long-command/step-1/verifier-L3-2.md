@@ -52,7 +52,7 @@ None that break anything. Checked items:
 - Unverified: the shellcheck part of check.sh printed `skip: shellcheck not installed`, so the changed lines were not linted on this machine.
 - `plugins/sdlc-lite/scripts/hook-selftest.sh`: 32 lines added, 0 removed (`git diff --numstat 24ef333 HEAD`), so no earlier case was changed.
 - `.sdlc/AGENTS.md` and `.sdlc/roadmap.md`: regenerated router and two roadmap rows. The criterion 4 run shows them current, and no `.sdlc/messages` file is in the diff.
-- `docs/maintenance/claude-hooks.md` and the ticket Context now say the literal backslash form is also quadratic, as round 1 asked. `git diff --check 24ef333 HEAD` exits 0.
+- `docs/references/claude-hooks.md` and the ticket Context now say the literal backslash form is also quadratic, as round 1 asked. `git diff --check 24ef333 HEAD` exits 0.
 - `docs/reports/hook-perf.md` spot-check on the report's own body, all within an order of magnitude:
 
   | Claim | Report | Observed |

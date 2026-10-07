@@ -3,12 +3,14 @@
 
 Usage (run from the repository root; reads only git-tracked files):
   rename_refs.py links                       count broken relative Markdown links (tracked .md files; links in code fences or inline code are examples and not counted)
-  rename_refs.py plan  OLD NEW [--map O=N]   list files and occurrences a rewrite would change
-  rename_refs.py apply OLD NEW [--map O=N] [--only GLOB]...   rewrite them in place (no git commands)
+  rename_refs.py plan  OLD NEW [--map O=N] [--only GLOB]... [--skip GLOB]...   list files and occurrences a rewrite would change
+  rename_refs.py apply OLD NEW [--map O=N] [--only GLOB]... [--skip GLOB]...   rewrite them in place (no git commands; run it BEFORE the move, so a moved file's own links resolve from its old folder; --skip leaves a file untouched)
   rename_refs.py check OLD [--allow GLOB]... exit 1 when a path token OLD remains outside the allowlist
   rename_refs.py selftest
 
-OLD and NEW are repository-relative folder paths such as docs/validation and docs/reports.
+OLD and NEW are repository-relative folder or file paths such as docs/validation and docs/reports. A map is tried
+in order, so list a file's own map before its folder's. When the moved file is a Markdown file, its links to files
+that stay are recomputed too (a depth change breaks them otherwise).
 A path token is OLD at the start of text, or after whitespace, a quote, a backtick, a paren,
 a bracket, '=', '|', '!', '*', or '/', and followed by '/', whitespace, a quote, a backtick, a
 paren, '|', or punctuation. It is never rewritten inside a URL (a token containing '://'),
@@ -96,13 +98,16 @@ def rewrite_links(text, rel, maps, files):
             return target
         resolved = os.path.normpath(os.path.join(folder, path)).replace(os.sep, '/')
         moved = move(resolved)
-        if moved is None:
-            return target
         # The source file may itself have moved; compute the link from the file's NEW folder.
         new_folder = folder
         for old, new in maps:
             if rel == old or rel.startswith(old + '/'):
                 new_folder = os.path.dirname(new + rel[len(old):])
+                break
+        if moved is None:
+            if new_folder == folder:
+                return target
+            moved = resolved  # a link from a moved file to a file that stays: recompute it from the new folder
         newrel = os.path.relpath(moved, new_folder or '.').replace(os.sep, '/')
         if path.endswith('/') and not newrel.endswith('/'):
             newrel += '/'
@@ -120,13 +125,15 @@ def rewrite_links(text, rel, maps, files):
     return LINK.sub(sub, text), n
 
 
-def plan_or_apply(root, maps, only, apply):
+def plan_or_apply(root, maps, only, apply, skip=()):
     files = tracked(root)
     changed, total = [], 0
     for rel in files:
         if not rel.endswith(TEXT_SUFFIXES):
             continue
         if only and not any(fnmatch.fnmatch(rel, g) for g in only):
+            continue
+        if any(fnmatch.fnmatch(rel, g) for g in skip):
             continue
         text = read(root, rel)
         if text is None:
@@ -286,6 +293,29 @@ def selftest():
         hits = stale(tmp, 'docs/validation', [])
         expect('negative control: reintroduced stale reference found', any(h[0] == 'docs/other.md' for h in hits))
         expect('allowlist suppresses it', not any(h[0] == 'docs/other.md' for h in stale(tmp, 'docs/validation', ['docs/other.md'])))
+        # depth change: a moved file's link to a file that stays, and --skip, with a negative control
+        for rel, body in {
+            'docs/old/x.md': '[up](../README.md) [sib](y.md) [out](../../AGENTS.md)\n',
+            'docs/old/y.md': '[x](x.md)\n',
+            'docs/keep.md': '[x](old/x.md) docs/old/x.md\n',
+            'docs/skipme.md': 'docs/old/x.md\n',
+        }.items():
+            os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
+            with open(os.path.join(tmp, rel), 'w') as fh:
+                fh.write(body)
+        run('add', '-A')
+        _, b_before = link_report(tmp)
+        os.makedirs(os.path.join(tmp, 'docs/specs'), exist_ok=True)
+        run('mv', 'docs/old', 'docs/specs/old')
+        _, b_negative = link_report(tmp)
+        expect('negative control: a depth-changing move without the rewrite breaks links', len(b_negative) > len(b_before))
+        run('mv', 'docs/specs/old', 'docs/old')
+        ch, _n = plan_or_apply(tmp, [('docs/old', 'docs/specs/old')], [], True, ['docs/skipme.md'])
+        run('mv', 'docs/old', 'docs/specs/old')
+        _, b_after = link_report(tmp)
+        expect('moved file links to stayers and siblings resolve after the rewrite', len(b_after) <= len(b_before))
+        expect('skip leaves the file untouched', open(os.path.join(tmp, 'docs/skipme.md')).read() == 'docs/old/x.md\n' and all(c[0] != 'docs/skipme.md' for c in ch))
+        expect('citing token rewritten', 'docs/specs/old/x.md' in open(os.path.join(tmp, 'docs/keep.md')).read())
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     for b in bad:
@@ -311,11 +341,12 @@ def main(argv):
     if cmd in ('plan', 'apply'):
         maps, rest = parse_maps(rest)
         only, rest = collect(rest, '--only')
+        skip, rest = collect(rest, '--skip')
         if len(rest) != 2:
-            print('usage: %s OLD NEW [--map O=N] [--only GLOB]' % cmd)
+            print('usage: %s OLD NEW [--map O=N] [--only GLOB] [--skip GLOB]' % cmd)
             return 2
         maps = [(rest[0].rstrip('/'), rest[1].rstrip('/'))] + maps
-        changed, total = plan_or_apply(root, maps, only, cmd == 'apply')
+        changed, total = plan_or_apply(root, maps, only, cmd == 'apply', skip)
         for rel, n in changed:
             print('%s %s (%d)' % ('rewrote' if cmd == 'apply' else 'would rewrite', rel, n))
         print('%s: %d files, %d references' % (cmd, len(changed), total))

@@ -15,7 +15,7 @@ A blocked builder whose cause is a stale lane (missing merged prerequisites, not
 
 ## Context
 `steps.py next` prints `replan` for a block whose cause is a stale lane. The right route is rebase the lane onto its merged prerequisites, move the step dir to `.superseded-N`, then `steps.py split --only N`.
-Fix: route or message in steps.py naming that, documented in `docs/maintenance/sdlc-internals.md`, with a regression test.
+Fix: route or message in steps.py naming that, documented in `docs/references/sdlc-internals.md`, with a regression test.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.

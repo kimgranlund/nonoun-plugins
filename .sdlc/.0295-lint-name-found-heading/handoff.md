@@ -19,7 +19,7 @@ Maison lost two hours to plan-review loops over `## Task goal` vs `## Goal`. Fil
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 with a new case: a handoff with `## Task goal` and no `## Goal` makes lint (and the precheck path that reads it) fail with a message naming `## Task goal` as found and `## Goal` as expected.
 - [ ] Negative control shown once: without the new message the case fails.
-- [ ] The existing message is unchanged when no near heading exists. docs/maintenance/sdlc-internals.md `scripts/steps.py` entry mentions it in one sentence.
+- [ ] The existing message is unchanged when no near heading exists. docs/references/sdlc-internals.md `scripts/steps.py` entry mentions it in one sentence.
 
 ## Closed
 

@@ -13,13 +13,13 @@ done
   - the attempt status is `completed`.
 
   Every failure message starts with `self-edit:`.
-- `docs/maintenance/sdlc-internals.md`: one sentence added to the `scripts/run.sh` entry, containing `edits run.sh while it runs`.
+- `docs/references/sdlc-internals.md`: one sentence added to the `scripts/run.sh` entry, containing `edits run.sh while it runs`.
 
 ## Checks
 - `grep -qF 'FAIL: self-edit' plugins/sdlc-lite/scripts/run-selftest.sh`: exit 0.
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh | grep -qx "run selftest: PASS"`: exit 0 (about 21s).
 - Base negative control, run as split commands (see Notes): the new selftest run against the base runner at `$SDLC_BASE_SHA` exited 1 with `run selftest: FAIL: self-edit: stdout is '', want '.../erepo/planner-L3.md'`. The criterion's test evaluated true. Run twice (before and after the last comment edit), same result both times, and the worktree was removed after each run.
-- `grep -qF 'edits run.sh while it runs' docs/maintenance/sdlc-internals.md`: exit 0.
+- `grep -qF 'edits run.sh while it runs' docs/references/sdlc-internals.md`: exit 0.
 - `git diff --check "$SDLC_BASE_SHA" -- <the three files>`: exit 0, no output.
 - `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`: exit 0.
 - `python3 plugins/sdlc-lite/scripts/check.py`: `ok: 18 role levels, 8 agents checked`.

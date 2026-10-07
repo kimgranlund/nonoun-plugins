@@ -7,7 +7,7 @@ pass
 - `steps.py selftest 2>&1 | grep -q 'ok: (r'`: pass, but the predicate is weak. Evidence: exit 0 here, but the base worktree at 0d15d3f already prints 3 `ok: (r` lines, so this grep cannot go red on its own. I counted the new cases in the built tree: 22 `ok: (r) ...` lines matching review or split refusal, 28 `(r` lines in total, against 3 at base. The new cases cover each rule, and the diff shows a negative form for each (steps.py selftest section `(r)`).
 - `grep -qF 'steps.py review'` in chain, conductor, plan: pass. Evidence: exit 0. Diff lines are present in chain section 3, the conductor bullet, and plan step 5.
 - `plan-reviewer-L1.md` and `plan review:` in handoff-format: pass. Evidence: exit 0. The diff shows the layout line and the `## Plan review` paragraph entries.
-- `review <task dir>` in `docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. The diff shows both the `steps.py` entry and the `run.sh` plan-reviewer family rule.
+- `review <task dir>` in `docs/references/sdlc-internals.md`: pass. Evidence: exit 0. The diff shows both the `steps.py` entry and the `run.sh` plan-reviewer family rule.
 - `grep -qF "'steps.py review'" plugins/sdlc-lite/scripts/check.py`: pass. Evidence: exit 0. The diff shows the route dict entries and docstring item 11.
 - (guard) `steps.py selftest`: pass. Evidence: rc 0. Bite check: at base, `steps.py review` fails with "invalid choice", and `split` of a replan-rejected plan writes `step-1`. So the new cases have something to catch.
 - (guard) `check.py plugins/sdlc-lite`: pass. Evidence: rc 0.

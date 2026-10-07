@@ -268,7 +268,7 @@ def check_add(args, base, moved):
     path = expand(pos[0])
     root = posixpath.normpath(prefix)
     if unresolved(path):
-        reasons.append(f'the path {pos[0]} cannot be resolved before it runs')
+        reasons.append(f'the path {pos[0]} cannot be resolved before it runs (the hook expands no variable except $SDLC_TMP_WORKTREES, so write "$SDLC_TMP_WORKTREES/<name>" or a literal path under it)')
     elif '..' in path.split('/'):
         reasons.append(f'the path {pos[0]} has a .. segment')
     elif not path.startswith('/') and (moved or base is None):

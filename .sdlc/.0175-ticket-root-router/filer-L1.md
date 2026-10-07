@@ -27,7 +27,7 @@ T-0175: Opt-in tickets/ root and generated .sdlc/AGENTS.md router
 - `traces/ingest.py` and `traces/sources/tickets.py`: `task_dirs` and the ticket reader follow the ticket root. `tickets` stays a plain directory name when there is no config line.
 - Selftests in `tickets.py`, `board.py` and `traces/selftest.py` add cases for each rule, with negative controls.
 - Docs:
-  - Updated `docs/maintenance/sdlc-internals.md`, the `handoff-format` and `ticket` skills, `docs/ticket-stages/design.md` and its `README.md`, and `docs/README.md`.
+  - Updated `docs/references/sdlc-internals.md`, the `handoff-format` and `ticket` skills, `docs/specs/ticket-stages/design.md` and its `README.md`, and `docs/README.md`.
   - Added `docs/reports/ticket-root-router-live-run.md`, linked from `docs/README.md`.
 - Generated `.sdlc/AGENTS.md` and `.sdlc/CLAUDE.md` for this repo's own `.sdlc` (no `ticket_root` line). `.sdlc/roadmap.md` shows no diff.
 - No new skill, no migration command, no version bump.

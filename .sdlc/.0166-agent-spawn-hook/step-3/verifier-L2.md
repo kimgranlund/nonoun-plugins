@@ -11,7 +11,7 @@ pass
   - The report holds two captured PreToolUse(Agent) payloads with distinct session ids and `agent_type: "sdlc-lite:conductor"`.
   - The transcript `490cdf1a-3845-4a9b-9b0f-46906935b9c0.jsonl` exists under `~/.claude/projects/…hook-live-probe-3IQqEC-deny/`, dated Sep 29 18:58 (196 KB). This confirms the deny-run transcript is real.
 - `grep -qF "validation/agent-spawn-hook-live-run.md" docs/README.md`: pass. Evidence: `5ok`. The diff adds one list item in the same form as the existing validation entries, dated for T-0166.
-- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/maintenance/claude-hooks.md`: pass. Evidence: `6ok`. The diff adds the heading ``## `hooks/block-role-spawn.sh` `` after the `block-disk-scan.sh` section. At base the same grep exits 1.
+- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/references/claude-hooks.md`: pass. Evidence: `6ok`. The diff adds the heading ``## `hooks/block-role-spawn.sh` `` after the `block-disk-scan.sh` section. At base the same grep exits 1.
 - `awk … | grep -q Codex`: pass. Evidence: `7ok`. The awk range covers only the new section's body. If the heading were missing, the range would be empty and the grep would fail, so the check can go red.
 - The section content matches the Do.
   - It names PreToolUse(Agent), detection by `agent_type` or `SDLC_ROLE=conductor`, the deny rule, and the allowed helpers.

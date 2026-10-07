@@ -6,7 +6,7 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Targets are `plugins/sdlc-lite/scripts/steps.py` (a new function `lean_warnings(plan, task_dir, steps)`, `cmd_lint`, the lint entry of the module docstring, and `selftest`) and `docs/maintenance/sdlc-internals.md` (the `## scripts/steps.py` paragraph, in the sentence ``lint <planner.md | task dir>` runs the same check and writes nothing``).
+Targets are `plugins/sdlc-lite/scripts/steps.py` (a new function `lean_warnings(plan, task_dir, steps)`, `cmd_lint`, the lint entry of the module docstring, and `selftest`) and `docs/references/sdlc-internals.md` (the `## scripts/steps.py` paragraph, in the sentence ``lint <planner.md | task dir>` runs the same check and writes nothing``).
 
 Settled decisions:
 - **Eligibility.** A plan is eligible ("meets the lean plan conditions") only when all of these hold. Each one reuses an existing helper, so the facts stay where they already live.
@@ -42,5 +42,5 @@ Depends on: none. Focused check: `python3 plugins/sdlc-lite/scripts/steps.py sel
 - `d=$(mktemp -d) && printf "## Step 1: a\nlevel: L1\n### Acceptance criteria\n- x\n" > "$d/planner-L2.md" && python3 plugins/sdlc-lite/scripts/steps.py lint "$d" 2>&1 >/dev/null | grep -qF "steps lint: warning:"`
 - (guard) `d=$(mktemp -d) && printf "## Step 1: a\nlevel: L1\n### Acceptance criteria\n- x\n" > "$d/planner-L2.md" && out=$(python3 plugins/sdlc-lite/scripts/steps.py lint "$d" 2>/dev/null) && test "$out" = "steps lint: ok"`
 - `python3 plugins/sdlc-lite/scripts/steps.py -h | grep -qF "steps lint: warning:"`
-- `grep -qF "steps lint: warning:" docs/maintenance/sdlc-internals.md`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/maintenance/sdlc-internals.md | grep -q .`
+- `grep -qF "steps lint: warning:" docs/references/sdlc-internals.md`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/references/sdlc-internals.md | grep -q .`

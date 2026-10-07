@@ -67,14 +67,14 @@ level: L1
      - `check` fails a malformed entry or an unprovided `cap:`.
 2. **`plugins/sdlc-lite/skills/ticket/SKILL.md`:** add one Rules bullet stating the same forms, `provides:`, the `(unmet)` roadmap marking, and that a roadmap goes stale when a named file lands or a provider closes, so rerun `roadmap`.
 3. **Templates:** in every template under `plugins/sdlc-lite/skills/ticket/templates/` with a `depends:` line, change only the trailing comment to name the forms, e.g. `# T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]`. Keep `depends: []` itself.
-4. **`docs/maintenance/sdlc-internals.md`:** in the `scripts/tickets.py` entry, add one sentence describing the `file:<path>`/`cap:<name>` entries and `provides`.
+4. **`docs/references/sdlc-internals.md`:** in the `scripts/tickets.py` entry, add one sentence describing the `file:<path>`/`cap:<name>` entries and `provides`.
 ### Acceptance criteria
 - `grep -qF 'cap:<name>' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qE '^provides: .*optional' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF 'cap:<name>' plugins/sdlc-lite/skills/ticket/SKILL.md`
 - `grep -qF 'provides:' plugins/sdlc-lite/skills/ticket/SKILL.md`
 - `for f in plugins/sdlc-lite/skills/ticket/templates/*.md; do if grep -q '^depends:' "$f"; then grep -E '^depends:' "$f" | grep -qF 'cap:<name>' || exit 1; fi; done`
-- `grep -qF 'cap:<name>' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'cap:<name>' docs/references/sdlc-internals.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py selftest`
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py`
 

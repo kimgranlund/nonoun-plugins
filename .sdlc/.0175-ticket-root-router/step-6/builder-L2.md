@@ -6,8 +6,8 @@ done
 - docs/maintenance/sdlc-internals.md: the `tickets.py` entry now covers the `ticket_root: tickets` root, the router block, the `.sdlc/CLAUDE.md` import, the `router:` stamp, and the `check` failures. The board paragraph now names the `.sdlc/tickets/` task dirs. The fanout entry gains the regular-lane follow-up, and the traces entry gains the ingest and reader facts.
 - plugins/sdlc-lite/skills/handoff-format/SKILL.md: four Layout lines added (`.sdlc/AGENTS.md`, `.sdlc/CLAUDE.md`, `.sdlc/config`, `.sdlc/tickets/`), plus the `claimed_by:` and `router:` front matter lines.
 - plugins/sdlc-lite/skills/ticket/SKILL.md: one new Rules bullet covering `ticket_root`, the router, the `check` failures, the upgrade step, and `claimed_by`.
-- docs/ticket-stages/design.md: line 3 updated to version 0.2, Built: Option A and the opt-in root.
-- docs/ticket-stages/README.md: line 3 updated.
+- docs/specs/ticket-stages/design.md: line 3 updated to version 0.2, Built: Option A and the opt-in root.
+- docs/specs/ticket-stages/README.md: line 3 updated.
 - docs/README.md: the Ticket stages line updated.
 
 ## Checks
@@ -20,4 +20,4 @@ done
 
 ## Notes
 - The step introduced no em dash, but the check covered only the uncommitted diff, not text from earlier steps.
-- In `docs/maintenance/sdlc-internals.md` the new `tickets.py` text is appended after the Templates sentence at the end of that entry.
+- In `docs/references/sdlc-internals.md` the new `tickets.py` text is appended after the Templates sentence at the end of that entry.

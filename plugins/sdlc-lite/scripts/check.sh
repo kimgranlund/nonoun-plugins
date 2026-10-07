@@ -39,6 +39,8 @@ python3 "$root/scripts/reorg.py" selftest || fail=1
 python3 "$root/scripts/docs_check.py" selftest || fail=1
 python3 "$root/scripts/promote.py" selftest || fail=1
 python3 "$root/scripts/cite_check.py" selftest || fail=1
+# The repository gate: docs/ conforms to docs/layout.md (this repository only; a consumer install has no docs/layout.md beside it).
+if [ -f "$root/../../docs/layout.md" ] && [ -e "$root/../../.git" ]; then python3 "$root/scripts/docs_check.py" --root "$root/../.." || fail=1; fi
 python3 "$root/scripts/plan_check.py" selftest || fail=1
 python3 "$root/scripts/supervisor.py" selftest || fail=1
 python3 "$root/scripts/rename_refs.py" selftest || fail=1

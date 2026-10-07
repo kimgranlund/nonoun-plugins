@@ -11,7 +11,7 @@ done
   - Header gains "Prompt TERM" and "Reaper" paragraphs.
   - Exit codes 130/143/129, the non-zero-exit message plus `exit 1`, and the `{ ... }` group are unchanged.
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: new `stale prefix` and `term cleanup` cases after the `want_wt` cases, both described in the header. They drive run.sh only.
-- `docs/maintenance/sdlc-internals.md`: the run.sh paragraph now covers the prompt TERM cleanup and `reap-tmp-worktrees.sh` (dead-owner prefixes, called at start and exit).
+- `docs/references/sdlc-internals.md`: the run.sh paragraph now covers the prompt TERM cleanup and `reap-tmp-worktrees.sh` (dead-owner prefixes, called at start and exit).
 
 ## Checks
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh` (guard): `run selftest: PASS`, rc 0. Ran twice, the second time after the last reaper edit.
@@ -22,7 +22,7 @@ done
 - Base-failure criterion (the exact command in the handoff): rc 0. The output was `run selftest: FAIL: stale prefix: dead-owner prefix builder-14856 is still on disk`.
 - Extra control: base plugin with the stale-prefix block removed from the copied selftest gave `FAIL: term cleanup: a worktree under .worktrees/tmp is still registered: .../wrepo/.worktrees/tmp/builder-18438/w`. The term case fails at base on its own.
 - Extra control: the fixed run.sh with the `stop_role` call removed gave `FAIL: term cleanup: the stub claude (pid 24822) is still alive`. The liveness assertion catches a missing role stop.
-- `grep -qF reap-tmp-worktrees.sh docs/maintenance/sdlc-internals.md`: rc 0.
+- `grep -qF reap-tmp-worktrees.sh docs/references/sdlc-internals.md`: rc 0.
 - `bash -n plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`: rc 0.
 - `python3 plugins/sdlc-lite/scripts/lifecycle-selftest.py`: `Ran 6 tests ... OK`, rc 0.
 - `python3 plugins/sdlc-lite/scripts/check.py`: rc 0.

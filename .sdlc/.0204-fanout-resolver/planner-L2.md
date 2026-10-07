@@ -43,7 +43,7 @@ Selftest: in `selftest()`, add a case whose `expect` labels all start with `tick
 
 The negative control is the same fixture against the base fanout.py, which refuses with `no ticket under ... has this id`. I observed this at plan time, and criterion 2 below re-runs it against `$SDLC_BASE_SHA`.
 
-Guidance: in `docs/maintenance/sdlc-internals.md` line ~51, replace the last sentences of the fanout paragraph, "Regular lanes do not follow `ticket_root` yet. With the line set, preflight finds no ticket under `<root>` for their ids and refuses. This is a follow-up.", with a sentence starting "Regular lanes follow `ticket_root`". It says that ids resolve through `tickets.ticket_dir(<root>)` and that handoff, step-dir, and filer paths in each worktree use that dir. It also says `FANOUT_ROOT` stays `<root>` and the dry run adds a `ticket folders in each worktree:` line when the dir differs.
+Guidance: in `docs/references/sdlc-internals.md` line ~51, replace the last sentences of the fanout paragraph, "Regular lanes do not follow `ticket_root` yet. With the line set, preflight finds no ticket under `<root>` for their ids and refuses. This is a follow-up.", with a sentence starting "Regular lanes follow `ticket_root`". It says that ids resolve through `tickets.ticket_dir(<root>)` and that handoff, step-dir, and filer paths in each worktree use that dir. It also says `FANOUT_ROOT` stays `<root>` and the dry run adds a `ticket folders in each worktree:` line when the dir differs.
 
 Deliberately left untouched:
 - `.sdlc/notes.md` (dated history of the T-0175 close)
@@ -55,12 +55,12 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/fanout.py selftest` and the f
 - Negative control: the criterion above, run with `F` set to the fanout.py in a `git archive "$SDLC_BASE_SHA" plugins/sdlc-lite/scripts` copy extracted into a temp dir, exits nonzero and its output contains `no ticket under`.
 - `grep -qF "tickets.load(tickets.ticket_dir(root))" plugins/sdlc-lite/scripts/fanout.py`
 - `grep -qF "ticket_root lane" plugins/sdlc-lite/scripts/fanout.py`
-- `grep -qF "Regular lanes follow" docs/maintenance/sdlc-internals.md`
-- `! grep -qF "Regular lanes do not follow" docs/maintenance/sdlc-internals.md`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/fanout.py -e docs/maintenance/sdlc-internals.md)"`
+- `grep -qF "Regular lanes follow" docs/references/sdlc-internals.md`
+- `! grep -qF "Regular lanes do not follow" docs/references/sdlc-internals.md`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/fanout.py -e docs/references/sdlc-internals.md)"`
 - `test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`
-- (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/fanout.py docs/maintenance/sdlc-internals.md`
+- (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/fanout.py docs/references/sdlc-internals.md`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`

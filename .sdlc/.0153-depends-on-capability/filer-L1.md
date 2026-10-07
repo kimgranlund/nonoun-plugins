@@ -18,7 +18,7 @@ A ticket's `depends:` list now accepts `file:<path>` and `cap:<name>` entries as
   - The roadmap marks an unmet `file:` or `cap:` entry `(unmet)` and escapes `|` in entries. File paths resolve against the git toplevel.
   - The module docstring covers all three forms and says to rerun `roadmap` when a named file appears or a provider closes.
   - New selftest cases.
-- Docs: `skills/handoff-format/SKILL.md` (front matter block plus a paragraph on what satisfies each form), `skills/ticket/SKILL.md` (one Rules bullet), the five ticket templates (trailing comment on the `depends:` line only), and `docs/maintenance/sdlc-internals.md` (one sentence).
+- Docs: `skills/handoff-format/SKILL.md` (front matter block plus a paragraph on what satisfies each form), `skills/ticket/SKILL.md` (one Rules bullet), the five ticket templates (trailing comment on the `depends:` line only), and `docs/references/sdlc-internals.md` (one sentence).
 
 Behavior changes to know about:
 - A malformed entry such as `T-12` used to report "which no ticket has". It now gets the malformed-entry error.

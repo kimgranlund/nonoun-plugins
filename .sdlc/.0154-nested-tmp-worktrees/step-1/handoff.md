@@ -28,7 +28,7 @@ Changes:
 3. In `plugins/sdlc-lite/scripts/run-selftest.sh`, add two cases that drive run.sh only (never call the reaper script directly), and describe them in the header comment:
    - `stale prefix`: before a real stub run, register a detached worktree under `.worktrees/tmp/builder-<dead pid>/w` (dead pid from a subshell that has exited) and one under `.worktrees/tmp/builder-$$/w` (live). After the run, the dead one is gone from disk and from `git worktree list`, and the live one is still present. Clean it up afterwards. Failures read `fail "stale prefix: <reason>"`.
    - `term cleanup`: a stub claude adds a worktree under `$SDLC_TMP_WORKTREES`, traps and ignores TERM, writes a ready marker, and sleeps about 30 s. Launch run.sh in the background, wait for the marker, send TERM to the run.sh pid (the run_lifecycle process), and wait for it to exit. Then assert that no worktree under `.worktrees/tmp` is registered, that `.worktrees/tmp` is gone, and that the stub process is no longer alive. Failures read `fail "term cleanup: <reason>"`.
-4. In `docs/maintenance/sdlc-internals.md`, in the run.sh paragraph where `SDLC_TMP_WORKTREES` cleanup is described, add the reaper (`reap-tmp-worktrees.sh`, dead-owner prefixes, start and exit) and the prompt TERM cleanup.
+4. In `docs/references/sdlc-internals.md`, in the run.sh paragraph where `SDLC_TMP_WORKTREES` cleanup is described, add the reaper (`reap-tmp-worktrees.sh`, dead-owner prefixes, start and exit) and the prompt TERM cleanup.
 ### Acceptance criteria
 - (guard) `bash plugins/sdlc-lite/scripts/run-selftest.sh`
 - `test -x plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`
@@ -36,5 +36,5 @@ Changes:
 - `grep -qF 'fail "stale prefix:' plugins/sdlc-lite/scripts/run-selftest.sh`
 - `grep -qF 'fail "term cleanup:' plugins/sdlc-lite/scripts/run-selftest.sh`
 - The new selftest fails on the base run.sh: `d=$(mktemp -d) && git archive "$SDLC_BASE_SHA" plugins/sdlc-lite | tar -x -C "$d" && cp plugins/sdlc-lite/scripts/run-selftest.sh "$d/plugins/sdlc-lite/scripts/run-selftest.sh" && out=$(bash "$d/plugins/sdlc-lite/scripts/run-selftest.sh" 2>&1); printf "%s\n" "$out" | grep -qE "FAIL: (stale prefix|term cleanup):"`
-- `grep -qF reap-tmp-worktrees.sh docs/maintenance/sdlc-internals.md`
+- `grep -qF reap-tmp-worktrees.sh docs/references/sdlc-internals.md`
 - `bash -n plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`

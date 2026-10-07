@@ -8,7 +8,7 @@ level: L3
 ### Do
 Targets:
 - `plugins/sdlc-lite/scripts/steps.py`: a new `# --- lane ---` section after `# --- review ---`, `main`, the module docstring, a few small helpers, and `selftest`.
-- `docs/maintenance/sdlc-internals.md`: the `## scripts/steps.py` paragraph.
+- `docs/references/sdlc-internals.md`: the `## scripts/steps.py` paragraph.
 
 Depends on: step 1 (`review_required`).
 
@@ -119,7 +119,7 @@ Evidence:
 
 **Docstring entry.** It states the stdout shape, every rule above with its reason meaning, the skips.md layout, the lenient plan read, and the error exits. It names `review_required()` as the function `review` uses, and names `LANE_CONTRACTS`.
 
-**Internals doc.** In `docs/maintenance/sdlc-internals.md`, add one `lane <task dir>` clause to the steps.py paragraph, right after the `review <task dir>` clause that ends with "(/chain 3 runs it after each planner run)". It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane` in `skips.md`.
+**Internals doc.** In `docs/references/sdlc-internals.md`, add one `lane <task dir>` clause to the steps.py paragraph, right after the `review <task dir>` clause that ends with "(/chain 3 runs it after each planner run)". It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane` in `skips.md`.
 
 **Selftest.** Print exactly these labels through `check(...)`. Use a temp git repo (`git init`, as the `(o)` and `(r)` cases do) with the ticket at `<repo>/.sdlc/0001-x/`. The lean fixture has:
 - a handoff with front matter `size: M`
@@ -168,7 +168,7 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/steps.py selftest` and `pytho
 - `d=$(mktemp -d) && printf "%s\n" "---" "size: M" "---" "" "## Goal" "g" > "$d/handoff.md" && out=$(python3 plugins/sdlc-lite/scripts/steps.py lane "$d") && test "$(printf "%s\n" "$out" | head -n 1)" = lean && grep -qxF -e "- lane: lean; point: before planning; reasons: size M decides before planning (no planner result yet)" "$d/skips.md"`
 - `d=$(mktemp -d) && printf "%s\n" "## Goal" "g" > "$d/handoff.md" && out=$(python3 plugins/sdlc-lite/scripts/steps.py lane "$d") && test "$(printf "%s\n" "$out" | head -n 1)" = full && printf "%s\n" "$out" | grep -qxF "reason: handoff.md front matter has no size of S, M, L, or XL" && grep -qxF -e "- lane: full; point: before planning; reasons: handoff.md front matter has no size of S, M, L, or XL" "$d/skips.md"`
 - `python3 -c 'import inspect, sys; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import steps; d = steps.__doc__; sys.exit(0 if "review_required(" in inspect.getsource(steps.lane_action) and "\n  lane " in d and "skips.md" in d else 1)'`
-- `grep -qF "skips.md" docs/maintenance/sdlc-internals.md && grep -qF "review_required" docs/maintenance/sdlc-internals.md`
+- `grep -qF "skips.md" docs/references/sdlc-internals.md && grep -qF "review_required" docs/references/sdlc-internals.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/results.py selftest`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
-- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/maintenance/sdlc-internals.md | grep -q .`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
+- (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/steps.py -e docs/references/sdlc-internals.md | grep -q .`

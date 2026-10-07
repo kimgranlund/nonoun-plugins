@@ -1,7 +1,7 @@
 {
   "base_commit": "0ff454e",
   "sha256": {
-    "docs/codex-role-execution.md": "1d692cb82f481ab5b39e167bb40bc22e74870bfb78965d1f77cb2bf6bc69a301",
+    "docs/references/codex-role-execution.md": "1d692cb82f481ab5b39e167bb40bc22e74870bfb78965d1f77cb2bf6bc69a301",
     "plugins/sdlc-lite/adapters/codex/models.json": "19fd18f82feb0c4049664f40081764f888747833e870546975d9498102d823f6",
     "plugins/sdlc-lite/scripts/codex-selftest.py": "581a4b393eee74b096440432856048de7999603403d696566cf9cff6fe1c8545",
     "plugins/sdlc-lite/scripts/run.sh": "091813131f4d3459fa45ae926ed444f248bae5a84231a3a84abecdf2fb2eeec7",

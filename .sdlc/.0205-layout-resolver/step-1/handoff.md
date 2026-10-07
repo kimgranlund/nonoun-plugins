@@ -44,7 +44,7 @@ All edits are in `plugins/sdlc-lite/scripts/tickets.py`. Line numbers are at HEA
    - every `_`-prefixed entry;
    - every `.`-prefixed entry except a closed-ticket folder matching `DOT_RE`, which is a stray because it belongs in `tickets/`.
 
-   Evidence: design.md:141-155 (target layout); docs/docs-schema/design.md:194 (`.sdlc/layout.md`) and :334 with docs_check.py:45-46, where `board.md` is a known loose record, so flagging it would fail `check` in every topics repo that has one.
+   Evidence: design.md:141-155 (target layout); docs/planning/docs-schema/design.md:194 (`.sdlc/layout.md`) and :334 with docs_check.py:45-46, where `board.md` is a known loose record, so flagging it would fail `check` in every topics repo that has one.
 5. Flat warning. When `layout_paths(root).layout` is `flat` and `<root>/config` has no explicit `layout: flat` line, `cmd_check` appends this line after the `ok:` line and the existing warnings: `warning: <root> uses the flat layout; tickets.py migrate-layout moves it to topic folders (add 'layout: flat' to <root>/config to keep it and silence this)`. The exit code stays 0 and the `ok:` line stays first. An explicit `layout: flat` line is the opt-out: migration is opt-in (design.md resolved decision 5), so a repo that chose flat should not be warned forever.
 6. Selftest (`selftest()`, line 1732). Add cases on topics fixtures (config `ticket_root: tickets` plus `layout: topics`):
    - `new` writes `tickets/roadmap.md` with `<slug>/handoff.md` links and the `work/` and `notes/` entry files, and `check` passes.

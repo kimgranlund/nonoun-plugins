@@ -3,7 +3,7 @@
 
 Usage: fleet_config.py [--file PATH] show [--active] | add --path P --name N --conductor C [--gh O/R]
        | exclude REPO --reason R | include REPO | selftest
-Schema: docs/sdlc-lite/fleet-config.md. A malformed file exits 1 naming the line.
+Schema: docs/specs/sdlc-lite/fleet-config.md. A malformed file exits 1 naming the line.
 """
 import argparse, datetime, json, os, re, sys, tempfile
 

@@ -7,9 +7,9 @@ done
 - plugins/sdlc-lite/scripts/fanout.py: added one docstring sentence on the same limit (an overlap first visible after a later lane has started its merge is not reordered), so the docstring and the doc entry agree.
 
 ## Checks
-- `grep -qF -- '- Overlap:' docs/maintenance/sdlc-internals.md`: exit 0
-- `grep -qF 'overlap (planned scope)' docs/maintenance/sdlc-internals.md`: exit 0
-- `grep -qF 'waiting for lane' docs/maintenance/sdlc-internals.md`: exit 0
+- `grep -qF -- '- Overlap:' docs/references/sdlc-internals.md`: exit 0
+- `grep -qF 'overlap (planned scope)' docs/references/sdlc-internals.md`: exit 0
+- `grep -qF 'waiting for lane' docs/references/sdlc-internals.md`: exit 0
 - Scope guard, with `SDLC_BASE_SHA` read from the step's base-sha file: exit 0
 - `git diff --check "$SDLC_BASE_SHA" -- <both files>`: exit 0
 - `bash plugins/sdlc-lite/scripts/check.sh`: exit 0. It printed "skip: shellcheck not installed", so shellcheck did not run.

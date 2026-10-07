@@ -7,7 +7,7 @@ T-0161: Spike: read-only reorganization plan on this repository
 
 ## PR body
 ### Summary
-T-0161 is a spike. It tests the rules in `docs/repo-onboarding/reorganization.md` (v0.6) against this repository's real files. It also asks which open findings (N1, N2, N3, N5, N9, N15) show up in practice.
+T-0161 is a spike. It tests the rules in `docs/planning/repo-onboarding/reorganization.md` (v0.6) against this repository's real files. It also asks which open findings (N1, N2, N3, N5, N9, N15) show up in practice.
 
 The recommendation is written into `.sdlc/0161-repo-reorganization/handoff.md`. Its apply verdict is **defer**. A reviewed plan that a person carries out by hand is enough for this repository.
 
@@ -21,7 +21,7 @@ The changes are all under `.sdlc/0161-repo-reorganization/`. The prototype moves
 - `handoff.md`: appended a `## Recommendation` section (39 added lines, front matter unchanged).
 
 ### Findings
-- Counts: placed 12, misplaced 4, unplaced 0. The review judged 2 of the 4 moves `ok`. It marked `docs/claude-handoff.md` and `docs/claude-response.md` `wrong`, because both are dated correspondence that a person would freeze.
+- Counts: placed 12, misplaced 4, unplaced 0. The review judged 2 of the 4 moves `ok`. It marked `docs/other/claude-handoff.md` and `docs/other/claude-response.md` `wrong`, because both are dated correspondence that a person would freeze.
 - N1: it occurred. Planning again after a fix is the normal path, so the plan should live in a file outside `.sdlc/` that each run overwrites, not in a ticket.
 - N2: none of the ambiguous inputs occurred. Detection works on probe layouts (`multi_home`, `into_frozen`, a case-folded `name_collision`). The two-sources-one-destination case was not exercised.
 - N3: no topic glob was needed.
@@ -61,7 +61,7 @@ None for the product. This is a spike and ships no production code. The recommen
 
 ## Follow-ups
 - decide: Whether to build apply for the reorganization or drop it. The spike recommends deferring, since a reviewed plan is 2 moves and 13 line edits by hand. Revisit only when a repository's plan is too large to carry out by hand.
-- decide: Whether to update `docs/repo-onboarding/reorganization.md` to v0.7 with the "Rules to change" list (plan file outside `.sdlc/`, the `Date:` frozen-candidate test, the added plan fields, regenerate and compare for N15).
-- fix-now: Freeze `docs/claude-handoff.md` and `docs/claude-response.md` in a real `docs/layout.md` before any reorganization of this repository uses the plan.
+- decide: Whether to update `docs/planning/repo-onboarding/reorganization.md` to v0.7 with the "Rules to change" list (plan file outside `.sdlc/`, the `Date:` frozen-candidate test, the added plan fields, regenerate and compare for N15).
+- fix-now: Freeze `docs/other/claude-handoff.md` and `docs/other/claude-response.md` in a real `docs/layout.md` before any reorganization of this repository uses the plan.
 - note: The two-sources-one-destination collision code path in `reorg_plan.py` was never exercised on this tree.
-- note: A broad glob such as `claude-*.md` pulls the placed file `docs/maintenance/claude-hooks.md`, so the design's glob rules need a warning for it.
+- note: A broad glob such as `claude-*.md` pulls the placed file `docs/references/claude-hooks.md`, so the design's glob rules need a warning for it.

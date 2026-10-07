@@ -13,7 +13,7 @@ pass
 - `grep -qF 'steps.py resume' chain/SKILL.md`: pass. Evidence: exit 0. The section 4 diff shows the rule.
 - `grep -qF 'run_lifecycle.py recover' chain/SKILL.md`: pass. Evidence: exit 0.
 - `allowed-tools` line names `scripts/run_lifecycle.py`: pass. Evidence: exit 0. The diff shows `Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_lifecycle.py:*)` added.
-- `grep -qF 'resume <task dir>' docs/maintenance/sdlc-internals.md`: pass. Evidence: exit 0. The `steps.py` entry has the new clause and the extended closing sentence.
+- `grep -qF 'resume <task dir>' docs/references/sdlc-internals.md`: pass. Evidence: exit 0. The `steps.py` entry has the new clause and the extended closing sentence.
 - (guard) scope diff: pass. Evidence: the command returned 0. Only `steps.py`, `chain/SKILL.md` and `sdlc-internals.md` changed outside `.sdlc`.
 - Runtime behavior beyond the fixtures: pass. Evidence:
   - At base, `steps.py resume <dir>` gave an argparse `invalid choice: 'resume'` error with rc 2, so the new behavior is red without the change.

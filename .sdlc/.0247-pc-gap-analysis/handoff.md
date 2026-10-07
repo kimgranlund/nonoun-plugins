@@ -17,12 +17,12 @@ The exact question this spike answers.
 A cited gap analysis of the Progressive Context system, using the generative-systems tier model and rubric, with a ranked list of improvements and the same pattern mapped onto docs/ and .sdlc/.
 
 ## Intent
-- Do: write docs/generative-constructs/progressive-context-gap-analysis.md (under about 250 lines, every claim cited to a file and line and labeled observed here, established elsewhere, or inferred); get one independent architect review; file the top recommendations as proposed tickets; link from docs/generative-constructs/README.md and docs/README.md.
+- Do: write docs/specs/generative-constructs/progressive-context-gap-analysis.md (under about 250 lines, every claim cited to a file and line and labeled observed here, established elsewhere, or inferred); get one independent architect review; file the top recommendations as proposed tickets; link from docs/specs/generative-constructs/README.md and docs/README.md.
 - Non-goals: editing the Progressive Context plugin or its specs; building any recommendation; a version bump, tag, push, or publish.
 - Done when: the doc and review record are merged, the recommendations are filed, and an independent reviewer found no uncited factual claim left.
 
 ## Context
-User request: analyze the progressive context system using /generative-systems and see what improvements make sense. Related in-flight work: docs/docs-schema/design.md (docs and .sdlc schema, registry pattern). Size M, solo lane. Philosophy: "Done is better than perfect."
+User request: analyze the progressive context system using /generative-systems and see what improvements make sense. Related in-flight work: docs/planning/docs-schema/design.md (docs and .sdlc schema, registry pattern). Size M, solo lane. Philosophy: "Done is better than perfect."
 
 ## Constraints
 No em dashes. Do not invent standards; mark inferences as inferences.

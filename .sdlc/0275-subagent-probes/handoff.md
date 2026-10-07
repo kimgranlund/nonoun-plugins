@@ -29,7 +29,7 @@ Observe, in a throwaway project, the eight sub-agent behaviors the design marks 
   - Each failed or partly failed probe names the design fallback it triggers (section 9 of the design).
 
 ## Context
-Design: `docs/sdlc-lite/subagent-mode.md` sections 1 to 9 name each assumption. Run in a scratch repo outside this one; no repo code changes in this ticket.
+Design: `docs/planning/sdlc-lite/subagent-mode.md` sections 1 to 9 name each assumption. Run in a scratch repo outside this one; no repo code changes in this ticket.
 
 ## Constraints
 No runner or hook code changes. No push or publish. No em dashes. No push, tag, or publish.

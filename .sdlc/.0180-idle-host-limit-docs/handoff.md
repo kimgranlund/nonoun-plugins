@@ -13,7 +13,7 @@ created: 2026-10-01
 Every place that describes the mailbox messenger says that a subagent can report only into a parent turn that is still running and cannot wake an idle host, and names the tested workaround.
 
 ## Intent
-- Do: state the limit in the generated mailbox entry file (the Host limits section of `ENTRY_TEMPLATE` in `plugins/sdlc-lite/scripts/messages.py`), `plugins/sdlc-lite/agents/messenger.md`, `docs/ticket-stages/design.md`, and `docs/codex-role-execution.md`. Add a dated correction note `docs/reports/messages-idle-host-limit-2026-10-01.md`, linked from `docs/README.md`. Regenerate the Codex agents with `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` because the messenger body changes.
+- Do: state the limit in the generated mailbox entry file (the Host limits section of `ENTRY_TEMPLATE` in `plugins/sdlc-lite/scripts/messages.py`), `plugins/sdlc-lite/agents/messenger.md`, `docs/specs/ticket-stages/design.md`, and `docs/references/codex-role-execution.md`. Add a dated correction note `docs/reports/messages-idle-host-limit-2026-10-01.md`, linked from `docs/README.md`. Regenerate the Codex agents with `python3 plugins/sdlc-lite/scripts/codex_roles.py generate` because the messenger body changes.
 - Non-goals: any code change besides the entry template text; rewriting `docs/reports/release-0.20.2.md` or `docs/reports/messages-live-run.md`; the `wait` command (T-0181); the watcher (T-0182).
 - Done when: the exact sentence `cannot wake an idle host` appears in each of the five files above, the checks in the step pass, and nothing else changed.
 

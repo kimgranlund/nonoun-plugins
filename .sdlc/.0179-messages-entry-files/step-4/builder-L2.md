@@ -4,7 +4,7 @@ done
 
 ## Changes
 - docs/maintenance/sdlc-internals.md: added the given text to the end of the `scripts/messages.py` entry and to the end of the `scripts/tickets.py` entry.
-- docs/ticket-stages/design.md: replaced line 3 (the version line) and the pending sentence in the Message bus Status paragraph.
+- docs/specs/ticket-stages/design.md: replaced line 3 (the version line) and the pending sentence in the Message bus Status paragraph.
 - plugins/sdlc-lite/skills/handoff-format/SKILL.md: extended the `.sdlc/messages/` layout row on line 36.
 
 ## Checks

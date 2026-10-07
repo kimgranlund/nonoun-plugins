@@ -27,7 +27,7 @@ No new skill, version bump, daemon or hook was added. Every step passed its veri
 - `docs/reports/messages-live-run.md` and `docs/reports/messages-live-run/`:
   - New dated validation doc with a probe script, an injected-defect file and five evidence files.
   - Linked from `docs/README.md`.
-- `docs/ticket-stages/design.md` and `docs/maintenance/sdlc-internals.md`: status and internals updated.
+- `docs/specs/ticket-stages/design.md` and `docs/references/sdlc-internals.md`: status and internals updated.
 
 ### Verification
 - Step 1, entry file templates and writer. Verifier L2 passed 14 criteria.

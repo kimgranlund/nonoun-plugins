@@ -17,10 +17,10 @@ Root cause: bash reads a script file as it executes it. `run_lifecycle.py` start
    - the `.attempt.json` status is `completed`.
 
    Do not add a variant that inserts bytes before the current offset: on the base code it can re-run earlier lines and loop.
-3. In `docs/maintenance/sdlc-internals.md`, add to the run.sh entry one sentence containing the exact phrase `edits run.sh while it runs`. It should say that the whole body is parsed before execution, so the running process keeps its behavior and still saves its result.
+3. In `docs/references/sdlc-internals.md`, add to the run.sh entry one sentence containing the exact phrase `edits run.sh while it runs`. It should say that the whole body is parsed before execution, so the running process keeps its behavior and still saves its result.
 ### Acceptance criteria
 - `grep -qF 'FAIL: self-edit' plugins/sdlc-lite/scripts/run-selftest.sh`
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh | grep -qx "run selftest: PASS"`
 - The new case fails on the base runner: `w="${SDLC_TMP_WORKTREES:?}/base-s1"; git worktree add -q --detach "$w" "$SDLC_BASE_SHA" && cp plugins/sdlc-lite/scripts/run-selftest.sh "$w/plugins/sdlc-lite/scripts/run-selftest.sh" && out=$(bash "$w/plugins/sdlc-lite/scripts/run-selftest.sh" 2>&1); rc=$?; git worktree remove --force "$w"; test "$rc" -ne 0 && printf '%s\n' "$out" | grep -q "run selftest: FAIL: self-edit"`
-- `grep -qF 'edits run.sh while it runs' docs/maintenance/sdlc-internals.md`
-- `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh docs/maintenance/sdlc-internals.md`
+- `grep -qF 'edits run.sh while it runs' docs/references/sdlc-internals.md`
+- `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh docs/references/sdlc-internals.md`
