@@ -33,6 +33,8 @@ A conductor in Claude Code starts solo as a headless session from Bash at the pr
 
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"` (no ticket: `--new-task [slug]` instead of `--task-dir`)
 
+A lane worktree and branch: the role cannot create them (`hooks/block-stray-worktree.sh` denies a role creating a worktree or branch), so the launcher does. Add `--worktree <name>` and `solo_run.py` creates `.worktrees/<name>` on a new branch `<name>` (reusing either when it exists) and runs the session there. With the raw command, create the worktree and branch yourself first and start the session from that directory.
+
 Before it starts anything it checks the ticket's budget as `run.sh` does for roles: at 80 percent of `budget_usd` with no ack it exits 4 (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. It records cost, usage, turns, and duration; a session that reports no cost records `cost_usd` null with a reason, never zero. The raw command is the fallback and records nothing:
 
 `SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`

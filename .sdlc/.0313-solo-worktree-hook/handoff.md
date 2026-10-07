@@ -2,7 +2,7 @@
 id: T-0313
 title: "solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Reported by the agent-ui conductor on 2026-10-06. Related: block-stray-worktree.
 
 ## Constraints
 No em dashes. No push, tag or publish.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
