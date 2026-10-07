@@ -2,7 +2,7 @@
 id: T-0333
 title: "Independent verification of the sub-agent mode tickets that closed with no verifier verdict"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Read-only on plugin code. No em or en dashes. No push or publish.
 - A4: every fail has a filed ticket: each ticket named under `## Filed` of a fail verdict exists as `.sdlc/03NN-*/handoff.md` with a filled body (T-0334, T-0335, T-0336), and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
 - A5: the verifiers were independent and ran as sub-agents through dispatch.py: each `.sdlc/verify-subagent/<batch>/runs.jsonl` has one `role verifier` line with `transport subagent`, `model fable`, `shared_with_builder` false, and the builders were sonnet (`.sdlc/.0284-solo-subagent/runs.jsonl`).
 - A6 (guard): `python3 plugins/sdlc-lite/scripts/check.py` exits 0, `git diff --name-only HEAD -- plugins` prints nothing, and `grep -rn -P '\x{2014}|\x{2013}' .sdlc/verify-subagent .sdlc/0334-skills-record-transcript-flag .sdlc/0335-cost-basis-label-drift .sdlc/0336-l3-verifier-row-outside-band` finds nothing.
+
+## Closed
+
+2026-10-06: 12 verdicts recorded in .sdlc/verify-subagent/summary.md (9 pass, 3 fail filed as T-0334 to T-0336)

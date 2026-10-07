@@ -25,7 +25,7 @@ Result: 9 pass, 3 fail (T-0280, T-0328, T-0331). Each fail has a filed ticket: T
 - Model: verifier L3 is fable xhigh; every transcript message reads `claude-fable-5-1`. Every builder was solo sonnet low (`runs.jsonl` of each closed folder, except T-0332, which was fixed inside the live rerun commit and has none), so the family differs.
 - Batches (criteria and result under `.sdlc/verify-subagent/<batch>/`): `probes` (T-0275), `dispatch-supervisor` (T-0279, T-0286), `cost-a` (T-0280, T-0328), `cost-b` (T-0331, T-0332), `solo-record` (T-0284, T-0330), `fanout` (T-0326, T-0327, T-0329). Each verdict file carries its ticket's criteria lines verbatim; the batch result is the full text.
 - Estimated verifier cost, from `runs.jsonl` (`cost_estimated: true`): about 36.6 USD across the six runs, 4.8 to 7.7 each.
-- T-0333's own verifier (L3, same mode, records in `.sdlc/0333-verify-subagent-tickets/`): the first run failed A6 because `check.py`'s link check reads `git ls-files` and the three new ticket folders were untracked while `roadmap.md` linked them; after they were staged (no content change) the second run passed. About 6.3 USD estimated for the two runs.
+- T-0333's own verifier (L3, same mode, records in `.sdlc/.0333-verify-subagent-tickets/`): the first run failed A6 because `check.py`'s link check reads `git ls-files` and the three new ticket folders were untracked while `roadmap.md` linked them; after they were staged (no content change) the second run passed. About 6.3 USD estimated for the two runs.
 - Tree under test: v0.21.0 plus three doc-only commits (`git diff --stat 027da15a HEAD -- plugins` is empty). Nothing was fixed.
 
 ## Fails and their tickets
