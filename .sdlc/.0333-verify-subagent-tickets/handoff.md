@@ -21,7 +21,7 @@ Each of T-0275, T-0279, T-0280, T-0284, T-0286, T-0326, T-0327, T-0328, T-0329, 
   - Every fail has a filed ticket; `check.py` and `tickets.py check` pass.
 
 ## Context
-0.21.0 (v0.21.0, 027da15a) shipped with these tickets closed on the solo lane and no verdict file (docs/reports/release-0.21.0.md lists them). Same pattern as T-0319.
+0.21.0 (v0.21.0, 027da15a) shipped with these tickets closed on the solo lane and no verdict file (docs/reports/2026-10-06-release-0-21-0.md lists them). Same pattern as T-0319.
 
 ## Constraints
 Read-only on plugin code. No em or en dashes. No push or publish.

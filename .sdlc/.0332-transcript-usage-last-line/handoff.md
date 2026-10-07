@@ -24,7 +24,7 @@ Estimate within 35 percent of the host cost.
 Final-rerun verifier stored at $1.769 against host $3.638 (0.49).
 
 ## Context
-Found by the final live rerun (docs/reports/subagent-mode-live-2026-10-07.md, `Final rerun after T-0329 to T-0331`). Root cause confirmed: first line per message id wins in `transcript_usage`.
+Found by the final live rerun (docs/reports/2026-10-07-subagent-mode-live.md, `Final rerun after T-0329 to T-0331`). Root cause confirmed: first line per message id wins in `transcript_usage`.
 
 ## Constraints
 The failing test lands with the fix. No em or en dashes. No push or publish.

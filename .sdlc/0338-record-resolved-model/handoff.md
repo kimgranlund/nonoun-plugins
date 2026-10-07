@@ -19,7 +19,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - Done when: a record with a transcript shows `resolved_model` in runs.jsonl; dispatch selftest and check.py pass.
 
 ## Context
-Live scout spawn 2026-10-07 (docs/reports/subagent-mode-live-2026-10-07.md, section Live scout spawn): the alias haiku resolved to claude-haiku-4-5-20251001, visible only in the transcript. On a Max login the alias has resolved to Sonnet 5.5 before (bench-scout-pin), so the run row should say which model ran. Files: plugins/sdlc-lite/scripts/dispatch.py (record), plugins/sdlc-lite/scripts/cost_estimate.py.
+Live scout spawn 2026-10-07 (docs/reports/2026-10-07-subagent-mode-live.md, section Live scout spawn): the alias haiku resolved to claude-haiku-4-5-20251001, visible only in the transcript. On a Max login the alias has resolved to Sonnet 5.5 before (bench-scout-pin), so the run row should say which model ran. Files: plugins/sdlc-lite/scripts/dispatch.py (record), plugins/sdlc-lite/scripts/cost_estimate.py.
 
 ## Constraints
 No em or en dashes. No push or publish. Model and effort defaults unchanged.
