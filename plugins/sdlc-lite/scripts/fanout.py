@@ -348,6 +348,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 # isolation worktree. The host cuts <name> a worktree under .claude/worktrees/<name> on branch worktree-<name>.
 HOST_WORKTREES = '.claude/worktrees'
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
+HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
 SOLO_SUBAGENT_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and rerun them all after a fix, and report files changed, each check '
@@ -1550,6 +1551,30 @@ def record_solo_lane(taskdir, tier):
     steps.write_solo_skips(taskdir, tier)
 
 
+def host_branch_ticket(root, branch, m):
+    """(ticket id, role) of the lane a host branch `worktree-agent-<agent_id>` belongs to, found through the agent_id
+    in a runs.jsonl line of a ticket folder on the branch or in the tree; ('', '') when no record names that agent."""
+    aid = m.group(1)
+    for slug, meta in tickets.branch_tickets(root, branch):
+        texts = []
+        p = root / slug / 'runs.jsonl'
+        if p.is_file():
+            texts.append(p.read_text(encoding='utf-8', errors='replace'))
+        rel = git_out(root, 'rev-parse', '--show-prefix').strip()
+        q = git(root, 'show', f'refs/heads/{branch}:{rel}{slug}/runs.jsonl')
+        if q.returncode == 0:
+            texts.append(q.stdout)
+        for text in texts:
+            for ln in text.splitlines():
+                try:
+                    rec = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(rec, dict) and rec.get('agent_id') == aid:
+                    return str(meta.get('id', '')), str(rec.get('role', ''))
+    return '', ''
+
+
 def land_lane_name(branch, tid):
     name = re.sub(r'[^a-z0-9]+', '-', re.sub(r'^worktree-', '', branch).lower()).strip('-')
     return name if name and LANE_RE.fullmatch(name) and name not in RESERVED else f'{tid.lower()}-land'
@@ -1585,7 +1610,9 @@ def land_preflight(a):
     if branch == integration:
         raise Refuse(f'{branch} is the integration branch; land a branch an agent worked on')
     m = SUBAGENT_BRANCH.fullmatch(branch)
-    tid = norm_tid(a.ticket) if a.ticket else (norm_tid(m.group(1).upper()) if m else '')
+    hm = HOST_BRANCH.fullmatch(branch)
+    host_tid, host_role = host_branch_ticket(root, branch, hm) if hm else ('', '')
+    tid = norm_tid(a.ticket) if a.ticket else (norm_tid(m.group(1).upper()) if m else host_tid)
     if not tickets.ID_RE.fullmatch(tid):
         raise Refuse(f'cannot tell which ticket {branch} delivers: pass --ticket T-NNNN (a branch named '
                      f'worktree-<id>-solo carries it)')
@@ -1630,7 +1657,7 @@ def land_preflight(a):
                      f'or pass another --lanes-dir')
     kind = a.lane
     if kind == 'auto':
-        kind = 'solo' if m else 'full'
+        kind = 'solo' if m or (host_role == 'solo' and host_tid == tid) else 'full'
     tier = solo_tier(t.size) if kind == 'solo' else None
     if kind == 'solo' and tier is None:
         kind = 'full'
@@ -3119,6 +3146,18 @@ def selftest():
                f'out={ln.stdout[-300:]!r}', ln.returncode == 1 and '| t-0005-solo | T-0005 | no changes |' in ln.stdout
                and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before
                and re.search(r'^status: ready\b', sh(ld, 'show', f'{integ}:.sdlc/t5/handoff.md').stdout, re.M))
+        # host-style branch name worktree-agent-<id>: the lane comes from the agent_id in the dispatch record
+        make_branch(ld, 'worktree-agent-a1b2c3', {'f6.txt': 'six\n', '.sdlc/t6/runs.jsonl':
+                    json.dumps({'role': 'solo', 'agent_id': 'a1b2c3'}) + '\n'}, 'T-0006: Ticket t6')
+        lh = verb(ld, 'land', 'worktree-agent-a1b2c3', *pin, '--gate', 'test -e f6.txt')
+        expect(f'case 23 land host branch: a solo lane is found by agent_id, merged and closed, got rc={lh.returncode} '
+               f'out={lh.stdout[-400:]!r} err={lh.stderr!r}', lh.returncode == 0 and 'T-0006 | merged |' in lh.stdout
+               and '- Lane for `T-0006`: solo' in lh.stdout
+               and re.search(r'^status: done\b', sh(ld, 'show', f'{integ}:.sdlc/t6/handoff.md').stdout, re.M))
+        make_branch(ld, 'worktree-agent-zzz', {'fz.txt': 'z\n'}, 'unknown')
+        lu = verb(ld, 'land', 'worktree-agent-zzz', *pin, '--gate', 'true')
+        expect(f'case 23 land host branch: an unknown agent is refused without --ticket, got rc={lu.returncode} err={lu.stderr!r}',
+               lu.returncode == 2 and 'cannot tell which ticket' in lu.stderr)
         # tier M: no verifier result, a failing one, then a passing one on the branch
         make_branch(ld, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
         lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
