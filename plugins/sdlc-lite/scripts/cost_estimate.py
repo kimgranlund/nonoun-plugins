@@ -180,6 +180,14 @@ def selftest():
     u0 = live[2][1]
     expect('negative control: without the calibration the final-rerun row falls under the band',
            sum(u0[k] * mult.get(k, 1) for k in TOKEN_KEYS) * rates['fable'] / 1e6 / 3.6384 < 0.65)
+    # T-0336: the L3 fable verifier row stays outside the band; the dated record accepts it as an outlier.
+    l3 = estimate('fable', {'input_tokens': 198, 'output_tokens': 8288, 'cache_read_input_tokens': 332971,
+                            'cache_creation_input_tokens': 51769}, table)[0]
+    expect('L3 verifier row is the recorded outlier: %.3f of host 2.4762' % ((l3 or 0) / 2.4762),
+           l3 is not None and not abs(l3 - 2.4762) <= TOLERANCE * 2.4762 and 0.5 <= l3 / 2.4762 <= 0.65)
+    rec = HERE.parent.parent.parent / 'docs' / 'reports' / 'l3-verifier-row-outlier-2026-10-06.md'
+    expect('accepted-outlier record exists and names the L3 row',
+           rec.is_file() and 'accepted as an outlier' in rec.read_text(encoding='utf-8'))
     with tempfile.TemporaryDirectory() as t2:
         tf = pathlib.Path(t2) / 't.jsonl'
         m = lambda i, o: json.dumps({'message': {'id': i, 'usage': {'input_tokens': 1, 'output_tokens': o}}})
