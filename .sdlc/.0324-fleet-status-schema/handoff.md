@@ -2,7 +2,7 @@
 id: T-0324
 title: "JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0323]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,7 @@ No em or en dashes. No push or publish. Model and effort defaults unchanged.
 - `grep -q 'fleet-status.schema.json' docs/maintenance/sdlc-internals.md`
 - `grep -q 'resources/fleet-status.schema.json' plugins/sdlc-lite/skills/fleet-status/SKILL.md`
 - `git diff --check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
