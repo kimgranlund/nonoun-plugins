@@ -2,7 +2,7 @@
 id: T-0314
 title: "Red-first control: a (red) criterion must fail at base and pass after, for solo and chain"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,13 @@ Reconsidered 2026-10-06 from dropped T-0211 (see docs/reports/parked-tickets-rev
 
 ## Constraints
 No change to any model or effort value. No em dashes. No push, tag or publish. Independent verifier per ticket; checks need a positive case and an observed negative control.
+
+## Acceptance criteria
+- `out=$(python3 plugins/sdlc-lite/scripts/specgate.py selftest) && for l in "red: a solo ticket fixture is red before the build and green after (observed)" "red: a (red) criterion green at base is refused with its name; a red one passes (the fixture above)" "red: a span that changes the tree is refused and the snapshot restores it" "red: control: with the restore disabled the changed file stays behind (the restore check bites)" "red: a timeout is refused and does not wait out the span" "red: --step reads a plan step: red passes, green is refused naming the step, no (red) is no-op"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done && test "$(printf '%s\n' "$out" | tail -n 1)" = "specgate selftest: PASS"`
+- `out=$(python3 plugins/sdlc-lite/scripts/steps.py selftest) && for l in "swap: (c) tag mismatch: a (red) line swapped for a plain text drops the (red) tag" "swap: (c) tag mismatch: a plain line swapped for a (red) text adds a (red) tag" "(red) a (red) span that is green now is refused with its name and writes nothing" "(red) a (red) span that changes the tree is refused, naming the path" "(red) control: with red_restore disabled the changed file stays behind (the restore check bites)" "(red) a full split runs no (red) span: a green one does not refuse"; do printf '%s\n' "$out" | grep -qxF "ok: $l" || exit 1; done && test "$(printf '%s\n' "$out" | tail -n 1)" = "steps selftest: PASS"`
+- `grep -qF 'specgate.py red' plugins/sdlc-lite/agents/solo.md && python3 plugins/sdlc-lite/scripts/check.py && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `python3 plugins/sdlc-lite/scripts/specgate.py red --help | grep -qF -- "--step" && python3 plugins/sdlc-lite/scripts/specgate.py red --help | grep -qF -- "--timeout"`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
