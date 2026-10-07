@@ -66,7 +66,8 @@ it then does the following.
                loaded_context is {"status":"log absent"} (a sub-agent leaves no stream-json log).
                cost_usd is estimated from the notice tokens by cost_estimate.py (cost_estimated true, cost_basis
                "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero;
-               usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given.
+               usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given; --transcript <jsonl>
+               replaces the token count with the transcript's summed usage fields, priced per field (T-0328).
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
                <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
   failed       no result file and no result on stdin: the stdin text is saved as <stem>.log, the attempt is failed
@@ -694,6 +695,7 @@ def main(argv):
     r.add_argument('--agent-id', help='the sub-agent id the Agent tool returned')
     r.add_argument('--tokens', type=int, help='subagent_tokens from the completion notice')
     r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
+    r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run')
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
     st.add_argument('directory')
@@ -726,6 +728,9 @@ def main(argv):
         return 0
     if args.cmd == 'record':
         used = {k: v for k, v in (('subagent_tokens', args.tokens), ('tool_uses', args.tool_uses)) if v is not None}
+        if args.transcript:  # T-0328: the notice count excludes cache reads; the transcript usage does not
+            used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
+                if cost_estimate.transcript_usage(args.transcript) else used
         try:
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms)
         except Refuse as r:

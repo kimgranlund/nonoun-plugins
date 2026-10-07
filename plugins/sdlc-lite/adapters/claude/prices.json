@@ -1,10 +1,22 @@
 {
-  "_note": "Blended USD per million tokens (input + cache + output summed) per model family, fitted to recorded runs.jsonl lines holding usage and a real cost_usd. cost_estimate.py selftest checks it stays within 35 percent per model.",
+  "_note": "Blended USD per million tokens (input + cache + output summed) per model family, fitted to recorded runs.jsonl lines holding usage and a real cost_usd. cost_estimate.py selftest checks it stays within 35 percent per model. usage_input is USD per million input tokens fitted to the host totals in docs/reports/subagent-mode-live-2026-10-07/host-cost.txt (T-0328); usage_multipliers scale it for output, cache read and cache write tokens. haiku is scaled from its blended rate, not fitted.",
   "unit": "usd_per_million_tokens",
   "models": {
     "fable": 3.28,
     "opus": 0.99,
     "sonnet": 0.81,
     "haiku": 0.21
+  },
+  "usage_input": {
+    "fable": 7.23,
+    "opus": 3.0,
+    "sonnet": 2.25,
+    "haiku": 0.58
+  },
+  "usage_multipliers": {
+    "input_tokens": 1,
+    "output_tokens": 5,
+    "cache_read_input_tokens": 0.1,
+    "cache_creation_input_tokens": 1.25
   }
 }
