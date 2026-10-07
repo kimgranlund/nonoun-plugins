@@ -153,6 +153,8 @@
    no line of them names `run.sh` without also naming Codex (run.sh is the Codex runner there; the Claude backend dispatches sub-agents).
    Negative controls: each phrase removed from each file, and a Claude-scoped `run.sh` line added to each file, must be flagged; a
    Codex-scoped `run.sh` line must not.
+41. Record transcript flag (T-0334): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with flags that omits `--transcript`.
+   Negative control: a record call without it is flagged; one with it is not.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -997,7 +999,7 @@ for rel, text in _dc_texts.items():
     errors.extend(f'{rel}: names run.sh outside a Codex line: {l[:80]}' for l in claude_runsh_lines(text))
     if not claude_runsh_lines(text + '\nRun `scripts/run.sh builder L1 x.md`.\n'): errors.append(f'check.py: dispatch core negative control not flagged for a Claude run.sh line in {rel}')
     if claude_runsh_lines(text + '\nOn Codex, run `SDLC_BACKEND=codex scripts/run.sh builder L1 x.md`.\n') != claude_runsh_lines(text): errors.append(f'check.py: dispatch core flagged a Codex run.sh line in {rel}')
-# Record transcript flag (T-0334): a skill that spells a `dispatch.py record` call with flags passes --transcript.
+# Record transcript flag (docstring item 41, T-0334): a skill that spells a `dispatch.py record` call with flags passes --transcript.
 def record_flag_bad(text): return [l.strip()[:60] for l in text.splitlines() if 'dispatch.py record <dispatch_file> --' in l and '--transcript' not in l]
 _rt_texts = {d.parent.name: _rd(d) for d in sorted((root/'skills').glob('*/SKILL.md'))}
 for _n, _t in _rt_texts.items():
