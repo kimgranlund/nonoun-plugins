@@ -976,9 +976,9 @@ def problems(ts, numbered=False):
             nnnn = name[:4]
             if m['id'] != f'T-{nnnn}':
                 errs.append(f'{slug}: folder prefix {nnnn}- does not match id {m["id"]!r} (want T-{nnnn})')
-        for k in REQUIRED:
-            if k not in m:
-                errs.append(f'{slug}: missing {k}')
+        gone = [k for k in REQUIRED if k not in m]
+        if gone:
+            errs.append(f'{slug}: missing {", ".join(gone)}')
         for k, allowed in ENUMS.items():
             if k in m and m[k] not in allowed:
                 errs.append(f'{slug}: {k}={m[k]!r} not in {"|".join(allowed)}')
@@ -2197,6 +2197,9 @@ def selftest():
             ('bad size', lambda r: edit(r, 'alpha', r'^size:.*$', 'size: XXL'), "size='XXL'"),
             ('bad priority', lambda r: edit(r, 'alpha', r'^priority:.*$', 'priority: P0'), "priority='P0'"),
             ('missing field', lambda r: edit(r, 'alpha', r'^size:.*\n', ''), 'alpha: missing size'),
+            ('partial front matter is one finding', lambda r: (r / 'alpha' / 'handoff.md').write_text(
+                '---\nstatus: done\n---\n\n## Goal\nx\n', encoding='utf-8'),
+             'alpha: missing id, title, type, size, priority, depends, created'),
             ('bad id', lambda r: edit(r, 'alpha', r'^id:.*$', 'id: T-12'), "alpha: id 'T-12' is not T-NNNN"),
             ('bad created', lambda r: edit(r, 'alpha', r'^created:.*$', 'created: 2026-9-1'),
              "alpha: created '2026-9-1' is not YYYY-MM-DD"),
