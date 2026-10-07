@@ -452,6 +452,13 @@ run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task sonnet "$gh")" >/dev/null;
 [[ $rc -eq 2 ]] || fail "spawn gate denies a scout spawn with model sonnet against a haiku alias record: exit $rc, want 2"
 run "$rs" "$(gj $vt $vn opus "other/../handoff.md")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate resolves a relative Handoff path against the hook cwd: exit $rc, want 0"
+# T-0344: the path is the first token after "Handoff:"; trailing text (even with a slash) is ignored.
+run "$rs" "$(gj $vt $vn opus "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a plain Handoff line (T-0344): exit $rc, want 0"
+run "$rs" "$(gj $vt $vn opus "$gh  (frozen, see docs/a/b.md)")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows trailing text on the Handoff line (T-0344): exit $rc, want 0"
+run "$rs" "$(jq -n --arg cwd "$gate" '{tool_name:"Agent",cwd:$cwd,agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"verifier-L3-gate-task",model:"opus",prompt:"no line here"}}')" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a prompt with no Handoff line (T-0344): exit $rc, want 2"
 # A solo dispatch (sdlc-lite:solo-L1|L2|L3, solo_run.py) is gated by its record and model only (T-0287 live defect).
 # The 0.21.x names solo-S|M|L are deprecated aliases the gate still accepts for one release (T-0342).
 for st in L1 L2 L3 S M L; do
