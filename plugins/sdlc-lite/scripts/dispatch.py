@@ -53,7 +53,8 @@ the result path it writes with the Write tool before it ends (T-0330); record fa
 Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, spec gate, or a running attempt, 4 budget, 5 lane.
 
 record is the post-launch half (T-0278, design section 3). It takes <stem>.dispatch.json and the sub-agent's
-result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty
+result: the file the role wrote at the dispatch's result path, else stdin when that file is missing or empty,
+else (with --transcript) the transcript's last assistant message; a max_tokens stop is refused as truncated (T-0343)
 (stdin with a "## " heading line is a result, any other stdin is the sub-agent's error text). In run.sh's order
 it then does the following.
   header       writes <!-- role= level= model= effort= --> from the dispatch over any header the role wrote, then
@@ -594,12 +595,14 @@ def limit_marker(d, error):
     say('session limit: resume with: ' + resume)
 
 
-def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None):
+def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None):
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused, 3 invalid result).
 
     The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
     missing or empty. stdin text with a ## heading line is a result; any other text is the sub-agent's error text.
-    validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control."""
+    validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control.
+    With transcript (a jsonl path), a result missing from both the file and stdin is taken from the transcript's last
+    assistant message; one that stopped on max_tokens is refused as truncated (T-0343)."""
     try:
         d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
     except (OSError, ValueError) as e:
@@ -637,8 +640,13 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     error = ''
     if not text.strip():
         said = (stdin() if stdin else '') or ''
+        fin = cost_estimate.transcript_final(transcript) if transcript and not re.search(r'^## ', said, re.M) else None
         if re.search(r'^## ', said, re.M):
             text = said
+        elif fin and fin[1] == 'max_tokens':
+            text, error = '', 'the %s final message in the transcript is truncated (stop_reason max_tokens); rerun it or have it write %s' % (role, result)
+        elif fin and re.search(r'^## ', fin[0], re.M):
+            text = fin[0]
         else:
             text, error = '', said.strip() or 'no result file at %s (the %s must write its report there before it ends)' % (result, role)
     if not text.strip():
@@ -754,7 +762,8 @@ def main(argv):
                 if cost_estimate.transcript_usage(args.transcript) else used
         try:
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
-                          resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None)
+                          resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None,
+                          transcript=args.transcript)
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -1377,6 +1386,21 @@ def selftest():
                            env=env_cli, stdin=subprocess.DEVNULL)
         case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-4-5-20251001')
         case('record with no transcript writes no resolved_model', 'resolved_model' not in lines_of(rb / '.sdlc' / 'c4')[-1])
+        # T-0343: the artifact comes from the transcript when the file and stdin are empty.
+        good = {'message': {'id': 'm2', 'role': 'assistant', 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': BODY['builder']}]}}
+        for nm, rec_ in (('c5', good), ('c6', {'message': {**good['message'], 'stop_reason': 'max_tokens'}})):
+            put(rb / '.sdlc' / nm / 'handoff.md')
+            rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            tf = rb / (nm + '.jsonl')
+            tf.write_text(json.dumps(rec_) + '\n')
+            q = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--transcript', str(tf), got['dispatch_file']],
+                               capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
+            if nm == 'c5':
+                case('empty stdin plus a transcript writes a valid result from the last assistant message',
+                     q.returncode == 0 and Path(got['result']).read_text().startswith('<!-- role=builder') and len(lines_of(rb / '.sdlc' / nm)) == 1)
+            else:
+                case('a truncated transcript message is rejected with a clear error and no result',
+                     q.returncode == 1 and 'truncated' in attempt_of(got)['error'] and not Path(got['result']).exists())
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
         case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')
