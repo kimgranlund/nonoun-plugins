@@ -642,9 +642,12 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         said = (stdin() if stdin else '') or ''
         has_head = bool(re.search(r'^## ', said, re.M))
         # T-0349: stdin that is an error stays a failure; stdin that is empty or a truncation of the transcript's final message yields to it.
-        is_err = bool(said.strip()) and not has_head and bool(LIMIT_RE.search(said) or re.match(r'\s*(API )?Error:', said))
-        fin = cost_estimate.transcript_final(transcript) if transcript and not is_err else None
+        # T-0352: stdin with no heading is error text unless it is a truncation of the transcript's final message.
         cut = said.strip().rstrip('.\u2026').rstrip()
+        fin = cost_estimate.transcript_final(transcript) if transcript else None
+        is_err = bool(said.strip()) and not has_head and not (fin and fin[0].strip().startswith(cut))
+        if is_err:
+            fin = None
         if fin and has_head and not (len(fin[0].strip()) > len(cut) and fin[0].strip().startswith(cut)):
             fin = None  # complete stdin: it is the result
         if fin and fin[1] == 'max_tokens':
@@ -733,6 +736,7 @@ def main(argv):
     sub.required = True
     p = sub.add_parser('prepare', help='run the pre-launch gates and print the dispatch JSON')
     p.add_argument('--dry-run', action='store_true', help='print the JSON; write no record, take no lock')
+    p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
     r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
@@ -780,7 +784,8 @@ def main(argv):
             sd = solo_dispatch(args.dispatch)
             if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
                 import solo_run
-                cost = solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens)
+                cost = solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens,
+                                         agent_id=args.agent_id, tool_uses=args.tool_uses, duration_ms=args.duration_ms)
                 print('solo recorded%s; live marker cleared' % ('' if cost is None else ', cost_usd %s' % cost))
                 return 0
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
@@ -793,6 +798,8 @@ def main(argv):
         except (OSError, ValueError) as e:
             print('dispatch.py: ' + str(e), file=sys.stderr)
             return 2
+    if args.routing_reason is not None:
+        os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run)
     except Refuse as r:
@@ -1227,6 +1234,12 @@ def selftest():
                            cwd=str(repo), capture_output=True, text=True, env=env)
         cli = json.loads(p.stdout) if p.returncode == 0 else {}
         case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'haiku' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', '--routing-reason', 'flag reason', 'scout', 'L1', '.sdlc/t/handoff.md'],
+                           cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
+        case('--routing-reason is read like the env var and wins over it', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'flag reason')
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md'],
+                           cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
+        case('the env var stays a fallback', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'env reason')
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'planner', 'L1', '.sdlc/ls/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         case('CLI exits 5 for the lane gate with the JSON absent from stdout', p.returncode == 5 and p.stdout == '')
@@ -1434,7 +1447,9 @@ def selftest():
                 ('t1', head, [amsg('x', tool=True), amsg(full)], True),
                 ('t2', 'Error: session limit reached', [interim], False),
                 ('t3', '', [amsg(full), amsg('', tool=True), {'message': {'role': 'user', 'content': 'x'}}], True),
-                ('t4', full, [interim], True)):
+                ('t4', full, [interim], True),
+                ('r6', 'Agent terminated unexpectedly', [amsg(full)], False),
+                ('r6b', full[:2], [amsg(full)], True)):
             put(rb / '.sdlc' / nm / 'handoff.md')
             rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
             tf = rb / (nm + '.jsonl')
@@ -1443,11 +1458,15 @@ def selftest():
                                capture_output=True, text=True, env=env_cli, input=said_)
             body_ = Path(got['result']).read_text() if Path(got['result']).is_file() else ''
             if ok:
-                case('record %s: result is %s' % (nm, 'the transcript final message' if nm in ('t1', 't3') else 'complete stdin'),
+                case('record %s: result is %s' % (nm, 'the transcript final message' if nm in ('t1', 't3', 'r6b') else 'complete stdin'),
                      q.returncode == 0 and (full.splitlines()[-1] in body_) and ('working' not in body_))
             else:
-                case('record t2: error stdin stays a failure with the limit marker despite an interim heading',
-                     q.returncode == 1 and not Path(got['result']).exists() and (rb / '.sdlc' / nm / 'builder-L1.limit').is_file())
+                if nm == 't2':
+                    case('record t2: error stdin stays a failure with the limit marker despite an interim heading',
+                         q.returncode == 1 and not Path(got['result']).exists() and (rb / '.sdlc' / nm / 'builder-L1.limit').is_file())
+                else:
+                    case('record %s: unmatched error stdin is a failure despite a complete transcript' % nm,
+                         q.returncode == 1 and not Path(got['result']).exists())
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
         case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')

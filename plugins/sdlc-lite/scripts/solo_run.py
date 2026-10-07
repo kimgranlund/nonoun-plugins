@@ -249,7 +249,7 @@ def append(task_dir, rec):
         f.write(json.dumps(rec, separators=(',', ':')) + '\n')
 
 
-def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
+def complete(task_dir, attempt, model_tier, transcript=None, tokens=None, agent_id=None, tool_uses=None, duration_ms=None):
     """Price the solo row dispatch_json wrote (usage null) from the sub-agent transcript or the notice token count (T-0328).
     Rewrites that row in place so budget.py does not count the run twice. Returns the priced cost, or None with the row untouched."""
     sys.path.insert(0, str(SCRIPTS))
@@ -257,6 +257,8 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
     usage = cost_estimate.transcript_usage(transcript) if transcript else None
     if usage is None and tokens is not None:
         usage = {'subagent_tokens': tokens}
+    if usage is not None and tool_uses is not None:
+        usage = {**usage, 'tool_uses': tool_uses}
     f = pathlib.Path(task_dir) / 'runs.jsonl'
     if usage is None or not f.is_file():
         unmark_live(task_dir, attempt)
@@ -272,6 +274,10 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
             est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[tier_of(model_tier)][0], usage)
             if est is not None:
                 r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
+                if agent_id:
+                    r['agent_id'] = agent_id
+                if duration_ms is not None:
+                    r['duration_ms'] = duration_ms
                 r.pop('cost_reason', None)
                 cost = est
         rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
@@ -976,6 +982,14 @@ def selftest():
         r0 = row()
         expect('complete: solo row priced in place, one row', got and len(r0) == 1 and r0[0]['cost_usd'] == got and got > 0
                and r0[0].get('cost_estimated') and 'cost_reason' not in r0[0] and r0[0]['usage']['output_tokens'] == 1000)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0352: the notice's agent id, tool uses and duration reach the row
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        got = complete(d, disp['attempt_id'], 'M', None, 1234, agent_id='ag-3', tool_uses=7, duration_ms=900)
+        r0 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
+        expect('complete: row carries agent_id, duration_ms and tool_uses', got is not None and r0.get('agent_id') == 'ag-3'
+               and r0.get('duration_ms') == 900 and r0['usage'].get('tool_uses') == 7)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)

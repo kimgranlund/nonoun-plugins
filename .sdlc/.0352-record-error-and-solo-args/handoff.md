@@ -2,7 +2,7 @@
 id: T-0352
 title: "dispatch.py record: unmatched error stdin yields to the transcript, and a solo dispatch file ignores agent id, tool uses and duration"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Non-blocking findings of the second verification pass of 2026-10-07; the release
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:8595b9c1e419 -->
+<!-- sdlc-lite:managed:start v1 sha256:f6a2edc7aaf5 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,12 +9,11 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 9
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
-  - T-0352 dispatch.py record: unmatched error stdin yields to the transcript, and a solo dispatch file ignores agent id, tool uses and duration (0352-record-error-and-solo-args)
   - T-0354 Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied (0354-prepare-env-prefix-allowlist)
   - T-0355 dispatch.py record refuses a solo_run.py dispatch file as not a dispatch file, so solo lanes get no cost rows (0355-solo-dispatch-not-recorded)
   - T-0356 Route the L3 Fable verifier to L4, L5, merge and security tickets only; replay T-0333 on L2 first (0356-verifier-routing-by-level)
@@ -22,7 +21,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0358 A solo lane stops early when the ticket is already fixed or stale (0358-solo-already-fixed-check)
 - ready: 0
 - blocked: 0
-- done: 316
+- done: 317
 - dropped: 25
 
 ## Procedures
