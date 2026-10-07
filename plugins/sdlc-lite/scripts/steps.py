@@ -952,6 +952,10 @@ def lint_steps(plan, steps):
             if rc != 0:
                 lines = [f'steps: {plan} step {n}: acceptance criterion command does not parse: {text}']
                 lines += [f'  {e}' for e in err.splitlines() if e.strip()]
+                crit = next((x for x in block.splitlines() if text in x), '')
+                if crit.count('`') > 2:
+                    lines.append('  hint: a backtick inside a command ends the code span; avoid nested backticks '
+                                 'and build the string by concatenation, e.g. node -e "console.log(\'a\' + \'b\')"')
                 findings.append('\n'.join(lines))
                 continue
             try:
@@ -2148,7 +2152,8 @@ def widen(step_dir, paths, timeout=300):
              if is_scope_span(s)]
     rows = sorted(set(i for i, _, _ in scope))
     if not rows:
-        refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list')
+        refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list '
+               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$")')
     if len(rows) > 1:
         refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list; '
                'need exactly one')
@@ -2443,6 +2448,9 @@ def selftest():
         d = task(plan=BROKEN_PLAN)
         refused('(j) split refuses a broken criterion command as a plan defect, writes nothing',
                 ['split', str(d)], d, needles=('plan defect', 'step 1', 'does not parse'))
+        d2 = task(plan=PLAN.replace('- one works', "- `node -e \"console.log(`x`)\"`"))
+        refused('(j) a nested-backtick criterion gets the hint line, first line kept',
+                ['lint', str(d2 / 'planner-L2.md')], d2, needles=('does not parse', 'hint: a backtick', 'concatenation'))
         refused('(j) lint on the plan file exits 1 with plan defect, writes nothing',
                 ['lint', str(d / 'planner-L2.md')], d, needle='plan defect')
 
@@ -3376,6 +3384,8 @@ def selftest():
         # (c) refusals: each writes nothing and ends with the plan-defect line
         r, d = w_repo(w_handoff('`test -d .`'))
         widen_refused('(c) no scope criterion line', d, ['b.txt'], 'no criterion line')
+        widen_refused('(c) no scope criterion line names the accepted forms', d, ['b.txt'],
+                      'grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"')
         r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`', f'`{W_FORMS["E"]}`'))
         widen_refused('(c) two scope criterion lines', d, ['b.txt'], '2 criterion lines')
         r, d = w_repo(w_handoff(f'`{W_LIST} | grep -v -e a.txt | {{ ! grep -q .; }}`'))
