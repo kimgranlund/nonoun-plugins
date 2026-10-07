@@ -8,7 +8,9 @@ user-invocable: false
 
 The tables below describe the Claude backend. For Codex, model and effort are defined in `adapters/codex/models.json`; the level scope and escalation rules below still apply. The Codex runner records its selected model. When the builder and verifier models match, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to; the Codex plan-reviewer takes the model that map gives for the newest planner result's recorded model. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`.
 
-The Claude model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh`. This file says how to pick a level. Keep the two in sync.
+The Claude model and effort per level live in `${CLAUDE_PLUGIN_ROOT}/adapters/claude/levels.json`, which `scripts/claude_roles.py` turns into one agent definition per row (`sdlc-lite:<role>-L<n>`); the definition fixes the effort. This file says how to pick a level. Keep the two in sync: `check.py` compares them.
+
+On Claude, a role at a level is dispatched as a sub-agent: `dispatch.py prepare <role> <level> <handoff.md>` runs the gates and prints the dispatch JSON, the conductor passes its `subagent_type`, `name`, `model`, `prompt`, and `run_in_background` to the `Agent` tool unchanged, and `dispatch.py record` validates the result and writes its header. `model` is a per-call parameter and `prepare` chooses it, so a verifier or plan-reviewer stays off the producer's model family; `effort` comes from the definition, so the conductor never passes an `effort` argument. A Codex role runs through the Codex runner with the rows of `adapters/codex/models.json`.
 
 ## How to resolve a level
 
@@ -37,7 +39,7 @@ The `/fix` fast lane runs builder L1 or L2 (never higher) and verifier L1. A fai
 
 ## verifier (L1 to L3)
 
-Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `run.sh` never lets a verifier run on the build's model family: after a Fable or Sonnet build, a verifier on that family becomes Opus at the same effort.
+Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → L2, L4 or L5 → L3. `dispatch.py prepare` (on Codex, the runner) never lets a verifier run on the build's model family: after a Fable or Sonnet build, a verifier on that family becomes Opus at the same effort, and the dispatch carries the changed `model`.
 
 | Level | Model / effort | Fits when |
 |---|---|---|
@@ -59,7 +61,7 @@ The plan-reviewer (L1, one level) reviews a plan before any builder starts. It i
 
 Other plans keep structural validation (`steps.py lint` and `steps.py split`) alone. `steps.py review <task dir>` prints the action (/chain 3).
 
-The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. With planner L2 and L3 both on Opus, a review of a plan by planner L2 or L3 runs on Fable high; only a plan by the Sonnet planner L1 is reviewed on Opus high. `run.sh` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
+The reviewer never runs on the planner's model family. Claude: an Opus planner moves the review to Fable high; a Fable or Sonnet planner keeps it on Opus high. With planner L2 and L3 both on Opus, a review of a plan by planner L2 or L3 runs on Fable high; only a plan by the Sonnet planner L1 is reviewed on Opus high. `dispatch.py prepare` applies this from the newest planner result's `model=` token. Codex: the `verifier_alternates` map in `adapters/codex/models.json`, keyed by the newest planner result's recorded model, so Astra high reviews Sol plans and `gpt-6.1-sol` high reviews Astra plans.
 
 The verdict routes the plan:
 - `pass`: `steps.py split`.
@@ -84,20 +86,20 @@ The verdict routes the plan:
 | filer | L1 | Sonnet medium |
 | plan-reviewer | L1 | Opus high |
 
-## Session agents (not run.sh roles)
+## Session agents (not pipeline roles)
 
-The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a run.sh role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `run.sh` has no messenger case.
+The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case.
 
-## Agent-tool spawns (outside run.sh)
+## Agent-tool spawns (outside a dispatch)
 
-This section applies to any in-session Agent-tool spawn that has no run.sh role: `general-purpose`, `Explore`, `Plan`, or any spawn that names no agent file. Work that has a run.sh role goes through run.sh, not the Agent tool.
+This section applies to any in-session Agent-tool spawn that is not a prepared dispatch: `general-purpose`, `Explore`, `Plan`, or any spawn that names no agent file. Work that has a pipeline role goes through `dispatch.py prepare` and the `Agent` call it describes, never a bare spawn; a dispatch takes its `model` from the dispatch JSON, not from this section.
 
 Every such spawn states `model` explicitly. An unset `model` inherits the session's top model. Pick the seat by class of work:
 
-- Mechanical or gather-only work: `haiku`. On the maintainer's login (Claude Code 2.1.285) the alias `haiku` resolves to Sonnet 5.5, and the Agent tool takes an alias, so this seat runs Sonnet there; the run.sh scout pins `claude-haiku-4-5`.
+- Mechanical or gather-only work: `haiku`. On the maintainer's login (Claude Code 2.1.285) the alias `haiku` resolves to Sonnet 5.5, and the Agent tool takes an alias, so this seat runs Sonnet there; the scout level row pins `claude-haiku-4-5`.
 - Search, review, and routine coding: `sonnet`, the default.
 - Judgment-heavy synthesis: `opus`.
 
 A plain Agent spawn cannot set effort. A `context: fork` or `subagent_type: "fork"` spawn always prices at the parent model, so it is never a step-down.
 
-Evidence: 62 inherited general-purpose builders cost $7.13 each, against $1.82 for an L3 run.sh builder.
+Evidence: 62 inherited general-purpose builders cost $7.13 each, against $1.82 for an L3 pipeline builder.
