@@ -140,6 +140,12 @@
    agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
    Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
    check.sh phrase removed must be flagged.
+39. Dispatch core: agents/conductor.md, skills/chain/SKILL.md, skills/fix/SKILL.md, skills/level-rubric/SKILL.md, and skills/handoff-format/SKILL.md
+   each name `dispatch.py prepare`, `dispatch.py record`, and the `Agent` spawn with its `name`, `model`, and `run_in_background` parameters (the three
+   launching texts, conductor, chain, and fix, also say the final message goes to `record` `on stdin`), and
+   no line of them names `run.sh` without also naming Codex (run.sh is the Codex runner there; the Claude backend dispatches sub-agents).
+   Negative controls: each phrase removed from each file, and a Claude-scoped `run.sh` line added to each file, must be flagged; a
+   Codex-scoped `run.sh` line must not.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -941,6 +947,20 @@ _cr_sh = _rd(root/'scripts/check.sh')
 errors.extend(f'check.py: generated definitions: {m}' for m in claude_roles_wiring_bad(_cr_sh))
 for _ph in CLAUDE_ROLES_NEEDS:
     if not claude_roles_wiring_bad(_cr_sh.replace(_ph, '')): errors.append(f'check.py: generated definitions negative control not flagged for check.sh without {_ph}')
+# Dispatch core (docstring item 39): the five dispatch texts name prepare, the Agent spawn, and record, and run.sh only for Codex.
+DISPATCH_FILES = ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/fix/SKILL.md', 'skills/level-rubric/SKILL.md', 'skills/handoff-format/SKILL.md')
+DISPATCH_PHRASES = ('dispatch.py prepare', 'dispatch.py record', '`Agent`', '`name`', '`model`', '`run_in_background`')
+DISPATCH_STDIN = ('agents/conductor.md', 'skills/chain/SKILL.md', 'skills/fix/SKILL.md')
+def dispatch_missing(text, phrase): return phrase not in text
+def claude_runsh_lines(text): return [l.strip() for l in text.splitlines() if 'run.sh' in l and 'Codex' not in l and 'codex' not in l]
+_dc_texts = {rel: _rd(root/rel) for rel in DISPATCH_FILES}
+for rel, text in _dc_texts.items():
+    for ph in DISPATCH_PHRASES + (('on stdin',) if rel in DISPATCH_STDIN else ()):
+        if dispatch_missing(text, ph): errors.append(f'{rel}: dispatch core missing "{ph}"')
+        elif not dispatch_missing(text.replace(ph, ''), ph): errors.append(f'check.py: dispatch core negative control not flagged for {rel} without "{ph}"')
+    errors.extend(f'{rel}: names run.sh outside a Codex line: {l[:80]}' for l in claude_runsh_lines(text))
+    if not claude_runsh_lines(text + '\nRun `scripts/run.sh builder L1 x.md`.\n'): errors.append(f'check.py: dispatch core negative control not flagged for a Claude run.sh line in {rel}')
+    if claude_runsh_lines(text + '\nOn Codex, run `SDLC_BACKEND=codex scripts/run.sh builder L1 x.md`.\n') != claude_runsh_lines(text): errors.append(f'check.py: dispatch core flagged a Codex run.sh line in {rel}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
