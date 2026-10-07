@@ -56,7 +56,8 @@
    `skip: evals lock guard`. Negative control: run.sh with the builder:L1 model changed gives `model table changed`.
 16. Spec gate: `guard timeout:` appears in agents/planner.md, skills/handoff-format/SKILL.md, scripts/steps.py,
    and scripts/specgate.py; `specgate.py check` appears in scripts/run.sh, skills/chain/SKILL.md, and
-   agents/conductor.md; and the first `specgate.py check` line of run.sh comes before its
+   agents/conductor.md; `specgate.py red` (the red-first control for a `(red)` criterion) appears in
+   agents/solo.md, agents/planner.md, and scripts/steps.py; and the first `specgate.py check` line of run.sh comes before its
    `exec python3 "$plugin_root/scripts/run_lifecycle.py"` line. Negative controls: each phrase removed, and the
    two run.sh lines swapped, must be flagged.
 17. Carry forward: `## Carry forward` appears in agents/scout.md, agents/researcher.md, agents/architect.md,
@@ -478,7 +479,8 @@ for phrase, rels in LEAN_LANE.items():
             errors.append(f'{rel}: lean-lane negative control not flagged')
 # Spec gate text (docstring item 16): the guard timeout line and the run.sh gate are named where they route.
 SPEC_GATE = {'guard timeout:': ('agents/planner.md', 'skills/handoff-format/SKILL.md', 'scripts/steps.py', 'scripts/specgate.py'),
-             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md')}
+             'specgate.py check': ('scripts/run.sh', 'skills/chain/SKILL.md', 'agents/conductor.md'),
+             'specgate.py red': ('agents/solo.md', 'agents/planner.md', 'scripts/steps.py')}
 def spec_gate_missing(text, phrase): return phrase not in text
 for phrase, rels in SPEC_GATE.items():
     for rel in rels:
