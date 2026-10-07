@@ -5,9 +5,9 @@ argument-hint: "<ticket slug | one-line ask>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/board.py:*), Agent, Read, Write, Grep, Glob, AskUserQuestion
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
-For every role launch, set `SDLC_ROUTING_REASON` (read by `dispatch.py prepare`) to the selected role/level rationale, including the recorded cause of any escalation or replan. Read [shared run operations](../handoff-format/run-operations.md) for readiness, attempt records, and safe recovery.
+For every role launch, set `SDLC_ROUTING_REASON` (read by `dispatch.py prepare`) to the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
 
 Arguments: `$ARGUMENTS`
 

@@ -5,7 +5,7 @@ argument-hint: "[topic or task dir]"
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git status:*), Bash(ls:*), AskUserQuestion
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host's question mechanism. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host's question mechanism. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (a topic, or a task dir such as `.sdlc/tickets/<slug>/`; empty means the whole session and the current task).
 

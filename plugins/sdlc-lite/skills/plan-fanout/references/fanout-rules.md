@@ -14,4 +14,4 @@ Labels: observed here (repo files or records) or from the code (`scripts/fanout.
 | Budget | `budget.py` tiers S $5, M $30, L $60; `solo_run.py` and `run.sh` exit 4 at 80 percent unless acked; `budget.py` itself exits 3 on a warning | from the code |
 | Dry run | `--dry-run` first; the real command is the dry run without that flag | from the code |
 
-Example: `python3 plugins/sdlc-lite/scripts/fanout.py run a=T-0001 b=T-0002 --lane auto --max-lanes 2 --dry-run`
+Example: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fanout.py run a=T-0001 b=T-0002 --lane auto --max-lanes 2 --dry-run`

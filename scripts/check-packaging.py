@@ -50,7 +50,7 @@ def check(root):
             'Claude handoff-freeze hook route lost')
     for skill in (sdlc / 'skills').glob('*/SKILL.md'):
         if skill.parent.name != 'sdlc-lite':
-            require('../sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
+            require('${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md' in skill.read_text(), f'{skill}: missing Codex route')
     for path in (root / 'plugins/progressive-context/skills').rglob('*.md'):
         # Contract templates use illustrative paths inside fenced examples.
         text = re.sub(r'```.*?```', '', path.read_text(), flags=re.S)
