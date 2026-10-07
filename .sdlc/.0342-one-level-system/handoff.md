@@ -2,7 +2,7 @@
 id: T-0342
 title: "One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL)"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0325, T-0338]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Rework of 0.21.x naming: the user asked on 2026-10-06 for the l1-l3 system inste
 
 ## Constraints
 No em or en dashes. No push, tag or publish. Model and effort defaults unchanged. Do not edit or move runtime scripts while a lane or benchmark uses them: this ticket starts after T-0325 and T-0338 merge.
+
+## Closed
+
+2026-10-07: built on branch onelevel (59a3697c), independently verified pass (Fable verifier, /tmp/verify-0342/verdict.md), merged
