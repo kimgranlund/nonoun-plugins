@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:e8cea1d8323f -->
+<!-- sdlc-lite:managed:start v1 sha256:c13e481107df -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 11
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
@@ -20,6 +20,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
   - T-0338 dispatch.py record writes the transcript's resolved model into the run record (0338-record-resolved-model)
+  - T-0342 One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL) (0342-one-level-system)
 - ready: 0
 - blocked: 0
 - done: 299
