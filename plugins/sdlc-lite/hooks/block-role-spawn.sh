@@ -8,7 +8,7 @@
 #         its dispatch record and model alone; not sdlc-lite:messenger or a bare role name); the
 #         0.21.x solo names solo-S, solo-M, solo-L pass as deprecated aliases for one release (ALIAS_OK);
 #      2. name is <role>-L<n>-<slug>[-<k>], the same <role>-L<n> as the subagent_type;
-#      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line: the
+#      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line (its path is the first token; trailing text is ignored): the
 #         file <name>.dispatch.json, or any *.dispatch.json whose "name" is this name (dispatch.py
 #         prepare writes <role>-L<n>[-<k>].dispatch.json and puts the Agent name inside it);
 #      4. the call's model equals that record's model, so a verifier or plan-reviewer cannot be
@@ -73,7 +73,11 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   prompt="$(jq -r '.tool_input.prompt // ""' <<<"$input" 2>/dev/null)"
   handoff=""
   while IFS= read -r line; do
-    if [[ "$line" == "Handoff: "* ]]; then handoff="${line#Handoff: }"; break; fi
+    if [[ "$line" == "Handoff: "* ]]; then
+      handoff="${line#Handoff: }"; handoff="${handoff#"${handoff%%[![:space:]]*}"}"
+      handoff="${handoff%%[[:space:]]*}"  # first token only: trailing text is ignored
+      break
+    fi
   done <<<"$prompt"
   [[ -n "$handoff" ]] || deny "the prompt of '$name' has no 'Handoff: <path>' line, so no dispatch record can be found. $prepare_hint"
   if [[ "$handoff" != /* ]]; then
