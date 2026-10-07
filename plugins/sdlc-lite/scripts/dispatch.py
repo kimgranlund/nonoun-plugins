@@ -599,7 +599,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused, 3 invalid result).
 
     The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
-    missing or empty. stdin text with a ## heading line is a result; any other text is the sub-agent's error text.
+    missing or empty. stdin text with a ## heading line is a result unless it is a truncation of the transcript's final message (T-0349); any other text is the sub-agent's error text.
     validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control.
     With transcript (a jsonl path), a result missing from both the file and stdin is taken from the transcript's last
     assistant message; one that stopped on max_tokens is refused as truncated (T-0343)."""
@@ -640,13 +640,19 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     error = ''
     if not text.strip():
         said = (stdin() if stdin else '') or ''
-        fin = cost_estimate.transcript_final(transcript) if transcript and not re.search(r'^## ', said, re.M) else None
-        if re.search(r'^## ', said, re.M):
-            text = said
-        elif fin and fin[1] == 'max_tokens':
+        has_head = bool(re.search(r'^## ', said, re.M))
+        # T-0349: stdin that is an error stays a failure; stdin that is empty or a truncation of the transcript's final message yields to it.
+        is_err = bool(said.strip()) and not has_head and bool(LIMIT_RE.search(said) or re.match(r'\s*(API )?Error:', said))
+        fin = cost_estimate.transcript_final(transcript) if transcript and not is_err else None
+        cut = said.strip().rstrip('.\u2026').rstrip()
+        if fin and has_head and not (len(fin[0].strip()) > len(cut) and fin[0].strip().startswith(cut)):
+            fin = None  # complete stdin: it is the result
+        if fin and fin[1] == 'max_tokens':
             text, error = '', 'the %s final message in the transcript is truncated (stop_reason max_tokens); rerun it or have it write %s' % (role, result)
         elif fin and re.search(r'^## ', fin[0], re.M):
             text = fin[0]
+        elif has_head:
+            text = said
         else:
             text, error = '', said.strip() or 'no result file at %s (the %s must write its report there before it ends)' % (result, role)
     if not text.strip():
@@ -1401,6 +1407,31 @@ def selftest():
             else:
                 case('a truncated transcript message is rejected with a clear error and no result',
                      q.returncode == 1 and 'truncated' in attempt_of(got)['error'] and not Path(got['result']).exists())
+        # T-0349: truncated stdin, error stdin beside an interim heading, tool-use turns before the final text.
+        def amsg(text, stop='end_turn', tool=False):
+            c = ([{'type': 'tool_use', 'id': 't', 'name': 'Bash', 'input': {}}] if tool else []) + ([{'type': 'text', 'text': text}] if text else [])
+            return {'message': {'role': 'assistant', 'stop_reason': stop, 'content': c}}
+        full = BODY['builder']
+        head = full.splitlines()[0]
+        interim = amsg('## Status\nworking')
+        for nm, said_, recs, ok in (
+                ('t1', head, [amsg('x', tool=True), amsg(full)], True),
+                ('t2', 'Error: session limit reached', [interim], False),
+                ('t3', '', [amsg(full), amsg('', tool=True), {'message': {'role': 'user', 'content': 'x'}}], True),
+                ('t4', full, [interim], True)):
+            put(rb / '.sdlc' / nm / 'handoff.md')
+            rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            tf = rb / (nm + '.jsonl')
+            tf.write_text('\n'.join(json.dumps(r_) for r_ in recs) + '\n')
+            q = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', '--transcript', str(tf), got['dispatch_file']],
+                               capture_output=True, text=True, env=env_cli, input=said_)
+            body_ = Path(got['result']).read_text() if Path(got['result']).is_file() else ''
+            if ok:
+                case('record %s: result is %s' % (nm, 'the transcript final message' if nm in ('t1', 't3') else 'complete stdin'),
+                     q.returncode == 0 and (full.splitlines()[-1] in body_) and ('working' not in body_))
+            else:
+                case('record t2: error stdin stays a failure with the limit marker despite an interim heading',
+                     q.returncode == 1 and not Path(got['result']).exists() and (rb / '.sdlc' / nm / 'builder-L1.limit').is_file())
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
         case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')
