@@ -1002,6 +1002,11 @@ def in_merge(wt):
     return git(wt, 'rev-parse', '-q', '--verify', 'MERGE_HEAD').returncode == 0
 
 
+# Run artifacts a lane commit never stages: they fail consumer repo gates (T-0339).
+LANE_ADD = ('add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock',
+            ':(exclude,glob)**/*.running')
+
+
 def wip_commit(wt, tid, outcome):
     """Commit whatever a stopped ticket left in the lane worktree wt as `wip(<id>): <outcome>`.
     Runs git only in wt (never the integration worktree, main, or the stash). Returns the new
@@ -1011,7 +1016,7 @@ def wip_commit(wt, tid, outcome):
         untracked = git(wt, 'ls-files', '--others', '--exclude-standard')
         if not dirty and not (untracked.returncode == 0 and untracked.stdout.strip()):
             return ''
-        if git(wt, 'add', '-A').returncode:
+        if git(wt, *LANE_ADD).returncode:
             return ''
         if git(wt, 'commit', '-q', '-m', f'wip({tid}): {outcome}').returncode:
             return ''
@@ -1136,7 +1141,7 @@ def run_ticket(ctx, lane, t, lock):
         if verdict != 'pass':
             return f'verifier {verdict}', ''
 
-    p = git(wt, 'add', '-A')
+    p = git(wt, *LANE_ADD)
     if p.returncode:
         return f'lane add failed: {first_line(p.stderr, f"rc={p.returncode}")}', ''
     if git(wt, 'diff', '--cached', '--quiet').returncode == 0:
@@ -3264,6 +3269,18 @@ def selftest():
         expect(f'case 24 stub that makes no change: outcome `no changes`, no merge, ticket still ready, got rc={pn.returncode} '
                f'out={pn.stdout[-300:]!r}', pn.returncode == 1 and '| alpha | T-0001 | no changes |' in pn.stdout
                and sh(nc, 'rev-list', '--merges', '--count', 'fanout/nc').stdout.strip() == '0')
+
+        # case 25 (T-0339): a lane commit never stages *.log, .run.lock or *.running, keeps the rest
+        ar = tmp / 'artifacts'
+        sized_repo(ar, ['S'], {'.gitignore': gi})
+        pa = fanout(ar, 'alpha=T-0001', '--integration', 'fanout/ar', '--lanes-dir', str(tmp / 'ar-lanes'), '--gate', 'true',
+                    '--driver', 'echo k > keep.txt; echo l > verifier-L3.log; : > .run.lock; : > x.running; '
+                                'mkdir -p .sdlc/t1; echo l > .sdlc/t1/v.log; echo a > .sdlc/t1/a.attempt.json')
+        ls_ar = sh(ar, 'ls-tree', '-r', '--name-only', 'fanout/ar').stdout.split()
+        expect(f'case 25 lane commit: artifacts excluded, keep.txt and attempt.json kept, got rc={pa.returncode} '
+               f'out={pa.stdout[-300:]!r} tree={ls_ar}',
+               'keep.txt' in ls_ar and '.sdlc/t1/a.attempt.json' in ls_ar
+               and not [f for f in ls_ar if f.endswith(('.log', '.run.lock', '.running'))])
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
