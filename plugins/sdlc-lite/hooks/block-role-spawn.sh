@@ -94,7 +94,9 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   want="$(jq -r '.model // ""' "$record" 2>/dev/null)"
   model="$(jq -r '.tool_input.model // ""' <<<"$input" 2>/dev/null)"
   [[ -n "$want" ]] || deny "the dispatch record $record holds no model. $prepare_hint"
-  [[ "$model" == "$want" ]] ||
+  # Compare by Agent alias: the Agent tool takes sonnet|opus|haiku|fable, a record may pin an id.
+  alias_of() { local m="${1#claude-}"; m="${m%%-*}"; case "$m" in sonnet|opus|haiku|fable) echo "$m" ;; *) echo "$1" ;; esac; }
+  [[ "$(alias_of "$model")" == "$(alias_of "$want")" ]] ||
     deny "model '${model:-unset}' is not the dispatch model '$want' in $record: the model is chosen by dispatch.py prepare, which keeps a verifier off the build's model family. Pass model '$want'."
   exit 0
 fi
