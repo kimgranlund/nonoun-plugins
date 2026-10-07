@@ -10,7 +10,7 @@ level: L3
 Targets:
 - `plugins/sdlc-lite/scripts/run.sh`: the verifier family block (lines 196-208) and the header "Family rules" paragraph (lines 22-26).
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: a new task-dir block and a header paragraph.
-- `docs/maintenance/sdlc-internals.md`: the `scripts/run.sh` entry (line 11).
+- `docs/references/sdlc-internals.md`: the `scripts/run.sh` entry (line 11).
 
 Depends on: none.
 
@@ -77,8 +77,8 @@ Focused checks: `bash plugins/sdlc-lite/scripts/run-selftest.sh` (65 s at plan t
 - (guard) `bash plugins/sdlc-lite/scripts/run-selftest.sh`
 - `sed -n '1,/^set -euo pipefail/p' plugins/sdlc-lite/scripts/run.sh | grep -qF 'step-<n>.superseded-<k>'`
 - `sed -n '1,/^set -euo pipefail/p' plugins/sdlc-lite/scripts/run-selftest.sh | grep -q '^# Task dir: '`
-- `awk '/^## .scripts\/run\.sh./{f=1;next} /^## /{f=0} f' docs/maintenance/sdlc-internals.md | grep -qF 'step-<n>.superseded-<k>'`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `awk '/^## .scripts\/run\.sh./{f=1;next} /^## /{f=0} f' docs/references/sdlc-internals.md | grep -qF 'step-<n>.superseded-<k>'`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/references/sdlc-internals.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Step 2: Codex resolve reads live step dirs when the handoff dir has no build
 level: L2
@@ -88,7 +88,7 @@ level: L2
 Targets:
 - `codex_roles.resolve` in `plugins/sdlc-lite/scripts/codex_roles.py` (lines 100-120).
 - A new test method `CodexTests.test_verifier_task_dir_reads_newest_live_step_builder` in `plugins/sdlc-lite/scripts/codex-selftest.py`, placed after `test_verifier_shares_builder_model_without_alternate` (line 256).
-- `docs/codex-role-execution.md` line 46.
+- `docs/references/codex-role-execution.md` line 46.
 
 Depends on: none. It runs after step 1, and its scope criterion includes step 1's files because builders never commit.
 
@@ -120,7 +120,7 @@ The test method:
 
 The defaults (verifier L1 is gpt-6-luna low, plan-reviewer L1 is gpt-6-astra high) come from `adapters/codex/models.json`, as the existing tests at lines 256-311 assume.
 
-`docs/codex-role-execution.md` line 46: after the sentence beginning "When a pipeline verifier's model matches the latest builder's model", add a sentence saying this. "The latest builder result is the newest in the verifier's handoff dir; a verifier launched at the task dir, whose dir holds none, reads the newest builder result of the highest-numbered `step-<n>/` under it that holds one, leaving out `step-<n>.superseded-<k>/` dirs, the same rule run.sh applies on Claude Code."
+`docs/references/codex-role-execution.md` line 46: after the sentence beginning "When a pipeline verifier's model matches the latest builder's model", add a sentence saying this. "The latest builder result is the newest in the verifier's handoff dir; a verifier launched at the task dir, whose dir holds none, reads the newest builder result of the highest-numbered `step-<n>/` under it that holds one, leaving out `step-<n>.superseded-<k>/` dirs, the same rule run.sh applies on Claude Code."
 
 No regeneration is needed: `definitions()` does not read `resolve`, so the generated TOML files do not change. `generate --check` runs in step 4.
 
@@ -133,8 +133,8 @@ Focused check: `python3 plugins/sdlc-lite/scripts/codex-selftest.py` (20 s at pl
 - `t=$(mktemp -d); trap 'rm -rf "$t"' EXIT; git archive "$SDLC_BASE_SHA" plugins/sdlc-lite | tar -x -C "$t" && cp plugins/sdlc-lite/scripts/codex-selftest.py "$t/plugins/sdlc-lite/scripts/codex-selftest.py" && ! python3 "$t/plugins/sdlc-lite/scripts/codex-selftest.py" CodexTests.test_verifier_task_dir_reads_newest_live_step_builder > "$t/out" 2>&1 && grep -q '^AssertionError' "$t/out"`
 - `python3 plugins/sdlc-lite/scripts/codex-selftest.py CodexTests.test_verifier_task_dir_reads_newest_live_step_builder`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex-selftest.py`
-- `grep -qF 'step-<n>.superseded-<k>' docs/codex-role-execution.md`
-- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/codex-role-execution.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- `grep -qF 'step-<n>.superseded-<k>' docs/references/codex-role-execution.md`
+- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/references/codex-role-execution.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Step 3: Pre-fix negative control and live run report
 level: L2
@@ -272,9 +272,9 @@ This replan changes only step 4, after `plan-reviewer-L1-2.md` (verdict replan).
 - (guard) `claude plugin validate plugins/sdlc-lite`
 - (guard) `python3 scripts/check-packaging.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
-- (guard) `b=$(head -n 1 .sdlc/0195-runner-family-task-dir/step-1/base-sha); test -n "$b" && git diff --check "$b" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh plugins/sdlc-lite/scripts/codex_roles.py plugins/sdlc-lite/scripts/codex-selftest.py docs/maintenance/sdlc-internals.md docs/codex-role-execution.md docs/README.md docs/reports/runner-family-task-dir-live-run.md`
-- (guard) `b=$(head -n 1 .sdlc/0195-runner-family-task-dir/step-1/base-sha); test -n "$b" && ! git diff "$b" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh plugins/sdlc-lite/scripts/codex_roles.py plugins/sdlc-lite/scripts/codex-selftest.py docs/maintenance/sdlc-internals.md docs/codex-role-execution.md docs/README.md docs/reports/runner-family-task-dir-live-run.md | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/codex-role-execution.md -e docs/README.md -e docs/reports/runner-family-task-dir-live-run.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
+- (guard) `b=$(head -n 1 .sdlc/0195-runner-family-task-dir/step-1/base-sha); test -n "$b" && git diff --check "$b" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh plugins/sdlc-lite/scripts/codex_roles.py plugins/sdlc-lite/scripts/codex-selftest.py docs/references/sdlc-internals.md docs/references/codex-role-execution.md docs/README.md docs/reports/runner-family-task-dir-live-run.md`
+- (guard) `b=$(head -n 1 .sdlc/0195-runner-family-task-dir/step-1/base-sha); test -n "$b" && ! git diff "$b" -- plugins/sdlc-lite/scripts/run.sh plugins/sdlc-lite/scripts/run-selftest.sh plugins/sdlc-lite/scripts/codex_roles.py plugins/sdlc-lite/scripts/codex-selftest.py docs/references/sdlc-internals.md docs/references/codex-role-execution.md docs/README.md docs/reports/runner-family-task-dir-live-run.md | grep -E "^\+" | grep -qF "$(printf '\342\200\224')"`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e plugins/sdlc-lite/scripts/run.sh -e plugins/sdlc-lite/scripts/run-selftest.sh -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/scripts/codex_roles.py -e plugins/sdlc-lite/scripts/codex-selftest.py -e docs/references/codex-role-execution.md -e docs/README.md -e docs/reports/runner-family-task-dir-live-run.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc")"`
 
 ## Assumptions
 - Steps 1 and 2 passed and are committed: verified by `step-1/verifier-L2.md` and `step-2/verifier-L1.md` (both `pass`) and by commits d87cc4b and aa59ebc (`git log --oneline -10`). Steps 1 to 3 are copied byte for byte from `planner-L3-2.md` (a `diff` of its lines 2-231 against this plan printed nothing), so `steps.py split --only` rewrites only steps 3 and 4. The plan review named only step 4.

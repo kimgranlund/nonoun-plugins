@@ -42,4 +42,4 @@ done
   - A sixth selftest refusal (the external branch named as `--integration`).
   - A `say` line when gates are skipped.
   - A setup print line for external lanes.
-- `docs/maintenance/sdlc-internals.md` and the skills are step 3's scope and are not touched here.
+- `docs/references/sdlc-internals.md` and the skills are step 3's scope and are not touched here.

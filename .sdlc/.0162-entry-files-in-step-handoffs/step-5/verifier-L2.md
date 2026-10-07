@@ -5,7 +5,7 @@ pass
 ## Criteria
 - `test -f docs/reports/entry-files-live-run.md`: pass. Evidence: the command exited 0 (printed c1).
 - `grep -qF 'validation/entry-files-live-run.md' docs/README.md`: pass. Evidence: exit 0. The diff adds the link line right after the onboard live run line.
-- `grep -qF 'entry-files-live-run.md' docs/repo-onboarding/design.md`: pass. Evidence: exit 0. The diff shows the link added in the "How roles reach an entry" bullet.
+- `grep -qF 'entry-files-live-run.md' docs/specs/repo-onboarding/design.md`: pass. Evidence: exit 0. The diff shows the link added in the "How roles reach an entry" bullet.
 - `grep -qF '| Host | Arm | Result | Evidence |' docs/reports/entry-files-live-run.md`: pass. Evidence: exit 0.
 - The 8-row `for h in ... grep -qF "| $h | $a | yes |"` loop: pass. Evidence: the loop ran to the end without exiting 1. Negative control: I changed the Codex `verifier read the entry` row to `no` in a temp copy and the same loop went red. So the loop can fail.
 - `grep -qF 'gpt-6-astra'`: pass. Evidence: exit 0.
@@ -33,7 +33,7 @@ Builder claims I checked against the tree:
 Steelman of a possible fail reason: "Codex reads are combined `cat` commands, not lone reads." The handoff asks for "a read of pkg/AGENTS.md", and the report states the limit itself. Dropped.
 
 ## Out of scope changes
-None. `git status` shows only `docs/README.md`, `docs/repo-onboarding/design.md`, the new report, and `.sdlc` artifacts. `git diff --check` exited 0. The `/tmp` wrapper and Codex project edits are outside the repository, as the handoff allowed.
+None. `git status` shows only `docs/README.md`, `docs/specs/repo-onboarding/design.md`, the new report, and `.sdlc` artifacts. `git diff --check` exited 0. The `/tmp` wrapper and Codex project edits are outside the repository, as the handoff allowed.
 
 ## For the next attempt
 None

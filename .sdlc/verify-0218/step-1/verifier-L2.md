@@ -30,7 +30,7 @@ pass
   - `docs/maintenance/sdlc-internals.md:94` says "item 18" for the solo agent. That is correct, and it was fixed from 17.
 
 ## Out of scope changes
-- `docs/maintenance/sdlc-internals.md` is modified in the working tree and not committed. It is in scope, because it is the item-17→18 citation fix.
+- `docs/references/sdlc-internals.md` is modified in the working tree and not committed. It is in scope, because it is the item-17→18 citation fix.
 - The diff against 244d0af also touches `plugins/sdlc-lite/scripts/tickets.py`, `plugins/sdlc-lite/skills/handoff-format/SKILL.md`, `.sdlc/AGENTS.md` and `.sdlc/roadmap.md`. These come from commit 1e109ce, which also carries the T-0219 skips-guard work, and the step does not ask for them. I did not review them beyond confirming `check.sh` passes. The other `.sdlc/**` entries are untracked verifier or handoff artifacts. I read nothing that makes them harmful. `check.sh` is green with them present.
 
 ## For the next attempt

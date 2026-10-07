@@ -26,4 +26,4 @@ I steelmanned each pass. The `models()` change and `runs.jsonl` field are covere
 None. Every changed file is one the step named. The 11 regenerated TOMLs and the 3 deleted alternate TOMLs come from the step's item 4.
 
 ## For the next attempt
-None. The builder's note about stale docs (`instructions.md`, `docs/codex-role-execution.md`, `docs/reports/native-codex-smoke.json`) belongs to step 2, which the handoff says covers docs. I did not run a live Codex run, because the criteria don't call for one.
+None. The builder's note about stale docs (`instructions.md`, `docs/references/codex-role-execution.md`, `docs/reports/native-codex-smoke.json`) belongs to step 2, which the handoff says covers docs. I did not run a live Codex run, because the criteria don't call for one.

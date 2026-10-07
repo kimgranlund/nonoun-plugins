@@ -16,7 +16,7 @@ pass
   - Steelman: a possible fail reason was that "no new findings" needs a log diff, not only an exit code. I did the log diff and it is clean, so I dropped that reason.
 
 ## Out of scope changes
-None. The merge commit brings in the runner lane's files (`run.sh`, `run_lifecycle.py`, `lifecycle-selftest.py`, `run-selftest.sh`, `docs/maintenance/sdlc-internals.md`, `.sdlc/0170-*`). All of these belong to the merged lane. `.sdlc/merge-t-0170/` is untracked, as before the merge. I removed my throwaway worktree.
+None. The merge commit brings in the runner lane's files (`run.sh`, `run_lifecycle.py`, `lifecycle-selftest.py`, `run-selftest.sh`, `docs/references/sdlc-internals.md`, `.sdlc/0170-*`). All of these belong to the merged lane. `.sdlc/merge-t-0170/` is untracked, as before the merge. I removed my throwaway worktree.
 
 ## For the next attempt
 None

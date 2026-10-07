@@ -2,7 +2,7 @@
 
 Recorded: 2026-09-29. Independent review of the onboarding design at v0.5. The reviewer was a fresh agent with no access to the authoring conversation. It changed no file in this repository.
 
-Subject: commit c7e4921 on branch `repo-onboarding-design`. Documents: `docs/repo-onboarding/design.md`, `reorganization.md`, `layered-context-pattern.md`, `README.md`, and the handoffs of tickets T-0160 to T-0162.
+Subject: commit c7e4921 on branch `repo-onboarding-design`. Documents: `docs/specs/repo-onboarding/design.md`, `reorganization.md`, `layered-context-pattern.md`, `README.md`, and the handoffs of tickets T-0160 to T-0162.
 
 | Ticket | Verdict | New findings |
 | --- | --- | --- |
@@ -27,7 +27,7 @@ No blocker. N10 and N14 apply across tickets.
 | N2 | Major | Ambiguous inputs: two homes matching one file, two files with one destination, a move into a frozen home. | `reorganization.md` inventory and refusals at v0.5, and the default template listing `reports/` as home and frozen. | Open. Input to spike T-0161. |
 | N3 | Major | Listing a topic as a home contradicts the topic definition, and homes and loose documents had no route from `docs/AGENTS.md`. | `reorganization.md:54` against `design.md:51`. | Routes fixed in design v0.6. The glob on a topic is open, input to the spike. |
 | N4 | Major | Setup needs the layout parser, which belonged to T-0161. | `design.md:51` against the T-0161 handoff. | Fixed in v0.6. The parser and its stop conditions are in T-0160. |
-| N5 | Major | "Link" is undefined, and backticked path cites are invisible to a link rewriter. | `docs/claude-handoff.md:9` cites `docs/claude-response.md` in backticks. | Open. Input to spike T-0161. |
+| N5 | Major | "Link" is undefined, and backticked path cites are invisible to a link rewriter. | `docs/claude-handoff.md:9` cites `docs/other/claude-response.md` in backticks. | Open. Input to spike T-0161. |
 | N6 | Major | The live run gate relied on text inside an HTML comment. Not observed by the reviewer. | The reviewer's live probe was declined by its permission system. | Confirmed by the author's probe and fixed in v0.6. The gate reads a visible line with tools disabled. |
 | N7 | Major | Check mode had no label for rows 7 and 8, and row 8 would append a block to `docs/layout.md`. | `design.md:97` at v0.5. | Fixed in v0.6. |
 | N8 | Major | Restore after a failed apply was unspecified. | `reorganization.md:109` at v0.5, root `AGENTS.md:29`. | Open. Apply is deferred. |

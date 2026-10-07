@@ -19,7 +19,7 @@ followed by one line per distinct role and level found in those runs.jsonl lines
 
 The script is read-only: it never creates, changes, or deletes anything under the ticket dir.
 
-Also add a `selftest` subcommand (`footprint.py selftest`) that builds fixture ticket directories (a fix-lane one and a chained one) in a temp dir, asserts exact counts, includes a negative control fixture where one extra file makes `check --max-files` fail, and exits 0 when everything holds. Wire the selftest into `plugins/sdlc-lite/scripts/check.sh` next to the other selftests, and add a short entry for the script in `docs/maintenance/sdlc-internals.md`.
+Also add a `selftest` subcommand (`footprint.py selftest`) that builds fixture ticket directories (a fix-lane one and a chained one) in a temp dir, asserts exact counts, includes a negative control fixture where one extra file makes `check --max-files` fail, and exits 0 when everything holds. Wire the selftest into `plugins/sdlc-lite/scripts/check.sh` next to the other selftests, and add a short entry for the script in `docs/references/sdlc-internals.md`.
 
 ## Context
 Size M. Part of measuring the cost of the SDLC loop: a ticket's footprint is the files and bytes its roles wrote. Do not change model or effort defaults. Do not commit, push, or publish.

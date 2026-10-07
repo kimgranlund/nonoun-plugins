@@ -87,7 +87,7 @@ Run `bash plugins/sdlc-lite/scripts/hook-live-probe.sh --conductor --out docs/re
 - Add a short note under the report's top heading, never after the verdict line (the verdict must stay the last line of the file), on what it proves: the observed `agent_type` for a plugin session agent launched with `--agent sdlc-lite:conductor`. It does not prove the interactive `.claude/settings.json` agent path, unless you also observe that path and record it there.
 - Add the report to the index in `docs/README.md`: one list item in the form of the existing validation entries (dated live run for T-0166), whose link target is `validation/agent-spawn-hook-live-run.md`.
 
-Add a section to `docs/maintenance/claude-hooks.md` after the `block-disk-scan.sh` section and before the closing paragraph. Its heading has exactly the form of the other hook sections there: two hash marks, a space, then the path `hooks/block-role-spawn.sh` wrapped in single backticks. The acceptance criteria match that heading with a dot in place of each backtick, so keep this form. The section covers:
+Add a section to `docs/references/claude-hooks.md` after the `block-disk-scan.sh` section and before the closing paragraph. Its heading has exactly the form of the other hook sections there: two hash marks, a space, then the path `hooks/block-role-spawn.sh` wrapped in single backticks. The acceptance criteria match that heading with a dot in place of each backtick, so keep this form. The section covers:
 - the event and matcher: PreToolUse, Agent
 - conductor detection: `agent_type` of `sdlc-lite:conductor` or `conductor`, or `SDLC_ROLE=conductor`
 - the deny rule (SDLC Lite role agents; another plugin's builder, verifier, reviewer, planner, or checker agent) and the allowed helpers (Explore, general-purpose, Plan, a missing subagent_type)
@@ -102,8 +102,8 @@ In `plugins/sdlc-lite/agents/conductor.md` line 24 (the bullet beginning "Planne
 - `grep -qE "^conductor deny: agent_type [^ ]*conductor, .*hook exit code 2$" docs/reports/agent-spawn-hook-live-run.md`
 - `grep -qE "^conductor allow: agent_type [^ ]*conductor, .*hook exit code 0$" docs/reports/agent-spawn-hook-live-run.md`
 - `grep -qF "validation/agent-spawn-hook-live-run.md" docs/README.md`
-- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/maintenance/claude-hooks.md` (a dot stands in for each backtick around the path)
-- `awk "/^## .hooks\/block-role-spawn\.sh./{f=1;next} /^## /{f=0} f" docs/maintenance/claude-hooks.md | grep -q Codex` (only the new section's body, up to the next level-two heading, is searched)
+- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/references/claude-hooks.md` (a dot stands in for each backtick around the path)
+- `awk "/^## .hooks\/block-role-spawn\.sh./{f=1;next} /^## /{f=0} f" docs/references/claude-hooks.md | grep -q Codex` (only the new section's body, up to the next level-two heading, is searched)
 - `grep -q block-role-spawn.sh plugins/sdlc-lite/agents/conductor.md`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
 - (guard) `bash plugins/sdlc-lite/scripts/hook-selftest.sh`

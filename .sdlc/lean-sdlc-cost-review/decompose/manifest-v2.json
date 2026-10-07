@@ -18,7 +18,7 @@
     {"id": "B-steps-stale", "label": "steps.py next, resume, review read order.records and route stale_input to rerun", "leaf": true},
     {"id": "B-hook", "label": "hooks/block-handoff-edit.sh (tool_input.file_path, acts without SDLC_ROLE, .running beside the path)", "leaf": true},
     {"id": "B-hooks-json", "label": "adapters/claude/hooks.json: new Edit|Write|MultiEdit matcher entry", "leaf": true},
-    {"id": "B-hook-selftest", "label": "scripts/hook-selftest.sh fixtures and docs/maintenance/claude-hooks.md", "leaf": true, "justify": "shared-util"},
+    {"id": "B-hook-selftest", "label": "scripts/hook-selftest.sh fixtures and docs/references/claude-hooks.md", "leaf": true, "justify": "shared-util"},
     {"id": "B-conductor-text", "label": "conductor.md and chain/SKILL.md: change.md rule and the rerun route (after T-0199)", "leaf": true},
     {"id": "B-live", "label": "docs/reports/handoff-freeze-live-run.md (Claude hook deny, stale flag on Claude and Codex)", "leaf": true},
     {"id": "C", "label": "C replan delta and checklist", "leaf": false},

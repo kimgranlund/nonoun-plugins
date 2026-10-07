@@ -27,7 +27,7 @@ A role working on a plan step reads the entry files that govern the files it cha
   - In the same run, a step whose nearest entry is the root has no `### Read first` subsection.
 
 ## Context
-Decision agreed with the user on 2026-09-29, recorded in `docs/repo-onboarding/design.md` under "How roles reach an entry".
+Decision agreed with the user on 2026-09-29, recorded in `docs/specs/repo-onboarding/design.md` under "How roles reach an entry".
 
 Reason: the loading probe (`docs/reports/nested-entry-file-loading.md`) showed that Codex loads entries only from the repository root down to its working directory, and roles start at the root. Claude Code loads a nested entry only through an import in a loaded `CLAUDE.md`.
 

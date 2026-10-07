@@ -7,7 +7,7 @@ T-0160: Add the `onboard` skill for entry files, docs layout, and check mode
 
 ## PR body
 ### Summary
-A repository adopting SDLC Lite can now run one script to get entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout. Anything the repository already wrote in those files stays as it was. This implements `docs/repo-onboarding/design.md` v0.7, including the role routing line in the root managed block.
+A repository adopting SDLC Lite can now run one script to get entry files that route into `docs/` and explain `.sdlc/`, plus a stated docs layout. Anything the repository already wrote in those files stays as it was. This implements `docs/specs/repo-onboarding/design.md` v0.7, including the role routing line in the root managed block.
 
 ### Changes
 - `plugins/sdlc-lite/scripts/onboard.py` (new, standard library only, Python 3.9.6 in the runs):
@@ -21,8 +21,8 @@ A repository adopting SDLC Lite can now run one script to get entry files that r
 - `plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`: a route table row for `onboard`.
 - `plugins/sdlc-lite/scripts/check.sh`: runs the `onboard.py` selftest.
 - `plugins/progressive-context/skills/progressive-context/references/sdlc-lite.md`: one sentence that names the `onboard` skill, with no path link.
-- `docs/repo-onboarding/design.md` and `docs/repo-onboarding/README.md`: the status lines now say the design is implemented and the reorganization is not.
-- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/repo-onboarding/README.md`: the dated live run report.
+- `docs/specs/repo-onboarding/design.md` and `docs/specs/repo-onboarding/README.md`: the status lines now say the design is implemented and the reorganization is not.
+- `docs/reports/onboard-live-run.md` (new), linked from `docs/README.md` and `docs/specs/repo-onboarding/README.md`: the dated live run report.
 
 ### How each was verified
 All five steps have a verifier verdict of pass.

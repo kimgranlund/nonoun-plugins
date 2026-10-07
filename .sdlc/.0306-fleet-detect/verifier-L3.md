@@ -35,7 +35,7 @@ Constraints checked: `subprocess` in `fleet_detect.py` is used only by the selft
 None.
 - `.sdlc/0306-fleet-detect/handoff.md`: the diff only adds the `## Acceptance criteria` section, which the solo lane writes.
 - `plugins/sdlc-lite/scripts/fleet_collect.py`: sanctioned by the acceptance preamble as additive. The diff removes no key, and the live agent-ui fingerprint still carries every earlier documented key.
-- `plugins/sdlc-lite/scripts/check.sh` and `docs/maintenance/sdlc-internals.md`: named by C10.
+- `plugins/sdlc-lite/scripts/check.sh` and `docs/references/sdlc-internals.md`: named by C10.
 - `base-sha`, `skips.md`, `verifier-L3.attempt.json`: runner records.
 - Dependents: `git grep -E 'fleet_collect|fleet_detect'` finds no other consumer of the fingerprint besides `check.sh`, the docs entry and ticket handoffs.
 
@@ -45,6 +45,6 @@ All 12 written criteria pass. The defect is in this step's new collector code in
 1. `ticket_of` (line 275, `rel.split(os.sep)[0]` at line 278) takes the first path component under `.sdlc`. Every ticket under `.sdlc/tickets/` collapses into one `by_ticket["tickets"]` bucket, and `planner_results_per_ticket` then reports a false finding (79 on live maison).
 2. `tickets_info` (line 430, `os.listdir(sd)` at line 437) lists only direct children of `.sdlc`. It sees none of the handoffs under `.sdlc/tickets/`, so `size_m_criteria` is silent there.
 
-Fix both by resolving the ticket dir per root from that root's `.sdlc/config`, mirroring `tickets.py ticket_dir` (line 308). Add a nested-layout case with a flat control to the `fleet_collect.py` selftest, and update the `by_ticket` and `tickets` wording in the docstring and in `docs/maintenance/sdlc-internals.md`.
+Fix both by resolving the ticket dir per root from that root's `.sdlc/config`, mirroring `tickets.py ticket_dir` (line 308). Add a nested-layout case with a flat control to the `fleet_collect.py` selftest, and update the `by_ticket` and `tickets` wording in the docstring and in `docs/references/sdlc-internals.md`.
 
 After the fix, the repro above should give per-folder `by_ticket` keys, no planner finding, and `size_m_criteria 25 > 20` in both layouts. Live maison should show no `by_ticket["tickets"]` finding and a `tickets.count` near 40. The top-level `first-wave-components` planner 11 finding is legitimate and should remain.

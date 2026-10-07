@@ -20,7 +20,7 @@ This PR adds a script-checked route, `steps.py widen`. The conductor names only 
   - Every refusal writes nothing, exits 1 and ends with `plan defect: steps widen refused: ...; replan this step (/chain 4.2)`.
   - It adds an argparse subparser and 25 `widen:` selftest cases.
   - `main` now uses `parse_known_args` so a path like `-x` gets widen's refusal instead of a usage error. Only `widen` accepts the leftover arguments.
-- `docs/maintenance/sdlc-internals.md`: documents the subcommand.
+- `docs/references/sdlc-internals.md`: documents the subcommand.
 - `skills/chain/SKILL.md`: new item 9, "Scope widening". Item 2 (builder blocked) names it as its one exception.
   - On exit 0, log `scope widened:` in `## Plan review` and rerun the builder at the same level. That rerun is not a bump and gets no `## Previous attempt`.
   - On exit 1, log `scope decision:` plus the stderr and take the 4.2 replan path.

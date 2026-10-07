@@ -27,7 +27,7 @@ done
 
 ## Notes
 - All gates were green, so step 1 left nothing to fix.
-- Every claim cites `spike/plan.json`, `spike/plan.txt` or `spike/review.md` by line or key. The Rules bullets name sections and decisions of `docs/repo-onboarding/reorganization.md` v0.6; that file was not edited.
+- Every claim cites `spike/plan.json`, `spike/plan.txt` or `spike/review.md` by line or key. The Rules bullets name sections and decisions of `docs/planning/repo-onboarding/reorganization.md` v0.6; that file was not edited.
 - The recommendation is that the plan lives in a file outside `.sdlc/`, not in a ticket (N1, N9). The plan should be generated again and compared before use, so a hand-edited plan is refused (N15). Apply is deferred: once the two records are frozen, the plan is 2 moves and 13 line edits, which a person can apply by hand.
 - The statement that `plan.json` has no `version` or `digest` field is based on reading its keys (lines 2-217).
 - No em dashes in the added text.

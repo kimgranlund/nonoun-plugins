@@ -1,7 +1,7 @@
 {
   "domain": "technical-architecture",
   "plan": false,
-  "note": "v1: docs/docs-schema/design.md v0.1 as written. Nodes are its homes, layout sections, checks, promotion, migration and entry-file rules. Actions were listed from the tooling's write and read sites (run.sh, steps.py, budget.py, tickets.py, onboard.py, check.py, evals.py) and the two repositories' trees, without looking at the node tree.",
+  "note": "v1: docs/planning/docs-schema/design.md v0.1 as written. Nodes are its homes, layout sections, checks, promotion, migration and entry-file rules. Actions were listed from the tooling's write and read sites (run.sh, steps.py, budget.py, tickets.py, onboard.py, check.py, evals.py) and the two repositories' trees, without looking at the node tree.",
   "nodes": [
     {"id": "S", "label": "docs schema (design.md v0.1)", "leaf": false},
     {"id": "H", "label": "nine fixed homes", "leaf": false, "justify": "grouping"},
@@ -71,7 +71,7 @@
     {"id": "a11", "label": "keep nested evidence trees (docs/reports depth 7) under a report"},
     {"id": "a12", "label": "make the other/ quarantine expire in the mode this repo and maison will run"},
     {"id": "a13", "label": "cite a ticket by id and refuse a path cite at close (tickets.py close git grep)"},
-    {"id": "a14", "label": "rewrite non-Markdown citers of a moved doc (check.py:613 reads docs/maintenance/claude-hooks.md)"},
+    {"id": "a14", "label": "rewrite non-Markdown citers of a moved doc (check.py:613 reads docs/references/claude-hooks.md)"},
     {"id": "a15", "label": "place design.md itself under the schema (home and status)"},
     {"id": "a16", "label": "keep eval records in .sdlc/evals/ for evals.py lock and offer a reader summary"},
     {"id": "a17", "label": "move a planning doc to archive on acceptance without contradicting the no-status-in-folder principle (repo-onboarding/design.md:189)"},

@@ -17,7 +17,7 @@ Steelman pass: draft fail "the Intent says ids come from `.sdlc/messages/*/new/`
 ## Out of scope changes
 - `.sdlc/0312-fleet-status-render/handoff.md`: the only diff is the appended `## Acceptance criteria`; `plugins/sdlc-lite/agents/solo.md:44` has solo write that section when the handoff has none, and the file's sha256 `83d160e8...` matches `handoff_sha256` in `verifier-L3.attempt.json`. Dismissed.
 - Untracked `base-sha`, `skips.md`, `verifier-L3.attempt.json`, `.run.lock` in the task dir: run.sh and `steps.py lane` bookkeeping, not step files. Dismissed.
-- `check.py`, `docs/maintenance/sdlc-internals.md`, `skills/sdlc-lite/SKILL.md`, new `skills/fleet-status/`: each named by criteria 5 and 7. In scope.
+- `check.py`, `docs/references/sdlc-internals.md`, `skills/sdlc-lite/SKILL.md`, new `skills/fleet-status/`: each named by criteria 5 and 7. In scope.
 
 ## For the next attempt
 None

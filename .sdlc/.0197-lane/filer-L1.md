@@ -22,7 +22,7 @@ The plan went through plan review twice. Round 1 returned replan with two findin
   - A `full` already recorded in `skips.md` stays `full`.
   - Added 9 `(lane)` selftest cases.
   - `criteria_count`, `is_scope_span` and `repo_path_ok` are now shared with `lean_warnings` and `widen`.
-- `docs/maintenance/sdlc-internals.md`: a `lane <task dir>` clause in the `scripts/steps.py` paragraph.
+- `docs/references/sdlc-internals.md`: a `lane <task dir>` clause in the `scripts/steps.py` paragraph.
 - `plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`: a new `## Lane per ticket` section, so the Codex host skill now mentions `steps.py lane`.
 - `plugins/sdlc-lite/skills/chain/SKILL.md`: replaced the "no script computes the lane yet" line with the `steps.py lane` sentence.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: added a `skips.md` line to the task-folder layout.

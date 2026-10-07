@@ -7,7 +7,7 @@ Blockers:
 
 1. B-2 contradicts the tooling and the design's own Promotion section. `design.md:36` says a design review "does not live in `.sdlc/`", while `design.md:43` names "an architect result" as a `.sdlc/` artifact to promote, and `run.sh:4-7` writes every role result into the handoff dir where `steps.py` and `order.py` read it (this review is `.sdlc/0233-docs-schema-design/review/architect-L1.md`). A conductor following B-2 literally bypasses `run.sh` or moves the result. Fix: a role result in the dir `run.sh` wrote it to is a record; the reader deliverable is its promoted copy.
 2. D-7 demands an entry file the tool cannot create. `design.md:166` errors on a home with two documents and no `AGENTS.md`; `repo-onboarding/design.md:58` says a home gets no entry file, and `onboard.py:463` skips every path under a listed home, so neither `specs/AGENTS.md` nor `specs/lean-sdlc/AGENTS.md` is ever written. Build ticket 2 (`design.md:259`) changes the template and `docs/AGENTS.md` text only. Fix: extend ticket 2 to the model at `onboard.py:452-476` (entries for homes and for topics under a home) and gate D-7 on that.
-3. Grandfathering by first-commit date is vacuous where it matters. `design.md:231` treats a file it cannot date as grandfathered; an untracked file has zero `git log --diff-filter=A` lines (measured on `docs/docs-schema/design.md`), so a new uncommitted file passes D-3 and D-12 and the negative control at `design.md:251` never fires pre-commit. A shallow clone yields a wrong date, not a missing one. After the ordered `git mv validation/ reports/` (`design.md:197`), every moved record gets a new first-commit date at its new path unless `--follow` is used, un-grandfathering the 48 files the rule protects. Fix: a `## Legacy` glob list in `docs/layout.md`, same backticked form as `## Frozen paths`; unlisted or untracked means new. `adopted:` and `mode:` then host nothing and go.
+3. Grandfathering by first-commit date is vacuous where it matters. `design.md:231` treats a file it cannot date as grandfathered; an untracked file has zero `git log --diff-filter=A` lines (measured on `docs/planning/docs-schema/design.md`), so a new uncommitted file passes D-3 and D-12 and the negative control at `design.md:251` never fires pre-commit. A shallow clone yields a wrong date, not a missing one. After the ordered `git mv validation/ reports/` (`design.md:197`), every moved record gets a new first-commit date at its new path unless `--follow` is used, un-grandfathering the 48 files the rule protects. Fix: a `## Legacy` glob list in `docs/layout.md`, same backticked form as `## Frozen paths`; unlisted or untracked means new. `adopted:` and `mode:` then host nothing and go.
 
 Non-blockers:
 
@@ -16,7 +16,7 @@ Non-blockers:
 6. D-9 and the depth rule reject real evidence. `docs/reports/dual-host-readiness-recovery.json` and `native-codex-smoke.json` sit at the home root; maison pairs each report with a `.sha256`; `docs/reports/plan-reviewer-live-run/claude/probe/step-1/` is depth 7 against `design.md:102`; maison's `gen-ui-audit-2026-10-03/audit-snapshot.json` has no same-stem Markdown at all (`design.md:216`). Say which checks the legacy list exempts and allow same-stem sidecars and any depth inside an evidence folder.
 7. B-1a misses retries. `design.md:172` matches `*-L[0-9].md`; `run.sh:6` writes `<role>-L<n>-<k>.md` (49 tracked). Also `budget-ack.md` (`budget.py:33`) and `decompose/` (`agents/architect.md:9`) are records B-2a does not list, and `.sdlc/fix-protocol-controls/` has no root `handoff.md`.
 8. Planning to archive on `status: superseded` (`design.md:76`) is a status-triggered move, which `repo-onboarding/design.md:189` forbids in so many words. The split can stay (user may change), but that sentence must be amended in the same change, or `planning/` folds into `specs/` with `status:`.
-9. Migration risk missing: `check.py:613` reads `docs/maintenance/claude-hooks.md` by path at run time, and the rewriter in `reorganization.md:87` covers tracked Markdown only. Root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and both `HARNESS-NOTES.md` cite moving paths.
+9. Migration risk missing: `check.py:613` reads `docs/references/claude-hooks.md` by path at run time, and the rewriter in `reorganization.md:87` covers tracked Markdown only. Root `AGENTS.md`, `plugins/sdlc-lite/AGENTS.md`, `README.md` and both `HARNESS-NOTES.md` cite moving paths.
 10. `reorganization.md:143,46` says `docs/reports/` is frozen and "not a defect to fix by moving"; `design.md:197` moves it. Pick one and amend the other.
 11. Promotion step 3 (`design.md:47`) writes into a ticket's `handoff.md`, which is frozen once a role reads it (root `AGENTS.md`, hook named at `check.py:607`) and hidden after close. `notes.md` or the `source:` key alone suffices.
 12. B-3a as written warns on 101 files in `docs/reports/` and on `lean-sdlc/cost-control.md:34,208`, `lean-sdlc/design.md:201`, `ticket-stages/watcher-design.md:34`. State whether the legacy list covers links.
@@ -31,7 +31,7 @@ Checked and clean: counts at `design.md:10` (69 entries, 48 Markdown, 19 folders
 - `docs/layout.md`: `## Kinds` (`- \`<home>/\` is \`<kind>\``) and `## Legacy` (one backticked glob per line) added; `## Schema` with `mode:`, `adopted:`, `extra-homes:` dropped. `Layout` in `plugins/sdlc-lite/scripts/onboard.py:46` gains `kinds` and `legacy`; `## Homes` and `## Frozen paths` forms unchanged.
 - `plugins/sdlc-lite/scripts/onboard.py:452-476` (`model`): entry files for homes and for topics nested under a home; D-7 depends on it.
 - `plugins/sdlc-lite/scripts/docs_check.py` (new): B-1a pattern `<role>-L<n>(-<k>)?.md`, `budget-ack.md`, `*.request.json`, `*.log`; B-2a record list with `decompose/` and step-only task folders; D-9 same-stem sidecars and any evidence depth; D-12 decision-number uniqueness; exit 1 on any error, legacy-listed files exempt.
-- `docs/docs-schema/design.md`: B-2 reworded (finding 1); mapping row for itself; `docs/repo-onboarding/design.md:189` and `docs/repo-onboarding/reorganization.md:143` amended in the same change.
+- `docs/planning/docs-schema/design.md`: B-2 reworded (finding 1); mapping row for itself; `docs/specs/repo-onboarding/design.md:189` and `docs/specs/repo-onboarding/reorganization.md:143` amended in the same change.
 - Migration apply: citing scan over code and entry files, not only tracked Markdown (`check.py:613`).
 
 ## Constraints and assumptions
@@ -39,7 +39,7 @@ Checked and clean: counts at `design.md:10` (69 entries, 48 Markdown, 19 folders
 - An older `onboard.py` ignores `## Kinds`, `## Schema`, `## Legacy`: verified by running `_parse_layout_text` on the proposed text.
 - `run.sh` writes `<role>-L<n>.md` and `-<k>` retries into the handoff dir: verified by `run.sh:4-7,193-199` and 49 tracked retry files.
 - Setup never writes an entry under a home: verified by `onboard.py:463` and `repo-onboarding/design.md:58`.
-- An untracked file has no first-commit date: verified by `git log --diff-filter=A -- docs/docs-schema/design.md` (0 lines); this clone is not shallow.
+- An untracked file has no first-commit date: verified by `git log --diff-filter=A -- docs/planning/docs-schema/design.md` (0 lines); this clone is not shallow.
 - `check.py` reads a docs path at run time: verified by `check.py:613`.
 - Consumer repos track `.sdlc/`: verified for maison (10 tracked files), so B-2a applies there.
 - `git mv` resets the add date without `--follow`: unverified (standard git behavior, not measured here).
@@ -66,11 +66,11 @@ Checked and clean: counts at `design.md:10` (69 entries, 48 Markdown, 19 folders
 - Setup skips everything under a listed home: `onboard.py:463`; homes get no entry: `repo-onboarding/design.md:58`.
 - Role result and retry names: `run.sh:4-7,193-199`; retry count 49 from `git ls-files .sdlc | grep -cE -- '-L[0-9]-[0-9]+\.md$'`.
 - `budget-ack.md` written by `budget.py:33`; `decompose/` written by `agents/architect.md:9`.
-- `check.py:613` reads `docs/maintenance/claude-hooks.md` by path; `check.py:607` names the handoff-edit hook.
+- `check.py:613` reads `docs/references/claude-hooks.md` by path; `check.py:607` names the handoff-edit hook.
 - `tickets.py close` path-cite refusal: `tickets.py:40-48`.
 - `docs/reports/`: 69 entries, 48 `.md`, 19 folders, 2 `.json` at root, 8 dated, 18 `<name>.md`/`<name>/` pairs, max depth 7.
 - Validation files citing `.sdlc/` paths: 101, from `grep -rlE '\.sdlc/[0-9A-Za-z._-]+/' docs/reports | wc -l`.
 - Docs with YAML front matter: 4, all fixtures under `docs/reports/`; `Recorded:` lines in 45 files.
 - maison: `docs/reference/` 30 tracked files, `reports/` 4 reports with `.sha256` sidecars, `maintenance/gen-ui-audit-2026-10-03/` holds 3 JSON and 2 Markdown, `.sdlc/` tracked (10 files).
 - `reorganization.md:143` freezes `docs/reports/`; `design.md:197` moves it.
-- Principle text that forbids status-triggered moves: `docs/repo-onboarding/design.md:189`.
+- Principle text that forbids status-triggered moves: `docs/specs/repo-onboarding/design.md:189`.

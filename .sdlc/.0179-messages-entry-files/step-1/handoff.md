@@ -111,7 +111,7 @@ List them: `python3 "{{scripts}}/messages.py" list --state done`.
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: its mailbox notice case sends with `messages.py` into a temp repo. Entry files now appear there and the counts do not change. Guarded below.
 - `scripts/check.py` `MESSENGER_WORDS` pins `.sdlc/messages/AGENTS.md` in `agents/messenger.md`. Unchanged.
 - `agents/messenger.md` and its generated TOML are left untouched on purpose. The body already defers to `.sdlc/messages/AGENTS.md`, and the agent belongs to T-0178.
-- Prose references (`docs/maintenance/sdlc-internals.md` and the skills) are steps 2 and 4.
+- Prose references (`docs/references/sdlc-internals.md` and the skills) are steps 2 and 4.
 
 No em dashes anywhere. Focused checks: `python3 plugins/sdlc-lite/scripts/messages.py selftest` and `bash plugins/sdlc-lite/scripts/run-selftest.sh`.
 ### Acceptance criteria

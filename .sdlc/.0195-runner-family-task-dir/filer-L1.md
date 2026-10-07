@@ -22,7 +22,7 @@ Model and effort defaults are unchanged. There is no version bump, tag, push or 
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: a new task-dir block with 8 cases, plus a `# Task dir:` header paragraph.
 - `plugins/sdlc-lite/scripts/codex_roles.py`: `resolve` applies the same step-dir fallback for a verifier. It carries a comment naming `run.sh` as its Claude twin.
 - `plugins/sdlc-lite/scripts/codex-selftest.py`: new `test_verifier_task_dir_reads_newest_live_step_builder` with 5 sub-cases.
-- `docs/maintenance/sdlc-internals.md` and `docs/codex-role-execution.md`: guidance updated for the new rule.
+- `docs/references/sdlc-internals.md` and `docs/references/codex-role-execution.md`: guidance updated for the new rule.
 - `docs/reports/runner-family-task-dir-live-run.md`, `docs/reports/runner-family-task-dir-live-run/` and one `docs/README.md` index line: the live-run report and its evidence.
 
 ### How each step was verified

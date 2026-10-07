@@ -1,6 +1,6 @@
 # Progressive Context gap analysis review
 
-Recorded: 2026-10-05. Ticket T-0247. Reviewed: `docs/generative-constructs/progressive-context-gap-analysis.md` at commit 61404dd (150 lines). Reviewer: `run.sh architect L1` (Fable high), a different model family from the author (Sonnet). Raw record: `.sdlc/.0247-pc-gap-analysis/review/decompose/report.md`.
+Recorded: 2026-10-05. Ticket T-0247. Reviewed: `docs/specs/generative-constructs/progressive-context-gap-analysis.md` at commit 61404dd (150 lines). Reviewer: `run.sh architect L1` (Fable high), a different model family from the author (Sonnet). Raw record: `.sdlc/.0247-pc-gap-analysis/review/decompose/report.md`.
 
 ## Verdict
 
@@ -24,4 +24,4 @@ A citation resolver (added to R6, T-0254); R4's home is `onboard.py check` (T-02
 
 ## Limits
 
-One reviewer, one pass. The reviewer could not confirm whether the rubric's 36-point band intentionally leaves out a tier. A revision of `docs/docs-schema/design.md` in review elsewhere may change cross-check items (b) to (e).
+One reviewer, one pass. The reviewer could not confirm whether the rubric's 36-point band intentionally leaves out a tier. A revision of `docs/planning/docs-schema/design.md` in review elsewhere may change cross-check items (b) to (e).

@@ -9,7 +9,7 @@ done
 - `plugins/sdlc-lite/adapters/codex/instructions.md`: the last paragraph now says "a verifier or plan-reviewer alternate profile".
 - `plugins/sdlc-lite/adapters/codex/agents/*.toml`: regenerated. The 22 existing profiles changed only in the prelude line. `sdlc-plan-reviewer-l1.toml` and `sdlc-plan-reviewer-l1-alternate.toml` are new.
 - `plugins/sdlc-lite/scripts/codex-selftest.py`: added `test_plan_reviewer_alternate_follows_newest_planner` and `test_runner_records_plan_reviewer_alternate_agent`. Existing tests are unchanged.
-- `docs/codex-role-execution.md`: the count is now 24 (20 base, four alternate), `sdlc-plan-reviewer-l1` is named, the `| Plan reviewer | Astra high | | | | |` row is added, and the alternates paragraph now covers the plan reviewer and what `shared_with_builder` means for it.
+- `docs/references/codex-role-execution.md`: the count is now 24 (20 base, four alternate), `sdlc-plan-reviewer-l1` is named, the `| Plan reviewer | Astra high | | | | |` row is added, and the alternates paragraph now covers the plan reviewer and what `shared_with_builder` means for it.
 - `plugins/sdlc-lite/skills/sdlc-lite/SKILL.md`: `sdlc-plan-reviewer-l1` added to the agent-name list.
 - `plugins/sdlc-lite/HARNESS-NOTES.md`: the install sentence now says 20 base agents, 24 with the default configuration. The runner paragraph also gets one added sentence saying the plan reviewer is compared with the latest planner result through the same map.
 

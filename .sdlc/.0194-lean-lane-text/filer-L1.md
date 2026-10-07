@@ -14,7 +14,7 @@ This adds the lean lane text and the coarse-step rule, so a size-S or M ticket c
   - A plan counts as eligible when all of these hold: planner L1 or L2, no `unresolved:` assumption, every step level 1 to 3, no `Merge ` step, no replan, and no `## Plan review` line in the handoff.
   - `steps.py -h` now carries the warning literal through an argparse epilog with `RawDescriptionHelpFormatter`.
   - Four new `(lean)` selftest cases cover the positive and negative paths.
-- `docs/maintenance/sdlc-internals.md`: the `steps.py` lint sentence now names the warning, the eligibility conditions and both triggers.
+- `docs/references/sdlc-internals.md`: the `steps.py` lint sentence now names the warning, the eligibility conditions and both triggers.
 - `plugins/sdlc-lite/skills/chain/SKILL.md`: new `## Lean chain` section before `## 1. Brief`. It states the lean conditions and the mandatory full-chain triggers, links the planner's coarse-step rule, and says lean close-out always runs the filer. It also notes that no script computes the lane yet.
 - `plugins/sdlc-lite/agents/planner.md`: new `## Coarse steps` section with the "one step per independently verifiable outcome" rule, placed before `## Criteria that can pass`.
 - `plugins/sdlc-lite/scripts/check.py`: docstring item 13 and a `LEAN_LANE` guard. Each phrase and file pair has its own negative control.

@@ -86,7 +86,7 @@ guard timeout: 1450
 - `plugins/sdlc-lite/AGENTS.md`
 - `docs/AGENTS.md`
 ### Do
-1. In `docs/maintenance/sdlc-internals.md`, add one passage on `migrate-layout [--dry-run] [--rewrite-refs]` to the `scripts/tickets.py` entry (line 39). Cover:
+1. In `docs/references/sdlc-internals.md`, add one passage on `migrate-layout [--dry-run] [--rewrite-refs]` to the `scripts/tickets.py` entry (line 39). Cover:
    - the preconditions: git work tree, clean tree, no loose root file, no existing target;
    - the moves;
    - the cite scan and its rewrite rule: relative forms are re-expressed from the citing file's new location, and managed blocks and `docs/reports/` are never rewritten;
@@ -109,7 +109,7 @@ guard timeout: 1450
 
 Depends on: step 1.
 ### Acceptance criteria
-- `grep -qF 'migrate-layout [--dry-run] [--rewrite-refs]' docs/maintenance/sdlc-internals.md`
+- `grep -qF 'migrate-layout [--dry-run] [--rewrite-refs]' docs/references/sdlc-internals.md`
 - `sed -n '/^argument-hint:/p' plugins/sdlc-lite/skills/ticket/SKILL.md | grep -qF 'migrate-layout [--dry-run] [--rewrite-refs]' && grep -F migrate-layout plugins/sdlc-lite/skills/ticket/SKILL.md | grep -F 'onboard.py setup' | grep -qF 'layout: flat'`
 - (guard) `git diff --check "$SDLC_BASE_SHA" -- plugins/sdlc-lite docs/maintenance`
 - (guard) `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ':(exclude).sdlc'; git ls-files --others --exclude-standard -- . ':(exclude).sdlc'; } | grep -vxE 'plugins/sdlc-lite/scripts/tickets\.py|docs/maintenance/sdlc-internals\.md|plugins/sdlc-lite/skills/ticket/SKILL\.md')"`

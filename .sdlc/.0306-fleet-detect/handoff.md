@@ -40,8 +40,8 @@ Run from the repository root. fleet_detect reads only fingerprints, so the colle
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest | grep -qx 'fleet_collect selftest: ok'`
 - `out=$(python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest) && printf '%s\n' "$out" | grep -q '^ok: ticket_root: tickets keys each ticket folder' && printf '%s\n' "$out" | grep -q '^ok: ticket_root control: the flat layout keys the same folders by name'`
 - `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect /Users/kimgranlund/Projects/maison/ui-kit-maison --du-timeout 5 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); b=d['runs']['by_ticket']; sys.exit(0 if 'tickets' not in b and any(k.startswith('tickets/') for k in b) and d['tickets']['count'] > 20 else 1)"`
-- `! grep -n "$(printf '\342\200\224')" plugins/sdlc-lite/scripts/fleet_detect.py plugins/sdlc-lite/scripts/fleet_collect.py docs/maintenance/sdlc-internals.md .sdlc/0306-fleet-detect/handoff.md && git diff --check`
-- `grep -q 'fleet_detect.py" selftest' plugins/sdlc-lite/scripts/check.sh && grep -q '^## `scripts/fleet_detect.py`' docs/maintenance/sdlc-internals.md`
+- `! grep -n "$(printf '\342\200\224')" plugins/sdlc-lite/scripts/fleet_detect.py plugins/sdlc-lite/scripts/fleet_collect.py docs/references/sdlc-internals.md .sdlc/0306-fleet-detect/handoff.md && git diff --check`
+- `grep -q 'fleet_detect.py" selftest' plugins/sdlc-lite/scripts/check.sh && grep -q '^## `scripts/fleet_detect.py`' docs/references/sdlc-internals.md`
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 

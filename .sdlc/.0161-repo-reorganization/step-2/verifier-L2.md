@@ -22,7 +22,7 @@ Builder claims I checked against the files:
 - **N5:** `cite_forms` is markdown_link 12, backtick_path 6, in_frozen_files 25, and every other form 0.
 - **N2:** `ambiguities` is `[]`, and `review.md` line 24 describes the probe runs.
 - **N3:** `unplaced` is empty (`plan.json` line 179).
-- **Rule names:** Decisions, Frozen material, Plan, Approve, Apply/Refusals and Open findings all exist in `docs/repo-onboarding/reorganization.md` (rows at lines 16-19, headings at 35, 50, 77, 92). The rows the Keep/Change bullets name are in the Decisions table.
+- **Rule names:** Decisions, Frozen material, Plan, Approve, Apply/Refusals and Open findings all exist in `docs/planning/repo-onboarding/reorganization.md` (rows at lines 16-19, headings at 35, 50, 77, 92). The rows the Keep/Change bullets name are in the Decisions table.
 - **No em dashes:** `grep -c '—'` on the handoff returns 0.
 - **Design doc untouched:** `git diff --name-only` lists no other file.
 

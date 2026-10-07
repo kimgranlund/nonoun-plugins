@@ -1,33 +1,34 @@
 # Documentation
 
-- [Progressive Context specifications](generative-constructs/README.md): lifecycle, context architecture and browser/A2UI proposals.
-- [Progressive Context plugin specification](generative-constructs/progressive-context-plugin.md): scope and packaging decisions.
-- [Progressive Context gap analysis](generative-constructs/progressive-context-gap-analysis.md): tier-by-tier gaps, ranked improvements, what not to build, and how the pattern applies to `docs/` and `.sdlc/`.
-- [Plugin compatibility and validation](plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
+- [Progressive Context specifications](specs/generative-constructs/README.md): lifecycle, context architecture and browser/A2UI proposals.
+- [Progressive Context plugin specification](specs/generative-constructs/progressive-context-plugin.md): scope and packaging decisions.
+- [Progressive Context gap analysis](specs/generative-constructs/progressive-context-gap-analysis.md): tier-by-tier gaps, ranked improvements, what not to build, and how the pattern applies to `docs/` and `.sdlc/`.
+- [Plugin compatibility and validation](references/plugin-compatibility.md): shipped behavior, dependencies and test boundaries.
 
-- [Native Codex role execution](codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
-- [Repository onboarding](repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
+- [Native Codex role execution](references/codex-role-execution.md): predefined agents, pipeline backend, setup and validation.
+- [Repository onboarding](specs/repo-onboarding/README.md): proposed entry files, default docs layout, document reorganization, and a reference on host loading.
 - [Docs check and setup entries](reports/2026-10-05-docs-check-run.md): dated record of `docs_check.py` (D-1 to D-12), the new entry files for homes, the default layout, the change to every adopter's `docs/AGENTS.md`, and read-only runs on this repository and maison.
 - [Rename to reports](reports/rename-validation-to-reports.md): dated record of renaming the evidence folder to `docs/reports/` (T-0246), with before and after counts, the rewrite rules, the allowlist, and the limits.
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
-- [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
+- [Docs schema migration](reports/2026-10-06-docs-schema-migration.md): dated record of moving this repository's `docs/` into the schema (T-0244): baseline, plan, four batches with counts, `docs/layout.md` and its Legacy list, the B-1a scope change, and the limits.
+- [Docs schema](planning/docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
-- [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
-- [Idle-host watcher design](ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
+- [Ticket stages and message bus](specs/ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
+- [Idle-host watcher design](planning/ticket-stages/watcher-design.md): proposed external watcher that resumes an idle host when a message arrives.
 - [Idle-host watcher design review](reports/idle-host-watcher-design-review.md): dated independent review of the watcher design, ready after fixes, with four blockers and the decision it needs.
 
 - [SDLC Lite design review, second round](reports/lean-sdlc-design-review-2.md): dated second architect review of the SDLC Lite design at v0.3, ready after fixes, and what v0.4 changed.
 - [SDLC Lite design review](reports/lean-sdlc-design-review.md): dated independent architect review of the SDLC Lite design at v0.1 and the changes made in v0.2.
-- [SDLC Lite cost control](sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
+- [SDLC Lite cost control](specs/sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
 - [SDLC Lite cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
-- [SDLC Lite pillars](sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
-- [Sub-agent execution mode](sdlc-lite/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
-- [SDLC Lite](sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
+- [SDLC Lite pillars](specs/sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
+- [Sub-agent execution mode](planning/sdlc-lite/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
+- [SDLC Lite](specs/sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
-- [SDLC Lite implementation reference](maintenance/sdlc-internals.md): selectively loaded runner and workflow details.
-- [Claude hook maintenance](maintenance/claude-hooks.md): host-specific enforcement and probes.
+- [SDLC Lite implementation reference](references/sdlc-internals.md): selectively loaded runner and workflow details.
+- [Claude hook maintenance](references/claude-hooks.md): host-specific enforcement and probes.
 - [Shared run operations](../plugins/sdlc-lite/skills/handoff-format/run-operations.md): readiness, routing records, and interruption recovery for both hosts.
 - [Onboard lane text](reports/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
 - [Progressive Context gap analysis review](reports/progressive-context-gap-analysis-review.md): dated independent architect review of the gap analysis, three blockers and eleven minor findings, and how each was applied.

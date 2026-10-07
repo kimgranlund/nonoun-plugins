@@ -7,7 +7,7 @@ level: L3
 ### Do
 - T-0258: fanout numbered close under `ticket_root: tickets` with `.sdlc/config` untracked (gitignored) failed with `close refused: .sdlc/NNNN-slug/handoff.md: missing or has no front matter`. The fix copies the config into the integration and lane worktrees (plugins/sdlc-lite/scripts/fanout.py). Test: the "untracked config lane" case in the fanout selftest.
 - T-0261: `steps.py precheck <task dir>` plus a run.sh refusal (exit 2, before any attempt record) for planner and plan-reviewer when the task handoff has no `## Goal`. Tests: steps.py selftest "(precheck)" cases and run-selftest.sh "goal precheck".
-- T-0263: `steps.py next` prints `resplit` for a blocked builder whose Notes first line starts `stale lane:`. Also changed: builder.md, chain SKILL, docs/maintenance/sdlc-internals.md, generated Codex builder agents.
+- T-0263: `steps.py next` prints `resplit` for a blocked builder whose Notes first line starts `stale lane:`. Also changed: builder.md, chain SKILL, docs/references/sdlc-internals.md, generated Codex builder agents.
 To show red before, make a throwaway worktree under `$SDLC_TMP_WORKTREES` at HEAD, revert only the non-test hunks of each fix there (the fanout.py config copy block, the run.sh precheck block, the steps.py `stale lane:` branch), and run the matching selftest; say what you did.
 
 ### Acceptance criteria

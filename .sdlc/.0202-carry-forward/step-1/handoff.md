@@ -51,7 +51,7 @@ Contract dependents:
 - The seven committed producer results under `.sdlc/` must keep validating (criterion 6).
 - Left untouched on purpose:
   - architect.md's read rule: the ticket gives the reader rule to the planner and builder only.
-  - `docs/maintenance/sdlc-internals.md`: its results.py entry describes the schema mechanics, which do not change.
+  - `docs/references/sdlc-internals.md`: its results.py entry describes the schema mechanics, which do not change.
   - `docs/lean-sdlc/design.md`: a proposal record.
   - `skills/handoff-format/SKILL.md`: the layout is unchanged.
 

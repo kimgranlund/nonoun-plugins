@@ -10,7 +10,7 @@ pass
 The gates went green at the built HEAD, so the pre-build worktree comparison did not apply. I did not run a negative control on any gate. Every gate here is a repo-owned guard that the earlier steps built and checked.
 
 ## Out of scope changes
-None. The modified files are `.gitignore`, `docs/maintenance/sdlc-internals.md`, `conductor.md`, the generated `sdlc-conductor-l1.toml`, `check.sh`, `handoff-format/SKILL.md` and `sdlc-lite/SKILL.md`. The new files are `traces.py`, `scripts/traces/` and `review-traces/`. All of these belong to the traces feature from steps 1 to 22. Step 23 itself only ran gates.
+None. The modified files are `.gitignore`, `docs/references/sdlc-internals.md`, `conductor.md`, the generated `sdlc-conductor-l1.toml`, `check.sh`, `handoff-format/SKILL.md` and `sdlc-lite/SKILL.md`. The new files are `traces.py`, `scripts/traces/` and `review-traces/`. All of these belong to the traces feature from steps 1 to 22. Step 23 itself only ran gates.
 
 ## For the next attempt
 None

@@ -22,7 +22,7 @@
  },
  "folders_without_entry": [
   {
-   "folder": "docs/generative-constructs",
+   "folder": "docs/specs/generative-constructs",
    "documents": 8,
    "entry_file": false,
    "flags": [

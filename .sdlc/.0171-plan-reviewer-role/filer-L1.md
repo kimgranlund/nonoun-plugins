@@ -25,8 +25,8 @@ All six steps passed their verifiers. Step 6's first builder attempt was killed 
   - A review is required for planner L3, any step at L4 or L5, a `Merge` step, and any plan with `## Plan review`.
   - A second `replan` verdict, a `blocked` verdict, or an `unresolved:` item stops for the user.
   - `split` refuses a plan whose review said `replan`.
-  - `/chain`, the conductor, `/plan`, `handoff-format`, `docs/maintenance/sdlc-internals.md`, and `check.py` are updated to match.
-- **Codex (step 4):** `models.json` gets `plan-reviewer` L1 at `gpt-6-astra` high. The alternate follows the newest planner's recorded model, so `gpt-6.1-sol` high reviews Astra plans. Regenerated TOML profiles, `codex_roles.py`, `codex_exchange.py`, `instructions.md`, and `docs/codex-role-execution.md` are updated, with new selftests. The base and alternate profiles now number 24 project agent definitions.
+  - `/chain`, the conductor, `/plan`, `handoff-format`, `docs/references/sdlc-internals.md`, and `check.py` are updated to match.
+- **Codex (step 4):** `models.json` gets `plan-reviewer` L1 at `gpt-6-astra` high. The alternate follows the newest planner's recorded model, so `gpt-6.1-sol` high reviews Astra plans. Regenerated TOML profiles, `codex_roles.py`, `codex_exchange.py`, `instructions.md`, and `docs/references/codex-role-execution.md` are updated, with new selftests. The base and alternate profiles now number 24 project agent definitions.
 - **Live validation doc (step 5):** `docs/reports/plan-reviewer-live-run.md`, its copied evidence, and one `docs/README.md` entry.
 - **Gates (step 6):** no fixes were needed.
 

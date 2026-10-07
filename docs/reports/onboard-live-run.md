@@ -1,6 +1,6 @@
 # Onboard live run
 
-Recorded: 2026-09-29. Live run gate from the [repository onboarding design](../repo-onboarding/design.md), ticket T-0160. One trial per arm.
+Recorded: 2026-09-29. Live run gate from the [repository onboarding design](../specs/repo-onboarding/design.md), ticket T-0160. One trial per arm.
 
 ## Environment
 

@@ -2,7 +2,7 @@
 
 Recorded: 2026-09-29. Independent review of the onboarding design at v0.4. The reviewer was a fresh agent with no access to the authoring conversation. It changed no file in this repository.
 
-Subject: commit fbb32d1 on branch `repo-onboarding-design`. Documents: `docs/repo-onboarding/design.md`, `reorganization.md`, `layered-context-pattern.md`, `README.md`, and the handoffs of tickets T-0160 to T-0163.
+Subject: commit fbb32d1 on branch `repo-onboarding-design`. Documents: `docs/specs/repo-onboarding/design.md`, `reorganization.md`, `layered-context-pattern.md`, `README.md`, and the handoffs of tickets T-0160 to T-0163.
 
 | Ticket | Verdict |
 | --- | --- |
@@ -17,7 +17,7 @@ Subject: commit fbb32d1 on branch `repo-onboarding-design`. Documents: `docs/rep
 | 1 | Blocker | The existence of `.run.lock` does not mean a role is running, so apply would refuse forever. | `run_lifecycle.py:29` opens the file and holds a lock, and nothing deletes it. `run_lifecycle.py recover` on a scratch folder left a zero-byte `.run.lock`. | The running check tries a non-blocking lock. |
 | 2 | Blocker | Approval changed the inputs the digest guards, the digest scope was undefined, and the plan had no machine-readable format. | `reorganization.md` steps 2 to 4 at v0.4. | `plan.json` is defined, the digest scope is defined and excludes `.sdlc/`, and decisions are made by editing the layout and planning again. |
 | 3 | Major | The layout format could not be parsed into behavior, and frozen paths could not name anything outside `docs/`. | The `<topic>/` placeholder in the template, and `plugins/sdlc-lite/bench/results/` citing `docs/` paths. | A grammar is defined, frozen globs are relative to the repository root, and every unparsed list line stops the script. |
-| 4 | Major | "Every link resolves" already fails in this repository. | Two links into a sibling repository that is absent: `docs/generative-constructs/README.md:19` and `progressive-context-plugin.md:76`. | The final check compares with a baseline. |
+| 4 | Major | "Every link resolves" already fails in this repository. | Two links into a sibling repository that is absent: `docs/specs/generative-constructs/README.md:19` and `progressive-context-plugin.md:76`. | The final check compares with a baseline. |
 | 5 | Major | Upsert rows overlapped, so a stale block with every target was never repaired. | `design.md` upsert table at v0.4. | The rows are ordered and the first match applies. |
 | 6 | Major | Blocks without targets were never written to an existing file, and an existing `docs/AGENTS.md` never gained the layout sections. | The `.sdlc/AGENTS.md` and `docs/AGENTS.md` templates at v0.4. | Target detection applies to the import only. The layout moved to `docs/layout.md`, which setup creates when missing. |
 | 7 | Major | An ignored `.sdlc/` is the documented default, so the root link to `.sdlc/AGENTS.md` breaks in a fresh clone. | `handoff-format/SKILL.md:32`. | `.sdlc/AGENTS.md` is dropped. The guidance is in the root managed block. |

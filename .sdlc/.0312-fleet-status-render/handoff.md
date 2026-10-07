@@ -37,7 +37,7 @@ Run from the repository root.
 4. Each repo row under Moving carries `unread N` and, when `.sdlc/supervisor/status.json` exists, the supervisor state; unread ids are file names under `.sdlc/messages/new/<receiver>/` and no message body is printed or opened (selftest end-to-end case with a planted body).
 5. `plugins/sdlc-lite/skills/fleet-status/SKILL.md` runs the script, prints its output verbatim, asks at most one AskUserQuestion round for the Needs-you rows with the recommended option first, never composes a table, and says `--ping` sends nothing; `skills/sdlc-lite/SKILL.md` routes to it and `check.py` guard 36 pins both (its negative controls fire).
 6. `python3 plugins/sdlc-lite/scripts/check.py`, `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `git diff --check` all pass.
-7. `docs/maintenance/sdlc-internals.md` names `render` and the skill in the `fleet_status.py` entry; the script's docstring lists the `render` usage and the new `collect` keys (`unread`, `supervisor`, `report_since`, `closed_since`, `merged_since`, `age_s`).
+7. `docs/references/sdlc-internals.md` names `render` and the skill in the `fleet_status.py` entry; the script's docstring lists the `render` usage and the new `collect` keys (`unread`, `supervisor`, `report_since`, `closed_since`, `merged_since`, `age_s`).
 8. No model call, no message sent, no push: `grep -n "messages\." plugins/sdlc-lite/scripts/fleet_status.py` shows only `messages.ID_RE`.
 
 ## Closed

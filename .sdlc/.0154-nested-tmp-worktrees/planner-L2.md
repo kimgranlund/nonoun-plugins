@@ -29,7 +29,7 @@ Changes:
 3. In `plugins/sdlc-lite/scripts/run-selftest.sh`, add two cases that drive run.sh only (never call the reaper script directly), and describe them in the header comment:
    - `stale prefix`: before a real stub run, register a detached worktree under `.worktrees/tmp/builder-<dead pid>/w` (dead pid from a subshell that has exited) and one under `.worktrees/tmp/builder-$$/w` (live). After the run, the dead one is gone from disk and from `git worktree list`, and the live one is still present. Clean it up afterwards. Failures read `fail "stale prefix: <reason>"`.
    - `term cleanup`: a stub claude adds a worktree under `$SDLC_TMP_WORKTREES`, traps and ignores TERM, writes a ready marker, and sleeps about 30 s. Launch run.sh in the background, wait for the marker, send TERM to the run.sh pid (the run_lifecycle process), and wait for it to exit. Then assert that no worktree under `.worktrees/tmp` is registered, that `.worktrees/tmp` is gone, and that the stub process is no longer alive. Failures read `fail "term cleanup: <reason>"`.
-4. In `docs/maintenance/sdlc-internals.md`, in the run.sh paragraph where `SDLC_TMP_WORKTREES` cleanup is described, add the reaper (`reap-tmp-worktrees.sh`, dead-owner prefixes, start and exit) and the prompt TERM cleanup.
+4. In `docs/references/sdlc-internals.md`, in the run.sh paragraph where `SDLC_TMP_WORKTREES` cleanup is described, add the reaper (`reap-tmp-worktrees.sh`, dead-owner prefixes, start and exit) and the prompt TERM cleanup.
 ### Acceptance criteria
 - (guard) `bash plugins/sdlc-lite/scripts/run-selftest.sh`
 - `test -x plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`
@@ -37,7 +37,7 @@ Changes:
 - `grep -qF 'fail "stale prefix:' plugins/sdlc-lite/scripts/run-selftest.sh`
 - `grep -qF 'fail "term cleanup:' plugins/sdlc-lite/scripts/run-selftest.sh`
 - The new selftest fails on the base run.sh: `d=$(mktemp -d) && git archive "$SDLC_BASE_SHA" plugins/sdlc-lite | tar -x -C "$d" && cp plugins/sdlc-lite/scripts/run-selftest.sh "$d/plugins/sdlc-lite/scripts/run-selftest.sh" && out=$(bash "$d/plugins/sdlc-lite/scripts/run-selftest.sh" 2>&1); printf "%s\n" "$out" | grep -qE "FAIL: (stale prefix|term cleanup):"`
-- `grep -qF reap-tmp-worktrees.sh docs/maintenance/sdlc-internals.md`
+- `grep -qF reap-tmp-worktrees.sh docs/references/sdlc-internals.md`
 - `bash -n plugins/sdlc-lite/scripts/reap-tmp-worktrees.sh`
 
 ## Step 2: fanout reaps each lane's dead-owner tmp prefixes after its driver
@@ -51,7 +51,7 @@ Changes:
 1. In `plugins/sdlc-lite/scripts/fanout.py`, right after the driver `subprocess.run(...)` returns in the per-ticket function (around line 537), before `inherited_red` and before any `git add -A` or wip commit, run `bash <SCRIPTS>/reap-tmp-worktrees.sh <lane worktree>`. Ignore its exit code; it only removes prefixes whose owner pid is dead. Update the module docstring step 2 to say so.
 2. Add a selftest case to fanout.py's `selftest`. The existing STUB, or a variant used by a new small lane, registers a detached worktree under `$PWD/.worktrees/tmp/builder-<dead pid>/w` from inside the stub script, which the hook cannot see. After the fanout run, `expect('lane tmp prefix reaped', ...)` checks that the lane worktree has no `.worktrees/tmp/builder-<dead pid>` and that `git worktree list` no longer lists it.
    - The builder must show the case red once by temporarily removing the reaper call, running the selftest, then restoring the call. The builder quotes the red output in its report.
-3. In `docs/maintenance/sdlc-internals.md`, add one clause about the per-driver lane reap to the fanout paragraph.
+3. In `docs/references/sdlc-internals.md`, add one clause about the per-driver lane reap to the fanout paragraph.
 ### Acceptance criteria
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`
 - `grep -qF reap-tmp-worktrees.sh plugins/sdlc-lite/scripts/fanout.py`

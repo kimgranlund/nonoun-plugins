@@ -2,12 +2,12 @@
   "ambiguities": [],
   "baseline_broken": [
     {
-      "file": "docs/generative-constructs/README.md",
+      "file": "docs/specs/generative-constructs/README.md",
       "line": 19,
       "target": "../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md"
     },
     {
-      "file": "docs/generative-constructs/progressive-context-plugin.md",
+      "file": "docs/specs/generative-constructs/progressive-context-plugin.md",
       "line": 76,
       "target": "../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md"
     }
@@ -29,39 +29,39 @@
   "layout": ".sdlc/0161-repo-reorganization/spike/layout.md",
   "moves": [
     {
-      "from": "docs/claude-handoff.md",
+      "from": "docs/other/claude-handoff.md",
       "rule": "`reports/` takes `claude-handoff.md`",
       "to": "docs/reports/claude-handoff.md"
     },
     {
-      "from": "docs/claude-response.md",
+      "from": "docs/other/claude-response.md",
       "rule": "`reports/` takes `claude-response.md`",
       "to": "docs/reports/claude-response.md"
     },
     {
-      "from": "docs/codex-role-execution.md",
+      "from": "docs/references/codex-role-execution.md",
       "rule": "`reference/` takes `codex-role-execution.md`",
       "to": "docs/reference/codex-role-execution.md"
     },
     {
-      "from": "docs/plugin-compatibility.md",
+      "from": "docs/references/plugin-compatibility.md",
       "rule": "`reference/` takes `plugin-compatibility.md`",
       "to": "docs/reference/plugin-compatibility.md"
     }
   ],
   "placed": [
-    "docs/generative-constructs/01-system-brief.md",
-    "docs/generative-constructs/02-construct-model.md",
-    "docs/generative-constructs/03-lifecycle-and-evaluation.md",
-    "docs/generative-constructs/04-context-and-harness.md",
-    "docs/generative-constructs/05-a2ui-composition-and-runtime.md",
-    "docs/generative-constructs/06-prototype-and-validation.md",
-    "docs/generative-constructs/progressive-context-plugin.md",
-    "docs/maintenance/claude-hooks.md",
-    "docs/maintenance/sdlc-internals.md",
-    "docs/repo-onboarding/design.md",
-    "docs/repo-onboarding/layered-context-pattern.md",
-    "docs/repo-onboarding/reorganization.md"
+    "docs/specs/generative-constructs/01-system-brief.md",
+    "docs/specs/generative-constructs/02-construct-model.md",
+    "docs/specs/generative-constructs/03-lifecycle-and-evaluation.md",
+    "docs/specs/generative-constructs/04-context-and-harness.md",
+    "docs/planning/generative-constructs/05-a2ui-composition-and-runtime.md",
+    "docs/planning/generative-constructs/06-prototype-and-validation.md",
+    "docs/specs/generative-constructs/progressive-context-plugin.md",
+    "docs/references/claude-hooks.md",
+    "docs/references/sdlc-internals.md",
+    "docs/specs/repo-onboarding/design.md",
+    "docs/references/layered-context-pattern.md",
+    "docs/planning/repo-onboarding/reorganization.md"
   ],
   "rewrites": [
     {
@@ -69,28 +69,28 @@
       "form": "markdown_link",
       "line": 20,
       "new": "docs/reference/codex-role-execution.md",
-      "old": "docs/codex-role-execution.md"
+      "old": "docs/references/codex-role-execution.md"
     },
     {
       "file": "AGENTS.md",
       "form": "markdown_link",
       "line": 22,
       "new": "docs/reference/plugin-compatibility.md",
-      "old": "docs/plugin-compatibility.md"
+      "old": "docs/references/plugin-compatibility.md"
     },
     {
       "file": "README.md",
       "form": "markdown_link",
       "line": 10,
       "new": "docs/reference/plugin-compatibility.md",
-      "old": "docs/plugin-compatibility.md"
+      "old": "docs/references/plugin-compatibility.md"
     },
     {
       "file": "README.md",
       "form": "markdown_link",
       "line": 26,
       "new": "docs/reference/codex-role-execution.md",
-      "old": "docs/codex-role-execution.md"
+      "old": "docs/references/codex-role-execution.md"
     },
     {
       "file": "docs/README.md",
@@ -107,35 +107,35 @@
       "old": "codex-role-execution.md"
     },
     {
-      "file": "docs/claude-handoff.md",
+      "file": "docs/other/claude-handoff.md",
       "form": "markdown_link",
       "line": 5,
       "new": "../readiness-recovery-validation.md",
       "old": "readiness-recovery-validation.md"
     },
     {
-      "file": "docs/codex-role-execution.md",
+      "file": "docs/references/codex-role-execution.md",
       "form": "markdown_link",
       "line": 76,
       "new": "../validation/native-codex-smoke.json",
       "old": "validation/native-codex-smoke.json"
     },
     {
-      "file": "docs/codex-role-execution.md",
+      "file": "docs/references/codex-role-execution.md",
       "form": "markdown_link",
       "line": 82,
       "new": "../../plugins/sdlc-lite/skills/handoff-format/run-operations.md",
       "old": "../plugins/sdlc-lite/skills/handoff-format/run-operations.md"
     },
     {
-      "file": "docs/generative-constructs/README.md",
+      "file": "docs/specs/generative-constructs/README.md",
       "form": "markdown_link",
       "line": 21,
       "new": "../reference/plugin-compatibility.md",
       "old": "../plugin-compatibility.md"
     },
     {
-      "file": "docs/maintenance/sdlc-internals.md",
+      "file": "docs/references/sdlc-internals.md",
       "form": "markdown_link",
       "line": 5,
       "new": "../reference/codex-role-execution.md",
@@ -146,21 +146,21 @@
       "form": "markdown_link",
       "line": 7,
       "new": "../../docs/reference/plugin-compatibility.md",
-      "old": "../../docs/plugin-compatibility.md"
+      "old": "../../docs/references/plugin-compatibility.md"
     },
     {
       "file": "plugins/sdlc-lite/AGENTS.md",
       "form": "markdown_link",
       "line": 9,
       "new": "../../docs/reference/codex-role-execution.md",
-      "old": "../../docs/codex-role-execution.md"
+      "old": "../../docs/references/codex-role-execution.md"
     },
     {
       "file": "plugins/sdlc-lite/HARNESS-NOTES.md",
       "form": "markdown_link",
       "line": 33,
       "new": "../../docs/reference/codex-role-execution.md",
-      "old": "../../docs/codex-role-execution.md"
+      "old": "../../docs/references/codex-role-execution.md"
     }
   ],
   "summary": {
@@ -179,38 +179,38 @@
   "unplaced": [],
   "unrewritten_cites": [
     {
-      "cites": "docs/claude-response.md",
-      "file": "docs/claude-handoff.md",
+      "cites": "docs/other/claude-response.md",
+      "file": "docs/other/claude-handoff.md",
       "form": "backtick_path",
       "line": 9
     },
     {
-      "cites": "docs/codex-role-execution.md",
-      "file": "docs/claude-response.md",
+      "cites": "docs/references/codex-role-execution.md",
+      "file": "docs/other/claude-response.md",
       "form": "backtick_path",
       "line": 60
     },
     {
-      "cites": "docs/claude-handoff.md",
-      "file": "docs/repo-onboarding/reorganization.md",
+      "cites": "docs/other/claude-handoff.md",
+      "file": "docs/planning/repo-onboarding/reorganization.md",
       "form": "backtick_path",
       "line": 142
     },
     {
-      "cites": "docs/claude-response.md",
-      "file": "docs/repo-onboarding/reorganization.md",
+      "cites": "docs/other/claude-response.md",
+      "file": "docs/planning/repo-onboarding/reorganization.md",
       "form": "backtick_path",
       "line": 142
     },
     {
-      "cites": "docs/codex-role-execution.md",
-      "file": "docs/repo-onboarding/reorganization.md",
+      "cites": "docs/references/codex-role-execution.md",
+      "file": "docs/planning/repo-onboarding/reorganization.md",
       "form": "backtick_path",
       "line": 142
     },
     {
-      "cites": "docs/plugin-compatibility.md",
-      "file": "docs/repo-onboarding/reorganization.md",
+      "cites": "docs/references/plugin-compatibility.md",
+      "file": "docs/planning/repo-onboarding/reorganization.md",
       "form": "backtick_path",
       "line": 142
     }

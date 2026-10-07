@@ -7,7 +7,7 @@ T-0162: Planner names the entry files each step needs
 
 ## PR body
 ### Summary
-A builder or verifier working on a plan step now reads the nearest non-root `AGENTS.md` for each file the step changes. The planner lists those entries in an optional `### Read first` subsection of the step. The reason is that Codex loads entries only from the root down to its working directory, and Claude Code loads a nested entry only through an import. Neither host loads a nested entry for a role that starts at the root. Design context is in `docs/repo-onboarding/design.md`, "How roles reach an entry".
+A builder or verifier working on a plan step now reads the nearest non-root `AGENTS.md` for each file the step changes. The planner lists those entries in an optional `### Read first` subsection of the step. The reason is that Codex loads entries only from the root down to its working directory, and Claude Code loads a nested entry only through an import. Neither host loads a nested entry for a role that starts at the root. Design context is in `docs/specs/repo-onboarding/design.md`, "How roles reach an entry".
 
 ### Changes
 - `plugins/sdlc-lite/scripts/steps.py`:
@@ -15,7 +15,7 @@ A builder or verifier working on a plan step now reads the nearest non-root `AGE
   - `split` shares the refusal.
   - Selftest case (r) has three checks: lint accepts an existing path, lint refuses a missing one, and split copies the subsection.
   - `swap` and the `split` copy logic are unchanged.
-- `docs/maintenance/sdlc-internals.md`: the `steps.py` entry describes the path check.
+- `docs/references/sdlc-internals.md`: the `steps.py` entry describes the path check.
 - `plugins/sdlc-lite/agents/planner.md`:
   - New `## Entry files` section.
   - Optional `### Read first` in the step template, after `level:` and before `### Do`.
@@ -25,7 +25,7 @@ A builder or verifier working on a plan step now reads the nearest non-root `AGE
 - `plugins/sdlc-lite/skills/fix/SKILL.md` and `skills/chain/SKILL.md` (loose-ends step): hand-written step handoffs add the same subsection.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: the step template documents the subsection as optional and gives the nearest-entry rule, with the root left out.
 - `plugins/sdlc-lite/scripts/check.py`: a read-first route check over seven files, with a negative control.
-- `docs/reports/entry-files-live-run.md`: new live-run report, linked from `docs/README.md` and `docs/repo-onboarding/design.md`.
+- `docs/reports/entry-files-live-run.md`: new live-run report, linked from `docs/README.md` and `docs/specs/repo-onboarding/design.md`.
 
 ### How each was verified
 Every step has a verifier verdict of pass.

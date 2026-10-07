@@ -5,7 +5,7 @@ done
 ## Changes
 - `plugins/sdlc-lite/scripts/steps.py`: new read-only `resume <task dir>` subcommand (`resume_action`, `cmd_resume`, `STEP_DIR_RE`); a module docstring entry and Usage line; an argparse subparser and dispatch; 7 selftest cases whose names start with `resume`.
 - `plugins/sdlc-lite/skills/chain/SKILL.md`: a resume rule at the start of section 4 (stale-attempt `run_lifecycle.py recover`, then inspect the step, then `steps.py resume`, never the newest or highest step dir). `Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_lifecycle.py:*)` added to `allowed-tools`.
-- `docs/maintenance/sdlc-internals.md`: the `scripts/steps.py` entry gains a `resume <task dir>` clause, and its closing sentence now says /chain runs `resume` when it resumes a task.
+- `docs/references/sdlc-internals.md`: the `scripts/steps.py` entry gains a `resume <task dir>` clause, and its closing sentence now says /chain runs `resume` when it resumes a task.
 
 ## Checks
 - Acceptance criteria 1 to 12, each run as written from the repo root with `SDLC_BASE_SHA=adf9ec1c…`: all rc=0. This covers the blocked step-2 fixture (prints `step-2` then `replan`), the all-passed fixture (`done`), the superseded dir plus step-10 fixture (`step-2` then `build L2`), the empty task dir (rc 1 with `steps resume:`), `selftest | grep '^ok: resume'`, the (guard) selftest, the three greps, the doc grep, and the (guard) scope diff.

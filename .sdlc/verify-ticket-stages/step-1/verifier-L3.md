@@ -41,7 +41,7 @@ fail
   - Unverified: the 10-second polling cadence was not measured. On Claude the messenger claimed only on its fourth spawn.
   - Stale prose, not a ticket requirement:
     - `docs/README.md` still calls the mailbox "(proposed)".
-    - `docs/ticket-stages/README.md` says only the router and `tickets/` root are built; `design.md:3` says the bus is built.
+    - `docs/specs/ticket-stages/README.md` says only the router and `tickets/` root are built; `design.md:3` says the bus is built.
     - The `docs/README.md` link text says a fresh role claimed and closed a ticket "from `tickets/AGENTS.md` alone", while that doc's result is unverified.
 - At least two injected defects were each caught by a selftest or check, with the defect and the failure stated: pass. Evidence, all in throwaway worktrees at HEAD, each restored after:
   - `read_time` stamped at send in `compose`: `messages selftest: FAIL: create: ... read_time is set in new/`. With the `new/` schema guard also removed: `FAIL: create: created message: read_time is '2026-10-01T10:37:08.729917Z', expected ''`.

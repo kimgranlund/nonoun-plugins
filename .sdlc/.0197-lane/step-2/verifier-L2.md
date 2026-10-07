@@ -8,7 +8,7 @@ pass
 - Criterion 7 (size M handoff gives `lean`, with the exact skips.md line): pass. Evidence: the command returned rc 0. A separate run on an XL handoff printed `full`, `reason: size XL decides before planning (no planner result yet)` and `read: <path>/handoff.md`. It created skips.md as `# Skips`, a blank line, `## Lane`, and the record.
 - Criterion 8 (no front matter gives `full` with the no-size reason, with no traceback): pass. Evidence: the command returned rc 0, covering stdout and the exact skips.md line.
 - Criterion 9 (docstring has a `\n  lane ` entry mentioning `skips.md`, and `lane_action` source holds `review_required(`): pass. Evidence: the command returned rc 0. The base `steps.py` has no `lane` subcommand at all, so this check is red there.
-- Criterion 10 (`docs/maintenance/sdlc-internals.md` names `skips.md` and `review_required`): pass. Evidence: the command returned rc 0, and the base grep for `skips.md` returned rc 1. The diff shows the `lane <task dir>` clause right after the `review` clause. It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane`. It also names `LANE_CONTRACTS` and the exit-1 cases.
+- Criterion 10 (`docs/references/sdlc-internals.md` names `skips.md` and `review_required`): pass. Evidence: the command returned rc 0, and the base grep for `skips.md` returned rc 1. The diff shows the `lane <task dir>` clause right after the `review` clause. It names `fix`/`lean`/`full`, the `reason:` and `read:` lines, `review_required()`, the size-only rule before planning, the after-planning conditions, the sticky `full`, and the `- lane:` line under `## Lane`. It also names `LANE_CONTRACTS` and the exit-1 cases.
 - (guard) `results.py selftest`: pass. Evidence: rc 0 in the run of all 13 criteria. The lazy `import tickets` sits inside `lane_action` (steps.py in the diff), with a comment saying why.
 - (guard) no em dash in `steps.py` or `sdlc-internals.md`: pass. Evidence: rc 0.
 - (guard) scope diff against `$SDLC_BASE_SHA`: pass. Evidence: rc 0. `git status --short` shows only those two files modified, plus untracked files under `.sdlc/`, which the guard excludes.
@@ -22,7 +22,7 @@ pass
   - `git diff --check` is clean.
 
 ## Out of scope changes
-None. The tracked diff is only `plugins/sdlc-lite/scripts/steps.py` and `docs/maintenance/sdlc-internals.md`. The untracked files under `.sdlc/0197-lane/step-2/` are run artifacts. `handoff-format/SKILL.md` is untouched, as the handoff required. I removed my throwaway worktree. I did not run `lane` on the real `.sdlc/0197-lane` dir.
+None. The tracked diff is only `plugins/sdlc-lite/scripts/steps.py` and `docs/references/sdlc-internals.md`. The untracked files under `.sdlc/0197-lane/step-2/` are run artifacts. `handoff-format/SKILL.md` is untouched, as the handoff required. I removed my throwaway worktree. I did not run `lane` on the real `.sdlc/0197-lane` dir.
 
 ## For the next attempt
 None

@@ -14,7 +14,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 Add a status banner to each numbered spec and a glossary mapping construct, revision, instance to capability, contract, assessment.
 
 ## Intent
-- Do: Edit docs/generative-constructs/01 to 06 only to add a banner pointing at the shipped skill and one glossary in the README.
+- Do: Edit docs/specs/generative-constructs/01 to 06 only to add a banner pointing at the shipped skill and one glossary in the README.
 - Non-goals: rewriting the proposals, editing the plugin.
 - Done when: each numbered spec carries the banner and the glossary names each shipped term once.
 
@@ -26,4 +26,4 @@ No push, tag, version bump, or publish. No em dashes. Preserve other agents' wor
 
 ## Closed
 
-2026-10-05: Banner added to docs/generative-constructs 01 to 06 and a vocabulary table in the README mapping construct, contract, criterion/evidence/assessment, revision, release, qualification, run and instance to the shipped terms (instance has no shipped counterpart); git diff --check, tickets.py check and link checks clean; the batched L3 verifier at the end of wave-b reads the diff.
+2026-10-05: Banner added to docs/specs/generative-constructs 01 to 06 and a vocabulary table in the README mapping construct, contract, criterion/evidence/assessment, revision, release, qualification, run and instance to the shipped terms (instance has no shipped counterpart); git diff --check, tickets.py check and link checks clean; the batched L3 verifier at the end of wave-b reads the diff.

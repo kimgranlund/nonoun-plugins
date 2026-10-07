@@ -7,8 +7,8 @@ done
 - plugins/sdlc-lite/skills/sdlc-lite/SKILL.md: added the route table row "Set up or check entry files and docs layout | onboard".
 - plugins/sdlc-lite/scripts/check.sh: added the onboard.py selftest line after fanout and named it in the header comment.
 - plugins/progressive-context/skills/progressive-context/references/sdlc-lite.md: added one sentence naming SDLC Lite's `onboard` skill as the setup step. It has no path link.
-- docs/repo-onboarding/design.md: the status line now says T-0160 implements the design in onboard.py and the `onboard` skill.
-- docs/repo-onboarding/README.md: now says "The design is implemented; the reorganization is not."
+- docs/specs/repo-onboarding/design.md: the status line now says T-0160 implements the design in onboard.py and the `onboard` skill.
+- docs/specs/repo-onboarding/README.md: now says "The design is implemented; the reorganization is not."
 
 ## Checks
 - Ran all 8 acceptance criteria as written: all passed.

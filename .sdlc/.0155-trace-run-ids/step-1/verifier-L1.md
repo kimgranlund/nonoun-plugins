@@ -6,8 +6,8 @@ pass
 - Resume probe: pass. I ran the full command from the handoff and it exited 0 (`PROBE=0`). `logs/fanout.log` held run A `fanout-a3c7344f336d` with `driver failed rc=3`, and run B `fanout-72f8e278fa44` with `merged`. The base code has no `FANOUT_RUN_ID` (`grep -c` gives 0 at `$SDLC_BASE_SHA`), so the probe cannot pass there.
 - `grep -qF "resume case" plugins/sdlc-lite/scripts/fanout.py`: pass. Exit 0.
 - `grep -qF "FANOUT_RUN_ID" plugins/sdlc-lite/scripts/fanout.py`: pass. Exit 0.
-- `grep -qF "logs/fanout.log" docs/maintenance/sdlc-internals.md`: pass. Exit 0.
-- `grep -qF "FANOUT_RUN_ID" docs/maintenance/sdlc-internals.md`: pass. Exit 0.
+- `grep -qF "logs/fanout.log" docs/references/sdlc-internals.md`: pass. Exit 0.
+- `grep -qF "FANOUT_RUN_ID" docs/references/sdlc-internals.md`: pass. Exit 0.
 - The builder result records the resume case's negative control: pass. `builder-L2.md` records it. I reproduced it on a copy of the scripts with a constant id. `selftest` then failed with `resume case: the two runs have distinct ids, got 'fanout-000000000000' and 'fanout-000000000000'`. On the built tree it passes.
 - (guard) scope `test -z ...`: pass. Exit 0. Only `fanout.py` and `sdlc-internals.md` changed. `SKILL.md` is untouched, and its line and log mentions cover only step-3 report printing, not the line format.
 - (guard) `python3 plugins/sdlc-lite/scripts/fanout.py selftest`: pass. Prints `fanout selftest: PASS`.

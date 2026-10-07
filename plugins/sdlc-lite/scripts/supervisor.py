@@ -13,7 +13,7 @@ Usage: supervisor.py [--root DIR] init
   its own records, and the clock. It never claims, moves, edits, or deletes a message, never runs
   messages.py expire, and never prints, stores, or passes a message body or topic. It reads the mailbox
   only through messages.py functions and keeps only id, sender, send_time, and re. The design is
-  docs/ticket-stages/watcher-design.md (decisions D1 to D21).
+  docs/planning/ticket-stages/watcher-design.md (decisions D1 to D21).
 
 Commands
   init      write AGENTS.md, CLAUDE.md (`@AGENTS.md`), and .gitignore whole when missing or different,

@@ -26,7 +26,7 @@ This ships the reader only. Nothing yet tells a task-dir verifier to write `## V
   - Docstring updated, plus 16 `next batch:` selftest cases.
 - `plugins/sdlc-lite/scripts/board.py`: imports `steps` and renders `🟢 pass · builder <L> · batch verifier <L>` when `steps.batch_verified` returns a path. A step rebuilt after the batch shows `built · builder <L>, awaiting verify`. Two `batch:` selftest cases.
 - `plugins/sdlc-lite/skills/handoff-format/SKILL.md`: new section `Batched verifier result (task dir)`, which is the result contract.
-- `docs/maintenance/sdlc-internals.md`: one clause each for the `steps.py` and `board.py` entries.
+- `docs/references/sdlc-internals.md`: one clause each for the `steps.py` and `board.py` entries.
 
 ### Verification
 Both steps got an independent verifier verdict of pass. Step 1 was built at L3 and verified at L2. Step 2 was built at L2 and verified at L1.

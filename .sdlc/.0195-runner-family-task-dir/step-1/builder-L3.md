@@ -5,7 +5,7 @@ done
 ## Changes
 - `plugins/sdlc-lite/scripts/run.sh`: the verifier family block now has a fallback. When `order.py newest "$dir" builder` prints nothing, it scans the direct `step-<n>` children (regex `^step-[0-9]+$`, compared with `10#`), runs `order.py newest` on each, and uses the result from the highest-numbered step that has one. The fallback has a comment naming `codex_roles.py resolve` as its Codex twin. The header "Family rules" paragraph gets the specified sentence, which includes `step-<n>.superseded-<k>`. All new code stays inside the `{ ... }` group.
 - `plugins/sdlc-lite/scripts/run-selftest.sh`: new `# Task dir: ` header paragraph, placed before the "Throwaway worktrees" paragraph. New task-dir block covering cases 1 to 8, placed right after the T-0108 skill-file check and before the plan-reviewer block. Fixtures go under `$repo/.sdlc/td` and are removed at the end. Every failure reads `fail "task dir: <reason>"`.
-- `docs/maintenance/sdlc-internals.md`: in the `scripts/run.sh` entry, "the Fable-never-verifies-Fable swap" is replaced with the specified verifier family rule text.
+- `docs/references/sdlc-internals.md`: in the `scripts/run.sh` entry, "the Fable-never-verifies-Fable swap" is replaced with the specified verifier family rule text.
 
 ## Checks
 - `bash -n` on run.sh and run-selftest.sh: OK.

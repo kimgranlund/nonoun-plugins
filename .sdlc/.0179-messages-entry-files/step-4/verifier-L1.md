@@ -8,7 +8,7 @@ pass
 - handoff-format `.sdlc/messages/` row contains `AGENTS.md`: pass. Evidence: exit 0 (c3=0). The diff shows the row is verbatim per the handoff. The old row had no `AGENTS.md`.
 - (guard) no em dash in added lines: pass. Evidence: exit 0 (c4=0). I read the added lines in the diff and saw none.
 - (guard) `git diff --check`: pass. Evidence: exit 0 with no output (c5=0).
-- (guard) scope allow-list: pass. Evidence: exit 0 (c6=0). The only changed files outside `.sdlc` are the three allowed ones: `docs/maintenance/sdlc-internals.md`, `docs/ticket-stages/design.md`, and `plugins/sdlc-lite/skills/handoff-format/SKILL.md`.
+- (guard) scope allow-list: pass. Evidence: exit 0 (c6=0). The only changed files outside `.sdlc` are the three allowed ones: `docs/references/sdlc-internals.md`, `docs/specs/ticket-stages/design.md`, and `plugins/sdlc-lite/skills/handoff-format/SKILL.md`.
 
 I did not run the pre-build gate check. No gate failed, so the check was not needed.
 

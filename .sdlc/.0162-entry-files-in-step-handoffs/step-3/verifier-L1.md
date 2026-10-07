@@ -12,7 +12,7 @@ pass
 I also ran `python3 plugins/sdlc-lite/scripts/check.py`. It printed "ok: 18 role levels, 8 agents checked".
 
 ## Out of scope changes
-`docs/maintenance/sdlc-internals.md` is modified in the tree, but this step did not call for it. The change adds the `### Read first` lint description to the `steps.py` entry. `git log` shows the file was last committed in a97ed40, before HEAD. I could not tie it to a specific earlier step. It matches the task goal and does not affect this step's criteria, so I am not counting it against the step.
+`docs/references/sdlc-internals.md` is modified in the tree, but this step did not call for it. The change adds the `### Read first` lint description to the `steps.py` entry. `git log` shows the file was last committed in a97ed40, before HEAD. I could not tie it to a specific earlier step. It matches the task goal and does not affect this step's criteria, so I am not counting it against the step.
 
 ## For the next attempt
 None

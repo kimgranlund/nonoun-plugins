@@ -28,7 +28,7 @@ The ticket's hook option (refusing role writes to `run.sh`) was not chosen.
   - It runs a real `planner L3` through the copy.
   - It asserts that the truncation happened, exit 0, the stdout result path, the result file text, the `runs.jsonl` line, and attempt status `completed`.
 - `plugins/sdlc-lite/scripts/lifecycle-selftest.py`: new `test_exit_zero_without_result_fails`. It runs `run_lifecycle.run` with a runner that is just `exit 0`. It asserts rc 1, status `failed`, `exit_code` 1, and the stderr line.
-- `docs/maintenance/sdlc-internals.md`: two sentences in the `scripts/run.sh` entry. One covers `edits run.sh while it runs` and one covers `exits 0 without a result`.
+- `docs/references/sdlc-internals.md`: two sentences in the `scripts/run.sh` entry. One covers `edits run.sh while it runs` and one covers `exits 0 without a result`.
 
 ### How each was verified
 Each step was checked by an independent verifier. All three passed.

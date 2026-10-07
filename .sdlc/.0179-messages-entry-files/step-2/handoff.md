@@ -56,7 +56,7 @@ This skill is not preloaded into any role (the agents' `skills:` lists name only
 - `fanout.py`: lanes run `tickets.py close` and roadmap, commit with `git add -A`, and check porcelain. The mailbox's own `.gitignore` (step 1) keeps entry files out. Guarded below.
 - `board.py` imports `tickets`. `task_dirs` needs a `handoff.md` (board.py:205-210), so `messages/` never shows as a task. Guarded below.
 - `docs/reports/ticket-root-router-live-run.md` lists the files `new` wrote. It is dated evidence and stays untouched on purpose.
-- Prose in `skills/handoff-format/SKILL.md` and `docs/maintenance/sdlc-internals.md` is step 4.
+- Prose in `skills/handoff-format/SKILL.md` and `docs/references/sdlc-internals.md` is step 4.
 
 No em dashes. Focused checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest`, `fanout.py selftest`, `board.py selftest`.
 ### Acceptance criteria

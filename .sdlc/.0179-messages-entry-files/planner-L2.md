@@ -123,21 +123,21 @@ Depends on: step 1, plus T-0175 (`write_router`, `write_roadmap`, and the router
 level: L1
 ### Do
 Depends on: step 2.
-- `docs/maintenance/sdlc-internals.md`, in the `scripts/messages.py` entry (added by T-0177; add one line under `scripts/tickets.py` too). Describe:
+- `docs/references/sdlc-internals.md`, in the `scripts/messages.py` entry (added by T-0177; add one line under `scripts/tickets.py` too). Describe:
   - `mailbox_dir` and `write_entries`.
   - The eight generated files and their templates in `skills/ticket/templates/messages/`.
   - That `send` writes them after validation, that `tickets.py roadmap` refreshes them only when the mailbox exists, and that `check` ignores them.
   - The router line linking `messages/AGENTS.md`.
-- `docs/ticket-stages/design.md`: in the status line or the Message bus section, add a status sentence naming `T-0179` that says the `messages/AGENTS.md` and stage entry files are built and generated from templates.
+- `docs/specs/ticket-stages/design.md`: in the status line or the Message bus section, add a status sentence naming `T-0179` that says the `messages/AGENTS.md` and stage entry files are built and generated from templates.
 - If `plugins/sdlc-lite/skills/handoff-format/SKILL.md` names the `messages/` folder after T-0177, add one clause there saying it holds generated `AGENTS.md`/`CLAUDE.md` entry files. Otherwise leave the file untouched.
 
 Edit only these sections, because T-0175 and T-0177 also edit both docs. No em dashes.
 ### Acceptance criteria
-- `f=docs/maintenance/sdlc-internals.md && grep -qF "write_entries" "$f" && grep -qF "messages/AGENTS.md" "$f" && grep -qF "mailbox_dir" "$f"`
-- `grep -n "T-0179" docs/ticket-stages/design.md | grep -qF "messages/AGENTS.md"`
-- `git diff "$SDLC_BASE_SHA" -- docs/maintenance/sdlc-internals.md docs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep "^+" | { ! grep -qF "—"; }`
-- (guard) `git diff --check "$SDLC_BASE_SHA" -- docs/maintenance/sdlc-internals.md docs/ticket-stages/design.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md" | { ! grep -q .; }`
+- `f=docs/references/sdlc-internals.md && grep -qF "write_entries" "$f" && grep -qF "messages/AGENTS.md" "$f" && grep -qF "mailbox_dir" "$f"`
+- `grep -n "T-0179" docs/specs/ticket-stages/design.md | grep -qF "messages/AGENTS.md"`
+- `git diff "$SDLC_BASE_SHA" -- docs/references/sdlc-internals.md docs/specs/ticket-stages/design.md plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep "^+" | { ! grep -qF "—"; }`
+- (guard) `git diff --check "$SDLC_BASE_SHA" -- docs/references/sdlc-internals.md docs/specs/ticket-stages/design.md`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/specs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md" | { ! grep -q .; }`
 
 ## Step 4: Live path-only and messenger runs on both hosts
 level: L4
@@ -207,7 +207,7 @@ If a run shows the entry files are wrong, fix the step 1 templates here and keep
 - `f=docs/reports/messages-live-run.md && for h in "## Claude Code, path only" "## Codex, path only" "## Messenger on Claude Code" "## Messenger on Codex" "## Negative control" "## Limits"; do grep -qxF -- "$h" "$f" || exit 1; done`
 - `grep -qF "(validation/messages-live-run.md)" docs/README.md`
 - `test -f docs/reports/messages-live-run/probe.sh && ! grep -rqF "—" docs/reports/messages-live-run docs/reports/messages-live-run.md`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*" | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxE "plugins/sdlc-lite/scripts/(messages|tickets)\.py|plugins/sdlc-lite/skills/ticket/templates/messages/(messages|new|read|done)\.md|docs/maintenance/sdlc-internals\.md|docs/specs/ticket-stages/design\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|docs/README\.md|docs/reports/messages-live-run\.md|docs/reports/messages-live-run/.*" | { ! grep -q .; }`
 
 ## Step 5: Gates green
 level: L2

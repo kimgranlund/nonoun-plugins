@@ -12,7 +12,7 @@ pass
 Steelman: I drafted a fail on the unverified shellcheck part. The builder's rebuttal would hold, because check.sh itself skips shellcheck when it is missing and exits 0. The handoff does not require shellcheck, so I dropped the finding.
 
 ## Out of scope changes
-None. `git diff --stat` shows three changed files: `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/scripts/steps.py`, and `plugins/sdlc-lite/skills/chain/SKILL.md`. These are step 1's files. Step 2 added no changes, which matches builder-L2.md's "None". The untracked files are all under `.sdlc`.
+None. `git diff --stat` shows three changed files: `docs/references/sdlc-internals.md`, `plugins/sdlc-lite/scripts/steps.py`, and `plugins/sdlc-lite/skills/chain/SKILL.md`. These are step 1's files. Step 2 added no changes, which matches builder-L2.md's "None". The untracked files are all under `.sdlc`.
 
 ## For the next attempt
 None

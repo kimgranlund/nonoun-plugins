@@ -5,7 +5,7 @@ Independently verify four small defect fixes in one commit, 65c37f2 (pre-build b
 level: L3
 
 ### Do
-- T-0259 (scripts/fanout.py): an uncommitted handoff refusal now names the force-add of the ignored path; a plan whose start commit tracks package.json and whose gates never install prints a `note:` naming `npm ci`; a red gate in a worktree with package.json and no node_modules appends a hint. Test: fanout selftest case 20. Docs: docs/maintenance/sdlc-internals.md.
+- T-0259 (scripts/fanout.py): an uncommitted handoff refusal now names the force-add of the ignored path; a plan whose start commit tracks package.json and whose gates never install prints a `note:` naming `npm ci`; a red gate in a worktree with package.json and no node_modules appends a hint. Test: fanout selftest case 20. Docs: docs/references/sdlc-internals.md.
 - T-0260 (scripts/run.sh, scripts/solo_run.py): a failed run whose log shows 429 or a session limit writes `<role>-<level>.limit` and prints `run.sh: session limit: resume with: ...` (exit stays 1); solo_run.py writes `solo.limit` and prints a resume hint. Tests: run-selftest.sh case `session limit` and solo_run.py selftest.
 - T-0262 (scripts/tickets.py): `outside_refs` also scans the ticket root with ignore rules off so citations under a gitignored `.sdlc` are found, refused, and rewritable; `--force` prints `left refs to ...`. Test: tickets.py selftest `(u) refs` cases.
 - T-0273 (scripts/codex-selftest.py): `test_fanout_uses_codex` now checks argv (role script, and not the claude CLI) instead of a `claude` substring, so it passes when the repo path contains `claude`. This worktree lives under `.claude/worktrees`, which is the repro.

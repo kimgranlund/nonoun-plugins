@@ -19,7 +19,7 @@ Make a role run record which entry files and references it actually read, so loa
 - Done when: a live run on Claude Code records its read paths, the Codex arm records them or states 'rollout absent', and a negative control shows a missing log is reported, not silently empty.
 
 ## Context
-Gap analysis R3 (docs/generative-constructs/progressive-context-gap-analysis.md): only routing_reason is stored today (run.sh:520-524). Codex rollout files can be absent (docs/reports/codex-conductor-solo-live-run.md:23). Do not edit run.sh while a role run uses it. Lane: solo. Philosophy: Done is better than perfect.
+Gap analysis R3 (docs/specs/generative-constructs/progressive-context-gap-analysis.md): only routing_reason is stored today (run.sh:520-524). Codex rollout files can be absent (docs/reports/codex-conductor-solo-live-run.md:23). Do not edit run.sh while a role run uses it. Lane: solo. Philosophy: Done is better than perfect.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes. Preserve other agents' worktrees.

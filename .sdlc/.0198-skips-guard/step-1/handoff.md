@@ -6,7 +6,7 @@ level: L2
 ### Read first
 - `plugins/sdlc-lite/AGENTS.md`
 ### Do
-Implementation targets: `plugins/sdlc-lite/scripts/tickets.py` (a new `skip_problems` helper, `cmd_check`, `cmd_close`, the module usage docstring's `check` and `close` entries, a new selftest block), `plugins/sdlc-lite/skills/handoff-format/SKILL.md` (Layout), and `docs/maintenance/sdlc-internals.md` (the `scripts/tickets.py` section). Depends on: none. T-0197 already ships `steps.py lane` and is merged at 026622f.
+Implementation targets: `plugins/sdlc-lite/scripts/tickets.py` (a new `skip_problems` helper, `cmd_check`, `cmd_close`, the module usage docstring's `check` and `close` entries, a new selftest block), `plugins/sdlc-lite/skills/handoff-format/SKILL.md` (Layout), and `docs/references/sdlc-internals.md` (the `scripts/tickets.py` section). Depends on: none. T-0197 already ships `steps.py lane` and is merged at 026622f.
 
 Settled decisions:
 
@@ -83,5 +83,5 @@ Focused checks: `python3 plugins/sdlc-lite/scripts/tickets.py selftest` (about 3
 - `grep -qF "(skips)" plugins/sdlc-lite/scripts/tickets.py`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py selftest`
 - `grep -qF "## Skipped" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- `grep -qF "## Skipped" docs/maintenance/sdlc-internals.md`
-- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/maintenance/sdlc-internals.md)"`
+- `grep -qF "## Skipped" docs/references/sdlc-internals.md`
+- `test -z "$( { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/tickets.py -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e docs/references/sdlc-internals.md)"`

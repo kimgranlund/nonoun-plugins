@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/skills/level-rubric/SKILL.md`: line 9 now describes the `verifier_alternates` switch and the `shared_with_builder` fallback. The Claude tables are unchanged.
-- `docs/codex-role-execution.md`: the agent count is now 19 while no alternate is configured. The mapping table moves Sol to Astra with efforts unchanged, and Scout stays Luna high. The verifier paragraph is rewritten, and I added the dated ChatGPT-account note (2026-09-29, Codex CLI 0.154.0). The historical evidence paragraphs are unchanged.
+- `docs/references/codex-role-execution.md`: the agent count is now 19 while no alternate is configured. The mapping table moves Sol to Astra with efforts unchanged, and Scout stays Luna high. The verifier paragraph is rewritten, and I added the dated ChatGPT-account note (2026-09-29, Codex CLI 0.154.0). The historical evidence paragraphs are unchanged.
 - `plugins/sdlc-lite/HARNESS-NOTES.md`: fixed the agent count and alternate-profile wording on the install line, and replaced "between Sol and Astra" with the configured-alternate / shared rule.
 - `plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l1.toml`, `sdlc-planner-l2.toml`, `sdlc-planner-l3.toml`: regenerated with `codex_roles.py generate`, because the planner agents embed the level-rubric skill body.
 

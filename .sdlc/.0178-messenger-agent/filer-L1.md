@@ -21,9 +21,9 @@ Adds `messenger` as a declared session agent for Claude and Codex. It polls the 
 - `adapters/codex/models.json` gains a `messenger` entry at the scout tier (`gpt-5.6-terra`). `scripts/codex_roles.py` adds `messenger` to the `workspace-write` tuple. The Codex agent `sdlc-messenger-l1.toml` is generated, not hand-edited.
 - `scripts/check.py` has a new messenger check for the agent file, the `models.json` entry and the generated TOML. It includes three inline negative controls.
 - `skills/level-rubric/SKILL.md` says the messenger is not a `run.sh` role, in prose rather than a table row. The planner and plan-reviewer TOMLs that preload that skill were regenerated.
-- `docs/codex-role-execution.md` gains a Messenger row, a count of 25 agents (21 base), and a paragraph on the Codex and Claude limits.
+- `docs/references/codex-role-execution.md` gains a Messenger row, a count of 25 agents (21 base), and a paragraph on the Codex and Claude limits.
 - `plugins/sdlc-lite/AGENTS.md` and the repo `AGENTS.md` now list the `conductor` and `messenger` session agents.
-- The `docs/ticket-stages/design.md` Message bus status line now says the messenger is built in T-0178.
+- The `docs/specs/ticket-stages/design.md` Message bus status line now says the messenger is built in T-0178.
 - `run.sh`, its role table, `agents/conductor.md`, the hooks, and all version numbers are unchanged.
 
 ### Verification

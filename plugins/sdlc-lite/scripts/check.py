@@ -77,7 +77,7 @@
    removed must be flagged).
 20. Handoff freeze (warn mode): scripts/run_lifecycle.py names `SDLC_HANDOFF_SHA256` and `handoff_sha256`; scripts/run.sh
    names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
-   adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/maintenance/claude-hooks.md names
+   adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/references/claude-hooks.md names
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
 21. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
    S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
@@ -110,23 +110,23 @@
    `ask`. Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
 30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
    `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
-   docs/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
+   docs/planning/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
 31. Plan skills: skills/plan-goal, plan-loop, and plan-fanout each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
    `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md.
    Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
 32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
    equal the rows of docs/reports/broken-links-allowlist.md. Negative controls: an extra broken link and a stale allowlist row must be flagged.
 33. Docs check: scripts/docs_check.py names rules `D-1` to `D-12`, `B-1a`, `B-2a`, `B-3a`, the options `--root` and `--only`, and `Legacy`; scripts/check.sh runs
-   `docs_check.py" selftest`. Negative controls: each phrase removed from each file must be flagged.
+   `docs_check.py" selftest` and `docs_check.py" --root` on this repository. Negative controls: each phrase removed from each file must be flagged.
 34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
    (docs/reports, closed tickets, run workspaces under .sdlc, bench results). Negative control: a planted spelling must be flagged and an allowlisted path must not.
 35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
-   scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/maintenance/sdlc-internals.md exists,
+   scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/references/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
 36. Fleet retro: skills/fleet-retro/SKILL.md names `fleet_collect.py`, `fleet_detect.py`, `SendMessage`, `interview.md`, `rubric.md`, `AskUserQuestion`,
    `review-traces`, `Codex host`, `SDLC_HEADLESS`, and the stages `## 1. Collect` to `## 6. File`, and holds no `harness:` reference; skills/fleet-retro/rubric.md names
    gates `G1` to `G5`, criteria `C1` to `C5`, `7 of 10`, and `Outcome check`; skills/fleet-retro/fixtures.md names `F1`, `F2`, `F3`; skills/sdlc-lite/SKILL.md and
-   agents/conductor.md route to `fleet-retro`; and, where docs/maintenance/sdlc-internals.md exists, it names `fleet-retro`. Negative controls: each phrase removed
+   agents/conductor.md route to `fleet-retro`; and, where docs/references/sdlc-internals.md exists, it names `fleet-retro`. Negative controls: each phrase removed
    from each file, a harness reference added, and a missing route must be flagged.
 37. Fleet status: skills/fleet-status/SKILL.md names `fleet_status.py render`, `## 1. Render`, `## 2. Print it`, `## 3. Ask once`, `## 4. Relay, do not act`,
    `Render, never compose`, `AskUserQuestion`, `If AskUserQuestion is unavailable`, `--ping`, `sends nothing`, and `Codex host`, and holds no `harness:` reference;
@@ -636,13 +636,13 @@ def freeze_missing(run_text, life_text, hook_ok, hooks_json, docs_text):
     if not hook_ok: out.append('handoff freeze: hooks/warn-handoff-edit.sh missing or not executable')
     if not re.search(r'"matcher":\s*"Edit\|Write\|NotebookEdit"[^]]*warn-handoff-edit\.sh', hooks_json):
         out.append('handoff freeze: adapters/claude/hooks.json does not register warn-handoff-edit.sh under Edit|Write|NotebookEdit')
-    if 'warn-handoff-edit.sh' not in docs_text: out.append('handoff freeze: docs/maintenance/claude-hooks.md does not name warn-handoff-edit.sh')
+    if 'warn-handoff-edit.sh' not in docs_text: out.append('handoff freeze: docs/references/claude-hooks.md does not name warn-handoff-edit.sh')
     return out
 def _rd(path): return path.read_text() if path.is_file() else ''
 _hook = root/'hooks/warn-handoff-edit.sh'
 _hook_ok = _hook.is_file() and os.access(_hook, os.X_OK)
 _fr = (_rd(root/'scripts/run.sh'), _rd(root/'scripts/run_lifecycle.py'), _hook_ok, _rd(root/'adapters/claude/hooks.json'),
-       _rd(root.resolve().parent.parent/'docs/maintenance/claude-hooks.md'))
+       _rd(root.resolve().parent.parent/'docs/references/claude-hooks.md'))
 errors.extend(freeze_missing(*_fr))
 for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.sh'), (3, 'warn-handoff-edit.sh')):
     _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
@@ -761,7 +761,7 @@ INVENTORY_NEEDS = (('inventory.py', ('orphan', 'stale', 'duplicate', 'oversized'
 def inventory_bad(texts):
     return [f'{name} missing "{ph}"' for name, phrases in INVENTORY_NEEDS for ph in phrases if ph not in texts[name]]
 _inv_texts = {'inventory.py': _rd(root/'scripts/inventory.py'), 'check.sh': _rd(root/'scripts/check.sh'),
-              'procedure': _rd(root/'../../docs/repo-onboarding/reorganization-plan-procedure.md')}
+              'procedure': _rd(root/'../../docs/planning/repo-onboarding/reorganization-plan-procedure.md')}
 errors.extend(f'check.py: document inventory: {m}' for m in inventory_bad(_inv_texts))
 for _name, _phrases in INVENTORY_NEEDS:
     for _ph in _phrases:
@@ -797,7 +797,7 @@ if (_repo/'.git').exists() and (_repo/'docs/reports/broken-links-allowlist.md').
     if not links_bad(_broken, _allowed + [('x.md', 'nope.md')]): errors.append('check.py: broken links negative control not flagged for a stale allowlist row')
 # Docs check (docstring item 33): the docs schema checker, its rule ids, and its selftest wiring.
 DOCS_CHECK_NEEDS = (('docs_check.py', tuple(f'D-{i}' for i in range(1, 13)) + ('B-1a', 'B-2a', 'B-3a', '--root', '--only', 'Legacy')),
-                    ('check.sh', ('docs_check.py" selftest',)))
+                    ('check.sh', ('docs_check.py" selftest', 'docs_check.py" --root')))
 def docs_check_bad(texts):
     return [f'{name} missing "{ph}"' for name, phrases in DOCS_CHECK_NEEDS for ph in phrases if ph not in texts[name]]
 _dc_texts = {'docs_check.py': _rd(root/'scripts/docs_check.py'), 'check.sh': _rd(root/'scripts/check.sh')}
@@ -828,7 +828,7 @@ def gate_lock_bad(texts):
     return [f'{name} missing "{ph}"' for name, phrases in GATE_LOCK_NEEDS for ph in phrases if name in texts and ph not in texts[name]]
 _gl_texts = {'gate_lock.py': _rd(root/'scripts/gate_lock.py'), 'check.sh': _rd(root/'scripts/check.sh'), 'fanout.py': _rd(root/'scripts/fanout.py'),
              'conductor': _rd(root/'agents/conductor.md')}
-if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _gl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+if (root/'../../docs/references/sdlc-internals.md').is_file(): _gl_texts['internals'] = _rd(root/'../../docs/references/sdlc-internals.md')
 errors.extend(f'check.py: gate lock: {m}' for m in gate_lock_bad(_gl_texts))
 for _name, _phrases in GATE_LOCK_NEEDS:
     for _ph in _phrases:
@@ -844,7 +844,7 @@ def fleet_bad(texts):
     return out
 _fl_texts = {'skill': _rd(root/'skills/fleet-retro/SKILL.md'), 'rubric': _rd(root/'skills/fleet-retro/rubric.md'), 'fixtures': _rd(root/'skills/fleet-retro/fixtures.md'),
              'entry': _entry, 'conductor': _rd(root/'agents/conductor.md')}
-if (root/'../../docs/maintenance/sdlc-internals.md').is_file(): _fl_texts['internals'] = _rd(root/'../../docs/maintenance/sdlc-internals.md')
+if (root/'../../docs/references/sdlc-internals.md').is_file(): _fl_texts['internals'] = _rd(root/'../../docs/references/sdlc-internals.md')
 errors.extend(f'check.py: fleet retro: {m}' for m in fleet_bad(_fl_texts))
 for _name, _phrases in FLEET_NEEDS:
     for _ph in _phrases:

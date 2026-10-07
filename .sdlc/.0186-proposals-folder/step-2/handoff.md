@@ -40,7 +40,7 @@ Depends on: step 1. Run from the repository root and use no em dashes. Each fact
    ```
 
    `tickets.py` keeps every byte outside the managed markers (tickets.py docstring; T-0185 placed the Evals line there and verified `tickets.py check` stayed ok).
-4. In `docs/maintenance/sdlc-internals.md`, add an entry headed exactly ``## `scripts/proposals.py` `` after the `scripts/evals.py` entry. It covers:
+4. In `docs/references/sdlc-internals.md`, add an entry headed exactly ``## `scripts/proposals.py` `` after the `scripts/evals.py` entry. It covers:
    - the purpose
    - the CLI with `--root`, `--proposals`, and `--plugin`, the six commands, and the exit codes
    - its reads (evals.py `validate_eval` in accept, tickets.py `new idea` in promote)
@@ -104,10 +104,10 @@ Left untouched on purpose:
 - `test "$(cat .sdlc/proposals/CLAUDE.md)" = '@AGENTS.md'`
 - `for s in "## File format" "## Patterns" "## Statuses" "## Procedures" "## Limits" "proposals.py scan" "proposals.py list" "proposals.py show" "proposals.py accept" "proposals.py reject" "proposals.py promote" "--proposals" "P-NNNN" "candidate" "accepted" "rejected" "promoted" "verifier-fail" "replan" "builder-bump" "next-attempt" "plan-defect" "follow-up" "## Evidence" "## Proposed change" ".sdlc/evals/" "tickets.py new idea" "--rewrite-refs"; do grep -qF -- "$s" .sdlc/proposals/AGENTS.md || exit 1; done`
 - `awk '/sdlc-lite:managed:end/{e=1; next} e && /proposals\/AGENTS\.md/{f=1} END{exit !f}' .sdlc/AGENTS.md`
-- ``grep -qxF '## `scripts/proposals.py`' docs/maintenance/sdlc-internals.md && grep -qF '.sdlc/proposals/' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'scripts/proposals.py' plugins/sdlc-lite/AGENTS.md``
+- ``grep -qxF '## `scripts/proposals.py`' docs/references/sdlc-internals.md && grep -qF '.sdlc/proposals/' plugins/sdlc-lite/skills/handoff-format/SKILL.md && grep -qF 'scripts/proposals.py' plugins/sdlc-lite/AGENTS.md``
 - `f=docs/reports/proposals-live-run.md && for s in "## Environment" "## Commands" "## Evidence" "## Limits" "proposals.py --root .sdlc --proposals" "no eval given" "is not in" "exit 0" "exit 1" "pattern: replan .sdlc/" "pattern: plan-defect" "P-0001" "0 new, 0 updated" "negative control" "plugins/"; do grep -qF -- "$s" "$f" || exit 1; done`
 - `grep -qE "2026-[0-9]{2}-[0-9]{2}" docs/reports/proposals-live-run.md`
 - `test -f .sdlc/proposals/AGENTS.md && test -f .sdlc/proposals/CLAUDE.md && test -z "$(find .sdlc/proposals -mindepth 1 ! -name AGENTS.md ! -name CLAUDE.md ! -name .DS_Store)"`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
-- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/proposals.py -e plugins/sdlc-lite/scripts/check.sh -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/reports/proposals-live-run.md | { ! grep -q .; }`
+- (guard) `{ git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vxF -e plugins/sdlc-lite/scripts/proposals.py -e plugins/sdlc-lite/scripts/check.sh -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/reports/proposals-live-run.md | { ! grep -q .; }`

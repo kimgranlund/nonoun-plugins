@@ -17,7 +17,7 @@ T-0204: fanout.py resolves lane tickets through ticket_dir
   - The dry run prints `ticket folders in each worktree: <dir>` only when `trel` differs from the root, so flat dry-run output is unchanged.
   - The module docstring is updated.
   - The new `ticket_root lane` selftest case covers a merge-and-close, and also two lanes (T-0002, T-0003) with a shared planned step-1 scope under `.sdlc/tickets/`.
-- `docs/maintenance/sdlc-internals.md`: the "Regular lanes do not follow `ticket_root` yet" sentences are replaced. The new text says regular lanes follow `ticket_root`, and that the dry run's planned-scope overlap check reads step handoffs from that dir.
+- `docs/references/sdlc-internals.md`: the "Regular lanes do not follow `ticket_root` yet" sentences are replaced. The new text says regular lanes follow `ticket_root`, and that the dry run's planned-scope overlap check reads step handoffs from that dir.
 - Deliberately unchanged:
   - `FANOUT_ROOT` still points at the lane root that holds `config`.
   - The `tickets.py --root <rel> close` command is untouched, because tickets.py resolves `ticket_dir` itself.

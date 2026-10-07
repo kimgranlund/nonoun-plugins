@@ -3,7 +3,7 @@
 pass
 
 ## Criteria
-- AC1, `grep -qF 'migrate-layout [--dry-run] [--rewrite-refs]' docs/maintenance/sdlc-internals.md`: pass. Evidence: the grep printed `c1ok`. The diff against `44168d55` shows the passage added to the `scripts/tickets.py` entry, so the base lacked it and the check can go red.
+- AC1, `grep -qF 'migrate-layout [--dry-run] [--rewrite-refs]' docs/references/sdlc-internals.md`: pass. Evidence: the grep printed `c1ok`. The diff against `44168d55` shows the passage added to the `scripts/tickets.py` entry, so the base lacked it and the check can go red.
 - AC2, argument-hint and bullet: pass. Evidence: the combined command printed `c2ok`. The diff adds `| migrate-layout [--dry-run] [--rewrite-refs]` to the `argument-hint` (line 4). It adds one Rules bullet that holds `onboard.py setup`, `layout: flat`, the `--dry-run`, `--rewrite-refs` and commit steps, and the `docs/reports/` note.
 - Doc passage matches step 1, which the Do requires. I read `tickets.py`: the docstring and code at lines 122-134 give the same preconditions, the `Path.rename` moves, `keep <file> (dated record under docs/reports/)`, the two config lines, and `nothing to migrate`. Line 1885 has the `layout: flat` warning text.
 - Guard, `git diff --check`: pass. Evidence: printed `c3ok`.

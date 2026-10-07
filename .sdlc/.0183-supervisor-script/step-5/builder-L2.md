@@ -9,7 +9,7 @@ done
   - New constants `ST_BASH_SENTENCE` and `BASH_RULE`.
   - `st_prompt` returns the new text.
   - New patch `CTL_OLD_PROMPT`, new case `case_prompt_bash`, and two new `SELFTEST_CASES` entries placed after the topic-leaking control.
-- `docs/ticket-stages/watcher-design.md`: in "The wake prompt", replaced the `- Text:` line with the new prompt and added the item about the first live run after it.
+- `docs/planning/ticket-stages/watcher-design.md`: in "The wake prompt", replaced the `- Text:` line with the new prompt and added the item about the first live run after it.
 
 ## Checks
 - AC1, the supervisor selftest with the folder-unchanged checks and the required `ok:` lines: `supervisor selftest: PASS`, all 5 lines present, exit 0.

@@ -18,7 +18,7 @@ done
 - grep for the conductor deny line: pass.
 - grep for the conductor allow line: pass.
 - `grep -qF "validation/agent-spawn-hook-live-run.md" docs/README.md`: pass.
-- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/maintenance/claude-hooks.md`: pass.
+- `grep -qE "^## .hooks/block-role-spawn\.sh.$" docs/references/claude-hooks.md`: pass.
 - awk over the new section's body piped to `grep -q Codex`: pass.
 - `grep -q block-role-spawn.sh plugins/sdlc-lite/agents/conductor.md`: pass.
 - (guard) `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`: pass ("Codex agent definitions verified").

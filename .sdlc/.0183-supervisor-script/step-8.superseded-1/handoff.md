@@ -21,7 +21,7 @@ Depends on: steps 1 to 7. The docs describe the behavior as the live run left it
    - Left untouched on purpose:
      - `onboard.py`'s root template: the supervisor folder ignores its own runtime files through the `.gitignore` that `init` writes, so a consumer's root entry needs no new rule, and changing the template moves its version and digest.
      - `messages.py` `ENTRY_TEMPLATE`: its statements about subagents and `wait` stay true, and the router line covers discovery. Also a ticket non-goal.
-3. `docs/maintenance/sdlc-internals.md`:
+3. `docs/references/sdlc-internals.md`:
    - Add a section `## `scripts/supervisor.py`` after the `messages.py` section. It holds one paragraph in the same style, covering:
      - commands;
      - the folder beside the mailbox, its files, and its git-ignore;
@@ -45,17 +45,17 @@ Depends on: steps 1 to 7. The docs describe the behavior as the live run left it
    - Under Behavioral invariants add `- `scripts/supervisor.py` never calls a model and never touches a message file; wakes run from fixed argument lists. Its folder contract is the `AGENTS.md` that `supervisor.py init` writes.`
 6. Status lines:
    - `docs/README.md` line 11 becomes `- [Idle-host watcher design](ticket-stages/watcher-design.md): the external watcher, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its limits and validation plan.`
-   - `docs/ticket-stages/README.md` line 6 becomes `- [Idle-host watcher design](watcher-design.md): the external process, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its safety limits and validation plan.`
-   - In `docs/ticket-stages/watcher-design.md`, the header line keeps its `Version 0.2, 2026-10-01.` start. Its status sentence becomes `Built in T-0183 as plugins/sdlc-lite/scripts/supervisor.py; live run in ../validation/supervisor-live-run.md.`, written as a link.
+   - `docs/specs/ticket-stages/README.md` line 6 becomes `- [Idle-host watcher design](watcher-design.md): the external process, built as plugins/sdlc-lite/scripts/supervisor.py (T-0183), that resumes an idle host when a message arrives, with its safety limits and validation plan.`
+   - In `docs/planning/ticket-stages/watcher-design.md`, the header line keeps its `Version 0.2, 2026-10-01.` start. Its status sentence becomes `Built in T-0183 as plugins/sdlc-lite/scripts/supervisor.py; live run in ../validation/supervisor-live-run.md.`, written as a link.
 7. No em dash in any file this step touches.
 ### Acceptance criteria
 - `python3 -c 'import sys; sys.path.insert(0, "plugins/sdlc-lite/scripts"); import tickets; assert any(l.startswith("- Supervisor:") and "supervisor/AGENTS.md" in l and "scripts/supervisor.py init" in l for l in tickets.ROUTER_TEMPLATE.splitlines())'`
 - `grep -E "^- Supervisor: " .sdlc/AGENTS.md | grep -qF "supervisor/AGENTS.md"`
 - (guard) `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - `out=$(python3 plugins/sdlc-lite/scripts/tickets.py selftest) && test "$(printf '%s\n' "$out" | tail -n 1)" = "tickets selftest: PASS" && grep -qF "router: the router links supervisor/AGENTS.md" plugins/sdlc-lite/scripts/tickets.py && grep -qF "Supervisor line links" plugins/sdlc-lite/scripts/tickets.py`
-- `grep -qE "^## .scripts/supervisor\.py.$" docs/maintenance/sdlc-internals.md && grep -qF "Supervisor line links" docs/maintenance/sdlc-internals.md`
+- `grep -qE "^## .scripts/supervisor\.py.$" docs/references/sdlc-internals.md && grep -qF "Supervisor line links" docs/references/sdlc-internals.md`
 - `grep -qE "^\.sdlc/supervisor/ " plugins/sdlc-lite/skills/handoff-format/SKILL.md`
 - `grep -qF "supervisor.py selftest" plugins/sdlc-lite/AGENTS.md`
-- `grep -F "ticket-stages/watcher-design.md" docs/README.md | grep -qF "built as" && grep -F "(watcher-design.md)" docs/ticket-stages/README.md | grep -qF "built as" && grep -qF "Built in T-0183" docs/ticket-stages/watcher-design.md`
-- (guard) `for f in plugins/sdlc-lite/scripts/tickets.py docs/maintenance/sdlc-internals.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/AGENTS.md docs/README.md docs/ticket-stages/README.md docs/ticket-stages/watcher-design.md .sdlc/AGENTS.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
-- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`
+- `grep -F "ticket-stages/watcher-design.md" docs/README.md | grep -qF "built as" && grep -F "(watcher-design.md)" docs/specs/ticket-stages/README.md | grep -qF "built as" && grep -qF "Built in T-0183" docs/planning/ticket-stages/watcher-design.md`
+- (guard) `for f in plugins/sdlc-lite/scripts/tickets.py docs/references/sdlc-internals.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/AGENTS.md docs/README.md docs/specs/ticket-stages/README.md docs/planning/ticket-stages/watcher-design.md .sdlc/AGENTS.md; do ! grep -qF "$(printf '\342\200\224')" "$f" || exit 1; done`
+- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc" | grep -vxF -e docs/planning/ticket-stages/watcher-design.md -e docs/reports/idle-host-watcher-design-review.md -e plugins/sdlc-lite/scripts/check.sh -e docs/README.md -e plugins/sdlc-lite/scripts/tickets.py -e docs/references/sdlc-internals.md -e plugins/sdlc-lite/skills/handoff-format/SKILL.md -e plugins/sdlc-lite/AGENTS.md -e docs/specs/ticket-stages/README.md)" && test -z "$(git ls-files --others --exclude-standard -- . ":(exclude).sdlc" | grep -vxE "plugins/sdlc-lite/scripts/supervisor\.py|docs/reports/supervisor-live-run\.md|docs/reports/supervisor-live-run/(probe\.py|AGENTS\.md|CLAUDE\.md|[a-z-]+\.txt)")"`

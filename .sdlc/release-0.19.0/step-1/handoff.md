@@ -5,7 +5,7 @@ Independent check that branch `release-0.19.0` is fit to release as SDLC Lite 0.
 level: L3
 
 ### Do
-Verify the release as a whole, not one step. Beyond the criteria below, read `docs/reports/release-0.19.0.md` and check each claim in its table against the commits since `cd6db5c` and the closed ticket folders under `.sdlc/` (the `.NNNN-` folders for T-0160, T-0162, T-0163, T-0164, T-0165, T-0168): that each change exists in the code, that each ticket's step folders hold a builder result and a passing verifier result, and that the known limits are stated truthfully. Check that both hosts' manifests for each plugin carry the same version, and that the new `onboard` skill and the changed conductor, planner, builder, and verifier bodies are consistent with each other and with `docs/repo-onboarding/design.md`. Report any claim in the release record that the evidence does not support.
+Verify the release as a whole, not one step. Beyond the criteria below, read `docs/reports/release-0.19.0.md` and check each claim in its table against the commits since `cd6db5c` and the closed ticket folders under `.sdlc/` (the `.NNNN-` folders for T-0160, T-0162, T-0163, T-0164, T-0165, T-0168): that each change exists in the code, that each ticket's step folders hold a builder result and a passing verifier result, and that the known limits are stated truthfully. Check that both hosts' manifests for each plugin carry the same version, and that the new `onboard` skill and the changed conductor, planner, builder, and verifier bodies are consistent with each other and with `docs/specs/repo-onboarding/design.md`. Report any claim in the release record that the evidence does not support.
 
 ### Acceptance criteria
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`

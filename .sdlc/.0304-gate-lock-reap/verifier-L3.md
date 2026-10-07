@@ -25,7 +25,7 @@ pass
   - The control's assertion can go red: a copy whose mutant write is made inert (`mutant.write_text(src)`) exits 1 with `negative control: with the parent check removed the live-parent case must fail, got []`.
 
 ## Out of scope changes
-None. `git status` shows only `plugins/sdlc-lite/scripts/gate_lock.py` and `docs/maintenance/sdlc-internals.md` modified, both named by the handoff, as an uncommitted working-tree diff against 7353252. No `builder-*.md` exists in the artifacts dir, so the diff was the claim under review.
+None. `git status` shows only `plugins/sdlc-lite/scripts/gate_lock.py` and `docs/references/sdlc-internals.md` modified, both named by the handoff, as an uncommitted working-tree diff against 7353252. No `builder-*.md` exists in the artifacts dir, so the diff was the claim under review.
 
 Concerns examined and cleared, each with its check:
 - `reap --match REGEX` is not in the handoff's flag list. It only narrows (`gate_lock.py:273`, `:320`): in the hand run an orphan carrying the token but no browser name was neither listed nor stopped. It is what keeps the selftest off real processes; a bare list-only `reap` on this machine shows 4 real orphaned `Google Chrome for Testing` processes, which I left alone.

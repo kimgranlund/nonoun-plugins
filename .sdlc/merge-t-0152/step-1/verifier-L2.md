@@ -16,12 +16,12 @@ pass
   - I removed the worktree afterwards.
 
 Builder claims checked against the tree:
-- The four conflict-resolved files match the builder's account. `git diff-tree --cc` lists `docs/maintenance/sdlc-internals.md`, `fanout.py`, `tickets.py` and `skills/ticket/SKILL.md`.
+- The four conflict-resolved files match the builder's account. `git diff-tree --cc` lists `docs/references/sdlc-internals.md`, `fanout.py`, `tickets.py` and `skills/ticket/SKILL.md`.
 - In `skills/ticket/SKILL.md`, both the lane's `external_branch` sentence and HEAD's `depends:` rule line are present.
 - `fanout selftest: PASS` on the merged tree covers the fanout.py resolution.
 
 ## Out of scope changes
-None. The `HEAD^1..HEAD` diff outside `.sdlc/` touches only `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/scripts/fanout.py`, `plugins/sdlc-lite/scripts/tickets.py`, `plugins/sdlc-lite/skills/fanout/SKILL.md` and `plugins/sdlc-lite/skills/ticket/SKILL.md`. That is the lane's own change set, and I checked it with `git diff HEAD^1 HEAD --stat -- . ':!.sdlc'`. The only untracked path is `.sdlc/merge-t-0152/`, the run's own artifacts.
+None. The `HEAD^1..HEAD` diff outside `.sdlc/` touches only `docs/references/sdlc-internals.md`, `plugins/sdlc-lite/scripts/fanout.py`, `plugins/sdlc-lite/scripts/tickets.py`, `plugins/sdlc-lite/skills/fanout/SKILL.md` and `plugins/sdlc-lite/skills/ticket/SKILL.md`. That is the lane's own change set, and I checked it with `git diff HEAD^1 HEAD --stat -- . ':!.sdlc'`. The only untracked path is `.sdlc/merge-t-0152/`, the run's own artifacts.
 
 ## For the next attempt
 None

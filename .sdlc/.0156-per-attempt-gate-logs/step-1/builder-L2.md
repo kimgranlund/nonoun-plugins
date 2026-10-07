@@ -4,7 +4,7 @@ done
 
 ## Changes
 - `plugins/sdlc-lite/scripts/fanout.py`: each gate attempt now gets its own log, `gate-<lane>-<id>-<k>-a<n>.log`. `n` is 1 plus the highest `a<n>` already in `logs/`, found by regex (mtime is never used). Updated the module and `run_logged` docstrings. In case 9, renamed the `gate-alpha-T-0001-1.log` references to the attempt-1 name. Added case 10 (gate retry case) and a line about it in the docstring's selftest paragraph.
-- `docs/maintenance/sdlc-internals.md`: the fanout entry now gives the per-attempt gate log name and says earlier attempts survive.
+- `docs/references/sdlc-internals.md`: the fanout entry now gives the per-attempt gate log name and says earlier attempts survive.
 
 ## Checks
 - Two-run probe (the command from the acceptance criteria): exit 0 (pass)

@@ -20,7 +20,7 @@ When the SDLC Lite conductor is in force, an Agent-tool spawn of another plugin'
 ## Context
 Source: the second report in T-0165, from the gen-ui-kit conductor session on 2026-09-29.
 
-Checked 2026-09-29 with Claude Code 2.1.284 in a throwaway project: a `PreToolUse` hook on the Agent tool received an `agent_type` field set to the session agent's name when the session ran with `--agent probecond`, and no `agent_type` field when it ran with no agent. The input also carried `tool_input.subagent_type`. Not yet checked: the exact `agent_type` value for a plugin agent such as the conductor, and the field in an interactive session that declares the agent in `.claude/settings.json`. Read `docs/maintenance/claude-hooks.md` before designing it. Existing hooks key off `SDLC_ROLE`, which an interactive session does not set.
+Checked 2026-09-29 with Claude Code 2.1.284 in a throwaway project: a `PreToolUse` hook on the Agent tool received an `agent_type` field set to the session agent's name when the session ran with `--agent probecond`, and no `agent_type` field when it ran with no agent. The input also carried `tool_input.subagent_type`. Not yet checked: the exact `agent_type` value for a plugin agent such as the conductor, and the field in an interactive session that declares the agent in `.claude/settings.json`. Read `docs/references/claude-hooks.md` before designing it. Existing hooks key off `SDLC_ROLE`, which an interactive session does not set.
 
 T-0165 adds the text rule. This ticket is the enforcement behind it.
 

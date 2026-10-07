@@ -1,22 +1,22 @@
 # SDLC Lite maintenance
 
-Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction. Improvements serve [the four pillars](../../docs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
+Done is better than perfect. Trust that modern, advanced models are very capable if given useful context and instruction. Improvements serve [the four pillars](../../docs/specs/sdlc-lite/pillars.md): performance, cost, quality, resilience.
 
 Read [repository guidance](../../AGENTS.md) first. Paths below are relative to this plugin unless a command starts with `plugins/`; those commands run from the repository root.
 
 ## Contracts and routing
 
-- Size S and M plugin work goes to `solo` by default; `/fix` only when the user asks for it or the lane script prints `fix`, and the lean lane when the lane script says so. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the SDLC Lite design](../../docs/sdlc-lite/design.md).
+- Size S and M plugin work goes to `solo` by default; `/fix` only when the user asks for it or the lane script prints `fix`, and the lean lane when the lane script says so. Run the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change) and record that reason in the ticket. See [the SDLC Lite design](../../docs/specs/sdlc-lite/design.md).
 - Shared roles live in `agents/`; workflows and output contracts live in `skills/`. Keep callers and producers consistent when changing handoffs or verdicts.
 - A skill is self-contained: what it needs to run (schemas, templates, rubrics, fixtures) ships in its own folder, and it names no repo-relative path outside it. Scripts are reached through `${CLAUDE_PLUGIN_ROOT}`, and the consumer's own files (`.sdlc/`) are found by the script, not assumed by the skill text. A new skill follows this; existing ones are brought in line by T-0325.
 - `agents/` also holds three session agents that are not `run.sh` roles, the `conductor`, the `messenger`, and `solo`. `scripts/check.py` excludes all three from the run.sh agreement check and checks the messenger's and solo's files and Codex mappings.
 - Pipeline role execution goes through `scripts/run.sh` so required output sections, result files, and `runs.jsonl` remain authoritative. Direct native delegation alone does not advance pipeline state.
 - `scripts/results.py` owns each role's result schema (key section, allowed first values, header, declared section order). `run.sh` and `steps.py` call it, `scripts/check.py` checks agent bodies against it, and no other file copies it.
-- Claude uses headless role processes. Codex supports standalone exec and native subagent exchange; read [Codex execution](../../docs/codex-role-execution.md) before changing that adapter.
+- Claude uses headless role processes. Codex supports standalone exec and native subagent exchange; read [Codex execution](../../docs/references/codex-role-execution.md) before changing that adapter.
 - Claude models and efforts live in `scripts/run.sh`, with the consumer explanation in `skills/level-rubric/SKILL.md`. `scripts/check.py` checks their agreement. Codex defaults live in `adapters/codex/models.json`. A change to either table needs a new eval in `.sdlc/evals/` and `scripts/evals.py lock`, else `scripts/check.py` fails; read [the evals entry file](../../.sdlc/evals/AGENTS.md) first.
 - After changing shared role bodies, preloaded skill bodies, Codex mappings, or the Codex prelude, run `python3 plugins/sdlc-lite/scripts/codex_roles.py generate`. Preserve managed-agent install ownership checks.
-- For runner, ticket, board, step, or fanout internals, read only the relevant entry in [the implementation reference](../../docs/maintenance/sdlc-internals.md).
-- For Claude hook registration, permissions, and background execution rules, read [hook maintenance](../../docs/maintenance/claude-hooks.md). Do not apply Claude flags or permission bypasses to Codex.
+- For runner, ticket, board, step, or fanout internals, read only the relevant entry in [the implementation reference](../../docs/references/sdlc-internals.md).
+- For Claude hook registration, permissions, and background execution rules, read [hook maintenance](../../docs/references/claude-hooks.md). Do not apply Claude flags or permission bypasses to Codex.
 
 ## Behavioral invariants
 

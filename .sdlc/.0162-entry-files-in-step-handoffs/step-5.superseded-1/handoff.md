@@ -4,7 +4,7 @@ A role working on a plan step reads the entry files that govern the files it cha
 ## Step 5: Live run on Claude Code and Codex
 level: L3
 ### Do
-Read `AGENTS.md` and `docs/codex-role-execution.md` first. Use `docs/reports/onboard-live-run.md` as the model for the report.
+Read `AGENTS.md` and `docs/references/codex-role-execution.md` first. Use `docs/reports/onboard-live-run.md` as the model for the report.
 
 Build a throwaway git project in a temp folder outside this repository:
 - a root `AGENTS.md`
@@ -42,11 +42,11 @@ Write `docs/reports/entry-files-live-run.md` with:
 
 Record what actually happened. A `no` stays a `no`. If a host cannot run, Status is blocked with the evidence, and nothing is fabricated.
 
-Add a link line for the report to `docs/README.md`, and link the report from the "How roles reach an entry" section of `docs/repo-onboarding/design.md`. Transcripts stay out of the repository.
+Add a link line for the report to `docs/README.md`, and link the report from the "How roles reach an entry" section of `docs/specs/repo-onboarding/design.md`. Transcripts stay out of the repository.
 ### Acceptance criteria
 - `test -f docs/reports/entry-files-live-run.md`
 - `grep -qF 'validation/entry-files-live-run.md' docs/README.md`
-- `grep -qF 'entry-files-live-run.md' docs/repo-onboarding/design.md`
+- `grep -qF 'entry-files-live-run.md' docs/specs/repo-onboarding/design.md`
 - `grep -qF '| Host | Arm | Result | Evidence |' docs/reports/entry-files-live-run.md`
 - `for h in "Claude Code" Codex; do for a in "handoff lists the entry" "builder read the entry" "verifier read the entry" "root-only step has no Read first"; do grep -qF "| $h | $a | yes |" docs/reports/entry-files-live-run.md || exit 1; done; done`
 - `grep -qF 'gpt-6-astra' docs/reports/entry-files-live-run.md`

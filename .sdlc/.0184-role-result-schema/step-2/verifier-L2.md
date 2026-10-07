@@ -21,4 +21,4 @@ Steelman pass: I drafted a fail on the check.sh edit (the `results.py selftest` 
 None. check.sh gained a `results.py selftest` line, which the scope guard allows. I checked it with `git diff` and the exit-0 scope guard. `git diff --check` is clean.
 
 ## For the next attempt
-None. The builder's note about stale "lacks its section" prose in `docs/maintenance/sdlc-internals.md`, `agents/conductor.md` and the run-selftest header comments is outside this step's allowed files. Later steps should pick it up.
+None. The builder's note about stale "lacks its section" prose in `docs/references/sdlc-internals.md`, `agents/conductor.md` and the run-selftest header comments is outside this step's allowed files. Later steps should pick it up.

@@ -1,6 +1,6 @@
 # Docs schema design review
 
-Recorded: 2026-10-05. Independent architect review of `docs/docs-schema/design.md` v0.1 for ticket T-0240.
+Recorded: 2026-10-05. Independent architect review of `docs/planning/docs-schema/design.md` v0.1 for ticket T-0240.
 
 ## Run
 

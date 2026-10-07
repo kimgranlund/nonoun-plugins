@@ -20,7 +20,7 @@ A planner run on T-0160 ran `find / -name quick_validate.py -path "*skill*" 2>/d
 - `plugins/sdlc-lite/adapters/claude/hooks.json`: registered in the `Bash` matcher after `block-repo-format.sh`. No shared `hooks/hooks.json` was created.
 - `plugins/sdlc-lite/scripts/hook-selftest.sh`: a new fixture block with 9 blocked cases (including the T-0160 repro and a `bash -c` wrapper) and 6 allowed cases (including no role). Search phrases are built with `printf`, so the file never holds a root search as a command. Every failure message starts with `block-disk-scan`.
 - `plugins/sdlc-lite/scripts/check.sh`: hook list in the header comment updated.
-- `docs/maintenance/claude-hooks.md`: new `## hooks/block-disk-scan.sh` section. It says the hook is Claude-only and that Codex roles are not covered.
+- `docs/references/claude-hooks.md`: new `## hooks/block-disk-scan.sh` section. It says the hook is Claude-only and that Codex roles are not covered.
 
 ### Verification
 - Step 1 verifier (L2): pass. It ran every acceptance criterion as written.

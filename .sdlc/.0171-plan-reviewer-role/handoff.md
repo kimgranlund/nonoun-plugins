@@ -29,7 +29,7 @@ Decisions needed before building:
 4. How `steps.py next` and `/chain` route `pass`, `replan`, and `blocked`, and how a `replan` from the reviewer interacts with the existing plan-defect and recurring-finding replan rules.
 5. The output section name `run.sh` requires for the role, and the level-rubric and handoff-format entries.
 
-Touches: `agents/plan-reviewer.md`, `scripts/run.sh` role and section tables, `scripts/check.py`, `skills/level-rubric`, `skills/handoff-format`, `skills/chain`, `agents/planner.md`, `adapters/codex/models.json`, generated Codex agents, `docs/codex-role-execution.md`.
+Touches: `agents/plan-reviewer.md`, `scripts/run.sh` role and section tables, `scripts/check.py`, `skills/level-rubric`, `skills/handoff-format`, `skills/chain`, `agents/planner.md`, `adapters/codex/models.json`, generated Codex agents, `docs/references/codex-role-execution.md`.
 
 ## Decisions
 Made 2026-09-30, after the Codex session's review of the Codex allocation. Decision 1 is the user's; the rest are defaults the user accepted by asking for the build, recorded so the planner does not reopen them.

@@ -2,7 +2,7 @@
   "domain": "goals",
   "plan": true,
   "nodes": [
-    { "id": "n0", "label": "independent fact-check of docs/generative-constructs/progressive-context-gap-analysis.md", "leaf": false, "justify": "grouping" },
+    { "id": "n0", "label": "independent fact-check of docs/specs/generative-constructs/progressive-context-gap-analysis.md", "leaf": false, "justify": "grouping" },
     { "id": "n1", "label": "citation group: Progressive Context skill files (SKILL.md, contracts.md, evidence.md, a2ui.md, workflow-stages.md, plugin AGENTS.md, codex plugin.json)", "leaf": true, "justify": null,
       "accept": "every PC path:line in the analysis was opened with sed -n and the quoted or paraphrased text is on that line; mismatches listed in report.md Findings" },
     { "id": "n2", "label": "citation group: proposal set (README.md, 02, 03, 04, progressive-context-plugin.md)", "leaf": true, "justify": null,
@@ -11,7 +11,7 @@
       "accept": "each record line opened; each claim graded supports / overstates; 'some runs' checked with grep -il rollout docs/reports/*.md" },
     { "id": "n4", "label": "citation group: SDLC Lite code and onboarding docs (run.sh:520-524, layered-context-pattern.md:40, repo-onboarding/design.md:195, .sdlc/AGENTS.md:1, onboard.py)", "leaf": true, "justify": null,
       "accept": "run.sh lines show routing_reason in the runs.jsonl record; onboard.py managed-block and stale-label mechanics read (lines 221-226, 369, 581, 696-711, 1140-1152)" },
-    { "id": "n5", "label": "citation group: docs/docs-schema/design.md lines and commit 5a1165e", "leaf": true, "justify": null,
+    { "id": "n5", "label": "citation group: docs/planning/docs-schema/design.md lines and commit 5a1165e", "leaf": true, "justify": null,
       "accept": "design.md lines 9-12, 54-70, 104, 126-128, 138-151, 153-175, 183 read at HEAD; git log confirms HEAD design.md == 5a1165e version" },
     { "id": "n6", "label": "citation group: outside-repo sources (generative-systems rubric path, maison .gitignore:6 and gen-ui-manifests SKILL.md:17)", "leaf": true, "justify": null,
       "accept": "rubric file exists at the absolute path with 13 '## T' headings and band 13-24; maison lines read; git grep -i 'progressive context' in maison lists every hit" },

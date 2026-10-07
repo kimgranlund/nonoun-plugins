@@ -36,7 +36,7 @@ Focused checks: the gate commands below.
 - `! grep -qF "no script computes the lane yet" plugins/sdlc-lite/skills/chain/SKILL.md`
 - `grep -qF "steps.py lane" plugins/sdlc-lite/skills/chain/SKILL.md`
 - `grep -qE "^  skips\.md +lane history: .*steps\.py lane" plugins/sdlc-lite/skills/handoff-format/SKILL.md`
-- (guard) `! grep -qF "—" plugins/sdlc-lite/skills/sdlc-lite/SKILL.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/scripts/steps.py docs/maintenance/sdlc-internals.md`
+- (guard) `! grep -qF "—" plugins/sdlc-lite/skills/sdlc-lite/SKILL.md plugins/sdlc-lite/skills/chain/SKILL.md plugins/sdlc-lite/skills/handoff-format/SKILL.md plugins/sdlc-lite/scripts/steps.py docs/references/sdlc-internals.md`
 - (guard) `! { git diff --name-only "$SDLC_BASE_SHA" -- . ":(exclude).sdlc"; git ls-files --others --exclude-standard -- . ":(exclude).sdlc"; } | grep -vE "^(plugins/sdlc-lite/skills/sdlc-lite/SKILL\.md|plugins/sdlc-lite/skills/chain/SKILL\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|plugins/sdlc-lite/scripts/steps\.py|docs/maintenance/sdlc-internals\.md|plugins/sdlc-lite/adapters/codex/agents/sdlc-[a-z0-9-]+\.toml)$" | grep -q .`
 - (guard) `bash plugins/sdlc-lite/scripts/check.sh`
 - (guard) `python3 scripts/check-packaging.py`

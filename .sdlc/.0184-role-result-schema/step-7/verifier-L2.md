@@ -14,7 +14,7 @@ pass
 The builder's claim of no changes is accurate. `HEAD` equals `$SDLC_BASE_SHA`. `git status` shows no step-7 modifications beyond the earlier steps' files and the `.sdlc` records. No gate was red, so the pre-build baseline check was not needed.
 
 ## Out of scope changes
-None. The modified files are `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/AGENTS.md`, `check.py`, `check.sh`, `fanout.py`, `run-selftest.sh`, `run.sh`, `steps.py`, `traces/selftest.py`, and the chain and fix `SKILL.md` files. The untracked files are `results.py` and the live-run doc. All of these come from steps 1 to 6. Step 7 changed no project files, and I made no edits.
+None. The modified files are `docs/references/sdlc-internals.md`, `plugins/sdlc-lite/AGENTS.md`, `check.py`, `check.sh`, `fanout.py`, `run-selftest.sh`, `run.sh`, `steps.py`, `traces/selftest.py`, and the chain and fix `SKILL.md` files. The untracked files are `results.py` and the live-run doc. All of these come from steps 1 to 6. Step 7 changed no project files, and I made no edits.
 
 ## For the next attempt
 None

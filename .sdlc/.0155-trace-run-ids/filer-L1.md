@@ -19,7 +19,7 @@ The ticket said to use `SDLC_ATTEMPT_ID`. This change does not, and the plan giv
   - `FANOUT_RUN_ID` is exported to the driver and gate environments.
   - `report.md` gains a `- Run:` line.
   - Selftest case 9 (`resume case`) is added, and the module docstring is updated.
-- `docs/maintenance/sdlc-internals.md`: the fanout entry now states the prefix, `logs/fanout.log`, `FANOUT_RUN_ID`, and why fanout mints its own id.
+- `docs/references/sdlc-internals.md`: the fanout entry now states the prefix, `logs/fanout.log`, `FANOUT_RUN_ID`, and why fanout mints its own id.
 - `plugins/sdlc-lite/skills/fanout/SKILL.md` is unchanged. It does not describe the line or log format.
 
 ### How each step was verified

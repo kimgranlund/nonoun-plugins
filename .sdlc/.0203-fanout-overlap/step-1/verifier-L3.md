@@ -19,7 +19,7 @@ Contract dependents traced with `git grep` (report.md, fanout.log, `- Logs:`, `O
 Steelman pass. Draft fail: `docs/maintenance/sdlc-internals.md:47` now describes the external lane as going "straight to the locked merge" and omits the overlap wait, so a record is stale after this change. Rebuttal: the plan assigns that doc to step 3 (`.sdlc/0203-fanout-overlap/step-3/handoff.md:7` targets the fanout entry at line 47, with criteria grepping `- Overlap:` and `waiting for lane` there), and this step's scope guard forbids touching it. Dropped.
 
 ## Out of scope changes
-None in the tracked tree: the only diff against `$SDLC_BASE_SHA` is `plugins/sdlc-lite/scripts/fanout.py` (`git diff --stat`). Untracked `.sdlc/0203-fanout-overlap/step-1/{base-sha,builder-L4.attempt.json,builder-L4.md,runs.jsonl,verifier-L3.attempt.json}` are run.sh records, excluded by the guard's `:(exclude).sdlc`. `docs/maintenance/sdlc-internals.md` is stale on the external-lane step 5 wording until step 3 lands (see the steelman entry above); not a change by this step.
+None in the tracked tree: the only diff against `$SDLC_BASE_SHA` is `plugins/sdlc-lite/scripts/fanout.py` (`git diff --stat`). Untracked `.sdlc/0203-fanout-overlap/step-1/{base-sha,builder-L4.attempt.json,builder-L4.md,runs.jsonl,verifier-L3.attempt.json}` are run.sh records, excluded by the guard's `:(exclude).sdlc`. `docs/references/sdlc-internals.md` is stale on the external-lane step 5 wording until step 3 lands (see the steelman entry above); not a change by this step.
 
 ## For the next attempt
 None

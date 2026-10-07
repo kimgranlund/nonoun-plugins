@@ -43,7 +43,7 @@ Consequence found in the code: `codex_roles.resolve` hardcodes the verifier's al
 Required change:
 
 1. `models.json`: every `gpt-6-sol` becomes `gpt-6-astra`. `gpt-6-luna` (scout L1) is not part of the decision and stays; it is also rejected on this account, which is recorded here and left for the user.
-2. `codex_roles.resolve`: the verifier's alternate model comes from configuration in `models.json`, not from a literal in the code. When no alternate other than the builder's model is configured, the verifier keeps the builder's model and the runner records that verification shared the builder's model. Documented in the level rubric and in `docs/codex-role-execution.md`.
+2. `codex_roles.resolve`: the verifier's alternate model comes from configuration in `models.json`, not from a literal in the code. When no alternate other than the builder's model is configured, the verifier keeps the builder's model and the runner records that verification shared the builder's model. Documented in the level rubric and in `docs/references/codex-role-execution.md`.
 3. Regenerate the Codex agents and update the Codex selftest.
 
 Found blocking T-0162 step 5 (`.sdlc/.0162-entry-files-in-step-handoffs/step-5/builder-L3.md`, Notes).

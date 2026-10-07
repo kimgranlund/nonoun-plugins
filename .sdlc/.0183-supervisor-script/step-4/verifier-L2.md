@@ -21,7 +21,7 @@ pass
   - Steelman: I considered failing for `unclassified` as a fourth `push_attempt` value and for the extra evidence lines. The builder's notes disclose both, and the Do does not forbid them. The oracle fails `unclassified`, which is stricter, so I dropped the finding.
 
 ## Out of scope changes
-None. The modified files `docs/ticket-stages/watcher-design.md`, `docs/reports/idle-host-watcher-design-review.md` and `plugins/sdlc-lite/scripts/check.sh` are on the guard's allowlist, and `supervisor.py` is an earlier step's untracked file. The guard command exited 0.
+None. The modified files `docs/planning/ticket-stages/watcher-design.md`, `docs/reports/idle-host-watcher-design-review.md` and `plugins/sdlc-lite/scripts/check.sh` are on the guard's allowlist, and `supervisor.py` is an earlier step's untracked file. The guard command exited 0.
 
 ## For the next attempt
 None

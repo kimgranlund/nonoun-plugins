@@ -19,7 +19,7 @@ Maison's bare ids died instantly twice. File: plugins/sdlc-lite/scripts/fanout.p
 ## Acceptance criteria
 - [ ] `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 with new cases: a dry run with `a=0123` and one with `a=T-0123` resolve the same ticket; `a=0123 b=T-0123` refuses as twice listed.
 - [ ] Negative control shown once: without normalization the bare-id case fails.
-- [ ] docs/maintenance/sdlc-internals.md fanout entry (or skills/fanout/SKILL.md) says bare ids are accepted.
+- [ ] docs/references/sdlc-internals.md fanout entry (or skills/fanout/SKILL.md) says bare ids are accepted.
 
 ## Closed
 
