@@ -2,7 +2,7 @@
 id: T-0325
 title: "Make every skill self-contained: ship its resources, drop repo-relative path assumptions"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0324]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. Skill behavior unchanged.
 - `python3 scripts/check-packaging.py`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
 - With the plugin copied outside the checkout and a throwaway `git init` project as the working directory, every `${CLAUDE_PLUGIN_ROOT}/<path>` a skill names exists in the copy, and `claude -p --plugin-dir <copy> 'Load sdlc-lite:scout ... read the run operations file'` reads `<copy>/skills/handoff-format/run-operations.md` (observed).
 - Skill behavior is unchanged: every changed skill line differs from its old text only where a link target became a `${CLAUDE_PLUGIN_ROOT}/...` path (`git diff --stat` shows equal insertions and deletions per skill file).
+
+## Closed
+
+2026-10-07: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
