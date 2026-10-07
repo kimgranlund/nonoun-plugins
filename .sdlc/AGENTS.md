@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d29e22b74c42 -->
+<!-- sdlc-lite:managed:start v1 sha256:2a9cbb2d0e35 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 33
+- proposed: 32
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
@@ -29,7 +29,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
   - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
   - T-0272 Conductor honors a repo opt-out of delegation (0272-conductor-repo-opt-out)
-  - T-0283 Launcher skills dispatch through sub-agents (0283-launcher-skills-dispatch)
   - T-0285 Fanout lanes as isolated background sub-agents (0285-fanout-subagent)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
@@ -45,7 +44,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
 - ready: 0
 - blocked: 0
-- done: 254
+- done: 255
 - dropped: 25
 
 ## Procedures
