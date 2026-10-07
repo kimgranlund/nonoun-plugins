@@ -997,6 +997,13 @@ for rel, text in _dc_texts.items():
     errors.extend(f'{rel}: names run.sh outside a Codex line: {l[:80]}' for l in claude_runsh_lines(text))
     if not claude_runsh_lines(text + '\nRun `scripts/run.sh builder L1 x.md`.\n'): errors.append(f'check.py: dispatch core negative control not flagged for a Claude run.sh line in {rel}')
     if claude_runsh_lines(text + '\nOn Codex, run `SDLC_BACKEND=codex scripts/run.sh builder L1 x.md`.\n') != claude_runsh_lines(text): errors.append(f'check.py: dispatch core flagged a Codex run.sh line in {rel}')
+# Record transcript flag (T-0334): a skill that spells a `dispatch.py record` call with flags passes --transcript.
+def record_flag_bad(text): return [l.strip()[:60] for l in text.splitlines() if 'dispatch.py record <dispatch_file> --' in l and '--transcript' not in l]
+_rt_texts = {d.parent.name: _rd(d) for d in sorted((root/'skills').glob('*/SKILL.md'))}
+for _n, _t in _rt_texts.items():
+    errors.extend(f'skills/{_n}/SKILL.md: dispatch.py record spelled without --transcript: {m}' for m in record_flag_bad(_t))
+if not record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n>`.'): errors.append('check.py: record transcript negative control not flagged for a record call without --transcript')
+if record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --transcript <t>`.'): errors.append('check.py: record transcript flagged a call that passes --transcript')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
