@@ -20,7 +20,7 @@ The verifier prompt written for a fanout lane names the lane worktree as its Tre
   - The goal holds (observed); check.py, tickets.py check and the touched selftests pass.
 
 ## Context
-Found by the live rerun appended to docs/reports/subagent-mode-live-2026-10-07.md (section `Rerun after T-0326 to T-0328`).
+Found by the live rerun appended to docs/reports/2026-10-07-subagent-mode-live.md (section `Rerun after T-0326 to T-0328`).
 
 ## Constraints
 No em or en dashes. No push or publish.

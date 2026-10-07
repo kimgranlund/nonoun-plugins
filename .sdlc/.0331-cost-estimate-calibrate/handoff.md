@@ -11,16 +11,16 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-The conductor and chain skills pass --transcript to dispatch.py record, the fanout path writes a priced solo row, and the estimate for the L2 and L3 verifier rows in docs/reports/subagent-mode-live-2026-10-07 (host-cost.txt) is within 35 percent of host; where the transcript undercounts input and output tokens, apply and document a calibration factor fitted on those rows and state the fitted band in the report. Pillar: cost gates must not undercount spend.
+The conductor and chain skills pass --transcript to dispatch.py record, the fanout path writes a priced solo row, and the estimate for the L2 and L3 verifier rows in docs/reports/2026-10-07-subagent-mode-live (host-cost.txt) is within 35 percent of host; where the transcript undercounts input and output tokens, apply and document a calibration factor fitted on those rows and state the fitted band in the report. Pillar: cost gates must not undercount spend.
 
 ## Intent
-- Do: The conductor and chain skills pass --transcript to dispatch.py record, the fanout path writes a priced solo row, and the estimate for the L2 and L3 verifier rows in docs/reports/subagent-mode-live-2026-10-07 (host-cost.txt) is within 35 percent of host; where the transcript undercounts input and output tokens, apply and document a calibration factor fitted on those rows and state the fitted band in the report. Pillar: cost gates must not undercount spend.
+- Do: The conductor and chain skills pass --transcript to dispatch.py record, the fanout path writes a priced solo row, and the estimate for the L2 and L3 verifier rows in docs/reports/2026-10-07-subagent-mode-live (host-cost.txt) is within 35 percent of host; where the transcript undercounts input and output tokens, apply and document a calibration factor fitted on those rows and state the fitted band in the report. Pillar: cost gates must not undercount spend.
 - Non-goals: model or effort changes; the account-switch criterion.
 - Done when:
   - The goal holds (observed); check.py, tickets.py check and the touched selftests pass.
 
 ## Context
-Found by the live rerun appended to docs/reports/subagent-mode-live-2026-10-07.md (section `Rerun after T-0326 to T-0328`).
+Found by the live rerun appended to docs/reports/2026-10-07-subagent-mode-live.md (section `Rerun after T-0326 to T-0328`).
 
 ## Constraints
 No em or en dashes. No push or publish.

@@ -185,7 +185,7 @@ def selftest():
                             'cache_creation_input_tokens': 51769}, table)[0]
     expect('L3 verifier row is the recorded outlier: %.3f of host 2.4762' % ((l3 or 0) / 2.4762),
            l3 is not None and not abs(l3 - 2.4762) <= TOLERANCE * 2.4762 and 0.5 <= l3 / 2.4762 <= 0.65)
-    rec = HERE.parent.parent.parent / 'docs' / 'reports' / 'l3-verifier-row-outlier-2026-10-06.md'
+    rec = HERE.parent.parent.parent / 'docs' / 'reports' / '2026-10-06-l3-verifier-row-outlier.md'
     expect('accepted-outlier record exists and names the L3 row',
            rec.is_file() and 'accepted as an outlier' in rec.read_text(encoding='utf-8'))
     with tempfile.TemporaryDirectory() as t2:

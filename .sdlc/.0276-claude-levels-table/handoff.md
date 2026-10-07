@@ -35,7 +35,7 @@ Run the negative controls in a throwaway copy, never in the working tree: from t
 5. No other `agents/*-L<n>.md` or `agents/solo-*.md` exists.
 6. `git diff --stat HEAD -- plugins/sdlc-lite/adapters/codex` is empty and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exits 0 (Codex files untouched). `git diff HEAD -- plugins/sdlc-lite/scripts/run.sh` changes only the comment above the `case "$role:$level"` rows: no model or effort value changes.
 7. `bash plugins/sdlc-lite/scripts/check.sh` and `python3 scripts/check-packaging.py` exit 0.
-8. P1 (`docs/reports/subagent-probes-2026-10-06.md`) found `effort`, `model`, `skills`, and `disallowedTools` honored for a plugin agent, so per-level definitions stand and no per-effort fallback is needed.
+8. P1 (`docs/reports/2026-10-06-subagent-probes.md`) found `effort`, `model`, `skills`, and `disallowedTools` honored for a plugin agent, so per-level definitions stand and no per-effort fallback is needed.
 
 ## Constraints
 Model and effort values must not change (user decision). Codex files and `models.json` untouched. No em dashes. No push, tag, or publish.
