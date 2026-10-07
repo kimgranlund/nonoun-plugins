@@ -25,3 +25,12 @@ From docs/docs-schema/design.md v0.4, "Placement proof". Evidence labels and the
 
 ## Constraints
 Hand-build the fixture; do not wait on or depend on `docs_check.py` or `render_registry`. Stop only processes you started. No em dashes. Do not touch other agents' worktrees.
+
+## Acceptance criteria
+1. `docs/reports/placement-proof-live-run.md` exists and holds the fixture, the briefs, the answer key, a placement for every one of the 96 scored cells (12 briefs, 2 arms, 4 session types), the verdict per session type, and the limits (including interactive Claude as a limit with its reason). Check: read the file.
+2. The answer key was fixed before any run: `shasum -a 256 docs/reports/placement-proof-live-run/answer-key.json`, `briefs.json` and `build_fixture.py` equal the hashes in `docs/reports/placement-proof-live-run/sealed.txt`, and that file's timestamp is earlier than the first scored run.
+3. The report's scores reproduce from the data: `python3 docs/reports/placement-proof-live-run/run_cells.py score` prints claude 12 and 8, solo 11 and 10, codex 12 and 10, codex-sub 12 and 9 (registry and control), and `runs.jsonl` has 96 rows with 12 briefs in each type and arm.
+4. The pass rule is applied as the ticket fixed it (registry at least 10 of 12 and at least 3 above control, per type; proven across types only if every type run passes), and the negative control is stated per type.
+5. `docs/docs-schema/design.md` carries the status "grounded in the cited evidence, placement unproven" with the failing types named, and no other change to the design beyond sentences that said the proof had not run or would gate on a pass.
+6. Non-goals held: `git status` shows only `docs/reports/placement-proof-live-run.md`, the folder `docs/reports/placement-proof-live-run/`, `docs/docs-schema/design.md` and the ticket folder; no version bump, tag, push, or edit to this repository's `docs/` layout.
+7. `git diff --check` and `python3 scripts/check-packaging.py` pass, local links in the two changed documents resolve, and the new files hold no em dash.

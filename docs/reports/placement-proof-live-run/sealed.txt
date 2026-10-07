@@ -1,0 +1,7 @@
+sealed_at_utc: 2026-10-07T01:17:48Z
+answer-key.json sha256: e0fc4e206097704d6e79013c01c68c4850d0a4230be389d078d0896965cab877
+briefs.json sha256: 23516dd00c0ad4f07746717c3ebcd68b01e72ea0edf4bae0ee1f45626bcdd69c
+build_fixture.py sha256: 8ea848d766dfc58b051d40d5bcd4d1380aa98e5a5fdac3dbb599bbfc86abc8ae
+registry fixture tree: e54f2fca56e17efb586d656b87965022ef25c191
+control fixture tree: 9a7af31752f9c160acaf1d5d7c09f5f35e2fe2b9
+sealed before any run: no session has been started for this ticket at this time

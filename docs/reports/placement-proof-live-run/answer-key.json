@@ -1,0 +1,18 @@
+{
+  "sealed_for": "T-0248 placement proof",
+  "rule": "A run's placement is the set of repository paths it added or renamed to (when it added none, the existing files it modified). A run is correct when that set is not empty and every path in it starts with an accepted prefix of the brief. A session that writes nothing is wrong. Extra edits to unrelated existing files are not placements.",
+  "answers": {
+    "B01": {"home": "docs/specs/", "accepted": ["docs/specs/", "docs/planning/"], "kind": "boundary: accepted but unbuilt design; alternate declared in advance"},
+    "B02": {"home": "docs/planning/", "accepted": ["docs/planning/"], "kind": "docs home"},
+    "B03": {"home": "docs/decisions/", "accepted": ["docs/decisions/"], "kind": "docs home"},
+    "B04": {"home": "docs/references/", "accepted": ["docs/references/", "docs/guides/"], "kind": "boundary: command cheat sheet; alternate declared in advance"},
+    "B05": {"home": "docs/guides/", "accepted": ["docs/guides/"], "kind": "docs home"},
+    "B06": {"home": "docs/reports/", "accepted": ["docs/reports/"], "kind": "docs home"},
+    "B07": {"home": "docs/assets/", "accepted": ["docs/assets/"], "kind": "docs home"},
+    "B08": {"home": "docs/archive/", "accepted": ["docs/archive/"], "kind": "docs home"},
+    "B09": {"home": "docs/other/", "accepted": ["docs/other/"], "kind": "docs home"},
+    "B10": {"home": ".sdlc/0007-retry-rule/", "accepted": [".sdlc/0007-retry-rule/"], "kind": ".sdlc versus docs, started in docs/"},
+    "B11": {"home": "docs/guides/", "accepted": ["docs/guides/"], "kind": ".sdlc versus docs, started in .sdlc/"},
+    "B12": {"home": ".sdlc/notes.md", "accepted": [".sdlc/notes.md"], "kind": ".sdlc versus docs, started in docs/"}
+  }
+}
