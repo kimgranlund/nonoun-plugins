@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs | --keep-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -49,7 +49,10 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             suggesting --rewrite-refs or --force. close --rewrite-refs rewrites <rel>/<slug> to
             <rel>/.<slug> in each file with the rename, adding `; rewrote refs in <files>` to the
             output; --dry-run --rewrite-refs lists one `rewrite <file>` line per file before the
-            `expect` line. --force closes and leaves them. Outside git there is no scan.
+            `expect` line. --force closes and leaves them. --keep-refs also leaves them, without
+            overriding open warnings: the ticket's ## Closed section lists the stale citations, the
+            output says `left refs`, and --dry-run lists one `keep <file>` line per file. It does not
+            combine with --rewrite-refs. Outside git there is no scan.
             With no filer-L*.md here, close refuses and, when another git worktree's same-relative
             <slug>/ holds one (glob only, never read), names each such folder: commit or copy it into
             this tree, then rerun close.
@@ -1697,7 +1700,7 @@ def append_notes(root, pid, title, entries):
 
 
 def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=False, skip=None, expect=None,
-              ack_warnings=None, rewrite_refs=False, ticket=None):
+              ack_warnings=None, rewrite_refs=False, ticket=None, keep_refs=False):
     """Read the newest filer-L*.md: refuse on open warnings, file at most one follow-up (the --ticket item) as
     a proposed idea ticket with from: <id>, append every other follow-up that is not skipped or a duplicate to
     <root>/notes.md, set the ticket done, regenerate the roadmap. Every refusal writes nothing.
@@ -1722,7 +1725,11 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     (ending at `/`, the end of a token, or punctuation, never running on into a longer folder name) or as a path token resolving to it relative to the citing file, from the toplevel, or absolute: with hits,
     close refuses unless rewrite_refs (rewrite_files turns each reference into the .<slug> form, keeping its
     relative or absolute form, with the rename; the dry run lists `rewrite <file>`) or force (close and leave
-    them). Plain slug folders never move, so never scan."""
+    them). keep_refs leaves them too without force, and records the stale citations in a ## Closed section.
+    Plain slug folders never move, so never scan."""
+    if keep_refs and rewrite_refs:
+        raise Fail(f'{slug}: --keep-refs leaves citations as they are and --rewrite-refs rewrites them, so they '
+                   f'do not combine; use one; nothing written')
     if ack_warnings is not None and force:
         raise Fail(f'{slug}: --ack-warnings records why open warnings no longer apply, so it does not combine '
                    f'with --force; use one; nothing written')
@@ -1769,12 +1776,16 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                    f'decided: <who>" line per role under ## Skipped in {d / "skips.md"}; nothing written')
     top, old_ref, new_ref, refs = (outside_refs(td, slug, roadmap=layout_paths(root).roadmap) if archive
                                    else (None, '', '', []))
-    if refs and not rewrite_refs and not force:
-        via_force = '' if ack_warnings is not None else ' or --force (close anyway, leaving them)'
+    if refs and not rewrite_refs and not force and not keep_refs:
+        via_force = (f' or --keep-refs (close, leave them and record them in the close note)'
+                     + ('' if ack_warnings is not None else ' or --force (close anyway, leaving them)'))
         raise Fail(f'{slug}: close renames it to {dot.name}, but these files outside it reference {old_ref}:\n'
                    + ''.join(f'  {f}\n' for f in refs)
                    + f'rerun with --rewrite-refs (rewrite them to {new_ref}){via_force}; nothing written')
     rewrite = refs if rewrite_refs else []
+
+    kept = (f'{datetime.date.today().isoformat()}: kept stale refs to {old_ref} in: ' + ', '.join(refs)
+            if keep_refs and refs else '')
 
     def rewrite_now():
         rewrite_files(top, rewrite, old_ref, new_ref)
@@ -1794,6 +1805,8 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         if body and not body.endswith('\n'):
             body += '\n'
         body += f'\n## Closed\n\n{datetime.date.today().isoformat()}: {why}\n'
+        if kept:
+            body += f'\n{kept}\n'
         h.write_bytes((head + body).encode('utf-8'))
         if archive:
             d.rename(dot)
@@ -1924,6 +1937,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
                          + ([f'rename {slug} -> {dot.name}'] if archive else [])
                          + ([f'ack warnings: {ack_warnings.strip()}'] if ack_warnings is not None else [])
                          + [f'rewrite {f}' for f in rewrite]
+                         + ([f'keep {f}' for f in refs] if keep_refs else [])
                          + [f'expect {digest}'])
 
     for s, t in planned:
@@ -1938,6 +1952,10 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         quoted = '\n'.join(f'> {ln}' if ln.strip() else '>' for ln in warnings.splitlines())
         body += (f'\n## Closed\n\n{datetime.date.today().isoformat()}: warnings acknowledged: '
                  f'{ack_warnings.strip()}\n\n{quoted}\n')
+    if kept:
+        if body and not body.endswith('\n'):
+            body += '\n'
+        body += (f'\n{kept}\n' if '\n## Closed\n' in body else f'\n## Closed\n\n{kept}\n')
     h.write_bytes((head + body).encode('utf-8'))
     if archive:
         d.rename(dot)
@@ -3268,6 +3286,25 @@ def selftest():
                    and spec.read_text(encoding='utf-8') == 'see .sdlc/0003-x/handoff.md\n')
             expect(f'(u) refs: --force prints the files it left citing the folder: {out!r}',
                    out.endswith('; left refs to .sdlc/0003-x in docs/spec.md'))
+
+            # T-0348: --keep-refs closes, leaves the citation, lists it in the close note; no flag still refuses
+            root, spec = ref_repo()
+            rc, out, err = run(root, 'close', ('0003-x',))
+            expect(f'(u) keep-refs: no flag still refuses: rc={rc} {err!r}',
+                   rc == 1 and '--keep-refs' in err and (root / '0003-x').is_dir())
+            rc, out, err = run(root, 'close', ('0003-x',), keep_refs=True, rewrite_refs=True)
+            expect(f'(u) keep-refs: does not combine with --rewrite-refs: rc={rc} {err!r}',
+                   rc == 1 and 'nothing written' in err and (root / '0003-x').is_dir())
+            rc, out, err = run(root, 'close', ('0003-x',), keep_refs=True, dry_run=True)
+            expect(f'(u) keep-refs: dry run lists keep docs/spec.md: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'keep docs/spec.md' in out.splitlines() and (root / '0003-x').is_dir())
+            rc, out, err = run(root, 'close', ('0003-x',), keep_refs=True)
+            note = (root / '.0003-x' / 'handoff.md').read_text(encoding='utf-8')
+            expect(f'(u) keep-refs: closes, leaves the cite, close note lists docs/spec.md: rc={rc} {out!r} {err!r}',
+                   rc == 0 and 'kept refs' not in err and out.endswith('; left refs to .sdlc/0003-x in docs/spec.md')
+                   and '## Closed' in note and 'kept stale refs to .sdlc/0003-x in: docs/spec.md' in note
+                   and spec.read_text(encoding='utf-8') == 'see .sdlc/0003-x/handoff.md\n'
+                   and status(root, '.0003-x') == 'done')
 
             # T-0262: a citation under a gitignored ticket root is seen, refused, named, and rewritable
             def ignored_ref():
@@ -4769,6 +4806,9 @@ def main(argv):
                    help='numbered mode: when files outside the ticket folder reference <rel>/<slug>, rewrite them to '
                         '<rel>/.<slug> with the rename (--dry-run lists each as `rewrite <file>`) instead of '
                         'refusing; --force closes and leaves them')
+    p.add_argument('--keep-refs', action='store_true',
+                   help='numbered mode: close and leave the citing files as they are, without --force overriding '
+                        'warnings; the ## Closed section lists the stale citations (--dry-run lists `keep <file>`)')
     p.add_argument('--numbered', action='store_true',
                    help='name each follow-up folder NNNN-<slug> after its own new id and, on success, persist '
                         '`ticket_folders: numbered` in <root>/config (also on via that config)')
@@ -4827,6 +4867,7 @@ def main(argv):
         kw['expect'] = a.expect
         kw['ticket'] = a.ticket
         kw['rewrite_refs'] = a.rewrite_refs
+        kw['keep_refs'] = a.keep_refs
         try:
             kw['skip'] = None if a.skip is None else parse_skip(a.skip)
         except Fail as e:
