@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:827e769c4280 -->
+<!-- sdlc-lite:managed:start v1 sha256:f1849610f047 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 40
+- proposed: 39
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -19,7 +19,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0264 steps.py split has no override after a replan verdict (0264-split-after-replan-override)
   - T-0265 Headless planner stalled on a denied rm permission prompt (0265-headless-planner-denied-rm)
-  - T-0266 tickets.py check breaks on partial front matter (0266-tickets-check-partial-front-matter)
   - T-0267 A hook denies git worktree add with variable paths (0267-hook-denies-worktree-add-variable)
   - T-0269 traces detector reports failed attempts as missing a runs.jsonl row (0269-traces-failed-attempt-noise)
   - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
@@ -52,7 +51,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 253
+- done: 254
 - dropped: 25
 
 ## Procedures
