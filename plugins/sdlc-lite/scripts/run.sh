@@ -90,6 +90,14 @@
 # one. It must have is_error false and a non-empty .result (else exit 1); its .result is written to
 # the result file. The runs.jsonl cost, duration, and turns come from the last result event, which
 # holds the session totals.
+# Loaded context (T-0252): the runs.jsonl line always holds loaded_context, from `scripts/traces.py context
+# <log> --backend <backend>` (traces/sources/context.py owns the rules): {"source":"stream-json","paths":[...]}
+# with the file_path of every Read tool_use in the Claude log, {"source":"rollout","paths":[...]} with the files
+# the Codex rollout's shell reads (cat, head, tail, sed, nl, less, more, bat) opened, or {"status": ...}
+# ("log absent", "log unreadable", "rollout absent", "rollout unreadable", "collector failed") when the list
+# cannot be built; a status also prints one stderr line "run.sh: loaded context not recorded: <status>; see <log>".
+# An empty paths list means the run read nothing through those channels. Entry files the host injects into the
+# session are not in the log, so they are not listed. It never changes the exit code.
 # Env: SDLC_DRY_RUN=1 prints the command only (after the preflight and .nvmrc resolution).
 # SDLC_SPECGATE=off skips the spec gate with one stderr line "run.sh: SDLC_SPECGATE=off: spec gate
 # skipped", and the plan-reviewer run's runs.jsonl line gets "specgate":"off".
@@ -575,15 +583,21 @@ if [[ -n "$handoff_start_sha" ]]; then
 fi
 specgate_flag=""
 if [[ "$role" == plan-reviewer && "${SDLC_SPECGATE:-}" == off ]]; then specgate_flag=off; fi
+# Loaded context (see the header, T-0252): traces.py context reads the run's log (or Codex rollout);
+# a status instead of paths ('log absent', 'rollout absent') is reported on stderr, never recorded empty.
+ctx_json=$(python3 "$plugin_root/scripts/traces.py" context "$log" --backend "$backend" 2>/dev/null) || ctx_json=""
+jq -e 'type == "object" and (has("paths") or has("status"))' <<<"$ctx_json" >/dev/null 2>&1 || ctx_json='{"status":"collector failed"}'
+ctx_status=$(jq -r '.status // empty' <<<"$ctx_json")
+[[ -z "$ctx_status" ]] || echo "run.sh: loaded context not recorded: $ctx_status; see $log" >&2
 jq -c --arg role "$role" --arg level "$level" --arg model "$model" --arg effort "$effort" \
   --arg handoff_sha256 "$handoff_start_sha" --argjson stale_input "$stale_input" \
   --arg attempt_id "${SDLC_ATTEMPT_ID:-}" --arg routing_reason "${SDLC_ROUTING_REASON:-}" \
   --arg backend "$backend" --arg file "$name.md" --argjson stray_wt "$stray_wt_json" --argjson stray_br "$stray_br_json" \
   --argjson shared_with_builder "$shared_with_builder" --arg specgate "$specgate_flag" \
-  --arg lane_override "${SDLC_LANE_OVERRIDE_APPLIED:-}" \
+  --arg lane_override "${SDLC_LANE_OVERRIDE_APPLIED:-}" --argjson loaded_context "$ctx_json" \
   '{ts: (now|todate), role: $role, level: $level, model: $model, effort: $effort, file: $file, shared_with_builder: $shared_with_builder,
     attempt_id: $attempt_id, handoff_sha256: $handoff_sha256, stale_input: $stale_input, routing_reason: $routing_reason, backend: $backend, transport: (.transport // $backend), usage: .usage, cost_usd: .total_cost_usd, duration_ms: .duration_ms, turns: .num_turns,
-    stray_worktrees: $stray_wt, stray_branches: $stray_br}
+    stray_worktrees: $stray_wt, stray_branches: $stray_br, loaded_context: $loaded_context}
     + (if $specgate == "" then {} else {specgate: $specgate} end)
     + (if $lane_override == "" then {} else {lane_override: $lane_override} end)' <<<"$last_ev" >>"$dir/runs.jsonl"
 
