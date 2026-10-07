@@ -372,7 +372,7 @@ def solo_command(handoff_rel, size, backend=None):
     task_dir = pathlib.PurePosixPath(handoff_rel).parent.as_posix()
     return ' '.join(shlex.quote(x) for x in (
         sys.executable, str(SCRIPTS / 'solo_run.py'), 'run', '--task-dir', task_dir, '--tier', tier,
-        '--backend', backend, '--brief', prompt))
+        '--backend', backend, '--exec', '--brief', prompt))  # --exec: headless start until T-0285 moves lanes to sub-agents
 
 
 def default_driver(handoff_rel, kind='full', size=None):
