@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:5aa83335daa3 -->
+<!-- sdlc-lite:managed:start v1 sha256:57b8332e6a77 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 36
+- proposed: 35
   - T-0205 layout key and one resolver for ticket dir, roadmap, notes (0205-layout-resolver)
   - T-0206 tickets.py migrate-layout (0206-migrate-layout)
   - T-0207 Readers and docs for the topic layout (0207-layout-readers-docs)
@@ -33,7 +33,6 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0283 Launcher skills dispatch through sub-agents (0283-launcher-skills-dispatch)
   - T-0284 Solo and its verifier run as sub-agents (0284-solo-subagent)
   - T-0285 Fanout lanes as isolated background sub-agents (0285-fanout-subagent)
-  - T-0286 Supervisor reports orphaned dispatches (0286-supervisor-orphans)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
@@ -48,7 +47,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
 - ready: 0
 - blocked: 0
-- done: 251
+- done: 252
 - dropped: 25
 
 ## Procedures
