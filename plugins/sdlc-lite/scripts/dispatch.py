@@ -18,7 +18,7 @@ goal precheck, lane gate, spec gate, budget gate, then the one write section.
   preflight    the handoff exists and the current directory is a git work tree with a commit.
   family       a verifier never runs on the newest build's model family (a Fable or Sonnet build moves it to
                Opus, same effort); a plan-reviewer never on the newest planner's (an Opus planner moves it
-               to Fable). Both read the first model=<[a-z]*> token of the newest result by order.py; a
+               to Fable). Both read the first model=<[a-z]*> token of the newest result by order.py (a dir with no builder result reads its newest `role solo` runs.jsonl record: a Sonnet solo gets an Opus verifier); a
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
@@ -148,11 +148,19 @@ def step_build(directory):
     return built
 
 
+def solo_model(directory):
+    """The model of the newest `role solo` record in directory/runs.jsonl, else ''."""
+    got = [r.get('model') for _, r in order.records(directory) if r.get('role') == 'solo']
+    return got[-1] if got and isinstance(got[-1], str) else ''
+
+
 def family(role, model, directory):
     if role == 'verifier':
         built = order.newest(str(directory), 'builder') or step_build(directory)
         if built and model == model_of(built) and model in ('fable', 'sonnet'):
             return 'opus'
+        if not built and model == solo_model(directory) and model in ('fable', 'sonnet'):
+            return 'opus'  # a solo ticket has no builder result: its newest runs.jsonl solo record holds the family (T-0284)
     elif role == 'plan-reviewer':
         planned = order.newest(str(directory), 'planner')
         if planned and model == model_of(planned) and model == 'opus':
@@ -852,6 +860,17 @@ def selftest():
         rc, got = same('verifier swap value', repo, 'verifier', 'L3', '.sdlc/t/step-1/handoff.md')
         case('verifier L3 after a fable build moves to opus xhigh', (got['model'], got['effort']) == ('opus', 'xhigh'))
         shutil.rmtree(sw)
+
+        # 2b. A solo ticket has no builder result: the newest solo record in runs.jsonl holds the family (T-0284).
+        so = sdlc / 'so'
+        put(so / 'handoff.md')
+        for smodel, level, want in (('sonnet', 'L2', 'opus'), ('sonnet', 'L1', 'opus'), ('opus', 'L2', 'sonnet'), ('sonnet', 'L3', 'fable')):
+            (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L2', 'model': smodel}) + '\n')
+            rc, got, _ = prep(repo, 'verifier', level, '.sdlc/so/handoff.md', '--dry-run')
+            case('verifier %s after a %s solo gets %s' % (level, smodel, want), rc == 0 and got['model'] == want)
+        (so / 'runs.jsonl').unlink()
+        rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run')
+        case('verifier L2 with no solo record keeps sonnet', rc == 0 and got['model'] == 'sonnet')
 
         # 3. Verifier at a task dir: the highest live step holds the build; superseded dirs are left out.
         td = sdlc / 'td'

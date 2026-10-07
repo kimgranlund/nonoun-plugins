@@ -31,11 +31,11 @@ The launcher picks the tier from the ticket size and starts you at that model an
 | L | L | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
 
 ## Start
-A conductor in Claude Code starts solo as a headless session from Bash at the project root, with the tier's model and effort from the table, under the interactive vs headless rule in agents/conductor.md (`hooks/block-role-spawn.sh` denies its Agent-tool spawn of `sdlc-lite:` agents). `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work). Start it through the cost wrapper, so the session's cost and token usage land in the task's `runs.jsonl` and the budget gate and the board count the default lane:
+A conductor in Claude Code starts solo as a background sub-agent. It runs the cost wrapper, which checks the ticket's budget, records the solo's model for the verifier's family rule, and prints the dispatch JSON:
 
 `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/solo_run.py" run --task-dir <ticket folder> --tier <S|M|L> --brief "<typed brief>"` (no ticket: `--new-task [slug]` instead of `--task-dir`)
 
-Before it starts anything it checks the ticket's budget as `run.sh` does for roles: at 80 percent of `budget_usd` with no ack it exits 4 (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. It records cost, usage, turns, and duration; a session that reports no cost records `cost_usd` null with a reason, never zero. The raw command is the fallback and records nothing:
+At 80 percent of `budget_usd` with no ack it exits 4 and prints no JSON (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. The conductor then spawns the Agent tool with that JSON's `subagent_type` (`sdlc-lite:solo-S`, `solo-M`, or `solo-L`), `name`, `description`, `model`, `effort`, `prompt`, and `run_in_background`. `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work) when the host sets it. The headless start, used by fanout lanes until they move to sub-agents, is the same command with `--exec`, or raw and unrecorded:
 
 `SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`
 
@@ -43,9 +43,9 @@ On Codex the conductor starts `sdlc-solo-l1`, `sdlc-solo-l2`, or `sdlc-solo-l3` 
 
 ## Verification
 - Tier S: none beyond your checks, as /fix today.
-- Tiers M and L: once all checks pass, write the task handoff's `## Acceptance criteria` if it has none, then run one batched independent verifier over the whole ticket: `${CLAUDE_PLUGIN_ROOT}/scripts/run.sh verifier <level> <task dir>/handoff.md`, under the interactive vs headless rule in agents/conductor.md. Pick the level so the verifier is a different model family from yours, because solo writes no builder result for run.sh's family rule to read: tier M (Sonnet) uses `verifier L3` (Fable); tier L (Opus) uses `verifier L2` (Sonnet). On Codex the verifier is `sdlc-verifier-l3`. When you run as a sub-agent without a way to start it, say `verify: needed` in your report and the parent runs it.
-- The verifier result file is checked by the runner; to check one yourself: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role verifier`.
-- A verifier fail: fix its findings once and run it once more. A second fail: stop and report.
+- Tiers M and L: once all checks pass, write the task handoff's `## Acceptance criteria` if it has none, end with your report, and say `verify: needed`. You do not start the verifier. The parent runs one batched independent verifier over the whole ticket: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py" prepare verifier L2 <task dir>/handoff.md`, then spawns the Agent tool with the JSON it prints. Prepare keeps the verifier off your model family by reading your `role solo` record in the task's `runs.jsonl`: a Sonnet solo (tiers S and M) gets an Opus verifier, an Opus solo (tier L) a Sonnet one. On Codex the verifier is `sdlc-verifier-l3`.
+- The verifier result file is checked by the recorder; to check one yourself: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/results.py" validate <file> --role verifier`.
+- A verifier fail: the parent sends the findings back to solo once, and runs the verifier once more. A second fail: stop and report.
 
 ## Output
 Your final message is the only thing your parent receives: a compact report, under 25 lines, of files changed, each check with its outcome, the verifier verdict if one ran, the commit shas if you committed, and anything still open. No narration of the work.
