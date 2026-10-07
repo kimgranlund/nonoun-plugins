@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:64a662968216 -->
+<!-- sdlc-lite:managed:start v1 sha256:58dd979e5452 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,10 +15,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0352 dispatch.py record: unmatched error stdin yields to the transcript, and a solo dispatch file ignores agent id, tool uses and duration (0352-record-error-and-solo-args)
-  - T-0353 Move every Haiku 4.5 agent to Claude Haiku 5.5 (claude-haiku-5-5), by user decision (0353-haiku-5-5)
+  - T-0354 Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied (0354-prepare-env-prefix-allowlist)
 - ready: 0
 - blocked: 0
-- done: 315
+- done: 316
 - dropped: 25
 
 ## Procedures

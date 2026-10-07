@@ -2,7 +2,7 @@
 id: T-0353
 title: "Move every Haiku 4.5 agent to Claude Haiku 5.5 (claude-haiku-5-5), by user decision"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Haiku 5.5 is new (retirement date implies release 2026-10-07). The alias sentenc
 
 ## Constraints
 No em or en dashes. No push or publish. Other repos' agents are handled by their conductors, not here.
+
+## Closed
+
+2026-10-07: built on branch haiku55 (4efd6e01), independently verified pass (Fable verifier, .sdlc/verify-haiku55/verdict.md), merged

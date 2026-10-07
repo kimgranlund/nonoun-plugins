@@ -40,7 +40,7 @@ To block until a message arrives, run `python3 "/Users/kimgranlund/Projects/nono
 
 Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
-- Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-4-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
+- Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
 - Codex: install the project agents once with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
 
 While the parent is active, `wait` is the cheaper alternative to a polling subagent. The messenger may run it in its loop, or the parent may skip the messenger and run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <harness> --timeout 100 --interval 10` itself, then claim each printed id with `read`. On Claude Code, `--timeout 100` keeps the call under the default 120-second Bash timeout. `wait` returns only into an active parent, so it does not wake an idle host.
