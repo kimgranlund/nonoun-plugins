@@ -308,12 +308,15 @@ def settle(directory, dry_run):
     return recovered
 
 
-def status(directory):
-    """One line per attempt: stem, state, role-level, parent pid."""
+def status(directory, orphans_only=False):
+    """One line per attempt: stem, state, role-level, parent pid; orphans_only keeps the orphaned ones."""
     lines = []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
-        lines.append('%s %s %s-%s parent_pid=%s' % (path.name[:-len('.attempt.json')], attempt_state(data), data.get('role'), data.get('level'),
+        state = attempt_state(data)
+        if orphans_only and state != 'orphaned':
+            continue
+        lines.append('%s %s %s-%s parent_pid=%s' % (path.name[:-len('.attempt.json')], state, data.get('role'), data.get('level'),
                                                     data.get('parent_pid') or data.get('owner_pid')))
     return lines
 
@@ -684,6 +687,7 @@ def main(argv):
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
     st.add_argument('directory')
+    st.add_argument('--orphans', action='store_true', help='print only orphaned attempts')
     rc_ = sub.add_parser('recover', help='mark orphaned attempts interrupted')
     rc_.add_argument('directory')
     rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
@@ -696,7 +700,7 @@ def main(argv):
     if args.cmd in ('status', 'recover', 'resume'):
         try:
             if args.cmd == 'status':
-                out = status(args.directory)
+                out = status(args.directory, args.orphans)
             elif args.cmd == 'resume':
                 out = resume(args.name, args.root)
             else:
@@ -1057,8 +1061,10 @@ def selftest():
         (w / 'builder-L1.running').write_text('1\n')
         st_dead = status(w)
         case('status: running attempt with a dead parent prints orphaned', st_dead == ['builder-L1 orphaned builder-L1 parent_pid=%d' % dead])
+        case('status --orphans lists the orphan', status(w, True) == st_dead)
         a['parent_pid'] = live
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
+        case('negative control: status --orphans lists none for a live parent', status(w, True) == [])
         case('negative control: a live parent prints running', 'running' in status(w)[0] and 'orphaned' not in status(w)[0])
         a['parent_pid'] = dead
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
