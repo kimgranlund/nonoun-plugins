@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:bb3e04c99f1e -->
+<!-- sdlc-lite:managed:start v1 sha256:90b6dafc1f4f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,12 +9,18 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 5
+- proposed: 11
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0342 One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL) (0342-one-level-system)
+  - T-0343 dispatch.py record writes the role artifact from the sub-agent transcript so no model Write is needed (0343-record-artifact-from-transcript)
+  - T-0344 block-role-spawn.sh tolerates trailing text on the Handoff: line, or the dispatch JSON says exactly what to pass (0344-spawn-hook-handoff-line)
+  - T-0345 solo_run.py run defaults to --worktree when another solo is live, so parallel solos never share the main checkout (0345-solo-run-default-worktree)
+  - T-0346 solo_run.py run prints a clear error when its stream is unreadable instead of exiting silently on a JSON parse failure (0346-solo-run-silent-json-failure)
+  - T-0347 steps.py lint flags criteria that cite a count or `node --test <dir>` without a named source (0347-lint-criteria-count-and-dir)
+  - T-0348 tickets.py close offers a quiet --keep-refs so a doc citing the folder does not force --force (0348-close-keep-refs)
 - ready: 0
 - blocked: 0
 - done: 305
