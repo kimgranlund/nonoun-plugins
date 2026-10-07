@@ -81,6 +81,24 @@ def transcript_usage(path):
     return tot if any(tot.values()) else None
 
 
+def transcript_model(path):
+    """The model the transcript's last assistant message ran on (message.model), or None (T-0338)."""
+    got = None
+    try:
+        lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            msg = json.loads(line).get('message')
+        except (ValueError, AttributeError):
+            continue
+        if isinstance(msg, dict) and msg.get('role') == 'assistant' and isinstance(msg.get('model'), str) and msg['model'].strip() \
+                and not msg['model'].startswith('<'):
+            got = msg['model']
+    return got
+
+
 def family(model, table):
     m = (model or '').lower()
     return next((k for k in table if k in m), None)
