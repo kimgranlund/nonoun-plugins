@@ -5,7 +5,7 @@ argument-hint: "[task dir]"
 allowed-tools: Read, Grep, Glob, AskUserQuestion
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS` (a task dir such as `.sdlc/<slug>/`; empty means the current task).
 

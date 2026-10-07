@@ -155,6 +155,12 @@
    Codex-scoped `run.sh` line must not.
 41. Record transcript flag (T-0334): no skills/*/SKILL.md spells a `dispatch.py record <dispatch_file> --` call with flags that omits `--transcript`.
    Negative control: a record call without it is flagged; one with it is not.
+42. Self-contained skills (T-0325): in every skills/*/ folder of this plugin, and of the sibling progressive-context plugin when it sits next to this one, no
+   markdown link in any .md file (fenced blocks aside) starts with `docs/`, `plugins/`, `../`, or `/`, or resolves outside its skill folder (URLs, `#anchors`, and
+   links led by `${CLAUDE_PLUGIN_ROOT}/` pass); no SKILL.md or references/ file names a prose path starting with `plugins/`; and every
+   `${CLAUDE_PLUGIN_ROOT}/<path>` a skill names exists in its plugin (a path with `<`, `*`, or `$` is a pattern and is skipped). Fixtures and rubrics quote evidence from
+   other repos, so only their links are checked. Negative controls: a planted `../`, `../../`, `docs/`, `plugins/`, or absolute link, a `plugins/` prose path, and a
+   dangling plugin-root path are each flagged; a link inside the folder, a URL, an anchor, and a plugin-root link are not.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1006,6 +1012,40 @@ for _n, _t in _rt_texts.items():
     errors.extend(f'skills/{_n}/SKILL.md: dispatch.py record spelled without --transcript: {m}' for m in record_flag_bad(_t))
 if not record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --tokens <n>`.'): errors.append('check.py: record transcript negative control not flagged for a record call without --transcript')
 if record_flag_bad('Run `python3 x/dispatch.py record <dispatch_file> --agent-id <id> --transcript <t>`.'): errors.append('check.py: record transcript flagged a call that passes --transcript')
+# Self-contained skills (docstring item 42, T-0325): a skill reaches only its own folder and ${CLAUDE_PLUGIN_ROOT}; the other plugin's skills are checked when present.
+PLUGIN_VAR = '${CLAUDE_PLUGIN_ROOT}'
+def skill_ref_bad(text, md_dir, skill_dir, plugin_root, prose_rule=True):
+    """Findings for one skill .md file: a link leaving the skill folder, a `plugins/` prose path, a dangling plugin-root path."""
+    out = []
+    for tg in re.findall(r'\]\(([^)\s]+)', re.sub(r'```.*?```', '', text, flags=re.S)):
+        if '://' in tg or tg.startswith(('#', 'mailto:', PLUGIN_VAR + '/')): continue
+        rel = tg.split('#')[0]
+        if rel.startswith(('docs/', 'plugins/', '../', '/', '~')) or not (md_dir/rel).resolve().is_relative_to(skill_dir.resolve()):
+            out.append(f'link leaves the skill folder: {tg}')
+    if prose_rule:
+        out.extend(f'prose path starts with plugins/: {m}' for m in re.findall(r'(?<![\w/.${}-])plugins/[\w./-]+', text))
+    for m in re.findall(r'\$\{CLAUDE_PLUGIN_ROOT\}/([^\s`"\'<>()*$\[\]]+)', text):
+        if not (plugin_root/m.rstrip('.,;:')).exists(): out.append(f'{PLUGIN_VAR}/{m} does not exist in the plugin')
+    return out
+_sc_roots = [root/'skills'] + ([root.parent/'progressive-context/skills'] if (root.parent/'progressive-context/skills').is_dir() and root.name == 'sdlc-lite' else [])
+_sc_n = 0
+for _sr in _sc_roots:
+    for _sk in sorted(d for d in _sr.iterdir() if d.is_dir()):
+        for _md in sorted(_sk.rglob('*.md')):
+            _sc_n += 1
+            _prose = _md.name == 'SKILL.md' and _md.parent == _sk or 'references' in _md.relative_to(_sk).parts
+            errors.extend(f'{_md.relative_to(_sr.parent.parent)}: {m}' for m in skill_ref_bad(_md.read_text(), _md.parent, _sk, _sr.parent, _prose))
+_sc_dir, _sc_pl = pathlib.Path('/x/pl/skills/demo'), pathlib.Path('/x/pl')
+for _why, _bad in (('a ../ link', '[a](../sdlc-lite/SKILL.md)'), ('a ../../ link', '[a](../../agents/planner.md)'), ('a docs/ link', '[a](docs/x.md)'),
+                   ('a plugins/ link', '[a](plugins/sdlc-lite/scripts/x.py)'), ('an absolute link', '[a](/etc/hosts)'),
+                   ('an in-folder link that climbs out', '[a](references/../../other/x.md#h)'),
+                   ('a plugins/ prose path', 'Run `python3 plugins/sdlc-lite/scripts/fanout.py run`.'),
+                   ('a dangling plugin-root path', 'Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/no-such-script.py`.')):
+    if not skill_ref_bad(_bad, _sc_dir, _sc_dir, _sc_pl): errors.append(f'check.py: self-contained skills negative control not flagged for {_why}')
+for _ok in ('[a](references/x.md)', '[a](resources/y.json#k)', '[a](https://example.com/docs/x)', '[a](#top)', '[a](${CLAUDE_PLUGIN_ROOT}/agents/planner.md)',
+            '```\n[a](../x.md)\n```', 'Read `${CLAUDE_PLUGIN_ROOT}/scripts/steps.py` and `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.py`.'):
+    if skill_ref_bad(_ok, _sc_dir, _sc_dir, root): errors.append(f'check.py: self-contained skills flagged a clean reference: {_ok[:40]}')
+if not _sc_n: errors.append('skills: no skill .md files found for the self-contained check')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

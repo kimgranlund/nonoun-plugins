@@ -5,7 +5,7 @@ argument-hint: "[--repos A,B] [--since last|DATE] [--ping]"
 allowed-tools: Read, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fleet_status.py render:*), AskUserQuestion
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host's question mechanism. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. AskUserQuestion becomes the host's question mechanism. Claude Code follows the workflow below directly.
 
 Arguments: `$ARGUMENTS`
 

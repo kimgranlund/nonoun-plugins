@@ -4,7 +4,7 @@ description: "Level tables and routing rubrics for every sdlc-lite role (model a
 user-invocable: false
 ---
 
-**Codex host:** Before following this workflow, read [the Codex adapter](../sdlc-lite/SKILL.md) and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
+**Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
 The tables below describe the Claude backend. For Codex, model and effort are defined in `adapters/codex/models.json`; the level scope and escalation rules below still apply. The Codex runner records its selected model. When the builder and verifier models match, the Codex verifier switches to the model that `verifier_alternates` in `adapters/codex/models.json` maps the builder's model to; the Codex plan-reviewer takes the model that map gives for the newest planner result's recorded model. With no alternate configured, the verifier keeps the builder's model and the runner records `shared_with_builder` in the result header and `runs.jsonl`.
 
