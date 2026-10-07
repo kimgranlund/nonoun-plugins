@@ -51,4 +51,4 @@ The dry run writes nothing. It prints every move, link fix, and rewrite, the lin
 3. Makes one Git commit per batch, so `git revert` undoes a batch.
 4. Finishes each batch with a link check against the baseline taken before the first move, and restores the start when it fails.
 
-The evidence on this repository is [the apply live run](../reports/reorg-apply-live-run.md).
+The evidence on this repository is [the apply live run](../../reports/reorg-apply-live-run.md).

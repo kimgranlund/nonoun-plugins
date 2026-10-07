@@ -5,7 +5,7 @@ status: proposed
 
 Status: v0.7. Recorded: 2026-09-29, updated 2026-10-06. Apply is built in `reorg.py` by T-0233, and the inventory in `inventory.py` by T-0232. Glob classification and `onboard plan` are not built.
 
-Three review rounds each found new edge cases in these rules, so they were settled by building. The read-only inventory and the model-written plan are in [the plan procedure](reorganization-plan-procedure.md); apply, its refusals, and its final check are in `reorg.py`, whose header is the authoritative statement of its rules. The [open findings](#open-findings) record how each finding was settled, and [the apply live run](../reports/reorg-apply-live-run.md) is the evidence on this repository.
+Three review rounds each found new edge cases in these rules, so they were settled by building. The read-only inventory and the model-written plan are in [the plan procedure](reorganization-plan-procedure.md); apply, its refusals, and its final check are in `reorg.py`, whose header is the authoritative statement of its rules. The [open findings](#open-findings) record how each finding was settled, and [the apply live run](../../reports/reorg-apply-live-run.md) is the evidence on this repository.
 
 This document covers moving existing files to match a repository's layout. Entry files and the default layout are defined in the [onboarding design](../../specs/repo-onboarding/design.md). Evidence is in the [first review](../../reports/repo-onboarding-design-review.md), the [second review](../../reports/repo-onboarding-design-review-2.md), and the [third review](../../reports/repo-onboarding-design-review-3.md).
 
@@ -101,7 +101,7 @@ Each gate has a positive case and an observed negative control in `reorg.py self
 | Restore | A passing apply leaves the moves in place. | A failing final check leaves the working tree as it was before apply. | `restore`, `dirty` |
 | Commits and dry run | One commit per batch; the dry run prints the listing. | A single commit, or a dry run that writes, is flagged. | `commit`, `dryrun` |
 | Managed blocks | A rewrite inside an onboard managed block refreshes its hash. | A block edited by hand keeps its hash. | `managed` |
-| End to end | On a clone of this repository, dry run and apply complete, and the final check passes. | The same plan with no `--approve`, or after an edited document, refuses. | None: [the apply live run](../reports/reorg-apply-live-run.md). |
+| End to end | On a clone of this repository, dry run and apply complete, and the final check passes. | The same plan with no `--approve`, or after an edited document, refuses. | None: [the apply live run](../../reports/reorg-apply-live-run.md). |
 
 ## Open findings
 
@@ -130,6 +130,6 @@ This repository does not match the default layout, which makes it a realistic fi
 
 ## Unverified assumptions
 
-- `git mv` followed by link rewriting keeps file history readable in `git log --follow`. Measured once in [the apply live run](../reports/reorg-apply-live-run.md): Git followed `codex-role-execution.md` (87 lines, 4 rewritten) across the move. A small file with a large share of rewritten lines may not be followed, so this stays unverified in general.
+- `git mv` followed by link rewriting keeps file history readable in `git log --follow`. Measured once in [the apply live run](../../reports/reorg-apply-live-run.md): Git followed `codex-role-execution.md` (87 lines, 4 rewritten) across the move. A small file with a large share of rewritten lines may not be followed, so this stays unverified in general.
 - Globs classify enough files to be useful. The share of unplaced files in a real repository is unknown.
 - Restoring the working tree after a failed final check is reliable when moves and rewrites are the only changes. The refusal on uncommitted changes is meant to guarantee that.

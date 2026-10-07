@@ -144,7 +144,7 @@ Existing documents mostly have no front matter. The review counted 4 documents w
 
 ## The context registry pattern
 
-Added 2026-10-05 at the user's request: any harness or session must be able to adopt the organizing principles from the folders alone. The pattern below is one scheme used identically for `docs/` and `.sdlc/`. It is grounded in cited evidence and its placement effect is **unproven**: the placement proof (T-0248) ran on 2026-10-06 and did not pass for every session type ([record](../reports/placement-proof-live-run.md)). This design counts the pattern as proven only after a pass, and every claim below carries a label.
+Added 2026-10-05 at the user's request: any harness or session must be able to adopt the organizing principles from the folders alone. The pattern below is one scheme used identically for `docs/` and `.sdlc/`. It is grounded in cited evidence and its placement effect is **unproven**: the placement proof (T-0248) ran on 2026-10-06 and did not pass for every session type ([record](../../reports/placement-proof-live-run.md)). This design counts the pattern as proven only after a pass, and every claim below carries a label.
 
 ### Need, and what grounds it
 
@@ -164,7 +164,7 @@ Progressive Context says to "add no registry ... without an actual need" (`plugi
 | Four documentation kinds: tutorials, how-to guides, reference, explanation | established elsewhere (Diataxis, by Daniele Procida), not re-verified here | named only; mapping below |
 | A short numbered record of one decision with status, context, decision and consequences, superseded and not edited | established elsewhere (Michael Nygard's architecture decision records, and the MADR template), not re-verified here | named only |
 | The nine homes, the registry columns, the `## Decide` list, the render rule and the drift check | our convention | this design |
-| A session given only a path inside a registry folder places a new document in the right home more often than without the registry | unproven (T-0248 ran: pass for `claude -p` and the Codex native subagent, fail for the `solo` agent and Codex `codex exec`; one run per cell) | [T-0248 record](../reports/placement-proof-live-run.md) |
+| A session given only a path inside a registry folder places a new document in the right home more often than without the registry | unproven (T-0248 ran: pass for `claude -p` and the Codex native subagent, fail for the `solo` agent and Codex `codex exec`; one run per cell) | [T-0248 record](../../reports/placement-proof-live-run.md) |
 
 Two consequences of the observed rows. First, Codex run from the repository root does not load a home's own entry, so the compact registry in the parent entry (`docs/AGENTS.md`, `.sdlc/AGENTS.md`) must be enough to place a document by itself; the home's entry adds detail for sessions that work inside it. Second, a home entry is only auto-loaded on Claude Code when a `CLAUDE.md` imports it, which the existing entry-file rule already requires.
 
@@ -291,7 +291,7 @@ The test that decides whether the pattern is "proven":
 - **Pass rule, set before the run:** proven for a session type only if the with-registry accuracy is at least 10 of 12 and beats the control by at least 3 briefs; "proven across all session types" requires every run type to pass. N is small and each cell is one run, so no significance is claimed; the record says so.
 - **Negative control:** the control copy must misplace more than the registry copy. If it does not, the registry is not shown to help, and the design recommends dropping it, as Progressive Context's own rule says.
 - **Until it passes,** the status of the pattern is "grounded in the cited evidence, placement unproven", and the worked examples must not claim more.
-- **Result (2026-10-06, [record](../reports/placement-proof-live-run.md)):** registry against control placed 12 against 8 (`claude -p`, pass), 11 against 10 (`solo` agent, fail), 12 against 10 (Codex `codex exec`, fail) and 12 against 9 (Codex native subagent, pass); the interactive session was not run. The control misplaced more briefs than the registry in every type that ran, so the negative control does not fire, but the pattern is not proven across types. One run per cell, no significance. The effect showed on the `.sdlc` versus `docs/` briefs, not on the nine docs homes, which the control placed correctly whenever it wrote a file.
+- **Result (2026-10-06, [record](../../reports/placement-proof-live-run.md)):** registry against control placed 12 against 8 (`claude -p`, pass), 11 against 10 (`solo` agent, fail), 12 against 10 (Codex `codex exec`, fail) and 12 against 9 (Codex native subagent, pass); the interactive session was not run. The control misplaced more briefs than the registry in every type that ran, so the negative control does not fire, but the pattern is not proven across types. One run per cell, no significance. The effect showed on the `.sdlc` versus `docs/` briefs, not on the nine docs homes, which the control placed correctly whenever it wrote a file.
 
 ## Overriding: docs/layout.md
 

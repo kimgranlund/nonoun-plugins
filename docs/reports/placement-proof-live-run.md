@@ -1,6 +1,9 @@
+---
+date: 2026-10-06
+---
 # Placement proof for the context registry, live run
 
-Recorded: 2026-10-06 (scored runs 2026-10-07 01:20 to about 01:31 UTC). Ticket T-0248. Tests the claim in [the docs schema design](../docs-schema/design.md), "The context registry pattern": a fresh session given only a path and a brief places a new document in the right home more often when the registry is in the entry files. One run per cell. No significance is claimed.
+Recorded: 2026-10-06 (scored runs 2026-10-07 01:20 to about 01:31 UTC). Ticket T-0248. Tests the claim in [the docs schema design](../planning/docs-schema/design.md), "The context registry pattern": a fresh session given only a path and a brief places a new document in the right home more often when the registry is in the entry files. One run per cell. No significance is claimed.
 
 ## Verdict
 

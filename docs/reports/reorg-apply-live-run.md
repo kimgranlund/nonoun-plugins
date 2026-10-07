@@ -1,6 +1,9 @@
+---
+date: 2026-10-06
+---
 # Reorganization apply live run
 
-Recorded: 2026-10-06. Live run for ticket T-0233: `reorg.py apply` moved four loose documents in a clone of this repository, in two batches, from the plan this repository already wrote in [the docs schema design](../docs-schema/design.md) (the `references/` and `other/` rows). This repository was not changed by the run. Evidence is in [`reorg-apply-live-run/`](reorg-apply-live-run/); the claims below name the file that shows each one.
+Recorded: 2026-10-06. Live run for ticket T-0233: `reorg.py apply` moved four loose documents in a clone of this repository, in two batches, from the plan this repository already wrote in [the docs schema design](../planning/docs-schema/design.md) (the `references/` and `other/` rows). This repository was not changed by the run. Evidence is in [`reorg-apply-live-run/`](reorg-apply-live-run/); the claims below name the file that shows each one.
 
 ## What ran
 
@@ -28,4 +31,4 @@ Recorded: 2026-10-06. Live run for ticket T-0233: `reorg.py apply` moved four lo
 - `docs/docs-schema/design.md:368` and `:370` were rewritten to the new paths ([`dry-run.txt`](reorg-apply-live-run/dry-run.txt)). They are the from-column of a proposal table and name the old paths on purpose, but they are repo-root path tokens, and rule 3 in `reorg.py`'s header rewrites every such token. A citation that means the old path is not distinguished.
 - Glob classification and `onboard plan` are not built; the plan was written by hand from the design's table.
 - The clone's commits were made with a clone-local Git identity (`builder`), visible in [`git-log.txt`](reorg-apply-live-run/git-log.txt).
-- The design and status of apply are in [the reorganization rules](../repo-onboarding/reorganization.md).
+- The design and status of apply are in [the reorganization rules](../planning/repo-onboarding/reorganization.md).

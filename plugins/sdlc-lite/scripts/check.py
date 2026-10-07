@@ -135,7 +135,7 @@
    JSON, declares draft 2020-12, and requires the `machine`, `repos`, `needs_you`, and `delta` keys. Negative controls: each phrase removed from each file, a
    harness reference added, the routing line removed, and a missing, unparsable, wrong-draft, or key-less schema file must be flagged.
 38. Reorganization apply: scripts/reorg.py names `--dry-run`, `--approve`, `reorg.py: refused:`, and `final check failed`; scripts/check.sh runs
-   `reorg.py" selftest`; docs/repo-onboarding/reorganization-plan-procedure.md names `reorg.py` and `--approve`. Negative controls: each phrase removed
+   `reorg.py" selftest`; docs/planning/repo-onboarding/reorganization-plan-procedure.md names `reorg.py` and `--approve`. Negative controls: each phrase removed
    from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
@@ -775,7 +775,7 @@ REORG_NEEDS = (('reorg.py', ('--dry-run', '--approve', 'reorg.py: refused:', 'fi
 def reorg_bad(texts):
     return [f'{name} missing "{ph}"' for name, phrases in REORG_NEEDS for ph in phrases if ph not in texts[name]]
 _reorg_texts = {'reorg.py': _rd(root/'scripts/reorg.py'), 'check.sh': _rd(root/'scripts/check.sh'),
-                'procedure': _rd(root/'../../docs/repo-onboarding/reorganization-plan-procedure.md')}
+                'procedure': _rd(root/'../../docs/planning/repo-onboarding/reorganization-plan-procedure.md')}
 errors.extend(f'check.py: reorganization apply: {m}' for m in reorg_bad(_reorg_texts))
 for _name, _phrases in REORG_NEEDS:
     for _ph in _phrases:
