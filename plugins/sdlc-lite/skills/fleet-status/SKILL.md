@@ -17,7 +17,7 @@ Exit 2 or 1: report stderr in one sentence (a bad registry, an unknown repo, a b
 
 ## 2. Print it
 
-Print stdout verbatim as the reply, before any question. Render, never compose: do not rewrite, reorder, shorten, summarize, or fix a row, and never build a table of your own. The output order is Machine, Needs you, Moving, Stale or stuck, Done since last report, Release state, and Ping with `--ping`. Needs you, Moving, Stale or stuck, and Release state are markdown tables (Repo, Row, State, Detail, Source) the script writes; Machine is one line. Marks in the State column: 🟢 live, 🟡 idle, 🔴 dead, ⚠️ stale, ⚪ nothing moving. Closed tickets whose board rows still claim work are folded into one row per repo under Stale or stuck (`N closed tickets still shown on the board`). Every row carries its source in brackets, the last cell of a table row.
+Print stdout verbatim as the reply, before any question, inside one fenced code block (plain `text`) so the columns keep their alignment. Render, never compose: do not rewrite, reorder, shorten, summarize, or fix a row, and never build a table of your own. The output order is Machine, Needs you, Moving, Stale or stuck, Done since last report, Release state, and Ping with `--ping`. Needs you, Moving, Stale or stuck, and Release state are plain aligned tables the script writes (a header row, a dashed rule, columns Repo, Row, State, Detail, Source padded with spaces, no pipes); Machine is one line. Marks in the State column: 🟢 live, 🟡 idle, 🔴 dead, ⚠️ stale, ⚪ nothing moving. Closed tickets whose board rows still claim work are folded into one row per repo under Stale or stuck (`N closed tickets still shown on the board`). Every row carries its source in brackets, the last column of a table row.
 
 `--ping` lists the conductors with work to report on, to message for a health report. This skill sends nothing; the user or the conductor sends with `messages.py`.
 
@@ -39,6 +39,7 @@ Reply with one line per answer. Do not merge, message a conductor, edit a ticket
 
 Rules:
 - Render, never compose. The script is the only author of the table.
+- The data `render` draws is the `collect` object, and [resources/fleet-status.schema.json](resources/fleet-status.schema.json) (JSON Schema, draft 2020-12) is the authority for its keys, types and allowed values; the script's selftest checks a collected fixture against it.
 - `Moving` lists only rows with a live process, a live marker, or activity in the last 15 minutes. A row the board shows as building with none of those is under `Stale or stuck`, whatever the board says.
 - A repo the registry excludes never appears; `--repos` naming one skips it.
 - The first call after a fresh checkout says `first report` under Done since: pass `--since DATE` for a dated list.

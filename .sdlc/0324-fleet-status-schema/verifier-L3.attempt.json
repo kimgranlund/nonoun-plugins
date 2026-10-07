@@ -1,0 +1,21 @@
+{
+  "attempt_id": "e46c47c78f23455cb854732e4f4e219e",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-07T01:03:50.581652+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-schema/schema",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-schema/schema/.sdlc/0324-fleet-status-schema/handoff.md",
+  "owner_pid": 38040,
+  "handoff_sha256": "a0c6d6174c99be38fc70c30a02c5be738008f6cf492695aca3575f1235f916a5",
+  "process_pid": 38478,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T01:15:57.931760+00:00"
+}
