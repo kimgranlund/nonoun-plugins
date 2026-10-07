@@ -1,0 +1,2 @@
+jq -r 'select(.type=="assistant")|.message.model' agent-af4e67cac17c4d962.jsonl | sort | uniq -c
+  23 claude-haiku-4-5-20251001

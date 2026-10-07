@@ -442,6 +442,14 @@ run "$rs" "$(gj sdlc-lite:builder-L2 builder-L2-gate-task-2 sonnet "$gh")" >/dev
 [[ $rc -eq 0 ]] || fail "spawn gate allows a -k dispatch (builder-L2-gate-task-2): exit $rc, want 0"
 run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task haiku "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a record named <name>.dispatch.json: exit $rc, want 0"
+# T-0337: the Agent tool takes only the alias haiku while a record may hold the pinned id; compare by alias.
+printf '%s' '{"name":"scout-L1-alias-task","model":"claude-haiku-4-5"}' >"$gate/scout-L1-alias.dispatch.json"
+run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-alias-task haiku "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows model haiku against a claude-haiku-4-5 record (T-0337): exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-alias-task sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a scout spawn with model sonnet against a haiku record: exit $rc, want 2"
+run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a scout spawn with model sonnet against a haiku alias record: exit $rc, want 2"
 run "$rs" "$(gj $vt $vn opus "other/../handoff.md")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate resolves a relative Handoff path against the hook cwd: exit $rc, want 0"
 # A solo dispatch (sdlc-lite:solo-S|M|L, solo_run.py) is gated by its record and model only (T-0287 live defect).
