@@ -21,6 +21,7 @@ The L3 Fable verifier runs only for L4, L5, merge and security tickets; L1 and L
   - If routing changes: eval record locked, generated agents and Codex TOML current, check.sh passes.
 
 ## Context
+Replay done (docs/reports/2026-10-07-verifier-l2-replay.md, uncommitted in main; commit it with this ticket): L2 matched L3 on 41 of 43 criteria, missed T0280-2 (literal label match), one false fail; $6.19 vs about $36.56. The user approved shipping on 2026-10-07: verifier L3 only for L4, L5, merge and security tickets, plus any ticket with a criterion that pins an exact label or string; L1 and L2 tickets use verifier L2. Find where verifier level is chosen (steps.py lane/split, the level rubric, conductor.md and the verify skill) and make that the rule, with a selftest positive and negative control. No levels.json model or effort row changes.
 Fleet cost analysis of 2026-10-07 (all-time deduped run records, five repos): verifier L3 Fable $1,291 over 198 runs (about $6.5 each) versus verifier L2 Sonnet about $0.50 each; solo L2 Sonnet xhigh about $406 ($3.31 to $5.53 per run). The user approved these four proposals on 2026-10-07.
 
 ## Constraints
