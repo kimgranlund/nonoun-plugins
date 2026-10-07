@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:8fe1348e49cd -->
+<!-- sdlc-lite:managed:start v1 sha256:3e6b1fef0986 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 12
+- proposed: 11
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0287 Live evidence for sub-agent mode, including an account switch (0287-subagent-live-evidence)
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
@@ -21,10 +21,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
   - T-0338 dispatch.py record writes the transcript's resolved model into the run record (0338-record-resolved-model)
   - T-0339 A fanout or solo lane commit never stages run artifacts that fail repo gates (*.log, .run.lock, *.running) (0339-fanout-lane-stages-logs)
-  - T-0340 dispatch.py prepare recovers or names a stale attempt left by a failed spawn instead of blocking the next prepare (0340-prepare-stale-attempt)
 - ready: 0
 - blocked: 0
-- done: 296
+- done: 297
 - dropped: 25
 
 ## Procedures
