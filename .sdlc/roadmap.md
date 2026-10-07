@@ -282,7 +282,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0281 | [.0281-hooks-agent-role](.0281-hooks-agent-role/handoff.md) | Hooks key on agent_type; spawn gate replaces block-role-spawn | feature | M | P2 | T-0275, T-0277 | 🟢 done |
 | T-0282 | [.0282-conductor-dispatch-core](.0282-conductor-dispatch-core/handoff.md) | Conductor and chain dispatch roles as sub-agents | feature | M | P2 | T-0276, T-0278, T-0279, T-0280, T-0281 | 🟢 done |
 | T-0283 | [0283-launcher-skills-dispatch](0283-launcher-skills-dispatch/handoff.md) | Launcher skills dispatch through sub-agents | chore | M | P2 | T-0282 | ⏳ proposed |
-| T-0284 | [0284-solo-subagent](0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | S | P2 | T-0282 | ⏳ proposed |
+| T-0284 | [.0284-solo-subagent](.0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | S | P2 | T-0282 | 🟢 done |
 | T-0285 | [0285-fanout-subagent](0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | M | P2 | T-0284, T-0281 | ⏳ proposed |
 | T-0286 | [.0286-supervisor-orphans](.0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | 🟢 done |
 | T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
