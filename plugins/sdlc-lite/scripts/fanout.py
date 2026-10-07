@@ -1660,7 +1660,9 @@ def land_preflight(a):
                      f'or pass another --lanes-dir')
     kind = a.lane
     if kind == 'auto':
-        kind = 'solo' if m or (host_role == 'solo' and host_tid == tid) else 'full'
+        # fanout spawns only solo lanes as sub-agents, so a host branch worktree-agent-<id> is a solo lane unless a
+        # record on it says another role: a solo sub-agent writes no runs.jsonl line, so no record is the usual case
+        kind = 'solo' if m or (hm and (not host_role or (host_role == 'solo' and host_tid == tid))) else 'full'
     tier = solo_tier(t.size) if kind == 'solo' else None
     if kind == 'solo' and tier is None:
         kind = 'full'
@@ -3101,7 +3103,7 @@ def selftest():
 
         # case 23 (T-0285): land merges one sub-agent branch behind the locked merge, gates and close
         ld = tmp / 'land'
-        sized_repo(ld, ['S', 'M', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
+        sized_repo(ld, ['S', 'M', 'S', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
         main_ld = sh(ld, 'rev-parse', 'main').stdout.strip()
 
         def make_branch(repo_, branch, files, msg=None):
@@ -3171,6 +3173,10 @@ def selftest():
         lu = verb(ld, 'land', 'worktree-agent-zzz', *pin, '--gate', 'true')
         expect(f'case 23 land host branch: an unknown agent is refused without --ticket, got rc={lu.returncode} err={lu.stderr!r}',
                lu.returncode == 2 and 'cannot tell which ticket' in lu.stderr)
+        # a real solo sub-agent writes no runs.jsonl line in its lane (T-0287 rerun): --ticket alone makes it a solo lane
+        lz = verb(ld, 'land', 'worktree-agent-zzz', *pin, '--ticket', 'T-0007', '--gate', 'test -e fz.txt')
+        expect(f'case 23 land host branch: no record, --ticket given: solo lane, merged and closed, got rc={lz.returncode} '
+               f'out={lz.stdout[-400:]!r}', lz.returncode == 0 and '- Lane for `T-0007`: solo' in lz.stdout)
         # tier M: no verifier result, a failing one, then a passing one on the branch
         make_branch(ld, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
         lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
