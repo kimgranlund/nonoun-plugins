@@ -452,14 +452,23 @@ run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task sonnet "$gh")" >/dev/null;
 [[ $rc -eq 2 ]] || fail "spawn gate denies a scout spawn with model sonnet against a haiku alias record: exit $rc, want 2"
 run "$rs" "$(gj $vt $vn opus "other/../handoff.md")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate resolves a relative Handoff path against the hook cwd: exit $rc, want 0"
-# A solo dispatch (sdlc-lite:solo-S|M|L, solo_run.py) is gated by its record and model only (T-0287 live defect).
-printf '%s' '{"subagent_type":"sdlc-lite:solo-M","name":"solo-M-gate-task","model":"sonnet","role":"solo"}' >"$gate/solo-M-gate-task.dispatch.json"
-run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task sonnet "$gh")" >/dev/null; rc=$?
-[[ $rc -eq 0 ]] || fail "spawn gate allows a recorded solo dispatch: exit $rc, want 0"
-run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task opus "$gh")" >/dev/null; rc=$?
-[[ $rc -eq 2 ]] || fail "spawn gate denies a solo dispatch with another model: exit $rc, want 2"
-run "$rs" "$(gj sdlc-lite:solo-M solo-M-no-record sonnet "$gh")" >/dev/null; rc=$?
-[[ $rc -eq 2 ]] || fail "spawn gate denies a solo spawn with no dispatch record: exit $rc, want 2"
+# A solo dispatch (sdlc-lite:solo-L1|L2|L3, solo_run.py) is gated by its record and model only (T-0287 live defect).
+# The 0.21.x names solo-S|M|L are deprecated aliases the gate still accepts for one release (T-0342).
+for st in L1 L2 L3 S M L; do
+  printf '%s' "{\"subagent_type\":\"sdlc-lite:solo-$st\",\"name\":\"solo-$st-gate-task\",\"model\":\"sonnet\",\"role\":\"solo\"}" >"$gate/solo-$st-gate-task.dispatch.json"
+  run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-gate-task" sonnet "$gh")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate allows a recorded solo-$st dispatch: exit $rc, want 0"
+  run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-gate-task" opus "$gh")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate denies a solo-$st dispatch with another model: exit $rc, want 2"
+  run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-no-record" sonnet "$gh")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate denies a solo-$st spawn with no dispatch record: exit $rc, want 2"
+done
+# Negative controls: no other solo name passes condition 1, even with a record.
+for st in L4 L0 XL X; do
+  printf '%s' "{\"name\":\"solo-$st-gate-task\",\"model\":\"sonnet\"}" >"$gate/solo-$st-gate-task.dispatch.json"
+  run "$rs" "$(gj "sdlc-lite:solo-$st" "solo-$st-gate-task" sonnet "$gh")" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate denies sdlc-lite:solo-$st: exit $rc, want 2"
+done
 # Condition 1: subagent_type is sdlc-lite:<role>-L<n>.
 for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:messenger sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
   out=$(run "$rs" "$(gj "$sub" $vn opus "$gh")"); rc=$?
@@ -576,6 +585,9 @@ sdlc-lite:builder-L3|builder
 sdlc-lite:verifier-L1|verifier
 sdlc-lite:plan-reviewer-L2|plan-reviewer
 sdlc-lite:scout-L1|scout
+sdlc-lite:solo-L1|solo
+sdlc-lite:solo-L2|solo
+sdlc-lite:solo-L3|solo
 sdlc-lite:solo-M|solo
 sdlc-lite:solo-S|solo
 sdlc-lite:solo-L|solo
@@ -615,6 +627,7 @@ done <<'CASES'
 sdlc-lite:builder-L3|builder
 sdlc-lite:verifier-L2|verifier
 sdlc-lite:plan-reviewer-L1|plan-reviewer
+sdlc-lite:solo-L2|solo
 sdlc-lite:solo-M|solo
 CASES
 out=$(run "$rf" "$(rj sdlc-lite:builder-L2 "$fmtc")"); rc=$?
@@ -627,7 +640,7 @@ for at in "" sdlc-lite:conductor conductor general-purpose Explore harness:agent
     [[ $rc -eq 0 ]] || fail "$(basename "$hook") passes '$c' with agent_type '${at:-none}': exit $rc, want 0"
   done
 done
-for at in sdlc-lite:verifier-L2 sdlc-lite:solo-M sdlc-lite:planner-L1; do
+for at in sdlc-lite:verifier-L2 sdlc-lite:solo-L2 sdlc-lite:solo-M sdlc-lite:planner-L1; do
   run "$rf" "$(rj "$at" "$fmtc")" >/dev/null; rc=$?
   [[ $rc -eq 0 ]] || fail "block-repo-format passes '$fmtc' for non-builder sub-agent $at: exit $rc, want 0"
 done
@@ -703,7 +716,7 @@ run "$wrh" "$(wrj "" Write "$wd/notes.md")" SDLC_ROLE=planner >/dev/null; rc=$?
 # Not restricted (negative controls): the builder, solo, the conductor, other agents, no role, other tools.
 for spec in "sdlc-lite:builder-L3|Write|$wd/notes.md" "sdlc-lite:builder-L3|Edit|$wd/notes.md" \
   "sdlc-lite:builder-L3|NotebookEdit|$wd/n.ipynb" "sdlc-lite:builder-L3|Write|/tmp/x.md" \
-  "sdlc-lite:solo-M|Write|$wd/notes.md" "sdlc-lite:solo-M|Edit|$wd/notes.md" \
+  "sdlc-lite:solo-L2|Write|$wd/notes.md" "sdlc-lite:solo-L2|Edit|$wd/notes.md" "sdlc-lite:solo-M|Write|$wd/notes.md" \
   "sdlc-lite:conductor|Write|$wd/notes.md" "general-purpose|Write|$wd/notes.md" \
   "|Write|$wd/notes.md" "|Edit|$wd/notes.md" "sdlc-lite:verifier-L3|Read|$wd/notes.md" "sdlc-lite:verifier-L3|Bash|$wd/notes.md"; do
   IFS='|' read -r at tool path <<<"$spec"

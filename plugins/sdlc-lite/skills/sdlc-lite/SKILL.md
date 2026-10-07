@@ -46,7 +46,7 @@ Read referenced rubric, handoff format, templates, or scripts only as required. 
 
 ## Lane per ticket
 
-Before work on a ticket, run `python3 "<plugin-root>/scripts/steps.py" lane <ticket dir>` and follow its first line: `solo` means run the `solo` session agent at the tier for the ticket size (S, M, L; the Codex agents are `sdlc-solo-l1`, `sdlc-solo-l2`, `sdlc-solo-l3`), `lean` the lean chain in the chain workflow, and `full` the chain workflow. Run it again after the planner result and after every append to the ticket handoff's `## Plan review` section; a lean ticket that meets a mandatory condition prints `full` from then on. Each run appends its result to `<ticket dir>/skips.md`, and its `reason:` lines name the facts that decided it.
+Before work on a ticket, run `python3 "<plugin-root>/scripts/steps.py" lane <ticket dir>` and follow its first line: `solo` means run the `solo` session agent at the solo level for the ticket level (L1, L2, L3; the Codex agents are `sdlc-solo-l1`, `sdlc-solo-l2`, `sdlc-solo-l3`), `lean` the lean chain in the chain workflow, and `full` the chain workflow. Run it again after the planner result and after every append to the ticket handoff's `## Plan review` section; a lean ticket that meets a mandatory condition prints `full` from then on. Each run appends its result to `<ticket dir>/skips.md`, and its `reason:` lines name the facts that decided it.
 
 ## Native execution
 

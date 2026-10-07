@@ -160,10 +160,10 @@ Nothing meters spend. `board.py` sums cost per task for display, but no limit ex
 
 ### Design
 
-- Front matter `budget_usd: <number>` on a ticket, optional, set at filing. Tier defaults from this week's medians: size S $5, M $30, L $60, XL none (ask). The user confirmed them on 2026-10-04 (stop and ask at 80 percent) and each is editable per ticket with `budget.py set <ticket> --usd N`.
+- Front matter `budget_usd: <number>` on a ticket, optional, set at filing. Defaults by ticket level from this week's medians: L1 $5, L2 $30, L3 $60, L4 and L5 none (ask). The user confirmed them on 2026-10-04 (stop and ask at 80 percent) and each is editable per ticket with `budget.py set <ticket> --usd N`.
 - New `scripts/budget.py`:
   - `status <ticket dir>` prints `spend`, `budget`, `percent`, `state` (`ok`, `warn` at 80 percent, `over` at 100), and `unmetered_runs: N`. Exit 0 ok, 3 warn or over, 2 no budget set. These exit codes are internal to `budget.py`.
-  - `set <ticket> --tier S|M|L` or `--usd N` writes the field. `ack <ticket dir> --usd N --reason TEXT` writes `budget-ack.md` raising the ceiling once.
+  - `set <ticket> --tier L1|L2|L3` or `--usd N` writes the field. `ack <ticket dir> --usd N --reason TEXT` writes `budget-ack.md` raising the ceiling once.
   - `ticket_of(handoff dir)` walks up from a step dir, including `step-<n>.superseded-<k>/step-<n>/`, to the nearest `handoff.md` with front matter, bounded by the `.sdlc` root.
   - Spend is `cost_usd` summed from every `runs.jsonl` under the ticket folder, recursively, deduplicated by `attempt_id`. A null `cost_usd` counts 0 and is reported as unmetered. Codex runs record no cost (`codex_exec.py`), so the meter covers Claude roles only; the entry file says so.
 - `run.sh` pre-launch, before `exec run_lifecycle.py`: when the ticket has a budget and `budget.py status` is warn or over with no later `budget-ack.md`, `run.sh` exits 4 with `run.sh: budget <pct>%: ask the user; budget.py ack`. Exit 3 already means "result failed validation" to the conductor, so 4 is used. T-0199's stop rule (d) turns exit 4 into one question to the user. A ticket with no budget is unmetered, so existing repos see no change.
@@ -226,7 +226,7 @@ A target is a hypothesis. If the replay in item C shows the checklist catches fe
 None open. Resolved by the user on 2026-10-04:
 
 1. Handoff-edit hook: warn first (flag stale input, log it, allow the edit); deny is a later switch once the log supports it.
-2. Budget tiers: S $5, M $30, L $60, stop and ask at 80 percent, editable per ticket through `budget.py set --usd N`.
+2. Budget by ticket level: L1 $5, L2 $30, L3 $60, stop and ask at 80 percent, editable per ticket through `budget.py set --usd N`.
 3. Lower reviewer effort for delta re-reviews after a replan, one level below the plan-reviewer's current effort (high to medium), with an eval file and lock under the T-0185 rule.
 
 ## Validation of this addendum

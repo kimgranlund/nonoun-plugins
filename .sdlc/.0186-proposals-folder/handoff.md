@@ -3,7 +3,7 @@ id: T-0186
 title: "proposals/ folder and proposals.py mining runs and notes for candidate changes"
 type: feature
 status: done
-size: M
+size: L2
 priority: P2
 depends: [T-0185]
 created: 2026-10-01

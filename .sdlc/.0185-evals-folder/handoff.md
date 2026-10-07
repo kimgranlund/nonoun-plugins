@@ -3,7 +3,7 @@ id: T-0185
 title: "evals/ folder, evals.py, and a model-table change must cite an eval"
 type: feature
 status: done
-size: M
+size: L2
 priority: P2
 depends: []
 created: 2026-10-01

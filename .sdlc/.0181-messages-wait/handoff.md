@@ -3,7 +3,7 @@ id: T-0181
 title: "messages.py wait: one blocking call that returns when a message arrives"
 type: feature
 status: done
-size: M
+size: L2
 priority: P2
 depends: [T-0180]
 created: 2026-10-01

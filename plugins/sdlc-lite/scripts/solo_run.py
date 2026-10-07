@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Start the solo agent for one ticket and record its cost, so the default lane is metered.
 
-  solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier S|M|L (--brief TEXT | --brief-file FILE | --brief -)
+  solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier L1|L2|L3 (--brief TEXT | --brief-file FILE | --brief -)
                   [--backend claude|codex] [--exec] [--cwd DIR] [--worktree NAME] [--timeout SECONDS] [--raw-out FILE]
   solo_run.py selftest
 
 Claude (T-0284): run checks the budget gate, appends one `role solo` record (transport subagent, cost null) so the
 verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
-sub-agent (`subagent_type sdlc-lite:solo-<tier>`, model, effort, prompt = the brief). It starts no `claude -p`. The
-parent then runs one `dispatch.py prepare verifier L2 <task dir>/handoff.md` for tiers M and L. `--exec` is the legacy
+sub-agent (`subagent_type sdlc-lite:solo-<level>`, model, effort, prompt = the brief). It starts no `claude -p`. The
+parent then runs one `dispatch.py prepare verifier L2 <task dir>/handoff.md` for levels L2 and L3. `--exec` is the legacy
 headless start that the next paragraphs describe (`fanout.py run` lanes use it until T-0288; sub-agent lanes use `fanout.py prep` and `land`, T-0285); Codex always executes.
 
-With --exec (or Codex), run starts the session at the tier's model and effort (agents/solo.md), prints the agent's report on
+With --exec (or Codex), run starts the session at the level's model and effort (agents/solo.md), prints the agent's report on
 stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh writes for roles
-(ts, role solo, level L1..L3 for tier S..L, model, effort, cost_usd, usage, duration_ms, turns, attempt_id,
+(ts, role solo, level L1..L3, model, effort, cost_usd, usage, duration_ms, turns, attempt_id,
 backend, transport, routing_reason). --task-dir is the ticket or task folder, the one holding handoff.md.
 budget.py sums cost_usd over every runs.jsonl under the ticket and counts a record with no numeric cost
 as unmetered, so this record is all the budget gate and the board need.
@@ -55,9 +55,16 @@ import uuid
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent
 PLUGIN = SCRIPTS.parent
-# Solo tiers (agents/solo.md): tier -> (Claude model, Claude effort, level). The same table as fanout.SOLO_TIERS;
+# Solo levels (agents/solo.md): level -> (Claude model, Claude effort, level). The same table as fanout.SOLO_TIERS;
 # check.py guards that solo.md, fanout.py and this table agree.
-TIERS = {'S': ('sonnet', 'low', 'L1'), 'M': ('sonnet', 'xhigh', 'L2'), 'L': ('opus', 'xhigh', 'L3')}
+TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'xhigh', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
+# Deprecated 0.21.x tier names, accepted by --tier for one release and normalized to the level. ALIAS_OK
+TIER_ALIASES = {'S': 'L1', 'M': 'L2', 'L': 'L3'}  # ALIAS_OK
+
+
+def tier_of(tier):
+    """The solo level for a --tier value: L1, L2, L3, or a deprecated alias of one; else the value unchanged."""
+    return TIER_ALIASES.get(tier, tier)
 CODEX_MODELS = {'L1': ('gpt-6.1-sol', 'low'), 'L2': ('gpt-6.1-sol', 'high'), 'L3': ('gpt-6.1-sol', 'xhigh')}
 
 
@@ -66,9 +73,10 @@ class Refuse(Exception):
 
 
 def command(tier, brief, backend):
-    """(argv, model, effort) that starts solo at the tier."""
+    """(argv, model, effort) that starts solo at the level."""
+    tier = tier_of(tier)
     if tier not in TIERS:
-        raise Refuse(f'no solo tier {tier!r}: want S, M, or L')
+        raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
     model, effort, level = TIERS[tier]
     if backend == 'codex':
         exe = os.environ.get('SOLO_CODEX_EXEC') or str(SCRIPTS / 'codex_exec.py')
@@ -82,8 +90,9 @@ def command(tier, brief, backend):
 
 def dispatch_json(task_dir, tier, brief):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
+    tier = tier_of(tier)
     if tier not in TIERS:
-        raise Refuse(f'no solo tier {tier!r}: want S, M, or L')
+        raise Refuse(f'no solo level {tier!r}: want L1, L2, or L3')
     handoff = pathlib.Path(task_dir) / 'handoff.md'
     if not handoff.is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
@@ -97,7 +106,7 @@ def dispatch_json(task_dir, tier, brief):
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=f'solo-{tier}-{slug}', description=f'solo {tier}: {slug}',
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
-             attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'S' else None)
+             attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'L1' else None)
     # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
     d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
     (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
@@ -145,6 +154,7 @@ def number(x):
 
 def build_record(tier, backend, model, effort, result, attempt, started, rc, reason=None):
     """One runs.jsonl line. cost_usd is the result's total_cost_usd, else null with cost_reason: never zero."""
+    tier = tier_of(tier)
     level = TIERS[tier][2]
     cost = number((result or {}).get('total_cost_usd'))
     cost_reason = None
@@ -156,7 +166,7 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
         duration = round((time.monotonic() - started) * 1000)
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'solo', 'level': level,
            'model': model, 'effort': effort, 'file': '', 'shared_with_builder': False, 'attempt_id': attempt,
-           'routing_reason': reason or f'solo lane, tier {tier}',
+           'routing_reason': reason or f'solo lane, level {tier}',
            'backend': backend, 'transport': 'exec' if backend == 'codex' else 'claude',
            'usage': (result or {}).get('usage'), 'cost_usd': cost, 'duration_ms': duration,
            'turns': number((result or {}).get('num_turns')), 'exit_code': rc,
@@ -177,6 +187,7 @@ def limit_hint(task_dir, tier, text):
     m = LIMIT_RE.search(text or '')
     if not m:
         return
+    tier = tier_of(tier)
     resume = f'python3 {pathlib.Path(__file__).resolve()} run --task-dir {task_dir} --tier {tier} --brief <the same brief>'
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'task_dir': str(task_dir), 'tier': tier,
            'resume': resume, 'evidence': (text or '')[max(0, m.start() - 40):m.end() + 80].strip()[:200]}
@@ -248,7 +259,7 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
             rows.append(line)
             continue
         if isinstance(r, dict) and r.get('role') == 'solo' and r.get('attempt_id', '').startswith(attempt) and r.get('usage') is None:
-            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[model_tier][0], usage)
+            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[tier_of(model_tier)][0], usage)
             if est is not None:
                 r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
                 r.pop('cost_reason', None)
@@ -368,6 +379,7 @@ def ensure_worktree(name, base=None):
 
 
 def run(task_dir, tier, brief, backend='claude', cwd=None, timeout=None, raw_out=None):
+    tier = tier_of(tier)
     argv, model, effort = command(tier, brief, backend)
     if not (pathlib.Path(task_dir) / 'handoff.md').is_file():
         raise Refuse(f'{task_dir}: no handoff.md; --task-dir is the ticket or task folder')
@@ -595,15 +607,25 @@ def selftest():
             expect('subagent: the budget gate exits 4 with no dispatch and no record', rc4 == 4 and none is None and len(lines(d)) == 1)
             dsub = ticket('subagent', budget_usd=10)
             seed(dsub, 1.0)
-            rcd, dd = pj(dsub, 'M', 'the brief')
+            rcd, dd = pj(dsub, 'L2', 'the brief')
             recs = lines(dsub)
-            expect('subagent: tier M dispatch names solo-M, sonnet xhigh, the brief, and the verifier command',
-                   rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-M' and (dd['model'], dd['effort']) == ('sonnet', 'xhigh')
-                   and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-M-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
+            expect('subagent: level L2 dispatch names solo-L2, sonnet xhigh, the brief, and the verifier command',
+                   rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == 'solo-L2-subagent' and dd['tier'] == 'L2'
+                   and (dd['model'], dd['effort']) == ('sonnet', 'xhigh')
+                   and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-L2-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
             expect('subagent: one solo record with transport subagent and cost null, and no session started',
                    len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
                    and recs[1]['cost_usd'] is None and not mark.exists())
-            expect('subagent: tier S has no verifier command', pj(dsub, 'S', 'b')[1]['verifier'] is None)
+            expect('subagent: level L1 has no verifier command', pj(dsub, 'L1', 'b')[1]['verifier'] is None)
+            # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
+            for alias, level, me in (('S', 'L1', ('sonnet', 'low')), ('M', 'L2', ('sonnet', 'xhigh')), ('L', 'L3', ('opus', 'xhigh'))):
+                _, da = pj(dsub, alias, 'b')
+                expect(f'subagent: alias {alias} dispatches as solo-{level} at {me}',
+                       da['subagent_type'] == f'sdlc-lite:solo-{level}' and da['tier'] == level and da['level'] == level
+                       and (da['model'], da['effort']) == me and da['name'].startswith(f'solo-{level}-'))
+            _, d3 = pj(dsub, 'L3', 'b')
+            expect('subagent: level L3 is opus xhigh with a verifier command',
+                   d3['subagent_type'] == 'sdlc-lite:solo-L3' and (d3['model'], d3['effort']) == ('opus', 'xhigh') and d3['verifier'])
             # Ack raises the ceiling: the same ticket then starts.
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 rc_ack = budget.cmd_ack(str(d), 20, 'selftest')
@@ -648,12 +670,20 @@ def selftest():
             pr = tmp / 'cliproj'
             (pr / '.sdlc').mkdir(parents=True)
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-task',
-                                 '--tier', 'S', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
+                                 '--tier', 'L1', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
                                 env=dict(os.environ), timeout=60)
             recs = [json.loads(x) for x in (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').read_text().splitlines()] \
                 if (pr / '.sdlc' / 'cli-task' / 'runs.jsonl').is_file() else []
             expect(f'new task CLI: rc 0 and one solo record, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
-                   cp.returncode == 0 and [x.get('role') for x in recs] == ['solo'])
+                   cp.returncode == 0 and [x.get('role') for x in recs] == ['solo'] and recs[0].get('level') == 'L1')
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--new-task', 'cli-alias',
+                                 '--tier', 'S', '--brief', 'cli brief'], cwd=str(pr), capture_output=True, text=True,
+                                env=dict(os.environ), timeout=60)
+            recs = [json.loads(x) for x in (pr / '.sdlc' / 'cli-alias' / 'runs.jsonl').read_text().splitlines()] \
+                if (pr / '.sdlc' / 'cli-alias' / 'runs.jsonl').is_file() else []
+            expect(f'CLI: the deprecated --tier S is accepted as L1 with a notice, got rc={cp.returncode} err={cp.stderr[-200:]!r}',  # ALIAS_OK
+                   cp.returncode == 0 and '--tier S is deprecated; use --tier L1' in cp.stderr  # ALIAS_OK
+                   and [x.get('level') for x in recs] == ['L1'] and recs[0].get('effort') == 'low')
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--tier', 'S',
                                  '--brief', 'x'], cwd=str(pr), capture_output=True, text=True, timeout=60)
             expect('CLI: neither --task-dir nor --new-task exits 2', cp.returncode == 2)
@@ -666,8 +696,10 @@ def selftest():
                             '"total_cost_usd":None,"duration_ms":5,"num_turns":2,"usage":{"input_tokens":9}}))\n')
             os.environ['SOLO_CODEX_EXEC'] = str(stub)
             d = ticket('codex')
+            q(d, 'L3', 'b', backend='codex')
             q(d, 'L', 'b', backend='codex')
             rec = lines(d)[0]
+            expect('codex: alias L runs as level L3 too', lines(d)[1].get('level') == 'L3' and lines(d)[1].get('effort') == 'xhigh')
             expect('codex: level L3, null cost with reason', rec.get('level') == 'L3' and rec.get('cost_usd') is None
                    and rec.get('cost_reason') == 'codex reports no cost' and rec.get('turns') == 2
                    and rec.get('model') == 'gpt-6.1-sol' and rec.get('effort') == 'xhigh')
@@ -675,7 +707,7 @@ def selftest():
 
             # Refusals write nothing.
             d = ticket('refuse')
-            for name, fn in (('bad tier', lambda: q(d, 'XL', 'b')), ('bad backend', lambda: q(d, 'M', 'b', backend='x')),
+            for name, fn in (('bad tier', lambda: q(d, 'XL', 'b')), ('bad level', lambda: q(d, 'L4', 'b')), ('bad backend', lambda: q(d, 'M', 'b', backend='x')),
                              ('no handoff', lambda: q(tmp / 'nowhere', 'M', 'b'))):
                 try:
                     fn()
@@ -687,12 +719,12 @@ def selftest():
             # Two runs get two attempt ids.
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
             d = ticket('two')
-            q(d, 'M', 'b')
+            q(d, 'L2', 'b')
             q(d, 'M', 'b')
             ids = [x['attempt_id'] for x in lines(d)]
             expect('distinct attempt ids, both counted', len(set(ids)) == 2 and abs(budget.spend(d)[0] - 2) < 1e-9)
             expect('inherited SDLC_ATTEMPT_ID is not reused', 'inherited-role-attempt' not in ids)
-            expect('inherited SDLC_ROUTING_REASON is not copied', all(x.get('routing_reason') == 'solo lane, tier M' for x in lines(d)))
+            expect('inherited SDLC_ROUTING_REASON is not copied', all(x.get('routing_reason') == 'solo lane, level L2' for x in lines(d)))
 
             # find_result shapes.
             expect('find_result: none on empty', find_result('') is None and find_result('not json') is None)
@@ -731,7 +763,7 @@ def selftest():
 
             def wrapper(script, *extra):
                 pidf.unlink(missing_ok=True)
-                return subprocess.Popen([sys.executable, str(script), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S',
+                return subprocess.Popen([sys.executable, str(script), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1',
                                          '--brief', 'b', '--cwd', str(repo), *extra], stdout=subprocess.DEVNULL,
                                         stderr=open(errf, 'w'))
 
@@ -783,7 +815,7 @@ def selftest():
                 lock.write_text(f'{live.pid}\n')
                 pidf.unlink(missing_ok=True)
                 before = len(lines(dg))
-                cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+                cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1', '--brief', 'b',
                                      '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
                 msg = cp.stderr.strip().splitlines()
                 expect('second run: refused with the one-line message, nonzero',
@@ -799,7 +831,7 @@ def selftest():
             lock.write_text(f'{dead.pid}\n')
             shim("printf '%s' '{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}'\n")
             before = len(lines(dg))
-            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'S', '--brief', 'b',
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
             expect('stale lock: a dead pid proceeds and records', cp.returncode == 0 and len(lines(dg)) == before + 1)
             expect('stale lock: removed on exit', not lock.exists())
@@ -813,7 +845,7 @@ def selftest():
             dw = wrepo / 'wt'
             pwdf = tmp / 'pwd.out'
             shim(f"pwd -P > {pwdf}\nprintf '%s' '{{\"type\":\"result\",\"is_error\":false,\"result\":\"ok\",\"total_cost_usd\":1}}'\n")
-            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'S', '--brief', 'b',
+            cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dw), '--tier', 'L1', '--brief', 'b',
                                  '--cwd', str(wrepo), '--worktree', 'lane-x'], capture_output=True, text=True, timeout=60)
             want = (wrepo / '.worktrees' / 'lane-x').resolve()
             br = subprocess.run(['git', 'branch', '--list', 'lane-x'], cwd=str(wrepo), capture_output=True, text=True).stdout
@@ -854,7 +886,8 @@ def main():
     r.add_argument('--task-dir', help='the ticket or task folder holding handoff.md')
     r.add_argument('--new-task', nargs='?', const='', metavar='SLUG', help='no ticket: create '
                    '<ticket root>/<SLUG>/handoff.md from the brief and run there (default slug solo-<timestamp>)')
-    r.add_argument('--tier', required=True, choices=sorted(TIERS))
+    r.add_argument('--tier', required=True, choices=sorted(TIERS) + sorted(TIER_ALIASES),
+                   help='L1, L2, or L3 (S, M, L: deprecated aliases)')  # ALIAS_OK
     g = r.add_mutually_exclusive_group(required=True)
     g.add_argument('--brief')
     g.add_argument('--brief-file')
@@ -868,13 +901,16 @@ def main():
     c = sub.add_parser('complete', help='price a finished solo sub-agent row from its transcript usage or notice tokens')
     c.add_argument('--task-dir', required=True)
     c.add_argument('--attempt', required=True, help='attempt_id (or a prefix) from the dispatch JSON')
-    c.add_argument('--tier', required=True, choices=sorted(TIERS))
+    c.add_argument('--tier', required=True, choices=sorted(TIERS) + sorted(TIER_ALIASES))
     c.add_argument('--transcript')
     c.add_argument('--tokens', type=int)
     sub.add_parser('selftest')
     a = p.parse_args()
     if a.cmd == 'selftest':
         return selftest()
+    if a.tier in TIER_ALIASES:
+        print(f'solo_run.py: --tier {a.tier} is deprecated; use --tier {tier_of(a.tier)}', file=sys.stderr)
+        a.tier = tier_of(a.tier)
     if a.cmd == 'complete':
         cost = complete(a.task_dir, a.attempt, a.tier, a.transcript, a.tokens)
         print('solo_run.py: no row priced (no usage, or no unpriced solo row for that attempt)' if cost is None else 'priced $%.4f' % cost)

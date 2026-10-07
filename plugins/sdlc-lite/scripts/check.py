@@ -70,11 +70,11 @@
    agents/planner.md and agents/builder.md; and `cite the result path` in agents/planner.md. Each pair has a
    negative control (the phrase removed must be flagged). results.SCHEMA declares `Carry forward` last for the
    four producing roles, so item 13 also requires the `## Carry forward` heading line there.
-18. Solo agent: agents/solo.md exists and names tiers S, M, and L with `Sonnet low`, `Sonnet xhigh`, and
+18. Solo agent: agents/solo.md exists and names levels L1, L2, and L3 with `Sonnet low`, `Sonnet xhigh`, and
    `Opus xhigh`; adapters/codex/models.json has the `solo` entry L1 gpt-6.1-sol low, L2 gpt-6.1-sol high,
    L3 gpt-6.1-sol xhigh; the generated adapters/codex/agents/sdlc-solo-l1..l3.toml exist; and adapters/claude/levels.json has the
-   `solo` tiers S sonnet low, M sonnet xhigh, L opus xhigh. Negative controls: each phrase removed, no `solo` key, a changed
-   `solo` entry, one TOML missing, and a changed levels.json solo tier must be flagged.
+   `solo` levels L1 sonnet low, L2 sonnet xhigh, L3 opus xhigh. Negative controls: each phrase removed, no `solo` key, a changed
+   `solo` entry, one TOML missing, and a changed levels.json solo level must be flagged.
 19. Conductor rules: agents/conductor.md names (1) the philosophy line and the objective line `cheapest path that
    still passes independent verification`, (2) lane-first routing (`Lane first: run` then `steps.py lane`) and the
    dispatch line `Lane: <lane> because <reason>`, (3) the stop rules `hard stop that comes to the user`, and (4) the
@@ -84,8 +84,8 @@
    names `SDLC_HANDOFF_SHA256`, `stale_input`, and `stale input:`; hooks/warn-handoff-edit.sh exists and is executable;
    adapters/claude/hooks.json registers it under an `Edit|Write|NotebookEdit` matcher; docs/references/claude-hooks.md names
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
-21. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send size
-   S and M to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
+21. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send ticket
+   levels L1 and L2 to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
    .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
 22. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
    in scripts/run.sh; and `budget.py` in scripts/board.py. Each pair has a negative control (the phrase removed
@@ -94,9 +94,9 @@
    existing one. Negative controls: a duplicated number, and a comment citing a missing item, must be flagged.
 24. Fanout solo first: scripts/fanout.py names `sdlc-lite:solo`, `solo_command(`, `SOLO_VERIFIER`, `--max-lanes`,
    `--stagger`, `--yes-many`, `--allow-overlap`, and the sub-agent lane entry points `def cmd_prep(`, `def cmd_land(`, and
-   `SOLO_SUBAGENT_PROMPT`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
-   low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
-   `--max-lanes`, `--stagger`, `fanout.py prep`, `fanout.py land`, the `Tree: <path>` line of a full-chain brief, and `.claude/worktrees/`. Negative controls: a changed tier, and each phrase removed, must be flagged.
+   `SOLO_SUBAGENT_PROMPT`; its SOLO_TIERS agree with the levels in agents/solo.md (L1 `Sonnet
+   low`, L2 `Sonnet xhigh`, L3 `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
+   `--max-lanes`, `--stagger`, `fanout.py prep`, `fanout.py land`, the `Tree: <path>` line of a full-chain brief, and `.claude/worktrees/`. Negative controls: a changed level, and each phrase removed, must be flagged.
 25. Agent command: skills/agent/SKILL.md names every agents/*.md stem in backticks, its start table names only
    agents that exist and have a Codex entry in adapters/codex/models.json, and it names `block-role-spawn.sh`.
    Negative controls: a stem removed from the skill, a table row for a name with no agent file, and a table row
@@ -105,8 +105,8 @@
    `record_lane`; scripts/fanout.py calls `steps.write_solo_skips`; agents/conductor.md says a solo ticket closes with
    `tickets.py close --reason`. Negative controls: each phrase removed must be flagged.
 27. Solo cost capture: scripts/solo_run.py names `sdlc-lite:solo`, `SDLC_ROLE`, `cost_usd`, `cost_reason`, and `total_cost_usd`;
-   its TIERS agree with the tiers in agents/solo.md and with fanout.py SOLO_TIERS; agents/solo.md names `solo_run.py` as the
-   start path. Negative controls: a changed tier, a phrase removed from solo_run.py, and solo.md without `solo_run.py`, must be flagged.
+   its TIERS agree with the levels in agents/solo.md and with fanout.py SOLO_TIERS; agents/solo.md names `solo_run.py` as the
+   start path. Negative controls: a changed level, a phrase removed from solo_run.py, and solo.md without `solo_run.py`, must be flagged.
 28. Solo budget gate: scripts/solo_run.py names `budget_hold`, `budget.py ack`, `--new-task`, and returns 4 when it holds;
    scripts/fanout.py names `budget gate: budget.py ack`; agents/solo.md, skills/agent/SKILL.md, and skills/fanout/SKILL.md name
    the gate and `--new-task` where they start solo. Negative controls: each phrase removed from each file must be flagged.
@@ -144,7 +144,7 @@
    `reorg.py" selftest`; docs/planning/repo-onboarding/reorganization-plan-procedure.md names `reorg.py` and `--approve`. Negative controls: each phrase removed
    from each file must be flagged.
 39. Generated Claude definitions: `scripts/claude_roles.py generate --check` exits 0 (every levels.json row has its agents/<role>-L<n>.md or
-   agents/solo-<tier>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
+   agents/solo-L<n>.md, byte for byte), and scripts/check.sh runs `claude_roles.py generate --check` and `claude_roles.py selftest`.
    Negative controls, on a temp copy: a hand-edited generated file, a levels.json effort changed without regenerating, and each
    check.sh phrase removed must be flagged.
 40. Dispatch core: agents/conductor.md, skills/chain/SKILL.md, skills/fix/SKILL.md, skills/level-rubric/SKILL.md, and skills/handoff-format/SKILL.md
@@ -161,6 +161,12 @@
    `${CLAUDE_PLUGIN_ROOT}/<path>` a skill names exists in its plugin (a path with `<`, `*`, or `$` is a pattern and is skipped). Fixtures and rubrics quote evidence from
    other repos, so only their links are checked. Negative controls: a planted `../`, `../../`, `docs/`, `plugins/`, or absolute link, a `plugins/` prose path, and a
    dangling plugin-root path are each flagged; a link inside the folder, a URL, an anchor, and a plugin-root link are not.
+43. One level system (T-0342): no skills/**/*.md, agents/*.md, commands/**/*.md, hooks/* file, adapters/codex/instructions.md,
+   adapters/codex/agents/*.toml, or the alias owners scripts/tickets.py, scripts/solo_run.py, and scripts/claude_roles.py holds the
+   retired S/M/L tier or size vocabulary (RETIRED_VOCAB: a tier, size, or level word before S, M, L, or XL, a solo-S|M|L agent
+   name, the S|M|L, `S, M, L`, and S/M/L lists, and an `S $5, M $30` budget list); ticket levels and solo levels are L1 to L5. A line marked `ALIAS_OK` passes
+   only in a file of ALIAS_FILES (the deprecated aliases kept for one release). Negative controls: a planted `tier S` line, a
+   planted `solo-M` line, and an `ALIAS_OK` line outside ALIAS_FILES are each flagged; the same marked line in an alias file is not.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -178,7 +184,7 @@ for role, lvl, model, effort in re.findall(r'^\s*([\w-]+):(L\d)\)\s*model=([\w-]
     run[(role, lvl)] = f'{cap(model)} {effort}'
 if not run: errors.append('run.sh: no role:level cases parsed')
 
-# levels.json: {role: {level: [model, effort]}}; the L<n> rows are the pipeline roles, the S, M, L rows the solo tiers.
+# levels.json: {role: {level: [model, effort]}}; the L<n> rows of every role but solo are the pipeline roles, the solo row holds the solo levels L1 to L3.
 levels, solo_levels = {}, {}
 try:
     for role, by_level in json.loads((root/'adapters/claude/levels.json').read_text()).items():
@@ -615,8 +621,8 @@ errors.extend(messenger_missing(mt, mc, mtoml))
 if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
         or not messenger_missing(mt, mc, False)):
     errors.append('check.py: messenger guard negative control not flagged')
-# Solo agent (docstring item 18): a session agent with tiers S, M, L, a Codex mapping, and three generated TOMLs.
-SOLO_WORDS = ('| S |', '| M |', '| L |', 'Sonnet low', 'Sonnet xhigh', 'Opus xhigh')
+# Solo agent (docstring item 18): a session agent with levels L1, L2, L3, a Codex mapping, and three generated TOMLs.
+SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet low', 'Sonnet xhigh', 'Opus xhigh')
 SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
 def solo_missing(agent_text, codex_models, tomls):
     out = []
@@ -636,10 +642,10 @@ if not solo_missing(st, mc, stomls) and (
         or not solo_missing(st, dict(mc, solo=dict(SOLO_CODEX, L2=['gpt-6.1-sol', 'xhigh'])), stomls)
         or not solo_missing(st, mc, stomls - {'l3'})):
     errors.append('check.py: solo guard negative control not flagged')
-SOLO_CLAUDE = {'S': ['sonnet', 'low'], 'M': ['sonnet', 'xhigh'], 'L': ['opus', 'xhigh']}
-def solo_levels_bad(claude_solo): return [] if claude_solo == SOLO_CLAUDE else [f'solo: adapters/claude/levels.json solo tiers are not {SOLO_CLAUDE}']
+SOLO_CLAUDE = {'L1': ['sonnet', 'low'], 'L2': ['sonnet', 'xhigh'], 'L3': ['opus', 'xhigh']}
+def solo_levels_bad(claude_solo): return [] if claude_solo == SOLO_CLAUDE else [f'solo: adapters/claude/levels.json solo levels are not {SOLO_CLAUDE}']
 errors.extend(solo_levels_bad(solo_levels))
-if not solo_levels_bad(dict(solo_levels, M=['sonnet', 'low'])) or not solo_levels_bad({}):
+if not solo_levels_bad(dict(solo_levels, L2=['sonnet', 'low'])) or not solo_levels_bad({}):
     errors.append('check.py: solo levels negative control not flagged')
 # Conductor rules (docstring item 19): philosophy and objective, lane first, stop rules, thin conductor.
 CONDUCTOR_RULES = ('Done is better than perfect. Trust that modern, advanced models are very capable if given useful '
@@ -722,12 +728,12 @@ for _i, _w in ((0, FREEZE_RUN[1]), (1, FREEZE_LIFE[1]), (4, 'warn-handoff-edit.s
     _args = list(_fr); _args[_i] = _args[_i].replace(_w, '')
     if not freeze_missing(*_args): errors.append(f'check.py: handoff freeze guard negative control not flagged for "{_w}"')
 if not freeze_missing(_fr[0], _fr[1], False, _fr[3], _fr[4]): errors.append('check.py: handoff freeze guard negative control not flagged for the hook file')
-# Solo start path (docstring item 21): solo.md holds the start command; every routing text sends S and M to solo.
+# Solo start path (docstring item 21): solo.md holds the start command; every routing text sends ticket levels L1 and L2 to solo.
 SOLO_ROUTE = (('agents/solo.md', '--agent sdlc-lite:solo'),
-              (CONDUCTOR, 'Size S and M go to `solo` by default'),
-              ('skills/fix/SKILL.md', 'size S and M go to `solo`'),
-              ('AGENTS.md', 'Size S and M plugin work goes to `solo` by default'),
-              ('.claude/agents/sdlc-lite-author.md', '`solo` for size S and M by default'))
+              (CONDUCTOR, 'Ticket levels L1 and L2 go to `solo` by default'),
+              ('skills/fix/SKILL.md', 'ticket levels L1 and L2 go to `solo`'),
+              ('AGENTS.md', 'Ticket level L1 and L2 plugin work goes to `solo` by default'),
+              ('.claude/agents/sdlc-lite-author.md', '`solo` for ticket levels L1 and L2 by default'))
 def solo_route_missing(text, phrase): return phrase not in text
 for rel, phrase in SOLO_ROUTE:
     srt = _rd(root.resolve().parent.parent/rel) if rel.startswith('.claude/') else _rd(root/rel)
@@ -746,21 +752,22 @@ for _b in guard_numbers_bad(__doc__, _src): errors.append(f'check.py: {_b}')
 _dup = __doc__.replace('\n19. Conductor rules', '\n18. Conductor rules', 1)
 if not guard_numbers_bad(_dup, _src): errors.append('check.py: guard numbers negative control not flagged for a duplicated number')
 if not guard_numbers_bad(__doc__, _src + '\n# x (docstring ' + 'item 99)'): errors.append('check.py: guard numbers negative control not flagged for a missing item')
-# Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md tiers.
+# Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md levels.
+SOLO_ROW_RE = r"'(L[1-3])': \('(\w+)', '(\w+)', '(L\d)'\)"
 FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap', 'def cmd_prep(', 'def cmd_land(', 'SOLO_SUBAGENT_PROMPT')
 FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger', 'fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/')
 def fanout_solo_bad(fan, solo, skill):
     bad = [f'fanout.py missing "{ph}"' for ph in FANOUT_PHRASES if ph not in fan]
     bad += [f'skills/fanout/SKILL.md missing "{ph}"' for ph in FANOUT_SKILL_PHRASES if ph not in skill]
-    tiers = re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", fan)
-    if sorted(t[0] for t in tiers) != ['L', 'M', 'S']: bad.append('fanout.py SOLO_TIERS does not list S, M, and L')
+    tiers = re.findall(SOLO_ROW_RE, fan)
+    if sorted(t[0] for t in tiers) != ['L1', 'L2', 'L3']: bad.append('fanout.py SOLO_TIERS does not list L1, L2, and L3')
     for tier, model, effort, level in tiers:
-        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'SOLO_TIERS {tier} {model} {effort} is not the tier {tier} row of agents/solo.md')
-        if level != {'S': 'L1', 'M': 'L2', 'L': 'L3'}[tier]: bad.append(f'SOLO_TIERS {tier} has Codex level {level}')
+        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'SOLO_TIERS {tier} {model} {effort} is not the level {tier} row of agents/solo.md')
+        if level != tier: bad.append(f'SOLO_TIERS {tier} has Codex level {level}')
     return bad
 _ff, _fs, _fk = _rd(root/'scripts/fanout.py'), _rd(root/'agents/solo.md'), _rd(root/'skills/fanout/SKILL.md')
 errors.extend(fanout_solo_bad(_ff, _fs, _fk))
-for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
+for _mut in (lambda t: t.replace("'L2': ('sonnet', 'xhigh', 'L2')", "'L2': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
 for _ph in ('fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/'):
@@ -794,15 +801,15 @@ SOLO_RUN_PHRASES = ('sdlc-lite:solo', 'SDLC_ROLE', 'cost_usd', 'cost_reason', 't
 def solo_cost_bad(run_py, solo, fan):
     bad = [f'solo_run.py missing "{ph}"' for ph in SOLO_RUN_PHRASES if ph not in run_py]
     if 'solo_run.py' not in solo: bad.append('agents/solo.md does not name solo_run.py as the start path')
-    mine = re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", run_py)
-    if sorted(t[0] for t in mine) != ['L', 'M', 'S']: bad.append('solo_run.py TIERS does not list S, M, and L')
+    mine = re.findall(SOLO_ROW_RE, run_py)
+    if sorted(t[0] for t in mine) != ['L1', 'L2', 'L3']: bad.append('solo_run.py TIERS does not list L1, L2, and L3')
     for tier, model, effort, level in mine:
-        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'solo_run.py TIERS {tier} {model} {effort} is not the tier {tier} row of agents/solo.md')
-    if sorted(mine) != sorted(re.findall(r"'([SML])': \('(\w+)', '(\w+)', '(L\d)'\)", fan)): bad.append('solo_run.py TIERS differ from fanout.py SOLO_TIERS')
+        if not re.search(rf'^\| {tier} \| {tier} \| {model.capitalize()} {effort} \|', solo, re.M): bad.append(f'solo_run.py TIERS {tier} {model} {effort} is not the level {tier} row of agents/solo.md')
+    if sorted(mine) != sorted(re.findall(SOLO_ROW_RE, fan)): bad.append('solo_run.py TIERS differ from fanout.py SOLO_TIERS')
     return bad
 _sr = _rd(root/'scripts/solo_run.py')
 errors.extend(solo_cost_bad(_sr, _fs, _ff))
-for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
+for _mut in (lambda t: t.replace("'L2': ('sonnet', 'xhigh', 'L2')", "'L2': ('sonnet', 'low', 'L2')"), lambda t: t.replace('cost_reason', 'cost_why')):
     if not solo_cost_bad(_mut(_sr), _fs, _ff): errors.append('check.py: solo cost capture negative control not flagged for a changed solo_run.py')
 if not solo_cost_bad(_sr, _fs.replace('solo_run.py', 'the wrapper'), _ff): errors.append('check.py: solo cost capture negative control not flagged for solo.md')
 # Solo budget gate (docstring item 28): solo_run.py stops at 80 percent with no ack, fanout names the outcome, the docs say so.
@@ -1046,6 +1053,32 @@ for _ok in ('[a](references/x.md)', '[a](resources/y.json#k)', '[a](https://exam
             '```\n[a](../x.md)\n```', 'Read `${CLAUDE_PLUGIN_ROOT}/scripts/steps.py` and `${CLAUDE_PLUGIN_ROOT}/scripts/<name>.py`.'):
     if skill_ref_bad(_ok, _sc_dir, _sc_dir, root): errors.append(f'check.py: self-contained skills flagged a clean reference: {_ok[:40]}')
 if not _sc_n: errors.append('skills: no skill .md files found for the self-contained check')
+# One level system (docstring item 43, T-0342): ticket and solo levels are L1 to L5; the retired S/M/L vocabulary stays out of
+# the shipped texts. An `ALIAS_OK` line passes only in an ALIAS_FILES file (the deprecated aliases kept for one release).
+RETIRED_VOCAB = (r'\b(?i:tiers?|sizes?|levels?) (?:S|M|L|XL)\b', r'\bsolo-(?:S|M|L)\b', r'\bS\|M\|L\b',
+                 r'\bS, M,? (?:and |or )?L\b', r'\bS/M/L\b', r'\bS \$\d+, M \$')
+ALIAS_FILES = ('hooks/block-role-spawn.sh', 'hooks/_role.sh', 'scripts/tickets.py', 'scripts/solo_run.py', 'scripts/claude_roles.py')
+def retired_vocab_bad(rel, text):
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if 'ALIAS_OK' in line and rel in ALIAS_FILES: continue
+        for rx in RETIRED_VOCAB:
+            m = re.search(rx, line)
+            if m: out.append(f'{rel}:{n}: retired S/M/L vocabulary "{m.group(0)}"; use the level L1 to L5'); break
+    return out
+_rv_files = [p for d in ('skills', 'agents', 'commands') if (root/d).is_dir() for p in sorted((root/d).rglob('*.md'))]
+_rv_files += sorted(p for p in (root/'hooks').glob('*') if p.is_file()) + [root/'adapters/codex/instructions.md']
+_rv_files += sorted((root/'adapters/codex/agents').glob('*.toml')) + [root/a for a in ALIAS_FILES if a.startswith('scripts/')]
+for _p in _rv_files:
+    if _p.is_file(): errors.extend(retired_vocab_bad(_p.relative_to(root).as_posix(), _p.read_text(encoding='utf-8', errors='replace')))
+if len(_rv_files) < 30: errors.append(f'one level system: only {len(_rv_files)} files scanned; the scan roots moved')
+for _why, _rel, _bad in (('a planted tier S line', 'agents/solo.md', 'Start at tier S.'), ('a planted solo-M name', 'skills/agent/SKILL.md', 'spawn sdlc-lite:solo-M'),
+                         ('a planted size XL', 'adapters/codex/instructions.md', 'a size XL ticket'), ('a planted S/M/L list', 'agents/conductor.md', 'tiers are S/M/L'),
+                         ('an ALIAS_OK line outside ALIAS_FILES', 'skills/fix/SKILL.md', 'solo-S still works  # ALIAS_OK'),
+                         ('a planted budget list', 'skills/plan-fanout/SKILL.md', 'caps S $5, M $30, L $60')):
+    if not retired_vocab_bad(_rel, 'clean line\n' + _bad + '\n'): errors.append(f'check.py: one level system negative control not flagged for {_why}')
+if retired_vocab_bad('hooks/_role.sh', "re_solo='^(solo)-[SML]$'  # solo-S|M|L ALIAS_OK\n") or retired_vocab_bad('agents/solo.md', 'level L1, L2, L3; size L4; solo-L1\n'):
+    errors.append('check.py: one level system flagged an allowed line')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)

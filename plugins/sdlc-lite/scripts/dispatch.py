@@ -103,6 +103,7 @@ import claude_roles  # noqa: E402
 import cost_estimate  # noqa: E402
 import order  # noqa: E402
 import results  # noqa: E402
+import tickets  # noqa: E402
 import run_lifecycle  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
@@ -258,7 +259,8 @@ def build_base(directory):
 
 
 def lane_gate(role, directory, plugin):
-    """None to proceed, else the (lane_dir, size) of a solo-lane ticket that needs the solo agent."""
+    """None to proceed, else the (lane_dir, level) of a solo-lane ticket that needs the solo agent: its size as a
+    level (tickets.parse reads a deprecated alias size as its level), L2 when unreadable."""
     lane_dir = Path(directory).parent if Path(directory).name.startswith('step-') else Path(directory)
     handoff = lane_dir / 'handoff.md'
     if not handoff.is_file() or not re.search(r'^id: *T-[0-9]+', handoff.read_text(encoding='utf-8', errors='replace'), re.M):
@@ -271,8 +273,8 @@ def lane_gate(role, directory, plugin):
     lane = (script('steps.py', 'lane', '--check', lane_dir).stdout.splitlines() or [''])[0]
     if lane != 'solo':
         return None
-    m = re.search(r'^size: *([SMLX]*)', handoff.read_text(encoding='utf-8', errors='replace'), re.M)
-    return lane_dir, (m.group(1) if m else '') or 'M'
+    size = (tickets.parse(handoff.read_text(encoding='utf-8', errors='replace')) or {}).get('size')
+    return lane_dir, size if size in ('L1', 'L2', 'L3') else 'L2'
 
 
 def mailbox(role):
@@ -993,17 +995,25 @@ def selftest():
         put(sdlc / 'sg' / 'planner-L1.md', SGPLAN.replace('## Step 1: Gates', 'guard timeout: 900\n\n## Step 1: Gates'))
         case('a plan with a guard timeout passes the spec gate', prep(repo, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', '--dry-run')[0] == 0)
 
-        ticket(sdlc / 'ls', 'S')  # lane gate
+        ticket(sdlc / 'ls', 'L1')  # lane gate
         for role in ('planner', 'builder', 'plan-reviewer'):
             err = refused('lane gate ' + role, 5, role, 'L1', '.sdlc/ls/handoff.md', 'lane')
-        case('lane gate prints the solo command and the override', 'solo_run.py run --task-dir' in err and '--tier S' in err and 'SDLC_LANE_OVERRIDE' in err)
+        case('lane gate prints the solo command and the override', 'solo_run.py run --task-dir' in err and '--tier L1 ' in err and 'SDLC_LANE_OVERRIDE' in err)
+        for alias, level in (('S', 'L1'), ('M', 'L2')):  # a deprecated alias size gets the level in the solo command
+            ticket(sdlc / ('la' + alias), alias)
+            err = refused('lane gate alias ' + alias, 5, 'planner', 'L1', '.sdlc/la%s/handoff.md' % alias, 'lane')
+            case('lane gate on alias size %s prints --tier %s' % (alias, level), '--tier %s ' % level in err)
+        ticket(sdlc / 'l2', 'L2')
+        case('lane gate on size L2 prints --tier L2', '--tier L2 ' in refused('lane gate L2', 5, 'planner', 'L1', '.sdlc/l2/handoff.md', 'lane'))
         put(sdlc / 'ls' / 'step-1' / 'handoff.md', '## Step 1\n')
         refused('lane gate on a step', 5, 'builder', 'L1', '.sdlc/ls/step-1/handoff.md', 'lane')
         for role in ('verifier', 'filer', 'scout'):
             case('lane gate leaves %s alone' % role, prep(repo, role, 'L1', '.sdlc/ls/handoff.md', '--dry-run')[0] == 0)
-        ticket(sdlc / 'll', 'L')
-        case('lane gate leaves a size L ticket alone', prep(repo, 'planner', 'L1', '.sdlc/ll/handoff.md', '--dry-run')[0] == 0)
-        ticket(sdlc / 'lk', 'S')
+        ticket(sdlc / 'll', 'L3')
+        case('lane gate leaves a size L3 ticket alone', prep(repo, 'planner', 'L1', '.sdlc/ll/handoff.md', '--dry-run')[0] == 0)
+        ticket(sdlc / 'lalias3', 'L')
+        case('lane gate leaves an alias size L ticket alone', prep(repo, 'planner', 'L1', '.sdlc/lalias3/handoff.md', '--dry-run')[0] == 0)
+        ticket(sdlc / 'lk', 'L1')
         put(sdlc / 'lk' / 'skips.md', '- lane: full\n')
         case('lane gate leaves a recorded non-solo lane alone', prep(repo, 'planner', 'L1', '.sdlc/lk/handoff.md', '--dry-run')[0] == 0)
         rc, got, err = prep(repo, 'planner', 'L1', '.sdlc/ls/handoff.md', SDLC_LANE_OVERRIDE='chain needs a merge step')
@@ -1017,7 +1027,7 @@ def selftest():
         for f in list((sdlc / 'ls').glob('planner-L1*')):
             f.unlink()
 
-        ticket(sdlc / 'bg', 'M', budget_usd=10)  # budget gate (verifier: not lane gated)
+        ticket(sdlc / 'bg', 'L2', budget_usd=10)  # budget gate (verifier: not lane gated)
         put(sdlc / 'bg' / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 9, 'attempt_id': 'a1'}) + '\n')
         err = refused('budget gate', 4, 'verifier', 'L1', '.sdlc/bg/handoff.md', 'budget')
         case('budget gate names the percent and budget.py ack', '90%' in err and 'budget.py ack' in err)
@@ -1026,7 +1036,7 @@ def selftest():
         (sdlc / 'bg' / 'budget-ack.md').unlink()
         put(sdlc / 'bg' / 'runs.jsonl', json.dumps({'role': 'builder', 'cost_usd': 1, 'attempt_id': 'a1'}) + '\n')
         case('under 80 percent passes', prep(repo, 'verifier', 'L1', '.sdlc/bg/handoff.md', '--dry-run')[0] == 0)
-        ticket(sdlc / 'bn', 'M')
+        ticket(sdlc / 'bn', 'L2')
         case('a ticket with no budget passes', prep(repo, 'verifier', 'L1', '.sdlc/bn/handoff.md', '--dry-run')[0] == 0)
 
         # preflight: handoff, row, git work tree, commit, generated definition, skills.
@@ -1034,7 +1044,7 @@ def selftest():
              == runsh(repo, 'builder', 'L1', '.sdlc/none/handoff.md')[0])
         case('preflight: an unknown row exits 2 like run.sh', prep(repo, 'builder', 'L9', '.sdlc/t/handoff.md')[0] == 2
              == runsh(repo, 'builder', 'L9', '.sdlc/t/handoff.md')[0])
-        case('preflight: solo is not a pipeline row', prep(repo, 'solo', 'M', '.sdlc/t/handoff.md')[0] == 2)
+        case('preflight: solo is not a pipeline row', prep(repo, 'solo', 'L2', '.sdlc/t/handoff.md')[0] == 2)
         nogit = tmp / 'nogit'
         put(nogit / 'h.md')
         case('preflight: a directory outside a git work tree exits 2 like run.sh',

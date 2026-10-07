@@ -3,7 +3,7 @@ id: T-0244
 title: "Migrate this repository's docs/ to the schema through the reorganization tooling"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2
 depends: [T-0242, T-0243, T-0246]   # T-NNNN, file:<path>, cap:<name>
 created: 2026-10-05

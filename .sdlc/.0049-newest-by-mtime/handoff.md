@@ -3,7 +3,7 @@ id: T-0049
 title: "Newest result is picked by mtime, which checkout resets"
 type: bug             # feature | bug | chore | spike | idea
 status: done
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

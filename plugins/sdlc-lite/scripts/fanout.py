@@ -25,11 +25,11 @@ prep
   lanes dir inside the tree that is not gitignored) plus one more: `.claude/worktrees/` must be gitignored, because the
   host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers, as for `.worktrees/`).
   Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
-  for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<S|M|L>, `name` <id>-solo, `model`, `effort`,
+  for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<L1|L2|L3>, `name` <id>-solo, `model`, `effort`,
   `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
   (worktree-<id>-solo, known before the spawn) and its `worktree` (.claude/worktrees/<id>-solo), and a `prompt` brief
   that asks the solo to commit `<id>: <title>` on its branch (SOLO_SUBAGENT_PROMPT; the headless SOLO_PROMPT says
-  never commit). For tier M and L it also prints the verifier command, prepared against the sub-agent worktree after the
+  never commit). For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
   solo reports (`dispatch.py prepare verifier L3`, SOLO_VERIFIER, never the solo's family); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
   gates. A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
@@ -50,18 +50,18 @@ land
   `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
   record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
   nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
-  and, for a solo tier M or L, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
+  and, for a solo level L2 or L3, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
   the branch that the integration branch does not hold (git objects, newest by order.py). Exit 0 only for `merged`.
   Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
-  (the latest outcome each), with the `- Lane for <id>` line and the tier model line, as for `run`.
+  (the latest outcome each), with the `- Lane for <id>` line and the level model line, as for `run`.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
-  the lane and appends its record to the task's skips.md (committed with the lane): `solo` (size S and M by
-  default) starts the solo agent (agents/solo.md) from a typed brief at the tier's model and effort (Claude:
-  `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at S Sonnet low, M Sonnet xhigh; Codex: `codex_exec.py solo
+  the lane and appends its record to the task's skips.md (committed with the lane): `solo` (ticket level L1 and
+  L2 by default) starts the solo agent (agents/solo.md) from a typed brief at the level's model and effort (Claude:
+  `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at L1 Sonnet low, L2 Sonnet xhigh; Codex: `codex_exec.py solo
   L1|L2|L3`, honoring SDLC_BACKEND), both started through `solo_run.py` so each lane's solo session cost lands in
   the ticket's runs.jsonl and the budget and board meter it (T-0226); anything else (`full`, or `lean` after a plan) keeps the headless conductor
-  running /sdlc-lite:chain. A solo ticket of size M or L then needs one independent batched verifier: a new
+  running /sdlc-lite:chain. A solo ticket of level L2 or L3 then needs one independent batched verifier: a new
   task-dir verifier result with Verdict pass, from the solo itself or else one fanout runs once
   (`run.sh verifier L3 <task dir>/handoff.md`, never the solo's own family); a missing or non-pass verdict is
   the outcome `verifier fail` or `no verifier result`, with no merge. --lane solo or full forces the choice for
@@ -291,9 +291,9 @@ selftest
   prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and cats the slot file it holds. The gate log of a
   default run shows both set and `alpha/T-0001` as the holder; SDLC_GATE_SLOTS=3 gives max(1, cpus // 3)
   workers; the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
-  A prep case (case 22, T-0285): three tickets (S, M, S) in two lanes print one lane line each, the T-0001 dispatch JSON
-  (name T-0001-solo, sdlc-lite:solo-S, sonnet, isolation worktree, branch worktree-T-0001-solo, the brief carrying
-  `T-0001: Ticket t1` and no "Never commit"), a tier M verifier command against the worktree and none for tier S, a land
+  A prep case (case 22, T-0285): three tickets (sizes L1, L2, and the alias of L1) in two lanes print one lane line each, the T-0001 dispatch JSON
+  (name T-0001-solo, sdlc-lite:solo-L1, sonnet, isolation worktree, branch worktree-T-0001-solo, the brief carrying
+  `T-0001: Ticket t1` and no "Never commit"), a level L2 verifier command against the worktree and none for level L1, a land
   command per ticket with the base sha and the gate, and create no branch, worktree, lanes dir or file; SDLC_HEADLESS=1
   gives run_in_background false; `--lane full` prints the tree and sync commands, a `Tree:` line and no JSON; a ticket at
   80 percent of its budget prints `budget gate: budget.py ack`, no dispatch, and exits 4 while the other ticket still
@@ -302,9 +302,9 @@ selftest
   lets prep print the plan; `.claude/worktrees/` not gitignored exits 2 naming it. A land case (case 23, T-0285):
   branches worktree-T-0001-solo and worktree-T-0003-solo, each with one commit, land through a green gate to `merged`
   on a reused integration worktree (two merge commits, `close <id>` commits, status done, a solo lane in skips.md,
-  main untouched and clean, the report listing both tickets with `Lane for` and the tier line); a red gate resets the
+  main untouched and clean, the report listing both tickets with `Lane for` and the level line); a red gate resets the
   merge (`red: false rc=1`, tip unchanged, ticket still ready); `Ran 0 tests` is `gate vacuous` and --allow-empty-gate
-  merges it; a branch with no commits is `no changes`; a size M ticket with no verifier result, then a failing one, is
+  merges it; a branch with no commits is `no changes`; a size L2 ticket with no verifier result, then a failing one, is
   refused and with a passing one merges; a missing branch, a branch naming no ticket and the integration branch refuse
   with exit 2. Case 24 (T-0285): a `--driver true` stub that commits nothing gives `no changes`.
 """
@@ -329,9 +329,10 @@ PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: neve
           'Never commit, push, or publish: fanout.py commits this lane when you finish.')
 
 
-# Solo tiers (agents/solo.md): ticket size -> (Claude model, Claude effort, Codex level). The Codex agents are
+# Solo levels (agents/solo.md): ticket level -> (Claude model, Claude effort, Codex level). The Codex agents are
 # sdlc-solo-l1..l3 from adapters/codex/models.json. check.py guards that solo.md and these agree.
-SOLO_TIERS = {'S': ('sonnet', 'low', 'L1'), 'M': ('sonnet', 'xhigh', 'L2'), 'L': ('opus', 'xhigh', 'L3')}
+SOLO_TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'xhigh', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
+SOLO_VERIFIED = ('L2', 'L3')  # the solo levels that need one independent batched verifier before the merge
 SOLO_VERIFIER = 'L3'  # a different family from every solo builder (Sonnet, Opus): the run.sh verifier L3
 MAX_LANES_DEFAULT, MAX_LANES_HARD, STAGGER_DEFAULT = 4, 16, 20
 # A test gate that ran nothing: unittest "Ran 0 tests", pytest "no tests ran" or exit code 5 (nothing collected).
@@ -339,7 +340,7 @@ VACUOUS_GATE = re.compile(r'\bRan 0 tests\b|\bno tests ran\b|\bcollected 0 items
 SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket and the '
                'files it names, make the smallest change that meets its done criterion, run every check command it '
                'names and rerun them all after a fix, and report files changed, each check with its outcome, and '
-               'anything still open. For a size M or L ticket write the handoff\'s ## Acceptance criteria if it has '
+               'anything still open. For a ticket of level L2 or L3 write the handoff\'s ## Acceptance criteria if it has '
                'none, then run the one batched independent verifier agents/solo.md names. No person is present: '
                'never ask the user and never use AskUserQuestion. Never commit, push, open a PR, or publish: '
                'fanout.py commits this lane when you finish and closes the ticket after the merge.')
@@ -352,7 +353,7 @@ HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own n
 SOLO_SUBAGENT_PROMPT = ('Handoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and rerun them all after a fix, and report files changed, each check '
-                        'with its outcome, and anything still open. For a size M or L ticket write the handoff\'s '
+                        'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
                         '## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the '
                         'parent runs the one batched independent verifier. No person is present: never ask the user '
                         'and never use AskUserQuestion. You work on your own worktree branch: commit early and often, '
@@ -387,15 +388,17 @@ def cell(text):
 
 
 def solo_tier(size):
-    """The tier for a ticket size: S, M, or L (an XL or unknown size has no solo tier: None)."""
-    return size if size in SOLO_TIERS else None
+    """The solo level for a ticket size: L1, L2, or L3, a deprecated alias read as its level (tickets.size_level);
+    L4, L5, or an unknown size has no solo level: None."""
+    level = tickets.size_level(size)
+    return level if level in SOLO_TIERS else None
 
 
 def solo_model_label(tier, backend=None):
-    """`<model> <effort>` the solo agent runs at for a tier on the backend: the Claude tier from SOLO_TIERS, or the
+    """`<model> <effort>` the solo agent runs at for a level on the backend: the Claude row from SOLO_TIERS, or the
     Codex model and effort of sdlc-solo-l1..l3 read from adapters/codex/models.json (never a hardcoded guess)."""
     backend = backend or os.environ.get('SDLC_BACKEND', 'claude')
-    model, effort, level = SOLO_TIERS[tier]
+    model, effort, level = SOLO_TIERS[solo_tier(tier)]
     if backend == 'codex':
         try:
             model, effort = json.loads((PLUGIN / 'adapters' / 'codex' / 'models.json').read_text())['solo'][level]
@@ -426,16 +429,16 @@ def gate_vacuous(rc, text, gate=''):
 
 
 def solo_command(handoff_rel, size, backend=None):
-    """The shell command that starts the solo agent for one ticket at its size's tier, or raises Refuse.
+    """The shell command that starts the solo agent for one ticket at its size's level, or raises Refuse.
 
     It starts through scripts/solo_run.py (T-0226), which runs `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo`
-    at the tier's model and effort (or codex_exec.py solo L1..L3) and appends one `role solo` record with the
+    at the level's model and effort (or codex_exec.py solo L1..L3) and appends one `role solo` record with the
     session's cost to the ticket's runs.jsonl, so budget.py and the board meter the lane. SDLC_SELFTEST_RAW_SOLO
     restores the raw unmetered command, which the selftest uses as its negative control."""
     backend = backend or os.environ.get('SDLC_BACKEND', 'claude')
     tier = solo_tier(size)
     if tier is None:
-        raise Refuse(f'no solo tier for size {size!r}: want S, M, or L')
+        raise Refuse(f'no solo level for size {size!r}: want L1, L2, or L3')
     model, effort, level = SOLO_TIERS[tier]
     prompt = SOLO_PROMPT.format(handoff=handoff_rel)
     if backend not in ('claude', 'codex'):
@@ -735,13 +738,13 @@ def close_reason(ctx, t):
     kind, tier = ctx['kinds'].get(t.id, ('', None))
     if kind != 'solo':
         return None
-    return (f'delivered by the solo agent (tier {tier}); one independent batched verifier passed before the merge'
-            if tier in ('M', 'L') else f'delivered by the solo agent (tier {tier}); the ticket\'s own checks and the fanout gates passed')
+    return (f'delivered by the solo agent (level {tier}); one independent batched verifier passed before the merge'
+            if tier in SOLO_VERIFIED else f'delivered by the solo agent (level {tier}); the ticket\'s own checks and the fanout gates passed')
 
 
 def write_solo_skips(taskdir, tier):
     """The solo lane's skipped planner and filer under ## Skipped, written by steps.write_solo_skips (the one
-    writer, shared with `steps.py lane` itself); called again here for the tier-sized reason and for an
+    writer, shared with `steps.py lane` itself); called again here for the level-sized reason and for an
     already-recorded lane. True when it wrote."""
     return steps.write_solo_skips(taskdir, tier)
 
@@ -861,7 +864,7 @@ def print_plan(ctx):
             if not lane.external:
                 kind, why = lane_decision(ctx, tickets.ticket_dir(ctx['root']) / t.slug)
                 tier = solo_tier(t.size) if kind == 'solo' else None
-                shown = f'solo, tier {tier}: {solo_model_label(tier)}' if tier else kind
+                shown = f'solo, level {tier}: {solo_model_label(tier)}' if tier else kind
                 out.append(f'    lane: {shown} ({why})')
     out += plan_overlap(ctx)
     if ctx['gates']:
@@ -874,7 +877,7 @@ def print_plan(ctx):
         out.append(f"driver: {ctx['driver']}")
     else:
         out.append(f"driver: solo first (--lane {ctx['lane_mode']}): steps.py lane picks solo or the full chain per ticket")
-        out.append(f"  solo (size S and M): {solo_command('<handoff>', 'M')}")
+        out.append(f"  solo (ticket level L1 and L2): {solo_command('<handoff>', 'L2')}")
         out.append(f"  full: {default_driver('<handoff>')}")
         out.append("  (<handoff> is each ticket's handoff path relative to the lane worktree)")
     if ctx['rewrite_refs']:
@@ -1105,13 +1108,13 @@ def run_ticket(ctx, lane, t, lock):
     log = ctx['logs'] / f'{lane.name}-{t.id}.log'
     kind, why = lane_run(ctx, wt, t)
     tier = solo_tier(t.size) if kind == 'solo' else None
-    if kind == 'solo' and tier is None:  # an XL or unsized ticket has no solo tier: the chain takes it
-        kind, why = 'full', f'size {t.size or "unset"} has no solo tier'
+    if kind == 'solo' and tier is None:  # an L4, L5, or unsized ticket has no solo level: the chain takes it
+        kind, why = 'full', f'size {t.size or "unset"} has no solo level'
     ctx['kinds'][t.id] = (kind, tier)
     env['FANOUT_LANE_KIND'] = kind
     if kind in ('full', 'driver') and (ctx['driver'] or ctx['lane_mode'] == 'full') and not env.get('SDLC_LANE_OVERRIDE'):
         env['SDLC_LANE_OVERRIDE'] = 'fanout forced the full chain (--lane full or --driver)'  # run.sh lane gate
-    say(ctx, lane, t.id, f'lane {kind}' + (f' tier {tier}' if tier else '') + f' ({why})')
+    say(ctx, lane, t.id, f'lane {kind}' + (f' level {tier}' if tier else '') + f' ({why})')
     taskdir = wt / ctx['trel'] / t.slug
     if kind == 'solo' and tier:
         write_solo_skips(taskdir, tier)
@@ -1129,7 +1132,7 @@ def run_ticket(ctx, lane, t, lock):
         return (f'{inherited} (driver rc={rc})' if inherited else f'driver failed rc={rc}'), ''
     if inherited:  # main was already red: no lane commit, merge, or close; run_lane WIP-commits the tree
         return inherited, ''
-    if kind == 'solo' and tier in ('M', 'L'):  # one independent batched verifier decides before any merge
+    if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict = solo_verdict(taskdir, before)
         if verdict is None:  # the solo did not run it (Codex solo, say): fanout runs it once
             say(ctx, lane, t.id, f'verifier {SOLO_VERIFIER} started (the solo left no new verifier result)')
@@ -1353,7 +1356,7 @@ def report(ctx):
         for tid, _outcome, _commit in lane.results:
             if tid in ctx['kinds']:
                 kind, tier = ctx['kinds'][tid]
-                out.append(f'- Lane for `{tid}`: {kind}' + (f' (tier {tier}: {solo_model_label(tier)})' if tier else ''))
+                out.append(f'- Lane for `{tid}`: {kind}' + (f' (level {tier}: {solo_model_label(tier)})' if tier else ''))
     out += ['', '| Lane | Ticket | Outcome | Commit |', '|---|---|---|---|']
     for lane in ctx['lanes']:
         for tid, outcome, commit in lane.results:
@@ -1415,11 +1418,12 @@ def subagent_name(tid):
 
 def subagent_dispatch(ctx, t, tier):
     """The Agent call for one solo ticket: a background sub-agent in its own worktree, told to commit `<id>: <title>`."""
+    tier = solo_tier(tier)
     model, effort, _ = SOLO_TIERS[tier]
     name = subagent_name(t.id)
     handoff = (ctx['trel'] / t.slug / 'handoff.md').as_posix()
     verifier = None
-    if tier in ('M', 'L'):  # prepared against the sub-agent worktree once the solo reports (SOLO_VERIFIER: never its family)
+    if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports (SOLO_VERIFIER: never its family)
         verifier = ' '.join(shlex.quote(x) for x in (
             sys.executable, str(SCRIPTS / 'dispatch.py'), 'prepare', 'verifier', SOLO_VERIFIER,
             f'{HOST_WORKTREES}/{name}/{handoff}'))
@@ -1434,7 +1438,7 @@ def subagent_dispatch(ctx, t, tier):
 def write_solo_row(taskdir, tier):
     """Append the unpriced `role solo` row of a sub-agent lane to the ticket's runs.jsonl; returns its attempt_id (T-0331)."""
     import solo_run
-    model, effort, _ = solo_run.TIERS[tier]
+    model, effort, _ = solo_run.TIERS[solo_run.tier_of(tier)]
     attempt = uuid.uuid4().hex
     rec = solo_run.build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
     rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
@@ -1496,8 +1500,8 @@ def print_prep(ctx):
             kind, why = lane_decision(ctx, taskdir)
             tier = solo_tier(t.size) if kind == 'solo' else None
             if kind == 'solo' and tier is None:
-                kind, why = 'full', f'size {t.size or "unset"} has no solo tier'
-            shown = f'solo, tier {tier}: {solo_model_label(tier)}' if tier else kind
+                kind, why = 'full', f'size {t.size or "unset"} has no solo level'
+            shown = f'solo, level {tier}: {solo_model_label(tier)}' if tier else kind
             out.append(f'    lane: {shown} ({why})')
             if tier:
                 import solo_run  # same scripts/ dir: the budget gate a solo lane starts through
@@ -1584,7 +1588,7 @@ def record_solo_lane(taskdir, tier):
     skips = pathlib.Path(taskdir) / 'skips.md'
     if skips.is_file() and re.search(r'(?m)^- lane: ', skips.read_text(encoding='utf-8')):
         return
-    steps.record_lane(taskdir, 'solo', 'fanout land', [f'sub-agent lane: tier {tier} ran as one solo sub-agent'])
+    steps.record_lane(taskdir, 'solo', 'fanout land', [f'sub-agent lane: level {tier} ran as one solo sub-agent'])
     steps.write_solo_skips(taskdir, tier)
 
 
@@ -1740,7 +1744,7 @@ def land_setup(ctx):
 
 def land_ticket(ctx, lock):
     """One finished branch through the external-lane merge: `no changes` when it adds nothing, the verifier verdict
-    for a solo tier M or L, then the locked merge, gates, and close. Returns (outcome, commit)."""
+    for a solo level L2 or L3, then the locked merge, gates, and close. Returns (outcome, commit)."""
     lane, t = ctx['lane'], ctx['ticket']
     ref = f'refs/heads/{lane.branch}'
     tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
@@ -1748,7 +1752,7 @@ def land_ticket(ctx, lock):
     if p.returncode == 0 and p.stdout.strip() == '0':
         return 'no changes', tip[:7]
     kind, tier = ctx['kinds'][t.id]
-    if kind == 'solo' and tier in ('M', 'L'):  # one independent batched verifier decides before any merge
+    if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict = branch_verdict(ctx, ref, t)
         if verdict is None:
             return 'no verifier result (commit the verifier result on the branch, then land again)', tip[:7]
@@ -1783,7 +1787,7 @@ def cmd_land(a):
     ctx['cond'] = threading.Condition()
     lane, t = ctx['lane'], ctx['ticket']
     kind, tier = ctx['kinds'][t.id]
-    say(ctx, lane, t.id, f'land {lane.branch} (lane {kind}' + (f' tier {tier}' if tier else '') + ')')
+    say(ctx, lane, t.id, f'land {lane.branch} (lane {kind}' + (f' level {tier}' if tier else '') + ')')
     if kind == 'solo' and tier and (a.transcript or a.tokens is not None):
         cost = price_solo_row(ctx['root'] / t.slug, tier, a.transcript, a.tokens)
         say(ctx, lane, t.id, 'solo row priced $%.4f (estimate)' % cost if cost is not None else 'solo row not priced (no unpriced row or no usage)')
@@ -1804,7 +1808,7 @@ def cmd_land(a):
         ln = lane if tid == t.id else Lane(rec['lane'], [tid], rec['branch'])
         ln.branch, ln.results, ln.files = rec['branch'], [(tid, rec['outcome'], rec['commit'])], set(rec.get('files') or [])
         lanes.append(ln)
-        kinds[tid] = (rec['kind'], rec['tier'])
+        kinds[tid] = (rec['kind'], solo_tier(rec['tier']) if rec.get('tier') else None)  # a 0.21.x journal holds S, M, L
     ctx['lanes'], ctx['kinds'] = lanes, kinds
     text = report(ctx)
     print()
@@ -1885,14 +1889,14 @@ def selftest():
     with tempfile.TemporaryDirectory() as t331:
         td = pathlib.Path(t331)
         (td / 'handoff.md').write_text('---\nid: T-0001\n---\n', encoding='utf-8')
-        aid = write_solo_row(td, 'S')
+        aid = write_solo_row(td, 'L1')
         row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
         expect('T-0331 prep writes an unpriced solo row', row.get('role') == 'solo' and row.get('usage') is None and row.get('attempt_id') == aid)
-        expect('T-0331 negative control: no transcript or tokens prices nothing', price_solo_row(td, 'S', None, None) is None)
+        expect('T-0331 negative control: no transcript or tokens prices nothing', price_solo_row(td, 'L1', None, None) is None)
         tr = td / 'tr.jsonl'
         tr.write_text(json.dumps({'message': {'id': 'm', 'usage': {'input_tokens': 6, 'output_tokens': 847,
                       'cache_read_input_tokens': 58134, 'cache_creation_input_tokens': 32972}}}) + '\n', encoding='utf-8')
-        cost = price_solo_row(td, 'S', str(tr), None)
+        cost = price_solo_row(td, 'S', str(tr), None)  # ALIAS_OK: a 0.21.x tier name still prices the row
         row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
         expect('T-0331 land prices the solo row from the transcript', cost and row.get('cost_usd') == cost and row.get('cost_estimated') is True)
 
@@ -2694,7 +2698,7 @@ def selftest():
         sr = tmp / 'solofirst'
         sr.mkdir()
         (sr / '.sdlc').mkdir()
-        sizes = [('s1', 'T-0001', 'S'), ('m1', 'T-0002', 'M'), ('l1', 'T-0003', 'L'), ('s2', 'T-0004', 'S'),
+        sizes = [('s1', 'T-0001', 'L1'), ('m1', 'T-0002', 'M'), ('l1', 'T-0003', 'L3'), ('s2', 'T-0004', 'S'),
                  ('s3', 'T-0005', 'S'), ('s4', 'T-0006', 'S')]
         for slug, tid, size in sizes:
             (sr / '.sdlc' / slug).mkdir()
@@ -2709,51 +2713,52 @@ def selftest():
         sl = tmp / 'sololanes'
         proc = fanout(sr, '--dry-run', '--lanes-dir', str(sl), 'a=T-0001', 'b=T-0002', 'c=T-0003')
         out = proc.stdout
-        expect(f'case 15 lane: size S prints solo tier S (sonnet low), M tier M (sonnet xhigh), and L the full chain '
+        expect(f'case 15 lane: size L1 prints solo level L1 (sonnet low), the alias M level L2 (sonnet xhigh), and L3 the full chain '
                f'(steps.py lane decides), got {proc.returncode} stdout={out!r} stderr={proc.stderr!r}',
-               proc.returncode == 0 and 'lane: solo, tier S: sonnet low' in out
-               and 'lane: solo, tier M: sonnet xhigh' in out
+               proc.returncode == 0 and 'lane: solo, level L1: sonnet low' in out
+               and 'lane: solo, level L2: sonnet xhigh' in out
                and re.search(r'T-0003 l1: .*\n    lane: full \(', out) and 'driver: solo first (--lane auto)' in out)
-        expect('case 15 lane negative control: no solo line for the size L ticket',
+        expect('case 15 lane negative control: no solo line for the size L3 ticket',
                not re.search(r'T-0003 l1: .*\n    lane: solo', out))
         proc = fanout(sr, '--dry-run', '--lane', 'full', '--lanes-dir', str(sl), 'a=T-0001')
-        expect(f'case 15 --lane full forces the chain for a size S ticket, got {proc.stdout!r}',
+        expect(f'case 15 --lane full forces the chain for a size L1 ticket, got {proc.stdout!r}',
                proc.returncode == 0 and 'lane: full (--lane full)' in proc.stdout)
-        for label, size in (('S', 'S'), ('M', 'M'), ('L', 'L')):
+        for label, size in (('L1', 'L1'), ('L2', 'L2'), ('L3', 'L3'), ('L1', 'S'), ('L2', 'M'), ('L3', 'L')):
             cmd = solo_command('h.md', size, 'claude')
-            expect(f'case 15 command: tier {label} starts through solo_run.py with --tier {label}, got {cmd}',
+            expect(f'case 15 command: size {size} starts through solo_run.py with --tier {label}, got {cmd}',
                    'solo_run.py' in cmd and ' run ' in cmd and f'--tier {label}' in cmd and '--backend claude' in cmd
                    and '--task-dir .' in cmd and 'sdlc-lite:conductor' not in cmd)
         saved_raw = os.environ.get('SDLC_SELFTEST_RAW_SOLO')
         os.environ['SDLC_SELFTEST_RAW_SOLO'] = '1'
         try:
-            for label, size, want in (('S', 'S', ('--model sonnet', '--effort low')),
-                                      ('M', 'M', ('--model sonnet', '--effort xhigh')),
-                                      ('L', 'L', ('--model opus', '--effort xhigh'))):
+            for label, size, want in (('L1', 'L1', ('--model sonnet', '--effort low')),
+                                      ('L2', 'M', ('--model sonnet', '--effort xhigh')),
+                                      ('L3', 'L3', ('--model opus', '--effort xhigh'))):
                 cmd = solo_command('h.md', size, 'claude')
-                expect(f'case 15 raw fallback: tier {label} starts sdlc-lite:solo with {want}, got {cmd}',
+                expect(f'case 15 raw fallback: level {label} starts sdlc-lite:solo with {want}, got {cmd}',
                        '--agent sdlc-lite:solo' in cmd and all(w in cmd for w in want) and cmd.startswith('SDLC_ROLE=solo ')
                        and 'sdlc-lite:conductor' not in cmd and '--dangerously-skip-permissions' in cmd and 'solo_run.py' not in cmd)
         finally:
             if saved_raw is None: os.environ.pop('SDLC_SELFTEST_RAW_SOLO', None)
             else: os.environ['SDLC_SELFTEST_RAW_SOLO'] = saved_raw
-        for size, level in (('S', 'L1'), ('M', 'L2'), ('L', 'L3')):
+        for size, level in (('L1', 'L1'), ('L2', 'L2'), ('L3', 'L3'), ('S', 'L1'), ('M', 'L2'), ('L', 'L3')):
             cmd = solo_command('.sdlc/t/h/handoff.md', size, 'codex')
-            expect(f'case 15 command: Codex tier {size} runs solo_run.py --backend codex --tier {size}, got {cmd}',
-                   'solo_run.py' in cmd and '--backend codex' in cmd and f'--tier {size}' in cmd and '--task-dir .sdlc/t/h' in cmd)
-        full = default_driver('h.md', 'full', 'M')
+            expect(f'case 15 command: Codex size {size} runs solo_run.py --backend codex --tier {level}, got {cmd}',
+                   'solo_run.py' in cmd and '--backend codex' in cmd and f'--tier {level} ' in cmd and '--task-dir .sdlc/t/h' in cmd)
+        full = default_driver('h.md', 'full', 'L2')
         expect(f'case 15 command negative control: the full driver starts the conductor, never solo, got {full}',
                'sdlc-lite:conductor' in full and 'sdlc-lite:solo' not in full)
-        try:
-            solo_command('h.md', 'XL', 'claude')
-            expect('case 15: a size XL ticket has no solo tier (Refuse)', False)
-        except Refuse:
-            pass
-        fake = {'kinds': {'T-1': ('solo', 'M'), 'T-2': ('solo', 'S'), 'T-3': ('full', None), 'T-4': ('driver', None)}}
-        expect('case 15 close: a solo M ticket closes with a reason naming the verifier',
+        for big in ('L4', 'L5', 'XL'):
+            try:
+                solo_command('h.md', big, 'claude')
+                expect(f'case 15: a size {big} ticket has no solo level (Refuse)', False)
+            except Refuse:
+                pass
+        fake = {'kinds': {'T-1': ('solo', 'L2'), 'T-2': ('solo', 'L1'), 'T-3': ('full', None), 'T-4': ('driver', None)}}
+        expect('case 15 close: a solo L2 ticket closes with a reason naming the verifier',
                'verifier passed' in (close_reason(fake, Ticket('T-1', 'x', 't')) or ''))
-        expect('case 15 close: a solo S ticket closes with a reason naming the checks',
-               'solo agent (tier S)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
+        expect('case 15 close: a solo L1 ticket closes with a reason naming the checks',
+               'solo agent (level L1)' in (close_reason(fake, Ticket('T-2', 'x', 't')) or ''))
         expect('case 15 close negative control: a chain or driver ticket closes through its filer, no --reason',
                close_reason(fake, Ticket('T-3', 'x', 't')) is None and close_reason(fake, Ticket('T-4', 'x', 't')) is None)
         # the solo verifier gate reads only a result that is new since the driver started
@@ -2866,11 +2871,11 @@ def selftest():
         tdir_ = tmp / 'skiptask'
         tdir_.mkdir()
         (tdir_ / 'skips.md').write_text('# Skips\n\n## Lane\n- lane: solo; point: p; reasons: r\n', encoding='utf-8')
-        expect('case 16 write_solo_skips: writes once', write_solo_skips(tdir_, 'S') is True)
-        expect('case 16 write_solo_skips: a second call is a no-op', write_solo_skips(tdir_, 'S') is False)
+        expect('case 16 write_solo_skips: writes once', write_solo_skips(tdir_, 'L1') is True)
+        expect('case 16 write_solo_skips: a second call is a no-op', write_solo_skips(tdir_, 'L1') is False)
         (tdir_ / 'skips.md').write_text('# Skips\n', encoding='utf-8')
         expect('case 16 write_solo_skips negative control: no lane record writes nothing',
-               write_solo_skips(tdir_, 'S') is False and 'skip:' not in (tdir_ / 'skips.md').read_text())
+               write_solo_skips(tdir_, 'L1') is False and 'skip:' not in (tdir_ / 'skips.md').read_text())
 
         # 17. Solo lanes are metered (T-0226): solo_command starts through solo_run.py, so a solo lane writes a
         # `role solo` record with the session cost into the ticket's runs.jsonl. A `claude` shim on PATH prints a
@@ -2943,12 +2948,12 @@ def selftest():
                pu.returncode == 0 and ran_under)
 
         # case 19: report names the real model per backend; a gate that ran no tests is flagged
-        for be, tier, want in (('claude', 'S', 'sonnet low'), ('claude', 'M', 'sonnet xhigh'), ('claude', 'L', 'opus xhigh'),
-                               ('codex', 'S', 'gpt-6.1-sol low'), ('codex', 'M', 'gpt-6.1-sol high'),
-                               ('codex', 'L', 'gpt-6.1-sol xhigh')):
+        for be, tier, want in (('claude', 'L1', 'sonnet low'), ('claude', 'L2', 'sonnet xhigh'), ('claude', 'L3', 'opus xhigh'),
+                               ('codex', 'L1', 'gpt-6.1-sol low'), ('codex', 'L2', 'gpt-6.1-sol high'),
+                               ('codex', 'L3', 'gpt-6.1-sol xhigh'), ('claude', 'M', 'sonnet xhigh'), ('codex', 'L', 'gpt-6.1-sol xhigh')):
             got = solo_model_label(tier, be)
-            expect(f'case 19 model label: {be} tier {tier} is {want!r}, got {got!r}', got == want)
-        expect('case 19 codex label is not the Claude model', 'sonnet' not in solo_model_label('S', 'codex'))
+            expect(f'case 19 model label: {be} level {tier} is {want!r}, got {got!r}', got == want)
+        expect('case 19 codex label is not the Claude model', 'sonnet' not in solo_model_label('L1', 'codex'))
         for rc, text, gate, want in ((0, 'Ran 0 tests in 0.000s\nOK', 'x', True), (5, '', 'python -m pytest', True),
                                      (0, '=== no tests ran in 0.01s ===', 'x', True), (0, 'Ran 3 tests in 0.1s\nOK', 'x', False),
                                      (1, 'Ran 0 tests', 'x', False), (0, '', 'true', False)):
@@ -3046,29 +3051,29 @@ def selftest():
                 sh(path, *args_)
 
         p1 = tmp / 'prep1'
-        sized_repo(p1, ['S', 'M', 'S'], {'.gitignore': gi})
+        sized_repo(p1, ['L1', 'L2', 'S'], {'.gitignore': gi})  # levels, and the alias S read as L1
         pl1 = tmp / 'prep1-lanes'
         main_p1 = sh(p1, 'rev-parse', 'main').stdout.strip()
         pp = verb(p1, 'prep', 'alpha=T-0001,T-0002', 'beta=T-0003', '--lanes-dir', str(pl1), '--integration', 'fanout/p',
                   '--gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
         expect(f'case 22 prep: exits 0, got {pp.returncode} out={pp.stdout[-400:]!r} err={pp.stderr!r}', pp.returncode == 0)
-        expect('case 22 prep: one lane line per ticket with its tier',
-               'lane: solo, tier S: sonnet low' in pp.stdout and 'lane: solo, tier M: sonnet xhigh' in pp.stdout)
+        expect('case 22 prep: one lane line per ticket with its level, the alias S as L1',
+               pp.stdout.count('lane: solo, level L1: sonnet low') == 2 and 'lane: solo, level L2: sonnet xhigh' in pp.stdout)
         try:
             d1, d2 = dispatch_of(pp.stdout, 'T-0001'), dispatch_of(pp.stdout, 'T-0002')
         except (ValueError, KeyError) as e:
             d1 = d2 = {}
             expect(f'case 22 prep: the dispatch JSON parses, got {e!r} in {pp.stdout!r}', False)
         expect(f'case 22 prep: T-0001 dispatch names the sub-agent, model and worktree isolation, got {d1}',
-               d1.get('name') == 'T-0001-solo' and d1.get('subagent_type') == 'sdlc-lite:solo-S'
+               d1.get('name') == 'T-0001-solo' and d1.get('subagent_type') == 'sdlc-lite:solo-L1'
                and d1.get('model') == 'sonnet' and d1.get('isolation') == 'worktree'
                and d1.get('run_in_background') is True and d1.get('branch') == 'worktree-T-0001-solo'
                and d1.get('worktree') == '.claude/worktrees/T-0001-solo')
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
                'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
-        expect(f'case 22 prep: tier S has no verifier, tier M prepares verifier L3 against the worktree, got {d1.get("verifier")!r} '
-               f'{d2.get("verifier")!r}', d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-M'
+        expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L3 against the worktree, got {d1.get("verifier")!r} '
+               f'{d2.get("verifier")!r}', d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
                and 'prepare verifier L3 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or ''))
         expect('case 22 prep: each ticket gets its land command naming the branch, the ticket, the base and the gate',
                all(f'land worktree-{x}-solo --ticket {x}' in pp.stdout for x in ('T-0001', 'T-0002', 'T-0003'))
@@ -3155,7 +3160,7 @@ def selftest():
 
         # case 23 (T-0285): land merges one sub-agent branch behind the locked merge, gates and close
         ld = tmp / 'land'
-        sized_repo(ld, ['S', 'M', 'S', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
+        sized_repo(ld, ['L1', 'L2', 'S', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
         main_ld = sh(ld, 'rev-parse', 'main').stdout.strip()
 
         def make_branch(repo_, branch, files, msg=None):
@@ -3183,8 +3188,8 @@ def selftest():
         subjects = sh(ld, 'log', '--format=%s', integ).stdout.splitlines()
         expect(f'case 23 land: the merge commit and the `close <id>` commit are on the integration branch, got {subjects[:4]}',
                'Merge worktree-T-0001-solo: T-0001' in subjects and 'close T-0001' in subjects)
-        expect('case 23 land: the report carries the Lane line with the tier and model',
-               '- Lane for `T-0001`: solo (tier S: sonnet low)' in l1.stdout)
+        expect('case 23 land: the report carries the Lane line with the level and model',
+               '- Lane for `T-0001`: solo (level L1: sonnet low)' in l1.stdout)
         expect('case 23 land: the solo lane is recorded in the ticket skips.md on the integration branch',
                '- lane: solo' in sh(ld, 'show', f'{integ}:.sdlc/t1/skips.md').stdout)
         l3 = verb(ld, 'land', 'worktree-T-0003-solo', *pin, '--gate', 'test -e f1.txt && test -e f3.txt')
@@ -3229,10 +3234,10 @@ def selftest():
         lz = verb(ld, 'land', 'worktree-agent-zzz', *pin, '--ticket', 'T-0007', '--gate', 'test -e fz.txt')
         expect(f'case 23 land host branch: no record, --ticket given: solo lane, merged and closed, got rc={lz.returncode} '
                f'out={lz.stdout[-400:]!r}', lz.returncode == 0 and '- Lane for `T-0007`: solo' in lz.stdout)
-        # tier M: no verifier result, a failing one, then a passing one on the branch
+        # level L2: no verifier result, a failing one, then a passing one on the branch
         make_branch(ld, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
         lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
-        expect(f'case 23 land tier M: no verifier result is refused before any merge, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
+        expect(f'case 23 land level L2: no verifier result is refused before any merge, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
                lm.returncode == 1 and 'no verifier result' in lm.stdout and sh(ld, 'cat-file', '-e', f'{integ}:f2.txt').returncode != 0)
         vhead = '<!-- role=verifier level=L3 model=fable effort=high -->\n'
         for verdict, want, extra in (('fail', 'verifier fail', ()), ('pass', 'merged', ())):
@@ -3243,10 +3248,10 @@ def selftest():
             sh(ld, 'commit', '-q', '-m', f'verifier {verdict}')
             sh(ld, 'checkout', '-q', 'main')
             lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
-            expect(f'case 23 land tier M: a {verdict} verifier gives {want}, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
+            expect(f'case 23 land level L2: a {verdict} verifier gives {want}, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
                    want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
-        expect('case 23 land tier M: the report names the M tier model',
-               '- Lane for `T-0002`: solo (tier M: sonnet xhigh)' in lm.stdout)
+        expect('case 23 land level L2: the report names the L2 model',
+               '- Lane for `T-0002`: solo (level L2: sonnet xhigh)' in lm.stdout)
         # refusals, each exit 2 with nothing created
         sh(ld, 'branch', 'weird-branch', 'main')
         for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),
@@ -3373,7 +3378,7 @@ def main(argv):
                     'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
                     '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
     ap.add_argument('--lane', choices=('auto', 'solo', 'full'), default='auto',
-                    help='auto (default): steps.py lane picks solo (size S and M) or the full chain per ticket; '
+                    help='auto (default): steps.py lane picks solo (ticket level L1 and L2) or the full chain per ticket; '
                     'solo or full forces it for every ticket')
     ap.add_argument('--max-lanes', type=int, default=MAX_LANES_DEFAULT, metavar='N',
                     help=f'most regular lanes in one run (default {MAX_LANES_DEFAULT}); above {MAX_LANES_HARD} needs --yes-many')

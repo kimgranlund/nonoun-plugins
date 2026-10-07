@@ -3,7 +3,7 @@ id: T-0065
 title: "fanout.py's default lane driver does not set SDLC_ROLE, so..."
 type: idea            # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-25

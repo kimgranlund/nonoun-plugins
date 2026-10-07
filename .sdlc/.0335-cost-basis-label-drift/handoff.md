@@ -3,7 +3,7 @@ id: T-0335
 title: "cost_basis label for transcript pricing drifted from the T-0280 criterion and its docstring is stale (T-0280 finding)"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-06

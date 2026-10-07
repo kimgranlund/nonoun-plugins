@@ -3,7 +3,7 @@ id: T-0175
 title: "Opt-in tickets/ root and generated .sdlc/AGENTS.md router"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: L              # S | M | L | XL
+size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-09-30

@@ -3,7 +3,7 @@ id: T-0212
 title: "Handoff freeze: stale_input flag, rerun action, handoff edit hook"
 type: chore           # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: L
+size: L3
 priority: P2         # P1 | P2 | P3
 depends: [T-0196, T-0197, T-0199, T-0211, T-0183]
 created: 2026-10-04

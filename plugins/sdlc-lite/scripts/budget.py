@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Per-ticket cost budget: meter spend from runs.jsonl and stop to ask at 80 percent.
 
-Usage: budget.py status <path> | set <ticket dir|handoff.md> (--tier S|M|L | --usd N)
+Usage: budget.py status <path> | set <ticket dir|handoff.md> (--tier L1|L2|L3 | --usd N)
                  | ack <ticket dir> --usd N --reason TEXT | selftest
 
 The budget is optional front matter `budget_usd: <number>` on a ticket's handoff.md (anything that is
-not a positive number counts as no budget). Tiers: S $5, M $30, L $60, XL none (ask the user).
+not a positive number counts as no budget). By ticket level: L1 $5, L2 $30, L3 $60, L4 and L5 none (ask the
+user). --tier takes the level; the deprecated 0.21.x size names are read as their level (tickets.SIZE_ALIASES).
 
   status  resolves the ticket from a ticket dir, a step dir, a superseded step dir, or a handoff.md
           (ticket_of walks up to the nearest handoff.md whose front matter has an `id`, stopping at the
@@ -29,7 +30,12 @@ import argparse, datetime, json, math, os, pathlib, re, sys, tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import tickets  # same scripts/ dir: the only front matter parser
 
-TIERS = {'S': 5, 'M': 30, 'L': 60}
+TIERS = {'L1': 5, 'L2': 30, 'L3': 60}  # budget_usd by ticket level
+
+
+def tier_usd(level):
+    """The default budget for a ticket level, or for a deprecated alias of one; None for L4, L5, or anything else."""
+    return TIERS.get(tickets.size_level(level))
 WARN_PCT = 80
 ACK = 'budget-ack.md'
 FRONT_RE = re.compile(r'---\n(.*?)^---[ \t]*$', re.S | re.M)
@@ -297,18 +303,22 @@ def selftest():
 
         t = ticket(root, 'tier', budget=None)
         before = (t / 'handoff.md').read_text(encoding='utf-8')
-        rc1 = quiet(cmd_set, t, TIERS['S'])
+        rc1 = quiet(cmd_set, t, TIERS['L1'])
         after1 = (t / 'handoff.md').read_text(encoding='utf-8')
         rc2 = quiet(cmd_set, t / 'handoff.md', 12.5)
         after2 = (t / 'handoff.md').read_text(encoding='utf-8')
         plain = root / 'plain.md'
         plain.write_text('## Goal\nno front matter\n', encoding='utf-8')
         rc3 = quiet(cmd_set, plain, 5)
-        expect('set: tier S writes budget_usd 5',
+        expect('set: level L1 writes budget_usd 5',
                rc1 == 0 and after1 == before.replace('---\n\n## Goal', 'budget_usd: 5\n---\n\n## Goal')
                and rc2 == 0 and after2 == before.replace('---\n\n## Goal', 'budget_usd: 12.50\n---\n\n## Goal')
                and after2.count('budget_usd') == 1 and rc3 == 2
                and plain.read_text(encoding='utf-8') == '## Goal\nno front matter\n')
+
+        expect('tier_usd: levels L1 to L3, the aliases read as their level, none for L4',
+               (tier_usd('L1'), tier_usd('L2'), tier_usd('L3'), tier_usd('S'), tier_usd('M'), tier_usd('L'), tier_usd('L4'), tier_usd('XL'))
+               == (5, 30, 60, 5, 30, 60, None, None))
 
     for label in oks:
         print(f'ok: {label}')
@@ -329,7 +339,7 @@ def main():
     p = sub.add_parser('set')
     p.add_argument('path')
     g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument('--tier', choices=sorted(TIERS))
+    g.add_argument('--tier', choices=sorted(TIERS) + ['L', 'M', 'S'], help='the ticket level L1, L2, or L3 (S, M, L: deprecated aliases)')
     g.add_argument('--usd', type=float)
     p = sub.add_parser('ack')
     p.add_argument('path')
@@ -342,7 +352,7 @@ def main():
     if a.cmd == 'status':
         return cmd_status(a.path)
     if a.cmd == 'set':
-        usd = TIERS[a.tier] if a.tier else a.usd
+        usd = tier_usd(a.tier) if a.tier else a.usd
         if number(usd) is None:
             print('budget.py: --usd must be a positive number', file=sys.stderr)
             return 2

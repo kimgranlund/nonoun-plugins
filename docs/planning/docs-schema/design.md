@@ -434,7 +434,7 @@ Each check gets a fixture repository with a positive case and a negative control
 
 ## Build tickets
 
-Each is size S or M and fits one solo step. They are filed as `proposed`.
+Each is ticket level L1 or L2 and fits one solo step. They are filed as `proposed`.
 
 1. **Schema format and parser (T-0241):** the `## Kinds` registry table (eleven columns), `## Decide` list, and `## Legacy` in `onboard.py`'s `parse_layout`, `Layout` gains `kinds` and `legacy`, with the selftest. Depends on nothing.
 2. **`docs_check.py`, the setup model and the default template (T-0242):** checks D-1 to D-12, entry files for homes and topics under a home (D-7) written by setup only after a dry-run diff and one question (decision 4), the updated default layout and `docs/AGENTS.md` text, and the two sentence amendments in `docs/specs/repo-onboarding/design.md` (the no-entry-for-homes sentence and the Number prefixes sentence). Also the shared `render_registry` function and R-1 and R-2. Depends on 1.
@@ -442,4 +442,4 @@ Each is size S or M and fits one solo step. They are filed as `proposed`.
 4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, except the validation move, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
 6. **Rename `docs/validation/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
 5. **Promotion helper (T-0245):** a small script that copies a `.sdlc` artifact to a `docs/` home with the `source:` front matter. Depends on 1.
-7. **Placement proof (T-0248, proposed, size M, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The proof ran on 2026-10-06 and did not pass, so the gate stays closed. The T-0241 parser and the other checks do not wait.
+7. **Placement proof (T-0248, proposed, level L2, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The proof ran on 2026-10-06 and did not pass, so the gate stays closed. The T-0241 parser and the other checks do not wait.

@@ -3,7 +3,7 @@
 See skills/handoff-format; the tickets/ form applies when .sdlc/config has a `ticket_root: tickets` line.
 This script is the only writer of the roadmap: .sdlc/roadmap.md, or .sdlc/tickets/roadmap.md with `layout: topics`.
 
-Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | selftest}
+Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close <slug> [--force] [--reason TEXT] [--ack-warnings TEXT] [--dry-run] [--skip N[,N...]] [--ticket N] [--expect DIGEST] [--rewrite-refs] [--numbered] | roadmap [--numbered] | check [--numbered] | archive [--dry-run] [--rewrite-refs] [--force] [--numbered] | number [--dry-run] | migrate-layout [--dry-run] [--rewrite-refs] | migrate-size [--apply] | selftest}
   --root    dir holding roadmap.md, config, notes.md, _templates and the ticket dirs (default: .sdlc in the cwd,
             like board.py). With a `ticket_root: tickets` line in <root>/config the ticket dirs live in
             <root>/tickets (the ticket root) instead; roadmap.md, config, notes.md and _templates stay at <root>
@@ -138,7 +138,11 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             rewrite, keep and `config <line>` lines and writes nothing. With nothing to move and both config lines
             present it prints `nothing to migrate` and check's output. Afterwards run onboard.py setup to refresh
             the root AGENTS.md block
-  config    <root>/config may also hold `external_branch: <branch>` lines, one branch per line (blank lines, #
+  migrate-size  rewrite each alias `size:` (SIZE_ALIASES, read as L1 to L4) to its level in the front matter of
+            every ticket handoff.md (closed .NNNN-<slug> folders too) and every <root>/_templates/*.md, printing
+            `<path>: size <old> -> <new>` per file. A dry run unless --apply; --apply writes and regenerates the
+            roadmap. A ticket's size is its level: L1 small, L2 medium, L3 large, L4 extra large, L5 reserved
+  config   <root>/config may also hold `external_branch: <branch>` lines, one branch per line (blank lines, #
             comment lines and a trailing # comment are ignored; a repeated name counts once), each registering a
             branch an outside agent owns that no worktree here checks out. new and close read the ticket folders
             committed at <branch>:<rel> from git objects (no checkout) and stamp every new ticket and follow-up
@@ -235,9 +239,14 @@ REQUIRED = ('id', 'title', 'type', 'status', 'size', 'priority', 'depends', 'cre
 ENUMS = {
     'type': ('feature', 'bug', 'chore', 'spike', 'idea'),
     'status': ('proposed', 'ready', 'blocked', 'done', 'dropped'),
-    'size': ('S', 'M', 'L', 'XL'),
+    'size': ('L1', 'L2', 'L3', 'L4', 'L5'),
     'priority': ('P1', 'P2', 'P3'),
 }
+# A ticket's size is its level, L1 (small) to L4 (extra large); L5 is reserved. The 0.21.x values are read
+# aliases (deprecated): parse() maps them to the level, and every tickets.py write of a front matter
+# (new, close, migrate-size) stores the level. ALIAS_OK: the retired-vocabulary guard in check.py allows this line.
+SIZE_ALIASES = {'S': 'L1', 'M': 'L2', 'L': 'L3', 'XL': 'L4'}  # ALIAS_OK
+SIZE_COMMENT = '# L1 | L2 | L3 | L4 (L5 reserved)'
 GLYPH = {'proposed': '⏳', 'ready': '🔵', 'blocked': '🔴', 'done': '🟢', 'dropped': '⚪'}
 ID_RE = re.compile(r'T-\d{4}')
 CAP_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]*')  # a capability name, fullmatch (cap:<name>, provides)
@@ -286,7 +295,37 @@ def parse(text):
             continue
         k, v = line.split(':', 1)
         meta[k.strip()] = parse_value(v)
+    if isinstance(meta.get('size'), str):
+        meta['size'] = size_level(meta['size'])
     return meta
+
+
+def size_level(v):
+    """The level for a size value: an alias (SIZE_ALIASES) maps to L1 to L4, anything else is returned as is."""
+    return SIZE_ALIASES.get(v, v)
+
+
+def normalize_size_text(text):
+    """(text, old, new): the front matter's `size:` line rewritten from an alias to its level, with the
+    template's alias comment replaced; old and new are None when nothing changed. Only the front matter block
+    is touched."""
+    fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', text, re.S | re.M)
+    if not fm:
+        return text, None, None
+    head = fm.group(0)
+    m = re.search(r'^([ \t]*size[ \t]*:[ \t]*)([^\s#]+)([ \t]*)(#[^\r\n]*)?', head, re.M)
+    if not m or m.group(2) not in SIZE_ALIASES:
+        return text, None, None
+    old, new = m.group(2), SIZE_ALIASES[m.group(2)]
+    comment = m.group(4)
+    if comment is not None and re.fullmatch(r'#\s*S\s*\|\s*M\s*\|\s*L\s*\|\s*XL\s*', comment.strip()):  # ALIAS_OK
+        comment = SIZE_COMMENT
+    if comment is None:
+        line = m.group(1) + new + m.group(3)
+    else:  # keep the comment's column where the shorter alias left room
+        line = m.group(1) + new + ' ' * max(1, len(old) + len(m.group(3)) - len(new)) + comment
+    head = head[:m.start()] + line + head[m.end():]
+    return head + text[fm.end():], old, new
 
 
 def load(root):
@@ -1515,6 +1554,7 @@ def stamp(root, ts, kind, slug, title='', origin=None, context=None, numbered=Fa
         t = router_paths(root)[1]
         text = (text[:fm.start(1)] + f'router: {t}/AGENTS.md  # how to claim and close this ticket\n'
                 + text[fm.start(1):])
+    text = normalize_size_text(text)[0]  # an older consumer template's alias size is stored as its level
     meta = parse(text)
     if meta is None:
         raise Fail(f'{tpl}: template has no front matter; nothing written')
@@ -1743,6 +1783,7 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
         return f'; left refs to {old_ref} in {", ".join(refs)}' if refs else ''
     fm = re.match(r'---\r?\n.*?^---[ \t]*\r?$', raw, re.S | re.M)
     head, n = re.subn(r'^([ \t]*status[ \t]*:[ \t]*)[^\s#]+', r'\g<1>done', raw[:fm.end()], count=1, flags=re.M)
+    head = normalize_size_text(head)[0]
     if reason is not None:
         why = reason.strip()
         if not why:
@@ -2000,6 +2041,36 @@ def cmd_archive(root, numbered=False, dry_run=False, rewrite_refs=False, force=F
     return f'archived {len(names)} folder(s): ' + ', '.join(f'{n} -> .{n}' for n in names) + rewrote
 
 
+def cmd_migrate_size(root, apply=False):
+    """Rewrite every ticket's alias `size:` (SIZE_ALIASES) to its level (L1 to L4) in the front matter of each
+    <ticket root>/<dir>/handoff.md (closed .NNNN-<slug> folders too) and each <root>/_templates/*.md. A dry run
+    (the default) lists `<path>: size <old> -> <new>` and writes nothing; apply writes them and regenerates the
+    roadmap. Only the size line (and the template's alias comment on it) changes."""
+    td = layout_paths(root).tickets
+    files = [td / slug / 'handoff.md' for slug, _ in load(td)]
+    tpl = pathlib.Path(root) / '_templates'
+    if tpl.is_dir():
+        files += sorted(tpl.glob('*.md'))
+    lines, changed = [], []
+    for f in files:
+        raw = f.read_bytes().decode('utf-8', 'surrogateescape')
+        new, old, lvl = normalize_size_text(raw)
+        if old is None:
+            continue
+        rel = f.relative_to(root) if f.is_relative_to(root) else f
+        lines.append(f'{rel.as_posix()}: size {old} -> {lvl}')
+        changed.append((f, new))
+    if not changed:
+        return 'migrate-size: every size is already a level (L1 to L5); nothing to do'
+    if not apply:
+        return '\n'.join(lines + [f'migrate-size: dry run, {len(changed)} file(s) would change; rerun with --apply'])
+    for f, new in changed:
+        f.write_bytes(new.encode('utf-8', 'surrogateescape'))
+    if td.is_dir():
+        write_roadmap(root, load(td))
+    return '\n'.join(lines + [f'migrate-size: rewrote {len(changed)} file(s)'])
+
+
 def cmd_number(root, dry_run=False):
     """Convert a plain-slug ticket root to numbered mode: rename each <slug> ticket folder to NNNN-<slug> after
     its own id, rewrite every cite of <rel>/<slug> (the literal, or a path token that resolves to the folder,
@@ -2184,6 +2255,8 @@ def run(root, cmd, args=(), **kw):
             return 0, cmd_number(root, **kw), ''
         if cmd == 'migrate-layout':
             return 0, cmd_migrate_layout(root, **kw), ''
+        if cmd == 'migrate-size':
+            return 0, cmd_migrate_size(root, **kw), ''
         raise Fail(f'unknown command {cmd!r}')
     except Fail as e:
         return 1, '', str(e)
@@ -4601,6 +4674,42 @@ def selftest():
         expect(f'(ph) every PLACEHOLDER_KEEP line is in a shipped template: {sorted(PLACEHOLDER_KEEP - shipped)}',
                PLACEHOLDER_KEEP <= shipped)
 
+    # (size) a ticket's size is its level L1 to L5; the 0.21.x SIZE_ALIASES are read aliases, stored as levels on write
+    with tempfile.TemporaryDirectory() as tmp:
+        sz = pathlib.Path(tmp) / '.sdlc'
+        sz.mkdir()
+        (sz / 'config').write_text('layout: flat\n', encoding='utf-8')
+        rc, _, err = run(sz, 'new', ('chore', 'alpha', 'Alpha'))
+        h = sz / 'alpha' / 'handoff.md'
+        expect(f'(size) new stamps a level from the shipped template: {err}',
+               rc == 0 and dict(load(sz))['alpha']['size'] in ENUMS['size'] and re.search(r'(?m)^size: L\d', h.read_text()))
+        for alias, level in SIZE_ALIASES.items():
+            expect(f'(size) alias {alias} reads as {level}', parse(f'---\nsize: {alias}\n---\n')['size'] == level)
+        for level in ENUMS['size']:
+            expect(f'(size) level {level} reads as itself', parse(f'---\nsize: {level}\n---\n')['size'] == level)
+        h.write_text(re.sub(r'(?m)^size:.*$', 'size: M              # S | M | L | XL', h.read_text()), encoding='utf-8')  # ALIAS_OK
+        rc, out, err = run(sz, 'check')
+        expect(f'(size) an alias size passes check and reads as its level: rc={rc} {err}', rc == 0)
+        before = h.read_bytes()
+        rc, out, _ = run(sz, 'migrate-size')
+        expect(f'(size) migrate-size is a dry run by default: {out!r}',
+               rc == 0 and 'alpha/handoff.md: size M -> L2' in out and 'dry run' in out and h.read_bytes() == before)  # ALIAS_OK
+        rc, out, _ = run(sz, 'migrate-size', apply=True)
+        txt = h.read_text()
+        expect(f'(size) migrate-size --apply writes the level and the level comment: {txt!r}',
+               rc == 0 and re.search(r'(?m)^size: L2 +# L1 \| L2 \| L3 \| L4 \(L5 reserved\)$', txt)
+               and txt.replace('L2             # L1 | L2 | L3 | L4 (L5 reserved)', 'M              # S | M | L | XL') == before.decode())  # ALIAS_OK
+        expect('(size) migrate-size a second time has nothing to do', 'nothing to do' in run(sz, 'migrate-size')[1])
+        expect('(size) check passes after migrate-size', run(sz, 'check')[0] == 0)
+        h.write_text(re.sub(r'(?m)^size:.*$', 'size: XL', h.read_text()), encoding='utf-8')
+        run(sz, 'roadmap')
+        rc, out, _ = run(sz, 'close', ('alpha',), reason='done elsewhere')
+        expect(f'(size) close stores the alias XL as L4 on write: {rc} {out}',
+               rc == 0 and re.search(r'(?m)^size: L4$', h.read_text()) and re.search(r'(?m)^status: done', h.read_text()))
+        h.write_text(re.sub(r'(?m)^size:.*$', 'size: XXL', h.read_text()), encoding='utf-8')
+        rc, _, err = run(sz, 'check')
+        expect(f'(size) negative control: an unknown size still fails check: {err}', rc == 1 and "size='XXL'" in err)
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -4690,6 +4799,9 @@ def main(argv):
                    help='print each move, rewrite, keep and config line; write nothing')
     p.add_argument('--rewrite-refs', action='store_true',
                    help='rewrite files that cite a moved path to its new path instead of refusing')
+    p = sub.add_parser('migrate-size', help='rewrite the 0.21.x alias sizes to levels (L1 to L4) in ticket and '
+                                            'template front matter; a dry run unless --apply')
+    p.add_argument('--apply', action='store_true', help='write the rewrites and regenerate the roadmap')
     sub.add_parser('selftest', help='prove every check failure fires')
     a = ap.parse_args(argv)
     cmd = a.cmd or 'check'
@@ -4702,6 +4814,8 @@ def main(argv):
     if cmd == 'migrate-layout':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs
+    if cmd == 'migrate-size':
+        kw['apply'] = a.apply
     if cmd == 'archive':
         kw['dry_run'] = a.dry_run
         kw['rewrite_refs'] = a.rewrite_refs

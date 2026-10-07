@@ -3,7 +3,7 @@ id: T-0342
 title: "One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL)"
 type: chore           # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0325, T-0338]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-07

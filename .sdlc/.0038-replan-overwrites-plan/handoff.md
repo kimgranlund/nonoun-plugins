@@ -3,7 +3,7 @@ id: T-0038
 title: "A replan overwrites the original plan"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M
+size: L2
 priority: P1
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

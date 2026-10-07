@@ -3,7 +3,7 @@ id: T-0162
 title: "Planner names the entry files each step needs"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0160]          # ticket ids, e.g. [T-0002]
 created: 2026-09-29

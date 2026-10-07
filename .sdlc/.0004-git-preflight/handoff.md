@@ -3,7 +3,7 @@ id: T-0004
 title: "Git preflight before role runs"
 type: bug
 status: done
-size: S
+size: L1
 priority: P1
 depends: []
 created: 2026-09-24

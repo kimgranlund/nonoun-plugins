@@ -3,7 +3,7 @@ id: T-0243
 title: "The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2
 depends: [T-0242]   # T-NNNN, file:<path>, cap:<name>
 created: 2026-10-05

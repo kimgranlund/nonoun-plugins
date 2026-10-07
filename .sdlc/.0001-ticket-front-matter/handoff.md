@@ -3,7 +3,7 @@ id: T-0001
 title: "Ticket front matter in handoff.md"
 type: feature
 status: done
-size: S
+size: L1
 priority: P2
 depends: []
 created: 2026-09-24

@@ -912,23 +912,30 @@ lgrun() { # lgrun <out file> <slug> <role> [path under slug, default handoff.md]
     "$here/run.sh" "$role" L1 ".sdlc/$slug/$h" >"$out" 2>&1) || rc=$?
   echo "$rc"
 }
-lgmk lg-s S
+lgmk lg-s L1
 res $'## Goal\nx'
 rm -f "$tmp/count"
 rc=$(lgrun "$tmp/lg1" lg-s planner)
-[[ "$rc" == 5 ]] || fail "lane gate: planner on a size S ticket exited $rc, want 5: $(cat "$tmp/lg1")"
-grep -qF 'solo_run.py run --task-dir' "$tmp/lg1" && grep -qF -- '--tier S' "$tmp/lg1" \
+[[ "$rc" == 5 ]] || fail "lane gate: planner on a size L1 ticket exited $rc, want 5: $(cat "$tmp/lg1")"
+grep -qF 'solo_run.py run --task-dir' "$tmp/lg1" && grep -qF -- '--tier L1 ' "$tmp/lg1" \
   || fail "lane gate: refusal does not print the solo command: $(cat "$tmp/lg1")"
+# A deprecated alias size reads as its level: S and M print --tier L1 and L2.
+for pair in S:L1 M:L2 L2:L2; do
+  lgmk "lg-a${pair%%:*}" "${pair%%:*}"
+  rc=$(lgrun "$tmp/lga" "lg-a${pair%%:*}" planner handoff.md SDLC_DRY_RUN=1)
+  [[ "$rc" == 5 ]] && grep -qF -- "--tier ${pair##*:} " "$tmp/lga" \
+    || fail "lane gate: size ${pair%%:*} did not print --tier ${pair##*:} (exit $rc): $(cat "$tmp/lga")"
+done
 [[ ! -e "$tmp/count" ]] || fail "lane gate: a gated planner called the stub claude"
 [[ -z "$(find "$sgrepo/.sdlc/lg-s" -name '*.attempt.json' -o -name runs.jsonl -o -name skips.md)" ]] \
   || fail "lane gate: a gated planner left a record"
 for lrole in builder plan-reviewer; do
   rc=$(lgrun "$tmp/lg1" lg-s "$lrole" handoff.md SDLC_DRY_RUN=1)
-  [[ "$rc" == 5 ]] || fail "lane gate: $lrole on a size S ticket exited $rc, want 5: $(cat "$tmp/lg1")"
+  [[ "$rc" == 5 ]] || fail "lane gate: $lrole on a size L1 ticket exited $rc, want 5: $(cat "$tmp/lg1")"
 done
 mkdir -p "$sgrepo/.sdlc/lg-s/step-1"; cp "$sgrepo/.sdlc/lg-s/handoff.md" "$sgrepo/.sdlc/lg-s/step-1/handoff.md"
 rc=$(lgrun "$tmp/lg1" lg-s builder step-1/handoff.md SDLC_DRY_RUN=1)
-[[ "$rc" == 5 ]] || fail "lane gate: builder on a step of a size S ticket exited $rc, want 5: $(cat "$tmp/lg1")"
+[[ "$rc" == 5 ]] || fail "lane gate: builder on a step of a size L1 ticket exited $rc, want 5: $(cat "$tmp/lg1")"
 for lrole in verifier filer scout; do
   rc=$(lgrun "$tmp/lg1" lg-s "$lrole" handoff.md SDLC_DRY_RUN=1)
   [[ "$rc" == 0 ]] || fail "lane gate: $lrole was gated (exit $rc): $(cat "$tmp/lg1")"
@@ -939,15 +946,15 @@ grep -qxF 'lane override: chain needs a merge step' "$sgrepo/.sdlc/lg-s/skips.md
   || fail "lane gate: skips.md lacks the override line: $(cat "$sgrepo/.sdlc/lg-s/skips.md" 2>&1)"
 [[ "$(tail -n 1 "$sgrepo/.sdlc/lg-s/runs.jsonl" | jq -r '.lane_override')" == 'chain needs a merge step' ]] \
   || fail "lane gate: runs.jsonl line lacks lane_override: $(tail -n 1 "$sgrepo/.sdlc/lg-s/runs.jsonl")"
-lgmk lg-l L
+lgmk lg-l L3
 rc=$(lgrun "$tmp/lg3" lg-l planner)
-[[ "$rc" == 0 ]] || fail "lane gate: planner on a size L ticket exited $rc, want 0 (full lane is not gated): $(cat "$tmp/lg3")"
+[[ "$rc" == 0 ]] || fail "lane gate: planner on a size L3 ticket exited $rc, want 0 (full lane is not gated): $(cat "$tmp/lg3")"
 ! tail -n 1 "$sgrepo/.sdlc/lg-l/runs.jsonl" | jq -e 'has("lane_override")' >/dev/null 2>&1 \
   || fail "lane gate: an ungated run line carries lane_override"
-lgmk lg-n S none
+lgmk lg-n L1 none
 rc=$(lgrun "$tmp/lg4" lg-n planner)
 [[ "$rc" == 0 ]] || fail "lane gate: planner on a handoff with no ticket id exited $rc, want 0: $(cat "$tmp/lg4")"
-lgmk lg-c S T-0901
+lgmk lg-c L1 T-0901
 printf '%s\n' '## Lane' '- lane: lean; point: before planning; reasons: chain chose lean' >"$sgrepo/.sdlc/lg-c/skips.md"
 rc=$(lgrun "$tmp/lg5" lg-c planner)
 [[ "$rc" == 0 ]] || fail "lane gate: planner after a recorded non-solo lane exited $rc, want 0: $(cat "$tmp/lg5")"
@@ -999,7 +1006,7 @@ stale_run noread
 # planner L3 at a step-1/handoff.md with no front matter, so budget.py walks up to the ticket.
 bt="$repo/.sdlc/bt"
 mkdir -p "$bt/step-1"
-printf -- '---\nid: T-0900\ntitle: x\ntype: chore\nstatus: ready\nsize: L\npriority: P2\ndepends: []\ncreated: 2026-10-04\nbudget_usd: 10\n---\n' >"$bt/handoff.md"
+printf -- '---\nid: T-0900\ntitle: x\ntype: chore\nstatus: ready\nsize: L3\npriority: P2\ndepends: []\ncreated: 2026-10-04\nbudget_usd: 10\n---\n' >"$bt/handoff.md"
 printf '{"role":"builder","cost_usd":8.5,"attempt_id":"seed"}\n' >"$bt/runs.jsonl"
 echo '## Goal' >"$bt/step-1/handoff.md"
 bcount() { cat "$tmp/count" 2>/dev/null || echo 0; }
@@ -1023,7 +1030,7 @@ n0=$(bcount); brc=0
 label="budget gate: a ticket with no budget launches unchanged"
 nb="$repo/.sdlc/nb"
 mkdir -p "$nb/step-1"
-printf -- '---\nid: T-0901\ntitle: x\ntype: chore\nstatus: ready\nsize: L\npriority: P2\ndepends: []\ncreated: 2026-10-04\n---\n' >"$nb/handoff.md"
+printf -- '---\nid: T-0901\ntitle: x\ntype: chore\nstatus: ready\nsize: L3\npriority: P2\ndepends: []\ncreated: 2026-10-04\n---\n' >"$nb/handoff.md"
 printf '{"role":"builder","cost_usd":500,"attempt_id":"seed"}\n' >"$nb/runs.jsonl"
 echo '## Goal' >"$nb/step-1/handoff.md"
 n0=$(bcount); brc=0

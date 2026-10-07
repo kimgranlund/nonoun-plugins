@@ -3,7 +3,7 @@ id: T-0210
 title: "Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line"
 type: chore           # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M
+size: L2
 priority: P2         # P1 | P2 | P3
 depends: []
 created: 2026-10-04

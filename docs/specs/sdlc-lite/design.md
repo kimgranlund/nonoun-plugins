@@ -61,7 +61,7 @@ Defaults chosen by the author for the remaining questions, because the user aske
 
 ## 1. Lean chain (T-0189)
 
-Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). A size-M ticket pays for `/chain` in full. The change is a third lane between them and a planner rule that makes steps coarse.
+Today the lanes are `/fix` (ticket level L1, no planner) and `/chain` (everything else). A level L2 ticket pays for `/chain` in full. The change is a third lane between them and a planner rule that makes steps coarse.
 
 ### Lane selection
 
@@ -69,8 +69,8 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 | Lane | Use when | Roles |
 | --- | --- | --- |
-| fix | size S, one file's behavior, no plan needed (unchanged) | builder L1 or L2, verifier L1 |
-| lean | size S or M, every condition in the lean list below holds | planner L2, builder and verifier per coarse step, one close-out |
+| fix | ticket level L1, one file's behavior, no plan needed (unchanged) | builder L1 or L2, verifier L1 |
+| lean | ticket level L1 or L2, every condition in the lean list below holds | planner L2, builder and verifier per coarse step, one close-out |
 | full | any condition in the mandatory list below | the current chain, unchanged |
 
 ### Lean conditions (all must hold)
@@ -88,7 +88,7 @@ Today the lanes are `/fix` (size S, no planner) and `/chain` (everything else). 
 
 ### Decision points
 
-Before planning, size alone decides, with one limit: a size S or M ticket with more than 20 checkbox criteria under `## Acceptance criteria` is `full`, with a reason that says to split it into tickets of at most 20 (T-0296). `lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
+Before planning, size alone decides, with one limit: a ticket of level L1 or L2 with more than 20 checkbox criteria under `## Acceptance criteria` is `full`, with a reason that says to split it into tickets of at most 20 (T-0296). `lane` runs at three points and prints the same first-line contract each time: before planning (from ticket front matter only: size), after the planner result (adds step levels, merge steps, files), and after every append to `## Plan review` (a swap, a widen, a replan, or a review). A lean ticket that reaches a mandatory condition becomes `full` from that point; work already done stays valid and the conductor continues at the next required role. Each call appends its result to the ticket's `skips.md` header, so the lane history is auditable.
 
 ### Coarse steps
 
@@ -280,7 +280,7 @@ Every guard below has a positive case and a negative control.
 
 | Behavior | Positive | Negative control |
 | --- | --- | --- |
-| `steps.py lane` | A size-S fixture gives `solo`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`; a lean ticket whose handoff gains a `## Plan review` line flips to `full` on the next call |
+| `steps.py lane` | A level L1 fixture gives `solo`, a two-step L2 plan gives `lean`, a planner L3 plan gives `full` | The same two-step plan with one step at L4 must give `full`; a lean ticket whose handoff gains a `## Plan review` line flips to `full` on the next call |
 | Skip record | A lean ticket with `skips.md` entries closes | A lean ticket missing an entry fails `check` |
 | Batched verification independence | A task-dir verifier of Sonnet builds runs on a non-Sonnet family and the run record names it (after row V) | The pre-fix run: `run-selftest.sh` dry-runs the family rule on a task-dir fixture (cf. `run-selftest.sh:132-147`) and prints `--model sonnet` before the fix; `codex-selftest.py` resolve cases (cf. `256-262`) show `shared` false with no builder. `run.sh` remaps silently and has no refusal path, so the control asserts the remap |
 | Batched step state | A task-dir verifier result listing the builder results makes `next` and `resume` treat those steps as verified, and `board.py` renders it | A step whose builder result is newer than the listing, or one not listed, still resumes at `verify` |

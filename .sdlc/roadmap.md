@@ -5,338 +5,338 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
-| T-0001 | [.0001-ticket-front-matter](.0001-ticket-front-matter/handoff.md) | Ticket front matter in handoff.md | feature | S | P2 | none | 🟢 done |
-| T-0002 | [.0002-ticket-intake-roadmap](.0002-ticket-intake-roadmap/handoff.md) | Ticket intake command and generated roadmap | feature | M | P2 | T-0001 | 🟢 done |
-| T-0003 | [.0003-filer-follow-ups-to-tickets](.0003-filer-follow-ups-to-tickets/handoff.md) | Filer follow-ups become tickets; /file closes the task | feature | M | P2 | T-0001, T-0002 | 🟢 done |
-| T-0004 | [.0004-git-preflight](.0004-git-preflight/handoff.md) | Git preflight before role runs | bug | S | P1 | none | 🟢 done |
-| T-0005 | [.0005-verifier-l1-independence](.0005-verifier-l1-independence/handoff.md) | Verifier L1 uses the same model family as builder L1 | spike | S | P3 | none | 🟢 done |
-| T-0006 | [.0006-publish-gate-docs](.0006-publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | S | P3 | none | 🟢 done |
-| T-0007 | [.0007-run-the-filer-headless-on](.0007-run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | M | P2 | none | 🟢 done |
-| T-0008 | [.0008-check-this-repo-s-live](.0008-check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | M | P2 | none | ⚪ dropped |
-| T-0009 | [.0009-optional-id-and-status-columns](.0009-optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | M | P2 | none | 🟢 done |
-| T-0010 | [.0010-t-0001-still-shows-status](.0010-t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | M | P2 | none | 🟢 done |
-| T-0011 | [.0011-bring-this-repo-s-backlog](.0011-bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | M | P2 | none | ⚪ dropped |
-| T-0012 | [.0012-add-close-to-tickets-py](.0012-add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | M | P2 | none | ⚪ dropped |
-| T-0013 | [.0013-follow-up-titles-truncated](.0013-follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | S | P3 | none | 🟢 done |
-| T-0014 | [.0014-followuptitle-in-tickets-py-returns](.0014-followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | M | P2 | none | 🟢 done |
-| T-0015 | [.0015-board-hides-closed-tickets](.0015-board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | S | P3 | none | 🟢 done |
-| T-0016 | [.0016-ticket-numbered-folders](.0016-ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | M | P2 | none | 🟢 done |
-| T-0017 | [.0017-board-order-by-id](.0017-board-order-by-id/handoff.md) | Board order matches the roadmap | feature | S | P3 | none | 🟢 done |
-| T-0018 | [.0018-gitignore-board-state](.0018-gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | S | P2 | none | 🟢 done |
-| T-0019 | [.0019-move-the-board-cache-sdlc](.0019-move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | M | P2 | none | 🟢 done |
-| T-0020 | [.0020-board-py-hides-tickets-by](.0020-board-py-hides-tickets-by/handoff.md) | board.py hides tickets by the hardcoded statuses dropped and done... | idea | M | P2 | none | 🟢 done |
-| T-0021 | [.0021-decide-whether-board-should-default](.0021-decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | M | P2 | none | 🟢 done |
-| T-0022 | [.0022-tickets-py-roadmap-skips-the](.0022-tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | M | P2 | none | 🟢 done |
-| T-0023 | [.0023-in-numbered-mode-tickets-py](.0023-in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | M | P2 | none | 🟢 done |
-| T-0024 | [.0024-numbered-mode-not-persisted](.0024-numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | S | P2 | none | 🟢 done |
-| T-0025 | [.0025-bench-project-dirs](.0025-bench-project-dirs/handoff.md) | Bench tasks and results live in the project | feature | M | P2 | none | 🟢 done |
-| T-0026 | [.0026-tickets-py-check-should-warn](.0026-tickets-py-check-should-warn/handoff.md) | tickets.py: check should warn when every ticket folder has an NNNN... | idea | M | P2 | none | 🟢 done |
-| T-0027 | [.0027-tickets-py-close-numbered-does](.0027-tickets-py-close-numbered-does/handoff.md) | tickets.py: close --numbered does not persist ticket_folders... | idea | M | P2 | none | ⚪ dropped |
-| T-0028 | [.0028-tickets-py-selftest-crashes-with](.0028-tickets-py-selftest-crashes-with/handoff.md) | tickets.py selftest crashes with FileNotFoundError when run from a... | idea | M | P2 | none | ⚪ dropped |
-| T-0029 | [.0029-tickets-py-selftest-pass-output](.0029-tickets-py-selftest-pass-output/handoff.md) | tickets.py selftest pass output does not list individual... | idea | M | P2 | none | ⚪ dropped |
-| T-0030 | [.0030-board-changed-markers-silently-stop](.0030-board-changed-markers-silently-stop/handoff.md) | Board '· changed' markers silently stop working when the per-user... | idea | M | P2 | none | ⚪ dropped |
-| T-0031 | [.0031-legacy-sdlc-board-state-json](.0031-legacy-sdlc-board-state-json/handoff.md) | Legacy .sdlc/.board-state.json files stay in existing projects... | idea | M | P2 | none | 🟢 done |
-| T-0032 | [.0032-confirm-with-one-real-scripts](.0032-confirm-with-one-real-scripts/handoff.md) | Confirm with one real scripts/bench.sh --bench-dir DIR run that the... | idea | M | P2 | none | 🟢 done |
-| T-0033 | [.0033-tickets-py-the-numbered-folder](.0033-tickets-py-the-numbered-folder/handoff.md) | tickets.py: the numbered-folder warning in check gives a false... | idea | M | P2 | none | ⚪ dropped |
-| T-0034 | [.0034-tickets-py-the-argparse-numbered](.0034-tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | M | P3 | none | 🟢 done |
-| T-0035 | [.0035-t-0026-step-2-acceptance](.0035-t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | M | P2 | none | ⚪ dropped |
-| T-0036 | [.0036-have-bench-sh-write-its](.0036-have-bench-sh-write-its/handoff.md) | Have bench.sh write its exit code and wall-clock duration to the... | idea | M | P3 | none | 🟢 done |
-| T-0037 | [.0037-close-without-filer](.0037-close-without-filer/handoff.md) | close a ticket finished by other work | feature | S | P2 | none | 🟢 done |
-| T-0038 | [.0038-replan-overwrites-plan](.0038-replan-overwrites-plan/handoff.md) | A replan overwrites the original plan | bug | M | P1 | none | 🟢 done |
-| T-0039 | [.0039-superseded-step-dirs](.0039-superseded-step-dirs/handoff.md) | A defined name for superseded step dirs | feature | S | P2 | none | 🟢 done |
-| T-0040 | [.0040-split-plan-into-steps](.0040-split-plan-into-steps/handoff.md) | A script writes step handoffs from a plan | feature | M | P2 | none | 🟢 done |
-| T-0041 | [.0041-confirm-follow-ups](.0041-confirm-follow-ups/handoff.md) | close confirms follow-ups before filing them | feature | M | P2 | none | 🟢 done |
-| T-0042 | [.0042-long-runs-interactive](.0042-long-runs-interactive/handoff.md) | Document long role runs in interactive sessions | bug | S | P1 | none | 🟢 done |
-| T-0043 | [.0043-board-py-summary-counts-l5](.0043-board-py-summary-counts-l5/handoff.md) | board.py summary counts L5 runs with the glob step-/builder-L5... | idea | M | P2 | none | ⚪ dropped |
-| T-0044 | [.0044-reconcile-the-chain-4-2](.0044-reconcile-the-chain-4-2/handoff.md) | Reconcile the /chain 4.2 wording from T-0040 rename, then steps.py... | idea | M | P2 | none | ⚪ dropped |
-| T-0045 | [.0045-verify-with-one-live-interactive](.0045-verify-with-one-live-interactive/handoff.md) | Verify with one live interactive /chain run on a throwaway repo... | idea | M | P2 | none | 🟢 done |
-| T-0046 | [.0046-tickets-py-selftest-case-m](.0046-tickets-py-selftest-case-m/handoff.md) | tickets.py selftest case m, empty --reason, passes without the new... | idea | M | P2 | none | ⚪ dropped |
-| T-0047 | [.0047-exercise-the-new-file-step](.0047-exercise-the-new-file-step/handoff.md) | Exercise the new /file step 3 flow dry run, AskUserQuestion, then... | idea | M | P2 | none | 🟢 done |
-| T-0048 | [.0048-guard-close-skip-against-index](.0048-guard-close-skip-against-index/handoff.md) | Guard close --skip against index drift: if the filer file changes... | idea | M | P3 | none | 🟢 done |
-| T-0049 | [.0049-newest-by-mtime](.0049-newest-by-mtime/handoff.md) | Newest result is picked by mtime, which checkout resets | bug | S | P1 | none | 🟢 done |
-| T-0050 | [.0050-dot-prefix-closed](.0050-dot-prefix-closed/handoff.md) | Dot-prefix closed ticket folders | feature | M | P2 | T-0049 | 🟢 done |
-| T-0051 | [.0051-order-py-crashes-with-indexerror](.0051-order-py-crashes-with-indexerror/handoff.md) | order.py crashes with IndexError when run with no arguments while... | idea | M | P2 | none | ⚪ dropped |
-| T-0052 | [.0052-order-counts-after-returns-true](.0052-order-counts-after-returns-true/handoff.md) | order.counts_after returns true when either file has no runs.jsonl... | idea | M | P2 | none | ⚪ dropped |
-| T-0053 | [.0053-the-hooks-pretooluse-command-leaves](.0053-the-hooks-pretooluse-command-leaves/handoff.md) | The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted... | idea | M | P2 | none | 🟢 done |
-| T-0054 | [.0054-tickets-py-load-reads-nnnn](.0054-tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | M | P2 | none | 🟢 done |
-| T-0055 | [.0055-worktree-id-collision](.0055-worktree-id-collision/handoff.md) | Ticket ids collide across parallel worktrees | bug | S | P2 | none | 🟢 done |
-| T-0056 | [.0056-filer-record-lost-in-worktree](.0056-filer-record-lost-in-worktree/handoff.md) | filer-L1.md stays uncommitted in a lane worktree, so close on main finds no filer file | bug | S | P2 | none | 🟢 done |
-| T-0057 | [.0057-close-ack-warnings](.0057-close-ack-warnings/handoff.md) | close --ack-warnings to record why stale filer warnings no longer apply, instead of --force | feature | M | P2 | none | 🟢 done |
-| T-0059 | [.0059-merge-step-template](.0059-merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | M | P2 | none | 🟢 done |
-| T-0058 | [.0058-fanout-command](.0058-fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | M | P2 | T-0055, T-0056, T-0059 | 🟢 done |
-| T-0060 | [.0060-unpassable-plan-criteria](.0060-unpassable-plan-criteria/handoff.md) | Plan acceptance criteria that cannot pass reach the builder | bug | S | P2 | none | 🟢 done |
-| T-0061 | [.0061-add-a-steps-py-next](.0061-add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | M | P2 | none | 🟢 done |
-| T-0062 | [.0062-criteria-that-contradict-each-other](.0062-criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | M | P2 | none | 🟢 done |
-| T-0063 | [.0063-run-a-live-merge-step](.0063-run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | M | P2 | none | 🟢 done |
-| T-0064 | [.0064-merge-step-conflict-marker-guard](.0064-merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | M | P2 | none | 🟢 done |
-| T-0065 | [.0065-fanout-py-s-default-lane](.0065-fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | M | P2 | none | 🟢 done |
-| T-0066 | [.0066-file-semantic-duplicates](.0066-file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | S | P2 | none | 🟢 done |
-| T-0067 | [.0067-file-publish-question-options](.0067-file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | S | P2 | none | 🟢 done |
-| T-0068 | [.0068-board-closed-not-planned](.0068-board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | S | P2 | none | 🟢 done |
-| T-0069 | [.0069-conflict-guard-lane-false-positive](.0069-conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | M | P2 | none | 🟢 done |
-| T-0070 | [.0070-conflict-guard-gnu-xargs-probe](.0070-conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | M | P2 | none | 🟢 done |
-| T-0071 | [.0071-followup-dup-matches-own-ticket](.0071-followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | S | P2 | none | 🟢 done |
-| T-0072 | [.0072-headless-background-abandon](.0072-headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | S | P1 | none | 🟢 done |
-| T-0073 | [.0073-verifier-no-verdict](.0073-verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | S | P2 | none | 🟢 done |
-| T-0074 | [.0074-run-honors-nvmrc](.0074-run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | M | P3 | none | 🟢 done |
-| T-0075 | [.0075-confirm-with-a-live-claude](.0075-confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | M | P2 | none | 🟢 done |
-| T-0076 | [.0076-headless-conductors-can-still-abandon](.0076-headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | M | P2 | none | 🟢 done |
-| T-0077 | [.0077-block-publish-sh-matches-publish](.0077-block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | M | P2 | none | 🟢 done |
-| T-0078 | [.0078-skills-file-skill-md-line](.0078-skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | M | P2 | none | 🟢 done |
-| T-0079 | [.0079-close-dry-run-lists-open](.0079-close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | M | P2 | none | 🟢 done |
-| T-0080 | [.0080-file-step-3-3-follow](.0080-file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | M | P2 | none | 🟢 done |
-| T-0081 | [.0081-add-a-steps-py-selftest](.0081-add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | M | P2 | none | 🟢 done |
-| T-0082 | [.0082-criteria-or-fallback](.0082-criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | S | P2 | none | 🟢 done |
-| T-0083 | [.0083-guards-in-steps-py-split](.0083-guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | M | P2 | none | 🟢 done |
-| T-0084 | [.0084-port-checking-rules](.0084-port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | M | P2 | none | 🟢 done |
-| T-0085 | [.0085-port-thinking-depth](.0085-port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | M | P2 | none | 🟢 done |
-| T-0086 | [.0086-chain-open-questions-sweep](.0086-chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | M | P2 | none | 🟢 done |
-| T-0087 | [.0087-agent-spawn-seat-ladder](.0087-agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | M | P2 | none | 🟢 done |
-| T-0088 | [.0088-board-py-shows-rerun-verify](.0088-board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | M | P2 | none | 🟢 done |
-| T-0089 | [.0089-the-merge-step-conflict-marker](.0089-the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | M | P2 | none | 🟢 done |
-| T-0090 | [.0090-fanout-lanes-in-worktrees-dir](.0090-fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | M | P2 | none | 🟢 done |
-| T-0091 | [.0091-run-a-real-chain-close](.0091-run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | M | P2 | none | 🟢 done |
-| T-0092 | [.0092-run-a-live-probe-to](.0092-run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | M | P2 | none | 🟢 done |
-| T-0093 | [.0093-check-the-steps-py-lint](.0093-check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | M | P2 | none | 🟢 done |
-| T-0094 | [.0094-steps-py-split-only-guard](.0094-steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | M | P2 | none | 🟢 done |
-| T-0095 | [.0095-role-worktrees-left-behind](.0095-role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | S | P2 | none | 🟢 done |
-| T-0096 | [.0096-tickets-py-selftest-checks-that](.0096-tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | M | P2 | none | 🟢 done |
-| T-0097 | [.0097-block-publish-sh-no-longer](.0097-block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | M | P2 | none | 🟢 done |
-| T-0098 | [.0098-prompt-audit-cleanup](.0098-prompt-audit-cleanup/handoff.md) | Apply prompt-audit hunks: drop history ids and dates from level-rubric, checks-that-bite, file skills | chore | M | P2 | none | 🟢 done |
-| T-0099 | [.0099-add-a-hook-live-probe](.0099-add-a-hook-live-probe/handoff.md) | Add a hook-live-probe.sh selftest case where the hook exits with a... | idea | M | P2 | none | 🟢 done |
-| T-0100 | [.0100-planner-parallel-safe-criteria](.0100-planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | S | P2 | none | 🟢 done |
-| T-0101 | [.0101-builder-inherited-red](.0101-builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | M | P2 | none | 🟢 done |
-| T-0102 | [.0102-builder-scope-hygiene](.0102-builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | S | P2 | none | 🟢 done |
-| T-0103 | [.0103-run-result-format-check](.0103-run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | S | P1 | none | 🟢 done |
-| T-0104 | [.0104-fanout-selftest-covers-the-default](.0104-fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | M | P2 | none | 🟢 done |
-| T-0105 | [.0105-find-out-why-the-t](.0105-find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | M | P2 | none | 🟢 done |
-| T-0106 | [.0106-extend-claude-agents-sdlc-lite](.0106-extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | M | P2 | none | 🟢 done |
-| T-0107 | [.0107-role-throwaway-worktrees-created-outside](.0107-role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | M | P2 | none | 🟢 done |
-| T-0108 | [.0108-a-dry-run-of-a](.0108-a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | M | P2 | none | 🟢 done |
-| T-0109 | [.0109-make-the-fixed-count-lint](.0109-make-the-fixed-count-lint/handoff.md) | Make the fixed-count lint skip a bare = assignment such as n=26... | idea | M | P2 | none | 🟢 done |
-| T-0110 | [.0110-decide-how-the-pinned-sha](.0110-decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | M | P2 | none | 🟢 done |
-| T-0111 | [.0111-pattern-kill-hook-misses-forms](.0111-pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | M | P2 | none | 🟢 done |
-| T-0112 | [.0112-formatter-rule-is-prompt-only](.0112-formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | M | P2 | none | 🟢 done |
-| T-0113 | [.0113-close-rename-breaks-refs](.0113-close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | S | P2 | none | 🟢 done |
-| T-0114 | [.0114-verifier-fail-on-a-gate](.0114-verifier-fail-on-a-gate/handoff.md) | Verifier fail on a gate that is already red at the pre-build HEAD... | idea | M | P2 | none | 🟢 done |
-| T-0115 | [.0115-fanout-py-treats-a-lane](.0115-fanout-py-treats-a-lane/handoff.md) | fanout.py treats a lane that ends on an inherited red builder like... | idea | M | P2 | none | 🟢 done |
-| T-0116 | [.0116-tickets-py-archive-renames-done](.0116-tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | M | P2 | none | 🟢 done |
-| T-0117 | [.0117-fanout-py-closes-tickets-with](.0117-fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | M | P2 | none | 🟢 done |
-| T-0118 | [.0118-the-reference-scan-matches-only](.0118-the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | M | P2 | none | 🟢 done |
-| T-0119 | [.0119-fanout-py-still-reports-only](.0119-fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | M | P2 | none | 🟢 done |
-| T-0120 | [.0120-block-publish-sh-an-option](.0120-block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | M | P2 | none | 🟢 done |
-| T-0121 | [.0121-pattern-kill-hook-does-not](.0121-pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | M | P2 | none | 🟢 done |
-| T-0122 | [.0122-fanout-py-inherited-red-reads](.0122-fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | M | P2 | none | 🟢 done |
-| T-0123 | [.0123-replan-light-criterion-swap](.0123-replan-light-criterion-swap/handoff.md) | Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan | bug | S | P1 | none | 🟢 done |
-| T-0124 | [.0124-inherited-red-gate-steps](.0124-inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | S | P2 | none | 🟢 done |
-| T-0125 | [.0125-criteria-no-porcelain-clean](.0125-criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | S | P2 | none | 🟢 done |
-| T-0126 | [.0126-chain-stop-leaves-dirty-tree](.0126-chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | S | P2 | none | 🟢 done |
-| T-0127 | [.0127-fanout-resync-limit](.0127-fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | M | P3 | none | ⚪ dropped |
-| T-0128 | [.0128-tickets-py-outside-refs-matches](.0128-tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | M | P2 | none | 🟢 done |
-| T-0129 | [.0129-worktrees-created-from-inside-a](.0129-worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | M | P2 | none | 🟢 done |
-| T-0130 | [.0130-git-worktree-add-path-name](.0130-git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | M | P2 | none | 🟢 done |
-| T-0131 | [.0131-the-reference-scan-still-treats](.0131-the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | M | P2 | none | 🟢 done |
-| T-0132 | [.0132-planner-batch-probes](.0132-planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | M | P2 | none | 🟢 done |
-| T-0133 | [.0133-investigate-the-intermittent-check-sh](.0133-investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | M | P2 | none | 🟢 done |
-| T-0134 | [.0134-mirror-the-extended-planner-rules](.0134-mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | M | P2 | none | 🟢 done |
-| T-0135 | [.0135-extend-the-clean-status-lint](.0135-extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | M | P2 | none | 🟢 done |
-| T-0136 | [.0136-decide-whether-path-scoped-git](.0136-decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | M | P2 | none | 🟢 done |
-| T-0137 | [.0137-the-steps-py-lint-accepts](.0137-the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | M | P2 | none | 🟢 done |
-| T-0138 | [.0138-the-steps-py-lint-does](.0138-the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | M | P2 | none | 🟢 done |
-| T-0139 | [.0139-pre-sync-wip-id-dirty](.0139-pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | M | P2 | none | 🟢 done |
-| T-0140 | [.0140-no-code-gate-detects-a](.0140-no-code-gate-detects-a/handoff.md) | No code gate detects a full-suite guard placed on a non-final step... | idea | M | P2 | none | ⚪ dropped |
-| T-0141 | [.0141-criteria-build-base-var](.0141-criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | S | P2 | none | 🟢 done |
-| T-0142 | [.0142-finish-in-session](.0142-finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | M | P1 | none | 🟢 done |
-| T-0143 | [.0143-step-2-s-fix-picking](.0143-step-2-s-fix-picking/handoff.md) | step 2's fix picking the correct result event from a stream-json... | idea | M | P2 | none | 🟢 done |
-| T-0144 | [.0144-the-node-perl-and-ruby](.0144-the-node-perl-and-ruby/handoff.md) | The node, perl, and ruby value-option lists are best-effort the... | idea | M | P2 | none | ⚪ dropped |
-| T-0145 | [.0145-block-pattern-kill-sh-s](.0145-block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | M | P2 | none | ⚪ dropped |
-| T-0146 | [.0146-the-step-1-acceptance-criterion](.0146-the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | M | P2 | none | 🟢 done |
-| T-0147 | [.0147-a-compound-span-followed-by](.0147-a-compound-span-followed-by/handoff.md) | a compound span followed by &&, ;, or \|\| after its closing keyword... | idea | M | P2 | none | ⚪ dropped |
-| T-0148 | [.0148-decisions-update-criteria](.0148-decisions-update-criteria/handoff.md) | Conductor scope decisions update the acceptance criteria, not just prose | feature | M | P2 | none | 🟢 done |
-| T-0149 | [.0149-trace-contract-dependents](.0149-trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | M | P2 | none | 🟢 done |
-| T-0150 | [.0150-resume-from-blocked-step](.0150-resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | S | P2 | none | 🟢 done |
-| T-0151 | [.0151-fanout-reset-guards-dirty-tree](.0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | S | P2 | none | 🟢 done |
-| T-0152 | [.0152-external-lane-owners](.0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | M | P2 | none | 🟢 done |
-| T-0153 | [.0153-depends-on-capability](.0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | M | P2 | none | 🟢 done |
-| T-0154 | [.0154-nested-tmp-worktrees](.0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | S | P2 | none | 🟢 done |
-| T-0155 | [.0155-trace-run-ids](.0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | S | P2 | none | 🟢 done |
-| T-0156 | [.0156-per-attempt-gate-logs](.0156-per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | S | P2 | none | 🟢 done |
-| T-0157 | [.0157-review-sdlc-traces](.0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L | P2 | T-0155, T-0156 | 🟢 done |
-| T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | S | P2 | none | 🟢 done |
-| T-0159 | [.0159-lifecycle-selftests-flake-under-load](.0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | S | P2 | none | 🟢 done |
-| T-0160 | [.0160-repo-onboarding-skill](.0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | M | P2 | none | 🟢 done |
-| T-0161 | [.0161-repo-reorganization](.0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | M | P2 | T-0160 | 🟢 done |
-| T-0162 | [.0162-entry-files-in-step-handoffs](.0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | M | P2 | T-0160 | 🟢 done |
-| T-0163 | [.0163-codex-default-models-rejected](.0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | M | P2 | none | 🟢 done |
-| T-0164 | [.0164-fix-skill-lints-task-folder](.0164-fix-skill-lints-task-folder/handoff.md) | /fix lints the task folder, which has no planner file | bug | S | P2 | none | 🟢 done |
-| T-0165 | [.0165-roles-replaced-by-other-agents](.0165-roles-replaced-by-other-agents/handoff.md) | Sessions replace SDLC Lite roles with other plugins' agents | bug | S | P2 | none | 🟢 done |
-| T-0166 | [.0166-agent-spawn-hook](.0166-agent-spawn-hook/handoff.md) | Warn when the conductor spawns another plugin's role agent | feature | M | P2 | none | 🟢 done |
-| T-0167 | [.0167-role-in-temp-worktree](.0167-role-in-temp-worktree/handoff.md) | Document running a role from a temporary worktree | feature | M | P2 | none | 🟢 done |
-| T-0168 | [.0168-unattended-publish](.0168-unattended-publish/handoff.md) | Decide how publishing works during an unattended run | idea | S | P2 | none | 🟢 done |
-| T-0169 | [.0169-role-whole-disk-search](.0169-role-whole-disk-search/handoff.md) | A role's whole-disk find hung a planner run for 25 minutes | bug | S | P2 | none | 🟢 done |
-| T-0170 | [.0170-builder-edits-running-runner](.0170-builder-edits-running-runner/handoff.md) | A builder that edits run.sh loses its own result | bug | S | P2 | none | 🟢 done |
-| T-0171 | [.0171-plan-reviewer-role](.0171-plan-reviewer-role/handoff.md) | Independent plan-reviewer role before implementation | feature | L | P2 | none | 🟢 done |
-| T-0172 | [.0172-scout-pin-haiku](.0172-scout-pin-haiku/handoff.md) | Pin the scout to claude-haiku-4-5 | chore | S | P2 | none | 🟢 done |
-| T-0173 | [.0173-planner-l3-opus](.0173-planner-l3-opus/handoff.md) | Move planner L3 from Fable xhigh to Opus xhigh | chore | S | P2 | none | 🟢 done |
-| T-0174 | [.0174-disk-scan-quoted-mention](.0174-disk-scan-quoted-mention/handoff.md) | block-disk-scan.sh denies a quoted mention of a scan inside a compound command | bug | S | P2 | none | 🟢 done |
-| T-0175 | [.0175-ticket-root-router](.0175-ticket-root-router/handoff.md) | Opt-in tickets/ root and generated .sdlc/AGENTS.md router | feature | L | P2 | none | 🟢 done |
-| T-0176 | [.0176-messages-mailbox](.0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | L | P2 | none | 🟢 done |
-| T-0177 | [.0177-mailbox-core](.0177-mailbox-core/handoff.md) | Mailbox core: messages.py, lifecycle, schema, and run.sh notice | feature | L | P2 | none | 🟢 done |
-| T-0178 | [.0178-messenger-agent](.0178-messenger-agent/handoff.md) | Messenger agent: declared agent, Codex mapping, and check.py coverage | feature | M | P2 | T-0177 | 🟢 done |
-| T-0179 | [.0179-messages-entry-files](.0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | M | P2 | T-0177, T-0178 | 🟢 done |
-| T-0180 | [.0180-idle-host-limit-docs](.0180-idle-host-limit-docs/handoff.md) | Document that the messenger reaches only an active parent host | chore | S | P2 | none | 🟢 done |
-| T-0181 | [.0181-messages-wait](.0181-messages-wait/handoff.md) | messages.py wait: one blocking call that returns when a message arrives | feature | M | P2 | T-0180 | 🟢 done |
-| T-0182 | [.0182-idle-host-watcher-design](.0182-idle-host-watcher-design/handoff.md) | Design an external watcher that resumes an idle host when a message arrives | spike | M | P2 | none | 🟢 done |
-| T-0183 | [.0183-supervisor-script](.0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L | P2 | T-0181, T-0182 | 🟢 done |
-| T-0184 | [.0184-role-result-schema](.0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | M | P2 | none | 🟢 done |
-| T-0185 | [.0185-evals-folder](.0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | M | P2 | none | 🟢 done |
-| T-0186 | [.0186-proposals-folder](.0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | M | P2 | T-0185 | 🟢 done |
-| T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | M | P2 | T-0183 | ⚪ dropped |
-| T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | M | P2 | none | 🟢 done |
-| T-0189 | [.0189-lean-chain](.0189-lean-chain/handoff.md) | Lean chain: fewer, coarser planner builder verifier steps for size M work | chore | M | P2 | none | 🟢 done |
-| T-0190 | [.0190-sdlc-topic-subfolders](.0190-sdlc-topic-subfolders/handoff.md) | Organize every .sdlc/ content type into topic sub-folders | chore | M | P2 | none | 🟢 done |
-| T-0191 | [.0191-single-plan-record](.0191-single-plan-record/handoff.md) | One plan record per ticket; later roles do not repeat research or planning | chore | M | P2 | none | 🟢 done |
-| T-0192 | [.0192-conductor-batching](.0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | M | P2 | none | 🟢 done |
-| T-0193 | [.0193-footprint](.0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | M | P2 | none | 🟢 done |
-| T-0194 | [.0194-lean-lane-text](.0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | M | P2 | none | 🟢 done |
-| T-0195 | [.0195-runner-family-task-dir](.0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L | P2 | none | 🟢 done |
-| T-0196 | [.0196-batch-state](.0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L | P2 | T-0195 | 🟢 done |
-| T-0197 | [.0197-lane](.0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L | P2 | T-0194 | 🟢 done |
-| T-0198 | [.0198-skips-guard](.0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | M | P2 | T-0197 | 🟢 done |
-| T-0199 | [.0199-conductor-rules](.0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | M | P2 | T-0196, T-0198 | 🟢 done |
-| T-0200 | [0200-plan-merge](0200-plan-merge/handoff.md) | Replan by delta: merged plan view and steps.py resolve | feature | L | P2 | T-0197 | ⚪ dropped |
-| T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | M | P2 | T-0200 | ⚪ dropped |
-| T-0202 | [.0202-carry-forward](.0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L | P2 | none | 🟢 done |
-| T-0203 | [.0203-fanout-overlap](.0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | M | P2 | none | 🟢 done |
-| T-0204 | [.0204-fanout-resolver](.0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | M | P2 | T-0203 | 🟢 done |
-| T-0205 | [.0205-layout-resolver](.0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L | P2 | T-0204 | 🟢 done |
-| T-0206 | [.0206-migrate-layout](.0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L | P2 | T-0205 | 🟢 done |
-| T-0207 | [.0207-layout-readers-docs](.0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | M | P2 | T-0206 | 🟢 done |
-| T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | M | P2 | T-0199, T-0201, T-0207 | ⚪ dropped |
-| T-0209 | [.0209-maintainer-lean-default](.0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | S | P2 | T-0194 | 🟢 done |
-| T-0210 | [.0210-spec-gate-check](.0210-spec-gate-check/handoff.md) | Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line | chore | M | P2 | none | 🟢 done |
-| T-0211 | [0211-spec-gate-red](0211-spec-gate-red/handoff.md) | Spec gate A2: specgate.py red, (red) tag, split and review wiring | chore | L | P2 | T-0197, T-0201, T-0202, T-0210 | ⚪ dropped |
-| T-0212 | [.0212-handoff-freeze](.0212-handoff-freeze/handoff.md) | Handoff freeze: stale_input flag, rerun action, handoff edit hook | chore | L | P2 | T-0196, T-0197, T-0199, T-0211, T-0183 | 🟢 done |
-| T-0213 | [0213-replan-delta-checklist](0213-replan-delta-checklist/handoff.md) | Replan handoff, planner checklist, scoped plan review, replans metric | chore | L | P2 | T-0199, T-0200, T-0201, T-0202, T-0211 | ⚪ dropped |
-| T-0214 | [.0214-ticket-budget](.0214-ticket-budget/handoff.md) | Per-ticket cost budget: budget.py, run.sh exit 4, board column | chore | L | P2 | T-0187, T-0199, T-0212 | 🟢 done |
-| T-0215 | [.0215-solo-operator-tiers](.0215-solo-operator-tiers/handoff.md) | Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets | feature | M | P1 | none | 🟢 done |
-| T-0216 | [.0216-solo-live-proof](.0216-solo-live-proof/handoff.md) | Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex | chore | S | P2 | T-0215 | 🟢 done |
-| T-0217 | [.0217-solo-start-path](.0217-solo-start-path/handoff.md) | Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix | bug | S | P1 | none | 🟢 done |
-| T-0218 | [.0218-guard-numbers](.0218-guard-numbers/handoff.md) | Renumber check.py guards uniquely and guard it | chore | M | P2 | none | 🟢 done |
-| T-0219 | [.0219-skips-solo-full](.0219-skips-solo-full/handoff.md) | Skips guard covers lane solo and full | chore | M | P2 | none | 🟢 done |
-| T-0220 | [.0220-t0212-reverify](.0220-t0212-reverify/handoff.md) | Re-verify T-0212's check-packaging fix | chore | M | P2 | none | 🟢 done |
-| T-0221 | [.0221-fanout-solo-first](.0221-fanout-solo-first/handoff.md) | fanout.py runs each lane by steps.py lane: solo for S and M, chain for full, with a lane cap and stagger | feature | M | P2 | none | 🟢 done |
-| T-0222 | [.0222-fanout-solo-skipped](.0222-fanout-solo-skipped/handoff.md) | fanout solo lane closes: write the ## Skipped entries the T-0219 skips guard needs | bug | S | P2 | none | 🟢 done |
-| T-0223 | [.0223-agent-command](.0223-agent-command/handoff.md) | /agent command: launch an SDLC Lite agent by name on instructions | feature | M | P2 | none | 🟢 done |
-| T-0224 | [.0224-solo-lane-skipped](.0224-solo-lane-skipped/handoff.md) | steps.py lane writes the planner and filer ## Skipped entries for lane solo, so any caller can close by reason | bug | S | P2 | none | 🟢 done |
-| T-0225 | [.0225-solo-cost-capture](.0225-solo-cost-capture/handoff.md) | Solo sessions write no cost record, so the budget gate cannot see the default lane | bug | S | P1 | none | 🟢 done |
-| T-0226 | [.0226-fanout-solo-metering](.0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | S | P1 | none | 🟢 done |
-| T-0227 | [.0227-orient-entry-files](.0227-orient-entry-files/handoff.md) | Orient a harness: root AGENTS.md work section, tree map, docs entry | chore | S | P2 | none | 🟢 done |
-| T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | S | P2 | none | 🟢 done |
-| T-0229 | [.0229-solo-budget-gate](.0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | M | P1 | none | 🟢 done |
-| T-0230 | [.0230-fanout-codex-report-and-gate](.0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | 🟢 done |
-| T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | 🟢 done |
-| T-0232 | [.0232-reorg-inventory](.0232-reorg-inventory/handoff.md) | inventory.py: read-only document inventory and reorganization plan procedure | feature | M | P2 | none | 🟢 done |
-| T-0233 | [.0233-reorg-apply](.0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L | P2 | T-0232 | 🟢 done |
-| T-0240 | [.0240-docs-schema-design](.0240-docs-schema-design/handoff.md) | Design: strict docs/ folder schema and the docs vs .sdlc boundary | feature | M | P1 | none | 🟢 done |
-| T-0241 | [.0241-docs-schema-parser](.0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser | feature | S | P2 | none | 🟢 done |
-| T-0242 | [.0242-docs-check-script](.0242-docs-check-script/handoff.md) | docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template | feature | M | P2 | T-0241 | 🟢 done |
-| T-0243 | [.0243-sdlc-boundary-checks](.0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | 🟢 done |
-| T-0245 | [.0245-docs-promotion-helper](.0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | 🟢 done |
-| T-0246 | [.0246-rename-validation-to-reports](.0246-rename-validation-to-reports/handoff.md) | Rename docs/validation to docs/reports and rewrite references | chore | M | P2 | none | 🟢 done |
-| T-0244 | [.0244-docs-schema-migration](.0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | 🟢 done |
-| T-0247 | [.0247-pc-gap-analysis](.0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | M | P2 | none | 🟢 done |
-| T-0248 | [.0248-placement-proof](.0248-placement-proof/handoff.md) | Placement proof for the context registry | chore | M | P2 | none | 🟢 done |
-| T-0249 | [.0249-plan-goal](.0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | 🟢 done |
-| T-0250 | [.0250-plan-loop](.0250-plan-loop/handoff.md) | plan-loop skill | feature | S | P2 | none | 🟢 done |
-| T-0251 | [.0251-plan-fanout](.0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | 🟢 done |
-| T-0252 | [.0252-pc-run-context-trace](.0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | M | P2 | none | 🟢 done |
-| T-0253 | [.0253-pc-entry-file-resolver](.0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | S | P2 | none | 🟢 done |
-| T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |
-| T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | 🟢 done |
-| T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | 🟢 done |
-| T-0257 | [.0257-broken-links-cleanup](.0257-broken-links-cleanup/handoff.md) | Fix moved-target Markdown links, exclude code from the link counter, guard the baseline | chore | M | P2 | none | 🟢 done |
-| T-0258 | [.0258-fanout-close-ticket-root](.0258-fanout-close-ticket-root/handoff.md) | fanout numbered close ignores ticket_root | bug | S | P2 | none | 🟢 done |
-| T-0259 | [.0259-fanout-gate-preflight](.0259-fanout-gate-preflight/handoff.md) | fanout needs committed handoffs and node_modules in the gate worktree | chore | S | P2 | none | 🟢 done |
-| T-0260 | [.0260-solo-session-limit-resume](.0260-solo-session-limit-resume/handoff.md) | Solo long commands capped at 30 min and session-limit stops leave no resume | bug | M | P2 | none | 🟢 done |
-| T-0261 | [.0261-split-goal-precheck](.0261-split-goal-precheck/handoff.md) | steps.py split needs ## Goal; fail fast before any planner runs | bug | S | P2 | none | 🟢 done |
-| T-0262 | [.0262-close-citation-scan-gaps](.0262-close-citation-scan-gaps/handoff.md) | tickets.py close needs --force on tracked citations and cannot see .sdlc citations | bug | M | P2 | none | 🟢 done |
-| T-0263 | [.0263-stale-lane-route](.0263-stale-lane-route/handoff.md) | A builder blocked by a stale lane routes to replan, not rebase-and-resplit | bug | S | P2 | none | 🟢 done |
-| T-0264 | [.0264-split-after-replan-override](.0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | M | P2 | none | 🟢 done |
-| T-0265 | [.0265-headless-planner-denied-rm](.0265-headless-planner-denied-rm/handoff.md) | Headless planner stalled on a denied rm permission prompt | bug | S | P2 | none | 🟢 done |
-| T-0266 | [.0266-tickets-check-partial-front-matter](.0266-tickets-check-partial-front-matter/handoff.md) | tickets.py check breaks on partial front matter | bug | S | P2 | none | 🟢 done |
-| T-0267 | [.0267-hook-denies-worktree-add-variable](.0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | 🟢 done |
-| T-0268 | [.0268-raw-solo-cost-records](.0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | S | P2 | none | 🟢 done |
-| T-0269 | [.0269-traces-failed-attempt-noise](.0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | S | P2 | none | 🟢 done |
-| T-0270 | [.0270-steps-lint-nested-backtick-message](.0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | 🟢 done |
-| T-0271 | [.0271-planner-contract-dependents-lint](.0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | 🟢 done |
-| T-0272 | [.0272-conductor-repo-opt-out](.0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | 🟢 done |
-| T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
-| T-0274 | [.0274-lane-gate](.0274-lane-gate/handoff.md) | run.sh lane gate | chore | M | P2 | none | 🟢 done |
-| T-0275 | [.0275-subagent-probes](.0275-subagent-probes/handoff.md) | Probe the sub-agent mechanics the design assumes | spike | S | P2 | none | 🟢 done |
-| T-0276 | [.0276-claude-levels-table](.0276-claude-levels-table/handoff.md) | Claude level table and per-level generated agents | feature | M | P2 | T-0275 | 🟢 done |
-| T-0277 | [.0277-dispatch-prepare](.0277-dispatch-prepare/handoff.md) | dispatch.py prepare: the pre-launch half of run.sh | feature | M | P2 | T-0276 | 🟢 done |
-| T-0278 | [.0278-dispatch-record](.0278-dispatch-record/handoff.md) | dispatch.py record: validate, record, and close a dispatched role | feature | M | P2 | T-0277 | 🟢 done |
-| T-0279 | [.0279-dispatch-recover](.0279-dispatch-recover/handoff.md) | dispatch.py status and resume for dead or interrupted sub-agents | feature | S | P2 | T-0278 | 🟢 done |
-| T-0280 | [.0280-cost-estimate](.0280-cost-estimate/handoff.md) | Estimated cost for sub-agent runs from tokens and a price table | feature | S | P2 | T-0278 | 🟢 done |
-| T-0281 | [.0281-hooks-agent-role](.0281-hooks-agent-role/handoff.md) | Hooks key on agent_type; spawn gate replaces block-role-spawn | feature | M | P2 | T-0275, T-0277 | 🟢 done |
-| T-0282 | [.0282-conductor-dispatch-core](.0282-conductor-dispatch-core/handoff.md) | Conductor and chain dispatch roles as sub-agents | feature | M | P2 | T-0276, T-0278, T-0279, T-0280, T-0281 | 🟢 done |
-| T-0283 | [.0283-launcher-skills-dispatch](.0283-launcher-skills-dispatch/handoff.md) | Launcher skills dispatch through sub-agents | chore | M | P2 | T-0282 | 🟢 done |
-| T-0284 | [.0284-solo-subagent](.0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | S | P2 | T-0282 | 🟢 done |
-| T-0285 | [.0285-fanout-subagent](.0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | M | P2 | T-0284, T-0281 | 🟢 done |
-| T-0286 | [.0286-supervisor-orphans](.0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | 🟢 done |
-| T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
-| T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | S | P2 | T-0287 | ⏳ proposed |
-| T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | M | P2 | none | 🟢 done |
-| T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | 🟢 done |
-| T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | ⏳ proposed |
-| T-0293 | [.0293-solo-run-kill-group](.0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | S | P2 | none | 🟢 done |
-| T-0294 | [.0294-plan-review-l4-l5-only](.0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | S | P2 | none | 🟢 done |
-| T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🟢 done |
-| T-0296 | [.0296-lane-refuse-m-over-20-criteria](.0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | S | P2 | none | 🟢 done |
-| T-0297 | [.0297-planner-guard-dry-run-widen-inherit](.0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | S | P2 | none | 🟢 done |
-| T-0298 | [.0298-limit-marker-reset-time](.0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | S | P2 | none | 🟢 done |
-| T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🟢 done |
-| T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🟢 done |
-| T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | M | P2 | none | ⏳ proposed |
-| T-0302 | [.0302-adr-number-allocator-note](.0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | 🟢 done |
-| T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | M | P2 | none | 🟢 done |
-| T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | M | P2 | T-0303 | 🟢 done |
-| T-0305 | [.0305-fleet-collect](.0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | M | P2 | none | 🟢 done |
-| T-0306 | [.0306-fleet-detect](.0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | M | P2 | T-0305 | 🟢 done |
-| T-0307 | [.0307-fleet-interview](.0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | S | P2 | none | 🟢 done |
-| T-0308 | [.0308-fleet-retro-skill](.0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | M | P2 | T-0305, T-0306, T-0307 | 🟢 done |
-| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/specs/sdlc-lite | chore | M | P2 | none | 🟢 done |
-| T-0310 | [.0310-fleet-config](.0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | S | P2 | none | 🟢 done |
-| T-0311 | [.0311-fleet-liveness](.0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | M | P2 | T-0305, T-0310 | 🟢 done |
-| T-0312 | [.0312-fleet-status-render](.0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | M | P2 | T-0310, T-0311 | 🟢 done |
-| T-0313 | [.0313-solo-worktree-hook](.0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | S | P2 | none | 🟢 done |
-| T-0314 | [.0314-red-first-control](.0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | M | P2 | none | 🟢 done |
-| T-0315 | [.0315-replan-cost-remeasure](.0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | S | P2 | none | 🟢 done |
-| T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | M | P2 | none | ⏳ proposed |
-| T-0317 | [0317-red-under-load-rerun](0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | M | P2 | none | ⏳ proposed |
-| T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | S | P2 | none | 🟢 done |
-| T-0319 | [0319-fleet-verify-0307-0310](0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | S | P2 | none | ⏳ proposed |
-| T-0320 | [.0320-fleet-config-nameless-entry-line](.0320-fleet-config-nameless-entry-line/handoff.md) | fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) | bug | S | P2 | none | 🟢 done |
-| T-0321 | [.0321-interview-template-readthrough](.0321-interview-template-readthrough/handoff.md) | Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4) | chore | M | P2 | none | 🟢 done |
-| T-0322 | [.0322-fleet-verify-fixes](.0322-fleet-verify-fixes/handoff.md) | Make the flaky fleet_status selftest deterministic | bug | S | P2 | none | 🟢 done |
-| T-0323 | [.0323-fleet-status-tables](.0323-fleet-status-tables/handoff.md) | fleet_status render: colored emoji marks and tables, collapse done-but-open rows | feature | M | P2 | none | 🟢 done |
-| T-0324 | [.0324-fleet-status-schema](.0324-fleet-status-schema/handoff.md) | JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section | feature | M | P2 | T-0323 | 🟢 done |
-| T-0325 | [.0325-skills-self-contained](.0325-skills-self-contained/handoff.md) | Make every skill self-contained: ship its resources, drop repo-relative path assumptions | chore | M | P2 | T-0324 | 🟢 done |
-| T-0326 | [.0326-fanout-prep-spawn-gate](.0326-fanout-prep-spawn-gate/handoff.md) | fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) | bug | S | P2 | none | 🟢 done |
-| T-0327 | [.0327-fanout-land-branch-name](.0327-fanout-land-branch-name/handoff.md) | fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3) | bug | S | P2 | none | 🟢 done |
-| T-0328 | [.0328-subagent-cost-estimate-gap](.0328-subagent-cost-estimate-gap/handoff.md) | Sub-agent cost estimate is 7 to 12 percent of host and null for solo rows (T-0287 finding 4) | bug | S | P2 | none | 🟢 done |
-| T-0329 | [.0329-fanout-verifier-tree](.0329-fanout-verifier-tree/handoff.md) | Fanout verifier prompt Tree: points at the main tree, not the lane worktree | bug | S | P2 | none | 🟢 done |
-| T-0330 | [.0330-verifier-report-on-disk](.0330-verifier-report-on-disk/handoff.md) | Verifier report is not on disk when dispatch.py record runs for a sub-agent | bug | S | P2 | none | 🟢 done |
-| T-0331 | [.0331-cost-estimate-calibrate](.0331-cost-estimate-calibrate/handoff.md) | Sub-agent cost estimate still 8.5 percent of host after T-0328 | bug | S | P2 | none | 🟢 done |
-| T-0332 | [.0332-transcript-usage-last-line](.0332-transcript-usage-last-line/handoff.md) | Transcript usage takes the first partial line per message id | bug | S | P2 | none | 🟢 done |
-| T-0333 | [.0333-verify-subagent-tickets](.0333-verify-subagent-tickets/handoff.md) | Independent verification of the sub-agent mode tickets that closed with no verifier verdict | chore | M | P2 | none | 🟢 done |
-| T-0334 | [.0334-skills-record-transcript-flag](.0334-skills-record-transcript-flag/handoff.md) | Twelve launcher skills spell dispatch.py record without --transcript (T-0331 finding) | bug | S | P2 | none | 🟢 done |
-| T-0335 | [.0335-cost-basis-label-drift](.0335-cost-basis-label-drift/handoff.md) | cost_basis label for transcript pricing drifted from the T-0280 criterion and its docstring is stale (T-0280 finding) | bug | S | P3 | none | 🟢 done |
-| T-0336 | [.0336-l3-verifier-row-outside-band](.0336-l3-verifier-row-outside-band/handoff.md) | The L3 verifier row of the live evidence prices at 0.57 of host after the T-0332 refit (T-0328 and T-0331 finding) | bug | S | P3 | none | 🟢 done |
-| T-0337 | [.0337-scout-haiku-spawn-denied](.0337-scout-haiku-spawn-denied/handoff.md) | dispatch.py prepare scout L1 emits a model the Agent tool rejects and the spawn hook denies (found by ultimate-tokens) | bug | S | P2 | none | 🟢 done |
-| T-0338 | [.0338-record-resolved-model](.0338-record-resolved-model/handoff.md) | dispatch.py record writes the transcript's resolved model into the run record | chore | S | P2 | none | 🟢 done |
-| T-0339 | [.0339-fanout-lane-stages-logs](.0339-fanout-lane-stages-logs/handoff.md) | A fanout or solo lane commit never stages run artifacts that fail repo gates (*.log, .run.lock, *.running) | bug | S | P2 | none | 🟢 done |
-| T-0340 | [.0340-prepare-stale-attempt](.0340-prepare-stale-attempt/handoff.md) | dispatch.py prepare recovers or names a stale attempt left by a failed spawn instead of blocking the next prepare | bug | S | P2 | none | 🟢 done |
-| T-0341 | [.0341-subagent-lane-stages-artifacts](.0341-subagent-lane-stages-artifacts/handoff.md) | Sub-agent lane commits (fanout prep commit command, the fanout skill's verifier commit, solo sub-agent commits) still use git add -A and can stage *.log and .run.lock | bug | S | P2 | none | 🟢 done |
-| T-0342 | [0342-one-level-system](0342-one-level-system/handoff.md) | One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL) | chore | M | P2 | T-0325, T-0338 | ⏳ proposed |
+| T-0001 | [.0001-ticket-front-matter](.0001-ticket-front-matter/handoff.md) | Ticket front matter in handoff.md | feature | L1 | P2 | none | 🟢 done |
+| T-0002 | [.0002-ticket-intake-roadmap](.0002-ticket-intake-roadmap/handoff.md) | Ticket intake command and generated roadmap | feature | L2 | P2 | T-0001 | 🟢 done |
+| T-0003 | [.0003-filer-follow-ups-to-tickets](.0003-filer-follow-ups-to-tickets/handoff.md) | Filer follow-ups become tickets; /file closes the task | feature | L2 | P2 | T-0001, T-0002 | 🟢 done |
+| T-0004 | [.0004-git-preflight](.0004-git-preflight/handoff.md) | Git preflight before role runs | bug | L1 | P1 | none | 🟢 done |
+| T-0005 | [.0005-verifier-l1-independence](.0005-verifier-l1-independence/handoff.md) | Verifier L1 uses the same model family as builder L1 | spike | L1 | P3 | none | 🟢 done |
+| T-0006 | [.0006-publish-gate-docs](.0006-publish-gate-docs/handoff.md) | Document that block-publish.sh only guards role runs | chore | L1 | P3 | none | 🟢 done |
+| T-0007 | [.0007-run-the-filer-headless-on](.0007-run-the-filer-headless-on/handoff.md) | Run the filer headless on a real task to confirm it emits... | idea | L2 | P2 | none | 🟢 done |
+| T-0008 | [.0008-check-this-repo-s-live](.0008-check-this-repo-s-live/handoff.md) | Check this repo's live .sdlc/ against tickets.py check and generate... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0009 | [.0009-optional-id-and-status-columns](.0009-optional-id-and-status-columns/handoff.md) | Optional id and status columns in scripts/board.py | idea | L2 | P2 | none | 🟢 done |
+| T-0010 | [.0010-t-0001-still-shows-status](.0010-t-0001-still-shows-status/handoff.md) | T-0001 still shows status: proposed | idea | L2 | P2 | none | 🟢 done |
+| T-0011 | [.0011-bring-this-repo-s-backlog](.0011-bring-this-repo-s-backlog/handoff.md) | Bring this repo's backlog under /ticket | idea | L2 | P2 | none | ⚪ dropped |
+| T-0012 | [.0012-add-close-to-tickets-py](.0012-add-close-to-tickets-py/handoff.md) | Add close to tickets.py. It was left out because it belongs to T-0003. | idea | L2 | P2 | none | ⚪ dropped |
+| T-0013 | [.0013-follow-up-titles-truncated](.0013-follow-up-titles-truncated/handoff.md) | close cuts follow-up titles mid-word with ... | bug | L1 | P3 | none | 🟢 done |
+| T-0014 | [.0014-followuptitle-in-tickets-py-returns](.0014-followuptitle-in-tickets-py-returns/handoff.md) | follow_up_title in tickets.py returns an empty title when the bullet... | idea | L2 | P2 | none | 🟢 done |
+| T-0015 | [.0015-board-hides-closed-tickets](.0015-board-hides-closed-tickets/handoff.md) | board lists dropped and unplanned done tickets | bug | L1 | P3 | none | 🟢 done |
+| T-0016 | [.0016-ticket-numbered-folders](.0016-ticket-numbered-folders/handoff.md) | Opt-in numbered ticket folders (NNNN-<slug>) | feature | L2 | P2 | none | 🟢 done |
+| T-0017 | [.0017-board-order-by-id](.0017-board-order-by-id/handoff.md) | Board order matches the roadmap | feature | L1 | P3 | none | 🟢 done |
+| T-0018 | [.0018-gitignore-board-state](.0018-gitignore-board-state/handoff.md) | Recommend ignoring .sdlc/.board-state.json | chore | L1 | P2 | none | 🟢 done |
+| T-0019 | [.0019-move-the-board-cache-sdlc](.0019-move-the-board-cache-sdlc/handoff.md) | Move the board cache .sdlc/.board-state.json out of the working... | idea | L2 | P2 | none | 🟢 done |
+| T-0020 | [.0020-board-py-hides-tickets-by](.0020-board-py-hides-tickets-by/handoff.md) | board.py hides tickets by the hardcoded statuses dropped and done... | idea | L2 | P2 | none | 🟢 done |
+| T-0021 | [.0021-decide-whether-board-should-default](.0021-decide-whether-board-should-default/handoff.md) | Decide whether /board should default to --sort id when tasks have... | idea | L2 | P2 | none | 🟢 done |
+| T-0022 | [.0022-tickets-py-roadmap-skips-the](.0022-tickets-py-roadmap-skips-the/handoff.md) | tickets.py roadmap skips the numbered prefix/id check, so with... | idea | L2 | P2 | none | 🟢 done |
+| T-0023 | [.0023-in-numbered-mode-tickets-py](.0023-in-numbered-mode-tickets-py/handoff.md) | In numbered mode, tickets.py new and close refuse when any existing... | idea | L2 | P2 | none | 🟢 done |
+| T-0024 | [.0024-numbered-mode-not-persisted](.0024-numbered-mode-not-persisted/handoff.md) | new --numbered does not turn on the numbered check | bug | L1 | P2 | none | 🟢 done |
+| T-0025 | [.0025-bench-project-dirs](.0025-bench-project-dirs/handoff.md) | Bench tasks and results live in the project | feature | L2 | P2 | none | 🟢 done |
+| T-0026 | [.0026-tickets-py-check-should-warn](.0026-tickets-py-check-should-warn/handoff.md) | tickets.py: check should warn when every ticket folder has an NNNN... | idea | L2 | P2 | none | 🟢 done |
+| T-0027 | [.0027-tickets-py-close-numbered-does](.0027-tickets-py-close-numbered-does/handoff.md) | tickets.py: close --numbered does not persist ticket_folders... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0028 | [.0028-tickets-py-selftest-crashes-with](.0028-tickets-py-selftest-crashes-with/handoff.md) | tickets.py selftest crashes with FileNotFoundError when run from a... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0029 | [.0029-tickets-py-selftest-pass-output](.0029-tickets-py-selftest-pass-output/handoff.md) | tickets.py selftest pass output does not list individual... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0030 | [.0030-board-changed-markers-silently-stop](.0030-board-changed-markers-silently-stop/handoff.md) | Board '· changed' markers silently stop working when the per-user... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0031 | [.0031-legacy-sdlc-board-state-json](.0031-legacy-sdlc-board-state-json/handoff.md) | Legacy .sdlc/.board-state.json files stay in existing projects... | idea | L2 | P2 | none | 🟢 done |
+| T-0032 | [.0032-confirm-with-one-real-scripts](.0032-confirm-with-one-real-scripts/handoff.md) | Confirm with one real scripts/bench.sh --bench-dir DIR run that the... | idea | L2 | P2 | none | 🟢 done |
+| T-0033 | [.0033-tickets-py-the-numbered-folder](.0033-tickets-py-the-numbered-folder/handoff.md) | tickets.py: the numbered-folder warning in check gives a false... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0034 | [.0034-tickets-py-the-argparse-numbered](.0034-tickets-py-the-argparse-numbered/handoff.md) | tickets.py: the argparse --numbered help text for close does not... | idea | L2 | P3 | none | 🟢 done |
+| T-0035 | [.0035-t-0026-step-2-acceptance](.0035-t-0026-step-2-acceptance/handoff.md) | T-0026 step 2 acceptance check grep warn CLAUDE.md can never fail... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0036 | [.0036-have-bench-sh-write-its](.0036-have-bench-sh-write-its/handoff.md) | Have bench.sh write its exit code and wall-clock duration to the... | idea | L2 | P3 | none | 🟢 done |
+| T-0037 | [.0037-close-without-filer](.0037-close-without-filer/handoff.md) | close a ticket finished by other work | feature | L1 | P2 | none | 🟢 done |
+| T-0038 | [.0038-replan-overwrites-plan](.0038-replan-overwrites-plan/handoff.md) | A replan overwrites the original plan | bug | L2 | P1 | none | 🟢 done |
+| T-0039 | [.0039-superseded-step-dirs](.0039-superseded-step-dirs/handoff.md) | A defined name for superseded step dirs | feature | L1 | P2 | none | 🟢 done |
+| T-0040 | [.0040-split-plan-into-steps](.0040-split-plan-into-steps/handoff.md) | A script writes step handoffs from a plan | feature | L2 | P2 | none | 🟢 done |
+| T-0041 | [.0041-confirm-follow-ups](.0041-confirm-follow-ups/handoff.md) | close confirms follow-ups before filing them | feature | L2 | P2 | none | 🟢 done |
+| T-0042 | [.0042-long-runs-interactive](.0042-long-runs-interactive/handoff.md) | Document long role runs in interactive sessions | bug | L1 | P1 | none | 🟢 done |
+| T-0043 | [.0043-board-py-summary-counts-l5](.0043-board-py-summary-counts-l5/handoff.md) | board.py summary counts L5 runs with the glob step-/builder-L5... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0044 | [.0044-reconcile-the-chain-4-2](.0044-reconcile-the-chain-4-2/handoff.md) | Reconcile the /chain 4.2 wording from T-0040 rename, then steps.py... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0045 | [.0045-verify-with-one-live-interactive](.0045-verify-with-one-live-interactive/handoff.md) | Verify with one live interactive /chain run on a throwaway repo... | idea | L2 | P2 | none | 🟢 done |
+| T-0046 | [.0046-tickets-py-selftest-case-m](.0046-tickets-py-selftest-case-m/handoff.md) | tickets.py selftest case m, empty --reason, passes without the new... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0047 | [.0047-exercise-the-new-file-step](.0047-exercise-the-new-file-step/handoff.md) | Exercise the new /file step 3 flow dry run, AskUserQuestion, then... | idea | L2 | P2 | none | 🟢 done |
+| T-0048 | [.0048-guard-close-skip-against-index](.0048-guard-close-skip-against-index/handoff.md) | Guard close --skip against index drift: if the filer file changes... | idea | L2 | P3 | none | 🟢 done |
+| T-0049 | [.0049-newest-by-mtime](.0049-newest-by-mtime/handoff.md) | Newest result is picked by mtime, which checkout resets | bug | L1 | P1 | none | 🟢 done |
+| T-0050 | [.0050-dot-prefix-closed](.0050-dot-prefix-closed/handoff.md) | Dot-prefix closed ticket folders | feature | L2 | P2 | T-0049 | 🟢 done |
+| T-0051 | [.0051-order-py-crashes-with-indexerror](.0051-order-py-crashes-with-indexerror/handoff.md) | order.py crashes with IndexError when run with no arguments while... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0052 | [.0052-order-counts-after-returns-true](.0052-order-counts-after-returns-true/handoff.md) | order.counts_after returns true when either file has no runs.jsonl... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0053 | [.0053-the-hooks-pretooluse-command-leaves](.0053-the-hooks-pretooluse-command-leaves/handoff.md) | The hooks.PreToolUse command leaves ${CLAUDE_PLUGIN_ROOT} unquoted... | idea | L2 | P2 | none | 🟢 done |
+| T-0054 | [.0054-tickets-py-load-reads-nnnn](.0054-tickets-py-load-reads-nnnn/handoff.md) | tickets.py load reads .NNNN-<slug> folders as tickets in plain mode... | idea | L2 | P2 | none | 🟢 done |
+| T-0055 | [.0055-worktree-id-collision](.0055-worktree-id-collision/handoff.md) | Ticket ids collide across parallel worktrees | bug | L1 | P2 | none | 🟢 done |
+| T-0056 | [.0056-filer-record-lost-in-worktree](.0056-filer-record-lost-in-worktree/handoff.md) | filer-L1.md stays uncommitted in a lane worktree, so close on main finds no filer file | bug | L1 | P2 | none | 🟢 done |
+| T-0057 | [.0057-close-ack-warnings](.0057-close-ack-warnings/handoff.md) | close --ack-warnings to record why stale filer warnings no longer apply, instead of --force | feature | L2 | P2 | none | 🟢 done |
+| T-0059 | [.0059-merge-step-template](.0059-merge-step-template/handoff.md) | Standard merge-branch step template for builders | feature | L2 | P2 | none | 🟢 done |
+| T-0058 | [.0058-fanout-command](.0058-fanout-command/handoff.md) | /fanout command for parallel lanes, with per-lane board view | feature | L2 | P2 | T-0055, T-0056, T-0059 | 🟢 done |
+| T-0060 | [.0060-unpassable-plan-criteria](.0060-unpassable-plan-criteria/handoff.md) | Plan acceptance criteria that cannot pass reach the builder | bug | L1 | P2 | none | 🟢 done |
+| T-0061 | [.0061-add-a-steps-py-next](.0061-add-a-steps-py-next/handoff.md) | Add a steps.py next <step dir> helper that reads the newest builder... | idea | L2 | P2 | none | 🟢 done |
+| T-0062 | [.0062-criteria-that-contradict-each-other](.0062-criteria-that-contradict-each-other/handoff.md) | Criteria that contradict each other, and criteria that are not red... | idea | L2 | P2 | none | 🟢 done |
+| T-0063 | [.0063-run-a-live-merge-step](.0063-run-a-live-merge-step/handoff.md) | Run a live merge step on a throwaway repo to prove the builder... | idea | L2 | P2 | none | 🟢 done |
+| T-0064 | [.0064-merge-step-conflict-marker-guard](.0064-merge-step-conflict-marker-guard/handoff.md) | Merge-step conflict-marker guard scans the whole tree when git diff... | idea | L2 | P2 | none | 🟢 done |
+| T-0065 | [.0065-fanout-py-s-default-lane](.0065-fanout-py-s-default-lane/handoff.md) | fanout.py's default lane driver does not set SDLC_ROLE, so... | idea | L2 | P2 | none | 🟢 done |
+| T-0066 | [.0066-file-semantic-duplicates](.0066-file-semantic-duplicates/handoff.md) | /file files a follow-up that duplicates an existing ticket in different words | bug | L1 | P2 | none | 🟢 done |
+| T-0067 | [.0067-file-publish-question-options](.0067-file-publish-question-options/handoff.md) | /file step 4 publish question exceeds AskUserQuestion's 4-option limit | bug | L1 | P2 | none | 🟢 done |
+| T-0068 | [.0068-board-closed-not-planned](.0068-board-closed-not-planned/handoff.md) | Board shows a closed task with no planner file as 'not planned' | bug | L1 | P2 | none | 🟢 done |
+| T-0069 | [.0069-conflict-guard-lane-false-positive](.0069-conflict-guard-lane-false-positive/handoff.md) | Merge-step conflict-marker guard flags a lane line that legitimately starts with seven < or > | idea | L2 | P2 | none | 🟢 done |
+| T-0070 | [.0070-conflict-guard-gnu-xargs-probe](.0070-conflict-guard-gnu-xargs-probe/handoff.md) | Run the merge-step conflict-marker guard probe under GNU xargs (Linux) | idea | L2 | P2 | none | 🟢 done |
+| T-0071 | [.0071-followup-dup-matches-own-ticket](.0071-followup-dup-matches-own-ticket/handoff.md) | tickets.py close marks follow-ups as duplicates of the ticket being closed when their slug base equals its slug | bug | L1 | P2 | none | 🟢 done |
+| T-0072 | [.0072-headless-background-abandon](.0072-headless-background-abandon/handoff.md) | Headless sessions background role runs and end the turn, abandoning the work | bug | L1 | P1 | none | 🟢 done |
+| T-0073 | [.0073-verifier-no-verdict](.0073-verifier-no-verdict/handoff.md) | A verifier result with no verdict is counted as a fail and burns a retry | bug | L1 | P2 | none | 🟢 done |
+| T-0074 | [.0074-run-honors-nvmrc](.0074-run-honors-nvmrc/handoff.md) | run.sh uses the node version from .nvmrc when present | feature | L2 | P3 | none | 🟢 done |
+| T-0075 | [.0075-confirm-with-a-live-claude](.0075-confirm-with-a-live-claude/handoff.md) | Confirm with a live claude -p probe that the Bash PreToolUse... | idea | L2 | P2 | none | 🟢 done |
+| T-0076 | [.0076-headless-conductors-can-still-abandon](.0076-headless-conductors-can-still-abandon/handoff.md) | Headless conductors can still abandon work through the Agent tool's... | idea | L2 | P2 | none | 🟢 done |
+| T-0077 | [.0077-block-publish-sh-matches-publish](.0077-block-publish-sh-matches-publish/handoff.md) | block-publish.sh matches publish commands inside heredoc and file... | idea | L2 | P2 | none | 🟢 done |
+| T-0078 | [.0078-skills-file-skill-md-line](.0078-skills-file-skill-md-line/handoff.md) | skills/file/SKILL.md line 18 still says block-publish 'only fires... | idea | L2 | P2 | none | 🟢 done |
+| T-0079 | [.0079-close-dry-run-lists-open](.0079-close-dry-run-lists-open/handoff.md) | close --dry-run lists open tickets from the local --root only, so... | idea | L2 | P2 | none | 🟢 done |
+| T-0080 | [.0080-file-step-3-3-follow](.0080-file-step-3-3-follow/handoff.md) | /file step 3.3 follow-ups multiSelect can exceed AskUserQuestion's... | idea | L2 | P2 | none | 🟢 done |
+| T-0081 | [.0081-add-a-steps-py-selftest](.0081-add-a-steps-py-selftest/handoff.md) | Add a steps.py selftest case for a done L3 build → verify L2: a... | idea | L2 | P2 | none | 🟢 done |
+| T-0082 | [.0082-criteria-or-fallback](.0082-criteria-or-fallback/handoff.md) | Planner: ban \|\| fallbacks in criteria; lint them in steps.py split | bug | L1 | P2 | none | 🟢 done |
+| T-0083 | [.0083-guards-in-steps-py-split](.0083-guards-in-steps-py-split/handoff.md) | Guards in steps.py split --only N really execute, so a guard... | idea | L2 | P2 | none | 🟢 done |
+| T-0084 | [.0084-port-checking-rules](.0084-port-checking-rules/handoff.md) | Port harness checking-rules into sdlc-lite; add to verifier skills | feature | L2 | P2 | none | 🟢 done |
+| T-0085 | [.0085-port-thinking-depth](.0085-port-thinking-depth/handoff.md) | Recurring-finding rule: question the plan or rule, not the last attempt (planner replan, conductor escalation) | feature | L2 | P2 | none | 🟢 done |
+| T-0086 | [.0086-chain-open-questions-sweep](.0086-chain-open-questions-sweep/handoff.md) | Close-out sweep at the end of /chain: batch unresolved items into one AskUserQuestion round | feature | L2 | P2 | none | 🟢 done |
+| T-0087 | [.0087-agent-spawn-seat-ladder](.0087-agent-spawn-seat-ladder/handoff.md) | Seat ladder for conductor Agent-tool spawns outside run.sh, in level-rubric | feature | L2 | P2 | none | 🟢 done |
+| T-0088 | [.0088-board-py-shows-rerun-verify](.0088-board-py-shows-rerun-verify/handoff.md) | board.py shows 'rerun verify' for a second no-verdict result in a... | idea | L2 | P2 | none | 🟢 done |
+| T-0089 | [.0089-the-merge-step-conflict-marker](.0089-the-merge-step-conflict-marker/handoff.md) | The merge-step conflict-marker guard misses a kept conflict-marker... | idea | L2 | P2 | none | 🟢 done |
+| T-0090 | [.0090-fanout-lanes-in-worktrees-dir](.0090-fanout-lanes-in-worktrees-dir/handoff.md) | fanout default lanes dir becomes <toplevel>/.worktrees/fanout/<lane> | feature | L2 | P2 | none | 🟢 done |
+| T-0091 | [.0091-run-a-real-chain-close](.0091-run-a-real-chain-close/handoff.md) | Run a real /chain close-out, both interactive and headless, to... | idea | L2 | P2 | none | 🟢 done |
+| T-0092 | [.0092-run-a-live-probe-to](.0092-run-a-live-probe-to/handoff.md) | Run a live probe to confirm that the running Claude Code version... | idea | L2 | P2 | none | 🟢 done |
+| T-0093 | [.0093-check-the-steps-py-lint](.0093-check-the-steps-py-lint/handoff.md) | Check the steps.py \|\| lint allowance against the merge guards peers... | idea | L2 | P2 | none | 🟢 done |
+| T-0094 | [.0094-steps-py-split-only-guard](.0094-steps-py-split-only-guard/handoff.md) | steps.py split --only guard check cannot see changes guards make to... | idea | L2 | P2 | none | 🟢 done |
+| T-0095 | [.0095-role-worktrees-left-behind](.0095-role-worktrees-left-behind/handoff.md) | Role runs leave throwaway git worktrees behind | bug | L1 | P2 | none | 🟢 done |
+| T-0096 | [.0096-tickets-py-selftest-checks-that](.0096-tickets-py-selftest-checks-that/handoff.md) | tickets.py selftest checks that the close --dry-run expect digest... | idea | L2 | P2 | none | 🟢 done |
+| T-0097 | [.0097-block-publish-sh-no-longer](.0097-block-publish-sh-no-longer/handoff.md) | block-publish.sh no longer blocks a publish run from an interpreter... | idea | L2 | P2 | none | 🟢 done |
+| T-0098 | [.0098-prompt-audit-cleanup](.0098-prompt-audit-cleanup/handoff.md) | Apply prompt-audit hunks: drop history ids and dates from level-rubric, checks-that-bite, file skills | chore | L2 | P2 | none | 🟢 done |
+| T-0099 | [.0099-add-a-hook-live-probe](.0099-add-a-hook-live-probe/handoff.md) | Add a hook-live-probe.sh selftest case where the hook exits with a... | idea | L2 | P2 | none | 🟢 done |
+| T-0100 | [.0100-planner-parallel-safe-criteria](.0100-planner-parallel-safe-criteria/handoff.md) | Planner criteria that break under parallel lanes: stale shas, fixed set counts, global aggregates | bug | L1 | P2 | none | 🟢 done |
+| T-0101 | [.0101-builder-inherited-red](.0101-builder-inherited-red/handoff.md) | Builder reports inherited red when a gate is already red at the merge base | feature | L2 | P2 | none | 🟢 done |
+| T-0102 | [.0102-builder-scope-hygiene](.0102-builder-scope-hygiene/handoff.md) | Builders format only changed files and never pkill by pattern | bug | L1 | P2 | none | 🟢 done |
+| T-0103 | [.0103-run-result-format-check](.0103-run-result-format-check/handoff.md) | run.sh fails a role run whose result lacks its required section | bug | L1 | P1 | none | 🟢 done |
+| T-0104 | [.0104-fanout-selftest-covers-the-default](.0104-fanout-selftest-covers-the-default/handoff.md) | fanout selftest covers the default .worktrees/fanout lanes dir only... | idea | L2 | P2 | none | 🟢 done |
+| T-0105 | [.0105-find-out-why-the-t](.0105-find-out-why-the-t/handoff.md) | Find out why the T-0072 background hook did not stop the run in... | idea | L2 | P2 | none | 🟢 done |
+| T-0106 | [.0106-extend-claude-agents-sdlc-lite](.0106-extend-claude-agents-sdlc-lite/handoff.md) | Extend .claude/agents/sdlc-lite-author.md line 19 to cover the... | idea | L2 | P2 | none | 🟢 done |
+| T-0107 | [.0107-role-throwaway-worktrees-created-outside](.0107-role-throwaway-worktrees-created-outside/handoff.md) | Role throwaway worktrees created outside $SDLC_TMP_WORKTREES for... | idea | L2 | P2 | none | 🟢 done |
+| T-0108 | [.0108-a-dry-run-of-a](.0108-a-dry-run-of-a/handoff.md) | A dry run of a role whose agent declares skills planner, architect... | idea | L2 | P2 | none | 🟢 done |
+| T-0109 | [.0109-make-the-fixed-count-lint](.0109-make-the-fixed-count-lint/handoff.md) | Make the fixed-count lint skip a bare = assignment such as n=26... | idea | L2 | P2 | none | 🟢 done |
+| T-0110 | [.0110-decide-how-the-pinned-sha](.0110-decide-how-the-pinned-sha/handoff.md) | Decide how the pinned-sha lint should handle a deliberate commit... | idea | L2 | P2 | none | 🟢 done |
+| T-0111 | [.0111-pattern-kill-hook-misses-forms](.0111-pattern-kill-hook-misses-forms/handoff.md) | Pattern-kill hook misses forms it does not match: ps aux \| grep x \|... | idea | L2 | P2 | none | 🟢 done |
+| T-0112 | [.0112-formatter-rule-is-prompt-only](.0112-formatter-rule-is-prompt-only/handoff.md) | Formatter rule is prompt-only: check.py proves only that the phrase... | idea | L2 | P2 | none | 🟢 done |
+| T-0113 | [.0113-close-rename-breaks-refs](.0113-close-rename-breaks-refs/handoff.md) | close's dot-prefix rename breaks committed references to the ticket folder | bug | L1 | P2 | none | 🟢 done |
+| T-0114 | [.0114-verifier-fail-on-a-gate](.0114-verifier-fail-on-a-gate/handoff.md) | Verifier fail on a gate that is already red at the pre-build HEAD... | idea | L2 | P2 | none | 🟢 done |
+| T-0115 | [.0115-fanout-py-treats-a-lane](.0115-fanout-py-treats-a-lane/handoff.md) | fanout.py treats a lane that ends on an inherited red builder like... | idea | L2 | P2 | none | 🟢 done |
+| T-0116 | [.0116-tickets-py-archive-renames-done](.0116-tickets-py-archive-renames-done/handoff.md) | tickets.py archive renames done/dropped numbered folders to the... | idea | L2 | P2 | none | 🟢 done |
+| T-0117 | [.0117-fanout-py-closes-tickets-with](.0117-fanout-py-closes-tickets-with/handoff.md) | fanout.py closes tickets with a plain close <slug>, so in a... | idea | L2 | P2 | none | 🟢 done |
+| T-0118 | [.0118-the-reference-scan-matches-only](.0118-the-reference-scan-matches-only/handoff.md) | The reference scan matches only the literal toplevel-relative path... | idea | L2 | P2 | none | 🟢 done |
+| T-0119 | [.0119-fanout-py-still-reports-only](.0119-fanout-py-still-reports-only/handoff.md) | fanout.py still reports only driver failed rc=<n> when a lane's... | idea | L2 | P2 | none | 🟢 done |
+| T-0120 | [.0120-block-publish-sh-an-option](.0120-block-publish-sh-an-option/handoff.md) | block-publish.sh: an option that takes a separate value word before... | idea | L2 | P2 | none | 🟢 done |
+| T-0121 | [.0121-pattern-kill-hook-does-not](.0121-pattern-kill-hook-does-not/handoff.md) | Pattern-kill hook does not catch a kill word assigned through a... | idea | L2 | P2 | none | 🟢 done |
+| T-0122 | [.0122-fanout-py-inherited-red-reads](.0122-fanout-py-inherited-red-reads/handoff.md) | fanout.py inherited_red reads the tests from the newest builder's... | idea | L2 | P2 | none | 🟢 done |
+| T-0123 | [.0123-replan-light-criterion-swap](.0123-replan-light-criterion-swap/handoff.md) | Plan defects: criteria stable across main syncs, and apply the verifier's replacement criterion without a full replan | bug | L1 | P1 | none | 🟢 done |
+| T-0124 | [.0124-inherited-red-gate-steps](.0124-inherited-red-gate-steps/handoff.md) | Gate guards on every step block on inherited red; a final gates-green step instead | bug | L1 | P2 | none | 🟢 done |
+| T-0125 | [.0125-criteria-no-porcelain-clean](.0125-criteria-no-porcelain-clean/handoff.md) | Criteria use git diff plus untracked files, never a clean porcelain status | bug | L1 | P2 | none | 🟢 done |
+| T-0126 | [.0126-chain-stop-leaves-dirty-tree](.0126-chain-stop-leaves-dirty-tree/handoff.md) | A chain that stops mid-step leaves the tree dirty and blocks the next sync merge | bug | L1 | P2 | none | 🟢 done |
+| T-0127 | [.0127-fanout-resync-limit](.0127-fanout-resync-limit/handoff.md) | fanout: make the resync retry limit configurable | feature | L2 | P3 | none | ⚪ dropped |
+| T-0128 | [.0128-tickets-py-outside-refs-matches](.0128-tickets-py-outside-refs-matches/handoff.md) | tickets.py outside_refs matches folder paths by fixed-string... | idea | L2 | P2 | none | 🟢 done |
+| T-0129 | [.0129-worktrees-created-from-inside-a](.0129-worktrees-created-from-inside-a/handoff.md) | Worktrees created from inside a script or program a role runs... | idea | L2 | P2 | none | 🟢 done |
+| T-0130 | [.0130-git-worktree-add-path-name](.0130-git-worktree-add-path-name/handoff.md) | git worktree add <path> <name> where <name> exists only as a remote... | idea | L2 | P2 | none | 🟢 done |
+| T-0131 | [.0131-the-reference-scan-still-treats](.0131-the-reference-scan-still-treats/handoff.md) | The reference scan still treats another tree's .sdlc/0003-x as a... | idea | L2 | P2 | none | 🟢 done |
+| T-0132 | [.0132-planner-batch-probes](.0132-planner-batch-probes/handoff.md) | Planner batches its criterion probes into one Bash call per step | chore | L2 | P2 | none | 🟢 done |
+| T-0133 | [.0133-investigate-the-intermittent-check-sh](.0133-investigate-the-intermittent-check-sh/handoff.md) | Investigate the intermittent check.sh failure hook selftest: FAIL... | idea | L2 | P2 | none | 🟢 done |
+| T-0134 | [.0134-mirror-the-extended-planner-rules](.0134-mirror-the-extended-planner-rules/handoff.md) | Mirror the extended planner rules a guard seen red first... | idea | L2 | P2 | none | 🟢 done |
+| T-0135 | [.0135-extend-the-clean-status-lint](.0135-extend-the-clean-status-lint/handoff.md) | Extend the clean-status lint in steps.py to catch a whole-tree... | idea | L2 | P2 | none | 🟢 done |
+| T-0136 | [.0136-decide-whether-path-scoped-git](.0136-decide-whether-path-scoped-git/handoff.md) | Decide whether path-scoped git status --porcelain -- <path>... | idea | L2 | P2 | none | 🟢 done |
+| T-0137 | [.0137-the-steps-py-lint-accepts](.0137-the-steps-py-lint-accepts/handoff.md) | The steps.py \|\| lint accepts test -f a \|\| exit 1 \| cat, which is... | idea | L2 | P2 | none | 🟢 done |
+| T-0138 | [.0138-the-steps-py-lint-does](.0138-the-steps-py-lint-does/handoff.md) | The steps.py lint does not check compound criteria with a trailing... | idea | L2 | P2 | none | 🟢 done |
+| T-0139 | [.0139-pre-sync-wip-id-dirty](.0139-pre-sync-wip-id-dirty/handoff.md) | Pre-sync wip<id>: dirty before sync commit in fanout.py run_ticket... | idea | L2 | P2 | none | 🟢 done |
+| T-0140 | [.0140-no-code-gate-detects-a](.0140-no-code-gate-detects-a/handoff.md) | No code gate detects a full-suite guard placed on a non-final step... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0141 | [.0141-criteria-build-base-var](.0141-criteria-build-base-var/handoff.md) | Scope criteria need a build-start base: run.sh exports SDLC_BASE_SHA | bug | L1 | P2 | none | 🟢 done |
+| T-0142 | [.0142-finish-in-session](.0142-finish-in-session/handoff.md) | Stop the ticket treadmill: loose-ends step, fast lane, filer fix-now-or-drop, one-ticket cap | feature | L2 | P1 | none | 🟢 done |
+| T-0143 | [.0143-step-2-s-fix-picking](.0143-step-2-s-fix-picking/handoff.md) | step 2's fix picking the correct result event from a stream-json... | idea | L2 | P2 | none | 🟢 done |
+| T-0144 | [.0144-the-node-perl-and-ruby](.0144-the-node-perl-and-ruby/handoff.md) | The node, perl, and ruby value-option lists are best-effort the... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0145 | [.0145-block-pattern-kill-sh-s](.0145-block-pattern-kill-sh-s/handoff.md) | block-pattern-kill.sh's new substitution matcher reads a... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0146 | [.0146-the-step-1-acceptance-criterion](.0146-the-step-1-acceptance-criterion/handoff.md) | The step-1 acceptance criterion pattern git diff --stat HEAD \| awk... | idea | L2 | P2 | none | 🟢 done |
+| T-0147 | [.0147-a-compound-span-followed-by](.0147-a-compound-span-followed-by/handoff.md) | a compound span followed by &&, ;, or \|\| after its closing keyword... | idea | L2 | P2 | none | ⚪ dropped |
+| T-0148 | [.0148-decisions-update-criteria](.0148-decisions-update-criteria/handoff.md) | Conductor scope decisions update the acceptance criteria, not just prose | feature | L2 | P2 | none | 🟢 done |
+| T-0149 | [.0149-trace-contract-dependents](.0149-trace-contract-dependents/handoff.md) | A step that changes a shared contract pulls its dependents into scope | feature | L2 | P2 | none | 🟢 done |
+| T-0150 | [.0150-resume-from-blocked-step](.0150-resume-from-blocked-step/handoff.md) | Resuming a chain restarts at the blocked step, not the newest step | bug | L1 | P2 | none | 🟢 done |
+| T-0151 | [.0151-fanout-reset-guards-dirty-tree](.0151-fanout-reset-guards-dirty-tree/handoff.md) | fanout.py never discards uncommitted edits when it resets the integration tree | bug | L1 | P2 | none | 🟢 done |
+| T-0152 | [.0152-external-lane-owners](.0152-external-lane-owners/handoff.md) | External agents (Codex) get lane integration and reserved ticket ids | feature | L2 | P2 | none | 🟢 done |
+| T-0153 | [.0153-depends-on-capability](.0153-depends-on-capability/handoff.md) | Ticket depends can name a capability or file, not only a whole ticket | feature | L2 | P2 | none | 🟢 done |
+| T-0154 | [.0154-nested-tmp-worktrees](.0154-nested-tmp-worktrees/handoff.md) | Builders inside a lane leave nested tmp worktrees behind | bug | L1 | P2 | none | 🟢 done |
+| T-0155 | [.0155-trace-run-ids](.0155-trace-run-ids/handoff.md) | Attempt id on lane and gate log lines | feature | L1 | P2 | none | 🟢 done |
+| T-0156 | [.0156-per-attempt-gate-logs](.0156-per-attempt-gate-logs/handoff.md) | Keep gate logs per attempt, never overwrite | feature | L1 | P2 | none | 🟢 done |
+| T-0157 | [.0157-review-sdlc-traces](.0157-review-sdlc-traces/handoff.md) | review-sdlc-traces: find SDLC-caused waste and bugs in project traces | feature | L3 | P2 | T-0155, T-0156 | 🟢 done |
+| T-0158 | [.0158-lifecycle-stale-lock-headless](.0158-lifecycle-stale-lock-headless/handoff.md) | Stale running attempt blocks headless Claude runs; .run.lock not ignored | bug | L1 | P2 | none | 🟢 done |
+| T-0159 | [.0159-lifecycle-selftests-flake-under-load](.0159-lifecycle-selftests-flake-under-load/handoff.md) | Lifecycle and codex selftests time out under host load | bug | L1 | P2 | none | 🟢 done |
+| T-0160 | [.0160-repo-onboarding-skill](.0160-repo-onboarding-skill/handoff.md) | Onboard skill: entry files, docs layout, and check mode | feature | L2 | P2 | none | 🟢 done |
+| T-0161 | [.0161-repo-reorganization](.0161-repo-reorganization/handoff.md) | Spike: read-only reorganization plan on this repository | spike | L2 | P2 | T-0160 | 🟢 done |
+| T-0162 | [.0162-entry-files-in-step-handoffs](.0162-entry-files-in-step-handoffs/handoff.md) | Planner names the entry files each step needs | feature | L2 | P2 | T-0160 | 🟢 done |
+| T-0163 | [.0163-codex-default-models-rejected](.0163-codex-default-models-rejected/handoff.md) | Codex rejects gpt-6-sol and gpt-6-luna on a ChatGPT account | bug | L2 | P2 | none | 🟢 done |
+| T-0164 | [.0164-fix-skill-lints-task-folder](.0164-fix-skill-lints-task-folder/handoff.md) | /fix lints the task folder, which has no planner file | bug | L1 | P2 | none | 🟢 done |
+| T-0165 | [.0165-roles-replaced-by-other-agents](.0165-roles-replaced-by-other-agents/handoff.md) | Sessions replace SDLC Lite roles with other plugins' agents | bug | L1 | P2 | none | 🟢 done |
+| T-0166 | [.0166-agent-spawn-hook](.0166-agent-spawn-hook/handoff.md) | Warn when the conductor spawns another plugin's role agent | feature | L2 | P2 | none | 🟢 done |
+| T-0167 | [.0167-role-in-temp-worktree](.0167-role-in-temp-worktree/handoff.md) | Document running a role from a temporary worktree | feature | L2 | P2 | none | 🟢 done |
+| T-0168 | [.0168-unattended-publish](.0168-unattended-publish/handoff.md) | Decide how publishing works during an unattended run | idea | L1 | P2 | none | 🟢 done |
+| T-0169 | [.0169-role-whole-disk-search](.0169-role-whole-disk-search/handoff.md) | A role's whole-disk find hung a planner run for 25 minutes | bug | L1 | P2 | none | 🟢 done |
+| T-0170 | [.0170-builder-edits-running-runner](.0170-builder-edits-running-runner/handoff.md) | A builder that edits run.sh loses its own result | bug | L1 | P2 | none | 🟢 done |
+| T-0171 | [.0171-plan-reviewer-role](.0171-plan-reviewer-role/handoff.md) | Independent plan-reviewer role before implementation | feature | L3 | P2 | none | 🟢 done |
+| T-0172 | [.0172-scout-pin-haiku](.0172-scout-pin-haiku/handoff.md) | Pin the scout to claude-haiku-4-5 | chore | L1 | P2 | none | 🟢 done |
+| T-0173 | [.0173-planner-l3-opus](.0173-planner-l3-opus/handoff.md) | Move planner L3 from Fable xhigh to Opus xhigh | chore | L1 | P2 | none | 🟢 done |
+| T-0174 | [.0174-disk-scan-quoted-mention](.0174-disk-scan-quoted-mention/handoff.md) | block-disk-scan.sh denies a quoted mention of a scan inside a compound command | bug | L1 | P2 | none | 🟢 done |
+| T-0175 | [.0175-ticket-root-router](.0175-ticket-root-router/handoff.md) | Opt-in tickets/ root and generated .sdlc/AGENTS.md router | feature | L3 | P2 | none | 🟢 done |
+| T-0176 | [.0176-messages-mailbox](.0176-messages-mailbox/handoff.md) | Git-ignored .sdlc/messages mailbox with atomic claim, expiry, and run.sh notice | feature | L3 | P2 | none | 🟢 done |
+| T-0177 | [.0177-mailbox-core](.0177-mailbox-core/handoff.md) | Mailbox core: messages.py, lifecycle, schema, and run.sh notice | feature | L3 | P2 | none | 🟢 done |
+| T-0178 | [.0178-messenger-agent](.0178-messenger-agent/handoff.md) | Messenger agent: declared agent, Codex mapping, and check.py coverage | feature | L2 | P2 | T-0177 | 🟢 done |
+| T-0179 | [.0179-messages-entry-files](.0179-messages-entry-files/handoff.md) | Messages entry files and fresh-role live validation | feature | L2 | P2 | T-0177, T-0178 | 🟢 done |
+| T-0180 | [.0180-idle-host-limit-docs](.0180-idle-host-limit-docs/handoff.md) | Document that the messenger reaches only an active parent host | chore | L1 | P2 | none | 🟢 done |
+| T-0181 | [.0181-messages-wait](.0181-messages-wait/handoff.md) | messages.py wait: one blocking call that returns when a message arrives | feature | L2 | P2 | T-0180 | 🟢 done |
+| T-0182 | [.0182-idle-host-watcher-design](.0182-idle-host-watcher-design/handoff.md) | Design an external watcher that resumes an idle host when a message arrives | spike | L2 | P2 | none | 🟢 done |
+| T-0183 | [.0183-supervisor-script](.0183-supervisor-script/handoff.md) | supervisor.py: deterministic watcher that resumes an idle host on new mail | feature | L3 | P2 | T-0181, T-0182 | 🟢 done |
+| T-0184 | [.0184-role-result-schema](.0184-role-result-schema/handoff.md) | One declared result schema per role, validated before the next role reads it | feature | L2 | P2 | none | 🟢 done |
+| T-0185 | [.0185-evals-folder](.0185-evals-folder/handoff.md) | evals/ folder, evals.py, and a model-table change must cite an eval | feature | L2 | P2 | none | 🟢 done |
+| T-0186 | [.0186-proposals-folder](.0186-proposals-folder/handoff.md) | proposals/ folder and proposals.py mining runs and notes for candidate changes | feature | L2 | P2 | T-0185 | 🟢 done |
+| T-0187 | [0187-board-overview](0187-board-overview/handoff.md) | board.py --overview: queue, running roles, supervisor, unread mail from the folders | feature | L2 | P2 | T-0183 | ⚪ dropped |
+| T-0188 | [.0188-tighten-idle-note](.0188-tighten-idle-note/handoff.md) | Tighten the idle-host limit note: wait does not address the limit | chore | L2 | P2 | none | 🟢 done |
+| T-0189 | [.0189-lean-chain](.0189-lean-chain/handoff.md) | Lean chain: fewer, coarser planner builder verifier steps for size M work | chore | L2 | P2 | none | 🟢 done |
+| T-0190 | [.0190-sdlc-topic-subfolders](.0190-sdlc-topic-subfolders/handoff.md) | Organize every .sdlc/ content type into topic sub-folders | chore | L2 | P2 | none | 🟢 done |
+| T-0191 | [.0191-single-plan-record](.0191-single-plan-record/handoff.md) | One plan record per ticket; later roles do not repeat research or planning | chore | L2 | P2 | none | 🟢 done |
+| T-0192 | [.0192-conductor-batching](.0192-conductor-batching/handoff.md) | Conductor rule: finish work the fastest way, batch reviews and verifications | chore | L2 | P2 | none | 🟢 done |
+| T-0193 | [.0193-footprint](.0193-footprint/handoff.md) | footprint.py: measure and gate a ticket's footprint | feature | L2 | P2 | none | 🟢 done |
+| T-0194 | [.0194-lean-lane-text](.0194-lean-lane-text/handoff.md) | Lean lane text and coarse-step rule in chain and planner | chore | L2 | P2 | none | 🟢 done |
+| T-0195 | [.0195-runner-family-task-dir](.0195-runner-family-task-dir/handoff.md) | Runner: verifier family rule for a task-dir verifier | feature | L3 | P2 | none | 🟢 done |
+| T-0196 | [.0196-batch-state](.0196-batch-state/handoff.md) | Step state for a whole-ticket (batched) verifier result | feature | L3 | P2 | T-0195 | 🟢 done |
+| T-0197 | [.0197-lane](.0197-lane/handoff.md) | steps.py lane, review_required(), and skips.md | feature | L3 | P2 | T-0194 | 🟢 done |
+| T-0198 | [.0198-skips-guard](.0198-skips-guard/handoff.md) | skips.md guard in tickets.py check and close | feature | L2 | P2 | T-0197 | 🟢 done |
+| T-0199 | [.0199-conductor-rules](.0199-conductor-rules/handoff.md) | Conductor batching and skip rules | chore | L2 | P2 | T-0196, T-0198 | 🟢 done |
+| T-0200 | [0200-plan-merge](0200-plan-merge/handoff.md) | Replan by delta: merged plan view and steps.py resolve | feature | L3 | P2 | T-0197 | ⚪ dropped |
+| T-0201 | [0201-anchor](0201-anchor/handoff.md) | Anchor rule for step blocks and its lint check | feature | L2 | P2 | T-0200 | ⚪ dropped |
+| T-0202 | [.0202-carry-forward](.0202-carry-forward/handoff.md) | Carry forward section in scout, researcher, architect, archaeologist | feature | L3 | P2 | none | 🟢 done |
+| T-0203 | [.0203-fanout-overlap](.0203-fanout-overlap/handoff.md) | fanout.py merge-time file-overlap check | feature | L2 | P2 | none | 🟢 done |
+| T-0204 | [.0204-fanout-resolver](.0204-fanout-resolver/handoff.md) | fanout.py resolves lane tickets through ticket_dir | feature | L2 | P2 | T-0203 | 🟢 done |
+| T-0205 | [.0205-layout-resolver](.0205-layout-resolver/handoff.md) | layout key and one resolver for ticket dir, roadmap, notes | feature | L3 | P2 | T-0204 | 🟢 done |
+| T-0206 | [.0206-migrate-layout](.0206-migrate-layout/handoff.md) | tickets.py migrate-layout | feature | L3 | P2 | T-0205 | 🟢 done |
+| T-0207 | [.0207-layout-readers-docs](.0207-layout-readers-docs/handoff.md) | Readers and docs for the topic layout | chore | L2 | P2 | T-0206 | 🟢 done |
+| T-0208 | [0208-live-evidence](0208-live-evidence/handoff.md) | Live evidence: lean and full ticket on both hosts | chore | L2 | P2 | T-0199, T-0201, T-0207 | ⚪ dropped |
+| T-0209 | [.0209-maintainer-lean-default](.0209-maintainer-lean-default/handoff.md) | Maintainer guidance: prefer the lean lane for plugin work and record why a ticket needs more | chore | L1 | P2 | T-0194 | 🟢 done |
+| T-0210 | [.0210-spec-gate-check](.0210-spec-gate-check/handoff.md) | Spec gate A1: specgate.py check, run.sh plan-reviewer refusal, plan guard-timeout line | chore | L2 | P2 | none | 🟢 done |
+| T-0211 | [0211-spec-gate-red](0211-spec-gate-red/handoff.md) | Spec gate A2: specgate.py red, (red) tag, split and review wiring | chore | L3 | P2 | T-0197, T-0201, T-0202, T-0210 | ⚪ dropped |
+| T-0212 | [.0212-handoff-freeze](.0212-handoff-freeze/handoff.md) | Handoff freeze: stale_input flag, rerun action, handoff edit hook | chore | L3 | P2 | T-0196, T-0197, T-0199, T-0211, T-0183 | 🟢 done |
+| T-0213 | [0213-replan-delta-checklist](0213-replan-delta-checklist/handoff.md) | Replan handoff, planner checklist, scoped plan review, replans metric | chore | L3 | P2 | T-0199, T-0200, T-0201, T-0202, T-0211 | ⚪ dropped |
+| T-0214 | [.0214-ticket-budget](.0214-ticket-budget/handoff.md) | Per-ticket cost budget: budget.py, run.sh exit 4, board column | chore | L3 | P2 | T-0187, T-0199, T-0212 | 🟢 done |
+| T-0215 | [.0215-solo-operator-tiers](.0215-solo-operator-tiers/handoff.md) | Solo operator session agent: tiers S, M, L as the default lane for small and medium tickets | feature | L2 | P1 | none | 🟢 done |
+| T-0216 | [.0216-solo-live-proof](.0216-solo-live-proof/handoff.md) | Live proof: a size-M ticket delivered by solo with a batched verifier, on Claude and Codex | chore | L1 | P2 | T-0215 | 🟢 done |
+| T-0217 | [.0217-solo-start-path](.0217-solo-start-path/handoff.md) | Solo has no start path: conductor cannot spawn it and S/M routing text still says /fix | bug | L1 | P1 | none | 🟢 done |
+| T-0218 | [.0218-guard-numbers](.0218-guard-numbers/handoff.md) | Renumber check.py guards uniquely and guard it | chore | L2 | P2 | none | 🟢 done |
+| T-0219 | [.0219-skips-solo-full](.0219-skips-solo-full/handoff.md) | Skips guard covers lane solo and full | chore | L2 | P2 | none | 🟢 done |
+| T-0220 | [.0220-t0212-reverify](.0220-t0212-reverify/handoff.md) | Re-verify T-0212's check-packaging fix | chore | L2 | P2 | none | 🟢 done |
+| T-0221 | [.0221-fanout-solo-first](.0221-fanout-solo-first/handoff.md) | fanout.py runs each lane by steps.py lane: solo for S and M, chain for full, with a lane cap and stagger | feature | L2 | P2 | none | 🟢 done |
+| T-0222 | [.0222-fanout-solo-skipped](.0222-fanout-solo-skipped/handoff.md) | fanout solo lane closes: write the ## Skipped entries the T-0219 skips guard needs | bug | L1 | P2 | none | 🟢 done |
+| T-0223 | [.0223-agent-command](.0223-agent-command/handoff.md) | /agent command: launch an SDLC Lite agent by name on instructions | feature | L2 | P2 | none | 🟢 done |
+| T-0224 | [.0224-solo-lane-skipped](.0224-solo-lane-skipped/handoff.md) | steps.py lane writes the planner and filer ## Skipped entries for lane solo, so any caller can close by reason | bug | L1 | P2 | none | 🟢 done |
+| T-0225 | [.0225-solo-cost-capture](.0225-solo-cost-capture/handoff.md) | Solo sessions write no cost record, so the budget gate cannot see the default lane | bug | L1 | P1 | none | 🟢 done |
+| T-0226 | [.0226-fanout-solo-metering](.0226-fanout-solo-metering/handoff.md) | Fanout solo lanes start the raw command, so their cost is not recorded | bug | L1 | P1 | none | 🟢 done |
+| T-0227 | [.0227-orient-entry-files](.0227-orient-entry-files/handoff.md) | Orient a harness: root AGENTS.md work section, tree map, docs entry | chore | L1 | P2 | none | 🟢 done |
+| T-0228 | [.0228-onboard-lane-text](.0228-onboard-lane-text/handoff.md) | onboard.py's root entry block still routes work to chain and fix, not solo | bug | L1 | P2 | none | 🟢 done |
+| T-0229 | [.0229-solo-budget-gate](.0229-solo-budget-gate/handoff.md) | Solo start has no budget gate, and /agent solo without a ticket is unmetered | bug | L2 | P1 | none | 🟢 done |
+| T-0230 | [.0230-fanout-codex-report-and-gate](.0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | L1 | P2 | none | 🟢 done |
+| T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | L1 | P2 | none | 🟢 done |
+| T-0232 | [.0232-reorg-inventory](.0232-reorg-inventory/handoff.md) | inventory.py: read-only document inventory and reorganization plan procedure | feature | L2 | P2 | none | 🟢 done |
+| T-0233 | [.0233-reorg-apply](.0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L3 | P2 | T-0232 | 🟢 done |
+| T-0240 | [.0240-docs-schema-design](.0240-docs-schema-design/handoff.md) | Design: strict docs/ folder schema and the docs vs .sdlc boundary | feature | L2 | P1 | none | 🟢 done |
+| T-0241 | [.0241-docs-schema-parser](.0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser | feature | L1 | P2 | none | 🟢 done |
+| T-0242 | [.0242-docs-check-script](.0242-docs-check-script/handoff.md) | docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template | feature | L2 | P2 | T-0241 | 🟢 done |
+| T-0243 | [.0243-sdlc-boundary-checks](.0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | L1 | P2 | T-0242 | 🟢 done |
+| T-0245 | [.0245-docs-promotion-helper](.0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | L1 | P2 | T-0241 | 🟢 done |
+| T-0246 | [.0246-rename-validation-to-reports](.0246-rename-validation-to-reports/handoff.md) | Rename docs/validation to docs/reports and rewrite references | chore | L2 | P2 | none | 🟢 done |
+| T-0244 | [.0244-docs-schema-migration](.0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | L2 | P2 | T-0242, T-0243, T-0246 | 🟢 done |
+| T-0247 | [.0247-pc-gap-analysis](.0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | L2 | P2 | none | 🟢 done |
+| T-0248 | [.0248-placement-proof](.0248-placement-proof/handoff.md) | Placement proof for the context registry | chore | L2 | P2 | none | 🟢 done |
+| T-0249 | [.0249-plan-goal](.0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | L2 | P2 | none | 🟢 done |
+| T-0250 | [.0250-plan-loop](.0250-plan-loop/handoff.md) | plan-loop skill | feature | L1 | P2 | none | 🟢 done |
+| T-0251 | [.0251-plan-fanout](.0251-plan-fanout/handoff.md) | plan-fanout skill | feature | L2 | P2 | none | 🟢 done |
+| T-0252 | [.0252-pc-run-context-trace](.0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | L2 | P2 | none | 🟢 done |
+| T-0253 | [.0253-pc-entry-file-resolver](.0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | L1 | P2 | none | 🟢 done |
+| T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | L2 | P2 | none | ⏳ proposed |
+| T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | L1 | P2 | none | 🟢 done |
+| T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | L1 | P2 | none | 🟢 done |
+| T-0257 | [.0257-broken-links-cleanup](.0257-broken-links-cleanup/handoff.md) | Fix moved-target Markdown links, exclude code from the link counter, guard the baseline | chore | L2 | P2 | none | 🟢 done |
+| T-0258 | [.0258-fanout-close-ticket-root](.0258-fanout-close-ticket-root/handoff.md) | fanout numbered close ignores ticket_root | bug | L1 | P2 | none | 🟢 done |
+| T-0259 | [.0259-fanout-gate-preflight](.0259-fanout-gate-preflight/handoff.md) | fanout needs committed handoffs and node_modules in the gate worktree | chore | L1 | P2 | none | 🟢 done |
+| T-0260 | [.0260-solo-session-limit-resume](.0260-solo-session-limit-resume/handoff.md) | Solo long commands capped at 30 min and session-limit stops leave no resume | bug | L2 | P2 | none | 🟢 done |
+| T-0261 | [.0261-split-goal-precheck](.0261-split-goal-precheck/handoff.md) | steps.py split needs ## Goal; fail fast before any planner runs | bug | L1 | P2 | none | 🟢 done |
+| T-0262 | [.0262-close-citation-scan-gaps](.0262-close-citation-scan-gaps/handoff.md) | tickets.py close needs --force on tracked citations and cannot see .sdlc citations | bug | L2 | P2 | none | 🟢 done |
+| T-0263 | [.0263-stale-lane-route](.0263-stale-lane-route/handoff.md) | A builder blocked by a stale lane routes to replan, not rebase-and-resplit | bug | L1 | P2 | none | 🟢 done |
+| T-0264 | [.0264-split-after-replan-override](.0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | L2 | P2 | none | 🟢 done |
+| T-0265 | [.0265-headless-planner-denied-rm](.0265-headless-planner-denied-rm/handoff.md) | Headless planner stalled on a denied rm permission prompt | bug | L1 | P2 | none | 🟢 done |
+| T-0266 | [.0266-tickets-check-partial-front-matter](.0266-tickets-check-partial-front-matter/handoff.md) | tickets.py check breaks on partial front matter | bug | L1 | P2 | none | 🟢 done |
+| T-0267 | [.0267-hook-denies-worktree-add-variable](.0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | L1 | P2 | none | 🟢 done |
+| T-0268 | [.0268-raw-solo-cost-records](.0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | L1 | P2 | none | 🟢 done |
+| T-0269 | [.0269-traces-failed-attempt-noise](.0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | L1 | P2 | none | 🟢 done |
+| T-0270 | [.0270-steps-lint-nested-backtick-message](.0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | L1 | P2 | none | 🟢 done |
+| T-0271 | [.0271-planner-contract-dependents-lint](.0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | L2 | P2 | none | 🟢 done |
+| T-0272 | [.0272-conductor-repo-opt-out](.0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | L1 | P2 | none | 🟢 done |
+| T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | L1 | P2 | none | 🟢 done |
+| T-0274 | [.0274-lane-gate](.0274-lane-gate/handoff.md) | run.sh lane gate | chore | L2 | P2 | none | 🟢 done |
+| T-0275 | [.0275-subagent-probes](.0275-subagent-probes/handoff.md) | Probe the sub-agent mechanics the design assumes | spike | L1 | P2 | none | 🟢 done |
+| T-0276 | [.0276-claude-levels-table](.0276-claude-levels-table/handoff.md) | Claude level table and per-level generated agents | feature | L2 | P2 | T-0275 | 🟢 done |
+| T-0277 | [.0277-dispatch-prepare](.0277-dispatch-prepare/handoff.md) | dispatch.py prepare: the pre-launch half of run.sh | feature | L2 | P2 | T-0276 | 🟢 done |
+| T-0278 | [.0278-dispatch-record](.0278-dispatch-record/handoff.md) | dispatch.py record: validate, record, and close a dispatched role | feature | L2 | P2 | T-0277 | 🟢 done |
+| T-0279 | [.0279-dispatch-recover](.0279-dispatch-recover/handoff.md) | dispatch.py status and resume for dead or interrupted sub-agents | feature | L1 | P2 | T-0278 | 🟢 done |
+| T-0280 | [.0280-cost-estimate](.0280-cost-estimate/handoff.md) | Estimated cost for sub-agent runs from tokens and a price table | feature | L1 | P2 | T-0278 | 🟢 done |
+| T-0281 | [.0281-hooks-agent-role](.0281-hooks-agent-role/handoff.md) | Hooks key on agent_type; spawn gate replaces block-role-spawn | feature | L2 | P2 | T-0275, T-0277 | 🟢 done |
+| T-0282 | [.0282-conductor-dispatch-core](.0282-conductor-dispatch-core/handoff.md) | Conductor and chain dispatch roles as sub-agents | feature | L2 | P2 | T-0276, T-0278, T-0279, T-0280, T-0281 | 🟢 done |
+| T-0283 | [.0283-launcher-skills-dispatch](.0283-launcher-skills-dispatch/handoff.md) | Launcher skills dispatch through sub-agents | chore | L2 | P2 | T-0282 | 🟢 done |
+| T-0284 | [.0284-solo-subagent](.0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | L1 | P2 | T-0282 | 🟢 done |
+| T-0285 | [.0285-fanout-subagent](.0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | L2 | P2 | T-0284, T-0281 | 🟢 done |
+| T-0286 | [.0286-supervisor-orphans](.0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | L1 | P2 | T-0279 | 🟢 done |
+| T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | L2 | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
+| T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | L1 | P2 | T-0287 | ⏳ proposed |
+| T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | L2 | P2 | none | 🟢 done |
+| T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | L1 | P2 | none | 🟢 done |
+| T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | L2 | P2 | none | ⏳ proposed |
+| T-0293 | [.0293-solo-run-kill-group](.0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | L1 | P2 | none | 🟢 done |
+| T-0294 | [.0294-plan-review-l4-l5-only](.0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | L1 | P2 | none | 🟢 done |
+| T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | L1 | P2 | none | 🟢 done |
+| T-0296 | [.0296-lane-refuse-m-over-20-criteria](.0296-lane-refuse-m-over-20-criteria/handoff.md) | steps lane refuses size M over 20 criteria | bug | L1 | P2 | none | 🟢 done |
+| T-0297 | [.0297-planner-guard-dry-run-widen-inherit](.0297-planner-guard-dry-run-widen-inherit/handoff.md) | Planner guard dry-run; split inherits earlier widenings | bug | L1 | P2 | none | 🟢 done |
+| T-0298 | [.0298-limit-marker-reset-time](.0298-limit-marker-reset-time/handoff.md) | 429 limit marker records the reset time | feature | L1 | P2 | none | 🟢 done |
+| T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | L1 | P2 | none | 🟢 done |
+| T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | L1 | P2 | none | 🟢 done |
+| T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | L2 | P2 | none | ⏳ proposed |
+| T-0302 | [.0302-adr-number-allocator-note](.0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | L2 | P2 | none | 🟢 done |
+| T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | L2 | P2 | none | 🟢 done |
+| T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | L2 | P2 | T-0303 | 🟢 done |
+| T-0305 | [.0305-fleet-collect](.0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | L2 | P2 | none | 🟢 done |
+| T-0306 | [.0306-fleet-detect](.0306-fleet-detect/handoff.md) | fleet_detect.py: waste and stall detect rules | feature | L2 | P2 | T-0305 | 🟢 done |
+| T-0307 | [.0307-fleet-interview](.0307-fleet-interview/handoff.md) | fleet-retro interview template and environment fingerprint | feature | L1 | P2 | none | 🟢 done |
+| T-0308 | [.0308-fleet-retro-skill](.0308-fleet-retro-skill/handoff.md) | /sdlc-lite:fleet-retro skill, cross-repo report, verification sample | feature | L2 | P2 | T-0305, T-0306, T-0307 | 🟢 done |
+| T-0309 | [.0309-naming-sdlc-lite](.0309-naming-sdlc-lite/handoff.md) | Name the product SDLC Lite and rename docs/lean-sdlc to docs/specs/sdlc-lite | chore | L2 | P2 | none | 🟢 done |
+| T-0310 | [.0310-fleet-config](.0310-fleet-config/handoff.md) | fleet.json: the active repo registry and conductor list | feature | L1 | P2 | none | 🟢 done |
+| T-0311 | [.0311-fleet-liveness](.0311-fleet-liveness/handoff.md) | fleet_status.py: liveness join, load trend and snapshot | feature | L2 | P2 | T-0305, T-0310 | 🟢 done |
+| T-0312 | [.0312-fleet-status-render](.0312-fleet-status-render/handoff.md) | fleet_status.py render and the /sdlc-lite:fleet-status skill | feature | L2 | P2 | T-0310, T-0311 | 🟢 done |
+| T-0313 | [.0313-solo-worktree-hook](.0313-solo-worktree-hook/handoff.md) | solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first | bug | L1 | P2 | none | 🟢 done |
+| T-0314 | [.0314-red-first-control](.0314-red-first-control/handoff.md) | Red-first control: a (red) criterion must fail at base and pass after, for solo and chain | feature | L2 | P2 | none | 🟢 done |
+| T-0315 | [.0315-replan-cost-remeasure](.0315-replan-cost-remeasure/handoff.md) | Re-measure planner and replan cost after T-0297 and the L4/L5 plan-review rule | spike | L1 | P2 | none | 🟢 done |
+| T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | L2 | P2 | none | ⏳ proposed |
+| T-0317 | [0317-red-under-load-rerun](0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | L2 | P2 | none | ⏳ proposed |
+| T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | L1 | P2 | none | 🟢 done |
+| T-0319 | [0319-fleet-verify-0307-0310](0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | L1 | P2 | none | ⏳ proposed |
+| T-0320 | [.0320-fleet-config-nameless-entry-line](.0320-fleet-config-nameless-entry-line/handoff.md) | fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) | bug | L1 | P2 | none | 🟢 done |
+| T-0321 | [.0321-interview-template-readthrough](.0321-interview-template-readthrough/handoff.md) | Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4) | chore | L2 | P2 | none | 🟢 done |
+| T-0322 | [.0322-fleet-verify-fixes](.0322-fleet-verify-fixes/handoff.md) | Make the flaky fleet_status selftest deterministic | bug | L1 | P2 | none | 🟢 done |
+| T-0323 | [.0323-fleet-status-tables](.0323-fleet-status-tables/handoff.md) | fleet_status render: colored emoji marks and tables, collapse done-but-open rows | feature | L2 | P2 | none | 🟢 done |
+| T-0324 | [.0324-fleet-status-schema](.0324-fleet-status-schema/handoff.md) | JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section | feature | L2 | P2 | T-0323 | 🟢 done |
+| T-0325 | [.0325-skills-self-contained](.0325-skills-self-contained/handoff.md) | Make every skill self-contained: ship its resources, drop repo-relative path assumptions | chore | L2 | P2 | T-0324 | 🟢 done |
+| T-0326 | [.0326-fanout-prep-spawn-gate](.0326-fanout-prep-spawn-gate/handoff.md) | fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) | bug | L1 | P2 | none | 🟢 done |
+| T-0327 | [.0327-fanout-land-branch-name](.0327-fanout-land-branch-name/handoff.md) | fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3) | bug | L1 | P2 | none | 🟢 done |
+| T-0328 | [.0328-subagent-cost-estimate-gap](.0328-subagent-cost-estimate-gap/handoff.md) | Sub-agent cost estimate is 7 to 12 percent of host and null for solo rows (T-0287 finding 4) | bug | L1 | P2 | none | 🟢 done |
+| T-0329 | [.0329-fanout-verifier-tree](.0329-fanout-verifier-tree/handoff.md) | Fanout verifier prompt Tree: points at the main tree, not the lane worktree | bug | L1 | P2 | none | 🟢 done |
+| T-0330 | [.0330-verifier-report-on-disk](.0330-verifier-report-on-disk/handoff.md) | Verifier report is not on disk when dispatch.py record runs for a sub-agent | bug | L1 | P2 | none | 🟢 done |
+| T-0331 | [.0331-cost-estimate-calibrate](.0331-cost-estimate-calibrate/handoff.md) | Sub-agent cost estimate still 8.5 percent of host after T-0328 | bug | L1 | P2 | none | 🟢 done |
+| T-0332 | [.0332-transcript-usage-last-line](.0332-transcript-usage-last-line/handoff.md) | Transcript usage takes the first partial line per message id | bug | L1 | P2 | none | 🟢 done |
+| T-0333 | [.0333-verify-subagent-tickets](.0333-verify-subagent-tickets/handoff.md) | Independent verification of the sub-agent mode tickets that closed with no verifier verdict | chore | L2 | P2 | none | 🟢 done |
+| T-0334 | [.0334-skills-record-transcript-flag](.0334-skills-record-transcript-flag/handoff.md) | Twelve launcher skills spell dispatch.py record without --transcript (T-0331 finding) | bug | L1 | P2 | none | 🟢 done |
+| T-0335 | [.0335-cost-basis-label-drift](.0335-cost-basis-label-drift/handoff.md) | cost_basis label for transcript pricing drifted from the T-0280 criterion and its docstring is stale (T-0280 finding) | bug | L1 | P3 | none | 🟢 done |
+| T-0336 | [.0336-l3-verifier-row-outside-band](.0336-l3-verifier-row-outside-band/handoff.md) | The L3 verifier row of the live evidence prices at 0.57 of host after the T-0332 refit (T-0328 and T-0331 finding) | bug | L1 | P3 | none | 🟢 done |
+| T-0337 | [.0337-scout-haiku-spawn-denied](.0337-scout-haiku-spawn-denied/handoff.md) | dispatch.py prepare scout L1 emits a model the Agent tool rejects and the spawn hook denies (found by ultimate-tokens) | bug | L1 | P2 | none | 🟢 done |
+| T-0338 | [.0338-record-resolved-model](.0338-record-resolved-model/handoff.md) | dispatch.py record writes the transcript's resolved model into the run record | chore | L1 | P2 | none | 🟢 done |
+| T-0339 | [.0339-fanout-lane-stages-logs](.0339-fanout-lane-stages-logs/handoff.md) | A fanout or solo lane commit never stages run artifacts that fail repo gates (*.log, .run.lock, *.running) | bug | L1 | P2 | none | 🟢 done |
+| T-0340 | [.0340-prepare-stale-attempt](.0340-prepare-stale-attempt/handoff.md) | dispatch.py prepare recovers or names a stale attempt left by a failed spawn instead of blocking the next prepare | bug | L1 | P2 | none | 🟢 done |
+| T-0341 | [.0341-subagent-lane-stages-artifacts](.0341-subagent-lane-stages-artifacts/handoff.md) | Sub-agent lane commits (fanout prep commit command, the fanout skill's verifier commit, solo sub-agent commits) still use git add -A and can stage *.log and .run.lock | bug | L1 | P2 | none | 🟢 done |
+| T-0342 | [0342-one-level-system](0342-one-level-system/handoff.md) | One level system: L1 to L5 everywhere; retire the S/M/L tier and size vocabularies (solo-S/M/L, ticket size S/M/L/XL) | chore | L2 | P2 | T-0325, T-0338 | ⏳ proposed |

@@ -3,7 +3,7 @@ id: T-0233
 title: "Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore)"
 type: feature        # feature | bug | chore | spike | idea
 status: done
-size: L              # S | M | L | XL
+size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2
 depends: [T-0232]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-05

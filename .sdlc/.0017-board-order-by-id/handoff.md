@@ -3,7 +3,7 @@ id: T-0017
 title: "Board order matches the roadmap"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S
+size: L1
 priority: P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

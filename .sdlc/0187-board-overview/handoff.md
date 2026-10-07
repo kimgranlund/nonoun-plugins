@@ -3,7 +3,7 @@ id: T-0187
 title: "board.py --overview: queue, running roles, supervisor, unread mail from the folders"
 type: feature
 status: dropped
-size: M
+size: L2
 priority: P2
 depends: [T-0183]
 created: 2026-10-01

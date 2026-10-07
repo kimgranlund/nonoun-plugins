@@ -3,7 +3,7 @@ id: T-0183
 title: "supervisor.py: deterministic watcher that resumes an idle host on new mail"
 type: feature
 status: done
-size: L
+size: L3
 priority: P2
 depends: [T-0181, T-0182]
 created: 2026-10-01

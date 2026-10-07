@@ -3,7 +3,7 @@ id: T-0200
 title: "Replan by delta: merged plan view and steps.py resolve"
 type: feature        # feature | bug | chore | spike | idea
 status: dropped
-size: L              # S | M | L | XL
+size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0197]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-04

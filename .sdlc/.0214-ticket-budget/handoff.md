@@ -3,7 +3,7 @@ id: T-0214
 title: "Per-ticket cost budget: budget.py, run.sh exit 4, board column"
 type: chore           # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: L
+size: L3
 priority: P2         # P1 | P2 | P3
 depends: [T-0187, T-0199, T-0212]
 created: 2026-10-04
