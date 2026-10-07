@@ -154,7 +154,7 @@ run
        `inherited red: step-<n>: <tests>`, the tests read from the verifier's Verdict line when
        the verifier reported the inherited red, else from the builder result's Status line. No lane commit, merge, or close; as for any stop,
        the lane tree is WIP-committed on the lane branch and kept there for inspection.
-    4. commit in the lane: `git add -A`, `git commit -m "<id>: <title>"`; nothing staged:
+    4. commit in the lane: `git add -A` minus run artifacts (*.log, .run.lock, *.running; LANE_ADD), `git commit -m "<id>: <title>"`; nothing staged:
        `no changes` (no merge, no close).
     5. first, outside the lock, the overlap wait: lanes rank by their position in the spec list,
        and the ticket's paths (`git diff --name-only <integration>...<ref>`, ref the lane branch,
@@ -1005,6 +1005,7 @@ def in_merge(wt):
 # Run artifacts a lane commit never stages: they fail consumer repo gates (T-0339).
 LANE_ADD = ('add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock',
             ':(exclude,glob)**/*.running')
+LANE_ADD_SH = 'git ' + ' '.join(shlex.quote(a) for a in LANE_ADD)  # the same add as a printed shell command (T-0341)
 
 
 def wip_commit(wt, tid, outcome):
@@ -1524,7 +1525,7 @@ def print_prep(ctx):
                     out.append(f"    tree: git worktree add -b {lane.branch} {tree} {ctx['start']}")
                 else:
                     out.append(f"    sync: git -C {tree} merge --ff --no-edit {ctx['integration']}")
-                out.append(f"    commit: git -C {tree} add -A && git -C {tree} commit -m {shlex.quote(f'{t.id}: {t.title}')}")
+                out.append(f"    commit: git -C {tree} {LANE_ADD_SH[4:]} && git -C {tree} commit -m {shlex.quote(f'{t.id}: {t.title}')}")
                 out.append(f"    land: {land_command(ctx, lane.branch, t.id)}")
     out += plan_overlap(ctx)
     if ctx['gates']:
@@ -3281,6 +3282,25 @@ def selftest():
                f'out={pa.stdout[-300:]!r} tree={ls_ar}',
                'keep.txt' in ls_ar and '.sdlc/t1/a.attempt.json' in ls_ar
                and not [f for f in ls_ar if f.endswith(('.log', '.run.lock', '.running'))])
+
+        # case 26 (T-0341): the printed prep commit command and the skill's verifier commit leave artifacts unstaged
+        pr = tmp / 'prepcmd'
+        sized_repo(pr, ['S'], {'.gitignore': gi})
+        pp = verb(pr, 'prep', 'alpha=T-0001', '--lane', 'full', '--integration', 'fanout/pr', '--lanes-dir', str(tmp / 'pr-lanes'), '--stagger', '0')
+        line = next((l for l in pp.stdout.splitlines() if l.strip().startswith('commit: git -C')), '')
+        skill = (pathlib.Path(__file__).resolve().parent.parent / 'skills' / 'fanout' / 'SKILL.md').read_text()
+        sk = re.search(r'`(git -C <worktree> add [^`]*)`', skill)
+        for label, tmpl in (('prep', line.strip()[len('commit: '):]), ('skill', sk.group(1) if sk else '')):
+            for flag, cmdtxt in (('new', tmpl), ('old', 'git -C <worktree> add -A && git -C <worktree> commit -m x')):
+                lt = tmp / f'c26-{label}-{flag}'
+                sh(tmp, 'clone', '-q', str(pr), str(lt))
+                sh(lt, 'config', 'user.name', 't'); sh(lt, 'config', 'user.email', 't@example.invalid')
+                (lt / 'k.txt').write_text('k'); (lt / 'v.log').write_text('l'); (lt / '.run.lock').write_text('')
+                add = re.sub(r'git -C \S+', f'git -C {shlex.quote(str(lt))}', cmdtxt.split(' && ')[0])
+                subprocess.run(add, shell=True, capture_output=True)
+                staged = sh(lt, 'diff', '--cached', '--name-only').stdout.split()
+                bad = [f for f in staged if f.endswith(('.log', '.run.lock'))]
+                expect(f'case 26 {label}/{flag}: staged={staged}', 'k.txt' in staged and (bad if flag == 'old' else not bad))
 
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
