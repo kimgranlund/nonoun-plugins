@@ -26,3 +26,13 @@ The user saw the 0.20.12 output wrap and be dominated by 60 closed maison ticket
 
 ## Constraints
 No em or en dashes in output. No push or publish. Model and effort defaults unchanged.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/fleet_status.py selftest`
+- `out=$(python3 plugins/sdlc-lite/scripts/fleet_status.py render --no-write --no-gh) && printf '%s\n' "$out" | grep -qxF '| Repo | Row | State | Detail | Source |' && ! printf '%s\n' "$out" | grep -q "$(printf '\xe2\x80\x94')"`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `test -z "$(git diff --name-only HEAD | grep -vxF -e docs/maintenance/sdlc-internals.md -e plugins/sdlc-lite/scripts/fleet_status.py -e plugins/sdlc-lite/skills/fleet-status/SKILL.md -e .sdlc/0323-fleet-status-tables/handoff.md)"`
+- `diff <(git show HEAD:plugins/sdlc-lite/scripts/fleet_status.py | sed -n '/^import datetime/,/^# --- render/p') <(sed -n '/^import datetime/,/^# --- render/p' plugins/sdlc-lite/scripts/fleet_status.py)` (collect data code is unchanged)
+- The selftest holds a control that done-but-open rows fold into one `N closed tickets still shown on the board` row per repo while a genuinely stale row stays listed, and a control that a row with no source still raises RenderError. Each fails when its behavior is removed: in a scratch copy of `plugins/sdlc-lite/scripts/`, make the `if 'ticket-done-board-open' in r['flags']:` test in `stale_items` read `if False:` (the collapse controls print FAIL), and delete the `if not clean(source): raise RenderError(...)` lines in `trow` (the source controls print FAIL).
+- `python3 plugins/sdlc-lite/scripts/fleet_status.py render --no-write --no-gh` prints Needs you, Moving, Stale or stuck and Release state as markdown tables with the marks 🟢 live, 🟡 idle, 🔴 dead, ⚠️ stale, ⚪ nothing moving, keeps Machine as one line, and the `skills/fleet-status/SKILL.md` text and the `docs/maintenance/sdlc-internals.md` fleet_status paragraph describe the same layout and marks; the skill's AskUserQuestion step is unchanged apart from naming the State, Detail and Source columns.
