@@ -7,8 +7,53 @@ Usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH
                      [--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run]
                      [--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate]
                      [--no-gate-lock]
+       fanout.py prep <spec>... [the run flags but --driver and --dry-run]
+       fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR]
+                      [--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock]
        fanout.py selftest
   where each <spec> is <lane>=<id>[,<id>...] or <lane>@<branch>=<id>[,<id>...]
+
+Sub-agent lanes (T-0285): `run` starts one process per lane. On the Claude host the parent conductor can instead
+dispatch each lane as a background sub-agent in an isolated worktree and keep only the deterministic work here:
+`prep` is preflight, the overlap check and the lane choice, and prints what to spawn; `land` is the locked merge, the
+gates, the vacuous-gate refusal, the close and the report for one finished branch. `run --driver` stays (the selftest
+and the headless default, removed only by T-0288).
+
+prep
+  The preflight of `run` (the same refusals, the same messages, exit 2, nothing created: an unknown, done or twice-
+  listed id, an uncommitted handoff, more lanes than --max-lanes, a planned-scope overlap unless --allow-overlap, a
+  lanes dir inside the tree that is not gitignored) plus one more: `.claude/worktrees/` must be gitignored, because the
+  host puts each sub-agent worktree there (add it to .gitignore and exclude it from watchers, as for `.worktrees/`).
+  Per ticket it prints the lane from `steps.py lane` (read only: prep writes no skips.md, runs.jsonl or branch), then
+  for a solo ticket the dispatch JSON: `subagent_type` sdlc-lite:solo-<S|M|L>, `name` <id>-solo, `model`, `effort`,
+  `isolation` worktree, `run_in_background` (false when SDLC_HEADLESS=1), the `branch` the host will make
+  (worktree-<id>-solo, known before the spawn) and its `worktree` (.claude/worktrees/<id>-solo), and a `prompt` brief
+  that asks the solo to commit `<id>: <title>` on its branch (SOLO_SUBAGENT_PROMPT; the headless SOLO_PROMPT says
+  never commit). For tier M and L it also prints the verifier command, prepared against the sub-agent worktree after the
+  solo reports (`dispatch.py prepare verifier L3`, SOLO_VERIFIER, never the solo's family); its result is committed on the
+  branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
+  gates. A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
+  A `full` ticket gets no dispatch: the parent conductor drives the chain, each role a sub-agent against the lane tree
+  (`<lanes-dir>/<lane>` on branch <integration>-<lane>, the command to make it printed, each brief carrying a
+  `Tree: <path>` line), commits `<id>: <title>` there, and lands that branch. Lane tickets run one after another: the
+  next is spawned after the previous one landed. The first land creates the integration branch and worktree (under
+  --lanes-dir) and each later land reuses them.
+
+land
+  `land <branch>` takes the ticket from `--ticket` or from a worktree-<id>-solo branch name, resolves it from git
+  objects on the branch (so the branch needs no `external_branch:` registration), and refuses (exit 2, nothing
+  created) a branch that is not a local branch, the integration branch, a ticket that is done or absent on the branch,
+  or an integration worktree path that is something else. It then follows the external-lane path of `run` unchanged:
+  the overlap wait, the integration-dirty refusal, `git merge --no-ff` as `Merge <branch>: <id>` (a conflict is
+  aborted as `merge conflict`: the parent asks the sub-agent, by name, to merge the integration branch on its side,
+  then lands again), each --gate through gate_lock.py (a vacuous gate is `gate vacuous`, a red one resets the merge:
+  `red: <gate> rc=<n>`), `tickets.py close` (a solo lane closes with --reason after `steps.record_lane` writes the lane
+  record and the skipped planner and filer into skips.md) and the `close <id>` commit. Two outcomes come first and merge
+  nothing: `no changes` when the branch holds no commit the integration branch lacks (a stub that never committed),
+  and, for a solo tier M or L, `no verifier result` or `verifier <verdict>` read from the verifier results committed on
+  the branch that the integration branch does not hold (git objects, newest by order.py). Exit 0 only for `merged`.
+  Each land appends one line to <lanes-dir>/logs/land.jsonl and rewrites report.md from it: every ticket landed so far
+  (the latest outcome each), with the `- Lane for <id>` line and the tier model line, as for `run`.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
   the lane and appends its record to the task's skips.md (committed with the lane): `solo` (size S and M by
@@ -246,6 +291,22 @@ selftest
   prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and cats the slot file it holds. The gate log of a
   default run shows both set and `alpha/T-0001` as the holder; SDLC_GATE_SLOTS=3 gives max(1, cpus // 3)
   workers; the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
+  A prep case (case 22, T-0285): three tickets (S, M, S) in two lanes print one lane line each, the T-0001 dispatch JSON
+  (name T-0001-solo, sdlc-lite:solo-S, sonnet, isolation worktree, branch worktree-T-0001-solo, the brief carrying
+  `T-0001: Ticket t1` and no "Never commit"), a tier M verifier command against the worktree and none for tier S, a land
+  command per ticket with the base sha and the gate, and create no branch, worktree, lanes dir or file; SDLC_HEADLESS=1
+  gives run_in_background false; `--lane full` prints the tree and sync commands, a `Tree:` line and no JSON; a ticket at
+  80 percent of its budget prints `budget gate: budget.py ack`, no dispatch, and exits 4 while the other ticket still
+  dispatches. Parity: for a planned-scope overlap, an uncommitted handoff, `--max-lanes 1` with two lanes, one id in two
+  lanes and an unknown id, `run` and `prep` both exit 2 with the same stderr and create nothing; `--allow-overlap`
+  lets prep print the plan; `.claude/worktrees/` not gitignored exits 2 naming it. A land case (case 23, T-0285):
+  branches worktree-T-0001-solo and worktree-T-0003-solo, each with one commit, land through a green gate to `merged`
+  on a reused integration worktree (two merge commits, `close <id>` commits, status done, a solo lane in skips.md,
+  main untouched and clean, the report listing both tickets with `Lane for` and the tier line); a red gate resets the
+  merge (`red: false rc=1`, tip unchanged, ticket still ready); `Ran 0 tests` is `gate vacuous` and --allow-empty-gate
+  merges it; a branch with no commits is `no changes`; a size M ticket with no verifier result, then a failing one, is
+  refused and with a passing one merges; a missing branch, a branch naming no ticket and the integration branch refuse
+  with exit 2. Case 24 (T-0285): a `--driver true` stub that commits nothing gives `no changes`.
 """
 import argparse, datetime, fcntl, json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile, threading, time, uuid
 
@@ -282,6 +343,21 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
                'none, then run the one batched independent verifier agents/solo.md names. No person is present: '
                'never ask the user and never use AskUserQuestion. Never commit, push, open a PR, or publish: '
                'fanout.py commits this lane when you finish and closes the ticket after the merge.')
+
+# Sub-agent lanes (T-0285): the parent conductor spawns each solo ticket as a named background sub-agent with
+# isolation worktree. The host cuts <name> a worktree under .claude/worktrees/<name> on branch worktree-<name>.
+HOST_WORKTREES = '.claude/worktrees'
+SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
+SOLO_SUBAGENT_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+                        'and the files it names, make the smallest change that meets its done criterion, run every '
+                        'check command it names and rerun them all after a fix, and report files changed, each check '
+                        'with its outcome, and anything still open. For a size M or L ticket write the handoff\'s '
+                        '## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the '
+                        'parent runs the one batched independent verifier. No person is present: never ask the user '
+                        'and never use AskUserQuestion. You work on your own worktree branch: commit early and often, '
+                        'one `WIP {id}` commit after each green check and a final commit `{id}: {title}` when every '
+                        'check is green. Never push, open a PR, or publish: fanout.py land merges your branch, runs '
+                        'the gates, and closes the ticket.')
 
 
 class Refuse(Exception):
@@ -372,7 +448,7 @@ def solo_command(handoff_rel, size, backend=None):
     task_dir = pathlib.PurePosixPath(handoff_rel).parent.as_posix()
     return ' '.join(shlex.quote(x) for x in (
         sys.executable, str(SCRIPTS / 'solo_run.py'), 'run', '--task-dir', task_dir, '--tier', tier,
-        '--backend', backend, '--exec', '--brief', prompt))  # --exec: headless start until T-0285 moves lanes to sub-agents
+        '--backend', backend, '--exec', '--brief', prompt))  # --exec: the headless start of a `run` lane; sub-agent lanes use prep and land (T-0285), `run` goes in T-0288
 
 
 def default_driver(handoff_rel, kind='full', size=None):
@@ -423,6 +499,25 @@ def norm_tid(x):
     """T-0123, 0123, and 123 are one id: return T-NNNN; anything else comes back unchanged."""
     m = re.fullmatch(r'(?:T-)?(\d{1,4})', x)
     return f'T-{int(m.group(1)):04d}' if m else x
+
+
+def resolve_lanes_dir(a, cwd, top):
+    """The lanes dir (--lanes-dir, else <toplevel>/.worktrees/fanout); inside the work tree it must be gitignored."""
+    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.worktrees' / 'fanout'
+    if lanes_dir == top:
+        raise Refuse(f'--lanes-dir {lanes_dir} is the work tree toplevel; lanes need their own dir')
+    if top in lanes_dir.parents:
+        # lanes inside the work tree must be gitignored, or every lane shows up as untracked files
+        inner = lanes_dir.relative_to(top).as_posix()
+        probe, want = ('.worktrees/x', '.worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
+        p = git(top, 'check-ignore', '-q', probe)
+        if p.returncode == 1:
+            what = 'the default lanes dir' if not a.lanes_dir else '--lanes-dir'
+            raise Refuse(f'{what} {lanes_dir} is inside the work tree {top} but {want} is not gitignored; '
+                         f'add {want} to .gitignore, or pass --lanes-dir outside the repo')
+        if p.returncode:
+            raise Refuse(f'git check-ignore {probe} failed: {p.stderr.strip() or p.returncode}')
+    return lanes_dir
 
 
 def preflight(a):
@@ -534,20 +629,7 @@ def preflight(a):
             raise Refuse(f'--base {base} is not a commit')
         start = p.stdout.strip()
 
-    lanes_dir = (cwd / a.lanes_dir).resolve() if a.lanes_dir else top / '.worktrees' / 'fanout'
-    if lanes_dir == top:
-        raise Refuse(f'--lanes-dir {lanes_dir} is the work tree toplevel; lanes need their own dir')
-    if top in lanes_dir.parents:
-        # lanes inside the work tree must be gitignored, or every lane shows up as untracked files
-        inner = lanes_dir.relative_to(top).as_posix()
-        probe, want = ('.worktrees/x', '.worktrees/') if not a.lanes_dir else (f'{inner}/x', f'{inner}/')
-        p = git(top, 'check-ignore', '-q', probe)
-        if p.returncode == 1:
-            what = 'the default lanes dir' if not a.lanes_dir else '--lanes-dir'
-            raise Refuse(f'{what} {lanes_dir} is inside the work tree {top} but {want} is not gitignored; '
-                         f'add {want} to .gitignore, or pass --lanes-dir outside the repo')
-        if p.returncode:
-            raise Refuse(f'git check-ignore {probe} failed: {p.stderr.strip() or p.returncode}')
+    lanes_dir = resolve_lanes_dir(a, cwd, top)
     if lanes_dir.exists() and not lanes_dir.is_dir():
         raise Refuse(f'--lanes-dir {lanes_dir} exists and is not a dir')
     wts = git_out(cwd, 'worktree', 'list', '--porcelain').splitlines()
@@ -1183,6 +1265,8 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
             src, dst = lane.dir / trel / t.slug, integ / trel / t.slug
             if not any(dst.glob('filer-L*.md')) and src.is_dir():
                 shutil.copytree(str(src), str(dst), dirs_exist_ok=True)
+        if ctx.get('land') and ctx['kinds'].get(t.id, ('', None))[0] == 'solo':
+            record_solo_lane(integ / trel / t.slug, ctx['kinds'][t.id][1])
         argv = [sys.executable, str(SCRIPTS / 'tickets.py'), '--root', rel.as_posix(), 'close', t.slug]
         if close_reason(ctx, t):
             argv += ['--reason', close_reason(ctx, t)]
@@ -1272,6 +1356,18 @@ def report(ctx):
     return text
 
 
+def refuse_overlap(ctx):
+    """Refuse (run and prep alike) two tickets in different lanes whose planned scope overlaps, unless --allow-overlap."""
+    if ctx['allow_overlap']:
+        return
+    pairs, _ = overlap_pairs(ctx)
+    if pairs:
+        la, ta, lb, tb, paths = pairs[0]
+        raise Refuse(f"{ta.id} (lane {la.name}) and {tb.id} (lane {lb.name}) plan to change the same "
+                     f"files ({', '.join(paths)}): run them in one lane, or pass --allow-overlap and let "
+                     f"the merge-time wait serialize them")
+
+
 def cmd_run(a):
     try:
         ctx = preflight(a)
@@ -1280,13 +1376,7 @@ def cmd_run(a):
             return 0
         # fanout mints its own id on every run; an inherited SDLC_ATTEMPT_ID belongs to a role attempt
         ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
-        if not ctx['allow_overlap']:
-            pairs, _ = overlap_pairs(ctx)
-            if pairs:
-                la, ta, lb, tb, paths = pairs[0]
-                raise Refuse(f"{ta.id} (lane {la.name}) and {tb.id} (lane {lb.name}) plan to change the same "
-                             f"files ({', '.join(paths)}): run them in one lane, or pass --allow-overlap and let "
-                             f"the merge-time wait serialize them")
+        refuse_overlap(ctx)
         setup(ctx)
     except Refuse as e:
         print(f'fanout: {e}', file=sys.stderr)
@@ -1307,6 +1397,350 @@ def cmd_run(a):
     results = [r for lane in ctx['lanes'] for r in lane.results]
     ok = bool(results) and all(outcome == 'merged' for _, outcome, _ in results)
     return 0 if ok else 1
+
+
+# ---------- sub-agent lanes: prep and land (T-0285) ----------
+
+def subagent_name(tid):
+    """The sub-agent name of a solo ticket: <ticket>-solo, so the host puts it on branch worktree-<name>."""
+    return f'{tid}-solo'
+
+
+def subagent_dispatch(ctx, t, tier):
+    """The Agent call for one solo ticket: a background sub-agent in its own worktree, told to commit `<id>: <title>`."""
+    model, effort, _ = SOLO_TIERS[tier]
+    name = subagent_name(t.id)
+    handoff = (ctx['trel'] / t.slug / 'handoff.md').as_posix()
+    verifier = None
+    if tier in ('M', 'L'):  # prepared against the sub-agent worktree once the solo reports (SOLO_VERIFIER: never its family)
+        verifier = ' '.join(shlex.quote(x) for x in (
+            sys.executable, str(SCRIPTS / 'dispatch.py'), 'prepare', 'verifier', SOLO_VERIFIER,
+            f'{HOST_WORKTREES}/{name}/{handoff}'))
+    return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': f'solo {tier}: {t.id}',
+            'model': model, 'effort': effort,
+            'prompt': SOLO_SUBAGENT_PROMPT.format(handoff=handoff, id=t.id, title=t.title),
+            'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
+            'ticket': t.id, 'tier': tier, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
+            'handoff': handoff, 'verifier': verifier}
+
+
+def land_command(ctx, branch, tid):
+    """The `fanout.py land` command for one finished branch, pinning the run's integration branch, base, lanes dir and gates."""
+    argv = [sys.executable, str(SCRIPTS / 'fanout.py'), 'land', branch, '--ticket', tid,
+            '--integration', ctx['integration'], '--base', ctx['start'], '--lanes-dir', str(ctx['lanes_dir'])]
+    if ctx['root'] != ctx['top'] / '.sdlc':
+        argv += ['--root', os.path.relpath(ctx['root'], ctx['cwd'])]
+    for g in ctx['gates']:
+        argv += ['--gate', g]
+    if ctx['allow_empty_gate']:
+        argv.append('--allow-empty-gate')
+    if ctx['rewrite_refs']:
+        argv.append('--rewrite-refs')
+    return ' '.join(shlex.quote(x) for x in argv)
+
+
+def print_prep(ctx):
+    """The prep plan: per ticket the lane, then the dispatch JSON of a solo ticket or the tree commands of a full one.
+    Returns 4 when a ticket stops at the budget gate, else 0."""
+    out = ['fanout prep (sub-agent lanes: nothing created)']
+    if ctx['reuse']:
+        out.append(f"integration branch {ctx['integration']} exists at {ctx['start']}: land reuses it")
+    else:
+        out.append(f"base: {ctx['start']} ({ctx['base']})")
+        out.append(f"integration branch: {ctx['integration']} (the first land creates it at the base)")
+    out.append(f"integration worktree: {ctx['integ_dir']} (the first land creates it)")
+    out.append(f"ticket root in each worktree: {ctx['rel'].as_posix()}")
+    n_reg = sum(1 for x in ctx['lanes'] if not x.external)
+    out.append(f"lane cap: {n_reg} lane(s) of at most {ctx['max_lanes']} (--max-lanes); stagger: {ctx['stagger']} s "
+               f"between spawns (--stagger): the parent spaces its Agent calls")
+    rc = 0
+    for lane in ctx['lanes']:
+        out.append(f'lane {lane.name}: its tickets run one after another; spawn the next after the previous one lands')
+        for k, t in enumerate(lane.tickets):
+            out.append(f'  {t.id} {t.slug}: {t.title}')
+            taskdir = tickets.ticket_dir(ctx['root']) / t.slug
+            kind, why = lane_decision(ctx, taskdir)
+            tier = solo_tier(t.size) if kind == 'solo' else None
+            if kind == 'solo' and tier is None:
+                kind, why = 'full', f'size {t.size or "unset"} has no solo tier'
+            shown = f'solo, tier {tier}: {solo_model_label(tier)}' if tier else kind
+            out.append(f'    lane: {shown} ({why})')
+            if tier:
+                import solo_run  # same scripts/ dir: the budget gate a solo lane starts through
+                hold = solo_run.budget_hold(taskdir)
+                if hold:
+                    out.append(f"    blocked: budget gate: budget.py ack (budget {hold['percent']}%: ask the user); no dispatch")
+                    rc = 4
+                    continue
+                d = subagent_dispatch(ctx, t, tier)
+                out.append(f"    branch: {d['branch']}; worktree: {d['worktree']} (host-made at the spawn)")
+                out.append(f"    dispatch {t.id}:")
+                out.append('\n'.join('    ' + ln for ln in json.dumps(d, indent=2).splitlines()))
+                if d['verifier']:
+                    out.append(f"    verifier (after the solo reports; commit its result on {d['branch']}): {d['verifier']}")
+                out.append(f"    land: {land_command(ctx, d['branch'], t.id)}")
+            else:
+                tree = ctx['lanes_dir'] / lane.name
+                out.append(f'    full: driven by the parent conductor, not a lane process (skills/fanout/SKILL.md): '
+                           f'roles run as sub-agents against {tree}, each brief carrying `Tree: {tree}`')
+                if k == 0:
+                    out.append(f"    tree: git worktree add -b {lane.branch} {tree} {ctx['start']}")
+                else:
+                    out.append(f"    sync: git -C {tree} merge --ff --no-edit {ctx['integration']}")
+                out.append(f"    commit: git -C {tree} add -A && git -C {tree} commit -m {shlex.quote(f'{t.id}: {t.title}')}")
+                out.append(f"    land: {land_command(ctx, lane.branch, t.id)}")
+    out += plan_overlap(ctx)
+    if ctx['gates']:
+        out += [f'gate {k}: {g}' for k, g in enumerate(ctx['gates'], 1)]
+    else:
+        out.append('gates: none given (merges will not be gated)')
+    if deps_note(ctx):
+        out.append(deps_note(ctx))
+    out.append(f"logs: {ctx['logs']}")
+    print('\n'.join(out))
+    return rc
+
+
+def cmd_prep(a):
+    try:
+        ctx = preflight(a)
+        probe = git(ctx['top'], 'check-ignore', '-q', f'{HOST_WORKTREES}/x')
+        if probe.returncode == 1:
+            raise Refuse(f'{HOST_WORKTREES}/ is not gitignored: the host puts each sub-agent worktree there; add '
+                         f'{HOST_WORKTREES}/ to .gitignore (and exclude it from watchers, as .worktrees/)')
+        if probe.returncode:
+            raise Refuse(f'git check-ignore {HOST_WORKTREES}/x failed: {probe.stderr.strip() or probe.returncode}')
+        refuse_overlap(ctx)
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    return print_prep(ctx)
+
+
+def branch_names(cwd, ref, prefix):
+    """The file names directly under <prefix>/ at ref (git objects, no checkout); empty when ref or dir is missing."""
+    p = git(cwd, 'ls-tree', '--name-only', ref, prefix + '/' if prefix != '.' else '')
+    return {pathlib.PurePosixPath(x).name for x in p.stdout.splitlines() if x} if p.returncode == 0 else set()
+
+
+def branch_verdict(ctx, ref, t):
+    """'pass', 'fail', ... or None: the newest task-dir verifier result committed on ref that the integration branch
+    does not hold yet (read from git objects into a temp dir, never from a tree)."""
+    prefix = (ctx['trel'] / t.slug).as_posix()
+    on_ref = branch_names(ctx['cwd'], ref, prefix)
+    new = sorted(n for n in on_ref - branch_names(ctx['cwd'], ctx['integration'], prefix)
+                 if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', n))
+    if not new:
+        return None
+    with tempfile.TemporaryDirectory() as td:
+        for n in new + (['runs.jsonl'] if 'runs.jsonl' in on_ref else []):
+            blob = git(ctx['cwd'], 'show', f'{ref}:{prefix}/{n}' if prefix != '.' else f'{ref}:{n}')
+            if blob.returncode == 0:
+                (pathlib.Path(td) / n).write_text(blob.stdout, encoding='utf-8')
+        newest = order.newest(pathlib.Path(td), 'verifier')
+        return steps.verdict_or_none(newest) if newest else None
+
+
+def record_solo_lane(taskdir, tier):
+    """A solo delivery's lane record in its skips.md (with the skipped planner and filer), when none is recorded yet."""
+    skips = pathlib.Path(taskdir) / 'skips.md'
+    if skips.is_file() and re.search(r'(?m)^- lane: ', skips.read_text(encoding='utf-8')):
+        return
+    steps.record_lane(taskdir, 'solo', 'fanout land', [f'sub-agent lane: tier {tier} ran as one solo sub-agent'])
+    steps.write_solo_skips(taskdir, tier)
+
+
+def land_lane_name(branch, tid):
+    name = re.sub(r'[^a-z0-9]+', '-', re.sub(r'^worktree-', '', branch).lower()).strip('-')
+    return name if name and LANE_RE.fullmatch(name) and name not in RESERVED else f'{tid.lower()}-land'
+
+
+def land_preflight(a):
+    """Every check before any write for one `land <branch>`. Returns the run context; raises Refuse."""
+    cwd = pathlib.Path.cwd()
+    p = git(cwd, 'rev-parse', '--is-inside-work-tree')
+    if p.returncode or p.stdout.strip() != 'true':
+        raise Refuse('not a git repo: run fanout.py inside a git work tree with a commit')
+    if git(cwd, 'rev-parse', '--verify', '-q', 'HEAD').returncode:
+        raise Refuse('git repo has no commit: commit first')
+    top = pathlib.Path(git_out(cwd, 'rev-parse', '--show-toplevel')).resolve()
+    root = (cwd / a.root).resolve()
+    try:
+        rel = root.relative_to(top)
+    except ValueError:
+        raise Refuse(f'--root {a.root} is {root}, outside the git toplevel {top}')
+    if not root.is_dir():
+        raise Refuse(f'--root {a.root}: {root} is not a dir')
+    try:
+        tdir = tickets.ticket_dir(root)
+    except tickets.Fail as e:
+        raise Refuse(str(e))
+    branch = a.branch
+    tip = git(cwd, 'rev-parse', '-q', '--verify', f'refs/heads/{branch}^{{commit}}')
+    if tip.returncode:
+        raise Refuse(f'{branch} is not a local branch with a commit')
+    integration = a.integration or f'fanout/{datetime.date.today().isoformat()}'
+    if git(cwd, 'check-ref-format', '--branch', integration).returncode:
+        raise Refuse(f'{integration!r} is not a valid branch name')
+    if branch == integration:
+        raise Refuse(f'{branch} is the integration branch; land a branch an agent worked on')
+    m = SUBAGENT_BRANCH.fullmatch(branch)
+    tid = norm_tid(a.ticket) if a.ticket else (norm_tid(m.group(1).upper()) if m else '')
+    if not tickets.ID_RE.fullmatch(tid):
+        raise Refuse(f'cannot tell which ticket {branch} delivers: pass --ticket T-NNNN (a branch named '
+                     f'worktree-<id>-solo carries it)')
+    hits = [(s, mt) for s, mt in tickets.branch_tickets(root, branch) if mt.get('id') == tid]
+    if not hits:
+        raise Refuse(f'{tid}: no ticket on branch {branch} has this id')
+    if len(hits) > 1:
+        raise Refuse(f'{tid}: {len(hits)} folders share this id ({", ".join(s for s, _ in hits)})')
+    slug, meta = hits[0]
+    if meta.get('status') in ('done', 'dropped'):
+        raise Refuse(f'{tid} ({slug}): status is {meta["status"]} on {branch}, nothing to land')
+    t = Ticket(tid, slug, str(meta.get('title', '')), str(meta.get('size', '')))
+
+    refs = git_out(cwd, 'for-each-ref', '--format=%(refname)', 'refs/heads/').splitlines()
+    reuse = ('refs/heads/' + integration) in refs
+    if reuse:
+        start = git_out(cwd, 'rev-parse', '--verify', f'refs/heads/{integration}^{{commit}}')
+    else:
+        clash = branch_clash(integration, refs)
+        if clash:
+            raise Refuse(f'integration branch {integration} clashes with the existing ref {clash}')
+        base = a.base or 'HEAD'
+        p = git(cwd, 'rev-parse', '--verify', '-q', f'{base}^{{commit}}')
+        if p.returncode:
+            raise Refuse(f'--base {base} is not a commit')
+        start = p.stdout.strip()
+    lanes_dir = resolve_lanes_dir(a, cwd, top)
+    if lanes_dir.exists() and not lanes_dir.is_dir():
+        raise Refuse(f'--lanes-dir {lanes_dir} exists and is not a dir')
+    integ_dir = lanes_dir / 'integration'
+    checked_out, wt_path = {}, None
+    for line in git_out(cwd, 'worktree', 'list', '--porcelain').splitlines():
+        if line.startswith('worktree '):
+            wt_path = pathlib.Path(line[len('worktree '):]).resolve()
+        elif line.startswith('branch refs/heads/'):
+            checked_out[line[len('branch refs/heads/'):]] = wt_path
+    where = checked_out.get(integration)
+    if where is not None and where != integ_dir.resolve():
+        raise Refuse(f'integration branch {integration} is checked out in {where}; land works in {integ_dir}')
+    if integ_dir.exists() and where is None:
+        raise Refuse(f'{integ_dir} exists but is not a worktree on {integration}; remove it with git worktree remove, '
+                     f'or pass another --lanes-dir')
+    kind = a.lane
+    if kind == 'auto':
+        kind = 'solo' if m else 'full'
+    tier = solo_tier(t.size) if kind == 'solo' else None
+    if kind == 'solo' and tier is None:
+        kind = 'full'
+    lane = Lane(land_lane_name(branch, tid), [tid], branch)
+    lane.branch, lane.tip, lane.tickets = branch, tip.stdout.strip(), [t]
+    return {'cwd': cwd, 'top': top, 'root': root, 'rel': rel, 'trel': tdir.relative_to(top), 'lanes': [lane],
+            'lane': lane, 'ticket': t, 'integration': integration, 'reuse': reuse, 'start': start, 'base': a.base or 'HEAD',
+            'lanes_dir': lanes_dir, 'integ_dir': integ_dir, 'integ_exists': where is not None, 'logs': lanes_dir / 'logs',
+            'gates': list(a.gate or []), 'driver': None, 'rewrite_refs': bool(a.rewrite_refs),
+            'numbered': tickets.config_numbered(root), 'kinds': {tid: (kind, tier)}, 'land': True,
+            'allow_empty_gate': bool(a.allow_empty_gate), 'gate_lock': not a.no_gate_lock and not gate_slots_off()}
+
+
+def land_setup(ctx):
+    """The integration branch and worktree for a land, created on the first land of a fanout and reused after."""
+    cwd, integration, integ = ctx['cwd'], ctx['integration'], ctx['integ_dir']
+    made_dir = not ctx['lanes_dir'].exists()
+    made_branch = False
+    try:
+        ctx['lanes_dir'].mkdir(parents=True, exist_ok=True)
+        if not ctx['reuse']:
+            git_out(cwd, 'branch', integration, ctx['start'])
+            made_branch = True
+        if not ctx['integ_exists']:
+            git_out(cwd, 'worktree', 'add', '-q', str(integ), integration)
+        src_cfg = ctx['root'] / 'config'  # .sdlc/config is often untracked: a fresh worktree would read the defaults
+        dst_cfg = integ / ctx['rel'] / 'config'
+        if src_cfg.is_file() and not dst_cfg.exists() and dst_cfg.parent.is_dir():
+            shutil.copyfile(str(src_cfg), str(dst_cfg))
+        ctx['logs'].mkdir(parents=True, exist_ok=True)
+    except BaseException:
+        if not ctx['integ_exists']:
+            git(cwd, 'worktree', 'remove', '--force', str(integ))
+        if made_branch:
+            git(cwd, 'branch', '-D', integration)
+        git(cwd, 'worktree', 'prune')
+        if made_dir:
+            shutil.rmtree(ctx['lanes_dir'], ignore_errors=True)
+        raise
+
+
+def land_ticket(ctx, lock):
+    """One finished branch through the external-lane merge: `no changes` when it adds nothing, the verifier verdict
+    for a solo tier M or L, then the locked merge, gates, and close. Returns (outcome, commit)."""
+    lane, t = ctx['lane'], ctx['ticket']
+    ref = f'refs/heads/{lane.branch}'
+    tip = git_out(ctx['cwd'], 'rev-parse', '--verify', f'{ref}^{{commit}}')
+    p = git(ctx['cwd'], 'rev-list', '--count', f"{ctx['integration']}..{ref}")
+    if p.returncode == 0 and p.stdout.strip() == '0':
+        return 'no changes', tip[:7]
+    kind, tier = ctx['kinds'][t.id]
+    if kind == 'solo' and tier in ('M', 'L'):  # one independent batched verifier decides before any merge
+        verdict = branch_verdict(ctx, ref, t)
+        if verdict is None:
+            return 'no verifier result (commit the verifier result on the branch, then land again)', tip[:7]
+        if verdict != 'pass':
+            return f'verifier {verdict}', tip[:7]
+    return merge_gate_close(ctx, lane, t, lock, ref, tip[:7])
+
+
+def read_journal(path):
+    out = {}
+    try:
+        for ln in path.read_text(encoding='utf-8').splitlines():
+            try:
+                rec = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(rec, dict) and rec.get('ticket'):
+                out[rec['ticket']] = rec  # a later land of the same ticket replaces the earlier one
+    except OSError:
+        pass
+    return out
+
+
+def cmd_land(a):
+    try:
+        ctx = land_preflight(a)
+        land_setup(ctx)
+    except Refuse as e:
+        print(f'fanout: {e}', file=sys.stderr)
+        return 2
+    ctx['run_id'] = 'fanout-' + uuid.uuid4().hex[:12]
+    ctx['cond'] = threading.Condition()
+    lane, t = ctx['lane'], ctx['ticket']
+    kind, tier = ctx['kinds'][t.id]
+    say(ctx, lane, t.id, f'land {lane.branch} (lane {kind}' + (f' tier {tier}' if tier else '') + ')')
+    try:
+        outcome, commit = land_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock'))
+    except Exception as e:  # a git or IO failure mid-land: record it
+        outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
+    lane.results.append((t.id, outcome, commit))
+    say(ctx, lane, t.id, outcome)
+    journal = ctx['logs'] / 'land.jsonl'
+    with open(journal, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'run_id': ctx['run_id'], 'lane': lane.name, 'branch': lane.branch, 'ticket': t.id,
+                            'outcome': outcome, 'commit': commit, 'kind': kind, 'tier': tier,
+                            'files': sorted(lane.files)}) + '\n')
+    prior = read_journal(journal)  # report every ticket landed so far in this lanes dir, the latest outcome each
+    lanes, kinds = [], {}
+    for tid, rec in prior.items():
+        ln = lane if tid == t.id else Lane(rec['lane'], [tid], rec['branch'])
+        ln.branch, ln.results, ln.files = rec['branch'], [(tid, rec['outcome'], rec['commit'])], set(rec.get('files') or [])
+        lanes.append(ln)
+        kinds[tid] = (rec['kind'], rec['tier'])
+    ctx['lanes'], ctx['kinds'] = lanes, kinds
+    text = report(ctx)
+    print()
+    print(text, end='')
+    return 0 if outcome == 'merged' else 1
 
 
 # ---------- selftest ----------
@@ -2508,6 +2942,225 @@ def selftest():
             expect(f'case 21 {name}: the slot file names the lane and ticket is {locked}, log={text!r}',
                    ('"name": "alpha/T-0001"' in text) == locked)
 
+        # case 22 (T-0285): prep prints the lane and the dispatch JSON per ticket, refuses what run refuses, creates nothing
+        gi = '.worktrees/\n.claude/worktrees/\n'
+
+        def verb(cwd, name, *args, **extra_env):
+            return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), name, *args], cwd=str(cwd),
+                                  env=gate_env(**extra_env), capture_output=True, text=True, timeout=300)
+
+        def dispatch_of(text, tid):
+            at = text.index(f'dispatch {tid}:\n') + len(f'dispatch {tid}:\n')
+            return json.JSONDecoder().raw_decode(text[at:].lstrip())[0]
+
+        def sized_repo(path, sizes, extra=None):
+            make_repo(path, [(f't{k}', f'T-000{k}', 'ready') for k in range(1, len(sizes) + 1)], extra)
+            for k, size in enumerate(sizes, 1):
+                hp = path / '.sdlc' / f't{k}' / 'handoff.md'
+                hp.write_text(hp.read_text().replace('size: S\n', f'size: {size}\n'), encoding='utf-8')
+            for args_ in (('add', '-A'), ('commit', '-q', '-m', 'sizes')):
+                sh(path, *args_)
+
+        p1 = tmp / 'prep1'
+        sized_repo(p1, ['S', 'M', 'S'], {'.gitignore': gi})
+        pl1 = tmp / 'prep1-lanes'
+        main_p1 = sh(p1, 'rev-parse', 'main').stdout.strip()
+        pp = verb(p1, 'prep', 'alpha=T-0001,T-0002', 'beta=T-0003', '--lanes-dir', str(pl1), '--integration', 'fanout/p',
+                  '--gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
+        expect(f'case 22 prep: exits 0, got {pp.returncode} out={pp.stdout[-400:]!r} err={pp.stderr!r}', pp.returncode == 0)
+        expect('case 22 prep: one lane line per ticket with its tier',
+               'lane: solo, tier S: sonnet low' in pp.stdout and 'lane: solo, tier M: sonnet xhigh' in pp.stdout)
+        try:
+            d1, d2 = dispatch_of(pp.stdout, 'T-0001'), dispatch_of(pp.stdout, 'T-0002')
+        except (ValueError, KeyError) as e:
+            d1 = d2 = {}
+            expect(f'case 22 prep: the dispatch JSON parses, got {e!r} in {pp.stdout!r}', False)
+        expect(f'case 22 prep: T-0001 dispatch names the sub-agent, model and worktree isolation, got {d1}',
+               d1.get('name') == 'T-0001-solo' and d1.get('subagent_type') == 'sdlc-lite:solo-S'
+               and d1.get('model') == 'sonnet' and d1.get('isolation') == 'worktree'
+               and d1.get('run_in_background') is True and d1.get('branch') == 'worktree-T-0001-solo'
+               and d1.get('worktree') == '.claude/worktrees/T-0001-solo')
+        expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
+               'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
+               and 'Never commit' not in d1.get('prompt', ''))
+        expect(f'case 22 prep: tier S has no verifier, tier M prepares verifier L3 against the worktree, got {d1.get("verifier")!r} '
+               f'{d2.get("verifier")!r}', d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-M'
+               and 'prepare verifier L3 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or ''))
+        expect('case 22 prep: each ticket gets its land command naming the branch, the ticket, the base and the gate',
+               all(f'land worktree-{x}-solo --ticket {x}' in pp.stdout for x in ('T-0001', 'T-0002', 'T-0003'))
+               and f'--base {main_p1}' in pp.stdout and '--gate true' in pp.stdout)
+        expect('case 22 prep: creates no branch, worktree, lanes dir or file in the repo',
+               sh(p1, 'branch', '--list', 'fanout/*', 'worktree-*').stdout.strip() == ''
+               and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists()
+               and sh(p1, 'status', '--porcelain').stdout == '')
+        ph = verb(p1, 'prep', 'alpha=T-0001', '--lanes-dir', str(pl1), '--integration', 'fanout/p', '--stagger', '0',
+                  SDLC_HEADLESS='1')
+        expect('case 22 prep: a headless parent gets a foreground spawn (run_in_background false)',
+               ph.returncode == 0 and dispatch_of(ph.stdout, 'T-0001').get('run_in_background') is False)
+        pf = verb(p1, 'prep', 'alpha=T-0001,T-0002', '--lane', 'full', '--lanes-dir', str(pl1), '--integration', 'fanout/p',
+                  '--stagger', '0')
+        expect(f'case 22 prep --lane full: no dispatch JSON, the parent drives the chain against the lane tree with a '
+               f'Tree: line, got rc={pf.returncode} out={pf.stdout!r}',
+               pf.returncode == 0 and 'dispatch T-0001' not in pf.stdout and 'full: driven by the parent conductor' in pf.stdout
+               and f'`Tree: {pl1 / "alpha"}`' in pf.stdout and f'worktree add -b fanout/p-alpha {pl1 / "alpha"}' in pf.stdout
+               and f'merge --ff --no-edit fanout/p' in pf.stdout and 'commit -m \'T-0001: Ticket t1\'' in pf.stdout)
+        # budget gate: an 80 percent ticket gets no dispatch and prep exits 4 (control: the others still print)
+        pb1 = tmp / 'prep-budget'
+        sized_repo(pb1, ['S', 'S'], {'.gitignore': gi})
+        hb = pb1 / '.sdlc' / 't1' / 'handoff.md'
+        hb.write_text(hb.read_text().replace('size: S\n', 'size: S\nbudget_usd: 10\n'), encoding='utf-8')
+        (pb1 / '.sdlc' / 't1' / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'attempt_id': 'seeded', 'cost_usd': 8.0}) + '\n')
+        for args_ in (('add', '-A'), ('commit', '-q', '-m', 'budget')):
+            sh(pb1, *args_)
+        pbg = verb(pb1, 'prep', 'alpha=T-0001', 'beta=T-0002', '--lanes-dir', str(tmp / 'pbl'), '--stagger', '0')
+        expect(f'case 22 prep budget gate: T-0001 is blocked with no dispatch, T-0002 dispatches, exit 4, got rc={pbg.returncode} '
+               f'out={pbg.stdout[-500:]!r}', pbg.returncode == 4 and 'budget gate: budget.py ack' in pbg.stdout
+               and 'dispatch T-0001:' not in pbg.stdout and 'dispatch T-0002:' in pbg.stdout)
+
+        # prep refuses what run refuses: the same message and exit 2, nothing created (dry-run parity)
+        pu = tmp / 'prep-unignored'
+        sized_repo(pu, ['S'], {'.gitignore': '.worktrees/\n'})
+        puo = verb(pu, 'prep', 'alpha=T-0001', '--lanes-dir', str(tmp / 'pul'), '--stagger', '0')
+        expect(f'case 22 prep: .claude/worktrees/ not ignored exits 2 naming it and .gitignore, got rc={puo.returncode} '
+               f'err={puo.stderr!r}', puo.returncode == 2 and '.claude/worktrees/' in puo.stderr and '.gitignore' in puo.stderr)
+        pr_ov = tmp / 'prep-overlap'
+        sized_repo(pr_ov, ['S', 'S'], {'.gitignore': gi})
+        for slug in ('t1', 't2'):
+            sd = pr_ov / '.sdlc' / slug / 'step-1'
+            sd.mkdir(parents=True)
+            sd.joinpath('handoff.md').write_text(
+                '## Step 1\n### Acceptance criteria\n- `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | '
+                'grep -vxF -e shared.txt)"`\n', encoding='utf-8')
+        for args_ in (('add', '-A'), ('commit', '-q', '-m', 'scopes')):
+            sh(pr_ov, *args_)
+        pr_unc = tmp / 'prep-uncommitted'
+        sized_repo(pr_unc, ['S'], {'.gitignore': gi})
+        (pr_unc / '.sdlc' / 'x').mkdir()
+        (pr_unc / '.sdlc' / 'x' / 'handoff.md').write_text(
+            '---\nid: T-0002\ntitle: "Ticket x"\ntype: chore\nstatus: ready\nsize: S\npriority: P2\ndepends: []\n'
+            'created: 2026-01-01\n---\n\n## Goal\nx\n', encoding='utf-8')
+        for label, repo_, args_, want in (
+                ('planned-scope overlap', pr_ov, ('alpha=T-0001', 'beta=T-0002'), 'plan to change the same files'),
+                ('an uncommitted handoff', pr_unc, ('alpha=T-0002',), 'not committed at'),
+                ('--max-lanes 1 with two lanes', p1, ('alpha=T-0001', 'beta=T-0003', '--max-lanes', '1'), 'exceed --max-lanes 1'),
+                ('one id in two lanes', p1, ('alpha=T-0001', 'beta=T-0001'), 'appears in lane alpha and lane beta'),
+                ('an unknown id', pr_unc, ('alpha=T-0009',), 'no ticket under')):
+            lanes_arg = ('--lanes-dir', str(tmp / 'parity-lanes'), '--integration', 'fanout/par')
+            run_o = fanout(repo_, *args_, *lanes_arg, '--driver', 'exit 3')
+            prep_o = verb(repo_, 'prep', *args_, *lanes_arg, '--stagger', '0')
+            expect(f'case 22 parity ({label}): run and prep both exit 2 with the same message, got run '
+                   f'{run_o.returncode} {run_o.stderr!r} prep {prep_o.returncode} {prep_o.stderr!r}',
+                   run_o.returncode == 2 and prep_o.returncode == 2 and run_o.stderr == prep_o.stderr
+                   and want in prep_o.stderr)
+        expect('case 22 parity: the refusals created no branch, worktree or lanes dir',
+               sh(pr_ov, 'branch', '--list', 'fanout/*').stdout.strip() == '' and not (tmp / 'parity-lanes').exists()
+               and len(sh(pr_ov, 'worktree', 'list').stdout.splitlines()) == 1)
+        po = verb(pr_ov, 'prep', 'alpha=T-0001', 'beta=T-0002', '--allow-overlap', '--lanes-dir', str(tmp / 'pol'), '--stagger', '0')
+        expect(f'case 22 parity control: --allow-overlap lets prep print the plan, got rc={po.returncode} err={po.stderr!r}',
+               po.returncode == 0 and 'overlap (planned scope): alpha T-0001 and beta T-0002: shared.txt' in po.stdout)
+
+        # case 23 (T-0285): land merges one sub-agent branch behind the locked merge, gates and close
+        ld = tmp / 'land'
+        sized_repo(ld, ['S', 'M', 'S', 'S', 'S', 'S'], {'.gitignore': gi})
+        main_ld = sh(ld, 'rev-parse', 'main').stdout.strip()
+
+        def make_branch(repo_, branch, files, msg=None):
+            sh(repo_, 'checkout', '-q', '-b', branch, 'main')
+            for name, body in files.items():
+                path_ = repo_ / name
+                path_.parent.mkdir(parents=True, exist_ok=True)
+                path_.write_text(body, encoding='utf-8')
+            if files:
+                sh(repo_, 'add', '-A')
+                sh(repo_, 'commit', '-q', '-m', msg or branch)
+            sh(repo_, 'checkout', '-q', 'main')
+
+        lanes_l, integ = tmp / 'land-lanes', 'fanout/l'
+        pin = ('--integration', integ, '--lanes-dir', str(lanes_l), '--base', 'main')
+        make_branch(ld, 'worktree-T-0001-solo', {'f1.txt': 'one\n'}, 'T-0001: Ticket t1')
+        make_branch(ld, 'worktree-T-0003-solo', {'f3.txt': 'three\n'}, 'T-0003: Ticket t3')
+        l1 = verb(ld, 'land', 'worktree-T-0001-solo', *pin, '--gate', 'test -e f1.txt')
+        expect(f'case 23 land: a green gate merges and closes, got rc={l1.returncode} out={l1.stdout[-500:]!r} err={l1.stderr!r}',
+               l1.returncode == 0 and '| t-0001-solo | T-0001 | merged |' in l1.stdout)
+        expect('case 23 land: the integration branch holds f1.txt and the ticket is done there, main is untouched',
+               sh(ld, 'cat-file', '-e', f'{integ}:f1.txt').returncode == 0
+               and re.search(r'^status: done\b', sh(ld, 'show', f'{integ}:.sdlc/t1/handoff.md').stdout, re.M)
+               and sh(ld, 'rev-parse', 'main').stdout.strip() == main_ld and sh(ld, 'status', '--porcelain').stdout == '')
+        subjects = sh(ld, 'log', '--format=%s', integ).stdout.splitlines()
+        expect(f'case 23 land: the merge commit and the `close <id>` commit are on the integration branch, got {subjects[:4]}',
+               'Merge worktree-T-0001-solo: T-0001' in subjects and 'close T-0001' in subjects)
+        expect('case 23 land: the report carries the Lane line with the tier and model',
+               '- Lane for `T-0001`: solo (tier S: sonnet low)' in l1.stdout)
+        expect('case 23 land: the solo lane is recorded in the ticket skips.md on the integration branch',
+               '- lane: solo' in sh(ld, 'show', f'{integ}:.sdlc/t1/skips.md').stdout)
+        l3 = verb(ld, 'land', 'worktree-T-0003-solo', *pin, '--gate', 'test -e f1.txt && test -e f3.txt')
+        rep_ld = (lanes_l / 'report.md').read_text() if (lanes_l / 'report.md').is_file() else ''
+        expect(f'case 23 land: a second land reuses the integration worktree, gates against both, and the report lists both, '
+               f'got rc={l3.returncode} out={l3.stdout[-400:]!r} err={l3.stderr!r}',
+               l3.returncode == 0 and '| t-0001-solo | T-0001 | merged |' in rep_ld and '| t-0003-solo | T-0003 | merged |' in rep_ld
+               and sh(ld, 'rev-list', '--merges', '--count', integ).stdout.strip() == '2')
+        make_branch(ld, 'worktree-T-0004-solo', {'f4.txt': 'four\n'}, 'T-0004: Ticket t4')
+        tip_before = sh(ld, 'rev-parse', integ).stdout.strip()
+        lr = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'false')
+        expect(f'case 23 land: a red gate reports red and resets the merge, got rc={lr.returncode} out={lr.stdout[-300:]!r}',
+               lr.returncode == 1 and 'red: false rc=1' in lr.stdout and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before
+               and sh(ld, 'cat-file', '-e', f'{integ}:f4.txt').returncode != 0
+               and re.search(r'^status: ready\b', sh(ld, 'show', f'{integ}:.sdlc/t4/handoff.md').stdout, re.M))
+        lv = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'echo "Ran 0 tests in 0.000s"')
+        expect(f'case 23 land: a gate that ran no tests is refused, got rc={lv.returncode} out={lv.stdout[-300:]!r}',
+               lv.returncode == 1 and 'gate vacuous' in lv.stdout and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before)
+        la = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'echo "Ran 0 tests in 0.000s"', '--allow-empty-gate')
+        expect(f'case 23 land: --allow-empty-gate merges it, got rc={la.returncode} out={la.stdout[-300:]!r}',
+               la.returncode == 0 and '| t-0004-solo | T-0004 | merged |' in la.stdout)
+        sh(ld, 'branch', 'worktree-T-0005-solo', 'main')  # a stub sub-agent that never committed
+        tip_before = sh(ld, 'rev-parse', integ).stdout.strip()
+        ln = verb(ld, 'land', 'worktree-T-0005-solo', *pin, '--gate', 'true')
+        expect(f'case 23 land: a branch with no commits gives `no changes`, no merge, no close, got rc={ln.returncode} '
+               f'out={ln.stdout[-300:]!r}', ln.returncode == 1 and '| t-0005-solo | T-0005 | no changes |' in ln.stdout
+               and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before
+               and re.search(r'^status: ready\b', sh(ld, 'show', f'{integ}:.sdlc/t5/handoff.md').stdout, re.M))
+        # tier M: no verifier result, a failing one, then a passing one on the branch
+        make_branch(ld, 'worktree-T-0002-solo', {'f2.txt': 'two\n'}, 'T-0002: Ticket t2')
+        lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
+        expect(f'case 23 land tier M: no verifier result is refused before any merge, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
+               lm.returncode == 1 and 'no verifier result' in lm.stdout and sh(ld, 'cat-file', '-e', f'{integ}:f2.txt').returncode != 0)
+        vhead = '<!-- role=verifier level=L3 model=fable effort=high -->\n'
+        for verdict, want, extra in (('fail', 'verifier fail', ()), ('pass', 'merged', ())):
+            sh(ld, 'checkout', '-q', 'worktree-T-0002-solo')
+            vpath = ld / '.sdlc' / 't2' / 'verifier-L3.md'
+            vpath.write_text(vhead + f'## Verdict\n{verdict}\n', encoding='utf-8')
+            sh(ld, 'add', '-A')
+            sh(ld, 'commit', '-q', '-m', f'verifier {verdict}')
+            sh(ld, 'checkout', '-q', 'main')
+            lm = verb(ld, 'land', 'worktree-T-0002-solo', *pin, '--gate', 'true')
+            expect(f'case 23 land tier M: a {verdict} verifier gives {want}, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
+                   want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
+        expect('case 23 land tier M: the report names the M tier model',
+               '- Lane for `T-0002`: solo (tier M: sonnet xhigh)' in lm.stdout)
+        # refusals, each exit 2 with nothing created
+        sh(ld, 'branch', 'weird-branch', 'main')
+        for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),
+                                   ('a branch that names no ticket', ('weird-branch',), '--ticket'),
+                                   ('the integration branch itself', (integ, '--ticket', 'T-0001'), 'is the integration branch')):
+            lo = verb(ld, 'land', *args_, *pin)
+            expect(f'case 23 land refusal ({label}): exit 2 naming {want!r}, got rc={lo.returncode} err={lo.stderr!r}',
+                   lo.returncode == 2 and want in lo.stderr and 'Traceback' not in lo.stderr)
+        ls_ = verb(ld, 'land', 'weird-branch', '--ticket', 'T-0006', *pin, '--gate', 'true')
+        expect(f'case 23 land: --ticket names a ticket on a branch with any name; with no commits it is `no changes`, '
+               f'got rc={ls_.returncode} out={ls_.stdout[-200:]!r}', ls_.returncode == 1 and 'no changes' in ls_.stdout)
+        lfresh = verb(ld, 'land', 'worktree-T-0006-solo', '--lanes-dir', str(tmp / 'nolanes'), '--integration', 'fanout/none')
+        expect(f'case 23 land: an unknown solo branch refuses before creating the lanes dir, got rc={lfresh.returncode}',
+               lfresh.returncode == 2 and not (tmp / 'nolanes').exists() and sh(ld, 'branch', '--list', 'fanout/none').stdout.strip() == '')
+
+        # case 24 (T-0285): a --driver stub that commits nothing gives `no changes`; the stub path itself is unchanged
+        nc = tmp / 'nochange'
+        make_repo(nc, [('a', 'T-0001', 'ready')])
+        pn = fanout(nc, 'alpha=T-0001', '--integration', 'fanout/nc', '--lanes-dir', str(tmp / 'nc-lanes'), '--driver', 'true',
+                    '--gate', 'true')
+        expect(f'case 24 stub that makes no change: outcome `no changes`, no merge, ticket still ready, got rc={pn.returncode} '
+               f'out={pn.stdout[-300:]!r}', pn.returncode == 1 and '| alpha | T-0001 | no changes |' in pn.stdout
+               and sh(nc, 'rev-list', '--merges', '--count', 'fanout/nc').stdout.strip() == '0')
+
     if misses:
         print('fanout selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -2517,20 +3170,46 @@ def selftest():
     return 0
 
 
+USAGE = ('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
+         '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
+         '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] '
+         '[--no-gate-lock] | '
+         'fanout.py prep <spec>... [the run flags but --driver and --dry-run] | '
+         'fanout.py land <branch> [--ticket T-NNNN] [--root .sdlc] [--base REF] [--integration BRANCH] [--lanes-dir DIR] '
+         '[--gate CMD]... [--rewrite-refs] [--lane auto|solo|full] [--allow-empty-gate] [--no-gate-lock] | '
+         'fanout.py selftest\n'
+         '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
+         '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
+         'line in <root>/config: no worktree, no driver)')
+
+
 def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
-    if argv[:1] != ['run']:
-        print('usage: fanout.py run <spec>... [--root .sdlc] [--base REF] [--integration BRANCH] '
-              '[--lanes-dir DIR] [--gate CMD]... [--driver CMD] [--rewrite-refs] [--dry-run] '
-              '[--lane auto|solo|full] [--max-lanes N] [--yes-many] [--stagger SECS] [--allow-overlap] [--allow-empty-gate] '
-              '[--no-gate-lock] | '
-              'fanout.py selftest\n'
-              '  each <spec> is <lane>=<id>[,<id>...] (a worktree and a driver per ticket) or '
-              '<lane>@<branch>=<id>[,<id>...] (an external branch registered by an `external_branch: <branch>` '
-              'line in <root>/config: no worktree, no driver)', file=sys.stderr)
+    if argv[:1] not in (['run'], ['prep'], ['land']):
+        print(USAGE, file=sys.stderr)
         return 2
-    ap = argparse.ArgumentParser(prog='fanout.py run', description=__doc__.split('\n')[0])
+    if argv[0] == 'land':
+        lp = argparse.ArgumentParser(prog='fanout.py land', description='Merge one finished sub-agent branch behind the '
+                                     'locked merge and the gates, then close its ticket on the integration branch.')
+        lp.add_argument('branch', help='the branch a sub-agent (or the parent, for a full ticket) committed on, '
+                        'for example worktree-T-0001-solo')
+        lp.add_argument('--ticket', metavar='T-NNNN', help='the ticket the branch delivers (else read from a '
+                        'worktree-<id>-solo branch name)')
+        lp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
+        lp.add_argument('--base', help='commit for a new integration branch (default HEAD)')
+        lp.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
+        lp.add_argument('--lanes-dir', help='where the integration worktree, logs and report go '
+                        '(default <toplevel>/.worktrees/fanout)')
+        lp.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after the '
+                        'merge; red resets the merge (repeatable, in order)')
+        lp.add_argument('--rewrite-refs', action='store_true', help='as for run')
+        lp.add_argument('--lane', choices=('auto', 'solo', 'full'), default='auto',
+                        help='auto (default): a worktree-<id>-solo branch is a solo delivery, any other a full one')
+        lp.add_argument('--allow-empty-gate', action='store_true', help='as for run')
+        lp.add_argument('--no-gate-lock', action='store_true', help='as for run')
+        return cmd_land(lp.parse_args(argv[1:]))
+    ap = argparse.ArgumentParser(prog=f'fanout.py {argv[0]}', description=__doc__.split('\n')[0])
     ap.add_argument('lanes', nargs='+', metavar='<lane>[@<branch>]=<id>[,<id>...]',
                     help='a lane spec: <lane>=<id>[,<id>...] runs a worktree and a driver per ticket; '
                     '<lane>@<branch>=<id>[,<id>...] merges an outside agent\'s branch, registered by an '
@@ -2544,8 +3223,9 @@ def main(argv):
                     '(add .worktrees/ or the dir to .gitignore) or run refuses with exit 2')
     ap.add_argument('--gate', action='append', metavar='CMD', help='run in the integration worktree after each merge; '
                     'red resets the merge (repeatable, in order)')
-    ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
-                    '(default: a headless sdlc-lite conductor running /sdlc-lite:chain)')
+    if argv[0] == 'run':
+        ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
+                        '(default: a headless sdlc-lite conductor running /sdlc-lite:chain)')
     ap.add_argument('--rewrite-refs', action='store_true', help='opt-in, numbered mode only: when a ticket '
                     'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
                     '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
@@ -2563,6 +3243,9 @@ def main(argv):
                     help='merge although a gate ran no tests (unittest "Ran 0 tests", pytest "no tests ran" or rc 5)')
     ap.add_argument('--no-gate-lock', action='store_true',
                     help='run each gate bare, not through gate_lock.py (as does SDLC_GATE_SLOTS=0)')
+    if argv[0] == 'prep':  # prep never runs a driver and never creates anything, so it has neither flag
+        ap.set_defaults(driver=None, dry_run=True)
+        return cmd_prep(ap.parse_intermixed_args(argv[1:]))
     ap.add_argument('--dry-run', action='store_true', help='print the plan and create nothing')
     return cmd_run(ap.parse_intermixed_args(argv[1:]))
 

@@ -9,7 +9,7 @@ Claude (T-0284): run checks the budget gate, appends one `role solo` record (tra
 verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
 sub-agent (`subagent_type sdlc-lite:solo-<tier>`, model, effort, prompt = the brief). It starts no `claude -p`. The
 parent then runs one `dispatch.py prepare verifier L2 <task dir>/handoff.md` for tiers M and L. `--exec` is the legacy
-headless start that the next paragraphs describe (fanout.py lanes use it until T-0285); Codex always executes.
+headless start that the next paragraphs describe (`fanout.py run` lanes use it until T-0288; sub-agent lanes use `fanout.py prep` and `land`, T-0285); Codex always executes.
 
 With --exec (or Codex), run starts the session at the tier's model and effort (agents/solo.md), prints the agent's report on
 stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh writes for roles

@@ -92,9 +92,10 @@
 23. Guard numbers: the docstring's numbered guards run 1..N once each, and every `docstring item N` comment names an
    existing one. Negative controls: a duplicated number, and a comment citing a missing item, must be flagged.
 24. Fanout solo first: scripts/fanout.py names `sdlc-lite:solo`, `solo_command(`, `SOLO_VERIFIER`, `--max-lanes`,
-   `--stagger`, `--yes-many`, and `--allow-overlap`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
+   `--stagger`, `--yes-many`, `--allow-overlap`, and the sub-agent lane entry points `def cmd_prep(`, `def cmd_land(`, and
+   `SOLO_SUBAGENT_PROMPT`; its SOLO_TIERS agree with the tiers in agents/solo.md (S `Sonnet
    low`, M `Sonnet xhigh`, L `Opus xhigh`) and the Codex levels L1..L3; skills/fanout/SKILL.md names `Solo first`,
-   `--max-lanes`, and `--stagger`. Negative controls: a changed tier, and each phrase removed, must be flagged.
+   `--max-lanes`, `--stagger`, `fanout.py prep`, `fanout.py land`, the `Tree: <path>` line of a full-chain brief, and `.claude/worktrees/`. Negative controls: a changed tier, and each phrase removed, must be flagged.
 25. Agent command: skills/agent/SKILL.md names every agents/*.md stem in backticks, its start table names only
    agents that exist and have a Codex entry in adapters/codex/models.json, and it names `block-role-spawn.sh`.
    Negative controls: a stem removed from the skill, a table row for a name with no agent file, and a table row
@@ -731,8 +732,8 @@ _dup = __doc__.replace('\n19. Conductor rules', '\n18. Conductor rules', 1)
 if not guard_numbers_bad(_dup, _src): errors.append('check.py: guard numbers negative control not flagged for a duplicated number')
 if not guard_numbers_bad(__doc__, _src + '\n# x (docstring ' + 'item 99)'): errors.append('check.py: guard numbers negative control not flagged for a missing item')
 # Fanout solo first (docstring item 24): fanout.py picks the lane per ticket and starts solo at the solo.md tiers.
-FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap')
-FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger')
+FANOUT_PHRASES = ('sdlc-lite:solo', 'solo_command(', 'SOLO_VERIFIER', '--max-lanes', '--stagger', '--yes-many', '--allow-overlap', 'def cmd_prep(', 'def cmd_land(', 'SOLO_SUBAGENT_PROMPT')
+FANOUT_SKILL_PHRASES = ('Solo first', '--max-lanes', '--stagger', 'fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/')
 def fanout_solo_bad(fan, solo, skill):
     bad = [f'fanout.py missing "{ph}"' for ph in FANOUT_PHRASES if ph not in fan]
     bad += [f'skills/fanout/SKILL.md missing "{ph}"' for ph in FANOUT_SKILL_PHRASES if ph not in skill]
@@ -744,9 +745,11 @@ def fanout_solo_bad(fan, solo, skill):
     return bad
 _ff, _fs, _fk = _rd(root/'scripts/fanout.py'), _rd(root/'agents/solo.md'), _rd(root/'skills/fanout/SKILL.md')
 errors.extend(fanout_solo_bad(_ff, _fs, _fk))
-for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause')):
+for _mut in (lambda t: t.replace("'M': ('sonnet', 'xhigh', 'L2')", "'M': ('sonnet', 'low', 'L2')"), lambda t: t.replace('--stagger', '--pause'), lambda t: t.replace('def cmd_land(', 'def cmd_x(')):
     if not fanout_solo_bad(_mut(_ff), _fs, _fk): errors.append('check.py: fanout solo first negative control not flagged for a changed fanout.py')
 if not fanout_solo_bad(_ff, _fs, _fk.replace('Solo first', '')): errors.append('check.py: fanout solo first negative control not flagged for the skill')
+for _ph in ('fanout.py prep', 'fanout.py land', '`Tree: <path>`', '.claude/worktrees/'):
+    if not fanout_solo_bad(_ff, _fs, _fk.replace(_ph, '')): errors.append(f'check.py: fanout sub-agent lane negative control not flagged for the skill without {_ph}')
 # Agent command (docstring item 25): the /agent skill's names agree with agents/*.md and the Codex mapping.
 def agent_cmd_bad(skill, stems, codex_keys):
     if not skill.strip(): return ['skills/agent/SKILL.md missing or empty']
