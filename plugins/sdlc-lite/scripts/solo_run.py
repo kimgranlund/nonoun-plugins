@@ -229,6 +229,36 @@ def append(task_dir, rec):
         f.write(json.dumps(rec, separators=(',', ':')) + '\n')
 
 
+def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
+    """Price the solo row dispatch_json wrote (usage null) from the sub-agent transcript or the notice token count (T-0328).
+    Rewrites that row in place so budget.py does not count the run twice. Returns the priced cost, or None with the row untouched."""
+    sys.path.insert(0, str(SCRIPTS))
+    import cost_estimate
+    usage = cost_estimate.transcript_usage(transcript) if transcript else None
+    if usage is None and tokens is not None:
+        usage = {'subagent_tokens': tokens}
+    f = pathlib.Path(task_dir) / 'runs.jsonl'
+    if usage is None or not f.is_file():
+        return None
+    rows, cost = [], None
+    for line in f.read_text(encoding='utf-8').splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            rows.append(line)
+            continue
+        if isinstance(r, dict) and r.get('role') == 'solo' and r.get('attempt_id', '').startswith(attempt) and r.get('usage') is None:
+            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[model_tier][0], usage)
+            if est is not None:
+                r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
+                r.pop('cost_reason', None)
+                cost = est
+        rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
+    if cost is not None:
+        f.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+    return cost
+
+
 class Stopped(Exception):
     """The wrapper got SIGTERM, SIGINT or SIGHUP (T-0293)."""
 
@@ -795,6 +825,20 @@ def selftest():
             for k, v in old_env.items():
                 if v is None: os.environ.pop(k, None)
                 else: os.environ[k] = v
+    with tempfile.TemporaryDirectory() as tmp:
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        tr = d / 't.jsonl'
+        tr.write_text(json.dumps({'message': {'id': 'm1', 'usage': {'input_tokens': 10, 'output_tokens': 1000,
+                                                                      'cache_read_input_tokens': 500000}}}) + '\n')
+        row = lambda: [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()]
+        expect('solo row starts unpriced', row()[0]['cost_usd'] is None)
+        expect('complete: unknown attempt prices nothing', complete(d, 'zzzz', 'M', str(tr)) is None and row()[0]['cost_usd'] is None)
+        got = complete(d, disp['attempt_id'], 'M', str(tr))
+        r0 = row()
+        expect('complete: solo row priced in place, one row', got and len(r0) == 1 and r0[0]['cost_usd'] == got and got > 0
+               and r0[0].get('cost_estimated') and 'cost_reason' not in r0[0] and r0[0]['usage']['output_tokens'] == 1000)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
@@ -821,10 +865,20 @@ def main():
                    '(unless it exists) and run the session there')
     r.add_argument('--timeout', type=float)
     r.add_argument('--raw-out', help='also save the session stdout (the result JSON) to this file')
+    c = sub.add_parser('complete', help='price a finished solo sub-agent row from its transcript usage or notice tokens')
+    c.add_argument('--task-dir', required=True)
+    c.add_argument('--attempt', required=True, help='attempt_id (or a prefix) from the dispatch JSON')
+    c.add_argument('--tier', required=True, choices=sorted(TIERS))
+    c.add_argument('--transcript')
+    c.add_argument('--tokens', type=int)
     sub.add_parser('selftest')
     a = p.parse_args()
     if a.cmd == 'selftest':
         return selftest()
+    if a.cmd == 'complete':
+        cost = complete(a.task_dir, a.attempt, a.tier, a.transcript, a.tokens)
+        print('solo_run.py: no row priced (no usage, or no unpriced solo row for that attempt)' if cost is None else 'priced $%.4f' % cost)
+        return 0 if cost is not None else 2
     brief = a.brief
     if a.brief_file:
         brief = sys.stdin.read() if a.brief_file == '-' else pathlib.Path(a.brief_file).read_text(encoding='utf-8')

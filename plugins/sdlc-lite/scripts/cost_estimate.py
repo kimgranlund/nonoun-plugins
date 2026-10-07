@@ -13,12 +13,16 @@ cost_estimated true by the caller. Probe P5 (transcript usage x price) is not as
 
 selftest calibrates the table against recorded runs.jsonl lines with both usage and a real cost_usd: per
 model with at least 3 such lines, the aggregate estimate must be within 35 percent of the aggregate actual.
+
+Per-field usage (a transcript or result event) is priced field by field with usage_input x usage_multipliers when
+the file has them (basis "usage fields x rates"); the calibration over headless history stays blended.
 """
 import json, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 PRICES = HERE.parent / 'adapters' / 'claude' / 'prices.json'
 BASIS = 'tokens x blended'
+BASIS_USAGE = 'usage fields x rates'
 TOKEN_KEYS = ('input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens')
 TOLERANCE = 0.35
 
@@ -27,11 +31,45 @@ def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0
 
 
-def load(path=PRICES):
+def _read(path=PRICES):
     try:
-        return json.loads(pathlib.Path(path).read_text(encoding='utf-8')).get('models', {})
-    except (OSError, ValueError, AttributeError):
+        return json.loads(pathlib.Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
         return {}
+
+
+def load(path=PRICES):
+    m = _read(path).get('models', {})
+    return m if isinstance(m, dict) else {}
+
+
+def usage_rates(path=PRICES):
+    """({family: input USD per million}, {token field: multiplier}) from the price file."""
+    d = _read(path)
+    r, m = d.get('usage_input'), d.get('usage_multipliers')
+    return (r if isinstance(r, dict) else {}), (m if isinstance(m, dict) else {})
+
+
+def transcript_usage(path):
+    """Summed usage fields over a sub-agent or session transcript (jsonl), one count per message id; None if unreadable."""
+    seen, tot = set(), dict.fromkeys(TOKEN_KEYS, 0)
+    try:
+        lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            msg = json.loads(line).get('message')
+        except (ValueError, AttributeError):
+            continue
+        u = msg.get('usage') if isinstance(msg, dict) else None
+        if not isinstance(u, dict) or msg.get('id') in seen:
+            continue
+        seen.add(msg.get('id'))
+        for k in TOKEN_KEYS:
+            if _num(u.get(k)):
+                tot[k] += u[k]
+    return tot if any(tot.values()) else None
 
 
 def family(model, table):
@@ -49,13 +87,18 @@ def tokens(usage):
     return sum(vals) if vals else None
 
 
-def estimate(model, usage, table=None):
+def estimate(model, usage, table=None, by_field=True):
     """(cost_usd, basis, reason): the estimate, or None with a reason."""
     table = load() if table is None else table
     n = tokens(usage)
     if n is None:
         return None, None, 'no usage block'
     fam = family(model, table)
+    rates, mult = usage_rates()
+    if by_field and not _num(usage.get('subagent_tokens')) and fam in rates and _num(rates[fam]) and any(k in mult for k in TOKEN_KEYS):
+        # Per-field usage (input, output, cache read and write): each field at its own rate, not one blended rate.
+        usd = sum(usage[k] * mult.get(k, 1) for k in TOKEN_KEYS if _num(usage.get(k))) * rates[fam] / 1e6
+        return round(usd, 6), BASIS_USAGE, None
     if fam is None or not _num(table.get(fam)):
         return None, None, 'no price for model %s' % model
     return round(n / 1e6 * table[fam], 6), BASIS, None
@@ -77,7 +120,7 @@ def calibration(root, table):
             c = r.get('cost_usd') if isinstance(r, dict) else None
             if not (_num(c) and c > 0) or r.get('cost_estimated') or r.get('transport') == 'subagent':
                 continue
-            est, _, _ = estimate(r.get('model'), r.get('usage'), table)
+            est, _, _ = estimate(r.get('model'), r.get('usage'), table, by_field=False)
             fam = family(r.get('model'), table)
             if est is None:
                 continue
@@ -99,11 +142,33 @@ def selftest():
     expect('price table loads with fable, opus, sonnet', all(_num(table.get(k)) for k in ('fable', 'opus', 'sonnet')))
     c, b, r = estimate('claude-sonnet-5-5', {'subagent_tokens': 1_000_000}, table)
     expect('estimate: tokens x blended', c == table['sonnet'] and b == BASIS and r is None)
-    c, b, r = estimate('opus', {'input_tokens': 500_000, 'output_tokens': 500_000}, table)
+    c, b, r = estimate('opus', {'input_tokens': 500_000, 'output_tokens': 500_000}, table, by_field=False)
     expect('estimate: sums result-event fields', c == table['opus'])
     expect('no usage block: null with reason, never zero', estimate('opus', None, table) == (None, None, 'no usage block')
            and estimate('opus', {}, table)[0] is None)
     expect('unknown model: null with reason', estimate('gpt', {'subagent_tokens': 5}, table)[0] is None)
+
+    # Live evidence (T-0328): the stored L2 and L3 verifier rows priced from transcript usage vs host totals.
+    rates, mult = usage_rates()
+    expect('usage rates and multipliers load', all(_num(rates.get(k)) for k in ('fable', 'opus', 'sonnet')) and mult)
+    live = [('opus', {'input_tokens': 18, 'output_tokens': 5079, 'cache_read_input_tokens': 288063,
+                      'cache_creation_input_tokens': 51144}, 0.3538),
+            ('fable', {'input_tokens': 620, 'output_tokens': 8345, 'cache_read_input_tokens': 865645,
+                       'cache_creation_input_tokens': 170689}, 2.4762)]
+    for fam, u, host in live:
+        e, b, _ = estimate(fam, u, table)
+        expect('live %s verifier row: estimate %s vs host %.4f within 35 percent' % (fam, e, host),
+               e is not None and b == BASIS_USAGE and abs(e - host) <= TOLERANCE * host)
+        # Negative control: the old blended count (cache reads excluded) misses the band.
+        old = estimate(fam, {'subagent_tokens': u['input_tokens'] + u['output_tokens']}, table)[0]
+        expect('negative control: %s blended count without cache is outside the band' % fam, abs(old - host) > TOLERANCE * host)
+    with tempfile.TemporaryDirectory() as t2:
+        tf = pathlib.Path(t2) / 't.jsonl'
+        m = lambda i, o: json.dumps({'message': {'id': i, 'usage': {'input_tokens': 1, 'output_tokens': o}}})
+        tf.write_text('\n'.join([m('a', 10), m('a', 10), m('b', 5), 'junk']) + '\n', encoding='utf-8')
+        expect('transcript_usage sums once per message id', transcript_usage(tf) ==
+               {'input_tokens': 2, 'cache_creation_input_tokens': 0, 'cache_read_input_tokens': 0, 'output_tokens': 15})
+        expect('transcript_usage: missing file is None', transcript_usage(pathlib.Path(t2) / 'nope') is None)
 
     def run(root, rows):
         d = pathlib.Path(root)
