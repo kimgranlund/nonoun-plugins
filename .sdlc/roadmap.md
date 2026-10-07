@@ -265,7 +265,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0264 | [0264-split-after-replan-override](0264-split-after-replan-override/handoff.md) | steps.py split has no override after a replan verdict | bug | M | P2 | none | ⏳ proposed |
 | T-0265 | [.0265-headless-planner-denied-rm](.0265-headless-planner-denied-rm/handoff.md) | Headless planner stalled on a denied rm permission prompt | bug | S | P2 | none | 🟢 done |
 | T-0266 | [.0266-tickets-check-partial-front-matter](.0266-tickets-check-partial-front-matter/handoff.md) | tickets.py check breaks on partial front matter | bug | S | P2 | none | 🟢 done |
-| T-0267 | [0267-hook-denies-worktree-add-variable](0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | ⏳ proposed |
+| T-0267 | [.0267-hook-denies-worktree-add-variable](.0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | 🟢 done |
 | T-0268 | [.0268-raw-solo-cost-records](.0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | S | P2 | none | 🟢 done |
 | T-0269 | [.0269-traces-failed-attempt-noise](.0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | S | P2 | none | 🟢 done |
 | T-0270 | [0270-steps-lint-nested-backtick-message](0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | ⏳ proposed |
