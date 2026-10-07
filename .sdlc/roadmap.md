@@ -326,6 +326,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0326 | [.0326-fanout-prep-spawn-gate](.0326-fanout-prep-spawn-gate/handoff.md) | fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) | bug | S | P2 | none | 🟢 done |
 | T-0327 | [.0327-fanout-land-branch-name](.0327-fanout-land-branch-name/handoff.md) | fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3) | bug | S | P2 | none | 🟢 done |
 | T-0328 | [.0328-subagent-cost-estimate-gap](.0328-subagent-cost-estimate-gap/handoff.md) | Sub-agent cost estimate is 7 to 12 percent of host and null for solo rows (T-0287 finding 4) | bug | S | P2 | none | 🟢 done |
-| T-0329 | [0329-fanout-verifier-tree](0329-fanout-verifier-tree/handoff.md) | Fanout verifier prompt Tree: points at the main tree, not the lane worktree | bug | S | P2 | none | ⏳ proposed |
+| T-0329 | [.0329-fanout-verifier-tree](.0329-fanout-verifier-tree/handoff.md) | Fanout verifier prompt Tree: points at the main tree, not the lane worktree | bug | S | P2 | none | 🟢 done |
 | T-0330 | [0330-verifier-report-on-disk](0330-verifier-report-on-disk/handoff.md) | Verifier report is not on disk when dispatch.py record runs for a sub-agent | bug | S | P2 | none | ⏳ proposed |
 | T-0331 | [0331-cost-estimate-calibrate](0331-cost-estimate-calibrate/handoff.md) | Sub-agent cost estimate still 8.5 percent of host after T-0328 | bug | S | P2 | none | ⏳ proposed |
