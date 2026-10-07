@@ -204,6 +204,17 @@ def solo_lane(task: pathlib.Path) -> bool:
     return bool(lanes) and lanes[-1] == 'solo'
 
 
+def orphaned_attempts(task: pathlib.Path):
+    """Attempts of a running dispatch whose parent died (dispatch.py status --orphans); display-only, never fails."""
+    if not any(task.glob('*.attempt.json')):
+        return []
+    try:
+        import dispatch
+        return dispatch.status(task, True)
+    except Exception:
+        return []
+
+
 def task_rows(task: pathlib.Path):
     rows = []
     running = [p for p in task.glob('*.running')]
@@ -212,7 +223,9 @@ def task_rows(task: pathlib.Path):
     if not running and front is not None and front[1] == 'done' and solo_lane(task):
         # A merged, closed solo lane keeps its step folder; its builder row is not the ticket's state.
         return [(task.name, 'task', '🟢', 'closed', 100)], []
-    if running:
+    if running and orphaned_attempts(task):
+        rows.append((task.name, 'task', '🟡', 'orphaned · resume', 0))
+    elif running:
         role_lvl = running[-1].stem
         rows.append((task.name, 'task', '🟡', f'running · {role_lvl}', 0))
     elif not steps:
@@ -730,6 +743,15 @@ def selftest() -> int:
 
         # 5c. A legacy <root>/.board-state.json gets a hint, is never touched, and --summary ignores it.
         (ct / 'planner-L1.running').unlink()
+        ot = task_dir(clean, 'orph', '# o\n')
+        dead = subprocess.Popen([sys.executable, '-c', 'pass'])
+        dead.wait()
+        (ot / 'builder-L1.running').write_text('1\n')
+        attempt = ot / 'builder-L1.attempt.json'
+        for pid, want in ((dead.pid, 'orphaned · resume'), (os.getpid(), 'running · builder-L1')):
+            attempt.write_text(json.dumps({'status': 'running', 'backend': 'claude', 'role': 'builder', 'level': 'L1', 'parent_pid': pid}))
+            got = task_rows(ot)[0][0]
+            expect(f'a running dispatch with parent {pid} renders {want}, got {got}', got and got[2:4] == ('🟡', want))
         no_hint = render(clean, [ct])
         sum_without = summary(clean)
         expect(f'no legacy file means no hint, got {no_hint!r}', 'safe to delete' not in no_hint)
