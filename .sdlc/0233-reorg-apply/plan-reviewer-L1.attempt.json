@@ -1,0 +1,21 @@
+{
+  "attempt_id": "364840b5972c45d7ac92cd09258740d2",
+  "name": "plan-reviewer-L1",
+  "role": "plan-reviewer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "high",
+  "routing_reason": "plan-reviewer L1: plan has an L4 step",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-07T01:40:50.437791+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg/.sdlc/0233-reorg-apply/handoff.md",
+  "owner_pid": 30831,
+  "handoff_sha256": "84860ffd6f689bcc022d832a87dc0b8227310ec5bc9479b7aad287f247e0898f",
+  "process_pid": 31222,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T01:50:43.609811+00:00"
+}

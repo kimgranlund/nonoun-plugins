@@ -134,6 +134,9 @@
    scripts/check.sh runs `fleet_status.py" selftest`; skills/fleet-status/SKILL.md links `resources/fleet-status.schema.json`, and that file exists, parses as
    JSON, declares draft 2020-12, and requires the `machine`, `repos`, `needs_you`, and `delta` keys. Negative controls: each phrase removed from each file, a
    harness reference added, the routing line removed, and a missing, unparsable, wrong-draft, or key-less schema file must be flagged.
+38. Reorganization apply: scripts/reorg.py names `--dry-run`, `--approve`, `reorg.py: refused:`, and `final check failed`; scripts/check.sh runs
+   `reorg.py" selftest`; docs/repo-onboarding/reorganization-plan-procedure.md names `reorg.py` and `--approve`. Negative controls: each phrase removed
+   from each file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -766,6 +769,17 @@ errors.extend(f'check.py: document inventory: {m}' for m in inventory_bad(_inv_t
 for _name, _phrases in INVENTORY_NEEDS:
     for _ph in _phrases:
         if not inventory_bad(dict(_inv_texts, **{_name: _inv_texts[_name].replace(_ph, '')})): errors.append(f'check.py: document inventory negative control not flagged for {_name} without {_ph}')
+# Reorganization apply (docstring item 38): the apply script, its selftest wiring, and the plan procedure's apply step.
+REORG_NEEDS = (('reorg.py', ('--dry-run', '--approve', 'reorg.py: refused:', 'final check failed')),
+               ('check.sh', ('reorg.py" selftest',)), ('procedure', ('reorg.py', '--approve')))
+def reorg_bad(texts):
+    return [f'{name} missing "{ph}"' for name, phrases in REORG_NEEDS for ph in phrases if ph not in texts[name]]
+_reorg_texts = {'reorg.py': _rd(root/'scripts/reorg.py'), 'check.sh': _rd(root/'scripts/check.sh'),
+                'procedure': _rd(root/'../../docs/repo-onboarding/reorganization-plan-procedure.md')}
+errors.extend(f'check.py: reorganization apply: {m}' for m in reorg_bad(_reorg_texts))
+for _name, _phrases in REORG_NEEDS:
+    for _ph in _phrases:
+        if not reorg_bad(dict(_reorg_texts, **{_name: _reorg_texts[_name].replace(_ph, '')})): errors.append(f'check.py: reorganization apply negative control not flagged for {_name} without {_ph}')
 # Plan skills (docstring item 31): three self-contained planning skills that return a validated paste-ready block, each routed from the entry skill.
 PLAN_NEEDS = ('## 1. Gather', 'plan_check.py', 'AskUserQuestion', 'Why this plan', 'You must authorize', 'Unattended', 'Codex host')
 def plan_bad(texts, entry):

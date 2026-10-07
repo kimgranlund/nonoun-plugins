@@ -1,0 +1,21 @@
+{
+  "attempt_id": "2748bbcf571c4c6e983a744c682e5209",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "verifier L3: build L4 -> verifier L3 per steps.py next",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-07T02:44:38.672937+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg/.sdlc/0233-reorg-apply/step-1/handoff.md",
+  "owner_pid": 12983,
+  "handoff_sha256": "14958fc26994c1a814ff04228166dd88ddd68bfb76bda5cfdfdf59b0ac0b52e6",
+  "process_pid": 13039,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T02:57:26.805730+00:00"
+}

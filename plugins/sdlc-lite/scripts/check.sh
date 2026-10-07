@@ -35,6 +35,7 @@ python3 "$root/scripts/specgate.py" selftest || fail=1
 python3 "$root/scripts/budget.py" selftest || fail=1
 python3 "$root/scripts/solo_run.py" selftest || fail=1
 python3 "$root/scripts/inventory.py" selftest || fail=1
+python3 "$root/scripts/reorg.py" selftest || fail=1
 python3 "$root/scripts/docs_check.py" selftest || fail=1
 python3 "$root/scripts/promote.py" selftest || fail=1
 python3 "$root/scripts/cite_check.py" selftest || fail=1

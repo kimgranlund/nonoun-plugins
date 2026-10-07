@@ -1,6 +1,6 @@
 # Docs schema and the docs/.sdlc boundary
 
-Status: draft v0.4, recorded 2026-10-05, after one independent architect review of v0.1 ([record](../reports/docs-schema-design-review.md)). v0.2, v0.3 and v0.4 were not reviewed by the architect again; v0.4 adds the context registry pattern, which is grounded in cited evidence and has placement unproven until T-0248 passes. Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
+Status: draft v0.4, recorded 2026-10-05, after one independent architect review of v0.1 ([record](../reports/docs-schema-design-review.md)). v0.2, v0.3 and v0.4 were not reviewed by the architect again; v0.4 adds the context registry pattern, which is grounded in cited evidence and has placement unproven: the placement proof (T-0248) ran on 2026-10-06 and passed for 2 of 4 session types, failing for the `solo` agent and Codex `codex exec` ([record](../reports/placement-proof-live-run.md)). Design only: nothing here is implemented, and no file moves in any repository because of this document. Ticket T-0240.
 
 Every choice marked **(user may change)** is a default I picked and justified. The rest follows from the repository's own files.
 
@@ -141,7 +141,7 @@ Existing documents mostly have no front matter. The review counted 4 documents w
 
 ## The context registry pattern
 
-Added 2026-10-05 at the user's request: any harness or session must be able to adopt the organizing principles from the folders alone. The pattern below is one scheme used identically for `docs/` and `.sdlc/`. It is grounded in cited evidence and its placement effect is **unproven** until the placement proof (T-0248) passes. This design counts the pattern as proven only after that test, and every claim below carries a label.
+Added 2026-10-05 at the user's request: any harness or session must be able to adopt the organizing principles from the folders alone. The pattern below is one scheme used identically for `docs/` and `.sdlc/`. It is grounded in cited evidence and its placement effect is **unproven**: the placement proof (T-0248) ran on 2026-10-06 and did not pass for every session type ([record](../reports/placement-proof-live-run.md)). This design counts the pattern as proven only after a pass, and every claim below carries a label.
 
 ### Need, and what grounds it
 
@@ -161,7 +161,7 @@ Progressive Context says to "add no registry ... without an actual need" (`plugi
 | Four documentation kinds: tutorials, how-to guides, reference, explanation | established elsewhere (Diataxis, by Daniele Procida), not re-verified here | named only; mapping below |
 | A short numbered record of one decision with status, context, decision and consequences, superseded and not edited | established elsewhere (Michael Nygard's architecture decision records, and the MADR template), not re-verified here | named only |
 | The nine homes, the registry columns, the `## Decide` list, the render rule and the drift check | our convention | this design |
-| A session given only a path inside a registry folder places a new document in the right home more often than without the registry | unproven | T-0248 |
+| A session given only a path inside a registry folder places a new document in the right home more often than without the registry | unproven (T-0248 ran: pass for `claude -p` and the Codex native subagent, fail for the `solo` agent and Codex `codex exec`; one run per cell) | [T-0248 record](../reports/placement-proof-live-run.md) |
 
 Two consequences of the observed rows. First, Codex run from the repository root does not load a home's own entry, so the compact registry in the parent entry (`docs/AGENTS.md`, `.sdlc/AGENTS.md`) must be enough to place a document by itself; the home's entry adds detail for sessions that work inside it. Second, a home entry is only auto-loaded on Claude Code when a `CLAUDE.md` imports it, which the existing entry-file rule already requires.
 
@@ -273,7 +273,7 @@ The docs `## Decide` list, ordered:
 (user-owned text)
 ```
 
-The two columns are one layout; only the data differs. The labels in this design apply to these examples: the rows are our convention and carry no evidence until T-0248 passes. The managed block of `docs/AGENTS.md` and `.sdlc/AGENTS.md` must say so in one line while that holds: "placement effect unproven; see docs-schema design".
+The two columns are one layout; only the data differs. The labels in this design apply to these examples: the rows are our convention and carry no passing placement evidence until T-0248 passes (it has run once and not passed). The managed block of `docs/AGENTS.md` and `.sdlc/AGENTS.md` must say so in one line while that holds: "placement effect unproven; see docs-schema design".
 
 Cross-references, built separately and not part of this design: T-0252 (records which context a run loaded, which is the measurement a later placement study would use), T-0253 (an entry-file resolver in `onboard.py check`, which R-1 should reuse once it exists), T-0254 (lints and a citation resolver, for D-10), T-0255 (one capability contract) and T-0256 (spec vocabulary). They do not change the registry schema; if T-0253 lands first, the render and drift code use its resolver.
 
@@ -288,6 +288,7 @@ The test that decides whether the pattern is "proven":
 - **Pass rule, set before the run:** proven for a session type only if the with-registry accuracy is at least 10 of 12 and beats the control by at least 3 briefs; "proven across all session types" requires every run type to pass. N is small and each cell is one run, so no significance is claimed; the record says so.
 - **Negative control:** the control copy must misplace more than the registry copy. If it does not, the registry is not shown to help, and the design recommends dropping it, as Progressive Context's own rule says.
 - **Until it passes,** the status of the pattern is "grounded in the cited evidence, placement unproven", and the worked examples must not claim more.
+- **Result (2026-10-06, [record](../reports/placement-proof-live-run.md)):** registry against control placed 12 against 8 (`claude -p`, pass), 11 against 10 (`solo` agent, fail), 12 against 10 (Codex `codex exec`, fail) and 12 against 9 (Codex native subagent, pass); the interactive session was not run. The control misplaced more briefs than the registry in every type that ran, so the negative control does not fire, but the pattern is not proven across types. One run per cell, no significance. The effect showed on the `.sdlc` versus `docs/` briefs, not on the nine docs homes, which the control placed correctly whenever it wrote a file.
 
 ## Overriding: docs/layout.md
 
@@ -411,7 +412,7 @@ Questions 1 to 4 of the earlier draft are resolved (see Resolved decisions). Sti
 5. Is the 90-day `review-by` horizon right? Default 90 days.
 6. Should `README.md` stay optional? Default optional.
 7. Is a separate `.sdlc/layout.md` right, or should `.sdlc/config` grow a table? Default a separate file, since `config` is read by `tickets.py` as plain `key: value` lines.
-8. If T-0248 shows the registry does not help placement, drop it and keep the nine homes and the `## Decide` list in `docs/AGENTS.md` prose. Default: drop, as Progressive Context line 24 says.
+8. If T-0248 shows the registry does not help placement, drop it and keep the nine homes and the `## Decide` list in `docs/AGENTS.md` prose. Default: drop, as Progressive Context line 24 says. T-0248 has run: the control misplaced more than the registry in every type, so the registry is not shown useless, but it passed for only 2 of 4 session types, so the choice between a stronger second pass and dropping it is open.
 
 ## Validation plan
 
@@ -436,4 +437,4 @@ Each is size S or M and fits one solo step. They are filed as `proposed`.
 4. **This repository's migration (T-0244):** inventory, plan and gated apply to the layout above, except the validation move, including the widened citing scan. Depends on 2 and on the gated apply ticket from the reorganization project.
 6. **Rename `docs/validation/` to `docs/reports/` (T-0246):** the one-off mechanical rename the user asked for now, with the reference rewrite, the stale-reference check and the freeze amendment. Depends on the `reorg-inventory` merge only, not on tickets 1 to 5.
 5. **Promotion helper (T-0245):** a small script that copies a `.sdlc` artifact to a `docs/` home with the `source:` front matter. Depends on 1.
-7. **Placement proof (T-0248, proposed, size M, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The T-0241 parser and the other checks do not wait.
+7. **Placement proof (T-0248, proposed, size M, solo):** the test in The context registry pattern, built on a hand-made fixture so it does not wait for machinery, run on the session types listed there. It gates the registry parts of T-0242 and T-0243 (the `render_registry` function, R-1, R-2, and the `.sdlc/layout.md` registry): they start only after the proof reports a pass. The proof ran on 2026-10-06 and did not pass, so the gate stays closed. The T-0241 parser and the other checks do not wait.

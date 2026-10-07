@@ -1,0 +1,11 @@
+$ git clone -q <clone> <clone2> && git -C <clone2> reset -q --hard 49be510d   # the same layout commit
+$ reorg.py apply plan.json --root <clone2> --dry-run | tail -n 1
+exit 0
+digest b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf
+$ printf "\nEdited after the dry run.\n" >> <clone2>/docs/sdlc-lite/pillars.md   # an unrelated tracked document
+$ reorg.py apply plan.json --root <clone2> --approve b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf
+reorg.py: refused: digest mismatch: --approve b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf, but the repository and plan give f7eb638f9ff5f0aa1ac251f9482aa1ea13afc876630a5c04c07d4016ea9b2ebe
+exit 1
+$ git -C <clone2> log --oneline -1; git -C <clone2> status --short
+49be510d docs: layout for reorg live run
+ M docs/sdlc-lite/pillars.md

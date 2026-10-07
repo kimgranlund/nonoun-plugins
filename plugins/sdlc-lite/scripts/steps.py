@@ -21,7 +21,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             one that pins a commit sha fixed at plan time (except the ancestry form
             git merge-base --is-ancestor <sha> HEAD), and one that compares a count over a
             changing set with a fixed number (see lint), and one whose ### Read first lists a
-            path that does not exist (see lint). An optional ### Read first subsection is copied
+            path that does not exist, and a plan that names in no step a path a verifier or builder
+            result beside it flagged on a "plan defect:" line (see lint). An optional ### Read first subsection is copied
             verbatim with the rest of the step block.
             With --only N, split then runs that step's (guard) criteria against the current tree:
             each command-like code span on a criterion line that starts with "(guard)" runs under
@@ -106,6 +107,17 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             folder outside git. A path that does not exist is a finding: "steps: <plan> step <n>:
             ### Read first lists a path that does not exist: <path>", and lint and split refuse
             with the plan defect last line. A step with no ### Read first stays valid.
+            It also checks the plan's contract dependents (T-0271): every line that starts
+            "plan defect:" (after leading blanks) in a step-*/verifier-*.md or step-*/builder-*.md
+            beside the plan, superseded step-<n>.superseded-<k>/ folders included, is split on
+            whitespace; a token trimmed of backticks, quotes, brackets, sentence punctuation, and a
+            trailing :line, that holds a / or ends in a file extension, is relative with no ..
+            part, and names an existing file or folder under the plan folder's git toplevel (else
+            that folder) is a path token. A path token that no ## Step block holds as a substring is
+            a finding, one per path: "steps: <plan>: no step names <path>, which <result> flagged on
+            a plan defect: line", and lint and split refuse with the plan defect last line. A word
+            that names nothing on disk (and/or, c1) is no token; a plan with no such results is
+            unchanged; swap and widen look beside their step handoff and find none.
             Never executes a span, writes nothing, and needs no
             handoff.md. Prints "steps lint: ok", or the split refusal on stderr and exits 1.
             After a clean lint it also prints coarse-step warnings on stderr (stdout and exit 0
@@ -1079,12 +1091,73 @@ def read_first_paths(block):
     return out
 
 
+PLAN_DEFECT_PREFIX = 'plan defect:'
+PATH_TRIM = '`\'"()[]{}<>,;:.*'
+PATH_LINENO_RE = re.compile(r':\d+(?::\d+)?$')
+PATH_EXT_RE = re.compile(r'[A-Za-z0-9_-]\.[A-Za-z0-9]{1,8}$')
+
+
+def defect_path_tokens(text, base):
+    """The path tokens in one `plan defect:` line's text: a whitespace-separated token, trimmed of
+    markdown and sentence punctuation (and a trailing :line), that holds a / or ends in a file
+    extension, is relative with no .. part, and names an existing file or folder under base. A word
+    such as and/or, pass/fail, or c1 names nothing on disk and is no token."""
+    out = []
+    for raw in text.split():
+        tok = raw.strip(PATH_TRIM)
+        tok = PATH_LINENO_RE.sub('', tok).strip(PATH_TRIM)
+        while tok.startswith('./'):
+            tok = tok[2:]
+        if not tok or tok.startswith(('/', '~', '-', '$')) or '://' in tok:
+            continue
+        if '/' not in tok and not PATH_EXT_RE.search(tok):
+            continue
+        if '..' in tok.split('/') or not (base / tok).exists():
+            continue
+        if tok not in out:
+            out.append(tok)
+    return out
+
+
+def defect_dependents(plan, steps):
+    """One finding per path a `plan defect:` line named in a step-*/verifier-*.md or step-*/builder-*.md
+    beside the plan (the superseded step-<n>.superseded-<k>/ folders count) that no ## Step block holds,
+    read as a substring: a contract dependent a verifier flagged must reach the replan (planner.md).
+    The plan's folder is the task dir; paths resolve against its git toplevel, else that folder."""
+    folder = pathlib.Path(plan).resolve().parent
+    results = sorted(p for kind in ('verifier', 'builder') for p in folder.glob(f'step-*/{kind}-*.md'))
+    if not results:
+        return []
+    base = pathlib.Path(git_toplevel(folder) or folder)
+    blocks = list(steps.values())
+    seen, findings = set(), []
+    for res in results:
+        try:
+            lines = res.read_text(encoding='utf-8', errors='replace').splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            line = line.strip()
+            if not line.startswith(PLAN_DEFECT_PREFIX):
+                continue
+            for tok in defect_path_tokens(line[len(PLAN_DEFECT_PREFIX):], base):
+                if tok in seen or any(tok in block for block in blocks):
+                    continue
+                seen.add(tok)
+                findings.append(f'steps: {plan}: no step names {tok}, which {res.relative_to(folder)} flagged '
+                                f'on a {PLAN_DEFECT_PREFIX} line\n'
+                                '  put it in a step: name it in the Do and the scope criterion, with a criterion '
+                                'that runs it, or name it in a Do with the reason it stays untouched')
+    return findings
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
     set compared with a fixed number; one per ### Read first path that does not exist, resolved against
-    the git toplevel of the plan's folder (else that folder); [] when clean. bash -n parses and never
-    executes."""
+    the git toplevel of the plan's folder (else that folder); one per path a verifier or builder result
+    beside the plan named on a `plan defect:` line that no step names (defect_dependents); [] when
+    clean. bash -n parses and never executes."""
     findings = []
     base = None
     for n, block in steps.items():
@@ -1105,6 +1178,10 @@ def lint_steps(plan, steps):
             if rc != 0:
                 lines = [f'steps: {plan} step {n}: acceptance criterion command does not parse: {text}']
                 lines += [f'  {e}' for e in err.splitlines() if e.strip()]
+                crit = next((x for x in block.splitlines() if text in x), '')
+                if crit.count('`') > 2:
+                    lines.append('  hint: a backtick inside a command ends the code span; avoid nested backticks '
+                                 'and build the string by concatenation, e.g. node -e "console.log(\'a\' + \'b\')"')
                 findings.append('\n'.join(lines))
                 continue
             try:
@@ -1139,7 +1216,7 @@ def lint_steps(plan, steps):
                                 'non-empty and the criterion can never pass: check '
                                 '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
                                 '(`git ls-files --others --exclude-standard -- <path>`) instead')
-    return findings
+    return findings + defect_dependents(plan, steps)
 
 
 def lint_or_fail(plan, steps):
@@ -2305,7 +2382,8 @@ def widen(step_dir, paths, timeout=300):
              if is_scope_span(s)]
     rows = sorted(set(i for i, _, _ in scope))
     if not rows:
-        refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list')
+        refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list '
+               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$")')
     if len(rows) > 1:
         refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list; '
                'need exactly one')
@@ -2600,6 +2678,9 @@ def selftest():
         d = task(plan=BROKEN_PLAN)
         refused('(j) split refuses a broken criterion command as a plan defect, writes nothing',
                 ['split', str(d)], d, needles=('plan defect', 'step 1', 'does not parse'))
+        d2 = task(plan=PLAN.replace('- one works', "- `node -e \"console.log(`x`)\"`"))
+        refused('(j) a nested-backtick criterion gets the hint line, first line kept',
+                ['lint', str(d2 / 'planner-L2.md')], d2, needles=('does not parse', 'hint: a backtick', 'concatenation'))
         refused('(j) lint on the plan file exits 1 with plan defect, writes nothing',
                 ['lint', str(d / 'planner-L2.md')], d, needle='plan defect')
 
@@ -3069,6 +3150,83 @@ def selftest():
               rc == 1 and out == '' and 'does not exist: gone/AGENTS.md' in err
               and err.strip().splitlines()[-1].startswith('plan defect')
               and rc2 == 1 and 'gone/AGENTS.md' in err2 and not (d / 'step-1').exists())
+
+        # (s) T-0271: a path a verifier or builder result named on a `plan defect:` line must appear in
+        # a ## Step block of the plan, else lint and split refuse (the contract dependents rule)
+        (r / 'sub' / 'dependencies.json').write_text('{}\n', encoding='utf-8')
+        DEP = 'sub/dependencies.json'
+        s_names = PLAN.replace('Do two.', f'Do two. Also update `{DEP}`.')
+
+        def s_task(plan, files):
+            count[0] += 1
+            d = r / '.sdlc' / f's{count[0]}'
+            d.mkdir(parents=True)
+            (d / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            (d / 'planner-L2.md').write_text(hdr('planner-L2.md', plan), encoding='utf-8')
+            for name, text in files:
+                (d / name).parent.mkdir(exist_ok=True)
+                (d / name).write_text(hdr(pathlib.Path(name).name, text), encoding='utf-8')
+            return d
+
+        def s_defect(line, kind='verifier'):
+            if kind == 'verifier':
+                return f'## Verdict\nfail\n\n## For the next attempt\n\n{line}\nwiden the step\n'
+            return f'## Status\nblocked\n\n## Notes\n{line}\n'
+
+        V_OLD = 'step-1.superseded-1/verifier-L1.md'
+        for what, line in (('a bare path', f'plan defect: step 3 failed on {DEP}'),
+                           ('a backticked path with a period and :line', f'plan defect: `{DEP}:12`.'),
+                           ('a path in a longer line', f'plan defect: c1 and/or c2 and pass/fail; {DEP}, gone/x.json')):
+            d = s_task(PLAN, [(V_OLD, s_defect(line))])
+            rc, out, err = run_main(['lint', str(d)])
+            lines = err.strip().splitlines()
+            check(f'(s) lint refuses a plan that omits {what} a verifier named on a plan defect: line',
+                  rc == 1 and out == '' and f'no step names {DEP}, which {V_OLD} flagged' in err
+                  and err.count('no step names') == 1 and 'and/or' not in err and 'gone/x.json' not in err
+                  and lines[-1].startswith('plan defect'))
+            refused(f'(s) split refuses it too and writes nothing ({what})', ['split', str(d)], d, DEP)
+        d = s_task(PLAN, [(V_OLD, s_defect(f'plan defect: {DEP}'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) the finding is advice for the planner: put the path in a step',
+              'name it in the Do and the scope criterion' in err)
+        d = s_task(PLAN, [('step-2.superseded-1/builder-L2.md', s_defect(f'plan defect: {DEP} is stale', 'builder'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) lint reads builder-*.md as well as verifier-*.md',
+              rc == 1 and f'no step names {DEP}, which step-2.superseded-1/builder-L2.md flagged' in err)
+        d = s_task(PLAN, [('step-1/verifier-L1.md', s_defect(f'plan defect: {DEP}'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) lint reads a live step-<n>/ result, not only a superseded one',
+              rc == 1 and f'no step names {DEP}, which step-1/verifier-L1.md flagged' in err)
+        d = s_task(PLAN, [(V_OLD, s_defect(f'plan defect: {DEP}')),
+                          ('step-2.superseded-1/builder-L2.md', s_defect(f'plan defect: {DEP}', 'builder'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) one finding per path across results', rc == 1 and err.count('no step names') == 1)
+
+        # the positive controls: naming the path in a step, or holding no token, passes and splits
+        d = s_task(s_names, [(V_OLD, s_defect(f'plan defect: {DEP}'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) lint accepts a plan whose step names the flagged path', rc == 0 and 'steps lint: ok' in out)
+        rc, out, _ = run_main(['split', str(d)])
+        check('(s) split writes the steps for a plan that names the flagged path',
+              rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and (d / 'step-2' / 'handoff.md').is_file())
+        for what, line in (('no token', 'plan defect: c2 contradicts c1'),
+                           ('a word that names nothing on disk', 'plan defect: and/or pass/fail gone/x.json'),
+                           ('a path outside the repo', 'plan defect: ../outside.json /etc/hosts'),
+                           ('a url', 'plan defect: https://example.com/a.json')):
+            d = s_task(PLAN, [(V_OLD, s_defect(line))])
+            rc, out, err = run_main(['lint', str(d)])
+            check(f'(s) a plan defect: line with {what} adds no finding', rc == 0 and 'steps lint: ok' in out)
+        d = s_task(PLAN, [(V_OLD, f'## Verdict\nfail\n\n## For the next attempt\n\nfix it, see {DEP}\n'
+                                  f'not a plan defect: {DEP}\n')])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) only a line that starts with plan defect: counts', rc == 0 and 'steps lint: ok' in out)
+
+        # the negative control: the path named outside every ## Step block (## Risks) is still a finding
+        d = s_task(PLAN.replace('RISKTEXT must not leak', f'RISKTEXT {DEP}'),
+                   [(V_OLD, s_defect(f'plan defect: {DEP}'))])
+        rc, out, err = run_main(['lint', str(d)])
+        check('(s) a path named only outside the ## Step blocks is still a finding',
+              rc == 1 and f'no step names {DEP}' in err)
 
         # next: the /chain step 4 action from the newest results, by recorded run order
         DONE, BLOCKED = '## Status\ndone\n', '## Status\nblocked\n\n## Notes\nplan defect: c1 bad\n'
@@ -3616,6 +3774,8 @@ def selftest():
         # (c) refusals: each writes nothing and ends with the plan-defect line
         r, d = w_repo(w_handoff('`test -d .`'))
         widen_refused('(c) no scope criterion line', d, ['b.txt'], 'no criterion line')
+        widen_refused('(c) no scope criterion line names the accepted forms', d, ['b.txt'],
+                      'grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"')
         r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`', f'`{W_FORMS["E"]}`'))
         widen_refused('(c) two scope criterion lines', d, ['b.txt'], '2 criterion lines')
         r, d = w_repo(w_handoff(f'`{W_LIST} | grep -v -e a.txt | {{ ! grep -q .; }}`'))

@@ -268,8 +268,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0267 | [0267-hook-denies-worktree-add-variable](0267-hook-denies-worktree-add-variable/handoff.md) | A hook denies git worktree add with variable paths | bug | S | P2 | none | ⏳ proposed |
 | T-0268 | [.0268-raw-solo-cost-records](.0268-raw-solo-cost-records/handoff.md) | Raw claude -p solos have no solo_run cost records | chore | S | P2 | none | 🟢 done |
 | T-0269 | [.0269-traces-failed-attempt-noise](.0269-traces-failed-attempt-noise/handoff.md) | traces detector reports failed attempts as missing a runs.jsonl row | bug | S | P2 | none | 🟢 done |
-| T-0270 | [0270-steps-lint-nested-backtick-message](0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | ⏳ proposed |
-| T-0271 | [0271-planner-contract-dependents-lint](0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | ⏳ proposed |
+| T-0270 | [.0270-steps-lint-nested-backtick-message](.0270-steps-lint-nested-backtick-message/handoff.md) | steps.py lint gives a generic error for nested backticks | bug | S | P2 | none | 🟢 done |
+| T-0271 | [.0271-planner-contract-dependents-lint](.0271-planner-contract-dependents-lint/handoff.md) | steps.py lint should enforce plan-defect contract dependents | feature | M | P2 | none | 🟢 done |
 | T-0272 | [.0272-conductor-repo-opt-out](.0272-conductor-repo-opt-out/handoff.md) | Conductor honors a repo opt-out of delegation | feature | S | P2 | none | 🟢 done |
 | T-0273 | [.0273-codex-selftest-claude-path](.0273-codex-selftest-claude-path/handoff.md) | codex-selftest fanout test fails when repo path contains claude | bug | S | P2 | none | 🟢 done |
 | T-0274 | [.0274-lane-gate](.0274-lane-gate/handoff.md) | run.sh lane gate | chore | M | P2 | none | 🟢 done |

@@ -1,0 +1,36 @@
+$ python3 plugins/sdlc-lite/scripts/reorg.py selftest
+ok digest positive
+ok digest negative
+ok approve positive
+ok approve negative
+ok frozen positive
+ok frozen negative
+ok rewrite positive
+ok rewrite negative
+ok batches positive
+ok batches negative
+ok citation positive
+ok citation negative
+ok baseline positive
+ok baseline negative
+ok running positive
+ok running negative
+ok collision positive
+ok collision negative
+ok dirty positive
+ok dirty negative
+ok restore positive
+ok restore negative
+ok commit positive
+ok commit negative
+ok dryrun positive
+ok dryrun negative
+ok managed positive
+ok managed negative
+ok linkfix positive
+ok linkfix negative
+reorg selftest: PASS
+real 15.59
+user 5.58
+sys 7.14
+exit 0

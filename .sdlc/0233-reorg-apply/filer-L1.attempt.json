@@ -1,0 +1,21 @@
+{
+  "attempt_id": "353f0b0c2fb04e928d6f27a6289c2edc",
+  "name": "filer-L1",
+  "role": "filer",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "sonnet",
+  "effort": "medium",
+  "routing_reason": "filer L1: chain section 5 draft",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-07T03:24:12.241444+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg/.sdlc/0233-reorg-apply/handoff.md",
+  "owner_pid": 61695,
+  "handoff_sha256": "8c30f2d6d1dd3c9ef0964c18fef25a5206555b530ce0f6ca9e1b5de03eeff1da",
+  "process_pid": 61733,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T03:24:45.568656+00:00"
+}

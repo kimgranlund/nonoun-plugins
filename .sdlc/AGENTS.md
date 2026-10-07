@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:2aa2504de478 -->
+<!-- sdlc-lite:managed:start v1 sha256:b39d05cc81b4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,14 +9,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 28
+- proposed: 26
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
   - T-0264 steps.py split has no override after a replan verdict (0264-split-after-replan-override)
   - T-0267 A hook denies git worktree add with variable paths (0267-hook-denies-worktree-add-variable)
-  - T-0270 steps.py lint gives a generic error for nested backticks (0270-steps-lint-nested-backtick-message)
-  - T-0271 steps.py lint should enforce plan-defect contract dependents (0271-planner-contract-dependents-lint)
   - T-0275 Probe the sub-agent mechanics the design assumes (0275-subagent-probes)
   - T-0276 Claude level table and per-level generated agents (0276-claude-levels-table)
   - T-0277 dispatch.py prepare: the pre-launch half of run.sh (0277-dispatch-prepare)
@@ -40,7 +38,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 265
+- done: 267
 - dropped: 25
 
 ## Procedures

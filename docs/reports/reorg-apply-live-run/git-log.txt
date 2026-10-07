@@ -1,0 +1,39 @@
+commit 56e99a4db400fed029bcb6358c2421047ec4695b
+Author: builder <builder@example.invalid>
+Date:   Tue Oct 6 19:58:47 2026 -0700
+
+    reorg: other
+
+    move docs/claude-handoff.md -> docs/other/claude-handoff.md
+    move docs/claude-response.md -> docs/other/claude-response.md
+    plan digest b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf
+
+ docs/docs-schema/design.md          | 2 +-
+ docs/{ => other}/claude-handoff.md  | 4 ++--
+ docs/{ => other}/claude-response.md | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 240bf77cc479ffdeb9d548639e916e3247bf3d6f
+Author: builder <builder@example.invalid>
+Date:   Tue Oct 6 19:58:47 2026 -0700
+
+    reorg: references
+
+    move docs/codex-role-execution.md -> docs/references/codex-role-execution.md
+    move docs/plugin-compatibility.md -> docs/references/plugin-compatibility.md
+    plan digest b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf
+
+ AGENTS.md                                     | 4 ++--
+ README.md                                     | 4 ++--
+ docs/AGENTS.md                                | 2 +-
+ docs/README.md                                | 4 ++--
+ docs/claude-response.md                       | 2 +-
+ docs/docs-schema/design.md                    | 2 +-
+ docs/generative-constructs/README.md          | 2 +-
+ docs/maintenance/sdlc-internals.md            | 2 +-
+ docs/{ => references}/codex-role-execution.md | 8 ++++----
+ docs/{ => references}/plugin-compatibility.md | 0
+ plugins/progressive-context/HARNESS-NOTES.md  | 2 +-
+ plugins/sdlc-lite/AGENTS.md                   | 2 +-
+ plugins/sdlc-lite/HARNESS-NOTES.md            | 2 +-
+ 13 files changed, 18 insertions(+), 18 deletions(-)

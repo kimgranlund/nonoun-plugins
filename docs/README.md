@@ -12,6 +12,7 @@
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
+- [Reorganization apply live run](reports/reorg-apply-live-run.md): dated record of `reorg.py` moving four documents in a clone of this repository in two batches, the listing, the digest and approval refusals, the link counts, and the limits.
 - [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
 - [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.
@@ -32,6 +33,7 @@
 - [Onboard lane text](reports/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
 - [Progressive Context gap analysis review](reports/progressive-context-gap-analysis-review.md): dated independent architect review of the gap analysis, three blockers and eleven minor findings, and how each was applied.
 - [Docs schema design review](reports/docs-schema-design-review.md): dated independent architect review of the docs schema design, with 15 findings and how each was applied.
+- [Placement proof live run](reports/placement-proof-live-run.md): dated live run for T-0248 testing whether the context registry helps fresh sessions place new documents, on four session types with a control arm; the pass rule held for two types and failed for two, so placement stays unproven.
 - [Repository onboarding design review](reports/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](reports/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.
 - [Repository onboarding design review, third round](reports/repo-onboarding-design-review-3.md): dated independent review of the onboarding design at v0.5.
