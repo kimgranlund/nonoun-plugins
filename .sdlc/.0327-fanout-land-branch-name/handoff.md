@@ -2,7 +2,7 @@
 id: T-0327
 title: "fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3)"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ Found by the T-0287 live run on branch subagent-w5. Files: plugins/sdlc-lite/scr
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-06: built by fanout lane, merged by hand
