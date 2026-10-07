@@ -2840,7 +2840,8 @@ def selftest():
         # the close is refused and the second ticket never runs.
         shim = tmp / 'shim'
         shim.mkdir()
-        (shim / 'claude').write_text('#!/usr/bin/env bash\nset -eu\necho "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n')
+        (shim / 'claude').write_text('#!/usr/bin/env bash\nset -eu\necho "$FANOUT_TICKET" >"$FANOUT_TICKET.txt"\n'
+                                       'echo \'{"type":"result","result":"ok","is_error":false}\'\n')  # T-0346: a stream with no result event now fails
         (shim / 'claude').chmod(0o755)
         shim_env = dict(ENV, PATH=f'{shim}:{ENV.get("PATH", "")}')
 
