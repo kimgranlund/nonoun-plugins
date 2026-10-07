@@ -1,0 +1,13 @@
+SESSION 3a31a3a3-f331-4357-b89d-0550d0b373d7
+  parent 3a31a3a3-f331-4357-b89d-05  {'claude-sonnet-5-5': 11} {'input_tokens': 22, 'output_tokens': 2731, 'cache_read_input_tokens': 411504, 'cache_creation_input_tokens': 45538} 03:19:19 03:19:50
+  sub agent-a014d89b352cdf2ef.js sdlc-lite:solo-S {'claude-sonnet-5-5': 3} {'input_tokens': 6, 'output_tokens': 847, 'cache_read_input_tokens': 58134, 'cache_creation_input_tokens': 32972} 03:19:31 03:19:39
+SESSION b02ffe93-2d33-4cec-872b-a02eac331144
+  parent b02ffe93-2d33-4cec-872b-a0  {'claude-sonnet-5-5': 16} {'input_tokens': 32, 'output_tokens': 7528, 'cache_read_input_tokens': 696076, 'cache_creation_input_tokens': 55770} 03:20:12 03:22:05
+  sub agent-a5052b8461b479050.js sdlc-lite:verifier-L1 {'claude-opus-5-5': 9} {'input_tokens': 18, 'output_tokens': 5079, 'cache_read_input_tokens': 288063, 'cache_creation_input_tokens': 51144} 03:21:13 03:21:54
+  sub agent-ad2cbba0f10f2d506.js sdlc-lite:builder-L1 {'claude-sonnet-5-5': 4} {'input_tokens': 8, 'output_tokens': 1102, 'cache_read_input_tokens': 93445, 'cache_creation_input_tokens': 35082} 03:20:53 03:21:03
+  sub agent-ade7c74b789457e65.js sdlc-lite:planner-L1 {'claude-sonnet-5-5': 6} {'input_tokens': 12, 'output_tokens': 2347, 'cache_read_input_tokens': 192616, 'cache_creation_input_tokens': 42928} 03:20:21 03:20:40
+SESSION a1ae7e48-c24a-41ae-940d-62c65af5f22b
+  parent a1ae7e48-c24a-41ae-940d-62  {'claude-sonnet-5-5': 29} {'input_tokens': 58, 'output_tokens': 15840, 'cache_read_input_tokens': 1519625, 'cache_creation_input_tokens': 74013} 03:22:24 03:28:35
+  sub agent-a904ad1cad883ca4b.js sdlc-lite:verifier-L3 {'claude-fable-5-1': 23} {'input_tokens': 620, 'output_tokens': 8345, 'cache_read_input_tokens': 865645, 'cache_creation_input_tokens': 170689} 03:23:39 03:28:14
+  sub agent-ab4b159bcba10b564.js sdlc-lite:solo-S {'claude-sonnet-5-5': 3} {'input_tokens': 6, 'output_tokens': 797, 'cache_read_input_tokens': 68336, 'cache_creation_input_tokens': 24104} 03:22:54 03:23:02
+  sub agent-acf61a22dc619fd24.js sdlc-lite:solo-M {'claude-sonnet-5-5': 21} {'input_tokens': 42, 'output_tokens': 6188, 'cache_read_input_tokens': 733953, 'cache_creation_input_tokens': 47256} 03:22:52 03:23:30
