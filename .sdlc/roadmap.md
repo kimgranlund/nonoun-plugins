@@ -322,3 +322,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0322 | [.0322-fleet-verify-fixes](.0322-fleet-verify-fixes/handoff.md) | Make the flaky fleet_status selftest deterministic | bug | S | P2 | none | 🟢 done |
 | T-0323 | [0323-fleet-status-tables](0323-fleet-status-tables/handoff.md) | fleet_status render: colored emoji marks and tables, collapse done-but-open rows | feature | M | P2 | none | ⏳ proposed |
 | T-0324 | [0324-fleet-status-schema](0324-fleet-status-schema/handoff.md) | JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section | feature | M | P2 | T-0323 | ⏳ proposed |
+| T-0325 | [0325-skills-self-contained](0325-skills-self-contained/handoff.md) | Make every skill self-contained: ship its resources, drop repo-relative path assumptions | chore | M | P2 | T-0324 | ⏳ proposed |
