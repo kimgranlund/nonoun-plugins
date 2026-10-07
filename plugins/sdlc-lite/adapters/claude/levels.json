@@ -4,7 +4,7 @@
   "verifier": {"L1": ["sonnet", "medium"], "L2": ["sonnet", "high"], "L3": ["fable", "xhigh"]},
   "researcher": {"L1": ["sonnet", "medium"], "L2": ["opus", "medium"], "L3": ["opus", "high"]},
   "architect": {"L1": ["fable", "high"]},
-  "scout": {"L1": ["claude-haiku-4-5", "low"]},
+  "scout": {"L1": ["claude-haiku-5-5", "low"]},
   "archaeologist": {"L1": ["sonnet", "medium"]},
   "filer": {"L1": ["sonnet", "medium"]},
   "plan-reviewer": {"L1": ["opus", "high"]},

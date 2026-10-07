@@ -1,5 +1,5 @@
 {
-  "eval": ".sdlc/evals/0001-solo-tiers.md",
-  "previous_eval": ".sdlc/evals/0000-baseline.md",
-  "table_sha256": "f4d26ef28e57559a85296cd885e261327cdf57863c3b1c73cc91ed50876048a3"
+  "eval": ".sdlc/evals/0002-haiku-5-5.md",
+  "previous_eval": ".sdlc/evals/0001-solo-tiers.md",
+  "table_sha256": "2dcd093be10c651df6dae77414946885626b587b276248be9404910a92147daf"
 }

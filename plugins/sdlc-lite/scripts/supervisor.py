@@ -235,7 +235,7 @@ Run every command from inside the repository. The script path in the commands wa
 ```json
 {
   "receivers": {
-    "claude": {"host": "claude", "mode": "ephemeral", "model": "claude-haiku-4-5", "effort": "low"},
+    "claude": {"host": "claude", "mode": "ephemeral", "model": "claude-haiku-5-5", "effort": "low"},
     "codex": {"host": "codex", "mode": "attached", "session": "<codex thread id>", "transcript": "/absolute/path/to/rollout-<codex thread id>.jsonl"},
     "human": {"host": "claude", "mode": "notify"}
   }

@@ -163,7 +163,7 @@ AGENT_ALIASES = ('sonnet', 'opus', 'haiku', 'fable')
 
 
 def agent_alias(model):
-    """The Agent tool accepts only an alias; map a pinned id such as claude-haiku-4-5 to its family alias.
+    """The Agent tool accepts only an alias; map a pinned id such as claude-haiku-5-5 to its family alias.
     On a Max login the alias haiku has resolved to Sonnet 5.5 (docs/reports/haiku-alias-2026-09-30.md), so the
     transcript model field, not this alias, says which model ran."""
     if model in AGENT_ALIASES:
@@ -1219,7 +1219,7 @@ def selftest():
                     r_printed = r_got['model'] if r_got else agent_alias(r_model)  # a lane gate refusal prints nothing
                 case('row %s %s prints an Agent alias' % (r_role, r_level), r_printed in AGENT_ALIASES)
         case('a bad model is not an Agent alias (negative control)', agent_alias('gpt-9') not in AGENT_ALIASES
-             and agent_alias('claude-haiku-4-5') == 'haiku')
+             and agent_alias('claude-haiku-5-5') == 'haiku')
 
         # 8. The CLI: stdout is the JSON alone, the exit code is the gate's.
         env = {k: v for k, v in os.environ.items() if not k.startswith('SDLC_')}
@@ -1398,7 +1398,7 @@ def selftest():
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / 'nope.dispatch.json')],
                            capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
         tr = rb / 'tr.jsonl'
-        tr.write_text(json.dumps({'message': {'id': 'm1', 'role': 'assistant', 'model': 'claude-haiku-4-5-20251001', 'usage': {'output_tokens': 5}}}) + '\n')
+        tr.write_text(json.dumps({'message': {'id': 'm1', 'role': 'assistant', 'model': 'claude-haiku-5-5', 'usage': {'output_tokens': 5}}}) + '\n')
         put(rb / '.sdlc' / 'c3' / 'handoff.md')
         put(rb / '.sdlc' / 'c4' / 'handoff.md')
         for nm, extra in (('c3', ['--transcript', str(tr)]), ('c4', [])):
@@ -1406,7 +1406,7 @@ def selftest():
             Path(got['result']).write_text(BODY['builder'])
             subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record'] + extra + [got['dispatch_file']], capture_output=True, text=True,
                            env=env_cli, stdin=subprocess.DEVNULL)
-        case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-4-5-20251001')
+        case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-5-5')
         case('record with no transcript writes no resolved_model', 'resolved_model' not in lines_of(rb / '.sdlc' / 'c4')[-1])
         # T-0343: the artifact comes from the transcript when the file and stdin are empty.
         good = {'message': {'id': 'm2', 'role': 'assistant', 'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': BODY['builder']}]}}

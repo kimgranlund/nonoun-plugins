@@ -1,0 +1,29 @@
+{
+  "attempt_id": "309f5984b79d4c47b4df39a11008923e",
+  "name": "scout-L1",
+  "agent_name": "scout-L1-h55",
+  "role": "scout",
+  "level": "L1",
+  "backend": "claude",
+  "transport": "subagent",
+  "model": "haiku",
+  "effort": "low",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-07T20:25:13.684905+00:00",
+  "project": "/private/tmp/h55proof",
+  "handoff": "/private/tmp/h55proof/.sdlc/h55/handoff.md",
+  "parent_pid": 69391,
+  "parent_pid_source": "claude",
+  "handoff_sha256": "273f46f464c63fbed88b9517a8b73632e1fec18bd54c4a764d283fb9941e4d58",
+  "worktrees_before": [
+    "/private/tmp/h55proof"
+  ],
+  "branches_before": [
+    "main"
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-07T20:25:48.720581+00:00",
+  "agent_id": "a7bcea9727a22d7ca"
+}

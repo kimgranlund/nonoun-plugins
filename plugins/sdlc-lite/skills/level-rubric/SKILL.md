@@ -95,14 +95,14 @@ The verdict routes the plan:
 | Role | Level | Model / effort |
 |---|---|---|
 | architect | L1 | Fable high |
-| scout | L1 | Haiku 4.5 low |
+| scout | L1 | Haiku 5.5 low |
 | archaeologist | L1 | Sonnet medium |
 | filer | L1 | Sonnet medium |
 | plan-reviewer | L1 | Opus high |
 
 ## Session agents (not pipeline roles)
 
-The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-4-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case.
+The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-5-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case.
 
 ## Agent-tool spawns (outside a dispatch)
 
@@ -110,7 +110,7 @@ This section applies to any in-session Agent-tool spawn that is not a prepared d
 
 Every such spawn states `model` explicitly. An unset `model` inherits the session's top model. Pick the seat by class of work:
 
-- Mechanical or gather-only work: `haiku`. On the maintainer's login (Claude Code 2.1.285) the alias `haiku` resolves to Sonnet 5.5, and the Agent tool takes an alias, so this seat runs Sonnet there; the scout level row pins `claude-haiku-4-5`.
+- Mechanical or gather-only work: `haiku`. The Agent tool takes an alias, and the scout level row pins `claude-haiku-5-5`. On 2026-10-07 (Claude Code 2.1.293) the alias `haiku` resolved to `claude-haiku-5-5`; on an earlier login (Claude Code 2.1.285) it resolved to Sonnet 5.5, so only the transcript model field says what ran.
 - Search, review, and routine coding: `sonnet`, the default.
 - Judgment-heavy synthesis: `opus`.
 

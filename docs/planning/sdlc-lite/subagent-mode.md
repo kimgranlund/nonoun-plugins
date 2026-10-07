@@ -73,7 +73,7 @@ What now carries the guarantee, in order of strength:
 - Header: `record` writes `<!-- role=.. level=.. model=.. effort=.. -->` from the dispatch, so later family rules and `steps.py` read it as today.
 - Observed model: the sub-agent transcript carries a model per message, if probe P5 confirms it; `record` then cross-checks the dispatched model. Until P5, the evidence is the dispatch, which says what was requested, not what ran. Say so in reports.
 
-Unverified: the `haiku`, `sonnet`, `opus`, and `fable` aliases resolve to the models the pinned table assumes (scout is pinned to `claude-haiku-4-5` today). The alias mapping is checked in P1.
+Unverified: the `haiku`, `sonnet`, `opus`, and `fable` aliases resolve to the models the pinned table assumes (scout is pinned to `claude-haiku-5-5` today). The alias mapping is checked in P1.
 
 ## 3. Results and records
 

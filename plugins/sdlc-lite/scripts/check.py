@@ -44,7 +44,7 @@
    `unresolved:` in agents/planner.md, agents/plan-reviewer.md, and scripts/steps.py; `Missing decisions` in
    agents/plan-reviewer.md, skills/chain/SKILL.md, and agents/conductor.md; and `plan review:` in agents/planner.md,
    skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and agents/conductor.md.
-12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-4-5`, and names `messages.py` and
+12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-5-5`, and names `messages.py` and
    `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
    adapters/codex/agents/sdlc-messenger-l1.toml exists. Negative controls: empty text, no `messenger` key, no TOML.
 13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
@@ -176,7 +176,7 @@ root = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__)
 errors = []
 
 def cap(m):
-    """Alias -> "Sonnet"; pinned id claude-<family>-<major>-<minor> -> "Haiku 4.5"."""
+    """Alias -> "Sonnet"; pinned id claude-<family>-<major>-<minor> -> "Haiku 5.5"."""
     pin = re.fullmatch(r'claude-([a-z]+)-(\d+)-(\d+)', m)
     return f'{pin.group(1).capitalize()} {pin.group(2)}.{pin.group(3)}' if pin else m.capitalize()
 
@@ -237,7 +237,7 @@ def scout_mismatch(run_text, rubric_text):
     return not (m and r and f'{cap(m.group(1))} {m.group(2)}' == r.group(1))
 _rs, _rb = (root/'scripts/run.sh').read_text(), (root/'skills/level-rubric/SKILL.md').read_text()
 if scout_mismatch(_rs, _rb): errors.append('run.sh scout:L1 and level-rubric scout row disagree')
-if cap('claude-haiku-4-5') != 'Haiku 4.5' or cap('sonnet') != 'Sonnet':
+if cap('claude-haiku-5-5') != 'Haiku 5.5' or cap('sonnet') != 'Sonnet':
     errors.append('check.py: cap() pinned-id mapping broken')
 if not scout_mismatch(re.sub(r'(scout:L1\)\s*model=)[\w-]+', r'\g<1>claude-haiku-9-9', _rs), _rb):
     errors.append('check.py: scout pin guard negative control not flagged')
@@ -607,7 +607,7 @@ for phrase, rels in TICKET_BUDGET.items():
         elif not ticket_budget_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: ticket-budget negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
-MESSENGER_WORDS = ('model: claude-haiku-4-5', 'messages.py', '.sdlc/messages/AGENTS.md')
+MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGENTS.md')
 def messenger_missing(agent_text, codex_models, toml_present):
     out = []
     if not agent_text.strip(): out.append('messenger: agents/messenger.md missing or empty')

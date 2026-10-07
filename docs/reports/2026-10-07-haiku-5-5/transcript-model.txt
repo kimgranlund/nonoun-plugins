@@ -1,0 +1,7 @@
+# sub-agent transcript agent-a7bcea9727a22d7ca.jsonl: assistant message id, model
+msg_011CfoWB1du5KU1u7PTTbfWH	claude-haiku-5-5
+msg_011CfoWB1du5KU1u7PTTbfWH	claude-haiku-5-5
+msg_011CfoWB6NA56sUuLXTD9EZE	claude-haiku-5-5
+msg_011CfoWBAvFQpoQ169guaf8g	claude-haiku-5-5
+msg_011CfoWBEamkiouejywg8Ck5	claude-haiku-5-5
+msg_011CfoWBEamkiouejywg8Ck5	claude-haiku-5-5

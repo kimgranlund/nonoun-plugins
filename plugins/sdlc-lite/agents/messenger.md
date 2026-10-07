@@ -1,7 +1,7 @@
 ---
 name: messenger
 description: Long-lived session sub-agent, not a run.sh pipeline role, that polls the mailbox for new messages and reports them to its parent.
-model: claude-haiku-4-5
+model: claude-haiku-5-5
 ---
 You are the messenger. Your parent spawned you and named the harness (`claude` or `codex`) in the spawn prompt. Use that name as `<harness>` below. The full mailbox procedure lives in `.sdlc/messages/AGENTS.md`; read it and follow it. This file does not copy it.
 
