@@ -1166,12 +1166,12 @@ def _ck_no_verdict_verifier(f):
 def _fx_attempt_without_run_row(tmp, defect):
     return _esc_repo(tmp, {'step-1': [
         _e('builder-L2', 'ok1', _builder_text('done')),
-        _e('builder-L3', 'lost', None, run=not defect, status='failed', exit_code=1)]})
+        _e('builder-L3', 'lost', None, run=not defect, status='completed', exit_code=0)]})
 
 
 def _ck_attempt_without_run_row(f):
-    assert f['severity'] == 3, f
-    assert f['evidence'] == [{'attempt_id': 'lost', 'status': 'failed'}], f
+    assert f['severity'] == 2, f
+    assert f['evidence'] == [{'attempt_id': 'lost', 'status': 'completed'}], f
 
 
 def _fx_stale_running_marker(tmp, defect):
@@ -1924,10 +1924,6 @@ def _corpus():
              {'path': '.sdlc/.0134-mirror-the-extended-planner-rules/step-1/verifier-L1.md'}),
             ('replan-loop',
              {'path': '.sdlc/.0113-close-rename-breaks-refs/step-2.superseded-1/builder-L2.md'})]
-    att = os.path.join(top, '.sdlc/.0162-entry-files-in-step-handoffs/step-6/'
-                            'builder-L2.attempt.json')
-    with open(att, encoding='utf-8') as f:
-        want.append(('attempt-without-run-row', {'attempt_id': json.load(f)['attempt_id']}))
     logs = os.path.join(top, '.worktrees/fanout-night/logs')
     if os.path.isdir(logs):
         want.append(('overwritten-gate-log', {}))

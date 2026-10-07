@@ -41,9 +41,9 @@ Detectors (cause_hint files are plugin-relative):
   no-verdict-verifier    a verifier row with a result file and verdict None; evidence the
                          result. Cause agents/verifier.md.
   attempt-without-run-row
-                         an attempt record (not legacy) whose status is not running and that no
-                         runs.jsonl record joined; evidence its id and status; high severity when
-                         failed. Cause scripts/run.sh.
+                         an attempt record (not legacy) whose status is not running, failed, or
+                         interrupted (run.sh appends a row only after a successful result) and
+                         that no runs.jsonl record joined; evidence its id and status. Cause scripts/run.sh.
   stale-running-marker   a <role>-<level>.running marker in a row's dir where that role-level has
                          attempt records and none is running (evidence the marker), or a running
                          record whose owner_pid is not alive here (os.kill(pid, 0) raises
@@ -450,11 +450,9 @@ def attempt_without_run_row(ctx):
         if not _source(r, lambda s: s.endswith('.attempt.json')) or _has_run(r):
             continue
         status = r.get('status')
-        if status == 'running':
+        if status in ('running', 'failed', 'interrupted'):
             continue
-        key = 'attempt-without-run-row-failed' if status == 'failed' \
-            else 'attempt-without-run-row'
-        out.append(_make(ctx, 'attempt-without-run-row', key, 'scripts/run.sh', 'runs.jsonl row',
+        out.append(_make(ctx, 'attempt-without-run-row', 'attempt-without-run-row', 'scripts/run.sh', 'runs.jsonl row',
                          [{'attempt_id': aid, 'status': status}],
                          f'{aid}: attempt {status or "with no status"} has no runs.jsonl row'))
     return out
