@@ -10,8 +10,11 @@ Usage: fleet_status.py render [--repos A,B] [--since last|DATE] [--ping] [--flee
        fleet_status.py selftest
 
 render prints these sections in this order, at most 60 lines for three repos (the list caps shrink together until
-it fits, the cut rows become a `+N more` row; blank lines and table headers count the same as any line). Needs you,
-Moving, Stale or stuck and Release state are markdown tables with the columns Repo, Row, State, Detail, Source:
+it fits, the cut rows become a `+N more` row; blank lines, table headers and rules count the same as any line). Needs
+you, Moving, Stale or stuck and Release state are plain aligned tables, indented two spaces: a header row, a dashed
+rule, then the rows, each column padded with spaces to its widest cell (a colored circle counts two columns), no
+pipes, and a blank line after the table. The columns are Repo, Row, State, Detail, Source; State carries the colored
+emoji and its word, and an empty cell is a hyphen:
   Machine         one line: load, trend arrow, cores, stop line and headroom, the two top consumers with a pid,
                   and the verdict (ok, NEAR or OVER the stop line)
   Needs you       open non-draft PRs (State merge) and blocked tickets whose owner is the user or unknown (State
@@ -34,9 +37,9 @@ Moving, Stale or stuck and Release state are markdown tables with the columns Re
                   fetch age
   Ping            only with --ping: the conductors with work to report on, to message for a health report.
                   Nothing is sent.
-Every row ends with its source in brackets, the last cell of a table row (the ticket folder under the repo's
+Every row ends with its source in brackets, the last column of a table row (the ticket folder under the repo's
 .sdlc, `PR #N`, `@ sha`, `.sdlc` for a repo's board, `.git`; the Repo cell names the repo) or `loadavg, ps`; a row
-with no source raises RenderError, render exits 1 and prints nothing. No em dash is printed.
+with no source raises RenderError, render exits 1 and prints nothing. No pipe and no em dash is printed.
 render reads the registry (--fleet, default .sdlc/fleet.json): --repos narrows the active repos by name, a name the
 registry excludes is skipped with a note on stderr and never shown, an unknown name exits 2. render writes the
 same state files as collect (the snapshot makes the next call's `since last`); --no-write skips them. Exit codes:
@@ -52,7 +55,10 @@ newest 2000 lines past 4000), and `fleet-status.json` holds the snapshot the nex
 `.sdlc` in the cwd and no --state-dir nothing is written, and `snapshot.written` is false. --no-write skips
 both files (the trend then uses the last stored samples; the delta uses the last stored snapshot).
 
-Output keys (stdout, JSON):
+Output keys (stdout, JSON): skills/fleet-status/resources/fleet-status.schema.json (JSON Schema, draft 2020-12) is
+the authority for the key list, the types and the allowed values; selftest validates collected fixtures against it
+with a small stdlib checker (`schema_errors`), and a negative control shows a missing key is rejected. A key added
+here or in scan_repo() and not in the schema fails the selftest. The notes below say what the values mean.
   time          UTC ISO instant of this call
   machine.load  load1, load5, load15, cpus, stop_line, verdict (ok | near | over: over when load1 is above the
                 stop line, near from 80 percent of it), headroom (stop_line - load1), arrow (the trend's), trend {arrow, delta, minutes, source, samples}: the delta of load1 against the oldest
@@ -105,7 +111,7 @@ Output keys (stdout, JSON):
 Read-only: only `ps`, `git` plumbing and `gh pr list` GET calls run on a repo, each bounded by a timeout and
 killed with its process group on expiry. Exit codes: 0 ok, 2 usage or a missing explicit repo.
 """
-import datetime, json, os, pathlib, re, sys, tempfile, time
+import datetime, json, os, pathlib, re, sys, tempfile, time, unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -849,6 +855,87 @@ def summary_line(out):
         or 'no rows', ld['load1'], ld['arrow'], ld['verdict'])
 
 
+# --- schema ------------------------------------------------------------------
+
+SCHEMA_PATH = os.path.join(HERE, '..', 'skills', 'fleet-status', 'resources', 'fleet-status.schema.json')
+SCHEMA_ANNOTATIONS = frozenset(('$schema', '$id', '$defs', 'title', 'description'))
+SCHEMA_KEYWORDS = frozenset(('$ref', 'type', 'enum', 'const', 'required', 'properties', 'additionalProperties', 'items',
+                             'minimum', 'oneOf', 'allOf'))
+JSON_TYPES = {'null': lambda v: v is None, 'boolean': lambda v: isinstance(v, bool), 'string': lambda v: isinstance(v, str),
+              'integer': lambda v: isinstance(v, int) and not isinstance(v, bool),
+              'number': lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+              'array': lambda v: isinstance(v, list), 'object': lambda v: isinstance(v, dict)}
+
+
+def load_schema(path=SCHEMA_PATH):
+    with open(path, encoding='utf-8') as f:
+        return json.load(f)
+
+
+def same_json(a, b):
+    """Equal and of the same JSON type: True is not 1."""
+    return a == b and isinstance(a, bool) == isinstance(b, bool)
+
+
+def schema_errors(value, schema, root=None, path='$'):
+    """[message] for each place `value` breaks `schema` (JSON Schema, draft 2020-12), [] when it conforms. Standard
+    library only, and only the keywords fleet-status.schema.json uses: $ref (to #/$defs/...), type, enum, const,
+    required, properties, additionalProperties (false or a schema), items, minimum, oneOf, allOf. The annotation keywords
+    are ignored; any other keyword raises ValueError, so a schema that grows past this checker cannot pass unchecked."""
+    root = schema if root is None else root
+    for key in schema:
+        if key not in SCHEMA_KEYWORDS and key not in SCHEMA_ANNOTATIONS:
+            raise ValueError('schema keyword %s at %s is not supported by this checker' % (key, path))
+    errors = []
+    if '$ref' in schema:
+        node = root
+        ref = schema['$ref']
+        if not ref.startswith('#/'):
+            raise ValueError('only local $ref is supported: %s' % ref)
+        for part in ref[2:].split('/'):
+            if not isinstance(node, dict) or part not in node:
+                raise ValueError('$ref %s does not resolve' % ref)
+            node = node[part]
+        errors += schema_errors(value, node, root, path)
+    if 'type' in schema:
+        names = schema['type'] if isinstance(schema['type'], list) else [schema['type']]
+        for n in names:
+            if n not in JSON_TYPES:
+                raise ValueError('schema type %s at %s is not a JSON type' % (n, path))
+        if not any(JSON_TYPES[n](value) for n in names):
+            errors.append('%s: expected %s, got %s' % (path, ' or '.join(names), type(value).__name__))
+    if 'enum' in schema and not any(same_json(value, v) for v in schema['enum']):
+        errors.append('%s: %r is not one of %s' % (path, value, schema['enum']))
+    if 'const' in schema and not same_json(value, schema['const']):
+        errors.append('%s: expected %r, got %r' % (path, schema['const'], value))
+    if 'minimum' in schema and JSON_TYPES['number'](value) and value < schema['minimum']:
+        errors.append('%s: %r is below the minimum %r' % (path, value, schema['minimum']))
+    if isinstance(value, dict):
+        props = schema.get('properties', {})
+        for key in schema.get('required', []):
+            if key not in value:
+                errors.append('%s: missing required key %s' % (path, key))
+        for key, item in value.items():
+            if key in props:
+                errors += schema_errors(item, props[key], root, '%s.%s' % (path, key))
+            elif schema.get('additionalProperties') is False:
+                errors.append('%s: key %s is not in the schema' % (path, key))
+            elif isinstance(schema.get('additionalProperties'), dict):
+                errors += schema_errors(item, schema['additionalProperties'], root, '%s.%s' % (path, key))
+    if isinstance(value, list) and 'items' in schema:
+        for i, item in enumerate(value):
+            errors += schema_errors(item, schema['items'], root, '%s[%d]' % (path, i))
+    for sub in schema.get('allOf', []):
+        errors += schema_errors(value, sub, root, path)
+    if 'oneOf' in schema:
+        tries = [schema_errors(value, sub, root, path) for sub in schema['oneOf']]
+        passed = sum(1 for t in tries if not t)
+        if passed != 1:
+            errors.append('%s: matches %d of %d oneOf alternatives%s' % (
+                path, passed, len(tries), '' if passed else ' (' + '; '.join(t[0] for t in tries) + ')'))
+    return errors
+
+
 # --- render ------------------------------------------------------------------
 
 EM_DASH, EN_DASH = chr(0x2014), chr(0x2013)   # spelled as code points: the file itself holds neither
@@ -859,6 +946,7 @@ TITLE_W = 32
 # white circle for a repo with nothing moving
 MARKS = {'live': '\U0001F7E2', 'idle': '\U0001F7E1', 'dead': '\U0001F534', 'stale': '\u26a0\ufe0f', 'none': '\u26aa'}
 TABLE_HEAD = ('Repo', 'Row', 'State', 'Detail', 'Source')
+INDENT, GAP = '  ', '  '    # a table is indented like the other rows; its columns are two spaces apart
 DONE_MARK = '✓'
 CREDENTIAL_RE = re.compile(r'(credential|token|secret|password|api[ _-]?key|log ?in\b|sign[ -]?in\b|2fa|oauth|authenticat)', re.I)
 OWNER_ORDER = {'user': 0, 'unknown': 1}
@@ -869,9 +957,10 @@ class RenderError(ValueError):
 
 
 def clean(text, width=None):
-    """One printable line: control characters gone, em and en dashes turned into a hyphen, optionally truncated."""
+    """One printable line: control characters gone, em and en dashes turned into a hyphen, a pipe into a slash (the
+    output holds no pipe), optionally truncated."""
     t = re.sub(r'[\x00-\x1f\x7f]+', ' ', '' if text is None else str(text))
-    t = ' '.join(t.replace(EM_DASH, '-').replace(EN_DASH, '-').split())
+    t = ' '.join(t.replace(EM_DASH, '-').replace(EN_DASH, '-').replace('|', '/').split())
     return t[:width - 3].rstrip() + '...' if width and len(t) > width else t
 
 
@@ -891,28 +980,40 @@ def fmt(text, source, indent='  '):
 
 
 def cell(text):
-    """One table cell: a clean line with no pipe, which would split the cell."""
-    return clean(text).replace('|', '/')
+    """One table cell: a clean line, and a hyphen for no text, so a reader can split a row on two spaces."""
+    return clean(text) or '-'
 
 
 def trow(repo, row, state, detail, source):
-    """One table row. Source is the last cell, in brackets; a row with no source is a defect."""
+    """One table row as its five cells. Source is the last, in brackets; a row with no source is a defect."""
     if not clean(source):
         raise RenderError('row has no source: %s' % clean('%s %s' % (repo, row), 60))
-    return '| ' + ' | '.join([cell(repo), cell(row), cell(state), cell(detail), '[%s]' % cell(source)]) + ' |'
+    return (cell(repo), cell(row), cell(state), cell(detail), '[%s]' % cell(source))
 
 
 def more_row(n):
-    """The `+N more` tail of a cut list: a table row with no source, because it is not a row of data."""
-    return '| ' + ' | '.join(['', '+%d more' % n, '', '', '']) + ' |'
+    """The `+N more` tail of a cut list: a row with no source, because it is not a row of data."""
+    return ('', '+%d more' % n, '', '', '')
+
+
+def dwidth(text):
+    """Terminal columns of a string: a wide character (the colored circles) takes two, and the emoji selector after the
+    warning sign widens it from one to two."""
+    return sum(1 if ch == '\ufe0f' else 2 if unicodedata.east_asian_width(ch) in ('W', 'F') else 1 for ch in text)
 
 
 def table(rows):
-    """Header, separator, the rows, then one blank line: a line right after a table with no blank between would be
-    read as one more row of it. [] when there is no row."""
+    """A plain aligned table: the header, a dashed rule, the rows, then one blank line (so the next heading does not
+    read as one more row). Each column but the last is padded with spaces to its widest cell, the last (Source) is not,
+    and no line ends in a space. [] when there is no row."""
     if not rows:
         return []
-    return ['| ' + ' | '.join(TABLE_HEAD) + ' |', '|' + '---|' * len(TABLE_HEAD)] + list(rows) + ['']
+    grid = [TABLE_HEAD] + list(rows)
+    widths = [max(dwidth(r[i]) for r in grid) for i in range(len(TABLE_HEAD))]
+
+    def line(cells):
+        return (INDENT + GAP.join(c + ' ' * (w - dwidth(c)) for c, w in zip(cells, widths))).rstrip()
+    return [line(TABLE_HEAD), INDENT + GAP.join('-' * w for w in widths)] + [line(r) for r in rows] + ['']
 
 
 def state_cell(state):
@@ -1110,7 +1211,7 @@ def build(data, caps, ping):
         who = ' (%s)' % repo['conductor'] if repo.get('conductor') else ''
         sup = supervisor_text(repo.get('supervisor'))
         rows.append(trow(name + who, repo_counts(repo), state_cell(mark),
-                         'unread %d%s' % (len(repo['unread']), ' | ' + sup if sup else ''), '.sdlc'))
+                         'unread %d%s' % (len(repo['unread']), '; ' + sup if sup else ''), '.sdlc'))
         if repo['unread']:
             ids = repo['unread'][:1] + (['+%d more' % (len(repo['unread']) - 1)] if len(repo['unread']) > 1 else [])
             rows.append(trow(name, 'unread messages', '', ', '.join(ids), '.sdlc/messages/new'))
@@ -1148,9 +1249,9 @@ def build(data, caps, ping):
 def render(data, ping=False):
     """The whole status as text, from one collect() object. Sections in the fixed order: Machine, Needs you, Moving,
     Stale or stuck, Done since last report, Release state; Needs you, Moving, Stale or stuck and Release state are
-    markdown tables. Lists are capped, the caps shrunk together until the output is at most MAX_LINES lines (three
-    repos fit; a table's header, separator and blank line count like any other line). Every row carries its source
-    in brackets; a row with no source raises RenderError. No em dash is ever printed."""
+    plain aligned tables (see table()). Lists are capped, the caps shrunk together until the output is at most
+    MAX_LINES lines (three repos fit; a table's header, rule and blank line count like any other line). Every row
+    carries its source in brackets; a row with no source raises RenderError. No em dash and no pipe is ever printed."""
     caps = dict(CAP_START)
     while True:
         lines = build(data, caps, ping)
@@ -1466,6 +1567,44 @@ def selftest_collect():
            len(rown) == 2 and all(r['flags'] == [] and r['state'] == 'done' for r in rown))
         ok('flag: a live row carries none', row['T-0001']['flags'] == [])
         ok('counts add up', out['repos'][0]['counts'].get('live') == 2 and out['repos'][0]['counts'].get('dead') == 3)
+
+        # the schema is the authority for the collect output: a collected fixture validates against it (stdlib checker),
+        # and a fixture that breaks it is rejected
+        import copy
+        schema = load_schema()
+        ok('schema: the schema file ships in the skill folder and is draft 2020-12',
+           os.path.isfile(SCHEMA_PATH) and schema.get('$schema') == 'https://json-schema.org/draft/2020-12/schema')
+
+        def valid(label, data):
+            errs = schema_errors(data, schema)
+            ok('schema: %s validates against fleet-status.schema.json' % label, not errs)
+            for e in errs[:3]:
+                print('  ' + e)
+
+        def rejected(data, mutate, needle):
+            bad = copy.deepcopy(data)
+            mutate(bad)
+            return any(needle in e for e in schema_errors(bad, schema))
+        valid('a collect with live, dead, idle, stale, queued and done rows', out)
+        ok('negative control: a fixture missing a required top-level key is rejected',
+           rejected(out, lambda d: d.pop('delta'), '$: missing required key delta'))
+        ok('negative control: a fixture missing a nested required key is rejected',
+           rejected(out, lambda d: d['machine']['load'].pop('verdict'), '$.machine.load: missing required key verdict'))
+        ok('negative control: a row missing its state is rejected',
+           rejected(out, lambda d: d['repos'][0]['rows'][0].pop('state'), '$.repos[0].rows[0]: missing required key state'))
+        ok('negative control: a wrong type, a value outside an enum and a key the schema does not list are rejected',
+           rejected(out, lambda d: d['repos'][0]['rows'][0].update(claims_work='yes'), 'claims_work: expected boolean')
+           and rejected(out, lambda d: d['repos'][0]['rows'][0].update(state='running'), 'state: ')
+           and rejected(out, lambda d: d['repos'][0].update(extra=1), 'key extra is not in the schema'))
+        ok('negative control: true is not an integer, and a number below its minimum is rejected',
+           rejected(out, lambda d: d['repos'][0].update(worktrees=True), 'worktrees: expected integer')
+           and rejected(out, lambda d: d['repos'][0].update(worktrees=-1), 'below the minimum'))
+        try:
+            schema_errors(1, {'pattern': 'x'})
+            raised = False
+        except ValueError:
+            raised = True
+        ok('negative control: a schema keyword the checker does not implement raises instead of passing unchecked', raised)
         # negative control: the marker removed turns dead into stale, not idle or live
         os.unlink(os.path.join(t2, 'builder-L1.running'))
         out2 = collect([{'name': 'repo', 'path': repo, 'conductor': 'c', 'gh': None}], sd, gh=False, write=False)
@@ -1624,6 +1763,10 @@ def selftest_collect():
         prs = [n for n in a['needs_you'] if n['kind'] == 'pr']
         ok('needs you: open non-draft PRs via gh, drafts counted apart', [p['number'] for p in prs] == [7, 8]
            and a['repos'][0]['prs']['drafts'] == 1 and 'APPROVED' in prs[0]['detail'])
+        valid('a collect with open PRs from gh', a)
+        ok('negative control: a top-level needs_you item without its repo, and a PR item with a stray key, are rejected',
+           rejected(a, lambda d: d['needs_you'][0].pop('repo'), 'missing required key repo')
+           and rejected(a, lambda d: d['needs_you'][0].update(stray=1), 'matches 0 of 2 oneOf alternatives'))
         os.unlink(os.path.join(t2, 'builder-L1.running'))
         os.rename(t3, os.path.join(repo, '.sdlc', '.0003-stale-row' + U))
         write(os.path.join(repo, '.sdlc', '.0003-stale-row' + U, 'handoff.md'),
@@ -1639,6 +1782,7 @@ def selftest_collect():
            any(c['id'] == 'T-0002' and c['kind'] == 'state' and c['from'] == 'dead' and c['to'] == 'stale' for c in d['state_changes']))
         ok('delta: a merged PR is listed as merged, not closed', [p['number'] for p in d['prs_merged']] == [7] and not d['prs_closed'])
         ok('delta: since is the previous snapshot time', d['since'] == iso(base) and not d['first_run'])
+        valid('a collect with a close, a state change and a merged PR in its delta', b)
         c = collect(ent, sd4, now=base + datetime.timedelta(seconds=180))
         ok('negative control: a third run with nothing changed lists no close and no state change',
            not c['delta']['closed'] and not c['delta']['state_changes'] and not c['delta']['prs_merged'])
@@ -1647,10 +1791,27 @@ def selftest_collect():
         e2 = collect(ent, sd4, now=base + datetime.timedelta(seconds=240))
         ok('delta: a PR that left the open list unmerged is closed, not merged',
            [p['number'] for p in e2['delta']['prs_closed']] == [8] and not e2['delta']['prs_merged'])
+        valid('a collect with a closed unmerged PR in its delta', e2)
+        # --since DATE adds closed_since and merged_since to each repo
+        sr = os.path.join(tmp, 'sincerepo')
+        write(os.path.join(sr, '.sdlc', '.0001-x', 'handoff.md'), '---\nid: T-0001\ntitle: "x"\ntype: chore\nstatus: done\nsize: S\n---\n\n## Goal\nx\n')
+        git(sr, 'init', '-q', '-b', 'main')
+        git(sr, 'add', '-A')
+        git(sr, 'commit', '-q', '-m', 'close T-0001')
+        write(os.environ['GH_MERGED'], json.dumps([{'number': 11, 'title': 'eleven', 'mergedAt': '2026-10-06T00:00:00Z'}]))
+        sc = collect([{'name': 'since', 'path': sr, 'conductor': None, 'gh': None}], os.path.join(tmp, 'state9'),
+                     write=False, since=parse_ts('2026-10-01'))
+        valid('a collect with --since DATE (closed_since and merged_since)', sc)
+        ok('schema: the --since collect carries the close commit and the merged PR the schema describes',
+           [c['id'] for c in sc['repos'][0].get('closed_since', [])] == ['T-0001']
+           and [p['number'] for p in sc['repos'][0].get('merged_since') or []] == [11])
+        ok('negative control: a merged_since item missing its number is rejected',
+           rejected(sc, lambda d: d['repos'][0]['merged_since'][0].pop('number'), 'matches 0 of 3 oneOf alternatives'))
         GH_CMD = os.path.join(tmp, 'bin', 'no-such-gh')
         f = collect(ent, os.path.join(tmp, 'state5'), now=base)
         ok('gh: a missing gh is an error object, not a crash, and the PR delta stays empty',
            'error' in f['repos'][0]['prs'] and not [n for n in f['needs_you'] if n['kind'] == 'pr'])
+        valid('a collect whose gh failed (prs is an error object)', f)
         GH_CMD = saved[1]
 
         # read-only on the inspected repo
@@ -1681,7 +1842,8 @@ def selftest_collect():
         ok('cli: collect exits 0 with JSON and a status line', rc == 0 and se.startswith('status: 1 repos')
            and data.get('machine', {}).get('load', {}).get('verdict') == 'over' and data['repos'][0]['name'] == 'repo')
         ok('cli: every documented top-level key is present', all(k in data for k in (
-            'time', 'machine', 'repos', 'needs_you', 'delta', 'snapshot')))
+            'time', 'machine', 'repos', 'needs_you', 'delta', 'report_since', 'snapshot')))
+        valid('the CLI output for one repo', data)
         rc, _o, _e = cli('collect', os.path.join(tmp, 'missing'), '--no-gh')
         ok('cli: a missing explicit repo exits 2', rc == 2)
         fleet = os.path.join(tmp, 'fleet.json')
@@ -1693,6 +1855,7 @@ def selftest_collect():
         data = json.loads(so) if rc == 0 else {}
         names = [r['name'] for r in data.get('repos', [])]
         ok('cli: the registry supplies the active repos only', names == ['in', 'gone'])
+        valid('the CLI output with a registry repo whose directory is missing', data)
         ok('cli: a registry entry with a missing directory is reported, not fatal',
            data['repos'][1].get('error') == 'no such directory')
         rc, _o, _e = cli('collect', '--fleet', os.path.join(tmp, 'absent.json'))
@@ -1779,19 +1942,20 @@ def selftest_render():
     def title_of(ln):
         return next(k for k in TITLES + ['Ping'] if ln.startswith(k))
 
-    HEAD_ROW = '| ' + ' | '.join(TABLE_HEAD) + ' |'
+    HEAD_RE = re.compile(r'^  ' + r'\s+'.join(TABLE_HEAD) + r'$')
+    RULE_RE = re.compile(r'^  -+(  -+){%d}$' % (len(TABLE_HEAD) - 1))
 
     def is_head(ln):
-        return ln == HEAD_ROW or ln.startswith('|---')
+        return bool(HEAD_RE.match(ln) or RULE_RE.match(ln))
 
     def sections(text):
-        """{heading: [rows]}: a line that starts in column 0 opens a section, an indented or table line is a row of it
-        (a table's header and separator are not rows, blank lines are nothing)."""
+        """{heading: [rows]}: a line that starts in column 0 opens a section, an indented line is a row of it (a
+        table's header and rule are not rows, blank lines are nothing)."""
         out, cur = {}, None
         for ln in text.splitlines():
             if not ln.strip() or is_head(ln):
                 continue
-            if not ln.startswith((' ', '|')):
+            if not ln.startswith(' '):
                 cur = title_of(ln)
                 out.setdefault(cur, [])
             else:
@@ -1799,55 +1963,61 @@ def selftest_render():
         return out
 
     def head_titles(text):
-        return [title_of(ln) for ln in text.splitlines() if ln.strip() and not ln.startswith((' ', '|'))]
+        return [title_of(ln) for ln in text.splitlines() if ln.strip() and not ln.startswith(' ')]
 
     def has(rows, token):
         return any(token in r for r in rows)
 
     def cells(ln):
-        return [c.strip() for c in ln.strip().strip('|').split('|')]
+        """The cells of a table row: runs of text a gap of two or more spaces apart (a cell holds single spaces only)."""
+        return re.split(r' {2,}', ln.strip())
 
     def row_with(rows, token):
         return next(r for r in rows if token in r)
 
     def traceable(text):
-        """The content lines that do not end with a bracketed source: a table row ends with a `[source]` cell, any other
-        indented row and the Machine line end with `  [source]` (a `+N more` tail is not a row)."""
+        """The content lines that do not end with a bracketed source: a table row, any other indented row and the Machine
+        line end with `[source]` after a space (a `+N more` tail is not a row)."""
         bad = []
         for ln in text.splitlines():
-            if not ln.strip() or is_head(ln) or re.match(r'^\s+\+\d+ more$', ln) or re.match(r'^\| +\| \+\d+ more \|', ln):
+            if not ln.strip() or is_head(ln) or re.match(r'^\s+\+\d+ more$', ln):
                 continue
-            if ln.startswith('|'):
-                if not re.search(r' \[[^\]]+\] \|$', ln):
-                    bad.append(ln)
-            elif (ln.startswith(' ') or ln.startswith('Machine')) and not re.search(r'  \[[^\]]+\]$', ln):
+            if (ln.startswith(' ') or ln.startswith('Machine')) and not re.search(r'\s\[[^\]]+\]$', ln):
                 bad.append(ln)
         return bad
 
+    def starts(ln):
+        """The terminal column each cell of a line starts at."""
+        return [dwidth(ln[:m.start()]) for m in re.finditer(r'\S+(?: \S+)*', ln)]
+
     def tables_ok(text):
-        """Every table is a header, a separator and rows of the same width, closed by a blank line or the end, so a
-        markdown reader takes it for one table and the next heading for text."""
+        """Every table is a header, a rule and at least one row, all indented, closed by a blank line or the end; the
+        cells of every row start at the columns the rule's dashes do, whatever the colored marks weigh; and no line
+        holds a pipe."""
         lines = text.splitlines()
         i, n_tables = 0, 0
         while i < len(lines):
-            if not lines[i].startswith('|'):
+            if not HEAD_RE.match(lines[i]):
                 i += 1
                 continue
-            j = i
-            while j < len(lines) and lines[j].startswith('|'):
-                j += 1
-            block = lines[i:j]
-            if block[0] != HEAD_ROW or len(block) < 3 or not block[1].startswith('|---') or (j < len(lines) and lines[j].strip()):
+            j = i + 2
+            if j >= len(lines) or not RULE_RE.match(lines[i + 1]):
                 return False
-            if len({ln.count('|') for ln in block}) != 1 or block[0].count('|') != len(TABLE_HEAD) + 1:
+            while j < len(lines) and lines[j].strip():
+                j += 1
+            rows = [ln for ln in lines[i + 2:j] if not re.match(r'^\s+\+\d+ more$', ln)]
+            if not rows or not all(ln.startswith(INDENT) for ln in lines[i:j]):
+                return False
+            cols = starts(lines[i + 1])
+            if starts(lines[i]) != cols or any(starts(ln) != cols for ln in rows):
                 return False
             n_tables += 1
             i = j
-        return n_tables > 0
+        return n_tables > 0 and '|' not in text
 
     def width(ln):
         """Terminal columns of a line: the colored circles are two wide."""
-        return len(ln) + sum(ln.count(c) for c in (MARKS['live'], MARKS['idle'], MARKS['dead'], MARKS['none']))
+        return dwidth(ln)
 
     # --- order, placement and the planted stale row ---------------------------------------------
     base = model([repo('alpha', [row('T-0001', '0001-live', 'live', evidence=['process 41: x']),
@@ -1874,8 +2044,14 @@ def selftest_render():
        cells(row_with(sections(text)['Stale or stuck'], 'T-0002'))[2] == MARKS['stale'] + ' stale'
        and cells(row_with(sections(text)['Stale or stuck'], 'T-0003'))[2] == MARKS['dead'] + ' dead')
     ok('marks: none of the old glyphs is printed', not re.search('[\u25cf\u25d0\u2716\u25cb]|\u26a0(?!\ufe0f)', text))
-    ok('tables: Needs you, Moving, Stale or stuck and Release state are markdown tables that close with a blank line',
-       tables_ok(text) and text.count(HEAD_ROW) == 3)
+    ok('tables: Moving, Stale or stuck and Release state are plain aligned tables with a rule, no pipe, closed by a blank line',
+       tables_ok(text) and len([ln for ln in text.splitlines() if HEAD_RE.match(ln)]) == 3 and '|' not in text)
+    ok('tables: dwidth counts the colored marks two columns wide and a plain glyph one',
+       dwidth(MARKS['live']) == dwidth(MARKS['idle']) == dwidth(MARKS['dead']) == dwidth(MARKS['none']) == dwidth(MARKS['stale']) == 2
+       and dwidth(DONE_MARK) == 1 and dwidth('abc') == 3)
+    mis = text.replace('  [0004-idle]', ' [0004-idle]')
+    ok('negative control: a row shifted one column is flagged by the alignment check', tables_ok(text) and not tables_ok(mis))
+    ok('negative control: a pipe in the output is flagged by the table check', not tables_ok(text + '\n| x |\n'))
     flipped = model([repo('alpha', [row('T-0002', '0002-stale', 'live', evidence=['process 41: x'])])])
     sec = sections(render(flipped))
     ok('negative control: the same row made live moves from Stale or stuck to Moving',
@@ -1894,14 +2070,14 @@ def selftest_render():
                   repo('beta', [row('T-0060', '0060-done', 'stale', flags=FLAG, evidence=stale_ev)])])
     mtxt = render(many)
     st = sections(mtxt)['Stale or stuck']
-    alpha_fold = [r for r in st if '| alpha |' in r and 'closed ticket' in r]
+    alpha_fold = [r for r in st if cells(r)[0] == 'alpha' and 'closed ticket' in r]
     ok('collapse: the 7 done-but-open rows of one repo are one row, `7 closed tickets still shown on the board`',
        len(alpha_fold) == 1 and cells(alpha_fold[0])[1] == '7 closed tickets still shown on the board'
        and cells(alpha_fold[0])[2] == MARKS['stale'] + ' stale' and cells(alpha_fold[0])[4] == '[.sdlc]')
     ok('collapse: the folded row names the first three tickets and counts the rest',
        bool(alpha_fold) and cells(alpha_fold[0])[3] == 'T-0001, T-0002, T-0003, +4 more'
        and '0004-done' not in mtxt and '0007-done-dead' not in mtxt)
-    ok('collapse: another repo gets its own row, in the singular for one', has(st, '| beta |') and has(st, '1 closed ticket still shown on the board'))
+    ok('collapse: another repo gets its own row, in the singular for one', any(cells(r)[0] == 'beta' for r in st) and has(st, '1 closed ticket still shown on the board'))
     ok('collapse: a genuinely stale row and a genuinely dead row stay listed',
        has(st, 'T-0050') and has(st, 'T-0051') and MARKS['dead'] + ' dead' in row_with(st, 'T-0051'))
     ok('collapse: the folded rows are not repeated under Moving', not has(sections(mtxt)['Moving'], 'done'))
@@ -1938,8 +2114,9 @@ def selftest_render():
         except RenderError:
             refused.append(True)
     ok('source: trow refuses an empty, a blank and a missing source, and prints one that is there as the last cell',
-       all(refused) and trow('r', 'a row', 's', 'd', 'src') == '| r | a row | s | d | [src] |')
-    ok('source: a pipe in a title cannot split its cell', trow('r', 'a | b', 's', 'd', 'src') == '| r | a / b | s | d | [src] |')
+       all(refused) and trow('r', 'a row', 's', 'd', 'src') == ('r', 'a row', 's', 'd', '[src]'))
+    ok('source: a pipe in a title is printed as a slash, and an empty cell as a hyphen',
+       trow('r', 'a | b', '', 'd', 'src') == ('r', 'a / b', '-', 'd', '[src]'))
     try:
         render(model([repo('alpha', [], needs=[{'kind': 'blocked', 'id': 'T-9', 'task': '', 'title': 'x', 'owner': 'user',
                                                   'note': '', 'age_s': 5}])]))
@@ -1970,7 +2147,7 @@ def selftest_render():
     ok('size: the heavy render keeps every section and every row traceable',
        head_titles(long_text)[:7] == TITLES and traceable(long_text) == [])
 
-    # --- a row stays on one line at 120 columns where it can ------------------------------------------------
+    # --- a table line stays within 150 columns where the names allow (a column is as wide as its widest cell) ---
     real = model([repo('maison', [row('T-0106', '0106-component-contracts', 'live', title='Implement gated installed-package evaluation lab',
                                       evidence=['process 53150: node x']),
                                   row('T-0107', '0107-token-audit', 'idle', title='Audit the token ladder', evidence=['runs.jsonl changed 3m ago']),
@@ -1981,11 +2158,12 @@ def selftest_render():
                               {'kind': 'blocked', 'id': 'T-0110', 'task': '0110-pick-backend', 'title': 'Pick the storage backend for the lab',
                                'owner': 'unknown', 'note': '', 'age_s': 90000}],
                        sup={'running': True, 'age_s': 5, 'receivers': {'conductor': 'idle'}}, conductor='conductor')])
-    wide = [ln for ln in render(real).splitlines() if ln.startswith('|') and width(ln) > 120]
-    ok('width: the rows of a realistic maison status fit 120 columns (%s)' % ', '.join(str(width(w)) for w in wide), wide == [])
+    wide = [ln for ln in render(real).splitlines() if ln.startswith('  ') and width(ln) > 150]
+    ok('width: the lines of a realistic maison status fit 150 columns (%s)' % ', '.join(str(width(w)) for w in wide), wide == [])
     wide_ctl = [ln for ln in render(model([repo('maison', [row('T-0105', '0105-' + 'x' * 70, 'stale', title='t' * 60,
-                                                              evidence=stale_ev)])])).splitlines() if ln.startswith('|') and width(ln) > 120]
-    ok('negative control: the width check does flag a row with a 75-character ticket folder', len(wide_ctl) == 1)
+                                                              evidence=stale_ev)])])).splitlines() if ln.startswith('  ') and width(ln) > 150]
+    ok('negative control: the width check does flag a table with a 75-character ticket folder (its header and rule widen with it)',
+       len(wide_ctl) >= 1 and any('0105-' + 'x' * 70 in ln for ln in wide_ctl))
 
     # --- no em dash ---------------------------------------------------------------------------------
     dashy = model([repo('alpha', [row('T-0001', '0001-x', 'live', title='first %s second\nthird' % EM)],
@@ -2032,13 +2210,13 @@ def selftest_render():
                 repo('delta', [])])
     mtext = render(mv)
     msec = sections(mtext)['Moving']
-    hdr = {cells(r)[0]: cells(r) for r in msec if cells(r)[3].startswith('unread ')}
+    hdr = {cells(r)[0]: cells(r) for r in msec if len(cells(r)) == 5 and cells(r)[3].startswith('unread ')}
     a_row, b_row, g_row, d_row = hdr['alpha (c)'], hdr['beta (c)'], hdr['gamma (c)'], hdr['delta (c)']
     ok('moving: a repo row carries its mark, counts, unread count and supervisor state',
        a_row[2] == MARKS['live'] + ' live' and b_row[2] == MARKS['idle'] + ' idle' and a_row[1] == '1 live' and a_row[4] == '[.sdlc]'
        and 'unread 3' in a_row[3] and 'supervisor: running (c1 idle, c2 waking)' in a_row[3])
     ok('moving: the first unread id is named, the rest counted, and no other id is printed',
-       has(msec, '| %s, +2 more |' % ids[0]) and ids[1] not in mtext and ids[2] not in mtext)
+       has(msec, '%s, +2 more' % ids[0]) and ids[1] not in mtext and ids[2] not in mtext)
     ok('moving: a stopped supervisor and an unreadable one say so',
        'supervisor: not running (status 3h old)' in b_row[3] and 'status unreadable' in g_row[3])
     ok('moving: a repo with nothing moving still gets its row, with the white mark and no supervisor',
@@ -2221,7 +2399,7 @@ def selftest_render():
         before = files((ra, rb, rc_, rx))
         rc, so, se = cli('render', '--fleet', fleet, '--no-gh', '--state-dir', sd)
         ok('e2e: render exits 0 and prints the sections in order', rc == 0 and head_titles(so) == TITLES)
-        ok('e2e: the output has markdown tables, colored marks, no old glyph and no em dash',
+        ok('e2e: the output has plain aligned tables, colored marks, no pipe, no old glyph and no em dash',
            tables_ok(so) and MARKS['live'] in so and EM not in so
            and not re.search('[\u25cf\u25d0\u2716\u25cb]', so))
         sec = sections(so)
@@ -2237,7 +2415,7 @@ def selftest_render():
         ok('e2e: unread ids are named and no message body is printed',
            mid in so and 'unread 1' in so and 'BODY-MUST-NOT-APPEAR' not in so and 'unread 0' in so)
         ok('e2e: the supervisor state is on the repo row', 'supervisor: running (conductor-a idle)' in so)
-        ok('e2e: release shows the unpushed close commit', has(sec['Release state'], '| alpha | main | 1 unpushed, 0 behind origin |'))
+        ok('e2e: release shows the unpushed close commit', cells(row_with(sec['Release state'], 'alpha'))[:3] == ['alpha', 'main', '1 unpushed, 0 behind origin'])
         ok('e2e: render is read-only on every inspected repo', files((ra, rb, rc_, rx)) == before)
         # the observed negative control: a process now names the planted stale row, and it moves to Moving
         kids.append(subprocess.Popen([sys.executable, '-c', sleeper, os.path.join(ra, '.sdlc', '0003-stale-row' + U)],

@@ -129,8 +129,10 @@
    from each file, a harness reference added, and a missing route must be flagged.
 37. Fleet status: skills/fleet-status/SKILL.md names `fleet_status.py render`, `## 1. Render`, `## 2. Print it`, `## 3. Ask once`, `## 4. Relay, do not act`,
    `Render, never compose`, `AskUserQuestion`, `If AskUserQuestion is unavailable`, `--ping`, `sends nothing`, and `Codex host`, and holds no `harness:` reference;
-   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, and `def selftest_render`; scripts/check.sh runs
-   `fleet_status.py" selftest`. Negative controls: each phrase removed from each file, a harness reference added, and the routing line removed must be flagged.
+   skills/sdlc-lite/SKILL.md routes to `fleet-status`; scripts/fleet_status.py names `RenderError`, `def render(`, `def schema_errors`, and `def selftest_render`;
+   scripts/check.sh runs `fleet_status.py" selftest`; skills/fleet-status/SKILL.md links `resources/fleet-status.schema.json`, and that file exists, parses as
+   JSON, declares draft 2020-12, and requires the `machine`, `repos`, `needs_you`, and `delta` keys. Negative controls: each phrase removed from each file, a
+   harness reference added, the routing line removed, and a missing, unparsable, wrong-draft, or key-less schema file must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -848,20 +850,35 @@ for _name, _phrases in FLEET_NEEDS:
 if not fleet_bad(dict(_fl_texts, skill=_fl_texts['skill'] + ' harness:x')): errors.append('check.py: fleet retro negative control not flagged for a harness reference')
 # Fleet status (docstring item 37): the skill prints the renderer's output and asks once; the renderer refuses a row with no source.
 FLEET_STATUS_NEEDS = (('skill', ('fleet_status.py render', '## 1. Render', '## 2. Print it', '## 3. Ask once', '## 4. Relay, do not act', 'Render, never compose',
-                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host')),
-                      ('script', ('RenderError', 'def render(', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+                                 'AskUserQuestion', 'If AskUserQuestion is unavailable', '--ping', 'sends nothing', 'Codex host',
+                                 'resources/fleet-status.schema.json')),
+                      ('script', ('RenderError', 'def render(', 'def schema_errors', 'def selftest_render')), ('check.sh', ('fleet_status.py" selftest',)))
+FLEET_SCHEMA_KEYS = ('machine', 'repos', 'needs_you', 'delta')
+def fleet_schema_bad(text):
+    if not text.strip(): return ['skills/fleet-status/resources/fleet-status.schema.json is missing or empty']
+    try: doc = json.loads(text)
+    except ValueError as e: return [f'fleet-status.schema.json does not parse as JSON: {e}']
+    if not isinstance(doc, dict): return ['fleet-status.schema.json is not a JSON object']
+    out = [] if doc.get('$schema') == 'https://json-schema.org/draft/2020-12/schema' else ['fleet-status.schema.json does not declare draft 2020-12']
+    return out + [f'fleet-status.schema.json does not require "{k}"' for k in FLEET_SCHEMA_KEYS if k not in (doc.get('required') or [])]
 def fleet_status_bad(texts, entry):
     out = [f'{name} missing "{ph}"' for name, phrases in FLEET_STATUS_NEEDS for ph in phrases if ph not in texts[name]]
+    out += fleet_schema_bad(texts['schema'])
     if re.search(r'harness:', texts['skill']): out.append('fleet-status SKILL.md references harness:')
     if '| fleet-status |' not in entry: out.append('skills/sdlc-lite/SKILL.md does not route to fleet-status')
     return out
-_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh')}
+_fs_texts = {'skill': _rd(root/'skills/fleet-status/SKILL.md'), 'script': _rd(root/'scripts/fleet_status.py'), 'check.sh': _rd(root/'scripts/check.sh'),
+             'schema': _rd(root/'skills/fleet-status/resources/fleet-status.schema.json')}
 errors.extend(f'check.py: fleet status: {m}' for m in fleet_status_bad(_fs_texts, _entry))
 for _name, _phrases in FLEET_STATUS_NEEDS:
     for _ph in _phrases:
         if not fleet_status_bad(dict(_fs_texts, **{_name: _fs_texts[_name].replace(_ph, '')}), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_name} without "{_ph}"')
 if not fleet_status_bad(dict(_fs_texts, skill=_fs_texts['skill'] + ' harness:x'), _entry): errors.append('check.py: fleet status negative control not flagged for a harness reference')
 if not fleet_status_bad(_fs_texts, _entry.replace('| fleet-status |', '|')): errors.append('check.py: fleet status negative control not flagged for a missing entry route')
+for _why, _bad in (('a missing schema file', ''), ('an unparsable schema file', _fs_texts['schema'][:-20]), ('a schema file that is not an object', '[]'),
+                   ('a schema file with the wrong draft', _fs_texts['schema'].replace('2020-12', '2019-09')),
+                   ('a schema file that does not require repos', _fs_texts['schema'].replace('"repos", ', '', 1))):
+    if not fleet_status_bad(dict(_fs_texts, schema=_bad), _entry): errors.append(f'check.py: fleet status negative control not flagged for {_why}')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents checked')
 sys.exit(1 if errors else 0)
