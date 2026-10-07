@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:938359d4b658 -->
+<!-- sdlc-lite:managed:start v1 sha256:f616d9967dce -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,16 +9,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 6
+- proposed: 5
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
-  - T-0349 dispatch.py record uses the transcript's final message when stdin is truncated, and keeps error stdin as a failure (0349-record-truncated-stdin)
   - T-0350 A conductor-path solo run clears its live marker, so later solos in the checkout do not default to a worktree for 6 hours (0350-solo-live-marker-cleanup)
 - ready: 0
 - blocked: 0
-- done: 313
+- done: 314
 - dropped: 25
 
 ## Procedures
