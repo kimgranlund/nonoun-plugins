@@ -19,3 +19,14 @@ Fix: in `lint_steps`, read `step-*/verifier-*.md` and `step-*/builder-*.md` besi
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Acceptance criteria
+- `steps.py lint` and `split` refuse a plan that names in no `## Step` block a path an earlier `step-*/verifier-*.md` or `step-*/builder-*.md` flagged on a line starting `plan defect:`, one finding per path, ending with the plan defect last line: `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q '^ok: (s) lint refuses a plan that omits a bare path'`
+- A plan whose step names the flagged path lints clean and splits; a `plan defect:` line holding no path token (`c2 contradicts c1`, `and/or`, a url, a path outside the repo) adds no finding: `python3 plugins/sdlc-lite/scripts/steps.py selftest | grep -q '^ok: (s) lint accepts a plan whose step names the flagged path'`
+- The whole steps selftest passes, existing swap and widen cases included: `python3 plugins/sdlc-lite/scripts/steps.py selftest | tail -1`
+- The new gate has an observed negative control: with `defect_dependents` stubbed to return no findings, the `(s)` refusal cases fail while the positive cases still pass (run `steps.selftest()` from a module load that stubs it).
+- The Codex agent definitions match `planner.md`: `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+- Role and skill contracts hold: `python3 plugins/sdlc-lite/scripts/check.py`
+- Full regression suite is green: `bash plugins/sdlc-lite/scripts/check.sh`
+- Whitespace is clean and the diff adds no em dash: `git diff --check`
+- Scope: `git diff --name-only` lists only `docs/maintenance/sdlc-internals.md`, `plugins/sdlc-lite/agents/planner.md`, the three `plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l*.toml` files, and `plugins/sdlc-lite/scripts/steps.py`, besides this ticket folder.
