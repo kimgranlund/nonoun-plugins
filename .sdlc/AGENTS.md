@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:59088059509f -->
+<!-- sdlc-lite:managed:start v1 sha256:7cda6812209c -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 33
+- proposed: 32
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0245 Promotion helper: copy a .sdlc artifact into a docs home with source front matter (0245-docs-promotion-helper)
@@ -38,14 +38,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0292 Machine-wide gate semaphore so a load stop line counts gates, not lanes (0292-machine-wide-gate-semaphore)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0302 ADR number allocator note (repo-owned, docs only) (0302-adr-number-allocator-note)
-  - T-0313 solo role blocked by block-stray-worktree: conductor must create the lane worktree and branch first (0313-solo-worktree-hook)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 260
+- done: 261
 - dropped: 25
 
 ## Procedures
