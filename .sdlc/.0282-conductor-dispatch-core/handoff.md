@@ -2,7 +2,7 @@
 id: T-0282
 title: "Conductor and chain dispatch roles as sub-agents"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0276, T-0278, T-0279, T-0280, T-0281]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -63,3 +63,7 @@ read: .sdlc/typo-demo/step-1/verifier-L1.md
 ```
 
 An earlier run of the same item (`/tmp/t0282-live`, text before the stdin rule below) found two things. First, the conductor ran `dispatch.py record` with no result file and no stdin, because neither role writes its result file when the prompt only says its final message is "saved verbatim"; `record` closed the attempt failed and refused a second record. The conductor, chain, and fix texts now say to pipe the final message to `record` on stdin and never to run it with neither (the second run followed it). Second, the conductor spawned the second verifier with `model: sonnet`, and the spawn gate denied it (`model 'sonnet' is not the dispatch model 'opus'`): the gate bites, and the texts now say to read `model` from each dispatch's JSON.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
