@@ -1425,6 +1425,33 @@ def subagent_dispatch(ctx, t, tier):
             'handoff': handoff, 'verifier': verifier}
 
 
+def write_solo_row(taskdir, tier):
+    """Append the unpriced `role solo` row of a sub-agent lane to the ticket's runs.jsonl; returns its attempt_id (T-0331)."""
+    import solo_run
+    model, effort, _ = solo_run.TIERS[tier]
+    attempt = uuid.uuid4().hex
+    rec = solo_run.build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
+    rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
+    solo_run.append(taskdir, rec)
+    return attempt
+
+
+def price_solo_row(taskdir, tier, transcript, tokens):
+    """Price the lane's unpriced solo row from the sub-agent transcript (or notice tokens); the price, or None."""
+    import solo_run
+    f = pathlib.Path(taskdir) / 'runs.jsonl'
+    if not f.is_file() or (not transcript and tokens is None):
+        return None
+    for line in reversed(f.read_text(encoding='utf-8').splitlines()):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get('role') == 'solo' and r.get('usage') is None and r.get('attempt_id'):
+            return solo_run.complete(taskdir, r['attempt_id'], tier, transcript, tokens)
+    return None
+
+
 def land_command(ctx, branch, tid):
     """The `fanout.py land` command for one finished branch, pinning the run's integration branch, base, lanes dir and gates."""
     argv = [sys.executable, str(SCRIPTS / 'fanout.py'), 'land', branch, '--ticket', tid,
@@ -1474,6 +1501,7 @@ def print_prep(ctx):
                     rc = 4
                     continue
                 d = subagent_dispatch(ctx, t, tier)
+                d['attempt_id'] = write_solo_row(taskdir, tier)  # the unpriced row `land --transcript` prices (T-0331)
                 # The spawn gate (hooks/block-role-spawn.sh) finds this record beside the prompt's Handoff line (T-0326).
                 (taskdir / f"{d['name']}.dispatch.json").write_text(
                     json.dumps({**d, 'role': 'solo', 'level': solo_run.TIERS[tier][2]}, indent=2) + '\n', encoding='utf-8')
@@ -1750,6 +1778,9 @@ def cmd_land(a):
     lane, t = ctx['lane'], ctx['ticket']
     kind, tier = ctx['kinds'][t.id]
     say(ctx, lane, t.id, f'land {lane.branch} (lane {kind}' + (f' tier {tier}' if tier else '') + ')')
+    if kind == 'solo' and tier and (a.transcript or a.tokens is not None):
+        cost = price_solo_row(ctx['root'] / t.slug, tier, a.transcript, a.tokens)
+        say(ctx, lane, t.id, 'solo row priced $%.4f (estimate)' % cost if cost is not None else 'solo row not priced (no unpriced row or no usage)')
     try:
         outcome, commit = land_ticket(ctx, MergeLock(ctx['lanes_dir'] / 'merge.lock'))
     except Exception as e:  # a git or IO failure mid-land: record it
@@ -1843,6 +1874,21 @@ def selftest():
 
     def sh(cwd, *args):
         return subprocess.run(['git', '-C', str(cwd), *args], env=ENV, capture_output=True, text=True)
+
+    # T-0331: prep writes an unpriced solo row; land --transcript prices it (negative control: no usage prices nothing)
+    with tempfile.TemporaryDirectory() as t331:
+        td = pathlib.Path(t331)
+        (td / 'handoff.md').write_text('---\nid: T-0001\n---\n', encoding='utf-8')
+        aid = write_solo_row(td, 'S')
+        row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
+        expect('T-0331 prep writes an unpriced solo row', row.get('role') == 'solo' and row.get('usage') is None and row.get('attempt_id') == aid)
+        expect('T-0331 negative control: no transcript or tokens prices nothing', price_solo_row(td, 'S', None, None) is None)
+        tr = td / 'tr.jsonl'
+        tr.write_text(json.dumps({'message': {'id': 'm', 'usage': {'input_tokens': 6, 'output_tokens': 847,
+                      'cache_read_input_tokens': 58134, 'cache_creation_input_tokens': 32972}}}) + '\n', encoding='utf-8')
+        cost = price_solo_row(td, 'S', str(tr), None)
+        row = json.loads((td / 'runs.jsonl').read_text().splitlines()[-1])
+        expect('T-0331 land prices the solo row from the transcript', cost and row.get('cost_usd') == cost and row.get('cost_estimated') is True)
 
     def make_repo(repo, specs, extra=None):
         (repo / '.sdlc').mkdir(parents=True)
@@ -3025,7 +3071,7 @@ def selftest():
                sh(p1, 'branch', '--list', 'fanout/*', 'worktree-*').stdout.strip() == ''
                and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists()
                and [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all').stdout.splitlines()
-                    if not ln.endswith('-solo.dispatch.json')] == [])
+                    if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl'))] == [])
         # T-0326: both lane prompts pass the spawn gate; the same prompt without its Handoff line is still refused
         def gate_rc(d, prompt):
             ev = json.dumps({'tool_name': 'Agent', 'agent_type': 'sdlc-lite:conductor', 'cwd': str(p1), 'tool_input': {
@@ -3255,6 +3301,8 @@ def main(argv):
         lp.add_argument('--ticket', metavar='T-NNNN', help='the ticket the branch delivers (else read from a '
                         'worktree-<id>-solo branch name)')
         lp.add_argument('--root', default='.sdlc', help='ticket root, relative to the cwd (default .sdlc)')
+        lp.add_argument('--transcript', help='the solo sub-agent transcript (jsonl): prices the ticket\'s solo runs.jsonl row (T-0331)')
+        lp.add_argument('--tokens', type=int, help='subagent_tokens from the notice, when there is no transcript')
         lp.add_argument('--base', help='commit for a new integration branch (default HEAD)')
         lp.add_argument('--integration', help='integration branch (default fanout/<YYYY-MM-DD>)')
         lp.add_argument('--lanes-dir', help='where the integration worktree, logs and report go '

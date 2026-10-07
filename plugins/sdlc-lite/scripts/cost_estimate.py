@@ -50,6 +50,12 @@ def usage_rates(path=PRICES):
     return (r if isinstance(r, dict) else {}), (m if isinstance(m, dict) else {})
 
 
+def usage_calibration(path=PRICES):
+    """{token field: factor} that scales transcript counts for the streamed-usage undercount (T-0331)."""
+    c = _read(path).get('usage_calibration')
+    return {k: v for k, v in c.items() if _num(v)} if isinstance(c, dict) else {}
+
+
 def transcript_usage(path):
     """Summed usage fields over a sub-agent or session transcript (jsonl), one count per message id; None if unreadable."""
     seen, tot = set(), dict.fromkeys(TOKEN_KEYS, 0)
@@ -97,7 +103,8 @@ def estimate(model, usage, table=None, by_field=True):
     rates, mult = usage_rates()
     if by_field and not _num(usage.get('subagent_tokens')) and fam in rates and _num(rates[fam]) and any(k in mult for k in TOKEN_KEYS):
         # Per-field usage (input, output, cache read and write): each field at its own rate, not one blended rate.
-        usd = sum(usage[k] * mult.get(k, 1) for k in TOKEN_KEYS if _num(usage.get(k))) * rates[fam] / 1e6
+        cal = usage_calibration()
+        usd = sum(usage[k] * cal.get(k, 1) * mult.get(k, 1) for k in TOKEN_KEYS if _num(usage.get(k))) * rates[fam] / 1e6
         return round(usd, 6), BASIS_USAGE, None
     if fam is None or not _num(table.get(fam)):
         return None, None, 'no price for model %s' % model
@@ -155,13 +162,22 @@ def selftest():
                       'cache_creation_input_tokens': 51144}, 0.3538),
             ('fable', {'input_tokens': 620, 'output_tokens': 8345, 'cache_read_input_tokens': 865645,
                        'cache_creation_input_tokens': 170689}, 2.4762)]
-    for fam, u, host in live:
+    live.append(('fable', {'input_tokens': 258, 'output_tokens': 1697, 'cache_read_input_tokens': 360163,
+                           'cache_creation_input_tokens': 58224}, 2.3025))  # R1 verifier (T-0331)
+    for fam, u, host in live[:2]:
         e, b, _ = estimate(fam, u, table)
         expect('live %s verifier row: estimate %s vs host %.4f within 35 percent' % (fam, e, host),
                e is not None and b == BASIS_USAGE and abs(e - host) <= TOLERANCE * host)
         # Negative control: the old blended count (cache reads excluded) misses the band.
         old = estimate(fam, {'subagent_tokens': u['input_tokens'] + u['output_tokens']}, table)[0]
         expect('negative control: %s blended count without cache is outside the band' % fam, abs(old - host) > TOLERANCE * host)
+    # T-0331 fitted band: estimate/host over all three live rows, the R1 row sitting below the 35 percent band.
+    ratios = [estimate(f, u, table)[0] / h for f, u, h in live]
+    expect('fitted band over the three live rows is 0.45 to 1.35, got %s' % [round(x, 2) for x in ratios],
+           all(0.45 <= x <= 1.35 for x in ratios))
+    u0 = live[2][1]
+    expect('negative control: without the calibration the R1 row falls under the band',
+           sum(u0[k] * mult.get(k, 1) for k in TOKEN_KEYS) * rates['fable'] / 1e6 / 2.3025 < 0.45)
     with tempfile.TemporaryDirectory() as t2:
         tf = pathlib.Path(t2) / 't.jsonl'
         m = lambda i, o: json.dumps({'message': {'id': i, 'usage': {'input_tokens': 1, 'output_tokens': o}}})
