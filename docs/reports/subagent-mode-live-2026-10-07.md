@@ -143,3 +143,47 @@ Account switch, resume ladder, interactive background sub-agents and the other i
 ### T-0331 calibration
 
 The conductor text and the chain skill now pass `dispatch.py record --transcript`; `fanout.py prep` writes an unpriced `role solo` row and `fanout.py land --transcript` prices it. The transcript undercounts input and output tokens (R1 verifier: output 1697 vs host 18417, input 258 vs 51956), so `adapters/claude/prices.json` carries `usage_calibration` (input x100, output x2), applied per field in `cost_estimate.estimate`. Fitted band, estimate over host: L2 opus verifier 1.22, L3 fable verifier 1.12, R1 fable verifier 0.48. The L2 and L3 rows are within 35 percent; the R1 row stays under the band (selftest asserts 0.45 to 1.35, with a negative control showing the uncalibrated R1 estimate falls below 0.45). The calibration is fitted on three rows and not observed live after this change.
+
+## Final rerun after T-0329 to T-0331
+
+Plugin under test: this worktree (`.worktrees/fanout-w7/integration`, branch `subagent-w7`, tip e7a16566 for run F; run G ran after the T-0332 fix below was applied to the working tree), `claude -p --plugin-dir <worktree>/plugins/sdlc-lite --agent sdlc-lite:conductor --dangerously-skip-permissions --output-format stream-json --verbose`, `SDLC_HEADLESS=1`, Claude Code 2.1.292, no `/login`. Fresh throwaway projects `/tmp/sdlcfin2/proj` (run F) and `/tmp/sdlcfin3/proj` (run G): a tiny `kit` package, `onboard.py setup`, T-0001 slugify (size M, lane `solo`) and T-0002 titlecase (size S). The same prompt both times: fanout in sub-agent mode, two lanes, a verifier for the M ticket, `land` per branch with `--transcript`, no hand close. Raw records are the `F-*`, `G-*` and [final-host-cost.txt](subagent-mode-live-2026-10-07/final-host-cost.txt) files in [subagent-mode-live-2026-10-07/](subagent-mode-live-2026-10-07/); streams and transcripts stay in `/tmp/sdlcfin*/logs` and `~/.claude/projects/-private-tmp-sdlcfin*-proj`. Foreground sub-agents (headless).
+
+| Item | Verdict | Run |
+|---|---|---|
+| (a) verifier Tree is the lane worktree (T-0329) | fixed (observed) | F and G |
+| (a) verifier report on disk when `record` runs (T-0330) | fixed (observed) | F and G |
+| (a) `land` closes the ticket, nothing closed by hand | fixed (observed) | F and G |
+| (b) verifier row within 35 percent of host | still failing at e7a16566 (F, 0.49), fixed by T-0332 (observed in G, 0.75) | F, G |
+| (b) solo row within 35 percent of host | fixed (observed, host share derived, not host-reported) | G |
+
+### (a) Fanout with a verifier, size M
+
+Run F 21:42:02 to 21:48:49 PDT, run G 21:50:47 to 21:57:17 PDT; both `is_error false`, host `refused 0` spawn gate, 2 permission denials each (the verifier's `git worktree add` mutation commands, retried with a literal path as in the earlier runs).
+
+- Tree. [F-verifier-L3.dispatch.json](subagent-mode-live-2026-10-07/F-verifier-L3.dispatch.json) and [G-verifier-L3.dispatch.json](subagent-mode-live-2026-10-07/G-verifier-L3.dispatch.json): `tree` and the prompt's `Tree:` line are `/private/tmp/sdlcfin3/proj/.claude/worktrees/agent-a0e93a1c8c3259297` (G; F `.../agent-a2a547eb68291d1b8`), the lane worktree, where R1 had the main tree. `Handoff:` and `Artifacts dir:` point into the same worktree. The verifier ran every Bash call there and checked the solo's commits.
+- Report on disk before `record`. The verifier wrote `verifier-L3.md` itself (G stream: Write 04:55:17 and again 04:55:47 after `results.py validate`, `dispatch.py record` 04:56:59; F: Write 04:47:09 and 04:47:42, `ls` of the artifacts dir 04:48:30, `record` 04:48:33). `record` read it from stdin (`< $W/.sdlc/0001-slugify/verifier-L3.md`), and the committed record is the verifier's full report with the `<!-- role=verifier ... -->` header, not a conductor summary ([G-verifier-L3.md](subagent-mode-live-2026-10-07/G-verifier-L3.md)). The attempt file ends `status completed` with the `agent_id`.
+- Land and close. The branches are the host-named `worktree-agent-<agent_id>`; `land ... --ticket T-000N` printed the lane as `solo (tier M: sonnet xhigh)` and `solo (tier S: sonnet low)` ([G-fanout-report.md](subagent-mode-live-2026-10-07/G-fanout-report.md)). `git log fanout/final` in G: `close T-0002`, `Merge ...T-0002`, `close T-0001`, `Merge ...T-0001`, `T-0001: verifier`; both handoffs read `status: done` on the integration branch. No Bash call in either stream runs `tickets.py`; the conductor closed nothing by hand.
+
+Verdict: fixed (observed) for T-0329, T-0330 and the land close, on a size M lane with a verifier through a host-named branch.
+
+### (b) Cost against the host
+
+Host figure: the session `modelUsage` `costUSD` per model in the stream result ([final-host-cost.txt](subagent-mode-live-2026-10-07/final-host-cost.txt)); the conductor and solos are sonnet, the verifier is the only fable use.
+
+| Row | Stored estimate | Host | Ratio |
+|---|---|---|---|
+| F verifier (fable), code at e7a16566 | $1.7692 | $3.6384 | 0.49, outside the band |
+| F verifier, same transcript priced with the T-0332 code | $3.0200 | $3.6384 | 0.83 |
+| G verifier (fable), T-0332 code, stored by `record --transcript` | $2.5754 | $3.4588 | 0.74, within the band |
+| G solo T-0001 (sonnet), stored | $0.2489 | $0.2271 (derived) | 1.10, within the band |
+| G solo T-0002 (sonnet), stored | $0.1142 | $0.1070 (derived) | 1.07, within the band |
+
+The solo hosts are derived: the host reports one sonnet total for the conductor and both solos ($0.6391), so each solo's share is the sonnet total split by that solo transcript's price-weighted token units (input 1, output 5, cache read 0.1, cache write 1.25). The transcript cache fields equal the host's exactly, so the split is sound but it is not a host-reported per-agent cost.
+
+Root cause of F, found here (not the transcript being unrepairable, as the T-0331 section concluded): `cost_estimate.transcript_usage` kept the first line per message id, but the host writes several lines per id while streaming; the first holds early partial counts (`output_tokens 8`), the last the final ones. F verifier, first line per id: input 482, output 3550; last line per id: input 486, output 20945, cache read 900039 and cache write 68277, which equal the host's `modelUsage` cache fields exactly (R1 verifier likewise: cache 410383 and 60757 equal the host; output 14852 against 18417). The remaining host excess is input (about 200 to 250 times the transcript: R1 51956 vs 260, F 120787 vs 486) and output (about 1.25 times); `usage_calibration` was refit to input 225 and output 1.27 from those two rows plus the L2 opus verifier (0.93). Fix, commit with this section (T-0332): last line per id in `transcript_usage`, the refit in `prices.json`, selftest fixtures on the final counts with a case whose first line differs (it fails on the old first-line logic) and the uncalibrated negative control. `cost_estimate.py selftest` 20 ok.
+
+Verdict: the verifier estimate was still failing at e7a16566 (0.49, same as R1's 0.48) and is fixed by T-0332, observed in G at 0.74 (solo rows 1.07 to 1.10). Caveats: the calibration is fitted on three rows; the old L3 fixture (fable, host $2.4762) is dropped because its recorded counts do not reproduce from the surviving transcript (last-line sums price it at about 0.57 of host), so one earlier row stays outside the band; the input factor is empirical, not explained (the host reports far more uncached input than the transcript holds).
+
+### Still unverified
+
+Account switch and resume ladder, interactive background sub-agents, session-limit behavior, and a lane whose spawn fails on a missing model are unchanged. The F-versus-G sample is two runs on one host build.

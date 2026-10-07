@@ -57,8 +57,11 @@ def usage_calibration(path=PRICES):
 
 
 def transcript_usage(path):
-    """Summed usage fields over a sub-agent or session transcript (jsonl), one count per message id; None if unreadable."""
-    seen, tot = set(), dict.fromkeys(TOKEN_KEYS, 0)
+    """Summed usage fields over a sub-agent or session transcript (jsonl), one count per message id; None if unreadable.
+
+    The host writes several lines per message id while it streams; the first holds early partial counts (output 8),
+    the last the final ones, so the last line per id wins (T-0332: cache fields then match the host exactly)."""
+    last, tot = {}, dict.fromkeys(TOKEN_KEYS, 0)
     try:
         lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
     except OSError:
@@ -69,9 +72,9 @@ def transcript_usage(path):
         except (ValueError, AttributeError):
             continue
         u = msg.get('usage') if isinstance(msg, dict) else None
-        if not isinstance(u, dict) or msg.get('id') in seen:
-            continue
-        seen.add(msg.get('id'))
+        if isinstance(u, dict):
+            last[msg.get('id')] = u
+    for u in last.values():
         for k in TOKEN_KEYS:
             if _num(u.get(k)):
                 tot[k] += u[k]
@@ -158,31 +161,28 @@ def selftest():
     # Live evidence (T-0328): the stored L2 and L3 verifier rows priced from transcript usage vs host totals.
     rates, mult = usage_rates()
     expect('usage rates and multipliers load', all(_num(rates.get(k)) for k in ('fable', 'opus', 'sonnet')) and mult)
-    live = [('opus', {'input_tokens': 18, 'output_tokens': 5079, 'cache_read_input_tokens': 288063,
-                      'cache_creation_input_tokens': 51144}, 0.3538),
-            ('fable', {'input_tokens': 620, 'output_tokens': 8345, 'cache_read_input_tokens': 865645,
-                       'cache_creation_input_tokens': 170689}, 2.4762)]
-    live.append(('fable', {'input_tokens': 258, 'output_tokens': 1697, 'cache_read_input_tokens': 360163,
-                           'cache_creation_input_tokens': 58224}, 2.3025))  # R1 verifier (T-0331)
-    for fam, u, host in live[:2]:
+    # Final per-message counts (last line per message id); host costUSD from the stored host totals.
+    live = [('opus', {'input_tokens': 14, 'output_tokens': 5068, 'cache_read_input_tokens': 223021,
+                      'cache_creation_input_tokens': 41554}, 0.3538),  # L2 verifier
+            ('fable', {'input_tokens': 260, 'output_tokens': 14852, 'cache_read_input_tokens': 410383,
+                       'cache_creation_input_tokens': 60757}, 2.3025),  # R1 verifier
+            ('fable', {'input_tokens': 486, 'output_tokens': 20945, 'cache_read_input_tokens': 900039,
+                       'cache_creation_input_tokens': 68277}, 3.6384)]  # final-rerun verifier (cache fields equal the host's)
+    for fam, u, host in live:
         e, b, _ = estimate(fam, u, table)
         expect('live %s verifier row: estimate %s vs host %.4f within 35 percent' % (fam, e, host),
                e is not None and b == BASIS_USAGE and abs(e - host) <= TOLERANCE * host)
         # Negative control: the old blended count (cache reads excluded) misses the band.
         old = estimate(fam, {'subagent_tokens': u['input_tokens'] + u['output_tokens']}, table)[0]
         expect('negative control: %s blended count without cache is outside the band' % fam, abs(old - host) > TOLERANCE * host)
-    # T-0331 fitted band: estimate/host over all three live rows, the R1 row sitting below the 35 percent band.
-    ratios = [estimate(f, u, table)[0] / h for f, u, h in live]
-    expect('fitted band over the three live rows is 0.45 to 1.35, got %s' % [round(x, 2) for x in ratios],
-           all(0.45 <= x <= 1.35 for x in ratios))
     u0 = live[2][1]
-    expect('negative control: without the calibration the R1 row falls under the band',
-           sum(u0[k] * mult.get(k, 1) for k in TOKEN_KEYS) * rates['fable'] / 1e6 / 2.3025 < 0.45)
+    expect('negative control: without the calibration the final-rerun row falls under the band',
+           sum(u0[k] * mult.get(k, 1) for k in TOKEN_KEYS) * rates['fable'] / 1e6 / 3.6384 < 0.65)
     with tempfile.TemporaryDirectory() as t2:
         tf = pathlib.Path(t2) / 't.jsonl'
         m = lambda i, o: json.dumps({'message': {'id': i, 'usage': {'input_tokens': 1, 'output_tokens': o}}})
-        tf.write_text('\n'.join([m('a', 10), m('a', 10), m('b', 5), 'junk']) + '\n', encoding='utf-8')
-        expect('transcript_usage sums once per message id', transcript_usage(tf) ==
+        tf.write_text('\n'.join([m('a', 8), m('a', 8), m('a', 10), m('b', 5), 'junk']) + '\n', encoding='utf-8')
+        expect('transcript_usage sums the last line once per message id', transcript_usage(tf) ==
                {'input_tokens': 2, 'cache_creation_input_tokens': 0, 'cache_read_input_tokens': 0, 'output_tokens': 15})
         expect('transcript_usage: missing file is None', transcript_usage(pathlib.Path(t2) / 'nope') is None)
 

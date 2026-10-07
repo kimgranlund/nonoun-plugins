@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:00cb9049a053 -->
+<!-- sdlc-lite:managed:start v1 sha256:5e64bd126454 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -28,7 +28,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
 - ready: 0
 - blocked: 0
-- done: 283
+- done: 284
 - dropped: 25
 
 ## Procedures

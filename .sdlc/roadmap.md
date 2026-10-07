@@ -329,3 +329,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0329 | [.0329-fanout-verifier-tree](.0329-fanout-verifier-tree/handoff.md) | Fanout verifier prompt Tree: points at the main tree, not the lane worktree | bug | S | P2 | none | 🟢 done |
 | T-0330 | [.0330-verifier-report-on-disk](.0330-verifier-report-on-disk/handoff.md) | Verifier report is not on disk when dispatch.py record runs for a sub-agent | bug | S | P2 | none | 🟢 done |
 | T-0331 | [.0331-cost-estimate-calibrate](.0331-cost-estimate-calibrate/handoff.md) | Sub-agent cost estimate still 8.5 percent of host after T-0328 | bug | S | P2 | none | 🟢 done |
+| T-0332 | [.0332-transcript-usage-last-line](.0332-transcript-usage-last-line/handoff.md) | Transcript usage takes the first partial line per message id | bug | S | P2 | none | 🟢 done |
