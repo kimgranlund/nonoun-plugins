@@ -9,7 +9,7 @@ adapters/codex/models.json. A Claude sub-agent takes its effort from its definit
 Agent call, so each row gets its own definition in agents/ (T-0276):
 
   <role>-L<n>.md   one per pipeline-role row (builder-L3, verifier-L3, plan-reviewer-L1, ...)
-  solo-S|M|L.md    one per solo tier
+  solo-L1|L2|L3.md one per solo level
 
 Each file is the role body of agents/<role>.md verbatim, under a generated frontmatter: name, description (the
 role's, without its run.sh launch sentence, plus the level), model, effort, disallowedTools (every role but
@@ -37,7 +37,7 @@ SOLO = 'solo'
 WRITERS = ('builder', SOLO)
 DISALLOWED = 'Edit, NotebookEdit'
 LAUNCH_SENTENCE = ' Launched headless by scripts/run.sh.'
-GENERATED_RE = re.compile(r'[a-z]+(?:-[a-z]+)*-(?:L\d|S|M|L)')
+GENERATED_RE = re.compile(r'[a-z]+(?:-[a-z]+)*-(?:L\d|S|M|L)')  # S|M|L: the 0.21.x solo files, removed as orphans. ALIAS_OK
 SOURCE_RE = re.compile(r'---\n(.*?)\n---\n(.*)', re.S)
 
 
@@ -57,9 +57,9 @@ def table(plugin):
         if not re.fullmatch(r'[a-z]+(?:-[a-z]+)*', role) or not isinstance(levels, dict) or not levels:
             raise TableError('%s: role %r needs an object of levels' % (path, role))
         for level, row in levels.items():
-            ok_level = re.fullmatch(r'[SML]', level) if role == SOLO else re.fullmatch(r'L\d', level)
+            ok_level = re.fullmatch(r'L[1-3]', level) if role == SOLO else re.fullmatch(r'L\d', level)
             if not ok_level:
-                raise TableError('%s: %s level %r is not %s' % (path, role, level, 'S, M, or L' if role == SOLO else 'L1 to L9'))
+                raise TableError('%s: %s level %r is not %s' % (path, role, level, 'L1, L2, or L3' if role == SOLO else 'L1 to L9'))
             if not (isinstance(row, list) and len(row) == 2 and all(isinstance(v, str) and v for v in row)):
                 raise TableError('%s: %s:%s must be [model, effort]' % (path, role, level))
             if row[1] not in EFFORTS:
@@ -181,7 +181,7 @@ def selftest(plugin):
         case('one file per table row (%d)' % rows, len(names) == rows)
         case('check passes after generate', run('generate', '--check') == 0)
 
-        for name in ('builder-L3', 'solo-S', 'verifier-L3', 'plan-reviewer-L1', 'architect-L1'):
+        for name in ('builder-L3', 'solo-L1', 'solo-L3', 'verifier-L3', 'plan-reviewer-L1', 'architect-L1'):
             text = (d / 'agents' / (name + '.md')).read_text(encoding='utf-8')
             role = name.rsplit('-', 1)[0]
             m = SOURCE_RE.fullmatch(text)
@@ -214,7 +214,8 @@ def selftest(plugin):
 
         for label, mutate in (('an unknown effort', lambda t: t['planner']['L1'].__setitem__(1, 'ultra')),
                               ('a role with no role file', lambda t: t.__setitem__('ghost', {'L1': ['sonnet', 'low']})),
-                              ('a solo tier named L1', lambda t: t['solo'].__setitem__('L1', ['sonnet', 'low']))):
+                              ('a solo level named S (the retired tier name)', lambda t: t['solo'].__setitem__('S', ['sonnet', 'low'])),  # ALIAS_OK
+                              ('a solo level L4', lambda t: t['solo'].__setitem__('L4', ['opus', 'xhigh']))):
             bad = json.loads(json.dumps(data))
             mutate(bad)
             levels.write_text(json.dumps(bad) + '\n', encoding='utf-8')

@@ -9,7 +9,7 @@ Done is better than perfect. Trust that modern, advanced models are very capable
 The job is the cheapest path that still passes independent verification, and the lane is chosen before any role runs.
 
 ## Route every ask
-- Lane first: run `steps.py lane <task dir>` and follow it. It names `solo` (agents/solo.md, one session end to end) by default for size S and M; `lean` only after planning, when the lane script says so; the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change). Escalating to a heavier lane is what needs justification.
+- Lane first: run `steps.py lane <task dir>` and follow it. It names `solo` (agents/solo.md, one session end to end) by default for ticket levels L1 and L2 (the ticket's `size:`, L1 to L5); `lean` only after planning, when the lane script says so; the full chain only with a stated reason (an L4 or L5 step, a merge step, cross-cutting scope, a security-sensitive change). Escalating to a heavier lane is what needs justification.
 - `dispatch.py prepare` (Codex: `run.sh`) exits 5 for a planner, builder, or plan-reviewer on a solo-lane ticket and prints the `solo_run.py` command: run it, or rerun with `SDLC_LANE_OVERRIDE="<reason>"` only when the full chain has a stated reason.
 - Before dispatch, write one line, `Lane: <lane> because <reason>`, and record the same line in the ticket or task folder; `steps.py lane` already appends its own record to the task's `skips.md`, and for lane solo the skipped planner and filer, so a solo ticket closes with `tickets.py close --reason` and nothing more.
 - Repo opt-out: before routing, check the repo entry file (AGENTS.md or CLAUDE.md) for a line that declines agents or delegation, such as "No extra agents or delegation required", "no subagents", or "do not delegate". If one is there, skip the lane, run no roles, do the work yourself in this session, and say so once in one line (`Opt-out: working solo in-session per <file>`). The user's explicit ask for a pipeline role or lane overrides it. `steps.py lane` does not read the entry file.
@@ -18,7 +18,7 @@ The job is the cheapest path that still passes independent verification, and the
 - Scoped but large or cross-cutting → `/sdlc-lite:decompose`, then `/sdlc-lite:plan`.
 - A question about where code is → `/sdlc-lite:scout`; why it is that way → `/sdlc-lite:dig`; outside facts → `/sdlc-lite:research`.
 - Several ready tickets to run in parallel lanes → `/sdlc-lite:fanout`.
-- Size S and M go to `solo` by default (start it as agents/solo.md says, through `scripts/solo_run.py`; a raw `claude -p` start writes no cost record). `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets, runs only when the user asks for it or the lane script prints `fix`.
+- Ticket levels L1 and L2 go to `solo` by default (start it as agents/solo.md says, through `scripts/solo_run.py`; a raw `claude -p` start writes no cost record). `/sdlc-lite:fix`, the fast lane with no planner, filer, or follow-up tickets, runs only when the user asks for it or the lane script prints `fix`.
 - Ready to run end to end → `/sdlc-lite:chain`. One ready step → `/sdlc-lite:build`, then `/sdlc-lite:verify`.
 - Status → `/sdlc-lite:board`. Finished task → `/sdlc-lite:file`.
 - New ticket, or roadmap → /sdlc-lite:ticket

@@ -3,7 +3,7 @@ id: T-0245
 title: "Promotion helper: copy a .sdlc artifact into a docs home with source front matter"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2
 depends: [T-0241]   # T-NNNN, file:<path>, cap:<name>
 created: 2026-10-05

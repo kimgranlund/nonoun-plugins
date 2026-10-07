@@ -3,7 +3,7 @@ id: T-0039
 title: "A defined name for superseded step dirs"
 type: feature        # feature | bug | chore | spike | idea
 status: done        # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S
+size: L1
 priority: P2
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

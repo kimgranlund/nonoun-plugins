@@ -3,7 +3,7 @@ id: T-0005
 title: "Verifier L1 uses the same model family as builder L1"
 type: spike
 status: done
-size: S
+size: L1
 priority: P3
 depends: []
 created: 2026-09-24

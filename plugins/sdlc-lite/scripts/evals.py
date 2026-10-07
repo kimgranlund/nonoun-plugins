@@ -27,7 +27,7 @@ Eval file
 
 Model table hash
   Every pipeline-role row of <plugin>/adapters/claude/levels.json (a level named L1 to L9; the solo
-  tiers S, M, and L are not rows of the lock), formatted as `<role>:<level> <model> <effort>`,
+  levels L1 to L3 are not rows of the lock, as before their rename from the 0.21.x tier names), formatted as `<role>:<level> <model> <effort>`,
   sorted, one per line, then adapters/codex/models.json dumped with sorted keys and compact
   separators, then a newline. table_sha256 is the sha256 hex of that UTF-8 text, so whitespace
   edits leave it alone and any value change moves it. The text equals the one the run.sh case rows
@@ -111,7 +111,7 @@ def canonical_table(plugin):
         table = json.loads(levels.read_text(encoding='utf-8'))
         rows = sorted('%s:%s %s %s' % (role, level, model, effort)
                       for role, by_level in table.items() for level, (model, effort) in by_level.items()
-                      if LEVEL_RE.fullmatch(level))
+                      if LEVEL_RE.fullmatch(level) and role != 'solo')
     except (OSError, UnicodeDecodeError, ValueError, AttributeError) as e:
         raise TableError('%s: cannot read: %s' % (levels, e))
     if not rows:

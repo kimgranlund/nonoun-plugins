@@ -19,6 +19,20 @@ Use the first source that gives one:
 2. A `level: Lx` line in the handoff (set by the planner, per step).
 3. The role's rule below. Pick the **lowest** level whose row fits every signal, then state the level and a one-line reason before running.
 
+## One level scale
+
+SDLC Lite has one level scale, L1 to L5, for every sized thing: a role run, a ticket (its front matter `size:`, the ticket level), and the solo agent. This table ties them together; the role sections below give each role's model per level.
+
+| Level | Scale | Ticket level: default lane (`steps.py lane`) | Solo agent: Claude, Codex | Ticket budget (`budget.py set --tier`) |
+|---|---|---|---|---|
+| L1 | small | solo | `solo-L1`: Sonnet low, `sdlc-solo-l1` | $5 |
+| L2 | medium | solo | `solo-L2`: Sonnet xhigh, `sdlc-solo-l2` | $30 |
+| L3 | large | full chain | `solo-L3`: Opus xhigh, `sdlc-solo-l3` | $60 |
+| L4 | extra large | full chain | none | none, ask the user |
+| L5 | reserved | full chain | none | none, ask the user |
+
+The solo level is the ticket level, and a solo L3 runs only when someone starts it for a large ticket. The Claude solo rows live in `adapters/claude/levels.json` (row `solo`), the Codex ones in `adapters/codex/models.json`. A ticket or a launcher written for an older plugin version may still use the one-letter names; the scripts read each as its level (`tickets.py migrate-size` rewrites ticket front matter).
+
 ## builder (L1 to L5)
 
 | Level | Model / effort | Fits when |

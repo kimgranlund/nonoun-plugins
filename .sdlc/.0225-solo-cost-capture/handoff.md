@@ -3,7 +3,7 @@ id: T-0225
 title: "Solo sessions write no cost record, so the budget gate cannot see the default lane"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-04

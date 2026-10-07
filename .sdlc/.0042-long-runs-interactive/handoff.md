@@ -3,7 +3,7 @@ id: T-0042
 title: "Document long role runs in interactive sessions"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S
+size: L1
 priority: P1
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

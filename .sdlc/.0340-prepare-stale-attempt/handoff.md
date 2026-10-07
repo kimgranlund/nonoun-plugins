@@ -3,7 +3,7 @@ id: T-0340
 title: "dispatch.py prepare recovers or names a stale attempt left by a failed spawn instead of blocking the next prepare"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: S              # S | M | L | XL
+size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-07

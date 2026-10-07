@@ -307,8 +307,10 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == bui
       lane_line="lane override: $SDLC_LANE_OVERRIDE"
       [[ "${SDLC_DRY_RUN:-}" == 1 ]] || grep -qxF "$lane_line" "$lane_dir/skips.md" 2>/dev/null || printf '%s\n' "$lane_line" >>"$lane_dir/skips.md"
     else
-      lane_size=$(sed -n 's/^size: *\([SMLX]*\).*/\1/p' "$lane_dir/handoff.md" | head -n 1)
-      echo "run.sh: lane solo for $lane_dir: use the solo agent: python3 $plugin_root/scripts/solo_run.py run --task-dir $lane_dir --tier ${lane_size:-M} --brief \"<brief>\"" >&2
+      # The solo level is the ticket size as a level; a deprecated alias size (S, M) reads as L1, L2.
+      lane_size=$(sed -n 's/^size: *\([A-Z0-9]*\).*/\1/p' "$lane_dir/handoff.md" | head -n 1)
+      case "$lane_size" in S) lane_size=L1 ;; M) lane_size=L2 ;; L1|L2|L3) ;; *) lane_size=L2 ;; esac
+      echo "run.sh: lane solo for $lane_dir: use the solo agent: python3 $plugin_root/scripts/solo_run.py run --task-dir $lane_dir --tier $lane_size --brief \"<brief>\"" >&2
       echo "run.sh: or set SDLC_LANE_OVERRIDE=\"<reason the chain is needed>\" to run $role anyway (recorded in skips.md)" >&2
       exit 5
     fi

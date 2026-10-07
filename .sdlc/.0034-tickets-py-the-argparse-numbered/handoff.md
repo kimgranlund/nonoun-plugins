@@ -3,7 +3,7 @@ id: T-0034
 title: "tickets.py: the argparse --numbered help text for close does not..."
 type: idea            # feature | bug | chore | spike | idea
 status: done
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

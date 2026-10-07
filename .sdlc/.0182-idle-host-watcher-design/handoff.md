@@ -3,7 +3,7 @@ id: T-0182
 title: "Design an external watcher that resumes an idle host when a message arrives"
 type: spike
 status: done
-size: M
+size: L2
 priority: P2
 depends: []
 created: 2026-10-01

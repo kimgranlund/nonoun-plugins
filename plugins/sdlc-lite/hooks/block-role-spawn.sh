@@ -4,8 +4,9 @@
 #
 #  - subagent_type sdlc-lite:<role>-L<n> is allowed only as a prepared dispatch, that is only when
 #    all four hold, and each failed condition is its own denial:
-#      1. subagent_type is sdlc-lite:<role>-L<n> (a level definition, or sdlc-lite:solo-S|M|L on
-#         its dispatch record and model alone; not sdlc-lite:messenger or a bare role name);
+#      1. subagent_type is sdlc-lite:<role>-L<n> (a level definition, or sdlc-lite:solo-L1|L2|L3 on
+#         its dispatch record and model alone; not sdlc-lite:messenger or a bare role name); the
+#         0.21.x solo names solo-S, solo-M, solo-L pass as deprecated aliases for one release (ALIAS_OK);
 #      2. name is <role>-L<n>-<slug>[-<k>], the same <role>-L<n> as the subagent_type;
 #      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line: the
 #         file <name>.dispatch.json, or any *.dispatch.json whose "name" is this name (dispatch.py
@@ -51,14 +52,15 @@ if [[ "$sub" == "fork" ]]; then
   exit 0
 fi
 
-re_bare='^(scout|researcher|architect|archaeologist|planner|plan-reviewer|builder|verifier|filer|solo|conductor|messenger)(-L[0-9]+|-[SML])?$'
+re_bare='^(scout|researcher|architect|archaeologist|planner|plan-reviewer|builder|verifier|filer|solo|conductor|messenger)(-L[0-9]+|-[SML])?$'  # ALIAS_OK
 if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   # A bare role name is never a prepared dispatch (prepare prints the sdlc-lite: form), so it
   # fails condition 1 like any other malformed type.
   stem="${sub#sdlc-lite:}"
   re_type='^[a-z]+(-[a-z]+)*-L[0-9]+$'
-  re_solo='^solo-[SML]$'
-  [[ "$sub" == sdlc-lite:* && ( "$stem" =~ $re_type || "$stem" =~ $re_solo ) ]] ||
+  # solo-L1|L2|L3, and the deprecated 0.21.x aliases solo-S|M|L for one release. ALIAS_OK
+  re_solo='^solo-(L[1-3]|[SML])$'
+  [[ "$sub" == sdlc-lite:* && ( "$stem" =~ $re_type || "$stem" =~ $re_solo ) && ( "$stem" != solo-* || "$stem" =~ $re_solo ) ]] ||
     deny "do not spawn '$sub': only sdlc-lite:<role>-L<n> agents are dispatched, and only after dispatch.py prepare. $prepare_hint"
   re_name='^[A-Za-z0-9][A-Za-z0-9_-]*$'
   # A solo dispatch (solo_run.py, fanout prep) names its own agent: the record check below is its gate.

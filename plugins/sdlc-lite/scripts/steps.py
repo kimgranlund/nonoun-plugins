@@ -177,21 +177,22 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             records the planner and filer under ## Skipped (one `- skip: <role>; step: all; reason: solo lane...;
             decided: lane` line each, added once), the form the tickets.py skips guard counts, so a conductor can
             close the ticket by reason with no extra step.
-            Facts: the size is the handoff.md front matter field size (tickets.parse), valid only when it
-            is S, M, L, or XL; a handoff with no front matter block has no size. The point is "before
+            Facts: the size is the handoff.md front matter field size (tickets.parse), the ticket level,
+            valid only when it is L1 to L5 (tickets.parse reads the deprecated aliases S, M, L, XL as L1 to
+            L4); a handoff with no front matter block has no size. The point is "before
             planning" with no planner result, "after plan review" when there is one and handoff.md has a
             line "## Plan review", else "after planning". The plan is read leniently, like review's
             plan facts: no results.structure_error check, since split, lint, and review refuse a bad plan.
             Rules, reasons collected in this order:
               skips.md has a line starting "- lane: full;" in its ## Lane section -> "skips.md already
                 records full, and a lane never returns from full" (a lane never returns from full)
-              no valid size -> "handoff.md front matter has no size of S, M, L, or XL"
+              no valid size -> "handoff.md front matter has no size of L1 to L5"
             Before planning, size alone decides: with either reason above the lane is full and only those
-            print; else S or M -> solo, L or XL -> full, with the one reason "size <v> decides before
-            planning (no planner result yet)"; but size S or M with more than 20 checkbox lines under the
+            print; else L1 or L2 -> solo, L3 to L5 -> full, with the one reason "size <v> decides before
+            planning (no planner result yet)"; but size L1 or L2 with more than 20 checkbox lines under the
             handoff's ## Acceptance criteria is full, with the one reason "ticket lists <N> criteria (limit
-            20 for size S or M); split it into tickets of at most 20". After planning, more reasons follow, in order:
-              size L or XL -> "size <v> is above M, and lean takes only size S or M"
+            20 for size L1 or L2); split it into tickets of at most 20". After planning, more reasons follow, in order:
+              size L3 to L5 -> "size <v> is above L2, and lean takes only size L1 or L2"
               an unresolved assumption by review_required() (the function review uses) -> "<plan> lists
                 an unresolved assumption: "<first item>""
               every reason review_required() returns, verbatim (a step at L4 or L5), then the lean-only
@@ -1904,7 +1905,8 @@ LANE_CONTRACTS = (
     'scripts/check-packaging.py',
 )
 LANE_STICKY = 'skips.md already records full, and a lane never returns from full'
-LANE_NO_SIZE = 'handoff.md front matter has no size of S, M, L, or XL'
+LANE_NO_SIZE = 'handoff.md front matter has no size of L1 to L5'
+LANE_SOLO_SIZES = ('L1', 'L2')  # the ticket levels the solo lane takes before planning, and lean after it
 ERE_PATTERN_CHARS = set('^$*+?()[]{}')
 
 
@@ -2025,15 +2027,15 @@ def lane_action(task):
     if not plan:
         if reasons:
             return 'full', point, reasons, read
-        if size in ('S', 'M') and ticket_k > LANE_MAX_TICKET_CRITERIA:
-            return 'full', point, [f'ticket lists {ticket_k} criteria (limit {LANE_MAX_TICKET_CRITERIA} for size S or M); '
+        if size in LANE_SOLO_SIZES and ticket_k > LANE_MAX_TICKET_CRITERIA:
+            return 'full', point, [f'ticket lists {ticket_k} criteria (limit {LANE_MAX_TICKET_CRITERIA} for size L1 or L2); '
                                    f'split it into tickets of at most {LANE_MAX_TICKET_CRITERIA}'], read
-        lane = {'S': 'solo', 'M': 'solo'}.get(size, 'full')
+        lane = 'solo' if size in LANE_SOLO_SIZES else 'full'
         return lane, point, [f'size {size} decides before planning (no planner result yet)'], read
 
     pname = os.path.basename(plan)
-    if size in ('L', 'XL'):
-        reasons.append(f'size {size} is above M, and lean takes only size S or M')
+    if size not in LANE_SOLO_SIZES:
+        reasons.append(f'size {size} is above L2, and lean takes only size L1 or L2')
     unresolved, why = review_required(plan, t)
     if unresolved:
         reasons.append(f'{pname} lists an unresolved assumption: "{unresolved[0]}"')
@@ -4069,7 +4071,7 @@ def selftest():
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and err == ''
               and (d / 'handoff.md').read_text(encoding='utf-8') == '## Goal\ng\n')
         # (lane) the lane of a ticket, and its record in skips.md
-        def l_handoff(size='M', tail=''):
+        def l_handoff(size='L2', tail=''):
             front = f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n' if size is not None else ''
             return f'{front}## Goal\ng\n{tail}'
 
@@ -4115,21 +4117,24 @@ def selftest():
                 if skips.is_file() else []
             return (lines[0] if rc == 0 and lines and err == '' else f'rc={rc} err={err.strip()}'), reasons, reads, recs
 
-        lean_ok = 'every lean condition holds: size M, planner L2, 2 steps at L1 to L3, one AGENTS.md owner (.)'
+        lean_ok = 'every lean condition holds: size L2, planner L2, 2 steps at L1 to L3, one AGENTS.md owner (.)'
         ok = True
-        for size, want in (('S', 'solo'), ('M', 'solo'), ('L', 'full'), ('XL', 'full')):
+        # the levels, then the deprecated aliases (read as L1 to L4): the same lanes, the reason names the level
+        for size, want, level in (('L1', 'solo', 'L1'), ('L2', 'solo', 'L2'), ('L3', 'full', 'L3'), ('L4', 'full', 'L4'),
+                                  ('L5', 'full', 'L5'), ('S', 'solo', 'L1'), ('M', 'solo', 'L2'), ('L', 'full', 'L3'),
+                                  ('XL', 'full', 'L4')):
             lane, reasons, _, recs = l_run(l_task(l_handoff(size)))
-            why = f'size {size} decides before planning (no planner result yet)'
+            why = f'size {level} decides before planning (no planner result yet)'
             ok = ok and lane == want and reasons == [why] \
                 and recs == [f'- lane: {want}; point: before planning; reasons: {why}']
         for k, want in ((20, 'solo'), (21, 'full')):
             crit = '\n## Acceptance criteria\n' + ''.join(f'- [ ] c{i}\n' for i in range(k))
-            lane, reasons, _, _ = l_run(l_task(l_handoff('M', crit)))
-            why = 'size M decides before planning (no planner result yet)' if k == 20 else \
-                'ticket lists 21 criteria (limit 20 for size S or M); split it into tickets of at most 20'
+            lane, reasons, _, _ = l_run(l_task(l_handoff('L2', crit)))
+            why = 'size L2 decides before planning (no planner result yet)' if k == 20 else \
+                'ticket lists 21 criteria (limit 20 for size L1 or L2); split it into tickets of at most 20'
             ok = ok and lane == want and reasons == [why]
         lane, reasons, _, recs = l_run(l_task(l_handoff(None)))
-        check('(lane) before planning, size alone decides: S and M solo, L and XL full, no size full',
+        check('(lane) before planning, size alone decides: L1 and L2 (aliases S, M) solo, L3 to L5 (aliases L, XL) full, no size full',
               ok and lane == 'full' and reasons == [LANE_NO_SIZE]
               and recs == [f'- lane: full; point: before planning; reasons: {LANE_NO_SIZE}'])
 
@@ -4140,7 +4145,7 @@ def selftest():
             ok = ok and lane == 'lean' and reasons == [lean_ok] \
                 and recs == [f'- lane: lean; point: after planning; reasons: {lean_ok}'] \
                 and reads == [str(d / 'handoff.md'), str(d / 'planner-L2.md')]
-        check('(lane) a two-step size M plan at L1 to L3 inside one AGENTS.md owner is lean, for scope forms F, E, '
+        check('(lane) a two-step size L2 plan at L1 to L3 inside one AGENTS.md owner is lean, for scope forms F, E, '
               'and A', ok)
 
         lane, reasons, _, _ = l_run(l_task(l_handoff(), {'planner-L2.md': l_plan(title1='Merge lane/x')}))
@@ -4180,7 +4185,8 @@ def selftest():
               ok and 'planner-L2.md lists an unresolved assumption: "unresolved: which db"' in unresolved_reasons)
 
         full_cases = [
-            (l_task(l_handoff('L'), {'planner-L2.md': l_plan()}), 'size L is above M, and lean takes only size S or M'),
+            (l_task(l_handoff('L3'), {'planner-L2.md': l_plan()}), 'size L3 is above L2, and lean takes only size L1 or L2'),
+            (l_task(l_handoff('L'), {'planner-L2.md': l_plan()}), 'size L3 is above L2, and lean takes only size L1 or L2'),
             (l_task(l_handoff(), {'planner-L2.md': l_plan(levels=(2, 3, 1), crits=(12, 2, 2),
                                                           scopes=(L_F1, L_F2, 'grep -vxF -e docs/d.md'))}),
              '3 steps, and lean allows at most 2'),
@@ -4198,11 +4204,11 @@ def selftest():
              'scoped files span 2 AGENTS.md owners: ., pkg'),
         ]
         res = [(l_run(d), want) for d, want in full_cases]
-        check('(lane) full after planning: size L, three steps, a 13-criterion step, no recognized scope allow-list, '
+        check('(lane) full after planning: size L3, three steps, a 13-criterion step, no recognized scope allow-list, '
               'a non-path scope entry, a contract path, or two AGENTS.md owners',
               all(r[0] == 'full' and r[1] == [want] for r, want in res))
 
-        rec_m = '- lane: solo; point: before planning; reasons: size M decides before planning (no planner result yet)'
+        rec_m = '- lane: solo; point: before planning; reasons: size L2 decides before planning (no planner result yet)'
         why_s = 'solo lane: runs end to end in one session'
         sk = f'- skip: planner; step: all; reason: {why_s}; decided: lane\n- skip: filer; step: all; reason: {why_s}; decided: lane\n'
         d = l_task(l_handoff())
@@ -4260,7 +4266,7 @@ def selftest():
                                   capture_output=True, text=True)
             d = r / '.sdlc' / 'solo-a'
             hp = d / 'handoff.md'
-            hp.write_text(re.sub(r'(?m)^size:.*$', 'size: M', hp.read_text(encoding='utf-8')), encoding='utf-8')
+            hp.write_text(re.sub(r'(?m)^size:.*$', 'size: L2', hp.read_text(encoding='utf-8')), encoding='utf-8')
             lane_run_ = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(d)],
                                        cwd=str(r), env=env_, capture_output=True, text=True)
             first = (d / 'skips.md').read_text(encoding='utf-8') if (d / 'skips.md').is_file() else ''
@@ -4288,10 +4294,10 @@ def selftest():
         subprocess.run(['git', 'init', '-q', str(full_)], check=True, capture_output=True)
         fd = full_ / '.sdlc' / 'big'
         fd.mkdir(parents=True)
-        (fd / 'handoff.md').write_text(l_handoff('L'), encoding='utf-8')
+        (fd / 'handoff.md').write_text(l_handoff('L3'), encoding='utf-8')
         subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'lane', str(fd)], cwd=str(full_),
                        capture_output=True, text=True)
-        check('(lane solo close) only lane solo writes Skipped entries: a size L ticket (lane full) gets none',
+        check('(lane solo close) only lane solo writes Skipped entries: a size L3 ticket (lane full) gets none',
               '- skip:' not in (fd / 'skips.md').read_text(encoding='utf-8'))
 
     if misses:

@@ -3,7 +3,7 @@ id: T-0184
 title: "One declared result schema per role, validated before the next role reads it"
 type: feature
 status: done
-size: M
+size: L2
 priority: P2
 depends: []
 created: 2026-10-01

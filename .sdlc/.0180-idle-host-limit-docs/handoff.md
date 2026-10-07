@@ -3,7 +3,7 @@ id: T-0180
 title: "Document that the messenger reaches only an active parent host"
 type: chore
 status: done
-size: S
+size: L1
 priority: P2
 depends: []
 created: 2026-10-01

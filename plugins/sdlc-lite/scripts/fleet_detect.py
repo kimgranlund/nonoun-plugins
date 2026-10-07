@@ -26,7 +26,7 @@ Rules (a rule fires when the value is OVER its threshold; thresholds live in THR
   planner_results_per_ticket  one finding per ticket folder with more planner runs than the threshold
                               (runs.by_ticket)
   plan_review_share           planner plus plan-reviewer cost over total cost (plan_review_share)
-  size_m_criteria             one finding per size M handoff with more acceptance criteria than the threshold
+  size_m_criteria             one finding per size L2 handoff (or its 0.21.x alias M) with more acceptance criteria than the threshold
                               (tickets.items)
   hook_cpu                    one finding per hook process over hook_cpu_pct %CPU that has been alive longer than
                               hook_etime_s seconds (processes.hooks.items). One `ps` snapshot cannot show a
@@ -49,7 +49,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 THRESHOLDS = collections.OrderedDict([
     ('planner_results_per_ticket', 5),    # planner runs in one ticket folder (runs.by_ticket[t].planner)
     ('plan_review_share', 0.40),          # (planner + plan-reviewer) cost over total cost, a fraction
-    ('size_m_criteria', 20),              # acceptance criteria in one size M handoff
+    ('size_m_criteria', 20),              # acceptance criteria in one size L2 (alias M) handoff
     ('hook_cpu_pct', 50),                 # one hook process's ps %CPU ...
     ('hook_etime_s', 20),                 # ... while it has been alive longer than this many seconds
     ('chromium_processes', 30),           # Chromium process count
@@ -157,7 +157,7 @@ def rule_size_m_criteria(fp):
     items = dig(fp, 'tickets', 'items')
     for i, it in enumerate(items if isinstance(items, list) else ()):
         n = num(it.get('criteria')) if isinstance(it, dict) else None
-        if n is not None and n > limit and str(it.get('size')).upper() == 'M':
+        if n is not None and n > limit and str(it.get('size')).upper() in ('L2', 'M'):  # M: the 0.21.x alias of L2
             yield (key_path('tickets', 'items', ('idx', i), 'criteria'), int(n), limit,
                    {'ticket': it.get('ticket'), 'id': it.get('id')})
 
@@ -420,6 +420,10 @@ def selftest():
                                                          [{'version': '0.10.0', 'path': '/p'}])))] == ['plugin_version_stale'])
     ok('size_m_criteria: a lowercase size m counts', [f['rule'] for f in detect(
         with_((('tickets', 'items', 2, 'size'), 'm'), (('tickets', 'items', 2, 'criteria'), 21)))] == ['size_m_criteria'])
+    ok('size_m_criteria: a size L2 counts like its alias M', [f['rule'] for f in detect(
+        with_((('tickets', 'items', 2, 'size'), 'L2'), (('tickets', 'items', 2, 'criteria'), 21)))] == ['size_m_criteria'])
+    ok('size_m_criteria: a size L3 does not count', detect(
+        with_((('tickets', 'items', 2, 'size'), 'L3'), (('tickets', 'items', 2, 'criteria'), 500))) == [])
 
     # a ticket key with a slash (ticket_root: tickets) round-trips through the evidence path
     nested = with_((('runs', 'by_ticket', 'tickets/0001-a'), {'planner': 6}))

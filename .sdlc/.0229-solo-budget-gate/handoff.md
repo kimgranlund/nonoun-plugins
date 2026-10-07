@@ -3,7 +3,7 @@ id: T-0229
 title: "Solo start has no budget gate, and /agent solo without a ticket is unmetered"
 type: bug             # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-10-04

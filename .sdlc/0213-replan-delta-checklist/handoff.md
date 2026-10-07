@@ -3,7 +3,7 @@ id: T-0213
 title: "Replan handoff, planner checklist, scoped plan review, replans metric"
 type: chore           # feature | bug | chore | spike | idea
 status: dropped
-size: L
+size: L3
 priority: P2         # P1 | P2 | P3
 depends: [T-0199, T-0200, T-0201, T-0202, T-0211]
 created: 2026-10-04

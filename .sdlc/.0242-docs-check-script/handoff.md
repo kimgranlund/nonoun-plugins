@@ -3,7 +3,7 @@ id: T-0242
 title: "docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template"
 type: feature        # feature | bug | chore | spike | idea
 status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2
 depends: [T-0241]   # registry parts also wait for T-0248   # T-NNNN, file:<path>, cap:<name>
 created: 2026-10-05

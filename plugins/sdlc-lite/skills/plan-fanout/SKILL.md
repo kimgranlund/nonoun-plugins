@@ -25,6 +25,6 @@ Build the command, pipe it to `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plan_check.
 
 ## 4. Return
 
-ONE fenced block of two lines, the `fanout.py run ... --dry-run` command and then the same command without the flag; five lines of `Why this plan` (the lane grouping, the cap, the gate); `You must authorize` naming the spend (tier caps S $5, M $30, L $60 from budget.py) and that fanout merges nothing to a remote and publishes nothing. This skill cannot run it for you.
+ONE fenced block of two lines, the `fanout.py run ... --dry-run` command and then the same command without the flag; five lines of `Why this plan` (the lane grouping, the cap, the gate); `You must authorize` naming the spend (level caps L1 $5, L2 $30, L3 $60 from budget.py) and that fanout merges nothing to a remote and publishes nothing. This skill cannot run it for you.
 
 Unattended: never call AskUserQuestion; return the command with each missing input as a `warn`.

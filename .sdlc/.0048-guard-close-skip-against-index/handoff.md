@@ -3,7 +3,7 @@ id: T-0048
 title: "Guard close --skip against index drift: if the filer file changes..."
 type: idea            # feature | bug | chore | spike | idea
 status: done
-size: M              # S | M | L | XL
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P3
 depends: []          # ticket ids, e.g. [T-0002]
 created: 2026-09-24

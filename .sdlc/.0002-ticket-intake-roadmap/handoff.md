@@ -3,7 +3,7 @@ id: T-0002
 title: "Ticket intake command and generated roadmap"
 type: feature
 status: done
-size: M
+size: L2
 priority: P2
 depends: [T-0001]
 created: 2026-09-24

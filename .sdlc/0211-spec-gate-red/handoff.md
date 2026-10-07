@@ -3,7 +3,7 @@ id: T-0211
 title: "Spec gate A2: specgate.py red, (red) tag, split and review wiring"
 type: chore           # feature | bug | chore | spike | idea
 status: dropped
-size: L
+size: L3
 priority: P2         # P1 | P2 | P3
 depends: [T-0197, T-0201, T-0202, T-0210]
 created: 2026-10-04

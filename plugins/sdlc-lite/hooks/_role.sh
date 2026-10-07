@@ -6,7 +6,7 @@
 #
 # The role is $SDLC_ROLE when it is set (run.sh and fanout set it per process). Otherwise it is
 # the hook input's agent_type for an SDLC Lite sub-agent, with the sdlc-lite: prefix and the
-# level suffix removed (sdlc-lite:builder-L3 -> builder, sdlc-lite:solo-M -> solo): a sub-agent
+# level suffix removed (sdlc-lite:builder-L3 -> builder, sdlc-lite:solo-L2 -> solo): a sub-agent
 # inherits its parent's environment, so the per-process variable cannot tell it from the
 # parent, and the hook input can. When both exist the variable wins, so a headless parent's
 # role is what its sub-agents resolve to; the sub-agent's own type counts only in a session
@@ -23,6 +23,7 @@ SDLC_PIPELINE_ROLES=" scout researcher architect archaeologist planner plan-revi
 SDLC_READONLY_ROLES=" scout researcher architect archaeologist planner plan-reviewer verifier filer "
 
 sdlc_role() {
+  # re_solo: the deprecated 0.21.x solo names solo-S|M|L, kept for one release. ALIAS_OK
   local at name re_level='^(.+)-L[0-9]+$' re_solo='^(solo)-[SML]$'
   if [[ -n "${SDLC_ROLE:-}" ]]; then
     printf '%s' "$SDLC_ROLE"

@@ -16,7 +16,7 @@ Version 0.1, 2026-10-06. Built in SDLC Lite 0.21.0 except T-0288 (retiring the C
 Status tags: CONFIRMED (host documentation), OBSERVED (this author session), UNVERIFIED (a probe ticket owns it).
 
 ```
-Agent({description, prompt, subagent_type: "sdlc-lite:solo-M", model: "sonnet"|"opus"|"haiku"|"fable",
+Agent({description, prompt, subagent_type: "sdlc-lite:solo-L2", model: "sonnet"|"opus"|"haiku"|"fable",
        name: "<ticket>-solo", isolation: "worktree", run_in_background: true})
 ```
 
@@ -35,7 +35,7 @@ Agent({description, prompt, subagent_type: "sdlc-lite:solo-M", model: "sonnet"|"
 | Account switch: docs are silent; sub-agents survived repeated `/login`, `claude -p` children were marked interrupted | OBSERVED |
 | Behavior at a session limit; whether a parent restart loses background sub-agents | UNVERIFIED (P7, P4) |
 
-Consequences. Tiers S, M, L (Sonnet low, Sonnet xhigh, Opus xhigh) need three definitions, `solo-S`, `solo-M`, `solo-L`, or one definition with a fixed effort and a per-call model; two tiers share `xhigh`, so a per-effort pair (`low`, `xhigh`) would do for solo, but the design uses per-level definitions everywhere (section 1) so `check.py` compares rows one to one. Sub-agents inherit the parent's environment, so `SDLC_ROLE` and `SDLC_TMP_WORKTREES` stop being per-role facts, and the hooks resolve the role from `agent_type` (section 4).
+Consequences. Solo levels L1, L2, L3 (Sonnet low, Sonnet xhigh, Opus xhigh) need three definitions, `solo-L1`, `solo-L2`, `solo-L3`, or one definition with a fixed effort and a per-call model; two levels share `xhigh`, so a per-effort pair (`low`, `xhigh`) would do for solo, but the design uses per-level definitions everywhere (section 1) so `check.py` compares rows one to one. Sub-agents inherit the parent's environment, so `SDLC_ROLE` and `SDLC_TMP_WORKTREES` stop being per-role facts, and the hooks resolve the role from `agent_type` (section 4).
 
 ## 1. Dispatch contract
 
@@ -47,7 +47,7 @@ The conductor spawns every role the same three-step way. The first and third ste
 
 Forks. A full-context fork needs a stated reason (`Fork reason:` first line of the prompt) and is never allowed for `verifier` or `plan-reviewer`, because a fork inherits the parent's context and model and cannot be independent. The hook enforces it (section 4).
 
-Level to model and effort. `model` is a per-call override; `effort` is fixed by the definition. So the level table gets one generated definition per `role:level` row, `sdlc-lite:builder-L3` and so on (19 rows plus `solo-S`, `solo-M`, `solo-L`), each the role body of `agents/<role>.md` verbatim plus frontmatter `model`, `effort`, `disallowedTools`, `skills`. Per-effort definitions would be 13 files instead of 22, but per-level maps one to one onto the `run.sh` and level-rubric rows, makes the level readable in the agent name and the record, and keeps the agreement check a plain row comparison. The verifier family remap changes only the `model` argument, never the definition, so it adds no definitions.
+Level to model and effort. `model` is a per-call override; `effort` is fixed by the definition. So the level table gets one generated definition per `role:level` row, `sdlc-lite:builder-L3` and so on (19 rows plus `solo-L1`, `solo-L2`, `solo-L3`), each the role body of `agents/<role>.md` verbatim plus frontmatter `model`, `effort`, `disallowedTools`, `skills`. Per-effort definitions would be 13 files instead of 22, but per-level maps one to one onto the `run.sh` and level-rubric rows, makes the level readable in the agent name and the record, and keeps the agreement check a plain row comparison. The verifier family remap changes only the `model` argument, never the definition, so it adds no definitions.
 
 Table home. The `role:level` rows move from the `run.sh` `case` to `adapters/claude/levels.json`, mirroring `adapters/codex/models.json`; `scripts/claude_roles.py generate|--check` writes the definitions (the `codex_roles.py` pattern). Values do not change (user decision). `evals.py canonical_table` must keep producing the same text so `evals.py hash` and `table-lock.json` stay valid; the ticket's acceptance proves the hash is unchanged.
 
@@ -58,7 +58,7 @@ Table home. The `role:level` rows move from the `run.sh` `case` to `adapters/cla
 | 1 level tables | `run.sh` regex vs level-rubric rows | `levels.json` vs `run.sh` vs level-rubric, three ways; any one source edited fails |
 | 2 role files | every `agents/<role>.md` has a `run.sh` case | every role has `levels.json` rows; `run.sh` case required only until run.sh's Claude branch is retired |
 | 15 evals lock | table read from `run.sh` | table read from `levels.json`, hash unchanged |
-| 18, 24, 27 solo tiers | `solo.md`, `fanout.SOLO_TIERS`, `solo_run.py` | also the generated `solo-S/M/L` |
+| 18, 24, 27 solo levels | `solo.md`, `fanout.SOLO_TIERS`, `solo_run.py` | also the generated `solo-L1`, `solo-L2`, `solo-L3` |
 | new | none | `claude_roles.py generate --check`: a hand edit to a generated file, or a `levels.json` change without regeneration, fails |
 
 Skills. Today `run.sh` appends each declared skill with `--append-system-prompt-file` because `claude --agent` does not preload them (`sdlc-internals.md`, token probe 2026-09-24). A sub-agent definition's `skills:` frontmatter is the documented route; unverified for plugin-shipped agents (probe P1).
@@ -106,9 +106,9 @@ Unverified and gating: that a plugin PreToolUse hook fires for sub-agent tool ca
 Spawn depth defaults to 3, so a lane conductor sub-agent that dispatches roles is possible on paper, but whether the generated definitions get the Agent tool and whether nested background results reach the lane conductor is unverified (P8). The baseline is flat: the parent session is the only dispatcher, one level deep. Fanout keeps what is deterministic and moves process launching to the conductor:
 
 - `fanout.py prep` does preflight, the overlap check, the lane choice (`steps.py lane`), and prints a dispatch table. `fanout.py land <branch>` does the locked merge, the gates, the vacuous-gate refusal, `close <id>`, and the report. `run --driver` stays for the selftest.
-- A size S or M ticket is one named background `solo-S/M/L` sub-agent with `isolation: worktree`. The brief adds the lane commit instruction (`<id>: <title>`), because solo commits nothing unless asked. The worktree branch the host returns is merged by `land`; this is the existing external-lane path (`<lane>@<branch>`, `external_branch:`).
+- A ticket of level L1 or L2 is one named background `solo-L1`/`solo-L2` sub-agent with `isolation: worktree`. The brief adds the lane commit instruction (`<id>: <title>`), because solo commits nothing unless asked. The worktree branch the host returns is merged by `land`; this is the existing external-lane path (`<lane>@<branch>`, `external_branch:`).
 - A `full` or `lean` ticket is driven by the parent (a nested lane conductor is a later option if P8 passes): roles are sub-agents against the lane branch, each brief carrying a `Tree:` line and using `cd <tree> &&` per Bash call, since a sub-agent shares the parent's cwd and cwd resets between calls. The parent reads only `steps.py next` and the records, so its context cost is the status lines.
-- Tiers M and L still need one task-dir verifier; the parent dispatches it after the solo returns, which keeps independence in one place and does not depend on nesting.
+- Solo levels L2 and L3 still need one task-dir verifier; the parent dispatches it after the solo returns, which keeps independence in one place and does not depend on nesting.
 - `--max-lanes` (default 4) stays, well under the 20-agent default ceiling (`Concurrent subagent limit reached` is a failed spawn, not a crash). Parallel sub-agents draw on one account limit. Lane names are `<ticket>-solo`, but the host names the branch `worktree-agent-<agent_id>` (observed live, T-0287), so the conductor reads it from the Agent result and `land` treats a host branch as a solo lane; `.claude/worktrees/` must be ignored by the repo and excluded from watchers, as `.worktrees/` is today.
 
 Unverified: a resumed sub-agent keeps its worktree (P4), and nested lane conductors (P8).

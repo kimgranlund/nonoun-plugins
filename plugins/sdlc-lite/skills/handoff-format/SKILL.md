@@ -89,7 +89,7 @@ id: T-NNNN
 title: "..."
 type: feature|bug|chore|spike|idea
 status: proposed|ready|blocked|done|dropped
-size: S|M|L|XL
+size: L1|L2|L3|L4|L5   # the ticket level: L1 small, L2 medium, L3 large, L4 extra large, L5 reserved
 priority: P1|P2|P3
 depends: [T-NNNN, file:<path>, cap:<name>, ...]
 created: YYYY-MM-DD
@@ -103,6 +103,8 @@ router: .sdlc/AGENTS.md   # stamped by new: the folder rules (.sdlc/tickets/AGEN
 A `file:` depends entry is repo-relative and met once the path exists; it never orders tickets. A `cap:` entry is met once a `done` ticket provides it, and orders the ticket after every provider. `check` fails a malformed entry or an unprovided `cap:`.
 
 Front matter is purely additive: a handoff with no front matter keeps working unchanged, and no runner requires or parses it. `board.py` reads `id`/`status` from front matter for display only (via `tickets.py`'s parser, so a task without front matter or an unreadable handoff.md just gets empty cells); it still never requires, validates, or writes front matter. `/ticket new` stamps these fields, `/ticket check` validates them, and `scripts/tickets.py` remains the sole parser and writer of front matter semantics. `tickets.py close` sets `status: done` and stamps `from: <id>` on each follow-up idea ticket it creates. `board.py` also uses ticket status to decide which tasks it lists at all: a `dropped` ticket, or a `done` ticket with no recorded step work, is left off the board entirely.
+
+`size` is the ticket level, on the same L1 to L5 scale as the role levels: L1 and L2 go to the `solo` lane by default, L3 and above to the chain (`steps.py lane` decides). A ticket written by an older plugin version may still carry the one-letter size names; `tickets.py` reads each as its level and stores the level whenever it writes the front matter, and `tickets.py migrate-size --apply` rewrites them all at once.
 
 `status` here is a person's decision (proposed, ready to build, blocked, done, dropped), not build progress. It never tracks how far a task got through the roles; that stays derived by `/board` from `.sdlc/` run state. The two are independent: a ticket can sit at `status: ready` while `/board` shows no runs yet, or `status: blocked` while a step has already built.
 
