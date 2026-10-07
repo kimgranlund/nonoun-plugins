@@ -2,7 +2,7 @@
 id: T-0269
 title: "traces detector reports failed attempts as missing a runs.jsonl row"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -20,3 +20,7 @@ Acceptance: the three `_esc_repo` commands in draft 1 plus `traces.py selftest`.
 
 ## Constraints
 No push, tag, version bump, or publish. No em dashes.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
