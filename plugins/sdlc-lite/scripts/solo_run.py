@@ -499,6 +499,15 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
         rec['level'], attempt[:8], f'${cost:.4f}' if cost is not None else f"none ({rec['cost_reason']})"),
         file=sys.stderr)
     failed = 1 if rc == 0 and (result or {}).get('is_error') else rc
+    if rc == 0 and result is None:
+        # T-0346: an unreadable stream (no result event) is a failure, said on stdout with the raw first line and the log path.
+        log = pathlib.Path(raw_out) if raw_out else pathlib.Path(task_dir) / 'solo.stream.log'
+        if not raw_out:
+            log.write_text(out or '', encoding='utf-8')
+        first = (out or '').strip().splitlines()[:1]
+        print(f'solo_run.py: FAILED: session stream has no readable result event (JSON parse failure); '
+              f'first line: {first[0][:200] if first else "(empty)"}; raw stream log: {log}')
+        failed = 1
     if failed:
         limit_hint(task_dir, tier, text if isinstance(text, str) and text else out)
     else:
@@ -566,6 +575,15 @@ def selftest():
             expect('exit status 0', rc == 0)
             s, un, _est = budget.spend(d)
             expect('budget counts the solo cost', abs(s - 3.25) < 1e-9 and un == 0)
+
+            shim("printf '%s\\n' 'not json {broken'\n")
+            d = ticket('bad')
+            out_bad = io.StringIO()
+            with contextlib.redirect_stdout(out_bad), contextlib.redirect_stderr(io.StringIO()):
+                rc_bad = run(str(d), 'S', 'b', cwd=str(tmp))
+            expect('malformed stream: non-zero exit and stdout names the log path (T-0346)',
+                   rc_bad != 0 and str(d / 'solo.stream.log') in out_bad.getvalue() and 'not json' in out_bad.getvalue()
+                   and (d / 'solo.stream.log').is_file())
 
             shim(f"printf '%s\\n' '[{{\"type\":\"system\"}},{ok_json}]'\n")
             d = ticket('arr')
