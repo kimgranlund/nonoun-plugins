@@ -1,0 +1,18 @@
+{
+  "note": "Each session receives only 'Path: <absolute start folder in its fixture copy>' and the brief text. The start folder is also the session's working directory. No answer, home name, or hint is in a brief.",
+  "briefs": [
+    {"id": "B01", "start": "docs", "text": "The notification digest design was approved last week and implementation starts tomorrow; nothing is built yet. Write the design document: what the digest contains, when it is sent, and what it never includes."},
+    {"id": "B02", "start": "docs", "text": "Draft a proposal to cache the board's rendered output between runs. It is only an idea for the team to review; nothing is decided or built."},
+    {"id": "B03", "start": "docs", "text": "We chose JSON Lines over SQLite for run logs. Record the decision, the reason, and what we gave up, so nobody reopens it by accident."},
+    {"id": "B04", "start": "docs", "text": "Make a cheat sheet of the commands to restart a failed ticket: each command and one line on when to use it."},
+    {"id": "B05", "start": "docs", "text": "Write the numbered steps a maintainer follows to rotate the model table: edit the table, run the checks, record the change."},
+    {"id": "B06", "start": "docs", "text": "Record today's benchmark: 12 tasks, 10 passed, cost $4.20, run on 2026-10-06 against the lane scripts. Finding: cost fell 18 percent against last month."},
+    {"id": "B07", "start": "docs", "text": "A teammate drew board-flow.svg, a flow diagram of the board. Add the file so documents can embed it. Its content is: <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"40\"><rect width=\"160\" height=\"40\" fill=\"none\" stroke=\"black\"/><text x=\"8\" y=\"24\">board flow</text></svg>"},
+    {"id": "B08", "start": "docs", "text": "The guide on resuming a stopped run is out of date: automatic resume replaced it in release 0.21. Retire it but keep it for history, and say what replaced it."},
+    {"id": "B09", "start": "docs", "text": "Here are loose notes from a call, none of them sorted: 'timeouts feel short; maybe cache the board; ask about licences; try the new model for planning'. File them so they are not lost until someone sorts them."},
+    {"id": "B10", "start": "docs", "text": "Ticket T-0007 finished and its independent verifier passed it. Write the verifier's result: verdict pass, three checks run (unit tests, lint, link check), no findings."},
+    {"id": "B11", "start": ".sdlc", "text": "Write the steps a new maintainer follows to add a role to the runner: create the role file, wire it into the table, run its check. Numbered."},
+    {"id": "B12", "start": "docs", "text": "While closing ticket T-0007 we agreed to revisit the retry timeout default later, but not as a ticket of its own. Write that follow-up down so it is not lost."}
+  ],
+  "pilot": {"id": "P0", "start": "docs", "text": "Record that the nightly job runs at 02:00 UTC and takes about 20 minutes."}
+}

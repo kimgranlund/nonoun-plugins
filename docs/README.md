@@ -32,6 +32,7 @@
 - [Onboard lane text](reports/onboard-lane-text.md): dated record of the root entry block now routing by `steps.py lane` (T-0228), why no template version bump was made, and the read-only check against a consumer repo.
 - [Progressive Context gap analysis review](reports/progressive-context-gap-analysis-review.md): dated independent architect review of the gap analysis, three blockers and eleven minor findings, and how each was applied.
 - [Docs schema design review](reports/docs-schema-design-review.md): dated independent architect review of the docs schema design, with 15 findings and how each was applied.
+- [Placement proof live run](reports/placement-proof-live-run.md): dated live run for T-0248 testing whether the context registry helps fresh sessions place new documents, on four session types with a control arm; the pass rule held for two types and failed for two, so placement stays unproven.
 - [Repository onboarding design review](reports/repo-onboarding-design-review.md): dated independent review of the onboarding design at v0.1.
 - [Repository onboarding design review, second round](reports/repo-onboarding-design-review-2.md): dated independent review of the onboarding design at v0.4.
 - [Repository onboarding design review, third round](reports/repo-onboarding-design-review-3.md): dated independent review of the onboarding design at v0.5.
