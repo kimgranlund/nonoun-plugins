@@ -949,6 +949,14 @@ def selftest():
                 f.unlink()
             c4, j4 = disp('par4')
             expect('default worktree: none live again keeps the checkout', c4.returncode == 0 and 'worktree' not in j4)
+            # T-0350: recording a finished sub-agent solo (dispatch.py record) clears its marker, so the next solo stays here.
+            c5, j5 = disp('par5')
+            expect('recorded solo: before the record, a live marker forces the next solo into a worktree', c5.returncode == 0 and j5.get('worktree'))
+            rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(wr2 / 'par4' / f'{j4["name"]}.dispatch.json')],
+                                capture_output=True, text=True, timeout=60)
+            c6, j6 = disp('par6')
+            expect('recorded solo: record exits 0 and clears the marker, the next solo keeps the checkout',
+                   rp.returncode == 0 and c6.returncode == 0 and 'worktree' not in j6)
         finally:
             os.environ['PATH'] = old_path
             for k, v in old_env.items():
