@@ -464,7 +464,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
         stem, k = next_stem(directory, role, level)
         name = agent_name(role, level, directory, k)
         result = directory / (stem + '.md')
-        toplevel = git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()
+        toplevel = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip() or git('rev-parse', '--show-toplevel').stdout.strip() or os.getcwd()  # the handoff's own tree, so a lane worktree handoff gets the lane as Tree
         tmp_prefix = str(Path(toplevel) / '.worktrees' / 'tmp' / name)
 
         base = None
@@ -1072,6 +1072,15 @@ def selftest():
              got['prompt'].startswith('Handoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
                                       'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', w, w / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
+        lw = rr.parent / (rr.name + '-lane')
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'add', '-q', '--detach', str(lw), 'HEAD'], capture_output=True)
+        (lw / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
+        shutil.copy(rr / '.sdlc' / 'w' / 'handoff.md', lw / '.sdlc' / 'w' / 'handoff.md')
+        rcl, dl, _ = prep(rr, 'verifier', 'L1', str(lw / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        case('a verifier prompt for a lane worktree handoff carries the worktree as Tree, not the cwd tree',
+             rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
+             and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(dl['tree'] + '/.worktrees/tmp/'))
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2)
         case('the refused prepare wrote no second record', sorted(p.name for p in w.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
