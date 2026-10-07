@@ -444,8 +444,16 @@ run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task haiku "$gh")" >/dev/null; 
 [[ $rc -eq 0 ]] || fail "spawn gate allows a record named <name>.dispatch.json: exit $rc, want 0"
 run "$rs" "$(gj $vt $vn opus "other/../handoff.md")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate resolves a relative Handoff path against the hook cwd: exit $rc, want 0"
+# A solo dispatch (sdlc-lite:solo-S|M|L, solo_run.py) is gated by its record and model only (T-0287 live defect).
+printf '%s' '{"subagent_type":"sdlc-lite:solo-M","name":"solo-M-gate-task","model":"sonnet","role":"solo"}' >"$gate/solo-M-gate-task.dispatch.json"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a recorded solo dispatch: exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-gate-task opus "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a solo dispatch with another model: exit $rc, want 2"
+run "$rs" "$(gj sdlc-lite:solo-M solo-M-no-record sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 2 ]] || fail "spawn gate denies a solo spawn with no dispatch record: exit $rc, want 2"
 # Condition 1: subagent_type is sdlc-lite:<role>-L<n>.
-for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo-M sdlc-lite:messenger sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
+for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:messenger sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
   out=$(run "$rs" "$(gj "$sub" $vn opus "$gh")"); rc=$?
   [[ $rc -eq 2 ]] || fail "spawn gate condition 1, subagent_type '$sub': exit $rc, want 2"
 done

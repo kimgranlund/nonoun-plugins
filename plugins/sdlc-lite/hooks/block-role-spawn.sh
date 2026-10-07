@@ -57,10 +57,14 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   # fails condition 1 like any other malformed type.
   stem="${sub#sdlc-lite:}"
   re_type='^[a-z]+(-[a-z]+)*-L[0-9]+$'
-  [[ "$sub" == sdlc-lite:* && "$stem" =~ $re_type ]] ||
+  re_solo='^solo-[SML]$'
+  [[ "$sub" == sdlc-lite:* && ( "$stem" =~ $re_type || "$stem" =~ $re_solo ) ]] ||
     deny "do not spawn '$sub': only sdlc-lite:<role>-L<n> agents are dispatched, and only after dispatch.py prepare. $prepare_hint"
   re_name='^[A-Za-z0-9][A-Za-z0-9_-]*$'
-  if [[ "$name" != "$stem"-?* || ! "$name" =~ $re_name ]]; then
+  # A solo dispatch (solo_run.py, fanout prep) names its own agent: the record check below is its gate.
+  if [[ "$stem" =~ $re_solo ]]; then
+    [[ "$name" =~ $re_name ]] || deny "name '$name' is not a valid agent name. $prepare_hint"
+  elif [[ "$name" != "$stem"-?* || ! "$name" =~ $re_name ]]; then
     deny "name '$name' does not match ${stem}-<slug>[-<k>] for subagent_type '$sub'. $prepare_hint"
   fi
 

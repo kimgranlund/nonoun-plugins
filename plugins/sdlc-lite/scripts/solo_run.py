@@ -98,6 +98,9 @@ def dispatch_json(task_dir, tier, brief):
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
              attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'S' else None)
+    # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
+    d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
     rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
     rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
     append(task_dir, rec)
@@ -566,7 +569,7 @@ def selftest():
             recs = lines(dsub)
             expect('subagent: tier M dispatch names solo-M, sonnet xhigh, the brief, and the verifier command',
                    rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-M' and (dd['model'], dd['effort']) == ('sonnet', 'xhigh')
-                   and dd['prompt'] == 'the brief' and 'prepare verifier L2' in dd['verifier'])
+                   and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-M-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
             expect('subagent: one solo record with transport subagent and cost null, and no session started',
                    len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
                    and recs[1]['cost_usd'] is None and not mark.exists())
