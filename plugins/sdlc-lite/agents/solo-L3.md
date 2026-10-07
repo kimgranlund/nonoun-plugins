@@ -39,9 +39,9 @@ A lane worktree and branch: the role cannot create them (`hooks/block-stray-work
 
 At 80 percent of `budget_usd` with no ack it exits 4 and prints no JSON (`budget.py ack` raises the ceiling, after asking the user); a ticket with no budget is never blocked. The headless session records cost, usage, turns, and duration; one that reports no cost records `cost_usd` null with a reason, never zero. The conductor then spawns the Agent tool with that JSON's `subagent_type` (`sdlc-lite:solo-L1`, `solo-L2`, or `solo-L3`), `name`, `description`, `model`, `effort`, `prompt`, and `run_in_background`. `SDLC_ROLE=solo` arms the role hooks (no publishing, no pattern kills, no background work) when the host sets it. The headless start, used by fanout lanes until they move to sub-agents, is the same command with `--exec`, or raw and unrecorded:
 
-When the sub-agent ends, the conductor runs `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py" record <ticket folder>/<name>.dispatch.json [--transcript <jsonl>]`: it prices the row and clears the live marker that makes the next solo in this checkout default to a worktree (the 6 hour TTL is only a backstop).
-
 `SDLC_ROLE=solo claude -p --plugin-dir "${CLAUDE_PLUGIN_ROOT}" --agent sdlc-lite:solo --model <model> --effort <effort> --dangerously-skip-permissions -- "<typed brief>"`
+
+When the sub-agent ends, the conductor runs `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py" record <ticket folder>/<name>.dispatch.json [--transcript <jsonl>]`: it prices the row and clears the live marker that makes the next solo in this checkout default to a worktree (the 6 hour TTL is only a backstop).
 
 On Codex the conductor starts `sdlc-solo-l1`, `sdlc-solo-l2`, or `sdlc-solo-l3` for level L1, L2, or L3 through the existing Codex role path.
 
