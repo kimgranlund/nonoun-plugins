@@ -56,7 +56,9 @@ A `.sdlc/` artifact that should outlive its ticket (an architect result, a desig
 3. The promoted file's `source:` key is the link back. The ticket's `handoff.md` is not edited, because it is frozen once a role reads it and hidden after the ticket closes. A line in the notes file (`.sdlc/notes.md`, or `.sdlc/notes/notes.md` with `layout: topics`) may record the promotion.
 4. Which home: a design that is accepted goes to `specs/`, a record of one choice goes to `decisions/`, evidence goes to `reports/`.
 
-Promotion is advice in version 1 and a small script later (build ticket 5). A check cannot know what "should outlive" a ticket, so it only checks a promoted file's front matter.
+Usage: `python3 plugins/sdlc-lite/scripts/promote.py <artifact path> <home> [--slug S] [--ticket T-NNNN] [--note]` does steps 1 to 3 (it adds `source:` and `source-file:`, plus `status: proposed` for planning and decisions or `date:` and a date prefix for reports, and refuses an unknown home or an existing target). Choosing the home stays a person's call.
+
+Promotion is advice in version 1 and the script above in version 2. A check cannot know what "should outlive" a ticket, so it only checks a promoted file's front matter.
 
 ## The docs schema
 
