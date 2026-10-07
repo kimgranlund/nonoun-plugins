@@ -2,7 +2,7 @@
 id: T-0341
 title: "Sub-agent lane commits (fanout prep commit command, the fanout skill's verifier commit, solo sub-agent commits) still use git add -A and can stage *.log and .run.lock"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Gap named in docs/reports/2026-10-07-release-0-21-1.md (fact-check pass 5). Orig
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: delivered by the solo agent (tier S); the ticket's own checks and the fanout gates passed
