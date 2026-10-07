@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:01f4bd8a51a8 -->
+<!-- sdlc-lite:managed:start v1 sha256:c5c3b712e891 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 8
+- proposed: 7
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
@@ -17,10 +17,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0354 Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied (0354-prepare-env-prefix-allowlist)
   - T-0356 Route the L3 Fable verifier to L4, L5, merge and security tickets only; replay T-0333 on L2 first (0356-verifier-routing-by-level)
   - T-0357 Test solo L2 Sonnet at high versus xhigh on past tickets (0357-solo-l2-effort-sweep)
-  - T-0358 A solo lane stops early when the ticket is already fixed or stale (0358-solo-already-fixed-check)
 - ready: 0
 - blocked: 0
-- done: 318
+- done: 319
 - dropped: 25
 
 ## Procedures

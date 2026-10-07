@@ -2,7 +2,7 @@
 id: T-0358
 title: "A solo lane stops early when the ticket is already fixed or stale"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Fleet cost analysis of 2026-10-07 (all-time deduped run records, five repos): ve
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
