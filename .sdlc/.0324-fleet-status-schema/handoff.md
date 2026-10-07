@@ -2,7 +2,7 @@
 id: T-0324
 title: "JSON schema for the fleet_status collect output, and render as one plain aligned CLI table per section"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0323]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,19 @@ User direction on 2026-10-06: capture each repo's status in a JSON schema or sim
 
 ## Constraints
 No em or en dashes. No push or publish. Model and effort defaults unchanged.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/fleet_status.py selftest`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `python3 -c "import json; json.load(open('plugins/sdlc-lite/skills/fleet-status/resources/fleet-status.schema.json', encoding='utf-8'))"`
+- `python3 plugins/sdlc-lite/scripts/fleet_status.py collect --no-gh --no-write 2>/dev/null | python3 -c "import sys, json; sys.path.insert(0, 'plugins/sdlc-lite/scripts'); import fleet_status as f; e = f.schema_errors(json.load(sys.stdin), f.load_schema()); print(e); sys.exit(1 if e else 0)"`
+- (guard) `python3 plugins/sdlc-lite/scripts/fleet_status.py collect --no-gh --no-write 2>/dev/null | python3 -c "import sys, json; sys.path.insert(0, 'plugins/sdlc-lite/scripts'); import fleet_status as f; d = json.load(sys.stdin); del d['delta']; e = f.schema_errors(d, f.load_schema()); print(e); sys.exit(0 if e else 1)"`
+- `python3 plugins/sdlc-lite/scripts/fleet_status.py render --no-write --no-gh | python3 -c "import sys; t = sys.stdin.read(); sys.exit(0 if ('|' not in t and chr(0x2014) not in t and chr(0x2013) not in t and 'Repo' in t and '-----' in t) else 1)"`
+- `grep -q 'fleet-status.schema.json' docs/maintenance/sdlc-internals.md`
+- `grep -q 'resources/fleet-status.schema.json' plugins/sdlc-lite/skills/fleet-status/SKILL.md`
+- `git diff --check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
