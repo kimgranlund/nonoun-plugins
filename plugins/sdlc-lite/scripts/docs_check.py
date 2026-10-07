@@ -358,7 +358,7 @@ def run(root, only=None, today=None, disable=()):
                     out.append(Finding('warning', 'B-2a', '.sdlc/' + rel, 'loose Markdown file outside the record types'))
                 continue
             top = rel.split('/', 1)[0]
-            if top in SDLC_RECORD_DIRS or TICKET_DIR.match(top) or top in flagged:
+            if top in SDLC_RECORD_DIRS or TICKET_DIR.match(top) or top.startswith('verify-') or top in flagged:
                 continue
             if top + '/handoff.md' in have or any(p.startswith(top + '/step-') for p in sdlc):
                 continue
@@ -528,6 +528,7 @@ def gate_boundary(runner):
         _write(tmp, '.sdlc/wave-a/step-1/handoff.md', '# H\n')
         _write(tmp, '.sdlc/wave-b/handoff.md', '# H\n')
         _write(tmp, '.sdlc/messages/inbox/m.md', '# M\n')
+        _write(tmp, '.sdlc/verify-x/verdict.md', '# V\n')  # verifier record folder
         _write(tmp, '.sdlc/AGENTS.md', '# A\n')
         _write(tmp, '.sdlc/roadmap.md', '# R\n')
         # layout: topics record folders: ticket-less tasks in work/, the notes file in notes/, each with an entry file

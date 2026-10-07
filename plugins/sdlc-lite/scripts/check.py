@@ -167,6 +167,8 @@
    name, the S|M|L, `S, M, L`, and S/M/L lists, and an `S $5, M $30` budget list); ticket levels and solo levels are L1 to L5. A line marked `ALIAS_OK` passes
    only in a file of ALIAS_FILES (the deprecated aliases kept for one release). Negative controls: a planted `tier S` line, a
    planted `solo-M` line, and an `ALIAS_OK` line outside ALIAS_FILES are each flagged; the same marked line in an alias file is not.
+44. Generated-definition parity (T-0351): `codex_roles.py generate --check` and `claude_roles.py generate --check` pass inside check.py; negative control: a planted edit
+   to a temp copy of agents/conductor.md without regenerating is flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -1079,6 +1081,20 @@ for _why, _rel, _bad in (('a planted tier S line', 'agents/solo.md', 'Start at t
     if not retired_vocab_bad(_rel, 'clean line\n' + _bad + '\n'): errors.append(f'check.py: one level system negative control not flagged for {_why}')
 if retired_vocab_bad('hooks/_role.sh', "re_solo='^(solo)-[SML]$'  # solo-S|M|L ALIAS_OK\n") or retired_vocab_bad('agents/solo.md', 'level L1, L2, L3; size L4; solo-L1\n'):
     errors.append('check.py: one level system flagged an allowed line')
+# Generated-definition parity (T-0351): an agent source edited without regenerating fails here, not only in check.sh.
+def regen_drift(plugin):
+    out = []
+    for script, name in (('codex_roles.py', 'Codex'), ('claude_roles.py', 'Claude')):
+        r = subprocess.run([sys.executable, str(plugin/'scripts'/script), 'generate', '--check'], capture_output=True, text=True)
+        if r.returncode: out.append(f'{name} generated agent definitions drift from their sources; run {script} generate: ' + (r.stdout + r.stderr).strip().splitlines()[-1:][0] if (r.stdout + r.stderr).strip() else f'{name} generated agent definitions drift; run {script} generate')
+    return out
+errors.extend(regen_drift(root))
+_rg = pathlib.Path(tempfile.mkdtemp())
+try:
+    shutil.copytree(root, _rg/'p', ignore=shutil.ignore_patterns('.git', '__pycache__'))
+    (_rg/'p'/'agents'/'conductor.md').write_text((_rg/'p'/'agents'/'conductor.md').read_text() + '\nplanted edit\n')
+    if not regen_drift(_rg/'p'): errors.append('check.py: regenerate parity negative control not flagged for an edited agent source')
+finally: shutil.rmtree(_rg, ignore_errors=True)
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
