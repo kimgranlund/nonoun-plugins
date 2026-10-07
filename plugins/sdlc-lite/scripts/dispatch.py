@@ -710,6 +710,16 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     return 0
 
 
+def solo_dispatch(path):
+    """The dict of a solo_run.py dispatch file (role solo, an attempt_id, no attempt_file), else None."""
+    try:
+        d = json.loads(Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    ok = isinstance(d, dict) and d.get('role') == 'solo' and d.get('attempt_id') and d.get('artifacts_dir') and 'attempt_file' not in d
+    return d if ok else None
+
+
 def read_stdin():
     try:
         return '' if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read()
@@ -767,6 +777,12 @@ def main(argv):
             used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
                 if cost_estimate.transcript_usage(args.transcript) else used
         try:
+            sd = solo_dispatch(args.dispatch)
+            if sd:  # T-0350: a solo_run.py dispatch has no attempt file; recording it prices the row and clears the live marker
+                import solo_run
+                cost = solo_run.complete(sd['artifacts_dir'], sd['attempt_id'], sd.get('tier') or 'L1', args.transcript, args.tokens)
+                print('solo recorded%s; live marker cleared' % ('' if cost is None else ', cost_usd %s' % cost))
+                return 0
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
                           resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None,
                           transcript=args.transcript)
