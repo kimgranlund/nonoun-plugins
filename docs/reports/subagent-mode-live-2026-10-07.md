@@ -139,3 +139,7 @@ Solo rows: priced rows do not exist on the fanout path. Neither lane has a `runs
 ### Still unverified
 
 Account switch, resume ladder, interactive background sub-agents and the other items listed under Unverified above are unchanged by this rerun. The R2 fix is observed on size S lanes; a size M lane through `land` with a verifier result on a host-named branch was exercised only in R1 (before the fix, forced `--lane solo`) and by the selftest.
+
+### T-0331 calibration
+
+The conductor text and the chain skill now pass `dispatch.py record --transcript`; `fanout.py prep` writes an unpriced `role solo` row and `fanout.py land --transcript` prices it. The transcript undercounts input and output tokens (R1 verifier: output 1697 vs host 18417, input 258 vs 51956), so `adapters/claude/prices.json` carries `usage_calibration` (input x100, output x2), applied per field in `cost_estimate.estimate`. Fitted band, estimate over host: L2 opus verifier 1.22, L3 fable verifier 1.12, R1 fable verifier 0.48. The L2 and L3 rows are within 35 percent; the R1 row stays under the band (selftest asserts 0.45 to 1.35, with a negative control showing the uncalibrated R1 estimate falls below 0.45). The calibration is fitted on three rows and not observed live after this change.

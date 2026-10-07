@@ -1,5 +1,5 @@
 {
-  "_note": "Blended USD per million tokens (input + cache + output summed) per model family, fitted to recorded runs.jsonl lines holding usage and a real cost_usd. cost_estimate.py selftest checks it stays within 35 percent per model. usage_input is USD per million input tokens fitted to the host totals in docs/reports/subagent-mode-live-2026-10-07/host-cost.txt (T-0328); usage_multipliers scale it for output, cache read and cache write tokens. haiku is scaled from its blended rate, not fitted.",
+  "_note": "Blended USD per million tokens (input + cache + output summed) per model family, fitted to recorded runs.jsonl lines holding usage and a real cost_usd. cost_estimate.py selftest checks it stays within 35 percent per model. usage_input is USD per million input tokens fitted to the host totals in docs/reports/subagent-mode-live-2026-10-07/host-cost.txt (T-0328); usage_multipliers scale it for output, cache read and cache write tokens. usage_calibration (T-0331) multiplies the transcript input and output counts, which carry early partial streamed values and undercount the host (R1 verifier: output 1697 vs 18417, input 258 vs 51956); fitted band over the L2 opus, L3 fable and R1 fable verifier rows: estimate/host 0.48 to 1.31 (the R1 row stays below the 35 percent band, the transcript cannot be repaired further). haiku is scaled from its blended rate, not fitted.",
   "unit": "usd_per_million_tokens",
   "models": {
     "fable": 3.28,
@@ -12,6 +12,10 @@
     "opus": 3.0,
     "sonnet": 2.25,
     "haiku": 0.58
+  },
+  "usage_calibration": {
+    "input_tokens": 100,
+    "output_tokens": 2
   },
   "usage_multipliers": {
     "input_tokens": 1,
