@@ -7,7 +7,7 @@
     {
       "name": "sdlc-lite",
       "source": "./plugins/sdlc-lite",
-      "description": "SDLC Lite agent team: leveled builders, planners, verifiers and more, run headless at a fixed model and effort per level."
+      "description": "SDLC Lite agent team: leveled builders, planners, verifiers and more, dispatched as sub-agents on Claude and natively on Codex, at a fixed model and effort per level."
     },
     {
       "name": "progressive-context",

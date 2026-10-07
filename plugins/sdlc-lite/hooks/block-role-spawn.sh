@@ -4,8 +4,8 @@
 #
 #  - subagent_type sdlc-lite:<role>-L<n> is allowed only as a prepared dispatch, that is only when
 #    all four hold, and each failed condition is its own denial:
-#      1. subagent_type is sdlc-lite:<role>-L<n> (a level definition, not sdlc-lite:solo-M,
-#         sdlc-lite:messenger, or a bare role name);
+#      1. subagent_type is sdlc-lite:<role>-L<n> (a level definition, or sdlc-lite:solo-S|M|L on
+#         its dispatch record and model alone; not sdlc-lite:messenger or a bare role name);
 #      2. name is <role>-L<n>-<slug>[-<k>], the same <role>-L<n> as the subagent_type;
 #      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line: the
 #         file <name>.dispatch.json, or any *.dispatch.json whose "name" is this name (dispatch.py

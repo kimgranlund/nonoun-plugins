@@ -3,7 +3,7 @@ status: proposed
 ---
 # Sub-agent execution mode (Claude host)
 
-Version 0.1, 2026-10-06. Proposal; nothing here is built. Tickets T-0275 to T-0288. The user decided (binding): one execution mode for every multi-agent session on the Claude host, and it is in-session sub-agents, because execution must survive account switches (`/login`). `claude -p` children are retired from the pipeline. Codex keeps its native exchange.
+Version 0.1, 2026-10-06. Built in SDLC Lite 0.21.0 except T-0288 (retiring the Claude headless path), which is open, so `claude -p` and `run.sh`'s Claude branch remain as a fallback; sections below that say "becomes" or "is retired" describe the end state, not the shipped one ([release record](../../reports/release-0.21.0.md)). Tickets T-0275 to T-0288. The user decided (binding): one execution mode for every multi-agent session on the Claude host, and it is in-session sub-agents, because execution must survive account switches (`/login`). `claude -p` children are retired from the pipeline. Codex keeps its native exchange.
 
 ## Evidence and the decision
 

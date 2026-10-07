@@ -27,7 +27,7 @@
 - [SDLC Lite cost control](specs/sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
 - [SDLC Lite cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
 - [SDLC Lite pillars](specs/sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
-- [Sub-agent execution mode](planning/sdlc-lite/subagent-mode.md): proposed single Claude execution mode (in-session sub-agents instead of `claude -p`) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
+- [Sub-agent execution mode](planning/sdlc-lite/subagent-mode.md): single Claude execution mode (in-session sub-agents, shipped in 0.21.0; retiring `claude -p` is T-0288, open) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
 - [SDLC Lite](specs/sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.
 
 - [SDLC Lite implementation reference](references/sdlc-internals.md): selectively loaded runner and workflow details.
@@ -49,6 +49,7 @@
 - [Fleet retro 2026-10-06](reports/fleet-retro-2026-10-06.md): dated live run of `/sdlc-lite:fleet-retro` (T-0308) on agent-ui and ui-kit-maison: the cost-ranked findings, the sampled verifier, the planted-claim control, and the post-0.20.11 re-measure; the interview step did not run (no person present).
 - [Ask skill live run](reports/ask-skill-live-run.md): dated live run for T-0231 of `/sdlc-lite:ask`: what the sweep found before and after the fix, the plain-text fallback in headless runs, and what was not exercised.
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC Lite, with verifier history and known limits.
+- [Release 0.21.0](reports/release-0.21.0.md): the sub-agent execution mode for Claude (T-0275 to T-0286, T-0326 to T-0332), upgrade and merge notes, what the live runs show and what stays unverified, and that headless `claude -p` remains a fallback with T-0288 open.
 - [Release 0.20.12](reports/release-0.20.12.md): the two fleet skills, `/sdlc-lite:fleet-retro` and `/sdlc-lite:fleet-status`, and the collector, detect, config and status scripts behind them (T-0305 to T-0308, T-0310 to T-0312), with the merge notes, guard renumbering for the sub-agent mode branch, live read-only runs and what was not exercised.
 - [Release 0.20.10](reports/release-0.20.10.md): the `.sdlc` boundary checks in `docs_check.py` and four defect fixes (fanout preflight, session-limit resume, close citation scan, a Codex selftest path check), with known limits.
 - [Release 0.20.9](reports/release-0.20.9.md): `/sdlc-lite:ask`, the document inventory, the docs schema and `docs_check.py`, the plan skills, the `docs/reports` rename and three defect fixes, with known limits.
