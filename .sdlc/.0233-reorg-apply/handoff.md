@@ -2,7 +2,7 @@
 id: T-0233
 title: "Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore)"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed
+status: done
 size: L              # S | M | L | XL
 priority: P2
 depends: [T-0232]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,7 @@ plan review: replan: step 1: interfaces: item 7 says the link and mention forms 
 plan review: replan: step 2: acceptance criteria: planner-L3.md:83 makes `follow.txt` with at least two lines a hard criterion, while reorganization.md:151 lists `git log --follow` across a move plus rewrite as the unverified assumption the run is meant to test. Probe: a 3-line file moved with one link rewritten gave `git log --follow --oneline` one line (rename not detected); a 32-line file with one rewritten line gave two. docs/codex-role-execution.md is 87 lines (`wc -l`), so the criterion is expected to pass, but it turns a measurement into a pass condition without saying so; a low-similarity moved file would fail step 2 for a reason outside the Do.
 plan review: replan: step 2: acceptance criteria: planner-L3.md:87 uses the bare `! grep -q <path>` form for four files with no `test -f`; grep exits 2 on a missing path and `!` turns that into a pass (checks-that-bite bestiary). Low severity because all four paths are tracked today (`git ls-files docs/repo-onboarding/reorganization-plan-procedure.md docs/repo-onboarding/reorganization.md docs/repo-onboarding/README.md` lists them).
 plan review: replan: plan: assumptions: all other assumptions verified. `onboard.parse_layout` on the empty-sections fixture returns `Layout(homes={}, frozen=[], kinds={}, decide=(), legacy=[])` (ran it); `fcntl.flock(LOCK_EX | LOCK_NB)` at run_lifecycle.py:29-31; `__pycache__/` at .gitignore:11; sibling import at docs_check.py:26-27; `token_regex`/`in_url` at rename_refs.py:44-52; `find_block` at onboard.py:741, `digest` at :523, `START_MARKER` at :312, `frozen_match`/`_frozen` at :243-262; no citation of the four live-run files in a fenced block of a non-frozen Markdown file, in a non-Markdown file outside docs/reports/, or inside a URL (three greps, all empty); `git clone -q "$PWD" <tmp>/clone` from this worktree works and carries two unheld tracked `.run.lock` files; T-0232 is closed (`.sdlc/.0232-reorg-inventory`); `steps.py lint` prints `steps lint: ok`.
+
+## Closed
+
+2026-10-06: built and merged by fanout lane

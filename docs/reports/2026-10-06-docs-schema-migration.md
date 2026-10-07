@@ -49,7 +49,7 @@ The mapping table in the design, applied by what each file is. Moves not in the 
 
 ## Batches
 
-Each batch: `rename_refs.py plan` (the dry run, which is also the citing scan), `apply`, `git mv`, then `links`, `docs_check.py` and `check.py`. The maps and the `--skip` are in the shell scripts named below; every batch skipped `.sdlc/0244-docs-schema-migration/*`. The scan covered every tracked text file, with no frozen file touched (`bench/results/` and `adapters/codex/agents/` are not cited by any moved path).
+Each batch: `rename_refs.py plan` (the dry run, which is also the citing scan), `apply`, `git mv`, then `links`, `docs_check.py` and `check.py`. The maps and the `--skip` are in the shell scripts named below; every batch skipped `.sdlc/.0244-docs-schema-migration/*`. The scan covered every tracked text file, with no frozen file touched (`bench/results/` and `adapters/codex/agents/` are not cited by any moved path).
 
 | Batch | Moves | Files rewritten | References | Broken links after | `docs_check.py` errors after |
 | --- | --- | --- | --- | --- | --- |
@@ -106,4 +106,4 @@ Allowlist for the stale-reference check (`rename_refs.py check`): `.sdlc/*0244*`
 
 ## Verification
 
-Final `bash plugins/sdlc-lite/scripts/check.sh`: exit 1 on the same items as the baseline and on nothing else (the `codex_roles.py generate --check` drift, `FAILED (failures=5, errors=1)` in `codex-selftest.py`, `FAILED (failures=3)` in `lifecycle-selftest.py`); `docs_check.py selftest`, `rename_refs.py selftest`, `onboard.py selftest`, `check.py` and the new `docs_check.py --root` gate pass; `python3 scripts/check-packaging.py` passes; `git diff --check HEAD` is clean. One independent verifier (L3, a different model family from the solo session) ran the eight acceptance criteria in a throwaway worktree, including mutation reds for the B-1a exemption and for both `rename_refs.py` additions, and returned `pass`: `.sdlc/0244-docs-schema-migration/verifier-L3.md`.
+Final `bash plugins/sdlc-lite/scripts/check.sh`: exit 1 on the same items as the baseline and on nothing else (the `codex_roles.py generate --check` drift, `FAILED (failures=5, errors=1)` in `codex-selftest.py`, `FAILED (failures=3)` in `lifecycle-selftest.py`); `docs_check.py selftest`, `rename_refs.py selftest`, `onboard.py selftest`, `check.py` and the new `docs_check.py --root` gate pass; `python3 scripts/check-packaging.py` passes; `git diff --check HEAD` is clean. One independent verifier (L3, a different model family from the solo session) ran the eight acceptance criteria in a throwaway worktree, including mutation reds for the B-1a exemption and for both `rename_refs.py` additions, and returned `pass`: `.sdlc/.0244-docs-schema-migration/verifier-L3.md`.

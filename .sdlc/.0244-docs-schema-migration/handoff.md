@@ -2,7 +2,7 @@
 id: T-0244
 title: "Migrate this repository's docs/ to the schema through the reorganization tooling"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2
 depends: [T-0242, T-0243, T-0246]   # T-NNNN, file:<path>, cap:<name>
@@ -34,3 +34,7 @@ Run from the repository root. The record is `docs/reports/2026-10-06-docs-schema
 6. `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` and `python3 plugins/sdlc-lite/scripts/rename_refs.py selftest` print PASS; the B-1a change has a positive case and a negative control in the selftest (a generated name in an evidence folder is not flagged, the same name under `docs/specs/` is flagged, a variant that ignores the exemption fails the gate).
 7. `plugins/sdlc-lite/scripts/check.sh` runs `docs_check.py --root` on this repository; with a stray `docs/stray-note.md` staged, the gate line exits 1 naming D-2, and without it exits 0.
 8. `bash plugins/sdlc-lite/scripts/check.sh` fails only on what failed before the change (`codex_roles.py generate --check` drift, `FAILED (failures=5, errors=1)` in `codex-selftest.py`, `FAILED (failures=3)` in `lifecycle-selftest.py`); `python3 scripts/check-packaging.py` passes; `git diff --check HEAD` is clean.
+
+## Closed
+
+2026-10-06: built and merged by fanout lane

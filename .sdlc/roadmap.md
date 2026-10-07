@@ -237,14 +237,14 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0230 | [.0230-fanout-codex-report-and-gate](.0230-fanout-codex-report-and-gate/handoff.md) | fanout report says 'tier S: sonnet low' on a Codex run, and its gate can run 0 tests | bug | S | P2 | none | 🟢 done |
 | T-0231 | [.0231-ask-skill](.0231-ask-skill/handoff.md) | /sdlc-lite:ask: sweep open questions and blockers, ask once with reasoned options | feature | S | P2 | none | 🟢 done |
 | T-0232 | [.0232-reorg-inventory](.0232-reorg-inventory/handoff.md) | inventory.py: read-only document inventory and reorganization plan procedure | feature | M | P2 | none | 🟢 done |
-| T-0233 | [0233-reorg-apply](0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L | P2 | T-0232 | ⏳ proposed |
+| T-0233 | [.0233-reorg-apply](.0233-reorg-apply/handoff.md) | Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) | feature | L | P2 | T-0232 | 🟢 done |
 | T-0240 | [.0240-docs-schema-design](.0240-docs-schema-design/handoff.md) | Design: strict docs/ folder schema and the docs vs .sdlc boundary | feature | M | P1 | none | 🟢 done |
 | T-0241 | [.0241-docs-schema-parser](.0241-docs-schema-parser/handoff.md) | Schema format: ## Kinds registry table, ## Decide and ## Legacy in the layout parser | feature | S | P2 | none | 🟢 done |
 | T-0242 | [.0242-docs-check-script](.0242-docs-check-script/handoff.md) | docs_check.py (D-1 to D-12), setup entries for homes, and the default layout template | feature | M | P2 | T-0241 | 🟢 done |
 | T-0243 | [.0243-sdlc-boundary-checks](.0243-sdlc-boundary-checks/handoff.md) | The .sdlc boundary checks B-1a, B-2a, B-3a in docs_check.py | feature | S | P2 | T-0242 | 🟢 done |
 | T-0245 | [.0245-docs-promotion-helper](.0245-docs-promotion-helper/handoff.md) | Promotion helper: copy a .sdlc artifact into a docs home with source front matter | feature | S | P2 | T-0241 | 🟢 done |
 | T-0246 | [.0246-rename-validation-to-reports](.0246-rename-validation-to-reports/handoff.md) | Rename docs/validation to docs/reports and rewrite references | chore | M | P2 | none | 🟢 done |
-| T-0244 | [0244-docs-schema-migration](0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | ⏳ proposed |
+| T-0244 | [.0244-docs-schema-migration](.0244-docs-schema-migration/handoff.md) | Migrate this repository's docs/ to the schema through the reorganization tooling | feature | M | P2 | T-0242, T-0243, T-0246 | 🟢 done |
 | T-0247 | [.0247-pc-gap-analysis](.0247-pc-gap-analysis/handoff.md) | Generative-systems gap analysis of Progressive Context and its use for docs/ and .sdlc/ | spike | M | P2 | none | 🟢 done |
 | T-0248 | [.0248-placement-proof](.0248-placement-proof/handoff.md) | Placement proof for the context registry | chore | M | P2 | none | 🟢 done |
 | T-0249 | [.0249-plan-goal](.0249-plan-goal/handoff.md) | plan-goal skill and the plan_check.py validator | feature | M | P2 | none | 🟢 done |
