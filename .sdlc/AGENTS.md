@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:3d76eb89728e -->
+<!-- sdlc-lite:managed:start v1 sha256:425828e7b159 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 16
+- proposed: 19
   - T-0233 Gated apply for an approved reorganization plan (dry run, citing-file scan, commit per batch, restore) (0233-reorg-apply)
   - T-0244 Migrate this repository's docs/ to the schema through the reorganization tooling (0244-docs-schema-migration)
   - T-0254 Handoff and evidence lints with citation resolver (0254-pc-evidence-lints)
@@ -26,6 +26,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0319 Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict (0319-fleet-verify-0307-0310)
   - T-0325 Make every skill self-contained: ship its resources, drop repo-relative path assumptions (0325-skills-self-contained)
+  - T-0326 fanout prep lane dispatch is refused by the spawn gate (T-0287 finding 2) (0326-fanout-prep-spawn-gate)
+  - T-0327 fanout land misreads host worktree branch names worktree-agent-<id> as external lanes (T-0287 finding 3) (0327-fanout-land-branch-name)
+  - T-0328 Sub-agent cost estimate is 7 to 12 percent of host and null for solo rows (T-0287 finding 4) (0328-subagent-cost-estimate-gap)
 - ready: 0
 - blocked: 0
 - done: 277
