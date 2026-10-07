@@ -9,6 +9,10 @@ Usage:
                                                the findings.jsonl path
   traces.py clusters --max N [--repo REPO] [--out DIR]
                                                prints the top N cause clusters as JSON
+  traces.py context <log> [--backend claude|codex] [--codex-home DIR]
+                                               prints one JSON line: the paths one run read, or a
+                                               status ('log absent', 'rollout absent'); run.sh
+                                               stores it as loaded_context in runs.jsonl
 detect and clusters resolve the out dir as ingest does (REPO defaults to `.`). None spawns a
 claude or codex process.
 
