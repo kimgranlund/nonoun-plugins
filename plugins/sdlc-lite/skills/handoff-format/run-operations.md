@@ -43,7 +43,7 @@ cd "$wt"
 run.sh builder <level> /abs/path/.sdlc/<task>/step-N/handoff.md
 run.sh verifier <level> /abs/path/.sdlc/<task>/step-N/handoff.md
 git -C "$wt" switch -c <branch>          # only to keep the work
-git -C "$wt" add -A && git -C "$wt" commit -m "<message>"
+git -C "$wt" add -A -- . ':(exclude,glob)**/*.log' ':(exclude,glob)**/.run.lock' ':(exclude,glob)**/*.running' && git -C "$wt" commit -m "<message>"
 cd /
 git -C <repo> worktree remove "$wt"      # no --force
 rmdir "$(dirname "$wt")"
