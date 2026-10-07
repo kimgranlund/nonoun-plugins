@@ -1,10 +1,10 @@
 # Repository onboarding
 
-Proposals for preparing a repository that adopts SDLC Lite. The design is implemented; the reorganization is not.
+Proposals for preparing a repository that adopts SDLC Lite. The design is implemented, and so are the reorganization's inventory and apply; glob classification is not.
 
 - [Entry files and docs layout](design.md): the `onboard` skill, entry file rules, upsert behavior, default layout, and templates. Ticket T-0160. Role access is ticket T-0162.
-- [Document reorganization](reorganization.md): draft rules for plan, approval, and apply, with open findings. Spike T-0161.
-- [Reorganization plan procedure](reorganization-plan-procedure.md): step 1, a read-only inventory then a model-written plan; apply is not built. Tickets T-0232 and T-0233.
+- [Document reorganization](reorganization.md): rules for plan, approval, and apply, with how each open finding was settled. Spike T-0161, apply T-0233.
+- [Reorganization plan procedure](reorganization-plan-procedure.md): a read-only inventory, a model-written plan, then `reorg.py` applies the approved plan. Tickets T-0232 and T-0233.
 - [Docs schema](../docs-schema/README.md): the strict folder schema that reorganization targets.
 - [Layered context pattern](layered-context-pattern.md): reference on how Claude Code and Codex load nested entry files.
 
@@ -16,3 +16,4 @@ Evidence:
 - [Nested entry file loading](../reports/nested-entry-file-loading.md): live probe on both hosts.
 - [Onboard live run](../reports/onboard-live-run.md): live run gate on both hosts, with the negative control.
 - [Reorganization inventory live run](../reports/reorg-inventory-live-run.md): `inventory.py` on two repositories and one plan, with a spot check.
+- [Reorganization apply live run](../reports/reorg-apply-live-run.md): `reorg.py` moved four documents in a clone of this repository in two batches, with both refusals.

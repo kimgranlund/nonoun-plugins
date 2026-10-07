@@ -1,8 +1,8 @@
 # Reorganization plan procedure
 
-Status: step 1 of the reorganization project. A plan is written; nothing is moved. The apply step is not built (see [the draft rules](reorganization.md) and ticket T-0233).
+Status: built. Steps 1 and 2 write a plan and move nothing (T-0232); step 3 applies an approved plan with `reorg.py` (T-0233). The rules are in [the reorganization rules](reorganization.md).
 
-The work splits in two so each half does what it is good at. A script reads the repository and states facts. A model session reads those facts and proposes a plan. A later script, not built yet, applies only a plan the user approved.
+The work splits in two so each half does what it is good at. A script reads the repository and states facts. A model session reads those facts and proposes a plan. A second script, `reorg.py`, applies only a plan the user approved.
 
 ## Step 1: the facts
 
@@ -32,14 +32,20 @@ Rules for the session:
 - A flag is a lead, not a verdict. A `duplicate` of templated READMEs is usually intended; say so when the documents are the same kind of file.
 - State what was not read.
 
-## Step 3: the apply gate (not built)
+## Step 3: apply
 
-The plan is never applied by the session that wrote it. A later script applies a plan only after the user approves it, and it must:
+The plan is never applied by the session that wrote it. The session or the user turns the approved moves into a plan JSON file outside the repository (the format is in `reorg.py`'s header), and the repository needs a `docs/layout.md` that lists its frozen paths. Then, from the user's session:
 
-1. Refuse unless the plan's digest matches the repository now (an edited document means plan again).
-2. Do a dry run that prints every move and every link rewrite.
-3. Scan for citing files before each move, as `tickets.py close` does for ticket folders, and refuse a move that would orphan a citation it cannot rewrite.
-4. Make one Git commit per batch, so `git revert` undoes a batch.
-5. Finish with a link check against the baseline taken before the first move, and restore the working tree when it fails.
+```
+python3 <plugin>/scripts/reorg.py apply <plan>.json --root <repo> --dry-run
+python3 <plugin>/scripts/reorg.py apply <plan>.json --root <repo> --approve <digest>
+```
 
-The remaining requirements are the refusals and validation gates in [the draft rules](reorganization.md).
+The dry run writes nothing. It prints every move, link fix, and rewrite, the links already broken before the first batch, and a digest of the repository and the plan. Passing that digest to `--approve` is the approval. The apply:
+
+1. Refuses unless the digest still matches (an edited document or plan means a new dry run), and refuses every case in [the refusals](reorganization.md#refusals) before any write, printing `reorg.py: refused: <reason>`.
+2. Rewrites every citation of a moved file it can, and refuses a citation it cannot rewrite.
+3. Makes one Git commit per batch, so `git revert` undoes a batch.
+4. Finishes each batch with a link check against the baseline taken before the first move, and restores the start when it fails.
+
+The evidence on this repository is [the apply live run](../reports/reorg-apply-live-run.md).

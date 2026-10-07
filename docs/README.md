@@ -12,6 +12,7 @@
 - [Parked tickets review](reports/parked-tickets-review-2026-10-06.md): dated review of nine tickets parked since 2026-10-04 against the pillars, with the verdict and code evidence for each.
 - [Broken links cleanup](reports/broken-links-cleanup.md): dated record of the Markdown link cleanup (T-0257), the counter's code exclusion, the 12 allowlisted links, and the check.py baseline guard.
 - [Reorganization inventory live run](reports/reorg-inventory-live-run.md): read-only `inventory.py` on two repositories and one model-written plan, with a six-claim spot check and limits.
+- [Reorganization apply live run](reports/reorg-apply-live-run.md): dated record of `reorg.py` moving four documents in a clone of this repository in two batches, the listing, the digest and approval refusals, the link counts, and the limits.
 - [Docs schema](docs-schema/README.md): proposed strict folder schema for `docs/`, the `docs/` versus `.sdlc/` boundary, and the checks that enforce them.
 
 - [Ticket stages and message bus](ticket-stages/README.md): the `.sdlc/` router and the opt-in `tickets/` root (built), the cross-harness mailbox and its `messenger` agent (built); stage folders remain a proposal.

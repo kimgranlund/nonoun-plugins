@@ -1,0 +1,21 @@
+{
+  "attempt_id": "7bc4ec7c3b9c434c9938f1dd892d0ae7",
+  "name": "planner-L3",
+  "role": "planner",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "xhigh",
+  "routing_reason": "planner L3: size L, risky file-moving apply step with link rewriting across a repo, three earlier review rounds found edge cases",
+  "reason_source": "caller",
+  "status": "completed",
+  "started_at": "2026-10-07T01:12:33.251061+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b4/reorg/.sdlc/0233-reorg-apply/handoff.md",
+  "owner_pid": 85715,
+  "handoff_sha256": "84860ffd6f689bcc022d832a87dc0b8227310ec5bc9479b7aad287f247e0898f",
+  "process_pid": 86225,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T01:40:43.206253+00:00"
+}

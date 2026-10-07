@@ -1,0 +1,32 @@
+batch 1: references
+move docs/codex-role-execution.md -> docs/references/codex-role-execution.md
+move docs/plugin-compatibility.md -> docs/references/plugin-compatibility.md
+rewrite AGENTS.md:28 docs/codex-role-execution.md -> docs/references/codex-role-execution.md
+rewrite AGENTS.md:30 docs/plugin-compatibility.md -> docs/references/plugin-compatibility.md
+rewrite README.md:10 docs/plugin-compatibility.md -> docs/references/plugin-compatibility.md
+rewrite README.md:26 docs/codex-role-execution.md -> docs/references/codex-role-execution.md
+rewrite docs/AGENTS.md:12 codex-role-execution.md -> references/codex-role-execution.md
+rewrite docs/AGENTS.md:12 plugin-compatibility.md -> references/plugin-compatibility.md
+rewrite docs/README.md:6 plugin-compatibility.md -> references/plugin-compatibility.md
+rewrite docs/README.md:8 codex-role-execution.md -> references/codex-role-execution.md
+rewrite docs/claude-response.md:60 codex-role-execution.md -> references/codex-role-execution.md
+rewrite docs/codex-role-execution.md:46 ../.sdlc/evals/AGENTS.md -> ../../.sdlc/evals/AGENTS.md
+rewrite docs/codex-role-execution.md:48 reports/codex-account-models-2026-09-30.md -> ../reports/codex-account-models-2026-09-30.md
+rewrite docs/codex-role-execution.md:81 reports/native-codex-smoke.json -> ../reports/native-codex-smoke.json
+rewrite docs/codex-role-execution.md:87 ../plugins/sdlc-lite/skills/handoff-format/run-operations.md -> ../../plugins/sdlc-lite/skills/handoff-format/run-operations.md
+rewrite docs/docs-schema/design.md:368 docs/codex-role-execution.md -> docs/references/codex-role-execution.md
+rewrite docs/generative-constructs/README.md:23 ../plugin-compatibility.md -> ../references/plugin-compatibility.md
+rewrite docs/maintenance/sdlc-internals.md:5 ../codex-role-execution.md -> ../references/codex-role-execution.md
+rewrite plugins/progressive-context/HARNESS-NOTES.md:7 ../../docs/plugin-compatibility.md -> ../../docs/references/plugin-compatibility.md
+rewrite plugins/sdlc-lite/AGENTS.md:15 ../../docs/codex-role-execution.md -> ../../docs/references/codex-role-execution.md
+rewrite plugins/sdlc-lite/HARNESS-NOTES.md:33 ../../docs/codex-role-execution.md -> ../../docs/references/codex-role-execution.md
+batch 2: other
+move docs/claude-handoff.md -> docs/other/claude-handoff.md
+move docs/claude-response.md -> docs/other/claude-response.md
+rewrite docs/claude-handoff.md:5 reports/readiness-recovery-validation.md -> ../reports/readiness-recovery-validation.md
+rewrite docs/claude-handoff.md:9 docs/claude-response.md -> docs/other/claude-response.md
+rewrite docs/claude-response.md:60 references/codex-role-execution.md -> ../references/codex-role-execution.md
+rewrite docs/docs-schema/design.md:370 docs/claude-handoff.md -> docs/other/claude-handoff.md
+baseline docs/generative-constructs/README.md: ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+baseline docs/generative-constructs/progressive-context-plugin.md: ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+digest b64030095d333be9be7352051375013645a11722ad04ef581c1c5008e4707dbf

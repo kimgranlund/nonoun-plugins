@@ -1,0 +1,29 @@
+$ cd <clone> && python3 <this tree>/plugins/sdlc-lite/scripts/rename_refs.py links   # before the apply, at 49be510d
+links: 838 checked, 12 broken
+  broken: .sdlc/.0185-evals-folder/planner-L3.md -> ../.sdlc/evals/AGENTS.md
+  broken: .sdlc/.0185-evals-folder/step-4/handoff.md -> ../../.sdlc/evals/AGENTS.md
+  broken: .sdlc/.0185-evals-folder/step-4/handoff.md -> ../.sdlc/evals/AGENTS.md
+  broken: .sdlc/verify-0227-b/verifier-L3.md -> validation/solo-vs-lean-benchmark-2026-10-04.md
+  broken: .sdlc/verify-0227-b/verifier-L3.md -> design.md
+  broken: .sdlc/verify-0227/verifier-L3.md -> README.md
+  broken: .sdlc/verify-docs-schema-2/verifier-L3.md -> ../validation/docs-schema-design-review.md
+  broken: .sdlc/verify-docs-schema-3/verifier-L3.md -> ../validation/docs-schema-design-review.md
+  broken: docs/generative-constructs/README.md -> ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+  broken: docs/generative-constructs/progressive-context-plugin.md -> ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+  broken: docs/reports/reorg-inventory-live-run.md -> contract.json
+  broken: docs/reports/reorg-inventory-live-run/maison-plan.md -> component.md
+
+$ cd <clone> && python3 <this tree>/plugins/sdlc-lite/scripts/rename_refs.py links   # after the apply, at 56e99a4d
+links: 838 checked, 12 broken
+  broken: .sdlc/.0185-evals-folder/planner-L3.md -> ../.sdlc/evals/AGENTS.md
+  broken: .sdlc/.0185-evals-folder/step-4/handoff.md -> ../../.sdlc/evals/AGENTS.md
+  broken: .sdlc/.0185-evals-folder/step-4/handoff.md -> ../.sdlc/evals/AGENTS.md
+  broken: .sdlc/verify-0227-b/verifier-L3.md -> validation/solo-vs-lean-benchmark-2026-10-04.md
+  broken: .sdlc/verify-0227-b/verifier-L3.md -> design.md
+  broken: .sdlc/verify-0227/verifier-L3.md -> README.md
+  broken: .sdlc/verify-docs-schema-2/verifier-L3.md -> ../validation/docs-schema-design-review.md
+  broken: .sdlc/verify-docs-schema-3/verifier-L3.md -> ../validation/docs-schema-design-review.md
+  broken: docs/generative-constructs/README.md -> ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+  broken: docs/generative-constructs/progressive-context-plugin.md -> ../../../gen-ui-system-svelte-lite/docs/references/folder-native-gen-ui-ontology.md
+  broken: docs/reports/reorg-inventory-live-run.md -> contract.json
+  broken: docs/reports/reorg-inventory-live-run/maison-plan.md -> component.md

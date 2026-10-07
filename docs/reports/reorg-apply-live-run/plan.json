@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "batches": [
+    {"name": "references", "moves": [
+      {"from": "docs/codex-role-execution.md", "to": "docs/references/codex-role-execution.md"},
+      {"from": "docs/plugin-compatibility.md", "to": "docs/references/plugin-compatibility.md"}]},
+    {"name": "other", "moves": [
+      {"from": "docs/claude-handoff.md", "to": "docs/other/claude-handoff.md"},
+      {"from": "docs/claude-response.md", "to": "docs/other/claude-response.md"}]}
+  ]
+}

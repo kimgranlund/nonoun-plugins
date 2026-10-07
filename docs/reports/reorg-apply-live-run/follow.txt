@@ -1,0 +1,19 @@
+240bf77c reorg: references
+9539f0e4 T-0309: name the product SDLC Lite, rename docs/lean-sdlc to docs/sdlc-lite, add the name guard
+35c9ce3e T-0246: rename docs/validation to docs/reports, rewrite references, add rename_refs.py
+c741881a T-0185: evals folder, evals.py, table lock
+aa59ebc6 .sdlc/0195-runner-family-task-dir step-2: built and verified
+7bfac7de T-0180: document the idle-host limit
+e7632cf1 T-0178: record plan defect and replan request
+def3b337 0171-plan-reviewer-role step 4: built and verified through /chain
+f5dc2601 Fix four stale Codex statements found in the Codex review
+9219c4b4 Codex role-based allocation for planner, builder, and verifier
+47eb722a Mirror the Claude tiers in the Codex model mapping
+48e0496a Return the Codex scout to gpt-6-luna; correct the release record
+69ba9ebf Configure verified GPT-6.1 Sol alternate for Codex verification
+0ff454ee Codex scout L1 uses gpt-6-astra
+625d2924 Close T-0162 and T-0163; bump SDLC Lite to 0.19.0 and Progressive Context to 0.1.2
+49b34291 T-0163 step 2: document the shared-model verifier, gates green
+641b7cb6 Add opt-in Codex project conductor setup
+d4ad342f Add dual-host run readiness and recovery
+7f0fafc7 Add Progressive Context and native Codex role execution
