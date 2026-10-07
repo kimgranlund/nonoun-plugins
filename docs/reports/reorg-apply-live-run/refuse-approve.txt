@@ -1,0 +1,6 @@
+$ git -C <clone2> checkout -- docs/sdlc-lite/pillars.md   # clean tree at the layout commit
+$ reorg.py apply plan.json --root <clone2>   # no --approve
+reorg.py: refused: no --approve; run with --dry-run, review the listing, and pass its digest
+exit 1
+$ git -C <clone2> log --oneline -1; git -C <clone2> status --short
+49be510d docs: layout for reorg live run
