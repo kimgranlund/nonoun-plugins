@@ -260,10 +260,10 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None, agent_
     if usage is not None and tool_uses is not None:
         usage = {**usage, 'tool_uses': tool_uses}
     f = pathlib.Path(task_dir) / 'runs.jsonl'
-    if usage is None or not f.is_file():
+    if not f.is_file():
         unmark_live(task_dir, attempt)
         return None
-    rows, cost = [], None
+    rows, cost, touched = [], None, False
     for line in f.read_text(encoding='utf-8').splitlines():
         try:
             r = json.loads(line)
@@ -271,17 +271,18 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None, agent_
             rows.append(line)
             continue
         if isinstance(r, dict) and r.get('role') == 'solo' and r.get('attempt_id', '').startswith(attempt) and r.get('usage') is None:
-            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[tier_of(model_tier)][0], usage)
+            if agent_id:  # T-0355: the agent id and duration land even when nothing prices the row
+                r['agent_id'], touched = agent_id, True
+            if duration_ms is not None:
+                r['duration_ms'], touched = duration_ms, True
+            est, basis, _ = cost_estimate.estimate(r.get('model') or TIERS[tier_of(model_tier)][0], usage) if usage is not None else (None, None, None)
             if est is not None:
                 r.update(usage=usage, cost_usd=est, cost_estimated=True, cost_basis=basis)
-                if agent_id:
-                    r['agent_id'] = agent_id
-                if duration_ms is not None:
-                    r['duration_ms'] = duration_ms
                 r.pop('cost_reason', None)
                 cost = est
+                touched = True
         rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
-    if cost is not None:
+    if touched:
         f.write_text('\n'.join(rows) + '\n', encoding='utf-8')
     unmark_live(task_dir, attempt)
     return cost
@@ -990,6 +991,21 @@ def selftest():
         r0 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
         expect('complete: row carries agent_id, duration_ms and tool_uses', got is not None and r0.get('agent_id') == 'ag-3'
                and r0.get('duration_ms') == 900 and r0['usage'].get('tool_uses') == 7)
+    with tempfile.TemporaryDirectory() as tmp:  # T-0355: dispatch.py record takes the solo_run.py dispatch file end to end
+        d = pathlib.Path(tmp)
+        (d / 'handoff.md').write_text('x\n')
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        rp = subprocess.run([sys.executable, str(SCRIPTS / 'dispatch.py'), 'record', str(d / f'{disp["name"]}.dispatch.json'),
+                             '--tokens', '5000', '--agent-id', 'ag-9', '--duration-ms', '4321'], capture_output=True, text=True, timeout=60)
+        r0 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()]
+        expect('record: a solo dispatch file records end to end with cost, agent_id and duration', rp.returncode == 0 and len(r0) == 1
+               and r0[0]['cost_usd'] and r0[0].get('agent_id') == 'ag-9' and r0[0].get('duration_ms') == 4321)
+        (d / 'runs.jsonl').unlink()
+        rc, disp = dispatch_json(str(d), 'M', 'brief')
+        complete(d, disp['attempt_id'], 'M', None, None, agent_id='ag-8', duration_ms=77)
+        r1 = [json.loads(l) for l in (d / 'runs.jsonl').read_text().splitlines()][0]
+        expect('complete: with nothing to price, agent_id and duration still land', r1.get('agent_id') == 'ag-8' and r1.get('duration_ms') == 77
+               and r1['cost_usd'] is None)
     if fails:
         for f in fails:
             print('solo_run selftest FAIL: ' + f)
