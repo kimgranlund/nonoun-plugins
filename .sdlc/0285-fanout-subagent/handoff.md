@@ -27,3 +27,11 @@ Design section 5. Lane names are `<ticket>-solo`, so the host puts the work on b
 
 ## Constraints
 No push; main untouched, as today. No em dashes. No push, tag, or publish.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0; its cases 22 to 24 cover prep (lane, dispatch JSON, run/prep refusal parity), land (merge, gates, vacuous gate, red-gate reset, `no changes`, tier M verifier) and a stub that commits nothing.
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+- [ ] `python3 scripts/check-packaging.py` exits 0.
+- [ ] `git diff --check` exits 0.
+- [ ] `grep -q 'fanout.py land' plugins/sdlc-lite/skills/fanout/SKILL.md && grep -q 'Tree: <path>' plugins/sdlc-lite/skills/fanout/SKILL.md` documents the full-chain lane driven by the parent.
+- [ ] `git check-ignore -q .claude/worktrees/x` exits 0.
