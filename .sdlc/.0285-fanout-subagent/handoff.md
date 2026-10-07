@@ -2,7 +2,7 @@
 id: T-0285
 title: "Fanout lanes as isolated background sub-agents"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0284, T-0281]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No push; main untouched, as today. No em dashes. No push, tag, or publish.
 - [ ] `git diff --check` exits 0.
 - [ ] `grep -q 'fanout.py land' plugins/sdlc-lite/skills/fanout/SKILL.md && grep -q 'Tree: <path>' plugins/sdlc-lite/skills/fanout/SKILL.md` documents the full-chain lane driven by the parent.
 - [ ] `git check-ignore -q .claude/worktrees/x` exits 0.
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge
