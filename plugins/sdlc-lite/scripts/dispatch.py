@@ -592,7 +592,7 @@ def limit_marker(d, error):
     say('session limit: resume with: ' + resume)
 
 
-def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result):
+def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None):
     """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused, 3 invalid result).
 
     The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
@@ -671,6 +671,8 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
                 loaded_context={'status': 'log absent'})  # T-0252: a sub-agent leaves no stream-json log to read
     if est is not None:
         line.update(cost_estimated=True, cost_basis=basis)
+    if resolved_model:  # T-0338: the model the transcript says ran, beside the alias in model
+        line['resolved_model'] = resolved_model
     if d.get('specgate'):
         line['specgate'] = d['specgate']
     if d.get('lane_override'):
@@ -749,7 +751,8 @@ def main(argv):
             used = {**(cost_estimate.transcript_usage(args.transcript) or {}), **{k: v for k, v in used.items() if k != 'subagent_tokens'}} \
                 if cost_estimate.transcript_usage(args.transcript) else used
         try:
-            return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms)
+            return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
+                          resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None)
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -1353,6 +1356,17 @@ def selftest():
              and isinstance(line.get('cost_usd'), float) and line['cost_usd'] > 0 and line.get('cost_reason') is None)
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record', str(rb / 'nope.dispatch.json')],
                            capture_output=True, text=True, env=env_cli, stdin=subprocess.DEVNULL)
+        tr = rb / 'tr.jsonl'
+        tr.write_text(json.dumps({'message': {'id': 'm1', 'role': 'assistant', 'model': 'claude-haiku-4-5-20251001', 'usage': {'output_tokens': 5}}}) + '\n')
+        put(rb / '.sdlc' / 'c3' / 'handoff.md')
+        put(rb / '.sdlc' / 'c4' / 'handoff.md')
+        for nm, extra in (('c3', ['--transcript', str(tr)]), ('c4', [])):
+            rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
+            Path(got['result']).write_text(BODY['builder'])
+            subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record'] + extra + [got['dispatch_file']], capture_output=True, text=True,
+                           env=env_cli, stdin=subprocess.DEVNULL)
+        case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-4-5-20251001')
+        case('record with no transcript writes no resolved_model', 'resolved_model' not in lines_of(rb / '.sdlc' / 'c4')[-1])
         case('CLI record on a missing dispatch file exits 2', p.returncode == 2 and 'cannot read dispatch file' in p.stderr)
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/c2/handoff.md', body=BODY['builder'])
         case('a second attempt in a dir whose first was recorded is allowed and takes the next name', rc == 0 and got['result_name'] == 'builder-L1-2')
