@@ -47,7 +47,8 @@ base-sha as run.sh does. --dry-run prints the JSON and writes nothing, takes no 
 
 Brief. The run.sh prompt (Handoff, Artifacts dir, the result and output-format sentence) plus a Tree line, a
 throwaway-worktree prefix line (.worktrees/tmp/<Agent name>), and for builder and verifier a Base sha line,
-since a sub-agent cannot read SDLC_BASE_SHA from its environment.
+since a sub-agent cannot read SDLC_BASE_SHA from its environment. A verifier brief also carries a Report file line:
+the result path it writes with the Write tool before it ends (T-0330); record fails the run with a message naming that path when it is missing.
 
 Exit codes as run.sh: 0 ok, 2 usage, preflight, goal, spec gate, or a running attempt, 4 budget, 5 lane.
 
@@ -478,6 +479,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them when done.'
                   % (handoff, directory, result, toplevel, toplevel, tmp_prefix, tmp_prefix))
+        if role == 'verifier':
+            prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
+                       'as your final message; dispatch.py record reads the file, and a missing one fails the run)' % result)
         if base:
             prompt += '\nBase sha: %s (the commit this build started from; diff scope criteria against it)' % base
 
@@ -621,7 +625,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         if re.search(r'^## ', said, re.M):
             text = said
         else:
-            text, error = '', said.strip() or 'no result file at %s' % result
+            text, error = '', said.strip() or 'no result file at %s (the %s must write its report there before it ends)' % (result, role)
     if not text.strip():
         log = result.with_suffix('.log')
         log.write_text(error + '\n', encoding='utf-8')
@@ -1290,6 +1294,15 @@ def selftest():
              rc == 1 and sorted(marker) == ['evidence', 'handoff', 'level', 'resume', 'role', 'ts'] and '429' in marker['evidence']
              and marker['resume'] == 'python3 %s prepare builder L1 %s' % (HERE / 'dispatch.py', got['handoff'])
              and 'session limit: resume with: ' + marker['resume'] in err)
+        put(rb / '.sdlc' / 'v1' / 'handoff.md')
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md')
+        case('a verifier prompt names the report path it must write before it ends',
+             'Report file: %s' % got['result'] in got['prompt'] and 'before you end' in got['prompt'])
+        case('a verifier with no report on disk is rejected: exit 1, a message naming the path, no runs.jsonl line',
+             rc == 1 and 'no result file at %s' % got['result'] in attempt_of(got)['error'] and 'must write its report there' in attempt_of(got)['error']
+             and lines_of(rb / '.sdlc' / 'v1') == [])
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md', body=BODY['verifier'])
+        case('a verifier with its report on disk is accepted', rc == 0 and attempt_of(got)['status'] == 'completed')
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', body=BODY['builder'])
         case('a later success in the same dir removes the limit marker', rc == 0 and not (f3 / 'builder-L1.limit').exists())
 
