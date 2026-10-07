@@ -162,7 +162,7 @@ AGENT_ALIASES = ('sonnet', 'opus', 'haiku', 'fable')
 
 def agent_alias(model):
     """The Agent tool accepts only an alias; map a pinned id such as claude-haiku-4-5 to its family alias.
-    On a Max login the alias haiku has resolved to Sonnet 5.5 (docs/reports/bench-scout-pin), so the
+    On a Max login the alias haiku has resolved to Sonnet 5.5 (docs/reports/haiku-alias-2026-09-30.md), so the
     transcript model field, not this alias, says which model ran."""
     if model in AGENT_ALIASES:
         return model
