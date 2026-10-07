@@ -7,7 +7,7 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Bash(p
 
 **Codex host:** Before following this workflow, read the Codex adapter at `${CLAUDE_PLUGIN_ROOT}/skills/sdlc-lite/SKILL.md` and apply its tool, argument, path, and process translations. Claude Code follows the workflow below directly.
 
-For every role launch, set `SDLC_ROUTING_REASON` (read by `dispatch.py prepare`) to the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
+For every role launch, pass `--routing-reason` to `dispatch.py prepare` (Codex: `SDLC_ROUTING_REASON`) as the selected role/level rationale, including the recorded cause of any escalation or replan. Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, attempt records, and safe recovery.
 
 Arguments: `$ARGUMENTS`
 

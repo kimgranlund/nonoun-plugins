@@ -9,7 +9,7 @@ python3 "<plugin-root>/scripts/readiness.py" --backend codex --transport subagen
 
 Use `--transport exec` for standalone Codex execution. These read-only checks inspect tools, Git baseline, plugin configuration, and Codex generated/project agents as applicable. They do not authenticate, spend a model call, or establish that an existing Codex chat loaded new agents. For native dispatch, confirm the exact named agent is available and that the host has delegation capacity. Fix reported setup issues before dispatch; do not widen permissions to pass a check. The shared role runner also performs local readiness checks.
 
-Set `SDLC_ROUTING_REASON` per invocation to the reason for the selected role and level: user selection, task scope, or recorded escalation evidence. Keep the current model/effort mappings. Without a reason, the runner explicitly records that the caller supplied no task-specific rationale.
+Pass `dispatch.py prepare --routing-reason` (Codex `run.sh`: `SDLC_ROUTING_REASON`) per invocation to the reason for the selected role and level: user selection, task scope, or recorded escalation evidence. Keep the current model/effort mappings. Without a reason, the runner explicitly records that the caller supplied no task-specific rationale.
 
 Every actual runner invocation reserves a unique `<role>-<level>[-N].attempt.json` before launching the backend. It captures the attempt ID, selected role/level/model/effort, backend/transport, reason, timestamps, and terminal exit status. Normal `runs.jsonl` rows carry the same ID and reason. A `completed` attempt means the runner accepted the report format and exited successfully; inspect the role's Status/Verdict for the actual work outcome. A failed or blocked verification is not task completion.
 

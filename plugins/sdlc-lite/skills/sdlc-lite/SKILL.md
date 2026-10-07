@@ -52,7 +52,7 @@ Before work on a ticket, run `python3 "<plugin-root>/scripts/steps.py" lane <tic
 
 On Claude Code every role is a sub-agent, dispatched as `agents/conductor.md` ("How you run roles") says; this section is the Codex path.
 
-Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, routing rationale, and safe recovery. Set `SDLC_ROUTING_REASON` when launching a role; do not invent a task-specific rationale when none was supplied.
+Read shared run operations at `${CLAUDE_PLUGIN_ROOT}/skills/handoff-format/run-operations.md` for readiness, routing rationale, and safe recovery. Pass `--routing-reason` to `dispatch.py prepare` (Codex: set `SDLC_ROUTING_REASON`) when launching a role; do not invent a task-specific rationale when none was supplied.
 
 Run from the target project root. For runner calls inside Codex, use `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent` and follow the exchange below. Standalone terminal launchers use `SDLC_BACKEND=codex`; do not rely on an exported variable surviving between shell tool calls. Example inside Codex: `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent "<plugin-root>/scripts/run.sh" builder L2 .sdlc/example/step-1/handoff.md`.
 

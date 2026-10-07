@@ -733,6 +733,7 @@ def main(argv):
     sub.required = True
     p = sub.add_parser('prepare', help='run the pre-launch gates and print the dispatch JSON')
     p.add_argument('--dry-run', action='store_true', help='print the JSON; write no record, take no lock')
+    p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
     r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
@@ -793,6 +794,8 @@ def main(argv):
         except (OSError, ValueError) as e:
             print('dispatch.py: ' + str(e), file=sys.stderr)
             return 2
+    if args.routing_reason is not None:
+        os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
         out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run)
     except Refuse as r:
@@ -1227,6 +1230,12 @@ def selftest():
                            cwd=str(repo), capture_output=True, text=True, env=env)
         cli = json.loads(p.stdout) if p.returncode == 0 else {}
         case('CLI prints the dispatch JSON on stdout', p.returncode == 0 and cli.get('model') == 'haiku' and cli.get('subagent_type') == 'sdlc-lite:scout-L1')
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', '--routing-reason', 'flag reason', 'scout', 'L1', '.sdlc/t/handoff.md'],
+                           cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
+        case('--routing-reason is read like the env var and wins over it', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'flag reason')
+        p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md'],
+                           cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
+        case('the env var stays a fallback', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'env reason')
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'planner', 'L1', '.sdlc/ls/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         case('CLI exits 5 for the lane gate with the JSON absent from stdout', p.returncode == 5 and p.stdout == '')
