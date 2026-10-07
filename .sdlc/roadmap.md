@@ -320,3 +320,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0320 | [.0320-fleet-config-nameless-entry-line](.0320-fleet-config-nameless-entry-line/handoff.md) | fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) | bug | S | P2 | none | 🟢 done |
 | T-0321 | [.0321-interview-template-readthrough](.0321-interview-template-readthrough/handoff.md) | Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4) | chore | M | P2 | none | 🟢 done |
 | T-0322 | [.0322-fleet-verify-fixes](.0322-fleet-verify-fixes/handoff.md) | Make the flaky fleet_status selftest deterministic | bug | S | P2 | none | 🟢 done |
+| T-0323 | [0323-fleet-status-tables](0323-fleet-status-tables/handoff.md) | fleet_status render: colored emoji marks and tables, collapse done-but-open rows | feature | M | P2 | none | ⏳ proposed |
