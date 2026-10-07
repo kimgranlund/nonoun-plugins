@@ -1,0 +1,373 @@
+{
+  "repo": "/Users/kimgranlund/Projects/adia/ui-kit/main",
+  "summary": "runs: 0 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-06",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.21.0",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.21.0",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.21.0",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.292 (Claude Code)",
+    "time": "2026-10-07T12:49:43Z",
+    "uptime_load": {
+      "uptime_s": 1715549,
+      "load1": 15.5,
+      "load5": 11.17,
+      "load15": 9.1,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 0,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 0,
+    "by_role": {},
+    "by_lane": {
+      "solo": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {},
+    "interrupted": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 381,
+      "runs_files": 10
+    }
+  },
+  "plan_review_share": null,
+  "tickets": {
+    "count": 16,
+    "items": []
+  },
+  "processes": {
+    "chromium": {
+      "count": 40,
+      "cpu_pct": 9.9,
+      "rss_mb": 19090.0
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 13,
+      "cpu_pct": 12.0,
+      "rss_mb": 6698.8
+    }
+  },
+  "worktrees": {
+    "count": 380,
+    "size": "unknown",
+    "size_kb_known": 17423400,
+    "items": [
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/selftest-entrypoints-sandbox-PfqcdP",
+        "size": "188.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/dev",
+        "size": "201.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/.git-worktrees/rv109-main",
+        "size": "196.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a11y1",
+        "size": "792.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a11y2",
+        "size": "795.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2",
+        "size": "792.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5",
+        "size": "193.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5-catalog",
+        "size": "410.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5-last",
+        "size": "197.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5-sidecars",
+        "size": "411.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5-step2",
+        "size": "197.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5-step3",
+        "size": "197.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5b",
+        "size": "194.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5c",
+        "size": "396.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam5d",
+        "size": "470.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2-fam6",
+        "size": "192.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2b",
+        "size": "394.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2c",
+        "size": "408.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a2ui",
+        "size": "174.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/a4",
+        "size": "788.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/accessors-10940",
+        "size": "403.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/actcut2",
+        "size": "175.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/actcutA",
+        "size": "195.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/actcutB",
+        "size": "175.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr-ratify",
+        "size": "191.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr-ratify-rulings",
+        "size": "395.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr0122-barrels-a",
+        "size": "196.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr0122-barrels-b",
+        "size": "196.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr0122-barrels-c",
+        "size": "403.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr0122-migrate",
+        "size": "206.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr0124-embeddings",
+        "size": "403.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/adr1",
+        "size": "584.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/agents-md-follow",
+        "size": "396.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/agents-size",
+        "size": "392.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/agentsmd",
+        "size": "195.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/al-followups",
+        "size": "394.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/asset-loader-followups",
+        "size": "394.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/asset-loader-robust",
+        "size": "394.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/attr1",
+        "size": "194.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/au1",
+        "size": "772.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/au2",
+        "size": "790.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/aud10198",
+        "size": "806.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/bare-renderer",
+        "size": "392.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/brand-residue",
+        "size": "402.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/budgets-fix",
+        "size": "366.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/buildchores",
+        "size": "unknown"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/button-icononly",
+        "size": "unknown"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/c2",
+        "size": "unknown"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/c2-prune",
+        "size": "unknown"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/adia/ui-kit/main/.git-worktrees/c3",
+        "size": "unknown"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-06",
+    "window_days": 1,
+    "runs": 77,
+    "wall_minutes": 258.2,
+    "failed": 4,
+    "by_workflow": {
+      "CI": {
+        "runs": 30,
+        "wall_minutes": 200.3,
+        "failed": 3,
+        "by_event": {
+          "pull_request": 20,
+          "push": 10
+        },
+        "push_runs_7d": 10,
+        "pull_request_runs_7d": 20,
+        "push_dup_7d": 0
+      },
+      "CI watchdog": {
+        "runs": 3,
+        "wall_minutes": 1.4,
+        "failed": 0,
+        "by_event": {
+          "schedule": 3
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Corpus freshness": {
+        "runs": 8,
+        "wall_minutes": 20.6,
+        "failed": 0,
+        "by_event": {
+          "push": 8
+        },
+        "push_runs_7d": 8,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Deploy site (ui-kit.exe.xyz)": {
+        "runs": 3,
+        "wall_minutes": 22.3,
+        "failed": 1,
+        "by_event": {
+          "push": 3
+        },
+        "push_runs_7d": 3,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Doc status gate (full history)": {
+        "runs": 2,
+        "wall_minutes": 2.5,
+        "failed": 0,
+        "by_event": {
+          "push": 2
+        },
+        "push_runs_7d": 2,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "PR gates": {
+        "runs": 31,
+        "wall_minutes": 11.0,
+        "failed": 0,
+        "by_event": {
+          "pull_request": 21,
+          "push": 10
+        },
+        "push_runs_7d": 10,
+        "pull_request_runs_7d": 21,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
