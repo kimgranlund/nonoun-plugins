@@ -187,3 +187,16 @@ Verdict: the verifier estimate was still failing at e7a16566 (0.49, same as R1's
 ### Still unverified
 
 Account switch and resume ladder, interactive background sub-agents, session-limit behavior, and a lane whose spawn fails on a missing model are unchanged. The F-versus-G sample is two runs on one host build.
+
+## Live scout spawn (2026-10-07)
+
+Closes the open live item of T-0337. Throwaway project `/tmp/scoutproj` (one `greet.py`, one handoff), headless `claude -p --plugin-dir <scoutlive>/plugins/sdlc-lite --agent sdlc-lite:conductor`, no login change. The conductor ran `dispatch.py prepare scout L1`, one Agent call with the printed JSON, and `dispatch.py record` with `--transcript`. Host result: `is_error false`, `permission_denials []`, `subagent_stats` spawned 1, completed 1, failed 0, refused 0, `by_type sdlc-lite:scout-L1`.
+
+- Stream: [scout-live-stream.jsonl](subagent-mode-live-2026-10-07/scout-live-stream.jsonl) (result line trimmed to the fields quoted here).
+- Prepare printed and the Agent call used `"subagent_type":"sdlc-lite:scout-L1"`, `"model":"haiku"`, effort `low`; the record holds `"model":"haiku"`: [scout-live-scout-L1.dispatch.json](subagent-mode-live-2026-10-07/scout-live-scout-L1.dispatch.json). The spawn hook allowed the call (no refusal).
+- Run row: [scout-live-runs.jsonl](subagent-mode-live-2026-10-07/scout-live-runs.jsonl) holds `role scout`, `level L1`, `model haiku`, `transport subagent`, `agent_id af4e67cac17c4d962`, `cost_usd 0.044086`, `stray_worktrees []`; the attempt ends `completed` ([attempt](subagent-mode-live-2026-10-07/scout-live-scout-L1.attempt.json)), the result is [scout-live-scout-L1.md](subagent-mode-live-2026-10-07/scout-live-scout-L1.md) with the right answer (`greet.py:1`, `greet(name)`).
+- Transcript model field ([scout-live-transcript-model.txt](subagent-mode-live-2026-10-07/scout-live-transcript-model.txt)): all 23 assistant messages of the sub-agent read `claude-haiku-4-5-20251001`. The host `modelUsage` agrees: the conductor ran `claude-sonnet-5-5` and the scout `claude-haiku-4-5-20251001` (costUSD 0.0550).
+
+Statement: on this login the alias `haiku` resolved to Haiku 4.5, so the sub-agent ran on the model the scout row pins. The earlier resolution to Sonnet 5.5 on a Max login (bench-scout-pin) did not recur here, and it can still occur on another login, so the transcript model field stays the only proof of what ran. The scout model and effort default is unchanged (a user decision), and no bug ticket is needed for the alias. The run row stores the alias, not the resolved model; recording it is filed as T-0338.
+
+Hook selftest (T-0337 gap): the new cases allow model `haiku` against a `claude-haiku-4-5` record and deny model `sonnet` against both a `haiku` and a `claude-haiku-4-5` record. Against v0.21.0's hook the allow case fails (`exit 2, want 0`); against the current hook the selftest passes.
