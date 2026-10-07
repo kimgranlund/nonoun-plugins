@@ -1,0 +1,21 @@
+{
+  "attempt_id": "eecce4b8ec8e48bdb614ee149f5d670b",
+  "name": "verifier-L3",
+  "role": "verifier",
+  "level": "L3",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "fable",
+  "effort": "xhigh",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-07T01:43:55.116216+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b6/adr",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-b6/adr/.sdlc/0302-adr-number-allocator-note/handoff.md",
+  "owner_pid": 99424,
+  "handoff_sha256": "99faba5a571ee7c0d0481067c1920867877d7f726cc884ee19632faf22c891a4",
+  "process_pid": 99508,
+  "exit_code": 0,
+  "finished_at": "2026-10-07T01:49:43.818160+00:00"
+}

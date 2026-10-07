@@ -15,3 +15,12 @@ A short repo-owned note (docs only) on allocating ADR numbers so two sibling wor
 
 ## Context
 Idea only, no build. Source: agent-ui root-cause 2026-10-06 section 2: T-0012 and T-0014 both took ADR-0235 in sibling worktrees, found by a plan reviewer by luck. The allocator is the consumer repo's to own; sdlc-lite adds only a docs note (for example in handoff-format or onboard), not code.
+
+## Acceptance criteria
+- `grep -q '^## Numbered records across worktrees (ADR numbers)' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
+- `awk '/^## Numbered records across worktrees/{f=1;next} /^## /{f=0} f' plugins/sdlc-lite/skills/handoff-format/SKILL.md | grep -q 'git worktree list'`
+- `! git diff --name-only HEAD | grep -v -E '^(\.sdlc/0302-adr-number-allocator-note/handoff\.md|plugins/sdlc-lite/skills/handoff-format/SKILL\.md|plugins/sdlc-lite/adapters/codex/agents/sdlc-planner-l[123]\.toml)$' | grep -q .`
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 scripts/check-packaging.py`
+- `git diff --check`

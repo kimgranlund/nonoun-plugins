@@ -186,6 +186,15 @@ A verifier launched at the task dir writes `verifier-L<k>.md` in the task dir, n
 
 `steps.py next` and `resume` treat a listed step as verified while the listed path is still that step's newest builder result by `order.py` (a rebuild after the batch is not listed, so the step goes back to `verify`), and `board.py` renders it. The newest task-dir verifier result (by `order.py`) that lists the build decides: it counts only with Verdict `pass` and no `results.structure_error`, so a later `fail` on the same build overrides an earlier `pass`, and two batches over disjoint steps both stay valid. A step-dir verifier result that counts after the build still decides first. A step is never batch-verified when its newest builder Status is not `done`, its build is L4 or L5, its title starts with `Merge ` or holds `gates green` (any case), it is the highest-numbered live `step-<n>/` in the task dir, or a `step-<n>.superseded-<k>/` sibling exists; those steps take a per-step verifier. `## Verified` is not a declared verifier section, which is fine: `results.structure_error` ignores undeclared headings.
 
+## Numbered records across worktrees (ADR numbers)
+
+Sibling worktrees each see only their own tree. Two lanes that each take "the next ADR number" from their own folder take the same one, and nothing notices until the merge (one repository's T-0012 and T-0014 both took ADR-0235). `tickets.py new` avoids this for ticket ids; SDLC Lite ships no allocator for ADRs or any other numbered record, because the numbering scheme and its folder belong to the consumer repository. A repository that numbers ADRs owns the rule, and this is the minimum it should state:
+
+- The next number is the highest across every `git worktree list` tree and the integration branch, plus one. A scan of the current tree alone is not enough.
+- If the repository has an allocator script, a handoff and a plan call it. If not, the conductor picks the number from that tree-wide view before a lane starts and writes it into the ticket's `## Context` as `ADR number: NNNN`; the plan and builder use that number and never pick one.
+- A plan step never says "the next ADR number". It names the number, or names the allocator.
+- A repository check that fails on a duplicate number in the ADR folder catches a clash that slipped past, the way `tickets.py check` does for ticket ids.
+
 ## Free-text arguments
 
 When a launcher skill gets text instead of a handoff path, create `.sdlc/<slug>/handoff.md` (slug: 2 to 5 lowercase words from the text, hyphenated; add `-2` etc. if taken) from the template, put the text in Goal (or Question for question roles), fill Context from what the current conversation established, and show the user the path.
