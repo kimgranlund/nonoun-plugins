@@ -65,7 +65,7 @@ None that break anything. Checked items:
 
 - `docs/reports/hook-perf.md` is not in docs/README.md. Seven other reports are also unindexed, so this is not a regression.
 - Constraints: 0 em dashes on added lines (`git diff 24ef333 HEAD`, added lines, `grep -c`), and 0 files changed under `plugins/sdlc-lite/agents`, `adapters` or `skills`.
-- `.sdlc/0292-machine-wide-gate-semaphore/handoff.md` and the step-1 run records in HEAD are ticket and run records, with no code.
+- `.sdlc/.0292-machine-wide-gate-semaphore/handoff.md` and the step-1 run records in HEAD are ticket and run records, with no code.
 - Working tree: the modified `step-1/handoff.md` is the brief I verified against, and `verifier-L3-2.attempt.json` is this run's record. Both throwaway worktrees are removed (`git worktree list` shows 0 under the prefix).
 - A scratch folder, `/tmp/vfy0291-31435`, is left outside the repo because the cleanup command was denied.
 

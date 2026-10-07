@@ -2,7 +2,7 @@
 id: T-0319
 title: "Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: S              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Both shipped in 0.20.12 with this limitation stated in the release record.
 
 ## Constraints
 No em dashes. No push, tag or publish. Positive case and an observed negative control for any new check.
+
+## Closed
+
+2026-10-07: verification done: findings became T-0320 to T-0322, all closed

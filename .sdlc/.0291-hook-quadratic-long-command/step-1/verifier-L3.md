@@ -54,7 +54,7 @@ fail
   - Caveat: the literal-substitution figure is true only because that string has zero backslashes; see below.
 
 ## Out of scope changes
-- `.sdlc/0292-machine-wide-gate-semaphore/handoff.md`: new idea ticket with no code. Its front matter parses (`tickets.py --root .sdlc check` in the throwaway, after regenerating, printed `ok: 269 tickets, roadmap current`, up from 267 at base). Adding it left `.sdlc/AGENTS.md` stale; see below.
+- `.sdlc/.0292-machine-wide-gate-semaphore/handoff.md`: new idea ticket with no code. Its front matter parses (`tickets.py --root .sdlc check` in the throwaway, after regenerating, printed `ok: 269 tickets, roadmap current`, up from 267 at base). Adding it left `.sdlc/AGENTS.md` stale; see below.
 - `.sdlc/roadmap.md`: two rows added for T-0291 and T-0292. Regenerating in the throwaway left roadmap.md unmodified, so the rows are current.
 - `docs/references/claude-hooks.md`: two lines added. `git diff --check 24ef333 HEAD` exits 0, the link target exists, and the diff holds 0 em dashes. Its guidance is incomplete; see below.
 - Dismissed with checks: hooks.json is unchanged (`git diff --name-only 24ef333 HEAD -- plugins/sdlc-lite/adapters` lists 0 files), `check.py` prints `ok: 19 role levels, 9 agents checked`, and `hook-live-probe.sh --selftest` prints PASS. I did not run the full `check.sh`.

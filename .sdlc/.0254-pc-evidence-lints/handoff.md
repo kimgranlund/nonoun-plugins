@@ -2,7 +2,7 @@
 id: T-0254
 title: "Handoff and evidence lints with citation resolver"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No push, tag, version bump, or publish. No em dashes. Preserve other agents' wor
 
 ## Notes
 Read-only for the verifier: report pass or fail per criterion with evidence. The resolver proves a cited file is tracked and the line exists; it does not prove the line says what the claim says, and that limit is documented, not a defect.
+
+## Closed
+
+2026-10-07: built by fanout lane batch3-lints (cite_check.py, evidence lints), merged in 0.21.1

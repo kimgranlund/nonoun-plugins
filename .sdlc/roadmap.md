@@ -252,7 +252,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0251 | [.0251-plan-fanout](.0251-plan-fanout/handoff.md) | plan-fanout skill | feature | M | P2 | none | 🟢 done |
 | T-0252 | [.0252-pc-run-context-trace](.0252-pc-run-context-trace/handoff.md) | Record which context a run loaded | chore | M | P2 | none | 🟢 done |
 | T-0253 | [.0253-pc-entry-file-resolver](.0253-pc-entry-file-resolver/handoff.md) | Entry-file resolver in onboard.py check | chore | S | P2 | none | 🟢 done |
-| T-0254 | [0254-pc-evidence-lints](0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | ⏳ proposed |
+| T-0254 | [.0254-pc-evidence-lints](.0254-pc-evidence-lints/handoff.md) | Handoff and evidence lints with citation resolver | chore | M | P2 | none | 🟢 done |
 | T-0255 | [.0255-pc-first-contract](.0255-pc-first-contract/handoff.md) | Write one real capability contract for the solo lane | chore | S | P2 | none | 🟢 done |
 | T-0256 | [.0256-pc-spec-vocabulary](.0256-pc-spec-vocabulary/handoff.md) | Reconcile construct and capability vocabulary in the specs | chore | S | P2 | none | 🟢 done |
 | T-0257 | [.0257-broken-links-cleanup](.0257-broken-links-cleanup/handoff.md) | Fix moved-target Markdown links, exclude code from the link counter, guard the baseline | chore | M | P2 | none | 🟢 done |
@@ -285,11 +285,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0284 | [.0284-solo-subagent](.0284-solo-subagent/handoff.md) | Solo and its verifier run as sub-agents | feature | S | P2 | T-0282 | 🟢 done |
 | T-0285 | [.0285-fanout-subagent](.0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | M | P2 | T-0284, T-0281 | 🟢 done |
 | T-0286 | [.0286-supervisor-orphans](.0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | S | P2 | T-0279 | 🟢 done |
-| T-0287 | [0287-subagent-live-evidence](0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | ⏳ proposed |
+| T-0287 | [.0287-subagent-live-evidence](.0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | M | P2 | T-0283, T-0284, T-0285, T-0286 | 🟢 done |
 | T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | S | P2 | T-0287 | ⏳ proposed |
 | T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | M | P2 | none | 🟢 done |
 | T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | S | P2 | none | 🟢 done |
-| T-0292 | [0292-machine-wide-gate-semaphore](0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | ⏳ proposed |
+| T-0292 | [.0292-machine-wide-gate-semaphore](.0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | M | P2 | none | 🟢 done |
 | T-0293 | [.0293-solo-run-kill-group](.0293-solo-run-kill-group/handoff.md) | solo_run kills process group and refuses a second live run | bug | S | P2 | none | 🟢 done |
 | T-0294 | [.0294-plan-review-l4-l5-only](.0294-plan-review-l4-l5-only/handoff.md) | Plan review only for L4 and L5 steps | feature | S | P2 | none | 🟢 done |
 | T-0295 | [.0295-lint-name-found-heading](.0295-lint-name-found-heading/handoff.md) | steps lint names the handoff heading it found | bug | S | P2 | none | 🟢 done |
@@ -316,7 +316,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0316 | [0316-codex-live-evidence](0316-codex-live-evidence/handoff.md) | Live headless chain run on Codex, recorded | feature | M | P2 | none | ⏳ proposed |
 | T-0317 | [0317-red-under-load-rerun](0317-red-under-load-rerun/handoff.md) | Verifier policy: a browser-test red under measured load re-runs once alone before it counts | feature | M | P2 | none | ⏳ proposed |
 | T-0318 | [.0318-fleet-status-noise](.0318-fleet-status-noise/handoff.md) | fleet_status.py render: ticket_root layout shows 60 done tickets as 'board still claims work' and prints a -0.1 load trend arrow | bug | S | P2 | none | 🟢 done |
-| T-0319 | [0319-fleet-verify-0307-0310](0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | S | P2 | none | ⏳ proposed |
+| T-0319 | [.0319-fleet-verify-0307-0310](.0319-fleet-verify-0307-0310/handoff.md) | Independent verification of T-0307 and T-0310, which closed on the solo lane with no verifier verdict | chore | S | P2 | none | 🟢 done |
 | T-0320 | [.0320-fleet-config-nameless-entry-line](.0320-fleet-config-nameless-entry-line/handoff.md) | fleet_config.py reports line 1 for a nameless or non-object repo entry (T-0310 verifier B3) | bug | S | P2 | none | 🟢 done |
 | T-0321 | [.0321-interview-template-readthrough](.0321-interview-template-readthrough/handoff.md) | Record the T-0307 read-through and state the mark and row rules in interview.md (verifier A4) | chore | M | P2 | none | 🟢 done |
 | T-0322 | [.0322-fleet-verify-fixes](.0322-fleet-verify-fixes/handoff.md) | Make the flaky fleet_status selftest deterministic | bug | S | P2 | none | 🟢 done |

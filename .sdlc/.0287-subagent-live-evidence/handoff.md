@@ -2,7 +2,7 @@
 id: T-0287
 title: "Live evidence for sub-agent mode, including an account switch"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: [T-0283, T-0284, T-0285, T-0286]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Design section 9 lists what is unverified; this ticket closes each item it can a
 
 ## Constraints
 Throwaway project only; no push or publish. No em dashes. No push, tag, or publish.
+
+## Closed
+
+2026-10-07: live evidence recorded in docs/reports/2026-10-07-subagent-mode-live.md; the account-switch spanning-run criterion was not exercised and stays UNVERIFIED (user chose to skip it)
