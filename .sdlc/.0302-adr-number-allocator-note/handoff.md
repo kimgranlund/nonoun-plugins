@@ -2,7 +2,7 @@
 id: T-0302
 title: "ADR number allocator note (repo-owned, docs only)"
 type: idea            # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: M              # S | M | L | XL
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,3 +24,7 @@ Idea only, no build. Source: agent-ui root-cause 2026-10-06 section 2: T-0012 an
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 scripts/check-packaging.py`
 - `git diff --check`
+
+## Closed
+
+2026-10-06: delivered by the solo agent (tier M); one independent batched verifier passed before the merge

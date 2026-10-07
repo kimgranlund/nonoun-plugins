@@ -299,7 +299,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0299 | [.0299-fanout-bare-ticket-ids](.0299-fanout-bare-ticket-ids/handoff.md) | fanout lane specs accept T-0123 or bare 0123 | bug | S | P2 | none | 🟢 done |
 | T-0300 | [.0300-board-solo-merged-done](.0300-board-solo-merged-done/handoff.md) | Board row for a merged solo lane reads done | bug | S | P2 | none | 🟢 done |
 | T-0301 | [0301-limit-conductor-rerun](0301-limit-conductor-rerun/handoff.md) | Conductor schedules the rerun after a 429 limit | idea | M | P2 | none | ⏳ proposed |
-| T-0302 | [0302-adr-number-allocator-note](0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | ⏳ proposed |
+| T-0302 | [.0302-adr-number-allocator-note](.0302-adr-number-allocator-note/handoff.md) | ADR number allocator note (repo-owned, docs only) | idea | M | P2 | none | 🟢 done |
 | T-0303 | [.0303-gate-lock-semaphore](.0303-gate-lock-semaphore/handoff.md) | gate_lock.py machine-wide semaphore for heavy gates | feature | M | P2 | none | 🟢 done |
 | T-0304 | [.0304-gate-lock-reap](.0304-gate-lock-reap/handoff.md) | gate_lock.py reap suggests orphaned browser processes | feature | M | P2 | T-0303 | 🟢 done |
 | T-0305 | [.0305-fleet-collect](.0305-fleet-collect/handoff.md) | fleet_collect.py: per-repo collector | feature | M | P2 | none | 🟢 done |
