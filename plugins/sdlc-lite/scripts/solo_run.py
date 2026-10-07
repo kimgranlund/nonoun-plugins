@@ -2,7 +2,7 @@
 """Start the solo agent for one ticket and record its cost, so the default lane is metered.
 
   solo_run.py run (--task-dir DIR | --new-task [SLUG]) --tier L1|L2|L3 (--brief TEXT | --brief-file FILE | --brief -)
-                  [--backend claude|codex] [--exec] [--cwd DIR] [--worktree NAME] [--timeout SECONDS] [--raw-out FILE]
+                  [--backend claude|codex] [--exec] [--cwd DIR] [--worktree NAME | --no-worktree] [--timeout SECONDS] [--raw-out FILE]
   solo_run.py selftest
 
 Claude (T-0284): run checks the budget gate, appends one `role solo` record (transport subagent, cost null) so the
@@ -28,6 +28,10 @@ lanes through this wrapper, so the gate covers them too.
 <ticket root>/<SLUG>/handoff.md from the brief (SLUG defaults to solo-YYYYMMDD-HHMMSS; refused when the folder
 exists), then runs there, so the session's cost is recorded like any other. A task folder without an `id` is not
 a ticket and has no budget.
+
+T-0345: when another solo is live in the checkout (a sub-agent dispatch marker under the git dir, fresh and not yet
+priced by `complete`, or a live --exec lock), run defaults to --worktree solo-<task>, prints the choice, and the dispatch
+JSON carries `worktree`. --worktree and --no-worktree win.
 
 Cost is never guessed. A result with no total_cost_usd (a crash, a missing result event, Codex, which
 reports none) records cost_usd null with a cost_reason, and the budget reports that run as unmetered.
@@ -88,7 +92,7 @@ def command(tier, brief, backend):
             '--effort', effort, '--dangerously-skip-permissions', '--output-format', 'json', '--', brief], model, effort
 
 
-def dispatch_json(task_dir, tier, brief):
+def dispatch_json(task_dir, tier, brief, worktree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
     tier = tier_of(tier)
     if tier not in TIERS:
@@ -109,6 +113,11 @@ def dispatch_json(task_dir, tier, brief):
              attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'L1' else None)
     # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
     d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    if worktree:
+        d['worktree'] = worktree
+        d['prompt'] = f'Worktree: {worktree} (work and commit there, not in the main checkout)\n' + d['prompt']
+    else:
+        mark_live(task_dir, attempt)
     (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
     rec = build_record(tier, 'claude', model, effort, None, attempt, time.monotonic(), 0)
     rec.update(transport='subagent', cost_reason='subagent usage not priced', duration_ms=None, turns=None)
@@ -250,6 +259,7 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
         usage = {'subagent_tokens': tokens}
     f = pathlib.Path(task_dir) / 'runs.jsonl'
     if usage is None or not f.is_file():
+        unmark_live(task_dir, attempt)
         return None
     rows, cost = [], None
     for line in f.read_text(encoding='utf-8').splitlines():
@@ -267,6 +277,7 @@ def complete(task_dir, attempt, model_tier, transcript=None, tokens=None):
         rows.append(json.dumps(r, separators=(',', ':')) if isinstance(r, dict) else line)
     if cost is not None:
         f.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+    unmark_live(task_dir, attempt)
     return cost
 
 
@@ -358,6 +369,51 @@ def drop_lock(path):
             path.unlink()
     except (OSError, ValueError):
         pass
+
+
+LIVE_TTL = 6 * 3600  # a sub-agent solo leaves no pid; its marker counts as live this long unless complete removes it
+
+
+def _live_dir(where):
+    lp = lock_path(where)
+    return lp.parent / 'solo_live' if lp else None
+
+
+def mark_live(where, attempt):
+    d = _live_dir(where)
+    if d is not None:
+        d.mkdir(exist_ok=True)
+        (d / attempt).write_text(str(time.time()), encoding='utf-8')
+
+
+def unmark_live(where, attempt):
+    d = _live_dir(where)
+    if d is not None and d.is_dir():
+        for f in d.glob(attempt + '*'):
+            f.unlink(missing_ok=True)
+
+
+def live_solos(where):
+    """Count other solos live in the checkout holding where: a fresh sub-agent marker or a live exec lock (T-0345)."""
+    n = 0
+    d = _live_dir(where)
+    if d is not None and d.is_dir():
+        n += sum(1 for f in d.iterdir() if time.time() - f.stat().st_mtime < LIVE_TTL)
+    lp = lock_path(where)
+    if lp is not None and lp.exists():
+        try:
+            n += 1 if _pid_alive(int(lp.read_text().strip())) else 0
+        except (OSError, ValueError):
+            pass
+    return n
+
+
+def auto_worktree(task_dir, cwd):
+    """The worktree name to default to when another solo is live in this checkout, else None."""
+    if not live_solos(cwd or task_dir):
+        return None
+    slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
+    return 'solo-' + slug
 
 
 def ensure_worktree(name, base=None):
@@ -816,7 +872,7 @@ def selftest():
                 pidf.unlink(missing_ok=True)
                 before = len(lines(dg))
                 cp = subprocess.run([sys.executable, str(me), 'run', '--exec', '--task-dir', str(dg), '--tier', 'L1', '--brief', 'b',
-                                     '--cwd', str(repo)], capture_output=True, text=True, timeout=60)
+                                     '--cwd', str(repo), '--no-worktree'], capture_output=True, text=True, timeout=60)
                 msg = cp.stderr.strip().splitlines()
                 expect('second run: refused with the one-line message, nonzero',
                        cp.returncode != 0 and msg == [f'solo_run.py: another solo run is live (pid {live.pid})'])
@@ -852,6 +908,29 @@ def selftest():
             expect('--worktree: run succeeds', cp.returncode == 0)
             expect('--worktree: worktree on a new branch', want.is_dir() and 'lane-x' in br)
             expect('--worktree: session cwd is the worktree', pwdf.exists() and pathlib.Path(pwdf.read_text().strip()) == want)
+            # T-0345: a second dispatch while a first solo is live defaults to a worktree; a single run keeps today's behavior.
+            wr2 = tmp / 'dfrepo'
+            wr2.mkdir()
+            for c in (['init', '-q'], ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'i']):
+                subprocess.run(['git', *c], cwd=str(wr2), check=True)
+            def disp(name, *extra):
+                d_ = ticket(name)
+                shutil.move(str(d_), str(wr2 / name))
+                cp_ = subprocess.run([sys.executable, str(me), 'run', '--task-dir', str(wr2 / name), '--tier', 'L1', '--brief', 'b',
+                                      '--cwd', str(wr2), *extra], capture_output=True, text=True, timeout=60)
+                return cp_, (json.loads(cp_.stdout) if cp_.stdout.strip() else {})
+            c1, j1 = disp('par1')
+            expect('default worktree: a single run keeps the checkout', c1.returncode == 0 and 'worktree' not in j1)
+            c2, j2 = disp('par2')
+            expect('default worktree: the second live solo gets a worktree', c2.returncode == 0 and j2.get('worktree')
+                   and pathlib.Path(j2['worktree']).is_dir() and 'solo-par2' in c2.stderr)
+            c3, j3 = disp('par3', '--no-worktree')
+            expect('default worktree: --no-worktree wins', c3.returncode == 0 and 'worktree' not in j3)
+            unmark_live(wr2, j1['attempt_id'])
+            for f in (wr2 / '.git' / 'solo_live').glob('*'):
+                f.unlink()
+            c4, j4 = disp('par4')
+            expect('default worktree: none live again keeps the checkout', c4.returncode == 0 and 'worktree' not in j4)
         finally:
             os.environ['PATH'] = old_path
             for k, v in old_env.items():
@@ -896,6 +975,7 @@ def main():
     r.add_argument('--cwd')
     r.add_argument('--worktree', metavar='NAME', help='create .worktrees/NAME on a new branch NAME first '
                    '(unless it exists) and run the session there')
+    r.add_argument('--no-worktree', action='store_true', help='stay in this checkout even when another solo is live')
     r.add_argument('--timeout', type=float)
     r.add_argument('--raw-out', help='also save the session stdout (the result JSON) to this file')
     c = sub.add_parser('complete', help='price a finished solo sub-agent row from its transcript usage or notice tokens')
@@ -930,12 +1010,18 @@ def main():
         task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
         if a.new_task is not None:
             print(f'solo_run.py: task folder {task_dir}', file=sys.stderr)
+        wt = a.worktree
+        if not wt and not a.no_worktree:
+            wt = auto_worktree(task_dir, a.cwd)
+            if wt:
+                print(f'solo_run.py: another solo is live in this checkout; using worktree {wt} (--no-worktree to stay)', file=sys.stderr)
         if a.backend == 'claude' and not a.exec:
-            rc, d = dispatch_json(task_dir, a.tier, brief)
+            path = ensure_worktree(wt, a.cwd) if wt else None
+            rc, d = dispatch_json(task_dir, a.tier, brief, path)
             if d:
                 print(json.dumps(d, indent=2))
             return rc
-        cwd = ensure_worktree(a.worktree, a.cwd) if a.worktree else a.cwd
+        cwd = ensure_worktree(wt, a.cwd) if wt else a.cwd
         return run(task_dir, a.tier, brief, a.backend, cwd, a.timeout, a.raw_out)
     except Refuse as exc:
         print(f'solo_run.py: {exc}', file=sys.stderr)
