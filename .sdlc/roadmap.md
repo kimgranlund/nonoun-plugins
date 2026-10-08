@@ -365,3 +365,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0365 | [.0365-widen-allowlist](.0365-widen-allowlist/handoff.md) | steps.py widen accepts real scope growth without a hand-written diff-name-only criterion | bug | L2 | P2 | none | 🟢 done |
 | T-0366 | [.0366-prepare-base-sha](.0366-prepare-base-sha/handoff.md) | dispatch.py prepare verifier prints the pre-build commit as Base sha, not the post-solo HEAD | bug | L1 | P2 | none | 🟢 done |
 | T-0367 | [0367-messenger-read-backlog](0367-messenger-read-backlog/handoff.md) | Messenger startup reports previously claimed, unacknowledged messages in read/<receiver> once, and states new versus pending precisely | bug | L2 | P2 | none | ⏳ proposed |
+| T-0368 | [0368-prune-flag](0368-prune-flag/handoff.md) | A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result | feature | L2 | P2 | none | ⏳ proposed |
