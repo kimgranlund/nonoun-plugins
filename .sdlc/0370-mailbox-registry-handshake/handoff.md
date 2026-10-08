@@ -25,3 +25,17 @@ Maison sent a handshake to maison-testing when the user meant the Codex session,
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+verifier: L3
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and prints `ok: registry: send to an unregistered receiver is refused`, `ok: registry: send to a reader-less receiver warns, a live one prints its reader`, `ok: sender: default names repo and harness, conductor kept`, `ok: handshake: reader alive and no reader` and `ok: receivers: list shows live and orphaned, expire closes orphans`.
+- Those five cases fail against the pre-change script (observed: `git show HEAD:plugins/sdlc-lite/scripts/messages.py` as the CLI under test gives FAIL for each).
+- `send` to a receiver absent from `.sdlc/messages/receivers.json` exits 1 and writes nothing; `reply` to an unregistered sender still works.
+- `send` prints the receiver's harness, repo and reader on stderr and warns when the reader is `none`; stdout stays the message path.
+- Without `--sender`, the sender is `<repo>-<harness>-conductor`; `--sender conductor` is stored as `conductor`; with no flag and no detectable harness the send is refused.
+- `handshake --receiver NAME` prints a line starting `reader alive` and exits 0 when a reader claims the ping, and a line starting `no reader` and exits 3 on timeout; it does not call `cmd_wait` and `wait` is unchanged.
+- `list --receivers` shows `live`, `no-reader` and `orphaned`; `expire` names orphans on stderr; `expire --orphans` closes them and touches no registered receiver.
+- The mailbox `AGENTS.md` template documents the Codex reader recipe (a `wait` loop under `/goal`) beside the Claude one.
+- `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, `bash plugins/sdlc-lite/scripts/run-selftest.sh`, `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` all exit 0.
+- No em or en dash in the diff; `git diff --check` is clean.

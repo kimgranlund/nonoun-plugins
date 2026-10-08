@@ -819,12 +819,12 @@ nline() { echo "run.sh: $1 new message(s) for $2; read with messages.py"; }
   || fail "notice: dry run with no mailbox exited non-zero"
 [[ ! -s "$tmp/n0" ]] || fail "notice: dry run with no mailbox printed stderr: $(cat "$tmp/n0")"
 [[ ! -e "$mrepo/.sdlc" ]] || fail "notice: dry run with no mailbox created .sdlc"
-(cd "$mrepo" && python3 "$here/messages.py" send --receiver planner --sender alice --topic t \
+(cd "$mrepo" && python3 "$here/messages.py" register --name planner --harness human >/dev/null && python3 "$here/messages.py" send --receiver planner --sender alice --topic t \
   --follow-up false notice-body-1 >/dev/null) || fail "notice: send to planner failed"
 (cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" planner L2 h.md >/dev/null 2>"$tmp/n1") \
   || fail "notice: planner dry run exited non-zero"
 [[ "$(cat "$tmp/n1")" == "$(nline 1 planner)" ]] || fail "notice: one message: stderr is '$(cat "$tmp/n1")'"
-(cd "$mrepo" && python3 "$here/messages.py" send --receiver claude --sender codex --topic t \
+(cd "$mrepo" && python3 "$here/messages.py" register --name claude --harness human >/dev/null && python3 "$here/messages.py" send --receiver claude --sender codex --topic t \
   --follow-up false notice-body-2 >/dev/null) || fail "notice: send to claude failed"
 (cd "$mrepo" && SDLC_DRY_RUN=1 "$here/run.sh" planner L2 h.md >/dev/null 2>"$tmp/n2") \
   || fail "notice: planner dry run exited non-zero"
