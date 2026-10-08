@@ -294,8 +294,23 @@ def next_stem(directory, role, level):
     return stem, k
 
 
+def fork_floor(directory):
+    """In a linked (lane) worktree, the commit the lane forked from: git merge-base HEAD <main checkout HEAD>
+    (SDLC_BASE_REF names another ref). '' in the main checkout or when git cannot say (T-0376)."""
+    gd = git('rev-parse', '--git-dir', cwd=directory).stdout.strip()
+    common = git('rev-parse', '--git-common-dir', cwd=directory).stdout.strip()
+    if not gd or not common or os.path.realpath(os.path.join(str(directory), gd)) == os.path.realpath(os.path.join(str(directory), common)):
+        return ''
+    ref = os.environ.get('SDLC_BASE_REF', '').strip()
+    if not ref:
+        m = re.search(r'^HEAD ([0-9a-f]{7,64})$', git('worktree', 'list', '--porcelain', cwd=directory).stdout, re.M)
+        ref = m.group(1) if m else ''
+    return git('merge-base', 'HEAD', ref, cwd=directory).stdout.strip() if ref else ''
+
+
 def build_base(directory):
-    """The build-start commit run.sh stores in base-sha: HEAD, or the stored sha kept valid."""
+    """The build-start commit run.sh stores in base-sha: HEAD, or the stored sha kept valid. Git runs in the
+    handoff's own tree, and in a lane worktree a stored sha older than the lane's fork point is stale (T-0376)."""
     stored = ''
     f = Path(directory) / 'base-sha'
     if f.is_file():
@@ -311,13 +326,16 @@ def build_base(directory):
             if stored:
                 break
     base = ''
-    if stored and git('rev-parse', '-q', '--verify', stored + '^{commit}').returncode == 0 \
-            and git('merge-base', '--is-ancestor', stored, 'HEAD').returncode == 0:
-        base = git('rev-parse', stored + '^{commit}').stdout.strip()
-        merges = git('rev-list', '--first-parent', '--merges', base + '..HEAD').stdout.split()
+    cwd = directory
+    floor = fork_floor(directory)
+    if stored and git('rev-parse', '-q', '--verify', stored + '^{commit}', cwd=cwd).returncode == 0 \
+            and git('merge-base', '--is-ancestor', stored, 'HEAD', cwd=cwd).returncode == 0 \
+            and (not floor or git('merge-base', '--is-ancestor', floor, stored, cwd=cwd).returncode == 0):
+        base = git('rev-parse', stored + '^{commit}', cwd=cwd).stdout.strip()
+        merges = git('rev-list', '--first-parent', '--merges', base + '..HEAD', cwd=cwd).stdout.split()
         if merges:
             base = merges[0]
-    return stored, base or git('rev-parse', 'HEAD').stdout.strip()
+    return stored, base or git('rev-parse', 'HEAD', cwd=cwd).stdout.strip()
 
 
 def lane_gate(role, directory, plugin):
@@ -1375,6 +1393,52 @@ def selftest():
              rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
              and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(dl['tree'] + '/.worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
+        # T-0376: a lane forked from a commit newer than a stale stored base records its fork point, so a scope guard lists only the lane.
+        def gt(where, *a):
+            return subprocess.run(['git', '-C', str(where), '-c', 'user.name=t', '-c', 'user.email=t@t', *a], capture_output=True, text=True).stdout.strip()
+        stale = gt(rr, 'rev-parse', 'HEAD')
+        (rr / 'main-new.txt').write_text('m')
+        gt(rr, 'add', '-A')
+        gt(rr, 'commit', '-qm', 'main moves on')
+        fork = gt(rr, 'rev-parse', 'HEAD')
+        lw2 = rr.parent / (rr.name + '-lane2')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane2', str(lw2), 'HEAD')
+        (lw2 / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
+        shutil.copy(rr / '.sdlc' / 'w' / 'handoff.md', lw2 / '.sdlc' / 'w' / 'handoff.md')
+        (lw2 / 'lane-only.txt').write_text('l')
+        gt(lw2, 'add', '-A')
+        gt(lw2, 'commit', '-qm', 'lane work')
+        lane_head = gt(lw2, 'rev-parse', 'HEAD')
+        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(stale + '\n')
+        _, dstale, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        case('a stale stored base older than the lane fork point is replaced by the lane HEAD (not the main checkout HEAD)',
+             dstale['base_sha'] == lane_head != stale and lane_head != gt(rr, 'rev-parse', 'HEAD'))
+        listed = gt(lw2, 'diff', '--name-only', dstale['base_sha'], '--', '.', ':(exclude).sdlc').split()
+        case('the scope-guard diff against that base lists only the lane files', listed == [])
+        (lw2 / 'later.txt').write_text('y')
+        gt(lw2, 'add', '-A')
+        gt(lw2, 'commit', '-qm', 'more lane work')
+        listed = gt(lw2, 'diff', '--name-only', dstale['base_sha'], '--', '.', ':(exclude).sdlc').split()
+        case('after more lane work the guard diff lists the lane files and not main\'s', listed == ['later.txt'])
+        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(lane_head + '\n')
+        _, dkeep, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        case('a stored base at or after the fork point is kept', dkeep['base_sha'] == lane_head)
+        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(fork + '\n')
+        _, dfork, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        case('a stored base equal to the fork point is kept', dfork['base_sha'] == fork)
+        (lw2 / '.sdlc' / 'w' / 'base-sha').write_text(stale + '\n')
+        with clean_env(), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
+            os.environ['SDLC_BASE_REF'] = 'HEAD~5000'  # an unresolvable ref gives no floor: the old, ancestor-only rule
+            try:
+                dnofloor = prepare('builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), dry_run=True)
+            finally:
+                os.environ.pop('SDLC_BASE_REF', None)
+        case('negative control: with no fork floor the stale ancestor is kept', dnofloor['base_sha'] == stale)
+        _, dbld, _ = prep(rr, 'builder', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        _, dver, _ = prep(rr, 'verifier', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
+        case('prepare verifier and prepare builder print the same base for the same lane',
+             dver['base_sha'] == dbld['base_sha'] == gt(lw2, 'rev-parse', 'HEAD'))
+        subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw2)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getppid()))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2
              and 'run_lifecycle.py recover "%s"' % w in err2)

@@ -117,7 +117,9 @@
 # the stored sha, except that when git rev-list --first-parent --merges <stored>..HEAD is non-empty,
 # base = its first line (the newest resync merge on the first-parent chain), since builders commit
 # only on merge steps and any other commit since the base is the step's own work. base-sha is
-# written when it was missing or changed. The role gets SDLC_BASE_SHA=<base> next to SDLC_ROLE, so
+# written when it was missing or changed. In a linked (lane) worktree a stored sha that does not descend
+# from the lane's fork point (git merge-base HEAD <main checkout HEAD>, or SDLC_BASE_REF) is stale and
+# replaced by HEAD, and git runs in the handoff's own tree (T-0376). The role gets SDLC_BASE_SHA=<base> next to SDLC_ROLE, so
 # scope criteria can diff against the tree the build started from whether or not anything is
 # committed later. Every other role gets SDLC_BASE_SHA removed from its env (even when the caller
 # exported it) and writes no base-sha. Caveat: on a merge step the builder's own merge commit moves
@@ -433,13 +435,24 @@ if [[ "$role" == builder || "$role" == verifier ]]; then
   [[ -f "$dir/base-sha" ]] && { IFS= read -r stored <"$dir/base-sha" || true; }
   stored="${stored//[[:space:]]/}"
   base=""
-  if [[ -n "$stored" ]] && git rev-parse -q --verify "$stored^{commit}" >/dev/null 2>&1 \
-    && git merge-base --is-ancestor "$stored" HEAD >/dev/null 2>&1; then
-    base=$(git rev-parse "$stored^{commit}")
-    resync=$(git rev-list --first-parent --merges "$base..HEAD" | head -1 || true)
+  # T-0376: git runs in the handoff's own tree; in a linked (lane) worktree a stored sha older than the
+  # lane's fork point (merge-base of HEAD and the main checkout HEAD, or SDLC_BASE_REF) is stale.
+  floor=""
+  gd=$(cd "$dir" && cd "$(git rev-parse --git-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+  gc=$(cd "$dir" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+  if [[ -n "$gd" && "$gd" != "$gc" ]]; then
+    fref="${SDLC_BASE_REF:-}"
+    [[ -n "$fref" ]] || fref=$(git -C "$dir" worktree list --porcelain | sed -n 's/^HEAD //p' | head -1)
+    [[ -z "$fref" ]] || floor=$(git -C "$dir" merge-base HEAD "$fref" 2>/dev/null || true)
+  fi
+  if [[ -n "$stored" ]] && git -C "$dir" rev-parse -q --verify "$stored^{commit}" >/dev/null 2>&1 \
+    && git -C "$dir" merge-base --is-ancestor "$stored" HEAD >/dev/null 2>&1 \
+    && { [[ -z "$floor" ]] || git -C "$dir" merge-base --is-ancestor "$floor" "$stored" >/dev/null 2>&1; }; then
+    base=$(git -C "$dir" rev-parse "$stored^{commit}")
+    resync=$(git -C "$dir" rev-list --first-parent --merges "$base..HEAD" | head -1 || true)
     [[ -n "$resync" ]] && base="$resync"
   fi
-  [[ -n "$base" ]] || base=$(git rev-parse HEAD)
+  [[ -n "$base" ]] || base=$(git -C "$dir" rev-parse HEAD)
   [[ "$base" == "$stored" ]] || printf '%s\n' "$base" >"$dir/base-sha"
   base_env=("SDLC_BASE_SHA=$base")
 fi
