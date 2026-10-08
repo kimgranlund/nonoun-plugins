@@ -24,7 +24,7 @@
 # find ., a path below those roots, ls / without -R, a quoted mention, and no role.
 # block-role-spawn.sh is the spawn gate. In a conductor session (agent_type sdlc-lite:conductor or
 # conductor, or SDLC_ROLE=conductor) it allows an sdlc-lite:<role>-L<n> spawn only when the name is
-# <role>-L<n>-<slug>[-<k>], a dispatch record beside the prompt's Handoff names that agent, and the
+# <ticket>-<role>-L<n>[-<k>], a dispatch record beside the prompt's Handoff names that agent, and the
 # call's model equals the record's model; each of the four conditions has a deny case, built by
 # changing one thing in a passing payload. It denies a fork named verifier- or plan-reviewer-, a
 # fork with no "Fork reason:" line, and another plugin's builder, verifier, reviewer, planner, or
@@ -418,9 +418,9 @@ wtmp=$(mktemp -d); trap 'rm -rf "$wtmp"' EXIT
 # <role>-L<n>.dispatch.json (keyed by the stem, with the Agent name inside it) beside the handoff.
 gate="$wtmp/gate"; mkdir -p "$gate/other"
 : >"$gate/handoff.md"
-printf '%s' '{"subagent_type":"sdlc-lite:verifier-L3","name":"verifier-L3-gate-task","model":"opus","role":"verifier","level":"L3"}' >"$gate/verifier-L3.dispatch.json"
-printf '%s' '{"subagent_type":"sdlc-lite:builder-L2","name":"builder-L2-gate-task-2","model":"sonnet","role":"builder","level":"L2"}' >"$gate/builder-L2-2.dispatch.json"
-printf '%s' '{"model":"haiku"}' >"$gate/scout-L1-gate-task.dispatch.json"
+printf '%s' '{"subagent_type":"sdlc-lite:verifier-L3","name":"gate-task-verifier-L3","model":"opus","role":"verifier","level":"L3"}' >"$gate/verifier-L3.dispatch.json"
+printf '%s' '{"subagent_type":"sdlc-lite:builder-L2","name":"gate-task-builder-L2-2","model":"sonnet","role":"builder","level":"L2"}' >"$gate/builder-L2-2.dispatch.json"
+printf '%s' '{"model":"haiku"}' >"$gate/gate-task-scout-L1.dispatch.json"
 # gj <subagent_type> <name> <model> <handoff> [agent_type]: the JSON of one conductor Agent spawn
 # whose prompt carries the Handoff line dispatch.py prepare writes.
 gj() {
@@ -431,20 +431,20 @@ gj() {
      | if $model != "" then .tool_input.model = $model else . end'
 }
 gh="$gate/handoff.md"
-vt=sdlc-lite:verifier-L3; vn=verifier-L3-gate-task
+vt=sdlc-lite:verifier-L3; vn="gate-task-verifier-L3"
 run "$rs" "$(gj $vt $vn opus "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (record keyed by stem): exit $rc, want 0"
 run "$rs" "$(gj $vt $vn opus "$gh" conductor)" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (agent_type conductor): exit $rc, want 0"
 run "$rs" "$(gj $vt $vn opus "$gh" "")" SDLC_ROLE=conductor >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a prepared dispatch (SDLC_ROLE=conductor): exit $rc, want 0"
-run "$rs" "$(gj sdlc-lite:builder-L2 builder-L2-gate-task-2 sonnet "$gh")" >/dev/null; rc=$?
-[[ $rc -eq 0 ]] || fail "spawn gate allows a -k dispatch (builder-L2-gate-task-2): exit $rc, want 0"
-run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-gate-task haiku "$gh")" >/dev/null; rc=$?
+run "$rs" "$(gj sdlc-lite:builder-L2 gate-task-builder-L2-2 sonnet "$gh")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows a -k dispatch (gate-task-builder-L2-2): exit $rc, want 0"
+run "$rs" "$(gj sdlc-lite:scout-L1 gate-task-scout-L1 haiku "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a record named <name>.dispatch.json: exit $rc, want 0"
 # T-0337: the Agent tool takes only the alias haiku while a record may hold the pinned id; compare by alias.
-printf '%s' '{"name":"scout-L1-alias-task","model":"claude-haiku-5-5"}' >"$gate/scout-L1-alias.dispatch.json"
-run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-alias-task haiku "$gh")" >/dev/null; rc=$?
+printf '%s' '{"name":"alias-task-scout-L1","model":"claude-haiku-5-5"}' >"$gate/scout-L1-alias.dispatch.json"
+run "$rs" "$(gj sdlc-lite:scout-L1 alias-task-scout-L1 haiku "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows model haiku against a claude-haiku-5-5 record (T-0337): exit $rc, want 0"
 run "$rs" "$(gj sdlc-lite:scout-L1 scout-L1-alias-task sonnet "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate denies a scout spawn with model sonnet against a haiku record: exit $rc, want 2"
@@ -457,7 +457,7 @@ run "$rs" "$(gj $vt $vn opus "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows a plain Handoff line (T-0344): exit $rc, want 0"
 run "$rs" "$(gj $vt $vn opus "$gh  (frozen, see docs/a/b.md)")" >/dev/null; rc=$?
 [[ $rc -eq 0 ]] || fail "spawn gate allows trailing text on the Handoff line (T-0344): exit $rc, want 0"
-run "$rs" "$(jq -n --arg cwd "$gate" '{tool_name:"Agent",cwd:$cwd,agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"verifier-L3-gate-task",model:"opus",prompt:"no line here"}}')" >/dev/null; rc=$?
+run "$rs" "$(jq -n --arg cwd "$gate" '{tool_name:"Agent",cwd:$cwd,agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"sdlc-lite:verifier-L3",name:"gate-task-verifier-L3",model:"opus",prompt:"no line here"}}')" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate denies a prompt with no Handoff line (T-0344): exit $rc, want 2"
 # A solo dispatch (sdlc-lite:solo-L1|L2|L3, solo_run.py) is gated by its record and model only (T-0287 live defect).
 # The 0.21.x names solo-S|M|L are deprecated aliases the gate still accepts for one release (T-0342).
@@ -482,14 +482,14 @@ for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo
   [[ $rc -eq 2 ]] || fail "spawn gate condition 1, subagent_type '$sub': exit $rc, want 2"
 done
 grep -q "sdlc-lite:<role>-L<n>" <<<"$out" || fail "spawn gate condition 1: stderr does not name the required form"
-# Condition 2: name is <role>-L<n>-<slug>[-<k>] for the same <role>-L<n>.
-for nm in "" verifier-L3 verifier-L3- builder-L3-gate-task verifier-L2-gate-task verifier-gate-task gate-task-verifier-L3 "verifier-L3-bad name" "verifier-L3-a/b"; do
+# Condition 2: name is <ticket>-<role>-L<n>[-<k>] for the same <role>-L<n> (T-0363); the old <role>-L<n>-<slug> form is refused.
+for nm in "" verifier-L3 verifier-L3- -verifier-L3 builder-L3-gate-task verifier-L3-gate-task verifier-L2-gate-task verifier-gate-task gate-task-builder-L3 gate-task-verifier-L2 gate-task-verifier-L3-x "bad name-verifier-L3" "a/b-verifier-L3"; do
   out=$(run "$rs" "$(gj $vt "$nm" opus "$gh")"); rc=$?
   [[ $rc -eq 2 ]] || fail "spawn gate condition 2, name '$nm': exit $rc, want 2"
 done
 grep -q "does not match" <<<"$out" || fail "spawn gate condition 2: stderr lacks the name rule"
 # Condition 3: a dispatch record beside the named handoff.
-out=$(run "$rs" "$(gj $vt verifier-L3-no-record opus "$gh")"); rc=$?
+out=$(run "$rs" "$(gj $vt no-record-verifier-L3 opus "$gh")"); rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate condition 3, no record naming the agent: exit $rc, want 2"
 grep -q "no dispatch record" <<<"$out" || fail "spawn gate condition 3: stderr lacks 'no dispatch record'"
 run "$rs" "$(gj $vt $vn opus "$gate/other/handoff.md")" >/dev/null; rc=$?
@@ -506,10 +506,10 @@ for m in sonnet fable haiku OPUS ""; do
   [[ $rc -eq 2 ]] || fail "spawn gate condition 4, model '${m:-unset}' against opus: exit $rc, want 2"
 done
 grep -q "dispatch model 'opus'" <<<"$out" || fail "spawn gate condition 4: stderr lacks the dispatch model"
-printf '%s' '{"subagent_type":"sdlc-lite:planner-L1","name":"planner-L1-gate-task","role":"planner"}' >"$gate/planner-L1.dispatch.json"
-run "$rs" "$(gj sdlc-lite:planner-L1 planner-L1-gate-task opus "$gh")" >/dev/null; rc=$?
+printf '%s' '{"subagent_type":"sdlc-lite:planner-L1","name":"gate-task-planner-L1","role":"planner"}' >"$gate/planner-L1.dispatch.json"
+run "$rs" "$(gj sdlc-lite:planner-L1 gate-task-planner-L1 opus "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate condition 4, a record with no model: exit $rc, want 2"
-run "$rs" "$(gj sdlc-lite:planner-L1 planner-L1-gate-task "" "$gh")" >/dev/null; rc=$?
+run "$rs" "$(gj sdlc-lite:planner-L1 gate-task-planner-L1 "" "$gh")" >/dev/null; rc=$?
 [[ $rc -eq 2 ]] || fail "spawn gate condition 4, no model on the call or in the record: exit $rc, want 2"
 # The same denied calls pass outside a conductor session: the gate acts only for the conductor.
 run "$rs" "$(gj $vt $vn sonnet "$gh" "")" >/dev/null; rc=$?
@@ -523,7 +523,7 @@ fkj() {
     '{tool_name:"Agent",agent_type:"sdlc-lite:conductor",tool_input:{subagent_type:"fork",description:"d",prompt:$prompt}}
      | if $name != "" then .tool_input.name = $name else . end'
 }
-for nm in verifier-L3-gate-task verifier-L1-x plan-reviewer-L1-gate-task plan-reviewer-L2-x; do
+for nm in verifier-L3-gate-task verifier-L1-x plan-reviewer-L1-gate-task plan-reviewer-L2-x 0153-verifier-L3 0153-s2-plan-reviewer-L1-2; do
   out=$(run "$rs" "$(fkj $nm $'Fork reason: need the whole thread\nrest')"); rc=$?
   [[ $rc -eq 2 ]] || fail "fork named '$nm' with a Fork reason: exit $rc, want 2"
   grep -q independent <<<"$out" || fail "fork named '$nm': stderr lacks the independence reason"
