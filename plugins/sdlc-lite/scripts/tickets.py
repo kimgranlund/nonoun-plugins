@@ -151,6 +151,8 @@ Usage: tickets.py [--root DIR] {new <type> <slug> ["title"] [--numbered] | close
             committed at <branch>:<rel> from git objects (no checkout) and stamp every new ticket and follow-up
             id above their max; check warns for a registered name with no local branch. Outside git the lines
             change nothing.
+            `hash_bound: <glob> [<glob>...]` lines (same comment rules) declare the hash-bound and generated paths of
+            the fanout merge class (hash_bound_globs); tickets.py itself never acts on them.
             A `ticket_root: tickets` line (same comment rules) puts the ticket dirs in <root>/tickets for new, close,
             roadmap, check, archive and number; `tickets` is the only supported value, and any other value refuses
             every command, writing nothing. Without the line the ticket dirs are <root>/<slug> as before. With it,
@@ -259,6 +261,7 @@ PREFIX_RE = re.compile(r'\d{4}-')
 DOT_RE = re.compile(r'\.\d{4}-[a-z0-9]+(-[a-z0-9]+)*')  # a closed-ticket folder: .NNNN-<slug>, fullmatch
 CONFIG_RE = re.compile(r'\s*ticket_folders\s*:\s*numbered\s*(?:#.*)?')
 EXTERNAL_RE = re.compile(r'\s*external_branch\s*:\s*(\S+)\s*(?:#.*)?')
+HASH_BOUND_RE = re.compile(r'\s*hash_bound\s*:\s*([^#]*?)\s*(?:#.*)?')  # T-0374: one or more globs per line
 TICKET_ROOT_RE = re.compile(r'\s*ticket_root\s*:\s*(\S+)\s*(?:#.*)?')
 LAYOUT_RE = re.compile(r'\s*layout\s*:\s*(\S+)\s*(?:#.*)?')
 
@@ -413,6 +416,25 @@ def external_branches(root):
         m = EXTERNAL_RE.fullmatch(line)
         if m and m.group(1) not in out:
             out.append(m.group(1))
+    return out
+
+
+def hash_bound_globs(root):
+    """The hash-bound and generated paths a repo declares for the merge class (T-0374): the globs on every
+    `hash_bound: <glob> [<glob>...]` line in <root>/config, in file order, deduplicated; blank and # comment lines and a
+    trailing # comment are ignored, as for external_branch. [] when the file or the line is missing. Each glob is a git
+    :(glob) pathspec relative to the repository root (docs/references/sdlc-internals.md, fanout merge class)."""
+    path = root / 'config'
+    if not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding='utf-8').splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        m = HASH_BOUND_RE.fullmatch(line)
+        for g in (m.group(1).split() if m else []):
+            if g not in out:
+                out.append(g)
     return out
 
 
@@ -3840,6 +3862,13 @@ def selftest():
             expect(f'external: config yields the two names in order, numbered still holds: {got!r}',
                    got == ['codex/x', 'ext'] and config_numbered(cfg))
             expect('external: a missing config yields []', external_branches(wtmp / 'nocfg') == [])
+            # T-0374: hash_bound lines are one glob list (several per line, order kept, duplicates once, comments skipped)
+            (cfg / 'config').write_text('# hash_bound: hidden\nexternal_branch: ext\nhash_bound: gen  # generated\n'
+                                        '  hash_bound: a/** b/*.json\nhash_bound: gen\nhash_bound:   # none\n', encoding='utf-8')
+            got = hash_bound_globs(cfg)
+            expect(f'hash_bound: config yields the three globs in order, external_branch untouched: {got!r}',
+                   got == ['gen', 'a/**', 'b/*.json'] and external_branches(cfg) == ['ext'])
+            expect('hash_bound: a missing config yields []', hash_bound_globs(wtmp / 'nocfg') == [])
 
             # (ii) branch_tickets reads a branch checked out nowhere, by load()'s folder rule
             e_dir = wtmp / 'ext'
