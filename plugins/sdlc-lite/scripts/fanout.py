@@ -365,7 +365,7 @@ MAX_LANES_DEFAULT, MAX_LANES_HARD, STAGGER_DEFAULT = 4, 16, 20
 VACUOUS_GATE = re.compile(r'\bRan 0 tests\b|\bno tests ran\b|\bcollected 0 items\b', re.M)
 SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket and the '
                'files it names, make the smallest change that meets its done criterion, run every check command it '
-               'names and rerun them all after a fix, and report files changed, each check with its outcome, and '
+               'names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check with its outcome, and '
                'anything still open. For a ticket of level L2 or L3 write the handoff\'s ## Acceptance criteria if it has '
                'none, then run the one batched independent verifier agents/solo.md names. No person is present: '
                'never ask the user and never use AskUserQuestion. Never commit, push, open a PR, or publish: '
@@ -378,7 +378,7 @@ SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
 SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
-                        'check command it names and rerun them all after a fix, and report files changed, each check '
+                        'check command it names and after a fix rerun the checks that fix can affect (every check when unsure), keeping any `(red)` control, and report files changed, each check '
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
                         '## Acceptance criteria if it has none, end with your report, and say `verify: needed`: the '
                         'parent runs the one batched independent verifier. No person is present: never ask the user '
