@@ -356,4 +356,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0356 | [.0356-verifier-routing-by-level](.0356-verifier-routing-by-level/handoff.md) | Route the L3 Fable verifier to L4, L5, merge and security tickets only; replay T-0333 on L2 first | chore | L2 | P2 | none | 🟢 done |
 | T-0357 | [0357-solo-l2-effort-sweep](0357-solo-l2-effort-sweep/handoff.md) | Test solo L2 Sonnet at high versus xhigh on past tickets | chore | L2 | P2 | none | ⏳ proposed |
 | T-0358 | [.0358-solo-already-fixed-check](.0358-solo-already-fixed-check/handoff.md) | A solo lane stops early when the ticket is already fixed or stale | feature | L1 | P2 | none | 🟢 done |
-| T-0359 | [0359-haiku-price-refit](0359-haiku-price-refit/handoff.md) | Refit the Haiku rows in prices.json for claude-haiku-5-5 | chore | L1 | P2 | none | ⏳ proposed |
+| T-0359 | [.0359-haiku-price-refit](.0359-haiku-price-refit/handoff.md) | Refit the Haiku rows in prices.json for claude-haiku-5-5 | chore | L1 | P2 | none | 🟢 done |

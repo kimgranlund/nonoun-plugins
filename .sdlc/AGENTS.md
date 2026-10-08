@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:88e8a17a4181 -->
+<!-- sdlc-lite:managed:start v1 sha256:26a25ecd91d8 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,17 +9,16 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 7
+- proposed: 6
   - T-0288 Retire the Claude headless execution path (0288-retire-claude-exec)
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0354 Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied (0354-prepare-env-prefix-allowlist)
   - T-0357 Test solo L2 Sonnet at high versus xhigh on past tickets (0357-solo-l2-effort-sweep)
-  - T-0359 Refit the Haiku rows in prices.json for claude-haiku-5-5 (0359-haiku-price-refit)
 - ready: 0
 - blocked: 0
-- done: 320
+- done: 321
 - dropped: 25
 
 ## Procedures
