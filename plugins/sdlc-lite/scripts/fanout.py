@@ -17,7 +17,7 @@ Sub-agent lanes (T-0285): `run` starts one process per lane. On the Claude host 
 dispatch each lane as a background sub-agent in an isolated worktree and keep only the deterministic work here:
 `prep` is preflight, the overlap check and the lane choice, and prints what to spawn; `land` is the locked merge, the
 gates, the vacuous-gate refusal, the close and the report for one finished branch. `run --driver` stays (the selftest
-and the headless default, removed only by T-0288).
+and the headless default, which on Claude needs SDLC_CLAUDE_EXEC=1, T-0288).
 
 prep
   The preflight of `run` (the same refusals, the same messages, exit 2, nothing created: an unknown, done or twice-
@@ -465,7 +465,7 @@ def solo_command(handoff_rel, size, backend=None):
     task_dir = pathlib.PurePosixPath(handoff_rel).parent.as_posix()
     return ' '.join(shlex.quote(x) for x in (
         sys.executable, str(SCRIPTS / 'solo_run.py'), 'run', '--task-dir', task_dir, '--tier', tier,
-        '--backend', backend, '--exec', '--brief', prompt))  # --exec: the headless start of a `run` lane; sub-agent lanes use prep and land (T-0285), `run` goes in T-0288
+        '--backend', backend, '--exec', '--brief', prompt))  # --exec: the headless start of a `run` lane; sub-agent lanes use prep and land (T-0285), the Claude start refuses without SDLC_CLAUDE_EXEC=1 (T-0288, T-0361)
 
 
 def default_driver(handoff_rel, kind='full', size=None):
@@ -479,7 +479,7 @@ def default_driver(handoff_rel, kind='full', size=None):
     if backend != 'claude':
         raise Refuse('unknown SDLC_BACKEND: ' + backend)
     if os.environ.get('SDLC_CLAUDE_EXEC') != '1':
-        raise Refuse('no default claude -p driver: use fanout.py prep and land (sub-agent lanes), --driver CMD, or SDLC_CLAUDE_EXEC=1 (legacy)')
+        raise Refuse('no default claude -p driver: use fanout.py prep and land (sub-agent lanes), --driver CMD, or SDLC_CLAUDE_EXEC=1')
     return ' '.join(shlex.quote(x) for x in (
         'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:conductor', '--model', 'opus',
         '--effort', 'medium', '--dangerously-skip-permissions', PROMPT.format(handoff=handoff_rel)))
@@ -1896,6 +1896,7 @@ fi
 
 def selftest():
     misses = []
+    ENV['SDLC_CLAUDE_EXEC'] = '1'  # T-0361: ENV was copied at import, lane subprocesses read it
     os.environ['SDLC_CLAUDE_EXEC'] = '1'  # T-0288: the legacy Claude driver stays testable; case 15 checks the refusal without it
 
     def expect(label, cond):
@@ -3436,7 +3437,7 @@ def main(argv):
                     'red resets the merge (repeatable, in order)')
     if argv[0] == 'run':
         ap.add_argument('--driver', metavar='CMD', help='run per ticket in the lane worktree via bash -c '
-                        '(default: a headless sdlc-lite conductor running /sdlc-lite:chain)')
+                        '(default: a headless sdlc-lite conductor running /sdlc-lite:chain; on Claude it needs SDLC_CLAUDE_EXEC=1)')
     ap.add_argument('--rewrite-refs', action='store_true', help='opt-in, numbered mode only: when a ticket '
                     'closes, rewrite files outside the ticket folder that cite <rel>/NNNN-<slug> to '
                     '<rel>/.NNNN-<slug> (passed to tickets.py close). Without it such a close is refused')
