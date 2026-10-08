@@ -35,8 +35,11 @@ goal precheck, lane gate, spec gate, budget gate, then the one write section.
 Names. The result stem is <role>-<level>, or <role>-<level>-<k> for the lowest free k >= 2, where a stem is
 taken when any file <stem>.* sits in the handoff dir (run_lifecycle.py's rule, a superset of run.sh's
 .md and .request.json check, so an interrupted attempt's record bumps k and is never overwritten). The
-Agent name is <role>-<level>-<slug>[-<k>] (slug: the task dir name, plus -s<n> for a step dir, cut to fit 64
-characters). Records are keyed by the stem: <stem>.attempt.json and <stem>.dispatch.json, beside the handoff.
+Agent name is <ticket number>[-s<n>]-<role>-<level>[-<k>] (T-0363: what differs comes first, the attempt last; a
+task with no ticket id uses its dir name, cut to fit 64 characters, in place of the number; s<n> marks a step dir).
+The prompt's first line is a title of at most 50 characters (`T-0153 harness coverage | builder L3 | try 2`), line 2 is
+the Handoff line, and the description is the ticket id, role, level and first title words (3 to 5 words), per
+docs/references/subagent-list-style.md. Records are keyed by the stem: <stem>.attempt.json and <stem>.dispatch.json, beside the handoff.
 
 Records. <stem>.attempt.json holds run_lifecycle.py's keys with status running, transport subagent, and
 parent_pid (SDLC_DISPATCH_PARENT_PID, else the first ancestor process named claude, else the first ancestor
@@ -229,10 +232,44 @@ def slug_of(directory):
     return (re.sub(r'[^a-z0-9]+', '-', d.name.lower()).strip('-') or 'task'), step
 
 
+def ticket_label(directory):
+    """(id, title) of the ticket that owns directory, ('', '') when it has none (T-0363)."""
+    folder = budget.ticket_of(directory)
+    meta = (budget.front(folder / 'handoff.md') if folder else None) or {}
+    return str(meta.get('id') or '').strip(), re.sub(r'\s+', ' ', str(meta.get('title') or '')).strip()
+
+
 def agent_name(role, level, directory, k):
+    """<ticket number>[-s<n>]-<role>-<level>[-<k>], or <slug>[-s<n>]-<role>-<level>[-<k>] with no ticket: what differs
+    between rows comes first, the attempt last, where the host's 24-character cut keeps it (T-0363, subagent-list-style.md)."""
     slug, step = slug_of(directory)
-    head, tail = '%s-%s-' % (role, level), step + ('-%d' % k if k > 1 else '')
-    return head + slug[:max(1, NAME_MAX - len(head) - len(tail))].strip('-') + tail
+    tid = ticket_label(directory)[0]
+    tail = '-%s-%s' % (role, level) + ('-%d' % k if k > 1 else '')
+    head = re.sub(r'[^0-9A-Za-z]+', '', tid[2:]) if tid.upper().startswith('T-') and tid[2:].isdigit() else ''
+    if not head:
+        head = slug[:max(1, NAME_MAX - len(tail) - len(step))].strip('-') or 'task'
+    return head + step + tail
+
+
+def list_title(directory, role, level, k, limit=50):
+    """The first prompt line, at most limit characters: `T-0153 harness coverage | builder L3 | try 2`."""
+    tid, title = ticket_label(directory)
+    slug, step = slug_of(directory)
+    head = ((tid or slug) + (' s' + step[2:] if step else ''))
+    tail = ' | %s %s' % (role, level) + (' | try %d' % k if k > 1 else '')
+    head = head[:max(1, limit - len(tail))].rstrip('-')
+    room = limit - len(head) - len(tail) - 1
+    cut = title[:room] if tid and room > 0 else ''
+    if cut and len(title) > room and title[room] != ' ' and ' ' in cut:
+        cut = cut.rsplit(' ', 1)[0]  # cut at a word, not inside one
+    cut = cut.rstrip(' ,.;:-')
+    return (head + (' ' + cut if cut else '') + tail)[:limit]
+
+
+def list_description(directory, role, level):
+    """Three to five words: the ticket id, the role and level, then the first title words."""
+    tid, title = ticket_label(directory)
+    return ' '.join(([tid or slug_of(directory)[0], role, level] + title.split())[:5])
 
 
 def next_stem(directory, role, level):
@@ -251,10 +288,11 @@ def build_base(directory):
         lines = f.read_text(encoding='utf-8', errors='replace').splitlines()
         stored = re.sub(r'\s', '', lines[0]) if lines else ''
     if not stored:  # a solo lane has no run.sh: its dispatch file recorded the pre-build HEAD (T-0366)
-        for df in sorted(Path(directory).glob('solo-*.dispatch.json')):
+        for df in sorted(Path(directory).glob('*.dispatch.json')):  # <ticket>-solo-<level> now, solo-<level>-<slug> before T-0363
             try:
-                stored = str(json.loads(df.read_text(encoding='utf-8')).get('base_sha') or '').strip()
-            except (OSError, ValueError):
+                rec = json.loads(df.read_text(encoding='utf-8'))
+                stored = str(rec.get('base_sha') or '').strip() if rec.get('role') == 'solo' else ''
+            except (OSError, ValueError, AttributeError):
                 stored = ''
             if stored:
                 break
@@ -500,11 +538,11 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
             if not dry_run and base != stored:
                 (directory / 'base-sha').write_text(base + '\n', encoding='utf-8')
 
-        prompt = ('Handoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your '
+        prompt = ('%s\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your '
                   'instructions define: start with its first heading, with nothing before it and nothing after the last section.\n'
                   'Tree: %s (run every Bash call as cd %s && ...; the shell keeps no working directory between calls)\n'
                   'Throwaway worktrees only under %s (git worktree add --detach "%s/<name>" HEAD creates the parents); remove them when done.'
-                  % (handoff, directory, result, toplevel, toplevel, tmp_prefix, tmp_prefix))
+                  % (list_title(directory, role, level, k), handoff, directory, result, toplevel, toplevel, tmp_prefix, tmp_prefix))
         if role == 'verifier':
             prompt += ('\nReport file: %s (before you end, write your final report to exactly this path with the Write tool, the same text '
                        'as your final message; dispatch.py record reads the file, and a missing one fails the run)' % result)
@@ -515,7 +553,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         reason = os.environ.get('SDLC_ROUTING_REASON', '').strip()
         pid, source = parent_pid()
         dispatch = dict(subagent_type='sdlc-lite:%s-%s' % (role, level), name=name,
-                        description='%s %s: %s' % (role, level, slug_of(directory)[0]),
+                        description=list_description(directory, role, level),
                         model=model, effort=effort, prompt=prompt,
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix,
@@ -1152,13 +1190,13 @@ def selftest():
         case('dispatch file equals the printed JSON apart from dry_run', disk == got and got['dry_run'] is False)
         for key in ('subagent_type', 'model', 'effort', 'name', 'result', 'tmp_prefix', 'base_sha', 'prompt'):
             case('dispatch JSON has %s' % key, key in got and got[key] is not None)
-        case('subagent type, Agent name, and result path', got['subagent_type'] == 'sdlc-lite:builder-L1' and got['name'] == 'builder-L1-w'
-             and got['result'] == str(w / 'builder-L1.md') and got['tmp_prefix'] == str(rr / '.worktrees' / 'tmp' / 'builder-L1-w'))
+        case('subagent type, Agent name, and result path', got['subagent_type'] == 'sdlc-lite:builder-L1' and got['name'] == 'w-builder-L1'
+             and got['result'] == str(w / 'builder-L1.md') and got['tmp_prefix'] == str(rr / '.worktrees' / 'tmp' / 'w-builder-L1'))
         head = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
         case('a builder gets its base sha, in the dispatch, base-sha, and the brief',
              got['base_sha'] == head and (w / 'base-sha').read_text() == head + '\n' and 'Base sha: ' + head in got['prompt'])
         case('the brief is the run.sh prompt plus the tree and tmp prefix lines',
-             got['prompt'].startswith('Handoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
+             got['prompt'].startswith('w | builder L1\nHandoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
                                       'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', w, w / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
         # T-0366: a solo dispatch's recorded base sha, not the later HEAD, is the verifier's Base sha.
@@ -1207,7 +1245,7 @@ def selftest():
         (w / 'builder-L1.attempt.json').write_text(json.dumps(a))
         ladder = resume('builder-L1', str(rr))
         case('resume prints SendMessage by name, by id, then the new attempt with the addendum',
-             len(ladder) == 3 and 'SendMessage' in ladder[0] and 'builder-L1-w' in ladder[0] and 'SendMessage' in ladder[1] and 'ag-7' in ladder[1]
+             len(ladder) == 3 and 'SendMessage' in ladder[0] and 'w-builder-L1' in ladder[0] and 'SendMessage' in ladder[1] and 'ag-7' in ladder[1]
              and ladder[2].startswith('3. python3 dispatch.py prepare builder L1') and 'git status' in ladder[2] and 'transcript' in ladder[2])
         case('resume replays no old report', 'builder-L1.md' not in ' '.join(ladder))
         a.pop('agent_id')
@@ -1233,7 +1271,7 @@ def selftest():
         case('a dead-parent attempt is recovered first', rc3 == 0 and old['status'] == 'interrupted' and 'finished_at' in old and 'recovered' in err3
              and not (w / 'builder-L1.running').exists())
         case('the new attempt gets the next result name and Agent name', got3['result_name'] == 'builder-L1-2'
-             and got3['result'] == str(w / 'builder-L1-2.md') and got3['name'] == 'builder-L1-w-2'
+             and got3['result'] == str(w / 'builder-L1-2.md') and got3['name'] == 'w-builder-L1-2'
              and (w / 'builder-L1-2.attempt.json').is_file())
         case('the interrupted attempt was not overwritten', old['attempt_id'] == att['attempt_id'])
         dryrc, drygot, _ = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', '--dry-run')
@@ -1244,8 +1282,39 @@ def selftest():
         long_dir = rr / '.sdlc' / ('x' * 100) / 'step-12'
         put(long_dir / 'handoff.md', '## Step 12\n')
         long_name = agent_name('plan-reviewer', 'L1', long_dir, 12)
-        case('the Agent name fits 64 characters and keeps the step and attempt suffix', len(long_name) <= NAME_MAX and long_name.endswith('-s12-12')
+        case('the Agent name fits 64 characters and keeps the step and attempt suffix', len(long_name) <= NAME_MAX and long_name.endswith('-s12-plan-reviewer-L1-12')
              and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,63}', long_name) is not None)
+
+        # 7a. T-0363: the host's agent list cuts a name at 24 characters and a prompt's first line at 50
+        # (docs/references/subagent-list-style.md): two attempts of two tickets stay apart in both columns.
+        rows = []
+        for tid, tslug, ttitle in (('T-0153', '0153-harness-coverage-for-the-spawn-gate', 'Harness coverage for the spawn gate and its retries'),
+                                   ('T-0227', '0227-harness-coverage-for-the-verifier', 'Harness coverage for the verifier and its retries')):
+            tdir = rr / '.sdlc' / tslug
+            put(tdir / 'handoff.md', '\n'.join(['---', 'id: ' + tid, 'title: "%s"' % ttitle, 'type: chore', 'status: ready', 'size: L4',
+                                                'priority: P2', 'depends: []', 'created: 2026-10-08', '---', '', '## Goal', 'x', '']))
+            for _attempt in range(2):
+                rcn, gn, errn = prep(rr, 'builder', 'L3', '.sdlc/%s/handoff.md' % tslug, SDLC_DISPATCH_PARENT_PID=str(live))
+                if gn is None:
+                    print(errn)
+                    break
+                af = Path(gn['attempt_file'])
+                an = json.loads(af.read_text())
+                an['status'] = 'interrupted'  # the retry: its predecessor ended without a report
+                af.write_text(json.dumps(an))
+                rows.append((gn['name'], gn['prompt'].splitlines()[0], gn['prompt'].splitlines()[1], gn['description']))
+        for r_name, r_first, _, r_desc in rows:
+            print('  list row: %-26s | %-50s | %s' % (r_name, r_first, r_desc))
+        case('four attempts of two tickets print four names', len(rows) == 4 and all(r[0] for r in rows))
+        case('the first 24 name characters differ across all attempts', len({r[0][:24] for r in rows}) == len(rows))
+        case('each first prompt line is at most 50 characters and starts with the ticket id',
+             all(len(r[1]) <= 50 and r[1].startswith(('T-0153 ', 'T-0227 ')) for r in rows))
+        case('line 2 of the prompt is the Handoff line and the description is 3 to 5 words',
+             all(r[2].startswith('Handoff: ') and 3 <= len(r[3].split()) <= 5 for r in rows))
+        case('a retry adds its number last and keeps the ticket first',
+             rows[0][0] == '0153-builder-L3' and rows[1][0] == '0153-builder-L3-2' and rows[2][0] == '0227-builder-L3'
+             and 'try 2' in rows[1][1] and rows[1][1].startswith('T-0153 ') and 'try' not in rows[0][1])
+        case('a name carries no date, sha, or absolute path', not any(re.search(r'\d{4}-\d\d-\d\d|[0-9a-f]{12}|/', r[0] + r[1]) for r in rows))
 
         # 7b. Every one of the 22 level-table rows (solo too) prints a model the Agent tool accepts.
         for r_role, r_levels in claude_roles.table(PLUGIN).items():

@@ -40,7 +40,7 @@ deny() {
 prepare_hint="prepare the dispatch with dispatch.py prepare <role> <level> <handoff.md> and spawn with exactly the JSON it prints (subagent_type, name, model, prompt)"
 
 if [[ "$sub" == "fork" ]]; then
-  if [[ "$name" == verifier-* || "$name" == plan-reviewer-* ]]; then
+  if [[ "$name" == verifier-* || "$name" == plan-reviewer-* || "$name" =~ -(verifier|plan-reviewer)-L[0-9]+(-[0-9]+)?$ ]]; then
     deny "do not fork '$name': a fork inherits this session's context and model, so a verifier or plan-reviewer fork cannot be independent. $prepare_hint"
   fi
   prompt="$(jq -r '.tool_input.prompt // ""' <<<"$input" 2>/dev/null)"
@@ -66,8 +66,8 @@ if [[ "$sub" == sdlc-lite:* || "$sub" =~ $re_bare ]]; then
   # A solo dispatch (solo_run.py, fanout prep) names its own agent: the record check below is its gate.
   if [[ "$stem" =~ $re_solo ]]; then
     [[ "$name" =~ $re_name ]] || deny "name '$name' is not a valid agent name. $prepare_hint"
-  elif [[ "$name" != "$stem"-?* || ! "$name" =~ $re_name ]]; then
-    deny "name '$name' does not match ${stem}-<slug>[-<k>] for subagent_type '$sub'. $prepare_hint"
+  elif [[ ! "$name" =~ ^.+-${stem}(-[0-9]+)?$ || ! "$name" =~ $re_name ]]; then
+    deny "name '$name' does not match <ticket>-${stem}[-<k>] for subagent_type '$sub'. $prepare_hint"
   fi
 
   prompt="$(jq -r '.tool_input.prompt // ""' <<<"$input" 2>/dev/null)"

@@ -1,6 +1,6 @@
 # Sub-agent list style guide
 
-Read when changing what `dispatch.py prepare`, `solo_run.py` or `fanout.py` print for an Agent spawn. It decides what a person sees in the host's background agent list, so a row can be told apart at a glance. Status: a style target. The scripts do not follow it yet; the work is T-0363.
+Read when changing what `dispatch.py prepare`, `solo_run.py` or `fanout.py` print for an Agent spawn. It decides what a person sees in the host's background agent list, so a row can be told apart at a glance. Status: implemented by T-0363 in `dispatch.py` (`agent_name`, `list_title`, `list_description`), `solo_run.py` and `fanout.py`. The fanout lane name stays `T-NNNN-solo` because the host's worktree branch is `worktree-<name>`.
 
 ## What the list shows
 

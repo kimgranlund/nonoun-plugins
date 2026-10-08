@@ -363,7 +363,7 @@ SOLO_PROMPT = ('Brief: deliver ticket {handoff} end to end in this session as th
 HOST_WORKTREES = '.claude/worktrees'
 SUBAGENT_BRANCH = re.compile(r'worktree-(T-\d{4})-solo', re.I)
 HOST_BRANCH = re.compile(r'worktree-agent-([A-Za-z0-9_-]+)')  # the host's own name for a sub-agent worktree branch
-SOLO_SUBAGENT_PROMPT = ('Handoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
+SOLO_SUBAGENT_PROMPT = ('{head}\nHandoff: {handoff}\nBrief: deliver ticket {handoff} end to end in this session as the solo agent. Read the ticket '
                         'and the files it names, make the smallest change that meets its done criterion, run every '
                         'check command it names and rerun them all after a fix, and report files changed, each check '
                         'with its outcome, and anything still open. For a ticket of level L2 or L3 write the handoff\'s '
@@ -1437,6 +1437,17 @@ def subagent_name(tid):
     return f'{tid}-solo'
 
 
+def subagent_head(tid, title, tier, limit=50):
+    """The first prompt line, at most 50 characters (T-0363, docs/references/subagent-list-style.md): `T-0153 harness coverage | solo L2`."""
+    tail = f' | solo {tier}'
+    room = limit - len(tid) - len(tail) - 1
+    cut = title[:room] if room > 0 else ''
+    if cut and len(title) > room and title[room] != ' ' and ' ' in cut:
+        cut = cut.rsplit(' ', 1)[0]
+    cut = cut.strip(' ,.;:-')
+    return f'{tid} {cut}{tail}' if cut else f'{tid}{tail}'
+
+
 def subagent_dispatch(ctx, t, tier):
     """The Agent call for one solo ticket: a background sub-agent in its own worktree, told to commit `<id>: <title>`."""
     tier = solo_tier(tier)
@@ -1448,9 +1459,9 @@ def subagent_dispatch(ctx, t, tier):
         verifier = ' '.join(shlex.quote(x) for x in (
             sys.executable, str(SCRIPTS / 'dispatch.py'), 'prepare', '--solo-model', model, 'verifier', solo_verifier(ctx['top'] / handoff),
             f'{HOST_WORKTREES}/{name}/{handoff}'))
-    return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': f'solo {tier}: {t.id}',
+    return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': ' '.join(([t.id, 'solo', tier] + t.title.split())[:5]),  # 3 to 5 words
             'model': model, 'effort': effort,
-            'prompt': SOLO_SUBAGENT_PROMPT.format(handoff=handoff, id=t.id, title=t.title),
+            'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
             'handoff': handoff, 'verifier': verifier,
@@ -3159,6 +3170,14 @@ def selftest():
                and len(sh(p1, 'worktree', 'list').stdout.splitlines()) == 1 and not pl1.exists()
                and [ln for ln in sh(p1, 'status', '--porcelain', '--untracked-files=all').stdout.splitlines()
                     if not ln.endswith(('-solo.dispatch.json', '/runs.jsonl'))] == [])
+        # T-0363: the list title is line 1 (ticket id first, at most 50 characters), Handoff is line 2, the description 3 to 5 words.
+        for dd_ in (d1, d2):
+            pl_ = dd_.get('prompt', '').splitlines()
+            print(f"  list row: {dd_.get('name'):<26} | {pl_[0] if pl_ else '':<50} | {dd_.get('description')}")
+        expect('case 22 prep: line 1 is a title of at most 50 characters starting with the ticket id, line 2 is Handoff, the description is 3 to 5 words',
+               all(len(dd_['prompt'].splitlines()[0]) <= 50 and dd_['prompt'].startswith(dd_['ticket'] + ' ')
+                   and dd_['prompt'].splitlines()[1].startswith('Handoff: ') and 3 <= len(dd_['description'].split()) <= 5 for dd_ in (d1, d2))
+               and d1['name'][:24] != d2['name'][:24])
         # T-0326: both lane prompts pass the spawn gate; the same prompt without its Handoff line is still refused
         def gate_rc(d, prompt):
             ev = json.dumps({'tool_name': 'Agent', 'agent_type': 'sdlc-lite:conductor', 'cwd': str(p1), 'tool_input': {
