@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--override-review REASON] |
+Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] |
                  lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
@@ -13,6 +13,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             then write <task dir>/step-<n>/handoff.md as "## Task goal", the goal, a blank line,
             and the step block verbatim (## Step <n>: ... up to the next ## heading, trailing
             blank lines trimmed). Prints one line per file written.
+            --tree PATH sets the work tree --only runs its (guard) and (red) spans in, else the git toplevel
+            of the plan folder (the lane worktree when the plan lives there).
             --only N (repeatable) writes only those steps; an N not in the plan is an error.
             Refuses a step whose step-<n>/ already holds builder-*.md or verifier-*.md: rename it
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
@@ -712,11 +714,12 @@ def run_guard(text, cwd, timeout, base=None):
     return rc, tail[-5:]
 
 
-def run_guards(plan, steps, chosen, task_dir, timeouts):
+def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
     """Run the runnable (guard) spans of each chosen step, each under timeouts[n] seconds; raise
-    Fail naming every red one. Called only by split --only; a full split and lint never execute a span."""
-    top = git_toplevel(task_dir)
-    cwd = top or str(task_dir)
+    Fail naming every red one. Called only by split --only; a full split and lint never execute a span.
+    tree (--tree) is the work tree the spans run in, else the git toplevel of the task dir."""
+    top = git_toplevel(tree or task_dir)
+    cwd = top or str(tree or task_dir)
     base = base_sha(top)
     lines, red, before, ran = [], [], None, False
     for n in chosen:
@@ -848,13 +851,13 @@ def red_first(items, top, cwd, base):
     return out
 
 
-def run_red(plan, steps, chosen, task_dir, timeouts):
+def run_red(plan, steps, chosen, task_dir, timeouts, tree=None):
     """Run the runnable (red) spans of each chosen step, each under timeouts[n] seconds, and raise Fail
     when one is green now, times out, or changes the tree (see red_first). Called only by split --only,
     beside run_guards; a full split and lint never execute a span."""
-    top = git_toplevel(task_dir)
+    top = git_toplevel(tree or task_dir)
     items = [(n, text, timeouts[n]) for n in chosen for text in red_spans(steps[n]) if not guard_skipped(text)]
-    found = red_first(items, top, top or str(task_dir), base_sha(top))
+    found = red_first(items, top, top or str(tree or task_dir), base_sha(top))
     if found:
         raise Fail('\n'.join([f'steps: {plan} red-first: {m}' for m in found]
                              + [f'plan defect: red-first: {len(found)} refusal(s); replan this step (/chain 3)']))
@@ -1289,7 +1292,7 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=None, override_review=None):
+def split(target, only=None, guard_timeout=None, override_review=None, tree=None):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write, each step under guard_timeout when given, else
     its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT. override_review (a reason)
@@ -1336,8 +1339,8 @@ def split(target, only=None, guard_timeout=None, override_review=None):
         timeouts = {n: guard_timeout if guard_timeout is not None
                     else step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT
                     for n in chosen}
-        run_guards(plan, steps, chosen, task_dir, timeouts)
-        run_red(plan, steps, chosen, task_dir, timeouts)
+        run_guards(plan, steps, chosen, task_dir, timeouts, tree)
+        run_red(plan, steps, chosen, task_dir, timeouts, tree)
     if override:
         record_review_override(task_dir, *override)
         print(f'steps: review override: {override[0]} says replan; split anyway: {override[1]}', file=sys.stderr)
@@ -1415,9 +1418,9 @@ def cmd_precheck(task_dir):
     return 0
 
 
-def cmd_split(target, only, guard_timeout=None, override_review=None):
+def cmd_split(target, only, guard_timeout=None, override_review=None, tree=None):
     try:
-        written = split(target, only, guard_timeout, override_review)
+        written = split(target, only, guard_timeout, override_review, tree)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -3185,6 +3188,18 @@ def selftest():
         check('(n) --only with a green guard runs it (from the task dir outside git) and writes the handoff',
               rc == 0 and err == '' and green.exists() and (d / 'step-1' / 'handoff.md').is_file())
 
+        # (T-0377) the plan folder lacks the file the guard greps; the lane tree has it
+        lane_tree = tmp / 'n-lane-tree'
+        lane_tree.mkdir()
+        (lane_tree / 'lane-only.txt').write_text('x\n')
+        d = task(plan=guard_plan('(guard) `test -f lane-only.txt`'))
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(n) --only without --tree runs the guard in the plan folder (red: file is in the lane tree only)',
+              rc == 1 and 'plan defect:' in err and not (d / 'step-1').exists())
+        rc, out, err = run_main(['split', str(d), '--only', '1', '--tree', str(lane_tree)])
+        check('(n) --only --tree runs the guard in the lane tree and writes the handoff',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+
         d = task(plan=guard_plan(f'(guard) `git diff --quiet HEAD^1 HEAD && test -e {tmp}/nope`'))
         rc, _, err = run_main(['split', str(d), '--only', '1'])
         check('(n) a HEAD^1 guard is skipped (it would be red if run)',
@@ -4619,6 +4634,9 @@ def main(argv):
                    help='per-guard timeout for --only; it overrides any "guard timeout: <seconds>" line '
                         '(default: the step block\'s line, else the plan\'s line outside every step, else 300); '
                         'a timeout is a red guard')
+    p.add_argument('--tree', default=None, metavar='PATH',
+                   help='the work tree --only runs its (guard) and (red) spans in (default: the git toplevel '
+                        'of the plan folder); use the lane worktree when the plan folder is in another checkout')
     p.add_argument('--override-review', default=None, metavar='REASON',
                    help='split a plan whose newest plan review says replan anyway (the user\'s call); records '
                         '"review override: <review file>: <reason>" under ## Plan review in handoff.md; '
@@ -4692,7 +4710,10 @@ def main(argv):
         if not reason:
             print('steps: --override-review needs a reason', file=sys.stderr)
             return 1
-    return cmd_split(a.target, a.only, a.guard_timeout, reason)
+    if a.tree is not None and not os.path.isdir(a.tree):
+        print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
+        return 1
+    return cmd_split(a.target, a.only, a.guard_timeout, reason, a.tree)
 
 
 if __name__ == '__main__':
