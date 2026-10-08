@@ -375,3 +375,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0374 | [0374-rolling-merge-class](0374-rolling-merge-class/handoff.md) | Lanes get a computed merge class (rolling or integration) and a land command for rolling lanes | feature | L3 | P2 | T-0375 | ⏳ proposed |
 | T-0376 | [0376-lane-base-from-merge-base](0376-lane-base-from-merge-base/handoff.md) | The lane base sha is the lane's merge-base at dispatch, not the main checkout HEAD | bug | L2 | P2 | none | ⏳ proposed |
 | T-0377 | [0377-split-only-tree](0377-split-only-tree/handoff.md) | steps.py split --only runs guard and red spans in the lane tree, not the main checkout | bug | L1 | P2 | none | ⏳ proposed |
+| T-0378 | [0378-red-checkpoint-builder](0378-red-checkpoint-builder/handoff.md) | Record required red checks before a builder implements, and record a deviation when a run lacks them | feature | L2 | P2 | none | ⏳ proposed |
