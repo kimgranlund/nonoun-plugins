@@ -11,18 +11,17 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
 ## Goal
-The bug is fixed and a test that failed before the fix passes after it.
+`steps.py split --only N` evaluates a step's guard and red spans in the lane tree, not the main checkout.
 
-## Repro
-1. Exact command or steps, from a clean checkout.
-
-## Expected
-
-## Actual
-Paste the output or error verbatim.
+## Intent
+- Do: scripts/steps.py split --only runs the step's (guard) and (red) spans at the main checkout cwd, so on a stale main it reports a false plan defect (maison T-0152 step 12). Run them in the lane tree: accept `--tree PATH` and default to the handoff's own git toplevel (as dispatch.py prepare does for the verifier prompt).
+- Non-goals: model or effort changes; anything outside this ticket.
+- Done when:
+  - A selftest: a handoff in a lane worktree whose main checkout lacks the file the guard greps reports ok when run with --only, and fails without the fix (observed failing first).
+  - check.py, tickets.py check, the affected selftests and both generate --check pass.
 
 ## Context
-Where it was found (file:line, story id, session). Suspected cause, marked as a guess.
+Maison reported a false plan defect on T-0152 step 12 because the guard ran against a stale main. Source: feedback from the maison conductor, 2026-10-08 (about 30 lanes across Claude and Codex, 3 bases, 2 peer repos); its specifics are in the maison repo's .sdlc/notes.md and handoffs. Maison ran plugin 0.21.2; check each claim against 0.21.3 and main before building.
 
 ## Constraints
-The failing test lands before or with the fix, never after.
+No em or en dashes. No push or publish.
