@@ -49,7 +49,10 @@
    adapters/codex/agents/sdlc-messenger-l1.toml exists. It also carries the persistent-poller rules (T-0369): `SendMessage` delivery,
    the `Parent: <address>` startup ping, the same-turn loop, the yield line, the `inbox-<repo>-<receiver>` spawn name, the
    `find` and Monitor host pitfalls, and the claim/handled report format. Negative controls: empty text, no `messenger` key,
-   no TOML, and the text with each of those words removed.
+   no TOML, and the text with each of those words removed. It also carries the lifecycle procedure (T-0380): the
+   `activate`, `beat` and `release` commands, the `supervisor.py` continuation route, that a message is never new
+   authorization, and that a schedule or `activate` is no evidence of idle delivery; the generated mailbox text in
+   scripts/messages.py carries the same procedure under `## Activate a worker`. Negative controls: each phrase removed.
 13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
    line, first occurrences in declared order; scripts/run.sh and scripts/steps.py hold no copy of the schema table.
    Negative controls: builder body with `## Changes` and `## Checks` swapped; run.sh with an `allowed='x'` line.
@@ -614,7 +617,15 @@ for phrase, rels in TICKET_BUDGET.items():
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
 MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGENTS.md',
                    'SendMessage', 'Parent: <address>', 'messenger up', 'same turn', 'yielding;', 'inbox-<repo>-<receiver>',
-                   'use `find`', 'Monitor', 'handled: unknown')  # T-0369: delivery, startup ping, loop, yield, spawn name, host pitfalls, report format
+                   'use `find`', 'Monitor', 'handled: unknown',  # T-0369: delivery, startup ping, loop, yield, spawn name, host pitfalls, report format
+                   'messages.py activate', 'messages.py beat', 'messages.py release', 'scripts/supervisor.py',
+                   'only active-turn delivery is available', 'never counts as new authorization',
+                   'never evidence that an idle parent received a message', 'Any completion event ends you')  # T-0380: lifecycle
+MAILBOX_WORDS = ('## Activate a worker', 'only active-turn delivery is available', '{{scripts}}/supervisor.py',
+                 '--authorized-by', 'never widens that scope', 'is not evidence that an idle parent received anything',
+                 'one re-arm per stall', 'exits 3 unless it is listening', 'Retry and recovery are bounded',
+                 'the exchange cannot loop')  # T-0380
+def mailbox_missing(script_text): return [f'mailbox: scripts/messages.py entry text missing "{w}"' for w in MAILBOX_WORDS if w not in script_text]
 def messenger_missing(agent_text, codex_models, toml_present):
     out = []
     if not agent_text.strip(): out.append('messenger: agents/messenger.md missing or empty')
@@ -631,6 +642,11 @@ if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for 
         or not messenger_missing(mt, mc, False)
         or any(not messenger_missing(mt.replace(w, ''), mc, mtoml) for w in MESSENGER_WORDS)):
     errors.append('check.py: messenger guard negative control not flagged')
+mscript = root/'scripts/messages.py'
+mst = mscript.read_text().split('ENTRY_TEMPLATE = """', 1)[-1].split('STAGE_TEMPLATES', 1)[0] if mscript.is_file() else ''
+errors.extend(mailbox_missing(mst))
+if not mailbox_missing('') or any(not mailbox_missing(mst.replace(w, '')) for w in MAILBOX_WORDS):
+    errors.append('check.py: mailbox lifecycle guard negative control not flagged')
 # Solo agent (docstring item 18): a session agent with levels L1, L2, L3, a Codex mapping, and three generated TOMLs.
 SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet low', '| L2 | L2 | Sonnet high |', 'Opus xhigh')
 SOLO_CODEX = {'L1': ['gpt-6.1-sol', 'low'], 'L2': ['gpt-6.1-sol', 'high'], 'L3': ['gpt-6.1-sol', 'xhigh']}
