@@ -9,8 +9,8 @@ Claude (T-0284): run checks the budget gate, appends one `role solo` record (tra
 verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
 sub-agent (`subagent_type sdlc-lite:solo-<level>`, model, effort, prompt = the brief). It starts no `claude -p`. The
 parent then runs one `dispatch.py prepare verifier <level> <task dir>/handoff.md` for levels L2 and L3 (L2, or L3 where
-`steps.py verifier-level` says so, T-0356). `--exec` is the legacy
-headless start that the next paragraphs describe (`fanout.py run` lanes use it until T-0288; sub-agent lanes use `fanout.py prep` and `land`, T-0285); Codex always executes.
+`steps.py verifier-level` says so, T-0356). `--exec` is the retired
+headless start that the next paragraphs describe: on Claude it exits 2 unless `SDLC_CLAUDE_EXEC=1` (T-0288, T-0361); sub-agent lanes use `fanout.py prep` and `land`, T-0285; Codex always executes.
 
 With --exec (or Codex), run starts the session at the level's model and effort (agents/solo.md), prints the agent's report on
 stdout, and appends one line to <task-dir>/runs.jsonl in the record shape run.sh writes for roles
@@ -538,6 +538,7 @@ def selftest():
         if not ok:
             fails.append(name)
 
+    os.environ['SDLC_CLAUDE_EXEC'] = '1'  # T-0361: the retired Claude --exec start stays testable; the refusal case unsets it
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
         bin_dir = tmp / 'bin'
@@ -776,6 +777,13 @@ def selftest():
             cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--tier', 'S',
                                  '--brief', 'x'], cwd=str(pr), capture_output=True, text=True, timeout=60)
             expect('CLI: neither --task-dir nor --new-task exits 2', cp.returncode == 2)
+            # T-0361: Claude --exec without SDLC_CLAUDE_EXEC=1 refuses with one line, no record; the flag set starts as before.
+            env_off = {k: v for k, v in os.environ.items() if k != 'SDLC_CLAUDE_EXEC'}
+            cp = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), 'run', '--exec', '--new-task', 'cli-gate',
+                                 '--tier', 'L1', '--brief', 'b'], cwd=str(pr), capture_output=True, text=True, env=env_off, timeout=60)
+            expect(f'CLI T-0361: Claude --exec without the flag exits 2 with one line and no task, got rc={cp.returncode} err={cp.stderr[-200:]!r}',
+                   cp.returncode == 2 and len(cp.stderr.strip().splitlines()) == 1 and 'SDLC_CLAUDE_EXEC=1' in cp.stderr
+                   and not (pr / '.sdlc' / 'cli-gate').exists())
             os.environ.pop('SOLO_MARK', None)
 
             # Codex: codex_exec.py reports no cost; the record says so. A stub stands in for it.
@@ -1069,6 +1077,9 @@ def main():
         return 2
     if bool(a.task_dir) == (a.new_task is not None):
         print('solo_run.py: give exactly one of --task-dir or --new-task', file=sys.stderr)
+        return 2
+    if a.backend == 'claude' and a.exec and os.environ.get('SDLC_CLAUDE_EXEC') != '1':
+        print('solo_run.py: the Claude headless start is retired: use fanout.py prep and land or dispatch.py prepare (sub-agent), or SDLC_CLAUDE_EXEC=1', file=sys.stderr)
         return 2
     try:
         task_dir = a.task_dir if a.task_dir else new_task(a.new_task, brief)
