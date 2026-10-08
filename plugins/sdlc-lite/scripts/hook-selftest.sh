@@ -477,11 +477,33 @@ for st in L4 L0 XL X; do
   [[ $rc -eq 2 ]] || fail "spawn gate denies sdlc-lite:solo-$st: exit $rc, want 2"
 done
 # Condition 1: subagent_type is sdlc-lite:<role>-L<n>.
-for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:messenger sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
+for sub in sdlc-lite:verifier sdlc-lite:verifier-L sdlc-lite:solo sdlc-lite:solo-X sdlc-lite:conductor verifier-L3 sdlc-lite:Verifier-L3; do
   out=$(run "$rs" "$(gj "$sub" $vn opus "$gh")"); rc=$?
   [[ $rc -eq 2 ]] || fail "spawn gate condition 1, subagent_type '$sub': exit $rc, want 2"
 done
 grep -q "sdlc-lite:<role>-L<n>" <<<"$out" || fail "spawn gate condition 1: stderr does not name the required form"
+# T-0369: a conductor may spawn the session agent sdlc-lite:messenger (no dispatch record: it is not a pipeline role)
+# under the legible name inbox-<repo>-<receiver>; every other name, and every other non-role agent, stays denied.
+mj() { gj "$1" "$2" haiku "$gh" "${3-sdlc-lite:conductor}"; }
+for nm in inbox-maison-claude inbox-sdlc-lite-codex; do
+  run "$rs" "$(mj sdlc-lite:messenger "$nm")" >/dev/null; rc=$?
+  [[ $rc -eq 0 ]] || fail "spawn gate allows sdlc-lite:messenger named '$nm' (T-0369): exit $rc, want 0"
+done
+run "$rs" "$(mj sdlc-lite:messenger inbox-maison-claude conductor)" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows the messenger for agent_type conductor (T-0369): exit $rc, want 0"
+run "$rs" "$(mj sdlc-lite:messenger inbox-maison-claude "")" SDLC_ROLE=conductor >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate allows the messenger under SDLC_ROLE=conductor (T-0369): exit $rc, want 0"
+for nm in "" messenger poller inbox inbox- Inbox-maison-claude "inbox-bad name" inbox-a/b verifier-L3; do
+  out=$(run "$rs" "$(mj sdlc-lite:messenger "$nm")"); rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate denies the messenger named '$nm' (T-0369): exit $rc, want 2"
+done
+grep -q "inbox-<repo>-<receiver>" <<<"$out" || fail "spawn gate: the messenger name denial does not name inbox-<repo>-<receiver>"
+for sub in sdlc-lite:conductor sdlc-lite:solo sdlc-lite:solo-L4 sdlc-lite:messenger-L1 sdlc-lite:verifier sdlc-lite:builder-L3; do
+  run "$rs" "$(mj "$sub" inbox-maison-claude)" >/dev/null; rc=$?
+  [[ $rc -eq 2 ]] || fail "spawn gate: '$sub' named inbox-maison-claude still denies beside the messenger allowance (T-0369): exit $rc, want 2"
+done
+run "$rs" "$(mj sdlc-lite:messenger "inbox-maison-claude" "")" >/dev/null; rc=$?
+[[ $rc -eq 0 ]] || fail "spawn gate: a non-conductor session passes a messenger spawn (T-0369): exit $rc, want 0"
 # Condition 2: name is <ticket>-<role>-L<n>[-<k>] for the same <role>-L<n> (T-0363); the old <role>-L<n>-<slug> form is refused.
 for nm in "" verifier-L3 verifier-L3- -verifier-L3 builder-L3-gate-task verifier-L3-gate-task verifier-L2-gate-task verifier-gate-task gate-task-builder-L3 gate-task-verifier-L2 gate-task-verifier-L3-x "bad name-verifier-L3" "a/b-verifier-L3"; do
   out=$(run "$rs" "$(gj $vt "$nm" opus "$gh")"); rc=$?

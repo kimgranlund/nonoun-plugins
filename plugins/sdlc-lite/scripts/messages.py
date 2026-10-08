@@ -307,9 +307,9 @@ Before relying on a receiver, prove its reader is alive: `python3 "{{scripts}}/m
 
 ## Messenger
 
-Each harness runs one dedicated `messenger` sub-agent on a cheap model. On startup it runs `backlog --once` and reports previously claimed, unacknowledged messages in their own section; it never replays, replies to, or acks them. It then polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
+Each harness runs one dedicated `messenger` sub-agent on a cheap model. On startup it runs `backlog --once` and reports previously claimed, unacknowledged messages in their own section; it never replays, replies to, or acks them. It then polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and delivers each claimed batch to its parent by `SendMessage` (assistant text reaches nobody), naming each claimed id and `read/<harness>/<id>.md`, then keeps polling in the same turn; it yields only when told to stop or after a bounded number of reports or empty waits, so the parent's instructions drain. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
-- Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
+- Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude` and its parent address as `Parent: <address>`, exactly as the host routes it. A conductor session may spawn it without a dispatch record under the name `inbox-<repo>-<receiver>`, for example `inbox-maison-claude`; the first thing it does is a startup `SendMessage` ping to that address. When it yields (`yielding; SendMessage me to resume`), resume it by `SendMessage`. A poller with stale instructions is replaced by a new spawn, not corrected by message.
 - Codex: install the project agents once with `python3 "{{scripts}}/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
 
 - Codex reader recipe, no messenger: under `/goal`, loop on `python3 "{{scripts}}/messages.py" wait --receiver <name> --timeout 100 --interval 10`, claim each printed id with `read`, handle it, and run `wait` again until the goal ends. Register the reader first with `register --name <name> --harness codex --reader <session>`, then confirm it from the sender's side with `handshake`.
@@ -319,11 +319,11 @@ While the parent is active, `wait` is the cheaper alternative to a polling subag
 
 ## Host limits
 
-Claude Code: the messenger lives only while its session runs. Foreground `sleep` is blocked, so polling needs Monitor (an until-loop) or a loop. A session running the `sdlc-lite:conductor` agent cannot spawn it, because the plugin's `block-role-spawn.sh` hook denies every `sdlc-lite:` agent spawn there. A Claude hook enforces nothing on Codex.
+Claude Code: the messenger lives only while its session runs. Foreground `sleep` is blocked, but `wait` is one foreground call and needs no loop. A session running the `sdlc-lite:conductor` agent may spawn `sdlc-lite:messenger` only under the name `inbox-<repo>-<receiver>`; the plugin's `block-role-spawn.sh` hook denies any other `sdlc-lite:` agent that is not a prepared dispatch. A shell watcher must use `find`, not a glob, because zsh aborts on an unmatched glob; a `Monitor` watcher posts every event to the user's feed and expires after 30 minutes. A Claude hook enforces nothing on Codex.
 
 Codex: the messenger is a native subagent with its own lifetime and no Claude tools or hooks. The Codex sandbox and approval policy apply. One host working says nothing about the other.
 
-Both hosts: A subagent, including the messenger, can report only into a parent turn that is still running. It cannot wake an idle host on Claude Code or Codex. Keep the parent in an active turn: on Codex run `/goal` or have the parent wait on the messenger and spawn it again; on Claude Code keep the foreground session working. The live runs covered only an active parent.
+Both hosts: A subagent, including the messenger, can report only into a parent turn that is still running. It cannot wake an idle host on Claude Code or Codex. Keep the parent in an active turn: on Codex run `/goal` or have the parent wait on the messenger and spawn it again; on Claude Code keep the foreground session working. The live runs covered only an active parent. A host heartbeat that resumed an idle Codex chat was observed once and is not proven reliable; this file does not claim idle wake.
 
 ## Trust
 
@@ -2531,6 +2531,142 @@ def case_receivers_and_orphans(h):
     b.refused('expire', '--orphans', want='receivers.json')
 
 
+# T-0369: the messenger loop in agents/messenger.md, modelled against the real CLI. The model stands in for the
+# agent, so the case also binds the model to the agent text; the live round trip is the regression evidence for the
+# host. A transcript event is (turn, kind, to, text, at): kind SendMessage reaches the parent, kind text never does.
+ST_PARENT = 'main'
+ST_DELIVER_WITHIN = 10  # seconds from the claim's read_time to the parent-visible SendMessage
+
+
+class StTranscript:
+    def __init__(self):
+        self.events = []
+
+    def send_message(self, turn, to, text):
+        self.events.append((turn, 'SendMessage', to, text, st_now()))
+
+    def assistant_text(self, turn, text):
+        self.events.append((turn, 'text', None, text, st_now()))
+
+
+def st_poll(b, tx, harness, parent, mode, ping_to=None, rounds=3, yield_after_empty=2):
+    """One messenger run. mode persistent delivers each batch by SendMessage and loops in the same turn;
+    text-only narrates each batch as assistant text (the maison defect); one-shot delivers then ends the turn."""
+    turn, empty = 1, 0
+    tx.send_message(turn, ping_to or parent, f'messenger up, harness {harness}')
+    b.ok('backlog', '--receiver', harness, '--once')
+    for n in range(1, rounds + 1):
+        if st_poll.between:
+            st_poll.between(n)
+        r = b.run('wait', '--receiver', harness, '--timeout', '1', '--interval', '1')
+        if r.returncode == 3:
+            empty += 1
+            if empty >= yield_after_empty:
+                return turn
+            continue
+        empty = 0
+        ids = [ln.split('\t', 1)[0] for ln in r.stdout.decode('utf-8').splitlines()]
+        lines = []
+        for mid in ids:
+            b.ok('read', mid, '--receiver', harness)
+            lines.append(f'claimed {mid} read/{harness}/{mid}.md | notified: SendMessage sent | handled: unknown')
+        report = f'{len(ids)} new messages; 0 previously claimed messages remain unacknowledged.\n' + '\n'.join(lines)
+        if mode == 'text-only':
+            tx.assistant_text(turn, report)
+        else:
+            tx.send_message(turn, parent, report)
+        if mode == 'one-shot':
+            return turn
+    return turn
+
+
+st_poll.between = None
+
+
+def st_assert_delivered(b, tx, harness, parent, ids):
+    """The parent transcript shows the startup ping at the parent address and every id, each by SendMessage to
+    the parent within ST_DELIVER_WITHIN seconds of its claim, all in one turn."""
+    if not tx.events or tx.events[0][1:3] != ('SendMessage', parent) or 'messenger up' not in tx.events[0][3]:
+        st_fail(f'the first event is not a startup ping to {parent!r}: {tx.events[:1]}')
+    turns = set()
+    for mid in ids:
+        got = [e for e in tx.events if e[1] == 'SendMessage' and e[2] == parent and mid in e[3]
+               and f'read/{harness}/{mid}.md' in e[3]]
+        if not got:
+            st_fail(f'the parent never received {mid} by SendMessage; events: {[e[1] for e in tx.events]}')
+        fields, _ = b.load('read', harness, mid)
+        late = (datetime.datetime.strptime(got[0][4], ST_TS_FMT)
+                - datetime.datetime.strptime(fields['read_time'], ST_TS_FMT)).total_seconds()
+        if not 0 <= late <= ST_DELIVER_WITHIN:
+            st_fail(f'{mid} reached the parent {late:.1f} s after its claim, limit {ST_DELIVER_WITHIN} s')
+        turns.add(got[0][0])
+    if len(turns) != 1:
+        st_fail(f'the messages reached the parent in turns {sorted(turns)}, expected one turn')
+
+
+def st_must_flag(label, fn):
+    try:
+        fn()
+    except SelftestFail:
+        return
+    st_fail(f'negative control not flagged: {label}')
+
+
+def case_messenger_delivery(h):
+    here = os.path.dirname(os.path.realpath(__file__))
+    try:
+        with open(os.path.join(here, '..', 'agents', 'messenger.md'), encoding='utf-8') as f:
+            text = f.read()
+    except FileNotFoundError:
+        text = None
+    if text is not None:  # the model above is only evidence while the agent text still says the same
+        for want in ('Parent: <address>', 'messenger up', 'SendMessage', 'same turn', 'yielding;'):
+            if want not in text:
+                st_fail(f'agents/messenger.md no longer says {want!r}, which this model relies on')
+
+    def fresh():
+        b = Box(h)
+        b.reg('claude', 'claude', 'sess-1')
+        b.put('claude', '20260101T000000000000Z-alice-first',
+              st_message(receiver='claude', send_time='2026-01-01T00:00:00.000000Z', topic='first'))
+        return b
+
+    def second(b):  # a reply 13 s after the first message, arriving while the poller is looping
+        def between(n):
+            if n == 2:
+                b.put('claude', '20260101T000013000000Z-alice-second',
+                      st_message(receiver='claude', send_time='2026-01-01T00:00:13.000000Z', topic='second'))
+        st_poll.between = between
+
+    ids = ['20260101T000000000000Z-alice-first', '20260101T000013000000Z-alice-second']
+    try:
+        # persistent: both messages 13 s apart reach the parent by SendMessage, in one turn
+        b, tx = fresh(), StTranscript()
+        second(b)
+        st_poll(b, tx, 'claude', ST_PARENT, 'persistent')
+        st_assert_delivered(b, tx, 'claude', ST_PARENT, ids)
+        # negative controls, each observed failing
+        b, tx = fresh(), StTranscript()
+        second(b)
+        st_poll(b, tx, 'claude', ST_PARENT, 'text-only')
+        st_must_flag('a poller that only writes assistant text', lambda: st_assert_delivered(b, tx, 'claude', ST_PARENT, ids))
+        b, tx = fresh(), StTranscript()
+        second(b)
+        st_poll(b, tx, 'claude', ST_PARENT, 'one-shot')
+        st_must_flag('a one-shot poller misses the second message',
+                     lambda: st_assert_delivered(b, tx, 'claude', ST_PARENT, ids))
+        st_poll.between(2)  # the second message lands after the one-shot turn ended: nobody is polling
+        if [m for _, _, m in b.messages(('new',))] != [ids[1]]:
+            st_fail('the one-shot control should leave the second message unread in new/claude/')
+        b, tx = fresh(), StTranscript()
+        second(b)
+        st_poll(b, tx, 'claude', ST_PARENT, 'persistent', ping_to='team-lead')
+        st_must_flag('a startup ping to a different parent address',
+                     lambda: st_assert_delivered(b, tx, 'claude', ST_PARENT, ids))
+    finally:
+        st_poll.between = None
+
+
 SELFTEST_CASES = (
     ('create', case_create),
     ('new to read', case_new_to_read),
@@ -2570,6 +2706,7 @@ SELFTEST_CASES = (
     ('registry: send to a reader-less receiver warns, a live one prints its reader', case_registry_warns_reader_less),
     ('sender: default names repo and harness, conductor kept', case_default_sender),
     ('handshake: reader alive and no reader', case_handshake),
+    ('messenger: two messages 13 s apart reach the parent by SendMessage in one turn', case_messenger_delivery),
     ('receivers: list shows live and orphaned, expire closes orphans', case_receivers_and_orphans),
 )
 

@@ -5,7 +5,7 @@
 #  - subagent_type sdlc-lite:<role>-L<n> is allowed only as a prepared dispatch, that is only when
 #    all four hold, and each failed condition is its own denial:
 #      1. subagent_type is sdlc-lite:<role>-L<n> (a level definition, or sdlc-lite:solo-L1|L2|L3 on
-#         its dispatch record and model alone; not sdlc-lite:messenger or a bare role name); the
+#         its dispatch record and model alone; not sdlc-lite:conductor or a bare role name); the
 #         0.21.x solo names solo-S, solo-M, solo-L pass as deprecated aliases for one release (ALIAS_OK);
 #      2. name is <role>-L<n>-<slug>[-<k>], the same <role>-L<n> as the subagent_type;
 #      3. a dispatch record exists beside the handoff named by the prompt's "Handoff:" line (its path is the first token; trailing text is ignored): the
@@ -13,6 +13,8 @@
 #         prepare writes <role>-L<n>[-<k>].dispatch.json and puts the Agent name inside it);
 #      4. the call's model equals that record's model, so a verifier or plan-reviewer cannot be
 #         moved onto the builder's family after prepare chose its model.
+#  - sdlc-lite:messenger is the one session agent a conductor may spawn without a dispatch record (it is
+#    not a pipeline role): its name must be inbox-<repo>-<receiver> (T-0369). Any other name is denied.
 #  - subagent_type fork is denied when the name starts with verifier- or plan-reviewer- (a fork
 #    inherits the parent's context and model, so it cannot be independent), and any other fork
 #    needs a "Fork reason:" line in the prompt.
@@ -49,6 +51,12 @@ if [[ "$sub" == "fork" ]]; then
     if [[ "$line" =~ ^Fork\ reason:[[:space:]]*[^[:space:]] ]]; then has_reason=1; break; fi
   done <<<"$prompt"
   [[ $has_reason -eq 1 ]] || deny "a fork needs a line 'Fork reason: <why a fork and not a fresh brief>' in its prompt"
+  exit 0
+fi
+
+if [[ "$sub" == "sdlc-lite:messenger" ]]; then
+  [[ "$name" =~ ^inbox-[a-z0-9]+(-[a-z0-9]+)+$ ]] ||
+    deny "name '$name' does not match inbox-<repo>-<receiver> (lowercase letters, digits and dashes) for subagent_type 'sdlc-lite:messenger'; spawn it as the mailbox poller, for example inbox-maison-claude"
   exit 0
 fi
 

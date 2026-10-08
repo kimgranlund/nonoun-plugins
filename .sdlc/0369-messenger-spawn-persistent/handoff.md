@@ -30,3 +30,9 @@ Maison hit all of this on 2026-10-08: the messenger spawn was denied by block-ro
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `bash plugins/sdlc-lite/scripts/hook-selftest.sh` exits 0 and its spawn-gate cases show a conductor spawning `sdlc-lite:messenger` named `inbox-maison-claude` passes, a messenger with another name denies, and `sdlc-lite:conductor`, `sdlc-lite:solo`, `sdlc-lite:verifier` and `sdlc-lite:builder-L3` still deny.
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and its `messenger:` case flags a poller that writes only assistant text, a one-shot poller that misses the second message, and a startup ping to the wrong parent address, while a persistent poller delivers two messages 13 s apart to the parent by SendMessage in one turn.
+- `plugins/sdlc-lite/agents/messenger.md` states the SendMessage delivery rule, the `Parent: <address>` startup ping, the same-turn loop with a bounded yield, the claim/handled report format, the `find` zsh pitfall, and that a Monitor watcher posts to the user's feed; it does not claim idle wake or a fix for the unprocessed correction.
+- `python3 plugins/sdlc-lite/scripts/check.py`, `tickets.py --root .sdlc check`, `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0; deleting any required messenger phrase makes `check.py` fail.
