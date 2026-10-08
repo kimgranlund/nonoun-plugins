@@ -881,7 +881,7 @@ def selftest():
 
     def runsh(repo, role, level, rel, **env):
         """(rc, model, effort, result name, stderr) of SDLC_DRY_RUN=1 run.sh, its argv decoded through bash."""
-        with clean_env(SDLC_DRY_RUN='1', **env):
+        with clean_env(SDLC_DRY_RUN='1', SDLC_CLAUDE_EXEC='1', **env):
             p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
         if p.returncode != 0:
             return p.returncode, None, None, None, p.stderr
@@ -1279,7 +1279,7 @@ def selftest():
             event = tmp / 'stub-result.json'
             event.write_text(json.dumps({'type': 'result', 'is_error': False, 'result': BODY[role], 'total_cost_usd': 0.5,
                                          'duration_ms': 5, 'num_turns': 2, 'usage': {'input_tokens': 1}}) + '\n')
-            with clean_env(PATH=str(stub) + os.pathsep + os.environ['PATH'], STUB_RESULT=str(event), **env):
+            with clean_env(PATH=str(stub) + os.pathsep + os.environ['PATH'], STUB_RESULT=str(event), SDLC_CLAUDE_EXEC='1', **env):
                 p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
             return p.returncode, p.stdout.strip(), p.stderr
 

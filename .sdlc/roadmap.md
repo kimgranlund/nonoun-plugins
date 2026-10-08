@@ -286,7 +286,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0285 | [.0285-fanout-subagent](.0285-fanout-subagent/handoff.md) | Fanout lanes as isolated background sub-agents | feature | L2 | P2 | T-0284, T-0281 | 🟢 done |
 | T-0286 | [.0286-supervisor-orphans](.0286-supervisor-orphans/handoff.md) | Supervisor reports orphaned dispatches | feature | L1 | P2 | T-0279 | 🟢 done |
 | T-0287 | [.0287-subagent-live-evidence](.0287-subagent-live-evidence/handoff.md) | Live evidence for sub-agent mode, including an account switch | chore | L2 | P2 | T-0283, T-0284, T-0285, T-0286 | 🟢 done |
-| T-0288 | [0288-retire-claude-exec](0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | L1 | P2 | T-0287 | ⏳ proposed |
+| T-0288 | [.0288-retire-claude-exec](.0288-retire-claude-exec/handoff.md) | Retire the Claude headless execution path | chore | L1 | P2 | T-0287 | 🟢 done |
 | T-0290 | [.0290-role-bodies-subagent](.0290-role-bodies-subagent/handoff.md) | Role bodies optimized for session and sub-agent execution | chore | L2 | P2 | none | 🟢 done |
 | T-0291 | [.0291-hook-quadratic-long-command](.0291-hook-quadratic-long-command/handoff.md) | PreToolUse hooks run super-quadratic on long Bash commands | bug | L1 | P2 | none | 🟢 done |
 | T-0292 | [.0292-machine-wide-gate-semaphore](.0292-machine-wide-gate-semaphore/handoff.md) | Machine-wide gate semaphore so a load stop line counts gates, not lanes | idea | L2 | P2 | none | 🟢 done |
