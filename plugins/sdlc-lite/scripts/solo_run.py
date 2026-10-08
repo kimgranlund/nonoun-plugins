@@ -38,7 +38,9 @@ Cost is never guessed. A result with no total_cost_usd (a crash, a missing resul
 reports none) records cost_usd null with a cost_reason, and the budget reports that run as unmetered.
 
 Claude: `SDLC_ROLE=solo claude -p --plugin-dir <plugin> --agent sdlc-lite:solo --model M --effort E
---dangerously-skip-permissions --output-format json -- <brief>`. Codex: `codex_exec.py solo L1..L3 <brief>`.
+--dangerously-skip-permissions --output-format json -- <brief>`. Codex: `codex_exec.py solo L1..L3 <brief>`; with SDLC_CODEX_TRANSPORT=subagent it adds
+`--request-file <task dir>/solo-<level>-<attempt>.request.json` (T-0372), the parent answers it through codex_exchange.py,
+and the record says transport subagent (a standalone run says exec).
 Exit status is the session's own, or 1 when it reported an error.
 """
 import argparse
@@ -171,7 +173,24 @@ def number(x):
     return x if isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) else None
 
 
-def build_record(tier, backend, model, effort, result, attempt, started, rc, reason=None):
+def native_codex():
+    """True when a Codex solo run uses the native subagent transport (T-0372): the parent answers a request file."""
+    return os.environ.get('SDLC_CODEX_TRANSPORT') == 'subagent'
+
+
+def request_path(task_dir, level, attempt):
+    """The native exchange request for one attempt. The attempt id is fresh per run, so a rerun never overwrites an earlier request."""
+    return pathlib.Path(task_dir).resolve() / f'solo-{level}-{attempt[:8]}.request.json'
+
+
+def clean_exchange(request):
+    """Remove an exchange's lock, owner lock, temp and response files; the request (status received or failed) stays as the record."""
+    request = pathlib.Path(request)
+    for suffix in ('.response.json', '.lock', '.owner.lock', '.tmp'):
+        request.with_suffix(suffix).unlink(missing_ok=True)
+
+
+def build_record(tier, backend, model, effort, result, attempt, started, rc, reason=None, transport=None):
     """One runs.jsonl line. cost_usd is the result's total_cost_usd, else null with cost_reason: never zero."""
     tier = tier_of(tier)
     level = TIERS[tier][2]
@@ -186,7 +205,7 @@ def build_record(tier, backend, model, effort, result, attempt, started, rc, rea
     rec = {'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'solo', 'level': level,
            'model': model, 'effort': effort, 'file': '', 'shared_with_builder': False, 'attempt_id': attempt,
            'routing_reason': reason or f'solo lane, level {tier}',
-           'backend': backend, 'transport': 'exec' if backend == 'codex' else 'claude',
+           'backend': backend, 'transport': (transport or (result or {}).get('transport') or 'exec') if backend == 'codex' else 'claude',
            'usage': (result or {}).get('usage'), 'cost_usd': cost, 'duration_ms': duration,
            'turns': number((result or {}).get('num_turns')), 'exit_code': rc,
            'stray_worktrees': [], 'stray_branches': []}
@@ -486,6 +505,11 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     attempt = uuid.uuid4().hex
     env = dict(os.environ, SDLC_ROLE='solo', SDLC_ATTEMPT_ID=attempt)
     started = time.monotonic()
+    request = None
+    if backend == 'codex' and native_codex():  # T-0372: solo gets the same request lifecycle as conductor
+        request = request_path(task_dir, TIERS[tier][2], attempt)
+        argv = argv + ['--request-file', str(request)]
+        print(f'solo_run.py: native request {request}', file=sys.stderr)
     p = None
     try:
         p = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
@@ -504,7 +528,9 @@ def _run_locked(task_dir, tier, brief, backend, cwd, timeout, raw_out, argv, mod
     if raw_out:
         pathlib.Path(raw_out).write_text(out or '', encoding='utf-8')
     result = find_result(out)
-    rec = build_record(tier, backend, model, effort, result, attempt, started, rc)
+    if request is not None:
+        clean_exchange(request)
+    rec = build_record(tier, backend, model, effort, result, attempt, started, rc, transport='subagent' if request is not None else None)
     append(task_dir, rec)
     text = (result or {}).get('result')
     if isinstance(text, str) and text:

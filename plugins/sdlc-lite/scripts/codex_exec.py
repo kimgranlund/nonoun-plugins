@@ -27,11 +27,11 @@ def run(role, level, prompt, model=None, effort=None, request_file=None):
     if transport not in ('exec', 'subagent'):
         raise ValueError('unknown SDLC_CODEX_TRANSPORT: ' + transport)
     if transport == 'subagent':
-        if not request_file and role == 'conductor':
+        if not request_file and role in ('conductor', 'solo'):
             import uuid
             exchange_dir = Path.cwd() / '.sdlc'
             exchange_dir.mkdir(exist_ok=True)
-            request_file = str(exchange_dir / ('native-conductor-' + uuid.uuid4().hex + '.request.json'))
+            request_file = str(exchange_dir / ('native-' + role + '-' + uuid.uuid4().hex + '.request.json'))
         if not request_file:raise ValueError('subagent transport requires --request-file')
         from codex_exchange import wait_for_agent
         return wait_for_agent(role, level, prompt, model, effort, request_file, timeout)
