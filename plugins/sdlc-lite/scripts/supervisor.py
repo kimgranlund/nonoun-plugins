@@ -1474,6 +1474,7 @@ if handle in ('ack', 'claim'):
             msg('reply', mid, 'stub reply')
         msg('ack', mid, '--outcome', 'handled by the stub')
 if cfg.get('send_to'):
+    msg('register', '--name', cfg['send_to'], '--harness', 'human')
     msg('send', '--receiver', cfg['send_to'], '--sender', receiver, '--topic', 'stub', '--follow-up', 'false',
         'stub body')
 time.sleep(cfg.get('sleep', 0))
@@ -1960,6 +1961,9 @@ class Box:
 
     def send(self, receiver='bob', sender='alice', topic='t', body='hi', follow_up='false', re_id=None):
         extra = [] if re_id is None else ['--re', re_id]
+        subprocess.run([sys.executable, self.h.msg, 'register', '--name', receiver, '--harness', 'human'],
+                       cwd=self.repo, env=self.h.env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE, timeout=60, check=True)
         r = subprocess.run([sys.executable, self.h.msg, 'send', '--receiver', receiver, '--sender', sender, '--topic',
                             topic, '--follow-up', follow_up] + extra + [body], cwd=self.repo, env=self.h.env,
                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)

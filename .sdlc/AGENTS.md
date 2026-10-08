@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:9c834ae6b7af -->
+<!-- sdlc-lite:managed:start v1 sha256:a42ad87d15be -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,20 +9,19 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 9
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0357 Test solo L2 Sonnet at high versus xhigh on past tickets (0357-solo-l2-effort-sweep)
   - T-0368 A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result (0368-prune-flag)
   - T-0369 A conductor can spawn the messenger, and the messenger keeps polling after a report (0369-messenger-spawn-persistent)
-  - T-0370 Mailbox receivers registry, default sender identity and a handshake command (0370-mailbox-registry-handshake)
   - T-0371 dispatch.py guards assume one session: own-pid attempt block and repo-wide stray worktree check (0371-guards-single-session)
   - T-0372 Codex solo launcher does not supply the native exchange request file (0372-codex-solo-native-transport)
   - T-0373 Codex dispatch readiness does not check roles loaded in the current session (0373-codex-role-preflight)
 - ready: 0
 - blocked: 0
-- done: 331
+- done: 332
 - dropped: 25
 
 ## Procedures

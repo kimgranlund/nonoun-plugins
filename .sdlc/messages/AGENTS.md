@@ -14,9 +14,9 @@ The script path in the commands below was written when this file was generated. 
 
 ## Send
 
-`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" send --receiver <name> --sender <name> --topic "<one line>" --follow-up <true|false> "<body>"`
+`python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" send --receiver <name> --topic "<one line>" --follow-up <true|false> "<body>"`
 
-Names match `[a-z0-9]+(-[a-z0-9]+)*`. `--follow-up true` makes `ack` wait for a reply. Optional flags: `--re <id>`, `--kind question|handoff|ack`, `--ttl` (default `7d`). A body of `-` is read from stdin. The command prints the new message path.
+Names match `[a-z0-9]+(-[a-z0-9]+)*`. The receiver must be registered (see Receivers), or `send` refuses and writes nothing. `--sender <name>` is optional: it defaults to `<repo>-<harness>-conductor`, for example `maison-claude-conductor`, so replies and logs say which repo and harness spoke; the harness comes from `SDLC_HARNESS` or the host's own variables, and `--sender conductor` is still accepted as written. `--follow-up true` makes `ack` wait for a reply. Optional flags: `--re <id>`, `--kind question|handoff|ack`, `--ttl` (default: the receiver's registered expiry, `7d` unless set). A body of `-` is read from stdin. The command prints the new message path on stdout; on stderr it prints the receiver's harness, repo and reader, and warns when the reader is `none`.
 
 ## Read
 
@@ -38,12 +38,23 @@ To see messages already claimed but not acknowledged, run `python3 "/Users/kimgr
 
 `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" expire` moves every message in `new/` or `read/` past its `expires` time to `done/`. Outcomes are `expired`, or `expired, no reply` plus a notice to the sender when a requested reply never came.
 
+## Receivers
+
+`.sdlc/messages/receivers.json` lists every receiver by name with its harness (`claude`, `codex` or `human`), repo, reader session (or `none`), last seen time and default expiry. Register or refresh one with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" register --name <name> --harness <claude|codex|human> --reader <session>`; add `--repo <name>` and `--ttl <ttl>` when the defaults (this repo, `7d`) are wrong. A reader that polls re-registers to refresh last seen.
+
+List them with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" list --receivers`: one row per receiver of name, status, harness, repo, reader, last seen, new count, read count. `live` has a reader, `no-reader` is registered with reader `none`, `orphaned` is a mailbox with open messages and no registry entry. `expire` also names each orphaned mailbox on stderr; `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" expire --orphans` closes their open messages.
+
+Before relying on a receiver, prove its reader is alive: `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" handshake --receiver <name> --timeout <seconds>`. It sends a ping with a nonce and waits for any reader to claim it with `read`. It prints `reader alive` and exits 0, or prints `no reader` and exits 3 at the timeout. It never uses `wait` and never changes how `wait` behaves.
+
 ## Messenger
 
 Each harness runs one dedicated `messenger` sub-agent on a cheap model. On startup it runs `backlog --once` and reports previously claimed, unacknowledged messages in their own section; it never replays, replies to, or acks them. It then polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
 - Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
 - Codex: install the project agents once with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
+
+- Codex reader recipe, no messenger: under `/goal`, loop on `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <name> --timeout 100 --interval 10`, claim each printed id with `read`, handle it, and run `wait` again until the goal ends. Register the reader first with `register --name <name> --harness codex --reader <session>`, then confirm it from the sender's side with `handshake`.
+- Claude reader recipe: the messenger above, or the same `wait` loop from the foreground session.
 
 While the parent is active, `wait` is the cheaper alternative to a polling subagent. The messenger may run it in its loop, or the parent may skip the messenger and run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <harness> --timeout 100 --interval 10` itself, then claim each printed id with `read`. On Claude Code, `--timeout 100` keeps the call under the default 120-second Bash timeout. `wait` returns only into an active parent, so it does not wake an idle host.
 
