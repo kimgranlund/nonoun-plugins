@@ -2,7 +2,7 @@
 id: T-0370
 title: "Mailbox receivers registry, default sender identity and a handshake command"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0367]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,7 @@ verifier: L3
 - The mailbox `AGENTS.md` template documents the Codex reader recipe (a `wait` loop under `/goal`) beside the Claude one.
 - `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, `bash plugins/sdlc-lite/scripts/run-selftest.sh`, `python3 plugins/sdlc-lite/scripts/supervisor.py selftest`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` all exit 0.
 - No em or en dash in the diff; `git diff --check` is clean.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
