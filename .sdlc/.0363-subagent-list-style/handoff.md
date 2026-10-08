@@ -2,7 +2,7 @@
 id: T-0363
 title: "Make spawn names, prompt first lines and descriptions follow the sub-agent list style guide"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/check.py`, `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0.
 - No em or en dash appears in the added lines of `git diff` (the count of added lines holding one is 0).
 - The `Base sha` item is already met by T-0366 (`build_base` reads the solo dispatch file's `base_sha`), so it was left alone.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
