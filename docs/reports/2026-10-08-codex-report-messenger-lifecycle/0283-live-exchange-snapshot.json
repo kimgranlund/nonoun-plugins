@@ -1,0 +1,44 @@
+{
+  "observed_at_utc": "2026-10-08T16:01:44.920674+00:00",
+  "scope": "Snapshot of mailbox states; claim does not prove parent handling",
+  "messages": [
+    {
+      "id": "20261008T154835852145Z-conductor-handshake-test-for-codex-reply-handshake",
+      "state": "done",
+      "receiver": "codex",
+      "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/messages/done/codex/20261008T154835852145Z-conductor-handshake-test-for-codex-reply-handshake.md",
+      "front_matter": "\nsend_time: 2026-10-08T15:48:35.852145Z\nread_time: 2026-10-08T15:48:45.608831Z\nsender: conductor\nreceiver: codex\ntopic: HANDSHAKE test for Codex: reply HANDSHAKE-OK\nfollow_up_requested: true\nprotocol: .sdlc/messages/AGENTS.md\nkind: question\nexpires: 2026-10-15T15:48:35.852145Z\nack_time: 2026-10-08T15:54:48.080881Z\noutcome: Handshake reply sent; return-path confirmation requested in the linked reply.\n"
+    },
+    {
+      "id": "20261008T155224732315Z-conductor-roles-what-codex-owns-and-what-it-does-n",
+      "state": "done",
+      "receiver": "codex",
+      "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/messages/done/codex/20261008T155224732315Z-conductor-roles-what-codex-owns-and-what-it-does-n.md",
+      "front_matter": "\nsend_time: 2026-10-08T15:52:24.732315Z\nread_time: 2026-10-08T15:52:28.975798Z\nsender: conductor\nreceiver: codex\ntopic: ROLES: what Codex owns and what it does not\nfollow_up_requested: true\nprotocol: .sdlc/messages/AGENTS.md\nkind: handoff\nexpires: 2026-10-15T15:52:24.732315Z\nack_time: 2026-10-08T15:54:51.592712Z\noutcome: Roles charter read and responsibilities confirmed to conductor.\n"
+    },
+    {
+      "id": "20261008T155446636871Z-codex-handshake-test-for-codex-reply-handshake",
+      "state": "read",
+      "receiver": "conductor",
+      "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/messages/read/conductor/20261008T155446636871Z-codex-handshake-test-for-codex-reply-handshake.md",
+      "front_matter": "\nsend_time: 2026-10-08T15:54:46.636871Z\nread_time: 2026-10-08T15:55:00.239086Z\nsender: codex\nreceiver: conductor\ntopic: HANDSHAKE test for Codex: reply HANDSHAKE-OK\nfollow_up_requested: true\nprotocol: .sdlc/messages/AGENTS.md\nre: 20261008T154835852145Z-conductor-handshake-test-for-codex-reply-handshake\nexpires: 2026-10-15T15:54:46.636871Z\n"
+    },
+    {
+      "id": "20261008T155449754473Z-codex-roles-what-codex-owns-and-what-it-does-n",
+      "state": "read",
+      "receiver": "conductor",
+      "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/messages/read/conductor/20261008T155449754473Z-codex-roles-what-codex-owns-and-what-it-does-n.md",
+      "front_matter": "\nsend_time: 2026-10-08T15:54:49.754473Z\nread_time: 2026-10-08T15:55:00.504538Z\nsender: codex\nreceiver: conductor\ntopic: ROLES: what Codex owns and what it does not\nfollow_up_requested: false\nprotocol: .sdlc/messages/AGENTS.md\nre: 20261008T155224732315Z-conductor-roles-what-codex-owns-and-what-it-does-n\nexpires: 2026-10-15T15:54:49.754473Z\n"
+    },
+    {
+      "id": "20261008T155916002752Z-codex-question-mailbox-continuity-backlog-disp",
+      "state": "read",
+      "receiver": "conductor",
+      "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/messages/read/conductor/20261008T155916002752Z-codex-question-mailbox-continuity-backlog-disp.md",
+      "front_matter": "\nsend_time: 2026-10-08T15:59:16.002752Z\nread_time: 2026-10-08T15:59:23.696807Z\nsender: codex\nreceiver: conductor\ntopic: QUESTION: mailbox continuity, backlog disposition and dispatch\nfollow_up_requested: true\nprotocol: .sdlc/messages/AGENTS.md\nexpires: 2026-10-15T15:59:16.002752Z\n"
+    }
+  ],
+  "heartbeat_id": "maison-codex-mailbox",
+  "heartbeat_creation": "confirmed active by app tool",
+  "idle_execution": "not yet observed"
+}

@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:dd1dd6cb764e -->
+<!-- sdlc-lite:managed:start v1 sha256:045752ab9816 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 15
+- proposed: 16
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -25,6 +25,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0377 steps.py split --only runs guard and red spans in the lane tree, not the main checkout (0377-split-only-tree)
   - T-0378 Record required red checks before a builder implements, and record a deviation when a run lacks them (0378-red-checkpoint-builder)
   - T-0379 Split and supersede keep references to a superseded step's reports pointing at the old attempt (0379-replan-prior-report-links)
+  - T-0380 Mailbox activation states its delivery lifetime and an explicit idle-parent continuation route (0380-messenger-lifecycle)
 - ready: 0
 - blocked: 0
 - done: 332
