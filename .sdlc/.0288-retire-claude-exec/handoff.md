@@ -2,7 +2,7 @@
 id: T-0288
 title: "Retire the Claude headless execution path"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0287]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -27,3 +27,7 @@ Design section 8. Do not start before the live-evidence ticket is closed with a 
 
 ## Constraints
 No push, tag, or publish; release notes only if the user asks. No em dashes. No push, tag, or publish.
+
+## Closed
+
+2026-10-07: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
