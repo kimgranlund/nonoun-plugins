@@ -1681,6 +1681,42 @@ def verdict_or_none(path):
     return results.key_value(path, 'verifier')
 
 
+def merge_class(verdict, stale_base, hits):
+    """The merge class of one lane, the one rule `board.py --lanes` and `fanout.py roll` share (T-0374; defined in
+    docs/references/sdlc-internals.md, fanout merge class): ('rolling', '') when the lane is independently verified
+    (verdict 'pass'), its base is an ancestor of main (stale_base empty) and it touches no declared path (hits
+    empty); else ('integration', reason) with the first failing reason in this order: 'hash-bound <path>',
+    'stale base <sha7>', 'unverified' (no verdict) or 'verifier <verdict>'."""
+    if hits:
+        return 'integration', f'hash-bound {sorted(hits)[0]}'
+    if stale_base:
+        return 'integration', f'stale base {str(stale_base)[:7]}'
+    if verdict != 'pass':
+        return 'integration', f'verifier {verdict}' if verdict and verdict != 'none' else 'unverified'
+    return 'rolling', ''
+
+
+def declared_hits(cwd, globs, *diff, untracked=False):
+    """The paths `git diff --name-only <diff...>` in cwd lists that match a declared hash-bound or generated glob
+    (tickets.hash_bound_globs; each a git :(glob) pathspec from the repository root), plus, with untracked=True, the
+    untracked files that match; sorted. [] when nothing is declared. Raises ValueError when git fails, so an
+    unreadable diff never reads as rolling (T-0374)."""
+    if not globs:
+        return []
+    import tickets
+    env = {k: v for k, v in os.environ.items() if k not in tickets.GIT_ENV_DROP}
+    specs = ['--', *(':(top,glob)' + g for g in globs)]
+    cmds = [['diff', '--name-only', *diff, *specs]] + ([['ls-files', '--others', '--exclude-standard', *specs]] if untracked else [])
+    out = set()
+    for c in cmds:
+        p = subprocess.run(['git', '--no-optional-locks', '-C', str(cwd), *c], env=env, capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL)
+        if p.returncode:
+            raise ValueError(p.stderr.strip() or f'git {c[0]} rc={p.returncode}')
+        out.update(x for x in p.stdout.splitlines() if x)
+    return sorted(out)
+
+
 def is_plan_defect(path):
     body = section(path, 'For the next attempt') or []
     first = next((line.strip() for line in body if line.strip()), '')
