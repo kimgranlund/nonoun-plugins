@@ -2,7 +2,7 @@
 id: T-0365
 title: "steps.py widen accepts real scope growth without a hand-written diff-name-only criterion"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ Smaller change picked: `steps.py widen --reason "<why>"`. When a step has no sco
 - [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest | tail -1 | grep -q 'PASS'`
 - [ ] `d=$(mktemp -d) && mkdir $d/s && printf '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n- `test -d .`\n' > $d/s/handoff.md && cd $d && git init -q . && ! python3 "$OLDPWD/plugins/sdlc-lite/scripts/steps.py" widen s b.txt 2>/dev/null && python3 "$OLDPWD/plugins/sdlc-lite/scripts/steps.py" widen s b.txt --reason why | grep -q 'no scope criterion' && grep -q 'steps.py widen): why' s/handoff.md`
 - [ ] `python3 plugins/sdlc-lite/scripts/check.py && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
