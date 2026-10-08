@@ -683,18 +683,62 @@ def rev_commit(top, rev):
     return r.stdout.strip() or None if r.returncode == 0 else None
 
 
+def _git_dirs(where):
+    """(git dir, common git dir) of the repo at where, as real paths, or None outside git."""
+    try:
+        r = subprocess.run(['git', '-C', str(where), 'rev-parse', '--git-dir', '--git-common-dir'],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = r.stdout.splitlines()
+    if r.returncode != 0 or len(lines) != 2:
+        return None
+    return tuple(os.path.realpath(os.path.join(str(where), x)) for x in lines)
+
+
+def exec_toplevel(task_dir):
+    """The git toplevel a step's build runs in (T-0381): the task dir's own toplevel, except a task dir in the main
+    checkout read from inside an owned linked (lane) worktree of the same repo, where it is that worktree. None
+    outside a git work tree."""
+    top = git_toplevel(task_dir)
+    hd = _git_dirs(task_dir) if top else None
+    if not hd or hd[0] != hd[1]:
+        return top
+    cwd_top = git_toplevel(os.getcwd())
+    cd = _git_dirs(cwd_top) if cwd_top else None
+    return cwd_top if cd and cd[0] != cd[1] and cd[1] == hd[1] else top
+
+
+NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
+
+
 def base_sha(top, step_dir=None):
-    """SDLC_BASE_SHA for a span: the first line of <step dir>/base-sha when it names a commit,
-    else HEAD at top; None outside git."""
+    """SDLC_BASE_SHA for a span (T-0381), in this order: a base the step handoff names (a line `base: <sha>`), else the
+    first line of <step dir>/base-sha recorded at the first dispatch, else HEAD at top; None outside git. top is the
+    execution tree (exec_toplevel), never the main checkout of a lane. A value that is not a commit that is an
+    ancestor of HEAD is skipped, with a stderr line for a named one."""
     if not top:
         return None
+
+    def usable(sha):
+        c = rev_commit(top, sha) if sha else None
+        if not c:
+            return None
+        r = subprocess.run(['git', '-C', top, 'merge-base', '--is-ancestor', c, 'HEAD'], capture_output=True,
+                           stdin=subprocess.DEVNULL, timeout=30)
+        return c if r.returncode == 0 else None
     if step_dir is not None:
-        f = pathlib.Path(step_dir) / 'base-sha'
-        with contextlib.suppress(OSError, UnicodeDecodeError):
-            first = (f.read_text(encoding='utf-8').splitlines() or [''])[0].strip()
-            sha = rev_commit(top, first) if first else None
-            if sha:
-                return sha
+        with contextlib.suppress(OSError, UnicodeDecodeError, subprocess.SubprocessError):
+            m = NAMED_BASE_RE.search((pathlib.Path(step_dir) / 'handoff.md').read_text(encoding='utf-8'))
+            if m:
+                if usable(m.group(1)):
+                    return usable(m.group(1))
+                print(f'steps.py: SDLC_BASE_SHA refused: {pathlib.Path(step_dir) / "handoff.md"} names base '
+                      f'{m.group(1)}, which is not a commit that is an ancestor of HEAD in {top}', file=sys.stderr)
+        with contextlib.suppress(OSError, UnicodeDecodeError, subprocess.SubprocessError):
+            first = ((pathlib.Path(step_dir) / 'base-sha').read_text(encoding='utf-8').splitlines() or [''])[0].strip()
+            if usable(first):
+                return usable(first)
     return rev_commit(top, 'HEAD')
 
 
@@ -2630,7 +2674,7 @@ def swap(step_dir, timeout=300):
 
     top = git_toplevel(d)
     cwd = top or str(d)
-    base = base_sha(top, d)
+    base = base_sha(exec_toplevel(d), d)
     before = tree_state(top) if top else None
     detail, red = [], []
     for s in spans:
@@ -2826,7 +2870,7 @@ def widen(step_dir, paths, timeout=300, reason=None):
 
     top = git_toplevel(d)
     cwd = top or str(d)
-    base = base_sha(top, d)
+    base = base_sha(exec_toplevel(d), d)
     before = tree_state(top) if top else None
     detail, red = [], []
     rc, tail = run_guard(new, cwd, timeout, base)
@@ -4101,6 +4145,60 @@ def selftest():
         rc, out, err = run_main(['swap', str(d)])
         check('swap: a new span sees SDLC_BASE_SHA from the stored base-sha, not HEAD',
               rc == 0 and 'base-sha' in (d / 'handoff.md').read_text(encoding='utf-8'))
+        # T-0381: a step dir in the MAIN checkout, the owned lane worktree as the cwd: the span base comes from the lane.
+        # Order: a base the handoff names, else the base-sha recorded at the first dispatch, else the lane HEAD; never
+        # the main checkout's HEAD.
+        main_r = tmp / 'shared-base-repo'
+        main_r.mkdir()
+        gm = ['git', '-C', str(main_r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+
+        def rev(where, what='HEAD'):
+            return subprocess.run(['git', '-C', str(where), 'rev-parse', what], check=True, capture_output=True,
+                                  text=True).stdout.strip()
+        subprocess.run(['git', 'init', '-q', str(main_r)], check=True, capture_output=True)
+        subprocess.run(gm + ['commit', '-q', '--allow-empty', '-m', 'a'], check=True, capture_output=True)
+        sb_a = rev(main_r)
+        subprocess.run(gm + ['commit', '-q', '--allow-empty', '-m', 'b'], check=True, capture_output=True)
+        sb_main = rev(main_r)
+        lane_r = tmp / 'shared-base-lane'
+        subprocess.run(gm + ['worktree', 'add', '-q', '-b', 'sb-lane', str(lane_r), 'HEAD'], check=True, capture_output=True)
+        gl = ['git', '-C', str(lane_r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(gl + ['commit', '-q', '--allow-empty', '-m', 'l1'], check=True, capture_output=True)
+        sb_l1 = rev(lane_r)
+        subprocess.run(gl + ['commit', '-q', '--allow-empty', '-m', 'l2'], check=True, capture_output=True)
+        sb_l2 = rev(lane_r)
+        sb_orphan = subprocess.run(gm + ['commit-tree', rev(main_r, 'HEAD^{tree}'), '-m', 'orphan'], check=True,
+                                   capture_output=True, text=True).stdout.strip()
+        (main_r / 'sdlc').mkdir()
+        sd = s_step([], where=main_r / 'sdlc')
+        sd_hand = (sd / 'handoff.md').read_text(encoding='utf-8')
+
+        def shared_base(at):
+            here = os.getcwd()
+            os.chdir(at)
+            try:
+                return base_sha(exec_toplevel(sd), sd)
+            finally:
+                os.chdir(here)
+        (sd / 'base-sha').unlink(missing_ok=True)
+        check('shared step dir (T-0381): nothing recorded gives the lane HEAD, not the main checkout HEAD',
+              shared_base(lane_r) == sb_l2 != sb_main)
+        (sd / 'base-sha').write_text(sb_l1 + '\n', encoding='utf-8')
+        check('shared step dir (T-0381): a rework keeps the base recorded at the first dispatch (a lane commit)',
+              shared_base(lane_r) == sb_l1)
+        (sd / 'handoff.md').write_text(sd_hand + f'\nbase: {sb_a}\n', encoding='utf-8')
+        check('shared step dir (T-0381): a base the handoff names wins over the recorded one',
+              shared_base(lane_r) == sb_a)
+        (sd / 'handoff.md').write_text(sd_hand + f'\nbase: {sb_orphan}\n', encoding='utf-8')
+        err_buf = io.StringIO()
+        with contextlib.redirect_stderr(err_buf):
+            got = shared_base(lane_r)
+        check('shared step dir (T-0381): a named base that is no ancestor of HEAD is refused loudly and the recorded one kept',
+              got == sb_l1 and 'SDLC_BASE_SHA refused' in err_buf.getvalue())
+        (sd / 'handoff.md').write_text(sd_hand, encoding='utf-8')
+        (sd / 'base-sha').unlink()
+        check('shared step dir (T-0381) negative control: from the main checkout the base is the main checkout HEAD',
+              shared_base(main_r) == sb_main)
         swap_refused('(c) verifier older than the newest builder',
                      s_step(pair + [('verifier-L1.md', swap_v()), ('builder-L2-2.md', DONE)]), 'older')
         swap_refused('(c) newest verifier a pass', s_step(pair + [('verifier-L1.md', PASS)]), 'no fail verdict')
@@ -4953,13 +5051,13 @@ def main(argv):
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='per-span timeout for the new criterion (default 300); a timeout refuses. Spans run with '
-                        'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+                        'SDLC_BASE_SHA from the handoff\'s `base:` line, else <step dir>/base-sha, else HEAD of the execution tree')
     p = sub.add_parser('widen', help='add paths to the one scope criterion of a step handoff')
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md')
     p.add_argument('paths', nargs='*', metavar='path', help='repo-relative paths to allow (one or more)')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='timeout for the widened span (default 300); a timeout refuses. It runs with '
-                        'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+                        'SDLC_BASE_SHA from the handoff\'s `base:` line, else <step dir>/base-sha, else HEAD of the execution tree')
     p.add_argument('--reason', metavar='WHY',
                    help='why the files are in scope; recorded on each ## Scope widened item. With no scope '
                         'criterion in the step it makes the path list the recorded allow-list')

@@ -618,6 +618,66 @@ lg add m.txt
 lg commit -q -m more
 seen=$(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" verifier L1 s/handoff.md >/dev/null 2>&1; cat "$tmp/baseseen")
 [[ "$seen" == "$lane_head" ]] || fail "base lane kept: SDLC_BASE_SHA is '$seen', want the stored lane base $lane_head"
+# T-0381: the shared-handoff shape, the handoff in the MAIN checkout and the owned lane worktree as the cwd.
+# The base of a step is, in this order: a base the handoff names (a `base: <sha>` line), else the sha recorded at
+# the step's first dispatch (base-sha), else the execution tree's HEAD, never the main checkout's HEAD. A supplied
+# SDLC_BASE_SHA that is a valid ancestor but differs from that pick is refused (`SDLC_BASE_SHA refused: ...`).
+fork=$(bg rev-parse HEAD)
+lane_tip=$(lg rev-parse HEAD)
+[[ "$lane_head" != "$lane_tip" && "$lane_head" != "$fork" ]] || fail "base shared handoff: fixture lane commits did not diverge from main"
+bg merge-base --is-ancestor "$lane_head" HEAD && fail "base shared handoff: lane commit $lane_head is reachable from main"
+# srun <role> [env...]: a run in the lane (cwd) against the main checkout's handoff; stub output in $tmp/baseseen.
+srun() {
+  local r="$1"; shift
+  rm -f "$tmp/baseseen"
+  (cd "$tmp/blane" && env ${1+"$@"} PATH="$tmp/bbin:$PATH" "$here/run.sh" "$r" L1 "$brepo/s/handoff.md" >/dev/null 2>"$tmp/berr") \
+    || fail "base shared handoff $r run: run.sh exited non-zero ($(cat "$tmp/berr"))"
+  cat "$tmp/baseseen" 2>/dev/null || echo MISSING
+}
+hand_orig=$(cat "$brepo/s/handoff.md")
+# A rework (a second dispatch after lane commits) keeps the base recorded at the first dispatch.
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun builder)
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, rework keeps the recorded base: SDLC_BASE_SHA is '$seen', want $lane_head (lane HEAD $lane_tip, main HEAD $fork)"
+grep -q "base ${lane_head:0:12}: recorded" "$tmp/berr" || fail "base shared handoff: the chosen base and why were not printed ($(cat "$tmp/berr"))"
+# Nothing recorded: the execution tree's HEAD, never the main checkout's HEAD.
+rm -f "$brepo/s/base-sha"
+seen=$(srun builder)
+[[ "$seen" == "$lane_tip" ]] || fail "base shared handoff, first dispatch: SDLC_BASE_SHA is '$seen', want the lane HEAD $lane_tip (main HEAD is $fork)"
+# A wrong but valid supplied base is refused and the right one kept.
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun builder SDLC_BASE_SHA="$fork")
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, wrong supplied base: SDLC_BASE_SHA is '$seen', want the recorded $lane_head (supplied main HEAD $fork)"
+grep -q "SDLC_BASE_SHA refused: $fork" "$tmp/berr" || fail "base shared handoff, wrong supplied base: no 'SDLC_BASE_SHA refused' line ($(cat "$tmp/berr"))"
+seen=$(srun verifier SDLC_BASE_SHA="$lane_head")
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, matching supplied base: SDLC_BASE_SHA is '$seen', want $lane_head"
+grep -q "SDLC_BASE_SHA refused" "$tmp/berr" && fail "base shared handoff, matching supplied base was refused ($(cat "$tmp/berr"))"
+rm -f "$brepo/s/base-sha"
+seen=$(srun builder SDLC_BASE_SHA="$fork")
+[[ "$seen" == "$lane_tip" ]] || fail "base shared handoff, wrong supplied base on a first dispatch: SDLC_BASE_SHA is '$seen', want the lane HEAD $lane_tip"
+grep -q "SDLC_BASE_SHA refused: $fork" "$tmp/berr" || fail "base shared handoff, wrong supplied base on a first dispatch: no refusal line ($(cat "$tmp/berr"))"
+# A base the handoff names wins over the recorded one and over a supplied one, even older than the lane fork.
+printf '%s\nbase: %s\n' "$hand_orig" "$b0" >"$brepo/s/handoff.md"
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun builder)
+[[ "$seen" == "$b0" ]] || fail "base shared handoff, named base: SDLC_BASE_SHA is '$seen', want the handoff-named $b0 (recorded $lane_head)"
+grep -q "base ${b0:0:12}: named in the handoff" "$tmp/berr" || fail "base shared handoff, named base: the why was not printed ($(cat "$tmp/berr"))"
+seen=$(srun builder SDLC_BASE_SHA="$b0")
+[[ "$seen" == "$b0" ]] || fail "base shared handoff, supplied equals the named base: SDLC_BASE_SHA is '$seen', want $b0"
+seen=$(srun builder SDLC_BASE_SHA="$lane_head")
+[[ "$seen" == "$b0" ]] || fail "base shared handoff, supplied differs from the named base: SDLC_BASE_SHA is '$seen', want $b0"
+grep -q "SDLC_BASE_SHA refused: $lane_head" "$tmp/berr" || fail "base shared handoff, supplied differs from the named base: no refusal line ($(cat "$tmp/berr"))"
+# A named base that is not an ancestor of the execution HEAD fails loudly, not silently.
+printf '%s\nbase: %s\n' "$hand_orig" "$na" >"$brepo/s/handoff.md"
+rm -f "$tmp/baseseen"
+(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 "$brepo/s/handoff.md" >/dev/null 2>"$tmp/berr") \
+  && fail "base shared handoff, invalid named base: run.sh exited 0"
+grep -q "SDLC_BASE_SHA refused: .*$na" "$tmp/berr" || fail "base shared handoff, invalid named base: no refusal line ($(cat "$tmp/berr"))"
+[[ ! -e "$tmp/baseseen" ]] || fail "base shared handoff, invalid named base: the role still ran"
+printf '%s\n' "$hand_orig" >"$brepo/s/handoff.md"
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun planner SDLC_BASE_SHA="$lane_head")
+[[ "$seen" == unset ]] || fail "base shared handoff, planner: SDLC_BASE_SHA is '$seen', want unset"
 
 # Stray report: a third stub makes worktrees and a branch from inside its own script (STUB_MODE
 # stray|strayfail|prefix|none), outside the Bash tool text the hooks see.

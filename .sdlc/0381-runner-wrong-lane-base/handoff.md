@@ -27,3 +27,15 @@ Maison recurrences of its T-0289 (T-0152 step 3 and the T-0295 amendment), and C
 
 ## Constraints
 No em or en dashes. No push or publish. Codex host behavior cannot be run live here; mark it unverified.
+
+## Acceptance criteria
+verifier: L3
+
+Design reading: the Replan paragraph of the Intent settled the open question for the build-start rule, so the base of a step is the order named base, then recorded base, then HEAD of the execution tree (never the main checkout's HEAD). The Goal and Done-when wording "equals the lane merge-base" predates it; the two ledger cases (T-0152 step 3, T-0295) are met through the handoff-named base. A step handoff names its base with a line `base: <sha>`.
+
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh 2>&1 | tail -1 | grep -qx 'run selftest: PASS'`
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1 | grep -c '^ok: a main-checkout handoff run from the lane' | grep -qx 8`
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest 2>&1 | grep -c '^ok: shared step dir (T-0381)' | grep -qx 5`
+- `grep -q 'base shared handoff, wrong supplied base' plugins/sdlc-lite/scripts/run-selftest.sh && grep -q 'SDLC_BASE_SHA refused' plugins/sdlc-lite/scripts/run.sh && grep -q 'SDLC_BASE_SHA refused' plugins/sdlc-lite/scripts/dispatch.py && grep -q 'SDLC_BASE_SHA refused' plugins/sdlc-lite/scripts/steps.py`
+- `python3 plugins/sdlc-lite/scripts/check.py && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
+- Codex host behavior is unverified live; the Codex native request path reaches the same run.sh base block.
