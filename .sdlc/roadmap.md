@@ -361,3 +361,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0361 | [.0361-retire-solo-gate](.0361-retire-solo-gate/handoff.md) | Finish the headless retirement: gate solo_run --exec, make the check.py guard bite, repair stale text | bug | L1 | P2 | none | 🟢 done |
 | T-0362 | [0362-retire-leftovers](0362-retire-leftovers/handoff.md) | Headless retirement leftovers: gate before the solo return in default_driver, three stale text lines | bug | L1 | P2 | none | ⏳ proposed |
 | T-0363 | [0363-subagent-list-style](0363-subagent-list-style/handoff.md) | Make spawn names, prompt first lines and descriptions follow the sub-agent list style guide | chore | L2 | P2 | none | ⏳ proposed |
+| T-0364 | [0364-replan-loop-small-gaps](0364-replan-loop-small-gaps/handoff.md) | A plan review whose findings are one-line Notes fixes does not trigger a replan | bug | L2 | P2 | none | ⏳ proposed |
+| T-0365 | [0365-widen-allowlist](0365-widen-allowlist/handoff.md) | steps.py widen accepts real scope growth without a hand-written diff-name-only criterion | bug | L2 | P2 | none | ⏳ proposed |
+| T-0366 | [0366-prepare-base-sha](0366-prepare-base-sha/handoff.md) | dispatch.py prepare verifier prints the pre-build commit as Base sha, not the post-solo HEAD | bug | L1 | P2 | none | ⏳ proposed |
