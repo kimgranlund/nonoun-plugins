@@ -135,6 +135,9 @@ set -euo pipefail
 role="${1:-}"; level="${2:-}"; handoff="${3:-}"
 backend="${SDLC_BACKEND:-claude}"
 case "$backend" in claude|codex) ;; *) echo "unknown SDLC_BACKEND: $backend" >&2; exit 2 ;; esac
+if [[ "$backend" == claude && "${SDLC_CLAUDE_EXEC:-}" != 1 ]]; then
+  echo "run.sh no longer runs Claude roles headless: use 'dispatch.py prepare $role $level <handoff>' and spawn the sub-agent (SDLC_CLAUDE_EXEC=1 is the legacy path for bench and CI)" >&2; exit 2
+fi
 usage() { echo "usage: run.sh <role> <level> <handoff.md>  (see levels in this file)" >&2; exit 2; }
 
 # role:level -> model effort. Mirrors adapters/claude/levels.json (the table home) until this Claude branch is retired; keep in sync with it and skills/level-rubric/SKILL.md (Claude mapping).

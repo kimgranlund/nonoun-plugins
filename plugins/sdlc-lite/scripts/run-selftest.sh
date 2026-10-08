@@ -95,6 +95,9 @@ trap 'rm -rf "$tmp"' EXIT
 
 fail() { echo "run selftest: FAIL: $*"; exit 1; }
 
+# T-0288: the Claude branch is legacy; every case below exercises it, so opt in. The refusal cases unset it.
+export SDLC_CLAUDE_EXEC=1
+
 # Stub claude: ignores its args, prints a run.sh-shaped JSON result numbered by a counter file.
 mkdir -p "$tmp/bin"
 cat >"$tmp/bin/claude" <<EOF
@@ -117,6 +120,12 @@ git -C "$repo" init -q
 git -C "$repo" add -A
 git -C "$repo" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false \
   commit -q -m init
+
+# T-0288: without SDLC_CLAUDE_EXEC=1 the Claude backend exits 2 with one line naming dispatch.py prepare and starts no claude;
+# Codex is not refused by the guard (it fails later, on codex_exec, not with this line).
+refuse_out=$(cd "$repo" && env -u SDLC_CLAUDE_EXEC PATH="$tmp/bin:$PATH" SDLC_BACKEND=claude "$here/run.sh" builder L1 .sdlc/t/handoff.md 2>&1) && refuse_rc=0 || refuse_rc=$?
+[[ "$refuse_rc" == 2 ]] || fail "claude retirement: want exit 2 without SDLC_CLAUDE_EXEC, got $refuse_rc"
+[[ "$(printf '%s\n' "$refuse_out" | wc -l | tr -d ' ')" == 1 && "$refuse_out" == *"dispatch.py prepare"* ]] || fail "claude retirement: want one line naming dispatch.py prepare, got: $refuse_out"
 
 dir="$(cd "$repo/.sdlc/t" && pwd)"
 names=(planner-L3 planner-L3-2 planner-L3-3)
