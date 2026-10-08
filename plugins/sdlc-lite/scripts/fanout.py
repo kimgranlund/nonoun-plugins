@@ -58,7 +58,7 @@ land
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
   the lane and appends its record to the task's skips.md (committed with the lane): `solo` (ticket level L1 and
   L2 by default) starts the solo agent (agents/solo.md) from a typed brief at the level's model and effort (Claude:
-  `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at L1 Sonnet low, L2 Sonnet xhigh; Codex: `codex_exec.py solo
+  `SDLC_ROLE=solo claude -p --agent sdlc-lite:solo` at L1 Sonnet low, L2 Sonnet high; Codex: `codex_exec.py solo
   L1|L2|L3`, honoring SDLC_BACKEND), both started through `solo_run.py` so each lane's solo session cost lands in
   the ticket's runs.jsonl and the budget and board meter it (T-0226); anything else (`full`, or `lean` after a plan) keeps the headless conductor
   running /sdlc-lite:chain. A solo ticket of level L2 or L3 then needs one independent batched verifier: a new
@@ -331,7 +331,7 @@ PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: neve
 
 # Solo levels (agents/solo.md): ticket level -> (Claude model, Claude effort, Codex level). The Codex agents are
 # sdlc-solo-l1..l3 from adapters/codex/models.json. check.py guards that solo.md and these agree.
-SOLO_TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'xhigh', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
+SOLO_TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'high', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
 SOLO_VERIFIED = ('L2', 'L3')  # the solo levels that need one independent batched verifier before the merge
 SOLO_VERIFIER = 'L2'  # the default level of a solo ticket's batched verifier (T-0356); solo_verifier raises it to L3
 
@@ -2727,10 +2727,10 @@ def selftest():
         sl = tmp / 'sololanes'
         proc = fanout(sr, '--dry-run', '--lanes-dir', str(sl), 'a=T-0001', 'b=T-0002', 'c=T-0003')
         out = proc.stdout
-        expect(f'case 15 lane: size L1 prints solo level L1 (sonnet low), the alias M level L2 (sonnet xhigh), and L3 the full chain '
+        expect(f'case 15 lane: size L1 prints solo level L1 (sonnet low), the alias M level L2 (sonnet high), and L3 the full chain '
                f'(steps.py lane decides), got {proc.returncode} stdout={out!r} stderr={proc.stderr!r}',
                proc.returncode == 0 and 'lane: solo, level L1: sonnet low' in out
-               and 'lane: solo, level L2: sonnet xhigh' in out
+               and 'lane: solo, level L2: sonnet high' in out
                and re.search(r'T-0003 l1: .*\n    lane: full \(', out) and 'driver: solo first (--lane auto)' in out)
         expect('case 15 lane negative control: no solo line for the size L3 ticket',
                not re.search(r'T-0003 l1: .*\n    lane: solo', out))
@@ -2746,7 +2746,7 @@ def selftest():
         os.environ['SDLC_SELFTEST_RAW_SOLO'] = '1'
         try:
             for label, size, want in (('L1', 'L1', ('--model sonnet', '--effort low')),
-                                      ('L2', 'M', ('--model sonnet', '--effort xhigh')),
+                                      ('L2', 'M', ('--model sonnet', '--effort high')),
                                       ('L3', 'L3', ('--model opus', '--effort xhigh'))):
                 cmd = solo_command('h.md', size, 'claude')
                 expect(f'case 15 raw fallback: level {label} starts sdlc-lite:solo with {want}, got {cmd}',
@@ -2963,9 +2963,9 @@ def selftest():
                pu.returncode == 0 and ran_under)
 
         # case 19: report names the real model per backend; a gate that ran no tests is flagged
-        for be, tier, want in (('claude', 'L1', 'sonnet low'), ('claude', 'L2', 'sonnet xhigh'), ('claude', 'L3', 'opus xhigh'),
+        for be, tier, want in (('claude', 'L1', 'sonnet low'), ('claude', 'L2', 'sonnet high'), ('claude', 'L3', 'opus xhigh'),
                                ('codex', 'L1', 'gpt-6.1-sol low'), ('codex', 'L2', 'gpt-6.1-sol high'),
-                               ('codex', 'L3', 'gpt-6.1-sol xhigh'), ('claude', 'M', 'sonnet xhigh'), ('codex', 'L', 'gpt-6.1-sol xhigh')):
+                               ('codex', 'L3', 'gpt-6.1-sol xhigh'), ('claude', 'M', 'sonnet high'), ('codex', 'L', 'gpt-6.1-sol xhigh')):
             got = solo_model_label(tier, be)
             expect(f'case 19 model label: {be} level {tier} is {want!r}, got {got!r}', got == want)
         expect('case 19 codex label is not the Claude model', 'sonnet' not in solo_model_label('L1', 'codex'))
@@ -3073,7 +3073,7 @@ def selftest():
                   '--gate', 'true', '--stagger', '0', SDLC_HEADLESS='')
         expect(f'case 22 prep: exits 0, got {pp.returncode} out={pp.stdout[-400:]!r} err={pp.stderr!r}', pp.returncode == 0)
         expect('case 22 prep: one lane line per ticket with its level, the alias S as L1',
-               pp.stdout.count('lane: solo, level L1: sonnet low') == 2 and 'lane: solo, level L2: sonnet xhigh' in pp.stdout)
+               pp.stdout.count('lane: solo, level L1: sonnet low') == 2 and 'lane: solo, level L2: sonnet high' in pp.stdout)
         try:
             d1, d2 = dispatch_of(pp.stdout, 'T-0001'), dispatch_of(pp.stdout, 'T-0002')
         except (ValueError, KeyError) as e:
@@ -3299,7 +3299,7 @@ def selftest():
             expect(f'case 23 land level L2: a {verdict} verifier gives {want}, got rc={lm.returncode} out={lm.stdout[-300:]!r}',
                    want in lm.stdout and (lm.returncode == 0) == (want == 'merged'))
         expect('case 23 land level L2: the report names the L2 model',
-               '- Lane for `T-0002`: solo (level L2: sonnet xhigh)' in lm.stdout)
+               '- Lane for `T-0002`: solo (level L2: sonnet high)' in lm.stdout)
         # refusals, each exit 2 with nothing created
         sh(ld, 'branch', 'weird-branch', 'main')
         for label, args_, want in (('a branch that does not exist', ('no-such-branch',), 'not a local branch'),

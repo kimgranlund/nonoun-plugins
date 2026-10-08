@@ -25,7 +25,7 @@ The launcher picks your level from the ticket level (its `size:`, L1 to L5) and 
 | Level | Ticket level | Claude | Codex |
 |---|---|---|---|
 | L1 | L1 | Sonnet low | `sdlc-solo-l1` (gpt-6.1-sol low) |
-| L2 | L2 | Sonnet xhigh | `sdlc-solo-l2` (gpt-6.1-sol high) |
+| L2 | L2 | Sonnet high | `sdlc-solo-l2` (gpt-6.1-sol high) |
 | L3 | L3 | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
 
 ## Start

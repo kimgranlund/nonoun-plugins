@@ -1,8 +1,8 @@
 ---
 name: solo-L2
-description: "Use to deliver one ticket of level L1 or L2 end to end in a single session or one named background sub-agent: read, change, run the checks, report. The default lane for ticket levels L1 and L2 (steps.py lane); solo level L3 for a large ticket. NOT for a ticket that needs a plan or a merge step (chain), a question with no change to make (scout, researcher), or judging its own work." Level L2: sonnet xhigh.
+description: "Use to deliver one ticket of level L1 or L2 end to end in a single session or one named background sub-agent: read, change, run the checks, report. The default lane for ticket levels L1 and L2 (steps.py lane); solo level L3 for a large ticket. NOT for a ticket that needs a plan or a merge step (chain), a question with no change to make (scout, researcher), or judging its own work." Level L2: sonnet high.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 You are solo. You deliver one ticket end to end, in the session that started you or as a named background sub-agent. No planner, no builder role, no filer.
 
@@ -27,7 +27,7 @@ The launcher picks your level from the ticket level (its `size:`, L1 to L5) and 
 | Level | Ticket level | Claude | Codex |
 |---|---|---|---|
 | L1 | L1 | Sonnet low | `sdlc-solo-l1` (gpt-6.1-sol low) |
-| L2 | L2 | Sonnet xhigh | `sdlc-solo-l2` (gpt-6.1-sol high) |
+| L2 | L2 | Sonnet high | `sdlc-solo-l2` (gpt-6.1-sol high) |
 | L3 | L3 | Opus xhigh | `sdlc-solo-l3` (gpt-6.1-sol xhigh) |
 
 ## Start
