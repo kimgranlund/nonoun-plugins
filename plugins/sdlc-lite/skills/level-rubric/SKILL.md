@@ -104,7 +104,7 @@ The verdict routes the plan:
 
 ## Session agents (not pipeline roles)
 
-The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-5-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case.
+The `conductor`, the `solo` operator, and the `messenger` are session agents. The messenger is not a pipeline role. Its Claude model `claude-haiku-5-5` is pinned in its own front matter, and its Codex agent `sdlc-messenger-l1` comes from `adapters/codex/models.json`. `dispatch.py prepare` takes pipeline rows only, and the Codex runner has no messenger case. The messenger is never a prepared dispatch, so `record` does not queue it: when its parent is done with it, run `dispatch.py prune --add <name> --role messenger`, then `dispatch.py prune`.
 
 ## Agent-tool spawns (outside a dispatch)
 

@@ -1463,7 +1463,7 @@ def subagent_dispatch(ctx, t, tier):
             'model': model, 'effort': effort,
             'prompt': SOLO_SUBAGENT_PROMPT.format(head=subagent_head(t.id, t.title, tier), handoff=handoff, id=t.id, title=t.title),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
-            'ticket': t.id, 'tier': tier, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
+            'ticket': t.id, 'tier': tier, 'prune': False, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
             'handoff': handoff, 'verifier': verifier,
             'base_sha': subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None}
 
@@ -1830,6 +1830,13 @@ def cmd_land(a):
         outcome, commit = f'error: {first_line(str(e), type(e).__name__)}', ''
     lane.results.append((t.id, outcome, commit))
     say(ctx, lane, t.id, outcome)
+    if kind == 'solo' and outcome == 'merged':  # T-0368: the solo's work has landed, so it is no longer resumable: queue it for pruning
+        try:
+            import dispatch  # same scripts/ dir
+            dispatch.prune_add(str(ctx['top']), subagent_name(t.id), 'solo', tier or '')
+            say(ctx, lane, t.id, f'prune: {subagent_name(t.id)}')
+        except OSError as e:
+            say(ctx, lane, t.id, f'prune queue not written: {e}')
     journal = ctx['logs'] / 'land.jsonl'
     with open(journal, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'run_id': ctx['run_id'], 'lane': lane.name, 'branch': lane.branch, 'ticket': t.id,
@@ -3293,6 +3300,13 @@ def selftest():
                f'got rc={l3.returncode} out={l3.stdout[-400:]!r} err={l3.stderr!r}',
                l3.returncode == 0 and '| t-0001-solo | T-0001 | merged |' in rep_ld and '| t-0003-solo | T-0003 | merged |' in rep_ld
                and sh(ld, 'rev-list', '--merges', '--count', integ).stdout.strip() == '2')
+        def pruned(repo_):
+            try:
+                return [e['name'] for e in json.loads((repo_ / '.sdlc' / 'runtime' / 'prune.json').read_text())]
+            except (OSError, ValueError):
+                return []
+        expect(f'case 23 land prune (T-0368): a merged solo is queued for pruning in the project, got {pruned(ld)}',
+               pruned(ld) == ['T-0001-solo', 'T-0003-solo'] and 'prune: T-0003-solo' in l3.stdout + l3.stderr)
         make_branch(ld, 'worktree-T-0004-solo', {'f4.txt': 'four\n'}, 'T-0004: Ticket t4')
         tip_before = sh(ld, 'rev-parse', integ).stdout.strip()
         lr = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'false')
@@ -3300,6 +3314,8 @@ def selftest():
                lr.returncode == 1 and 'red: false rc=1' in lr.stdout and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before
                and sh(ld, 'cat-file', '-e', f'{integ}:f4.txt').returncode != 0
                and re.search(r'^status: ready\b', sh(ld, 'show', f'{integ}:.sdlc/t4/handoff.md').stdout, re.M))
+        expect(f'case 23 land prune (T-0368): a land that did not merge queues nothing (negative control), got {pruned(ld)}',
+               'T-0004-solo' not in pruned(ld))
         lv = verb(ld, 'land', 'worktree-T-0004-solo', *pin, '--gate', 'echo "Ran 0 tests in 0.000s"')
         expect(f'case 23 land: a gate that ran no tests is refused, got rc={lv.returncode} out={lv.stdout[-300:]!r}',
                lv.returncode == 1 and 'gate vacuous' in lv.stdout and sh(ld, 'rev-parse', integ).stdout.strip() == tip_before)

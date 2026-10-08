@@ -121,7 +121,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     tdir = pathlib.Path(task_dir).resolve()
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
-             role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(tdir),
+             role='solo', level=level, tier=tier, prune=False, handoff=str(handoff.resolve()), artifacts_dir=str(tdir),
              attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
     d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
