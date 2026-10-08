@@ -1,0 +1,1750 @@
+{
+  "repo": "/Users/kimgranlund/Projects/maison/ui-kit-maison",
+  "summary": "runs: 150 deduped, $22.69, 2 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-07T05:00",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.21.3",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.21.3",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.21.3",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.294 (Claude Code)",
+    "time": "2026-10-08T13:02:11Z",
+    "uptime_load": {
+      "uptime_s": 1802697,
+      "load1": 6.13,
+      "load5": 5.06,
+      "load15": 4.91,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 150,
+    "cost_usd": 22.688,
+    "duration_s": 7940.9,
+    "unmetered": 43,
+    "by_role": {
+      "solo": {
+        "count": 65,
+        "cost_usd": 16.5361,
+        "duration_s": 7222.7
+      },
+      "planner": {
+        "count": 9,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "builder": {
+        "count": 14,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 53,
+        "cost_usd": 6.1518,
+        "duration_s": 718.1
+      },
+      "plan-reviewer": {
+        "count": 9,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 69,
+        "cost_usd": 16.5361,
+        "duration_s": 7222.7
+      },
+      "full": {
+        "count": 81,
+        "cost_usd": 6.1518,
+        "duration_s": 718.1
+      }
+    },
+    "by_ticket": {
+      "tickets/.0151-package-assets-docs-css": {
+        "builder": 4,
+        "planner": 1,
+        "solo": 1,
+        "verifier": 4
+      },
+      "tickets/.0194-chart-slice-12": {
+        "solo": 2
+      },
+      "tickets/.0199-chart-slice-17": {
+        "solo": 2
+      },
+      "tickets/.0200-chart-slice-18": {
+        "solo": 2
+      },
+      "tickets/.0201-integrate-charts-wave1": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0203-integrate-wave1": {
+        "solo": 2,
+        "verifier": 1
+      },
+      "tickets/.0204-app-run2-incident-war-room": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "tickets/.0205-app-run2-plan-pricing-configurator": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0206-app-run2-research-notebook-composer": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0207-app-run2-media-asset-library": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0208-app-run2-account-security-center": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "tickets/.0209-app-run2-operations-analytics-dashboard": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0210-examples-style-s0": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0211-examples-style-g1": {
+        "solo": 2,
+        "verifier": 2
+      },
+      "tickets/.0212-examples-style-w1": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0213-examples-style-f1": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0214-examples-style-p1": {
+        "solo": 1
+      },
+      "tickets/.0215-examples-style-c1": {
+        "solo": 1
+      },
+      "tickets/.0219-rca-m7": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0220-rca-m1": {
+        "solo": 2,
+        "verifier": 1
+      },
+      "tickets/.0223-rca-m3": {
+        "solo": 2
+      },
+      "tickets/.0224-rca-m4": {
+        "solo": 2,
+        "verifier": 1
+      },
+      "tickets/.0225-rca-m5": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0235-examples-documentation-standard": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0236-run2-cross-app-analysis": {
+        "solo": 1
+      },
+      "tickets/.0237-maison-ui-consumer-plugin": {
+        "builder": 3,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "verifier": 3
+      },
+      "tickets/.0238-script-built-heading-classes": {
+        "solo": 1
+      },
+      "tickets/.0239-gen-ui-hill-climb-skill": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "tickets/.0240-autonomous-loop-policy": {
+        "solo": 1,
+        "verifier": 3
+      },
+      "tickets/.0242-refresh-verification-commands": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "tickets/.0243-cli-bounds-flag": {
+        "solo": 1
+      },
+      "tickets/.0244-chartcard-cardparts-part-rule": {
+        "solo": 1
+      },
+      "tickets/.0245-toast-under-modal": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0246-rtl-dir-lowering": {
+        "solo": 1
+      },
+      "tickets/.0247-sort-indicator-fixture": {
+        "solo": 1
+      },
+      "tickets/.0248-component-request-process": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0250-t0202-listbox": {
+        "solo": 2,
+        "verifier": 1
+      },
+      "tickets/.0251-t0202-geometry": {
+        "solo": 2,
+        "verifier": 2
+      },
+      "tickets/.0252-t0202-switch-menu-textarea": {
+        "solo": 1
+      },
+      "tickets/.0253-t0202-charts": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0254-t0202-examples": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0256-examples-layout-audit": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0257-ex-scaffold-layout-gap": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0258-ex-header-unit": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0259-ex-fixture-anatomy": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0260-ex-workflow-cards": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0264-ex-charts-intro": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0268-ex-nav-group-headers": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0269-plan-picker-disabled-double-dim": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/.0272-r2-integration": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "tickets/0105-structured-component-contracts": {
+        "planner": 1
+      },
+      "tickets/0152-manifest-driven-renderers": {
+        "plan-reviewer": 3,
+        "planner": 2
+      },
+      "tickets/0153-harness-coverage-all-components": {
+        "builder": 5,
+        "plan-reviewer": 3,
+        "planner": 2,
+        "verifier": 1
+      },
+      "tickets/0221-rca-m6": {
+        "solo": 2
+      },
+      "tickets/0222-rca-m2": {
+        "solo": 1
+      },
+      "tickets/0227-heading-system-and-sheet": {
+        "builder": 2,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "verifier": 2
+      },
+      "tickets/0275-e1-burn-down": {
+        "solo": 1
+      },
+      "tickets/0276-plan-picker-disabled-cta-dim": {
+        "solo": 1
+      },
+      "tickets/style-review-plan": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 2,
+      "attempts": [
+        {
+          "attempt_id": "7b378e030bce418e96daddea22f30f5a",
+          "role": "builder",
+          "level": "L3",
+          "started_at": "2026-10-07T17:25:42.556240+00:00",
+          "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/.0151-package-assets-docs-css/step-2.superseded-1/builder-L3.attempt.json"
+        },
+        {
+          "attempt_id": "18b5a001054a4780b8a263a786864816",
+          "role": "builder",
+          "level": "L3",
+          "started_at": "2026-10-08T07:43:50.232517+00:00",
+          "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.sdlc/tickets/0227-heading-system-and-sheet/step-2/builder-L3.attempt.json"
+        }
+      ]
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [
+      {
+        "ticket": "tickets/.0021-agent-reasoning-nested-alignment",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S fix of a verifier-confirmed defect (T-0142 result)"
+      },
+      {
+        "ticket": "tickets/.0131-app-incident-war-room",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0132-app-plan-pricing-configurator",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0133-app-research-notebook-composer",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0134-app-media-asset-library",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0135-app-account-security-center",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0136-app-operations-analytics-dashboard",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M feature (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0156-red-playwright-specs-beyond-five",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0157-harness-catalog-mutations-timeout",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0171-settlement-test-fixture-build-json",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size S bug (steps.py lane prints solo)"
+      },
+      {
+        "ticket": "tickets/.0172-candidate-regeneration",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M, mechanical regeneration with a documented playbook (T-0125)"
+      }
+    ],
+    "duplicates_dropped": 0,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 101,
+      "runs_files": 1300
+    }
+  },
+  "plan_review_share": 0.0,
+  "tickets": {
+    "count": 382,
+    "items": [
+      {
+        "ticket": "tickets/.0010-textarea-composition",
+        "id": "T-0010",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0039-dogfooding-finding-disposition",
+        "id": "T-0039",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0051-gen-ui-internal-distribution",
+        "id": "T-0051",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0052-gen-ui-consumer-distribution-validation",
+        "id": "T-0052",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0124-main-gate-inherited-red",
+        "id": "T-0124",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0125-typescript-runtime-dependency",
+        "id": "T-0125",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0126-maison-cycle-command",
+        "id": "T-0126",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0131-app-incident-war-room",
+        "id": "T-0131",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0132-app-plan-pricing-configurator",
+        "id": "T-0132",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0133-app-research-notebook-composer",
+        "id": "T-0133",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0134-app-media-asset-library",
+        "id": "T-0134",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0135-app-account-security-center",
+        "id": "T-0135",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0139-main-gate-red-specs",
+        "id": "T-0139",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0140-harness-check-eperm-cleanup",
+        "id": "T-0140",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0141-data-token-layer",
+        "id": "T-0141",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0142-reconcile-stale-verify-criteria",
+        "id": "T-0142",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0143-naming-vocabulary-doc",
+        "id": "T-0143",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0144-decision-log-evidence-manifest",
+        "id": "T-0144",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0145-component-spec-map-layered-gates",
+        "id": "T-0145",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0146-pack-docs-link-validator",
+        "id": "T-0146",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0147-intent-ir-schema-scorer",
+        "id": "T-0147",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0148-skills-single-source-generator",
+        "id": "T-0148",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0149-generate-all-entry-point",
+        "id": "T-0149",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0150-recipe-ts-naming-and-custom-elements",
+        "id": "T-0150",
+        "size": "L",
+        "criteria": 12
+      },
+      {
+        "ticket": "tickets/.0151-package-assets-docs-css",
+        "id": "T-0151",
+        "size": "L3",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0156-red-playwright-specs-beyond-five",
+        "id": "T-0156",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0157-harness-catalog-mutations-timeout",
+        "id": "T-0157",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0161-composer-toolbar-select-width",
+        "id": "T-0161",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/.0162-card-border-paint-freeze-skip",
+        "id": "T-0162",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0163-examples-slice-2-theme",
+        "id": "T-0163",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0164-examples-slice-3-fields-actions",
+        "id": "T-0164",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0165-examples-slice-4-choices",
+        "id": "T-0165",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0166-examples-slice-5-overlays-commands",
+        "id": "T-0166",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0167-examples-slice-6-data-navigation",
+        "id": "T-0167",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0168-examples-slice-7-patterns",
+        "id": "T-0168",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0169-examples-slice-8-color",
+        "id": "T-0169",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0170-chart-core-math-port",
+        "id": "T-0170",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0171-settlement-test-fixture-build-json",
+        "id": "T-0171",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0172-candidate-regeneration",
+        "id": "T-0172",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0173-candidate-3-regeneration",
+        "id": "T-0173",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0174-chart-slice-3",
+        "id": "T-0174",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0175-chart-slice-4",
+        "id": "T-0175",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0176-chart-slice-5",
+        "id": "T-0176",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0177-chart-slice-6",
+        "id": "T-0177",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0178-chart-slice-7",
+        "id": "T-0178",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0179-chart-slice-8",
+        "id": "T-0179",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0180-tests-read-tracked-fixtures",
+        "id": "T-0180",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0181-candidate-4-regeneration",
+        "id": "T-0181",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0182-maison-element-base",
+        "id": "T-0182",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0183-chart-core-export-payload",
+        "id": "T-0183",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0184-verification-runs-in-testing-repo",
+        "id": "T-0184",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0185-button-active-paint",
+        "id": "T-0185",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/.0186-cycle-intent-scorer-source",
+        "id": "T-0186",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0187-chart-slice-9",
+        "id": "T-0187",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0188-chart-slice-10",
+        "id": "T-0188",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0189-listbox-scroll-and-scrollbar",
+        "id": "T-0189",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0190-integrate-candidate-5",
+        "id": "T-0190",
+        "size": "L",
+        "criteria": 11
+      },
+      {
+        "ticket": "tickets/.0191-button-hover-ladder",
+        "id": "T-0191",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/.0192-field-control-surface-system",
+        "id": "T-0192",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0193-chart-slice-11",
+        "id": "T-0193",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0194-chart-slice-12",
+        "id": "T-0194",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0195-chart-slice-13",
+        "id": "T-0195",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0196-chart-slice-14",
+        "id": "T-0196",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0197-chart-slice-15",
+        "id": "T-0197",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0198-chart-slice-16",
+        "id": "T-0198",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0199-chart-slice-17",
+        "id": "T-0199",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0200-chart-slice-18",
+        "id": "T-0200",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0201-integrate-charts-wave1",
+        "id": "T-0201",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0203-integrate-wave1",
+        "id": "T-0203",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0204-app-run2-incident-war-room",
+        "id": "T-0204",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0205-app-run2-plan-pricing-configurator",
+        "id": "T-0205",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0206-app-run2-research-notebook-composer",
+        "id": "T-0206",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0207-app-run2-media-asset-library",
+        "id": "T-0207",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0208-app-run2-account-security-center",
+        "id": "T-0208",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0209-app-run2-operations-analytics-dashboard",
+        "id": "T-0209",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0210-examples-style-s0",
+        "id": "T-0210",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0211-examples-style-g1",
+        "id": "T-0211",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0212-examples-style-w1",
+        "id": "T-0212",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0213-examples-style-f1",
+        "id": "T-0213",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0214-examples-style-p1",
+        "id": "T-0214",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0215-examples-style-c1",
+        "id": "T-0215",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0219-rca-m7",
+        "id": "T-0219",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0220-rca-m1",
+        "id": "T-0220",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0223-rca-m3",
+        "id": "T-0223",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0224-rca-m4",
+        "id": "T-0224",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0225-rca-m5",
+        "id": "T-0225",
+        "size": "L1",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0235-examples-documentation-standard",
+        "id": "T-0235",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0236-run2-cross-app-analysis",
+        "id": "T-0236",
+        "size": "S",
+        "criteria": 11
+      },
+      {
+        "ticket": "tickets/.0239-gen-ui-hill-climb-skill",
+        "id": "T-0239",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0240-autonomous-loop-policy",
+        "id": "T-0240",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0245-toast-under-modal",
+        "id": "T-0245",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0248-component-request-process",
+        "id": "T-0248",
+        "size": "M",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/.0250-t0202-listbox",
+        "id": "T-0250",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0251-t0202-geometry",
+        "id": "T-0251",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0252-t0202-switch-menu-textarea",
+        "id": "T-0252",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/.0253-t0202-charts",
+        "id": "T-0253",
+        "size": "L2",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/.0256-examples-layout-audit",
+        "id": "T-0256",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0259-ex-fixture-anatomy",
+        "id": "T-0259",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0260-ex-workflow-cards",
+        "id": "T-0260",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0263-ex-app-pattern-headings",
+        "id": "T-0263",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/.0265-ex-one-h1",
+        "id": "T-0265",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/.0266-ex-cascade-token-hygiene",
+        "id": "T-0266",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0268-ex-nav-group-headers",
+        "id": "T-0268",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0269-plan-picker-disabled-double-dim",
+        "id": "T-0269",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/.0272-r2-integration",
+        "id": "T-0272",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/0137-port-native-dom-charts",
+        "id": "T-0137",
+        "size": "XL",
+        "criteria": 9
+      },
+      {
+        "ticket": "tickets/0138-example-pages-component-coverage",
+        "id": "T-0138",
+        "size": "L",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0152-manifest-driven-renderers",
+        "id": "T-0152",
+        "size": "XL",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0153-harness-coverage-all-components",
+        "id": "T-0153",
+        "size": "XL",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0154-wire-standalone-scripts-and-regenerate-once",
+        "id": "T-0154",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0155-batch-generation-packaging-architecture",
+        "id": "T-0155",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0202-ui-edits-2",
+        "id": "T-0202",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0216-advanced-workflows-regeneration",
+        "id": "T-0216",
+        "size": "XL",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0221-rca-m6",
+        "id": "T-0221",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0222-rca-m2",
+        "id": "T-0222",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0226-rca-m8",
+        "id": "T-0226",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0227-heading-system-and-sheet",
+        "id": "T-0227",
+        "size": "L",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0228-table-t-a",
+        "id": "T-0228",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0229-table-t-b",
+        "id": "T-0229",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0230-table-t-c",
+        "id": "T-0230",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0231-table-t-d",
+        "id": "T-0231",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0232-table-t-e",
+        "id": "T-0232",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0233-table-t-f",
+        "id": "T-0233",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0234-table-t-g",
+        "id": "T-0234",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0270-component-page-header-title-intro-form-section",
+        "id": "T-0270",
+        "size": "L2",
+        "criteria": 12
+      },
+      {
+        "ticket": "tickets/0273-component-inlinestatusmessage",
+        "id": "T-0273",
+        "size": "L2",
+        "criteria": 12
+      },
+      {
+        "ticket": "tickets/0274-component-switchgroup",
+        "id": "T-0274",
+        "size": "L2",
+        "criteria": 12
+      },
+      {
+        "ticket": "tickets/0275-e1-burn-down",
+        "id": "T-0275",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0276-plan-picker-disabled-cta-dim",
+        "id": "T-0276",
+        "size": "L1",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0141-data-token-layer",
+        "id": "T-0141",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0143-naming-vocabulary-doc",
+        "id": "T-0143",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0144-decision-log-evidence-manifest",
+        "id": "T-0144",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0145-component-spec-map-layered-gates",
+        "id": "T-0145",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0146-pack-docs-link-validator",
+        "id": "T-0146",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0147-intent-ir-schema-scorer",
+        "id": "T-0147",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0148-skills-single-source-generator",
+        "id": "T-0148",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0150-recipe-ts-naming-and-custom-elements",
+        "id": "T-0150",
+        "size": "L",
+        "criteria": 12
+      },
+      {
+        "ticket": "tickets/0151-package-assets-docs-css",
+        "id": "T-0151",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0165-examples-slice-4-choices",
+        "id": "T-0165",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0171-settlement-test-fixture-build-json",
+        "id": "T-0171",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0179-chart-slice-8",
+        "id": "T-0179",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0182-maison-element-base",
+        "id": "T-0182",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0184-verification-runs-in-testing-repo",
+        "id": "T-0184",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0187-chart-slice-9",
+        "id": "T-0187",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0188-chart-slice-10",
+        "id": "T-0188",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0193-chart-slice-11",
+        "id": "T-0193",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0194-chart-slice-12",
+        "id": "T-0194",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0195-chart-slice-13",
+        "id": "T-0195",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0196-chart-slice-14",
+        "id": "T-0196",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0197-chart-slice-15",
+        "id": "T-0197",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0198-chart-slice-16",
+        "id": "T-0198",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0200-chart-slice-18",
+        "id": "T-0200",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0203-integrate-wave1",
+        "id": "T-0203",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0210-examples-style-s0",
+        "id": "T-0210",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0211-examples-style-g1",
+        "id": "T-0211",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0212-examples-style-w1",
+        "id": "T-0212",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0213-examples-style-f1",
+        "id": "T-0213",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0214-examples-style-p1",
+        "id": "T-0214",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0215-examples-style-c1",
+        "id": "T-0215",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0219-rca-m7",
+        "id": "T-0219",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0220-rca-m1",
+        "id": "T-0220",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0223-rca-m3",
+        "id": "T-0223",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0224-rca-m4",
+        "id": "T-0224",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0225-rca-m5",
+        "id": "T-0225",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0257-ex-scaffold-layout-gap",
+        "id": "T-0257",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0245-toast-under-modal",
+        "id": "T-0245",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0092-reusable-popup-width",
+        "id": "T-0092",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "tickets/0096-shared-control-note-typography",
+        "id": "T-0096",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "tickets/0127-button-pressed-and-page-presentation",
+        "id": "T-0127",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "tickets/0149-generate-all-entry-point",
+        "id": "T-0149",
+        "size": "L",
+        "criteria": 5
+      },
+      {
+        "ticket": "tickets/0161-composer-toolbar-select-width",
+        "id": "T-0161",
+        "size": "S",
+        "criteria": 3
+      },
+      {
+        "ticket": "tickets/0162-card-border-paint-freeze-skip",
+        "id": "T-0162",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0163-examples-slice-2-theme",
+        "id": "T-0163",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0164-examples-slice-3-fields-actions",
+        "id": "T-0164",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0166-examples-slice-5-overlays-commands",
+        "id": "T-0166",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0167-examples-slice-6-data-navigation",
+        "id": "T-0167",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0168-examples-slice-7-patterns",
+        "id": "T-0168",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0169-examples-slice-8-color",
+        "id": "T-0169",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0170-chart-core-math-port",
+        "id": "T-0170",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0199-chart-slice-17",
+        "id": "T-0199",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0174-chart-slice-3",
+        "id": "T-0174",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0175-chart-slice-4",
+        "id": "T-0175",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0176-chart-slice-5",
+        "id": "T-0176",
+        "size": "S",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0177-chart-slice-6",
+        "id": "T-0177",
+        "size": "L",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0178-chart-slice-7",
+        "id": "T-0178",
+        "size": "M",
+        "criteria": 4
+      },
+      {
+        "ticket": "tickets/0268-ex-nav-group-headers",
+        "id": "T-0268",
+        "size": "M",
+        "criteria": 5
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 41,
+      "cpu_pct": 62.4,
+      "rss_mb": 9715.9
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 8,
+      "cpu_pct": 18.3,
+      "rss_mb": 6238.1
+    }
+  },
+  "worktrees": {
+    "count": 100,
+    "size": "10252.5 MB",
+    "size_kb_known": 10498608,
+    "items": [
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.5qmdbo/base",
+        "size": "56.6 MB"
+      },
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.DBkNUi/base",
+        "size": "56.6 MB"
+      },
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.FiloD0/base",
+        "size": "56.6 MB"
+      },
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.GJtBWI/base",
+        "size": "56.5 MB"
+      },
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.jeS5bu/base",
+        "size": "56.6 MB"
+      },
+      {
+        "path": "/private/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/gates-base.jNEfoF/base",
+        "size": "56.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a1fff61a5d7b9c5f9",
+        "size": "57.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a245647f8334abc8d",
+        "size": "58.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a2c470a899656767b",
+        "size": "304.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a2d93807db525e6f4",
+        "size": "220.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a622ad7047c0abc45",
+        "size": "220.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a7e66708a2e7eb7bf",
+        "size": "259.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-a904be4bd3927f922",
+        "size": "56.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.claude/worktrees/agent-af6e19f2e5108fb13",
+        "size": "58.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0153-s1",
+        "size": "57.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0153-s2",
+        "size": "57.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0153-s3",
+        "size": "57.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0153-s4",
+        "size": "57.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0227-s1",
+        "size": "59.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/b-0227-s2",
+        "size": "59.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/bap",
+        "size": "43.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/base-w1",
+        "size": "55.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d1",
+        "size": "196.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d2",
+        "size": "196.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d3",
+        "size": "193.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d5",
+        "size": "194.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d7",
+        "size": "34.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/batchD/d8",
+        "size": "195.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-B-T-0141/c",
+        "size": "314.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-G-T-0174/c",
+        "size": "202.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/chain-S8-T-0179/integration",
+        "size": "52.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/charts-wave1/integration",
+        "size": "48.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/docs-ctx",
+        "size": "33.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout-base",
+        "size": "57.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout/a",
+        "size": "194.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout/c",
+        "size": "192.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout/d",
+        "size": "418.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout2/e",
+        "size": "192.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout2/integration",
+        "size": "30.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout3/g",
+        "size": "194.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/fanout3/integration",
+        "size": "30.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/lbs",
+        "size": "40.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/r2-integration",
+        "size": "265.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0220-rca-m1",
+        "size": "58.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0221-rca-m6",
+        "size": "221.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0223-rca-m3",
+        "size": "58.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0224-rca-m4",
+        "size": "58.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0250-t0202-listbox",
+        "size": "58.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0251-t0202-geometry",
+        "size": "59.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/maison/ui-kit-maison/.worktrees/solo-0252-t0202-switch-menu-textarea",
+        "size": "59.0 MB"
+      }
+    ]
+  },
+  "ci": {
+    "error": "unable to expand placeholder in path: no git remotes found"
+  }
+}

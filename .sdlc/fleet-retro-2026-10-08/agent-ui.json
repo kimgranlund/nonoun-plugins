@@ -1,0 +1,365 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/agent-ui",
+  "summary": "runs: 6 deduped, $0.00, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-07T05:00",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.21.3",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.21.3",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.21.3",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.294 (Claude Code)",
+    "time": "2026-10-08T13:02:05Z",
+    "uptime_load": {
+      "uptime_s": 1802691,
+      "load1": 5.62,
+      "load5": 4.94,
+      "load15": 4.87,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 6,
+    "cost_usd": 0.0,
+    "duration_s": 0.0,
+    "unmetered": 6,
+    "by_role": {
+      "solo": {
+        "count": 5,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 1,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 6,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 0,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "croupier-rerecord-haiku-5-5": {
+        "solo": 1
+      },
+      "haiku-5-5-max-tokens": {
+        "solo": 1
+      },
+      "lazy-catalog-records": {
+        "solo": 1
+      },
+      "reasoning-panel": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "size-budget-split-design": {
+        "solo": 1
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [
+      {
+        "ticket": "a2ui-test-kit",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user chose a solo builder after the second replan verdict (2026-10-06); steps.py lane prints full for size L"
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user explicitly directed a solo builder for the whole ticket on 2026-10-06; steps.py lane printed full (size L)"
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user asked for solo builders on new work for comparison (relayed 2026-10-06, same as T-0015) and said 'do it'; steps.py lane prints full for size L"
+      },
+      {
+        "ticket": "croupier-natural-blackjack",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M (steps.py lane)"
+      },
+      {
+        "ticket": "lazy-catalog-records",
+        "recorded": "full",
+        "effective": "solo",
+        "note": "solo (tier L) because the user directed solo sub-agents for new sessions on 2026-10-07; steps.py lane printed full (size L)"
+      },
+      {
+        "ticket": "reasoning-panel",
+        "recorded": null,
+        "effective": "solo",
+        "note": "solo because size M (steps.py lane)"
+      }
+    ],
+    "duplicates_dropped": 1,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 7,
+      "runs_files": 66
+    }
+  },
+  "plan_review_share": null,
+  "tickets": {
+    "count": 47,
+    "items": [
+      {
+        "ticket": "a2ui-test-kit",
+        "id": "T-0011",
+        "size": "XL",
+        "criteria": 13
+      },
+      {
+        "ticket": "activity-errors-card-polish",
+        "id": "T-0019",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "activity-strip-polish",
+        "id": "T-0022",
+        "size": "M",
+        "criteria": 5
+      },
+      {
+        "ticket": "agent-activity-steps",
+        "id": "T-0016",
+        "size": "L",
+        "criteria": 10
+      },
+      {
+        "ticket": "croupier-hand-consistency",
+        "id": "T-0017",
+        "size": "L",
+        "criteria": 9
+      },
+      {
+        "ticket": "croupier-natural-blackjack",
+        "id": "T-0020",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "croupier-rerecord-haiku-5-5",
+        "id": "T-0033",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": "devtools-meta-replay",
+        "id": "T-0018",
+        "size": "M",
+        "criteria": 10
+      },
+      {
+        "ticket": "explicit-low-effort",
+        "id": "T-0032",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "haiku-5-5",
+        "id": "T-0030",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": "haiku-5-5-max-tokens",
+        "id": "T-0035",
+        "size": "S",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-adr-seam",
+        "id": "T-0027",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-records",
+        "id": "T-0029",
+        "size": "L",
+        "criteria": 2
+      },
+      {
+        "ticket": "lazy-catalog-renderer",
+        "id": "T-0028",
+        "size": "M",
+        "criteria": 2
+      },
+      {
+        "ticket": "persona-registry",
+        "id": "T-0013",
+        "size": "M",
+        "criteria": 13
+      },
+      {
+        "ticket": "reasoning-panel",
+        "id": "T-0021",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "size-budget-split-design",
+        "id": "T-0026",
+        "size": "M",
+        "criteria": 3
+      },
+      {
+        "ticket": "stringified-tool-input",
+        "id": "T-0034",
+        "size": "L1",
+        "criteria": 2
+      },
+      {
+        "ticket": "sub-tag-aliases",
+        "id": "T-0015",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "thinking-blocks-passthrough",
+        "id": "T-0031",
+        "size": "L2",
+        "criteria": 2
+      },
+      {
+        "ticket": "turn-deadline",
+        "id": "T-0023",
+        "size": "M",
+        "criteria": 3
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 41,
+      "cpu_pct": 2.1,
+      "rss_mb": 9710.4
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 8,
+      "cpu_pct": 18.2,
+      "rss_mb": 6236.0
+    }
+  },
+  "worktrees": {
+    "count": 6,
+    "size": "396.3 MB",
+    "size_kb_known": 405856,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-lazy2",
+        "size": "71.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-maxtok",
+        "size": "70.6 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/wave-rerec",
+        "size": "70.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-1727",
+        "size": "72.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-planner",
+        "size": "56.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/agent-ui/.claude/worktrees/agent-ui-reviewer",
+        "size": "55.8 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-07",
+    "window_days": 1,
+    "runs": 52,
+    "wall_minutes": 116.3,
+    "failed": 0,
+    "by_workflow": {
+      "CI": {
+        "runs": 15,
+        "wall_minutes": 92.7,
+        "failed": 0,
+        "by_event": {
+          "pull_request": 15
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 15,
+        "push_dup_7d": 0
+      },
+      "Claude Code Review": {
+        "runs": 15,
+        "wall_minutes": 10.8,
+        "failed": 0,
+        "by_event": {
+          "pull_request": 15
+        },
+        "push_runs_7d": 0,
+        "pull_request_runs_7d": 15,
+        "push_dup_7d": 0
+      },
+      "Deploy docs site": {
+        "runs": 12,
+        "wall_minutes": 8.3,
+        "failed": 0,
+        "by_event": {
+          "push": 12
+        },
+        "push_runs_7d": 12,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      },
+      "Theme-provider fixture regen": {
+        "runs": 10,
+        "wall_minutes": 4.5,
+        "failed": 0,
+        "by_event": {
+          "push": 10
+        },
+        "push_runs_7d": 10,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
