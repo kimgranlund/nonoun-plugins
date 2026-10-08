@@ -25,3 +25,11 @@ maison T-0227 step 2 (widen refused, forced a conductor scope decision plus a us
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Choice
+Smaller change picked: `steps.py widen --reason "<why>"`. When a step has no scope criterion, the explicit path list plus the reason are recorded under `## Scope widened` as the allow-list instead of refusing. Changing the planner template would touch the generated agents and every future plan; this edits one command and keeps the refusal when neither list-with-reason nor a criterion is present.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest | tail -1 | grep -q 'PASS'`
+- [ ] `d=$(mktemp -d) && mkdir $d/s && printf '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n- `test -d .`\n' > $d/s/handoff.md && cd $d && git init -q . && ! python3 "$OLDPWD/plugins/sdlc-lite/scripts/steps.py" widen s b.txt 2>/dev/null && python3 "$OLDPWD/plugins/sdlc-lite/scripts/steps.py" widen s b.txt --reason why | grep -q 'no scope criterion' && grep -q 'steps.py widen): why' s/handoff.md`
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`

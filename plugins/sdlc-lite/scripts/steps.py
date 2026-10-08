@@ -6,7 +6,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                  next <step dir> |
                  resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
-                 widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
+                 widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--reason WHY] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -317,7 +317,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step dir, the old span, and the new text. Every refusal prints on stderr, ends with a
             last line "plan defect: steps swap refused: <why>; replan this step (/chain 4.2)",
             exits 1, and writes nothing.
-  widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS]: apply a conductor scope
+  widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--reason WHY]: apply a conductor scope
             decision to <step dir>/handoff.md, so the next builder does not block on the old scope
             guard. Each path must be repo-relative, match [A-Za-z0-9._/@+-]+, not start with - or /,
             and hold no .. component. Exactly one criterion line (the criteria_lines region, a - or
@@ -327,7 +327,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               E  grep -vxE "<pattern>"       |<path> is appended inside the quotes
               A  grep -vE "^(...)$" (or grep -E -v)   |<path> is inserted before )$
             In E and A the path is ERE-escaped (a backslash before each of .^$*+?()[]{}|\).
-            Zero or several such lines, or an unrecognized form, refuses. A path already listed
+            Several such lines, or an unrecognized form, refuses. Zero such lines refuses too,
+            unless --reason WHY is given: the path list is then the explicit allow-list, recorded
+            with the reason as "- `<path>`: allowed by a conductor scope decision (steps.py widen):
+            <why>" under ## Scope widened (no span is rewritten or run), and it prints "steps widen:
+            <step dir>: no scope criterion; recorded <paths> under ## Scope widened (reason: <why>)".
+            With a criterion present --reason is appended to each recorded item. A path already listed
             (an -e word for F, its escaped form an alternative for E and A) is skipped; when every
             path is listed it prints "widen: already applied", exits 0, and writes nothing. The
             rewritten line must keep its marker and (guard) tag and lint clean (the lint rules
@@ -2503,10 +2508,11 @@ def replace_span(line, old, new):
     return None
 
 
-def add_scope_widened(text, paths):
+def add_scope_widened(text, paths, reason=None):
     """The handoff text with one '## Scope widened' item per path: appended to the existing section,
-    after its last non-blank line, or in a new section at the end."""
-    items = [f'- `{p}`: allowed by a conductor scope decision (steps.py widen)' for p in paths]
+    after its last non-blank line, or in a new section at the end. A reason is appended to each item."""
+    tail = f': {reason}' if reason else ''
+    items = [f'- `{p}`: allowed by a conductor scope decision (steps.py widen){tail}' for p in paths]
     lines = text.splitlines()
     start = next((i for i, x in enumerate(lines) if x.rstrip() == '## Scope widened'), None)
     if start is None:
@@ -2520,9 +2526,11 @@ def add_scope_widened(text, paths):
     return '\n'.join(out) + '\n'
 
 
-def widen(step_dir, paths, timeout=300):
+def widen(step_dir, paths, timeout=300, reason=None):
     """Add paths to the one scope criterion of <step dir>/handoff.md after every check passes, and
-    record them under ## Scope widened. Returns the one stdout line. Raises Fail (last line
+    record them under ## Scope widened. A step with no scope criterion at all and a reason: record the
+    explicit path list and the reason under ## Scope widened, rewrite nothing else. Returns the one
+    stdout line. Raises Fail (last line
     'plan defect: steps widen refused: ...; replan this step (/chain 4.2)') and writes nothing on any
     refusal."""
     d = pathlib.Path(step_dir)
@@ -2540,6 +2548,10 @@ def widen(step_dir, paths, timeout=300):
             refuse(f'not a repo-relative path of [A-Za-z0-9._/@+-] with no leading - or / and no .. '
                    f'component: {p}')
     paths = list(dict.fromkeys(paths))
+    if reason is not None:
+        reason = ' '.join(reason.split())
+        if not reason:
+            refuse('--reason is empty')
 
     text = h.read_text(encoding='utf-8')
     lines = text.splitlines(keepends=True)
@@ -2548,8 +2560,11 @@ def widen(step_dir, paths, timeout=300):
              if is_scope_span(s)]
     rows = sorted(set(i for i, _, _ in scope))
     if not rows:
+        if reason is not None:
+            return widen_recorded(h, text, paths, reason)
         refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list '
-               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$")')
+               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"); '
+               'pass --reason "<why>" to record an explicit file list instead')
     if len(rows) > 1:
         refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list; '
                'need exactly one')
@@ -2601,13 +2616,35 @@ def widen(step_dir, paths, timeout=300):
 
     ending = lines[idx][len(lines[idx].rstrip('\r\n')):]
     lines[idx] = new_line + ending
-    h.write_text(add_scope_widened(''.join(lines), add), encoding='utf-8')
+    h.write_text(add_scope_widened(''.join(lines), add, reason), encoding='utf-8')
     return f'steps widen: {d}: added {", ".join(add)} to the scope criterion: {new}'
 
 
-def cmd_widen(step_dir, paths, timeout=300):
+def widen_recorded(h, text, paths, reason):
+    """The no-criterion path of widen: the plan holds no scope allow-list to extend, so the conductor's
+    explicit file list and reason are the allow-list, recorded under ## Scope widened. Returns the one
+    stdout line; writes nothing when every path is already listed."""
+    lines = text.splitlines()
+    start = next((i for i, x in enumerate(lines) if x.rstrip() == '## Scope widened'), None)
+    listed = set()
+    if start is not None:
+        for x in lines[start + 1:]:
+            if x.startswith('## '):
+                break
+            mm = re.match(r'^- `([^`]+)`', x)
+            if mm:
+                listed.add(mm.group(1))
+    add = [p for p in paths if p not in listed]
+    if not add:
+        return 'widen: already applied'
+    h.write_text(add_scope_widened(text, add, reason), encoding='utf-8')
+    return (f'steps widen: {h.parent}: no scope criterion; recorded {", ".join(add)} under '
+            f'## Scope widened (reason: {reason})')
+
+
+def cmd_widen(step_dir, paths, timeout=300, reason=None):
     try:
-        line = widen(step_dir, paths, timeout)
+        line = widen(step_dir, paths, timeout, reason)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -3957,6 +3994,41 @@ def selftest():
         widen_refused('(c) no scope criterion line', d, ['b.txt'], 'no criterion line')
         widen_refused('(c) no scope criterion line names the accepted forms', d, ['b.txt'],
                       'grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"')
+        widen_refused('(c) no scope criterion and no --reason still refuses, naming --reason', d, ['b.txt'],
+                      '--reason')
+        # (e) an explicit file list with a reason is the allow-list when the step has no scope criterion
+        before = (d / 'handoff.md').read_text(encoding='utf-8')
+        rc, out, err = run_main(['widen', str(d), 'b.txt', 'dir/c.txt', '--reason', 'citation-only   edits'])
+        text = (d / 'handoff.md').read_text(encoding='utf-8')
+        check('widen: (e) no scope criterion plus --reason records the list and the reason, rewrites no criterion',
+              rc == 0 and err == '' and len(out.splitlines()) == 1
+              and 'no scope criterion; recorded b.txt, dir/c.txt' in out and '(reason: citation-only edits)' in out
+              and text.startswith(before.rstrip('\n')) and '`test -d .`' in text
+              and text.endswith('## Scope widened\n'
+                                '- `b.txt`: allowed by a conductor scope decision (steps.py widen): citation-only edits\n'
+                                '- `dir/c.txt`: allowed by a conductor scope decision (steps.py widen): citation-only edits\n'))
+        before = snapshot(d)
+        rc, out, err = run_main(['widen', str(d), 'b.txt', '--reason', 'again'])
+        check('widen: (e) the same list and a reason again prints widen: already applied, exit 0, writes nothing',
+              rc == 0 and out.strip() == 'widen: already applied' and snapshot(d) == before)
+        rc, out, err = run_main(['widen', str(d), 'e.txt', '--reason', 'more'])
+        text = (d / 'handoff.md').read_text(encoding='utf-8')
+        check('widen: (e) a later list adds only the new path and keeps the earlier items',
+              rc == 0 and text.count('## Scope widened') == 1 and text.count('`b.txt`') == 1
+              and text.endswith('- `e.txt`: allowed by a conductor scope decision (steps.py widen): more\n'))
+        r, d = w_repo(w_handoff('`test -d .`'))
+        widen_refused('(e) an empty --reason refuses', d, ['b.txt', '--reason', '  '], '--reason is empty')
+        widen_refused('(e) a bad path still refuses with --reason', d, ['../x', '--reason', 'why'],
+                      'not a repo-relative path')
+        r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
+        rc, out, err = run_main(['widen', str(d), 'b.txt', '--reason', 'needed for the doc'])
+        check('widen: (e) with a criterion present --reason widens the criterion and is recorded on the item',
+              rc == 0 and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8')
+              and (d / 'handoff.md').read_text(encoding='utf-8').endswith(
+                  '(steps.py widen): needed for the doc\n'))
+        r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`', f'`{W_FORMS["E"]}`'))
+        widen_refused('(e) two scope criterion lines still refuse with --reason', d, ['b.txt', '--reason', 'why'],
+                      '2 criterion lines')
         r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`', f'`{W_FORMS["E"]}`'))
         widen_refused('(c) two scope criterion lines', d, ['b.txt'], '2 criterion lines')
         r, d = w_repo(w_handoff(f'`{W_LIST} | grep -v -e a.txt | {{ ! grep -q .; }}`'))
@@ -4506,6 +4578,9 @@ def main(argv):
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='timeout for the widened span (default 300); a timeout refuses. It runs with '
                         'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+    p.add_argument('--reason', metavar='WHY',
+                   help='why the files are in scope; recorded on each ## Scope widened item. With no scope '
+                        'criterion in the step it makes the path list the recorded allow-list')
     sub.add_parser('selftest', help='prove every case and every refusal fires')
     a, extra = ap.parse_known_args(argv)
     if extra and a.cmd != 'widen':
@@ -4515,7 +4590,7 @@ def main(argv):
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
             return 1
-        return cmd_widen(a.step_dir, a.paths + extra, a.timeout)
+        return cmd_widen(a.step_dir, a.paths + extra, a.timeout, a.reason)
     if a.cmd == 'selftest':
         return selftest()
     if a.cmd == 'precheck':
