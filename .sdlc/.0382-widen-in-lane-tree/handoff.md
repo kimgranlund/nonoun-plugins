@@ -2,7 +2,7 @@
 id: T-0382
 title: "steps.py widen evaluates the scope span in the lane work tree, not the stale root"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. Codex host behavior cannot be run live h
 - `python3 plugins/sdlc-lite/scripts/check.py >/dev/null 2>&1 && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check >/dev/null 2>&1`
 - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check >/dev/null 2>&1 && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check >/dev/null 2>&1`
 - `python3 plugins/sdlc-lite/scripts/steps.py widen --help | grep -q -- '--tree'`
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
