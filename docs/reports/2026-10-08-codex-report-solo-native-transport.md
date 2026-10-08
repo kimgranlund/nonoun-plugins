@@ -22,7 +22,7 @@ In a temporary directory outside a Git checkout, create ticket/handoff.md with a
 ```sh
 SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent python3 "$PLUGIN/scripts/solo_run.py" run --backend codex --task-dir "$TMP/ticket" --tier L2 --brief 'Transport probe, no implementation' --cwd "$TMP" --no-worktree
 ```
-Set PLUGIN to the installed SDLC Lite root and TMP to the disposable directory. No model invocation is needed. Captured actual arguments, output and exit code are in [repro.json](2026-10-08-codex-report-solo-native-transport-repro.json).
+Set PLUGIN to the installed SDLC Lite root and TMP to the disposable directory. No model invocation is needed. Captured actual arguments, output and exit code are in [repro.json](2026-10-08-codex-report-solo-native-transport/repro.json).
 
 ## Actual
 Exit 2. stderr: `Codex execution failed: subagent transport requires --request-file`. No native request file is written; the wrapper records an unsuccessful solo attempt in runs.jsonl. No Codex CLI or native agent starts.
