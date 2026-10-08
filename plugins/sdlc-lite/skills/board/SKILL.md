@@ -21,5 +21,5 @@ Rules:
 - ID and Ticket columns appear only when at least one rendered task's `handoff.md` has ticket front matter; a task without front matter gets empty cells in those columns, and a task dir with no front matter anywhere still renders the plain 4-column table.
 - The board lists the live set only: a ticketed task is left off entirely when it is `dropped`, or `done` with no recorded step work (no planner file, step dir, or running marker); proposed, ready, and blocked tickets stay visible even without steps.
 - If the render ends with a legacy `.board-state.json` hint line, print it verbatim like the rest. The file is safe to delete; board.py never touches it.
-- `--lanes` lists every `git worktree list` entry with its branch and that worktree's `--summary` line (`no tasks` when it has none), one row per lane; it leaves the default board unchanged and exits 1 outside a git work tree.
+- `--lanes` lists every `git worktree list` entry with its branch and that worktree's `--summary` line (`no tasks` when it has none), one row per lane, plus Base, Stale (base not an ancestor of main), Verifier, Merge (`n/a` until T-0374) and Owner (claude or codex) columns when lane worktrees exist; it leaves the default board unchanged and exits 1 outside a git work tree.
 - Decisions never go in the board; they go through AskUserQuestion.
