@@ -357,4 +357,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0357 | [0357-solo-l2-effort-sweep](0357-solo-l2-effort-sweep/handoff.md) | Test solo L2 Sonnet at high versus xhigh on past tickets | chore | L2 | P2 | none | ⏳ proposed |
 | T-0358 | [.0358-solo-already-fixed-check](.0358-solo-already-fixed-check/handoff.md) | A solo lane stops early when the ticket is already fixed or stale | feature | L1 | P2 | none | 🟢 done |
 | T-0359 | [.0359-haiku-price-refit](.0359-haiku-price-refit/handoff.md) | Refit the Haiku rows in prices.json for claude-haiku-5-5 | chore | L1 | P2 | none | 🟢 done |
-| T-0360 | [0360-solo-l2-to-high](0360-solo-l2-to-high/handoff.md) | Drop solo L2 (sonnet) from xhigh to high; lock an eval | chore | L2 | P2 | none | ⏳ proposed |
+| T-0360 | [.0360-solo-l2-to-high](.0360-solo-l2-to-high/handoff.md) | Drop solo L2 (sonnet) from xhigh to high; lock an eval | chore | L2 | P2 | none | 🟢 done |
