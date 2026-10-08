@@ -387,3 +387,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0387 | [0387-architect-markdown-design](0387-architect-markdown-design/handoff.md) | The architect skips decompose and the coverage check for a Markdown-only design handoff | chore | L1 | P2 | none | ⏳ proposed |
 | T-0388 | [0388-record-result-sha](0388-record-result-sha/handoff.md) | dispatch.py record stores result_sha256 in the attempt and the runs row | feature | L1 | P2 | T-0383 | ⏳ proposed |
 | T-0389 | [0389-codex-profile-fingerprint](0389-codex-profile-fingerprint/handoff.md) | Codex readiness distinguishes a callable role name from the loaded profile revision | bug | L2 | P2 | none | ⏳ proposed |
+| T-0390 | [0390-send-sender-registered](0390-send-sender-registered/handoff.md) | messages.py send defaults the sender to a name a reply can reach | bug | L1 | P2 | none | ⏳ proposed |
