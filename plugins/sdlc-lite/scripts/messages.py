@@ -10,6 +10,7 @@ Usage: messages.py [--root DIR] send --receiver NAME --sender NAME --topic TEXT 
        messages.py [--root DIR] expire [--now TIMESTAMP]
        messages.py [--root DIR] count --receiver NAME
        messages.py [--root DIR] wait --receiver NAME [--timeout SECONDS] [--interval SECONDS]
+       messages.py [--root DIR] backlog --receiver NAME [--once]
        messages.py selftest
   A body of `-` is read from stdin. TTL is a positive integer followed by s, m, h or d (default 7d).
   Exit 0 on success. Exit 1 on every refusal or validation failure: one stderr line
@@ -49,6 +50,13 @@ Commands
           seconds (default 120, 1 to 600). Print `<id>\\t<absolute path>` per valid message, sorted by
           id, and exit 0. At the timeout print `no new messages` and exit 3. It skips an invalid file.
           It never claims, moves, writes, stamps, or prints a body.
+  backlog print a status line, then `<id>\\t<sender>\\t<topic>\\t<send_time>\\t<read_time>\\t<follow_up_requested>`
+          per message in read/<receiver>/ (claimed, not acknowledged), sorted by id. The status line is
+          `<N> previously claimed message(s) remain(s) unacknowledged (<K> listed).`, N counting every
+          valid message in read/<receiver>/ and K the rows printed. Only this receiver is read. It never
+          claims, moves, stamps, or prints a body, and it skips an invalid file. With --once it lists
+          only ids not yet named in read/<receiver>/.backlog-reported and then adds them to that file
+          (one id per line), so a second --once run lists none. Without --once it writes nothing.
   selftest
           run every transition and refusal against throwaway git repos in a temp dir, calling this
           file as `<python> <this file>`, so a copied file tests itself. It never touches the
@@ -77,7 +85,9 @@ Layout
   the mailbox, so read, ack and reply find a message by id in any state folder.
   send and reply create new/<receiver>/ and also write the entry files, which creates new/, read/ and
   done/; read still creates only read/<receiver>/, and ack and expire only done/<receiver>/. list,
-  count, wait, and expire on a missing mailbox create nothing; list, count, and expire exit 0.
+  count, wait, backlog, and expire on a missing mailbox create nothing; list, count, backlog, and expire
+  exit 0. backlog --once is the only command that writes read/<receiver>/.backlog-reported, which
+  every other command ignores like any non-message file.
 
 Mailbox root
   --root DIR (relative to the cwd): the mailbox is DIR/messages.
@@ -127,9 +137,9 @@ Schema
   characters with no control character and no leading or trailing whitespace. In new/, read_time is
   empty and ack_time and outcome are absent; in read/, ack_time and outcome are absent. The body is
   UTF-8 of at most 4000 bytes, may be empty, and holds no line equal to a data marker.
-  Every subcommand except wait validates every message file it opens or counts before it writes or
-  moves anything; one invalid file exits 1 with `messages.py: invalid message <path>: <reason>`.
-  wait skips an invalid file instead.
+  Every subcommand except wait and backlog validates every message file it opens or counts before it
+  writes or moves anything; one invalid file exits 1 with `messages.py: invalid message <path>: <reason>`.
+  wait and backlog skip an invalid file instead.
 
 Reply rule
   A reply to message X exists when some message in new/<S>/, read/<S>/ or done/<S>/, where S is X's
@@ -231,6 +241,8 @@ Count new messages with `python3 "{{scripts}}/messages.py" count --receiver <nam
 
 To block until a message arrives, run `python3 "{{scripts}}/messages.py" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
 
+To see messages already claimed but not acknowledged, run `python3 "{{scripts}}/messages.py" backlog --receiver <name>`. It prints a status line, `<N> previously claimed message(s) remain(s) unacknowledged (<K> listed).`, then one tab-separated row per message in `read/<name>/`: id, sender, topic, send_time, read_time, follow_up_requested. It reads only that receiver, never claims, acks, or prints a body, and writes nothing. With `--once` it lists only messages it has not listed before (it records their ids in `read/<name>/.backlog-reported`), so a second `--once` run lists none.
+
 ## Reply
 
 `python3 "{{scripts}}/messages.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.
@@ -245,7 +257,7 @@ To block until a message arrives, run `python3 "{{scripts}}/messages.py" wait --
 
 ## Messenger
 
-Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
+Each harness runs one dedicated `messenger` sub-agent on a cheap model. On startup it runs `backlog --once` and reports previously claimed, unacknowledged messages in their own section; it never replays, replies to, or acks them. It then polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
 - Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
 - Codex: install the project agents once with `python3 "{{scripts}}/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
@@ -1025,6 +1037,41 @@ def cmd_wait(a):
         time.sleep(min(interval, remaining))
 
 
+BACKLOG_MARKER = '.backlog-reported'
+
+
+def cmd_backlog(a):
+    receiver = arg_name(a.receiver, '--receiver')
+    mbox = mailbox(a.root)
+    folder = os.path.join(mbox, 'read', receiver)
+    rows = []
+    for mid in message_ids(folder):
+        try:
+            got = load_or_none(msg_path(mbox, 'read', receiver, mid), 'read', receiver)
+        except Refuse:
+            continue
+        if got is not None:
+            f = got[0]
+            rows.append((mid, [mid, f['sender'], f['topic'], f['send_time'], f['read_time'],
+                               f['follow_up_requested']]))
+    total = len(rows)
+    marker = os.path.join(folder, BACKLOG_MARKER)
+    if a.once:
+        with Lock(mbox):
+            try:
+                with open(marker, encoding='utf-8') as fh:
+                    seen = set(fh.read().split())
+            except FileNotFoundError:
+                seen = set()
+            rows = [r for r in rows if r[0] not in seen]
+            if rows:
+                write_replace(marker, ''.join(f'{i}\n' for i in sorted(seen | {r[0] for r in rows})).encode('utf-8'))
+    noun = 'message remains' if total == 1 else 'messages remain'
+    emit(f'{total} previously claimed {noun} unacknowledged ({len(rows)} listed).\n'
+         + ''.join('\t'.join(r[1]) + '\n' for r in rows))
+    return 0
+
+
 # ---------------------------------------------------------------- selftest
 #
 # The selftest drives the CLI under test as a subprocess (sys.executable plus this file's own path)
@@ -1776,7 +1823,7 @@ def case_entry_parses(h):
                 if tok.startswith('--') and tok not in usage:
                     st_fail(f'{rel}: {cmd!r} uses {tok}, which {argv[2]} --help does not list')
             seen.add(argv[2])
-    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count', 'wait'}
+    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count', 'wait', 'backlog'}
     if seen != want:
         st_fail(f'the entry files run {sorted(seen)}, expected {sorted(want)}')
 
@@ -1958,6 +2005,67 @@ def case_wait_claim_control(h):
         st_fail('the state check passed a wait that claims the message')
 
 
+def st_backlog_rows(out):
+    lines = out.split('\n')
+    if lines[-1] != '':
+        st_fail(f'backlog output does not end in a newline: {out!r}')
+    return lines[0], [x.split('\t') for x in lines[1:-1]]
+
+
+def case_backlog(h):
+    b = Box(h)
+    old, _ = b.send(topic='old one', follow_up='true')
+    b.ok('read', old, '--receiver', 'bob')
+    b.send(receiver='carol', topic='other')  # another receiver's new message
+    carol_old, _ = b.send(receiver='carol', topic='carol claimed')
+    b.ok('read', carol_old, '--receiver', 'carol')
+    b.refused('backlog', want='--receiver is required')
+    before = b.snap()
+    out = b.ok('backlog', '--receiver', 'bob')
+    status, rows = st_backlog_rows(out)
+    if status != '1 previously claimed message remains unacknowledged (1 listed).':
+        st_fail(f'backlog status line was {status!r}')
+    fields, _ = b.load('read', 'bob', old)
+    want = [old, 'alice', 'old one', fields['send_time'], fields['read_time'], 'true']
+    if rows != [want]:
+        st_fail(f'backlog rows were {rows}, expected {[want]}')
+    if carol_old in out or 'carol' in out:
+        st_fail('backlog listed another receiver')
+    if b.snap() != before:
+        st_fail('backlog without --once changed the mailbox')
+    if st_backlog_rows(b.ok('backlog', '--receiver', 'bob'))[1] != [want]:
+        st_fail('backlog without --once did not repeat')
+    # new queue empty, read queue nonempty: --once surfaces it once, a second poll does not repeat it
+    if b.ok('count', '--receiver', 'bob') != '0\n':
+        st_fail('bob still has a new message')
+    status, rows = st_backlog_rows(b.ok('backlog', '--receiver', 'bob', '--once'))
+    if rows != [want]:
+        st_fail(f'the first --once run listed {rows}, expected {[want]}')
+    status, rows = st_backlog_rows(b.ok('backlog', '--receiver', 'bob', '--once'))
+    if rows != [] or status != '1 previously claimed message remains unacknowledged (0 listed).':
+        st_fail(f'the second --once run repeated the backlog: {status!r} {rows}')
+    if b.load('read', 'carol', carol_old)[0]['read_time'] == '':
+        st_fail('the other receiver\'s claimed message lost its read_time')
+    # a new arrival is still claimable and listed after it is claimed; a still-unacked old one is not repeated
+    new, _ = b.send(topic='fresh')
+    if b.ok('wait', '--receiver', 'bob', '--timeout', '1').split('\t', 1)[0] != new:
+        st_fail('wait did not return the new arrival')
+    b.ok('read', new, '--receiver', 'bob')
+    status, rows = st_backlog_rows(b.ok('backlog', '--receiver', 'bob', '--once'))
+    if [r[0] for r in rows] != [new] or not status.startswith('2 previously claimed messages remain'):
+        st_fail(f'the third --once run was {status!r} {rows}, expected only the new claim')
+    # ack leaves the backlog
+    b.ok('reply', old, 'answer')
+    b.ok('ack', old, '--outcome', 'handled')
+    status, rows = st_backlog_rows(b.ok('backlog', '--receiver', 'bob'))
+    if [r[0] for r in rows] != [new] or not status.startswith('1 previously claimed message remains'):
+        st_fail(f'after the ack the backlog was {status!r} {rows}')
+    # an invalid file is skipped, not fatal
+    b.put('bob', '20260101T000000000000Z-alice-garbage', b'not a message\n', state='read')
+    if st_backlog_rows(b.ok('backlog', '--receiver', 'bob'))[1][0][0] != new:
+        st_fail('backlog did not skip an invalid file')
+
+
 SELFTEST_CASES = (
     ('create', case_create),
     ('new to read', case_new_to_read),
@@ -1992,6 +2100,7 @@ SELFTEST_CASES = (
     ('wait: ignores a malformed file and another receiver', case_wait_skips),
     ('wait: never prints a body', case_wait_no_body),
     ('wait: a claiming wait is caught', case_wait_claim_control),
+    ('backlog: claimed messages listed once, own receiver only, read-only', case_backlog),
 )
 
 
@@ -2018,7 +2127,7 @@ def cmd_selftest(a):
 
 
 COMMANDS = {'send': cmd_send, 'list': cmd_list, 'read': cmd_read, 'ack': cmd_ack, 'reply': cmd_reply,
-            'expire': cmd_expire, 'count': cmd_count, 'wait': cmd_wait, 'selftest': cmd_selftest}
+            'expire': cmd_expire, 'count': cmd_count, 'wait': cmd_wait, 'backlog': cmd_backlog, 'selftest': cmd_selftest}
 
 
 def parser():
@@ -2027,7 +2136,7 @@ def parser():
     ap.add_argument('--root', metavar='DIR',
                     help='the mailbox is DIR/messages, DIR relative to the cwd (default: resolved through git, '
                          'see Mailbox root)')
-    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,wait,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,wait,backlog,selftest}')
 
     p = sub.add_parser('send', allow_abbrev=False, help='write a message to new/<receiver>/')
     p.add_argument('--receiver', metavar='NAME', help='required: who the message is for')
@@ -2074,6 +2183,12 @@ def parser():
                    help='give up after this many seconds: an integer from 1 to 600 (default 120)')
     p.add_argument('--interval', metavar='SECONDS',
                    help='check this often, in seconds: an integer of at least 1 (default 5)')
+
+    p = sub.add_parser('backlog', allow_abbrev=False,
+                       help='list messages claimed in read/<receiver>/ but not acknowledged; never claims')
+    p.add_argument('--receiver', metavar='NAME', help='required: the receiver')
+    p.add_argument('--once', action='store_true',
+                   help='list only messages not listed by an earlier --once run, and record them')
 
     sub.add_parser('selftest', allow_abbrev=False, help='prove every transition and refusal in temp repos')
     return ap

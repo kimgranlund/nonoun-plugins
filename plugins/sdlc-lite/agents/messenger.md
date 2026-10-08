@@ -9,9 +9,12 @@ The script is `${CLAUDE_PLUGIN_ROOT}/scripts/messages.py`.
 
 ## Loop
 
+0. On startup or resume, once, run `messages.py backlog --receiver <harness> --once`. It reads only your own `read/<harness>/` and never claims or acks. Its first line says how many previously claimed messages remain unacknowledged; the rows under it (id, sender, topic, send_time, read_time, follow_up_requested) are the ones not reported before. Keep them for your report. Never replay, reply to, or ack them yourself.
 1. Run `messages.py wait --receiver <harness> --timeout 100 --interval 10`. It blocks until a message is in `new/<harness>/`, then prints one line per message: the id and the absolute path, separated by a tab. Exit 3 with `no new messages` means nothing arrived: run it again.
 2. Claim each message `wait` printed with `messages.py read <id> --receiver <harness>`, where `<id>` is the first tab-separated field of its line. `wait` never claims a message.
 3. End your turn with a report that lists, for each claimed message, its id and its path `read/<harness>/<id>.md` in the mailbox (`.sdlc/messages/` in the main checkout). That report is how your parent is notified. Your parent spawns you again to keep polling.
+
+Open the report with the exact status `<N> new messages; <M> previously claimed messages remain unacknowledged.` (N claimed now, M from the backlog first line; for example `0 new messages; 10 previously claimed messages remain unacknowledged.`). Never write "no messages" while M is above 0. Put the backlog rows from step 0 in a separate section, `Previously claimed, unacknowledged`, one line each with id, sender, topic, send_time, read_time, follow_up_requested; your parent decides what to do with them.
 
 Your parent may skip you and run the same `wait` command itself while it is active. `wait` still cannot wake an idle host.
 

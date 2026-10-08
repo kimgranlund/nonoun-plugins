@@ -26,3 +26,10 @@ Codex report on SDLC Lite 0.21.3, repo ui-kit-maison, 2026-10-08: a restarted Co
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and lists the case `backlog: claimed messages listed once, own receiver only, read-only`.
+- With bob's new queue empty and one claimed message in read/bob, `messages.py backlog --receiver bob --once` lists it; a second identical run lists none; neither claims, acks or edits any message; carol's messages never appear.
+- `messages.py wait` semantics and the ack and follow-up rules are unchanged (all earlier selftest cases pass).
+- `agents/messenger.md` runs `backlog --receiver <harness> --once` once at startup and requires the report to open with `<N> new messages; <M> previously claimed messages remain unacknowledged.`, listing the backlog separately and never replaying, replying to or acking it.
+- `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0; `git diff --check` is clean; no em or en dash in the diff.
