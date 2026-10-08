@@ -133,7 +133,7 @@ run
        FANOUT_PLUGIN_ROOT, SDLC_HEADLESS=1 (hooks/block-background.sh denies Bash and Agent run_in_background),
        SDLC_ROLE=conductor (hooks/block-publish.sh blocks git push, gh writes, and package publishing
        in the Claude sessions the driver launches),
-       and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (claude -p --agent sdlc-lite:conductor, Opus
+       and BASH_DEFAULT_TIMEOUT_MS=BASH_MAX_TIMEOUT_MS=3600000 as bench.sh sets them. Default: a headless conductor (on Claude needs SDLC_CLAUDE_EXEC=1; claude -p --agent sdlc-lite:conductor, Opus
        medium) told to run /sdlc-lite:chain on the handoff unattended, run the filer but not
        close the ticket, and never commit, push, or publish. --driver replaces it (stubs,
        tests). After the driver returns, whatever its rc and before step 3 or any lane commit,
@@ -469,9 +469,11 @@ def solo_command(handoff_rel, size, backend=None):
 
 
 def default_driver(handoff_rel, kind='full', size=None):
-    if kind == 'solo':
-        return solo_command(handoff_rel, size)
     backend = os.environ.get('SDLC_BACKEND', 'claude')
+    if kind == 'solo':
+        if backend == 'claude' and os.environ.get('SDLC_CLAUDE_EXEC') != '1' and not os.environ.get('SDLC_SELFTEST_RAW_SOLO'):
+            raise Refuse('no default claude -p driver: use fanout.py prep and land (sub-agent lanes), --driver CMD, or SDLC_CLAUDE_EXEC=1')
+        return solo_command(handoff_rel, size)
     if backend == 'codex':
         return ' '.join(shlex.quote(x) for x in (
             sys.executable, str(SCRIPTS / 'codex_exec.py'), 'conductor', 'L1',
@@ -2772,7 +2774,16 @@ def selftest():
             expect('case 15 T-0288: no default claude -p driver without SDLC_CLAUDE_EXEC=1 (Refuse)', False)
         except Refuse:
             pass
+        for sz in ('L1', 'L2'):
+            try:
+                default_driver('h.md', 'solo', sz)
+                expect(f'case 15 T-0362: solo {sz} default driver refuses without SDLC_CLAUDE_EXEC=1 (Refuse)', False)
+            except Refuse:
+                pass
         os.environ['SDLC_CLAUDE_EXEC'] = '1'
+        for sz in ('L1', 'L2'):
+            expect(f'case 15 T-0362: solo {sz} default driver returns the solo_run command with the flag',
+                   'solo_run.py' in default_driver('h.md', 'solo', sz))
         full = default_driver('h.md', 'full', 'L2')
         if saved_ex is None: os.environ.pop('SDLC_CLAUDE_EXEC', None)
         else: os.environ['SDLC_CLAUDE_EXEC'] = saved_ex
