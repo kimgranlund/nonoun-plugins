@@ -2,7 +2,7 @@
 id: T-0387
 title: "The architect skips decompose and the coverage check for a Markdown-only design handoff"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ The maison conductor noted its architect ran decomposition and a coverage checke
 
 ## Constraints
 No em or en dashes. No push or publish. Codex host behavior cannot be run live here; mark it unverified.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed

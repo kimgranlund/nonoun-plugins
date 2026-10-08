@@ -384,4 +384,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0384 | [0384-lint-rejects-grep-p](0384-lint-rejects-grep-p/handoff.md) | steps.py lint rejects grep -P, which is vacuous on macOS | bug | L1 | P2 | none | ⏳ proposed |
 | T-0385 | [0385-template-hunks-0301](0385-template-hunks-0301/handoff.md) | Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk | chore | L2 | P2 | none | ⏳ proposed |
 | T-0386 | [0386-gate-lock-admission-design](0386-gate-lock-admission-design/handoff.md) | Design review: gate_lock.py as the weighted shared admission authority | feature | L3 | P2 | none | ⏳ proposed |
-| T-0387 | [0387-architect-markdown-design](0387-architect-markdown-design/handoff.md) | The architect skips decompose and the coverage check for a Markdown-only design handoff | chore | L1 | P2 | none | ⏳ proposed |
+| T-0387 | [.0387-architect-markdown-design](.0387-architect-markdown-design/handoff.md) | The architect skips decompose and the coverage check for a Markdown-only design handoff | chore | L1 | P2 | none | 🟢 done |
