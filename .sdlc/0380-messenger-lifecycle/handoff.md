@@ -23,5 +23,12 @@ Starting the mailbox service states what it will and will not deliver, picks an 
 ## Context
 Forwarded by the maison conductor from Codex, 2026-10-08 (maison T-0283, plus 0282 which is T-0367 here). Idle wake observation to record, not to rely on: Codex's native one-minute heartbeat resumed an idle Codex chat once (16:16:27Z) and claimed a queued message; the user then paused the heartbeat because the scheduled-prompt entries cluttered the chat. Idle wake is observed once, currently disabled, and not proven reliable. This ticket builds on T-0369 (spawn, persistent loop, parent address and delivery) and T-0370 (registry and handshake); do not duplicate them. The Codex host cannot be run here, so mark live Codex behavior unverified.
 
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and prints `ok:` for the four new cases: activation report (mailbox, receiver, new and pending counts, interval, expiry, parent-delivery limitation, scope), lease handoff (a second worker is refused, two simultaneous activations give one winner, a claim race gives one winner, a second reply is refused), liveness (expired, stalled, failed and early-stopped workers are not reported as listening, `status` exits 3), and the terminal round trip (new, read, reply, ack, counterpart receipt, nothing left to read, a receipt asking for a reply is refused).
+2. Each lifecycle guard bites: disabling the holder check, the expiry check, the ended check, the stall check, the duplicate-reply check or the ack-loop check makes the selftest fail.
+3. `agents/messenger.md` and the mailbox `AGENTS.md` template (`## Activate a worker`) state the explicit route (`active-turn` only, or `supervisor` with `--authorized-by`, linking supervisor.py), the scope set once with a message never counting as authorization, the separate active-parent and idle-parent cases with a schedule or dry run never counting as idle evidence, and bounded re-arm; `python3 plugins/sdlc-lite/scripts/check.py` exits 0 and its phrase guards (with negative controls) cover them.
+4. `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0.
+5. Live Codex behavior (native heartbeat, idle wake, `/goal` continuation) is not exercised and is reported as unverified.
+
 ## Constraints
 No em or en dashes. No push or publish.
