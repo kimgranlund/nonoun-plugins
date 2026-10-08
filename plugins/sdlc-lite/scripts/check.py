@@ -174,6 +174,8 @@
    planted `solo-M` line, and an `ALIAS_OK` line outside ALIAS_FILES are each flagged; the same marked line in an alias file is not.
 44. Generated-definition parity (T-0351): `codex_roles.py generate --check` and `claude_roles.py generate --check` pass inside check.py; negative control: a planted edit
    to a temp copy of agents/conductor.md without regenerating is flagged.
+45. Red checkpoint (T-0378): `redck.py" record` appears in agents/builder.md; `redck.py` in scripts/run.sh and scripts/dispatch.py (the completion audit);
+   `process-deviations.md` in agents/verifier.md, agents/filer.md, and scripts/redck.py. Negative control: each phrase removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -585,6 +587,18 @@ else:
     ri = next(i for i, l in enumerate(rs_lines) if SPEC_GATE_EXEC in l)
     swapped = list(rs_lines); swapped[gi], swapped[ri] = swapped[ri], swapped[gi]
     if not spec_gate_order_bad(swapped): errors.append('check.py: spec gate order negative control not flagged')
+# Red checkpoint (docstring item 45): the builder records before editing, completion audits, the verifier and filer read the deviations.
+RED_CHECKPOINT = {'redck.py" record': ('agents/builder.md',),
+                  'redck.py': ('scripts/run.sh', 'scripts/dispatch.py'),
+                  'process-deviations.md': ('agents/verifier.md', 'agents/filer.md', 'scripts/redck.py')}
+def red_checkpoint_missing(text, phrase): return phrase not in text
+for phrase, rels in RED_CHECKPOINT.items():
+    for rel in rels:
+        f = root/rel
+        text = f.read_text() if f.is_file() else ''
+        if red_checkpoint_missing(text, phrase): errors.append(f'{rel}: red checkpoint text missing "{phrase}"')
+        elif not red_checkpoint_missing(text.replace(phrase, ''), phrase):
+            errors.append(f'check.py: red checkpoint text negative control not flagged for {rel}')
 # Carry forward (docstring item 17): producer contracts end with the section; planner and builder read it first.
 CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
 CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),

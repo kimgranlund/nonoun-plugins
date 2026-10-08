@@ -836,18 +836,21 @@ def red_restore(top, before, after, snap):
     return tree_changes(before, now) if now is not None else sorted(tree_changes(before, after))
 
 
-def red_first(items, top, cwd, base):
+def red_first(items, top, cwd, base, results=None):
     """Run each (n, span, timeout) of items once, in order, in the current tree and return one message per
     refusal: a span that exits 0 is green now and cannot detect the change; a timeout; and, in a git work
     tree, a tree change, which is undone from a content snapshot taken before the first span (the message
     says whether the tree is restored). n is the step number, or None for a ticket handoff. Empty list: every
-    span is red now. The spans run synchronously, so the caller must own the tree while they do."""
+    span is red now. The spans run synchronously, so the caller must own the tree while they do. A list passed
+    as results gets one (n, span, rc) per span, rc None on a timeout (redck.py records them)."""
     out = []
     before = tree_state(top) if top and items else None
     snap = red_snapshot(top, before) if before is not None else {}
     for n, span, timeout in items:
         where = f'step {n}: ' if n is not None else ''
         rc, _ = run_guard(span, cwd, timeout, base)
+        if results is not None:
+            results.append((n, span, rc))
         if rc == 0:
             out.append(f'{where}`{span}` is green now; it cannot detect the change')
         elif rc is None:

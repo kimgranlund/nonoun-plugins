@@ -890,6 +890,9 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         close('failed', 3)
         return 3
     (result.parent / ('%s-%s.limit' % (role, level))).unlink(missing_ok=True)
+    if role == 'builder':  # T-0378: a completed build without its pre-edit (red) controls leaves a process deviation
+        subprocess.run([sys.executable, str(HERE / 'redck.py'), 'audit', d['handoff'], '--attempt-id', d['attempt_id']],
+                       stdout=subprocess.DEVNULL, check=False)
     report_strays(found)
     close('completed', 0)
     print(result)
