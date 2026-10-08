@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:a0c08a84b1d3 -->
+<!-- sdlc-lite:managed:start v1 sha256:16b6e602c9f3 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,24 +9,19 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 14
+- proposed: 9
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
-  - T-0382 steps.py widen evaluates the scope span in the lane work tree, not the stale root (0382-widen-in-lane-tree)
-  - T-0383 A recorded verifier verdict reaches the requesting receiver without a manual step (0383-verdict-delivery-gap)
-  - T-0384 steps.py lint rejects grep -P, which is vacuous on macOS (0384-lint-rejects-grep-p)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
-  - T-0386 Design review: gate_lock.py as the weighted shared admission authority (0386-gate-lock-admission-design)
-  - T-0387 The architect skips decompose and the coverage check for a Markdown-only design handoff (0387-architect-markdown-design)
   - T-0388 dispatch.py record stores result_sha256 in the attempt and the runs row (0388-record-result-sha)
   - T-0389 Codex readiness distinguishes a callable role name from the loaded profile revision (0389-codex-profile-fingerprint)
   - T-0390 messages.py send defaults the sender to a name a reply can reach (0390-send-sender-registered)
   - T-0391 run.sh reports only the role's own stray worktrees and branches, like dispatch.py record (0391-runsh-stray-scope)
 - ready: 0
 - blocked: 0
-- done: 345
+- done: 350
 - dropped: 25
 
 ## Procedures

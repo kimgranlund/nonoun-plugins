@@ -26,6 +26,7 @@
 - [SDLC Lite design review](reports/lean-sdlc-design-review.md): dated independent architect review of the SDLC Lite design at v0.1 and the changes made in v0.2.
 - [SDLC Lite cost control](specs/sdlc-lite/cost-control.md): proposed addendum with a spec gate, handoff freeze, replan delta with a planner checklist, and per-ticket budgets, measured on 2026-10-04 run records.
 - [SDLC Lite cost control review](reports/lean-sdlc-cost-control-review.md): dated independent architect review of the cost-control addendum.
+- [Gate lock admission design](specs/sdlc-lite/gate-lock-admission.md): design for review (T-0386) of making gate_lock.py the weighted shared admission authority, a counter-design to the maison T-0300 proposal with the owner split, migration, and regression cases; the maintainer's decision is pending.
 - [SDLC Lite pillars](specs/sdlc-lite/pillars.md): the four pillars (performance, cost, quality, resilience) that decide which improvements are worth pursuing, their measures, tie-break rules and the guardrail.
 - [Sub-agent execution mode](planning/sdlc-lite/subagent-mode.md): single Claude execution mode (in-session sub-agents, shipped in 0.21.0; retiring `claude -p` is T-0288, open) that survives account switches: dispatch contract, hooks, records, estimated cost, fanout, resume, and build tickets T-0275 to T-0288.
 - [SDLC Lite](specs/sdlc-lite/README.md): proposed lean chain, topic sub-folders as the default `.sdlc/` layout, a single plan record, and conductor batching, with measured baselines.

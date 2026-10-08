@@ -379,12 +379,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0379 | [.0379-replan-prior-report-links](.0379-replan-prior-report-links/handoff.md) | Split and supersede keep references to a superseded step's reports pointing at the old attempt | bug | L2 | P2 | none | 🟢 done |
 | T-0380 | [.0380-messenger-lifecycle](.0380-messenger-lifecycle/handoff.md) | Mailbox activation states its delivery lifetime and an explicit idle-parent continuation route | feature | L2 | P2 | T-0369 | 🟢 done |
 | T-0381 | [0381-runner-wrong-lane-base](0381-runner-wrong-lane-base/handoff.md) | Native runner accepts a valid ancestor that is the wrong lane base | bug | L2 | P2 | none | ⏳ proposed |
-| T-0382 | [0382-widen-in-lane-tree](0382-widen-in-lane-tree/handoff.md) | steps.py widen evaluates the scope span in the lane work tree, not the stale root | bug | L2 | P2 | none | ⏳ proposed |
-| T-0383 | [0383-verdict-delivery-gap](0383-verdict-delivery-gap/handoff.md) | A recorded verifier verdict reaches the requesting receiver without a manual step | bug | L2 | P2 | none | ⏳ proposed |
-| T-0384 | [0384-lint-rejects-grep-p](0384-lint-rejects-grep-p/handoff.md) | steps.py lint rejects grep -P, which is vacuous on macOS | bug | L1 | P2 | none | ⏳ proposed |
+| T-0382 | [.0382-widen-in-lane-tree](.0382-widen-in-lane-tree/handoff.md) | steps.py widen evaluates the scope span in the lane work tree, not the stale root | bug | L2 | P2 | none | 🟢 done |
+| T-0383 | [.0383-verdict-delivery-gap](.0383-verdict-delivery-gap/handoff.md) | A recorded verifier verdict reaches the requesting receiver without a manual step | bug | L2 | P2 | none | 🟢 done |
+| T-0384 | [.0384-lint-rejects-grep-p](.0384-lint-rejects-grep-p/handoff.md) | steps.py lint rejects grep -P, which is vacuous on macOS | bug | L1 | P2 | none | 🟢 done |
 | T-0385 | [0385-template-hunks-0301](0385-template-hunks-0301/handoff.md) | Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk | chore | L2 | P2 | none | ⏳ proposed |
-| T-0386 | [0386-gate-lock-admission-design](0386-gate-lock-admission-design/handoff.md) | Design review: gate_lock.py as the weighted shared admission authority | feature | L3 | P2 | none | ⏳ proposed |
-| T-0387 | [0387-architect-markdown-design](0387-architect-markdown-design/handoff.md) | The architect skips decompose and the coverage check for a Markdown-only design handoff | chore | L1 | P2 | none | ⏳ proposed |
+| T-0386 | [.0386-gate-lock-admission-design](.0386-gate-lock-admission-design/handoff.md) | Design review: gate_lock.py as the weighted shared admission authority | feature | L3 | P2 | none | 🟢 done |
+| T-0387 | [.0387-architect-markdown-design](.0387-architect-markdown-design/handoff.md) | The architect skips decompose and the coverage check for a Markdown-only design handoff | chore | L1 | P2 | none | 🟢 done |
 | T-0388 | [0388-record-result-sha](0388-record-result-sha/handoff.md) | dispatch.py record stores result_sha256 in the attempt and the runs row | feature | L1 | P2 | T-0383 | ⏳ proposed |
 | T-0389 | [0389-codex-profile-fingerprint](0389-codex-profile-fingerprint/handoff.md) | Codex readiness distinguishes a callable role name from the loaded profile revision | bug | L2 | P2 | none | ⏳ proposed |
 | T-0390 | [0390-send-sender-registered](0390-send-sender-registered/handoff.md) | messages.py send defaults the sender to a name a reply can reach | bug | L1 | P2 | none | ⏳ proposed |

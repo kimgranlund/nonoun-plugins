@@ -1,14 +1,15 @@
 # sdlc-lite
 
-The SDLC Lite lane design, cost control, pillars, fleet config and solo lane contract. Read for how lanes are chosen and how cost is controlled; the unbuilt sub-agent mode is in `planning/sdlc-lite/`.
+The SDLC Lite lane design, cost control, pillars, fleet config, solo lane contract and the gate lock admission design (for review). Read for how lanes are chosen and how cost is controlled; the unbuilt sub-agent mode is in `planning/sdlc-lite/`.
 
-<!-- sdlc-lite:managed:start v1 sha256:ec244f275728 -->
+<!-- sdlc-lite:managed:start v1 sha256:c6d29679e54c -->
 ## Documents
 
 - [README.md](README.md)
 - [cost-control.md](cost-control.md)
 - [design.md](design.md)
 - [fleet-config.md](fleet-config.md)
+- [gate-lock-admission.md](gate-lock-admission.md)
 - [pillars.md](pillars.md)
 - [solo-lane-assessment.md](solo-lane-assessment.md)
 - [solo-lane-contract.md](solo-lane-contract.md)
