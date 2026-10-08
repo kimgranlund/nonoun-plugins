@@ -2,7 +2,7 @@
 id: T-0354
 title: "Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Found by the T-0353 verification pass on 2026-10-07 (first headless attempt deni
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-07: Merged via fix0213 (9a640eb6); verified pass in .sdlc/verify-fix0213/verifier-L3.md
