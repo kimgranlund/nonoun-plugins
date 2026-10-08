@@ -2,7 +2,7 @@
 id: T-0373
 title: "Codex dispatch readiness does not check roles loaded in the current session"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: [T-0372]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. The Codex host cannot be run live here, 
 3. `adapters/codex/instructions.md` ("Readiness and resume for conductors") holds the readiness procedure with the parent-supplied catalog, the exact missing role and the generation, fresh session or launcher repair action, the native solo request-file check, and the resume packet; `skills/sdlc-lite/SKILL.md`, `agents/solo.md` and `skills/agent/SKILL.md` route to it. It names no host introspection API and bars substitution, Claude fallback and nested Codex CLI.
 4. `check.py`, `tickets.py check`, `codex_roles.py generate --check`, `claude_roles.py generate --check`, `run-selftest.sh` and `codex-selftest.py` pass.
 5. Live Codex fresh-session behavior is unverified (no Codex host here).
+
+## Closed
+
+2026-10-08: Merged and verified pass in .sdlc/verify-0.22-batch2/verifier-L3.md

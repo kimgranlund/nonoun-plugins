@@ -2,7 +2,7 @@
 id: T-0372
 title: "Codex solo launcher does not supply the native exchange request file"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P1         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. The Codex host cannot be run live here, 
 - Reverting `scripts/solo_run.py` and `scripts/codex_exec.py` to HEAD makes those cases fail (subagent transport requires --request-file).
 - `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/solo_run.py selftest` and `bash plugins/sdlc-lite/scripts/run-selftest.sh` exit 0.
 - `agents/solo.md`, `skills/agent/SKILL.md` and `adapters/codex/instructions.md` give the runnable `solo_run.py` invocation and the completion sequence (respond, await, report, cleanup).
+
+## Closed
+
+2026-10-08: Merged and verified pass in .sdlc/verify-0.22-batch2/verifier-L3.md

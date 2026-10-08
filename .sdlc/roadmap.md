@@ -354,7 +354,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0354 | [.0354-prepare-env-prefix-allowlist](.0354-prepare-env-prefix-allowlist/handoff.md) | Documented dispatch.py prepare form starts with an env assignment and misses a Bash(python3:*) allowlist, so a headless conductor is denied | bug | L1 | P2 | none | 🟢 done |
 | T-0355 | [.0355-solo-dispatch-not-recorded](.0355-solo-dispatch-not-recorded/handoff.md) | dispatch.py record refuses a solo_run.py dispatch file as not a dispatch file, so solo lanes get no cost rows | bug | L1 | P2 | none | 🟢 done |
 | T-0356 | [.0356-verifier-routing-by-level](.0356-verifier-routing-by-level/handoff.md) | Route the L3 Fable verifier to L4, L5, merge and security tickets only; replay T-0333 on L2 first | chore | L2 | P2 | none | 🟢 done |
-| T-0357 | [0357-solo-l2-effort-sweep](0357-solo-l2-effort-sweep/handoff.md) | Test solo L2 Sonnet at high versus xhigh on past tickets | chore | L2 | P2 | none | ⏳ proposed |
+| T-0357 | [.0357-solo-l2-effort-sweep](.0357-solo-l2-effort-sweep/handoff.md) | Test solo L2 Sonnet at high versus xhigh on past tickets | chore | L2 | P2 | none | 🟢 done |
 | T-0358 | [.0358-solo-already-fixed-check](.0358-solo-already-fixed-check/handoff.md) | A solo lane stops early when the ticket is already fixed or stale | feature | L1 | P2 | none | 🟢 done |
 | T-0359 | [.0359-haiku-price-refit](.0359-haiku-price-refit/handoff.md) | Refit the Haiku rows in prices.json for claude-haiku-5-5 | chore | L1 | P2 | none | 🟢 done |
 | T-0360 | [.0360-solo-l2-to-high](.0360-solo-l2-to-high/handoff.md) | Drop solo L2 (sonnet) from xhigh to high; lock an eval | chore | L2 | P2 | none | 🟢 done |
@@ -365,12 +365,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0365 | [.0365-widen-allowlist](.0365-widen-allowlist/handoff.md) | steps.py widen accepts real scope growth without a hand-written diff-name-only criterion | bug | L2 | P2 | none | 🟢 done |
 | T-0366 | [.0366-prepare-base-sha](.0366-prepare-base-sha/handoff.md) | dispatch.py prepare verifier prints the pre-build commit as Base sha, not the post-solo HEAD | bug | L1 | P2 | none | 🟢 done |
 | T-0367 | [.0367-messenger-read-backlog](.0367-messenger-read-backlog/handoff.md) | Messenger startup reports previously claimed, unacknowledged messages in read/<receiver> once, and states new versus pending precisely | bug | L2 | P2 | none | 🟢 done |
-| T-0368 | [0368-prune-flag](0368-prune-flag/handoff.md) | A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result | feature | L2 | P2 | none | ⏳ proposed |
+| T-0368 | [.0368-prune-flag](.0368-prune-flag/handoff.md) | A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result | feature | L2 | P2 | none | 🟢 done |
 | T-0369 | [.0369-messenger-spawn-persistent](.0369-messenger-spawn-persistent/handoff.md) | A conductor can spawn the messenger, and the messenger keeps polling after a report | bug | L2 | P2 | T-0367 | 🟢 done |
 | T-0370 | [.0370-mailbox-registry-handshake](.0370-mailbox-registry-handshake/handoff.md) | Mailbox receivers registry, default sender identity and a handshake command | feature | L2 | P2 | T-0367 | 🟢 done |
 | T-0371 | [.0371-guards-single-session](.0371-guards-single-session/handoff.md) | dispatch.py guards assume one session: own-pid attempt block and repo-wide stray worktree check | bug | L1 | P2 | T-0363 | 🟢 done |
-| T-0372 | [0372-codex-solo-native-transport](0372-codex-solo-native-transport/handoff.md) | Codex solo launcher does not supply the native exchange request file | bug | L2 | P1 | none | ⏳ proposed |
-| T-0373 | [0373-codex-role-preflight](0373-codex-role-preflight/handoff.md) | Codex dispatch readiness does not check roles loaded in the current session | bug | L2 | P1 | T-0372 | ⏳ proposed |
+| T-0372 | [.0372-codex-solo-native-transport](.0372-codex-solo-native-transport/handoff.md) | Codex solo launcher does not supply the native exchange request file | bug | L2 | P1 | none | 🟢 done |
+| T-0373 | [.0373-codex-role-preflight](.0373-codex-role-preflight/handoff.md) | Codex dispatch readiness does not check roles loaded in the current session | bug | L2 | P1 | T-0372 | 🟢 done |
 | T-0375 | [.0375-lane-ledger](.0375-lane-ledger/handoff.md) | board.py --lanes shows base sha, stale-base flag, verifier verdict, merge class and owner | feature | L2 | P2 | none | 🟢 done |
 | T-0374 | [0374-rolling-merge-class](0374-rolling-merge-class/handoff.md) | Lanes get a computed merge class (rolling or integration) and a land command for rolling lanes | feature | L3 | P2 | T-0375 | ⏳ proposed |
 | T-0376 | [.0376-lane-base-from-merge-base](.0376-lane-base-from-merge-base/handoff.md) | The lane base sha is the lane's merge-base at dispatch, not the main checkout HEAD | bug | L2 | P2 | none | 🟢 done |

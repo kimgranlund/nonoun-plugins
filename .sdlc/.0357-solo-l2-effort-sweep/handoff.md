@@ -2,7 +2,7 @@
 id: T-0357
 title: "Test solo L2 Sonnet at high versus xhigh on past tickets"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Fleet cost analysis of 2026-10-07 (all-time deduped run records, five repos): ve
 
 ## Constraints
 Report before changing levels.json. No em or en dashes.
+
+## Closed
+
+2026-10-08: Two sweeps recorded (docs/reports/2026-10-07-solo-l2-effort-sweep.md and -2.md); user approved high; shipped as T-0360, eval 0004

@@ -2,7 +2,7 @@
 id: T-0368
 title: "A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish.
 - (guard) `python3 plugins/sdlc-lite/scripts/check.py`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` pass.
 - (guard) `agents/conductor.md` step 4 and the launcher skills' dispatch step carry the line to run `dispatch.py prune` after `record`.
 - Live probe, observed in a throwaway repo by solo: `dispatch.py prepare scout L1` printed `"prune": true`; an `Agent` spawn of `probe-scout-L1` ran and `dispatch.py record` printed the result path then `prune: probe-scout-L1`; `dispatch.py prune` printed `TaskStop task_id=probe-scout-L1    # scout L1, recorded ...` and `.sdlc/runtime/prune.json` held the entry. Not observed: the TaskStop leg. The solo role's hook forces `run_in_background: false`, so the agent had already ended and `TaskStop task_id=probe-scout-L1` answered "No task found"; ListAgents showed no such agent. The parent must repeat the last two steps (background spawn, TaskStop by the printed name, ListAgents) from a conductor session to close the criterion.
+
+## Closed
+
+2026-10-08: Merged and verified pass in .sdlc/verify-0.22-batch2/verifier-L3.md

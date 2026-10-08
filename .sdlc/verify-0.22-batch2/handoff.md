@@ -18,7 +18,7 @@ T-0367 Done-when (.sdlc/.0367-messenger-read-backlog/handoff.md):
   - A message for another receiver is never claimed or listed; a new arrival is still claimed and forwarded; ack and follow-up rules are unchanged (existing cases pass).
   - messages.py selftest, check.py, tickets.py check, both generate --check pass.
 
-T-0368 Done-when (.sdlc/0368-prune-flag/handoff.md):
+T-0368 Done-when (.sdlc/.0368-prune-flag/handoff.md):
   - Selftests: prepare sets the flag per role; record queues exactly the pruneable agents and skips a builder, a failed record and a pending follow-up; prune lists and clears entries (observed failing first).
   - A live probe in a throwaway project: spawn one named one-shot sub-agent through prepare and record, run `dispatch.py prune`, make the printed TaskStop call, and confirm the agent leaves ListAgents.
   - check.py, dispatch and fleet_status selftests, hook-selftest.sh, both generate --check pass.
@@ -27,13 +27,13 @@ T-0370 Done-when (.sdlc/.0370-mailbox-registry-handshake/handoff.md):
   - Selftests: send to an unregistered receiver is refused; send to a reader-less receiver warns; handshake reports both states; default sender names repo and harness (observed failing first).
   - check.py, tickets.py check, hook-selftest.sh, the affected selftests and both generate --check pass.
 
-T-0372 Done-when (.sdlc/0372-codex-solo-native-transport/handoff.md):
+T-0372 Done-when (.sdlc/.0372-codex-solo-native-transport/handoff.md):
   - A no-model integration test starts solo with backend codex and transport subagent, observes a valid request file, submits a fixture response through scripts/codex_exchange.py, and completes with an accurate run record (observed failing first; repro in docs/reports/2026-10-08-codex-report-solo-native-transport/repro.json).
   - It covers solo L1, L2 and L3 routing, response failure, timeout, and a rerun request name that does not overwrite an earlier attempt, and it fails when the request-file wiring is removed (assert the request lifecycle, not only command construction).
   - The native record says backend codex and transport subagent; unknown cost is null with a reason; no Claude model, agent name or nested codex exec appears.
   - check.py, tickets.py check, codex_roles.py generate --check, run-selftest.sh and codex-selftest pass.
 
-T-0373 Done-when (.sdlc/0373-codex-role-preflight/handoff.md):
+T-0373 Done-when (.sdlc/.0373-codex-role-preflight/handoff.md):
   - Tests with fixture catalogs: current definitions plus a stale live catalog, stale definitions plus loaded older roles, and a fresh session with the required role available; the first two must not report ready (observed failing first).
   - The readiness text and resume packet are in the Codex adapter and the skill, and `codex_roles.py install --check` behavior is unchanged.
   - check.py, tickets.py check, codex_roles.py generate --check, run-selftest.sh and codex-selftest pass.
