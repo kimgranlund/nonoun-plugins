@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:97c2c5080612 -->
+<!-- sdlc-lite:managed:start v1 sha256:2f4709f30135 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,13 +9,12 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 12
+- proposed: 11
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0357 Test solo L2 Sonnet at high versus xhigh on past tickets (0357-solo-l2-effort-sweep)
   - T-0368 A prune flag on the dispatch file so finished sub-agents are stopped after a recorded result (0368-prune-flag)
-  - T-0369 A conductor can spawn the messenger, and the messenger keeps polling after a report (0369-messenger-spawn-persistent)
   - T-0372 Codex solo launcher does not supply the native exchange request file (0372-codex-solo-native-transport)
   - T-0373 Codex dispatch readiness does not check roles loaded in the current session (0373-codex-role-preflight)
   - T-0374 Lanes get a computed merge class (rolling or integration) and a land command for rolling lanes (0374-rolling-merge-class)
@@ -24,7 +23,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0380 Mailbox activation states its delivery lifetime and an explicit idle-parent continuation route (0380-messenger-lifecycle)
 - ready: 0
 - blocked: 0
-- done: 336
+- done: 337
 - dropped: 25
 
 ## Procedures
