@@ -172,13 +172,14 @@ def agent_alias(model):
     return m.group(1) if m else model
 
 
-def family(role, model, directory):
+def family(role, model, directory, solo=''):
     if role == 'verifier':
         built = order.newest(str(directory), 'builder') or step_build(directory)
         if built and model == model_of(built) and model in ('fable', 'sonnet'):
             return 'opus'
-        if not built and model == solo_model(directory) and model in ('fable', 'sonnet'):
-            return 'opus'  # a solo ticket has no builder result: its newest runs.jsonl solo record holds the family (T-0284)
+        if not built and model == (solo_model(directory) or solo) and model in ('fable', 'sonnet'):
+            return 'opus'  # a solo ticket has no builder result: its newest runs.jsonl solo record holds the family (T-0284);
+            # a sub-agent lane worktree holds none, so fanout.py prep passes --solo-model (T-0356)
     elif role == 'plan-reviewer':
         planned = order.newest(str(directory), 'planner')
         if planned and model == model_of(planned) and model == 'opus':
@@ -396,8 +397,9 @@ def under(path, prefix):
     return real == base or real.startswith(base + os.sep)
 
 
-def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
-    """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only)."""
+def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''):
+    """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only);
+    solo is the model of a solo ticket whose runs.jsonl record is not in this tree (--solo-model)."""
     plugin = Path(plugin)
     if os.environ.get('SDLC_BACKEND', 'claude') != 'claude':
         raise Refuse(2, 'dispatch.py prepare is the Claude host path; Codex dispatches through run.sh')
@@ -427,7 +429,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=()):
     except claude_roles.TableError as e:
         raise Refuse(2, 'dispatch.py: ' + str(e))
 
-    model = agent_alias(family(role, model, directory))
+    model = agent_alias(family(role, model, directory, solo))
     if not dry_run:
         mailbox(role)
 
@@ -736,6 +738,8 @@ def main(argv):
     sub.required = True
     p = sub.add_parser('prepare', help='run the pre-launch gates and print the dispatch JSON')
     p.add_argument('--dry-run', action='store_true', help='print the JSON; write no record, take no lock')
+    p.add_argument('--solo-model', default='', choices=('', 'sonnet', 'opus', 'fable', 'haiku'),
+                   help="the solo ticket's model when its runs.jsonl record is not in this tree (a sub-agent lane worktree): the verifier family rule reads it")
     p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
@@ -801,7 +805,7 @@ def main(argv):
     if args.routing_reason is not None:
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
-        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run)
+        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model)
     except Refuse as r:
         for line in r.lines:
             print(line, file=sys.stderr)
@@ -938,6 +942,15 @@ def selftest():
         (so / 'runs.jsonl').unlink()
         rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run')
         case('verifier L2 with no solo record keeps sonnet', rc == 0 and got['model'] == 'sonnet')
+        # T-0356: a sub-agent lane worktree holds no solo record, so fanout prep passes --solo-model
+        rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'sonnet')
+        case('verifier L2 with --solo-model sonnet and no record moves to opus, same effort', rc == 0 and (got['model'], got['effort']) == ('opus', 'high'))
+        rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'opus')
+        case('negative control: verifier L2 with --solo-model opus keeps sonnet', rc == 0 and got['model'] == 'sonnet')
+        (so / 'runs.jsonl').write_text(json.dumps({'role': 'solo', 'level': 'L3', 'model': 'opus'}) + '\n')
+        rc, got, _ = prep(repo, 'verifier', 'L2', '.sdlc/so/handoff.md', '--dry-run', '--solo-model', 'sonnet')
+        case('the runs.jsonl solo record wins over --solo-model: an opus record keeps verifier L2 on sonnet', rc == 0 and got['model'] == 'sonnet')
+        (so / 'runs.jsonl').unlink()
 
         # 3. Verifier at a task dir: the highest live step holds the build; superseded dirs are left out.
         td = sdlc / 'td'
