@@ -2030,7 +2030,7 @@ def selftest():
         cells = {}
         for line in board.stdout.splitlines():
             c = [x.strip() for x in line.strip('|').split('|')]
-            if line.startswith('| ') and len(c) == 3:
+            if line.startswith('| ') and len(c) >= 3:
                 cells[c[0]] = c[1]
         expect(f'board.py --lanes exits 0, got {board.returncode} stderr={board.stderr!r}', board.returncode == 0)
         expect(f'board.py --lanes lists alpha on fanout/test-alpha, got {cells}', cells.get('alpha') == 'fanout/test-alpha')

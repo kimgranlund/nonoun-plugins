@@ -1,0 +1,21 @@
+{
+  "attempt_id": "9b90ec490a374c2dabdcfc680cec10e7",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-08T18:54:37.452305+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f22/ledger",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f22/ledger/.sdlc/0375-lane-ledger/handoff.md",
+  "owner_pid": 6911,
+  "handoff_sha256": "6ac9de216032c8146d99a08df702c4ce68531f1169296fd47c02e6fc48d26ccd",
+  "process_pid": 7129,
+  "exit_code": 0,
+  "finished_at": "2026-10-08T19:03:04.256919+00:00"
+}
