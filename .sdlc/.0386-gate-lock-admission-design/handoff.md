@@ -2,7 +2,7 @@
 id: T-0386
 title: "Design review: gate_lock.py as the weighted shared admission authority"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -45,3 +45,7 @@ The design is [gate-lock-admission.md](../../docs/specs/sdlc-lite/gate-lock-admi
 5. Only documentation and this ticket change: no file under plugins/ or scripts/ differs from the base commit.
 6. The changed and added files contain no em or en dash.
 7. `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py check`, `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/onboard.py selftest`, `python3 plugins/sdlc-lite/scripts/docs_check.py` and `git diff --check` pass; `onboard.py check` reports nothing stale or unmanaged beyond what it reported before this change (AGENTS.md unmanaged, docs/references/AGENTS.md stale).
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L3); one independent batched verifier passed before the merge
