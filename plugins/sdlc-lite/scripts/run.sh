@@ -74,6 +74,9 @@
 # the override itself).
 # Goal precheck: before a planner or plan-reviewer run on a task handoff (not a step dir), run.sh runs
 # steps.py precheck on the handoff dir; no ## Goal section prints the reason and exits 2 before any attempt record.
+# Link check (T-0379): before a builder or verifier run on a step handoff (step-<n>/handoff.md), run.sh runs steps.py
+# lint on the step dir; a cited .sdlc path that does not exist, or a report of the step's own prior attempt that does not
+# name its step-<n>.superseded-<k> folder, prints the finding and exits 2 before any attempt record (dry runs too).
 # Spec gate: before a plan-reviewer run (dry runs too, never in the run_lifecycle.py child, either
 # backend), run.sh runs scripts/specgate.py check on the handoff dir. A refusal prints specgate's
 # lines and "run.sh: specgate.py check refused the plan in <dir>; replan, or set SDLC_SPECGATE=off"
@@ -307,6 +310,18 @@ if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == planner || "$role" == pla
   if ! goal_out=$(python3 "$plugin_root/scripts/steps.py" precheck "$dir" 2>&1); then
     printf '%s\n' "$goal_out" >&2
     echo "run.sh: steps.py precheck refused the task handoff in $dir; add a ## Goal section" >&2
+    exit 2
+  fi
+fi
+
+# Link check (T-0379): a builder or verifier on a step handoff (<task dir>/step-<n>/handoff.md) needs every cited
+# .sdlc path to exist and every report of the step's own prior attempt to name its step-<n>.superseded-<k> folder
+# (steps.py lint); refuse before any attempt record, dry runs too.
+if [[ "${SDLC_LIFECYCLE_CHILD:-}" != 1 && ( "$role" == builder || "$role" == verifier ) \
+      && "$(basename "$handoff")" == handoff.md && "$(basename "$dir")" =~ ^step-[0-9]+$ ]]; then
+  if ! links_out=$(python3 "$plugin_root/scripts/steps.py" lint "$dir" 2>&1); then
+    printf '%s\n' "$links_out" >&2
+    echo "run.sh: steps.py lint refused the links in $handoff; fix the cited paths (rewrite them to the step-<n>.superseded-<k> folder) before dispatching" >&2
     exit 2
   fi
 fi

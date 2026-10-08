@@ -12,7 +12,7 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, lane gate, spec gate, budget gate, then the one write section.
+goal precheck, link check, lane gate, spec gate, budget gate, then the one write section.
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
@@ -23,6 +23,9 @@ goal precheck, lane gate, spec gate, budget gate, then the one write section.
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
+  links        builder or verifier on a step handoff: steps.py lint <step dir> (T-0379). Every cited .sdlc path
+               must exist, and a report of the step's own prior attempt must name its step-<n>.superseded-<k>
+               folder. Refusal exit 2.
   lane         planner, builder, plan-reviewer on a solo-lane ticket: steps.py lane --check, exit 5, unless
                SDLC_LANE_OVERRIDE="<reason>" (appended once to skips.md, carried as lane_override).
   specgate     plan-reviewer: specgate.py check, exit 2, unless SDLC_SPECGATE=off (carried as specgate).
@@ -65,7 +68,8 @@ it then does the following.
                the body, to the result path.
   cleanup      removes the worktrees and directory under the dispatch's tmp prefix (only a path under
                <tree>/.worktrees/tmp/), then reports strays: worktrees and local branches that appeared since
-               prepare (its snapshot sits in the attempt record), the own prefix left out. Report only.
+               prepare (its snapshot sits in the attempt record) under <tree>/.worktrees/tmp/ or on a branch named with the
+               role's agent name, the own prefix left out; peers' worktrees and branches are not reported. Report only.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
   runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent;
@@ -121,7 +125,7 @@ import run_lifecycle  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
-GATES = ('preflight', 'goal', 'lane', 'specgate', 'budget', 'lock')
+GATES = ('preflight', 'goal', 'links', 'lane', 'specgate', 'budget', 'lock')
 PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer')
 
 
@@ -367,8 +371,9 @@ def attempt_state(data):
     return 'running'
 
 
-def recover_orphans(directory, dry_run=False):
-    """Mark orphaned attempts interrupted with run_lifecycle.py's recovery text; return (recovered, live) names."""
+def recover_orphans(directory, dry_run=False, own=None):
+    """Mark orphaned attempts interrupted with run_lifecycle.py's recovery text; return (recovered, live) names.
+    A running attempt whose recorded pid is own (the calling session) is neither recovered nor live (T-0371)."""
     live, recovered = [], []
     for path in sorted(Path(directory).glob('*.attempt.json')):
         data = read_attempt(path)
@@ -379,14 +384,14 @@ def recover_orphans(directory, dry_run=False):
                 run_lifecycle.write(path, data)
                 (Path(directory) / ('%s-%s.running' % (data.get('role'), data.get('level')))).unlink(missing_ok=True)
             recovered.append(path.name)
-        elif state == 'running':
+        elif state == 'running' and (data.get('parent_pid') or data.get('owner_pid')) != own:
             live.append('%s (pid %s)' % (path.name, data.get('parent_pid') or data.get('owner_pid')))
     return recovered, live
 
 
 def settle(directory, dry_run):
     """Refuse while a dispatched attempt in directory is alive; mark dead-parent ones interrupted."""
-    recovered, live = recover_orphans(directory, dry_run)
+    recovered, live = recover_orphans(directory, dry_run, own=parent_pid()[0])
     if live:
         raise Refuse(2, 'dispatch.py: an attempt is still running in %s: %s; record it, or wait for it, before dispatching another role. If its spawn was denied or never started, recover it: python3 %s %s' % (directory, ', '.join(live), Path(run_lifecycle.__file__).resolve().with_name('run_lifecycle.py'), 'recover "%s"' % directory))
     return recovered
@@ -496,6 +501,12 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if p.returncode != 0:
             raise Refuse(2, (p.stdout + p.stderr).rstrip('\n'),
                          'dispatch.py: steps.py precheck refused the task handoff in %s; add a ## Goal section' % directory)
+
+    if 'links' not in skip and role in ('builder', 'verifier') and handoff.name == 'handoff.md' and re.fullmatch(r'step-\d+', directory.name):
+        p = script('steps.py', 'lint', directory)
+        if p.returncode != 0:
+            raise Refuse(2, (p.stdout + p.stderr).rstrip('\n'),
+                         'dispatch.py: steps.py lint refused the links in %s; fix the cited paths (rewrite them to the step-<n>.superseded-<k> folder) before dispatching' % handoff)
 
     lane_override = ''
     if 'lane' not in skip and role in ('planner', 'builder', 'plan-reviewer'):
@@ -634,12 +645,16 @@ def remove_tmp(tree, prefix):
 
 
 def strays(tree, prefix, attempt):
-    """(worktree [path, branch] pairs, branch names) that appeared since prepare, this dispatch's own prefix left out."""
+    """(worktree [path, branch] pairs, branch names) that appeared since prepare and belong to this role: a worktree under
+    <tree>/.worktrees/tmp/ (its own prefix left out) or on a branch named with the role's agent name, a branch with that
+    name as prefix. Peers' worktrees and branches elsewhere are not this role's (T-0371)."""
     if 'worktrees_before' not in attempt:
         return [], []
     seen, known = set(attempt['worktrees_before']), set(attempt.get('branches_before', []))
-    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix)]
-    return wts, [b for b in branches(tree) if b not in known]
+    root, mine = os.path.join(tree, '.worktrees', 'tmp'), os.path.basename(prefix.rstrip('/'))
+    own_br = lambda b: bool(b) and b.startswith(mine)
+    wts = [(p, b) for p, b in worktrees(tree) if p not in seen and not under(p, prefix) and (under(p, root) or own_br(b))]
+    return wts, [b for b in branches(tree) if b not in known and own_br(b)]
 
 
 def limit_marker(d, error):
@@ -1207,6 +1222,22 @@ def selftest():
         put(sdlc / 'gp' / 'handoff.md', '## Goal\nx\n')
         case('goal precheck passes with a ## Goal section', prep(repo, 'planner', 'L1', '.sdlc/gp/handoff.md', '--dry-run')[0] == 0)
 
+        # link check (T-0379): a builder or verifier on a step handoff that cites a prior attempt's report at the live
+        # step path, or a path that does not exist, is refused before any record; the superseded path passes
+        lk = sdlc / 'lk'
+        put(lk / 'step-3.superseded-1' / 'builder-L3.md', '## Status\ndone\n')
+        for role in ('builder', 'verifier'):
+            put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nPrior attempt: .sdlc/lk/step-3/builder-L3.md\n')
+            err = refused('link check ' + role, 2, role, 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
+            case('link check %s names the path and the superseded fix' % role, 'step-3.superseded-1/builder-L3.md' in err)
+            put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nPrior attempt: .sdlc/lk/step-3.superseded-1/builder-L3.md\n')
+            case('link check %s passes once the link names the superseded folder' % role,
+                 prep(repo, role, 'L1', '.sdlc/lk/step-3/handoff.md', '--dry-run')[0] == 0)
+        put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nRead .sdlc/lk/step-3.superseded-1/builder-L9.md\n')
+        err = refused('link check absent path', 2, 'builder', 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
+        case('link check names an absent path', 'does not exist' in err and 'builder-L9.md' in err)
+        shutil.rmtree(lk)
+
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
         put(sdlc / 'sg' / 'planner-L1.md', SGPLAN)
         err = refused('spec gate', 2, 'plan-reviewer', 'L1', '.sdlc/sg/handoff.md', 'specgate')
@@ -1344,10 +1375,17 @@ def selftest():
              rcl == 0 and dl['tree'] == os.path.realpath(str(lw)) and 'Tree: %s ' % dl['tree'] in dl['prompt']
              and 'Tree: %s ' % rr not in dl['prompt'] and dl['tmp_prefix'].startswith(dl['tree'] + '/.worktrees/tmp/'))
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw)], capture_output=True)
-        rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live))
+        rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getppid()))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2
              and 'run_lifecycle.py recover "%s"' % w in err2)
         case('the refused prepare wrote no second record', sorted(p.name for p in w.glob('*.attempt.json')) == ['builder-L1.attempt.json'])
+        rc3, d3, err3 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', '--dry-run', SDLC_DISPATCH_PARENT_PID=str(live))
+        with clean_env(SDLC_DISPATCH_PARENT_PID=str(live)), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
+            own_next = prepare('verifier', 'L1', '.sdlc/w/handoff.md')
+        case('an attempt carrying the caller pid does not block the next prepare (T-0371)',
+             own_next['result_name'] == 'verifier-L1' and len(list(w.glob('*.attempt.json'))) == 2)
+        for f in list(w.glob('verifier-L1*')):
+            f.unlink()
         with clean_env(SDLC_DISPATCH_PARENT_PID=str(live)), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             doubled = prepare('verifier', 'L1', '.sdlc/w/handoff.md', skip=('lock',))
         case('negative control: without the lock gate a second running attempt starts', doubled['result_name'] == 'verifier-L1'
@@ -1706,8 +1744,9 @@ def selftest():
         rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/s1/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
         outside = tmp / 'outside-wt'
         own = Path(got['tmp_prefix']) / 'work'
-        for cmd in (['worktree', 'add', '--detach', str(own), 'HEAD'], ['worktree', 'add', '-b', 'stray-br', str(outside), 'HEAD'],
-                    ['worktree', 'add', '--detach', str(tmp / 'outside-detached'), 'HEAD']):
+        for cmd in (['worktree', 'add', '--detach', str(own), 'HEAD'], ['worktree', 'add', '-b', got['name'] + '-stray', str(outside), 'HEAD'],
+                    ['worktree', 'add', '--detach', str(rb / '.worktrees' / 'tmp' / 'other-role'), 'HEAD'],
+                    ['worktree', 'add', '-b', 'peer-br', str(tmp / 'peer-wt'), 'HEAD']):
             subprocess.run(['git', '-C', str(rb)] + cmd, check=True, capture_output=True)
         (rb / '.sdlc' / 's1' / 'handoff.md').write_text('## Goal\nchanged\n')
         Path(got['result']).write_text(BODY['builder'])
@@ -1718,13 +1757,17 @@ def selftest():
         listed = subprocess.run(['git', '-C', str(rb), 'worktree', 'list', '--porcelain'], capture_output=True, text=True).stdout
         case('a changed handoff is reported as stale input and flagged, with the exit code unchanged',
              rc == 0 and 'stale input: %s changed while builder ran' % got['handoff'] in err and line['stale_input'] is True)
+        sb, other = got['name'] + '-stray', rb / '.worktrees' / 'tmp' / 'other-role'
         case('strays are reported with their branch, listed in the line, with the exit code unchanged',
-             'stray worktree appeared during this run: %s [stray-br]' % outside in err
-             and 'stray worktree appeared during this run: %s\n' % (tmp / 'outside-detached') in err
-             and 'stray branch appeared during this run: stray-br' in err
-             and sorted(line['stray_worktrees']) == sorted([str(outside), str(tmp / 'outside-detached')]) and line['stray_branches'] == ['stray-br'])
+             'stray worktree appeared during this run: %s [%s]' % (outside, sb) in err
+             and 'stray worktree appeared during this run: %s\n' % other in err
+             and 'stray branch appeared during this run: ' + sb in err
+             and sorted(line['stray_worktrees']) == sorted([str(outside), str(other)]) and line['stray_branches'] == [sb])
+        case('a peer worktree and branch outside the role prefixes are not reported (negative control: the role own strays are)',
+             'peer-br' not in err and 'peer-wt' not in err and 'peer-br' not in line['stray_branches']
+             and str(tmp / 'peer-wt') not in line['stray_worktrees'])
         case('the dispatch tmp prefix is removed, its worktree unregistered, and it is not reported as a stray',
-             not Path(got['tmp_prefix']).exists() and str(own) not in listed and not (rb / '.worktrees').exists() and str(own) not in err)
+             not Path(got['tmp_prefix']).exists() and str(own) not in listed and str(own) not in err)
         case('the outside worktrees are only reported, never removed', outside.is_dir() and str(outside) in listed)
 
         # Guards on a tampered dispatch file: nothing outside the tmp root is removed, nothing outside the artifacts dir is written.

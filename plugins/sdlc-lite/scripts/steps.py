@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
-Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--override-review REASON] |
+Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] |
                  lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
@@ -13,6 +13,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             then write <task dir>/step-<n>/handoff.md as "## Task goal", the goal, a blank line,
             and the step block verbatim (## Step <n>: ... up to the next ## heading, trailing
             blank lines trimmed). Prints one line per file written.
+            --tree PATH sets the work tree --only runs its (guard) and (red) spans in, else the git toplevel
+            of the plan folder (the lane worktree when the plan lives there).
             --only N (repeatable) writes only those steps; an N not in the plan is an error.
             Refuses a step whose step-<n>/ already holds builder-*.md or verifier-*.md: rename it
             to step-<n>.superseded-<k>/ first (/chain 4.2). This script never renames anything.
@@ -74,7 +76,17 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             Every check runs before any write: a failure prints on stderr, exits 1, writes nothing.
   precheck  fail fast (exit 1, naming ## Goal) when <task dir>/handoff.md has no ## Goal section, as split
             would; run.sh calls it before a planner or plan-reviewer on a task handoff. Writes nothing.
-  lint      pick the plan the same way split does, then check that every command-like code span
+  lint      <step dir | step-<n>/handoff.md> (T-0379): check the .sdlc paths a step handoff cites. Each must exist, and a
+            report (builder-L*.md, verifier-L*.md, plan-reviewer-*.md) of the handoff's own step folder that has a
+            step-<n>.superseded-<k>/ sibling must name that superseded folder, not the live step-<n>/ (a later report of the
+            same name would satisfy it), except under ## Previous attempt. Exit 1, "plan defect: ..." last; dispatch.py
+            prepare and run.sh run it before a builder or verifier on a step handoff. A <placeholder>, glob, or
+            $VAR path is no citation. Writes nothing.
+            split rewrites the same links in the handoffs it writes: a cited step-<n>/<report> that is absent while a
+            step-<n>.superseded-<k>/ sibling holds it becomes the highest-k sibling's path (one stderr line each);
+            a path that exists or already names a superseded folder is kept, and no report is touched. (The plan text
+            is copied verbatim, so a plan written before the 4.2 rename carries step-<n>/ paths: that is the producer.)
+  lint      <planner.md | task dir>: pick the plan the same way split does, then check that every command-like code span
             under a step's ### Acceptance criteria (outside ``` fences) parses under bash -n, with
             each <placeholder> replaced first, and that none holds an unquoted || operator (a
             fallback passes on either side, so the criterion cannot fail); a || inside quotes, one
@@ -712,11 +724,12 @@ def run_guard(text, cwd, timeout, base=None):
     return rc, tail[-5:]
 
 
-def run_guards(plan, steps, chosen, task_dir, timeouts):
+def run_guards(plan, steps, chosen, task_dir, timeouts, tree=None):
     """Run the runnable (guard) spans of each chosen step, each under timeouts[n] seconds; raise
-    Fail naming every red one. Called only by split --only; a full split and lint never execute a span."""
-    top = git_toplevel(task_dir)
-    cwd = top or str(task_dir)
+    Fail naming every red one. Called only by split --only; a full split and lint never execute a span.
+    tree (--tree) is the work tree the spans run in, else the git toplevel of the task dir."""
+    top = git_toplevel(tree or task_dir)
+    cwd = top or str(tree or task_dir)
     base = base_sha(top)
     lines, red, before, ran = [], [], None, False
     for n in chosen:
@@ -848,13 +861,13 @@ def red_first(items, top, cwd, base):
     return out
 
 
-def run_red(plan, steps, chosen, task_dir, timeouts):
+def run_red(plan, steps, chosen, task_dir, timeouts, tree=None):
     """Run the runnable (red) spans of each chosen step, each under timeouts[n] seconds, and raise Fail
     when one is green now, times out, or changes the tree (see red_first). Called only by split --only,
     beside run_guards; a full split and lint never execute a span."""
-    top = git_toplevel(task_dir)
+    top = git_toplevel(tree or task_dir)
     items = [(n, text, timeouts[n]) for n in chosen for text in red_spans(steps[n]) if not guard_skipped(text)]
-    found = red_first(items, top, top or str(task_dir), base_sha(top))
+    found = red_first(items, top, top or str(tree or task_dir), base_sha(top))
     if found:
         raise Fail('\n'.join([f'steps: {plan} red-first: {m}' for m in found]
                              + [f'plan defect: red-first: {len(found)} refusal(s); replan this step (/chain 3)']))
@@ -1211,6 +1224,122 @@ def count_warnings(plan, steps):
     return out
 
 
+# --- step handoff links (T-0379) ----------------------------------------------
+# A replanned step's handoff is split from a plan written while step-<n>/ still held the previous attempt's
+# reports; /chain 4.2 then renames that folder to step-<n>.superseded-<k>/, so a path in the plan that names
+# step-<n>/builder-L3.md now points at nothing (or, after the rebuild, at the NEW attempt's report). The
+# producer is the plan text, which split copies verbatim; the rewrite below and the lint check close it.
+
+CITE_RE = re.compile(r"""(?:^|[\s`'"(\[=])((?:[^\s`'"()<>\[\],;|]*/)?\.sdlc/[^\s`'"()<>\[\],;|]+)""")
+REPORT_FILE_RE = re.compile(r'^[a-z][a-z-]*-L[1-5](?:-\d+)?\.md$')
+STEP_DIR_RE = re.compile(r'^step-(\d+)$')
+SUPERSEDED_RE = re.compile(r'^step-(\d+)\.superseded-(\d+)$')
+
+
+def sdlc_base(folder):
+    """The tree a cited .sdlc/... path resolves against: the nearest ancestor of folder (itself included) that
+    holds a .sdlc folder, else the git toplevel of folder, else folder."""
+    folder = pathlib.Path(folder).resolve()
+    for a in [folder] + list(folder.parents):
+        if (a / '.sdlc').is_dir():
+            return a
+    return pathlib.Path(git_toplevel(folder) or folder)
+
+
+def cited_sdlc_paths(text):
+    """[(start, end, rel)] for each .sdlc/... path in text: rel starts at .sdlc/, [start, end) is its span in
+    text. A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
+    citation; a trailing sentence dot or :line is trimmed."""
+    out = []
+    for m in CITE_RE.finditer(text):
+        raw, at = m.group(1), m.start(1)
+        i = raw.index('.sdlc/')
+        rel, start = raw[i:], at + i
+        rel = PATH_LINENO_RE.sub('', rel).rstrip('.:')
+        end = start + len(rel)
+        if any(c in rel for c in '*{}$?') or text[end:end + 1] in ('<', '*', '{', '$', '?') or len(rel) <= len('.sdlc/'):
+            continue
+        out.append((start, end, rel))
+    return out
+
+
+def superseded_holders(base, rel):
+    """For rel = .sdlc/.../step-<n>/<report>: the sibling step-<n>.superseded-<k>/ folders that hold that report,
+    newest attempt (highest k) first. [] for any other path."""
+    p = pathlib.Path(base) / rel
+    mm = STEP_DIR_RE.match(p.parent.name)
+    if not mm or not REPORT_FILE_RE.match(p.name) or not p.parent.parent.is_dir():
+        return []
+    found = []
+    for d in p.parent.parent.iterdir():
+        sm = SUPERSEDED_RE.match(d.name)
+        if sm and sm.group(1) == mm.group(1) and (d / p.name).is_file():
+            found.append((int(sm.group(2)), d.name))
+    return [name for _, name in sorted(found, reverse=True)]
+
+
+def superseded_rel(rel, holder):
+    """rel with its step-<n> folder replaced by the superseded folder name holder."""
+    pp = pathlib.PurePosixPath(rel)
+    return str(pp.parent.parent / holder / pp.name)
+
+
+def rewrite_prior_links(text, base):
+    """(new text, [(old rel, new rel)]): every cited step-<n>/<report> that no longer exists in the live step
+    folder, while a step-<n>.superseded-<k>/ sibling holds that report, now names the newest such sibling. A
+    path that exists, one that already names a superseded folder, and any other path stay as written; no report
+    file is touched."""
+    changes, pieces, last = [], [], 0
+    for start, end, rel in cited_sdlc_paths(text):
+        if (pathlib.Path(base) / rel).exists():
+            continue
+        holders = superseded_holders(base, rel)
+        if not holders:
+            continue
+        new = superseded_rel(rel, holders[0])
+        pieces += [text[last:start], new]
+        last = end
+        changes.append((rel, new))
+    return ''.join(pieces) + text[last:], changes
+
+
+def previous_attempt_span(text):
+    """(start, end) of the ## Previous attempt section of a step handoff, or None. Its citations name the live
+    attempt's reports and are never a prior-attempt link."""
+    m = re.search(r'^## Previous attempt[ \t]*$', text, re.M)
+    if not m:
+        return None
+    nxt = re.search(r'^## ', text[m.end():], re.M)
+    return m.start(), m.end() + (nxt.start() if nxt else len(text) - m.end())
+
+
+def link_findings(handoff):
+    """One finding per cited .sdlc path of a step handoff that cannot be trusted before a role is dispatched:
+    the path does not exist (the fix is named when a superseded sibling holds the report), or it is a report
+    inside the handoff's own step folder that has a step-<n>.superseded-<k>/ sibling (a link meant for the
+    previous attempt, which a later report of the same name would satisfy), outside ## Previous attempt.
+    [] when clean. Runs nothing."""
+    handoff = pathlib.Path(handoff)
+    text = handoff.read_text(encoding='utf-8')
+    base = sdlc_base(handoff.parent)
+    own = handoff.resolve().parent
+    prev = previous_attempt_span(text)
+    seen, findings = set(), []
+    for start, _, rel in cited_sdlc_paths(text):
+        if rel in seen:
+            continue
+        seen.add(rel)
+        p = base / rel
+        holders = superseded_holders(base, rel)
+        fix = f'; the previous attempt is {superseded_rel(rel, holders[0])}' if holders else ''
+        if not p.exists():
+            findings.append(f'steps: {handoff}: cited path does not exist: {rel}{fix}')
+        elif holders and p.resolve().parent == own and not (prev and prev[0] <= start < prev[1]):
+            findings.append(f'steps: {handoff}: {rel} names a report of a prior attempt of this step '
+                            f'(a later report of that name would satisfy it){fix}')
+    return findings
+
+
 def lint_steps(plan, steps):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -1226,7 +1355,7 @@ def lint_steps(plan, steps):
             folder = pathlib.Path(plan).resolve().parent
             base = pathlib.Path(git_toplevel(folder) or folder)
         for rel in paths:
-            if not (base / rel).exists():
+            if not (base / rel).exists() and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
         for text in command_spans(block):
             probe = PLACEHOLDER_RE.sub('PLACEHOLDER', text)
@@ -1289,7 +1418,7 @@ def lint_or_fail(plan, steps):
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
 
-def split(target, only=None, guard_timeout=None, override_review=None):
+def split(target, only=None, guard_timeout=None, override_review=None, tree=None):
     """Check everything, then write. Returns the paths written. With only, the chosen steps'
     runnable (guard) spans run before any write, each step under guard_timeout when given, else
     its own guard timeout line, else the plan's, else DEFAULT_GUARD_TIMEOUT. override_review (a reason)
@@ -1336,8 +1465,8 @@ def split(target, only=None, guard_timeout=None, override_review=None):
         timeouts = {n: guard_timeout if guard_timeout is not None
                     else step_guard_timeout(steps[n]) or plan_timeout or DEFAULT_GUARD_TIMEOUT
                     for n in chosen}
-        run_guards(plan, steps, chosen, task_dir, timeouts)
-        run_red(plan, steps, chosen, task_dir, timeouts)
+        run_guards(plan, steps, chosen, task_dir, timeouts, tree)
+        run_red(plan, steps, chosen, task_dir, timeouts, tree)
     if override:
         record_review_override(task_dir, *override)
         print(f'steps: review override: {override[0]} says replan; split anyway: {override[1]}', file=sys.stderr)
@@ -1347,6 +1476,9 @@ def split(target, only=None, guard_timeout=None, override_review=None):
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
         body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(task_dir, n))
+        body, moved = rewrite_prior_links(body, sdlc_base(task_dir))
+        for old_rel, new_rel in moved:
+            print(f'steps: step {n}: rewrote prior-report link {old_rel} -> {new_rel}', file=sys.stderr)
         if folded and folded.get(n):
             body += '\n### Notes\n' + ''.join(f'- {x}\n' for x in folded[n])
         path.write_text(body, encoding='utf-8')
@@ -1415,9 +1547,9 @@ def cmd_precheck(task_dir):
     return 0
 
 
-def cmd_split(target, only, guard_timeout=None, override_review=None):
+def cmd_split(target, only, guard_timeout=None, override_review=None, tree=None):
     try:
-        written = split(target, only, guard_timeout, override_review)
+        written = split(target, only, guard_timeout, override_review, tree)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -1454,7 +1586,23 @@ def lean_warnings(plan, task_dir, steps):
     return out
 
 
+def step_handoff_of(target):
+    """The handoff.md of target when it is a step folder (step-<n>/) or a handoff.md inside one, else None."""
+    t = pathlib.Path(target)
+    if t.is_dir() and STEP_DIR_RE.match(t.resolve().name):
+        t = t / 'handoff.md'
+    return t if t.is_file() and t.name == 'handoff.md' and STEP_DIR_RE.match(t.resolve().parent.name) else None
+
+
 def cmd_lint(target):
+    h = step_handoff_of(target)
+    if h is not None:
+        findings = link_findings(h)
+        if findings:
+            print('\n'.join(findings + [PLAN_DEFECT]), file=sys.stderr)
+            return 1
+        print('steps lint: ok')
+        return 0
     try:
         plan, task_dir = find_plan(target)
         steps = parse_steps(plan)
@@ -3185,6 +3333,18 @@ def selftest():
         check('(n) --only with a green guard runs it (from the task dir outside git) and writes the handoff',
               rc == 0 and err == '' and green.exists() and (d / 'step-1' / 'handoff.md').is_file())
 
+        # (T-0377) the plan folder lacks the file the guard greps; the lane tree has it
+        lane_tree = tmp / 'n-lane-tree'
+        lane_tree.mkdir()
+        (lane_tree / 'lane-only.txt').write_text('x\n')
+        d = task(plan=guard_plan('(guard) `test -f lane-only.txt`'))
+        rc, _, err = run_main(['split', str(d), '--only', '1'])
+        check('(n) --only without --tree runs the guard in the plan folder (red: file is in the lane tree only)',
+              rc == 1 and 'plan defect:' in err and not (d / 'step-1').exists())
+        rc, out, err = run_main(['split', str(d), '--only', '1', '--tree', str(lane_tree)])
+        check('(n) --only --tree runs the guard in the lane tree and writes the handoff',
+              rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+
         d = task(plan=guard_plan(f'(guard) `git diff --quiet HEAD^1 HEAD && test -e {tmp}/nope`'))
         rc, _, err = run_main(['split', str(d), '--only', '1'])
         check('(n) a HEAD^1 guard is skipped (it would be red if run)',
@@ -4593,6 +4753,115 @@ def selftest():
               and out.splitlines()[2] == f'read: {vd / "handoff.md"}' and sorted(x.name for x in vd.iterdir()) == ['handoff.md']
               and rc2 == 1 and 'no handoff.md' in err2)
 
+    # (L) T-0379: a step handoff cites prior-attempt reports of a superseded step; lint refuses a stale or
+    # absent path, and split rewrites the new handoff's citations into the immutable superseded folder
+    with tempfile.TemporaryDirectory() as ltmp:
+        lroot = pathlib.Path(ltmp)
+        counter = [0]
+
+        def l_task(superseded, live=(), cites=None):
+            """A fixture ticket under <root>/.sdlc: planner-L3.md whose steps 3, 4 and 9 cite the previous
+            attempt's reports as step-<n>/<report>, the superseded folders holding the reports, and any
+            reports already in the live step folders."""
+            counter[0] += 1
+            top = lroot / f'r{counter[0]}'
+            td = top / '.sdlc' / '0001-x'
+            td.mkdir(parents=True)
+            (td / 'handoff.md').write_text(HANDOFF, encoding='utf-8')
+            cites = cites or {3: 'builder-L3.md', 4: 'builder-L3.md', 9: 'verifier-L3.md'}
+            blocks = ''.join(
+                f'## Step {n}: s{n}\nlevel: L1\n\n### Read first\n- `.sdlc/0001-x/step-{n}/{rep}`\n\n### Acceptance criteria\n'
+                f'- `true`\n\nPrior attempt: see .sdlc/0001-x/step-{n}/{rep} for the findings.\n\n'
+                for n, rep in cites.items())
+            (td / 'planner-L3.md').write_text(hdr('planner-L3.md', f'# Plan\n## Goal\ng\n\n{blocks}'), encoding='utf-8')
+            for name, files in superseded.items():
+                (td / name).mkdir()
+                for f in files:
+                    (td / name / f).write_text(hdr(f, '## Status\ndone\n'), encoding='utf-8')
+            for name, files in dict(live).items():
+                (td / name).mkdir(exist_ok=True)
+                for f in files:
+                    (td / name / f).write_text(hdr(f, '## Status\ndone\n'), encoding='utf-8')
+            return td
+
+        ln = lambda td, n: (td / f'step-{n}' / 'handoff.md')
+        rd = lambda td, n: ln(td, n).read_text(encoding='utf-8') if ln(td, n).is_file() else ''
+        rep = {'step-3.superseded-1': ['builder-L3.md'], 'step-4.superseded-1': ['builder-L3.md'],
+               'step-9.superseded-1': ['verifier-L3.md']}
+        td = l_task(rep)
+        rc, out, err = run_main(['split', str(td)])
+        h3, h4, h9 = (rd(td, n) for n in (3, 4, 9))
+        check('(L) split rewrites steps 3, 4 and 9 citations into the superseded folder, one per step',
+              rc == 0 and '.sdlc/0001-x/step-3.superseded-1/builder-L3.md' in h3
+              and '.sdlc/0001-x/step-4.superseded-1/builder-L3.md' in h4
+              and '.sdlc/0001-x/step-9.superseded-1/verifier-L3.md' in h9
+              and '/step-3/builder-L3.md' not in h3 and '/step-4/builder-L3.md' not in h4 and '/step-9/verifier-L3.md' not in h9)
+        check('(L) the rewrite covers the prose citation as well as the ### Read first one',
+              h3.count('step-3.superseded-1/builder-L3.md') == 2)
+        check('(L) split names each rewrite on stderr', err.count('rewrote prior-report link') == 6)
+        check('(L) the rewritten handoffs pass lint with the live step dir still empty',
+              all(run_main(['lint', str(ln(td, n))])[0] == 0 for n in (3, 4, 9)))
+        check('(L) split never touches a finished report',
+              (td / 'step-3.superseded-1' / 'builder-L3.md').read_text(encoding='utf-8') == hdr('builder-L3.md', '## Status\ndone\n'))
+        # the newest superseded attempt holding the report is the previous one
+        td = l_task({'step-3.superseded-1': ['builder-L3.md'], 'step-3.superseded-2': ['builder-L3.md']},
+                    cites={3: 'builder-L3.md'})
+        run_main(['split', str(td)])
+        h3 = rd(td, 3)
+        check('(L) with two superseded attempts the citation keeps the previous (highest k) attempt',
+              'step-3.superseded-2/builder-L3.md' in h3 and 'superseded-1' not in h3)
+        # an explicit superseded citation keeps its attempt identity
+        td = l_task({'step-3.superseded-1': ['builder-L3.md'], 'step-3.superseded-2': ['builder-L3.md']}, cites={3: 'builder-L3.md'})
+        pl = td / 'planner-L3.md'
+        pl.write_text(pl.read_text(encoding='utf-8').replace('step-3/builder-L3.md', 'step-3.superseded-1/builder-L3.md'), encoding='utf-8')
+        rc, _, err = run_main(['split', str(td)])
+        h3 = rd(td, 3)
+        check('(L) an explicit step-3.superseded-1 citation is kept, not moved to the newest attempt',
+              rc == 0 and 'step-3.superseded-1/builder-L3.md' in h3 and 'superseded-2' not in h3 and 'rewrote' not in err)
+        # lint refusals
+        td = l_task(rep)
+        run_main(['split', str(td)])
+        h3p = ln(td, 3)
+        good = h3p.read_text(encoding='utf-8') if h3p.is_file() else ''
+        rc, out, err = run_main(['lint', str(h3p)])
+        check('(L) lint passes a step handoff whose citations all exist', rc == 0 and out.startswith('steps lint: ok'))
+        h3p.write_text(good + '\nAlso read .sdlc/0001-x/step-3.superseded-1/builder-L9.md.\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(h3p)])
+        check('(L) lint refuses an absent cited .sdlc path and names it',
+              rc == 1 and 'builder-L9.md' in err and 'does not exist' in err)
+        h3p.write_text(good.replace('step-3.superseded-1/builder-L3.md', 'step-3/builder-L3.md'), encoding='utf-8')
+        rc, _, err = run_main(['lint', str(h3p)])
+        check('(L) lint refuses a current-step report path that has a superseded sibling and names the fix',
+              rc == 1 and 'step-3.superseded-1/builder-L3.md' in err and 'does not exist' in err)
+        (td / 'step-3' / 'builder-L3.md').write_text(hdr('builder-L3.md', '## Status\ndone\n'), encoding='utf-8')
+        rc, _, err = run_main(['lint', str(h3p)])
+        check('(L) path reuse: a later new builder-L3.md in step-3/ does not satisfy a link meant for the previous build',
+              rc == 1 and 'prior attempt' in err and 'step-3.superseded-1/builder-L3.md' in err)
+        # a step with no superseded sibling may cite another live step's report
+        td = l_task({}, live={'step-1': ['builder-L2.md']}, cites={3: 'builder-L3.md'})
+        h = ln(td, 3)
+        h.parent.mkdir()
+        h.write_text('## Task goal\ng\n\n## Step 3: s\nlevel: L1\nRead .sdlc/0001-x/step-1/builder-L2.md first.\n', encoding='utf-8')
+        check('(L) a citation of another live step\'s existing report passes lint',
+              run_main(['lint', str(h)])[0] == 0 and run_main(['lint', str(h.parent)])[0] == 0)
+        # an uncited-placeholder or glob path is not a citation
+        h.write_text('## Task goal\ng\n\nWrite .sdlc/<task>/step-<n>/builder-L3.md and see .sdlc/0001-x/step-*/x.md.\n', encoding='utf-8')
+        check('(L) placeholder and glob paths are not checked', run_main(['lint', str(h)])[0] == 0)
+        # a plan defect is not raised for a Read first path split will rewrite; a truly absent one still is
+        td = l_task({'step-3.superseded-1': ['builder-L3.md']}, cites={3: 'builder-L3.md'})
+        check('(L) plan lint accepts a Read first path that split will rewrite', run_main(['lint', str(td)])[0] == 0)
+        td = l_task({'step-3.superseded-1': ['verifier-L3.md']}, cites={3: 'builder-L3.md'})
+        rc, _, err = run_main(['lint', str(td)])
+        check('(L) plan lint still refuses a Read first path no superseded folder holds',
+              rc == 1 and 'does not exist' in err)
+        # no input hashing change: dispatch.py owns that; here only prove split output is stable when nothing is stale
+        td = l_task(rep)
+        run_main(['split', str(td)])
+        before = {n: rd(td, n) for n in (3, 4, 9)}
+        run_main(['split', str(td)])
+        check('(L) a second split gives byte-identical handoffs',
+              before == {n: rd(td, n) for n in (3, 4, 9)} and all(before.values()))
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -4619,6 +4888,9 @@ def main(argv):
                    help='per-guard timeout for --only; it overrides any "guard timeout: <seconds>" line '
                         '(default: the step block\'s line, else the plan\'s line outside every step, else 300); '
                         'a timeout is a red guard')
+    p.add_argument('--tree', default=None, metavar='PATH',
+                   help='the work tree --only runs its (guard) and (red) spans in (default: the git toplevel '
+                        'of the plan folder); use the lane worktree when the plan folder is in another checkout')
     p.add_argument('--override-review', default=None, metavar='REASON',
                    help='split a plan whose newest plan review says replan anyway (the user\'s call); records '
                         '"review override: <review file>: <reason>" under ## Plan review in handoff.md; '
@@ -4692,7 +4964,10 @@ def main(argv):
         if not reason:
             print('steps: --override-review needs a reason', file=sys.stderr)
             return 1
-    return cmd_split(a.target, a.only, a.guard_timeout, reason)
+    if a.tree is not None and not os.path.isdir(a.tree):
+        print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
+        return 1
+    return cmd_split(a.target, a.only, a.guard_timeout, reason, a.tree)
 
 
 if __name__ == '__main__':

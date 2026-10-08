@@ -2,7 +2,7 @@
 id: T-0371
 title: "dispatch.py guards assume one session: own-pid attempt block and repo-wide stray worktree check"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0363]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,7 @@ Maison needed `run_lifecycle.py recover` twice for an attempt holding its own pi
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
