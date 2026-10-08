@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "/Users/kimgranlund/.codex/plugins/cache/sdlc-lite/sdlc-lite/0.21.3/scripts/solo_run.py",
+    "run",
+    "--backend",
+    "codex",
+    "--task-dir",
+    "/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-codex-solo-repro-fqcxf8ww/ticket",
+    "--tier",
+    "L2",
+    "--brief",
+    "Transport probe, no implementation",
+    "--cwd",
+    "/var/folders/n0/b1pq09652mbd8kncmz8tgkvc0000gn/T/sdlc-codex-solo-repro-fqcxf8ww",
+    "--no-worktree"
+  ],
+  "env": {
+    "SDLC_BACKEND": "codex",
+    "SDLC_CODEX_TRANSPORT": "subagent"
+  },
+  "exit_code": 2,
+  "stdout": "",
+  "stderr": "Codex execution failed: subagent transport requires --request-file\nsolo_run.py: recorded solo L2 attempt d69bc97f cost none (no result event)\n",
+  "files": [
+    "ticket/runs.jsonl",
+    "ticket/handoff.md"
+  ]
+}

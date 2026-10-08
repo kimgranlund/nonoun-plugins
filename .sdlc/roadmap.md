@@ -369,3 +369,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0369 | [0369-messenger-spawn-persistent](0369-messenger-spawn-persistent/handoff.md) | A conductor can spawn the messenger, and the messenger keeps polling after a report | bug | L2 | P2 | T-0367 | ⏳ proposed |
 | T-0370 | [0370-mailbox-registry-handshake](0370-mailbox-registry-handshake/handoff.md) | Mailbox receivers registry, default sender identity and a handshake command | feature | L2 | P2 | T-0367 | ⏳ proposed |
 | T-0371 | [0371-guards-single-session](0371-guards-single-session/handoff.md) | dispatch.py guards assume one session: own-pid attempt block and repo-wide stray worktree check | bug | L1 | P2 | T-0363 | ⏳ proposed |
+| T-0372 | [0372-codex-solo-native-transport](0372-codex-solo-native-transport/handoff.md) | Codex solo launcher does not supply the native exchange request file | bug | L2 | P1 | none | ⏳ proposed |
+| T-0373 | [0373-codex-role-preflight](0373-codex-role-preflight/handoff.md) | Codex dispatch readiness does not check roles loaded in the current session | bug | L2 | P1 | T-0372 | ⏳ proposed |
