@@ -487,6 +487,101 @@ message = "<!-- SDLC Lite Codex project conductor: example -->"
             if previous is None:os.environ.pop('SDLC_BACKEND',None)
             else:os.environ['SDLC_BACKEND']=previous
 
+    # T-0372: solo through the native transport creates, waits on and records a request exchange; no model, no nested CLI.
+    def solo_launch(self,tier,timeout=DEADLINE):
+        ticket=self.base/'ticket'; ticket.mkdir(exist_ok=True)
+        (ticket/'handoff.md').write_text('## Goal\nProbe.\n')
+        env=dict(self.env,SDLC_CODEX_TRANSPORT='subagent',SDLC_CODEX_TIMEOUT_SECONDS=str(timeout))
+        env.pop('SDLC_ATTEMPT_ID',None)
+        proc=subprocess.Popen(['python3',str(ROOT/'scripts/solo_run.py'),'run','--backend','codex','--task-dir',str(ticket),
+                               '--tier',tier,'--brief','Transport probe','--cwd',str(self.repo),'--no-worktree'],
+                              cwd=self.repo,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        return proc,ticket
+
+    def solo_requests(self,ticket,proc,known=()):
+        return self.wait_for(lambda:[r for r in ticket.glob('solo-*.request.json') if r not in known],directory=ticket,owner=proc)
+
+    def solo_respond(self,request,text='## Result\nsolo fixture done',failed=False):
+        report=request.parent/(request.stem+'.report.txt');report.write_text(text)
+        cmd=['python3',str(ROOT/'scripts/codex_exchange.py'),str(request),str(report)]+(['--failed'] if failed else [])
+        done=subprocess.run(cmd,capture_output=True,text=True)
+        self.assertEqual(done.returncode,0,done.stderr)
+
+    def solo_records(self,ticket):
+        return [json.loads(l) for l in (ticket/'runs.jsonl').read_text().splitlines()]
+
+    def test_solo_native_exchange_levels(self):
+        for tier,agent,effort in (('L1','sdlc-solo-l1','low'),('L2','sdlc-solo-l2','high'),('L3','sdlc-solo-l3','xhigh')):
+            with self.subTest(tier=tier):
+                (self.base/'ticket'/'runs.jsonl').unlink(missing_ok=True)
+                known=tuple((self.base/'ticket').glob('solo-*.request.json'))
+                proc,ticket=self.solo_launch(tier)
+                try:
+                    request=self.solo_requests(ticket,proc,known)[0]
+                    payload=json.loads(request.read_text())
+                    self.assertEqual((payload['agent'],payload['role'],payload['level'],payload['status'],payload['effort']),(agent,'solo',tier,'waiting',effort))
+                    self.assertIn('Transport probe',payload['prompt'])
+                    self.solo_respond(request)
+                    stdout,stderr=proc.communicate(timeout=DEADLINE)
+                    self.assertEqual(proc.returncode,0,stderr)
+                    self.assertIn('solo fixture done',stdout)
+                finally:
+                    if proc.poll() is None:proc.kill();proc.communicate()
+                self.assertEqual(json.loads(request.read_text())['status'],'received')
+                self.assertEqual([p.name for p in ticket.iterdir() if p.name.startswith('solo-') and not p.name.endswith('.request.json') and not p.name.endswith('.report.txt')],[])
+                rec=self.solo_records(ticket)[-1]
+                self.assertEqual((rec['backend'],rec['transport'],rec['role'],rec['level'],rec['model'],rec['exit_code']),('codex','subagent','solo',tier,'gpt-6.1-sol',0))
+                self.assertIsNone(rec['cost_usd']);self.assertTrue(rec['cost_reason'])
+                self.assertFalse((self.base/'probe.json').exists(),'a nested codex exec ran')
+
+    def test_solo_native_response_failure(self):
+        proc,ticket=self.solo_launch('L2')
+        try:
+            request=self.solo_requests(ticket,proc)[0]
+            self.solo_respond(request,'agent could not finish',failed=True)
+            proc.communicate(timeout=DEADLINE)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        self.assertNotEqual(proc.returncode,0)
+        self.assertEqual(json.loads(request.read_text())['status'],'failed')
+        rec=self.solo_records(ticket)[-1]
+        self.assertEqual((rec['backend'],rec['transport']),('codex','subagent'))
+        self.assertNotEqual(rec['exit_code'],0)
+
+    def test_solo_native_timeout(self):
+        proc,ticket=self.solo_launch('L1',timeout=2)
+        try:
+            request=self.solo_requests(ticket,proc)[0]
+            stdout,stderr=proc.communicate(timeout=DEADLINE)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        self.assertNotEqual(proc.returncode,0)
+        self.assertEqual(json.loads(request.read_text())['status'],'failed')
+        self.assertIn('timed out',stderr)
+        rec=self.solo_records(ticket)[-1]
+        self.assertEqual((rec['backend'],rec['transport']),('codex','subagent'))
+        self.assertIsNone(rec['cost_usd'])
+
+    def test_solo_native_rerun_keeps_earlier_request(self):
+        proc,ticket=self.solo_launch('L2')
+        try:
+            first=self.solo_requests(ticket,proc)[0]
+            self.solo_respond(first,failed=True);proc.communicate(timeout=DEADLINE)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        before=first.read_text()
+        proc,ticket=self.solo_launch('L2')
+        try:
+            second=self.solo_requests(ticket,proc,known=(first,))[0]
+            self.assertNotEqual(first,second)
+            self.assertEqual(first.read_text(),before)
+            self.solo_respond(second);proc.communicate(timeout=DEADLINE)
+        finally:
+            if proc.poll() is None:proc.kill();proc.communicate()
+        self.assertEqual(proc.returncode,0)
+        self.assertEqual(first.read_text(),before)
+        self.assertEqual(len(self.solo_records(ticket)),2)
+
 
 if __name__=='__main__':
     unittest.main()

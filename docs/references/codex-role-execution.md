@@ -78,6 +78,8 @@ An earlier attempt to nest a Codex CLI inside the conductor sandbox failed on ru
 The conductor does not receive extra network or Codex-home write permissions. Benchmark launchers return nonzero when a conductor process fails.
 
 
+A solo ticket uses the same exchange: `solo_run.py run --backend codex` with `SDLC_CODEX_TRANSPORT=subagent` publishes `<ticket folder>/solo-<level>-<attempt>.request.json` (fresh name per attempt), the parent answers it through `codex_exchange.py`, and the wrapper prints the report, removes the lock and response files, and records `backend codex`, `transport subagent`, null cost with a reason.
+
 For fanout or benchmark launchers inside Codex, select the subagent transport too. Their waiting native conductor requests appear in `.sdlc/native-conductor-*.request.json` under each driver's project directory. The parent dispatches them and submits actual reports using the same exchange. This requires sufficient native delegation depth and concurrency; capacity or permission failures must be reported. Standalone terminal launchers use exec for the conductor and native exchange for its children.
 
 
