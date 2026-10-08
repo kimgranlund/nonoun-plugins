@@ -24,6 +24,8 @@ Count new messages with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/p
 
 To block until a message arrives, run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
 
+To see messages already claimed but not acknowledged, run `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" backlog --receiver <name>`. It prints a status line, `<N> previously claimed message(s) remain(s) unacknowledged (<K> listed).`, then one tab-separated row per message in `read/<name>/`: id, sender, topic, send_time, read_time, follow_up_requested. It reads only that receiver, never claims, acks, or prints a body, and writes nothing. With `--once` it lists only messages it has not listed before (it records their ids in `read/<name>/.backlog-reported`), so a second `--once` run lists none.
+
 ## Reply
 
 `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/messages.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.
@@ -38,7 +40,7 @@ To block until a message arrives, run `python3 "/Users/kimgranlund/Projects/nono
 
 ## Messenger
 
-Each harness runs one dedicated `messenger` sub-agent on a cheap model. It polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
+Each harness runs one dedicated `messenger` sub-agent on a cheap model. On startup it runs `backlog --once` and reports previously claimed, unacknowledged messages in their own section; it never replays, replies to, or acks them. It then polls `new/<harness>/` every 10 seconds (`wait`, or `count` then `list`, then `read`) and notifies its parent through its report, naming each claimed id and `read/<harness>/<id>.md`. Parents send and reply through it, giving it the exact text. It acks only when its parent asks, and never acks a `follow_up_requested: true` message before the parent replied.
 
 - Claude Code: the Agent tool with `subagent_type` `sdlc-lite:messenger` (model `claude-haiku-5-5`) and a prompt naming the harness `claude`, run in the foreground. Spawn it again to keep polling.
 - Codex: install the project agents once with `python3 "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite/scripts/codex_roles.py" install .`. Then spawn the native agent `sdlc-messenger-l1` (model `gpt-5.6-terra`, effort low) with a prompt naming `codex`. Native agent calls need a fresh session after the install.
