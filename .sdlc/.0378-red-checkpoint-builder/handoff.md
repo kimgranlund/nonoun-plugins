@@ -2,7 +2,7 @@
 id: T-0378
 title: "Record required red checks before a builder implements, and record a deviation when a run lacks them"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish. The Codex host cannot be run live here; 
 - A builder that completes through `dispatch.py record` with a `(red)` handoff criterion and no `redck.py record` leaves `process-deviations.md` beside the handoff holding a `process deviation: red-checkpoint: missing` line: `grep -n "redck.py" plugins/sdlc-lite/scripts/dispatch.py plugins/sdlc-lite/scripts/run.sh` shows the audit call in both, and `agents/verifier.md` and `agents/filer.md` name `process-deviations.md`.
 - `agents/builder.md` rule 11 tells the builder to run `redck.py record` before the first edit and states that enforcement is procedural; `scripts/redck.py` states per host (Claude hook possible but not registered, Codex no hook, live Codex unverified) and keeps runner acceptance, builder checks, and independent verification as separate records.
 - No em or en dash in the lines added to the hand-edited files or the new script: `! git diff -U0 -- plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/filer.md plugins/sdlc-lite/scripts docs/references/sdlc-internals.md | grep '^+' | grep -qF -e "$(printf '\342\200\224')" -e "$(printf '\342\200\223')" && ! grep -qF -e "$(printf '\342\200\224')" -e "$(printf '\342\200\223')" plugins/sdlc-lite/scripts/redck.py`
+
+## Closed
+
+2026-10-08: Merged and verified pass in .sdlc/verify-0.22-batch3/verifier-L3.md; shipped in v0.22.0

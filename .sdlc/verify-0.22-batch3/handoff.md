@@ -33,7 +33,7 @@ T-0377 Done-when (.sdlc/.0377-split-only-tree/handoff.md):
   - A selftest: a handoff in a lane worktree whose main checkout lacks the file the guard greps reports ok when run with --only, and fails without the fix (observed failing first).
   - check.py, tickets.py check, the affected selftests and both generate --check pass.
 
-T-0378 Done-when (.sdlc/0378-red-checkpoint-builder/handoff.md):
+T-0378 Done-when (.sdlc/.0378-red-checkpoint-builder/handoff.md):
   - Tests cover: no tagged criteria, valid pre-edit controls, missing evidence, post-edit retrospective controls, and resumed work with evidence from an earlier attempt (observed failing first).
   - A run that completes without the checkpoint writes a process-deviation line that the verifier handoff and the filer read.
   - check.py, tickets.py check, the affected selftests, codex-selftest and both generate --check pass.
