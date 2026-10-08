@@ -3,6 +3,7 @@
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
   dispatch.py record [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
   dispatch.py resume [--root DIR] <name>  the ladder for an orphan: SendMessage by name, by id, then a new attempt
@@ -79,6 +80,14 @@ it then does the following.
                with exit_code 1 and the text, and no runs.jsonl line is written, as run.sh. A 429 or session-limit
                text writes <role>-<level>.limit with the prepare command to resume; a later success removes it.
   success      the attempt is completed, the result path is printed, exit 0.
+Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable teammate until it is stopped. prepare writes
+"prune": true into the dispatch for a one-shot role (scout, researcher, architect, archaeologist, planner, plan-reviewer,
+verifier, filer) and false for builder, whose failed run may be resumed (solo and the messenger are false too); --prune and
+--no-prune override it. record on exit 0 with prune true prints `prune: <agent name>` and appends {name, agent_id, role,
+level, recorded_at} to <project>/.sdlc/runtime/prune.json, unless another attempt of that agent is still open or the
+result's ## Follow-ups section is not None. `dispatch.py prune` lists the queue with the stop call per entry
+(`TaskStop task_id=<name>`); `--done NAME` removes an entry once stopped; `--add NAME` queues a landed builder or solo
+(`fanout.py land` does it for a merged solo).
 Exit codes: 0 ok, 1 failed sub-agent, 2 unreadable dispatch or attempt, an attempt that is not running, or a result
 path outside the artifacts dir, 3 invalid result.
 Not carried over: the .nvmrc PATH change (a sub-agent inherits the parent's environment) and the skill
@@ -113,6 +122,7 @@ import run_lifecycle  # noqa: E402
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
 GATES = ('preflight', 'goal', 'lane', 'specgate', 'budget', 'lock')
+PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer')
 
 
 class Refuse(Exception):
@@ -443,9 +453,10 @@ def under(path, prefix):
     return real == base or real.startswith(base + os.sep)
 
 
-def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''):
+def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None):
     """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only);
-    solo is the model of a solo ticket whose runs.jsonl record is not in this tree (--solo-model)."""
+    solo is the model of a solo ticket whose runs.jsonl record is not in this tree (--solo-model); prune overrides the
+    role's default prune flag (True, False, or None for the default)."""
     plugin = Path(plugin)
     if os.environ.get('SDLC_BACKEND', 'claude') != 'claude':
         raise Refuse(2, 'dispatch.py prepare is the Claude host path; Codex dispatches through run.sh')
@@ -556,6 +567,7 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         description=list_description(directory, role, level),
                         model=model, effort=effort, prompt=prompt,
                         run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
+                        prune=role in PRUNE_ROLES if prune is None else bool(prune),
                         role=role, level=level, result_name=stem, result=str(result), tmp_prefix=tmp_prefix,
                         base_sha=base, tree=toplevel, handoff=str(handoff), artifacts_dir=str(directory),
                         handoff_sha256=sha, shared_with_builder=False, lane_override=lane_override, specgate=specgate,
@@ -641,6 +653,96 @@ def limit_marker(d, error):
     marker.write_text(json.dumps(dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=d['role'], level=d['level'],
                                       handoff=d['handoff'], resume=resume, evidence=line), separators=(',', ':')) + '\n', encoding='utf-8')
     say('session limit: resume with: ' + resume)
+
+
+PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'
+PRUNE_KEYS = ('name', 'agent_id', 'role', 'level', 'recorded_at')
+
+
+def prune_path(root='.'):
+    return Path(root) / PRUNE_REL
+
+
+def prune_read(root='.'):
+    """The queued entries (a list of dicts); a missing or unreadable file is an empty queue."""
+    try:
+        data = json.loads(prune_path(root).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return []
+    return [e for e in data if isinstance(e, dict) and e.get('name')] if isinstance(data, list) else []
+
+
+def prune_edit(root, change):
+    """Read the queue under a file lock, let change(entries) return the new list, write it atomically; returns the list."""
+    import fcntl
+    path = prune_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not (path.parent / '.gitignore').exists():  # a consumer repo may not ignore .sdlc/runtime: the folder ignores itself
+        (path.parent / '.gitignore').write_text('*\n', encoding='utf-8')
+    with (path.parent / 'prune.lock').open('a+') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        entries = change(prune_read(root))
+        temp = path.with_name(path.name + '.tmp-' + uuid.uuid4().hex)
+        temp.write_text(json.dumps(entries, indent=2) + '\n', encoding='utf-8')
+        temp.replace(path)
+    return entries
+
+
+def prune_add(root, name, role='', level='', agent_id=None):
+    """Queue an agent by name (one entry per name; a later add replaces the earlier one)."""
+    entry = dict(name=name, agent_id=agent_id, role=role, level=level, recorded_at=run_lifecycle.now())
+    prune_edit(root, lambda es: [e for e in es if e.get('name') != name] + [entry])
+    return entry
+
+
+def prune_done(root, name):
+    """Remove an entry; True when it was queued."""
+    found = []
+    prune_edit(root, lambda es: [e for e in es if e.get('name') != name or found.append(1)])
+    return bool(found)
+
+
+def prune_lines(root='.'):
+    entries = prune_read(root)
+    if not entries:
+        return ['prune: nothing queued']
+    return ['TaskStop task_id=%s    # %s %s, recorded %s; then: dispatch.py prune --done %s'
+            % (e['name'], e.get('role') or 'agent', e.get('level') or '', e.get('recorded_at') or '?', e['name']) for e in entries]
+
+
+def follow_up_pending(text):
+    """True when the result's ## Follow-ups section holds anything but None."""
+    m = re.search(r'^## Follow-ups[ \t]*\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    return bool(m) and m.group(1).strip().rstrip('.').lower() not in ('', 'none')
+
+
+def attempt_open(directory, name, own):
+    """True when another attempt record in the directory for the agent name is still running."""
+    for f in Path(directory).glob('*.attempt.json'):
+        try:
+            a = json.loads(f.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        if f != own and isinstance(a, dict) and a.get('agent_name') == name and a.get('status') == 'running':
+            return True
+    return False
+
+
+def queue_prune(d, attempt, agent_id):
+    """After a recorded success: queue a dispatch with prune true and print `prune: <name>`; skip an open attempt or a pending follow-up."""
+    name = attempt.get('agent_name') or d.get('name')
+    if not d.get('prune') or not name:
+        return False
+    if attempt.get('status') != 'completed' or attempt_open(d['artifacts_dir'], name, Path(d['attempt_file'])):
+        return False
+    try:
+        if follow_up_pending(Path(d['result']).read_text(encoding='utf-8', errors='replace')):
+            return False
+    except OSError:
+        return False
+    prune_add(attempt.get('project') or d['tree'], name, d['role'], d['level'], agent_id or attempt.get('agent_id'))
+    print('prune: ' + name)
+    return True
 
 
 def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None):
@@ -758,6 +860,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     report_strays(found)
     close('completed', 0)
     print(result)
+    queue_prune(d, attempt, agent_id)
     return 0
 
 
@@ -787,6 +890,9 @@ def main(argv):
     p.add_argument('--solo-model', default='', choices=('', 'sonnet', 'opus', 'fable', 'haiku'),
                    help="the solo ticket's model when its runs.jsonl record is not in this tree (a sub-agent lane worktree): the verifier family rule reads it")
     p.add_argument('--routing-reason', help='why this role and level; wins over SDLC_ROUTING_REASON (a command that starts with VAR=... misses a Bash(python3:*) allowlist)')
+    pg = p.add_mutually_exclusive_group()
+    pg.add_argument('--prune', dest='prune', action='store_true', default=None, help='queue this agent for pruning after a recorded result (the default for a one-shot role)')
+    pg.add_argument('--no-prune', dest='prune', action='store_false', help='never queue this agent for pruning')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
     r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
@@ -804,10 +910,30 @@ def main(argv):
     rs = sub.add_parser('resume', help='print the resume ladder for an orphaned attempt')
     rs.add_argument('name', help='the attempt stem or Agent name')
     rs.add_argument('--root', default='.', help='where to search for attempt records')
+    pr = sub.add_parser('prune', help='list the finished sub-agents to stop, with the stop call for each')
+    pr.add_argument('--root', default='.', help='the project root holding .sdlc/runtime/prune.json')
+    pg2 = pr.add_mutually_exclusive_group()
+    pg2.add_argument('--done', metavar='NAME', help='remove NAME from the queue once it is stopped')
+    pg2.add_argument('--add', metavar='NAME', help='queue NAME (a landed builder or solo)')
+    pr.add_argument('--role', default='', help='with --add: the agent role')
+    pr.add_argument('--level', default='', help='with --add: the agent level')
     sub.add_parser('selftest', help='run the regression cases in temp repos')
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
         return selftest()
+    if args.cmd == 'prune':
+        try:
+            if args.done:
+                print('pruned: ' + args.done if prune_done(args.root, args.done) else 'not queued: ' + args.done)
+            elif args.add:
+                prune_add(args.root, args.add, args.role, args.level)
+                print('queued: ' + args.add)
+            else:
+                print('\n'.join(prune_lines(args.root)))
+        except OSError as e:
+            print('dispatch.py: ' + str(e), file=sys.stderr)
+            return 2
+        return 0
     if args.cmd in ('status', 'recover', 'resume'):
         try:
             if args.cmd == 'status':
@@ -851,7 +977,7 @@ def main(argv):
     if args.routing_reason is not None:
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
-        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model)
+        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune)
     except Refuse as r:
         for line in r.lines:
             print(line, file=sys.stderr)
@@ -1409,7 +1535,7 @@ def selftest():
             rc, got, err, out = go(rb, role, level, rel + '/handoff.md', body=BODY[role], agent_id='agent-' + role, **env)
             a_line, b_line = lines_of(ra / rel)[-1], lines_of(rb / rel)[-1]
             case('record parity %s: valid result exits 0 like run.sh and prints the result path' % role,
-                 src == 0 and rc == 0 and out.strip() == got['result'])
+                 src == 0 and rc == 0 and out.strip().splitlines()[0] == got['result'])
             case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id and cost_reason' % role,
                  set(b_line) == set(a_line) | {'agent_id', 'cost_reason'} and set(a_line) <= set(b_line))
             case('record parity %s: transport subagent, agent_id, null cost with its reason' % role,
@@ -1619,6 +1745,76 @@ def selftest():
         case('a header the role wrote is replaced by the dispatch header, once', rc == 0 and head_lines[0] == '<!-- role=builder level=L1 model=sonnet effort=low -->'
              and not head_lines[1].startswith('<!--'))
         case('a lane_override carried by the dispatch reaches the runs.jsonl line', lines_of(rb / '.sdlc' / 'g4')[-1].get('lane_override') == 'chain needed')
+
+        # T-0368 prune: prepare sets the flag per role; record queues exactly the pruneable agents; prune lists and clears the queue.
+        for i, role in enumerate(PRUNE_ROLES + ('builder',)):
+            put(rb / '.sdlc' / ('pf%d' % i) / 'handoff.md')
+            rc, got, err = prep(rb, role, 'L1', '.sdlc/pf%d/handoff.md' % i, '--dry-run', SDLC_SPECGATE='off')
+            case('prune flag: prepare sets prune %s for %s' % (role != 'builder', role), rc == 0 and got['prune'] is (role != 'builder'))
+        rc, got, err = prep(rb, 'scout', 'L1', '.sdlc/pf0/handoff.md', '--dry-run', '--no-prune')
+        case('prune flag: --no-prune turns a one-shot role off', rc == 0 and got['prune'] is False)
+        rc, got, err = prep(rb, 'builder', 'L1', '.sdlc/pf8/handoff.md', '--dry-run', '--prune')
+        case('prune flag: --prune turns a builder on', rc == 0 and got['prune'] is True)
+        try:
+            rc, got, err = prep(rb, 'scout', 'L1', '.sdlc/pf0/handoff.md', '--dry-run', '--prune', '--no-prune')
+        except SystemExit as e:
+            rc = e.code
+        case('prune flag: --prune with --no-prune is a usage error', rc == 2)
+
+        rp = mk(tmp / 'C')
+        def queued(repo):
+            return prune_read(str(repo))
+
+        FILER = '## Warnings\nNone\n\n## PR title\nt\n\n## PR body\nb\n\n## Changelog entry\nc\n\n## Follow-ups\n%s\n'
+        for name in ('q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'):
+            put(rp / '.sdlc' / name / 'handoff.md')
+        rc, got, err, out = go(rp, 'verifier', 'L1', '.sdlc/q1/handoff.md', body=BODY['verifier'], agent_id='ag-v')
+        q = queued(rp)
+        case('prune record: a recorded verifier prints prune: <name> and is queued with id, role, level and time',
+             rc == 0 and 'prune: %s' % got['name'] in out.splitlines() and len(q) == 1
+             and (q[0]['name'], q[0]['agent_id'], q[0]['role'], q[0]['level']) == (got['name'], 'ag-v', 'verifier', 'L1') and q[0]['recorded_at'])
+        rc, got, err, out = go(rp, 'builder', 'L1', '.sdlc/q2/handoff.md', body=BODY['builder'], agent_id='ag-b')
+        case('prune record: a recorded builder prints no prune line and is not queued', rc == 0 and 'prune:' not in out and len(queued(rp)) == 1)
+        rc, got, err, out = go(rp, 'scout', 'L1', '.sdlc/q3/handoff.md', body=None, said='boom no heading', agent_id='ag-f')
+        case('prune record: a failed record (exit 1) is not queued', rc == 1 and 'prune:' not in out and len(queued(rp)) == 1)
+        rc, got, err, out = go(rp, 'filer', 'L1', '.sdlc/q4/handoff.md', body=FILER % 'fix-now: tidy the thing', agent_id='ag-p')
+        case('prune record: a result with a pending follow-up is not queued', rc == 0 and 'prune:' not in out and len(queued(rp)) == 1)
+        rc, got, err, out = go(rp, 'filer', 'L1', '.sdlc/q5/handoff.md', body=FILER % 'None', agent_id='ag-n')
+        case('prune record: a result whose follow-ups are None is queued', rc == 0 and 'prune: %s' % got['name'] in out and len(queued(rp)) == 2)
+        rc, got, err, out = go(rp, 'planner', 'L1', '.sdlc/q6/handoff.md', body=BODY['planner'], agent_id='ag-x', mutate={'prune': False})
+        case('prune record: a dispatch with prune false is not queued (negative control)', rc == 0 and 'prune:' not in out and len(queued(rp)) == 2)
+        rc, got, err, out = go(rp, 'planner', 'L1', '.sdlc/q7/handoff.md', body=BODY['planner'], agent_id='ag-z')
+        d7, a7 = json.loads(Path(got['dispatch_file']).read_text()), attempt_of(got)
+        again = io.StringIO()
+        sib = Path(got['artifacts_dir']) / 'planner-L1-9.attempt.json'
+        sib.write_text(json.dumps({'agent_name': got['name'], 'status': 'running'}))
+        with contextlib.redirect_stdout(again):
+            requeued = queue_prune(d7, a7, 'ag-z')
+        case('prune record: an agent with another attempt still open is not queued', requeued is False and again.getvalue() == '')
+        sib.unlink()
+        names = [e['name'] for e in queued(rp)]
+        shown = prune_lines(str(rp))
+        case('prune list: one TaskStop task_id=<name> line per queued agent', len(shown) == 3
+             and all(l.startswith('TaskStop task_id=%s ' % n) for l, n in zip(shown, names)))
+        listed = io.StringIO()
+        with contextlib.redirect_stdout(listed):
+            rc_list = main(['prune', '--root', str(rp)])
+        case('prune command lists the queue', rc_list == 0 and listed.getvalue().count('TaskStop task_id=') == 3)
+        out_done = io.StringIO()
+        with contextlib.redirect_stdout(out_done):
+            main(['prune', '--root', str(rp), '--done', names[0]])
+            main(['prune', '--root', str(rp), '--done', 'nobody'])
+            main(['prune', '--root', str(rp), '--add', 'T-0900-solo', '--role', 'solo', '--level', 'L2'])
+        after = [e['name'] for e in queued(rp)]
+        case('prune --done removes one entry, --add queues a landed solo, an unknown name changes nothing',
+             after == names[1:] + ['T-0900-solo'] and 'not queued: nobody' in out_done.getvalue())
+        with contextlib.redirect_stdout(io.StringIO()):
+            for n in after:
+                main(['prune', '--root', str(rp), '--done', n])
+        empty = io.StringIO()
+        with contextlib.redirect_stdout(empty):
+            main(['prune', '--root', str(rp)])
+        case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 

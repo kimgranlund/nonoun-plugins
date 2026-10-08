@@ -29,7 +29,9 @@ emoji and its word, and an empty cell is a hyphen:
                   with a red circle for dead and a warning sign for stale; every row flagged
                   `ticket-done-board-open` (the ticket is done and the board still claims work) is folded into
                   one row per repo, `N closed tickets still shown on the board`; a conductor-owned blocked ticket,
-                  a ticket that vanished, a registry repo whose directory is missing
+                  a ticket that vanished, a registry repo whose directory is missing, a finished sub-agent
+                  still queued in .sdlc/runtime/prune.json more than 30 minutes after its recorded_at (T-0368:
+                  its stop was never made; the row names the agent, the fix is `dispatch.py prune`)
   Done since ...  tickets closed, dropped and PRs merged or closed unmerged since the last report (the stored
                   snapshot), or with --since DATE the `close T-NNNN` commits on each default branch since DATE
                   plus the PRs gh lists as merged since DATE; plain rows, not a table
@@ -98,6 +100,8 @@ here or in scan_repo() and not in the schema fails the selftest. The notes below
                 (commits the default branch holds that origin/<default> lacks, newest first, at most 10),
                 unpushed_branch_commits (commits on any local branch no remote branch has); a field is null when git
                 cannot say. Only read-only git plumbing runs, with GIT_OPTIONAL_LOCKS=0, and nothing is fetched.
+  pruning       per repo, the agents queued in .sdlc/runtime/prune.json: {name, role, level, recorded_at, age_s}
+                (read-only; a missing or unreadable file is an empty list)
   needs_you     the repos' needs_you lists joined, each with `repo`
   delta         against the previous snapshot: since (its time or null), first_run, state_changes[] {repo, id, task,
                 kind: state | status, from, to}, closed[] (ticket id first seen with status done), dropped[], new[],
@@ -601,6 +605,29 @@ def unread_ids(repo):
     return sorted(out)
 
 
+PRUNE_STALE_S = 30 * 60   # T-0368: a queued finished agent not stopped within 30 minutes is stuck
+
+
+def pruning_queue(repo, now_ts):
+    """The agents queued in <repo>/.sdlc/runtime/prune.json by dispatch.py record: [{name, role, level, recorded_at, age_s}].
+    Read-only; a missing, unreadable or malformed file is an empty queue."""
+    try:
+        with open(os.path.join(repo, '.sdlc', 'runtime', 'prune.json'), encoding='utf-8') as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return []
+    out = []
+    for e in data if isinstance(data, list) else []:
+        if not isinstance(e, dict) or not isinstance(e.get('name'), str):
+            continue
+        made = parse_ts(e.get('recorded_at'))
+        out.append({'name': e['name'], 'role': e['role'] if isinstance(e.get('role'), str) else '',
+                    'level': e['level'] if isinstance(e.get('level'), str) else '',
+                    'recorded_at': e['recorded_at'] if isinstance(e.get('recorded_at'), str) else '',
+                    'age_s': max(0, int(now_ts - made.timestamp())) if made else None})
+    return out
+
+
 def supervisor_state(repo, now_ts):
     """The supervisor's last status from <repo>/.sdlc/supervisor/status.json: None when absent, {error} when it
     does not parse, else {running (its pid answers kill 0), age_s, receivers {name: state}}."""
@@ -669,7 +696,7 @@ def scan_repo(entry, procs, now, active_s, gh, since=None):
     out = {'name': entry['name'], 'path': repo, 'conductor': entry.get('conductor'), 'gh': entry.get('gh'),
            'rows': [], 'counts': {}, 'needs_you': [], 'prs': 'skipped', 'release': release_state(repo),
            'worktrees': 0, 'tickets': {}, 'unread': unread_ids(repo),
-           'supervisor': supervisor_state(repo, now.timestamp())}
+           'supervisor': supervisor_state(repo, now.timestamp()), 'pruning': pruning_queue(repo, now.timestamp())}
     root = pathlib.Path(repo) / '.sdlc'
     _roots, linked = fleet_collect.worktree_roots(repo)
     linked = [w for w in linked if os.path.isdir(w)]
@@ -826,7 +853,7 @@ def collect(entries, state_dir=None, stop_line=DEFAULT_STOP_LINE, active_minutes
         if not os.path.isdir(e['path']):
             repos.append({'name': e['name'], 'path': e['path'], 'conductor': e.get('conductor'), 'gh': e.get('gh'),
                           'error': 'no such directory', 'rows': [], 'counts': {}, 'needs_you': [], 'prs': 'skipped',
-                          'release': None, 'worktrees': 0, 'tickets': {}, 'unread': [], 'supervisor': None})
+                          'release': None, 'worktrees': 0, 'tickets': {}, 'unread': [], 'supervisor': None, 'pruning': []})
             continue
         repos.append(scan_repo(e, workers, now, active_minutes * 60.0, gh, since))
     prev = read_snapshot(snap_path) if snap_path else None
@@ -1112,6 +1139,11 @@ def stale_items(data):
                 items.append((2, (name, '%s %s' % (n['id'] or n['task'].lstrip('.'), clean(n['title'], TITLE_W)),
                                   state_cell('stale'), 'blocked, owner conductor, age %s' % human_dur(n.get('age_s')),
                                   n.get('task') or '')))
+        for e in repo.get('pruning', []):
+            if e.get('age_s') is not None and e['age_s'] > PRUNE_STALE_S:
+                items.append((5, (name, 'agent %s finished, still not stopped' % e['name'], state_cell('stale'),
+                                  'queued for pruning %s ago; run dispatch.py prune' % human_dur(e['age_s']),
+                                  '.sdlc/runtime/prune.json')))
         if closed:
             ids = [r['id'] or r['task'].lstrip('.') for r in closed]
             items.append((4, (name, '%s still shown on the board' % plural(len(closed), 'closed ticket'), state_cell('stale'),
@@ -1829,6 +1861,15 @@ def selftest_collect():
         ok('read-only: --no-write writes neither file', not os.path.exists(os.path.join(tmp, 'state6'))
            and collect(ent, os.path.join(tmp, 'state6'), gh=False, write=False)['snapshot']['written'] is False
            and not os.path.exists(os.path.join(tmp, 'state6')))
+        t_p = now_utc()
+        write(os.path.join(repo, '.sdlc', 'runtime', 'prune.json'), json.dumps([
+            {'name': 'T-0001-scout-L1', 'agent_id': 'a1', 'role': 'scout', 'level': 'L1', 'recorded_at': iso(t_p - datetime.timedelta(minutes=45))},
+            {'name': 'T-0002-verifier-L2', 'agent_id': 'a2', 'role': 'verifier', 'level': 'L2', 'recorded_at': iso(t_p - datetime.timedelta(minutes=5))}]))
+        pq = {e['name']: e for e in collect(ent, None, gh=False, write=False, now=t_p)['repos'][0]['pruning']}
+        ok('pruning: collect reads the queued agents with their age', sorted(pq) == ['T-0001-scout-L1', 'T-0002-verifier-L2']
+           and 2600 <= pq['T-0001-scout-L1']['age_s'] <= 2800 and 250 <= pq['T-0002-verifier-L2']['age_s'] <= 350)
+        os.remove(os.path.join(repo, '.sdlc', 'runtime', 'prune.json'))
+        os.rmdir(os.path.join(repo, '.sdlc', 'runtime'))
 
         # cli
         me = os.path.abspath(__file__)
@@ -2018,6 +2059,16 @@ def selftest_render():
     def width(ln):
         """Terminal columns of a line: the colored circles are two wide."""
         return dwidth(ln)
+
+    # --- T-0368: a finished agent still queued after 30 minutes is stuck, a fresh one is not --------
+    pr_repo = repo('gamma', [row('T-0009', '0009-live', 'live', evidence=['process 41: x'])])
+    pr_repo['pruning'] = [{'name': 'T-0001-scout-L1', 'role': 'scout', 'level': 'L1', 'recorded_at': '2026-10-08T10:00:00Z', 'age_s': 2700},
+                          {'name': 'T-0002-verifier-L2', 'role': 'verifier', 'level': 'L2', 'recorded_at': '2026-10-08T10:40:00Z', 'age_s': 300}]
+    ptext = render(model([pr_repo]))
+    psec = sections(ptext)
+    ok('pruning: an agent queued 45 minutes is under Stale or stuck with the prune command',
+       has(psec['Stale or stuck'], 'T-0001-scout-L1') and has(psec['Stale or stuck'], 'dispatch.py prune'))
+    ok('pruning: an agent queued 5 minutes is not listed (negative control)', 'T-0002-verifier-L2' not in ptext)
 
     # --- order, placement and the planted stale row ---------------------------------------------
     base = model([repo('alpha', [row('T-0001', '0001-live', 'live', evidence=['process 41: x']),

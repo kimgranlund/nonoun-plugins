@@ -136,6 +136,10 @@
         },
         "release": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/release"}], "description": "Null for a missing directory."},
         "worktrees": {"type": "integer", "minimum": 0, "description": "Linked worktree count."},
+        "pruning": {"type": "array", "items": {"type": "object", "required": ["name", "role", "level", "recorded_at", "age_s"], "additionalProperties": false,
+          "properties": {"name": {"type": "string"}, "role": {"type": "string"}, "level": {"type": "string"}, "recorded_at": {"type": "string"},
+                         "age_s": {"type": ["integer", "null"]}}},
+          "description": "Finished sub-agents queued in .sdlc/runtime/prune.json (T-0368); optional, an absent file is an empty list."},
         "unread": {"type": "array", "items": {"type": "string"}, "description": "Message ids from file names under .sdlc/messages/new/<receiver>/, never a body."},
         "supervisor": {
           "description": "Null when .sdlc/supervisor/status.json is absent.",
