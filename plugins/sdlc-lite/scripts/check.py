@@ -700,6 +700,13 @@ for phrase in CONDUCTOR_RULES:
     if conductor_rule_missing(ct, phrase): errors.append(f'{CONDUCTOR}: conductor rules missing "{phrase}"')
     elif not conductor_rule_missing(ct.replace(phrase, ''), phrase):
         errors.append(f'check.py: conductor rules negative control not flagged for "{phrase}"')
+# Markdown-only design (T-0387): the architect skips decompose and the coverage check unless the handoff asks for a breakdown.
+MD_DESIGN = 'Markdown-only design'
+def md_design_missing(text): return MD_DESIGN not in text or 'coverage_check.py' not in text
+for _rel in ('agents/architect.md', 'skills/architect/SKILL.md'):
+    _t = (root/_rel).read_text() if (root/_rel).is_file() else ''
+    if md_design_missing(_t): errors.append(f'{_rel}: missing the Markdown-only design rule')
+    elif not md_design_missing(_t.replace(MD_DESIGN, '')): errors.append(f'check.py: Markdown-only design negative control not flagged for {_rel}')
 # Result schema (docstring item 13): agent bodies carry results.SCHEMA sections in order; no script copies the table.
 def schema_section_errors(text, sections):
     lines = [l.rstrip() for l in text.splitlines()]
