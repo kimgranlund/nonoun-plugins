@@ -46,7 +46,10 @@
    skills/chain/SKILL.md, skills/handoff-format/SKILL.md, and agents/conductor.md.
 12. Messenger agent: agents/messenger.md exists, pins `model: claude-haiku-5-5`, and names `messages.py` and
    `.sdlc/messages/AGENTS.md`; adapters/codex/models.json has a `messenger` entry; and the generated
-   adapters/codex/agents/sdlc-messenger-l1.toml exists. Negative controls: empty text, no `messenger` key, no TOML.
+   adapters/codex/agents/sdlc-messenger-l1.toml exists. It also carries the persistent-poller rules (T-0369): `SendMessage` delivery,
+   the `Parent: <address>` startup ping, the same-turn loop, the yield line, the `inbox-<repo>-<receiver>` spawn name, the
+   `find` and Monitor host pitfalls, and the claim/handled report format. Negative controls: empty text, no `messenger` key,
+   no TOML, and the text with each of those words removed.
 13. Result schema: for each role in results.SCHEMA, agents/<role>.md has every declared section as a `## <Section>`
    line, first occurrences in declared order; scripts/run.sh and scripts/steps.py hold no copy of the schema table.
    Negative controls: builder body with `## Changes` and `## Checks` swapped; run.sh with an `allowed='x'` line.
@@ -609,7 +612,9 @@ for phrase, rels in TICKET_BUDGET.items():
         elif not ticket_budget_missing(text.replace(phrase, ''), phrase):
             errors.append(f'{rel}: ticket-budget negative control not flagged')
 # Messenger agent (docstring item 12): a session sub-agent with a Claude file, a Codex mapping, and a generated TOML.
-MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGENTS.md')
+MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGENTS.md',
+                   'SendMessage', 'Parent: <address>', 'messenger up', 'same turn', 'yielding;', 'inbox-<repo>-<receiver>',
+                   'use `find`', 'Monitor', 'handled: unknown')  # T-0369: delivery, startup ping, loop, yield, spawn name, host pitfalls, report format
 def messenger_missing(agent_text, codex_models, toml_present):
     out = []
     if not agent_text.strip(): out.append('messenger: agents/messenger.md missing or empty')
@@ -623,7 +628,8 @@ mc = json.loads(mj.read_text()) if mj.is_file() else {}
 mtoml = (root/'adapters/codex/agents/sdlc-messenger-l1.toml').is_file()
 errors.extend(messenger_missing(mt, mc, mtoml))
 if (not messenger_missing('', mc, mtoml) or not messenger_missing(mt, {k: v for k, v in mc.items() if k != 'messenger'}, mtoml)
-        or not messenger_missing(mt, mc, False)):
+        or not messenger_missing(mt, mc, False)
+        or any(not messenger_missing(mt.replace(w, ''), mc, mtoml) for w in MESSENGER_WORDS)):
     errors.append('check.py: messenger guard negative control not flagged')
 # Solo agent (docstring item 18): a session agent with levels L1, L2, L3, a Codex mapping, and three generated TOMLs.
 SOLO_WORDS = ('| L1 | L1 |', '| L2 | L2 |', '| L3 | L3 |', 'Sonnet low', '| L2 | L2 | Sonnet high |', 'Opus xhigh')
