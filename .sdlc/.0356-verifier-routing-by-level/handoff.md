@@ -2,7 +2,7 @@
 id: T-0356
 title: "Route the L3 Fable verifier to L4, L5, merge and security tickets only; replay T-0333 on L2 first"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,7 @@ Model and effort defaults are the user's decision: the user approved the replay 
 - [ ] T0356-8: no model or effort row changed and the eval record exists with the table lock still valid: `git diff --quiet HEAD -- plugins/sdlc-lite/adapters/claude/levels.json plugins/sdlc-lite/adapters/codex/models.json && python3 plugins/sdlc-lite/scripts/evals.py list | grep -q 0003-verifier-l2-routing && python3 plugins/sdlc-lite/scripts/evals.py check`
 - [ ] T0356-9: the dated replay report is in the tree and the full suite passes: `test -f docs/reports/2026-10-07-verifier-l2-replay.md && python3 plugins/sdlc-lite/scripts/check.py && bash plugins/sdlc-lite/scripts/check.sh`
 - [ ] T0356-10: no em or en dash was added outside the generated Codex agents (their pre-existing role text holds some): `python3 -c "import subprocess,sys;d=subprocess.run(['git','diff','HEAD','-U0','--','.',':(exclude)plugins/sdlc-lite/adapters/codex/agents'],capture_output=True,text=True).stdout;sys.exit(any(l.startswith('+') and not l.startswith('+++') and ('\u2014' in l or '\u2013' in l) for l in d.splitlines()))"`
+
+## Closed
+
+2026-10-07: Merged cf3f5b84. Lane verifier L3 passed 7 of 7 criteria on the second run except the agent SKILL.md hardcoded L2, fixed in the lane tree and rechecked by grep; gates green.
