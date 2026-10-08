@@ -27,3 +27,11 @@ Evidence in the maison repo's notes; maison corrected the base by hand three tim
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -q "ok: a stale stored base older than the lane fork point"`
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | tail -1 | grep -q PASS`
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh | tail -1 | grep -q PASS`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
