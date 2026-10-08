@@ -2,7 +2,7 @@
 id: T-0379
 title: "Split and supersede keep references to a superseded step's reports pointing at the old attempt"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0; `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0; `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0.
 - `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0 (run.sh carries the same link gate as dispatch.py).
 - Input hashing in dispatch.py record (stale input warning) is unchanged: `git diff` of plugins/sdlc-lite/scripts/dispatch.py touches only the `links` gate, GATES, the docstring and its selftest case.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
