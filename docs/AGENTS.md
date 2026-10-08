@@ -4,7 +4,7 @@ Read [the index](README.md) for the full list. Pick the topic for the task; read
 
 | Topic | Holds | Read it for |
 |---|---|---|
-| `specs/sdlc-lite/` | The lane design, cost control, pillars, fleet config, solo lane contract | How lanes are chosen and how cost is controlled; the evidence for solo as the default is [the benchmark](reports/solo-vs-lean-benchmark-2026-10-04.md) |
+| `specs/sdlc-lite/` | The lane design, cost control, pillars, fleet config, solo lane contract, gate lock admission design (for review) | How lanes are chosen and how cost is controlled; the evidence for solo as the default is [the benchmark](reports/solo-vs-lean-benchmark-2026-10-04.md) |
 | `specs/ticket-stages/`, `specs/repo-onboarding/` | The `.sdlc` router, ticket root and mailbox design; entry-file and docs-layout design for adopting repositories | Changing `.sdlc/` layout, messages, `onboard.py` or its templates |
 | `specs/generative-constructs/` | Progressive Context specifications | Changing the Progressive Context plugin |
 | `references/` | Runner and ticket internals, Claude hooks, Codex execution, packaging | Changing runner, hook, Codex adapter or marketplace behavior |
