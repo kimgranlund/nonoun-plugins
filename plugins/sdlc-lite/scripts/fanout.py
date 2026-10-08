@@ -1453,7 +1453,8 @@ def subagent_dispatch(ctx, t, tier):
             'prompt': SOLO_SUBAGENT_PROMPT.format(handoff=handoff, id=t.id, title=t.title),
             'run_in_background': os.environ.get('SDLC_HEADLESS') != '1', 'isolation': 'worktree',
             'ticket': t.id, 'tier': tier, 'branch': f'worktree-{name}', 'worktree': f'{HOST_WORKTREES}/{name}',
-            'handoff': handoff, 'verifier': verifier}
+            'handoff': handoff, 'verifier': verifier,
+            'base_sha': subprocess.run(['git', '-C', str(ctx['top']), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip() or None}
 
 
 def write_solo_row(taskdir, tier):

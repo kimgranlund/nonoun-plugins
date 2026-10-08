@@ -93,6 +93,12 @@ def command(tier, brief, backend):
             '--effort', effort, '--dangerously-skip-permissions', '--output-format', 'json', '--', brief], model, effort
 
 
+def head_sha(where):
+    """HEAD of the repo holding where: the commit the build starts from, recorded for prepare verifier (T-0366)."""
+    r = subprocess.run(['git', '-C', str(where), 'rev-parse', 'HEAD'], capture_output=True, text=True)
+    return r.stdout.strip() or None if r.returncode == 0 else None
+
+
 def dispatch_json(task_dir, tier, brief, worktree=None):
     """(rc, dispatch dict or None): the budget gate, then the sub-agent dispatch for the Claude backend (T-0284)."""
     tier = tier_of(tier)
@@ -113,7 +119,7 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=f'solo-{tier}-{slug}', description=f'solo {tier}: {slug}',
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
-             attempt_id=attempt, verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
+             attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
     d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
     if worktree:
