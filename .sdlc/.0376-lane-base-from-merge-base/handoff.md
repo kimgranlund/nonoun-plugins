@@ -2,7 +2,7 @@
 id: T-0376
 title: "The lane base sha is the lane's merge-base at dispatch, not the main checkout HEAD"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/check.py`
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
