@@ -659,6 +659,10 @@ if ! chk=$(python3 "$plugin_root/scripts/results.py" validate "$result" --role "
   exit 3
 fi
 rm -f "$dir/$role-$level.limit"
+# Red checkpoint (T-0378): a completed build without pre-edit (red) controls leaves a process deviation.
+if [[ "$role" == builder ]]; then
+  python3 "$plugin_root/scripts/redck.py" audit "$handoff" --attempt-id "${SDLC_ATTEMPT_ID:-}" >/dev/null || :
+fi
 echo "$result"
 exit 0
 }

@@ -26,3 +26,12 @@ Idea forwarded by the maison conductor from Codex, 2026-10-08 (maison's T-0287; 
 
 ## Constraints
 No em or en dashes. No push or publish. The Codex host cannot be run live here; mark live Codex behavior unverified.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/redck.py selftest | tail -n 1 | grep -qx "redck selftest: PASS"`
+- `out=$(python3 plugins/sdlc-lite/scripts/redck.py selftest) && for k in "no tagged criteria" "valid pre-edit control" "missing evidence" "post-edit control" "resumed work" "a handoff changed after the original checkpoint" "an unbound control"; do printf '%s\n' "$out" | grep -qF "ok: $k" || exit 1; done`
+- `python3 plugins/sdlc-lite/scripts/check.py >/dev/null && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check >/dev/null && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check >/dev/null && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check >/dev/null`
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest | tail -n 1 | grep -qx "steps selftest: PASS" && python3 plugins/sdlc-lite/scripts/specgate.py selftest | tail -n 1 | grep -qx "specgate selftest: PASS" && python3 plugins/sdlc-lite/scripts/dispatch.py selftest | tail -n 1 | grep -qx "dispatch selftest: PASS" && python3 plugins/sdlc-lite/scripts/codex-selftest.py >/dev/null`
+- A builder that completes through `dispatch.py record` with a `(red)` handoff criterion and no `redck.py record` leaves `process-deviations.md` beside the handoff holding a `process deviation: red-checkpoint: missing` line: `grep -n "redck.py" plugins/sdlc-lite/scripts/dispatch.py plugins/sdlc-lite/scripts/run.sh` shows the audit call in both, and `agents/verifier.md` and `agents/filer.md` name `process-deviations.md`.
+- `agents/builder.md` rule 11 tells the builder to run `redck.py record` before the first edit and states that enforcement is procedural; `scripts/redck.py` states per host (Claude hook possible but not registered, Codex no hook, live Codex unverified) and keeps runner acceptance, builder checks, and independent verification as separate records.
+- No em or en dash in the lines added to the hand-edited files or the new script: `! git diff -U0 -- plugins/sdlc-lite/agents/builder.md plugins/sdlc-lite/agents/verifier.md plugins/sdlc-lite/agents/filer.md plugins/sdlc-lite/scripts docs/references/sdlc-internals.md | grep '^+' | grep -qF -e "$(printf '\342\200\224')" -e "$(printf '\342\200\223')" && ! grep -qF -e "$(printf '\342\200\224')" -e "$(printf '\342\200\223')" plugins/sdlc-lite/scripts/redck.py`
