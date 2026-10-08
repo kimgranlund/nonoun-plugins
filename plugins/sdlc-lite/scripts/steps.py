@@ -1107,6 +1107,16 @@ def requires_clean_diff(text):
     return False
 
 
+GREP_PERL_RE = re.compile(r'(?<![\w-])grep\b(?:\s+(?:-[A-Za-z]*P[A-Za-z]*|--perl-regexp|-[A-Za-z]+|--[a-z-]+(?:=\S+)?))*?'
+                          r'\s(?:-[A-Za-z]*P[A-Za-z]*|--perl-regexp)(?![\w-])')
+
+
+def uses_grep_perl(text):
+    """True when a span runs grep -P (or --perl-regexp): BSD grep on macOS has no -P, fails with
+    status 2, and a negated pipeline (`! ... | grep -P`) then passes vacuously."""
+    return bool(GREP_PERL_RE.search(text))
+
+
 def read_first_paths(block):
     """The paths listed under a step block's ### Read first, up to the next ## or ### line, with
     ``` fenced lines left out. Each list item (- or *) that holds a code span gives one path: the
@@ -1399,6 +1409,11 @@ def lint_steps(plan, steps):
                                 f'with a fixed number: {text}\n'
                                 '  other lanes change the set: derive the set at run time, '
                                 "or check only this step's own items")
+            if uses_grep_perl(text):
+                findings.append(f'steps: {plan} step {n}: acceptance criterion uses grep -P: {text}\n'
+                                '  BSD grep on macOS has no -P, so it errors and a negated pipeline passes '
+                                'vacuously: use python3 -c, or grep -E with a literal byte sequence '
+                                '(grep -E $(printf "\\xe2\\x80\\x94"))')
             if requires_clean_status(text):
                 findings.append(f'steps: {plan} step {n}: acceptance criterion requires a clean porcelain status: '
                                 f'{text}\n'
@@ -3233,6 +3248,14 @@ def selftest():
             d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
             refused(f'(k2) lint refuses a || fallback in a compound with a trailing redirect or pipe ({form})',
                     ['lint', str(d / 'planner-L2.md')], d, needles=('plan defect', 'joins two checks with ||'))
+        # (k2b) grep -P is vacuous on macOS: refused; portable forms pass
+        for form in ("! cat x | grep -P '\\x{2014}'", "! grep -qP 'a' x", "! grep --perl-regexp a x"):
+            d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
+            refused(f'(k2b) lint refuses grep -P ({form})', ['lint', str(d / 'planner-L2.md')], d,
+                    needles=('plan defect', 'uses grep -P', 'python3 -c'))
+        d = task(plan=PLAN.replace('- one works', '- `! cat x | grep -E "a|b"`\n- `! python3 -c "import sys; sys.exit(0)"`\n- `grep -c P x`'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2b) portable guard forms lint ok', rc == 0 and out.strip() == 'steps lint: ok')
         form = 'while read x; do test -f x || exit 1; done < f'
         d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
