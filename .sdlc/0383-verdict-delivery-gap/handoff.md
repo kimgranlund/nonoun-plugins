@@ -26,3 +26,12 @@ Maison T-0297 L1 delta verifier: the artifact PASS at 21:07:14Z reached Codex on
 
 ## Constraints
 No em or en dashes. No push or publish. Codex host behavior cannot be run live here; mark it unverified.
+
+## Acceptance criteria
+- (guard) `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | tail -1 | grep -q 'PASS'` passes; section 11 of the selftest holds the fault-injection cases (record then no verdict message; poller idle; duplicate delivery and crash between send and mark; attempt left running after a report; send failure left pending).
+- (guard) `python3 plugins/sdlc-lite/scripts/dispatch.py selftest | grep -c 'T-0297 fixture: the verdict is in the mailbox at the record moment'` prints 1 with an `ok:` line: `record` itself puts the verdict in the receiver's mailbox, gap under 5 seconds.
+- `dispatch.py prepare --notify <receiver> [--notify-re <id>]` writes `notify` into the dispatch file; without `--notify` no key, no message, no delivery record (control case in the selftest).
+- `python3 plugins/sdlc-lite/scripts/dispatch.py deliver <dispatch file>` is idempotent and never reruns the role; `dispatch.py status` shows `report-written-unrecorded` and `verdict-delivery-pending`.
+- The idle-poller route is documented: `grep -c 'Monitor' plugins/sdlc-lite/scripts/messages.py` and docs/references/sdlc-internals.md name the conductor Monitor over `new/<receiver>` as a measured route, not a plugin guarantee.
+- (guard) `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/messages.py selftest`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`, and `bash plugins/sdlc-lite/scripts/check.sh` exit 0.
+- Unverified by design: Codex host behavior (the Codex path uses run.sh and the exchange, not `dispatch.py record`) and a live Claude idle-poller rerun.

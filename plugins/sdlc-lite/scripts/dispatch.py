@@ -126,6 +126,8 @@ import run_lifecycle  # noqa: E402
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
 GATES = ('preflight', 'goal', 'links', 'lane', 'specgate', 'budget', 'lock')
+NAME_RE = re.compile(r'[a-z0-9]+(-[a-z0-9]+)*')
+ID_RE = re.compile(r'[0-9]{8}T[0-9]{12}Z-[a-z0-9]+(-[a-z0-9]+)*')
 PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer')
 
 
@@ -423,8 +425,20 @@ def status(directory, orphans_only=False):
         state = attempt_state(data)
         if orphans_only and state != 'orphaned':
             continue
-        lines.append('%s %s %s-%s parent_pid=%s' % (path.name[:-len('.attempt.json')], state, data.get('role'), data.get('level'),
-                                                    data.get('parent_pid') or data.get('owner_pid')))
+        stem = path.name[:-len('.attempt.json')]
+        line = '%s %s %s-%s parent_pid=%s' % (stem, state, data.get('role'), data.get('level'), data.get('parent_pid') or data.get('owner_pid'))
+        report = Path(directory) / (stem + '.md')
+        if state in ('running', 'orphaned') and report.is_file() and report.stat().st_size:
+            line += ' report-written-unrecorded'  # T-0383: the role reported but nobody recorded it, so no verdict was delivered
+        lines.append(line)
+        sent = Path(directory) / (stem + '.delivery.json')
+        if sent.is_file():
+            try:
+                dv = json.loads(sent.read_text(encoding='utf-8'))
+            except ValueError:
+                dv = {}
+            if dv.get('state') != 'sent':
+                lines.append('%s verdict-delivery-%s to %s%s' % (stem, dv.get('state', 'unreadable'), dv.get('receiver'), ': ' + dv['error'] if dv.get('error') else ''))
     return lines
 
 
@@ -476,10 +490,11 @@ def under(path, prefix):
     return real == base or real.startswith(base + os.sep)
 
 
-def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None):
+def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo='', prune=None, notify='', notify_re=''):
     """Run the gates and write the records; returns the dispatch dict. skip names gates to disable (selftest only);
     solo is the model of a solo ticket whose runs.jsonl record is not in this tree (--solo-model); prune overrides the
-    role's default prune flag (True, False, or None for the default)."""
+    role's default prune flag (True, False, or None for the default); notify names the mailbox receiver that gets the
+    verdict message when record closes the attempt (T-0383), notify_re the message id it answers."""
     plugin = Path(plugin)
     if os.environ.get('SDLC_BACKEND', 'claude') != 'claude':
         raise Refuse(2, 'dispatch.py prepare is the Claude host path; Codex dispatches through run.sh')
@@ -490,6 +505,8 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     if role == 'solo' or level not in rows.get(role, {}):
         raise Refuse(2, 'usage: dispatch.py prepare <role> <level> <handoff.md>  (no pipeline row %s:%s in adapters/claude/levels.json)' % (role, level))
     model, effort = rows[role][level]
+    if notify and not NAME_RE.fullmatch(notify) or notify_re and not (notify and ID_RE.fullmatch(notify_re)):
+        raise Refuse(2, 'dispatch.py: --notify takes a receiver name (lowercase letters, digits, hyphens); --notify-re takes a message id and needs --notify')
     handoff = Path(os.path.abspath(handoff))
     directory = handoff.parent
     if 'preflight' not in skip:
@@ -603,8 +620,12 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
                         routing_reason=reason or 'Caller selected this role and level; no task-specific rationale supplied.',
                         attempt_file=str(directory / (stem + '.attempt.json')),
                         dispatch_file=str(directory / (stem + '.dispatch.json')), dry_run=dry_run)
+        if notify:
+            dispatch.update(notify=notify, notify_re=notify_re)
         if dry_run:
             return dispatch
+        if notify:
+            unregistered_receiver(notify, toplevel)
         if lane_override:
             skips, line = directory.parent if directory.name.startswith('step-') else directory, 'lane override: ' + lane_override
             skips = skips / 'skips.md'
@@ -850,6 +871,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         limit_marker(d, error)
         report_strays(found)
         close('failed', 1, error=error[:500])
+        deliver_quietly(dispatch_file)
         return 1
 
     lines = text.splitlines()
@@ -888,6 +910,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         say('%s result %s; see %s' % (role, reason, result))
         report_strays(found)
         close('failed', 3)
+        deliver_quietly(dispatch_file)
         return 3
     (result.parent / ('%s-%s.limit' % (role, level))).unlink(missing_ok=True)
     if role == 'builder':  # T-0378: a completed build without its pre-edit (red) controls leaves a process deviation
@@ -896,8 +919,99 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     report_strays(found)
     close('completed', 0)
     print(result)
+    deliver_quietly(dispatch_file)
     queue_prune(d, attempt, agent_id)
     return 0
+
+
+def delivery_path(d):
+    return Path(d['artifacts_dir']) / (Path(d['result']).stem + '.delivery.json')
+
+
+def unregistered_receiver(receiver, tree):
+    """Warn at prepare when the notify receiver is not in the registry: the verdict would stay pending."""
+    p = script('messages.py', 'list', '--receivers', cwd=tree)
+    if p.returncode == 0 and not any(l.split('\t')[0] == receiver for l in p.stdout.splitlines()):
+        say('verdict-delivery: receiver %s is not registered; register it (messages.py register --name %s --harness <h>) before the verdict is recorded' % (receiver, receiver))
+
+
+def verdict_word(d, attempt):
+    """pass or fail from a verifier or plan-reviewer report; completed for a role with no verdict; failed or invalid when no usable report."""
+    code = attempt.get('exit_code')
+    if code == 1:
+        return 'failed'
+    if code == 3:
+        return 'invalid'
+    return results.key_value(d['result'], d['role']) or 'completed'
+
+
+def deliver(dispatch_file, quiet=False):
+    """Send the verdict message a dispatch asked for (--notify), once. Returns 0 sent or nothing asked, 4 pending, 5 attempt not yet recorded.
+
+    State lives in <stem>.delivery.json: sending (intent written before the send), sent, or pending (a send failed). A retry
+    finds an earlier send by the attempt id in the topic, so a crash between send and mark cannot send twice. The message
+    carries the verdict word, the role, the attempt id and the result path only, never result text. Delivery is
+    result-recorded then message-delivered; a parent handling it is not tracked here (T-0383)."""
+    d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
+    receiver = d.get('notify')
+    if not receiver:
+        return 0
+    path = delivery_path(d)
+    attempt = read_attempt(d['attempt_file'])
+    if attempt.get('status') == 'running':
+        if Path(d['result']).is_file() and Path(d['result']).stat().st_size:
+            say('verdict-delivery: UNRECORDED report %s exists but attempt %s is still running; run: python3 %s record %s'
+                % (d['result'], attempt.get('name'), HERE / 'dispatch.py', dispatch_file))
+        else:
+            say('verdict-delivery: attempt %s is still running; nothing to deliver yet' % attempt.get('name'))
+        return 5
+    state = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else {}
+    if state.get('state') == 'sent':
+        if not quiet:
+            say('verdict-delivery: already sent to %s (%s); nothing resent' % (receiver, state.get('message')))
+        return 0
+    word = verdict_word(d, attempt)
+    aid = d['attempt_id']
+    topic = 'verdict %s-%s %s attempt %s' % (d['role'], d['level'], word, aid)
+    state = dict(attempt_id=aid, receiver=receiver, re=d.get('notify_re') or '', topic=topic, state='sending', verdict=word)
+    run_lifecycle.write(path, state)
+    tree = d['tree']
+    found = script('messages.py', 'list', '--receiver', receiver, cwd=tree)
+    prior = [l.split('\t')[2] for l in found.stdout.splitlines() if len(l.split('\t')) > 4 and ' attempt %s' % aid in l.split('\t')[4]] if found.returncode == 0 else []
+    if prior:
+        sent, how = prior[0], 'found'
+    else:
+        body = '\n'.join(['role: %s-%s' % (d['role'], d['level']), 'attempt: ' + aid, 'verdict: ' + word, 'result: ' + d['result'],
+                          'handoff: ' + d['handoff'], 'This is a receipt: no reply is requested.'])
+        args = ['send', '--receiver', receiver, '--topic', topic, '--follow-up', 'false']
+        if d.get('notify_re'):
+            args += ['--re', d['notify_re']]
+        p = script('messages.py', *args, body, cwd=tree)
+        if p.returncode != 0:
+            state.update(state='pending', error=(p.stderr.strip() or p.stdout.strip())[:300])
+            run_lifecycle.write(path, state)
+            say('verdict-delivery: PENDING for %s (%s); once fixed run: python3 %s deliver %s' % (receiver, state['error'], HERE / 'dispatch.py', dispatch_file))
+            return 4
+        sent, how = os.path.basename(p.stdout.strip())[:-3], 'sent'
+    st = script('messages.py', 'status', '--receiver', receiver, cwd=tree)
+    poller = next((l.split(': ', 1)[1] for l in st.stdout.splitlines() if l.startswith('status: ')), 'unknown')
+    state.update(state='sent', message=sent, poller=poller, sent_at=run_lifecycle.now())
+    state.pop('error', None)
+    run_lifecycle.write(path, state)
+    say('verdict-delivery: %s %s to %s as %s' % (word, how, receiver, sent))
+    if poller != 'listening':
+        say('verdict-delivery: %s has no listening poller (status %s); the message waits in new/%s until something reads it. '
+            'Watch new/%s from the conductor with a Monitor, or run: python3 %s wait --receiver %s'
+            % (receiver, poller, receiver, receiver, HERE / 'messages.py', receiver))
+    return 0
+
+
+def deliver_quietly(dispatch_file):
+    """deliver() for record: a delivery fault never changes the record's own exit code."""
+    try:
+        deliver(dispatch_file)
+    except Exception as e:  # the pending file or the stderr line is the signal
+        say('verdict-delivery: FAILED (%s); once fixed run: python3 %s deliver %s' % (e, HERE / 'dispatch.py', dispatch_file))
 
 
 def solo_dispatch(path):
@@ -929,6 +1043,8 @@ def main(argv):
     pg = p.add_mutually_exclusive_group()
     pg.add_argument('--prune', dest='prune', action='store_true', default=None, help='queue this agent for pruning after a recorded result (the default for a one-shot role)')
     pg.add_argument('--no-prune', dest='prune', action='store_false', help='never queue this agent for pruning')
+    p.add_argument('--notify', default='', metavar='RECEIVER', help='mailbox receiver that gets the verdict message when record closes the attempt (T-0383)')
+    p.add_argument('--notify-re', default='', metavar='ID', help='with --notify: the message id the verdict answers')
     for key in ('role', 'level', 'handoff'):
         p.add_argument(key)
     r = sub.add_parser('record', help='validate and record a dispatched role, and close its attempt')
@@ -938,6 +1054,8 @@ def main(argv):
     r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
     r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run')
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
+    dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
+    dl.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
     st.add_argument('directory')
     st.add_argument('--orphans', action='store_true', help='print only orphaned attempts')
@@ -970,6 +1088,12 @@ def main(argv):
             print('dispatch.py: ' + str(e), file=sys.stderr)
             return 2
         return 0
+    if args.cmd == 'deliver':
+        try:
+            return deliver(args.dispatch)
+        except (OSError, ValueError, KeyError) as e:
+            print('dispatch.py: cannot deliver from %s: %s' % (args.dispatch, e), file=sys.stderr)
+            return 2
     if args.cmd in ('status', 'recover', 'resume'):
         try:
             if args.cmd == 'status':
@@ -1013,7 +1137,8 @@ def main(argv):
     if args.routing_reason is not None:
         os.environ['SDLC_ROUTING_REASON'] = args.routing_reason
     try:
-        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune)
+        out = prepare(args.role, args.level, args.handoff, dry_run=args.dry_run, solo=args.solo_model, prune=args.prune,
+                      notify=args.notify, notify_re=args.notify_re)
     except Refuse as r:
         for line in r.lines:
             print(line, file=sys.stderr)
@@ -1925,6 +2050,107 @@ def selftest():
         with contextlib.redirect_stdout(empty):
             main(['prune', '--root', str(rp)])
         case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
+
+        # 11. T-0383: a recorded verdict reaches the requesting receiver with no manual conductor step, and a miss is observable.
+        vr = mk(tmp / 'V')
+        msgs = lambda recv, state='new': sorted((vr / '.sdlc' / 'messages' / state / recv).glob('*.md')) if (vr / '.sdlc' / 'messages' / state / recv).is_dir() else []
+        mcmd = lambda *a: subprocess.run([sys.executable, str(HERE / 'messages.py')] + list(a), cwd=str(vr), capture_output=True, text=True)
+        case('selftest setup: the receiver registers', mcmd('register', '--name', 'codex', '--harness', 'codex', '--reader', 'sess-1').returncode == 0)
+
+        def notified(rel, *flags, body=BODY['verifier'], role='verifier', level='L1', record_it=True):
+            """prepare with --notify, let the role write body, record in process: (rc, dispatch, stderr)."""
+            put(vr / '.sdlc' / rel / 'handoff.md')
+            try:
+                rc, got, err = prep(vr, role, level, '.sdlc/%s/handoff.md' % rel, '--notify', 'codex', *flags, SDLC_DISPATCH_PARENT_PID=live_pid)
+            except SystemExit:
+                return 2, None, 'prepare does not take --notify'
+            if rc != 0:
+                return rc, got, err
+            if body is not None:
+                Path(got['result']).write_text(body, encoding='utf-8')
+            if not record_it:
+                return 0, got, err
+            e, o = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+                out = record(got['dispatch_file'], validate=validate_result)
+            return out, got, e.getvalue()
+
+        rc, got, err = notified('n1')
+        n1 = msgs('codex')
+        body_n1 = n1[0].read_text() if n1 else ''
+        case('record then verdict message: one message reaches the receiver at record, with the attempt id, pass, and the result path',
+             rc == 0 and len(n1) == 1 and got['attempt_id'] in body_n1 and 'verdict: pass' in body_n1 and got['result'] in body_n1)
+        case('the verdict message asks for no reply and carries no result text', 'follow_up_requested: false' in body_n1 and 'Criteria' not in body_n1)
+        dl = json.loads((Path(got['artifacts_dir']) / 'verifier-L1.delivery.json').read_text()) if n1 else {}
+        case('the delivery record is sent and names the message', dl.get('state') == 'sent' and dl.get('message') == n1[0].stem)
+        t0 = time.mktime(time.strptime(attempt_of(got)['finished_at'][:19], '%Y-%m-%dT%H:%M:%S'))
+        sent_at = re.search(r'^send_time: (\S+)', body_n1, re.M)
+        gap = abs(time.mktime(time.strptime(sent_at.group(1)[:19], '%Y-%m-%dT%H:%M:%S')) - t0) if sent_at else 9999
+        case('T-0297 fixture: the verdict is in the mailbox at the record moment, not minutes later (gap under 5 s, was about 7 minutes)', gap < 5)
+        case('a poller that is not listening is named on stderr with the Monitor route', 'no listening poller' in err and 'Monitor' in err and 'new/codex' in err)
+        case('the delivery record keeps the poller state', dl.get('poller') in ('none', 'stalled', 'expired', 'stopped', 'failed'))
+        # Control: a dispatch without --notify sends nothing.
+        put(vr / '.sdlc' / 'n0' / 'handoff.md')
+        rc0, got0, _ = prep(vr, 'verifier', 'L1', '.sdlc/n0/handoff.md', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(got0['result']).write_text(BODY['verifier'], encoding='utf-8')
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            record(got0['dispatch_file'])
+        case('control: a dispatch with no --notify sends no message and writes no delivery record', len(msgs('codex')) == 1 and 'notify' not in got0
+             and not (vr / '.sdlc' / 'n0' / 'verifier-L1.delivery.json').exists())
+
+        # Duplicate delivery: a rerun after sent sends nothing; a crash between send and mark finds the earlier send by attempt id.
+        e = io.StringIO()
+        with contextlib.redirect_stderr(e):
+            again = deliver(got['dispatch_file'])
+        case('duplicate delivery: deliver after sent resends nothing', again == 0 and len(msgs('codex')) == 1 and 'nothing resent' in e.getvalue())
+        dfile = Path(got['artifacts_dir']) / 'verifier-L1.delivery.json'
+        dfile.write_text(json.dumps({'attempt_id': got['attempt_id'], 'receiver': 'codex', 'state': 'sending'}))
+        with contextlib.redirect_stderr(io.StringIO()):
+            again = deliver(got['dispatch_file'])
+        case('duplicate delivery: a crash between send and mark (state sending) marks sent without a second message',
+             again == 0 and len(msgs('codex')) == 1 and json.loads(dfile.read_text()).get('state') == 'sent')
+
+        # A listening poller raises no warning.
+        act = mcmd('activate', '--receiver', 'codex', '--worker', 'inbox-v-codex', '--kind', 'parent', '--stop', 'test', '--interval', '60', '--window', '600')
+        rc, got2, err = notified('n2')
+        case('selftest setup: the receiver gets a lease', act.returncode == 0)
+        case('a listening poller: the message is delivered and no idle-poller warning is printed', rc == 0 and len(msgs('codex')) == 2 and 'no listening poller' not in err)
+
+        # An attempt left running after the report was written is observable and delivers nothing until recorded.
+        rc, got3, err = notified('n3', record_it=False)
+        listed = status(got3['artifacts_dir'])
+        case('attempt left running after a report: status names it report-written-unrecorded', any('report-written-unrecorded' in l for l in listed))
+        e = io.StringIO()
+        with contextlib.redirect_stderr(e):
+            held = deliver(got3['dispatch_file'])
+        case('deliver on that attempt exits 5, names the record command, and sends nothing',
+             held == 5 and 'UNRECORDED' in e.getvalue() and 'dispatch.py record' in e.getvalue() and len(msgs('codex')) == 2)
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            record(got3['dispatch_file'])
+        case('recording it later delivers the verdict once', len(msgs('codex')) == 3)
+
+        # A send that fails leaves a pending delivery, visible in status and in stderr; fixing the cause and rerunning delivers once.
+        put(vr / '.sdlc' / 'n4' / 'handoff.md')
+        rc, got4, _ = prep(vr, 'verifier', 'L1', '.sdlc/n4/handoff.md', '--notify', 'ghost', SDLC_DISPATCH_PARENT_PID=live_pid)
+        Path(got4['result']).write_text(BODY['verifier'], encoding='utf-8')
+        e = io.StringIO()
+        with contextlib.redirect_stderr(e), contextlib.redirect_stdout(io.StringIO()):
+            record(got4['dispatch_file'])
+        case('an unregistered receiver: PENDING on stderr, the record itself still completes', 'verdict-delivery: PENDING' in e.getvalue() and attempt_of(got4)['status'] == 'completed')
+        case('a pending delivery shows in status', any('verdict-delivery-pending to ghost' in l for l in status(got4['artifacts_dir'])))
+        mcmd('register', '--name', 'ghost', '--harness', 'claude', '--reader', 'sess-2')
+        with contextlib.redirect_stderr(io.StringIO()):
+            fixed = deliver(got4['dispatch_file'])
+            deliver(got4['dispatch_file'])
+        case('after registering, deliver sends the pending verdict exactly once', fixed == 0 and len(msgs('ghost')) == 1 and not any('verdict-delivery' in l for l in status(got4['artifacts_dir'])))
+
+        # A failed or invalid report still tells the receiver, with the word failed or invalid.
+        rc, got5, _ = notified('n5', body=None)
+        rc6, got6, _ = notified('n6', body='not a report\n')
+        words = [re.search(r'^verdict: (\S+)', m.read_text(), re.M).group(1) for m in msgs('codex')[3:]]
+        case('a failed sub-agent and an invalid report each deliver failed and invalid', rc == 1 and rc6 == 3 and sorted(words) == ['failed', 'invalid'])
+        rcx, _, errx = prep(vr, 'verifier', 'L1', '.sdlc/n1/handoff.md', '--notify', 'Bad Name', SDLC_DISPATCH_PARENT_PID=live_pid)
+        case('prepare refuses a malformed receiver name', rcx == 2 and '--notify' in errx)
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 

@@ -363,7 +363,7 @@ While the parent is active, `wait` is the cheaper alternative to a polling subag
 
 ## Host limits
 
-Claude Code: the messenger lives only while its session runs. Foreground `sleep` is blocked, but `wait` is one foreground call and needs no loop. A session running the `sdlc-lite:conductor` agent may spawn `sdlc-lite:messenger` only under the name `inbox-<repo>-<receiver>`; the plugin's `block-role-spawn.sh` hook denies any other `sdlc-lite:` agent that is not a prepared dispatch. A shell watcher must use `find`, not a glob, because zsh aborts on an unmatched glob; a `Monitor` watcher posts every event to the user's feed and expires after 30 minutes. A Claude hook enforces nothing on Codex.
+Claude Code: the messenger lives only while its session runs. Foreground `sleep` is blocked, but `wait` is one foreground call and needs no loop. A session running the `sdlc-lite:conductor` agent may spawn `sdlc-lite:messenger` only under the name `inbox-<repo>-<receiver>`; the plugin's `block-role-spawn.sh` hook denies any other `sdlc-lite:` agent that is not a prepared dispatch. A shell watcher must use `find`, not a glob, because zsh aborts on an unmatched glob; a `Monitor` watcher posts every event to the user's feed and expires after 30 minutes. A conductor `Monitor` over `new/<receiver>` is a supported route when a poller goes idle: it delivered a probe in 24 seconds where three idle general-purpose pollers took 4 to 10 minutes (maison T-0283; a measured route, not a plugin guarantee). A Claude hook enforces nothing on Codex.
 
 Codex: the messenger is a native subagent with its own lifetime and no Claude tools or hooks. The Codex sandbox and approval policy apply. One host working says nothing about the other.
 

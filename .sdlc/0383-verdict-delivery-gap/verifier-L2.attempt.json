@@ -1,0 +1,21 @@
+{
+  "attempt_id": "d823caa0c6b9493da6e712e8b34ea954",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-08T22:45:33.045915+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f25/verdict",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f25/verdict/.sdlc/0383-verdict-delivery-gap/handoff.md",
+  "owner_pid": 72035,
+  "handoff_sha256": "09a7f5bb2c1544cd567e3082b2f1d8e7ba42313487ccdcdc73fd95c25643a8dd",
+  "process_pid": 72120,
+  "exit_code": 0,
+  "finished_at": "2026-10-08T23:24:06.218550+00:00"
+}
