@@ -2,7 +2,7 @@
 id: T-0364
 title: "A plan review whose findings are one-line Notes fixes does not trigger a replan"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,12 @@ ultimate-tokens ran 6 planner runs and 3 plan reviews on geometry-maison-ladder;
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` passes, including the (r) cases where a review of only `notes-fix` findings reads as split and appends `### Notes` to the step handoff, and one real defect among them still replans.
+- [ ] `plugins/sdlc-lite/agents/plan-reviewer.md` defines the `notes-fix:` finding and its verdict rule; `skills/chain/SKILL.md` and `skills/handoff-format/SKILL.md` describe the fold.
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, and both `generate --check` pass.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

@@ -250,6 +250,14 @@ def build_base(directory):
     if f.is_file():
         lines = f.read_text(encoding='utf-8', errors='replace').splitlines()
         stored = re.sub(r'\s', '', lines[0]) if lines else ''
+    if not stored:  # a solo lane has no run.sh: its dispatch file recorded the pre-build HEAD (T-0366)
+        for df in sorted(Path(directory).glob('solo-*.dispatch.json')):
+            try:
+                stored = str(json.loads(df.read_text(encoding='utf-8')).get('base_sha') or '').strip()
+            except (OSError, ValueError):
+                stored = ''
+            if stored:
+                break
     base = ''
     if stored and git('rev-parse', '-q', '--verify', stored + '^{commit}').returncode == 0 \
             and git('merge-base', '--is-ancestor', stored, 'HEAD').returncode == 0:
@@ -1153,6 +1161,16 @@ def selftest():
              got['prompt'].startswith('Handoff: %s\nArtifacts dir: %s\nYour final message is saved verbatim as %s. Make it exactly the output format your instructions define: '
                                       'start with its first heading, with nothing before it and nothing after the last section.\n' % (w / 'handoff.md', w, w / 'builder-L1.md'))
              and 'Tree: %s' % rr in got['prompt'] and 'Throwaway worktrees only under %s' % got['tmp_prefix'] in got['prompt'])
+        # T-0366: a solo dispatch's recorded base sha, not the later HEAD, is the verifier's Base sha.
+        put(rr / '.sdlc' / 'sb' / 'handoff.md')
+        pre = subprocess.run(['git', '-C', str(rr), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+        (rr / '.sdlc' / 'sb' / 'solo-L1-sb.dispatch.json').write_text(json.dumps({'role': 'solo', 'base_sha': pre}))
+        (rr / 'later.txt').write_text('x')
+        subprocess.run(['git', '-C', str(rr), 'add', '-A'], capture_output=True)
+        subprocess.run(['git', '-C', str(rr), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'later'], capture_output=True)
+        rcs, ds, _ = prep(rr, 'verifier', 'L1', '.sdlc/sb/handoff.md', '--dry-run')
+        case('prepare verifier prints the solo dispatch base sha, not the later HEAD',
+             rcs == 0 and ds['base_sha'] == pre and 'Base sha: ' + pre in ds['prompt'])
         lw = rr.parent / (rr.name + '-lane')
         subprocess.run(['git', '-C', str(rr), 'worktree', 'add', '-q', '--detach', str(lw), 'HEAD'], capture_output=True)
         (lw / '.sdlc' / 'w').mkdir(parents=True, exist_ok=True)
