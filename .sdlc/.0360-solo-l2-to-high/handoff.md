@@ -2,7 +2,7 @@
 id: T-0360
 title: "Drop solo L2 (sonnet) from xhigh to high; lock an eval"
 type: chore           # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ Run from the repository root. The worktree is uncommitted; judge it with `git di
 - T0360-4: negative control, observed: with `.sdlc/evals/table-lock.json` moved aside, `python3 plugins/sdlc-lite/scripts/evals.py check` exits 1 (`table-lock.json: missing`) and `check.py` reports `FAIL evals`; with the file restored both pass. Changing a non-solo row in a plugin copy (`evals.py --plugin <copy> check`) fails with `model table changed`. Setting solo L2 back to xhigh makes `check.py` fail with `solo levels are not` (a solo row alone does not move the eval hash).
 - T0360-5: no live statement that solo L2 is xhigh remains: `git grep -n -E "Sonnet xhigh|sonnet xhigh" -- . ':!docs/reports' ':!docs/other' ':!.sdlc'` prints only `docs/README.md:90` (a dated live-run description, history), and `git grep -n -E "'L2': \('sonnet', 'xhigh'" -- plugins` prints nothing. `agents/solo.md`, `agents/solo-L1.md`, `solo-L2.md`, `solo-L3.md`, `skills/level-rubric/SKILL.md`, `docs/references/sdlc-internals.md`, and `docs/specs/sdlc-lite/solo-lane-contract.md` say Sonnet high for L2, and `agents/solo-L2.md` has front matter `effort: high`.
 - T0360-6: scope: `git diff HEAD --name-only` lists only the levels row, its generated agent and Codex files, `check.py`, `fanout.py`, `solo_run.py`, the rubric and the three doc lines, the new eval and the lock, and this handoff; no em or en dash is added outside the generated Codex files (their single-line TOML carries older dashes in unchanged text): `git diff HEAD -- . ':!plugins/sdlc-lite/adapters/codex/agents' | grep '^+' | python3 -c "import sys; print(sum(1 for l in sys.stdin if '\u2014' in l or '\u2013' in l))"` prints 0.
+
+## Closed
+
+2026-10-07: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
