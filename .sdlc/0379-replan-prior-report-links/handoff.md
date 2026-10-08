@@ -25,3 +25,10 @@ Codex finding forwarded by the maison conductor, 2026-10-08 (maison's T-0288; co
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and prints `ok: (L)` cases: split rewrites steps 3, 4 and 9 citations into step-N.superseded-K, lint refuses an absent path, lint refuses a live-step report path that has a superseded sibling (path reuse), a rewrite never touches a finished report.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and includes the `link check` cases (refusal exit 2 equal to run.sh, negative control with the `links` gate skipped).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0; `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0; `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0.
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh` exits 0 (run.sh carries the same link gate as dispatch.py).
+- Input hashing in dispatch.py record (stale input warning) is unchanged: `git diff` of plugins/sdlc-lite/scripts/dispatch.py touches only the `links` gate, GATES, the docstring and its selftest case.

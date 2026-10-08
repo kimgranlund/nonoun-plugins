@@ -12,7 +12,7 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, lane gate, spec gate, budget gate, then the one write section.
+goal precheck, link check, lane gate, spec gate, budget gate, then the one write section.
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
@@ -23,6 +23,9 @@ goal precheck, lane gate, spec gate, budget gate, then the one write section.
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
+  links        builder or verifier on a step handoff: steps.py lint <step dir> (T-0379). Every cited .sdlc path
+               must exist, and a report of the step's own prior attempt must name its step-<n>.superseded-<k>
+               folder. Refusal exit 2.
   lane         planner, builder, plan-reviewer on a solo-lane ticket: steps.py lane --check, exit 5, unless
                SDLC_LANE_OVERRIDE="<reason>" (appended once to skips.md, carried as lane_override).
   specgate     plan-reviewer: specgate.py check, exit 2, unless SDLC_SPECGATE=off (carried as specgate).
@@ -121,7 +124,7 @@ import run_lifecycle  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
 NAME_MAX = 64
-GATES = ('preflight', 'goal', 'lane', 'specgate', 'budget', 'lock')
+GATES = ('preflight', 'goal', 'links', 'lane', 'specgate', 'budget', 'lock')
 PRUNE_ROLES = ('scout', 'researcher', 'architect', 'archaeologist', 'planner', 'plan-reviewer', 'verifier', 'filer')
 
 
@@ -496,6 +499,12 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if p.returncode != 0:
             raise Refuse(2, (p.stdout + p.stderr).rstrip('\n'),
                          'dispatch.py: steps.py precheck refused the task handoff in %s; add a ## Goal section' % directory)
+
+    if 'links' not in skip and role in ('builder', 'verifier') and handoff.name == 'handoff.md' and re.fullmatch(r'step-\d+', directory.name):
+        p = script('steps.py', 'lint', directory)
+        if p.returncode != 0:
+            raise Refuse(2, (p.stdout + p.stderr).rstrip('\n'),
+                         'dispatch.py: steps.py lint refused the links in %s; fix the cited paths (rewrite them to the step-<n>.superseded-<k> folder) before dispatching' % handoff)
 
     lane_override = ''
     if 'lane' not in skip and role in ('planner', 'builder', 'plan-reviewer'):
@@ -1206,6 +1215,22 @@ def selftest():
             case('goal precheck %s names ## Goal' % role, '## Goal' in err)
         put(sdlc / 'gp' / 'handoff.md', '## Goal\nx\n')
         case('goal precheck passes with a ## Goal section', prep(repo, 'planner', 'L1', '.sdlc/gp/handoff.md', '--dry-run')[0] == 0)
+
+        # link check (T-0379): a builder or verifier on a step handoff that cites a prior attempt's report at the live
+        # step path, or a path that does not exist, is refused before any record; the superseded path passes
+        lk = sdlc / 'lk'
+        put(lk / 'step-3.superseded-1' / 'builder-L3.md', '## Status\ndone\n')
+        for role in ('builder', 'verifier'):
+            put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nPrior attempt: .sdlc/lk/step-3/builder-L3.md\n')
+            err = refused('link check ' + role, 2, role, 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
+            case('link check %s names the path and the superseded fix' % role, 'step-3.superseded-1/builder-L3.md' in err)
+            put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nPrior attempt: .sdlc/lk/step-3.superseded-1/builder-L3.md\n')
+            case('link check %s passes once the link names the superseded folder' % role,
+                 prep(repo, role, 'L1', '.sdlc/lk/step-3/handoff.md', '--dry-run')[0] == 0)
+        put(lk / 'step-3' / 'handoff.md', '## Task goal\ng\n\nRead .sdlc/lk/step-3.superseded-1/builder-L9.md\n')
+        err = refused('link check absent path', 2, 'builder', 'L1', '.sdlc/lk/step-3/handoff.md', 'links')
+        case('link check names an absent path', 'does not exist' in err and 'builder-L9.md' in err)
+        shutil.rmtree(lk)
 
         put(sdlc / 'sg' / 'handoff.md')  # spec gate
         put(sdlc / 'sg' / 'planner-L1.md', SGPLAN)
