@@ -115,16 +115,17 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
     import steps  # same scripts/ dir: the one rule for the verifier level (T-0356)
     vlevel = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))[0]
     attempt = uuid.uuid4().hex
-    slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
-    d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=f'solo-{tier}-{slug}', description=f'solo {tier}: {slug}',
+    import dispatch  # same scripts/ dir: the names and first prompt lines follow docs/references/subagent-list-style.md (T-0363)
+    tdir = pathlib.Path(task_dir).resolve()
+    d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=dispatch.agent_name('solo', tier, tdir, 1), description=dispatch.list_description(tdir, 'solo', tier),
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
-             role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
+             role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(tdir),
              attempt_id=attempt, base_sha=head_sha(task_dir), verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
-    # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
-    d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
+    # Line 1 is the list title; the spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the Handoff line on line 2.
+    d['prompt'] = f'{dispatch.list_title(tdir, "solo", tier, 1)}\nHandoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
     if worktree:
         d['worktree'] = worktree
-        d['prompt'] = f'Worktree: {worktree} (work and commit there, not in the main checkout)\n' + d['prompt']
+        d['prompt'] = d['prompt'].replace('\nArtifacts dir:', f'\nWorktree: {worktree} (work and commit there, not in the main checkout)\nArtifacts dir:', 1)
     else:
         mark_live(task_dir, attempt)
     (pathlib.Path(task_dir) / f'{d["name"]}.dispatch.json').write_text(json.dumps(d, indent=2) + '\n', encoding='utf-8')
@@ -701,9 +702,9 @@ def selftest():
             rcd, dd = pj(dsub, 'L2', 'the brief')
             recs = lines(dsub)
             expect('subagent: level L2 dispatch names solo-L2, sonnet high, the brief, and the verifier command',
-                   rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == 'solo-L2-subagent' and dd['tier'] == 'L2'
+                   rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == '0001-solo-L2' and dd['tier'] == 'L2'
                    and (dd['model'], dd['effort']) == ('sonnet', 'high')
-                   and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-L2-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
+                   and dd['prompt'].endswith('the brief') and dd['prompt'].splitlines()[0] == 'T-0001 t | solo L2' and dd['prompt'].splitlines()[1].startswith('Handoff: ') and (dsub / '0001-solo-L2.dispatch.json').is_file() and 3 <= len(dd['description'].split()) <= 5 and 'prepare verifier L2' in dd['verifier'])
             dmark = ticket('subagent-mark', budget_usd=10)
             (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
             rcv, dv = pj(dmark, 'L2', 'the brief')
@@ -713,12 +714,15 @@ def selftest():
                    len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
                    and recs[1]['cost_usd'] is None and not mark.exists())
             expect('subagent: level L1 has no verifier command', pj(dsub, 'L1', 'b')[1]['verifier'] is None)
+            _, dw = dispatch_json(str(dsub), 'L2', 'b', 'lane-x')
+            expect('subagent: with a worktree the title is line 1, Handoff line 2, Worktree line 3 (T-0363)',
+                   [ln.split(':')[0] for ln in dw['prompt'].splitlines()[1:4]] == ['Handoff', 'Worktree', 'Artifacts dir'] and len(dw['prompt'].splitlines()[0]) <= 50)
             # The deprecated 0.21.x tier names are aliases: each dispatches as its level (same model and effort).
             for alias, level, me in (('S', 'L1', ('sonnet', 'low')), ('M', 'L2', ('sonnet', 'high')), ('L', 'L3', ('opus', 'xhigh'))):
                 _, da = pj(dsub, alias, 'b')
                 expect(f'subagent: alias {alias} dispatches as solo-{level} at {me}',
                        da['subagent_type'] == f'sdlc-lite:solo-{level}' and da['tier'] == level and da['level'] == level
-                       and (da['model'], da['effort']) == me and da['name'].startswith(f'solo-{level}-'))
+                       and (da['model'], da['effort']) == me and da['name'] == f'0001-solo-{level}')
             _, d3 = pj(dsub, 'L3', 'b')
             expect('subagent: level L3 is opus xhigh with a verifier command',
                    d3['subagent_type'] == 'sdlc-lite:solo-L3' and (d3['model'], d3['effort']) == ('opus', 'xhigh') and d3['verifier'])
