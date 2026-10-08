@@ -26,3 +26,10 @@ Maison recurrences of its T-0289 (T-0152 step 3 and the T-0295 amendment), and C
 
 ## Constraints
 No em or en dashes. No push or publish. Codex host behavior cannot be run live here; mark it unverified.
+
+## Acceptance criteria
+- `bash plugins/sdlc-lite/scripts/run-selftest.sh 2>&1 | tail -1 | grep -qx 'run selftest: PASS'`
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest 2>&1 | grep -c '^ok: a main-checkout handoff run from the lane' | grep -qx 2`
+- `grep -q 'base shared handoff, lane prerequisite' plugins/sdlc-lite/scripts/run-selftest.sh && grep -q 'SDLC_BASE_SHA refused' plugins/sdlc-lite/scripts/run.sh`
+- `python3 plugins/sdlc-lite/scripts/check.py && python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check && python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check && python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check`
+- Codex host behavior is unverified live; the Codex native request path reaches the same run.sh base block.

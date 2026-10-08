@@ -618,6 +618,37 @@ lg add m.txt
 lg commit -q -m more
 seen=$(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" verifier L1 s/handoff.md >/dev/null 2>&1; cat "$tmp/baseseen")
 [[ "$seen" == "$lane_head" ]] || fail "base lane kept: SDLC_BASE_SHA is '$seen', want the stored lane base $lane_head"
+# T-0381: the shared-handoff shape, the handoff in the MAIN checkout and the owned lane worktree as the cwd.
+# Git runs in the lane, not the handoff's tree. lane_tip is the lane HEAD, fork the merge-base with main.
+fork=$(bg rev-parse HEAD)
+lane_tip=$(lg rev-parse HEAD)
+[[ "$lane_head" != "$lane_tip" && "$lane_head" != "$fork" ]] || fail "base shared handoff: fixture lane commits did not diverge from main"
+bg merge-base --is-ancestor "$lane_head" HEAD && fail "base shared handoff: lane commit $lane_head is reachable from main"
+# srun <role> [env...]: a run in the lane (cwd) against the main checkout's handoff; stub output in $tmp/baseseen.
+srun() {
+  local r="$1"; shift
+  rm -f "$tmp/baseseen"
+  (cd "$tmp/blane" && env "$@" PATH="$tmp/bbin:$PATH" "$here/run.sh" "$r" L1 "$brepo/s/handoff.md" >/dev/null 2>"$tmp/berr") \
+    || fail "base shared handoff $r run: run.sh exited non-zero ($(cat "$tmp/berr"))"
+  cat "$tmp/baseseen" 2>/dev/null || echo MISSING
+}
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun builder)
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, lane prerequisite: SDLC_BASE_SHA is '$seen', want the stored lane commit $lane_head (main HEAD $fork is not the lane base)"
+grep -q "base ${lane_head:0:12}: stored base-sha" "$tmp/berr" || fail "base shared handoff: the chosen base and why were not printed ($(cat "$tmp/berr"))"
+echo "$b0" >"$brepo/s/base-sha"
+seen=$(srun builder)
+[[ "$seen" == "$lane_tip" ]] || fail "base shared handoff, stale ancestor: SDLC_BASE_SHA is '$seen', want the lane HEAD $lane_tip (stored $b0 is older than the fork $fork)"
+[[ "$(bfile)" == "$lane_tip" ]] || fail "base shared handoff, stale ancestor: base-sha is '$(bfile)', want $lane_tip"
+seen=$(srun verifier SDLC_BASE_SHA="$lane_head")
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, supplied: SDLC_BASE_SHA is '$seen', want the supplied lane commit $lane_head"
+grep -q "base ${lane_head:0:12}: supplied SDLC_BASE_SHA" "$tmp/berr" || fail "base shared handoff, supplied: the chosen base and why were not printed ($(cat "$tmp/berr"))"
+echo "$lane_head" >"$brepo/s/base-sha"
+seen=$(srun builder SDLC_BASE_SHA="$b0")
+[[ "$seen" == "$lane_head" ]] || fail "base shared handoff, supplied stale ancestor: SDLC_BASE_SHA is '$seen', want the stored lane commit $lane_head (supplied $b0 is older than the fork)"
+grep -q "supplied SDLC_BASE_SHA $b0 refused" "$tmp/berr" || fail "base shared handoff, supplied stale ancestor: the refusal was not printed ($(cat "$tmp/berr"))"
+seen=$(srun planner SDLC_BASE_SHA="$lane_head")
+[[ "$seen" == unset ]] || fail "base shared handoff, planner: SDLC_BASE_SHA is '$seen', want unset"
 
 # Stray report: a third stub makes worktrees and a branch from inside its own script (STUB_MODE
 # stray|strayfail|prefix|none), outside the Bash tool text the hooks see.
