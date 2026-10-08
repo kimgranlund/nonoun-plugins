@@ -2,11 +2,11 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--tree PATH] [--override-review REASON] |
-                 lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
+                 lint <planner.md | task dir> [--tree PATH] | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
-                 widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--reason WHY] | selftest}
+                 widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--tree PATH] [--reason WHY] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
             by recorded run order in its runs.jsonl, see order.py)
             and the task goal (the ## Goal section of <task dir>/handoff.md, front matter skipped),
@@ -331,7 +331,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             step dir, the old span, and the new text. Every refusal prints on stderr, ends with a
             last line "plan defect: steps swap refused: <why>; replan this step (/chain 4.2)",
             exits 1, and writes nothing.
-  widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--reason WHY]: apply a conductor scope
+  widen     widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--tree PATH] [--reason WHY]: apply a conductor scope
             decision to <step dir>/handoff.md, so the next builder does not block on the old scope
             guard. Each path must be repo-relative, match [A-Za-z0-9._/@+-]+, not start with - or /,
             and hold no .. component. Exactly one criterion line (the criteria_lines region, a - or
@@ -350,8 +350,10 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             (an -e word for F, its escaped form an alternative for E and A) is skipped; when every
             path is listed it prints "widen: already applied", exits 0, and writes nothing. The
             rewritten line must keep its marker and (guard) tag and lint clean (the lint rules
-            above). The widened span then runs under bash -c from the git toplevel of the step dir
-            (else the step dir) under --timeout SECONDS (default 300), with SDLC_BASE_SHA from
+            above). The widened span then runs under bash -c from --tree PATH, else the git toplevel
+            of the step dir, else the step dir (when the step dir is in a shared or stale checkout and the
+            current directory is another work tree of the same repository, that work tree is the default
+            and stderr names it; --tree must belong to the step dir's repository) under --timeout SECONDS (default 300), with SDLC_BASE_SHA from
             <step dir>/base-sha, else HEAD, as swap does: a red span, a timeout, or a span that
             changed the work tree refuses. Otherwise it replaces only the target line, appends one
             item per added path, "- `<path>`: allowed by a conductor scope decision (steps.py
@@ -634,6 +636,40 @@ def git_toplevel(task_dir):
 def guard_cwd(task_dir):
     """The git toplevel of the task dir, else the task dir itself."""
     return git_toplevel(task_dir) or str(task_dir)
+
+
+def git_common_dir(path):
+    """The absolute, resolved git common dir of the repo holding path (shared by every linked
+    worktree of one repository), or None outside git."""
+    try:
+        r = subprocess.run(['git', '-C', str(path), 'rev-parse', '--git-common-dir'],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    out = r.stdout.strip()
+    if r.returncode != 0 or not out:
+        return None
+    return str((pathlib.Path(path) / out).resolve())
+
+
+def lane_tree(folder, tree=None):
+    """The work tree a command evaluates spans in for the handoff folder `folder`. --tree wins (it must be a
+    work tree of the same repository as the folder). Else the git toplevel of the folder; but when the
+    process cwd is a different work tree of that same repository (a lane worktree, with the shared handoff in
+    another checkout), the cwd's toplevel. Raises Fail on a --tree of another repository."""
+    top = git_toplevel(folder)
+    if tree is not None:
+        t = git_toplevel(tree)
+        if t is None:
+            raise Fail(f'steps: --tree {tree} is not inside a git work tree')
+        if top is not None and git_common_dir(t) != git_common_dir(top):
+            raise Fail(f'steps: --tree {tree} is a work tree of another repository than {folder}')
+        return t
+    here = git_toplevel(os.getcwd())
+    if top and here and os.path.realpath(here) != os.path.realpath(top) \
+            and git_common_dir(here) == git_common_dir(top):
+        return here
+    return top
 
 
 def tree_state(top):
@@ -1353,7 +1389,7 @@ def link_findings(handoff):
     return findings
 
 
-def lint_steps(plan, steps):
+def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
     set compared with a fixed number; one per ### Read first path that does not exist, resolved against
@@ -1366,7 +1402,7 @@ def lint_steps(plan, steps):
         paths = read_first_paths(block)
         if paths and base is None:
             folder = pathlib.Path(plan).resolve().parent
-            base = pathlib.Path(git_toplevel(folder) or folder)
+            base = pathlib.Path(lane_tree(folder, tree) or folder)
         for rel in paths:
             if not (base / rel).exists() and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
@@ -1430,8 +1466,8 @@ def lint_steps(plan, steps):
     return findings + defect_dependents(plan, steps)
 
 
-def lint_or_fail(plan, steps):
-    findings = lint_steps(plan, steps)
+def lint_or_fail(plan, steps, tree=None):
+    findings = lint_steps(plan, steps, tree)
     if findings:
         raise Fail('\n'.join(findings + [PLAN_DEFECT]))
 
@@ -1462,7 +1498,7 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
                    f'plan defect: plan review: {v}; run steps.py review (/chain 3)')
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
-    lint_or_fail(plan, steps)
+    lint_or_fail(plan, steps, tree)
     folded = review_findings(after[-1])[0] if after and review_verdict(after[-1]) == 'pass' else None
     if only:
         missing = sorted(set(n for n in only if n not in steps))
@@ -1612,7 +1648,7 @@ def step_handoff_of(target):
     return t if t.is_file() and t.name == 'handoff.md' and STEP_DIR_RE.match(t.resolve().parent.name) else None
 
 
-def cmd_lint(target):
+def cmd_lint(target, tree=None):
     h = step_handoff_of(target)
     if h is not None:
         findings = link_findings(h)
@@ -1624,7 +1660,7 @@ def cmd_lint(target):
     try:
         plan, task_dir = find_plan(target)
         steps = parse_steps(plan)
-        lint_or_fail(plan, steps)
+        lint_or_fail(plan, steps, tree)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -2770,7 +2806,7 @@ def add_scope_widened(text, paths, reason=None):
     return '\n'.join(out) + '\n'
 
 
-def widen(step_dir, paths, timeout=300, reason=None):
+def widen(step_dir, paths, timeout=300, reason=None, tree=None):
     """Add paths to the one scope criterion of <step dir>/handoff.md after every check passes, and
     record them under ## Scope widened. A step with no scope criterion at all and a reason: record the
     explicit path list and the reason under ## Scope widened, rewrite nothing else. Returns the one
@@ -2839,8 +2875,13 @@ def widen(step_dir, paths, timeout=300, reason=None):
     if findings:
         refuse(f'the widened criterion does not lint: {new}', findings)
 
-    top = git_toplevel(d)
+    try:
+        top = lane_tree(d, tree)
+    except Fail as e:
+        refuse(str(e).removeprefix('steps: '))
     cwd = top or str(d)
+    if top and os.path.realpath(top) != os.path.realpath(git_toplevel(d) or top):
+        print(f'steps widen: {d}: evaluating the scope span in the work tree {top}', file=sys.stderr)
     base = base_sha(top, d)
     before = tree_state(top) if top else None
     detail, red = [], []
@@ -2886,9 +2927,9 @@ def widen_recorded(h, text, paths, reason):
             f'## Scope widened (reason: {reason})')
 
 
-def cmd_widen(step_dir, paths, timeout=300, reason=None):
+def cmd_widen(step_dir, paths, timeout=300, reason=None, tree=None):
     try:
-        line = widen(step_dir, paths, timeout, reason)
+        line = widen(step_dir, paths, timeout, reason, tree)
     except Fail as e:
         print(e, file=sys.stderr)
         return 1
@@ -4323,6 +4364,64 @@ def selftest():
             check('widen: (d) the span sees SDLC_BASE_SHA from base-sha, not HEAD',
                   rc == 0 and err == '' and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8'))
 
+        # (T-0382) a shared handoff in the primary checkout (stale at A), the lane worktree at B holds the
+        # prerequisite commit and base-sha names B: widen must evaluate the lane, not the stale root
+        def lane_repo(extra_lane_file=None):
+            r, d = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
+            g = ['git', '-C', str(r), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+            lane = tmp / f'{r.name}-lane'
+            subprocess.run(g + ['worktree', 'add', '-q', '--detach', str(lane)], check=True, capture_output=True)
+            (lane / 'prerequisite.txt').write_text('p\n', encoding='utf-8')
+            gl = ['git', '-C', str(lane), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+            subprocess.run(gl + ['add', 'prerequisite.txt'], check=True, capture_output=True)
+            subprocess.run(gl + ['commit', '-q', '-m', 'prerequisite'], check=True, capture_output=True)
+            head = subprocess.run(['git', '-C', str(lane), 'rev-parse', 'HEAD'], check=True,
+                                  capture_output=True, text=True).stdout.strip()
+            (d / 'base-sha').write_text(head + '\n', encoding='utf-8')
+            if extra_lane_file:
+                (lane / extra_lane_file).write_text('u\n', encoding='utf-8')
+            return r, d, lane
+
+        def run_in(cwd, argv):
+            old = os.getcwd()
+            os.chdir(cwd)
+            try:
+                return run_main(argv)
+            finally:
+                os.chdir(old)
+
+        r, d, lane = lane_repo()
+        before = snapshot(d)
+        rc, out, err = run_in(r, ['widen', str(d), 'b.txt'])
+        check('widen: (T-0382) the primary checkout alone (no lane) stays red as before: stale root vs lane base',
+              rc == 1 and out == '' and snapshot(d) == before and 'red now (exit 1)' in err
+              and 'evaluating' not in err)
+        rc, out, err = run_in(r, ['widen', str(d), 'b.txt', '--tree', str(lane)])
+        check('widen: (T-0382) --tree the lane accepts the prerequisite from a shared handoff',
+              rc == 0 and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8'))
+        r, d, lane = lane_repo()
+        rc, out, err = run_in(lane, ['widen', str(d), 'b.txt'])
+        check('widen: (T-0382) with no --tree the lane cwd is the default tree, and stderr names it',
+              rc == 0 and '-e a.txt -e b.txt' in (d / 'handoff.md').read_text(encoding='utf-8')
+              and 'evaluating the scope span in the work tree' in err)
+        r, d, lane = lane_repo('unrelated.txt')
+        before = snapshot(d)
+        rc, out, err = run_in(lane, ['widen', str(d), 'b.txt'])
+        check('widen: (T-0382) negative control: an unrelated changed file in the lane still refuses, writes nothing',
+              rc == 1 and out == '' and snapshot(d) == before and 'red now (exit 1)' in err
+              and err.strip().splitlines()[-1].startswith('plan defect: steps widen refused:'))
+        r2, d2 = w_repo(w_handoff(f'`{W_FORMS["F"]}`'))
+        before = snapshot(d2)
+        rc, out, err = run_in(r2, ['widen', str(d2), 'b.txt', '--tree', str(lane)])
+        check('widen: (T-0382) a --tree of another repository refuses, writes nothing',
+              rc == 1 and out == '' and snapshot(d2) == before and 'another repository' in err
+              and err.strip().splitlines()[-1].startswith('plan defect: steps widen refused:'))
+        rc, out, err = run_in(r2, ['widen', str(d2), 'b.txt', '--tree', str(tmp / 'no-such-dir')])
+        check('widen: (T-0382) a --tree that is not a directory refuses', rc == 1 and 'not a directory' in err)
+        rc, out, err = run_in(r2, ['widen', str(d2), 'b.txt'])
+        check('widen: (T-0382) the ordinary single-checkout case is unchanged: no tree note, widened',
+              rc == 0 and 'evaluating' not in err and '-e a.txt -e b.txt' in (d2 / 'handoff.md').read_text(encoding='utf-8'))
+
         # (r) review: whether a plan needs a plan review, and the verdict routing; each rule with its
         # negative form. Plan files hold STEP-shaped blocks; runs.jsonl orders results when given.
         def r_plan(level='L1', title='a', tail=''):
@@ -4959,6 +5058,9 @@ def main(argv):
                         'a blocked review is never overridden')
     p = sub.add_parser('lint', help='check that criterion commands parse under bash -n; writes nothing')
     p.add_argument('target', help='a planner-*.md file, or a task dir (its newest planner-*.md by recorded run order)')
+    p.add_argument('--tree', default=None, metavar='PATH',
+                   help='the work tree the ### Read first paths resolve against (default: the git toplevel of the '
+                        'plan folder, or the current work tree when that is another worktree of the same repository)')
     p = sub.add_parser('precheck', help='fail fast when a task dir handoff has no ## Goal section; writes nothing')
     p.add_argument('task', help='a task dir holding handoff.md')
     p = sub.add_parser('next', help='print the next escalation action for a step dir; writes nothing')
@@ -4983,6 +5085,10 @@ def main(argv):
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
                    help='timeout for the widened span (default 300); a timeout refuses. It runs with '
                         'SDLC_BASE_SHA from <step dir>/base-sha, else HEAD')
+    p.add_argument('--tree', default=None, metavar='PATH',
+                   help='the work tree the widened span runs in (default: the git toplevel of the step dir, or the '
+                        'current work tree when that is another worktree of the same repository); it must belong '
+                        'to the same repository as the step dir')
     p.add_argument('--reason', metavar='WHY',
                    help='why the files are in scope; recorded on each ## Scope widened item. With no scope '
                         'criterion in the step it makes the path list the recorded allow-list')
@@ -4995,7 +5101,10 @@ def main(argv):
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)
             return 1
-        return cmd_widen(a.step_dir, a.paths + extra, a.timeout, a.reason)
+        if a.tree is not None and not os.path.isdir(a.tree):
+            print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
+            return 1
+        return cmd_widen(a.step_dir, a.paths + extra, a.timeout, a.reason, a.tree)
     if a.cmd == 'selftest':
         return selftest()
     if a.cmd == 'precheck':
@@ -5016,7 +5125,10 @@ def main(argv):
             return 1
         return cmd_swap(a.step_dir, a.timeout)
     if a.cmd == 'lint':
-        return cmd_lint(a.target)
+        if a.tree is not None and not os.path.isdir(a.tree):
+            print(f'steps: --tree {a.tree} is not a directory', file=sys.stderr)
+            return 1
+        return cmd_lint(a.target, a.tree)
     if a.guard_timeout is not None and not 0 < a.guard_timeout < float('inf'):
         print('steps: --guard-timeout must be a finite number of seconds greater than 0', file=sys.stderr)
         return 1
