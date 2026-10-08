@@ -26,3 +26,10 @@ Codex report from the maison repo, 2026-10-08, SDLC Lite 0.21.3, P1: [full repor
 
 ## Constraints
 No em or en dashes. No push or publish. The Codex host cannot be run live here, so a claim about live Codex behavior is marked unverified in the record.
+
+## Acceptance criteria
+1. `python3 plugins/sdlc-lite/scripts/codex-selftest.py -k preflight` passes five cases: current definitions with a live catalog lacking the solo roles, missing solo definitions with older roles loaded, and a fresh session with the role present (the first two report not ready, the third ready), plus an unknown role or edited definition (launcher repair) and the CLI exit codes. Observed failing first against the unchanged `codex_roles.py` (no `preflight`).
+2. `codex_roles.py install --check` behavior is unchanged: the existing install idempotence and edit-refusal test passes, and a preflight on an edited definition still reports the refusal.
+3. `adapters/codex/instructions.md` ("Readiness and resume for conductors") holds the readiness procedure with the parent-supplied catalog, the exact missing role and the generation, fresh session or launcher repair action, the native solo request-file check, and the resume packet; `skills/sdlc-lite/SKILL.md`, `agents/solo.md` and `skills/agent/SKILL.md` route to it. It names no host introspection API and bars substitution, Claude fallback and nested Codex CLI.
+4. `check.py`, `tickets.py check`, `codex_roles.py generate --check`, `claude_roles.py generate --check`, `run-selftest.sh` and `codex-selftest.py` pass.
+5. Live Codex fresh-session behavior is unverified (no Codex host here).

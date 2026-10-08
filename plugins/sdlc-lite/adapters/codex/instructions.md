@@ -22,3 +22,20 @@ Spawn that named custom agent with fresh context and exactly the request prompt.
 A solo ticket follows the same lifecycle through `SDLC_BACKEND=codex SDLC_CODEX_TRANSPORT=subagent python3 @SDLC_PLUGIN_ROOT@/scripts/solo_run.py run --backend codex --task-dir <ticket folder> --tier <L1|L2|L3> --brief <brief> --no-worktree`: it publishes `<ticket folder>/solo-<level>-<attempt>.request.json`, you spawn `sdlc-solo-l<n>` with exactly that prompt, answer it with `python3 @SDLC_PLUGIN_ROOT@/scripts/codex_exchange.py <request.json> <report-file>` (`--failed` on an execution error), and await the wrapper, which prints the report, removes the exchange lock and response files, keeps the request, and records `backend codex`, `transport subagent`, null cost with a reason.
 
 Do not execute the request yourself, invent a child report, or substitute a different agent. If native named-agent tools are unavailable, respond with --failed and report the blocker. Native agent calls require project setup and a fresh session; standalone terminal automation may use the exec transport outside a sandboxed parent. Use the exact agent selected by the request, including a verifier or plan-reviewer alternate profile when `models.json` configures one.
+
+
+# Readiness and resume for conductors
+
+Installed is not callable. Before claiming a ticket or starting a lane, three facts are checked separately: the plugin defines the lane's exact role, the project's generated definitions are current, and the role is in the callable agent catalog of this session. A shell script cannot inspect that catalog and there is no host introspection API, so you read the agent list your host exposes and pass it in:
+
+`python3 @SDLC_PLUGIN_ROOT@/scripts/codex_roles.py preflight <project-root> <exact agent name, e.g. sdlc-solo-l2> [more names, e.g. sdlc-verifier-l3] --catalog "<names callable now>"` (or `--catalog-file <file>`). Exit 0 prints `ready`; exit 2 names each missing role and the one action it needs: generation (`codex_roles.py install <project-root>`, which refuses to overwrite user edits, as `install --check` reports), a fresh Codex session (the definitions are installed but not loaded, and `install` does not add a role to the live catalog), or a launcher repair (the plugin does not define the role, or a definition was edited by hand). Passing the check means defined, current and listed; live behavior stays unverified until the first request file appears.
+
+Not ready means stop before claiming: name the missing role and the action, and never substitute a builder or another level, fall back to Claude, or start a nested Codex CLI. A fresh session alone does not prove the build can start: after it, start the solo wrapper above and confirm `<ticket folder>/solo-<level>-<attempt>.request.json` appears with status waiting; if it does not, that is a launcher repair, not a restart.
+
+Resume packet. When a session ends or is replaced before the work does, leave this in the ticket folder or the handoff, a few lines and no transcript:
+- ticket: path of its `handoff.md`, and the claim (`claimed_by`) and run state (newest `*.request.json` status, `runs.jsonl` rows, lane branch and worktree).
+- base and scope: the conductor-approved base sha and the files or areas in scope.
+- launcher issues: each unresolved one, with its ticket id.
+- mailbox: which message ids are acked or replied, and which session owns the receiver worker.
+
+A new session reads the packet first. It starts no receiver worker while the packet names a live owner, replays no reply the packet lists as sent, and reuses a waiting request file instead of creating a second one.

@@ -130,6 +130,51 @@ class CodexTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'symlinked agent'):
             codex_roles.install(self.repo)
 
+    def catalog(self,without=()):
+        return {name for name,_ in codex_roles.definitions() if name not in without}
+
+    def test_preflight_current_definitions_stale_live_catalog_is_not_ready(self):
+        codex_roles.install(self.repo)
+        problems=codex_roles.preflight(self.repo,['sdlc-solo-l2'],self.catalog(without=('sdlc-solo-l1','sdlc-solo-l2','sdlc-solo-l3')))
+        self.assertEqual(len(problems),1,problems)
+        self.assertIn('sdlc-solo-l2',problems[0]);self.assertIn('Fresh session required',problems[0])
+        self.assertNotIn('Generation required',problems[0])
+
+    def test_preflight_stale_definitions_with_older_roles_loaded_is_not_ready(self):
+        codex_roles.install(self.repo)
+        for target in (self.repo/'.codex/agents').glob('sdlc-solo-*.toml'):target.unlink()
+        older=self.catalog(without=('sdlc-solo-l1','sdlc-solo-l2','sdlc-solo-l3'))
+        problems=codex_roles.preflight(self.repo,['sdlc-solo-l2'],older)
+        text='\n'.join(problems)
+        self.assertIn('Generation required',text);self.assertIn('sdlc-solo-l2.toml',text)
+        self.assertIn('after generation, start a fresh Codex session',text)
+
+    def test_preflight_fresh_session_with_required_role_is_ready(self):
+        codex_roles.install(self.repo)
+        self.assertEqual(codex_roles.preflight(self.repo,['sdlc-solo-l2','sdlc-verifier-l3'],self.catalog()),[])
+        self.assertEqual(codex_roles.parse_catalog('sdlc-solo-l2, sdlc-verifier-l3\nsdlc-builder-l1'),{'sdlc-solo-l2','sdlc-verifier-l3','sdlc-builder-l1'})
+
+    def test_preflight_unknown_role_and_edited_definition_need_launcher_repair_and_install_check_unchanged(self):
+        codex_roles.install(self.repo)
+        problems=codex_roles.preflight(self.repo,['sdlc-solo-l9'],self.catalog()|{'sdlc-solo-l9'})
+        self.assertIn('Launcher repair',problems[0])
+        target=self.repo/'.codex/agents/sdlc-scout-l1.toml'
+        target.write_text(target.read_text()+'# user edit\n')
+        problems=codex_roles.preflight(self.repo,['sdlc-solo-l2'],self.catalog())
+        self.assertIn('Launcher repair',problems[0]);self.assertIn('refusing to overwrite',problems[0])
+        self.assertTrue(target.read_text().endswith('# user edit\n'))
+        with self.assertRaisesRegex(ValueError,'refusing to overwrite'):
+            codex_roles.install(self.repo,check=True)
+
+    def test_preflight_cli_requires_a_supplied_catalog(self):
+        codex_roles.install(self.repo)
+        script=str(ROOT/'scripts/codex_roles.py')
+        run=lambda *a:subprocess.run(['python3',script,'preflight',str(self.repo),'sdlc-solo-l2',*a],capture_output=True,text=True,timeout=DEADLINE)
+        none=run();self.assertEqual(none.returncode,2);self.assertIn('no callable catalog supplied',none.stderr)
+        stale=run('--catalog','sdlc-builder-l1 sdlc-planner-l1');self.assertEqual(stale.returncode,2);self.assertIn('Fresh session required',stale.stderr)
+        listing=self.base/'catalog.txt';listing.write_text('\n'.join(sorted(self.catalog())))
+        ok=run('--catalog-file',str(listing));self.assertEqual(ok.returncode,0,ok.stderr);self.assertIn('ready: sdlc-solo-l2',ok.stdout)
+
     def test_project_conductor_preserves_existing_config_and_removes_only_its_block(self):
         config=self.repo/'.codex/config.toml';config.parent.mkdir()
         original='''# keep this project comment

@@ -275,17 +275,68 @@ def install(project, check=False, conductor=False):
           + (' with project conductor' if conductor else '') + '; start a fresh Codex session.')
 
 
+def parse_catalog(text):
+    """Agent names from a catalog the parent supplies: comma, space or newline separated."""
+    return {name for name in re.split(r'[\s,]+', text) if name}
+
+
+def preflight(project, roles, catalog):
+    """Return the problems that keep roles from being callable in this session; empty means ready.
+
+    Three facts stay separate: the plugin defines the role, the project's generated definitions are
+    current (the install --check verdict, unchanged), and the role is in the callable agent catalog
+    the parent read from its host. A shell script cannot inspect that catalog, so the parent supplies
+    it; installed never implies loaded."""
+    defined = {name for name, _ in definitions()}
+    problems = []
+    unknown = [role for role in roles if role not in defined]
+    for role in unknown:
+        problems.append(f'{role}: not defined by this plugin version. Launcher repair: update the plugin or fix the lane role name; generation and a fresh session cannot add it.')
+    known = [role for role in roles if role in defined]
+    drift = None
+    try:
+        install(project, check=True)
+    except ValueError as exc:
+        drift = str(exc)
+    if drift is not None and known:
+        if 'refusing' in drift:
+            problems.append(f'definitions: {drift}. Launcher repair: resolve the edited or unmanaged file by hand; install will not overwrite it.')
+        else:
+            problems.append(f'definitions: {drift}. Generation required: run codex_roles.py install <project>, then start a fresh Codex session.')
+    for role in known:
+        if role not in catalog:
+            action = 'start a fresh Codex session' if drift is None else 'after generation, start a fresh Codex session'
+            problems.append(f'{role}: missing from the callable catalog of this session. Fresh session required: {action}; installed definitions are not live availability.')
+    return problems
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     subs = parser.add_subparsers(dest='command', required=True)
     gen = subs.add_parser('generate'); gen.add_argument('--check', action='store_true')
     setup = subs.add_parser('install'); setup.add_argument('project', type=Path); setup.add_argument('--check', action='store_true'); setup.add_argument('--conductor', action='store_true', help='opt in to the SDLC Lite main-session conductor for this project')
     off = subs.add_parser('conductor-off'); off.add_argument('project', type=Path)
+    pre = subs.add_parser('preflight', help='check the lane roles are defined, generated, and in the parent-supplied callable catalog')
+    pre.add_argument('project', type=Path); pre.add_argument('roles', nargs='+', help='exact agent names, e.g. sdlc-solo-l2')
+    pre.add_argument('--catalog', default='', help='agent names the host lists as callable in this session'); pre.add_argument('--catalog-file', type=Path, help='file of those names')
     res = subs.add_parser('resolve'); res.add_argument('role'); res.add_argument('level'); res.add_argument('directory', nargs='?')
     args = parser.parse_args()
     if args.command == 'resolve':
         model, effort, shared = resolve(args.role, args.level, args.directory)
         print(model, effort, *(['shared'] if shared else []))
+    elif args.command == 'preflight':
+        text = args.catalog + ' ' + (args.catalog_file.read_text() if args.catalog_file else '')
+        catalog = parse_catalog(text)
+        if not catalog:
+            print('not ready: no callable catalog supplied. The parent must read the agent list its host exposes and pass it with --catalog or --catalog-file; this script cannot inspect it.', file=sys.stderr)
+            sys.exit(2)
+        problems = preflight(args.project, args.roles, catalog)
+        if problems:
+            print('not ready: ' + '; '.join(args.roles), file=sys.stderr)
+            for problem in problems:
+                print('- ' + problem, file=sys.stderr)
+            sys.exit(2)
+        print('ready: ' + ', '.join(args.roles) + ' defined, generated current, and in the supplied catalog (live behavior unverified)')
     elif args.command == 'install':
         install(args.project, args.check, args.conductor)
     elif args.command == 'conductor-off':
