@@ -223,6 +223,17 @@ def selftest():
         # Negative control: the old blended count (cache reads excluded) misses the band.
         old = estimate(fam, {'subagent_tokens': u['input_tokens'] + u['output_tokens']}, table)[0]
         expect('negative control: %s blended count without cache is outside the band' % fam, abs(old - host) > TOLERANCE * host)
+    # T-0359: claude-haiku-5-5 scout run (docs/reports/2026-10-07-haiku-5-5), host costUSD 0.00559222.
+    hk = {'input_tokens': 8, 'output_tokens': 791, 'cache_read_input_tokens': 91842, 'cache_creation_input_tokens': 34220}
+    e, b, _ = estimate('claude-haiku-5-5', hk, table)
+    expect('haiku 5.5 row: estimate %s vs host 0.0056 within 35 percent' % e,
+           e is not None and b == BASIS_USAGE and abs(e - 0.00559222) <= TOLERANCE * 0.00559222)
+    with tempfile.TemporaryDirectory() as t3:
+        old = pathlib.Path(t3) / 'prices.json'
+        old.write_text(json.dumps({'usage_input': {'haiku': 0.58}, 'usage_multipliers': mult, 'usage_calibration': usage_calibration()}), encoding='utf-8')
+        oldrate = usage_rates(old)[0]['haiku']
+        eo = sum(hk[k] * usage_calibration().get(k, 1) * mult.get(k, 1) for k in TOKEN_KEYS) * oldrate / 1e6
+        expect('negative control: the pre-refit haiku rate 0.58 is rejected (%.4f)' % eo, abs(eo - 0.00559222) > TOLERANCE * 0.00559222)
     u0 = live[2][1]
     expect('negative control: without the calibration the final-rerun row falls under the band',
            sum(u0[k] * mult.get(k, 1) for k in TOKEN_KEYS) * rates['fable'] / 1e6 / 3.6384 < 0.65)
