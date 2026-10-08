@@ -2,7 +2,7 @@
 id: T-0375
 title: "board.py --lanes shows base sha, stale-base flag, verifier verdict, merge class and owner"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/board.py selftest` exits 0; its case 8b builds stale, verified and codex-owned fixture lanes and asserts each ledger column (it failed before the change).
+- In a repo whose only worktree is the main one, `board.py --lanes` prints the unchanged `| Lane | Branch | Board |` table (asserted in case 8b).
+- `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0.
+- `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, and both `codex_roles.py generate --check` and `claude_roles.py generate --check` exit 0.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

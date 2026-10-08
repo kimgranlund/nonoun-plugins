@@ -600,6 +600,24 @@ echo "$na" >"$brepo/s/base-sha"
 seen=$(brun verifier)
 [[ "$seen" == "$head_now" ]] || fail "base non-ancestor: SDLC_BASE_SHA is '$seen', want HEAD $head_now"
 [[ "$(bfile)" == "$head_now" ]] || fail "base non-ancestor: base-sha is '$(bfile)', want HEAD $head_now"
+# T-0376: a lane worktree forked after the main checkout moved on; a stored base older than the fork point
+# (an ancestor of the lane HEAD, the main checkout HEAD at split time) is replaced by the lane HEAD.
+bg worktree add -q -b lane "$tmp/blane" HEAD
+lg() { git -C "$tmp/blane" -c user.name=selftest -c user.email=selftest@example.invalid -c commit.gpgsign=false "$@"; }
+echo l >"$tmp/blane/lane.txt"
+lg add lane.txt
+lg commit -q -m lane
+lane_head=$(lg rev-parse HEAD)
+echo "$b0" >"$tmp/blane/s/base-sha"
+seen=$(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" builder L1 s/handoff.md >/dev/null 2>&1; cat "$tmp/baseseen")
+[[ "$seen" == "$lane_head" ]] || fail "base stale lane: SDLC_BASE_SHA is '$seen', want lane HEAD $lane_head (stored $b0 is older than the fork)"
+[[ "$(head -1 "$tmp/blane/s/base-sha")" == "$lane_head" ]] || fail "base stale lane: base-sha not rewritten to lane HEAD $lane_head"
+echo "$lane_head" >"$tmp/blane/s/base-sha"
+echo m >"$tmp/blane/m.txt"
+lg add m.txt
+lg commit -q -m more
+seen=$(cd "$tmp/blane" && PATH="$tmp/bbin:$PATH" "$here/run.sh" verifier L1 s/handoff.md >/dev/null 2>&1; cat "$tmp/baseseen")
+[[ "$seen" == "$lane_head" ]] || fail "base lane kept: SDLC_BASE_SHA is '$seen', want the stored lane base $lane_head"
 
 # Stray report: a third stub makes worktrees and a branch from inside its own script (STUB_MODE
 # stray|strayfail|prefix|none), outside the Bash tool text the hooks see.

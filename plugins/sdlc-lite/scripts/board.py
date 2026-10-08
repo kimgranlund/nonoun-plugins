@@ -14,7 +14,13 @@ Usage: board.py [--root DIR] [--task SLUG] [--waiting LINE] [--summary] [--sort 
 Lanes: --lanes renders | Lane | Branch | Board |, one row per `git worktree list` entry of the
 root's repo, in list order: Lane is the worktree's basename, Branch its branch (or
 "(detached <sha>)"), and Board the --summary line of that worktree's same-relative root (or
-"no tasks"). It never renders the task board or touches the state file; --waiting still prints
+"no tasks"). When the repo has lane worktrees besides the main one, five ledger columns follow
+(a repo with only the main worktree keeps the three-column table): Base (the lane's recorded base
+sha, from its base-sha file or solo dispatch file, 7 chars), Stale (`yes` when that base is not an
+ancestor of the main worktree's HEAD), Verifier (the newest verifier verdict: pass, fail, inherited,
+or none), Merge (`n/a` until T-0374 computes a merge class) and Owner (the backend of the lane's
+newest run record, claude or codex). A lane's own task is a task dir whose run record the main
+worktree lacks; a lane with none shows `-`, and the main row shows `-` throughout. It never renders the task board or touches the state file; --waiting still prints
 above it and --summary, --task and --sort are ignored. Outside a git work tree (any git
 failure) it prints "<root>: not inside a git work tree" on stderr and exits 1. The default board
 is unchanged.
@@ -456,6 +462,69 @@ def render(root: pathlib.Path, tasks, waiting=None) -> str:
     return '\n'.join(out)
 
 
+LEDGER_COLS = ['Base', 'Stale', 'Verifier', 'Merge', 'Owner']
+# Merge is `n/a` until T-0374 computes a merge class for a lane.
+
+
+def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
+    """[Base, Stale, Verifier, Merge, Owner] cells for one lane worktree, read-only. The lane's own
+    tasks are the task dirs holding a run record (base-sha, *.dispatch.json, runs.jsonl) that the
+    main worktree's same task dir lacks; the last by name decides. Base is the recorded base sha
+    (7 chars), Stale `yes` when it is not an ancestor of main's HEAD, Verifier the newest verifier
+    verdict (pass, fail, inherited, or none), Owner the backend of the newest run record. A lane
+    with no record shows `-` for Base, Stale and Owner."""
+    def own(d, name):
+        f = d / name
+        return f.is_file() and not (main_root / d.relative_to(root) / name).is_file()
+
+    mine = [d for d in sorted(task_dirs(root))
+            if own(d, 'base-sha') or own(d, 'runs.jsonl') or any(own(d, f.name) for f in d.glob('*.dispatch.json'))]
+    base = owner = '-'
+    verdict = 'none'
+    if mine:
+        d = mine[-1]
+        sha = ''
+        f = d / 'base-sha'
+        if f.is_file():
+            lines = f.read_text(encoding='utf-8', errors='replace').split()
+            sha = lines[0] if lines else ''
+        for df in sorted(d.glob('*.dispatch.json')):
+            if sha:
+                break
+            try:
+                rec = json.loads(df.read_text(encoding='utf-8'))
+                sha = str(rec.get('base_sha') or '').strip() if rec.get('role') == 'solo' else ''
+            except (OSError, ValueError, AttributeError):
+                sha = ''
+        if sha:
+            base = sha[:7]
+        backend = ''
+        f = d / 'runs.jsonl'
+        if f.is_file():
+            for line in f.read_text(encoding='utf-8', errors='replace').splitlines():
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(rec, dict):
+                    backend = str(rec.get('backend') or 'claude')
+        owner = backend or 'claude'  # a record with no backend field is a Claude run
+        for where in [d] + sorted(c for c in d.glob('step-*') if c.is_dir())[::-1]:
+            v = order.newest(where, 'verifier')
+            if v and steps.verdict_or_none(v):
+                verdict = steps.verdict_or_none(v)
+                break
+    stale = '-'
+    if base != '-':
+        try:
+            git('rev-parse', '-q', '--verify', sha + '^{commit}')
+            git('merge-base', '--is-ancestor', sha, main_head)
+            stale = 'no'
+        except ValueError:
+            stale = 'yes'
+    return [base, stale, verdict, 'n/a', owner]
+
+
 def lanes(root: pathlib.Path) -> str:
     """One row per `git worktree list` entry of root's repo: Lane (worktree basename), Branch,
     and Board, that worktree's summary() of the same-relative root. Raises ValueError outside
@@ -488,8 +557,12 @@ def lanes(root: pathlib.Path) -> str:
             entries[-1]['head'] = line[len('HEAD '):]
         elif entries and line.startswith('branch '):
             entries[-1]['branch'] = line[len('branch '):]
-    out = ['| Lane | Branch | Board |', '|---|---|---|']
-    for e in entries:
+    ledger = len(entries) > 1  # a repo with no lane worktrees keeps the three-column table
+    cols = ['Lane', 'Branch', 'Board'] + (LEDGER_COLS if ledger else [])
+    out = ['| ' + ' | '.join(cols) + ' |', '|' + '---|' * len(cols)]
+    main_head = entries[0].get('head', '') if entries else ''
+    main_root = (pathlib.Path(entries[0]['path']).resolve() / rel).resolve() if entries else None
+    for i, e in enumerate(entries):
         path = pathlib.Path(e['path']).resolve()
         ref = e.get('branch', '')
         if ref.startswith('refs/heads/'):
@@ -499,7 +572,11 @@ def lanes(root: pathlib.Path) -> str:
         else:
             branch = f"(detached {e.get('head', '')[:7]})"
         board = summary((path / rel).resolve()) or 'no tasks'
-        out.append(f'| {path.name} | {branch} | {board} |')
+        cells = [path.name, branch, board]
+        if ledger:
+            cells += ['-'] * len(LEDGER_COLS) if i == 0 else lane_ledger(
+                (path / rel).resolve(), main_root, main_head, git)
+        out.append('| ' + ' | '.join(cells) + ' |')
     return '\n'.join(out)
 
 
@@ -993,26 +1070,102 @@ def selftest() -> int:
         proc = run_lanes(repo / '.sdlc')
         expect(f'--lanes exited 0, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 0)
         lines = proc.stdout.splitlines()
-        expect(f'--lanes header, got {lines[:2]}', lines[:2] == ['| Lane | Branch | Board |', '|---|---|---|'])
+        expect(f'--lanes header, got {lines[:2]}', lines[0].startswith('| Lane | Branch | Board | Base |') and lines[1].startswith('|---|'))
         data = [[c.strip() for c in ln.strip('|').split('|')] for ln in lines[2:] if ln.startswith('| ')]
         expect(f'--lanes has exactly three data rows, got {data}', len(data) == 3)
-        cells = {r[0]: r for r in data if len(r) == 3}
-        expect(f'--lanes rows are repo, alpha, beta in list order, got {[r[0] for r in data]}',
-               [r[0] for r in data] == ['repo', 'alpha', 'beta'])
+        cells = {r[0]: r for r in data if len(r) == 8}
+        expect(f'--lanes rows are the main worktree first, then alpha and beta, got {[r[0] for r in data]}',
+               sorted(r[0] for r in data) == ['alpha', 'beta', 'repo'] and data[0][0] == 'repo')
         expect(f'--lanes Branch cells are the branch names, got {[r[1] for r in data]}',
-               [r[1] for r in data] == [head, 'alpha', 'beta'] and head)
+               {r[0]: r[1] for r in data} == {'repo': head, 'alpha': 'alpha', 'beta': 'beta'} and head)
         expect(f"alpha's Board reads its own running marker, got {cells.get('alpha')}",
-               cells.get('alpha', [''] * 3)[2] == 't planning')
+               cells.get('alpha', [''] * 8)[2] == 't planning')
         expect(f"beta's Board is unchanged by alpha's marker, got {cells.get('beta')}",
-               cells.get('beta', [''] * 3)[2] == 't not planned')
+               cells.get('beta', [''] * 8)[2] == 't not planned')
         expect(f"main's Board is unchanged by alpha's marker, got {cells.get('repo')}",
-               cells.get('repo', [''] * 3)[2] == 't not planned')
+               cells.get('repo', [''] * 8)[2] == 't not planned')
 
         plain = ltmp / 'plain'
         plain.mkdir()
         proc = run_lanes(plain)
         expect(f'--lanes outside git exits 1 naming git, got {proc.returncode} stderr={proc.stderr!r}',
                proc.returncode == 1 and 'git' in proc.stderr and not proc.stdout)
+
+    # 8b. --lanes ledger columns: base sha, stale-base flag, verifier verdict, merge class, owner.
+    with tempfile.TemporaryDirectory() as ltmp:
+        ltmp = pathlib.Path(ltmp).resolve()
+        env = {k: v for k, v in os.environ.items() if k not in tickets.GIT_ENV_DROP}
+        repo = ltmp / 'repo'
+        (repo / '.sdlc' / 't').mkdir(parents=True)
+        (repo / '.sdlc' / 't' / 'handoff.md').write_text('## Goal\nx\n')
+
+        def git(*args, cwd=repo):
+            p = subprocess.run(['git', '-C', str(cwd), *args], env=env, capture_output=True, text=True)
+            expect(f'git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
+            return p.stdout.strip()
+
+        git('init', '-q')
+        git('config', 'user.name', 'board selftest')
+        git('config', 'user.email', 'selftest@example.invalid')
+        git('config', 'commit.gpgsign', 'false')
+        git('add', '.sdlc/t/handoff.md')
+        git('commit', '-q', '-m', 'fixture')
+        base = git('rev-parse', 'HEAD')
+
+        def run_lanes(root):
+            return subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()),
+                                   '--lanes', '--root', str(root)], env=env, capture_output=True, text=True)
+
+        plain_out = run_lanes(repo / '.sdlc').stdout.splitlines()
+        expect(f'--lanes with no lanes keeps the three-column table, got {plain_out}',
+               plain_out[:2] == ['| Lane | Branch | Board |', '|---|---|---|'] and len(plain_out) == 3)
+
+        git('checkout', '-q', '-b', 'side')
+        (repo / 'side.txt').write_text('x')
+        git('add', 'side.txt')
+        git('commit', '-q', '-m', 'unmerged side work')
+        orphan = git('rev-parse', 'HEAD')
+        git('checkout', '-q', '-')
+        lanes_dir = ltmp / 'lanes'
+        for name in ('stale', 'verified', 'codex'):
+            git('worktree', 'add', '-q', '-b', name, str(lanes_dir / name))
+        # stale: its dispatch file recorded a base that main does not contain
+        (lanes_dir / 'stale' / '.sdlc' / 't' / 'solo-L2-t.dispatch.json').write_text(
+            json.dumps({'role': 'solo', 'base_sha': orphan}))
+        # verified: a base-sha file at main's head and a passing task-dir verifier result
+        (lanes_dir / 'verified' / '.sdlc' / 't' / 'base-sha').write_text(base + '\n')
+        (lanes_dir / 'verified' / '.sdlc' / 't' / 'verifier-L2.md').write_text(
+            '<!-- role=verifier level=L2 model=opus effort=high -->\n## Verdict\npass\n')
+        # codex: its run record names the codex backend
+        (lanes_dir / 'codex' / '.sdlc' / 't' / 'runs.jsonl').write_text(
+            json.dumps({'role': 'solo', 'backend': 'codex', 'file': ''}) + '\n')
+
+        proc = run_lanes(repo / '.sdlc')
+        expect(f'--lanes ledger exited 0, got {proc.returncode} stderr={proc.stderr!r}', proc.returncode == 0)
+        lines = proc.stdout.splitlines()
+        head = ['Lane', 'Branch', 'Board', 'Base', 'Stale', 'Verifier', 'Merge', 'Owner']
+        expect(f'--lanes ledger header, got {lines[:2]}',
+               lines[:2] == ['| ' + ' | '.join(head) + ' |', '|' + '---|' * len(head)])
+        rows = {}
+        for ln in lines[2:]:
+            cells = [c.strip() for c in ln.strip('|').split('|')]
+            if len(cells) == len(head):
+                rows[cells[0]] = dict(zip(head, cells))
+        expect(f'--lanes ledger rows are repo, stale, verified, codex, got {list(rows)}',
+               sorted(rows) == ['codex', 'repo', 'stale', 'verified'] and list(rows)[0] == 'repo')
+        got = rows.get('stale', {})
+        expect(f"stale lane shows its recorded base and Stale yes, got {got}",
+               got.get('Base') == orphan[:7] and got.get('Stale') == 'yes' and got.get('Verifier') == 'none'
+               and got.get('Merge') == 'n/a' and got.get('Owner') == 'claude')
+        got = rows.get('verified', {})
+        expect(f"verified lane shows base, Stale no and Verifier pass, got {got}",
+               got.get('Base') == base[:7] and got.get('Stale') == 'no' and got.get('Verifier') == 'pass'
+               and got.get('Merge') == 'n/a')
+        got = rows.get('codex', {})
+        expect(f"codex lane shows Owner codex, got {got}", got.get('Owner') == 'codex')
+        got = rows.get('repo', {})
+        expect(f"the main row carries no ledger values, got {got}",
+               all(got.get(k) == '-' for k in ('Base', 'Stale', 'Verifier', 'Merge', 'Owner')))
 
     # 9. ticket_root: tickets: tasks under <root>/tickets/ join the root's tasks.
     with tempfile.TemporaryDirectory() as ttmp:
