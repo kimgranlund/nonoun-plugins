@@ -86,7 +86,9 @@
    it. Each has a negative control (the phrase, file, or registration removed must be flagged).
 21. Solo start path: agents/solo.md holds the start command `--agent sdlc-lite:solo`, and the routing texts send ticket
    levels L1 and L2 to `solo`: agents/conductor.md, skills/fix/SKILL.md, AGENTS.md, and (from the repository root)
-   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged.
+   .claude/agents/sdlc-lite-author.md. Negative control: each phrase removed must be flagged. Claude headless retirement (T-0288):
+   scripts/run.sh holds `SDLC_CLAUDE_EXEC` and `dispatch.py prepare` in its Claude refusal, and scripts/fanout.py holds `SDLC_CLAUDE_EXEC`
+   in default_driver, so no `claude -p` runs by default (items 4, 20, 27 name the legacy path only). Negative control: each phrase removed.
 22. Ticket budget: `budget.py set` appears in skills/ticket/SKILL.md; `budget.py` and the `4 ticket budget` exit line
    in scripts/run.sh; and `budget.py` in scripts/board.py. Each pair has a negative control (the phrase removed
    must be flagged).
@@ -742,6 +744,13 @@ for rel, phrase in SOLO_ROUTE:
     if solo_route_missing(srt, phrase): errors.append(f'{rel}: solo start path missing "{phrase}"')
     elif not solo_route_missing(srt.replace(phrase, ''), phrase):
         errors.append(f'check.py: solo start path negative control not flagged for "{phrase}"')
+# Claude headless retirement (docstring item 21, T-0288): the legacy opt-in and the sub-agent pointer stay in the runner and the fanout driver.
+RETIRE_NEEDS = (('scripts/run.sh', 'SDLC_CLAUDE_EXEC'), ('scripts/run.sh', 'dispatch.py prepare'), ('scripts/fanout.py', 'SDLC_CLAUDE_EXEC'))
+def retire_missing(text, phrase): return phrase not in text
+for rel, phrase in RETIRE_NEEDS:
+    rtx = _rd(root/rel)
+    if retire_missing(rtx, phrase): errors.append(f'{rel}: claude headless retirement missing "{phrase}"')
+    elif not retire_missing(rtx.replace(phrase, ''), phrase): errors.append(f'check.py: claude retirement negative control not flagged for "{phrase}" in {rel}')
 # Guard numbers (docstring item 23): the docstring's numbered guards run 1..N once each, and every "docstring item N" comment names one.
 def guard_numbers_bad(doc, src):
     nums = [int(n) for n in re.findall(r'(?m)^(\d+)\. ', doc)]

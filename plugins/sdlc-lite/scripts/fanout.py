@@ -478,6 +478,8 @@ def default_driver(handoff_rel, kind='full', size=None):
             PROMPT.format(handoff=handoff_rel)))
     if backend != 'claude':
         raise Refuse('unknown SDLC_BACKEND: ' + backend)
+    if os.environ.get('SDLC_CLAUDE_EXEC') != '1':
+        raise Refuse('no default claude -p driver: use fanout.py prep and land (sub-agent lanes), --driver CMD, or SDLC_CLAUDE_EXEC=1 (legacy)')
     return ' '.join(shlex.quote(x) for x in (
         'claude', '-p', '--plugin-dir', str(PLUGIN), '--agent', 'sdlc-lite:conductor', '--model', 'opus',
         '--effort', 'medium', '--dangerously-skip-permissions', PROMPT.format(handoff=handoff_rel)))
@@ -891,7 +893,10 @@ def print_plan(ctx):
     else:
         out.append(f"driver: solo first (--lane {ctx['lane_mode']}): steps.py lane picks solo or the full chain per ticket")
         out.append(f"  solo (ticket level L1 and L2): {solo_command('<handoff>', 'L2')}")
-        out.append(f"  full: {default_driver('<handoff>')}")
+        try:
+            out.append(f"  full: {default_driver('<handoff>')}")
+        except Refuse as e:
+            out.append(f"  full: {e}")
         out.append("  (<handoff> is each ticket's handoff path relative to the lane worktree)")
     if ctx['rewrite_refs']:
         out.append('close: tickets.py close <slug> --rewrite-refs '
@@ -1891,6 +1896,7 @@ fi
 
 def selftest():
     misses = []
+    os.environ['SDLC_CLAUDE_EXEC'] = '1'  # T-0288: the legacy Claude driver stays testable; case 15 checks the refusal without it
 
     def expect(label, cond):
         if not cond:
@@ -2759,7 +2765,16 @@ def selftest():
             cmd = solo_command('.sdlc/t/h/handoff.md', size, 'codex')
             expect(f'case 15 command: Codex size {size} runs solo_run.py --backend codex --tier {level}, got {cmd}',
                    'solo_run.py' in cmd and '--backend codex' in cmd and f'--tier {level} ' in cmd and '--task-dir .sdlc/t/h' in cmd)
+        saved_ex = os.environ.pop('SDLC_CLAUDE_EXEC', None)
+        try:
+            default_driver('h.md', 'full', 'L2')
+            expect('case 15 T-0288: no default claude -p driver without SDLC_CLAUDE_EXEC=1 (Refuse)', False)
+        except Refuse:
+            pass
+        os.environ['SDLC_CLAUDE_EXEC'] = '1'
         full = default_driver('h.md', 'full', 'L2')
+        if saved_ex is None: os.environ.pop('SDLC_CLAUDE_EXEC', None)
+        else: os.environ['SDLC_CLAUDE_EXEC'] = saved_ex
         expect(f'case 15 command negative control: the full driver starts the conductor, never solo, got {full}',
                'sdlc-lite:conductor' in full and 'sdlc-lite:solo' not in full)
         for big in ('L4', 'L5', 'XL'):

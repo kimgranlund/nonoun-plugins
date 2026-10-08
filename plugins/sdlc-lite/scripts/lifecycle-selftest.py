@@ -18,6 +18,7 @@ import codex_exchange
 spec = importlib.util.spec_from_file_location('codex_test', Path(__file__).with_name('codex-selftest.py'))
 fixture = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture)
+os.environ['SDLC_CLAUDE_EXEC'] = '1'  # T-0288: these cases drive the legacy Claude branch of run.sh
 
 CLAUDE = '''#!/usr/bin/env python3
 import json, os, time
