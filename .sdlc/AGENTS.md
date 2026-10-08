@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4f3bba742b43 -->
+<!-- sdlc-lite:managed:start v1 sha256:f04e85f6635a -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,16 +9,15 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 6
+- proposed: 5
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0357 Test solo L2 Sonnet at high versus xhigh on past tickets (0357-solo-l2-effort-sweep)
   - T-0363 Make spawn names, prompt first lines and descriptions follow the sub-agent list style guide (0363-subagent-list-style)
-  - T-0367 Messenger startup reports previously claimed, unacknowledged messages in read/<receiver> once, and states new versus pending precisely (0367-messenger-read-backlog)
 - ready: 0
 - blocked: 0
-- done: 329
+- done: 330
 - dropped: 25
 
 ## Procedures
