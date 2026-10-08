@@ -25,3 +25,8 @@ ultimate-tokens ran 6 planner runs and 3 plan reviews on geometry-maison-ladder;
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- [ ] `python3 plugins/sdlc-lite/scripts/steps.py selftest` passes, including the (r) cases where a review of only `notes-fix` findings reads as split and appends `### Notes` to the step handoff, and one real defect among them still replans.
+- [ ] `plugins/sdlc-lite/agents/plan-reviewer.md` defines the `notes-fix:` finding and its verdict rule; `skills/chain/SKILL.md` and `skills/handoff-format/SKILL.md` describe the fold.
+- [ ] `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, and both `generate --check` pass.

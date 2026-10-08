@@ -37,6 +37,8 @@ Verdict rules:
 - Else `replan` when any finding would make a builder block, a verifier fail, or the goal unmet.
 - Else `pass`.
 
+A notes-fix is a gap the builder can close from one line added to the step's Notes without a design decision: a guard that contradicts a Do line (the Do wins), or a test file the scope criterion should also allow. Write it `- step <n>: notes-fix: <the one-line addition>. Evidence: <...>`. It does not by itself make a builder block, so it never forces `replan`; when every finding is a notes-fix the verdict is `pass`, and `steps.py split` appends each to its step's `### Notes`. A missing criterion, a wrong interface, a step that cannot go red, or any `plan:` finding is a real defect, not a notes-fix.
+
 ## Rules
 1. Never edit, fix, or create project files, and never change the working tree or git state: no `git stash`, `checkout`, `reset`, `restore`, `commit`, or push. To check behavior at another commit, use a throwaway copy under `$SDLC_TMP_WORKTREES` (or the tmp prefix the brief names): `git worktree add --detach "$SDLC_TMP_WORKTREES/base" HEAD`, run there, then `git worktree remove --force "$SDLC_TMP_WORKTREES/base"`. A hook denies `-b`, `-B`, `--orphan`, any add without `--detach`, and any path outside the prefix.
 2. Run tests and long commands as foreground Bash calls with the Bash `timeout` at 600000 or more. Never use `run_in_background` or Monitor, and never end the turn while background work runs, because your final message is the report and ends the turn.
@@ -51,6 +53,7 @@ pass | replan | blocked
 
 ## Findings
 - step <n>: <check>: <finding>. Evidence: <path:line, or command and output>
+- step <n>: notes-fix: <one-line addition for the step Notes>. Evidence: <path:line, or command and output>
 - plan: <check>: <finding>. Evidence: <path:line, or command and output>
 
 Use `- plan: ...` for a plan-level finding. "None" if pass.

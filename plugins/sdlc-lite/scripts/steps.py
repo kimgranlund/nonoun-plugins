@@ -161,6 +161,8 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                 result (a missing or disallowed Verdict is not a structure error; it stays below)
               newest such result's Verdict (first non-blank line under ## Verdict, lowercased):
                 pass                                     -> split
+                replan whose every ## Findings item is "- step <n>: notes-fix: <text>" -> read as pass
+                  (T-0364); split then appends a "### Notes" list of the step's items to that step's handoff
                 replan                                   -> replan, but stop when the task dir holds
                   two or more plan-reviewer results with Verdict replan (the count is per task dir);
                   a "review override: <that file name>: <reason>" line under ## Plan review in
@@ -1314,6 +1316,7 @@ def split(target, only=None, guard_timeout=None, override_review=None):
     goal = read_goal(task_dir)
     steps = parse_steps(plan)
     lint_or_fail(plan, steps)
+    folded = review_findings(after[-1])[0] if after and review_verdict(after[-1]) == 'pass' else None
     if only:
         missing = sorted(set(n for n in only if n not in steps))
         if missing:
@@ -1344,6 +1347,8 @@ def split(target, only=None, guard_timeout=None, override_review=None):
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
         body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(task_dir, n))
+        if folded and folded.get(n):
+            body += '\n### Notes\n' + ''.join(f'- {x}\n' for x in folded[n])
         path.write_text(body, encoding='utf-8')
         written.append(path)
     return written
@@ -1769,10 +1774,47 @@ def cmd_resume(task):
 
 # --- review -----------------------------------------------------------------
 
+NOTES_FIX_RE = re.compile(r'^[-*] step (\d+): notes-fix: (\S.*)$')
+
+
+def review_findings(path):
+    """({step number: [one-line fix text]} of the `- step <n>: notes-fix: <text>` items under ## Findings of a
+    plan-reviewer result, count of the other items) (T-0364). Read leniently; never raises."""
+    try:
+        lines = pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+    except (OSError, UnicodeDecodeError):
+        return {}, 0
+    notes, other, inside = {}, 0, False
+    for line in lines:
+        if line.startswith('## '):
+            inside = line.rstrip() == '## Findings'
+            continue
+        if not inside or not line.strip():
+            continue
+        m = NOTES_FIX_RE.match(line.strip())
+        if m:
+            notes.setdefault(int(m.group(1)), []).append(' '.join(m.group(2).split()))
+        else:
+            other += 1
+    return notes, other
+
+
+def review_notes(path):
+    """The notes-fix items of a plan-reviewer result when every item under ## Findings is one, else None.
+    A `- plan:` item, an unmarked step item, and a file with no items are not notes-level."""
+    notes, other = review_findings(path)
+    return notes if notes and not other else None
+
+
 def review_verdict(path):
     """'pass', 'replan', or 'blocked' from the first non-blank line under ## Verdict, read by
-    results.key_value against the plan-reviewer schema, else None. Ignores the header; never raises."""
-    return results.key_value(path, 'plan-reviewer')
+    results.key_value against the plan-reviewer schema, else None. Ignores the header; never raises.
+    A `replan` whose findings are all Notes-level fixes (review_notes) reads as 'pass': the findings are
+    folded into the step Notes by split, never a replan (T-0364). A real defect keeps `replan`."""
+    v = results.key_value(path, 'plan-reviewer')
+    if v == 'replan' and review_notes(path):
+        return 'pass'
+    return v
 
 
 def plan_facts(plan):
@@ -4253,6 +4295,35 @@ def selftest():
         check('(r) --override-review with no rejecting review does nothing: it splits and writes no record',
               rc == 0 and (d / 'step-1' / 'handoff.md').is_file() and err == ''
               and (d / 'handoff.md').read_text(encoding='utf-8') == '## Goal\ng\n')
+        # (r) T-0364: Notes-level findings pass and fold into the step Notes; a real defect still replans
+        def r_notes(v, items):
+            return f'## Verdict\n{v}\n\n## Findings\n{items}\n\n## Missing decisions\nNone\n'
+
+        NF = '- step 1: notes-fix: guard line contradicts the Do; use the Do.\n- step 1: notes-fix: add tests/x.py to scope.'
+        for v in ('replan', 'pass'):
+            d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_notes(v, NF)})
+            rc, out, _ = run_main(['review', str(d)])
+            rc2, _, _ = run_main(['split', str(d)])
+            h = (d / 'step-1' / 'handoff.md').read_text(encoding='utf-8') if rc2 == 0 else ''
+            check(f'(r) a {v} review whose findings are all notes-fix passes: review says split, split appends '
+                  'them to the step Notes',
+                  rc == 0 and out.splitlines()[0] == 'split' and rc2 == 0
+                  and h.endswith('\n### Notes\n- guard line contradicts the Do; use the Do.\n'
+                                 '- add tests/x.py to scope.\n'))
+        d = r_task({'planner-L3.md': r_plan('L4'),
+                    'plan-reviewer-L1.md': r_notes('replan', NF + '\n- step 1: criteria: c2 cannot go red.')})
+        before = snapshot(d)
+        rc, out, err = run_main(['split', str(d)])
+        check('(r) negative: one real defect among notes-fix findings still replans and split refuses',
+              r_first(d) == 'replan' and rc == 1 and out == '' and snapshot(d) == before)
+        for bad in ('- plan: notes-fix: x', '- step 1: x', 'None'):
+            d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_notes('replan', bad)})
+            check(f'(r) negative: a replan review whose finding is "{bad}" is not notes-level and replans',
+                  r_first(d) == 'replan')
+        d = r_task({'planner-L3.md': r_plan('L4'), 'plan-reviewer-L1.md': r_notes('replan', NF),
+                    'plan-reviewer-L1-2.md': r_notes('replan', NF)},
+                   ['planner-L3.md', 'plan-reviewer-L1.md', 'plan-reviewer-L1-2.md'])
+        check('(r) notes-fix reviews never count toward the one-replan cap', r_first(d) == 'split')
         # (lane) the lane of a ticket, and its record in skips.md
         def l_handoff(size='L2', tail=''):
             front = f'---\nid: T-0001\ntitle: "x"\nsize: {size}\n---\n\n' if size is not None else ''
