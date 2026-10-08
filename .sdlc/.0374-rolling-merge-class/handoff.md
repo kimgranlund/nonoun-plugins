@@ -2,7 +2,7 @@
 id: T-0374
 title: "Lanes get a computed merge class (rolling or integration) and a land command for rolling lanes"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0375]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -36,3 +36,7 @@ verifier: L3
 - [ ] The class rule, the `hash_bound:` config shape, and the roll gate are defined in one place, the "Merge class and `roll`" paragraph under `scripts/fanout.py` in `docs/references/sdlc-internals.md`; `steps.merge_class` is the one implementation of the rule and both `board.py` and `fanout.py` call it; `tickets.hash_bound_globs` is the one reader of the list.
 - [ ] Main moves only by fast-forward: `roll` merges, gates, and closes in `<lanes-dir>/rolling`, then runs `git merge --ff-only` where main is checked out or `git update-ref` against main's old sha, and never commits on or resets the main checkout.
 - [ ] `python3 plugins/sdlc-lite/scripts/check.py`, `python3 plugins/sdlc-lite/scripts/tickets.py check`, `python3 plugins/sdlc-lite/scripts/steps.py selftest`, `python3 plugins/sdlc-lite/scripts/tickets.py selftest`, `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` exit 0; `git diff --check` is clean and the diff adds no em or en dash.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L3); one independent batched verifier passed before the merge
