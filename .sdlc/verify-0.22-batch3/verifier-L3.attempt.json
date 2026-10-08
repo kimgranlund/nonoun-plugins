@@ -10,7 +10,7 @@
   "effort": "xhigh",
   "routing_reason": "eight sonnet-built tickets on the dispatch, spawn and Codex paths; last batch before 0.22.0",
   "reason_source": "caller",
-  "status": "running",
+  "status": "completed",
   "started_at": "2026-10-08T20:28:41.852930+00:00",
   "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite",
   "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.sdlc/verify-0.22-batch3/handoff.md",
@@ -289,5 +289,7 @@
     "worktree-agent-ae11c915f68bab1f5",
     "worktree-agent-ae9ec401bb7128396",
     "worktree-agent-afafb1b20c1d0dd6f"
-  ]
+  ],
+  "exit_code": 0,
+  "finished_at": "2026-10-08T21:17:43.313800+00:00"
 }
