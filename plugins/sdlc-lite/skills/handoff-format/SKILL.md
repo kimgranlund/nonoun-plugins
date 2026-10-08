@@ -158,6 +158,8 @@ level: L<n>
 
 Never write `grep -P` in a criterion or guard: BSD grep on macOS has no -P, so a negated pipeline passes vacuously and `steps.py lint` refuses it; use `python3 -c` or `grep -E` with a literal byte sequence.
 
+The step's `### Do` states its validation scope (see `agents/planner.md`): the affected behavior and named dependents, tests named by stable title and file rather than by source line, and the integration gate that owns broad coverage when the handoff assigns one.
+
 `### Read first` is optional. For each file the step changes, it lists the nearest `AGENTS.md` in that file's folder or a folder above it, leaving out the root entry, one ``- `<path>` `` line each, relative to the repository root. A step whose only entry is the root has no `### Read first`. `steps.py lint` refuses a listed path that does not exist.
 
 ### Merge step

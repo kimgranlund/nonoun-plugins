@@ -26,3 +26,11 @@ Codex RCA review for maison T-0301, 2026-10-08. Observed cause: one-line amendme
 
 ## Constraints
 No em or en dashes. No push or publish. Codex host behavior cannot be run live here; mark it unverified.
+
+## Acceptance criteria
+- `test -f docs/reports/2026-10-08-lean-template-hunks-0301.md` and it holds a disposition (accept, adapt or decline, with a reason) for each of the four hunks plus the standing-orders note, and states the receipt checker and T-0299 preflight are not built.
+- `grep -q 'selected-test count' plugins/sdlc-lite/agents/planner.md`, `grep -q 'integration gate' plugins/sdlc-lite/agents/planner.md`, `grep -q 'validation scope' plugins/sdlc-lite/skills/handoff-format/SKILL.md`.
+- `! grep -q 'rerun them all' plugins/sdlc-lite/scripts/fanout.py` and `! grep -q 'rerun all checks' plugins/sdlc-lite/agents/solo.md`.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0 (item 46 pins the text; it fails on the pre-change tree).
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/steps.py selftest`, `python3 plugins/sdlc-lite/scripts/fanout.py selftest`, `python3 plugins/sdlc-lite/scripts/claude_roles.py generate --check` and `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check` exit 0.
+- No em or en dash in the changed files; `git diff --check` is clean.

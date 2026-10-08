@@ -179,6 +179,9 @@
    to a temp copy of agents/conductor.md without regenerating is flagged.
 45. Red checkpoint (T-0378): `redck.py" record` appears in agents/builder.md; `redck.py` in scripts/run.sh and scripts/dispatch.py (the completion audit);
    `process-deviations.md` in agents/verifier.md, agents/filer.md, and scripts/redck.py. Negative control: each phrase removed must be flagged.
+46. Lean template (T-0385): agents/planner.md names `selected-test count`, `just to write the plan`, `validation scope`, `integration gate`, and `no record exists`;
+   skills/handoff-format/SKILL.md names `validation scope`; agents/solo.md, scripts/fanout.py (both briefs) say `can affect` after a fix and never `rerun them all` or
+   `rerun all checks`. Negative controls: each phrase removed, and a planted old phrase, must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -602,6 +605,27 @@ for phrase, rels in RED_CHECKPOINT.items():
         if red_checkpoint_missing(text, phrase): errors.append(f'{rel}: red checkpoint text missing "{phrase}"')
         elif not red_checkpoint_missing(text.replace(phrase, ''), phrase):
             errors.append(f'check.py: red checkpoint text negative control not flagged for {rel}')
+# Lean template (docstring item 46): validation scope, the integration-gate exception, and affected-input reruns.
+LEAN_TEMPLATE = {'selected-test count': ('agents/planner.md',), 'just to write the plan': ('agents/planner.md',),
+                 'validation scope': ('agents/planner.md', 'skills/handoff-format/SKILL.md'),
+                 'integration gate': ('agents/planner.md',), 'no record exists': ('agents/planner.md',)}
+RERUN_ALL = ('rerun them all', 'rerun all checks')
+def lean_template_bad(rel, text):
+    out = [f'{rel}: lean template text missing "{w}"' for w, rels in LEAN_TEMPLATE.items() if rel in rels and w not in text]
+    if rel in ('agents/solo.md', 'scripts/fanout.py'):
+        need = 2 if rel == 'scripts/fanout.py' else 1
+        if len(re.findall(r'rerun the checks (?:the fix|that fix) can affect', text)) < need: out.append(f'{rel}: affected-input rerun wording missing ({need} expected)')
+        out += [f'{rel}: still says "{w}"' for w in RERUN_ALL if w in text]
+    return out
+for rel in sorted({r for rels in LEAN_TEMPLATE.values() for r in rels} | {'agents/solo.md', 'scripts/fanout.py'}):
+    f = root/rel
+    text = f.read_text() if f.is_file() else ''
+    errors.extend(lean_template_bad(rel, text))
+    if not lean_template_bad(rel, text):
+        mutants = [text.replace(w, '') for w, rels in LEAN_TEMPLATE.items() if rel in rels]
+        if rel in ('agents/solo.md', 'scripts/fanout.py'):
+            mutants += [text.replace('can affect', 'can touch'), text + '\nrerun them all\n', text + '\nrerun all checks\n']
+        if any(not lean_template_bad(rel, m) for m in mutants): errors.append(f'check.py: lean template negative control not flagged for {rel}')
 # Carry forward (docstring item 17): producer contracts end with the section; planner and builder read it first.
 CF_PRODUCERS = ('agents/scout.md', 'agents/researcher.md', 'agents/architect.md', 'agents/archaeologist.md')
 CARRY_FORWARD = {'## Carry forward': CF_PRODUCERS + ('agents/planner.md', 'agents/builder.md'),
