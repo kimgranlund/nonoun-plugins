@@ -371,7 +371,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0371 | [.0371-guards-single-session](.0371-guards-single-session/handoff.md) | dispatch.py guards assume one session: own-pid attempt block and repo-wide stray worktree check | bug | L1 | P2 | T-0363 | 🟢 done |
 | T-0372 | [0372-codex-solo-native-transport](0372-codex-solo-native-transport/handoff.md) | Codex solo launcher does not supply the native exchange request file | bug | L2 | P1 | none | ⏳ proposed |
 | T-0373 | [0373-codex-role-preflight](0373-codex-role-preflight/handoff.md) | Codex dispatch readiness does not check roles loaded in the current session | bug | L2 | P1 | T-0372 | ⏳ proposed |
-| T-0375 | [0375-lane-ledger](0375-lane-ledger/handoff.md) | board.py --lanes shows base sha, stale-base flag, verifier verdict, merge class and owner | feature | L2 | P2 | none | ⏳ proposed |
+| T-0375 | [.0375-lane-ledger](.0375-lane-ledger/handoff.md) | board.py --lanes shows base sha, stale-base flag, verifier verdict, merge class and owner | feature | L2 | P2 | none | 🟢 done |
 | T-0374 | [0374-rolling-merge-class](0374-rolling-merge-class/handoff.md) | Lanes get a computed merge class (rolling or integration) and a land command for rolling lanes | feature | L3 | P2 | T-0375 | ⏳ proposed |
 | T-0376 | [0376-lane-base-from-merge-base](0376-lane-base-from-merge-base/handoff.md) | The lane base sha is the lane's merge-base at dispatch, not the main checkout HEAD | bug | L2 | P2 | none | ⏳ proposed |
 | T-0377 | [.0377-split-only-tree](.0377-split-only-tree/handoff.md) | steps.py split --only runs guard and red spans in the lane tree, not the main checkout | bug | L1 | P2 | none | 🟢 done |
