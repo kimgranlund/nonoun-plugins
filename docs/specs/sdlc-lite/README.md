@@ -11,3 +11,4 @@ Proposal, not implemented. Version 0.4, 2026-10-04.
 - [Second review](../../reports/lean-sdlc-design-review-2.md): ready after fixes; applied in v0.4.
 - [Cost control addendum](cost-control.md): four items the lean tickets do not cover (spec gate, handoff freeze, replan delta with a planner checklist, per-ticket budget), measured on 2026-10-04 run records.
 - [Cost control review](../../reports/lean-sdlc-cost-control-review.md): independent architect review of the addendum.
+- [Gate lock admission](gate-lock-admission.md): design for review (T-0386), not implemented: gate_lock.py as the weighted shared admission authority, with the owner split, migration from old plugin paths, and regression cases. The maintainer's decision is pending.
