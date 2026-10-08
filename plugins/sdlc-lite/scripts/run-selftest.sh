@@ -216,6 +216,15 @@ tdwant "no build, verifier L3" "fable --effort xhigh" "$(tddry L3)"
 # 8. A live step with no build reads only under itself, not its siblings.
 tdreset; tdbuild step-1 L1 sonnet; mkdir -p "$td/step-3"; echo '## Step 3' >"$td/step-3/handoff.md"
 tdwant "step-3 verifier ignores step-1" "sonnet --effort medium" "$(tddry L1 .sdlc/td/step-3/handoff.md)"
+# 9. A solo ticket has no builder result: the newest `role solo` record in runs.jsonl holds the family (T-0356).
+tdreset; printf '%s\n' '{"role":"solo","level":"L2","model":"sonnet"}' >"$td/runs.jsonl"
+tdwant "sonnet solo, verifier L2 moves to opus" "opus --effort high" "$(tddry L2)"
+tdreset; printf '%s\n' '{"role":"solo","level":"L3","model":"opus"}' >"$td/runs.jsonl"
+tdwant "negative control: opus solo, verifier L2 stays sonnet" "sonnet --effort high" "$(tddry L2)"
+tdreset; printf '%s\n' '{"role":"solo","level":"L2","model":"sonnet"}' '{"role":"scout","level":"L1","model":"sonnet"}' >"$td/runs.jsonl"
+tdwant "a non-solo record is not a solo family: newest solo sonnet still moves verifier L2 to opus" "opus --effort high" "$(tddry L2)"
+tdreset; printf '%s\n' '{"role":"scout","level":"L1","model":"sonnet"}' >"$td/runs.jsonl"
+tdwant "negative control: no solo record, verifier L2 stays sonnet" "sonnet --effort high" "$(tddry L2)"
 rm -rf "$td"
 
 # Plan-reviewer family rule reads the newest planner result by runs.jsonl order (dry run).

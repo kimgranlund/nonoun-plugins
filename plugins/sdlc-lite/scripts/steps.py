@@ -2,7 +2,8 @@
 """Split a planner result into one step handoff per step, so /chain never parses a plan by hand.
 
 Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout SECONDS] [--override-review REASON] |
-                 lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | next <step dir> |
+                 lint <planner.md | task dir> | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
+                 next <step dir> |
                  resume <task dir> |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] | selftest}
@@ -170,6 +171,12 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
             An invalid result prints "invalid result: <path>: <reason>", then "reason: the newest
             result does not match its results.py schema; stop and ask the user", then the read:
             lines; exit 0. next and resume print it the same way.
+  verifier-level  verifier-level <task dir>: print the level of a solo ticket's one batched verifier from its
+            handoff.md (T-0356): L3 (Fable) for a ticket of size L4 or L5, a title starting "Merge", the word
+            security in the title or ## Goal, a line "verifier: L3", or a checkbox criterion under ## Acceptance
+            criteria that pins an exact label or string (the words verbatim, exact or literal label/string/text/
+            wording/name, or label); else L2 (Sonnet high), L1 and L2 tickets included. Stdout: the level, then
+            "reason: <text>" and "read: <handoff.md>"; exit 0; exit 1 when the dir has no handoff.md. Writes nothing.
   lane      lane <task dir>: pick the task's lane, solo, lean, or full, and append it to <task dir>/skips.md.
             Stdout: the lane, then one "reason: <text>" line per reason, then one "read: <path>" line per
             file read (<task dir>/handoff.md when it exists, the newest planner-*.md by order.py when
@@ -2224,6 +2231,58 @@ def cmd_lane(task, check=False):
         print(f'reason: {r}')
     for p in read:
         print(f'read: {p}')
+    return 0
+
+
+# --- verifier level of a ticket (T-0356) -------------------------------------
+
+VERIFIER_FABLE_SIZES = ('L4', 'L5')
+VERIFIER_MARK_RE = re.compile(r'^verifier: L3\s*$', re.M)
+VERIFIER_MERGE_RE = re.compile(r'^Merge\b')
+VERIFIER_SECURITY_RE = re.compile(r'\bsecurity\b', re.I)
+# A criterion that pins an exact label or string says so in words; one that does not carries the mark line.
+VERIFIER_PIN_RE = re.compile(r'\bverbatim\b|\b(?:exact|exactly|literal)\s+(?:label|string|text|wording|name)s?\b|\blabels?\b', re.I)
+
+
+def ticket_verifier(text):
+    """(level, reason) of the one batched verifier of a solo ticket, from its handoff text. L3 (Fable) only for a
+    ticket of size L4 or L5, a Merge ticket, a security ticket, a ticket whose acceptance criteria pin an exact
+    label or string (the words verbatim, exact label, literal string, or label), or one with a `verifier: L3`
+    line; every other ticket, any L1 or L2 ticket included, gets L2 (Sonnet high). The replay in
+    docs/reports/2026-10-07-verifier-l2-replay.md found L2 missed a literal label match and nothing else."""
+    import tickets
+    meta = tickets.parse(text) or {}
+    size, title = str(meta.get('size', '')), str(meta.get('title', ''))
+    goal, criteria, inside = [], [], None
+    for line in text.splitlines():
+        if line.startswith('## '):
+            inside = line.rstrip()[3:]
+        elif inside == 'Goal':
+            goal.append(line)
+        elif inside == 'Acceptance criteria' and re.match(r'^\s*[-*] \[[ xX]\]', line):
+            criteria.append(line)
+    if size in VERIFIER_FABLE_SIZES:
+        return 'L3', f'size {size}'
+    if VERIFIER_MERGE_RE.match(title):
+        return 'L3', 'a merge ticket'
+    if VERIFIER_SECURITY_RE.search(title) or VERIFIER_SECURITY_RE.search(' '.join(goal)):
+        return 'L3', 'a security ticket'
+    if VERIFIER_MARK_RE.search(text):
+        return 'L3', 'the handoff carries a verifier: L3 line'
+    if any(VERIFIER_PIN_RE.search(c) for c in criteria):
+        return 'L3', 'a criterion pins an exact label or string'
+    return 'L2', f'size {size or "unset"}: no L4 or L5 size, merge, security, or exact label or string criterion'
+
+
+def cmd_verifier_level(task):
+    h = pathlib.Path(task) / 'handoff.md'
+    if not h.is_file():
+        print(f'steps verifier-level: no handoff.md in {task}', file=sys.stderr)
+        return 1
+    level, reason = ticket_verifier(h.read_text(encoding='utf-8'))
+    print(level)
+    print(f'reason: {reason}')
+    print(f'read: {h}')
     return 0
 
 
@@ -4352,6 +4411,45 @@ def selftest():
         check('(lane solo close) only lane solo writes Skipped entries: a size L3 ticket (lane full) gets none',
               '- skip:' not in (fd / 'skips.md').read_text(encoding='utf-8'))
 
+    # (v) The verifier level of a solo ticket (T-0356): L2 by default, L3 only on the named conditions.
+    def v_text(size='L2', title='x', goal='g', criteria=(), tail=''):
+        front = f'---\nid: T-0001\ntitle: "{title}"\nsize: {size}\n---\n\n' if size is not None else ''
+        crit = ''.join(f'- [ ] {c}\n' for c in criteria)
+        return f'{front}## Goal\n{goal}\n\n## Acceptance criteria\n{crit}\n## Context\n{tail}\n'
+
+    def v_level(text):
+        return ticket_verifier(text)[0]
+
+    check('(v) negative control: an L1 or L2 ticket with plain criteria gets verifier L2',
+          v_level(v_text('L1', criteria=['`true` exits 0'])) == 'L2' and v_level(v_text('L2', criteria=['`true` exits 0'])) == 'L2')
+    check('(v) negative control: an unsized ticket and a size L3 ticket get verifier L2',
+          v_level(v_text(None)) == 'L2' and v_level(v_text('L3')) == 'L2')
+    check('(v) negative control: exactly one, security, or label outside the Goal, title, and criteria, and verifier: L3 inside a sentence, do not raise it',
+          v_level(v_text(criteria=['exactly one file changes'], tail='a label, a security note, verifier: L3 in prose')) == 'L2')
+    check('(v) positive control: a line that is only verifier: L3 raises it, wherever it sits',
+          v_level(v_text(tail='verifier: L3')) == 'L3')
+    check('(v) positive control: size L4 and size L5 get verifier L3',
+          v_level(v_text('L4')) == 'L3' and v_level(v_text('L5')) == 'L3')
+    check('(v) positive control: a title starting Merge gets verifier L3; one that only contains merge does not',
+          v_level(v_text(title='Merge lane x')) == 'L3' and v_level(v_text(title='Do not merge lane x')) == 'L2')
+    check('(v) positive control: the word security in the title or the Goal gets verifier L3',
+          v_level(v_text(title='Security review of hooks')) == 'L3' and v_level(v_text(goal='close a security hole')) == 'L3')
+    check('(v) positive control: a criterion that pins an exact label or string gets verifier L3',
+          v_level(v_text(criteria=['the exact label reads `cost`'])) == 'L3'
+          and v_level(v_text(criteria=['the text matches verbatim'])) == 'L3'
+          and v_level(v_text(criteria=['the cost_basis label is `x`'])) == 'L3')
+    check('(v) a label word in a plain bullet outside the criteria checkboxes does not raise it',
+          v_level(v_text(tail='- the label is shown')) == 'L2')
+    with tempfile.TemporaryDirectory() as vtmp:
+        vd = pathlib.Path(vtmp)
+        (vd / 'handoff.md').write_text(v_text('L2', criteria=['`true` exits 0']), encoding='utf-8')
+        rc, out, err = run_main(['verifier-level', str(vd)])
+        rc2, _, err2 = run_main(['verifier-level', str(vd / 'nope')])
+        check('(v) verifier-level prints the level, a reason, and the handoff read; writes no file; a dir with no handoff.md exits 1',
+              rc == 0 and err == '' and out.splitlines()[0] == 'L2' and out.splitlines()[1].startswith('reason: ')
+              and out.splitlines()[2] == f'read: {vd / "handoff.md"}' and sorted(x.name for x in vd.iterdir()) == ['handoff.md']
+              and rc2 == 1 and 'no handoff.md' in err2)
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -4395,6 +4493,8 @@ def main(argv):
     p = sub.add_parser('lane', help='print a task dir\'s lane (solo, lean, or full) and append it to its skips.md')
     p.add_argument('task', help='a task dir holding handoff.md and any planner-*.md results')
     p.add_argument('--check', action='store_true', help='print the lane only; write nothing (run.sh lane gate)')
+    p = sub.add_parser('verifier-level', help='print the level (L2 or L3) of the one batched verifier of a solo ticket; writes nothing')
+    p.add_argument('task', help='a task dir holding the ticket handoff.md')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -4428,6 +4528,8 @@ def main(argv):
         return cmd_review(a.task)
     if a.cmd == 'lane':
         return cmd_lane(a.task, a.check)
+    if a.cmd == 'verifier-level':
+        return cmd_verifier_level(a.task)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)

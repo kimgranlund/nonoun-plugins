@@ -61,6 +61,8 @@ Follows the newest build level in the step dir: builder L1 or L2 → L1, L3 → 
 | L2 | Sonnet high | Judgment on behavior and edge cases |
 | L3 | Fable xhigh | Subtle correctness: concurrency, security, data |
 
+A solo ticket's one batched verifier (agents/solo.md) is not chosen by build level: `steps.py verifier-level <task dir>` prints L2 for every ticket, L1 and L2 included, and L3 only for a ticket of size L4 or L5, a Merge ticket, a security ticket, or a ticket whose acceptance criteria pin an exact label or string (a `verifier: L3` line in the handoff says so when the words do not). Fanout's `solo_verifier` keeps L3 on the Codex host, because the replay measured Claude only. A chain step is still verified by the table above. Evidence: `docs/reports/2026-10-07-verifier-l2-replay.md` (L2 matched L3 on 41 of 43 criteria at about one sixth of the cost, and missed one literal label match).
+
 ## planner (L1 to L3)
 
 | Level | Model / effort | Fits when |

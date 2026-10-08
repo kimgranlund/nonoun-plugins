@@ -30,7 +30,7 @@ prep
   (worktree-<id>-solo, known before the spawn) and its `worktree` (.claude/worktrees/<id>-solo), and a `prompt` brief
   that asks the solo to commit `<id>: <title>` on its branch (SOLO_SUBAGENT_PROMPT; the headless SOLO_PROMPT says
   never commit). For solo level L2 and L3 it also prints the verifier command, prepared against the sub-agent worktree after the
-  solo reports (`dispatch.py prepare verifier L3`, SOLO_VERIFIER, never the solo's family); its result is committed on the
+  solo reports (`dispatch.py prepare verifier L2`, or L3 for the tickets steps.py verifier-level names; SOLO_VERIFIER, T-0356); its result is committed on the
   branch. Every ticket gets its `land` command, pinning the integration branch, the base sha, the lanes dir and the
   gates. A ticket at its budget gate prints `blocked: budget gate: budget.py ack` instead of a dispatch and prep exits 4.
   A `full` ticket gets no dispatch: the parent conductor drives the chain, each role a sub-agent against the lane tree
@@ -63,7 +63,7 @@ Solo first (the default driver). For each ticket, after the lane syncs, `steps.p
   the ticket's runs.jsonl and the budget and board meter it (T-0226); anything else (`full`, or `lean` after a plan) keeps the headless conductor
   running /sdlc-lite:chain. A solo ticket of level L2 or L3 then needs one independent batched verifier: a new
   task-dir verifier result with Verdict pass, from the solo itself or else one fanout runs once
-  (`run.sh verifier L3 <task dir>/handoff.md`, never the solo's own family); a missing or non-pass verdict is
+  (`run.sh verifier L2 <task dir>/handoff.md`, or L3 where steps.py verifier-level says so); a missing or non-pass verdict is
   the outcome `verifier fail` or `no verifier result`, with no merge. --lane solo or full forces the choice for
   every ticket (no lane call, no record); --driver CMD overrides everything and skips the lane call. The run
   report lists each ticket's lane. Safety: --max-lanes N (default 4) is the most regular lanes one run may
@@ -333,7 +333,20 @@ PROMPT = ('Run /sdlc-lite:chain {handoff} unattended. No person is present: neve
 # sdlc-solo-l1..l3 from adapters/codex/models.json. check.py guards that solo.md and these agree.
 SOLO_TIERS = {'L1': ('sonnet', 'low', 'L1'), 'L2': ('sonnet', 'xhigh', 'L2'), 'L3': ('opus', 'xhigh', 'L3')}
 SOLO_VERIFIED = ('L2', 'L3')  # the solo levels that need one independent batched verifier before the merge
-SOLO_VERIFIER = 'L3'  # a different family from every solo builder (Sonnet, Opus): the run.sh verifier L3
+SOLO_VERIFIER = 'L2'  # the default level of a solo ticket's batched verifier (T-0356); solo_verifier raises it to L3
+
+
+def solo_verifier(handoff):
+    """The level of a solo ticket's one batched verifier, read from its handoff.md (steps.ticket_verifier): L2 by
+    default, L3 only for a ticket of size L4 or L5, a merge or security ticket, or one whose criteria pin an exact
+    label or string. Off the Claude host it stays L3: the replay behind T-0356 measured the Claude levels only.
+    The independence rule is the dispatch family rule (a Sonnet solo gets an Opus L2 verifier), not the level."""
+    if os.environ.get('SDLC_BACKEND', 'claude') != 'claude':
+        return 'L3'
+    try:
+        return steps.ticket_verifier(pathlib.Path(handoff).read_text(encoding='utf-8'))[0]
+    except OSError:
+        return SOLO_VERIFIER
 MAX_LANES_DEFAULT, MAX_LANES_HARD, STAGGER_DEFAULT = 4, 16, 20
 # A test gate that ran nothing: unittest "Ran 0 tests", pytest "no tests ran" or exit code 5 (nothing collected).
 VACUOUS_GATE = re.compile(r'\bRan 0 tests\b|\bno tests ran\b|\bcollected 0 items\b', re.M)
@@ -1135,8 +1148,9 @@ def run_ticket(ctx, lane, t, lock):
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
         verdict = solo_verdict(taskdir, before)
         if verdict is None:  # the solo did not run it (Codex solo, say): fanout runs it once
-            say(ctx, lane, t.id, f'verifier {SOLO_VERIFIER} started (the solo left no new verifier result)')
-            vrc = run_logged(['bash', str(SCRIPTS / 'run.sh'), 'verifier', SOLO_VERIFIER,
+            vlevel = solo_verifier(taskdir / 'handoff.md')
+            say(ctx, lane, t.id, f'verifier {vlevel} started (the solo left no new verifier result)')
+            vrc = run_logged(['bash', str(SCRIPTS / 'run.sh'), 'verifier', vlevel,
                               str(taskdir / 'handoff.md')], str(wt), env,
                              ctx['logs'] / f'{lane.name}-{t.id}-verifier.log', ctx['run_id'])
             verdict = solo_verdict(taskdir, before) if not vrc else None
@@ -1423,9 +1437,9 @@ def subagent_dispatch(ctx, t, tier):
     name = subagent_name(t.id)
     handoff = (ctx['trel'] / t.slug / 'handoff.md').as_posix()
     verifier = None
-    if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports (SOLO_VERIFIER: never its family)
+    if tier in SOLO_VERIFIED:  # prepared against the sub-agent worktree once the solo reports; the level is the ticket's at prep
         verifier = ' '.join(shlex.quote(x) for x in (
-            sys.executable, str(SCRIPTS / 'dispatch.py'), 'prepare', 'verifier', SOLO_VERIFIER,
+            sys.executable, str(SCRIPTS / 'dispatch.py'), 'prepare', '--solo-model', model, 'verifier', solo_verifier(ctx['top'] / handoff),
             f'{HOST_WORKTREES}/{name}/{handoff}'))
     return {'subagent_type': f'sdlc-lite:solo-{tier}', 'name': name, 'description': f'solo {tier}: {t.id}',
             'model': model, 'effort': effort,
@@ -3073,9 +3087,42 @@ def selftest():
         expect(f'case 22 prep: the brief carries the commit instruction `<id>: <title>`, got {d1.get("prompt")!r}',
                'final commit `T-0001: Ticket t1`' in d1.get('prompt', '') and 'Never push' in d1.get('prompt', '')
                and 'Never commit' not in d1.get('prompt', ''))
-        expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L3 against the worktree, got {d1.get("verifier")!r} '
-               f'{d2.get("verifier")!r}', d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
-               and 'prepare verifier L3 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or ''))
+        expect(f'case 22 prep: level L1 has no verifier, level L2 prepares verifier L2 (negative control: not L3) against the '
+               f'worktree, got {d1.get("verifier")!r} {d2.get("verifier")!r}',
+               d1.get('verifier') is None and d2.get('subagent_type') == 'sdlc-lite:solo-L2'
+               and 'prepare --solo-model sonnet verifier L2 .claude/worktrees/T-0002-solo/.sdlc/t2/handoff.md' in (d2.get('verifier') or '')
+               and 'verifier L3' not in (d2.get('verifier') or ''))
+        # T-0356: the positive control: a `verifier: L3` line in the handoff prepares verifier L3; the others stay L2
+        pv = tmp / 'prep-verifier'
+        sized_repo(pv, ['L2', 'L2', 'L2'], {'.gitignore': gi})
+        for k, extra_line in ((2, '\nverifier: L3\n'), (3, '\n## Acceptance criteria\n- [ ] the exact label reads `cost`\n')):
+            hv = pv / '.sdlc' / f't{k}' / 'handoff.md'
+            hv.write_text(hv.read_text() + extra_line, encoding='utf-8')
+        for args_ in (('add', '-A'), ('commit', '-q', '-m', 'verifier marks')):
+            sh(pv, *args_)
+        pvp = verb(pv, 'prep', 'alpha=T-0001,T-0002,T-0003', '--lanes-dir', str(tmp / 'pv-lanes'), '--integration', 'fanout/pv',
+                   '--stagger', '0')
+        try:
+            vv = {x: dispatch_of(pvp.stdout, x).get('verifier') or '' for x in ('T-0001', 'T-0002', 'T-0003')}
+        except (ValueError, KeyError) as e:
+            vv = {}
+            expect(f'case 22 verifier level: the dispatch JSON parses, got {e!r} in {pvp.stdout[-400:]!r}', False)
+        expect(f'case 22 verifier level: a plain L2 ticket prepares verifier L2; a `verifier: L3` line and an exact-label '
+               f'criterion prepare verifier L3, got {vv}',
+               '--solo-model sonnet verifier L2 ' in vv.get('T-0001', '') and '--solo-model sonnet verifier L3 ' in vv.get('T-0002', '')
+               and '--solo-model sonnet verifier L3 ' in vv.get('T-0003', ''))
+        hp1 = p1 / '.sdlc' / 't2' / 'handoff.md'
+        saved_backend = os.environ.pop('SDLC_BACKEND', None)
+        try:
+            claude_level = solo_verifier(hp1)
+            os.environ['SDLC_BACKEND'] = 'codex'
+            codex_level = solo_verifier(hp1)
+        finally:
+            os.environ.pop('SDLC_BACKEND', None)
+            if saved_backend is not None:
+                os.environ['SDLC_BACKEND'] = saved_backend
+        expect(f'case 22 verifier level: a plain L2 ticket is L2 on Claude; off the Claude host it stays L3 (the replay measured '
+               f'Claude only), got {claude_level} {codex_level}', claude_level == 'L2' and codex_level == 'L3')
         expect('case 22 prep: each ticket gets its land command naming the branch, the ticket, the base and the gate',
                all(f'land worktree-{x}-solo --ticket {x}' in pp.stdout for x in ('T-0001', 'T-0002', 'T-0003'))
                and f'--base {main_p1}' in pp.stdout and '--gate true' in pp.stdout)

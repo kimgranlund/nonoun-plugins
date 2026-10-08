@@ -28,6 +28,8 @@
 # result, keeps Opus high). A verifier whose handoff dir holds no builder result (a verifier
 # launched at the task dir) reads instead the newest builder result, by scripts/order.py, of the
 # highest-numbered step-<n>/ under it that holds one. step-<n>.superseded-<k>/ dirs are left out.
+# A verifier whose dir holds no builder result at all reads the model of the newest `role solo` record in
+# runs.jsonl (a solo ticket, T-0356): a Sonnet solo moves it to Opus.
 # scripts/codex_roles.py resolve applies the same rule on Codex.
 # Throwaway worktrees: a real run (never a dry run) passes the role
 # SDLC_TMP_WORKTREES=<toplevel>/.worktrees/tmp/<role>-<pid of run.sh>, a prefix this run owns. run.sh
@@ -238,13 +240,25 @@ if [[ "$backend" == claude && "$role" == verifier ]]; then
       best_n=$((10#$sn)); built="$sb"
     done
   fi
+  bmodel=""
   if [[ -n "$built" ]]; then
     bmodel=$(grep -o 'model=[a-z]*' "$built" | head -1 | cut -d= -f2 || true)
-    if [[ "$model" == "$bmodel" ]]; then
-      case "$model" in
-        fable|sonnet) model=opus ;;
-      esac
-    fi
+  else
+    # A solo ticket has no builder result either: the newest `role solo` record in runs.jsonl holds the
+    # family (T-0356; dispatch.py solo_model is the twin), so a Sonnet solo's L2 verifier moves to Opus.
+    bmodel=$(python3 - "$plugin_root/scripts" "$dir" 2>/dev/null <<'PY' || true
+import sys
+sys.path.insert(0, sys.argv[1])
+import order
+got = [r.get('model') for _, r in order.records(sys.argv[2]) if r.get('role') == 'solo']
+print(got[-1] if got and isinstance(got[-1], str) else '')
+PY
+)
+  fi
+  if [[ -n "$bmodel" && "$model" == "$bmodel" ]]; then
+    case "$model" in
+      fable|sonnet) model=opus ;;
+    esac
   fi
 fi
 # A plan-reviewer never runs on the planner's model family (T-0171, user decision 2026-09-30):

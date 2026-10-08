@@ -8,7 +8,8 @@
 Claude (T-0284): run checks the budget gate, appends one `role solo` record (transport subagent, cost null) so the
 verifier's family rule sees the solo's model, and prints the dispatch JSON for the parent to spawn as a background
 sub-agent (`subagent_type sdlc-lite:solo-<level>`, model, effort, prompt = the brief). It starts no `claude -p`. The
-parent then runs one `dispatch.py prepare verifier L2 <task dir>/handoff.md` for levels L2 and L3. `--exec` is the legacy
+parent then runs one `dispatch.py prepare verifier <level> <task dir>/handoff.md` for levels L2 and L3 (L2, or L3 where
+`steps.py verifier-level` says so, T-0356). `--exec` is the legacy
 headless start that the next paragraphs describe (`fanout.py run` lanes use it until T-0288; sub-agent lanes use `fanout.py prep` and `land`, T-0285); Codex always executes.
 
 With --exec (or Codex), run starts the session at the level's model and effort (agents/solo.md), prints the agent's report on
@@ -105,12 +106,14 @@ def dispatch_json(task_dir, tier, brief, worktree=None):
         print(f"solo_run.py: budget {hold['percent']}%: ask the user; budget.py ack", file=sys.stderr)
         return 4, None
     model, effort, level = TIERS[tier]
+    import steps  # same scripts/ dir: the one rule for the verifier level (T-0356)
+    vlevel = steps.ticket_verifier(handoff.read_text(encoding='utf-8'))[0]
     attempt = uuid.uuid4().hex
     slug = re.sub(r'[^a-z0-9]+', '-', pathlib.Path(task_dir).resolve().name.lower()).strip('-')[:40] or 'task'
     d = dict(subagent_type=f'sdlc-lite:solo-{tier}', name=f'solo-{tier}-{slug}', description=f'solo {tier}: {slug}',
              model=model, effort=effort, prompt=brief, run_in_background=os.environ.get('SDLC_HEADLESS') != '1',
              role='solo', level=level, tier=tier, handoff=str(handoff.resolve()), artifacts_dir=str(pathlib.Path(task_dir).resolve()),
-             attempt_id=attempt, verifier='python3 %s prepare verifier L2 %s' % (SCRIPTS / 'dispatch.py', handoff.resolve()) if tier != 'L1' else None)
+             attempt_id=attempt, verifier='python3 %s prepare verifier %s %s' % (SCRIPTS / 'dispatch.py', vlevel, handoff.resolve()) if tier != 'L1' else None)
     # The spawn gate (hooks/block-role-spawn.sh) finds the dispatch record from the prompt's Handoff line.
     d['prompt'] = f'Handoff: {d["handoff"]}\nArtifacts dir: {d["artifacts_dir"]}\n{brief}'
     if worktree:
@@ -693,6 +696,11 @@ def selftest():
                    rcd == 0 and dd['subagent_type'] == 'sdlc-lite:solo-L2' and dd['name'] == 'solo-L2-subagent' and dd['tier'] == 'L2'
                    and (dd['model'], dd['effort']) == ('sonnet', 'xhigh')
                    and dd['prompt'].endswith('the brief') and dd['prompt'].startswith('Handoff: ') and (dsub / 'solo-L2-subagent.dispatch.json').is_file() and 'prepare verifier L2' in dd['verifier'])
+            dmark = ticket('subagent-mark', budget_usd=10)
+            (dmark / 'handoff.md').write_text((dmark / 'handoff.md').read_text(encoding='utf-8') + '\nverifier: L3\n', encoding='utf-8')
+            rcv, dv = pj(dmark, 'L2', 'the brief')
+            expect('subagent: a handoff with a verifier: L3 line prints prepare verifier L3 (T-0356 positive control); the plain ticket above printed L2',
+                   rcv == 0 and 'prepare verifier L3' in dv['verifier'] and 'prepare verifier L2' in dd['verifier'])
             expect('subagent: one solo record with transport subagent and cost null, and no session started',
                    len(recs) == 2 and recs[1]['role'] == 'solo' and recs[1]['model'] == 'sonnet' and recs[1]['transport'] == 'subagent'
                    and recs[1]['cost_usd'] is None and not mark.exists())
