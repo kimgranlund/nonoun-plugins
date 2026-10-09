@@ -72,6 +72,8 @@ it then does the following.
                role's agent name, the own prefix left out; peers' worktrees and branches are not reported. Report only.
   stale        a handoff sha256 that differs from the one prepare stored prints "stale input: <handoff> changed
                while <role> ran" and sets stale_input. The exit code is unchanged by cleanup, strays, and stale.
+  result_sha256 (T-0388) the sha256 of the result file as accepted, after the header write, stored in the attempt
+               record and the runs.jsonl line; a later edit no longer matches it. Old records lack the field.
   runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent;
                loaded_context is {"status":"log absent"} (a sub-agent leaves no stream-json log).
                cost_usd is estimated from the notice tokens by cost_estimate.py (cost_estimated true, cost_basis
@@ -922,6 +924,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     header = '<!-- role=%s level=%s model=%s effort=%s%s -->' % (
         role, level, d['model'], d['effort'], ' shared_with_builder=yes' if d.get('shared_with_builder') else '')
     result.write_text(header + '\n' + body + '\n', encoding='utf-8')
+    result_sha = hashlib.sha256(result.read_bytes()).hexdigest()  # T-0388: the accepted bytes, after the header write
     remove_tmp(tree, prefix)
     found = strays(tree, prefix, attempt)
     stray_wt, stray_br = [p for p, _ in found[0]], found[1]
@@ -931,7 +934,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     est, basis, _ = cost_estimate.estimate(d['model'], usage)
     line = dict(ts=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), role=role, level=level, model=d['model'], effort=d['effort'],
                 file=result.name, shared_with_builder=bool(d.get('shared_with_builder')), attempt_id=d['attempt_id'],
-                handoff_sha256=d['handoff_sha256'], stale_input=stale, routing_reason=d['routing_reason'], backend='claude',
+                handoff_sha256=d['handoff_sha256'], result_sha256=result_sha, stale_input=stale, routing_reason=d['routing_reason'], backend='claude',
                 transport='subagent', agent_id=agent_id, usage=usage, cost_usd=est, cost_reason=None if est is not None else COST_REASON,
                 duration_ms=duration_ms, turns=None, stray_worktrees=stray_wt, stray_branches=stray_br,
                 loaded_context={'status': 'log absent'})  # T-0252: a sub-agent leaves no stream-json log to read
@@ -951,7 +954,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
     if reason is not None:
         say('%s result %s; see %s' % (role, reason, result))
         report_strays(found)
-        close('failed', 3)
+        close('failed', 3, result_sha256=result_sha)
         deliver_quietly(dispatch_file)
         return 3
     (result.parent / ('%s-%s.limit' % (role, level))).unlink(missing_ok=True)
@@ -959,7 +962,7 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
         subprocess.run([sys.executable, str(HERE / 'redck.py'), 'audit', d['handoff'], '--attempt-id', d['attempt_id']],
                        stdout=subprocess.DEVNULL, check=False)
     report_strays(found)
-    close('completed', 0)
+    close('completed', 0, result_sha256=result_sha)
     print(result)
     deliver_quietly(dispatch_file)
     queue_prune(d, attempt, agent_id)
@@ -1864,8 +1867,8 @@ def selftest():
             a_line, b_line = lines_of(ra / rel)[-1], lines_of(rb / rel)[-1]
             case('record parity %s: valid result exits 0 like run.sh and prints the result path' % role,
                  src == 0 and rc == 0 and out.strip().splitlines()[0] == got['result'])
-            case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id and cost_reason' % role,
-                 set(b_line) == set(a_line) | {'agent_id', 'cost_reason'} and set(a_line) <= set(b_line))
+            case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id, cost_reason, and result_sha256' % role,
+                 set(b_line) == set(a_line) | {'agent_id', 'cost_reason', 'result_sha256'} and set(a_line) <= set(b_line))
             case('record parity %s: transport subagent, agent_id, null cost with its reason' % role,
                  (b_line['transport'], a_line['transport'], b_line['agent_id'], b_line['cost_usd'], b_line['cost_reason'])
                  == ('subagent', 'claude', 'agent-' + role, None, 'subagent usage not priced'))
@@ -1880,6 +1883,12 @@ def selftest():
             case('record parity %s: specgate and lane_override are carried only when set' % role,
                  ('specgate' in b_line) == ('specgate' in a_line) == (role == 'plan-reviewer') and 'lane_override' not in b_line)
             att = attempt_of(got)
+            rsha = hashlib.sha256(Path(got['result']).read_bytes()).hexdigest()
+            case('record %s stores result_sha256 in the attempt and the runs row, equal to the result file sha256' % role,
+                 att.get('result_sha256') == rsha and b_line.get('result_sha256') == rsha)
+            Path(got['result']).write_text(Path(got['result']).read_text() + 'edited\n')
+            case('record %s: editing the result afterwards no longer matches result_sha256' % role,
+                 hashlib.sha256(Path(got['result']).read_bytes()).hexdigest() != att['result_sha256'])
             case('record %s closes the attempt completed with exit_code 0 and the agent id' % role,
                  (att['status'], att['exit_code'], att['agent_id']) == ('completed', 0, 'agent-' + role) and 'finished_at' in att)
             if role in ('builder', 'verifier'):
