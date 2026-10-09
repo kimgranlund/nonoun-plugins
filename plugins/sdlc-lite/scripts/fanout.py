@@ -1619,22 +1619,25 @@ def branch_names(cwd, ref, prefix):
     return {pathlib.PurePosixPath(x).name for x in p.stdout.splitlines() if x} if p.returncode == 0 else set()
 
 
-def branch_verdict(ctx, ref, t):
+def branch_verdict(ctx, ref, t, with_held=False):
     """'pass', 'fail', ... or None: the newest task-dir verifier result committed on ref that the integration branch
-    does not hold yet (read from git objects into a temp dir, never from a tree)."""
+    does not hold yet (read from git objects into a temp dir, never from a tree). With with_held, the pair
+    (verdict, held): held is the subjects or owners of a `fail` result's `deferred:` or `unmet-dependency:` note
+    (steps.held_note, T-0408), else ''."""
     prefix = (ctx['trel'] / t.slug).as_posix()
     on_ref = branch_names(ctx['cwd'], ref, prefix)
     new = sorted(n for n in on_ref - branch_names(ctx['cwd'], ctx['integration'], prefix)
                  if re.fullmatch(r'verifier-L\d+(-\d+)?\.md', n))
     if not new:
-        return None
+        return (None, '') if with_held else None
     with tempfile.TemporaryDirectory() as td:
         for n in new + (['runs.jsonl'] if 'runs.jsonl' in on_ref else []):
             blob = git(ctx['cwd'], 'show', f'{ref}:{prefix}/{n}' if prefix != '.' else f'{ref}:{n}')
             if blob.returncode == 0:
                 (pathlib.Path(td) / n).write_text(blob.stdout, encoding='utf-8')
         newest = newest_verifier(td, set(new))
-        return steps.verdict_or_none(newest) if newest else None
+        v = steps.verdict_or_none(newest) if newest else None
+        return (v, steps.held_note(newest) if newest and v == 'fail' else '') if with_held else v
 
 
 def record_solo_lane(taskdir, tier):
@@ -1822,11 +1825,11 @@ def land_ticket(ctx, lock):
         return 'no changes', tip[:7]
     kind, tier = ctx['kinds'][t.id]
     if kind == 'solo' and tier in SOLO_VERIFIED:  # one independent batched verifier decides before any merge
-        verdict = branch_verdict(ctx, ref, t)
+        verdict, held = branch_verdict(ctx, ref, t, with_held=True)
         if verdict is None:
             return 'no verifier result (commit the verifier result on the branch, then land again)', tip[:7]
         if verdict != 'pass':
-            return f'verifier {verdict}', tip[:7]
+            return f'verifier {verdict}' + (f' (held {held}: not a defect, settle it in the owner stage)' if held else ''), tip[:7]
     return merge_gate_close(ctx, lane, t, lock, ref, tip[:7])
 
 
@@ -1997,7 +2000,8 @@ def roll_ticket(ctx, lock):
         base = branch_base(ctx, ref, t)
         stale = base if base and git(cwd, 'merge-base', '--is-ancestor', base, old).returncode else ''
         hits = steps.declared_hits(ctx['top'], ctx['globs'], f'{old}...{ref}')
-        cls, why = steps.merge_class(branch_verdict(ctx, ref, t), stale, hits)  # the verdict: results main lacks
+        verdict, held = branch_verdict(ctx, ref, t, with_held=True)  # the verdict: results main lacks
+        cls, why = steps.merge_class(verdict, stale, hits, held)
         say(ctx, lane, t.id, f'merge class: {cls}' + (f' ({why})' if why else ''))
         if cls != 'rolling':
             return f'integration ({why}): land it through the integration branch (fanout.py land)', tip[:7]

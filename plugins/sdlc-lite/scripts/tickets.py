@@ -1781,7 +1781,9 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     close refuses unless rewrite_refs (rewrite_files turns each reference into the .<slug> form, keeping its
     relative or absolute form, with the rename; the dry run lists `rewrite <file>`) or force (close and leave
     them). keep_refs leaves them too without force, and records the stale citations in a ## Closed section.
-    Plain slug folders never move, so never scan."""
+    Plain slug folders never move, so never scan.
+    A criterion still held (steps.open_items: a verifier reported it unmet-dependency or deferred and no later result
+    passed it) refuses every close, --reason and --force included; nothing is written (T-0408)."""
     if keep_refs and rewrite_refs:
         raise Fail(f'{slug}: --keep-refs leaves citations as they are and --rewrite-refs rewrites them, so they '
                    f'do not combine; use one; nothing written')
@@ -1825,6 +1827,12 @@ def cmd_close(root, slug, force=False, numbered=False, reason=None, dry_run=Fals
     if meta['status'] == 'done':
         raise Fail(f'{slug}: {pid} is already closed (status: done); a second close would file duplicate '
                    f'follow-ups; nothing written')
+    import steps  # local like messages: only close needs the verifier's held criteria (T-0408)
+    held = steps.open_items(d, root)
+    if held:
+        raise Fail(f'{slug}: criteria still held: '
+                   + ', '.join(f"{i['ref']} {i['state']} {i['who']}" for i in held)
+                   + '; settle them in the owner stage; nothing written')
     got = skip_missing(d)
     if got:
         raise Fail(f'{skip_line(slug, got)}; add one "- skip: <role>; step: <n or all>; reason: <why>; '
@@ -2918,6 +2926,42 @@ def selftest():
         rc, _, err = run(root, 'close', ('alpha',), numbered=True, reason='x')
         expect(f'(o) --numbered --reason persists config: rc={rc} {err!r}',
                rc == 0 and status(root) == 'done' and config_numbered(root))
+
+        # (held) T-0408: a criterion the verifier holds (deferred or unmet-dependency) keeps the ticket open
+        V_HEAD = '<!-- role=verifier level=L2 model=opus effort=high -->\n'
+        V_HELD = (V_HEAD + '## Verdict\nfail\n\n## Criteria\n- #1 ships it: deferred integration. Evidence: not yet\n\n'
+                  '## For the next attempt\ndeferred: integration\n')
+        V_SETTLE = (V_HEAD + '## Verdict\npass\n\n## Criteria\n- #1 ships it: pass. Evidence: green\n\n'
+                    '## For the next attempt\nNone\n\n## Settles\n- ticket#1\n')
+
+        def held_case(clause='[owner: integration]', settled=False):
+            def mutate(r):
+                with (r / 'alpha' / 'handoff.md').open('a', encoding='utf-8') as f:
+                    f.write(f'\n## Acceptance criteria\n- [ ] ships it {clause}\n')
+                (r / 'alpha' / 'verifier-L2.md').write_text(V_HELD, encoding='utf-8')
+                names = ['verifier-L2.md']
+                if settled:
+                    (r / 'alpha' / 'verifier-L2-2.md').write_text(V_SETTLE, encoding='utf-8')
+                    names.append('verifier-L2-2.md')
+                (r / 'alpha' / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n in names), encoding='utf-8')
+            return mutate
+        for label, kw, args in (('--reason', {'reason': 'done elsewhere'}, ('alpha',)),
+                                ('--force --reason', {'reason': 'done elsewhere'}, ('alpha', True)),
+                                ('the filer path', {}, ('alpha',))):
+            root = case(held_case())
+            before = snap(root)
+            rc, _, err = run(root, 'close', args, **kw)
+            expect(f'(held) close via {label} refuses a held criterion and writes nothing: rc={rc} {err!r}',
+                   rc == 1 and 'criteria still held: ticket#1 deferred integration' in err
+                   and 'nothing written' in err and snap(root) == before and status(root) != 'done')
+        root = case(held_case(settled=True))
+        rc, _, err = run(root, 'close', ('alpha',), reason='done elsewhere')
+        expect(f'(held) control: the same ticket after a settling result closes: rc={rc} {err!r}',
+               rc == 0 and status(root) == 'done')
+        root = case(held_case(clause=''))
+        rc, _, err = run(root, 'close', ('alpha',), reason='done elsewhere')
+        expect(f'(held) control: a held line on a criterion with no clause does not block close: rc={rc} {err!r}',
+               rc == 0 and status(root) == 'done')
 
         # (p) --dry-run lists every bullet with its index and duplicate mark, and writes nothing
         three = '- Add retry to fetch\n- Quote the docs\n- Split the runner'

@@ -1,6 +1,6 @@
 # Verifier reports unmet dependency and deferred-to-owner apart from fail
 
-Status: design, approved by the maintainer on 2026-10-09 ("fold those into 0.22.2"); not implemented. Version 0.1, 2026-10-09, ticket T-0400. The build is its own ticket, filed after this one closes, and targets 0.22.2.
+Status: design, approved by the maintainer on 2026-10-09 ("fold those into 0.22.2"); built by T-0408 (2026-10-09) except two points listed under section 10. Version 0.2, ticket T-0400. Targets 0.22.2.
 
 ## 1. Answer in one paragraph
 
@@ -117,6 +117,8 @@ All run on temp fixtures with the `_steps_cases` pattern of results.py, each wit
 - Ticket front matter `depends:` alone. It orders ticket starts and cannot express a prerequisite of one criterion discovered during a build, nor a criterion owned by a later stage.
 
 ## 10. Risks and open points
+
+- Built deviations (T-0408): the ref ordinal counts bullet lines, not every line of `criteria_lines` (a blank line would shift later refs); `fanout.py land` still stops a held lane with a labelled `verifier fail (held ...)` outcome instead of letting it land before the owner settles; the live throwaway-project run of section 11 is not made.
 
 - The criterion ordinal `#k` is positional. A hand edit that inserts a criterion line shifts later refs; `lint` should warn when a result in the step dir names a ref whose line text no longer carries its clause. The build decides whether that is a warning or a refusal.
 - Comparing a step-dir result with a task-dir result by `runs.jsonl` position assumes both are recorded. A result with no record falls back to `order.py`'s name order within its own dir and loses to a recorded one.
