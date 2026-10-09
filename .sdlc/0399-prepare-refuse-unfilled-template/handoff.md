@@ -25,3 +25,9 @@ Maison and Codex, 2026-10-09: a ticket whose handoff was the unfilled template r
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and its output holds `ok:` lines for the unfilled bug and feature template cases (prepare verifier and planner exit 2 with one stderr line naming `handoff.md:<n>` and `unfilled template text`) and the negative control (`skip=('unfilled',)` lets the same input through).
+- `python3 plugins/sdlc-lite/scripts/dispatch.py prepare --dry-run verifier L2 .sdlc/0399-prepare-refuse-unfilled-template/handoff.md` exits 0 (a filled ticket passes).
+- `tickets.unfilled_line` in `plugins/sdlc-lite/scripts/tickets.py` reuses `prompt_text`, `body_lines`, `template` and `PLACEHOLDER_KEEP` rather than a copied rule.
+- `python3 plugins/sdlc-lite/scripts/tickets.py selftest`, `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0; `git diff --check` is clean.
