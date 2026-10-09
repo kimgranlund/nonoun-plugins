@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:4c422f030866 -->
+<!-- sdlc-lite:managed:start v1 sha256:512bc8726363 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,7 +16,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0410 Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal (0410-plan-doc-executor-design)
-- ready: 7
+- ready: 9
   - T-0411 Collector fields for K-002, K-003, K-004 and verifier minutes (0411-collector-fields-k002-k004), claimed by claude 2026-10-09
   - T-0412 record leaves the attempt running when no result exists yet (0412-record-before-result-file), claimed by claude 2026-10-09
   - T-0413 prepare --tree names the lane worktree as Tree and base (0413-prepare-tree-lane-worktree)
@@ -24,6 +24,8 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0415 Lint refuses circular criteria and records every refusal (0415-lint-circular-criteria), claimed by claude 2026-10-09
   - T-0416 Replay a scope-versus-tests heuristic and decide (0416-scope-vs-tests-heuristic-replay)
   - T-0417 Measure verifier minutes and decide on a delta verifier (0417-verifier-minutes-delta-decision)
+  - T-0418 Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4 (0418-l4-full-chain-cost-replay)
+  - T-0419 Write the standing narrow authorization for managed-block refresh in consumer repos (0419-standing-managed-block-auth), claimed by claude 2026-10-09
 - blocked: 0
 - done: 372
 - dropped: 25
