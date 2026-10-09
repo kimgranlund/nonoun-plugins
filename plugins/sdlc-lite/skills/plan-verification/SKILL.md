@@ -29,7 +29,7 @@ Draft 3 to 5 numbered criteria from the goal's Done when and the tickets' own ac
 
 ## 5. Write the negative control
 
-One line naming a state in which the measure reads red and the variable that makes it red. The cheapest: the `before` value sits on the wrong side of `target`. Otherwise name a mutation, per [checks-that-bite](${CLAUDE_PLUGIN_ROOT}/skills/checks-that-bite/SKILL.md).
+One line naming a state in which the measure reads red and the variable that makes it red. The cheapest: the `before` value sits on the wrong side of `target`. Otherwise name a mutation, per the `checks-that-bite` skill at `${CLAUDE_PLUGIN_ROOT}/skills/checks-that-bite/SKILL.md`.
 
 ## 6. Return
 
