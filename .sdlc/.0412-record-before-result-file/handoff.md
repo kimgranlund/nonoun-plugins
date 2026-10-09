@@ -2,7 +2,7 @@
 id: T-0412
 title: "record leaves the attempt running when no result exists yet"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -45,3 +45,7 @@ No em or en dashes. No push or publish. The plan step is the contract: if it is 
 - Error text on stdin with no result file still closes the attempt `failed` (exit 1).
 - The docstring `failed` paragraph and the `record` usage line describe the new behavior; only `dispatch.py` (and `docs/references/sdlc-internals.md`, unchanged) is in scope.
 - `dispatch.py selftest` passes and prints `ok:` for the four new labels and for the T-0330 verifier label.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
