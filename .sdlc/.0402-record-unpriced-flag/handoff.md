@@ -2,7 +2,7 @@
 id: T-0402
 title: "dispatch.py record flags a sub-agent run it cannot price"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,14 @@ Fleet retro 2026-10-09 row 1 (docs/reports/2026-10-09-fleet-retro-00.md): 163 of
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and prints `dispatch selftest: PASS`, including the cases "record with no --transcript and no --tokens prints the unpriced line and the row holds unpriced true" and "record with --transcript prints no unpriced line and the row is priced".
+- `python3 plugins/sdlc-lite/scripts/fleet_collect.py selftest` exits 0 and includes the case counting an `unpriced: true` row in `runs.unmetered`.
+- In `dispatch.py` `record`, the unpriced note and `unpriced: true` appear only when no cost could be estimated; the record still exits 0.
+- `docs/references/sdlc-internals.md` and `plugins/sdlc-lite/agents/conductor.md` document the flag; `claude_roles.py generate --check` and `codex_roles.py generate --check` pass.
+- `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

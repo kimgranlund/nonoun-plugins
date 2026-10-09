@@ -2,7 +2,7 @@
 id: T-0400
 title: "verifier reports unmet dependency and deferred-to-owner apart from fail"
 type: feature
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,17 @@ Maison and Codex, 2026-10-09: 11 component lanes had rows 7 to 12 of the compone
 
 ## Constraints
 Design only. The maintainer approved the design on 2026-10-09 ("fold those into 0.22.2"); a build still needs its own ticket. No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `test -f docs/specs/sdlc-lite/verifier-held-criteria.md && grep -q '^Status: design' docs/specs/sdlc-lite/verifier-held-criteria.md`
+- `grep -c 'Rejected alternatives' docs/specs/sdlc-lite/verifier-held-criteria.md | grep -qv '^0$'`
+- `for f in results.py verifier.md handoff-format steps.py; do grep -q "$f" docs/specs/sdlc-lite/verifier-held-criteria.md || exit 1; done`
+- `grep -q 'Negative controls (premature closure)' docs/specs/sdlc-lite/verifier-held-criteria.md && grep -q '^## 8. Migration' docs/specs/sdlc-lite/verifier-held-criteria.md`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/docs_check.py`
+- `python3 -c "import sys; sys.exit(any(c in open('docs/specs/sdlc-lite/verifier-held-criteria.md',encoding='utf-8').read() for c in '–—'))"`
+- Prose: the design keeps the Verdict values pass, fail and inherited red unchanged and makes a held criterion force Verdict fail; no code file is changed.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

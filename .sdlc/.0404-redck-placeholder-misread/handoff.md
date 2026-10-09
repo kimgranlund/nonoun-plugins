@@ -2,7 +2,7 @@
 id: T-0404
 title: "PLACEHOLDER_RE reads i<t ... >= as a placeholder and drops the criterion"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,12 @@ Fleet retro 2026-10-09 row 4 (ultimate-tokens, T-0044 steps 4 to 7: "redck: no (
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest` exits 0 and its output holds the cases `a node -e body with i<t and => is not skipped` and `<sha> and <step dir> are still skipped`.
+- `python3 -c "import sys; sys.path.insert(0,'plugins/sdlc-lite/scripts'); import steps; sys.exit(0 if not steps.guard_skipped('node -e \"for(let i=0;i<t;i++){}; const f=(x)=>x\"') and steps.guard_skipped('git cat-file -e <sha>') and steps.guard_skipped('test -d <step dir>/x') else 1)"`
+- `python3 plugins/sdlc-lite/scripts/redck.py selftest`, `python3 plugins/sdlc-lite/scripts/check.py`, and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
