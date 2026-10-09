@@ -2,7 +2,7 @@
 id: T-0403
 title: "steps.py widen rewrites a deny-path guard"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
 - Selftest cases `widen: (d)` cover a deny-path guard rewrite (red before, green after, lookalike still red), the rerun `widen: already applied`, a span with no allow-list and no exclude still refused with the existing "no criterion line" message, and a span with two exclude runs refused.
 - The allow-list forms F, E and A are unchanged (their `widen: (a)` and `(b)` cases still pass).
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
