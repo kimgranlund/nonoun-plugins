@@ -2,11 +2,12 @@
 id: T-0410
 title: "Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed
+status: ready
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
 created: 2026-10-09
+claimed_by: claude 2026-10-09
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
