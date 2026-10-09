@@ -483,7 +483,7 @@ def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
     mine = [d for d in sorted(task_dirs(root))
             if own(d, 'base-sha') or own(d, 'runs.jsonl') or any(own(d, f.name) for f in d.glob('*.dispatch.json'))]
     base = owner = '-'
-    verdict = 'none'
+    verdict, held = 'none', ''
     if mine:
         d = mine[-1]
         sha = ''
@@ -516,6 +516,7 @@ def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
             v = order.newest(where, 'verifier')
             if v and steps.verdict_or_none(v):
                 verdict = steps.verdict_or_none(v)
+                held = steps.held_note(v) if verdict == 'fail' else ''
                 break
     stale = '-'
     if base != '-':
@@ -529,7 +530,7 @@ def lane_ledger(root: pathlib.Path, main_root, main_head: str, git) -> list:
         tree = pathlib.Path(git('-C', str(root), 'rev-parse', '--show-toplevel').strip())
         fork = git('-C', str(tree), 'merge-base', main_head, 'HEAD').strip()
         hits = steps.declared_hits(tree, tickets.hash_bound_globs(main_root), fork, untracked=True)
-        cls, why = steps.merge_class(verdict, sha if stale == 'yes' else '', hits)
+        cls, why = steps.merge_class(verdict, sha if stale == 'yes' else '', hits, held)
         merge = f'{cls} ({why})' if why else cls
     except ValueError:  # an unreadable lane tree: no class rather than a guess
         merge = '?'

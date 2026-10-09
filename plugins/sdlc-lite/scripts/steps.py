@@ -5,6 +5,7 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
                  lint <planner.md | task dir> [--tree PATH] | precheck <task dir> | review <task dir> | lane <task dir> | verifier-level <task dir> |
                  next <step dir> |
                  resume <task dir> |
+                 open <task dir> [--explain] |
                  swap <step dir> [--timeout SECONDS] |
                  widen <step dir> <path> [<path> ...] [--timeout SECONDS] [--tree PATH] [--reason WHY] | selftest}
   split     read the plan (a planner-*.md file, or the newest planner-*.md in a task dir,
@@ -282,7 +283,13 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               newest verifier Verdict inherited red: <tests> -> inherited (a gate already red at
                 the pre-build HEAD; ask the conductor). Never counted as a fail or a no-verdict
                 run, and it breaks a no-verdict run; a bare "inherited red" with no colon is no verdict.
-              newest verifier Verdict pass               -> done
+              newest verifier Verdict pass               -> done, except a Verdict pass beside a Criteria line that
+                is unmet-dependency or deferred (fail closed) -> reverify L<level of that verifier>
+              fail whose ## For the next attempt starts "unmet-dependency:" or "deferred:" and every held
+                Criteria line checks out against the step handoff's bracket clause (T-0408; see open)
+                -> wait (no subject met yet), reverify (a declared subject is met now), or deferred (an
+                owner stage settles it). Never counted for a rebuild, a bump or a replan; a hold the handoff
+                does not declare is an ordinary fail, with "undeclared hold ignored: <ref>" in the reason.
               fail whose ## For the next attempt starts "plan defect:", holds one swap old:/swap new:
                 pair (see swap), and no other verifier result in the dir holds a pair -> swap L<build
                 level> (apply it with steps.py swap, then rebuild at that level); any other
@@ -295,10 +302,21 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               never a done or a fail, never adds a bump, and is never a verifier's paired builder.
             Errors (missing dir, no handoff level with no builder result) print one "steps next: "
             line on stderr, nothing on stdout, and exit 1.
+  open      open <task dir> [--explain] (T-0408): print one line "<ref>\t<state>\t<subject or owner>" per held
+            criterion (unmet-dependency or deferred) the task's handoffs declare with a trailing bracket clause
+            `[stage: <word>; owner: <stage word or T-NNNN>; needs: <T-NNNN|file:<path>|cap:<name>, ...>]`. A ref is
+            step-<n>#<k> (the k-th bullet under ### Acceptance criteria of that step's handoff) or ticket#<k> (the
+            k-th bullet under ## Acceptance criteria of the task handoff). The newest verifier result naming a ref
+            decides: pass settles it (a task-dir Verdict pass also settles the refs under its ## Settles). Nothing
+            and exit 0 when none; --explain adds the reason a hold is stale (its subject is met now) or an
+            ordinary fail (undeclared). tickets.py close refuses while any is open. lint refuses a malformed
+            clause; swap keeps a criterion line's clause unchanged.
   resume    pick the step a resumed /chain continues from (/chain step 4). Candidates are the task
             dir's direct children named exactly step-<n> (step-<n>.superseded-<k>/ left out),
             sorted by the integer n (step-2 before step-10). For each in order it runs the next
-            rules above; the first whose action is not done wins (invalid result included). Stdout:
+            rules above; the first whose action is not done, wait or deferred wins (invalid result included);
+            a wait or deferred step is skipped, and when only held steps remain the first one is printed
+            with "every other step passed" added to its reason. Stdout:
             that step dir as <task dir as given>/step-<n>, then exactly what next prints for it;
             exit 0. When every candidate is done: "done", then "reason: every step-<n>/ passed";
             exit 0. It never picks the newest or highest step dir. Writes nothing and never reads
@@ -1560,7 +1578,7 @@ def lint_steps(plan, steps, tree=None):
                                 'non-empty and the criterion can never pass: check '
                                 '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
                                 '(`git ls-files --others --exclude-standard -- <path>`) instead')
-    return findings + tests_findings(plan, steps) + defect_dependents(plan, steps)
+    return findings + tests_findings(plan, steps) + defect_dependents(plan, steps) + clause_findings(plan, steps)
 
 
 def lint_or_fail(plan, steps, tree=None):
@@ -1767,6 +1785,265 @@ def cmd_lint(target, tree=None):
     return 0
 
 
+# --- held criteria (T-0408) ---------------------------------------------------
+# A criterion has four states: pass, fail, `unmet-dependency <subject>` and `deferred <owner>`
+# (docs/specs/sdlc-lite/verifier-held-criteria.md). The handoff declares which criteria may be held in a trailing
+# bracket clause; the verifier may only hold a declared one, and held_items re-derives the claim from the handoff
+# and the ticket state instead of trusting the report.
+
+CLAUSE_RE = re.compile(r'\s\[([A-Za-z][\w-]*\s*:[^\[\]]*)\]\s*$')
+CLAUSE_KEYS = ('stage', 'owner', 'needs')
+WORD_RE = re.compile(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*')
+OWNER_RE = re.compile(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*|T-\d{4}')
+BULLET_RE = re.compile(r'^\s*[-*] ')
+HELD_STATES = ('unmet-dependency', 'deferred')
+HELD_NOTE_RE = re.compile(r'^(unmet-dependency|deferred):\s*(.*)$')
+CLAUSE_HINT = ('use [stage: <word>; owner: <stage word or T-NNNN>; '
+               'needs: <T-NNNN | file:<path> | cap:<name>, ...>] at the end of the line, outside any code span')
+
+
+def parse_clause(line):
+    """(meta, error) of a criterion line's trailing bracket clause. meta is {'stage': str, 'owner': str,
+    'needs': [subject]} for the keys present, {} when the line has no clause; error is a reason string for a
+    malformed clause (unknown or repeated key, empty value, bad owner or subject), else None. The clause is
+    outside any code span; the subject grammar is tickets.dep_kind."""
+    m = CLAUSE_RE.search(line)
+    if not m or line[:m.start()].count('`') % 2:
+        return {}, None
+    meta = {}
+    for part in m.group(1).split(';'):
+        key, _, val = part.partition(':')
+        key, val = key.strip(), val.strip()
+        if key not in CLAUSE_KEYS:
+            return {}, f'unknown key "{key}" (the keys are stage, owner, needs)'
+        if not val:
+            return {}, f'{key} has an empty value'
+        if key in meta:
+            return {}, f'{key} is given twice'
+        if key == 'stage':
+            if not WORD_RE.fullmatch(val):
+                return {}, f'stage "{val}" is not a lowercase kebab word'
+            meta[key] = val
+        elif key == 'owner':
+            if not OWNER_RE.fullmatch(val):
+                return {}, f'owner "{val}" is not a lowercase kebab stage word or T-NNNN'
+            meta[key] = val
+        else:
+            import tickets  # local: tickets.py owns the subject grammar and imports nothing from steps at load
+            subjects = [x.strip() for x in val.split(',')]
+            for x in subjects:
+                if tickets.dep_kind(x) is None:
+                    return {}, f'needs "{x}" is not T-NNNN, file:<path> or cap:<name>'
+            meta[key] = subjects
+    return meta, None
+
+
+def criteria_meta(line):
+    """{'stage', 'owner', 'needs'} of the keys a criterion line's bracket clause declares, else {}."""
+    return parse_clause(line)[0]
+
+
+def clause_findings(plan, steps):
+    """One finding per criterion line of a plan step whose trailing bracket clause is malformed."""
+    out = []
+    for n, block in steps.items():
+        for line in criteria_lines(block):
+            err = parse_clause(line)[1] if BULLET_RE.match(line) else None
+            if err:
+                out.append(f'steps: {plan} step {n}: criterion has a bad bracket clause: {err}\n'
+                           f'  {line.strip()}\n  {CLAUSE_HINT}')
+    return out
+
+
+def step_criterion_lines(d):
+    """{k: line}: the k-th bullet line (1-based) under ### Acceptance criteria of <step dir>/handoff.md."""
+    h = pathlib.Path(d) / 'handoff.md'
+    if not h.is_file():
+        return {}
+    items = [line for _, line in criteria_indexed(h.read_text(encoding='utf-8').splitlines()) if BULLET_RE.match(line)]
+    return dict(enumerate(items, 1))
+
+
+def ticket_criterion_lines(task):
+    """{k: line}: the k-th bullet line (1-based) under ## Acceptance criteria of <task dir>/handoff.md, fenced
+    lines left out."""
+    h = pathlib.Path(task) / 'handoff.md'
+    if not h.is_file():
+        return {}
+    items, inside, fenced = [], False, False
+    for line in h.read_text(encoding='utf-8').splitlines():
+        if line.startswith('## '):
+            inside, fenced = line.rstrip() == '## Acceptance criteria', False
+        elif inside and line.lstrip().startswith('```'):
+            fenced = not fenced
+        elif inside and not fenced and BULLET_RE.match(line):
+            items.append(line)
+    return dict(enumerate(items, 1))
+
+
+def live_step_dirs(task):
+    """[(name, path)] of the live step-<n>/ dirs of a task dir, by n."""
+    t = pathlib.Path(task)
+    got = [(int(c.name[5:]), c.name, c) for c in t.iterdir() if c.is_dir() and re.fullmatch(r'step-\d+', c.name)]
+    return [(name, c) for _, name, c in sorted(got)]
+
+
+def declared_meta(task):
+    """{ref: meta} for each criterion of the task dir whose bracket clause declares an owner or needs. A ref is
+    step-<n>#<k> or ticket#<k>; the ordinal counts bullet lines only."""
+    out = {}
+    for name, d in live_step_dirs(task):
+        for k, line in step_criterion_lines(d).items():
+            meta = criteria_meta(line)
+            if meta.get('owner') or meta.get('needs'):
+                out[f'{name}#{k}'] = meta
+    for k, line in ticket_criterion_lines(task).items():
+        meta = criteria_meta(line)
+        if meta.get('owner') or meta.get('needs'):
+            out[f'ticket#{k}'] = meta
+    return out
+
+
+def ref_key(ref):
+    scope, _, k = ref.partition('#')
+    return (0, int(scope[5:]), int(k)) if scope.startswith('step-') else (1, 0, int(k))
+
+
+def sdlc_root(task):
+    """The .sdlc root that holds a task dir: the nearest ancestor named .sdlc, else the task dir's parent."""
+    t = pathlib.Path(task).resolve()
+    return next((a for a in t.parents if a.name == '.sdlc'), t.parent)
+
+
+def subject_met(subject, root):
+    """True when an unmet-dependency subject is met now, by the tickets.py rules: T-NNNN is a done ticket, file:
+    is an existing repo path, cap: is provided by a done ticket."""
+    import tickets
+    kind = tickets.dep_kind(subject)
+    if kind == 'file':
+        return (tickets.file_base(root) / subject[len('file:'):]).exists()
+    try:
+        ts = tickets.load(tickets.layout_paths(root).tickets)
+    except tickets.Fail:
+        return False
+    if kind == 'id':
+        return any(m.get('id') == subject and m.get('status') == 'done' for _, m in ts)
+    if kind == 'cap':
+        return subject[len('cap:'):] in {n for _, m in ts if m.get('status') == 'done' for n in tickets.provides_of(m)}
+    return False
+
+
+def hold_item(ref, state, who, meta, root):
+    """One held criterion checked against its handoff declaration: {'ref', 'state', 'who', 'status', 'reason'}.
+    status is 'held' (declared and still unmet or owned elsewhere), 'stale' (the declared subject is met now, so
+    the report needs a re-check) or 'fail' (the handoff declares no such subject or owner: an undeclared hold is
+    an ordinary fail)."""
+    item = {'ref': ref, 'state': state, 'who': who, 'status': 'held', 'reason': ''}
+    if state == 'deferred' and meta.get('owner') != who:
+        item.update(status='fail', reason=f'undeclared hold ignored: {ref} (the handoff declares no owner {who})')
+    elif state == 'unmet-dependency' and who not in meta.get('needs', []):
+        item.update(status='fail', reason=f'undeclared hold ignored: {ref} (the handoff does not declare needs: {who})')
+    elif state == 'unmet-dependency' and subject_met(who, root):
+        item.update(status='stale', reason=f'stale: {who} is met now; re-check {ref}')
+    return item
+
+
+def result_ts(path):
+    name = os.path.basename(str(path))
+    for _, rec in order.records(os.path.dirname(str(path))):
+        if rec.get('file') == name:
+            return str(rec.get('ts') or '')
+    return ''
+
+
+def held_items(task, root=None):
+    """The open held criteria of a task dir (a list, sorted by ref; [] when none): for each criterion that the
+    handoff declares with owner: or needs:, the newest verifier result (task dir or live step dir) that names its
+    ref decides. pass settles it and fail is an ordinary fail; unmet-dependency and deferred are listed through
+    hold_item. A step-dir result's bare #k is that step's criterion, a task-dir result's bare #k is ticket#k, and
+    a task-dir Verdict pass settles the refs under its ## Settles. Newest is by the run record's ts, then step dir
+    before task dir, then order.py; a result with no ts loses to a recorded one. Reads only."""
+    task = pathlib.Path(task)
+    declared = declared_meta(task)
+    if not declared:
+        return []
+    root = pathlib.Path(root) if root is not None else sdlc_root(task)
+    events = []
+    for default, d, dir_rank in [(n, c, 0) for n, c in live_step_dirs(task)] + [('ticket', task, 1)]:
+        for i, w in enumerate(order.ordered(d, 'verifier')):
+            states = {}
+            for c in results.criteria_states(w):
+                if c['k'] is not None:
+                    states[f"{c['scope'] or default}#{c['k']}"] = (c['state'], c['who'])
+            if results.key_value(w, 'verifier') == 'pass':
+                for scope, k in results.settled_refs(w):
+                    states.setdefault(f'{scope}#{k}', ('pass', ''))
+            events.append(((result_ts(w), dir_rank, i), states))
+    latest = {}
+    for _, states in sorted(events, key=lambda e: e[0]):
+        latest.update(states)
+    out = []
+    for ref in sorted(declared, key=ref_key):
+        got = latest.get(ref)
+        if got and got[0] in HELD_STATES:
+            out.append(hold_item(ref, got[0], got[1], declared[ref], root))
+    return out
+
+
+def open_items(task, root=None):
+    """held_items under the name tickets.py close calls: the open held criteria of a task dir."""
+    return held_items(task, root)
+
+
+def next_note(path):
+    """The first non-blank line under ## For the next attempt of a result, stripped, else ''."""
+    body = section(path, 'For the next attempt') or []
+    return next((line.strip() for line in body if line.strip()), '')
+
+
+def held_note(path):
+    """The subjects or owners a verifier result's first ## For the next attempt line holds (`deferred:
+    integration` gives 'integration'), else ''. A display read; it does not check the handoff."""
+    m = HELD_NOTE_RE.match(next_note(path))
+    return m.group(2).strip() if m else ''
+
+
+def step_holds(d, v):
+    """hold_item for each held Criteria line of the step dir's verifier result v, checked against the step
+    handoff. A held line with no ref, or a ref of another dir, is an undeclared hold (status fail)."""
+    d = pathlib.Path(d).resolve()
+    declared = {}
+    for k, line in step_criterion_lines(d).items():
+        declared[f'{d.name}#{k}'] = criteria_meta(line)
+    root = sdlc_root(d.parent)
+    out = []
+    for c in results.criteria_states(v):
+        if c['state'] not in HELD_STATES:
+            continue
+        ref = f"{c['scope'] or d.name}#{c['k']}" if c['k'] is not None else '#<ref>'
+        out.append(hold_item(ref, c['state'], c['who'], declared.get(ref, {}), root))
+    return out
+
+
+def is_verified_hold(d, w):
+    """True when the verifier result w holds criteria and every hold checks out against the step handoff."""
+    if not HELD_NOTE_RE.match(next_note(w)):
+        return False
+    items = step_holds(d, w)
+    return bool(items) and all(i['status'] != 'fail' for i in items)
+
+
+def cmd_open(task, explain=False):
+    t = pathlib.Path(task)
+    if not t.is_dir():
+        print(f'steps open: no such directory: {t}', file=sys.stderr)
+        return 1
+    for i in held_items(t):
+        line = f"{i['ref']}\t{i['state']}\t{i['who']}"
+        print(line + (f"\t{i['reason']}" if explain and i['reason'] else ''))
+    return 0
+
+
 # --- next -------------------------------------------------------------------
 
 HANDOFF_LEVEL_RE = re.compile(r'^level: L([1-5])\s*$')
@@ -1829,17 +2106,21 @@ def verdict_or_none(path):
     return results.key_value(path, 'verifier')
 
 
-def merge_class(verdict, stale_base, hits):
+def merge_class(verdict, stale_base, hits, held=''):
     """The merge class of one lane, the one rule `board.py --lanes` and `fanout.py roll` share (T-0374; defined in
     docs/references/sdlc-internals.md, fanout merge class): ('rolling', '') when the lane is independently verified
     (verdict 'pass'), its base is an ancestor of main (stale_base empty) and it touches no declared path (hits
     empty); else ('integration', reason) with the first failing reason in this order: 'hash-bound <path>',
-    'stale base <sha7>', 'unverified' (no verdict) or 'verifier <verdict>'."""
+    'stale base <sha7>', 'unverified' (no verdict) or 'verifier <verdict>'. A `fail` verdict whose lane only holds
+    criteria (held: the subjects or owners of the result's `deferred:` or `unmet-dependency:` note, T-0408) reads
+    'held <who>' in place of 'verifier fail', so a lane waiting on its owner is not read as a defective one."""
     if hits:
         return 'integration', f'hash-bound {sorted(hits)[0]}'
     if stale_base:
         return 'integration', f'stale base {str(stale_base)[:7]}'
     if verdict != 'pass':
+        if held and verdict == 'fail':
+            return 'integration', f'held {held}'
         return 'integration', f'verifier {verdict}' if verdict and verdict != 'none' else 'unverified'
     return 'rolling', ''
 
@@ -1925,7 +2206,8 @@ def batch_verified(step_dir):
         listed = {p for line in (section(w, 'Verified') or []) for p in BATCH_PATH_RE.findall(line)}
         if want not in listed:
             continue
-        if results.structure_error(w, 'verifier') is None and verdict_or_none(w) == 'pass':
+        if (results.structure_error(w, 'verifier') is None and verdict_or_none(w) == 'pass'
+                and all(c['state'] == 'pass' for c in results.criteria_states(w))):
             return w
         return None
     return None
@@ -2010,7 +2292,32 @@ def next_action(step_dir):
                 f'{os.path.basename(v)} reports inherited red (gate already red at the pre-build HEAD); '
                 'ask the conductor, not a fail, rebuild, bump, or replan', read)
     if verdict(v) == 'pass':
+        beside = next((c for c in results.criteria_states(v) if c['state'] in HELD_STATES), None)
+        if beside is not None:
+            ref = f"#{beside['scope'] + '#' if beside['scope'] else ''}{beside['k']}" if beside['k'] is not None else 'a criterion'
+            return ('reverify', result_level(v),
+                    f'{os.path.basename(v)} has Verdict pass but {ref} is {beside["state"]} {beside["who"]}; '
+                    'read as fail, rerun the verifier at the same level', read)
         return 'done', None, f'newest verifier {os.path.basename(v)} passed', read
+    ignored = ''
+    if HELD_NOTE_RE.match(next_note(v)):
+        name, items = d.resolve().name, step_holds(d, v)
+        bad = [i for i in items if i['status'] == 'fail']
+        if items and not bad:
+            refs = ', '.join(i['ref'] for i in items)
+            stale = [i for i in items if i['status'] == 'stale']
+            if stale:
+                return ('reverify', result_level(v),
+                        f"{name}: subject now met; re-check {', '.join(i['ref'] for i in stale)}", read)
+            unmet = sorted({i['who'] for i in items if i['state'] == 'unmet-dependency'})
+            if unmet:
+                return ('wait', None,
+                        f"{name} waits on {', '.join(unmet)}; not a defect, no rebuild, bump or replan", read)
+            owners = sorted({i['who'] for i in items})
+            return ('deferred', None,
+                    f"{name} built; {refs} owned by {', '.join(owners)}; the owner stage settles them", read)
+        ignored = ('undeclared hold ignored: ' + ', '.join(i['ref'] for i in bad) if bad
+                   else 'undeclared hold ignored: the note holds a criterion no Criteria line names') + '; '
     if is_plan_defect(v):
         name = os.path.basename(v)
         if swap_pair(v) is not None and not earlier_swap(d, v):
@@ -2030,13 +2337,13 @@ def next_action(step_dir):
             continue
         if w not in read:
             read.append(w)
-        if verdict_or_none(w) == 'fail' and not is_plan_defect(w):
+        if verdict_or_none(w) == 'fail' and not is_plan_defect(w) and not is_verified_hold(d, w):
             count += 1
     if count <= 1:
-        return 'rebuild', level, f'first counted fail at build L{level}', read
+        return 'rebuild', level, f'{ignored}first counted fail at build L{level}', read
     if level < 5:
-        return 'bump', level + 1, f'{count} counted fails at build L{level}', read
-    return 'stop', None, f'{count} counted fails at build L5; there is no L6, ask the user', read
+        return 'bump', level + 1, f'{ignored}{count} counted fails at build L{level}', read
+    return 'stop', None, f'{ignored}{count} counted fails at build L5; there is no L6, ask the user', read
 
 
 INVALID_REASON = 'the newest result does not match its results.py schema; stop and ask the user'
@@ -2073,7 +2380,8 @@ STEP_DIR_RE = re.compile(r'step-(\d+)')
 def resume_action(task):
     """Return (step dir or None, action, level or None, reason, [result paths read]) for a task dir:
     the lowest-numbered step-<n>/ (by integer n; step-<n>.superseded-<k>/ left out) whose next_action
-    is not done, else (None, 'done', None, reason, []). Reads only; never file times."""
+    is not done, wait or deferred, else the first wait or deferred step (a held step is never printed done),
+    else (None, 'done', None, reason, []). Reads only; never file times."""
     t = pathlib.Path(task)
     if not t.is_dir():
         raise Fail(f'steps resume: no such directory: {t}')
@@ -2081,6 +2389,7 @@ def resume_action(task):
                   if c.is_dir() and (m := STEP_DIR_RE.fullmatch(c.name)))
     if not nums:
         raise Fail(f'steps resume: {t} has no step-<n>/ dirs; run steps.py split {t} first')
+    held = None
     for n in nums:
         d = pathlib.Path(task) / f'step-{n}'
         try:
@@ -2090,8 +2399,13 @@ def resume_action(task):
             if msg.startswith('steps next: '):
                 msg = msg[len('steps next: '):]
             raise Fail(f'steps resume: {d}: {msg}')
-        if action != 'done':
+        if action in ('wait', 'deferred'):  # the held step's own build is complete: go on to the next one
+            held = held or (d, action, level, reason, read)
+        elif action != 'done':
             return d, action, level, reason, read
+    if held is not None:
+        d, action, level, reason, read = held
+        return d, action, level, f'{reason}; every other step passed', read
     return None, 'done', None, 'every step-<n>/ passed', []
 
 
@@ -2766,6 +3080,9 @@ def swap(step_dir, timeout=300):
     if is_red_line(new) != is_red_line(target):
         refuse('the new text must carry (red) in its leading tags exactly when the old criterion line does: '
                f'old {"is" if is_red_line(target) else "is not"} a (red) line')
+    if parse_clause(target)[0] != parse_clause(f'- {new}')[0]:
+        refuse('the new text must keep the old criterion line\'s bracket clause unchanged: '
+               f'old {target.strip()}')
     spans = line_spans(f'- {new}')
     if not spans:
         refuse(f'the new criterion holds no runnable command span: {new}')
@@ -5310,6 +5627,119 @@ def selftest():
         check('(L) a second split gives byte-identical handoffs',
               before == {n: rd(td, n) for n in (3, 4, 9)} and all(before.values()))
 
+        # T-0408 held criteria: unmet-dependency and deferred are not defects; open lists them; swap keeps the clause
+        T_FM = ('---\nid: T-0307\ntitle: "schema"\ntype: chore\nstatus: {st}\nsize: L1\npriority: P2\ndepends: []\n'
+                'created: 2026-10-09\n---\n\n## Goal\nx\n')
+        H_STEP = ('## Task goal\ng\n\n## Step 1: x\nlevel: L2\n### Do\nd\n### Acceptance criteria\n'
+                  '- `test -f a` [needs: T-0307]\n- `test -f b` [owner: integration]\n- `test -f c`\n')
+        H_UNMET = ('## Verdict\nfail\n\n## Criteria\n- #1 `test -f a`: unmet-dependency T-0307. Evidence: no a\n\n'
+                   '## For the next attempt\nunmet-dependency: T-0307\n- #1 unmet-dependency\n')
+        H_DEFER = ('## Verdict\nfail\n\n## Criteria\n- #2 `test -f b`: deferred integration. Evidence: no b\n\n'
+                   '## For the next attempt\ndeferred: integration\n- #2 deferred\n')
+        H_PASSHELD = ('## Verdict\npass\n\n## Criteria\n- #2 `test -f b`: deferred integration. Evidence: no b\n\n'
+                      '## For the next attempt\nNone\n')
+        H_UNDECL = ('## Verdict\nfail\n\n## Criteria\n- #3 `test -f c`: deferred integration. Evidence: no c\n\n'
+                    '## For the next attempt\ndeferred: integration\n- #3 deferred\n')
+        SETTLE = ('## Verdict\npass\n\n## Criteria\n- #step-1#2 `test -f b`: pass. Evidence: b exists\n\n'
+                  '## For the next attempt\nNone\n\n## Settles\n- step-1#2\n')
+
+        def held_task(step_files, t_status='ready', step_handoff=H_STEP, task_files=(), ticket_ac=None):
+            """<root>/.sdlc/{0307-schema, task/{handoff.md, step-1, step-2}}: returns the task dir."""
+            count[0] += 1
+            root = tmp / f'held{count[0]}' / '.sdlc'
+            (root / '0307-schema').mkdir(parents=True)
+            (root / '0307-schema' / 'handoff.md').write_text(T_FM.format(st=t_status), encoding='utf-8')
+            t = root / 'task'
+            s1 = t / 'step-1'
+            s1.mkdir(parents=True)
+            (t / 'handoff.md').write_text('## Goal\ng\n' + (ticket_ac or ''), encoding='utf-8')
+            (s1 / 'handoff.md').write_text(step_handoff, encoding='utf-8')
+            for d, files in ((s1, step_files), (t, task_files)):
+                for name, text in files:
+                    (d / name).write_text(hdr(name, text), encoding='utf-8')
+                if files:
+                    (d / 'runs.jsonl').write_text(''.join(f'{{"file": "{n}"}}\n' for n, _ in files), encoding='utf-8')
+            return t
+
+        B = ('builder-L2.md', DONE)
+        t = held_task([B, ('verifier-L1.md', H_UNMET)])
+        check('held: unmet-dependency with T-0307 still ready -> wait, not a replan or rebuild',
+              nxt(t / 'step-1', 'wait'))
+        t = held_task([B, ('verifier-L1.md', H_UNMET)], t_status='done')
+        check('held: control, T-0307 done -> reverify the recheck, not wait', nxt(t / 'step-1', 'reverify L1'))
+        t = held_task([B, ('verifier-L1.md', H_DEFER)])
+        check('held: deferred with a declared owner -> deferred', nxt(t / 'step-1', 'deferred'))
+        t = held_task([B, ('verifier-L1.md', H_DEFER)], step_handoff=H_STEP.replace(' [owner: integration]', ''))
+        check('held: control, the same result with no owner clause -> counted rebuild, not deferred',
+              nxt(t / 'step-1', 'rebuild L2'))
+        t = held_task([B, ('verifier-L1.md', H_UNDECL)])
+        check('held: a hold on a criterion with no clause -> rebuild', nxt(t / 'step-1', 'rebuild L2'))
+        t = held_task([B, ('verifier-L1.md', H_DEFER), ('verifier-L1-2.md', H_DEFER), ('verifier-L1-3.md', H_DEFER)])
+        check('held: repeated held results are not counted fails -> still deferred, never bump',
+              nxt(t / 'step-1', 'deferred'))
+        t = held_task([B, ('verifier-L1.md', H_PASSHELD)])
+        check('held: Verdict pass beside a deferred line is never done -> reverify', nxt(t / 'step-1', 'reverify L1'))
+        saved_states = results.criteria_states
+        results.criteria_states = lambda path: []
+        try:
+            got = next_action(t / 'step-1')[0]
+        finally:
+            results.criteria_states = saved_states
+        check(f'held: control, with the criteria reader stubbed empty the same result is done ({got})', got == 'done')
+        t = held_task([B, ('verifier-L1.md', H_DEFER)])
+        rc, out, err = run_main(['open', str(t)])
+        check('held: open lists the deferred criterion', rc == 0 and out == 'step-1#2\tdeferred\tintegration\n' and err == '')
+        t = held_task([B, ('verifier-L1.md', H_DEFER)], task_files=[('verifier-L2.md', SETTLE)])
+        rc, out, err = run_main(['open', str(t)])
+        check('held: a task-dir result that settles the ref empties open', rc == 0 and out == '' and err == '')
+        t = held_task([B, ('verifier-L1.md', H_DEFER)], task_files=[('verifier-L2.md', SETTLE.replace('pass\n\n## Crit', 'fail\n\n## Crit', 1).replace(': pass.', ': fail.'))])
+        rc, out, err = run_main(['open', str(t)])
+        check('held: control, a settling result that fails the ref leaves it out of open as an ordinary fail',
+              rc == 0 and out == '')
+        t = held_task([B, ('verifier-L1.md', H_UNMET)], t_status='done')
+        rc, out, err = run_main(['open', '--explain', str(t)])
+        check('held: open --explain names a stale unmet-dependency',
+              rc == 0 and out.startswith('step-1#1\tunmet-dependency\tT-0307') and 'stale' in out)
+        t = held_task([], ticket_ac='\n## Acceptance criteria\n- [ ] ships it [owner: integration]\n',
+                      task_files=[('verifier-L2.md', '## Verdict\nfail\n\n## Criteria\n- #1 ships it: deferred integration. '
+                                   'Evidence: not yet\n\n## For the next attempt\ndeferred: integration\n')])
+        rc, out, err = run_main(['open', str(t)])
+        check('held: a bare #k in a task-dir result is ticket#k', rc == 0 and out == 'ticket#1\tdeferred\tintegration\n')
+        t = held_task([B, ('verifier-L1.md', H_DEFER)])
+        (t / 'step-2').mkdir()
+        (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: y\nlevel: L1\n', encoding='utf-8')
+        rc, out, err = run_main(['resume', str(t)])
+        check('held: resume skips a deferred step for the next unfinished one',
+              rc == 0 and out.splitlines()[:2] == [str(t / 'step-2'), 'build L1'])
+        os.remove(t / 'step-2' / 'handoff.md')
+        (t / 'step-2' / 'handoff.md').write_text('## Task goal\ng\n\n## Step 2: y\nlevel: L1\n', encoding='utf-8')
+        (t / 'step-2' / 'builder-L1.md').write_text(hdr('builder-L1.md', DONE), encoding='utf-8')
+        (t / 'step-2' / 'verifier-L1.md').write_text(hdr('verifier-L1.md', PASS), encoding='utf-8')
+        rc, out, err = run_main(['resume', str(t)])
+        check('held: resume with only held steps left prints the held action, never done',
+              rc == 0 and out.splitlines()[:2] == [str(t / 'step-1'), 'deferred'] and 'every other step passed' in out)
+        check('held: merge_class names the owner of a held lane',
+              merge_class('fail', '', [], 'integration') == ('integration', 'held integration')
+              and merge_class('fail', '', []) == ('integration', 'verifier fail'))
+        # lint refuses a malformed bracket clause; a good one passes
+        for bad in ('[bogus: x]', '[owner: ]', '[owner: Bad Owner]', '[needs: nowhere]', '[owner: a; owner: b]'):
+            d = task(plan=PLAN.replace('- one works', f'- `test -f a` {bad}'))
+            rc, _, err = run_main(['lint', str(d)])
+            check(f'held: lint refuses the clause {bad}', rc == 1 and 'bracket clause' in err
+                  and err.strip().splitlines()[-1].startswith('plan defect:'))
+        d = task(plan=PLAN.replace('- one works', '- `test -f a` [stage: integration; owner: integration]\n- `test -f b` [needs: T-0307, file:a/b, cap:x]'))
+        rc, out, err = run_main(['lint', str(d)])
+        check('held: lint accepts stage, owner and needs clauses', rc == 0 and out.startswith('steps lint: ok'))
+        # swap keeps the bracket clause
+        S_HELD = S_HANDOFF.replace('(old check)', '[owner: integration]')
+        d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v(new='`test -f handoff.md`'))], handoff=S_HELD)
+        swap_refused('a swap that drops the bracket clause', d, 'bracket clause')
+        d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v(new='`test -f handoff.md` [owner: other]'))], handoff=S_HELD)
+        swap_refused('a swap that changes the bracket clause', d, 'bracket clause')
+        d = s_step([('builder-L2.md', DONE), ('verifier-L1.md', swap_v(new='`test -f handoff.md` [owner: integration]'))], handoff=S_HELD)
+        rc, out, err = run_main(['swap', str(d)])
+        check('held: control, a swap that keeps the clause applies', rc == 0 and '[owner: integration]' in (d / 'handoff.md').read_text(encoding='utf-8'))
+
     if misses:
         print('steps selftest: FAIL, these did not hold:', file=sys.stderr)
         for m in misses:
@@ -5361,6 +5791,9 @@ def main(argv):
     p.add_argument('--check', action='store_true', help='print the lane only; write nothing (run.sh lane gate)')
     p = sub.add_parser('verifier-level', help='print the level (L2 or L3) of the one batched verifier of a solo ticket; writes nothing')
     p.add_argument('task', help='a task dir holding the ticket handoff.md')
+    p = sub.add_parser('open', help='list the held criteria (unmet-dependency, deferred) of a task dir; writes nothing')
+    p.add_argument('task', help='a task dir holding handoff.md and any step-<n>/ dirs')
+    p.add_argument('--explain', action='store_true', help='add the reason a hold was read as stale or an ordinary fail')
     p = sub.add_parser('swap', help="apply the newest verifier's one criterion swap to a step handoff")
     p.add_argument('step_dir', help='a step dir (step-<n>/) holding handoff.md and builder/verifier results')
     p.add_argument('--timeout', type=float, default=300, metavar='SECONDS',
@@ -5406,6 +5839,8 @@ def main(argv):
         return cmd_lane(a.task, a.check)
     if a.cmd == 'verifier-level':
         return cmd_verifier_level(a.task)
+    if a.cmd == 'open':
+        return cmd_open(a.task, a.explain)
     if a.cmd == 'swap':
         if not 0 < a.timeout < float('inf'):
             print('steps: --timeout must be a finite number of seconds greater than 0', file=sys.stderr)

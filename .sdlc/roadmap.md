@@ -405,5 +405,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0405 | [.0405-plan-verification-design](.0405-plan-verification-design/handoff.md) | plan-verification skill design: intent, rubric and KPI capture that plan-goal uses | feature | L2 | P2 | none | 🟢 done |
 | T-0406 | [.0406-plan-campaign-skill](.0406-plan-campaign-skill/handoff.md) | plan-campaign skill and plan_check.py campaign (from gen-ui-kit) | feature | L2 | P2 | none | 🟢 done |
 | T-0407 | [.0407-plan-verification-build](.0407-plan-verification-build/handoff.md) | Build the plan-verification skill and the two plan_check.py goal rules (design T-0405) | feature | L2 | P2 | T-0406 | 🟢 done |
-| T-0408 | [0408-verifier-held-criteria-build](0408-verifier-held-criteria-build/handoff.md) | Build verifier unmet-dependency and deferred-to-owner verdicts (design T-0400) | feature | L2 | P2 | none | 🔵 ready |
+| T-0408 | [.0408-verifier-held-criteria-build](.0408-verifier-held-criteria-build/handoff.md) | Build verifier unmet-dependency and deferred-to-owner verdicts (design T-0400) | feature | L2 | P2 | none | 🟢 done |
 | T-0409 | [0409-gate-lock-admission-build](0409-gate-lock-admission-build/handoff.md) | Build gate_lock.py weighted admission with FIFO, priority and liveness (design T-0386) | feature | L2 | P2 | none | 🔵 ready |

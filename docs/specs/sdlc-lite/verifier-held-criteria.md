@@ -1,6 +1,6 @@
 # Verifier reports unmet dependency and deferred-to-owner apart from fail
 
-Status: design, approved by the maintainer on 2026-10-09 ("fold those into 0.22.2"); not implemented. Version 0.1, 2026-10-09, ticket T-0400. The build is its own ticket, filed after this one closes, and targets 0.22.2.
+Status: design, approved by the maintainer on 2026-10-09 ("fold those into 0.22.2"); built by T-0408 (2026-10-09) except two points listed under section 10. Version 0.2, ticket T-0400. Targets 0.22.2.
 
 ## 1. Answer in one paragraph
 
@@ -72,7 +72,7 @@ Criterion reference: `<step dir name>#<k>` for the k-th line in that step's `###
   - Neither action is counted in the rebuild or bump count (as a plan-defect fail is not), and a verifier with held items plus an ordinary `fail` follows the ordinary path.
   - Any held line that does not verify makes the result an ordinary `fail` with reason "undeclared hold ignored: #k".
 - `resume_action`: `wait` and `deferred` steps are skipped in favour of the next step whose action is not done, `wait` or `deferred`, since the held step's own build is complete. When only held steps remain it prints the first one's action, `wait` or `deferred`, with "every other step passed". A step is never printed `done` while held.
-- `batch_verified` is unchanged: it counts a result only with Verdict `pass`, so a held step is never batch-verified.
+- `batch_verified` counts a result only with Verdict `pass`, and the build also requires every Criteria line to pass (steps.py `batch_verified`), so a held step is never batch-verified. This tightening is a third deviation from the first draft of this design.
 - New `steps.py open <task dir>` (read-only): prints one line per held criterion, `<ref>\t<state>\t<subject or owner>`, nothing and exit 0 when none; `--explain` adds the reason a hold was read as stale or fail. Also an importable `open_items(task_dir)` for tickets.py.
 - `merge_class`: the reason for a `fail` Verdict with only held items reads `held <owner or subject>` instead of `verifier fail`, so a lane waiting on its owner is not read as a defective one. The class stays `integration`.
 
@@ -117,6 +117,8 @@ All run on temp fixtures with the `_steps_cases` pattern of results.py, each wit
 - Ticket front matter `depends:` alone. It orders ticket starts and cannot express a prerequisite of one criterion discovered during a build, nor a criterion owned by a later stage.
 
 ## 10. Risks and open points
+
+- Built deviations (T-0408): the ref ordinal counts bullet lines, not every line of `criteria_lines` (a blank line would shift later refs); `fanout.py land` still stops a held lane with a labelled `verifier fail (held ...)` outcome instead of letting it land before the owner settles; the live throwaway-project run of section 11 is not made.
 
 - The criterion ordinal `#k` is positional. A hand edit that inserts a criterion line shifts later refs; `lint` should warn when a result in the step dir names a ref whose line text no longer carries its clause. The build decides whether that is a warning or a refusal.
 - Comparing a step-dir result with a task-dir result by `runs.jsonl` position assumes both are recorded. A result with no record falls back to `order.py`'s name order within its own dir and loses to a recorded one.
