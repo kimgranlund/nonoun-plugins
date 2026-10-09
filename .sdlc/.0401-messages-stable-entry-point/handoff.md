@@ -2,7 +2,7 @@
 id: T-0401
 title: "messages.py has no version-free entry point, so a watcher breaks when the plugin cache updates"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0; it fails when a skill, agent, command, hook or Codex adapter file names `sdlc-lite/<digits>.<digits>`.
 - `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
 - The generated mailbox `AGENTS.md` runs every command through `<mailbox>/messages-run.py`, and the launcher falls back to the newest sibling `sdlc-lite/<version>/scripts/messages.py` when its recorded folder is gone.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
