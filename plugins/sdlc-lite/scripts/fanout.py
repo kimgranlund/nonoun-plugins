@@ -188,8 +188,9 @@ run
        lines), then
        `git merge --no-ff --no-edit -m "Merge <lane branch>: <id>" <lane branch>` (a conflict
        is aborted: `merge conflict`); each --gate in order via bash -c, run through
-       `gate_lock.py run --name <lane>/<id> --` (T-0303: a machine-wide semaphore, at most
-       SDLC_GATE_SLOTS gates at once, default 2; `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
+       `gate_lock.py run --name <lane>/<id> --` (T-0303, T-0409: the machine-wide weighted
+       FIFO admission, built-in capacity 6 compute units and 3 browser jobs, two undeclared gates at once;
+       `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
        bare; a wait past the lock's timeout is gate rc 3 with the `gate_lock: timeout` line in the
        log), output to
        logs/gate-<lane>-<id>-<k>-a<n>.log (<k> numbers the gates, a<n> the attempts: n is 1 plus
@@ -299,11 +300,11 @@ selftest
   shared.txt pair line and the not-planned line for T-0003; negative control
   `--dry-run alpha=T-0001 beta=T-0004` prints `overlap (planned scope): none` and no pair line.
   Neither creates a branch, worktree or lanes dir.
-  A gate lock case (case 21, T-0303): every selftest run gets a private TMPDIR (so a private lock dir)
-  and no SDLC_GATE_* variables, so all cases run their gates through gate_lock.py. The probe gate
-  prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and cats the slot file it holds. The gate log of a
-  default run shows both set and `alpha/T-0001` as the holder; SDLC_GATE_SLOTS=3 gives max(1, cpus // 3)
-  workers; the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
+  A gate lock case (case 21, T-0303): every selftest run gets a private TMPDIR and SDLC_GATE_DIR (so a
+  private state root) and no other SDLC_GATE_* variables, so all cases run their gates through gate_lock.py. The probe gate
+  prints SDLC_GATE_WORKERS and SDLC_GATE_LOCK_HELD and the output of `gate_lock.py context --json`. The gate log of a
+  default run shows 3 workers, the marker set and `alpha/T-0001` as the grant's name; SDLC_GATE_SLOTS=3 gives 2
+  workers (6 // 3); the same run with --no-gate-lock, and with SDLC_GATE_SLOTS=0, shows neither and no holder.
   A prep case (case 22, T-0285): three tickets (sizes L1, L2, and the alias of L1) in two lanes print one lane line each, the T-0001 dispatch JSON
   (name T-0001-solo, sdlc-lite:solo-L1, sonnet, isolation worktree, branch worktree-T-0001-solo, the brief carrying
   `T-0001: Ticket t1` and no "Never commit"), a level L2 verifier command against the worktree and none for level L1, a land
@@ -2149,10 +2150,12 @@ def selftest():
             expect(f'fixture git {args} exited 0, got {p.returncode} stderr={p.stderr!r}', p.returncode == 0)
 
     def gate_env(**extra):
-        # a private TMPDIR gives every run a private gate_lock dir, and a gate-locked caller's own
-        # SDLC_GATE_* (this selftest may run inside gate_lock.py) must not leak in
+        # a private SDLC_GATE_DIR gives every run a private gate_lock state root (and a private TMPDIR its
+        # legacy slot dir), and a gate-locked caller's own SDLC_GATE_* (this selftest may run inside
+        # gate_lock.py) must not leak in
         env = {k: v for k, v in ENV.items() if not k.startswith('SDLC_GATE_')}
         env['TMPDIR'] = str(gate_tmp)
+        env['SDLC_GATE_DIR'] = str(gate_tmp / 'gate-state')
         env.update(extra)
         return env
 
@@ -3280,8 +3283,8 @@ def selftest():
                up.returncode == 2 and 'not committed' in up.stderr and 'git add -f' in up.stderr)
 
         # case 21 (T-0303): each --gate runs through gate_lock.py; --no-gate-lock and SDLC_GATE_SLOTS=0 skip it
-        gprobe = ('echo "W=[$SDLC_GATE_WORKERS] H=[$SDLC_GATE_LOCK_HELD]"; cat "$TMPDIR"/sdlc-gate-locks/slot-* 2>/dev/null; '
-                  'echo; echo "Ran 1 tests"')
+        gprobe = ('echo "W=[$SDLC_GATE_WORKERS] H=[$SDLC_GATE_LOCK_HELD]"; ' + shlex.quote(sys.executable) + ' '
+                  + shlex.quote(str(SCRIPTS / 'gate_lock.py')) + ' context --json 2>/dev/null; echo; echo "Ran 1 tests"')
 
         def gate_run(name, *extra, **extra_env):
             gr = tmp / f'gl-{name}'
@@ -3291,10 +3294,9 @@ def selftest():
             log = tmp / f'gll-{name}' / 'logs' / 'gate-alpha-T-0001-1-a1.log'
             return pr, log.read_text() if log.is_file() else ''
 
-        cpus = os.cpu_count() or 1
         for name, extra, env_extra, workers, locked in (
-                ('on', (), {}, str(max(1, cpus // 2)), True),
-                ('slots3', (), {'SDLC_GATE_SLOTS': '3'}, str(max(1, cpus // 3)), True),
+                ('on', (), {}, '3', True),
+                ('slots3', (), {'SDLC_GATE_SLOTS': '3'}, '2', True),
                 ('flag', ('--no-gate-lock',), {}, '', False),
                 ('zero', (), {'SDLC_GATE_SLOTS': '0'}, '', False)):
             pr, text = gate_run(name, *extra, **env_extra)
@@ -3302,7 +3304,7 @@ def selftest():
             expect(f'case 21 {name}: the gate saw SDLC_GATE_WORKERS=[{workers}], log={text!r}', f'W=[{workers}]' in text)
             expect(f'case 21 {name}: lock marker is {"set" if locked else "unset"}, log={text!r}',
                    (' H=[1]' in text) == locked)
-            expect(f'case 21 {name}: the slot file names the lane and ticket is {locked}, log={text!r}',
+            expect(f'case 21 {name}: the grant context names the lane and ticket is {locked}, log={text!r}',
                    ('"name": "alpha/T-0001"' in text) == locked)
 
         # case 22 (T-0285): prep prints the lane and the dispatch JSON per ticket, refuses what run refuses, creates nothing
