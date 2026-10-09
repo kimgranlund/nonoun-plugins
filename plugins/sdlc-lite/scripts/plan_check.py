@@ -6,7 +6,8 @@
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
 finding (exit 1), `warn <rule>: <why>` lines that never change the exit code, and `ok: <kind> plan passes` otherwise.
-Deterministic: no model call, no network. Fanout flags are read from fanout.py's own parser text, so a flag fanout.py
+A goal also carries the plan-verification outcome block (Outcome, Measured by, Rubric, Negative control): `outcome-block` and
+`done-measured` are shape checks only, since the script cannot know a `before` value is true. Deterministic: no model call, no network. Fanout flags are read from fanout.py's own parser text, so a flag fanout.py
 does not have is a finding. /goal and /loop cannot run headlessly: their rules come from the skills'
 references (the stop hook checks the goal each turn; /loop parses a leading interval token or a trailing `every N unit`).
 """
@@ -31,7 +32,7 @@ LABELS = (('scope', r'Scope'), ('how', r'How to work'), ('stop', r'(Budget|Stop 
 
 def sections(text):
     marks = []
-    for key, pat in LABELS:
+    for key, pat in LABELS + (('_outcome', r'Outcome'),):  # the outcome block ends the Scope section
         m = re.search(rf'(?im)^\s*({pat})\b[^\n]*', text)
         if m:
             marks.append((m.start(), key))
@@ -42,7 +43,7 @@ def sections(text):
     return out
 
 
-def check_goal(text):
+def check_goal(text, root='.sdlc'):
     text = unwrap(text)
     fails, warns = [], []
     if not re.match(r'/goal\s+\S', text):
@@ -81,9 +82,76 @@ def check_goal(text):
             fails.append(('done-uncheckable', 'Done when needs a command exit code, a file, a tag, or a merged ticket'))
         if not re.search(r'(?i)stopped|limit|notes\.md', d):
             fails.append(('done-limit', 'Done when must also cover stopping on a budget or limit with state written'))
+    f2, w2, measure = check_outcome(text)
+    fails.extend(f2)
+    warns.extend(w2)
+    if measure and 'done' in sec:
+        ids, cmds, target = measure
+        d = re.sub(r'\s+', ' ', sec['done'])
+        if not (any(i in d for i in ids) or any(c in d for c in cmds) or (target and target in d)):
+            fails.append(('done-measured', 'Done when must name the Measured by id or command, or its target, so closing tickets alone cannot end the goal'))
+    warns.extend(kpi_unresolved(text, root))
     if len(text) > 5000:
         fails.append(('too-long', f'{len(text)} characters; keep it under 5000 so it can be read overnight'))
     return fails, warns
+
+
+def check_outcome(text):
+    """The plan-verification outcome block: (fails, warns, measure) with measure = (K ids, commands, target) or None."""
+    fails, warns, measure = [], [], None
+
+    def bad(why):
+        fails.append(('outcome-block', why))
+    m = re.search(r'(?im)^\s*Outcome\s*:[^\n]*\S[^\n]*', text)
+    if not m:
+        bad('missing the `Outcome:` line (the state of the world that means the work succeeded)')
+    elif not re.search(r'Why:\s*\S', m.group(0)):
+        bad('the Outcome line needs `Why:` and one sentence on what it protects or buys')
+    m = re.search(r'(?im)^\s*Measured by\s*:([^\n]*)', text)
+    if not m:
+        bad('missing the `Measured by:` line (a KPI id or a backticked command, `before:` and `target:`)')
+    elif re.match(r'\s*none\s*:\s*\S', m.group(1), re.I):
+        warns.append(('no-measure', 'Measured by is `none`: the goal cannot show the outcome moved'))
+    else:
+        body = m.group(1)
+        ids, cmds = re.findall(r'\bK-\d+\b', body), [re.sub(r'\s+', ' ', c) for c in re.findall(r'`([^`]+)`', body)]
+        before, target = re.search(r'before\s*:\s*(\S[^,]*)', body), re.search(r'target\s*:\s*(\S[^\n]*?)\s*\.?\s*$', body)
+        if not (ids or cmds):
+            bad('Measured by must name a KPI id (K-001) or a backticked command')
+        if not before:
+            bad('Measured by needs `before: <value>` read by running the measure now')
+        elif re.match(r'unmeasured\b', before.group(1), re.I):
+            warns.append(('before-unmeasured', 'the before value is unmeasured: the goal starts without a reproducible baseline'))
+        if not target:
+            bad('Measured by needs `target: <bound>`')
+        if (ids or cmds) and before and target:
+            measure = (ids, cmds, re.sub(r'\s+', ' ', target.group(1)))
+    m = re.search(r'(?im)^\s*Rubric\s*:[^\n]*\n', text)
+    if not m:
+        bad('missing the `Rubric:` list (3 to 5 numbered criteria)')
+    else:
+        items = []
+        for ln in text[m.end():].splitlines():
+            if re.match(r'\s*\d+\.\s+\S', ln):
+                items.append(ln)
+            else:
+                break
+        if not 3 <= len(items) <= 5:
+            bad(f'Rubric needs 3 to 5 numbered criteria, found {len(items)}')
+        if any('pass:' not in i for i in items):
+            bad('every Rubric criterion needs `pass: <threshold>`')
+    if not re.search(r'(?im)^\s*Negative control\s*:\s*\S', text):
+        bad('missing the `Negative control:` line (a state in which the measure reads red)')
+    return fails, warns, measure
+
+
+def kpi_unresolved(text, root):
+    """Advice only: a cited K-NNN with no docs/kpi/NNN-*.md, when the repository (the parent of --root) keeps a docs/kpi folder."""
+    kpi = pathlib.Path(root).resolve().parent / 'docs' / 'kpi'
+    if not kpi.is_dir():
+        return []
+    return [('kpi-unresolved', f'K-{n} has no file docs/kpi/{n}-*.md')
+            for n in dict.fromkeys(re.findall(r'\bK-(\d+)\b', text)) if not list(kpi.glob(f'{n}-*.md'))]
 
 
 # ---- loop ----------------------------------------------------------------------------------------------------
@@ -378,7 +446,7 @@ def check_campaign(text, root='.sdlc', load=None):
 
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc'):
-    return {'goal': check_goal, 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
+    return {'goal': lambda t: check_goal(t, root), 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
             'campaign': lambda t: check_campaign(t, root)}[kind](text)
 
 
@@ -399,6 +467,14 @@ Scope (verify with tickets.py check first):
 1. T-0001 first thing
 2. T-0002 second thing
 
+Outcome: every run leaves a cost row. Why: spend and load cannot be sized from unmetered runs.
+Measured by: K-001 (`python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d`), before: 8.3, target: <= 5.
+Rubric:
+1. Unmetered share | pass: the measure reads 5 or below.
+2. No regression | pass: check.sh exits 0 on main.
+3. Scope held | pass: only T-0001 and T-0002 are closed by this goal.
+Negative control: the measure reads 8.3 now, above the target of 5, so it is red before any ticket lands.
+
 How to work: lane first with steps.py lane; solo for S and M; replan cap one, then record a limit; every claim from a command.
 A verifier fail means fix and re-verify; never merge on a fail.
 
@@ -406,7 +482,7 @@ Budget and stop rules: stop and write state to .sdlc/notes.md at $60 total, $15 
 
 Authorization: publish, push and tag are not implied. Authorized: a fast-forward push of the release commit only if the fact-check passes.
 
-Done when: tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md.
+Done when: K-001 reads <= 5 (the Measured by command), tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md.
 ```"""
 GOOD_CAMPAIGN = """Campaign: granular dependency loading is the standard for every page
 
@@ -414,7 +490,6 @@ Census: `python3 scripts/census-page-css.py` exits 0 and prints the pages still 
 Dependency order: Wave 0 lands on main before any Wave 1 lane starts; Wave 2 starts when every Wave 1 lane is merged; Wave 3 starts when Wave 2 passes.
 Lane cap: 16
 Cap reason: 50 file-disjoint directories and the owner authorized --yes-many; uptime checked first.
-Outcome, rubric and KPI: pointer for the plan-verification skill (T-0405); not planned here.
 
 Wave 0 (one lane, lands first): a derivation tool and a blocking gate `python3 scripts/check-page-css.py`, wired into the existing gate chain with no new CI job. The gate starts green through a day-one allowlist of current violators, each with a justification string; a stale entry fails the gate.
 Wave 1 (50 lanes, file-disjoint, one writer per file): each lane migrates its pages and deletes its own allowlist entries.
@@ -437,6 +512,14 @@ Scope (verify with tickets.py check first):
 3. Wave 2: bulk verifier review and probe sweep
 4. Wave 3: 8 to 10 bulk PRs
 
+Outcome: every page loads only the dependencies it uses. Why: the shared bundles cost every page load.
+Measured by: `python3 scripts/census-page-css.py`, before: 158, target: 0.
+Rubric:
+1. Pages still on a bundle | pass: the census prints 0.
+2. Gate holds | pass: `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist.
+3. Scope held | pass: only the four waves land.
+Negative control: the census prints 158 now, above the target of 0, so it is red before Wave 0 lands.
+
 How to work: lane first with steps.py lane; one writer per file; Wave 0 lands before any lane starts; replan cap one, then record a limit.
 A verifier fail means fix and re-verify; never merge on a fail.
 
@@ -444,7 +527,7 @@ Budget and stop rules: stop and write state to .sdlc/notes.md at $900 total, $30
 
 Authorization: publish, tag, and deploy are not implied. Authorized: one plain push per integration branch.
 
-Done when: `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist, or the goal stopped on a limit with state written to .sdlc/notes.md.
+Done when: `python3 scripts/census-page-css.py` prints 0 and `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist, or the goal stopped on a limit with state written to .sdlc/notes.md.
 ```
 """
 GOOD_ROWS = '| lane | directory | units |\n|---|---|---|\n' + '\n'.join(f'| p{i:02d} | site/pages/a{i:02d} | 3 |' for i in range(50))
@@ -465,6 +548,44 @@ def selftest():
     expect('goal: the topics-layout notes path passes', not f)
     f, _ = check_goal(GOOD_GOAL.replace('write state to .sdlc/notes.md', 'write state to .sdlc/notes/other.md'))
     expect('goal: a notes folder file that is not notes.md is flagged as stop-state', any(r == 'stop-state' for r, _ in f))
+    muts_ob = {
+        'a Outcome line deleted': re.sub(r'(?m)^Outcome:.*\n', '', GOOD_GOAL),
+        'b Why deleted': GOOD_GOAL.replace(' Why: spend and load cannot be sized from unmetered runs.', ''),
+        'c measure replaced by "it works"': GOOD_GOAL.replace('K-001 (`python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d`)', 'it works'),
+        'd before deleted': GOOD_GOAL.replace(' before: 8.3,', ''),
+        'e Rubric cut to 2': GOOD_GOAL.replace('3. Scope held | pass: only T-0001 and T-0002 are closed by this goal.\n', ''),
+        'f one pass deleted': GOOD_GOAL.replace(' | pass: check.sh exits 0 on main.', ''),
+        'g Negative control deleted': re.sub(r'(?m)^Negative control:.*\n', '', GOOD_GOAL),
+        'h target deleted': GOOD_GOAL.replace(', target: <= 5', ''),
+        'i Rubric cut to 6': GOOD_GOAL.replace('3. Scope held', '3. Scope held | pass: x.\n4. a | pass: x.\n5. b | pass: x.\n6. c | pass: x.\n7. Scope held', 1),
+        'j whole block deleted': re.sub(r'(?ms)^Outcome:.*?^Negative control:[^\n]*\n\n', '', GOOD_GOAL),
+    }
+    for why, text in muts_ob.items():
+        f, _ = check_goal(text)
+        expect(f'goal: mutant "{why}" is flagged as outcome-block', any(r == 'outcome-block' for r, _ in f))
+    expect('goal: the Outcome, Measured by, Rubric and Negative control block deleted names outcome-block', any(r == 'outcome-block' for r, _ in check_goal(muts_ob['j whole block deleted'])[0]))
+    tickets_only = re.sub(r'(?m)^Done when:.*$', 'Done when: T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md', GOOD_GOAL)
+    f, _ = check_goal(tickets_only)
+    expect('goal: a Done when that only closes tickets is flagged as done-measured', [r for r, _ in f] == ['done-measured'])
+    f, _ = check_goal(GOOD_GOAL.replace('Done when: K-001 reads <= 5 (the Measured by command)', 'Done when: K-002 reads below its limit'))
+    expect('goal: a Done when naming a different K id is flagged as done-measured', [r for r, _ in f] == ['done-measured'])
+    f, _ = check_goal(GOOD_GOAL.replace('Done when: K-001 reads <= 5 (the Measured by command)', 'Done when: `python3 plugins/sdlc-lite/scripts/fleet_collect.py collect . --since 7d` reads 5 or below'))
+    expect('goal: a Done when naming the Measured by command passes', not f)
+    f, w = check_goal(GOOD_GOAL.replace('before: 8.3', 'before: unmeasured: the collector has not run here'))
+    expect('goal: an unmeasured before value passes with a before-unmeasured warning', not f and [r for r, _ in w] == ['before-unmeasured'])
+    nm = re.sub(r'(?m)^Measured by:.*$', 'Measured by: none: no metric exists yet', GOOD_GOAL)
+    f, w = check_goal(nm)
+    expect('goal: Measured by none passes with a no-measure warning', not f and [r for r, _ in w] == ['no-measure'])
+    f, w = check_goal(GOOD_GOAL)
+    expect('goal: the good block has no warnings', not w)
+    with tempfile.TemporaryDirectory() as d:
+        (pathlib.Path(d) / 'docs' / 'kpi').mkdir(parents=True)
+        (pathlib.Path(d) / '.sdlc').mkdir()
+        f, w = check_goal(GOOD_GOAL, root=os.path.join(d, '.sdlc'))
+        expect('goal: a K id with no docs/kpi file warns kpi-unresolved and does not fail', not f and [r for r, _ in w] == ['kpi-unresolved'])
+        (pathlib.Path(d) / 'docs' / 'kpi' / '001-x.md').write_text('---\nid: K-001\n---\n')
+        f, w = check_goal(GOOD_GOAL, root=os.path.join(d, '.sdlc'))
+        expect('goal: a K id with its docs/kpi file does not warn', not f and not w)
     muts = {
         'starts-with-goal': GOOD_GOAL.replace('/goal Overnight', 'Overnight'),
         'section-scope': GOOD_GOAL.replace('Scope (', 'Items ('),

@@ -1,0 +1,21 @@
+{
+  "attempt_id": "83c58e689b784042bc575994c418a577",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "interrupted",
+  "started_at": "2026-10-09T15:58:34.048124+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f40/pv",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f40/pv/.sdlc/0407-plan-verification-build/handoff.md",
+  "owner_pid": 46402,
+  "handoff_sha256": "90e0fa194f95b53e6a04bbc6d2c01c9660623dae61262e4d0f43d5b289434ac9",
+  "process_pid": 46610,
+  "exit_code": 143,
+  "finished_at": "2026-10-09T16:02:31.153762+00:00"
+}
