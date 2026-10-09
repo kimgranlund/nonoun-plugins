@@ -309,7 +309,7 @@ The script path in the commands below was written when this file was generated. 
 
 `python3 "{{scripts}}/messages.py" send --receiver <name> --topic "<one line>" --follow-up <true|false> "<body>"`
 
-Names match `[a-z0-9]+(-[a-z0-9]+)*`. The receiver must be registered (see Receivers), or `send` refuses and writes nothing. `--sender <name>` is optional: it defaults to `<repo>-<harness>-conductor`, for example `maison-claude-conductor`, so replies and logs say which repo and harness spoke; the harness comes from `SDLC_HARNESS` or the host's own variables, and `--sender conductor` is still accepted as written. `--follow-up true` makes `ack` wait for a reply. Optional flags: `--re <id>`, `--kind question|handoff|ack`, `--ttl` (default: the receiver's registered expiry, `7d` unless set). A body of `-` is read from stdin. The command prints the new message path on stdout; on stderr it prints the receiver's harness, repo and reader, and warns when the reader is `none`.
+Names match `[a-z0-9]+(-[a-z0-9]+)*`. The receiver must be registered (see Receivers), or `send` refuses and writes nothing. `--sender <name>` is optional: it defaults to `<repo>-<harness>-conductor`, for example `maison-claude-conductor`, so replies and logs say which repo and harness spoke; the harness comes from `SDLC_HARNESS` or the host's own variables, and `--sender conductor` is still accepted as written. The first send or handshake with the default sender registers it in `receivers.json` (once), taking reader and expiry from the one live receiver of the same repo and harness, else reader `none`, so a `reply` to it reaches a registered mailbox; an explicit `--sender` registers nothing. `--follow-up true` makes `ack` wait for a reply. Optional flags: `--re <id>`, `--kind question|handoff|ack`, `--ttl` (default: the receiver's registered expiry, `7d` unless set). A body of `-` is read from stdin. The command prints the new message path on stdout; on stderr it prints the receiver's harness, repo and reader, and warns when the reader is `none`.
 
 ## Read
 
@@ -849,6 +849,27 @@ def default_sender(mbox):
     return (repo_name(mbox)[:NAME_MAX - len(suffix)].rstrip('-') or 'repo') + suffix
 
 
+def register_default_sender(mbox, sender):
+    """Make the default sender a registered receiver, once, so a reply to it reaches a mailbox with a reader.
+
+    It copies reader and expiry from the one registered receiver of the same harness and repo (the
+    conductor's own entry); with none or several it gets reader none. A name already registered is kept.
+    """
+    harness = detect_harness(os.environ)
+    repo = repo_name(mbox)
+    os.makedirs(mbox, exist_ok=True)
+    with Lock(mbox):
+        entries = load_registry(mbox)
+        if sender in entries:
+            return
+        twins = [e for e in entries.values() if e['harness'] == harness and e['repo'] == repo
+                 and e['reader'] != NO_READER]
+        twin = twins[0] if len(twins) == 1 else None
+        entries[sender] = {'harness': harness, 'repo': repo, 'reader': twin['reader'] if twin else NO_READER,
+                           'last_seen': stamp(utcnow()), 'expiry': twin['expiry'] if twin else DEFAULT_TTL}
+        save_registry(mbox, entries)
+
+
 def require_registered(mbox, receiver):
     """The receiver's registry entry, or a refusal naming how to register it. Writes nothing."""
     entries = load_registry(mbox)
@@ -994,6 +1015,8 @@ def cmd_send(a):
         ttl_seconds(a.ttl)
     body = arg_body(a.body)
     entry = require_registered(mbox, receiver)
+    if a.sender is None:
+        register_default_sender(mbox, sender)
     ttl = ttl_seconds(a.ttl if a.ttl is not None else entry['expiry'])
     message = compose(sender, receiver, topic, follow_up, ttl, body, a.re_id, a.kind)
     write_entries(mbox)
@@ -1378,6 +1401,8 @@ def cmd_handshake(a):
     mbox = mailbox(a.root)
     sender = arg_name(a.sender, '--sender') if a.sender is not None else default_sender(mbox)
     entry = require_registered(mbox, receiver)
+    if a.sender is None:
+        register_default_sender(mbox, sender)
     nonce = os.urandom(4).hex()
     body = (f'Handshake ping, nonce {nonce}. Claiming this message with `read` proves a reader is alive; '
             f'a reply is welcome and not required.').encode('utf-8')
@@ -2691,6 +2716,36 @@ def case_default_sender(h):
         st_fail(f'a long repo name gave the sender {sender!r}')
 
 
+def case_default_sender_registered(h):
+    b = Box(h)
+    b.ok('register', '--name', 'bob', '--harness', 'codex', '--reader', 'codex-sess-1')
+    b.ok('register', '--name', 'carol', '--harness', 'claude', '--reader', 'claude-sess-1')
+    repo = os.path.basename(b.repo)
+    me = f'{repo}-claude-conductor'
+    env = dict(h.env, SDLC_HARNESS='claude')
+    args = ('send', '--receiver', 'bob', '--topic', 't', '--follow-up', 'true', 'hi')
+    for _ in range(2):
+        r = b.run(*args, env=env)
+        if r.returncode != 0:
+            st_fail(f'default-sender send exited {r.returncode}: {r.stderr.decode("utf-8", "replace").strip()}')
+    out = b.ok('list', '--receivers')
+    if sum(1 for ln in out.splitlines() if ln.split('\t')[0] == me) != 1:
+        st_fail(f'the default sender is not listed exactly once after two sends: {out!r}')
+    row = [ln.split('\t') for ln in out.splitlines() if ln.split('\t')[0] == me][0]
+    if row[2] != 'claude' or row[4] != 'claude-sess-1':
+        st_fail(f'the default sender did not take the repo conductor reader: {row}')
+    new = os.path.join(b.mbox, 'new', 'bob')
+    mid = sorted(os.listdir(new))[0][:-3]
+    b.ok('reply', mid, 'yes')
+    if not os.listdir(os.path.join(b.mbox, 'new', me)):
+        st_fail('a reply to a default-sender message did not land in the sender mailbox')
+    if me not in json.loads(open(os.path.join(b.mbox, 'receivers.json')).read())['receivers']:
+        st_fail('the reply landed in an unregistered mailbox')
+    b.ok('send', '--receiver', 'bob', '--sender', 'zed', '--topic', 't', '--follow-up', 'false', 'hi')
+    if 'zed' in json.loads(open(os.path.join(b.mbox, 'receivers.json')).read())['receivers']:
+        st_fail('an explicit --sender was registered')
+
+
 def case_handshake(h):
     b = Box(h)
     b.ok('register', '--name', 'bob', '--harness', 'claude', '--reader', 'sess-1')
@@ -3151,6 +3206,7 @@ SELFTEST_CASES = (
     ('registry: send to an unregistered receiver is refused', case_registry_refuses_unknown),
     ('registry: send to a reader-less receiver warns, a live one prints its reader', case_registry_warns_reader_less),
     ('sender: default names repo and harness, conductor kept', case_default_sender),
+    ('sender: default sender is registered once with the repo reader', case_default_sender_registered),
     ('handshake: reader alive and no reader', case_handshake),
     ('messenger: two messages 13 s apart reach the parent by SendMessage in one turn', case_messenger_delivery),
     ('receivers: list shows live and orphaned, expire closes orphans', case_receivers_and_orphans),
