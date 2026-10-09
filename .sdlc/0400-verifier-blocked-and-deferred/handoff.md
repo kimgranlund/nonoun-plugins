@@ -2,7 +2,7 @@
 id: T-0400
 title: "verifier reports unmet dependency and deferred-to-owner apart from fail"
 type: feature
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: ready
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -24,4 +24,4 @@ A verifier report separates a real failure from an unmet prerequisite and from a
 Maison and Codex, 2026-10-09: 11 component lanes had rows 7 to 12 of the component-request template fail in every lane build because they are integration or testing owned, and one lane failed on a prerequisite from merge order (T-0307 schema). Evidence: maison .sdlc/tickets/0301-lean-template-bootstrap-design/codex-progress-bar-stage-evidence.md. Related: T-0386 and T-0385 template work.
 
 ## Constraints
-Design only. Needs the maintainer's approval before any build. No em or en dashes. No push or publish.
+Design only. The maintainer approved the design on 2026-10-09 ("fold those into 0.22.2"); a build still needs its own ticket. No em or en dashes. No push or publish.
