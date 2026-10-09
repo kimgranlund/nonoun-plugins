@@ -2,7 +2,7 @@
 id: T-0398
 title: "fanout replan lane reports verifier fail from a prior attempt's verifier result"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -30,3 +30,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and `grep -c 'case 15 verdict T-0398' plugins/sdlc-lite/scripts/fanout.py | grep -qx 3` exits 0 (the selftest prints only misses, so exit 0 means the three T-0398 cases held: an older recorded fail with a newer unrecorded pass reads pass; the baseline still excludes a stale file; with both recorded the later record wins).
 - `git diff` of `plugins/sdlc-lite/scripts/fanout.py` shows `solo_verdict` and `branch_verdict` both reading through `newest_verifier`, and no file mtime read.
 - `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py check` exit 0.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); verified pass by an L2 verifier on the second attempt after one criterion swap
