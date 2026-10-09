@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:71b943f9dec0 -->
+<!-- sdlc-lite:managed:start v1 sha256:5933739a05cf -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,9 +16,10 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0400 verifier reports unmet dependency and deferred-to-owner apart from fail (0400-verifier-blocked-and-deferred)
-- ready: 2
+- ready: 3
   - T-0398 fanout replan lane reports verifier fail from a prior attempt's verifier result (0398-fanout-stale-verifier-result)
   - T-0399 dispatch.py prepare refuses an unfilled handoff template instead of reaching a verifier (0399-prepare-refuse-unfilled-template)
+  - T-0401 messages.py has no version-free entry point, so a watcher breaks when the plugin cache updates (0401-messages-stable-entry-point)
 - blocked: 0
 - done: 360
 - dropped: 25

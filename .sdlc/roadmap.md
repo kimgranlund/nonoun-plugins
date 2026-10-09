@@ -398,3 +398,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0398 | [0398-fanout-stale-verifier-result](0398-fanout-stale-verifier-result/handoff.md) | fanout replan lane reports verifier fail from a prior attempt's verifier result | bug | L2 | P2 | none | 🔵 ready |
 | T-0399 | [0399-prepare-refuse-unfilled-template](0399-prepare-refuse-unfilled-template/handoff.md) | dispatch.py prepare refuses an unfilled handoff template instead of reaching a verifier | bug | L2 | P2 | none | 🔵 ready |
 | T-0400 | [0400-verifier-blocked-and-deferred](0400-verifier-blocked-and-deferred/handoff.md) | verifier reports unmet dependency and deferred-to-owner apart from fail | feature | L2 | P2 | none | ⏳ proposed |
+| T-0401 | [0401-messages-stable-entry-point](0401-messages-stable-entry-point/handoff.md) | messages.py has no version-free entry point, so a watcher breaks when the plugin cache updates | bug | L2 | P2 | none | 🔵 ready |
