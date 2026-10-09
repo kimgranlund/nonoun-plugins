@@ -25,3 +25,8 @@ Seen 2026-10-08 on the T-0381 second attempt (commit 57c423a6 "wip(T-0381): veri
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/fanout.py selftest` exits 0 and `grep -c 'case 15 verdict T-0398' plugins/sdlc-lite/scripts/fanout.py | grep -qx 3` exits 0 (the selftest prints only misses, so exit 0 means the three T-0398 cases held: an older recorded fail with a newer unrecorded pass reads pass; the baseline still excludes a stale file; with both recorded the later record wins).
+- `git diff` of `plugins/sdlc-lite/scripts/fanout.py` shows `solo_verdict` and `branch_verdict` both reading through `newest_verifier`, and no file mtime read.
+- `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py check` exit 0.

@@ -787,15 +787,23 @@ def verifier_files(taskdir):
         return set()
 
 
+def newest_verifier(d, names):
+    """Path of the newest verifier result in `d` among the file `names`, or None (T-0398). order.py ranks a file with no
+    runs.jsonl record below every recorded one, but a result a lane just produced is the one still unrecorded (the parent
+    records it after the solo reports), so an older recorded result of a prior attempt must not outrank it: the unrecorded
+    ones win when there are any, else the recorded order decides."""
+    got = [p for p in order.ordered(d, 'verifier') if pathlib.Path(p).name in names]
+    recorded = order._ranks(d)
+    fresh = [p for p in got if pathlib.Path(p).name not in recorded]
+    pick = fresh or got
+    return pick[-1] if pick else None
+
+
 def solo_verdict(taskdir, before):
     """'pass', 'fail', or None for the newest task-dir verifier result that is not in `before`."""
-    new = [f for f in verifier_files(taskdir) if f not in before]
-    if not new:
-        return None
-    newest = order.newest(pathlib.Path(taskdir), 'verifier')
-    if newest is None or pathlib.Path(newest).name not in new:
-        return None
-    return steps.verdict_or_none(newest)
+    new = {f for f in verifier_files(taskdir) if f not in before}
+    newest = newest_verifier(taskdir, new)
+    return steps.verdict_or_none(newest) if newest else None
 
 
 def planned_scope(root, slug):
@@ -1625,7 +1633,7 @@ def branch_verdict(ctx, ref, t):
             blob = git(ctx['cwd'], 'show', f'{ref}:{prefix}/{n}' if prefix != '.' else f'{ref}:{n}')
             if blob.returncode == 0:
                 (pathlib.Path(td) / n).write_text(blob.stdout, encoding='utf-8')
-        newest = order.newest(pathlib.Path(td), 'verifier')
+        newest = newest_verifier(td, set(new))
         return steps.verdict_or_none(newest) if newest else None
 
 
@@ -3017,6 +3025,28 @@ def selftest():
                                              '## For the next attempt\nfix it\n', encoding='utf-8')
         got = solo_verdict(vd, before)
         expect(f'case 15 verdict negative control: a newer failing result reads fail, not pass, got {got!r}',
+               got == 'fail')
+        # T-0398: an older recorded failing result from attempt 1 must not outrank the newer unrecorded one of attempt 2
+        vs = tmp / 'verdict-stale'
+        vs.mkdir()
+        (vs / 'verifier-L2.md').write_text('<!-- role=verifier level=L2 model=opus effort=high -->\n'
+                                           '## Verdict\nfail\n\n## Evidence\nbroke\n\n'
+                                           '## For the next attempt\nfix it\n', encoding='utf-8')
+        (vs / 'verifier-L3.md').write_text('<!-- role=verifier level=L3 model=fable effort=xhigh -->\n'
+                                           '## Verdict\npass\n\n## Evidence\nran\n\n'
+                                           '## For the next attempt\nNone\n', encoding='utf-8')
+        (vs / 'runs.jsonl').write_text('{"role":"verifier","level":"L2","file":"verifier-L2.md"}\n'
+                                       '{"role":"solo","level":"L2","file":""}\n', encoding='utf-8')
+        got = solo_verdict(vs, set())
+        expect(f'case 15 verdict T-0398: an older recorded fail and a newer unrecorded pass read pass, got {got!r}',
+               got == 'pass')
+        got = solo_verdict(vs, {'verifier-L2.md'})
+        expect(f'case 15 verdict T-0398: only the new file counts when the stale one is in the baseline, got {got!r}',
+               got == 'pass')
+        (vs / 'runs.jsonl').write_text('{"role":"verifier","level":"L3","file":"verifier-L3.md"}\n'
+                                       '{"role":"verifier","level":"L2","file":"verifier-L2.md"}\n', encoding='utf-8')
+        got = solo_verdict(vs, set())
+        expect(f'case 15 verdict T-0398 negative control: both recorded, the later record wins (fail), got {got!r}',
                got == 'fail')
         # cap and stagger
         six = [f'l{k}={tid}' for k, (_slug, tid, _size) in enumerate(sizes, 1)]
