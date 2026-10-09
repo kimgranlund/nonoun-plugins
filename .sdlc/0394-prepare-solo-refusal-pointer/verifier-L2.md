@@ -1,0 +1,17 @@
+<!-- role=verifier level=L2 model=opus effort=high -->
+## Verdict
+pass
+
+## Criteria
+- dispatch.py selftest exits 0 and includes the case `preflight: the solo refusal names the solo_run.py and fanout.py prep paths`: pass. Evidence: `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` gave rc=0 and ended with `dispatch selftest: PASS`. Line 153 of the output is `ok: preflight: the solo refusal names the solo_run.py and fanout.py prep paths`. The case is at dispatch.py:1495-1496 and tests `'solo_run.py run --task-dir' in err and 'fanout.py prep' in err` against the prepare stderr. Red side: there is no `process-deviations.md` and no builder report, so nothing records a failing-first control. I ran the check myself instead. In a throwaway worktree at `$SDLC_BASE_SHA` (3fec7c63), `prepare solo L2 <handoff> 2>&1 >/dev/null | grep -c "solo_run.py run --task-dir"` printed `0`, so the case's predicate is false on the pre-build code. The same command on the built tree printed `1`.
+- `prepare solo L2 <handoff.md>` exits 2 and its stderr contains `solo_run.py run --task-dir` and `fanout.py prep`: pass. Evidence: on the built tree, `python3 plugins/sdlc-lite/scripts/dispatch.py prepare --dry-run solo L2 .sdlc/0394-prepare-solo-refusal-pointer/handoff.md` gave rc=2 and printed the unchanged usage line plus `solo is not a pipeline row: start a solo ticket with python3 .../scripts/solo_run.py run --task-dir <dir> --tier L2 --no-worktree, or python3 .../scripts/fanout.py prep for a lane`. A run without `--dry-run`, with stdout discarded and only stderr kept, matched the string once. At base the same call gave rc=2 with only the usage line. I also checked that the commands the message names really exist. `solo_run.py run --help` lists `--task-dir`, `--tier {L1,L2,L3,...}` and `--no-worktree`. `fanout.py --help` lists the `fanout.py prep <spec>...` subcommand.
+- `prepare builder L9 <handoff.md>` still exits 2 with the unchanged usage line and no solo pointer: pass. Evidence: on the built tree it gave rc=2 and stderr was exactly `usage: dispatch.py prepare <role> <level> <handoff.md>  (no pipeline row builder:L9 in adapters/claude/levels.json)`. That is byte-identical to the base worktree's output, and it has no second line. In the code, the pointer is added only when `role == 'solo'` (dispatch.py:550-552).
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0: pass. Evidence: rc=0, output `ok: 19 role levels, 9 agents, 22 generated definitions checked`, and `grep -iE "fail|error"` found no matches.
+- Constraint "no em or en dashes": pass. Evidence: `git diff -U0 plugins/sdlc-lite/scripts/dispatch.py | grep -nP '[\x{2013}\x{2014}]'` returned exit 1 (no matches).
+
+## Out of scope changes
+- `.sdlc/0394-prepare-solo-refusal-pointer/handoff.md`: the solo agent appended a `## Acceptance criteria` section. I read the diff: it only appends lines after `## Constraints` and leaves Goal, Intent, Do, and Done-when unchanged. The four criteria repeat and sharpen the existing Done-when bullets. This is the ticket's own working record, not project code. Dismissed as harmless.
+- The diff touches nothing else. The only code change is `plugins/sdlc-lite/scripts/dispatch.py`: the refusal at lines 550-552 and the selftest case at 1495-1496. No shared contract changed. The usage line other roles get is byte-identical to base, as shown in the builder L9 check.
+
+## For the next attempt
+None
