@@ -2,7 +2,7 @@
 id: T-0400
 title: "verifier reports unmet dependency and deferred-to-owner apart from fail"
 type: feature
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ Design only. The maintainer approved the design on 2026-10-09 ("fold those into 
 - `python3 plugins/sdlc-lite/scripts/docs_check.py`
 - `python3 -c "import sys; sys.exit(any(c in open('docs/specs/sdlc-lite/verifier-held-criteria.md',encoding='utf-8').read() for c in '–—'))"`
 - Prose: the design keeps the Verdict values pass, fail and inherited red unchanged and makes a held criterion force Verdict fail; no code file is changed.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
