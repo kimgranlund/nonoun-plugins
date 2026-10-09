@@ -720,6 +720,7 @@ stray_clean() {
   git -C "$srepo" worktree remove --force "$srepo/.worktrees/tmp/stray-det" >/dev/null 2>&1 || true
   git -C "$srepo" worktree remove --force "$srepo-sibling" >/dev/null 2>&1 || true
   git -C "$srepo" worktree remove --force "$srepo-stray-br" >/dev/null 2>&1 || true
+  # shellcheck disable=SC2046  # branch names hold no spaces; the split is intended
   git -C "$srepo" branch -D sibling-lane sibling-br $(git -C "$srepo" for-each-ref --format="%(refname:short)" "refs/heads/builder-*") >/dev/null 2>&1 || true
   [[ "$(git -C "$srepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stray cleanup left a worktree"
 }
