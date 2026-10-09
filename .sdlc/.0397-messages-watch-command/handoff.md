@@ -2,7 +2,7 @@
 id: T-0397
 title: "messages.py watch polls, beats and renews in one process"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0396]
@@ -31,3 +31,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/messages.py watch --help` exits 0 and lists --receiver, --worker, --interval and --timeout.
 - `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
 - The mailbox AGENTS.md template in messages.py (Watch expiry bullet) and `plugins/sdlc-lite/agents/messenger.md` document `watch`; `claude_roles.py generate --check` and `codex_roles.py generate --check` pass.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
