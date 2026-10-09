@@ -547,7 +547,9 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
     except claude_roles.TableError as e:
         raise Refuse(2, 'dispatch.py: ' + str(e))
     if role == 'solo' or level not in rows.get(role, {}):
-        raise Refuse(2, 'usage: dispatch.py prepare <role> <level> <handoff.md>  (no pipeline row %s:%s in adapters/claude/levels.json)' % (role, level))
+        raise Refuse(2, 'usage: dispatch.py prepare <role> <level> <handoff.md>  (no pipeline row %s:%s in adapters/claude/levels.json)' % (role, level)
+                     + ('\nsolo is not a pipeline row: start a solo ticket with python3 %s run --task-dir <dir> --tier L2 --no-worktree, or python3 %s prep for a lane'
+                        % (HERE / 'solo_run.py', HERE / 'fanout.py') if role == 'solo' else ''))
     model, effort = rows[role][level]
     if notify and not NAME_RE.fullmatch(notify) or notify_re and not (notify and ID_RE.fullmatch(notify_re)):
         raise Refuse(2, 'dispatch.py: --notify takes a receiver name (lowercase letters, digits, hyphens); --notify-re takes a message id and needs --notify')
@@ -1490,6 +1492,8 @@ def selftest():
         case('preflight: an unknown row exits 2 like run.sh', prep(repo, 'builder', 'L9', '.sdlc/t/handoff.md')[0] == 2
              == runsh(repo, 'builder', 'L9', '.sdlc/t/handoff.md')[0])
         case('preflight: solo is not a pipeline row', prep(repo, 'solo', 'L2', '.sdlc/t/handoff.md')[0] == 2)
+        rc, _, err = prep(repo, 'solo', 'L2', '.sdlc/t/handoff.md')  # T-0394: the refusal names how to start a solo ticket
+        case('preflight: the solo refusal names the solo_run.py and fanout.py prep paths', 'solo_run.py run --task-dir' in err and 'fanout.py prep' in err)
         nogit = tmp / 'nogit'
         put(nogit / 'h.md')
         case('preflight: a directory outside a git work tree exits 2 like run.sh',

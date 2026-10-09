@@ -25,3 +25,9 @@ ultimate-tokens conductor, 2026-10-08: its first solo dispatch through the Agent
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/dispatch.py selftest` exits 0 and includes the case `preflight: the solo refusal names the solo_run.py and fanout.py prep paths`.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py prepare solo L2 <handoff.md>` exits 2 and its stderr contains `solo_run.py run --task-dir` and `fanout.py prep`.
+- `python3 plugins/sdlc-lite/scripts/dispatch.py prepare builder L9 <handoff.md>` still exits 2 with the unchanged usage line and no solo pointer.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
