@@ -399,6 +399,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0399 | [.0399-prepare-refuse-unfilled-template](.0399-prepare-refuse-unfilled-template/handoff.md) | dispatch.py prepare refuses an unfilled handoff template instead of reaching a verifier | bug | L2 | P2 | none | 🟢 done |
 | T-0400 | [.0400-verifier-blocked-and-deferred](.0400-verifier-blocked-and-deferred/handoff.md) | verifier reports unmet dependency and deferred-to-owner apart from fail | feature | L2 | P2 | none | 🟢 done |
 | T-0401 | [.0401-messages-stable-entry-point](.0401-messages-stable-entry-point/handoff.md) | messages.py has no version-free entry point, so a watcher breaks when the plugin cache updates | bug | L2 | P2 | none | 🟢 done |
-| T-0402 | [0402-record-unpriced-flag](0402-record-unpriced-flag/handoff.md) | dispatch.py record flags a sub-agent run it cannot price | bug | L2 | P2 | none | 🔵 ready |
+| T-0402 | [.0402-record-unpriced-flag](.0402-record-unpriced-flag/handoff.md) | dispatch.py record flags a sub-agent run it cannot price | bug | L2 | P2 | none | 🟢 done |
 | T-0403 | [.0403-widen-deny-path-guard](.0403-widen-deny-path-guard/handoff.md) | steps.py widen rewrites a deny-path guard | bug | L2 | P2 | none | 🟢 done |
 | T-0404 | [.0404-redck-placeholder-misread](.0404-redck-placeholder-misread/handoff.md) | PLACEHOLDER_RE reads i<t ... >= as a placeholder and drops the criterion | bug | L2 | P2 | none | 🟢 done |

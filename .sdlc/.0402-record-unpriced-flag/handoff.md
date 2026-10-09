@@ -2,7 +2,7 @@
 id: T-0402
 title: "dispatch.py record flags a sub-agent run it cannot price"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ No em or en dashes. No push or publish.
 - In `dispatch.py` `record`, the unpriced note and `unpriced: true` appear only when no cost could be estimated; the record still exits 0.
 - `docs/references/sdlc-internals.md` and `plugins/sdlc-lite/agents/conductor.md` document the flag; `claude_roles.py generate --check` and `codex_roles.py generate --check` pass.
 - `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exit 0.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
