@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:b9c6dbdcbeaa -->
+<!-- sdlc-lite:managed:start v1 sha256:ee82bd88de19 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,8 +15,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
-- ready: 1
+- ready: 2
   - T-0394 dispatch.py prepare refusal for solo names the solo_run.py and fanout.py prep paths (0394-prepare-solo-refusal-pointer)
+  - T-0395 redck treats a declared new regression test as an implementation edit (0395-redck-test-prelude)
 - blocked: 0
 - done: 356
 - dropped: 25
