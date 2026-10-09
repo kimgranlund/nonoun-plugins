@@ -2,7 +2,7 @@
 id: T-0419
 title: "Write the standing narrow authorization for managed-block refresh in consumer repos"
 type: chore           # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -26,3 +26,7 @@ Maintainer decision 2026-10-09: yes to a narrow, written standing authorization 
 
 ## Constraints
 No em or en dashes. No push or publish. Read-only on every consumer repo.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
