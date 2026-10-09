@@ -25,3 +25,10 @@ Maintainer decision 2026-10-09: intent, rubric and KPI capture becomes a new pla
 
 ## Constraints
 Design only. No em or en dashes. No push or publish. Build waits for its own ticket.
+
+## Acceptance criteria
+1. `docs/specs/sdlc-lite/plan-verification.md` exists, begins with a status line (design for review, ticket T-0405) and has no em or en dash: `grep -nP '\x{2014}|\x{2013}' docs/specs/sdlc-lite/plan-verification.md` prints nothing.
+2. The design covers items 1 to 6 of the Intent: the outcome block parts (Outcome and why, Measured by with before value, 3 to 5 rubric criteria with pass thresholds, one negative control), what it does not own (planner, verifier, handoff Intent), how plan-goal calls it, plan-loop/plan-fanout/ticket decisions, the shared reference path under the skill, and the build ticket with checks plus migration note.
+3. It names every file the build changes (section 7), the two new `plan_check.py goal` fail rules (`outcome-block`, `done-measured`) each with a negative control, and the rejected alternatives (extend plan-goal only, tickets only).
+4. `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` exits 0 and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+5. The document is listed in `docs/README.md`, `docs/specs/sdlc-lite/README.md` and the managed block of `docs/specs/sdlc-lite/AGENTS.md`; no plugin script or skill is changed (`git diff --stat -- plugins` is empty).
