@@ -252,3 +252,5 @@
 2026-10-09: maintainer decisions: built T-0405 plan-verification (T-0407), built T-0400 verifier held criteria (T-0408), approved gate-lock admission caps 6 compute and 3 browser and its build (T-0409); all three target 0.22.3 with T-0406. Declined for now: the ultimate-tokens onboard refresh and an agent-ui task.
 
 2026-10-09: Codex coordination for T-0411 to T-0417 (goal 002 plan). No codex receiver is registered in this repo, so the claim is the claimed_by line in each handoff: claude holds T-0411, T-0412, T-0415; T-0413, T-0414, T-0416, T-0417 are open for Codex until 2026-10-09 +30 min after the maison conductor relay, then claude runs them. Asked via the maison conductor (SendMessage).
+
+2026-10-09: maintainer decision (T-0419): conductors may refresh managed blocks of docs/**/AGENTS.md in their own repo under the narrow rule in `plugins/sdlc-lite/skills/onboard/SKILL.md` (Standing authorization). Anything else (root AGENTS.md, template change, new file, `--force`, other repos) is reported to the maintainer with the diff.
