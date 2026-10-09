@@ -388,5 +388,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0388 | [.0388-record-result-sha](.0388-record-result-sha/handoff.md) | dispatch.py record stores result_sha256 in the attempt and the runs row | feature | L1 | P2 | T-0383 | 🟢 done |
 | T-0389 | [.0389-codex-profile-fingerprint](.0389-codex-profile-fingerprint/handoff.md) | Codex readiness distinguishes a callable role name from the loaded profile revision | bug | L2 | P2 | none | 🟢 done |
 | T-0390 | [.0390-send-sender-registered](.0390-send-sender-registered/handoff.md) | messages.py send defaults the sender to a name a reply can reach | bug | L1 | P2 | none | 🟢 done |
-| T-0391 | [0391-runsh-stray-scope](0391-runsh-stray-scope/handoff.md) | run.sh reports only the role's own stray worktrees and branches, like dispatch.py record | bug | L1 | P2 | T-0381 | ⏳ proposed |
+| T-0391 | [.0391-runsh-stray-scope](.0391-runsh-stray-scope/handoff.md) | run.sh reports only the role's own stray worktrees and branches, like dispatch.py record | bug | L1 | P2 | T-0381 | 🟢 done |
 | T-0392 | [.0392-goals-and-kpi-homes](.0392-goals-and-kpi-homes/handoff.md) | Add docs/goals/ and docs/kpi/ homes with checks, layout and onboard support | feature | L2 | P2 | none | 🟢 done |
