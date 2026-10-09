@@ -12,4 +12,8 @@ Proposal, not implemented. Version 0.4, 2026-10-04.
 - [Cost control addendum](cost-control.md): four items the lean tickets do not cover (spec gate, handoff freeze, replan delta with a planner checklist, per-ticket budget), measured on 2026-10-04 run records.
 - [Cost control review](../../reports/lean-sdlc-cost-control-review.md): independent architect review of the addendum.
 - [Gate lock admission](gate-lock-admission.md): design for review (T-0386), not implemented: gate_lock.py as the weighted shared admission authority, with the owner split, migration from old plugin paths, and regression cases. The maintainer's decision is pending.
+<<<<<<< HEAD
 - [Verifier held criteria](verifier-held-criteria.md): design (T-0400), approved and not built: the verifier reports `unmet-dependency <subject>` and `deferred <owner>` apart from fail, steps.py routes them to wait or hold instead of a rebuild, and a ticket cannot close while one is open.
+=======
+- [plan-verification skill](plan-verification.md): design for review (T-0405), not implemented: a skill that captures an outcome, a measure with its before value, a rubric and a negative control for `plan-goal`, the two new `plan_check.py goal` rules with controls, and the build as its own ticket.
+>>>>>>> wave19
