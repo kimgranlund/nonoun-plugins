@@ -1225,6 +1225,39 @@ def placeholder_problems(root, td, ts):
     return out
 
 
+def unfilled_line(root, text):
+    """(line number, line) of the first template prompt line an open handoff still holds, or None. Same rule as
+    placeholder_problems (a prompt line of the handoff's type template, copied verbatim), plus one stricter
+    case: a line under `## Goal` that is the template's own Goal text, even when PLACEHOLDER_KEEP lets a closed
+    ticket keep it. None when the text has no front matter type or no template for it (a plain task handoff)."""
+    m = re.match(r'---\n(.*?)\n---[ \t]*(?:\n|$)', text.replace('\r\n', '\n'), re.S)
+    kind = None
+    for line in (m.group(1).split('\n') if m else []):
+        k = re.fullmatch(r'type:[ \t]*([A-Za-z0-9_-]+)[ \t]*(?:#.*)?', line)
+        if k:
+            kind = k.group(1)
+    if not kind:
+        return None
+    try:
+        tmpl = body_lines(template(root, kind).read_text(encoding='utf-8'))
+    except (Fail, OSError):
+        return None
+    prompts = {t for _, l in tmpl for t in [prompt_text(l)] if t and t not in PLACEHOLDER_KEEP}
+    goal, in_goal = set(), False
+    for _, l in tmpl:
+        if l.startswith('#'):
+            in_goal = l.strip().lower() == '## goal'
+        elif in_goal and prompt_text(l):
+            goal.add(prompt_text(l))
+    in_goal = False
+    for n, line in body_lines(text):
+        if line.startswith('#'):
+            in_goal = line.strip().lower() == '## goal'
+        t = prompt_text(line)
+        if t and (t in prompts or in_goal and t in goal):
+            return n, line
+
+
 def file_base(root):
     """The dir file:<path> entries resolve against: the git toplevel of root, else root's parent directory
     (git missing or failing, or root outside git). GIT_DIR, GIT_WORK_TREE and GIT_INDEX_FILE are dropped."""
