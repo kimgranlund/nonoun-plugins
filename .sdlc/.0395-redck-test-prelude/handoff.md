@@ -2,7 +2,7 @@
 id: T-0395
 title: "redck treats a declared new regression test as an implementation edit"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,15 @@ Maison and Codex, 2026-10-08, 0.22.0: report at maison .sdlc/tickets/0310-contra
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/redck.py selftest`
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `grep -q 'tests: <path>' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
+- Behavior: a declared dirty test is a hashed prelude (phase stays pre-edit), an undeclared test or any source path makes the phase retrospective, and a declared test changed after recording makes `redck.py audit` report prelude-changed.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

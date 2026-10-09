@@ -10,7 +10,11 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
             result (red, green, or timeout), phase, dirty. phase is pre-edit only when the work tree holds no
             source change against base_sha (git diff against it plus untracked files, paths under .sdlc/ and
             the handoff dir left out); otherwise retrospective, with the changed paths in dirty. The phase is
-            derived from the tree, never claimed by the caller. The attempt id is --attempt-id, else
+            derived from the tree, never claimed by the caller. Test prelude (T-0395): a dirty path that the
+            handoff names on a `tests:` line (comma-separated exact repo-relative files, steps.declared_tests)
+            and that exists is the regression fixture written before the implementation: it does not make the
+            phase retrospective, and the control stores {path: sha256} in prelude; any other dirty path,
+            declared tests included only when named, still does. The attempt id is --attempt-id, else
             SDLC_ATTEMPT_ID (a run.sh role has it), else the newest running builder *.attempt.json of the dir
             (a Claude sub-agent), else empty, which no audit accepts. A span that is green now or times out is
             surfaced on stderr and the exit is 1: a criterion already green cannot detect the change, so it is
@@ -25,9 +29,10 @@ Usage: redck.py {record <handoff.md | dir> [--attempt-id ID] [--timeout S] | aud
                                 one for the same handoff hash and base: a resumed build keeps the original
               green-baseline    this attempt's pre-edit control was green or timed out (not a red control)
               retrospective     only post-edit controls (phase retrospective)
+              prelude-changed   the pre-edit control is red but a declared test no longer matches the sha256 it stored
               missing           no control bound to this attempt (or the attempt id is empty)
-            The run status is the worst span (missing, retrospective, green-baseline, preserved, ok); none
-            when the handoff has no (red) criterion. Missing, retrospective, and green-baseline append one
+            The run status is the worst span (missing, prelude-changed, retrospective, green-baseline, preserved, ok); none
+            when the handoff has no (red) criterion. Missing, prelude-changed, retrospective, and green-baseline append one
             line "process deviation: red-checkpoint: <status>: ..." (once) to <handoff dir>/process-deviations.md
             and an audit line to red-checkpoint.jsonl. Exit 0 always: a deviation is recorded, it does not fail
             the run. agents/verifier.md and agents/filer.md read process-deviations.md.
@@ -48,8 +53,8 @@ import steps
 CHECKPOINT = 'red-checkpoint.jsonl'
 DEVIATIONS = 'process-deviations.md'
 DEVIATION_HEADER = '# Process deviations (written by redck.py audit; the verifier and filer read this file)'
-RANK = {'ok': 0, 'preserved': 1, 'green-baseline': 2, 'retrospective': 3, 'missing': 4}
-DEVIATING = ('missing', 'retrospective', 'green-baseline')
+RANK = {'ok': 0, 'preserved': 1, 'green-baseline': 2, 'retrospective': 3, 'prelude-changed': 4, 'missing': 5}
+DEVIATING = ('missing', 'retrospective', 'green-baseline', 'prelude-changed')
 
 
 def resolve(target):
@@ -84,8 +89,8 @@ def git_lines(top, *args):
 
 
 def dirty_paths(top, base, d):
-    """Source paths that differ from base (tracked diff plus untracked), .sdlc/ and the handoff dir left out;
-    None when git cannot say."""
+    """Paths that differ from base (tracked diff plus untracked), .sdlc/ and the handoff dir left out; None when
+    git cannot say. Splitting off the declared test prelude is split_prelude's job."""
     if not top or not base:
         return None
     tracked = git_lines(top, 'diff', '--name-only', base, '--')
@@ -94,6 +99,20 @@ def dirty_paths(top, base, d):
         return None
     here = os.path.relpath(os.path.realpath(d), os.path.realpath(top)).replace(os.sep, '/') + '/'
     return sorted(p for p in set(tracked + untracked) if not p.startswith('.sdlc/') and not p.startswith(here))
+
+
+def split_prelude(top, handoff, dirty):
+    """(implementation paths, prelude) for the dirty paths (T-0395): a dirty path that is a test the handoff declares
+    (a `tests:` line, steps.declared_tests) and exists as a file is the regression-fixture prelude, {path: sha256 of
+    its content}; every other dirty path is an implementation edit. None dirty stays None. An unsafe `tests:` entry
+    declares nothing and is surfaced on stderr."""
+    if dirty is None:
+        return None, {}
+    paths, problems = steps.declared_tests(pathlib.Path(handoff).read_text(encoding='utf-8'))
+    for t in problems:
+        print(f'redck: tests: entry {t} is not an exact repo-relative file path and declares nothing', file=sys.stderr)
+    prelude = {p: sha256(pathlib.Path(top) / p) for p in dirty if p in paths and (pathlib.Path(top) / p).is_file()}
+    return [p for p in dirty if p not in prelude], prelude
 
 
 def entries(d):
@@ -144,7 +163,7 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
         return 0
     top = steps.git_toplevel(d)
     base = steps.base_sha(top, d)
-    dirty = dirty_paths(top, base, d)
+    dirty, prelude = split_prelude(top, handoff, dirty_paths(top, base, d))
     phase = 'pre-edit' if dirty == [] else 'retrospective'
     aid, sha = attempt_of(d, attempt_id), sha256(handoff)
     got = []
@@ -152,7 +171,7 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     for (crit, span), (_, _, rc) in zip(items, got):
         result = 'timeout' if rc is None else 'green' if rc == 0 else 'red'
         append(d, dict(type='control', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, criterion=crit, span=span,
-                       exit=rc, result=result, phase=phase, dirty=dirty or []))
+                       exit=rc, result=result, phase=phase, dirty=dirty or [], prelude=prelude))
     if not aid:
         print('redck: no attempt id found; this control binds to no attempt and an audit will not accept it', file=sys.stderr)
     if phase == 'retrospective':
@@ -167,16 +186,31 @@ def cmd_record(target, attempt_id='', timeout=steps.DEFAULT_GUARD_TIMEOUT):
     return 0
 
 
-def span_status(es, span, aid, sha, base):
+def prelude_changed(top, e):
+    """The declared test paths of a control whose content no longer matches the sha256 the control stored."""
+    pre = e.get('prelude') or {}
+    out = []
+    for p, h in pre.items():
+        f = pathlib.Path(top or '.') / p
+        if not f.is_file() or sha256(f) != h:
+            out.append(p)
+    return out
+
+
+def span_status(es, span, aid, sha, base, top=None):
     mine = [e for e in es if e.get('type') == 'control' and e.get('span') == span
             and e.get('handoff_sha256') == sha and e.get('base_sha') == base]
     own = [e for e in mine if aid and e.get('attempt_id') == aid]
     pre = [e for e in own if e.get('phase') == 'pre-edit']
     if pre:
-        return 'ok' if pre[-1].get('result') == 'red' else 'green-baseline', ''
+        if pre[-1].get('result') != 'red':
+            return 'green-baseline', ''
+        bad = prelude_changed(top, pre[-1])
+        return ('prelude-changed', ', '.join(bad)) if bad else ('ok', '')
     earlier = [e for e in mine if e.get('attempt_id') != aid and e.get('phase') == 'pre-edit' and e.get('result') == 'red']
     if earlier:
-        return 'preserved', earlier[-1].get('attempt_id') or ''
+        bad = prelude_changed(top, earlier[-1])
+        return ('prelude-changed', ', '.join(bad)) if bad else ('preserved', earlier[-1].get('attempt_id') or '')
     return ('retrospective' if own else 'missing'), ''
 
 
@@ -198,17 +232,21 @@ def cmd_audit(target, attempt_id=''):
     base, sha = steps.base_sha(top, d), sha256(handoff)
     aid = attempt_of(d, attempt_id)
     es = entries(d)
-    per = [(span,) + span_status(es, span, aid, sha, base) for _, span in items]
+    per = [(span,) + span_status(es, span, aid, sha, base, top) for _, span in items]
     status = max((s for _, s, _ in per), key=RANK.get)
     for span, s, src in per:
-        print(f'redck: audit: {s}{" (original from attempt " + src + ")" if src else ""}: {clip(span)}')
+        note = f' (original from attempt {src})' if src and s == 'preserved' else f' (declared test changed: {src})' if src else ''
+        print(f'redck: audit: {s}{note}: {clip(span)}')
     print(f'redck: audit: {status}')
     append(d, dict(type='audit', ts=now(), attempt_id=aid, handoff_sha256=sha, base_sha=base, status=status,
                    spans=[dict(span=sp, status=s) for sp, s, _ in per]))
     if status in DEVIATING:
         bad = [clip(sp) for sp, s, _ in per if s in DEVIATING]
+        changed = '; '.join(src for _, s, src in per if s == 'prelude-changed' and src)
+        what = (f'(red) criteria whose declared test ({changed}) changed after the pre-edit control' if status == 'prelude-changed'
+                else '(red) criteria without a pre-edit red control')
         line = (f'process deviation: red-checkpoint: {status}: attempt {aid or "unbound"}, handoff sha256 {sha[:12]}, '
-                f'{len(bad)} of {len(per)} (red) criteria without a pre-edit red control: ' + '; '.join(f'`{b}`' for b in bad))
+                f'{len(bad)} of {len(per)} {what}: ' + '; '.join(f'`{b}`' for b in bad))
         f = d / DEVIATIONS
         have = f.read_text(encoding='utf-8').splitlines() if f.is_file() else []
         if line not in have:
@@ -363,6 +401,52 @@ def selftest():
         check('control: a report claiming red-first and a later baseline run do not make a pre-edit record',
               out7.rstrip().endswith('audit: retrospective'))
         (repo / 'out.txt').unlink()
+
+        # declared test prelude (T-0395): a declared test, and only that, is a prelude and not an implementation edit
+        impl = '- (red) `test -f impl.txt`'
+        (repo / 'tests').mkdir(exist_ok=True)
+
+        def clean():
+            for n in ('impl.txt', 'src.txt', 'tests/a.sh', 'tests/b.sh'):
+                (repo / n).unlink(missing_ok=True)
+        clean()
+        d = task(impl, '- tests: `tests/a.sh`')
+        (repo / 'tests' / 'a.sh').write_text('test -f impl.txt\n')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        (repo / 'impl.txt').write_text('x\n')
+        rc2, out2, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('declared new test, implementation untouched: records pre-edit with the test sha256, audit ok',
+              rc == 0 and len(e) == 1 and e[0]['phase'] == 'pre-edit' and e[0]['result'] == 'red' and e[0]['dirty'] == []
+              and e[0].get('prelude') == {'tests/a.sh': sha256(repo / 'tests' / 'a.sh')}
+              and out2.rstrip().endswith('audit: ok') and devs(d) == [])
+        (repo / 'tests' / 'a.sh').write_text('test -f impl.txt && true\n')
+        rc3, out3, _ = run_main(['audit', str(d), '--attempt-id', 'A1'])
+        check('a declared test whose content changes after recording fails the later green binding (control)',
+              out3.rstrip().endswith('audit: prelude-changed') and len(devs(d)) == 1 and 'tests/a.sh' in devs(d)[0])
+        clean()
+        d = task(impl, 'tests: tests/a.sh')
+        (repo / 'tests' / 'a.sh').write_text('test -f impl.txt\n')
+        (repo / 'src.txt').write_text('implementation\n')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        check('a declared test plus one source edit is retrospective, the source path is the dirty one',
+              rc == 0 and e[0]['phase'] == 'retrospective' and e[0]['dirty'] == ['src.txt'] and 'tests/a.sh' in e[0].get('prelude', {}))
+        clean()
+        d = task(impl, 'tests: tests/a.sh')
+        (repo / 'tests' / 'b.sh').write_text('test -f impl.txt\n')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        check('an undeclared new test is retrospective (control: tests/ is no blanket ignore)',
+              rc == 0 and e[0]['phase'] == 'retrospective' and e[0]['dirty'] == ['tests/b.sh'] and not e[0].get('prelude'))
+        clean()
+        d = task(impl, 'tests: ../outside.sh, tests/*.sh, /abs/x.sh, tests/')
+        (repo / 'tests' / 'a.sh').write_text('t\n')
+        rc, out, err = run_main(['record', str(d), '--attempt-id', 'A1'])
+        e = entries(d)
+        check('an unsafe tests: entry (.., glob, absolute, directory) declares nothing, so the new file is an edit',
+              e[0]['phase'] == 'retrospective' and not e[0].get('prelude') and 'tests:' in err)
+        clean()
 
         rc, out, err = run_main(['record', str(repo / '.sdlc' / 'nope')])
         check('a missing handoff exits 1 with a message', rc == 1 and 'no handoff' in err)
