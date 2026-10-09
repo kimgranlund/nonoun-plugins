@@ -48,3 +48,10 @@ Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minute
 
 ## Constraints
 No em or en dashes. No push or publish. The plan step is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- `fleet_collect.py selftest` prints `ok:` for each of the seven labels in Done when and exits 0.
+- `runs.interrupted.attempts[].lost_min`, `lost_min_median` and `lost_min_total`, `runs.orphaned`, `results.builder`, `plan_defects` and `attempts.by_role` appear in `fleet_collect.py collect` output with the shapes in Intent; every key present before is unchanged.
+- `fleet_detect.py selftest` and `fleet_status.py selftest` pass.
+- None of `docs/kpi/002`, `003`, `004` contains `absent until plan step 1` or a "cannot be read today" sentence; 004 still says early reads 0 until plan step 5.
+- Only `fleet_collect.py` and the three KPI files changed outside `.sdlc`.
