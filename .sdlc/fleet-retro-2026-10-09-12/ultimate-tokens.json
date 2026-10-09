@@ -1,0 +1,403 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens",
+  "summary": "runs: 49 deduped, $159.31, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-09",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.2",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.2",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.2",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.296 (Claude Code)",
+    "time": "2026-10-09T19:38:31Z",
+    "uptime_load": {
+      "uptime_s": 1912877,
+      "load1": 8.79,
+      "load5": 9.72,
+      "load15": 10.23,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 49,
+    "cost_usd": 159.3075,
+    "duration_s": 0.0,
+    "unmetered": 11,
+    "by_role": {
+      "solo": {
+        "count": 11,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "verifier": {
+        "count": 17,
+        "cost_usd": 40.0526,
+        "duration_s": 0.0
+      },
+      "planner": {
+        "count": 4,
+        "cost_usd": 28.3223,
+        "duration_s": 0.0
+      },
+      "plan-reviewer": {
+        "count": 4,
+        "cost_usd": 24.0277,
+        "duration_s": 0.0
+      },
+      "builder": {
+        "count": 11,
+        "cost_usd": 60.1067,
+        "duration_s": 0.0
+      },
+      "filer": {
+        "count": 1,
+        "cost_usd": 0.3332,
+        "duration_s": 0.0
+      },
+      "architect": {
+        "count": 1,
+        "cost_usd": 6.465,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 17,
+        "cost_usd": 5.3158,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 32,
+        "cost_usd": 153.9916,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "docs-leftovers": {
+        "solo": 1
+      },
+      "docs-planning-to-specs": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "gate-a-narrowing": {
+        "solo": 1
+      },
+      "hue-slider-detaches-anchor": {
+        "verifier": 1
+      },
+      "match-peer-lightness": {
+        "builder": 2,
+        "plan-reviewer": 3,
+        "planner": 3,
+        "solo": 5,
+        "verifier": 2
+      },
+      "native-dom-charts": {
+        "filer": 1
+      },
+      "radix-role-tooltips": {
+        "verifier": 1
+      },
+      "radix-tooltip-popover": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "ratify-adrs-close-notes": {
+        "solo": 1
+      },
+      "ui-polish-controls": {
+        "verifier": 2
+      },
+      "ui-standardization": {
+        "architect": 1,
+        "builder": 9,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "solo": 1,
+        "verifier": 9
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 275,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 25,
+      "runs_files": 2114
+    }
+  },
+  "plan_review_share": 0.3286,
+  "tickets": {
+    "count": 45,
+    "items": [
+      {
+        "ticket": "docs-facts-sweep",
+        "id": "T-0033",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": "docs-structure-sweep",
+        "id": "T-0034",
+        "size": "L2",
+        "criteria": 11
+      },
+      {
+        "ticket": "gate-a-basis",
+        "id": "T-0030",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": "geometry-tokens-snapshot",
+        "id": "T-0023",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-783",
+        "id": "T-0005",
+        "size": "M",
+        "criteria": 12
+      },
+      {
+        "ticket": "gh-784",
+        "id": "T-0009",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "gh-787",
+        "id": "T-0011",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-809",
+        "id": "T-0020",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-811",
+        "id": "T-0019",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "header-fit-ci",
+        "id": "T-0035",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": "header-tools-fit",
+        "id": "T-0031",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "hue-slider-detaches-anchor",
+        "id": "T-0045",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "inspector-review-fixes",
+        "id": "T-0025",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": "match-peer-lightness",
+        "id": "T-0040",
+        "size": "L4",
+        "criteria": 7
+      },
+      {
+        "ticket": "radix-tooltip-popover",
+        "id": "T-0043",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "ratify-adrs-close-notes",
+        "id": "T-0046",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": "semantic-mapping-tidy",
+        "id": "T-0016",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "ui-standardization",
+        "id": "T-0044",
+        "size": "L4",
+        "criteria": 9
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 24,
+      "cpu_pct": 57.1,
+      "rss_mb": 3992.1
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 6,
+      "cpu_pct": 36.6,
+      "rss_mb": 5636.3
+    }
+  },
+  "worktrees": {
+    "count": 24,
+    "size": "942.3 MB",
+    "size_kb_known": 964868,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a132fc276740721da",
+        "size": "99.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a16ef56179747a328",
+        "size": "34.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a2e62a4c5049de409",
+        "size": "34.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a4ca2b238bfec6e7e",
+        "size": "34.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a519681970640b6eb",
+        "size": "42.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a6ad0def5dce0e66d",
+        "size": "40.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a8233f575cf66e2bd",
+        "size": "34.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a95368407d624ea4d",
+        "size": "37.3 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-abb6281269114e477",
+        "size": "35.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-abe86b04568ef6f79",
+        "size": "41.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-adc629a9791e0c876",
+        "size": "34.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-affe887fe66b68920",
+        "size": "35.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/compute-layers",
+        "size": "39.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/figma-legacy-size-renames",
+        "size": "36.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/geometry-compound-insets",
+        "size": "39.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/match-peer-lightness",
+        "size": "46.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/native-dom-charts",
+        "size": "41.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/onboard-refresh",
+        "size": "32.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization",
+        "size": "75.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s5",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s6",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s7",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization/.worktrees/tmp/0044-planner-L3-2/base",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/fanout",
+        "size": "0.2 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-09",
+    "window_days": 0,
+    "runs": 18,
+    "wall_minutes": 212.8,
+    "failed": 1,
+    "by_workflow": {
+      "CI": {
+        "runs": 18,
+        "wall_minutes": 212.8,
+        "failed": 1,
+        "by_event": {
+          "pull_request": 10,
+          "push": 8
+        },
+        "push_runs_7d": 8,
+        "pull_request_runs_7d": 10,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
