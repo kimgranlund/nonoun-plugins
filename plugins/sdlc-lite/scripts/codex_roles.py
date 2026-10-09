@@ -82,7 +82,56 @@ def loads(path):
     return data
 
 
+def plugin_version():
+    return json.loads((ROOT / '.claude-plugin/plugin.json').read_text())['version']
+
+
+def fingerprint_of(data):
+    """Plugin version plus a short hash of the generated profile (name, model, effort, sandbox, instructions)."""
+    digest = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
+    return plugin_version() + '+' + digest
+
+
+def with_fingerprint(data):
+    """Embed the fingerprint in the profile so the role can state the revision it loaded (T-0389)."""
+    fp = fingerprint_of(data)
+    note = ('\n\n# Profile fingerprint\nThis profile is revision `' + fp + '`. Before any edit, make the first line of your first message '
+            'and the first line of your final report exactly `profile: ' + fp + '`.')
+    return dict(data, developer_instructions=data['developer_instructions'] + note)
+
+
+def fingerprint(role):
+    """The fingerprint the generated profile of this exact agent name carries."""
+    for name, data in definitions():
+        if name == role:
+            return re.search(r'revision `([^`]+)`', data['developer_instructions'])[1]
+    raise KeyError(role + ': not defined by this plugin version')
+
+
+def check_loaded(role, report, binding=None):
+    """Compare the fingerprint a role reports it loaded with the attempt binding.
+
+    Returns (status, message): ready (equal), refused (differs: the live session holds an older or other
+    profile, and install does not change a running session), unknown (the role stated none: a handshake is
+    required, and the host exposes no runtime fingerprint, so nothing claims ready)."""
+    binding = binding or fingerprint(role)
+    first = next((line.strip() for line in report.splitlines() if line.strip()), '')
+    found = re.fullmatch(r'profile:\s*(\S+)', first.strip('`* '))
+    if not found:
+        return 'unknown', (f'live freshness unknown: {role} stated no loaded profile fingerprint. Handshake required: ask it to reply with the first line '
+                           f'`profile: {binding}` before it edits; do not accept edits or claim ready.')
+    if found[1] != binding:
+        return 'refused', (f'refused: {role} loaded profile {found[1]}, the attempt binding is {binding}. Start a fresh Codex session (installing does not '
+                           'change a running session), then rerun preflight and the handshake; accept no edits from this run.')
+    return 'ready', f'ready: {role} loaded profile {binding}, equal to the attempt binding (live behavior beyond the profile unverified)'
+
+
 def definitions():
+    for name, data in raw_definitions():
+        yield name, with_fingerprint(data)
+
+
+def raw_definitions():
     alternates = verifier_alternates()
     for role, levels in models().items():
         for level, (model, effort) in levels.items():
@@ -319,11 +368,20 @@ def main():
     pre = subs.add_parser('preflight', help='check the lane roles are defined, generated, and in the parent-supplied callable catalog')
     pre.add_argument('project', type=Path); pre.add_argument('roles', nargs='+', help='exact agent names, e.g. sdlc-solo-l2')
     pre.add_argument('--catalog', default='', help='agent names the host lists as callable in this session'); pre.add_argument('--catalog-file', type=Path, help='file of those names')
+    fpr = subs.add_parser('fingerprint', help='print the profile fingerprint the generated agent carries (the attempt binding)'); fpr.add_argument('role')
+    hs = subs.add_parser('handshake', help='compare the fingerprint a role reported as loaded with the attempt binding (exit 0 ready, 2 refused, 3 unknown)')
+    hs.add_argument('role'); hs.add_argument('--report-file', type=Path, help="file holding the role's first message or report; absent or empty means it stated none"); hs.add_argument('--binding', help='expected fingerprint; default is the current generated profile')
     res = subs.add_parser('resolve'); res.add_argument('role'); res.add_argument('level'); res.add_argument('directory', nargs='?')
     args = parser.parse_args()
     if args.command == 'resolve':
         model, effort, shared = resolve(args.role, args.level, args.directory)
         print(model, effort, *(['shared'] if shared else []))
+    elif args.command == 'fingerprint':
+        print(fingerprint(args.role))
+    elif args.command == 'handshake':
+        status, message = check_loaded(args.role, args.report_file.read_text() if args.report_file and args.report_file.exists() else '', args.binding)
+        print(message, file=sys.stdout if status == 'ready' else sys.stderr)
+        sys.exit({'ready': 0, 'refused': 2, 'unknown': 3}[status])
     elif args.command == 'preflight':
         text = args.catalog + ' ' + (args.catalog_file.read_text() if args.catalog_file else '')
         catalog = parse_catalog(text)
@@ -336,7 +394,8 @@ def main():
             for problem in problems:
                 print('- ' + problem, file=sys.stderr)
             sys.exit(2)
-        print('ready: ' + ', '.join(args.roles) + ' defined, generated current, and in the supplied catalog (live behavior unverified)')
+        print('ready: ' + ', '.join(args.roles) + ' defined, generated current, and in the supplied catalog (live behavior unverified; live freshness unknown until the handshake: '
+              + '; '.join(r + ' must state `profile: ' + fingerprint(r) + '`' for r in args.roles) + ', checked with codex_roles.py handshake)')
     elif args.command == 'install':
         install(args.project, args.check, args.conductor)
     elif args.command == 'conductor-off':
