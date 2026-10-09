@@ -25,3 +25,15 @@ Codex evidence forwarded by the maison conductor, 2026-10-08 (maison .sdlc/ticke
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Result (solo, 2026-10-08)
+- Built: each generated Codex profile ends with a fingerprint (plugin version plus a 12 hex hash of name, model, effort, sandbox and instructions) and tells the role to put `profile: <fingerprint>` on the first line of its first message and final report before any edit. `codex_roles.py fingerprint <role>` prints the binding; `codex_roles.py handshake <role> [--report-file f] [--binding fp]` exits 0 ready (equal), 2 refused (differs: start a fresh Codex session, install does not change a running one), 3 `live freshness unknown` (none stated: handshake required, never ready). Preflight `ready` now says live freshness is unknown until the handshake. `install --check` logic is unchanged; the generated toml files changed only by the added fingerprint note.
+- T-0287 (maison) missing red-checkpoint rows: T-0378 first shipped in v0.22.0 (tag contains it). A builder loaded from a pre-0.22 profile has no instruction to write procedural red-checkpoint rows, so a stale session profile is a sufficient and plausible explanation, the same mechanism as the 0.21.3 results.py report. Unverified: maison's actual loaded version for T-0287 is not in this repo; the fingerprint line in a builder report would confirm it next time.
+- Live Codex behavior (a real session honoring the first-line instruction) is unverified; fixture tests only.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/codex-selftest.py` passes, including the five handshake and fingerprint tests (equal -> ready; differs -> refused with "Start a fresh Codex session"; absent or not-first-line -> `unknown` with "Handshake required").
+- `python3 plugins/sdlc-lite/scripts/codex_roles.py generate --check`, `claude_roles.py generate --check`, `plugins/sdlc-lite/scripts/check.py` and `tickets.py --root .sdlc check` pass.
+- Every `adapters/codex/agents/*.toml` ends with a `# Profile fingerprint` note whose `profile: <fingerprint>` equals `codex_roles.py fingerprint <name>`.
+- `install --check` code path is unchanged (diff of `install` shows no edits); `instructions.md`, `agents/solo.md` and `skills/agent/SKILL.md` describe the handshake.
+- The T-0287 answer is recorded in this file.

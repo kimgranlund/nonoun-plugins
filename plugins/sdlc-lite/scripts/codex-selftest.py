@@ -166,6 +166,38 @@ class CodexTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'refusing to overwrite'):
             codex_roles.install(self.repo,check=True)
 
+    def test_handshake_loaded_fingerprint_equals_binding_is_ready(self):
+        fp=codex_roles.fingerprint('sdlc-solo-l2')
+        self.assertRegex(fp,r'^\d+\.\d+\.\d+\+[0-9a-f]{12}$')
+        status,message=codex_roles.check_loaded('sdlc-solo-l2','profile: '+fp+'\nDone.')
+        self.assertEqual(status,'ready',message)
+
+    def test_handshake_different_fingerprint_is_refused_with_fresh_session_action(self):
+        status,message=codex_roles.check_loaded('sdlc-solo-l2','profile: 0.21.3+000000000000\nDone.')
+        self.assertEqual(status,'refused');self.assertIn('Start a fresh Codex session',message);self.assertIn('0.21.3+000000000000',message)
+
+    def test_handshake_absent_fingerprint_is_unknown_and_requires_handshake(self):
+        for report in ('','All done, edits made.\nprofile: '+codex_roles.fingerprint('sdlc-solo-l2')):
+            status,message=codex_roles.check_loaded('sdlc-solo-l2',report)
+            self.assertEqual(status,'unknown');self.assertIn('live freshness unknown',message);self.assertIn('Handshake required',message)
+
+    def test_profile_carries_its_fingerprint_and_it_tracks_the_content(self):
+        text=dict(codex_roles.definitions())['sdlc-solo-l2']['developer_instructions']
+        self.assertIn('exactly `profile: '+codex_roles.fingerprint('sdlc-solo-l2')+'`',text)
+        self.assertNotEqual(codex_roles.fingerprint('sdlc-solo-l2'),codex_roles.fingerprint('sdlc-solo-l3'))
+        raw=dict(codex_roles.raw_definitions())['sdlc-solo-l2']
+        self.assertEqual(codex_roles.fingerprint_of(raw),codex_roles.fingerprint('sdlc-solo-l2'))
+        self.assertNotEqual(codex_roles.fingerprint_of(dict(raw,developer_instructions=raw['developer_instructions']+' x')),codex_roles.fingerprint('sdlc-solo-l2'))
+
+    def test_handshake_cli_exit_codes(self):
+        script=str(ROOT/'scripts/codex_roles.py');fp=codex_roles.fingerprint('sdlc-solo-l2')
+        run=lambda *a:subprocess.run(['python3',script,'handshake','sdlc-solo-l2',*a],capture_output=True,text=True,timeout=DEADLINE)
+        rep=self.base/'first.txt'
+        rep.write_text('profile: '+fp+'\n');self.assertEqual(run('--report-file',str(rep)).returncode,0)
+        rep.write_text('profile: 0.21.3+aaaaaaaaaaaa\n');bad=run('--report-file',str(rep));self.assertEqual(bad.returncode,2);self.assertIn('fresh Codex session',bad.stderr)
+        self.assertEqual(run().returncode,3);self.assertEqual(run('--report-file',str(self.base/'none.txt')).returncode,3)
+        rep.write_text('profile: 9.9.9+bbbbbbbbbbbb\n');self.assertEqual(run('--report-file',str(rep),'--binding','9.9.9+bbbbbbbbbbbb').returncode,0)
+
     def test_preflight_cli_requires_a_supplied_catalog(self):
         codex_roles.install(self.repo)
         script=str(ROOT/'scripts/codex_roles.py')
