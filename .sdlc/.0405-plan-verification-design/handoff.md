@@ -2,7 +2,7 @@
 id: T-0405
 title: "plan-verification skill design: intent, rubric and KPI capture that plan-goal uses"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ Design only. No em or en dashes. No push or publish. Build waits for its own tic
 3. It names every file the build changes (section 7), the two new `plan_check.py goal` fail rules (`outcome-block`, `done-measured`) each with a negative control, and the rejected alternatives (extend plan-goal only, tickets only).
 4. `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` exits 0 and `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
 5. The document is listed in `docs/README.md`, `docs/specs/sdlc-lite/README.md` and the managed block of `docs/specs/sdlc-lite/AGENTS.md`; no plugin script or skill is changed (`git diff --stat -- plugins` is empty).
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
