@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:d9b2e3cf0904 -->
+<!-- sdlc-lite:managed:start v1 sha256:99fa8c6a56ad -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -16,14 +16,13 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
   - T-0410 Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal (0410-plan-doc-executor-design)
-- ready: 5
+- ready: 4
   - T-0413 prepare --tree names the lane worktree as Tree and base (0413-prepare-tree-lane-worktree)
   - T-0414 Restart sweep, reused parent pids, and a safe prune --add (0414-restart-sweep-and-safe-prune)
-  - T-0415 Lint refuses circular criteria and records every refusal (0415-lint-circular-criteria), claimed by claude 2026-10-09
   - T-0416 Replay a scope-versus-tests heuristic and decide (0416-scope-vs-tests-heuristic-replay)
   - T-0417 Measure verifier minutes and decide on a delta verifier (0417-verifier-minutes-delta-decision)
 - blocked: 0
-- done: 374
+- done: 375
 - dropped: 25
 
 ## Procedures

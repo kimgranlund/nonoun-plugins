@@ -412,6 +412,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0412 | [.0412-record-before-result-file](.0412-record-before-result-file/handoff.md) | record leaves the attempt running when no result exists yet | bug | L2 | P2 | none | 🟢 done |
 | T-0413 | [0413-prepare-tree-lane-worktree](0413-prepare-tree-lane-worktree/handoff.md) | prepare --tree names the lane worktree as Tree and base | bug | L3 | P2 | T-0412 | 🔵 ready |
 | T-0414 | [0414-restart-sweep-and-safe-prune](0414-restart-sweep-and-safe-prune/handoff.md) | Restart sweep, reused parent pids, and a safe prune --add | feature | L2 | P2 | T-0413 | 🔵 ready |
-| T-0415 | [0415-lint-circular-criteria](0415-lint-circular-criteria/handoff.md) | Lint refuses circular criteria and records every refusal | feature | L3 | P2 | none | 🔵 ready |
+| T-0415 | [.0415-lint-circular-criteria](.0415-lint-circular-criteria/handoff.md) | Lint refuses circular criteria and records every refusal | feature | L3 | P2 | none | 🟢 done |
 | T-0416 | [0416-scope-vs-tests-heuristic-replay](0416-scope-vs-tests-heuristic-replay/handoff.md) | Replay a scope-versus-tests heuristic and decide | spike | L2 | P2 | none | 🔵 ready |
 | T-0417 | [0417-verifier-minutes-delta-decision](0417-verifier-minutes-delta-decision/handoff.md) | Measure verifier minutes and decide on a delta verifier | spike | L1 | P2 | T-0411 | 🔵 ready |

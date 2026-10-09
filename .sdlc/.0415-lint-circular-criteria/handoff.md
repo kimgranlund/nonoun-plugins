@@ -2,7 +2,7 @@
 id: T-0415
 title: "Lint refuses circular criteria and records every refusal"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -38,3 +38,7 @@ Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minute
 
 ## Constraints
 No em or en dashes. No push or publish. The plan step is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L3); one independent batched verifier passed before the merge
