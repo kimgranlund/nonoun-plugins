@@ -4,7 +4,7 @@ Evidence labels: observed here (a gen-ui-kit campaign, 2026-10-09, as briefed by
 
 ## The check
 
-`plan_check.py campaign` reads the plan from stdin, `--text`, or `--file`. The `/goal` block is the fenced block that starts with `/goal`; it must also pass `plan_check.py goal`, and its findings print as `goal-<rule>`.
+`plan_check.py campaign` reads the plan from stdin, `--text`, or `--file`. The `/goal` block is the fenced block that starts with `/goal`; it must also pass `plan_check.py goal` (including the outcome block from plan-verification), and its findings print as `goal-<rule>`.
 
 | Finding | Rule |
 |---|---|
@@ -31,7 +31,6 @@ Census: `<command>` exits 0 and prints the units still to migrate (<count at pla
 Dependency order: Wave 0 lands on main before any Wave 1 lane starts; Wave 2 starts when every Wave 1 lane is merged; Wave 3 starts when Wave 2 passes.
 Lane cap: <N>
 Cap reason: <only when the partition has more lanes than the cap: why, and who authorized it>
-Outcome, rubric and KPI: pointer for the plan-verification skill (T-0405, not built yet); leave this line until that skill exists.
 
 Wave 0 (one lane, lands first): <shared tool> and a blocking gate `<gate command>`, wired into the existing gate chain with no new CI job. The gate starts green through a day-one allowlist of current violators, each with a justification string; a stale entry fails the gate.
 Wave 1 (<N> lanes, file-disjoint, one writer per file): each lane migrates its units and deletes its own allowlist entries.
@@ -47,7 +46,7 @@ Wave 3 (bulk PRs): one integration branch per area, <8 to 10> PRs, one plain pus
 Stop rules: stop and write state to .sdlc/notes.md at $<total> total, $<per lane> per lane, a rate or weekly limit, or three 529s in a row.
 Done when: `<gate command>` exits 0 on main with an empty allowlist
 
-<a fenced /goal block, as in the goal rules: Scope, How to work, Budget and stop rules, Authorization, Done when>
+<a fenced /goal block, as in the goal rules: Scope, the outcome lines (Outcome, Measured by, Rubric, Negative control), How to work, Budget and stop rules, Authorization, Done when>
 ```
 
 Worked example (observed): the goal was "granular dependency loading is the standard for every page". 136 html files linked a 120-sheet `components.css`; 22 linked a 348 KB `themes.css`. Wave 0 was one lane building a derivation tool and a blocking gate with a day-one allowlist; Wave 1 was up to 50 file-disjoint lanes migrating pages; Wave 2 was bulk verifier review plus a probe sweep; Wave 3 was 8 to 10 bulk PRs. It was done when the gate exited 0 on main with an empty allowlist.

@@ -29,7 +29,7 @@ Follow the template in the rules file, in this order:
 2. Wave 1, N lanes: a directory partition generated from the census, file-disjoint, one writer per file, one reference PR named as the pattern. Print it as a table of lane, directory, units.
 3. Wave 2, bulk review: one verifier per bundle of 5 to 10 lanes on a different model family than the builders, plus a probe sweep with before and after numbers per unit.
 4. Wave 3, bulk PRs: one integration branch per area, a target PR count (8 to 10), one plain push each.
-5. One `/goal` block (the goal rules in plan-goal apply): authorization explicit, with publish, tag, and deploy never implied. When the owner says "no limits", set a dollar backstop from the budget level times the lane count and call it a backstop.
+5. One `/goal` block (the goal rules in plan-goal apply, including the outcome lines from `${CLAUDE_PLUGIN_ROOT}/skills/plan-verification/SKILL.md`): authorization explicit, with publish, tag, and deploy never implied. When the owner says "no limits", set a dollar backstop from the budget level times the lane count and call it a backstop.
 
 Every number comes from the repo or the person's answer, never a default you invented.
 

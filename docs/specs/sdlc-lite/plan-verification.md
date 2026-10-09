@@ -1,6 +1,6 @@
 # plan-verification skill
 
-Design for review, not implemented. Version 0.1, 2026-10-09, ticket T-0405. Decided by the maintainer on 2026-10-09: intent, rubric and KPI capture becomes a new `plan-verification` skill that `plan-goal` uses. The build is a separate ticket (section 8); this ticket writes no skill and changes no script.
+Built (ticket T-0407, 2026-10-09; the build commit is the one that closes T-0407). Version 0.1, 2026-10-09, designed in ticket T-0405. Decided by the maintainer on 2026-10-09: intent, rubric and KPI capture becomes a new `plan-verification` skill that `plan-goal` uses. Build notes: the shared example uses `${CLAUDE_PLUGIN_ROOT}/scripts/...` because check.py item 42 rejects a `plugins/` prose path in a skill file; the campaign check embeds a goal block, so the `plan-campaign` rules file and its selftest block carry the outcome lines too; check.py item 48 holds the skill's wiring.
 
 ## 1. Problem
 

@@ -186,6 +186,10 @@
    scripts/messages.py names a versioned plugin cache folder (`sdlc-lite/<digits>.<digits>`); the mailbox text runs the `{{launcher}}`
    (`messages-run.py`) and says `beat` never extends the window. Negative controls: a planted versioned path in each scanned kind of file, and each phrase removed.
    scripts/messages.py selftest runs the watch loop through a simulated version-folder rename.
+48. Plan verification (T-0407): skills/plan-verification/SKILL.md names `references/outcome-block.md`, `Codex host`, and `Unattended` and holds no `harness:`
+   reference; references/outcome-block.md names `Outcome`, `Measured by`, `Rubric`, `Negative control`, `outcome-block`, and `done-measured`; skills/plan-goal/SKILL.md
+   names `plan-verification`; skills/plan-goal/references/goal-rules.md names `outcome-block.md`; skills/sdlc-lite/SKILL.md routes to `plan-verification`.
+   Item 31 stays for the four block-returning plan skills. Negative controls: each phrase removed from each file, a harness reference added, and a routing line removed must be flagged.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -964,6 +968,21 @@ for _n in _plans:
         if not plan_bad(dict(_plans, **{_n: _plans[_n].replace(_ph, '')}), _entry): errors.append(f'check.py: plan skills negative control not flagged for {_n} without "{_ph}"')
     if not plan_bad(dict(_plans, **{_n: _plans[_n] + ' harness:x'}), _entry): errors.append(f'check.py: plan skills negative control not flagged for a harness reference in {_n}')
     if not plan_bad(_plans, _entry.replace(f'plan-{_n}', 'x')): errors.append(f'check.py: plan skills negative control not flagged for a missing entry route to {_n}')
+# Plan verification (docstring item 48): the capture skill, its shared reference, and the plan-goal call that reads it.
+PV_NEEDS = (('skill', ('references/outcome-block.md', 'Codex host', 'Unattended')),
+            ('reference', ('Outcome', 'Measured by', 'Rubric', 'Negative control', 'outcome-block', 'done-measured')),
+            ('goal', ('plan-verification',)), ('rules', ('outcome-block.md',)), ('entry', ('plan-verification',)))
+def pv_bad(texts):
+    out = [f'{name} missing "{ph}"' for name, phrases in PV_NEEDS for ph in phrases if ph not in texts[name]]
+    if 'harness:' in texts['skill']: out.append('plan-verification SKILL.md references harness:')
+    return out
+_pv = {'skill': _rd(root/'skills/plan-verification/SKILL.md'), 'reference': _rd(root/'skills/plan-verification/references/outcome-block.md'),
+       'goal': _rd(root/'skills/plan-goal/SKILL.md'), 'rules': _rd(root/'skills/plan-goal/references/goal-rules.md'), 'entry': _entry}
+errors.extend(f'check.py: plan verification: {m}' for m in pv_bad(_pv))
+for _name, _phrases in PV_NEEDS:
+    for _ph in _phrases:
+        if not pv_bad(dict(_pv, **{_name: _pv[_name].replace(_ph, '')})): errors.append(f'check.py: plan verification negative control not flagged for {_name} without "{_ph}"')
+if not pv_bad(dict(_pv, skill=_pv['skill'] + ' harness:x')): errors.append('check.py: plan verification negative control not flagged for a harness reference')
 # Broken-link baseline (docstring item 32): runs only where the repository root is a git work tree (not in a consumer install).
 def links_bad(broken, allowed):
     got, want = set(broken), set(allowed)

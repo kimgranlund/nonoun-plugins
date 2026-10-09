@@ -28,6 +28,7 @@ Read the matching `skills/<name>/SKILL.md` under that plugin root:
 | Resolve outstanding questions / sweep questions and blockers | open-questions / ask |
 | Plan a goal, loop, or fanout run and get a paste-ready command | plan-goal / plan-loop / plan-fanout |
 | Plan a wave-based campaign (tool and gate, parallel lanes, bulk review, bulk PRs) | plan-campaign |
+| Capture an outcome, measure, rubric and negative control before a plan | plan-verification |
 | Set up or check entry files and docs layout | onboard |
 | Review sdlc run traces for sdlc-lite waste and bugs | review-traces |
 | Retro of how the plugin served several repos, one cost-ranked report | fleet-retro |
