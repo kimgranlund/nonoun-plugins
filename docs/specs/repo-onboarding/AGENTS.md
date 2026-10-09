@@ -1,0 +1,11 @@
+# repo-onboarding
+
+Entry files, the default docs layout, document reorganization and the `goals/` and `kpi/` homes for a repository that adopts SDLC Lite. Read the one file for the part you are changing.
+
+<!-- sdlc-lite:managed:start v1 sha256:e0cdc0252747 -->
+## Documents
+
+- [README.md](README.md)
+- [design.md](design.md)
+- [goals-and-kpi.md](goals-and-kpi.md)
+<!-- sdlc-lite:managed:end -->

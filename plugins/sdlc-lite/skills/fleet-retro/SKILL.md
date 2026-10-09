@@ -61,7 +61,7 @@ Lint with `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/steps.py lint W/verify/handoff.
 
 ## 6. File
 
-Findings that pass the rubric and whose mechanism names an sdlc-lite file or rule go to review-traces stage 4 (Propose) and stage 5 (File), skipping its stages 1 to 3: one propose handoff, with the finding row as its Context and the step 5 result as its verify result. Fill `Red check:` with the finding's detect rule going silent on a fresh collect, or a selftest case. Each ticket body also gets `outcome metric: <rule or command>, before: <value>`, which the next retro reads for the rubric's outcome check. Findings about a project, the host, or task text stay in the report.
+Findings that pass the rubric and whose mechanism names an sdlc-lite file or rule go to review-traces stage 4 (Propose) and stage 5 (File), skipping its stages 1 to 3: one propose handoff, with the finding row as its Context and the step 5 result as its verify result. Fill `Red check:` with the finding's detect rule going silent on a fresh collect, or a selftest case. Each ticket body also gets `outcome metric: <rule or command>, before: <value>`, which the next retro reads for the rubric's outcome check; when the repository has a `kpi/` file for the metric, write its id (`outcome metric: K-001, before: <value>`) and the next retro runs that file's `measure:`. Findings about a project, the host, or task text stay in the report.
 
 Stage 5's one AskUserQuestion round, batched four drafts at a time with the recommendation first, is the end of this skill. Unattended (`SDLC_HEADLESS=1`, a fanout lane, `claude -p`) file nothing: list the drafts in the report. Never auto-approve.
 

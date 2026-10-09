@@ -3,6 +3,7 @@
 Proposals for preparing a repository that adopts SDLC Lite. The design is implemented, and so are the reorganization's inventory and apply; glob classification is not.
 
 - [Entry files and docs layout](design.md): the `onboard` skill, entry file rules, upsert behavior, default layout, and templates. Ticket T-0160. Role access is ticket T-0162.
+- [Goals and KPIs](goals-and-kpi.md): the `goals/` and `kpi/` homes, the file shapes, and checks G-1 to G-5. Ticket T-0392.
 - [Document reorganization](../../planning/repo-onboarding/reorganization.md): rules for plan, approval, and apply, with how each open finding was settled. Spike T-0161, apply T-0233.
 - [Reorganization plan procedure](../../planning/repo-onboarding/reorganization-plan-procedure.md): a read-only inventory, a model-written plan, then `reorg.py` applies the approved plan. Tickets T-0232 and T-0233.
 - [Docs schema](../../planning/docs-schema/README.md): the strict folder schema that reorganization targets.
