@@ -12,8 +12,18 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
   runs            the string "none" when no `.sdlc` exists under the repo or any of its worktrees; else
                   total, cost_usd, duration_s, unmetered (null cost_usd or unpriced true), by_role {role: count, cost_usd,
                   duration_s}, by_lane {solo, full}, by_ticket {ticket folder: {role: count}}, interrupted
-                  {count, attempts[]}, limit_markers {count, files[]}, lane_overrides[], duplicates_dropped,
-                  sources
+                  {count, attempts[] {attempt_id, role, level, started_at, lost_min, path}, lost_min_median,
+                  lost_min_total}, orphaned {count, attempts[] {attempt_id, role, level, started_at, path}},
+                  limit_markers {count, files[]}, lane_overrides[], duplicates_dropped, sources
+  results         {builder: {total, blocked}}: builder rows of runs.jsonl in the window (deduplicated as `runs` is);
+                  blocked counts those whose result file (the row's `file`, beside its runs.jsonl) has a `## Status`
+                  section whose first non-blank line starts with the word `blocked`
+  plan_defects    {late, early}: late counts builder and verifier rows whose result file holds a line starting
+                  `plan defect:` (after an optional list marker); early counts lines of `refusals.jsonl` files in any
+                  scanned `.sdlc` dir with a `ts` in the window, deduplicated by (plan, text); it reads 0 until
+                  steps.py writes them (plan step 5)
+  attempts        {by_role: {role: {count, median_min, max_min}}}: completed `*.attempt.json` records in the window,
+                  minutes from started_at to finished_at
   plan_review_share   (plan-reviewer + planner cost_usd) / total cost_usd, null with no cost
   tickets         {count, items[]}: each `.sdlc/<folder>/handoff.md` (main checkout first, then worktrees; the first
                   copy of a folder wins) is counted. A ticket folder is keyed by its path under `.sdlc`: its name,
@@ -37,7 +47,11 @@ the repo's whole history, not one checkout. The lane of a run is the effective l
 `skips.md`: the last `Lane: <lane> ...` prose line (a conductor override) wins over the last `- lane: <lane>;`
 line under `## Lane` (the steps.py record); `lean` counts as `full`; role `solo` is always `solo`; no skips.md
 means `full` unless the role is solo. interrupted counts `*.attempt.json` files whose status is `interrupted`,
-deduplicated by attempt_id. limit_markers counts `*.limit` files (run.sh's 429 resume markers).
+deduplicated by attempt_id. lost_min of an interrupted attempt is the minutes from its started_at to the started_at
+of the next attempt record of the same role in the same directory, else to its own finished_at (null with neither);
+the median and total skip a null. orphaned counts attempt records still `running` on the claude backend (the default)
+that started in the window and whose parent_pid (else owner_pid) is dead now (the kill(pid, 0) test of
+dispatch.pid_alive), deduplicated by attempt_id. limit_markers counts `*.limit` files (run.sh's 429 resume markers).
 --since keeps records at or after DATE; --until keeps records up to DATE (a bare YYYY-MM-DD includes that whole
 day, a full ISO instant is an inclusive bound). A record with no readable timestamp is dropped when a bound is
 given. DATE is YYYY-MM-DD or ISO 8601; no zone means UTC.
@@ -46,7 +60,7 @@ Read-only: nothing under the repo is written. Only `ps`, `du -sk`, `git worktree
 (with --gh) `gh api` GET calls run, each bounded by a timeout and killed with its process group on expiry.
 Exit codes: 0 ok (a repo with no `.sdlc` included), 2 usage or a missing repo.
 """
-import collections, datetime, json, math, os, re, shutil, signal, subprocess, sys, tempfile, time
+import collections, datetime, json, math, os, re, shutil, signal, statistics, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(HERE)
@@ -184,8 +198,8 @@ def worktree_roots(repo):
 
 
 def scan_sdlc(roots):
-    """(runs files, attempt files, limit files, skips files) under each root's `.sdlc`, in root order."""
-    runs, attempts, limits, skips = [], [], [], []
+    """(runs files, attempt files, limit files, skips files, refusals files) under each root's `.sdlc`, in root order."""
+    runs, attempts, limits, skips, refusals = [], [], [], [], []
     seen_dirs = set()
     for root in roots:
         sd = os.path.join(root, '.sdlc')
@@ -204,7 +218,9 @@ def scan_sdlc(roots):
                     limits.append((sd, p))
                 elif n == 'skips.md':
                     skips.append((sd, p))
-    return runs, attempts, limits, skips
+                elif n == 'refusals.jsonl':
+                    refusals.append((sd, p))
+    return runs, attempts, limits, skips, refusals
 
 
 def read_text(path):
@@ -317,13 +333,62 @@ def round_bucket(b):
     return {'count': b['count'], 'cost_usd': round(b['cost_usd'], 4), 'duration_s': round(b['duration_s'], 1)}
 
 
-def collect_runs(repo, window, dedupe=True):
+def pid_alive(pid):
+    """The kill(pid, 0) test of dispatch.pid_alive: a process we may not signal still exists."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def minutes_between(start, end):
+    """Minutes from ISO string start to end, rounded to 0.1, or None when either is unreadable or end < start."""
+    a, b = parse_ts(start), parse_ts(end)
+    if a is None or b is None or b < a:
+        return None
+    return round((b - a).total_seconds() / 60.0, 1)
+
+
+def median_or_none(vals):
+    return round(statistics.median(vals), 1) if vals else None
+
+
+def result_text(runs_path, rec):
+    """The result file a runs.jsonl row names (`file`, beside the runs.jsonl), or ''."""
+    name = rec.get('file')
+    return read_text(os.path.join(os.path.dirname(runs_path), name)) if isinstance(name, str) and name else ''
+
+
+STATUS_RE = re.compile(r'^##[ \t]+Status[ \t]*$', re.M)
+PLAN_DEFECT_RE = re.compile(r'^[ \t]*(?:(?:[-*+]|\d+[.)])[ \t]+)?plan defect:', re.M)
+
+
+def result_blocked(text):
+    """True when the line after `## Status` (the next non-blank one) starts with the word `blocked`."""
+    m = STATUS_RE.search(text)
+    if not m:
+        return False
+    for line in text[m.end():].splitlines():
+        if line.strip():
+            w = re.match(r'\W*([A-Za-z]+)', line)
+            return bool(w) and w.group(1).lower() == 'blocked'
+    return False
+
+
+def collect_runs(repo, window, dedupe=True, extra=None):
     """The `runs` object (or the string "none") plus the lane overrides' source roots. dedupe=False is the
-    negative control: every row counts, so duplicates change the totals."""
+    negative control: every row counts, so duplicates change the totals. extra, when a dict, receives the keys
+    `results`, `plan_defects` and `attempts` that `collect` adds beside `runs`."""
     roots, _linked = worktree_roots(repo)
-    runs_files, attempt_files, limit_files, skips_files = scan_sdlc(roots)
+    runs_files, attempt_files, limit_files, skips_files, refusal_files = scan_sdlc(roots)
     if not runs_files and not attempt_files and not limit_files and not skips_files:
         return 'none'
+    result_rows = []                      # (role, runs.jsonl path, row) of builder and verifier rows in the window
     lanes = Lanes()
     for sdlc, p in skips_files:           # read every skips.md so overrides in runless tickets show too
         lanes.of_file(sdlc, os.path.join(os.path.dirname(p), 'x'))
@@ -362,32 +427,73 @@ def collect_runs(repo, window, dedupe=True):
             cost, dur = num(rec.get('cost_usd')), num(rec.get('duration_ms'))
             if cost is None or rec.get('unpriced') is True:  # T-0402: the flag dispatch.py record writes counts too
                 unmetered += 1
+            if role in ('builder', 'verifier'):
+                result_rows.append((role, p, rec))
             lane = 'solo' if role == 'solo' or lane_of == 'solo' else 'full'
             add_bucket(total, cost, dur)
             add_bucket(by_role.setdefault(role, new_bucket()), cost, dur)
             add_bucket(by_lane[lane], cost, dur)
             roles = by_ticket.setdefault(ticket, {})
             roles[role] = roles.get(role, 0) + 1
-    interrupted, attempts_seen = [], set()
+    attempt_recs = []                     # (path, record, dir under .sdlc) of every readable attempt file
     for sdlc, p in attempt_files:
         try:
             with open(p, encoding='utf-8') as f:
                 rec = json.load(f)
         except (OSError, ValueError):
             continue
-        if not isinstance(rec, dict) or rec.get('status') != 'interrupted':
-            continue
-        if window.active and not window.has(rec.get('started_at') or rec.get('finished_at')):
-            continue
+        if isinstance(rec, dict):
+            attempt_recs.append((p, rec, os.path.relpath(os.path.dirname(p), sdlc)))
+    starts = {}                           # (dir, role) -> sorted started_at instants of every attempt there
+    for _p, rec, rel in attempt_recs:
+        t = parse_ts(rec.get('started_at'))
+        if t is not None:
+            starts.setdefault((rel, rec.get('role')), []).append(t)
+    for v in starts.values():
+        v.sort()
+
+    def lost_min(rec, rel):
+        """Minutes from the attempt's start to the next attempt of the same role in the same dir, else to finished_at."""
+        t = parse_ts(rec.get('started_at'))
+        if t is None:
+            return None
+        later = [x for x in starts.get((rel, rec.get('role')), ()) if x > t]
+        if later:
+            return round((later[0] - t).total_seconds() / 60.0, 1)
+        return minutes_between(rec.get('started_at'), rec.get('finished_at'))
+
+    settled = {r.get('attempt_id') for _p, r, _rel in attempt_recs
+               if r.get('status') != 'running' and isinstance(r.get('attempt_id'), str)}   # another copy moved on
+    interrupted, attempts_seen, lost_all = [], set(), []
+    orphaned, orphans_seen = [], set()
+    done_min, done_seen = {}, set()
+    for p, rec, rel in attempt_recs:
+        status = rec.get('status')
         aid = rec.get('attempt_id')
         key = aid if isinstance(aid, str) and aid else p
-        if dedupe:
-            if key in attempts_seen:
-                continue
-            attempts_seen.add(key)
-        interrupted.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': rec.get('role'),
-                            'level': rec.get('level'), 'started_at': rec.get('started_at'),
-                            'path': p})
+        if status == 'interrupted':
+            if not window.active or window.has(rec.get('started_at') or rec.get('finished_at')):
+                if not (dedupe and key in attempts_seen):
+                    attempts_seen.add(key)
+                    lost = lost_min(rec, rel)
+                    if lost is not None:
+                        lost_all.append(lost)
+                    interrupted.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': rec.get('role'),
+                                        'level': rec.get('level'), 'started_at': rec.get('started_at'),
+                                        'lost_min': lost, 'path': p})
+        elif status == 'running' and rec.get('backend', 'claude') == 'claude':
+            pid = rec.get('parent_pid') or rec.get('owner_pid')
+            if (isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 and window.has(rec.get('started_at'))
+                    and aid not in settled and not pid_alive(pid) and not (dedupe and key in orphans_seen)):
+                orphans_seen.add(key)
+                orphaned.append({'attempt_id': aid if isinstance(aid, str) else None, 'role': rec.get('role'),
+                                 'level': rec.get('level'), 'started_at': rec.get('started_at'), 'path': p})
+        elif status == 'completed':
+            mins = minutes_between(rec.get('started_at'), rec.get('finished_at'))
+            if mins is not None and window.has(rec.get('started_at')) and not (dedupe and key in done_seen):
+                done_seen.add(key)
+                role = rec.get('role') if isinstance(rec.get('role'), str) and rec.get('role') else 'unknown'
+                done_min.setdefault(role, []).append(mins)
     limits, limits_seen = [], set()
     for sdlc, p in limit_files:
         raw = read_text(p).strip()
@@ -405,13 +511,43 @@ def collect_runs(repo, window, dedupe=True):
             limits_seen.add(key)
         limits.append({'file': p, 'role': rec.get('role'), 'level': rec.get('level'), 'ts': rec.get('ts'),
                        'reset': rec.get('reset')})
+    if extra is not None:
+        built, blocked, late = 0, 0, 0
+        for role, rp, row in result_rows:
+            text = result_text(rp, row)
+            if role == 'builder':
+                built += 1
+                blocked += result_blocked(text)
+            late += bool(PLAN_DEFECT_RE.search(text))
+        early, early_seen = 0, set()
+        for _sdlc, rp in refusal_files:
+            for line in read_text(rp).splitlines():
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(r, dict) or not window.has(r.get('ts')):
+                    continue
+                key = (r.get('plan'), r.get('text'))
+                if dedupe:
+                    if key in early_seen:
+                        continue
+                    early_seen.add(key)
+                early += 1
+        extra['results'] = {'builder': {'total': built, 'blocked': blocked}}
+        extra['plan_defects'] = {'late': late, 'early': early}
+        extra['attempts'] = {'by_role': {
+            role: {'count': len(v), 'median_min': median_or_none(v), 'max_min': max(v)}
+            for role, v in sorted(done_min.items())}}
     return {
         'total': total['count'], 'cost_usd': round(total['cost_usd'], 4),
         'duration_s': round(total['duration_s'], 1), 'unmetered': unmetered,
         'by_role': {k: round_bucket(v) for k, v in by_role.items()},
         'by_lane': {k: round_bucket(v) for k, v in by_lane.items()},
         'by_ticket': {t: dict(sorted(r.items())) for t, r in sorted(by_ticket.items())},
-        'interrupted': {'count': len(interrupted), 'attempts': interrupted[:LIST_CAP]},
+        'interrupted': {'count': len(interrupted), 'attempts': interrupted[:LIST_CAP],
+                        'lost_min_median': median_or_none(lost_all), 'lost_min_total': round(sum(lost_all), 1)},
+        'orphaned': {'count': len(orphaned), 'attempts': orphaned[:LIST_CAP]},
         'limit_markers': {'count': len(limits), 'files': limits[:LIST_CAP]},
         'lane_overrides': sorted(lanes.overrides.values(), key=lambda o: o['ticket']),
         'duplicates_dropped': dup, 'undated_dropped': undated,
@@ -703,7 +839,8 @@ def summary_line(runs):
 
 def collect(repo, since=None, until=None, gh=False, days=14, du_timeout=None, dedupe=True):
     window = Window(since, until)
-    runs = collect_runs(repo, window, dedupe=dedupe)
+    extra = {}
+    runs = collect_runs(repo, window, dedupe=dedupe, extra=extra)
     return collections.OrderedDict([
         ('repo', os.path.realpath(repo)),
         ('summary', summary_line(runs)),
@@ -711,6 +848,9 @@ def collect(repo, since=None, until=None, gh=False, days=14, du_timeout=None, de
         ('env', env_info()),
         ('runs', runs),
         ('plan_review_share', plan_review_share(runs)),
+        ('results', extra.get('results', {'builder': {'total': 0, 'blocked': 0}})),
+        ('plan_defects', extra.get('plan_defects', {'late': 0, 'early': 0})),
+        ('attempts', extra.get('attempts', {'by_role': {}})),
         ('tickets', tickets_info(repo)),
         ('processes', process_info()),
         ('worktrees', worktree_info(repo, du_timeout)),
@@ -909,6 +1049,12 @@ def selftest():
            and abs(r['by_role']['planner']['cost_usd'] - 5.0) < 1e-9)
         ok('interrupted: reported once across a worktree copy', r['interrupted']['count'] == 1
            and r['interrupted']['attempts'][0]['attempt_id'] == 'X')
+        ok('interrupted: lost_min runs to the next attempt start in the same dir and role',
+           r['interrupted']['attempts'][0]['lost_min'] == 30.0 and r['interrupted']['lost_min_median'] == 30.0
+           and r['interrupted']['lost_min_total'] == 30.0)
+        ok('interrupted: no interrupted attempt gives a null median and a zero total',
+           collect_runs(repo, Window(since='2026-10-05'))['interrupted']['lost_min_median'] is None
+           and collect_runs(repo, Window(since='2026-10-05'))['interrupted']['lost_min_total'] == 0)
         ok('limit marker counted', r['limit_markers']['count'] == 1 and r['limit_markers']['files'][0]['reset'] == '1:40pm')
         ok('lane override: full recorded, solo effective', any(
             o['ticket'] == 't1' and o['recorded'] == 'full' and o['effective'] == 'solo' for o in r['lane_overrides']))
@@ -940,6 +1086,88 @@ def selftest():
             ok('window: a bad date is refused', False)
         except ValueError:
             ok('window: a bad date is refused', True)
+
+        # KPI fields (T-0411): orphaned attempts, blocked builders, plan defects, attempt minutes. Own temp tree so the
+        # read-only snapshot above stays whole.
+        kpi_tmp = tempfile.mkdtemp(prefix='fleet-kpi.')
+        kp = os.path.join(kpi_tmp, 'repo')
+        dead = subprocess.Popen([sys.executable, '-c', 'pass'])
+        dead.wait()                                  # a pid that has exited and been reaped: dead now
+        def att(aid, role, status, started, **kw):
+            return json.dumps(dict({'attempt_id': aid, 'role': role, 'level': 'L2', 'status': status,
+                                    'started_at': started}, **kw))
+        k1 = os.path.join(kp, '.sdlc', 'k1')
+        write(os.path.join(k1, 'a-dead.attempt.json'), att('RD', 'builder', 'running', '2026-10-05T08:00:00+00:00',
+                                                          parent_pid=dead.pid))
+        write(os.path.join(k1, 'b-alive.attempt.json'), att('RA', 'builder', 'running', '2026-10-05T08:00:00+00:00',
+                                                           parent_pid=os.getpid()))
+        write(os.path.join(k1, 'c-codex.attempt.json'), att('RC', 'builder', 'running', '2026-10-05T08:00:00+00:00',
+                                                           parent_pid=dead.pid, backend='codex'))
+        write(os.path.join(k1, 'd-old.attempt.json'), att('RO', 'builder', 'running', '2026-09-01T08:00:00+00:00',
+                                                         parent_pid=dead.pid))
+        write(os.path.join(k1, 'e-owner.attempt.json'), att('RW', 'planner', 'running', '2026-10-05T08:00:00+00:00',
+                                                           owner_pid=dead.pid))
+        write(os.path.join(kp, '.worktrees', 'lane', '.sdlc', 'k1', 'a-dead.attempt.json'),
+              att('RD', 'builder', 'running', '2026-10-05T08:00:00+00:00', parent_pid=dead.pid))   # worktree copy
+        write(os.path.join(k1, 'f-moved.attempt.json'), att('RS', 'builder', 'running', '2026-10-05T08:00:00+00:00',
+                                                           parent_pid=dead.pid))
+        write(os.path.join(kp, '.worktrees', 'lane', '.sdlc', 'k1', 'f-moved.attempt.json'), att(
+            'RS', 'builder', 'completed', '2026-10-05T08:00:00+00:00', finished_at='2026-10-05T08:05:00+00:00'))
+        write(os.path.join(k1, 'step-1', 'verifier-L2.attempt.json'), att(
+            'V1', 'verifier', 'completed', '2026-10-05T10:00:00+00:00', finished_at='2026-10-05T10:12:00+00:00'))
+        write(os.path.join(k1, 'step-2', 'verifier-L2.attempt.json'), att(
+            'V2', 'verifier', 'completed', '2026-10-06T10:00:00+00:00', finished_at='2026-10-06T10:30:00+00:00'))
+        write(os.path.join(k1, 'step-2', 'builder-L2.attempt.json'), att(
+            'I1', 'builder', 'interrupted', '2026-10-06T08:00:00+00:00', finished_at='2026-10-06T08:20:00+00:00'))
+        write(os.path.join(k1, 'runs.jsonl'), rows(
+            dict(rec('builder', 'B1', 1.0, 1000, '2026-10-05T12:00:00Z'), file='builder-L2-1.md'),
+            dict(rec('builder', 'B1', 1.0, 1000, '2026-10-05T12:00:00Z'), file='builder-L2-1.md'),     # duplicate row
+            dict(rec('builder', 'B2', 1.0, 1000, '2026-10-05T13:00:00Z'), file='builder-L2-2.md'),
+            dict(rec('builder', 'B3', 1.0, 1000, '2026-09-01T13:00:00Z'), file='builder-L2-3.md'),      # outside window
+            dict(rec('verifier', 'V1', 1.0, 1000, '2026-10-05T14:00:00Z'), file='verifier-L2-1.md')))
+        write(os.path.join(k1, 'builder-L2-1.md'), '# Builder\n\n## Status\n\nblocked: no way to run the check\n')
+        write(os.path.join(k1, 'builder-L2-2.md'), '# Builder\n\n## Status\ndone\n\n## Notes\nblocked by nothing\n')
+        write(os.path.join(k1, 'builder-L2-3.md'), '## Status\nblocked\n')
+        write(os.path.join(k1, 'verifier-L2-1.md'), '## Verdict\nfail\n\n- plan defect: the criterion cannot pass\n')
+        write(os.path.join(k1, 'refusals.jsonl'),
+              json.dumps({'ts': '2026-10-05T09:00:00Z', 'tool': 'steps.py lint', 'plan': 'p.md', 'step': 1, 'text': 'x'}) + '\n'
+              + json.dumps({'ts': '2026-10-05T09:00:05Z', 'tool': 'steps.py lint', 'plan': 'p.md', 'step': 1, 'text': 'x'}) + '\n'
+              + json.dumps({'ts': '2026-10-05T09:01:00Z', 'tool': 'steps.py split', 'plan': 'p.md', 'step': 2, 'text': 'y'}) + '\n'
+              + json.dumps({'ts': '2026-09-01T09:00:00Z', 'tool': 'steps.py lint', 'plan': 'q.md', 'step': 1, 'text': 'z'}) + '\n'
+              + 'not json\n')
+        kx = {}
+        kr = collect_runs(kp, Window(since='2026-10-01'), extra=kx)
+        ok('orphaned: a running attempt whose parent pid is dead is counted',
+           sorted(a['attempt_id'] for a in kr['orphaned']['attempts']) == ['RD', 'RW'] and kr['orphaned']['count'] == 2)
+        ok('negative control: a running attempt whose parent pid is alive is not counted orphaned',
+           all(a['attempt_id'] != 'RA' for a in kr['orphaned']['attempts']))
+        ok('orphaned: an attempt another worktree copy shows finished is not counted',
+           all(a['attempt_id'] != 'RS' for a in kr['orphaned']['attempts']))
+        ok('orphaned: a codex attempt and one started before the window are not counted',
+           all(a['attempt_id'] not in ('RC', 'RO') for a in kr['orphaned']['attempts']))
+        ok('interrupted: lost_min falls back to finished_at with no later attempt',
+           kr['interrupted']['attempts'][0]['lost_min'] == 20.0)
+        ok('results: a builder result whose Status is blocked is counted',
+           kx['results']['builder'] == {'total': 2, 'blocked': 1})
+        ok('plan_defects: a plan defect line in a builder or verifier result is counted late',
+           kx['plan_defects']['late'] == 1)
+        ok('plan_defects: a refusals.jsonl line in the window is counted early',
+           kx['plan_defects']['early'] == 2)
+        ok('attempts: completed verifier minutes run from started_at to finished_at',
+           kx['attempts']['by_role'] == {'builder': {'count': 1, 'median_min': 5.0, 'max_min': 5.0},
+                                         'verifier': {'count': 2, 'median_min': 21.0, 'max_min': 30.0}})
+        kd = {}
+        collect_runs(kp, Window(since='2026-10-01'), dedupe=False, extra=kd)
+        ok('negative control: dedupe off double-counts the builder row and the repeated refusal',
+           kd['results']['builder']['total'] == 3 and kd['plan_defects']['early'] == 3)
+        kc = collect(kp, since='2026-10-01', du_timeout=1)
+        ok('collect: results, plan_defects and attempts sit beside runs', kc['results']['builder']['blocked'] == 1
+           and kc['plan_defects']['late'] == 1 and 'verifier' in kc['attempts']['by_role'])
+        ke = collect(os.path.join(kpi_tmp, 'nowhere'), du_timeout=1)
+        ok('collect: a repo with no .sdlc reads zero results, defects and attempts', ke['runs'] == 'none'
+           and ke['results'] == {'builder': {'total': 0, 'blocked': 0}} and ke['attempts'] == {'by_role': {}}
+           and ke['plan_defects'] == {'late': 0, 'early': 0})
+        shutil.rmtree(kpi_tmp, ignore_errors=True)
 
         # cli: json out, summary on stderr, repo untouched
         rc, out, err = cli('collect', repo, '--until', '2026-10-06T12:00:00Z', '--du-timeout', '5')

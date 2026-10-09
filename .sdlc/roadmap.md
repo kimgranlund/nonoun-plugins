@@ -408,11 +408,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0408 | [.0408-verifier-held-criteria-build](.0408-verifier-held-criteria-build/handoff.md) | Build verifier unmet-dependency and deferred-to-owner verdicts (design T-0400) | feature | L2 | P2 | none | 🟢 done |
 | T-0409 | [.0409-gate-lock-admission-build](.0409-gate-lock-admission-build/handoff.md) | Build gate_lock.py weighted admission with FIFO, priority and liveness (design T-0386) | feature | L2 | P2 | none | 🟢 done |
 | T-0410 | [0410-plan-doc-executor-design](0410-plan-doc-executor-design/handoff.md) | Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal | feature | L2 | P2 | none | ⏳ proposed |
-| T-0411 | [0411-collector-fields-k002-k004](0411-collector-fields-k002-k004/handoff.md) | Collector fields for K-002, K-003, K-004 and verifier minutes | feature | L2 | P2 | none | 🔵 ready |
-| T-0412 | [0412-record-before-result-file](0412-record-before-result-file/handoff.md) | record leaves the attempt running when no result exists yet | bug | L2 | P2 | none | 🔵 ready |
+| T-0411 | [.0411-collector-fields-k002-k004](.0411-collector-fields-k002-k004/handoff.md) | Collector fields for K-002, K-003, K-004 and verifier minutes | feature | L2 | P2 | none | 🟢 done |
+| T-0412 | [.0412-record-before-result-file](.0412-record-before-result-file/handoff.md) | record leaves the attempt running when no result exists yet | bug | L2 | P2 | none | 🟢 done |
 | T-0413 | [0413-prepare-tree-lane-worktree](0413-prepare-tree-lane-worktree/handoff.md) | prepare --tree names the lane worktree as Tree and base | bug | L3 | P2 | T-0412 | 🔵 ready |
 | T-0414 | [0414-restart-sweep-and-safe-prune](0414-restart-sweep-and-safe-prune/handoff.md) | Restart sweep, reused parent pids, and a safe prune --add | feature | L2 | P2 | T-0413 | 🔵 ready |
-| T-0415 | [0415-lint-circular-criteria](0415-lint-circular-criteria/handoff.md) | Lint refuses circular criteria and records every refusal | feature | L3 | P2 | none | 🔵 ready |
+| T-0415 | [.0415-lint-circular-criteria](.0415-lint-circular-criteria/handoff.md) | Lint refuses circular criteria and records every refusal | feature | L3 | P2 | none | 🟢 done |
 | T-0416 | [0416-scope-vs-tests-heuristic-replay](0416-scope-vs-tests-heuristic-replay/handoff.md) | Replay a scope-versus-tests heuristic and decide | spike | L2 | P2 | none | 🔵 ready |
 | T-0417 | [0417-verifier-minutes-delta-decision](0417-verifier-minutes-delta-decision/handoff.md) | Measure verifier minutes and decide on a delta verifier | spike | L1 | P2 | T-0411 | 🔵 ready |
 | T-0418 | [0418-l4-full-chain-cost-replay](0418-l4-full-chain-cost-replay/handoff.md) | Replay solo-sized chunks on ultimate-tokens T-0040 and T-0044 to size the full-chain cost on L4 | spike | L2 | P2 | none | 🔵 ready |
