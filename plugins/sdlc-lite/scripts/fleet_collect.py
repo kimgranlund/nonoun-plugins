@@ -10,7 +10,7 @@ Prints one JSON object on stdout and a `runs: ...` line on stderr. Keys:
                   entries of ~/.claude/plugins/installed_plugins.json), claude version, time (UTC),
                   uptime_load {uptime_s, load1, load5, load15, cpus}
   runs            the string "none" when no `.sdlc` exists under the repo or any of its worktrees; else
-                  total, cost_usd, duration_s, unmetered (null cost_usd), by_role {role: count, cost_usd,
+                  total, cost_usd, duration_s, unmetered (null cost_usd or unpriced true), by_role {role: count, cost_usd,
                   duration_s}, by_lane {solo, full}, by_ticket {ticket folder: {role: count}}, interrupted
                   {count, attempts[]}, limit_markers {count, files[]}, lane_overrides[], duplicates_dropped,
                   sources
@@ -46,7 +46,7 @@ Read-only: nothing under the repo is written. Only `ps`, `du -sk`, `git worktree
 (with --gh) `gh api` GET calls run, each bounded by a timeout and killed with its process group on expiry.
 Exit codes: 0 ok (a repo with no `.sdlc` included), 2 usage or a missing repo.
 """
-import collections, datetime, json, math, os, re, signal, subprocess, sys, tempfile, time
+import collections, datetime, json, math, os, re, shutil, signal, subprocess, sys, tempfile, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLUGIN_ROOT = os.path.dirname(HERE)
@@ -360,7 +360,7 @@ def collect_runs(repo, window, dedupe=True):
                 seen.add(key)
             role = rec.get('role') if isinstance(rec.get('role'), str) and rec.get('role') else 'unknown'
             cost, dur = num(rec.get('cost_usd')), num(rec.get('duration_ms'))
-            if cost is None:
+            if cost is None or rec.get('unpriced') is True:  # T-0402: the flag dispatch.py record writes counts too
                 unmetered += 1
             lane = 'solo' if role == 'solo' or lane_of == 'solo' else 'full'
             add_bucket(total, cost, dur)
@@ -896,6 +896,15 @@ def selftest():
         ok('dedupe: cost sums each attempt once', abs(r['cost_usd'] - 11.75) < 1e-9)
         ok('dedupe: dropped rows are counted', r['duplicates_dropped'] == 4)   # A, B, no-id line, A copy
         ok('unmetered: a null cost is reported', r['unmetered'] == 1)
+        # T-0402: a row flagged unpriced counts as unmetered even with a cost; a null-cost row still does; a priced row does not.
+        repo2_tmp = tempfile.mkdtemp(prefix='fleet-unpriced.')
+        repo2 = os.path.join(repo2_tmp, 'repo2')
+        write(os.path.join(repo2, '.sdlc', 't1', 'runs.jsonl'), rows(
+            {'ts': '2026-10-03T12:00:00Z', 'role': 'builder', 'cost_usd': 0.1, 'unpriced': True, 'attempt_id': 'U1'},
+            {'ts': '2026-10-03T12:00:00Z', 'role': 'builder', 'cost_usd': None, 'unpriced': True, 'attempt_id': 'U2'},
+            {'ts': '2026-10-03T12:00:00Z', 'role': 'builder', 'cost_usd': 0.2, 'attempt_id': 'P1'}))
+        ok('unmetered: an unpriced true row is counted once, a priced row is not', collect_runs(repo2, Window())['unmetered'] == 2)
+        shutil.rmtree(repo2_tmp, ignore_errors=True)
         ok('by_role: planner has two attempts', r['by_role']['planner']['count'] == 2
            and abs(r['by_role']['planner']['cost_usd'] - 5.0) < 1e-9)
         ok('interrupted: reported once across a worktree copy', r['interrupted']['count'] == 1
