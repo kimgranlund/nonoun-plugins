@@ -686,10 +686,13 @@ cat >"$tmp/sbin/claude" <<'EOF'
 #!/usr/bin/env bash
 case "${STUB_MODE:-none}" in
   stray|strayfail)
+    mine=$(basename "$SDLC_TMP_WORKTREES")
     { git worktree add -q --detach "$SDLC_TMP_WORKTREES/w" HEAD
-      git worktree add -q --detach "$PWD-stray-det" HEAD
-      git worktree add -q -b stray-wt-br "$PWD-stray-br" HEAD
-      git branch stray-br; } >/dev/null 2>&1 || { echo "stub: stray setup failed" >&2; exit 9; } ;;
+      git worktree add -q --detach "$(dirname "$SDLC_TMP_WORKTREES")/stray-det" HEAD
+      git worktree add -q -b "$mine-wt-br" "$PWD-stray-br" HEAD
+      git branch "$mine-br"
+      git worktree add -q -b sibling-lane "$PWD-sibling" HEAD
+      git branch sibling-br; } >/dev/null 2>&1 || { echo "stub: stray setup failed" >&2; exit 9; } ;;
   prefix) git worktree add -q --detach "$SDLC_TMP_WORKTREES/w" HEAD >/dev/null 2>&1 \
     || { echo "stub: git worktree add failed" >&2; exit 9; } ;;
 esac
@@ -714,9 +717,10 @@ stray_run() {
 }
 # stray_clean: removes the strays a stray run made (inside the temp repo only).
 stray_clean() {
-  git -C "$srepo" worktree remove --force "$srepo-stray-det" >/dev/null 2>&1 || true
+  git -C "$srepo" worktree remove --force "$srepo/.worktrees/tmp/stray-det" >/dev/null 2>&1 || true
+  git -C "$srepo" worktree remove --force "$srepo-sibling" >/dev/null 2>&1 || true
   git -C "$srepo" worktree remove --force "$srepo-stray-br" >/dev/null 2>&1 || true
-  git -C "$srepo" branch -D stray-br stray-wt-br >/dev/null 2>&1 || true
+  git -C "$srepo" branch -D sibling-lane sibling-br $(git -C "$srepo" for-each-ref --format="%(refname:short)" "refs/heads/builder-*") >/dev/null 2>&1 || true
   [[ "$(git -C "$srepo" worktree list | wc -l | tr -d ' ')" == 1 ]] || fail "stray cleanup left a worktree"
 }
 # want_strays <label>: the stderr lines for the two worktrees and two branches the stub made.
@@ -724,23 +728,24 @@ want_strays() {
   local n
   n=$(grep -c '^run.sh: stray worktree appeared during this run: ' "$tmp/serr" || true)
   [[ "$n" == 2 ]] || fail "$1: $n stray worktree lines, want 2: $(cat "$tmp/serr")"
-  grep -qx 'run.sh: stray worktree appeared during this run: .*/srepo-stray-det' "$tmp/serr" \
+  grep -qx 'run.sh: stray worktree appeared during this run: .*/tmp/stray-det' "$tmp/serr" \
     || fail "$1: no detached stray worktree line (without a branch): $(cat "$tmp/serr")"
-  grep -qx 'run.sh: stray worktree appeared during this run: .*/srepo-stray-br \[stray-wt-br\]' "$tmp/serr" \
+  grep -qx 'run.sh: stray worktree appeared during this run: .*/srepo-stray-br \[builder-[0-9]*-wt-br\]' "$tmp/serr" \
     || fail "$1: no branched stray worktree line with ' [stray-wt-br]': $(cat "$tmp/serr")"
   n=$(grep -c '^run.sh: stray branch appeared during this run: ' "$tmp/serr" || true)
   [[ "$n" == 2 ]] || fail "$1: $n stray branch lines, want 2: $(cat "$tmp/serr")"
-  grep -qx 'run.sh: stray branch appeared during this run: stray-br' "$tmp/serr" \
-    || fail "$1: no stray branch line for stray-br: $(cat "$tmp/serr")"
-  grep -qx 'run.sh: stray branch appeared during this run: stray-wt-br' "$tmp/serr" \
-    || fail "$1: no stray branch line for stray-wt-br: $(cat "$tmp/serr")"
-  ! grep -q '/.worktrees/tmp/' "$tmp/serr" || fail "$1: reported a worktree under the prefix: $(cat "$tmp/serr")"
+  grep -q '^run.sh: stray branch appeared during this run: builder-[0-9]*-br$' "$tmp/serr" \
+    || fail "$1: no stray branch line for the role's own branch: $(cat "$tmp/serr")"
+  grep -q '^run.sh: stray branch appeared during this run: builder-[0-9]*-wt-br$' "$tmp/serr" \
+    || fail "$1: no stray branch line for the role's own worktree branch: $(cat "$tmp/serr")"
+  ! grep -q 'sibling' "$tmp/serr" || fail "$1: reported a sibling lane worktree or branch: $(cat "$tmp/serr")"
+  ! grep -q '/.worktrees/tmp/builder-' "$tmp/serr" || fail "$1: reported a worktree under the prefix: $(cat "$tmp/serr")"
 }
 stray_run stray 0
 want_strays "stray ok run"
-jq -e '(.stray_branches | sort) == ["stray-br", "stray-wt-br"]
+jq -e '(.stray_branches | length == 2) and (.stray_branches | map(test("^builder-[0-9]+-(wt-)?br$")) | all)
   and (.stray_worktrees | length == 2)
-  and (.stray_worktrees | map(test("/srepo-stray-(det|br)$")) | all)' "$srepo/runs.jsonl" >/dev/null \
+  and (.stray_worktrees | map(test("/(srepo-stray-br|tmp/stray-det)$")) | all)' "$srepo/runs.jsonl" >/dev/null \
   || fail "stray ok run: runs.jsonl stray fields wrong: $(cat "$srepo/runs.jsonl")"
 stray_clean
 stray_run strayfail 1

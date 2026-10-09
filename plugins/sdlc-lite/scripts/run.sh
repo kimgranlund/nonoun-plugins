@@ -50,8 +50,9 @@
 # process, never this run's own, and never changes the exit code.
 # Stray report: a real run (never a dry run) snapshots `git worktree list --porcelain` and the local
 # branches (refs/heads) before the role starts. Worktrees and branches that appeared during this run
-# (from a script, make target, or other program the hooks cannot see) are reported, leaving out this
-# run's own prefix (compared by realpath). This run's runs.jsonl line always holds stray_worktrees
+# (from a script, make target, or other program the hooks cannot see) are reported when they belong to
+# this role (under .worktrees/tmp, or on a branch named with this run's prefix $role-$$; sibling lanes
+# elsewhere are not, as in dispatch.py record), leaving out this run's own prefix (compared by realpath). This run's runs.jsonl line always holds stray_worktrees
 # (array of worktree paths) and stray_branches (array of branch names), empty arrays when none
 # appeared. At exit, on success or failure (exit 1, exit 3, INT, TERM, HUP), after the cleanup, stderr
 # gets one line per item, once per run: "run.sh: stray worktree appeared during this run: <path>
@@ -544,12 +545,17 @@ in_list() {
   return 1
 }
 # Fills stray_wt (paths), stray_wt_br (branch or "" per path), and stray_br once per run.
+# Scope rule, the same as dispatch.py strays (T-0371, T-0391): a stray belongs to this role only when it
+# is a worktree under <toplevel>/.worktrees/tmp (this run's own prefix left out) or on a branch whose name
+# starts with this run's prefix name ($role-$$), or a branch with that name as prefix. Sibling lanes and
+# peers elsewhere are not reported. Keep the two in step.
 # Called in an || list, so it runs without errexit; never fails.
 detect_strays() {
   (( stray_done )) && return 0
   stray_done=1
-  local wt_real line p="" b="" pr br now_wt now_br
+  local wt_real line p="" b="" pr br now_wt now_br mine tmp_root
   wt_real=$(phys "$wt_tmp")
+  mine="${wt_tmp##*/}"; tmp_root=$(phys "$toplevel/.worktrees/tmp")
   now_wt=$(git -C "$toplevel" worktree list --porcelain 2>/dev/null)
   # Porcelain records end at a blank line; $(...) strips the last one, so the input adds it back.
   while IFS= read -r line; do
@@ -560,7 +566,9 @@ detect_strays() {
         if [[ -n "$p" ]] && ! in_list "$p" "$snap_wt"; then
           pr=$(phys "$p")
           if ! [[ "$pr" == "$wt_real" || "$pr" == "$wt_real"/* || "$p" == "$wt_tmp" || "$p" == "$wt_tmp"/* ]]; then
-            stray_wt+=("$p"); stray_wt_br+=("$b")
+            if [[ "$pr" == "$tmp_root"/* || ( -n "$b" && "$b" == "$mine"* ) ]]; then
+              stray_wt+=("$p"); stray_wt_br+=("$b")
+            fi
           fi
         fi
         p=""; b="" ;;
@@ -568,7 +576,7 @@ detect_strays() {
   done <<<"$now_wt"$'\n'
   now_br=$(git -C "$toplevel" for-each-ref --format='%(refname:short)' refs/heads 2>/dev/null)
   while IFS= read -r br; do
-    [[ -n "$br" ]] && ! in_list "$br" "$snap_br" && stray_br+=("$br")
+    [[ -n "$br" && "$br" == "$mine"* ]] && ! in_list "$br" "$snap_br" && stray_br+=("$br")
   done <<<"$now_br"
   return 0
 }
