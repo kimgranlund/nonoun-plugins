@@ -37,3 +37,11 @@ Planner L3 output for the 2026-10-09 retros. KPIs: K-002 restart recovery minute
 
 ## Constraints
 No em or en dashes. No push or publish. The plan step is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- `dispatch.py record` with no result file, empty stdin, and no transcript result prints `no result yet at <path>; the attempt stays running: ...` to stderr, exits 2, leaves the attempt `running`, and writes no `.log`, `runs.jsonl` line, `.limit` marker, or delivery.
+- After the result file appears, a second `record` completes the attempt (exit 0, one `runs.jsonl` line).
+- `record --no-result` with nothing to record keeps the old path: exit 1, error `no result file at <path> (the <role> must write its report there before it ends)`, attempt `failed`.
+- Error text on stdin with no result file still closes the attempt `failed` (exit 1).
+- The docstring `failed` paragraph and the `record` usage line describe the new behavior; only `dispatch.py` (and `docs/references/sdlc-internals.md`, unchanged) is in scope.
+- `dispatch.py selftest` passes and prints `ok:` for the four new labels and for the T-0330 verifier label.

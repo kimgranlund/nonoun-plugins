@@ -2,7 +2,7 @@
 """The pre-launch half of run.sh for Claude sub-agent dispatch (Python 3.9+).
 
   dispatch.py prepare [--dry-run] <role> <level> <handoff.md>
-  dispatch.py record [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
+  dispatch.py record [--no-result] [--agent-id ID] [--tokens N] [--tool-uses N] [--duration-ms N] <dispatch.json>
   dispatch.py prune [--root DIR] [--done NAME | --add NAME]   the queue of finished sub-agents to stop (T-0368)
   dispatch.py status <handoff dir>        each attempt: running, completed, failed, orphaned, or interrupted
   dispatch.py recover <handoff dir>       mark orphaned attempts interrupted (run_lifecycle.py's recovery text)
@@ -87,8 +87,12 @@ it then does the following.
                replaces the token count with the transcript's summed usage fields, priced per field (T-0328).
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
                <file>", exit 3, and keeps the file and the line; the attempt is failed with exit_code 3.
+  no result yet  no result file, empty stdin, and no transcript result: record prints `no result yet at <path>; the
+               attempt stays running` to stderr and exits 2, writing no log, runs.jsonl line, limit marker, or delivery
+               and not closing the attempt; record again once the role writes the file, or pass --no-result (T-0412).
   failed       no result file and no result on stdin: the stdin text is saved as <stem>.log, the attempt is failed
-               with exit_code 1 and the text, and no runs.jsonl line is written, as run.sh. A 429 or session-limit
+               with exit_code 1 and the text, and no runs.jsonl line is written, as run.sh. --no-result closes an
+               attempt with nothing at all this way, with the error `no result file at <path>`. A 429 or session-limit
                text writes <role>-<level>.limit with the prepare command to resume; a later success removes it.
   success      the attempt is completed, the result path is printed, exit 0.
 Prune (T-0368). The host keeps a finished sub-agent as an idle, addressable teammate until it is stopped. prepare writes
@@ -862,14 +866,15 @@ def queue_prune(d, attempt, agent_id):
     return True
 
 
-def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None):
-    """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused, 3 invalid result).
+def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=None, validate=validate_result, resolved_model=None, transcript=None, no_result=False):
+    """Validate, record, and close one dispatched role; returns the exit code (0 ok, 1 failed, 2 refused or no result yet, 3 invalid result).
 
     The result is the file the role wrote at the dispatch's result path, else stdin() (a callable) when the file is
     missing or empty. stdin text with a ## heading line is a result unless it is a truncation of the transcript's final message (T-0349); any other text is the sub-agent's error text.
     validate(role, path) returns None or a reason; selftest passes an accept-all one as the negative control.
     With transcript (a jsonl path), a result missing from both the file and stdin is taken from the transcript's last
-    assistant message; one that stopped on max_tokens is refused as truncated (T-0343)."""
+    assistant message; one that stopped on max_tokens is refused as truncated (T-0343).
+    With no file, empty stdin, and no transcript result, the attempt stays running and the exit is 2 (T-0412); no_result=True closes it failed (exit 1) as before."""
     try:
         d = json.loads(Path(dispatch_file).read_text(encoding='utf-8'))
     except (OSError, ValueError) as e:
@@ -923,6 +928,10 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
             text = fin[0]
         elif has_head:
             text = said
+        elif not said.strip() and not no_result:  # T-0412: nothing yet, not a failure; the role may still write its report
+            print('dispatch.py: no result yet at %s; the attempt stays running: record again once the %s writes it, or pass --no-result to close it failed'
+                  % (result, role), file=sys.stderr)
+            return 2
         else:
             text, error = '', said.strip() or 'no result file at %s (the %s must write its report there before it ends)' % (result, role)
     if not text.strip():
@@ -1121,6 +1130,7 @@ def main(argv):
     r.add_argument('--tool-uses', type=int, help='tool_uses from the completion notice')
     r.add_argument('--transcript', help='the sub-agent transcript (jsonl); its usage (input, output, cache read and write) prices the run')
     r.add_argument('--duration-ms', type=int, help='duration_ms from the completion notice')
+    r.add_argument('--no-result', action='store_true', help='close the attempt failed when no result file, stdin, or transcript result exists (default: exit 2 and leave it running)')
     dl = sub.add_parser('deliver', help='send (or confirm sent) the verdict message a dispatch asked for with --notify; idempotent')
     dl.add_argument('dispatch', help='the <stem>.dispatch.json prepare wrote')
     st = sub.add_parser('status', help='print each attempt in a handoff dir: running, completed, failed, orphaned, or interrupted')
@@ -1193,7 +1203,7 @@ def main(argv):
                 return 0
             return record(args.dispatch, stdin=read_stdin, agent_id=args.agent_id, usage=used or None, duration_ms=args.duration_ms,
                           resolved_model=cost_estimate.transcript_model(args.transcript) if args.transcript else None,
-                          transcript=args.transcript)
+                          transcript=args.transcript, no_result=args.no_result)
         except Refuse as r:
             for line in r.lines:
                 print(line, file=sys.stderr)
@@ -1873,7 +1883,7 @@ def selftest():
                 p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
             return p.returncode, p.stdout.strip(), p.stderr
 
-        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, **env):
+        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, no_result=False, **env):
             """prepare, let the role write body (or not), then record in process: (rc, dispatch, stderr, stdout)."""
             rc, got, err = prep(repo, role, level, rel, SDLC_DISPATCH_PARENT_PID=live_pid, **env)
             if rc != 0:
@@ -1888,7 +1898,7 @@ def selftest():
             e, o = io.StringIO(), io.StringIO()
             with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
                 try:
-                    out = record(got['dispatch_file'], stdin=(lambda: said) if said is not None else None, agent_id=agent_id, validate=validate)
+                    out = record(got['dispatch_file'], stdin=(lambda: said) if said is not None else None, agent_id=agent_id, validate=validate, no_result=no_result)
                 except Refuse as r:
                     print('\n'.join(r.lines), file=sys.stderr)
                     out = r.rc
@@ -1978,7 +1988,7 @@ def selftest():
         case('a failed sub-agent writes no result, no runs.jsonl line, and no limit marker, and keeps the error as a log',
              not Path(got['result']).exists() and lines_of(f1) == [] and not (f1 / 'builder-L1.limit').exists()
              and 'connection reset' in (f1 / 'builder-L1.log').read_text())
-        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f2/handoff.md')
+        rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f2/handoff.md', no_result=True)
         case('no result file and no stdin text is a failed sub-agent too', rc == 1 and 'no result file' in attempt_of(got)['error'])
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', said='API Error: 429 rate limit exceeded: session limit reached')
         f3 = rb / '.sdlc' / 'f3'
@@ -1988,12 +1998,35 @@ def selftest():
              and marker['resume'] == 'python3 %s prepare builder L1 %s' % (HERE / 'dispatch.py', got['handoff'])
              and 'session limit: resume with: ' + marker['resume'] in err)
         put(rb / '.sdlc' / 'v1' / 'handoff.md')
-        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md')
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md', no_result=True)
         case('a verifier prompt names the report path it must write before it ends',
              'Report file: %s' % got['result'] in got['prompt'] and 'before you end' in got['prompt'])
         case('a verifier with no report on disk is rejected: exit 1, a message naming the path, no runs.jsonl line',
              rc == 1 and 'no result file at %s' % got['result'] in attempt_of(got)['error'] and 'must write its report there' in attempt_of(got)['error']
              and lines_of(rb / '.sdlc' / 'v1') == [])
+        # T-0412: no result yet is not a failure; the attempt stays running until the role writes its report or --no-result closes it.
+        for name in ('r1', 'r2', 'r3'):
+            put(rb / '.sdlc' / name / 'handoff.md')
+        r1 = rb / '.sdlc' / 'r1'
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/r1/handoff.md')
+        case('record with no result file and empty stdin exits 2 and leaves the attempt running',
+             rc == 2 and 'no result yet at %s; the attempt stays running' % got['result'] in err and '--no-result' in err
+             and attempt_of(got)['status'] == 'running' and not (r1 / 'verifier-L1.log').exists() and lines_of(r1) == []
+             and not (r1 / 'verifier-L1.limit').exists() and not (r1 / 'verifier-L1.delivery.json').exists())
+        Path(got['result']).write_text(BODY['verifier'], encoding='utf-8')
+        e, o = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+            rc = record(got['dispatch_file'])
+        case('record after the late result file appears completes the attempt',
+             rc == 0 and attempt_of(got)['status'] == 'completed' and len(lines_of(r1)) == 1)
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/r2/handoff.md', no_result=True)
+        r2 = rb / '.sdlc' / 'r2'
+        case('record --no-result closes an attempt with no result file as failed, exit 1',
+             rc == 1 and (attempt_of(got)['status'], attempt_of(got)['exit_code']) == ('failed', 1)
+             and 'no result file at %s' % got['result'] in attempt_of(got)['error'] and lines_of(r2) == [])
+        rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/r3/handoff.md', said='API Error: connection reset by peer')
+        case('negative control: error text on stdin with no result file still closes the attempt failed',
+             rc == 1 and attempt_of(got)['status'] == 'failed' and 'connection reset' in attempt_of(got)['error'])
         rc, got, err, out = go(rb, 'verifier', 'L1', '.sdlc/v1/handoff.md', body=BODY['verifier'])
         case('a verifier with its report on disk is accepted', rc == 0 and attempt_of(got)['status'] == 'completed')
         rc, got, err, out = go(rb, 'builder', 'L1', '.sdlc/f3/handoff.md', body=BODY['builder'])
@@ -2221,7 +2254,7 @@ def selftest():
         mcmd = lambda *a: subprocess.run([sys.executable, str(HERE / 'messages.py')] + list(a), cwd=str(vr), capture_output=True, text=True)
         case('selftest setup: the receiver registers', mcmd('register', '--name', 'codex', '--harness', 'codex', '--reader', 'sess-1').returncode == 0)
 
-        def notified(rel, *flags, body=BODY['verifier'], role='verifier', level='L1', record_it=True):
+        def notified(rel, *flags, body=BODY['verifier'], role='verifier', level='L1', record_it=True, no_result=False):
             """prepare with --notify, let the role write body, record in process: (rc, dispatch, stderr)."""
             put(vr / '.sdlc' / rel / 'handoff.md')
             try:
@@ -2236,7 +2269,7 @@ def selftest():
                 return 0, got, err
             e, o = io.StringIO(), io.StringIO()
             with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
-                out = record(got['dispatch_file'], validate=validate_result)
+                out = record(got['dispatch_file'], validate=validate_result, no_result=no_result)
             return out, got, e.getvalue()
 
         rc, got, err = notified('n1')
@@ -2309,7 +2342,7 @@ def selftest():
         case('after registering, deliver sends the pending verdict exactly once', fixed == 0 and len(msgs('ghost')) == 1 and not any('verdict-delivery' in l for l in status(got4['artifacts_dir'])))
 
         # A failed or invalid report still tells the receiver, with the word failed or invalid.
-        rc, got5, _ = notified('n5', body=None)
+        rc, got5, _ = notified('n5', body=None, no_result=True)
         rc6, got6, _ = notified('n6', body='not a report\n')
         words = [re.search(r'^verdict: (\S+)', m.read_text(), re.M).group(1) for m in msgs('codex')[3:]]
         case('a failed sub-agent and an invalid report each deliver failed and invalid', rc == 1 and rc6 == 3 and sorted(words) == ['failed', 'invalid'])
