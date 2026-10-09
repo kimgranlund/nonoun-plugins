@@ -1,0 +1,469 @@
+{
+  "repo": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens",
+  "summary": "runs: 143 deduped, $392.63, 0 interrupted, 0 limit markers",
+  "window": {
+    "since": "2026-10-08",
+    "until": null
+  },
+  "env": {
+    "plugin": {
+      "version": "0.22.1",
+      "path": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/plugins/sdlc-lite",
+      "installed": [
+        {
+          "key": "sdlc-lite@sdlc-lite",
+          "version": "0.22.1",
+          "path": "/Users/kimgranlund/.claude/plugins/cache/sdlc-lite/sdlc-lite/0.22.1",
+          "scope": "user"
+        }
+      ]
+    },
+    "claude_version": "2.1.294 (Claude Code)",
+    "time": "2026-10-09T07:38:35Z",
+    "uptime_load": {
+      "uptime_s": 1869681,
+      "load1": 8.2,
+      "load5": 8.16,
+      "load15": 8.76,
+      "cpus": 20
+    }
+  },
+  "runs": {
+    "total": 143,
+    "cost_usd": 392.6278,
+    "duration_s": 0.0,
+    "unmetered": 15,
+    "by_role": {
+      "verifier": {
+        "count": 55,
+        "cost_usd": 103.7042,
+        "duration_s": 0.0
+      },
+      "solo": {
+        "count": 15,
+        "cost_usd": 0.0,
+        "duration_s": 0.0
+      },
+      "filer": {
+        "count": 5,
+        "cost_usd": 1.574,
+        "duration_s": 0.0
+      },
+      "builder": {
+        "count": 45,
+        "cost_usd": 154.056,
+        "duration_s": 0.0
+      },
+      "architect": {
+        "count": 5,
+        "cost_usd": 29.157,
+        "duration_s": 0.0
+      },
+      "planner": {
+        "count": 12,
+        "cost_usd": 74.3269,
+        "duration_s": 0.0
+      },
+      "plan-reviewer": {
+        "count": 6,
+        "cost_usd": 29.8099,
+        "duration_s": 0.0
+      }
+    },
+    "by_lane": {
+      "solo": {
+        "count": 31,
+        "cost_usd": 33.4161,
+        "duration_s": 0.0
+      },
+      "full": {
+        "count": 112,
+        "cost_usd": 359.2117,
+        "duration_s": 0.0
+      }
+    },
+    "by_ticket": {
+      "docs-facts-sweep": {
+        "verifier": 1
+      },
+      "docs-leftovers": {
+        "solo": 1
+      },
+      "docs-planning-to-specs": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "docs-structure-sweep": {
+        "verifier": 1
+      },
+      "figma-legacy-size-renames": {
+        "builder": 2,
+        "filer": 1,
+        "verifier": 2
+      },
+      "gate-a-basis": {
+        "verifier": 1
+      },
+      "gate-a-narrowing": {
+        "architect": 1
+      },
+      "geometry-compound-insets": {
+        "architect": 1,
+        "builder": 8,
+        "filer": 1,
+        "planner": 2,
+        "verifier": 6
+      },
+      "geometry-maison-ladder": {
+        "builder": 14,
+        "filer": 1,
+        "planner": 2,
+        "verifier": 13
+      },
+      "geometry-tokens-snapshot": {
+        "solo": 1
+      },
+      "gh-788": {
+        "builder": 3,
+        "filer": 1,
+        "plan-reviewer": 2,
+        "planner": 2,
+        "verifier": 3
+      },
+      "gh-809": {
+        "verifier": 1
+      },
+      "gh-811": {
+        "verifier": 1
+      },
+      "gh-811b": {
+        "solo": 1
+      },
+      "header-fit-ci": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "header-tools-fit": {
+        "verifier": 1
+      },
+      "hue-constancy-gate": {
+        "solo": 2
+      },
+      "hue-slider-detaches-anchor": {
+        "verifier": 1
+      },
+      "inspector-review-fixes": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "match-peer-lightness": {
+        "architect": 1,
+        "builder": 2,
+        "plan-reviewer": 3,
+        "planner": 3,
+        "solo": 1,
+        "verifier": 1
+      },
+      "native-dom-charts": {
+        "architect": 1,
+        "builder": 7,
+        "filer": 1,
+        "planner": 2,
+        "verifier": 5
+      },
+      "peer-luminosity-diagnose": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "radix-role-tooltips": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "radix-tooltip-popover": {
+        "solo": 1,
+        "verifier": 1
+      },
+      "settings-nav-focus": {
+        "solo": 1
+      },
+      "ui-polish-controls": {
+        "solo": 1,
+        "verifier": 2
+      },
+      "ui-standardization": {
+        "architect": 1,
+        "builder": 9,
+        "plan-reviewer": 1,
+        "planner": 1,
+        "solo": 1,
+        "verifier": 9
+      }
+    },
+    "interrupted": {
+      "count": 0,
+      "attempts": []
+    },
+    "limit_markers": {
+      "count": 0,
+      "files": []
+    },
+    "lane_overrides": [],
+    "duplicates_dropped": 2130,
+    "undated_dropped": 0,
+    "sources": {
+      "roots": 24,
+      "runs_files": 1986
+    }
+  },
+  "plan_review_share": 0.2652,
+  "tickets": {
+    "count": 44,
+    "items": [
+      {
+        "ticket": "docs-facts-sweep",
+        "id": "T-0033",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": "docs-structure-sweep",
+        "id": "T-0034",
+        "size": "L2",
+        "criteria": 11
+      },
+      {
+        "ticket": "gate-a-basis",
+        "id": "T-0030",
+        "size": "L2",
+        "criteria": 7
+      },
+      {
+        "ticket": "geometry-tokens-snapshot",
+        "id": "T-0023",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-783",
+        "id": "T-0005",
+        "size": "M",
+        "criteria": 12
+      },
+      {
+        "ticket": "gh-784",
+        "id": "T-0009",
+        "size": "M",
+        "criteria": 7
+      },
+      {
+        "ticket": "gh-787",
+        "id": "T-0011",
+        "size": "M",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-809",
+        "id": "T-0020",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "gh-811",
+        "id": "T-0019",
+        "size": "L2",
+        "criteria": 6
+      },
+      {
+        "ticket": "header-fit-ci",
+        "id": "T-0035",
+        "size": "L2",
+        "criteria": 3
+      },
+      {
+        "ticket": "header-tools-fit",
+        "id": "T-0031",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "hue-slider-detaches-anchor",
+        "id": "T-0045",
+        "size": "L2",
+        "criteria": 5
+      },
+      {
+        "ticket": "inspector-review-fixes",
+        "id": "T-0025",
+        "size": "L2",
+        "criteria": 9
+      },
+      {
+        "ticket": "radix-tooltip-popover",
+        "id": "T-0043",
+        "size": "L2",
+        "criteria": 4
+      },
+      {
+        "ticket": "semantic-mapping-tidy",
+        "id": "T-0016",
+        "size": "M",
+        "criteria": 8
+      },
+      {
+        "ticket": "ui-standardization",
+        "id": "T-0044",
+        "size": "L4",
+        "criteria": 9
+      }
+    ]
+  },
+  "processes": {
+    "chromium": {
+      "count": 48,
+      "cpu_pct": 0.1,
+      "rss_mb": 11085.5
+    },
+    "hooks": {
+      "count": 0,
+      "cpu_pct": 0.0,
+      "rss_mb": 0.0,
+      "items": []
+    },
+    "claude": {
+      "count": 7,
+      "cpu_pct": 7.4,
+      "rss_mb": 6811.1
+    }
+  },
+  "worktrees": {
+    "count": 23,
+    "size": "1058.7 MB",
+    "size_kb_known": 1084108,
+    "items": [
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a132fc276740721da",
+        "size": "99.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a16ef56179747a328",
+        "size": "34.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a2e62a4c5049de409",
+        "size": "34.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a4ca2b238bfec6e7e",
+        "size": "34.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a519681970640b6eb",
+        "size": "42.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a6ad0def5dce0e66d",
+        "size": "40.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-a8233f575cf66e2bd",
+        "size": "34.1 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-abb6281269114e477",
+        "size": "35.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-abe86b04568ef6f79",
+        "size": "41.2 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-adc629a9791e0c876",
+        "size": "34.9 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.claude/worktrees/agent-affe887fe66b68920",
+        "size": "35.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/compute-layers",
+        "size": "39.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/fanout/integration",
+        "size": "94.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/figma-legacy-size-renames",
+        "size": "36.4 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/geometry-compound-insets",
+        "size": "39.8 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/match-peer-lightness",
+        "size": "44.0 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/native-dom-charts",
+        "size": "41.7 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization",
+        "size": "75.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s5",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s6",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization-s7",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/ui-standardization/.worktrees/tmp/0044-planner-L3-2/base",
+        "size": "31.5 MB"
+      },
+      {
+        "path": "/Users/kimgranlund/Projects/nonoun/ultimate-tokens/.worktrees/fanout",
+        "size": "94.6 MB"
+      }
+    ]
+  },
+  "ci": {
+    "since": "2026-10-08",
+    "window_days": 1,
+    "runs": 34,
+    "wall_minutes": 227.3,
+    "failed": 1,
+    "by_workflow": {
+      "CI": {
+        "runs": 31,
+        "wall_minutes": 226.8,
+        "failed": 1,
+        "by_event": {
+          "pull_request": 16,
+          "push": 15
+        },
+        "push_runs_7d": 15,
+        "pull_request_runs_7d": 16,
+        "push_dup_7d": 0
+      },
+      "Publish plugin to npm": {
+        "runs": 3,
+        "wall_minutes": 0.5,
+        "failed": 0,
+        "by_event": {
+          "push": 3
+        },
+        "push_runs_7d": 3,
+        "pull_request_runs_7d": 0,
+        "push_dup_7d": 0
+      }
+    }
+  }
+}
