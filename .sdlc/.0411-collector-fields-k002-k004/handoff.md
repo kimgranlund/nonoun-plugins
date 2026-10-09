@@ -2,7 +2,7 @@
 id: T-0411
 title: "Collector fields for K-002, K-003, K-004 and verifier minutes"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -55,3 +55,7 @@ No em or en dashes. No push or publish. The plan step is the contract: if it is 
 - `fleet_detect.py selftest` and `fleet_status.py selftest` pass.
 - None of `docs/kpi/002`, `003`, `004` contains `absent until plan step 1` or a "cannot be read today" sentence; 004 still says early reads 0 until plan step 5.
 - Only `fleet_collect.py` and the three KPI files changed outside `.sdlc`.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
