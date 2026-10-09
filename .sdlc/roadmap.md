@@ -390,3 +390,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0390 | [.0390-send-sender-registered](.0390-send-sender-registered/handoff.md) | messages.py send defaults the sender to a name a reply can reach | bug | L1 | P2 | none | 🟢 done |
 | T-0391 | [.0391-runsh-stray-scope](.0391-runsh-stray-scope/handoff.md) | run.sh reports only the role's own stray worktrees and branches, like dispatch.py record | bug | L1 | P2 | T-0381 | 🟢 done |
 | T-0392 | [.0392-goals-and-kpi-homes](.0392-goals-and-kpi-homes/handoff.md) | Add docs/goals/ and docs/kpi/ homes with checks, layout and onboard support | feature | L2 | P2 | none | 🟢 done |
+| T-0393 | [0393-lint-absolute-citation-identity](0393-lint-absolute-citation-identity/handoff.md) | steps lint resolves absolute evidence citations against the wrong tree | bug | L1 | P2 | none | 🔵 ready |
