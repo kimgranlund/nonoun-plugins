@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Lint a planned /goal, /loop, or fanout block before it is handed to the user.
+"""Lint a planned /goal, /loop, fanout, or campaign block before it is handed to the user.
 
-  plan_check.py goal|loop|fanout [--text T | --file F] [--root .sdlc]
+  plan_check.py goal|loop|fanout|campaign [--text T | --file F] [--root .sdlc]
   plan_check.py selftest
 
 Reads the block from --text, --file, or stdin; a fenced block is unwrapped. Prints one `FAIL <rule>: <why>` line per
@@ -300,9 +300,86 @@ def check_fanout(text, root='.sdlc'):
     return fails, warns
 
 
+# ---- campaign ------------------------------------------------------------------------------------------------
+def goal_block(text):
+    """(plan text before the /goal block, the /goal block or None). A fenced block wins; else the first `/goal` line to the end."""
+    m = re.search(r'(?ms)^```[a-zA-Z]*\n(/goal\s.*?)^```', text) or re.search(r'(?ms)^(/goal\s.*)\Z', text)
+    return (text[:m.start()], m.group(1)) if m else (text, None)
+
+
+def wave_text(plan, n):
+    m = re.search(rf'(?ims)^\s*Wave {n}\b.*?(?=^\s*Wave {n + 1}\b|^\s*(?:Stop rules?|Budget|Done when|Reference PR)\b|\Z)', plan)
+    return m.group(0) if m else ''
+
+
+def partition_rows(plan):
+    rows = []
+    for ln in plan.splitlines():
+        cells = [c.strip().strip('`') for c in ln.strip().strip('|').split('|')] if ln.strip().startswith('|') else []
+        if len(cells) >= 2 and cells[0] and not set(cells[0]) <= set('-: ') and cells[0].lower() != 'lane':
+            rows.append((cells[0], cells[1].rstrip('/')))
+    return rows
+
+
+def machine_load():
+    try:
+        return os.getloadavg()[0], os.cpu_count() or 1
+    except (OSError, AttributeError):  # pragma: no cover
+        return 0.0, 1
+
+
+def check_campaign(text, root='.sdlc', load=None):
+    fails, warns = [], []
+    plan, goal = goal_block(text)
+    if not re.search(r'(?im)^\s*Census\b[^\n]*`[^`]+`[^\n]*', plan):
+        fails.append(('no-census', 'name a `Census:` command in backticks that counts the units still to migrate (exit 0, prints a number)'))
+    w0 = wave_text(plan, 0)
+    if not w0 or not re.search(r'(?i)\bgate\b', w0):
+        fails.append(('no-wave0-gate', 'Wave 0 must exist and land a shared tool and a blocking gate'))
+    elif not re.search(r'(?i)allowlist', w0):
+        warns.append(('no-allowlist', 'Wave 0 names no day-one allowlist, so the gate cannot start green'))
+    done = ' '.join(re.findall(r'(?im)^\s*Done when\b[^\n]*', plan))
+    if not re.search(r'(?i)`[^`]+`\s+exits?\s+0\b[^\n]*\bmain\b|\bmain\b[^\n]*`[^`]+`\s+exits?\s+0\b', done):
+        fails.append(('done-not-command', 'Done when must be a backticked command that exits 0 on main'))
+    rows = partition_rows(plan)
+    for i, (la, da) in enumerate(rows):
+        for lb, db in rows[i + 1:]:
+            if da == db or db.startswith(da + '/') or da.startswith(db + '/'):
+                fails.append(('overlap', f'lanes {la} ({da}) and {lb} ({db}) share files: the partition must be file-disjoint, one writer per file'))
+    cap = re.search(r'(?im)^\s*Lane cap\b\D{0,12}(\d+)', plan)
+    reason = re.search(r'(?im)^\s*Cap reason\b[:\s]*\S+', plan)
+    if not rows:
+        fails.append(('no-partition', 'Wave 1 needs a partition table: | lane | directory | units |'))
+    elif not cap:
+        fails.append(('no-lane-cap', 'state `Lane cap: N`'))
+    elif len(rows) > int(cap.group(1)) and not reason:
+        fails.append(('lane-cap', f'{len(rows)} lanes against a cap of {cap.group(1)} with no `Cap reason:` line'))
+    stop = ' '.join(re.findall(r'(?im)^\s*(?:Budget and )?stop rules?\b[^\n]*', plan))
+    if not re.search(r'\$\s?\d+', stop):
+        fails.append(('no-dollar-stop', 'a `Stop rules:` line needs a dollar number'))
+    w3 = wave_text(plan, 3)
+    if not re.search(r'(?i)\b\d+(\s*(to|-)\s*\d+)?\s+(bulk\s+)?PRs?\b|\bPRs?\b\W{0,3}(target|count|:)\W{0,3}\d+', w3):
+        fails.append(('pr-unbounded', 'Wave 3 needs a target PR count (a number or a range like 8 to 10)'))
+    if not re.search(r'(?im)^\s*Dependency order\b[^\n]*Wave 0[^\n]*\bbefore\b[^\n]*Wave 1', plan):
+        fails.append(('no-order', 'state `Dependency order:` with Wave 0 landing on main before any Wave 1 lane starts'))
+    if goal is None:
+        fails.append(('no-goal-block', 'return one fenced /goal block that passes `plan_check.py goal`'))
+    else:
+        fails.extend((f'goal-{r}', w) for r, w in check_goal(goal)[0])
+    if not re.search(r'(?im)^\s*Reference PR\b[^\n]*\S', plan):
+        warns.append(('no-reference-pr', 'name one reference PR as the pattern every lane copies'))
+    l1, cpus = load or machine_load()
+    if cap and l1 > cpus / 2 and int(cap.group(1)) > max(1, cpus - l1):
+        warns.append(('machine-load', f'lane cap {cap.group(1)} against load {l1:.1f} on {cpus} CPUs (above half): fewer lanes will run than planned'))
+    if os.path.basename(os.path.normpath(root)) != '.sdlc' and not load_tickets(root):
+        warns.append(('ticket-root', f'{root} holds 0 tickets; `tickets.py --root .sdlc check` may be reading the wrong root'))
+    return fails, warns
+
+
 # ---- driver --------------------------------------------------------------------------------------------------
 def run_check(kind, text, root='.sdlc'):
-    return {'goal': check_goal, 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root)}[kind](text)
+    return {'goal': check_goal, 'loop': check_loop, 'fanout': lambda t: check_fanout(t, root),
+            'campaign': lambda t: check_campaign(t, root)}[kind](text)
 
 
 def report(kind, fails, warns, out=print):
@@ -331,6 +408,47 @@ Authorization: publish, push and tag are not implied. Authorized: a fast-forward
 
 Done when: tickets.py check exits 0 and T-0001 and T-0002 are closed on main, or the goal stopped on a limit with state written to .sdlc/notes.md.
 ```"""
+GOOD_CAMPAIGN = """Campaign: granular dependency loading is the standard for every page
+
+Census: `python3 scripts/census-page-css.py` exits 0 and prints the pages still linking a bundle (158 at planning time: 136 on components.css, 22 on themes.css)
+Dependency order: Wave 0 lands on main before any Wave 1 lane starts; Wave 2 starts when every Wave 1 lane is merged; Wave 3 starts when Wave 2 passes.
+Lane cap: 16
+Cap reason: 50 file-disjoint directories and the owner authorized --yes-many; uptime checked first.
+Outcome, rubric and KPI: pointer for the plan-verification skill (T-0405); not planned here.
+
+Wave 0 (one lane, lands first): a derivation tool and a blocking gate `python3 scripts/check-page-css.py`, wired into the existing gate chain with no new CI job. The gate starts green through a day-one allowlist of current violators, each with a justification string; a stale entry fails the gate.
+Wave 1 (50 lanes, file-disjoint, one writer per file): each lane migrates its pages and deletes its own allowlist entries.
+Reference PR: #412 (the pattern every lane copies)
+
+__ROWS__
+
+Wave 2 (bulk review): one verifier per bundle of 5 to 10 lanes on a different model family than the builders, plus a probe sweep with before and after request counts per page (say dev server or dist).
+Wave 3 (bulk PRs): one integration branch per area, 8 to 10 PRs, one plain push each.
+
+Stop rules: stop and write state to .sdlc/notes.md at $900 total (a backstop: level L2 $30 times 30 lanes), $30 per lane, a rate or weekly limit, or three 529s in a row.
+Done when: `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist
+
+```
+/goal Migrate every page to granular dependency loading, then stop.
+
+Scope (verify with tickets.py check first):
+1. Wave 0: the derivation tool and the blocking gate with a day-one allowlist
+2. Wave 1: 50 file-disjoint page lanes
+3. Wave 2: bulk verifier review and probe sweep
+4. Wave 3: 8 to 10 bulk PRs
+
+How to work: lane first with steps.py lane; one writer per file; Wave 0 lands before any lane starts; replan cap one, then record a limit.
+A verifier fail means fix and re-verify; never merge on a fail.
+
+Budget and stop rules: stop and write state to .sdlc/notes.md at $900 total, $30 per lane, a rate or weekly limit, or three 529s in a row. No retry loops.
+
+Authorization: publish, tag, and deploy are not implied. Authorized: one plain push per integration branch.
+
+Done when: `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist, or the goal stopped on a limit with state written to .sdlc/notes.md.
+```
+"""
+GOOD_ROWS = '| lane | directory | units |\n|---|---|---|\n' + '\n'.join(f'| p{i:02d} | site/pages/a{i:02d} | 3 |' for i in range(50))
+GOOD_CAMPAIGN = GOOD_CAMPAIGN.replace('__ROWS__', GOOD_ROWS)
 GOOD_LOOP = "/loop 20m a status update with progress since the last run; stop when .sdlc/notes.md says done"
 
 
@@ -422,6 +540,35 @@ def selftest():
         expect('fanout: two tickets sharing only check.py warn as hot-spot, not fail', not any(r == 'overlap' for r, _ in f) and any(r == 'hot-spot' for r, _ in w))
         f, _ = check_fanout(good.replace('a=T-0001', 'a=T-0001,T-0005 c=T-0006'), root)
         expect('fanout: three lanes within the cap pass', not f)
+    f, w = check_campaign(GOOD_CAMPAIGN, load=(0.5, 8))
+    expect('campaign: the gen-ui-kit page-CSS plan passes with no warning', not f and not w)
+    expect('campaign: its /goal block passes plan_check goal', not check_goal(goal_block(GOOD_CAMPAIGN)[1])[0])
+    cmuts = {
+        'no-wave0-gate': (re.sub(r'(?m)^Wave 0 .*\n', 'Wave 0 (one lane): a derivation tool.\n', GOOD_CAMPAIGN), 'no-wave0-gate'),
+        'done-not-command': (GOOD_CAMPAIGN.replace('Done when: `python3 scripts/check-page-css.py` exits 0 on main with an empty allowlist', 'Done when: every page is migrated'), 'done-not-command'),
+        'overlap': (GOOD_CAMPAIGN.replace('site/pages/a01 ', 'site/pages/a00/inner '), 'overlap'),
+        'lane-cap': (GOOD_CAMPAIGN.replace('Cap reason: 50 file-disjoint directories and the owner authorized --yes-many; uptime checked first.\n', ''), 'lane-cap'),
+        'no-dollar-stop': (GOOD_CAMPAIGN.replace('at $900 total (a backstop: level L2 $30 times 30 lanes), $30 per lane, ', 'at ', 1), 'no-dollar-stop'),
+        'pr-unbounded': (GOOD_CAMPAIGN.replace('8 to 10 PRs', 'as many PRs as needed'), 'pr-unbounded'),
+        'no-order': (GOOD_CAMPAIGN.replace('Dependency order: Wave 0 lands on main before any Wave 1 lane starts; ', 'Dependency order: '), 'no-order'),
+        'no-census': (GOOD_CAMPAIGN.replace('Census: `python3 scripts/census-page-css.py` exits 0', 'Census: a count of pages'), 'no-census'),
+        'goal-block-fails-goal': (GOOD_CAMPAIGN.replace('three 529s in a row. No retry', 'errors. No retry'), 'goal-stop-529'),
+        'no-goal-block': (GOOD_CAMPAIGN.split('```')[0], 'no-goal-block'),
+    }
+    for label, (text, rule) in cmuts.items():
+        f, _ = check_campaign(text, load=(0.5, 8))
+        expect(f'campaign: mutant "{label}" is flagged as {rule}', any(r == rule for r, _ in f))
+    f, _ = check_campaign(GOOD_CAMPAIGN.replace('Lane cap: 16', 'Lane cap: 50').replace('Cap reason: 50 file-disjoint directories and the owner authorized --yes-many; uptime checked first.\n', ''), load=(0.5, 8))
+    expect('campaign: lanes equal to the cap need no reason', not f)
+    f, w = check_campaign(GOOD_CAMPAIGN.replace('Reference PR: #412 (the pattern every lane copies)\n', ''), load=(0.5, 8))
+    expect('campaign: a missing reference PR warns and does not fail', not f and any(r == 'no-reference-pr' for r, _ in w))
+    f, w = check_campaign(GOOD_CAMPAIGN, load=(7.0, 8))
+    expect('campaign: a loaded machine warns and does not fail', not f and any(r == 'machine-load' for r, _ in w))
+    with tempfile.TemporaryDirectory() as d:
+        f, w = check_campaign(GOOD_CAMPAIGN, root=os.path.join(d, 'tickets'), load=(0.5, 8))
+        expect('campaign: a ticket root with 0 tickets warns and does not fail', not f and any(r == 'ticket-root' for r, _ in w))
+    f, w = check_campaign(GOOD_CAMPAIGN, root='x/.sdlc', load=(0.5, 8))
+    expect('campaign: a root named .sdlc never warns about the ticket root', not any(r == 'ticket-root' for r, _ in w))
     rc = report('goal', *check_goal(GOOD_GOAL), out=lambda s: None)
     expect('report: a passing block exits 0', rc == 0)
     rc = report('goal', *check_goal('nope'), out=lambda s: None)
@@ -436,7 +583,7 @@ def main(argv):
     if argv[:1] == ['selftest']:
         return selftest()
     ap = argparse.ArgumentParser(prog='plan_check.py', description=__doc__.split('\n')[0])
-    ap.add_argument('kind', choices=('goal', 'loop', 'fanout'))
+    ap.add_argument('kind', choices=('goal', 'loop', 'fanout', 'campaign'))
     g = ap.add_mutually_exclusive_group()
     g.add_argument('--text')
     g.add_argument('--file')
