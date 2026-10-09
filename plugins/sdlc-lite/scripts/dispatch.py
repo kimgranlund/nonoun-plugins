@@ -296,6 +296,23 @@ def next_stem(directory, role, level):
     return stem, k
 
 
+def exec_tree(directory):
+    """The tree a build runs in: the handoff dir, except a handoff in the main checkout dispatched from inside an
+    owned linked (lane) worktree of the same repo, where it is that worktree (T-0381)."""
+    def dirs(where):
+        gd = git('rev-parse', '--git-dir', cwd=where).stdout.strip()
+        common = git('rev-parse', '--git-common-dir', cwd=where).stdout.strip()
+        if not gd or not common:
+            return None
+        return os.path.realpath(os.path.join(str(where), gd)), os.path.realpath(os.path.join(str(where), common))
+    hd = dirs(directory)
+    if not hd or hd[0] != hd[1]:
+        return directory
+    top = git('rev-parse', '--show-toplevel').stdout.strip()
+    cd = dirs(top) if top else None
+    return top if cd and cd[0] != cd[1] and cd[1] == hd[1] else directory
+
+
 def fork_floor(directory):
     """In a linked (lane) worktree, the commit the lane forked from: git merge-base HEAD <main checkout HEAD>
     (SDLC_BASE_REF names another ref). '' in the main checkout or when git cannot say (T-0376)."""
@@ -310,9 +327,16 @@ def fork_floor(directory):
     return git('merge-base', 'HEAD', ref, cwd=directory).stdout.strip() if ref else ''
 
 
+NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
+
+
 def build_base(directory):
-    """The build-start commit run.sh stores in base-sha: HEAD, or the stored sha kept valid. Git runs in the
-    handoff's own tree, and in a lane worktree a stored sha older than the lane's fork point is stale (T-0376)."""
+    """The build-start commit run.sh stores in base-sha (T-0381), in this order: (1) a base the handoff names (a line
+    `base: <sha>`), else (2) the sha recorded at the step's first dispatch, kept valid, else (3) HEAD of the execution
+    tree, never the main checkout's HEAD. A supplied SDLC_BASE_SHA that resolves to another commit is refused and the
+    pick kept; a named base that is not an ancestor of HEAD raises Refuse. Git runs in the execution tree (the
+    handoff's own tree, or the lane worktree a main-checkout handoff is run from), and in a lane worktree a recorded
+    sha older than the lane's fork point is stale (T-0376). Returns (stored, base)."""
     stored = ''
     f = Path(directory) / 'base-sha'
     if f.is_file():
@@ -327,17 +351,35 @@ def build_base(directory):
                 stored = ''
             if stored:
                 break
-    base = ''
-    cwd = directory
-    floor = fork_floor(directory)
-    if stored and git('rev-parse', '-q', '--verify', stored + '^{commit}', cwd=cwd).returncode == 0 \
-            and git('merge-base', '--is-ancestor', stored, 'HEAD', cwd=cwd).returncode == 0 \
-            and (not floor or git('merge-base', '--is-ancestor', floor, stored, cwd=cwd).returncode == 0):
-        base = git('rev-parse', stored + '^{commit}', cwd=cwd).stdout.strip()
+    cwd = exec_tree(directory)
+    floor = fork_floor(cwd)
+
+    def commit(sha):
+        return git('rev-parse', '-q', '--verify', sha + '^{commit}', cwd=cwd).stdout.strip() if sha else ''
+
+    def ancestor(sha):
+        return bool(commit(sha)) and git('merge-base', '--is-ancestor', sha, 'HEAD', cwd=cwd).returncode == 0
+
+    base, why = '', ''
+    hf = Path(directory) / 'handoff.md'
+    m = NAMED_BASE_RE.search(hf.read_text(encoding='utf-8', errors='replace')) if hf.is_file() else None
+    if m:
+        if not ancestor(m.group(1)):
+            raise Refuse(2, 'dispatch.py: SDLC_BASE_SHA refused: %s names base %s, which is not a commit that is an ancestor of HEAD in %s'
+                         % (hf, m.group(1), cwd))
+        base, why = commit(m.group(1)), 'named in the handoff'
+    if not base and ancestor(stored) and (not floor or git('merge-base', '--is-ancestor', floor, stored, cwd=cwd).returncode == 0):
+        base, why = commit(stored), 'recorded at the first dispatch (base-sha)'
         merges = git('rev-list', '--first-parent', '--merges', base + '..HEAD', cwd=cwd).stdout.split()
         if merges:
-            base = merges[0]
-    return stored, base or git('rev-parse', 'HEAD', cwd=cwd).stdout.strip()
+            base, why = merges[0], 'newest resync merge since the recorded base-sha'
+    if not base:
+        base, why = git('rev-parse', 'HEAD', cwd=cwd).stdout.strip(), 'HEAD of the execution tree (nothing named or recorded)'
+    supplied = re.sub(r'\s', '', os.environ.get('SDLC_BASE_SHA', ''))
+    if supplied and commit(supplied) != base:
+        say("SDLC_BASE_SHA refused: %s (supplied) differs from the step base %s (%s); name it in the handoff with a line 'base: <sha>' to use it"
+            % (supplied, base[:12], why))
+    return stored, base
 
 
 def lane_gate(role, directory, plugin):
@@ -1566,6 +1608,62 @@ def selftest():
         _, dver, _ = prep(rr, 'verifier', 'L1', str(lw2 / '.sdlc' / 'w' / 'handoff.md'), '--dry-run')
         case('prepare verifier and prepare builder print the same base for the same lane',
              dver['base_sha'] == dbld['base_sha'] == gt(lw2, 'rev-parse', 'HEAD'))
+        # T-0381: the handoff in the MAIN checkout, the owned lane worktree as the cwd. The base of a step is, in order,
+        # a base the handoff names (a `base: <sha>` line), else the sha recorded at its first dispatch, else the
+        # execution tree's HEAD (the lane), never the main checkout's HEAD; a differing supplied SDLC_BASE_SHA is refused.
+        mhand, mbase = rr / '.sdlc' / 'w' / 'handoff.md', rr / '.sdlc' / 'w' / 'base-sha'
+        mbase_was = mbase.read_text() if mbase.is_file() else None
+        mhand_was = mhand.read_text()
+        lane_tip2 = gt(lw2, 'rev-parse', 'HEAD')
+        main_head = gt(rr, 'rev-parse', 'HEAD')
+        orphan = gt(rr, 'commit-tree', gt(rr, 'rev-parse', 'HEAD^{tree}'), '-m', 'not on any branch')
+
+        def shared(**env):
+            err = io.StringIO()
+            with clean_env(**env), cwd(lw2), contextlib.redirect_stderr(err):
+                return prepare('builder', 'L1', str(mhand), dry_run=True)['base_sha'], err.getvalue()
+        mbase.write_text(lane_head + '\n')
+        got, _ = shared()
+        case('a main-checkout handoff run from the lane: a rework keeps the base recorded at the first dispatch, which main does not contain',
+             got == lane_head != lane_tip2 and lane_head not in gt(rr, 'rev-list', 'HEAD').split())
+        mbase.unlink()
+        got, _ = shared()
+        case('a main-checkout handoff run from the lane with nothing recorded gets the lane HEAD, not the main checkout HEAD',
+             got == lane_tip2 != main_head)
+        mbase.write_text(lane_head + '\n')
+        got, err = shared(SDLC_BASE_SHA=main_head)
+        case('a main-checkout handoff run from the lane refuses a wrong but valid supplied base and keeps the recorded one',
+             got == lane_head and 'SDLC_BASE_SHA refused: %s' % main_head in err)
+        got, err = shared(SDLC_BASE_SHA=lane_head)
+        case('a main-checkout handoff run from the lane accepts a supplied base equal to the pick', got == lane_head and 'refused' not in err)
+        mbase.unlink()
+        got, err = shared(SDLC_BASE_SHA=main_head)
+        case('a main-checkout handoff run from the lane refuses a wrong supplied base on a first dispatch too',
+             got == lane_tip2 and 'SDLC_BASE_SHA refused: %s' % main_head in err)
+        mbase.write_text(lane_head + '\n')
+        mhand.write_text(mhand_was + '\nbase: %s\n' % stale)
+        got, _ = shared()
+        case('a main-checkout handoff run from the lane: a base the handoff names wins over the recorded one, even older than the fork',
+             got == stale != lane_head)
+        got, err = shared(SDLC_BASE_SHA=lane_head)
+        case('a main-checkout handoff run from the lane: a supplied base that differs from the named one is refused',
+             got == stale and 'SDLC_BASE_SHA refused: %s' % lane_head in err)
+        mhand.write_text(mhand_was + '\nbase: %s\n' % orphan)
+        try:
+            shared()
+            refused = ''
+        except Refuse as e:
+            refused = str(e)
+        case('a main-checkout handoff run from the lane stops on a named base that is not an ancestor of HEAD',
+             'SDLC_BASE_SHA refused' in refused and orphan in refused)
+        mhand.write_text(mhand_was)
+        with clean_env(), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
+            case('negative control: the same main-checkout handoff run from the main checkout does not use the lane',
+                 prepare('builder', 'L1', str(mhand), dry_run=True)['base_sha'] == main_head)
+        if mbase_was is None:
+            mbase.unlink(missing_ok=True)
+        else:
+            mbase.write_text(mbase_was)
         subprocess.run(['git', '-C', str(rr), 'worktree', 'remove', '--force', str(lw2)], capture_output=True)
         rc2, _, err2 = prep(rr, 'verifier', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(os.getppid()))
         case('a second prepare with a running attempt and a live parent refuses', rc2 == 2 and 'still running' in err2 and 'builder-L1.attempt.json' in err2

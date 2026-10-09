@@ -1,0 +1,21 @@
+{
+  "attempt_id": "e2a53343453347b8b56d8232d214eed1",
+  "name": "verifier-L2",
+  "role": "verifier",
+  "level": "L2",
+  "backend": "claude",
+  "transport": "exec",
+  "model": "opus",
+  "effort": "high",
+  "routing_reason": "Caller selected this role and level; no task-specific rationale supplied.",
+  "reason_source": "fallback",
+  "status": "completed",
+  "started_at": "2026-10-08T22:32:24.953391+00:00",
+  "project": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f25/runbase",
+  "handoff": "/Users/kimgranlund/Projects/nonoun/sdlc-lite/.worktrees/fanout-f25/runbase/.sdlc/0381-runner-wrong-lane-base/handoff.md",
+  "owner_pid": 75522,
+  "handoff_sha256": "ef7a1297c8d50cc8ae87c0e3f36d6c6218d783ac8c9ffd2f86580de2fbce5e70",
+  "process_pid": 75597,
+  "exit_code": 0,
+  "finished_at": "2026-10-08T22:49:15.376140+00:00"
+}

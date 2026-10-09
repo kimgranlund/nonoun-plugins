@@ -112,15 +112,22 @@
 # PreToolUse hook sees that move, so hooks/block-background.sh cannot stop it (T-0105).
 # Build base: a real run (never a dry run) of builder or verifier resolves the commit the step's
 # build started from and stores it in <handoff dir>/base-sha (the handoff dir is the step dir). The
-# first line of base-sha is valid when it names a commit that is an ancestor of HEAD. Missing or
-# invalid (junk, or a sha no longer an ancestor after a reset or rewrite): base = HEAD. Valid: base =
-# the stored sha, except that when git rev-list --first-parent --merges <stored>..HEAD is non-empty,
-# base = its first line (the newest resync merge on the first-parent chain), since builders commit
-# only on merge steps and any other commit since the base is the step's own work. base-sha is
-# written when it was missing or changed. In a linked (lane) worktree a stored sha that does not descend
-# from the lane's fork point (git merge-base HEAD <main checkout HEAD>, or SDLC_BASE_REF) is stale and
-# replaced by HEAD, and git runs in the handoff's own tree (T-0376). The role gets SDLC_BASE_SHA=<base> next to SDLC_ROLE, so
-# scope criteria can diff against the tree the build started from whether or not anything is
+# base is, in this order (T-0381): (1) a base the handoff names, a line `base: <sha>` in handoff.md, which must
+# be a commit that is an ancestor of HEAD or the run stops with exit 2 and `run.sh: SDLC_BASE_SHA refused: ...`;
+# else (2) the sha recorded at the step's first dispatch, the first line of base-sha, valid when it names a commit
+# that is an ancestor of HEAD, so a rework keeps its original base; when git rev-list --first-parent --merges
+# <stored>..HEAD is non-empty, base = its first line (the newest resync merge on the first-parent chain), since
+# builders commit only on merge steps and any other commit since the base is the step's own work; else (3)
+# HEAD of the execution tree. Never the main checkout's HEAD. A missing or invalid record (junk, or a sha no
+# longer an ancestor after a reset or rewrite) falls to HEAD. The execution tree is the handoff's own tree,
+# except a handoff in the main checkout run from inside an owned linked (lane) worktree of the same repo,
+# where it is that lane worktree. In a lane worktree a recorded sha that does not descend from the lane's
+# fork point (git merge-base HEAD <main checkout HEAD>, or SDLC_BASE_REF) is stale and replaced by HEAD
+# (T-0376). A caller-supplied SDLC_BASE_SHA is never used in place of that pick: one that resolves to a
+# different commit is refused with the stderr line `run.sh: SDLC_BASE_SHA refused: ...` and the pick kept;
+# the handoff names a different base only through its `base:` line. run.sh prints `base <sha>: <why>` on
+# stderr. base-sha is written when it was missing or changed. The role gets SDLC_BASE_SHA=<base> next to
+# SDLC_ROLE, so scope criteria can diff against the tree the build started from whether or not anything is
 # committed later. Every other role gets SDLC_BASE_SHA removed from its env (even when the caller
 # exported it) and writes no base-sha. Caveat: on a merge step the builder's own merge commit moves
 # the base on the verifier run, so merge-step criteria use HEAD^1 instead.
@@ -428,32 +435,67 @@ fi
 if [[ "${SDLC_DRY_RUN:-}" == 1 ]]; then printf '%q ' "${cmd[@]}"; echo; exit 0; fi
 
 # Build base (see the header): builder and verifier only; every other role gets no SDLC_BASE_SHA.
+supplied="${SDLC_BASE_SHA:-}"
 unset SDLC_BASE_SHA
 base_env=()
 if [[ "$role" == builder || "$role" == verifier ]]; then
   stored=""
   [[ -f "$dir/base-sha" ]] && { IFS= read -r stored <"$dir/base-sha" || true; }
   stored="${stored//[[:space:]]/}"
+  supplied="${supplied//[[:space:]]/}"
   base=""
-  # T-0376: git runs in the handoff's own tree; in a linked (lane) worktree a stored sha older than the
-  # lane's fork point (merge-base of HEAD and the main checkout HEAD, or SDLC_BASE_REF) is stale.
-  floor=""
+  # T-0376/T-0381: git runs in the execution tree. That is the handoff's own tree, except a handoff in the
+  # main checkout run from inside an owned lane worktree (the shared-handoff shape), where it is that lane.
+  xt="$dir"
   gd=$(cd "$dir" && cd "$(git rev-parse --git-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
   gc=$(cd "$dir" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+  if [[ -n "$gd" && "$gd" == "$gc" ]]; then
+    ct=$(git rev-parse --show-toplevel 2>/dev/null || true)
+    if [[ -n "$ct" ]]; then
+      cgd=$(cd "$ct" && cd "$(git rev-parse --git-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+      cgc=$(cd "$ct" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P || true)
+      if [[ -n "$cgd" && "$cgd" != "$cgc" && "$cgc" == "$gc" ]]; then xt="$ct"; gd="$cgd"; gc="$cgc"; fi
+    fi
+  fi
+  # In a linked (lane) worktree a recorded sha older than the lane's fork point (merge-base of HEAD and the main
+  # checkout HEAD, or SDLC_BASE_REF) is stale.
+  floor=""
   if [[ -n "$gd" && "$gd" != "$gc" ]]; then
     fref="${SDLC_BASE_REF:-}"
-    [[ -n "$fref" ]] || fref=$(git -C "$dir" worktree list --porcelain | sed -n 's/^HEAD //p' | head -1)
-    [[ -z "$fref" ]] || floor=$(git -C "$dir" merge-base HEAD "$fref" 2>/dev/null || true)
+    [[ -n "$fref" ]] || fref=$(git -C "$xt" worktree list --porcelain | sed -n 's/^HEAD //p' | head -1)
+    [[ -z "$fref" ]] || floor=$(git -C "$xt" merge-base HEAD "$fref" 2>/dev/null || true)
   fi
-  if [[ -n "$stored" ]] && git -C "$dir" rev-parse -q --verify "$stored^{commit}" >/dev/null 2>&1 \
-    && git -C "$dir" merge-base --is-ancestor "$stored" HEAD >/dev/null 2>&1 \
-    && { [[ -z "$floor" ]] || git -C "$dir" merge-base --is-ancestor "$floor" "$stored" >/dev/null 2>&1; }; then
-    base=$(git -C "$dir" rev-parse "$stored^{commit}")
-    resync=$(git -C "$dir" rev-list --first-parent --merges "$base..HEAD" | head -1 || true)
-    [[ -n "$resync" ]] && base="$resync"
+  # T-0381: the base of a step is, in this order, (1) a base the handoff names (a line `base: <sha>`), else (2) the
+  # sha recorded at the step's first dispatch (base-sha, kept valid), else (3) HEAD of the execution tree. Never the
+  # main checkout's HEAD. A named base that is not an ancestor of the execution HEAD stops the run.
+  why=""
+  named=$(sed -nE 's/^[[:space:]]*(-[[:space:]]+)?[Bb]ase:[[:space:]]*([0-9a-fA-F]{7,40})[[:space:]]*(#.*)?$/\2/p' "$handoff" | head -1)
+  if [[ -n "$named" ]]; then
+    if git -C "$xt" rev-parse -q --verify "$named^{commit}" >/dev/null 2>&1 \
+      && git -C "$xt" merge-base --is-ancestor "$named" HEAD >/dev/null 2>&1; then
+      base=$(git -C "$xt" rev-parse "$named^{commit}"); why="named in the handoff"
+    else
+      echo "run.sh: SDLC_BASE_SHA refused: $handoff names base $named, which is not a commit that is an ancestor of HEAD in $xt" >&2
+      exit 2
+    fi
   fi
-  [[ -n "$base" ]] || base=$(git -C "$dir" rev-parse HEAD)
+  if [[ -z "$base" && -n "$stored" ]] && git -C "$xt" rev-parse -q --verify "$stored^{commit}" >/dev/null 2>&1 \
+    && git -C "$xt" merge-base --is-ancestor "$stored" HEAD >/dev/null 2>&1 \
+    && { [[ -z "$floor" ]] || git -C "$xt" merge-base --is-ancestor "$floor" "$stored" >/dev/null 2>&1; }; then
+    base=$(git -C "$xt" rev-parse "$stored^{commit}"); why="recorded at the first dispatch (base-sha)"
+    resync=$(git -C "$xt" rev-list --first-parent --merges "$base..HEAD" | head -1 || true)
+    [[ -z "$resync" ]] || { base="$resync"; why="newest resync merge since the recorded base-sha"; }
+  fi
+  [[ -n "$base" ]] || { base=$(git -C "$xt" rev-parse HEAD); why="HEAD of the execution tree (nothing named or recorded)"; }
+  # A supplied SDLC_BASE_SHA is checked against that pick; it never replaces it.
+  if [[ -n "$supplied" ]]; then
+    sup=$(git -C "$xt" rev-parse -q --verify "$supplied^{commit}" 2>/dev/null || true)
+    if [[ "$sup" != "$base" ]]; then
+      echo "run.sh: SDLC_BASE_SHA refused: $supplied (supplied) differs from the step base ${base:0:12} ($why); name it in the handoff with a line 'base: <sha>' to use it" >&2
+    fi
+  fi
   [[ "$base" == "$stored" ]] || printf '%s\n' "$base" >"$dir/base-sha"
+  echo "run.sh: base ${base:0:12}: $why${floor:+; lane fork point ${floor:0:12}}" >&2
   base_env=("SDLC_BASE_SHA=$base")
 fi
 
