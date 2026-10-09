@@ -746,6 +746,25 @@ def exec_toplevel(task_dir):
 
 
 NAMED_BASE_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?[Bb]ase:[ \t]*([0-9a-fA-F]{7,40})[ \t]*(?:#.*)?$', re.M)
+NAMED_TESTS_RE = re.compile(r'^[ \t]*(?:-[ \t]+)?tests:[ \t]*(.*?)[ \t]*$', re.M)
+
+
+def declared_tests(text):
+    """(paths, problems) for the `tests:` lines of a handoff or step block (T-0395): a bare line or list item of
+    comma-separated repo-relative file paths, each optionally in backticks, e.g. `tests: tests/a.sh, tests/b.sh`.
+    A path that is absolute, climbs with .., holds a glob character, or ends in / (a directory) is a problem and
+    declares nothing: the declaration is exact files, never a blanket ignore."""
+    paths, problems = [], []
+    for m in NAMED_TESTS_RE.finditer(text):
+        for raw in m.group(1).split(','):
+            t = raw.strip().strip('`').strip()
+            if not t:
+                continue
+            if t.startswith('/') or '..' in t.split('/') or t.endswith('/') or any(c in t for c in '*?[]{}'):
+                problems.append(t)
+            elif t not in paths:
+                paths.append(t.removeprefix('./'))
+    return paths, problems
 
 
 def base_sha(top, step_dir=None):
@@ -1443,6 +1462,13 @@ def link_findings(handoff):
     return findings
 
 
+def tests_findings(plan, steps):
+    """One finding per `tests:` entry in a step block that is not an exact repo-relative file path (declared_tests)."""
+    return [f'steps: {plan} step {n}: tests: names {t}, which is not an exact repo-relative file path\n'
+            '  list files such as tests/a.sh, not a directory, a glob, an absolute path, or a path with ..'
+            for n, block in steps.items() for t in declared_tests(block)[1]]
+
+
 def lint_steps(plan, steps, tree=None):
     """Return one finding per command-like criterion span that bash -n cannot parse; for a span that
     parses, one per unquoted || join, one for a pinned commit sha, and one for a count over a changing
@@ -1517,7 +1543,7 @@ def lint_steps(plan, steps, tree=None):
                                 'non-empty and the criterion can never pass: check '
                                 '`git diff --quiet "$SDLC_BASE_SHA" -- <path>` plus untracked files '
                                 '(`git ls-files --others --exclude-standard -- <path>`) instead')
-    return findings + defect_dependents(plan, steps)
+    return findings + tests_findings(plan, steps) + defect_dependents(plan, steps)
 
 
 def lint_or_fail(plan, steps, tree=None):
@@ -3351,6 +3377,16 @@ def selftest():
         d = task(plan=PLAN.replace('- one works', '- `! cat x | grep -E "a|b"`\n- `! python3 -c "import sys; sys.exit(0)"`\n- `grep -c P x`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
         check('(k2b) portable guard forms lint ok', rc == 0 and out.strip() == 'steps lint: ok')
+        # (k2c) a tests: line names exact repo-relative files (T-0395); a directory, glob, absolute path, or .. is refused
+        for form in ('tests/', 'tests/*.sh', '/abs/a.sh', '../a.sh'):
+            d = task(plan=PLAN.replace('- one works', f'- one works\ntests: tests/ok.sh, {form}'))
+            refused(f'(k2c) lint refuses a tests: entry ({form})', ['lint', str(d / 'planner-L2.md')], d,
+                    needles=('plan defect', 'not an exact repo-relative file path'))
+        d = task(plan=PLAN.replace('- one works', '- one works\n- tests: `tests/a.sh`, tests/b.sh'))
+        rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
+        check('(k2c) exact test files lint ok and parse as declared',
+              rc == 0 and out.strip() == 'steps lint: ok'
+              and declared_tests('- tests: `tests/a.sh`, ./tests/b.sh\n') == (['tests/a.sh', 'tests/b.sh'], []))
         form = 'while read x; do test -f x || exit 1; done < f'
         d = task(plan=PLAN.replace('- one works', f'- `{form}`'))
         rc, out, _ = run_main(['lint', str(d / 'planner-L2.md')])
