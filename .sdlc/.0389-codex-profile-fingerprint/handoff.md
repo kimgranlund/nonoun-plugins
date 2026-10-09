@@ -2,7 +2,7 @@
 id: T-0389
 title: "Codex readiness distinguishes a callable role name from the loaded profile revision"
 type: bug             # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,7 @@ No em or en dashes. No push or publish.
 - Every `adapters/codex/agents/*.toml` ends with a `# Profile fingerprint` note whose `profile: <fingerprint>` equals `codex_roles.py fingerprint <name>`.
 - `install --check` code path is unchanged (diff of `install` shows no edits); `instructions.md`, `agents/solo.md` and `skills/agent/SKILL.md` describe the handshake.
 - The T-0287 answer is recorded in this file.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
