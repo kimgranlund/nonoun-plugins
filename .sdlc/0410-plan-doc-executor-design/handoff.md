@@ -26,3 +26,13 @@ Maintainer direction, 2026-10-09: work at a higher level of abstraction. Plan wi
 
 ## Constraints
 Design only. No em or en dashes. No push or publish. Build waits for its own ticket and the maintainer's approval.
+
+## Acceptance criteria
+1. `test -f docs/specs/sdlc-lite/plan-doc-executor.md && grep -q '^Status: design' docs/specs/sdlc-lite/plan-doc-executor.md` exits 0 (the design file exists with a status line).
+2. The design's section 3.3 table names the new `plan_check.py plan` rules, each row with a negative control (a mutant), and section 3.1 and 3.2 fix the plan-doc shape: `grep -c '^| `' docs/specs/sdlc-lite/plan-doc-executor.md` is read by the verifier against the table rows, not trusted.
+3. Section 4.2 holds the `plan_done.py` truth table with the exits 0, 1, 2, 3 and 4 and one negative control per row.
+4. Section 5 covers what the executor reads, files, dispatches and records, how it upserts corpus docs and repairs stale records, and crash resume with a recover step.
+5. Section 6 is model-agnostic (Haiku 5.5 high, Sonnet low, Sonnet high, any builder row) and states the minimum for the executor and what stays with a stronger seat; section 7 holds the guardrails (never grades itself, publish only when named, replan cap one then stop with state).
+6. Section 8 splits the build into sized tickets naming every file changed, and 8.1 gives the live-run steps with goal 002 as the first customer; section 9 rejects both alternatives named in the ticket.
+7. `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` and `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check` exits 0, and `python3 -c "import sys;s=open('docs/specs/sdlc-lite/plan-doc-executor.md',encoding='utf-8').read();sys.exit(any(c in s for c in '\u2013\u2014'))"` exits 0.
+8. Facts the design cites about existing code hold: `steps.py lint .sdlc/plan-reliability-docs/plan.md` prints `steps lint: ok`; `dispatch.py` defines `family`; `levels.json` has no solo or builder row for Haiku.
