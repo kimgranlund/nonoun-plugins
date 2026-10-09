@@ -248,3 +248,5 @@
 2026-10-08: maison relayed live Codex evidence for T-0389 and T-0391 (T-0294 builder): maison .sdlc/tickets/0294-optioncard-disabled-double-dim/codex-delivery.md and step-1/builder-L2.log. Both tickets merged on main for 0.22.1; verify against it.
 
 2026-10-08: maison supplement for T-0386 (gate-lock admission design, closed): live contention on its repo-local browser-slot.sh (2 slots, mkdir based) shows no FIFO, no priority, no queued or admitted status; a Codex job blocking an integration waited behind lower-priority runs. Acceptance (queue order, priority, liveness): maison .sdlc/tickets/0300-shared-resource-lease-design/codex-live-admission-followup.md. No measured cost, no proven starvation. Attach to the T-0386 design and use it when the admission implementation ticket is filed.
+
+2026-10-09: maintainer decisions: built T-0405 plan-verification (T-0407), built T-0400 verifier held criteria (T-0408), approved gate-lock admission caps 6 compute and 3 browser and its build (T-0409); all three target 0.22.3 with T-0406. Declined for now: the ultimate-tokens onboard refresh and an agent-ui task.
