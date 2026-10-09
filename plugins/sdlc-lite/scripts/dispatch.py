@@ -81,7 +81,8 @@ it then does the following.
   runs.jsonl   one line with the key set run.sh writes, plus agent_id and cost_reason, with transport subagent;
                loaded_context is {"status":"log absent"} (a sub-agent leaves no stream-json log).
                cost_usd is estimated from the notice tokens by cost_estimate.py (cost_estimated true, cost_basis
-               "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero;
+               "tokens x blended"); with no tokens it is null with cost_reason "subagent usage not priced", never zero, the row holds unpriced true and stderr
+               says `unpriced: <name> has no cost row; pass --transcript <jsonl>` (T-0402);
                usage holds the notice's subagent_tokens and tool_uses when --tokens or --tool-uses is given; --transcript <jsonl>
                replaces the token count with the transcript's summed usage fields, priced per field (T-0328).
   validate     results.py validate --role <role>. A defect prints "dispatch.py: <role> result <reason>; see
@@ -958,6 +959,9 @@ def record(dispatch_file, stdin=None, agent_id=None, usage=None, duration_ms=Non
                 loaded_context={'status': 'log absent'})  # T-0252: a sub-agent leaves no stream-json log to read
     if est is not None:
         line.update(cost_estimated=True, cost_basis=basis)
+    else:  # T-0402: no transcript and no tokens leaves no cost row; say so now and mark the row, never fail the record
+        line['unpriced'] = True
+        say('unpriced: %s has no cost row; pass --transcript <jsonl>' % d['name'])
     if resolved_model:  # T-0338: the model the transcript says ran, beside the alias in model
         line['resolved_model'] = resolved_model
     if d.get('specgate'):
@@ -1909,8 +1913,8 @@ def selftest():
             a_line, b_line = lines_of(ra / rel)[-1], lines_of(rb / rel)[-1]
             case('record parity %s: valid result exits 0 like run.sh and prints the result path' % role,
                  src == 0 and rc == 0 and out.strip().splitlines()[0] == got['result'])
-            case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id, cost_reason, and result_sha256' % role,
-                 set(b_line) == set(a_line) | {'agent_id', 'cost_reason', 'result_sha256'} and set(a_line) <= set(b_line))
+            case('record parity %s: runs.jsonl key set is the run.sh set plus agent_id, cost_reason, result_sha256, and unpriced' % role,
+                 set(b_line) == set(a_line) | {'agent_id', 'cost_reason', 'result_sha256', 'unpriced'} and set(a_line) <= set(b_line))
             case('record parity %s: transport subagent, agent_id, null cost with its reason' % role,
                  (b_line['transport'], a_line['transport'], b_line['agent_id'], b_line['cost_usd'], b_line['cost_reason'])
                  == ('subagent', 'claude', 'agent-' + role, None, 'subagent usage not priced'))
@@ -1960,7 +1964,8 @@ def selftest():
                  and (att['status'], att['exit_code']) == ('failed', 3))
             rc, cgot, err, out = go(rb, role, 'L1', '.sdlc/ctl%d/handoff.md' % i, body=bad, validate=accept_all)
             case('negative control (%s): an accept-all validator lets the same bad result pass' % label,
-                 rc == 0 and attempt_of(cgot)['status'] == 'completed' and err == '')
+                 rc == 0 and attempt_of(cgot)['status'] == 'completed'
+                 and all(l.startswith('dispatch.py: unpriced: ') for l in err.splitlines()))  # T-0402: only the unpriced note
 
         # A failed sub-agent: error text and no result; a limit text also leaves the resume marker.
         for name in ('f1', 'f2', 'f3'):
@@ -2019,11 +2024,21 @@ def selftest():
         tr.write_text(json.dumps({'message': {'id': 'm1', 'role': 'assistant', 'model': 'claude-haiku-5-5', 'usage': {'output_tokens': 5}}}) + '\n')
         put(rb / '.sdlc' / 'c3' / 'handoff.md')
         put(rb / '.sdlc' / 'c4' / 'handoff.md')
+        unpriced_err = {}
         for nm, extra in (('c3', ['--transcript', str(tr)]), ('c4', [])):
             rc, got, _ = prep(rb, 'builder', 'L1', '.sdlc/%s/handoff.md' % nm, SDLC_DISPATCH_PARENT_PID=live_pid)
             Path(got['result']).write_text(BODY['builder'])
-            subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record'] + extra + [got['dispatch_file']], capture_output=True, text=True,
-                           env=env_cli, stdin=subprocess.DEVNULL)
+            up = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'record'] + extra + [got['dispatch_file']], capture_output=True, text=True,
+                                env=env_cli, stdin=subprocess.DEVNULL)
+            unpriced_err[nm] = (up.returncode, up.stderr, got['name'])
+        # T-0402: a record with no transcript and no tokens says it cannot price the run; a priced one is silent.
+        c3row, c4row = lines_of(rb / '.sdlc' / 'c3')[-1], lines_of(rb / '.sdlc' / 'c4')[-1]
+        case('record with no --transcript and no --tokens prints the unpriced line and the row holds unpriced true',
+             unpriced_err['c4'][0] == 0 and ('unpriced: %s has no cost row; pass --transcript <jsonl>' % unpriced_err['c4'][2]) in unpriced_err['c4'][1]
+             and c4row.get('unpriced') is True and c4row.get('cost_usd') is None)
+        case('record with --transcript prints no unpriced line and the row is priced',
+             'unpriced' not in unpriced_err['c3'][1] and 'unpriced' not in c3row and isinstance(c3row.get('cost_usd'), float))
+        case('record with notice tokens writes no unpriced field', 'unpriced' not in line)
         case('record with a transcript writes resolved_model beside the alias', lines_of(rb / '.sdlc' / 'c3')[-1].get('resolved_model') == 'claude-haiku-5-5')
         case('record with no transcript writes no resolved_model', 'resolved_model' not in lines_of(rb / '.sdlc' / 'c4')[-1])
         # T-0343: the artifact comes from the transcript when the file and stdin are empty.
