@@ -24,3 +24,4 @@ Rules:
 - The script writes every file. Write no file text yourself, and never hand-edit the managed blocks or `docs/layout.md` output to work around a report.
 - On a parse error (exit 1 naming a file and line), report the file and line and stop. Do not retry or patch the file.
 - Outside a Git work tree the script exits 1 and writes nothing; report the reason.
+- The default homes include `goals/` and `kpi/`; setup lists them in `docs/AGENTS.md` and never creates either folder empty, and `docs_check.py` rules G-1 to G-5 check the files a repository puts there.

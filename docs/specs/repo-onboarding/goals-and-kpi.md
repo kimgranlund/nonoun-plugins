@@ -1,9 +1,6 @@
----
-status: proposed
----
 # Goals and KPIs: two homes under docs/
 
-Status: proposed for 0.22.1, recorded 2026-10-08, ticket T-0392. The user asked for `docs/goals/` and `docs/kpi/` on 2026-10-08. This document elaborates the request; the build follows it. It extends the [docs schema](../docs-schema/design.md) with two homes and does not change the other nine.
+Built in 0.22.1, ticket T-0392, from a request of 2026-10-08. It extends the [docs schema](../../planning/docs-schema/design.md) with two homes and does not change the other nine. The first live examples are [G-001](../../goals/001-fleet-load-without-gate-reds.md) and [K-001](../../kpi/001-runs-without-cost-row.md).
 
 ## Why
 
@@ -104,7 +101,7 @@ The current value is not stored here. A KPI file is edited in place like a spec;
 | G-2 | Required front matter is missing: goals need `id`, `title`, `status`, `owner`, `created`, `kpis`; KPIs need `id`, `title`, `status`, `owner`, `created`, `unit`, `direction`, `target`, `measure`, `goals` |
 | G-3 | A `kpis:` id has no file in `kpi/`, or a `goals:` id has no file in `goals/`, or a goal lists a KPI that does not list it back |
 | G-4 | A goal with `status: active` has `kpis:` empty or missing, without `none: <reason>` |
-| G-5 | A `status:` value is outside its set, or a `dropped`, `achieved` or `retired` file still sits outside `archive/` after 30 days (advice, warning not error) |
+| G-5 | A `status:` value is outside its set, or a `dropped`, `achieved` or `retired` file still sits outside `archive/` after 30 days (advice, warning not error; the age counts from an optional `date:` or the file's modification time, as D-8 does) |
 
 The homes are added to `DEFAULT_HOMES` in `docs_check.py`, to `DOC_KINDS` in `onboard.py`, to the kinds table in `layout.md`, and to the managed Documents block that `onboard.py setup` writes under `docs/AGENTS.md`. As with every home, a repository creates a folder only when it has something to put in it; setup never creates an empty `goals/` or `kpi/`.
 

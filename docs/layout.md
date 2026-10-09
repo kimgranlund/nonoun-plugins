@@ -7,6 +7,8 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 - `specs/`
 - `planning/`
 - `decisions/`
+- `goals/`
+- `kpi/`
 - `references/`
 - `guides/`
 - `reports/`
@@ -21,6 +23,8 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 | `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
 | `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
 | `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
+| `goals/` | goals | one intended outcome per file | change plans -> `planning/` | steering needs a record | people | `NNN-slug.md`, `status:` | achieve or drop, then `archive/` | - | steering the work | `docs_check.py` |
+| `kpi/` | kpi | one measure per file | values over time -> `reports/` | a number needs a command | people | `NNN-slug.md`, `measure:` | edit in place | - | measuring an outcome | `docs_check.py` |
 | `references/` | references | lookup tables and listings | steps -> `guides/` | fast lookup | people | kebab-case | edit in place | - | looking something up | `docs_check.py` |
 | `guides/` | guides | procedures a person follows | tables -> `references/` | do, not explain | people | kebab-case | edit in place | - | doing a task | `docs_check.py` |
 | `reports/` | reports | dated evidence | steps -> `guides/` | evidence stays fixed | people | `YYYY-MM-DD-slug.md` | immutable | - | checking what was verified | `docs_check.py` |
@@ -34,10 +38,12 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 2. Is it evidence of something that happened on a date? yes -> `reports/`
 3. Is it one choice with its reasons and alternatives? yes -> `decisions/`
 4. Is it a proposal, roadmap or plan under review? yes -> `planning/`
-5. Is it steps a person follows? yes -> `guides/`
-6. Is it a table, listing or glossary you look things up in? yes -> `references/`
-7. Does it describe what the system is or must do? yes -> `specs/`
-8. Is it retired or superseded? yes -> `archive/`
+5. Is it an outcome to steer toward, with an owner and a status? yes -> `goals/`
+6. Is it a measure with a command that runs it, a unit and a target? yes -> `kpi/`
+7. Is it steps a person follows? yes -> `guides/`
+8. Is it a table, listing or glossary you look things up in? yes -> `references/`
+9. Does it describe what the system is or must do? yes -> `specs/`
+10. Is it retired or superseded? yes -> `archive/`
 otherwise -> `other/`
 
 ## Frozen paths

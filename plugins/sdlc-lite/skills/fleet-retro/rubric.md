@@ -26,7 +26,7 @@ A failed gate sets the score to 0 and names the gate. Check them in order and st
 
 ## Outcome check
 
-A closed ticket filed from a retro carries `outcome metric: <rule or command>, before: <value>`. The next retro re-collects and records one of `moved` (the value is under its threshold, or lower than `before`), `no change`, or `worse`. A `no change` or `worse` finding comes back as a new row with `fix did not hold`, scores C2 as 2, and names the ticket. A ticket with no outcome metric is itself a finding against the retro that filed it.
+A closed ticket filed from a retro carries `outcome metric: <rule or command>, before: <value>`; a KPI id (`K-001`) with a runnable `measure:` in `docs/kpi/` meets C5 in place of a rule or command. The next retro re-collects and records one of `moved` (the value is under its threshold, or lower than `before`), `no change`, or `worse`. A `no change` or `worse` finding comes back as a new row with `fix did not hold`, scores C2 as 2, and names the ticket. A ticket with no outcome metric is itself a finding against the retro that filed it.
 
 ## Calibration
 

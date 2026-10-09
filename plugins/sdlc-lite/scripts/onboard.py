@@ -41,7 +41,7 @@ KINDS = '## Kinds'
 DECIDE = '## Decide'
 LEGACY = '## Legacy'
 OPTIONAL_SECTIONS = (KINDS, DECIDE, LEGACY)
-DOC_KINDS = ('specs', 'planning', 'decisions', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+DOC_KINDS = ('specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 KIND_COLUMNS = ('id', 'kind', 'holds', 'not', 'why', 'writer', 'form', 'life', 'entry', 'read', 'owner')
 KIND_REQUIRED = ('id', 'kind', 'holds', 'not', 'why', 'form', 'read')
 
@@ -409,6 +409,8 @@ Pick one home from the table, then read one file. Placement effect unproven; see
 | `specs/` | What the system is and must do; edited in place | Proposals, dated evidence, steps |
 | `planning/` | Proposals, roadmaps, plans under review (`status:`) | What exists today |
 | `decisions/` | One numbered decision per file, immutable once accepted | Narrative design |
+| `goals/` | One intended outcome per file (`G-NNN`): owner, status, the KPIs that show it is met | Change plans, tickets, result values |
+| `kpi/` | One measure per file (`K-NNN`): command, unit, target, the goals it serves | Values over time, thresholds nobody can run |
 | `references/` | Lookup tables, listings, glossaries | Procedures, opinions |
 | `guides/` | How-to and operating procedures | Lookup tables, design |
 | `reports/` | Dated evidence: runs, reviews, audits, releases | Instructions, living specs |
@@ -424,11 +426,13 @@ The first line that matches wins.
 2. Evidence of something that happened on a date: `reports/`.
 3. One choice with its reasons: `decisions/`.
 4. A proposal, roadmap or plan under review: `planning/`.
-5. Steps a person follows: `guides/`.
-6. A table, listing or glossary you look things up in: `references/`.
-7. What the system is or must do: `specs/`.
-8. Retired or superseded: `archive/`.
-9. None of the above, or unsure: `other/`.
+5. An outcome to steer toward, with an owner and a status: `goals/`.
+6. A measure with a command that runs it, a unit and a target: `kpi/`.
+7. Steps a person follows: `guides/`.
+8. A table, listing or glossary you look things up in: `references/`.
+9. What the system is or must do: `specs/`.
+10. Retired or superseded: `archive/`.
+11. None of the above, or unsure: `other/`.
 
 ## Adding a document
 
@@ -456,6 +460,8 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 - `specs/`
 - `planning/`
 - `decisions/`
+- `goals/`
+- `kpi/`
 - `references/`
 - `guides/`
 - `reports/`
@@ -470,6 +476,8 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 | `specs/` | specs | what the system is and must do | plans -> `planning/` | one place to trust | people | kebab-case | supersede to `archive/` | - | defining the system | `docs_check.py` |
 | `planning/` | planning | proposals and plans under review | built facts -> `specs/` | decisions need a place | people | `status:` front matter | accept, then `archive/` | - | deciding or scheduling | `docs_check.py` |
 | `decisions/` | decisions | one numbered decision per file | narrative -> `specs/` | reasons outlive people | people | `NNNN-slug.md`, `status:` | supersede | - | asking why | `docs_check.py` |
+| `goals/` | goals | one intended outcome per file | change plans -> `planning/` | steering needs a record | people | `NNN-slug.md`, `status:` | achieve or drop, then `archive/` | - | steering the work | `docs_check.py` |
+| `kpi/` | kpi | one measure per file | values over time -> `reports/` | a number needs a command | people | `NNN-slug.md`, `measure:` | edit in place | - | measuring an outcome | `docs_check.py` |
 | `references/` | references | lookup tables and listings | steps -> `guides/` | fast lookup | people | kebab-case | edit in place | - | looking something up | `docs_check.py` |
 | `guides/` | guides | procedures a person follows | tables -> `references/` | do, not explain | people | kebab-case | edit in place | - | doing a task | `docs_check.py` |
 | `reports/` | reports | dated evidence | steps -> `guides/` | evidence stays fixed | people | `YYYY-MM-DD-slug.md` | immutable | - | checking what was verified | `docs_check.py` |
@@ -483,10 +491,12 @@ Any other folder directly under `docs/` is a topic. It holds the designs, specif
 2. Is it evidence of something that happened on a date? yes -> `reports/`
 3. Is it one choice with its reasons and alternatives? yes -> `decisions/`
 4. Is it a proposal, roadmap or plan under review? yes -> `planning/`
-5. Is it steps a person follows? yes -> `guides/`
-6. Is it a table, listing or glossary you look things up in? yes -> `references/`
-7. Does it describe what the system is or must do? yes -> `specs/`
-8. Is it retired or superseded? yes -> `archive/`
+5. Is it an outcome to steer toward, with an owner and a status? yes -> `goals/`
+6. Is it a measure with a command that runs it, a unit and a target? yes -> `kpi/`
+7. Is it steps a person follows? yes -> `guides/`
+8. Is it a table, listing or glossary you look things up in? yes -> `references/`
+9. Does it describe what the system is or must do? yes -> `specs/`
+10. Is it retired or superseded? yes -> `archive/`
 otherwise -> `other/`
 
 ## Frozen paths
@@ -1331,9 +1341,9 @@ def gate_create(impl):
         _expect_hash(block, 'docs/AGENTS.md')
         expect(block.text.startswith('# Documents\n\nPick one home from the table, then read one file.'),
                'docs/AGENTS.md: block starts %r' % block.text[:60])
-        for home in ('specs', 'planning', 'decisions', 'references', 'guides', 'reports', 'assets', 'archive', 'other'):
+        for home in ('specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other'):
             expect('| `%s/` |' % home in block.text, 'docs/AGENTS.md: the table lacks the home %s/' % home)
-        expect('otherwise' not in block.text and '9. None of the above, or unsure: `other/`.' in block.text,
+        expect('otherwise' not in block.text and '11. None of the above, or unsure: `other/`.' in block.text,
                'docs/AGENTS.md: the decision list is missing or malformed')
         expect(block.text.endswith('## Contents\n\n'), 'docs/AGENTS.md: contents in an empty fixture: %r'
                % block.text[-80:])

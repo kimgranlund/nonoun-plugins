@@ -7,10 +7,10 @@ Usage:
 
 Read-only: reads the target, writes nothing, calls no model. Prints one line per finding,
 `<error|warning> <rule> <path>: <message>`, then a summary; exits 1 when any error was found.
-`--only` takes rule ids (D-3) or the groups `docs` (D-*) and `boundary` (B-*).
+`--only` takes rule ids (D-3) or the groups `docs` (D-*), `goals` (G-*) and `boundary` (B-*).
 
 The layout comes from docs/layout.md (parsed by onboard.parse_layout). Without that file the
-nine default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
+eleven default homes apply. A `## Legacy` glob exempts a path from D-1, D-2, D-3, D-4, D-9, D-10,
 D-11, D-12 and B-3a; it never exempts D-5, D-6, B-1a or B-2a. B-1a skips a path inside a report's evidence folder. The registry drift checks R-1 and R-2
 belong to onboard.py check, not to this script.
 """
@@ -26,7 +26,7 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import onboard  # noqa: E402
 
-DEFAULT_HOMES = ('specs', 'planning', 'decisions', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
+DEFAULT_HOMES = ('specs', 'planning', 'decisions', 'goals', 'kpi', 'references', 'guides', 'reports', 'assets', 'archive', 'other')
 ENTRY_FILES = ('AGENTS.md', 'CLAUDE.md', 'README.md')
 TOP_FILES = ENTRY_FILES + ('layout.md',)
 TOPIC_KINDS = ('specs', 'planning', 'references', 'guides', 'decisions')
@@ -35,6 +35,15 @@ DECISION_STATUS = ('proposed', 'accepted', 'superseded')
 CLOSED_STATUS = ('accepted', 'rejected', 'superseded')
 LEGACY_EXEMPT = ('D-1', 'D-2', 'D-3', 'D-4', 'D-9', 'D-10', 'D-11', 'D-12', 'B-3a')
 DATE_IN_NAME = re.compile(r'\d{4}-\d{2}-\d{2}')
+GOAL_STATUS = ('proposed', 'active', 'achieved', 'dropped')
+KPI_STATUS = ('proposed', 'active', 'retired')
+GOAL_REQUIRED = ('id', 'title', 'status', 'owner', 'created', 'kpis')
+KPI_REQUIRED = ('id', 'title', 'status', 'owner', 'created', 'unit', 'direction', 'target', 'measure', 'goals')
+CONCEPT_NAME = re.compile(r'^(\d{3})-[a-z0-9]+(-[a-z0-9]+)*\.md$')
+CONCEPT_ID = {'goals': 'G', 'kpi': 'K'}
+GOAL_CLOSED = ('dropped', 'achieved')
+KPI_CLOSED = ('retired',)
+CONCEPT_AGE_DAYS = 30
 KEBAB = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
 VERSION_SUFFIX = re.compile(r'-v\d+(\.\d+)*$')
 DECISION_NAME = re.compile(r'^(\d{4})-[a-z0-9]+(-[a-z0-9]+)*\.md$')
@@ -185,7 +194,8 @@ def run(root, only=None, today=None, disable=()):
             return False
         if only is None:
             return True
-        return rule in only or ('docs' in only and rule.startswith('D-')) or ('boundary' in only and rule.startswith('B-'))
+        return (rule in only or ('docs' in only and rule.startswith('D-')) or ('boundary' in only and rule.startswith('B-'))
+                or ('goals' in only and rule.startswith('G-')))
 
     def add(level, rule, rel, message):
         if rule in LEGACY_EXEMPT and legacy_match(layout, rel):
@@ -209,7 +219,7 @@ def run(root, only=None, today=None, disable=()):
             seen.add(top)
             if any(not legacy_match(layout, r) for r in files if r.startswith(top + '/')):
                 out.append(Finding('error', 'D-1', 'docs/' + top + '/',
-                                   'not one of the nine default homes or a listed home with a ## Kinds row'))
+                                   'not one of the eleven default homes or a listed home with a ## Kinds row'))
         for name, kind in custom:
             out.append(Finding('info', 'D-1', 'docs/' + name + '/', 'custom home bound to kind %s' % kind))
     for rel in files:
@@ -365,8 +375,87 @@ def run(root, only=None, today=None, disable=()):
             flagged.add(top)
             out.append(Finding('warning', 'B-2a', '.sdlc/' + top + '/',
                                'folder is not a ticket folder, a task folder (handoff.md or step-N/), or a known record folder'))
+    concept_rules(repo, kinds, today, add, on, root)
     out.sort(key=lambda f: (f.rule, f.path, f.message))
     return out
+
+
+def _plain(fm, key):
+    """A front matter value without a trailing `# comment`; '' when the key is absent."""
+    return re.sub(r'\s+#.*$', '', fm.get(key, '')).strip()
+
+
+def _ids(value, letter):
+    return re.findall(r'\b%s-\d{3}\b' % letter, value)
+
+
+def concept_rules(repo, kinds, today, add, on, root):
+    """G-1 to G-5 over the goals and kpi homes (docs/specs/repo-onboarding/goals-and-kpi.md, Checks)."""
+    homes = {'goals': [], 'kpi': []}
+    for rel in repo.docs():
+        parts = rel.split('/')
+        kind = kinds.get(parts[0])
+        if kind in homes and len(parts) >= 2 and rel.lower().endswith('.md') and parts[-1] not in ENTRY_FILES:
+            homes[kind].append(rel)
+    meta = {}
+    for kind, rels in homes.items():
+        letter = CONCEPT_ID[kind]
+        required = GOAL_REQUIRED if kind == 'goals' else KPI_REQUIRED
+        statuses = GOAL_STATUS if kind == 'goals' else KPI_STATUS
+        closed = GOAL_CLOSED if kind == 'goals' else KPI_CLOSED
+        seen = {}
+        for rel in rels:
+            fm = front_matter(repo.text('docs/' + rel))
+            meta[rel] = fm
+            base = rel.rsplit('/', 1)[-1]
+            m = CONCEPT_NAME.match(base) if rel.count('/') == 1 else None
+            if on('G-1'):
+                if not m:
+                    add('error', 'G-1', rel, 'name must be NNN-slug.md directly in the folder (three digits, lowercase kebab-case)')
+                else:
+                    want = '%s-%s' % (letter, m.group(1))
+                    if _plain(fm, 'id') != want:
+                        add('error', 'G-1', rel, 'id %r does not match the file number, expected %s' % (_plain(fm, 'id'), want))
+                    if m.group(1) in seen:
+                        add('error', 'G-1', rel, 'number %s is also used by %s' % (m.group(1), seen[m.group(1)]))
+                    else:
+                        seen[m.group(1)] = rel
+            if on('G-2'):
+                missing = [k for k in required if not _plain(fm, k)]
+                if missing:
+                    add('error', 'G-2', rel, 'front matter lacks %s' % ', '.join(missing))
+            st = _plain(fm, 'status')
+            if on('G-5') and st and st not in statuses:
+                add('error', 'G-5', rel, 'status: must be one of %s (found %r)' % ('|'.join(statuses), st))
+            if on('G-5') and st in closed:
+                stamp = _dates(_plain(fm, 'date')) or _mtime(root, 'docs/' + rel)
+                if stamp and (today - stamp).days > CONCEPT_AGE_DAYS:
+                    add('warning', 'G-5', rel, 'status %s for more than %d days; move to archive/ and keep the number'
+                        % (st, CONCEPT_AGE_DAYS))
+            if kind == 'goals' and on('G-4') and st == 'active':
+                value = _plain(fm, 'kpis')
+                if not _ids(value, 'K') and not re.match(r'^none:\s*\S', value):
+                    add('error', 'G-4', rel, 'active goal has no kpis: list and no `none: <reason>`')
+    if not on('G-3'):
+        return
+    by_id = {'goals': {}, 'kpi': {}}
+    for kind, rels in homes.items():
+        for rel in rels:
+            i = _plain(meta[rel], 'id')
+            if i:
+                by_id[kind].setdefault(i, rel)
+    for rel in homes['goals']:
+        gid = _plain(meta[rel], 'id')
+        for k in _ids(_plain(meta[rel], 'kpis'), 'K'):
+            other = by_id['kpi'].get(k)
+            if not other:
+                add('error', 'G-3', rel, 'kpis: %s has no file in kpi/' % k)
+            elif gid and gid not in _ids(_plain(meta[other], 'goals'), 'G'):
+                add('error', 'G-3', rel, 'kpis: %s does not list %s back in goals:' % (k, gid))
+    for rel in homes['kpi']:
+        for g in _ids(_plain(meta[rel], 'goals'), 'G'):
+            if g not in by_id['goals']:
+                add('error', 'G-3', rel, 'goals: %s has no file in goals/' % g)
 
 
 def _mtime(root, rel):
@@ -407,6 +496,17 @@ TODAY = datetime.date(2026, 10, 5)
 FM_PLAN = '---\nstatus: proposed\n---\n# Plan\n'
 
 
+def _goal(n, kpis='[K-001]', status='active', owner='kim', extra=''):
+    own = 'owner: %s\n' % owner if owner else ''
+    return ('---\nid: G-%03d\ntitle: A goal\nstatus: %s\n%screated: 2026-10-05\nkpis: %s\n%s---\n# G\n'
+            % (n, status, own, kpis, extra))
+
+
+def _kpi(n, goals='[G-001]', status='active', extra=''):
+    return ('---\nid: K-%03d\ntitle: A measure\nstatus: %s\nowner: kim\ncreated: 2026-10-05\nunit: percent\n'
+            'direction: down\ntarget: "<= 5"\nmeasure: python3 x.py\ngoals: %s\n%s---\n# K\n' % (n, status, goals, extra))
+
+
 def _write(root, rel, text=''):
     p = os.path.join(root, rel)
     os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -429,6 +529,8 @@ def _clean(root):
     _write(root, 'docs/assets/pic.png', 'x\n')
     _write(root, 'docs/archive/old.md', '---\nstatus: superseded\n---\n# O\n')
     _write(root, 'docs/other/inbox.md', '---\nowner: kim\nreview-by: 2026-11-01\n---\n# I\n')
+    _write(root, 'docs/goals/001-first-goal.md', _goal(1))
+    _write(root, 'docs/kpi/001-first-kpi.md', _kpi(1))
 
 
 def _cases():
@@ -462,6 +564,19 @@ def _cases():
         ('B-2a', w('.sdlc/stray.md', '# S\n'), '.sdlc/stray.md'),
         ('B-3a', w('docs/specs/cites.md', '[t](../../.sdlc/0001-x/handoff.md)\n'), 'docs/specs/cites.md'),
         ('D-12', many(('docs/decisions/0001-zebra.md', '---\nstatus: accepted\n---\n')), 'docs/decisions/0001-zebra.md'),
+        ('G-1', w('docs/goals/fleet.md', _goal(2)), 'docs/goals/fleet.md'),
+        ('G-1', w('docs/kpi/002-two.md', _kpi(7)), 'docs/kpi/002-two.md'),
+        ('G-1', w('docs/goals/001-other.md', _goal(1)), 'docs/goals/001-other.md'),
+        ('G-2', w('docs/goals/002-no-owner.md', _goal(2, kpis='none: not measurable yet', status='proposed', owner='')),
+         'docs/goals/002-no-owner.md'),
+        ('G-2', w('docs/kpi/002-no-unit.md', _kpi(2, goals='[G-001]').replace('unit: percent\n', '')), 'docs/kpi/002-no-unit.md'),
+        ('G-3', w('docs/goals/002-missing-kpi.md', _goal(2, kpis='[K-009]', status='proposed')), 'docs/goals/002-missing-kpi.md'),
+        ('G-3', w('docs/kpi/002-missing-goal.md', _kpi(2, goals='[G-009]')), 'docs/kpi/002-missing-goal.md'),
+        ('G-3', w('docs/goals/002-no-backlink.md', _goal(2, kpis='[K-001]', status='proposed')), 'docs/goals/002-no-backlink.md'),
+        ('G-4', w('docs/goals/002-wish.md', _goal(2, kpis='[]')), 'docs/goals/002-wish.md'),
+        ('G-5', w('docs/goals/002-odd.md', _goal(2, kpis='none: later', status='wishful')), 'docs/goals/002-odd.md'),
+        ('G-5', w('docs/goals/002-old.md', _goal(2, kpis='none: later', status='dropped', extra='date: 2026-01-01\n')),
+         'docs/goals/002-old.md'),
     ]
 
 

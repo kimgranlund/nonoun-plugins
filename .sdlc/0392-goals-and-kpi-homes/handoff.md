@@ -26,3 +26,12 @@ User request 2026-10-08: "for sdlc-lite sessions, we should have a place in docs
 
 ## Constraints
 No em or en dashes. No push or publish. Do not edit another repository.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/docs_check.py selftest` passes; its fixture holds a valid goal and KPI linked both ways, and `_cases()` has a negative case for each of G-1 to G-5 (a rule disabled makes the selftest fail).
+- `python3 plugins/sdlc-lite/scripts/docs_check.py` reports 0 errors; moving `docs/kpi/001-runs-without-cost-row.md` away makes it report an error `G-3`.
+- `onboard.py selftest`, `check.py`, `tickets.py --root .sdlc check`, `codex_roles.py generate --check` and `claude_roles.py generate --check` pass.
+- `goals` and `kpi` are in `DEFAULT_HOMES` (docs_check.py) and `DOC_KINDS` (onboard.py), with rows in docs/layout.md; the managed block in docs/AGENTS.md lists both and `onboard.py check` reports docs/AGENTS.md `current`.
+- docs/specs/repo-onboarding/goals-and-kpi.md exists with no `status:` front matter and no Status line; docs/planning/goals-and-kpi/ is gone; D-7 and links resolve.
+- The two seed files exist, are linked both ways, and mark the unrun baseline as unverified.
+- The skills onboard and fleet-retro and the rubric C5 note each carry the one added sentence; no em or en dashes in changed files.

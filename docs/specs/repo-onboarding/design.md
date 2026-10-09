@@ -55,7 +55,7 @@ The template text is in [Templates](#templates).
 - A loose document is a document directly in `docs/`.
 - A topic's documents are counted through all its subfolders. A topic gets an entry file and a stub once it holds two or more documents. A topic with one document is linked from `docs/AGENTS.md` directly.
 - When a topic has a `README.md`, the topic entry links to it first.
-- A home, and a topic folder directly under a home, gets an entry file and a stub once it holds two or more documents (T-0242; the homes are the nine of [the docs schema](../../planning/docs-schema/design.md)). `docs/AGENTS.md` links to the home's `README.md` when it exists, to its entry when it has one, and names the folder otherwise. A report's evidence folder never gets one. A home entry lists at most 20 documents and then counts the rest.
+- A home, and a topic folder directly under a home, gets an entry file and a stub once it holds two or more documents (T-0242; the homes are the nine of [the docs schema](../../planning/docs-schema/design.md) plus `goals/` and `kpi/` from [goals and KPIs](goals-and-kpi.md)). `docs/AGENTS.md` links to the home's `README.md` when it exists, to its entry when it has one, and names the folder otherwise. A report's evidence folder never gets one. A home entry lists at most 20 documents and then counts the rest.
 - Setup writes nothing inside a folder that a frozen path matches.
 - Setup never deletes a file. An entry stays when its topic later falls to one document.
 - Setup creates no empty folders.
@@ -272,7 +272,7 @@ Managed by SDLC Lite onboard, template <N>.
 <!-- sdlc-lite:managed:end -->
 ```
 
-`docs/AGENTS.md` and `docs/layout.md`: since T-0242 the text is `DOCS_AGENTS_TEMPLATE` and `LAYOUT_TEMPLATE` in `plugins/sdlc-lite/scripts/onboard.py`, defined by [the docs schema](../../planning/docs-schema/design.md) (the nine homes, the decision list, `## Kinds`, `## Decide`, and an empty `## Legacy`). The `docs/AGENTS.md` block ends with the same `## Contents` placeholders as before; `docs/layout.md` is written only when the file is missing.
+`docs/AGENTS.md` and `docs/layout.md`: since T-0242 the text is `DOCS_AGENTS_TEMPLATE` and `LAYOUT_TEMPLATE` in `plugins/sdlc-lite/scripts/onboard.py`, defined by [the docs schema](../../planning/docs-schema/design.md) (the nine homes plus `goals/` and `kpi/`, the decision list, `## Kinds`, `## Decide`, and an empty `## Legacy`). The `docs/AGENTS.md` block ends with the same `## Contents` placeholders as before; `docs/layout.md` is written only when the file is missing.
 
 `docs/<topic>/AGENTS.md`:
 
