@@ -25,3 +25,11 @@ Maison and Codex, 2026-10-08, 0.22.0: report at maison .sdlc/tickets/0310-contra
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/redck.py selftest`
+- `python3 plugins/sdlc-lite/scripts/steps.py selftest`
+- `python3 plugins/sdlc-lite/scripts/check.py`
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`
+- `grep -q 'tests: <path>' plugins/sdlc-lite/skills/handoff-format/SKILL.md`
+- Behavior: a declared dirty test is a hashed prelude (phase stays pre-edit), an undeclared test or any source path makes the phase retrospective, and a declared test changed after recording makes `redck.py audit` report prelude-changed.
