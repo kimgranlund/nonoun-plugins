@@ -387,7 +387,11 @@ GUARD_TIMEOUT_RE = re.compile(r'^guard timeout:\s*(\d+(?:\.\d+)?)\s*$')
 DEFAULT_GUARD_TIMEOUT = 300
 SPAN_RE = re.compile(r'(`+)(.+?)\1')
 ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
-PLACEHOLDER_RE = re.compile(r'<[^<>\s][^<>]*>')
+# A template placeholder is an angle-bracketed run of words (<sha>, <step dir>, <L1|L2|L3>): no =, quote,
+# ;, &, (, ), brackets or other operator inside, and no space next to a |, so `i<t ... >=` is not one.
+PLACEHOLDER_RE = re.compile(r'<\w[\w.,/:-]*(?:(?: |\|)[\w.,/:-]+)*>')
+# The quoted body of a node -e or python -c command: code, never a placeholder inside it.
+CODE_BODY_RE = re.compile(r'''(\b(?:node\s+(?:-e|--eval)|python3?\s+-c)\s+)("(?:\\.|[^"\\])*"|'[^']*')''')
 TAG_RUN_RE = re.compile(r'^(?:\([\w-]+\)\s*)+')
 RED_SNAPSHOT_LIMIT = 8_000_000
 BUILTINS = {'cd', 'test', '[', 'echo', 'printf', 'export', 'set', 'true', 'false', 'time', 'type',
@@ -616,10 +620,20 @@ def red_spans(block):
     return out
 
 
+def fill_placeholders(text, repl='PLACEHOLDER'):
+    """text with each real <placeholder> replaced by repl; a node -e or python -c body is left alone."""
+    parts = CODE_BODY_RE.split(text)
+    return ''.join(p if i % 3 == 2 else PLACEHOLDER_RE.sub(repl, p) for i, p in enumerate(parts))
+
+
+def has_placeholder(text):
+    return fill_placeholders(text, '\0') != text
+
+
 def guard_skipped(text):
     """A guard span that cannot run against the current tree: it references HEAD^1 (a merge
     commit not made yet) or holds a <placeholder>."""
-    return 'HEAD^1' in text or PLACEHOLDER_RE.search(text) is not None
+    return 'HEAD^1' in text or has_placeholder(text)
 
 
 def git_toplevel(task_dir):
@@ -1487,7 +1501,7 @@ def lint_steps(plan, steps, tree=None):
             if not (base / rel).exists() and not superseded_holders(sdlc_base(pathlib.Path(plan).resolve().parent), rel):
                 findings.append(f'steps: {plan} step {n}: ### Read first lists a path that does not exist: {rel}')
         for text in command_spans(block):
-            probe = PLACEHOLDER_RE.sub('PLACEHOLDER', text)
+            probe = fill_placeholders(text)
             try:
                 r = subprocess.run(['bash', '-n', '-c', '--', probe], capture_output=True, text=True, timeout=5)
                 rc, err = r.returncode, r.stderr
@@ -3547,6 +3561,20 @@ def selftest():
         rc, _, err = run_main(['split', str(d), '--only', '1'])
         check('(n) a <placeholder> guard is skipped (it would be red if run)',
               rc == 0 and err == '' and (d / 'step-1' / 'handoff.md').is_file())
+
+        # T-0404: an operator span (i<t ... >=, =>) is a command, not a <placeholder>
+        check('(n) a node -e body with i<t and => is not skipped',
+              not guard_skipped('node -e "for(let i=0;i<t;i++){}; const f=(x)=>x"'))
+        check('(n) a node -e body with i<t || n >= 1 is not skipped',
+              not guard_skipped('node -e "if (i<t || n >= 1) process.exit(0)"'))
+        check('(n) a python -c body with a<b and c>d is not skipped',
+              not guard_skipped("python3 -c 'a=1; b=2; assert a<b or b>a'"))
+        check('(n) an unquoted i<t ... >= is not skipped', not guard_skipped('test $i<t && test $n >= 1'))
+        check('(n) <sha> and <step dir> are still skipped',
+              guard_skipped('git cat-file -e <sha>') and guard_skipped('test -d <step dir>/x')
+              and guard_skipped('test -e <L1|L2|L3>') and guard_skipped('node -e "1" <sha>'))
+        check('(n) lint fills a real placeholder but leaves a node -e body alone',
+              fill_placeholders('node -e "i<t; f=(x)=>x" <sha>') == 'node -e "i<t; f=(x)=>x" PLACEHOLDER')
 
         d = task(plan=guard_plan('(guard) `sleep 30`'))
         before = snapshot(d)
