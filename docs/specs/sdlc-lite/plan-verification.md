@@ -1,6 +1,6 @@
 # plan-verification skill
 
-Design for review, not implemented. Version 0.1, 2026-10-09, ticket T-0405. Decided by the maintainer on 2026-10-09: intent, rubric and KPI capture becomes a new `plan-verification` skill that `plan-goal` uses. The build is a separate ticket (section 8); this ticket writes no skill and changes no script.
+Status: design, approved by the maintainer on 2026-10-09 (build T-0407 filed); implementation in progress in T-0407. Version 0.1, 2026-10-09, ticket T-0405. Decided by the maintainer on 2026-10-09: intent, rubric and KPI capture becomes a new `plan-verification` skill that `plan-goal` uses. The build is a separate ticket (section 8); this ticket writes no skill and changes no script.
 
 ## 1. Problem
 
