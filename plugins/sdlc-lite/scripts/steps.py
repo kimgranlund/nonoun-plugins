@@ -1344,19 +1344,20 @@ def sdlc_base(folder):
 
 
 def cited_sdlc_paths(text):
-    """[(start, end, rel)] for each .sdlc/... path in text: rel starts at .sdlc/, [start, end) is its span in
-    text. A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
+    """[(start, end, rel, anchor)] for each .sdlc/... path in text: rel starts at .sdlc/, [start, end) is its
+    span in text; anchor is the absolute folder the path was written under (so it resolves exactly as written),
+    or None for a relative citation, which resolves against sdlc_base. A path that runs into a placeholder or glob (<n>, *, {a,b}, $VAR, ?) or is only a folder stem is no
     citation; a trailing sentence dot or :line is trimmed."""
     out = []
     for m in CITE_RE.finditer(text):
         raw, at = m.group(1), m.start(1)
         i = raw.index('.sdlc/')
         rel, start = raw[i:], at + i
-        rel = PATH_LINENO_RE.sub('', rel).rstrip('.:')
+        rel = PATH_LINENO_RE.sub('', rel.rstrip('.:')).rstrip('.:')
         end = start + len(rel)
         if any(c in rel for c in '*{}$?') or text[end:end + 1] in ('<', '*', '{', '$', '?') or len(rel) <= len('.sdlc/'):
             continue
-        out.append((start, end, rel))
+        out.append((start, end, rel, pathlib.Path(raw[:i]) if raw.startswith('/') else None))
     return out
 
 
@@ -1387,10 +1388,11 @@ def rewrite_prior_links(text, base):
     path that exists, one that already names a superseded folder, and any other path stay as written; no report
     file is touched."""
     changes, pieces, last = [], [], 0
-    for start, end, rel in cited_sdlc_paths(text):
-        if (pathlib.Path(base) / rel).exists():
+    for start, end, rel, anchor in cited_sdlc_paths(text):
+        root = anchor or pathlib.Path(base)
+        if (root / rel).exists():
             continue
-        holders = superseded_holders(base, rel)
+        holders = superseded_holders(root, rel)
         if not holders:
             continue
         new = superseded_rel(rel, holders[0])
@@ -1422,15 +1424,19 @@ def link_findings(handoff):
     own = handoff.resolve().parent
     prev = previous_attempt_span(text)
     seen, findings = set(), []
-    for start, _, rel in cited_sdlc_paths(text):
-        if rel in seen:
+    for start, _, rel, anchor in cited_sdlc_paths(text):
+        root = anchor or base
+        key = (str(anchor), rel)
+        if key in seen:
             continue
-        seen.add(rel)
-        p = base / rel
-        holders = superseded_holders(base, rel)
-        fix = f'; the previous attempt is {superseded_rel(rel, holders[0])}' if holders else ''
+        seen.add(key)
+        p = root / rel
+        holders = superseded_holders(root, rel)
+        shown = f'{anchor}/{rel}' if anchor else rel
+        fix = (f'; the previous attempt is {anchor}/{superseded_rel(rel, holders[0])}' if anchor
+               else f'; the previous attempt is {superseded_rel(rel, holders[0])}') if holders else ''
         if not p.exists():
-            findings.append(f'steps: {handoff}: cited path does not exist: {rel}{fix}')
+            findings.append(f'steps: {handoff}: cited path does not exist: {shown}{fix}')
         elif holders and p.resolve().parent == own and not (prev and prev[0] <= start < prev[1]):
             findings.append(f'steps: {handoff}: {rel} names a report of a prior attempt of this step '
                             f'(a later report of that name would satisfy it){fix}')
@@ -5117,6 +5123,35 @@ def selftest():
         rc, _, err = run_main(['lint', str(td)])
         check('(L) plan lint still refuses a Read first path no superseded folder holds',
               rc == 1 and 'does not exist' in err)
+        # absolute citations resolve exactly as written (T-0393)
+        td = l_task({}, cites={3: 'builder-L3.md'})
+        own = ln(td, 3)
+        own.parent.mkdir(parents=True, exist_ok=True)
+        sh = lroot / f'shared{counter[0]}' / '.sdlc' / 'tickets' / '0001-evidence'
+        sh.mkdir(parents=True)
+        (sh / 'verifier.md').write_text('x\n', encoding='utf-8')
+        ab = f'{sh}/verifier.md'
+        own.write_text(f'## Task goal\ng\n\nRead {ab}:12 first.\n', encoding='utf-8')
+        check('(L) an existing absolute target outside the owned tree passes with no local mirror',
+              run_main(['lint', str(own)])[0] == 0)
+        (sh / 'verifier.md').unlink()
+        mir = td.parent / '.sdlc' / 'tickets' / '0001-evidence'
+        mir.mkdir(parents=True)
+        (mir / 'verifier.md').write_text('y\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(own)])
+        check('(L) a nonexistent absolute target fails even with a local same-suffix file, naming the original',
+              rc == 1 and 'does not exist' in err and ab in err)
+        own.write_text('## Task goal\ng\n\nRead .sdlc/tickets/0001-evidence/verifier.md and '
+                       '../.sdlc/tickets/0001-evidence/verifier.md.\n', encoding='utf-8')
+        check('(L) relative and repository-root citations still resolve against the owned base',
+              run_main(['lint', str(own)])[0] == 0)
+        sup = sh / 'step-1.superseded-1'
+        sup.mkdir()
+        (sup / 'builder-L3.md').write_text('z\n', encoding='utf-8')
+        own.write_text(f'## Task goal\ng\n\nRead {sh}/step-1/builder-L3.md:5.\n', encoding='utf-8')
+        rc, _, err = run_main(['lint', str(own)])
+        check('(L) superseded-report guidance names the original absolute target',
+              rc == 1 and f'{sh}/step-1/builder-L3.md' in err and f'{sh}/step-1.superseded-1/builder-L3.md' in err)
         # no input hashing change: dispatch.py owns that; here only prove split output is stable when nothing is stale
         td = l_task(rep)
         run_main(['split', str(td)])
