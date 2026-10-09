@@ -2,7 +2,7 @@
 id: T-0409
 title: "Build gate_lock.py weighted admission with FIFO, priority and liveness (design T-0386)"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish. The design is the contract: if it is wro
 - The built-in policy is capacity 6 compute units and 3 browser jobs (`gate_lock.py policy show`).
 - `python3 plugins/sdlc-lite/scripts/check.py`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/fanout.py selftest`, `python3 scripts/check-packaging.py` and `git diff --check` pass.
 - `docs/references/sdlc-internals.md` describes the new gate_lock.py behavior.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); verified pass by an independent L3 verifier
