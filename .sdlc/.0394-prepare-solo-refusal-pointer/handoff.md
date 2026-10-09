@@ -2,7 +2,7 @@
 id: T-0394
 title: "dispatch.py prepare refusal for solo names the solo_run.py and fanout.py prep paths"
 type: chore
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -31,3 +31,7 @@ No em or en dashes. No push or publish.
 - `python3 plugins/sdlc-lite/scripts/dispatch.py prepare solo L2 <handoff.md>` exits 2 and its stderr contains `solo_run.py run --task-dir` and `fanout.py prep`.
 - `python3 plugins/sdlc-lite/scripts/dispatch.py prepare builder L9 <handoff.md>` still exits 2 with the unchanged usage line and no solo pointer.
 - `python3 plugins/sdlc-lite/scripts/check.py` exits 0.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
