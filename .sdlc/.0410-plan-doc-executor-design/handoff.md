@@ -2,7 +2,7 @@
 id: T-0410
 title: "Plan-doc contract, plan_done.py and a run-plan executor any builder tier can drive with /goal"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []
@@ -36,3 +36,7 @@ Design only. No em or en dashes. No push or publish. Build waits for its own tic
 6. Section 8 splits the build into sized tickets naming every file changed, and 8.1 gives the live-run steps with goal 002 as the first customer; section 9 rejects both alternatives named in the ticket.
 7. `python3 plugins/sdlc-lite/scripts/docs_check.py --root .` and `python3 plugins/sdlc-lite/scripts/check.py` exit 0, `git diff --check` exits 0, and `python3 -c "import sys;s=open('docs/specs/sdlc-lite/plan-doc-executor.md',encoding='utf-8').read();sys.exit(any(c in s for c in '\u2013\u2014'))"` exits 0.
 8. Facts the design cites about existing code hold: `steps.py lint .sdlc/plan-reliability-docs/plan.md` prints `steps lint: ok`; `dispatch.py` defines `family`; `levels.json` has no solo or builder row for Haiku.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
