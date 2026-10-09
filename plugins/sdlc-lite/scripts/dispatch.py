@@ -12,7 +12,7 @@
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 conductor passes to the Agent tool (design: docs/sdlc-lite/subagent-mode.md sections 1 to 3). It launches
 nothing and never edits run.sh. Order, as in run.sh: row lookup, preflight, family rules, mailbox notice,
-goal precheck, link check, lane gate, spec gate, budget gate, then the one write section.
+goal precheck, unfilled-handoff gate, link check, lane gate, spec gate, budget gate, then the one write section.
 
   row lookup   role:level must be a pipeline row of adapters/claude/levels.json (solo is dispatched by
                T-0284); agents/<role>-<level>.md must exist and every skill its role file declares must exist.
@@ -23,6 +23,10 @@ goal precheck, link check, lane gate, spec gate, budget gate, then the one write
                verifier whose dir holds no builder result reads the highest-numbered live step-<n>/ that
                holds one (step-<n>.superseded-<k>/ is left out).
   goal         planner or plan-reviewer on a task handoff: steps.py precheck.        Refusal exit 2.
+  unfilled     any role on a task handoff.md whose front matter type has a ticket template (T-0399): a line copied
+               from that template (tickets.unfilled_line, the rule tickets.py check warns with), or the template's
+               own Goal text under ## Goal, refuses with one line naming file:line. Exit 2. A handoff with no
+               ticket front matter passes.
   links        builder or verifier on a step handoff: steps.py lint <step dir> (T-0379). Every cited .sdlc path
                must exist, and a report of the step's own prior attempt must name its step-<n>.superseded-<k>
                folder. Refusal exit 2.
@@ -582,6 +586,18 @@ def prepare(role, level, handoff, plugin=PLUGIN, dry_run=False, skip=(), solo=''
         if p.returncode != 0:
             raise Refuse(2, (p.stdout + p.stderr).rstrip('\n'),
                          'dispatch.py: steps.py precheck refused the task handoff in %s; add a ## Goal section' % directory)
+
+    if 'unfilled' not in skip and task_handoff:
+        root = directory.parent
+        if not (root / '_templates').is_dir() and (root.parent / '_templates').is_dir():
+            root = root.parent  # ticket_root: tickets layout
+        try:
+            hit = tickets.unfilled_line(root, handoff.read_text(encoding='utf-8'))
+        except (OSError, UnicodeDecodeError):
+            hit = None
+        if hit:
+            raise Refuse(2, 'dispatch.py: %s:%d is unfilled template text %r; fill in the ticket before dispatching %s'
+                         % (handoff, hit[0], hit[1].strip()[:60], role))
 
     if 'links' not in skip and role in ('builder', 'verifier') and handoff.name == 'handoff.md' and re.fullmatch(r'step-\d+', directory.name):
         p = script('steps.py', 'lint', directory)
@@ -1414,6 +1430,28 @@ def selftest():
             case('goal precheck %s names ## Goal' % role, '## Goal' in err)
         put(sdlc / 'gp' / 'handoff.md', '## Goal\nx\n')
         case('goal precheck passes with a ## Goal section', prep(repo, 'planner', 'L1', '.sdlc/gp/handoff.md', '--dry-run')[0] == 0)
+
+        # unfilled handoff (T-0399): a ticket handoff still holding its type template's prompt text or Goal default is
+        # refused before any verifier or planner runs on it; a filled one passes. run.sh has no such gate, so no parity.
+        uf = sdlc / 'uf'
+        for kind in ('bug', 'feature'):
+            put(uf / 'handoff.md', (PLUGIN / 'skills' / 'ticket' / 'templates' / (kind + '.md')).read_text(encoding='utf-8'))
+            for role in ('verifier', 'planner'):
+                rc, _, err = prep(repo, role, 'L1', '.sdlc/uf/handoff.md', '--dry-run')
+                case('unfilled %s template: prepare %s exits 2 naming the file and the placeholder' % (kind, role),
+                     rc == 2 and '.sdlc/uf/handoff.md:' in err and 'unfilled template text' in err and len(err.strip().splitlines()) == 1)
+            with clean_env(), cwd(repo), contextlib.redirect_stderr(io.StringIO()):
+                passed = prepare('verifier', 'L1', '.sdlc/uf/handoff.md', dry_run=True, skip=('unfilled',))
+            case('unfilled %s template: negative control, without the unfilled gate it goes through' % kind, bool(passed))
+        ticket(uf, 'L2')
+        case('a filled ticket handoff still passes prepare', prep(repo, 'verifier', 'L1', '.sdlc/uf/handoff.md', '--dry-run')[0] == 0)
+        put(uf / 'handoff.md', (PLUGIN / 'skills' / 'ticket' / 'templates' / 'bug.md').read_text(encoding='utf-8')
+            .replace('The bug is fixed and a test that failed before the fix passes after it.', 'prepare mislabels x.')
+            .replace('1. Exact command or steps, from a clean checkout.', '1. run x').replace('Paste the output or error verbatim.', 'boom')
+            .replace('Where it was found (file:line, story id, session). Suspected cause, marked as a guess.', 'here'))
+        case('a bug ticket that keeps the Constraints default but fills the rest passes',
+             prep(repo, 'verifier', 'L1', '.sdlc/uf/handoff.md', '--dry-run')[0] == 0)
+        shutil.rmtree(uf)
 
         # link check (T-0379): a builder or verifier on a step handoff that cites a prior attempt's report at the live
         # step path, or a path that does not exist, is refused before any record; the superseded path passes
