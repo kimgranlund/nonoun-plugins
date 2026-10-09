@@ -2,7 +2,7 @@
 id: T-0406
 title: "plan-campaign skill and plan_check.py campaign (from gen-ui-kit)"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -32,3 +32,7 @@ No em or en dashes. No push or publish. Edit only this repo.
 3. `plugins/sdlc-lite/skills/plan-campaign/SKILL.md` and `references/campaign-rules.md` exist; the skill is self-contained, routed from `skills/sdlc-lite/SKILL.md`, and covered by check.py item 31.
 4. `check.py`, `claude_roles.py generate --check`, `codex_roles.py generate --check`, `scripts/check-packaging.py`, and `tickets.py --root .sdlc check` exit 0.
 5. No em or en dash in the new files; gen-ui-kit and T-0405 scope untouched (one pointer line in the template only).
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); one independent batched verifier passed before the merge

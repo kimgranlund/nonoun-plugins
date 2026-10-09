@@ -403,4 +403,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0403 | [.0403-widen-deny-path-guard](.0403-widen-deny-path-guard/handoff.md) | steps.py widen rewrites a deny-path guard | bug | L2 | P2 | none | 🟢 done |
 | T-0404 | [.0404-redck-placeholder-misread](.0404-redck-placeholder-misread/handoff.md) | PLACEHOLDER_RE reads i<t ... >= as a placeholder and drops the criterion | bug | L2 | P2 | none | 🟢 done |
 | T-0405 | [.0405-plan-verification-design](.0405-plan-verification-design/handoff.md) | plan-verification skill design: intent, rubric and KPI capture that plan-goal uses | feature | L2 | P2 | none | 🟢 done |
-| T-0406 | [0406-plan-campaign-skill](0406-plan-campaign-skill/handoff.md) | plan-campaign skill and plan_check.py campaign (from gen-ui-kit) | feature | L2 | P2 | none | 🔵 ready |
+| T-0406 | [.0406-plan-campaign-skill](.0406-plan-campaign-skill/handoff.md) | plan-campaign skill and plan_check.py campaign (from gen-ui-kit) | feature | L2 | P2 | none | 🟢 done |
