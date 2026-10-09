@@ -2,7 +2,7 @@
 id: T-0408
 title: "Build verifier unmet-dependency and deferred-to-owner verdicts (design T-0400)"
 type: feature        # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,7 @@ No em or en dashes. No push or publish. The design is the contract: if it is wro
 - Deferred-to-owner: a criterion `deferred <owner>` is closed by the owner's settling result and not by the builder's.
 - `python3 plugins/sdlc-lite/scripts/check.py`, `claude_roles.py generate --check`, `codex_roles.py generate --check` and `tickets.py check` exit 0; `git diff --check` is clean and the added lines hold no em or en dashes.
 - The design deviations in section 10 of docs/specs/sdlc-lite/verifier-held-criteria.md are real: the `#k` ordinal counts bullet lines, and `fanout.py land` stops a held lane with `verifier fail (held ...)`. Report both as confirmed or not; they do not fail the ticket.
+
+## Closed
+
+2026-10-09: delivered by the solo agent (level L2); verified pass by an independent L3 verifier

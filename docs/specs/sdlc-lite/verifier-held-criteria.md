@@ -72,7 +72,7 @@ Criterion reference: `<step dir name>#<k>` for the k-th line in that step's `###
   - Neither action is counted in the rebuild or bump count (as a plan-defect fail is not), and a verifier with held items plus an ordinary `fail` follows the ordinary path.
   - Any held line that does not verify makes the result an ordinary `fail` with reason "undeclared hold ignored: #k".
 - `resume_action`: `wait` and `deferred` steps are skipped in favour of the next step whose action is not done, `wait` or `deferred`, since the held step's own build is complete. When only held steps remain it prints the first one's action, `wait` or `deferred`, with "every other step passed". A step is never printed `done` while held.
-- `batch_verified` is unchanged: it counts a result only with Verdict `pass`, so a held step is never batch-verified.
+- `batch_verified` counts a result only with Verdict `pass`, and the build also requires every Criteria line to pass (steps.py `batch_verified`), so a held step is never batch-verified. This tightening is a third deviation from the first draft of this design.
 - New `steps.py open <task dir>` (read-only): prints one line per held criterion, `<ref>\t<state>\t<subject or owner>`, nothing and exit 0 when none; `--explain` adds the reason a hold was read as stale or fail. Also an importable `open_items(task_dir)` for tickets.py.
 - `merge_class`: the reason for a `fail` Verdict with only held items reads `held <owner or subject>` instead of `verifier fail`, so a lane waiting on its owner is not read as a defective one. The class stays `integration`.
 
