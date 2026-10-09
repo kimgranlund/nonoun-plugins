@@ -402,3 +402,4 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0402 | [0402-record-unpriced-flag](0402-record-unpriced-flag/handoff.md) | dispatch.py record flags a sub-agent run it cannot price | bug | L2 | P2 | none | 🔵 ready |
 | T-0403 | [0403-widen-deny-path-guard](0403-widen-deny-path-guard/handoff.md) | steps.py widen rewrites a deny-path guard | bug | L2 | P2 | none | 🔵 ready |
 | T-0404 | [0404-redck-placeholder-misread](0404-redck-placeholder-misread/handoff.md) | PLACEHOLDER_RE reads i<t ... >= as a placeholder and drops the criterion | bug | L2 | P2 | none | 🔵 ready |
+| T-0405 | [0405-plan-verification-design](0405-plan-verification-design/handoff.md) | plan-verification skill design: intent, rubric and KPI capture that plan-goal uses | feature | L2 | P2 | none | 🔵 ready |
