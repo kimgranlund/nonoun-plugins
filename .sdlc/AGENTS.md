@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:619aacbcac26 -->
+<!-- sdlc-lite:managed:start v1 sha256:81eb6a2c2f5f -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -9,7 +9,7 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
 
 ## Stages
 
-- proposed: 10
+- proposed: 9
   - T-0301 Conductor schedules the rerun after a 429 limit (0301-limit-conductor-rerun)
   - T-0316 Live headless chain run on Codex, recorded (0316-codex-live-evidence)
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
@@ -19,10 +19,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0389 Codex readiness distinguishes a callable role name from the loaded profile revision (0389-codex-profile-fingerprint)
   - T-0390 messages.py send defaults the sender to a name a reply can reach (0390-send-sender-registered)
   - T-0391 run.sh reports only the role's own stray worktrees and branches, like dispatch.py record (0391-runsh-stray-scope)
-  - T-0392 Add docs/goals/ and docs/kpi/ homes with checks, layout and onboard support (0392-goals-and-kpi-homes)
 - ready: 0
 - blocked: 0
-- done: 350
+- done: 351
 - dropped: 25
 
 ## Procedures

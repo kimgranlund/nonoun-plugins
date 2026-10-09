@@ -2,7 +2,7 @@
 id: T-0392
 title: "Add docs/goals/ and docs/kpi/ homes with checks, layout and onboard support"
 type: feature        # feature | bug | chore | spike | idea
-status: proposed     # proposed | ready | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -35,3 +35,7 @@ No em or en dashes. No push or publish. Do not edit another repository.
 - docs/specs/repo-onboarding/goals-and-kpi.md exists with no `status:` front matter and no Status line; docs/planning/goals-and-kpi/ is gone; D-7 and links resolve.
 - The two seed files exist, are linked both ways, and mark the unrun baseline as unverified.
 - The skills onboard and fleet-retro and the rubric C5 note each carry the one added sentence; no em or en dashes in changed files.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
