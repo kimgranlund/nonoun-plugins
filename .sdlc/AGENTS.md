@@ -1,4 +1,4 @@
-<!-- sdlc-lite:managed:start v1 sha256:88ab8b28a5a4 -->
+<!-- sdlc-lite:managed:start v1 sha256:8b67f70527f4 -->
 # Work records
 
 This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and `config`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `roadmap.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -15,10 +15,9 @@ This folder holds SDLC Lite tickets, task records, `roadmap.md`, `notes.md`, and
   - T-0317 Verifier policy: a browser-test red under measured load re-runs once alone before it counts (0317-red-under-load-rerun)
   - T-0381 Native runner accepts a valid ancestor that is the wrong lane base (0381-runner-wrong-lane-base)
   - T-0385 Rebase the Codex lean-template hunks onto 0.22.x and answer per hunk (0385-template-hunks-0301)
-- ready: 1
-  - T-0393 steps lint resolves absolute evidence citations against the wrong tree (0393-lint-absolute-citation-identity)
+- ready: 0
 - blocked: 0
-- done: 355
+- done: 356
 - dropped: 25
 
 ## Procedures

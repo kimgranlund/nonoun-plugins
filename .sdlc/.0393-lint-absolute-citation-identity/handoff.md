@@ -2,7 +2,7 @@
 id: T-0393
 title: "steps lint resolves absolute evidence citations against the wrong tree"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -28,3 +28,7 @@ Maison and Codex, 2026-10-08, 0.22.0: full report at maison .sdlc/tickets/0311-f
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed
