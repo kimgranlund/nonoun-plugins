@@ -125,7 +125,7 @@
 30. Document inventory: scripts/inventory.py names the flags `orphan`, `stale`, `duplicate`, `oversized`, `misplaced`, and `broken_links`, the options
    `--include-sdlc` and `--out`, and refuses to write inside the repository; scripts/check.sh runs `inventory.py selftest`;
    docs/planning/repo-onboarding/reorganization-plan-procedure.md names `inventory.py`. Negative controls: each phrase removed from each file must be flagged.
-31. Plan skills: skills/plan-goal, plan-loop, and plan-fanout each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
+31. Plan skills: skills/plan-goal, plan-loop, plan-fanout, and plan-campaign each name `## 1. Gather`, `plan_check.py`, `AskUserQuestion`, `Why this plan`,
    `You must authorize`, `Unattended`, and `Codex host`, hold no `harness:` reference, and are routed from skills/sdlc-lite/SKILL.md.
    Negative controls: each phrase removed, a harness reference added, and a routing line removed must be flagged.
 32. Broken-link baseline: the broken relative Markdown links that rename_refs.py `links` reports (code fences and inline code excluded)
@@ -948,7 +948,7 @@ errors.extend(f'check.py: reorganization apply: {m}' for m in reorg_bad(_reorg_t
 for _name, _phrases in REORG_NEEDS:
     for _ph in _phrases:
         if not reorg_bad(dict(_reorg_texts, **{_name: _reorg_texts[_name].replace(_ph, '')})): errors.append(f'check.py: reorganization apply negative control not flagged for {_name} without {_ph}')
-# Plan skills (docstring item 31): three self-contained planning skills that return a validated paste-ready block, each routed from the entry skill.
+# Plan skills (docstring item 31): four self-contained planning skills that return a validated paste-ready block, each routed from the entry skill.
 PLAN_NEEDS = ('## 1. Gather', 'plan_check.py', 'AskUserQuestion', 'Why this plan', 'You must authorize', 'Unattended', 'Codex host')
 def plan_bad(texts, entry):
     out = []
@@ -957,7 +957,7 @@ def plan_bad(texts, entry):
         if re.search(r'harness:', body): out.append(f'{name} SKILL.md references harness:')
         if f'plan-{name}' not in entry: out.append(f'skills/sdlc-lite/SKILL.md does not route to plan-{name}')
     return out
-_plans = {n: _rd(root/f'skills/plan-{n}/SKILL.md') for n in ('goal', 'loop', 'fanout')}
+_plans = {n: _rd(root/f'skills/plan-{n}/SKILL.md') for n in ('goal', 'loop', 'fanout', 'campaign')}
 errors.extend(f'check.py: plan skills: {m}' for m in plan_bad(_plans, _entry))
 for _n in _plans:
     for _ph in PLAN_NEEDS:
