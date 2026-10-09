@@ -393,5 +393,5 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0393 | [.0393-lint-absolute-citation-identity](.0393-lint-absolute-citation-identity/handoff.md) | steps lint resolves absolute evidence citations against the wrong tree | bug | L1 | P2 | none | 🟢 done |
 | T-0394 | [.0394-prepare-solo-refusal-pointer](.0394-prepare-solo-refusal-pointer/handoff.md) | dispatch.py prepare refusal for solo names the solo_run.py and fanout.py prep paths | chore | L2 | P2 | none | 🟢 done |
 | T-0395 | [.0395-redck-test-prelude](.0395-redck-test-prelude/handoff.md) | redck treats a declared new regression test as an implementation edit | bug | L2 | P2 | none | 🟢 done |
-| T-0396 | [0396-watch-expiry-renewal](0396-watch-expiry-renewal/handoff.md) | conductor mailbox watch expires after 30 minutes and Codex messages go unclaimed | bug | L2 | P2 | none | 🔵 ready |
+| T-0396 | [.0396-watch-expiry-renewal](.0396-watch-expiry-renewal/handoff.md) | conductor mailbox watch expires after 30 minutes and Codex messages go unclaimed | bug | L2 | P2 | none | 🟢 done |
 | T-0397 | [0397-messages-watch-command](0397-messages-watch-command/handoff.md) | messages.py watch polls, beats and renews in one process | feature | L2 | P2 | T-0396 | 🔵 ready |

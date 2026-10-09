@@ -2,7 +2,7 @@
 id: T-0396
 title: "conductor mailbox watch expires after 30 minutes and Codex messages go unclaimed"
 type: bug             # feature | bug | chore | spike | idea
-status: ready
+status: done
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -25,3 +25,13 @@ Maison and Codex, 2026-10-09: the Claude Monitor watcher expired after 30 minute
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and its case `watch: a lapsed watch reads as no reader, and renew clears it` is ok (the case failed before the change: status printed no `reader alive` line).
+- A lease past its window: `status` exits 3 and prints `reader alive: no` and `lapsed: yes`; a timed-out `handshake` prints `watch lapsed` and the `renew` command.
+- `messages.py renew --receiver R --worker W` on that lease exits 0 and `status` then exits 0 with `reader alive: yes`; `renew` refuses a non-holder, a missing lease, and a released lease.
+- `python3 plugins/sdlc-lite/scripts/check.py` and `python3 plugins/sdlc-lite/scripts/tickets.py check` pass; `codex_roles.py generate --check` and `claude_roles.py generate --check` pass.
+
+## Closed
+
+2026-10-08: delivered by the solo agent (level L2); one independent batched verifier passed before the merge
