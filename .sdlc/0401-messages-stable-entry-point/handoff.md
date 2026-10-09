@@ -25,3 +25,9 @@ Maison and Codex, 2026-10-09: after 0.22.0 to 0.22.1 the 0.22.0 cache folder dis
 
 ## Constraints
 No em or en dashes. No push or publish.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/messages.py selftest` exits 0 and includes the cases `entry files: no versioned plugin path, and the watch loop survives a plugin update` and `beat keeps the window; watch extends it`.
+- `python3 plugins/sdlc-lite/scripts/check.py` exits 0; it fails when a skill, agent, command, hook or Codex adapter file names `sdlc-lite/<digits>.<digits>`.
+- `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check` exits 0.
+- The generated mailbox `AGENTS.md` runs every command through `<mailbox>/messages-run.py`, and the launcher falls back to the newest sibling `sdlc-lite/<version>/scripts/messages.py` when its recorded folder is gone.

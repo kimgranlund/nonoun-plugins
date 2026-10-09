@@ -182,6 +182,10 @@
 46. Lean template (T-0385): agents/planner.md names `selected-test count`, `just to write the plan`, `validation scope`, `integration gate`, and `no record exists`;
    skills/handoff-format/SKILL.md names `validation scope`; agents/solo.md, scripts/fanout.py (both briefs) say `can affect` after a fix and never `rerun them all` or
    `rerun all checks`. Negative controls: each phrase removed, and a planted old phrase, must be flagged.
+47. Version-free entry point (T-0401): no shipped skill, agent, command, hook, Codex adapter file, or the generated mailbox text in
+   scripts/messages.py names a versioned plugin cache folder (`sdlc-lite/<digits>.<digits>`); the mailbox text runs the `{{launcher}}`
+   (`messages-run.py`) and says `beat` never extends the window. Negative controls: a planted versioned path in each scanned kind of file, and each phrase removed.
+   scripts/messages.py selftest runs the watch loop through a simulated version-folder rename.
 """
 import os, re, sys, json, pathlib, subprocess, tempfile, shutil
 
@@ -659,10 +663,10 @@ MESSENGER_WORDS = ('model: claude-haiku-5-5', 'messages.py', '.sdlc/messages/AGE
                    'messages.py activate', 'messages.py beat', 'messages.py release', 'scripts/supervisor.py',
                    'only active-turn delivery is available', 'never counts as new authorization',
                    'never evidence that an idle parent received a message', 'Any completion event ends you')  # T-0380: lifecycle
-MAILBOX_WORDS = ('## Activate a worker', 'only active-turn delivery is available', '{{scripts}}/supervisor.py',
+MAILBOX_WORDS = ('## Activate a worker', 'only active-turn delivery is available', 'idle-host watcher `supervisor.py`',
                  '--authorized-by', 'never widens that scope', 'is not evidence that an idle parent received anything',
                  'one re-arm per stall', 'exits 3 unless it is listening', 'Retry and recovery are bounded',
-                 'the exchange cannot loop')  # T-0380
+                 'the exchange cannot loop', 'python3 "{{launcher}}" watch', 'it never extends the window')  # T-0380, T-0401
 def mailbox_missing(script_text): return [f'mailbox: scripts/messages.py entry text missing "{w}"' for w in MAILBOX_WORDS if w not in script_text]
 def messenger_missing(agent_text, codex_models, toml_present):
     out = []
@@ -1177,6 +1181,18 @@ try:
     (_rg/'p'/'agents'/'conductor.md').write_text((_rg/'p'/'agents'/'conductor.md').read_text() + '\nplanted edit\n')
     if not regen_drift(_rg/'p'): errors.append('check.py: regenerate parity negative control not flagged for an edited agent source')
 finally: shutil.rmtree(_rg, ignore_errors=True)
+# Version-free entry point (docstring item 47, T-0401): a versioned cache path breaks a loop on the next plugin update.
+VERSIONED_PATH = re.compile(r'sdlc-lite/[0-9]+\.[0-9]+')
+def versioned_path_bad(rel, text): return [f'{rel}: names a versioned plugin cache folder "{m.group(0)}"; use a version-free entry point' for m in VERSIONED_PATH.finditer(text)][:1]
+_vp_files = [p for d in ('skills', 'agents', 'commands', 'hooks') if (root/d).is_dir() for p in sorted((root/d).rglob('*')) if p.is_file()]
+_vp_files += [root/'adapters/codex/instructions.md'] + sorted((root/'adapters/codex/agents').glob('*.toml'))
+for _p in _vp_files:
+    if _p.is_file(): errors.extend(versioned_path_bad(_p.relative_to(root).as_posix(), _p.read_text(encoding='utf-8', errors='replace')))
+errors.extend(versioned_path_bad('scripts/messages.py entry text', mst))
+if len(_vp_files) < 30: errors.append(f'version-free entry point: only {len(_vp_files)} files scanned; the scan roots moved')
+for _why, _bad in (('a skill', 'run python3 ~/.claude/plugins/cache/x/sdlc-lite/0.22.0/scripts/messages.py'), ('an agent', 'path .../sdlc-lite/1.2.3/scripts/messages.py')):
+    if not versioned_path_bad('skills/x/SKILL.md', 'clean\n' + _bad + '\n'): errors.append(f'check.py: version-free negative control not flagged for {_why}')
+if versioned_path_bad('skills/x/SKILL.md', 'the folder sdlc-lite/<version>/scripts and ${CLAUDE_PLUGIN_ROOT}/scripts/messages.py\n'): errors.append('check.py: version-free guard flagged an allowed line')
 for e in errors: print('FAIL', e)
 print(f'{"FAIL" if errors else "ok"}: {len(run)} role levels, {len(agents)} agents, {len(GENERATED)} generated definitions checked')
 sys.exit(1 if errors else 0)
