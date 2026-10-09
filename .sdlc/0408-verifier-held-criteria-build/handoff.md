@@ -25,3 +25,11 @@ Maison and Codex, 2026-10-09: 11 component lanes failed on template rows 7 to 12
 
 ## Constraints
 No em or en dashes. No push or publish. The design is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- Result parsing: `python3 plugins/sdlc-lite/scripts/steps.py selftest`, `results.py selftest`, `tickets.py selftest` and `dispatch.py selftest` each exit 0, and a verifier result with Verdict `pass` beside a held or failed criterion line is rejected by results validation while an old pass result and an old fail result still validate unchanged.
+- Routing: in a throwaway repo, a step whose verified result holds one criterion as `unmet-dependency <subject>` gets next action `wait` from `steps.py next`, never a rebuild or replan, and `steps.py open --explain` names the held criterion; once the subject is met the action is `reverify`.
+- Premature closure: in the same throwaway repo, `tickets.py close` for that ticket exits non-zero and writes nothing, with `--reason` and with `--force`; after a settling result exists the close goes through.
+- Deferred-to-owner: a criterion `deferred <owner>` is closed by the owner's settling result and not by the builder's.
+- `python3 plugins/sdlc-lite/scripts/check.py`, `claude_roles.py generate --check`, `codex_roles.py generate --check` and `tickets.py check` exit 0; `git diff --check` is clean and the added lines hold no em or en dashes.
+- The design deviations in section 10 of docs/specs/sdlc-lite/verifier-held-criteria.md are real: the `#k` ordinal counts bullet lines, and `fanout.py land` stops a held lane with `verifier fail (held ...)`. Report both as confirmed or not; they do not fail the ticket.
