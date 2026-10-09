@@ -1,6 +1,6 @@
 # Gate lock as the shared admission authority
 
-Design for review, not implemented. Version 0.1, 2026-10-08, ticket T-0386. The maintainer's decision is pending and is recorded in the ticket's `## Decision` section; no build ticket is filed before it. The numbers 6 compute units and 3 browser jobs from the proposal are not approved and are not used here; capacity numbers come only from calibration on future real runs.
+Built as `gate_lock.py` protocol `sdlc-gate/2` by ticket T-0409 (2026-10-09), after the maintainer approved the build and the numbers. Version 0.1, 2026-10-08, ticket T-0386. Where this design and the build differ, the build notes at the end say how; the current behavior is in the `gate_lock.py` entry of [sdlc-internals](../../references/sdlc-internals.md). The text below is the original design, kept as written, so its statements that the numbers 6 and 3 are not approved are superseded by the build notes.
 
 ## 1. Answer in one paragraph
 
@@ -188,3 +188,9 @@ Every v1 case runs in a temp `SDLC_GATE_DIR` with dummy commands that write star
 3. Draining a group whose leader exited before release (a behavior change: today leftover members keep running after the slot is freed).
 4. Keep `SDLC_GATE_SLOTS=0` and `--no-gate-lock` as the explicit opt-out (recommended) or remove them.
 5. No numbers: the built-in policy keeps today's behavior until calibration from real runs; 6 and 3 stay unapproved.
+
+## 12. Build notes (T-0409, 2026-10-09)
+
+- Numbers: the maintainer approved capacity 6 compute units and 3 browser jobs. The built-in policy is exactly that, with a default need of 3 compute units so that two undeclared gates still run at once, as before. Section 5's built-in default (`max(1, cpus // 2)` per gate, twice that in capacity) is replaced; `SDLC_GATE_WORKERS` for an undeclared gate is 3 instead of `cpus // 2`, and `--slots N` or `SDLC_GATE_SLOTS=N` asks for `max(1, 6 // N)` compute units (N of 1 asks for all 6) instead of `max(1, cpus // N)`, because a share larger than the capacity would otherwise be `too_large` for every current caller.
+- Priority: the design had none. Maison's acceptance (`codex-live-admission-followup.md`) adds it, so `run --priority P` (env `SDLC_GATE_PRIORITY`, default 0) orders the queue by highest priority, then arrival; round robin across repos applies among the repos at the top priority; a running holder is never preempted. `status` prints `admitted` and `queued` rows with the queue position and priority.
+- Not built, as section 8 deferred or section 7 leaves open: the start-barrier helper, capability tokens, request ids, the event stream, workload classes, the stable launcher (`install`, decision item 2), and the repo-owned entry guards. Group drain on leader exit (decision item 3) is built as designed.

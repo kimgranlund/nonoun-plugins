@@ -25,3 +25,13 @@ T-0386 design (gate-lock-admission.md) was pending the maintainer; the maintaine
 
 ## Constraints
 No em or en dashes. No push or publish. The design is the contract: if it is wrong or silent, stop and report a plan defect instead of improvising.
+
+## Acceptance criteria
+- `python3 plugins/sdlc-lite/scripts/gate_lock.py selftest` exits 0 and prints a negative control observed for each of: weighted cap, FIFO order, priority, dead holder reclaimed, live group not reclaimed, start identity, group drain.
+- A second job waits in FIFO order behind the first when the cap is full, and a higher priority job is admitted first among waiters: `gate_lock.py run --need compute_units=6 --priority 5 -- <cmd>` queued behind a full holder runs before an earlier priority 0 waiter.
+- `gate_lock.py status` prints `admitted` and `queued` rows (and `status --json` the same with `state` fields) while a holder runs and a job waits.
+- A dead holder (wrapper and process group gone) is reclaimed; a dead wrapper with a live process group keeps its charge.
+- Exit codes are unchanged for existing callers: the command's own status, 137 for SIGKILL, 127 and 126 for an unrunnable command, 143 on SIGTERM, 3 with a `gate_lock: timeout` first line on a wait timeout; `SDLC_GATE_SLOTS=0` and `--no-gate-lock` run bare.
+- The built-in policy is capacity 6 compute units and 3 browser jobs (`gate_lock.py policy show`).
+- `python3 plugins/sdlc-lite/scripts/check.py`, `bash plugins/sdlc-lite/scripts/hook-selftest.sh`, `python3 plugins/sdlc-lite/scripts/tickets.py --root .sdlc check`, `python3 plugins/sdlc-lite/scripts/fanout.py selftest`, `python3 scripts/check-packaging.py` and `git diff --check` pass.
+- `docs/references/sdlc-internals.md` describes the new gate_lock.py behavior.

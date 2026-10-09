@@ -134,7 +134,7 @@
    `docs_check.py" selftest` and `docs_check.py" --root` on this repository. Negative controls: each phrase removed from each file must be flagged.
 34. Product name: live tracked files hold none of the retired spellings of SDLC Lite listed in NAME_BANNED, outside the NAME_ALLOW history paths
    (docs/reports, closed tickets, run workspaces under .sdlc, bench results). Negative control: a planted spelling must be flagged and an allowlisted path must not.
-35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, and `sdlc-gate-locks`; scripts/check.sh runs `gate_lock.py" selftest`;
+35. Gate lock: scripts/gate_lock.py names `SLOT-CAP`, `SDLC_GATE_WORKERS`, `SDLC_GATE_SLOTS`, `sdlc-gate-locks`, `SDLC_GATE_DIR`, and `SDLC_GATE_GRANT`; scripts/check.sh runs `gate_lock.py" selftest`;
    scripts/fanout.py names `gate_lock.py` and `--no-gate-lock`; agents/conductor.md names `gate_lock.py run`; and, where docs/references/sdlc-internals.md exists,
    it names `gate_lock.py`. Negative controls: each phrase removed from each file must be flagged.
 36. Fleet retro: skills/fleet-retro/SKILL.md names `fleet_collect.py`, `fleet_detect.py`, `SendMessage`, `interview.md`, `rubric.md`, `AskUserQuestion`,
@@ -1003,7 +1003,7 @@ if (_repo/'.git').exists():
     if not name_bad(dict(_names, **{'docs/x.md': 'a ' + NAME_BANNED[0] + ' b'})): errors.append('check.py: product name negative control not flagged for a planted spelling')
     if name_bad({'docs/reports/x.md': 'a ' + NAME_BANNED[1] + ' b'}): errors.append('check.py: product name allowlist did not suppress a docs/reports path')
 # Gate lock (docstring item 35): the semaphore script, its selftest wiring, the fanout wrapper, and the conductor and internals mentions.
-GATE_LOCK_NEEDS = (('gate_lock.py', ('SLOT-CAP', 'SDLC_GATE_WORKERS', 'SDLC_GATE_SLOTS', 'sdlc-gate-locks')),
+GATE_LOCK_NEEDS = (('gate_lock.py', ('SLOT-CAP', 'SDLC_GATE_WORKERS', 'SDLC_GATE_SLOTS', 'sdlc-gate-locks', 'SDLC_GATE_DIR', 'SDLC_GATE_GRANT')),
                    ('check.sh', ('gate_lock.py" selftest',)), ('fanout.py', ('gate_lock.py', '--no-gate-lock')),
                    ('conductor', ('gate_lock.py run',)), ('internals', ('gate_lock.py',)))
 def gate_lock_bad(texts):

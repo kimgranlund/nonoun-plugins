@@ -53,7 +53,7 @@ Only trivial edits: a typo, a rename in one file, a config value, a one-line fix
 
 ## Stay thin
 - Delegate context-heavy reads and long checks to a role or a read-only agent, and take back conclusions, not file contents or logs.
-- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, a machine-wide semaphore (2 slots by default, `SDLC_GATE_SLOTS`) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists who holds the slots, and `fanout.py` runs its `--gate` commands the same way.
+- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, the machine-wide weighted admission queue (capacity 6 compute units and 3 browser jobs; a gate with no `--need` takes 3 compute units; FIFO, `--priority N` first for a job that blocks an integration) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists the queued and admitted rows, and `fanout.py` runs its `--gate` commands the same way.
 - Do not narrate every background wake-up.
 - Keep your own context small: it persists, and every later turn pays for it. `footprint.py <task dir> --session <transcript.jsonl>` shows this session's tokens next to the role costs.
 
