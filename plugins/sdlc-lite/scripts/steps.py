@@ -341,6 +341,9 @@ Usage: steps.py {split <planner.md | task dir> [--only N ...] [--guard-timeout S
               E  grep -vxE "<pattern>"       |<path> is appended inside the quotes
               A  grep -vE "^(...)$" (or grep -E -v)   |<path> is inserted before )$
             In E and A the path is ERE-escaped (a backslash before each of .^$*+?()[]{}|\).
+            A deny-path guard is also accepted: a span with git diff --name-only, no grep -v, and
+            exactly one run of ':(exclude)<path>' pathspecs; each path is appended as another
+            ':(exclude)<path>' after that run, in its quote style (a span with several runs refuses).
             Several such lines, or an unrecognized form, refuses. Zero such lines refuses too,
             unless --reason WHY is given: the path list is then the explicit allow-list, recorded
             with the reason as "- `<path>`: allowed by a conductor scope decision (steps.py widen):
@@ -2814,6 +2817,45 @@ def is_scope_span(span):
     return 'git diff --name-only' in span and INVERT_GREP_RE.search(span) is not None
 
 
+DENY_EXCL_RE = re.compile(r"""(['"]):\(exclude\)([^'"\s]+)\1""")
+
+
+def is_deny_span(span):
+    """True when a code span is a deny-path scope guard: git diff --name-only with an :(exclude)
+    pathspec and no grep -v allow-list (that one is is_scope_span)."""
+    return ('git diff --name-only' in span and not is_scope_span(span)
+            and DENY_EXCL_RE.search(span) is not None)
+
+
+def deny_runs(span):
+    """The :(exclude) pathspec tokens of a span, grouped into runs of tokens separated only by
+    whitespace: [[match, ...], ...]."""
+    runs, last = [], None
+    for m in DENY_EXCL_RE.finditer(span):
+        if last is not None and not span[last.end():m.start()].strip():
+            runs[-1].append(m)
+        else:
+            runs.append([m])
+        last = m
+    return runs
+
+
+def widen_deny(span, paths):
+    """(new span, paths added, why-not) for a deny-path guard: an :(exclude)<path> pathspec per new path
+    appended after the one run of exclude pathspecs, in that run's quote style. why-not is a refusal
+    reason (new is None) when the span has not exactly one run or one git diff --name-only."""
+    runs = deny_runs(span)
+    if len(runs) != 1:
+        return None, [], f'the deny-path scope criterion has {len(runs)} :(exclude) pathspec runs; need exactly one'
+    if span.count('git diff --name-only') != 1:
+        return None, [], 'the deny-path scope criterion has several git diff --name-only commands; need exactly one'
+    listed = {m.group(2) for m in runs[0]}
+    add = [p for p in paths if p not in listed]
+    q = runs[0][-1].group(1)
+    at = runs[0][-1].end()
+    return span[:at] + ''.join(f' {q}:(exclude){p}{q}' for p in add) + span[at:], add, None
+
+
 def repo_path_ok(p):
     """True when p is a repo-relative path of [A-Za-z0-9._/@+-] with no leading - or / and no ..
     component: the path rule widen and lane share."""
@@ -2917,33 +2959,41 @@ def widen(step_dir, paths, timeout=300, reason=None, tree=None):
     lines = text.splitlines(keepends=True)
     items = [(i, line) for i, line in criteria_indexed([x.rstrip('\r\n') for x in lines]) if list_item(line)]
     scope = [(i, line, s) for i, line in items for s in line_spans(line)
-             if is_scope_span(s)]
+             if is_scope_span(s) or is_deny_span(s)]
     rows = sorted(set(i for i, _, _ in scope))
     if not rows:
         if reason is not None:
             return widen_recorded(h, text, paths, reason)
         refuse('no criterion line has a command span with git diff --name-only and a grep -v allow-list '
-               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"); '
+               '(accepted forms: grep -vxF -e <word>..., grep -vxE "<pattern>", or grep -vE "^(...)$"; '
+               "or a deny-path guard with one run of ':(exclude)<path>' pathspecs); "
                'pass --reason "<why>" to record an explicit file list instead')
     if len(rows) > 1:
-        refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list; '
-               'need exactly one')
+        refuse(f'{len(rows)} criterion lines have a git diff --name-only span with a grep -v allow-list '
+               'or an :(exclude) deny-path; need exactly one')
     if len(scope) > 1:
-        refuse('the scope criterion line has several git diff --name-only spans with a grep -v allow-list')
+        refuse('the scope criterion line has several git diff --name-only spans with a grep -v allow-list '
+               'or an :(exclude) deny-path')
     idx, target, old = scope[0]
-    forms = widen_forms(old)
-    if not forms:
-        refuse('the scope criterion has an unrecognized allow-list form (want grep -vxF -e <word>..., '
-               f'grep -vxE "<pattern>", or grep -vE "^(...)$"): {old}')
-    if len(forms) > 1:
-        refuse(f'the scope criterion has {len(forms)} allow-list forms; need exactly one: {old}')
-    form, m = forms[0]
-    listed = widen_listed(form, m)
-    add = [p for p in paths if (p if form == 'F' else ere_escape(p)) not in listed]
+    if is_deny_span(old):
+        new, add, why = widen_deny(old, paths)
+        if why:
+            refuse(f'{why}: {old}')
+    else:
+        forms = widen_forms(old)
+        if not forms:
+            refuse('the scope criterion has an unrecognized allow-list form (want grep -vxF -e <word>..., '
+                   f'grep -vxE "<pattern>", or grep -vE "^(...)$"): {old}')
+        if len(forms) > 1:
+            refuse(f'the scope criterion has {len(forms)} allow-list forms; need exactly one: {old}')
+        form, m = forms[0]
+        listed = widen_listed(form, m)
+        add = [p for p in paths if (p if form == 'F' else ere_escape(p)) not in listed]
+        if not add:
+            return 'widen: already applied'
+        new = widen_span(old, form, m, add)
     if not add:
         return 'widen: already applied'
-
-    new = widen_span(old, form, m, add)
     new_line = replace_span(target, old, new)
     if new_line is None or list_item(new_line) is None:
         refuse(f'cannot rewrite the scope criterion line: {target}')
@@ -4417,6 +4467,42 @@ def selftest():
               and text.count('## Scope widened') == 1 and text.count('`b.txt`: allowed') == 1
               and text.endswith('- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
                                 '- `e.txt`: allowed by a conductor scope decision (steps.py widen)\n'))
+
+        # deny-path guard: git diff --name-only <base> -- . ':(exclude)<path>' | { ! grep -q .; }
+        D_SPAN = 'git diff --name-only "$SDLC_BASE_SHA" -- . \':(exclude)sdlc\' \':(exclude)a.txt\' | { ! grep -q .; }'
+        r, d = w_repo(w_handoff(f'(guard) `{D_SPAN}`', '`test -d .`'))
+        git_add = lambda *a: subprocess.run(['git', '-C', str(r), 'add', '-N'] + list(a), check=True,
+                                            capture_output=True)
+        (r / 'dir').mkdir()
+        for f in ('a.txt', 'b.txt', 'dir/c.txt'):
+            (r / f).write_text('x\n', encoding='utf-8')
+        git_add('a.txt', 'b.txt', 'dir/c.txt')
+        red_before = not w_green(r, d)
+        rc, out, err = run_main(['widen', str(d), 'b.txt', 'dir/c.txt'])
+        text = (d / 'handoff.md').read_text(encoding='utf-8')
+        green_after = w_green(r, d)
+        (r / 'bxtxt').write_text('x\n', encoding='utf-8')
+        git_add('bxtxt')
+        outside = not w_green(r, d)
+        check('widen: (d) a deny-path guard gets an :(exclude) pathspec per path: red before, green after, a '
+              'lookalike outside the set still fails, (guard) kept, ## Scope widened lists each path',
+              red_before and rc == 0 and err == '' and len(out.splitlines()) == 1
+              and out.startswith(f'steps widen: {d}: added b.txt, dir/c.txt to the scope criterion: ')
+              and "':(exclude)a.txt' ':(exclude)b.txt' ':(exclude)dir/c.txt' | { ! grep -q .; }" in text
+              and '- (guard) `' in text and green_after and outside
+              and '## Scope widened\n- `b.txt`: allowed by a conductor scope decision (steps.py widen)\n'
+                  '- `dir/c.txt`: allowed by a conductor scope decision (steps.py widen)\n' in text)
+        before = snapshot(d)
+        rc, out, err = run_main(['widen', str(d), 'b.txt', 'a.txt'])
+        check('widen: (d) a deny-path guard rerun with listed paths prints widen: already applied, writes nothing',
+              rc == 0 and out.strip() == 'widen: already applied' and snapshot(d) == before)
+        # forms the deny rewrite cannot handle stay refused
+        r, d = w_repo(w_handoff('`git diff --name-only "$SDLC_BASE_SHA" | wc -l | grep -qx 0`'))
+        widen_refused('(d) a git diff --name-only span with neither allow-list nor exclude is still refused', d,
+                      ['b.txt'], 'no criterion line has a command span with git diff --name-only and a grep -v allow-list')
+        r, d = w_repo(w_handoff('`git diff --name-only "$SDLC_BASE_SHA" -- . \':(exclude)x\' | cat; '
+                                'git diff --name-only -- \':(exclude)y\' | { ! grep -q .; }`'))
+        widen_refused('(d) a deny-path span with two exclude runs is refused', d, ['b.txt'], 'pathspec runs')
 
         # split inherits earlier widenings: step 1 widened by P, then split --only 2 puts P in step 2's
         # scope allow-list and its ## Scope widened section; a plan with no earlier widening is unchanged
